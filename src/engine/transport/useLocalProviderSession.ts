@@ -16,6 +16,7 @@ import {
     type LocalProviderRandom,
 } from './localProviderBootstrap';
 import {
+    clearLocalMatchSnapshot,
     type LocalMatchSnapshot,
     persistLocalMatchSnapshot,
     readLocalMatchSnapshot,
@@ -46,15 +47,17 @@ export function useLocalProviderSession(args: {
     } = args;
     const storageGameId = persistGameId ?? config.gameId;
 
-    const persistedSnapshot = useMemo(() => {
+    const persistedSnapshotResult = useMemo(() => {
         if (!persistSession) return null;
         const snapshot = readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers });
         if (!snapshot) return null;
         if (shouldRestorePersistedSession && !shouldRestorePersistedSession(snapshot)) {
-            return null;
+            return { snapshot: null, rejectedSeed: seed };
         }
-        return snapshot;
+        return { snapshot, rejectedSeed: null };
     }, [numPlayers, persistSession, seed, shouldRestorePersistedSession, storageGameId]);
+    const persistedSnapshot = persistedSnapshotResult?.snapshot ?? null;
+    const rejectedPersistedSnapshotSeed = persistedSnapshotResult?.rejectedSeed ?? null;
 
     const [initialRandom] = useState<LocalProviderRandom>(() =>
         createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0),
@@ -75,6 +78,9 @@ export function useLocalProviderSession(args: {
 
     useEffect(() => {
         if (!persistSession) return;
+        if (rejectedPersistedSnapshotSeed) {
+            clearLocalMatchSnapshot(storageGameId, rejectedPersistedSnapshotSeed);
+        }
         persistLocalMatchSnapshot({
             gameId: storageGameId,
             seed,
@@ -82,7 +88,7 @@ export function useLocalProviderSession(args: {
             state,
             randomCursor: randomRef.current.getCursor(),
         });
-    }, [numPlayers, persistSession, seed, state, storageGameId]);
+    }, [numPlayers, persistSession, rejectedPersistedSnapshotSeed, seed, state, storageGameId]);
 
     const reset = useCallback(() => {
         randomRef.current = createLocalProviderRandom(seed);

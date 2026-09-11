@@ -18,8 +18,11 @@ import {
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR,
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY,
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE,
+  BETRAYAL_REROLL_TARGET_CENTER_SOURCE,
   BETRAYAL_REROLL_VISUAL_CONTRACT,
   createBetrayalHouseDiceSkin,
+  getBetrayalRerollTargetHitSize,
+  getBetrayalRerollTargetOutlineSize,
   getBetrayalRerollTargetVisualCenter,
   getBetrayalRerollTargetVisualRotation,
   getBetrayalRerollTargetVisibleSize,
@@ -354,6 +357,8 @@ export function BetrayalHouseDice3DGroup({
           data-reroll-target-count={selectableDiceTargets.length}
           data-reroll-highlight-renderer={BETRAYAL_REROLL_HIGHLIGHT_RENDERER}
           data-reroll-visual-contract={BETRAYAL_REROLL_VISUAL_CONTRACT}
+          data-reroll-highlight-candidate-scale={BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE.toFixed(3)}
+          data-reroll-highlight-selected-scale={BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE.toFixed(3)}
           className="pointer-events-none absolute inset-0 z-20"
         >
           {selectableDiceTargets.map((target) => {
@@ -362,14 +367,34 @@ export function BetrayalHouseDice3DGroup({
             const targetVisibleSize = getBetrayalRerollTargetVisibleSize(
               target.layout,
             );
+            const targetOutlineSize = getBetrayalRerollTargetOutlineSize(
+              target.layout,
+            );
+            const targetHitSize = getBetrayalRerollTargetHitSize(target.layout);
             const targetVisualCenter = getBetrayalRerollTargetVisualCenter(
               target.layout,
             );
             const targetVisualRotation =
               getBetrayalRerollTargetVisualRotation(target.layout);
-            const targetWidth = Math.max(1, targetVisibleSize.width);
-            const targetHeight = Math.max(1, targetVisibleSize.height);
-            const targetMaxSize = Math.max(targetWidth, targetHeight);
+            const targetProjectedWidth = Math.max(
+              1,
+              target.layout.visualWidth ?? target.layout.width,
+            );
+            const targetProjectedHeight = Math.max(
+              1,
+              target.layout.visualHeight ?? target.layout.height,
+            );
+            const targetWidth = Math.max(1, targetHitSize.width);
+            const targetHeight = Math.max(1, targetHitSize.height);
+            const targetMaxSize = Math.max(
+              targetOutlineSize.width,
+              targetOutlineSize.height,
+            );
+            const outlineBorderWidth = isSelectedRerollTarget ? 2.5 : 1.75;
+            const outlineColor = isSelectedRerollTarget ? "#ff4df8" : "#00e7ff";
+            const outlineShadow = isSelectedRerollTarget
+              ? "0 0 0 1px rgba(255, 244, 210, 0.78), 0 0 12px rgba(255, 77, 248, 0.88)"
+              : "0 0 0 1px rgba(245, 255, 255, 0.58), 0 0 8px rgba(0, 231, 255, 0.68)";
             return (
               <div
                 key={`${roll.id}-reroll-target-${target.dieIndex}`}
@@ -382,6 +407,7 @@ export function BetrayalHouseDice3DGroup({
                 data-reroll-target-rotate-z={targetVisualRotation.toFixed(4)}
                 data-reroll-target-outline-rotate-z={targetVisualRotation.toFixed(4)}
                 data-reroll-target-source={target.source}
+                data-reroll-target-center-source={BETRAYAL_REROLL_TARGET_CENTER_SOURCE}
                 data-reroll-target-shape="die-face"
                 data-reroll-target-selected={isSelectedRerollTarget ? "true" : "false"}
                 data-reroll-target-box-size={targetMaxSize.toFixed(2)}
@@ -389,15 +415,17 @@ export function BetrayalHouseDice3DGroup({
                 data-reroll-target-hit-height={targetHeight.toFixed(2)}
                 data-reroll-target-visual-width={targetVisibleSize.width.toFixed(2)}
                 data-reroll-target-visual-height={targetVisibleSize.height.toFixed(2)}
-                data-reroll-target-outline-width={targetVisibleSize.width.toFixed(2)}
-                data-reroll-target-outline-height={targetVisibleSize.height.toFixed(2)}
-                data-reroll-target-outline-gap="0.00"
-                data-reroll-target-outline-paint={BETRAYAL_REROLL_HIGHLIGHT_RENDERER}
+                data-reroll-target-projected-width={targetProjectedWidth.toFixed(2)}
+                data-reroll-target-projected-height={targetProjectedHeight.toFixed(2)}
+                data-reroll-target-outline-width={targetOutlineSize.width.toFixed(2)}
+                data-reroll-target-outline-height={targetOutlineSize.height.toFixed(2)}
+                data-reroll-target-outline-gap="1.50"
+                data-reroll-target-outline-paint="projected-edge-outline"
                 data-reroll-target-outline-point-count={0}
                 data-reroll-target-outline-points=""
                 data-reroll-target-highlight-renderer={BETRAYAL_REROLL_HIGHLIGHT_RENDERER}
                 data-reroll-target-visual-contract={BETRAYAL_REROLL_VISUAL_CONTRACT}
-                data-reroll-target-visual-layer="transparent-hitbox-only"
+                data-reroll-target-visual-layer="projected-edge-outline-plus-transparent-hitbox"
                 className="group pointer-events-auto absolute outline-none"
                 style={{
                   left:
@@ -421,6 +449,21 @@ export function BetrayalHouseDice3DGroup({
                 <span className="sr-only">
                   {rerollSelection.getDieActionLabel(target.dieIndex)}
                 </span>
+                <span
+                  aria-hidden="true"
+                  data-testid={`betrayal-house-dice-reroll-target-outline-${target.dieIndex}`}
+                  data-reroll-target-outline-selected={isSelectedRerollTarget ? "true" : "false"}
+                  className="pointer-events-none absolute left-1/2 top-1/2 block"
+                  style={{
+                    width: `${targetOutlineSize.width}px`,
+                    height: `${targetOutlineSize.height}px`,
+                    transform: "translate(-50%, -50%)",
+                    border: `${outlineBorderWidth}px solid ${outlineColor}`,
+                    borderRadius: `${Math.max(7, Math.min(10, targetMaxSize * 0.19))}px`,
+                    boxShadow: outlineShadow,
+                    background: "transparent",
+                  }}
+                />
               </div>
             );
           })}

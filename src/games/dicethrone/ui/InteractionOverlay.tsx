@@ -6,7 +6,8 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { InteractionDescriptor, HeroState } from '../domain/types';
+import { Search, X } from 'lucide-react';
+import type { AbilityCard, InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
@@ -17,6 +18,31 @@ import { GameButton } from './components/GameButton';
 import { getDiceThroneCardPreviewRef } from './cardPreviewHelper';
 
 type TeamTone = 'self' | 'ally' | 'enemy';
+
+const CARD_POOL_CARD_WIDTH = 'clamp(88px, min(7.2vw, 12.5vh), 132px)';
+const CARD_POOL_CARD_MAX_WIDTH_PX = 132;
+const CARD_POOL_PANEL_MAX_WIDTH_PX = 1120;
+const CARD_POOL_PANEL_SAFE_PADDING_PX = 96;
+const CARD_POOL_GRID_GAP_PX = 16;
+
+const normalizeCardPoolSearchText = (value: unknown): string => (
+    String(value ?? '')
+        .normalize('NFKC')
+        .trim()
+        .toLocaleLowerCase()
+);
+
+const getCardPoolViewportWidth = (): number => {
+    if (typeof window === 'undefined') return 1024;
+    return Math.max(320, window.innerWidth);
+};
+
+const getCardPoolSingleRowCapacity = (): number => {
+    const viewportWidth = getCardPoolViewportWidth();
+    const panelWidth = Math.min(CARD_POOL_PANEL_MAX_WIDTH_PX, viewportWidth - 32);
+    const usableWidth = Math.max(CARD_POOL_CARD_MAX_WIDTH_PX, panelWidth - CARD_POOL_PANEL_SAFE_PADDING_PX);
+    return Math.max(1, Math.floor((usableWidth + CARD_POOL_GRID_GAP_PX) / (CARD_POOL_CARD_MAX_WIDTH_PX + CARD_POOL_GRID_GAP_PX)));
+};
 
 interface ToneClasses {
     idleBorderClassName: string;
@@ -240,103 +266,228 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
         isPlayerSelection || isHandCardSelection || isTransferTargetSelection ? 1 : interaction.selectCount
     );
     const canConfirm = selectedItems.length >= minSelectCount;
+    const [cardPoolSearch, setCardPoolSearch] = React.useState('');
+    const cardSelectionCards = React.useMemo(() => {
+        if (!isCardSelection) return [] as AbilityCard[];
+        return (isDeckCardSelection
+            ? players[interaction.playerId]?.deck
+            : players[interaction.playerId]?.hand) ?? [];
+    }, [interaction.playerId, isCardSelection, isDeckCardSelection, players]);
+    const cardPoolSearchSignature = React.useMemo(() => (
+        [
+            interaction.id,
+            interaction.playerId,
+            interactionType,
+            cardSelectionCards.map(card => card.id).join('|'),
+        ].join('::')
+    ), [cardSelectionCards, interaction.id, interaction.playerId, interactionType]);
+
+    React.useEffect(() => {
+        setCardPoolSearch('');
+    }, [cardPoolSearchSignature]);
+
+    const resolveCardName = React.useCallback((card: AbilityCard): string => {
+        const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
+            ?? card.i18n?.['zh-CN']?.name
+            ?? card.name
+            ?? card.id;
+        if (
+            typeof rawCardName === 'string'
+            && rawCardName.startsWith('cards.')
+            && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
+        ) {
+            return t(rawCardName);
+        }
+        return String(rawCardName);
+    }, [i18n, locale, t]);
+
+    const normalizedCardPoolSearch = normalizeCardPoolSearchText(cardPoolSearch);
+    const shouldShowCardPoolSearch = cardSelectionCards.length > getCardPoolSingleRowCapacity();
+    const visibleCardSelectionCards = React.useMemo(() => {
+        if (!shouldShowCardPoolSearch || normalizedCardPoolSearch.length === 0) {
+            return cardSelectionCards;
+        }
+
+        return cardSelectionCards.filter((card) => {
+            const localizedNames = Object.values(card.i18n ?? {})
+                .flatMap(entry => [entry.name, entry.description]);
+            const haystack = [
+                resolveCardName(card),
+                card.name,
+                card.description,
+                card.id,
+                card.type,
+                card.timing,
+                card.cpCost,
+                ...localizedNames,
+            ].map(normalizeCardPoolSearchText).join(' ');
+            return haystack.includes(normalizedCardPoolSearch);
+        });
+    }, [cardSelectionCards, normalizedCardPoolSearch, resolveCardName, shouldShowCardPoolSearch]);
 
     // Derived presence
     const isOpen = true; // Controlled by BoardOverlays
 
     if (isCardSelection) {
-        const cardSelectionCards = (isDeckCardSelection
-            ? players[interaction.playerId]?.deck
-            : players[interaction.playerId]?.hand) ?? [];
+        const cardPoolCardStyle: React.CSSProperties = {
+            backgroundColor: '#0f172a',
+            borderRadius: '0.25rem',
+            width: CARD_POOL_CARD_WIDTH,
+        };
 
         return (
             <div
                 data-testid="dt-card-pool-overlay"
-                data-card-pool-layout="bottom-shelf"
-                className="fixed inset-0 flex items-end justify-center pointer-events-auto"
+                data-card-pool-layout="center-stage"
+                data-card-pool-hand-protection="preserve-visible-hand"
+                data-card-pool-browse-mode="grid-scroll"
+                className="fixed inset-0 pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlay }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div
-                    className="w-full bg-gradient-to-t from-black/90 via-black/75 to-transparent px-4 pb-4 pt-8"
+                    data-testid="dt-card-pool-panel"
+                    className="pointer-events-auto absolute inset-x-0 top-[clamp(4.25rem,9vh,6.25rem)] px-4"
                     onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
                 >
-                    <h2 className="mb-4 text-center text-xl font-black uppercase tracking-tight text-amber-100 drop-shadow-lg">
-                        {t(interaction.titleKey, { count: interaction.selectCount })}
-                    </h2>
                     <div
-                        data-testid="dt-card-pool-selection"
-                        data-card-pool-kind={isDeckCardSelection ? 'deck' : 'hand'}
-                        className="mx-auto flex max-w-[90vw] gap-4 overflow-x-auto px-4 py-3 [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto"
+                        data-testid="dt-card-pool-surface"
+                        className="relative isolate mx-auto w-full max-w-[70rem] px-3 py-3"
                     >
-                        {cardSelectionCards.map(card => {
-                            const ownerCharacterId = players[interaction.playerId]?.characterId;
-                            const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
-                            const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
-                                ?? card.i18n?.['zh-CN']?.name
-                                ?? card.name
-                                ?? card.id;
-                            const cardName = typeof rawCardName === 'string'
-                                && rawCardName.startsWith('cards.')
-                                && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
-                                ? t(rawCardName)
-                                : rawCardName;
-                            const isSelected = selectedItems.includes(card.id);
-                            return (
-                                <button
-                                    key={card.id}
-                                    type="button"
-                                    data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
-                                    data-selected={isSelected ? 'true' : 'false'}
-                                    data-card-pool-mode="preview"
-                                    data-card-preview-ready={previewRef ? 'true' : 'false'}
-                                    aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
-                                    onClick={() => onSelectHandCard(card.id)}
-                                    className={`
-                                        group relative flex w-[min(9.5rem,38vw)] min-w-[7.5rem] flex-shrink-0 cursor-pointer border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300
-                                        ${isSelected ? 'z-10 scale-[1.05]' : 'hover:z-10 hover:scale-[1.03]'}
-                                    `}
-                                >
-                                    <div
-                                        data-testid={`dt-card-choice-preview-${card.id}`}
-                                        className={`
-                                            aspect-[0.61] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl transition-[box-shadow,transform] duration-200
-                                            ${isSelected
-                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
-                                                : 'group-hover:ring-2 group-hover:ring-amber-300/80 group-hover:shadow-2xl'}
-                                        `}
+                        <div
+                            aria-hidden="true"
+                            data-testid="dt-card-pool-backdrop"
+                            className="pointer-events-none absolute inset-x-[2%] inset-y-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
+                        />
+                        <h2
+                            data-testid="dt-card-pool-title"
+                            className="mb-2 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
+                        >
+                            {t(interaction.titleKey, { count: interaction.selectCount })}
+                        </h2>
+                        {shouldShowCardPoolSearch ? (
+                            <div
+                                data-testid="dt-card-pool-search"
+                                className="mx-auto mb-1 max-w-[min(100%,30rem)]"
+                            >
+                                <div className="relative">
+                                    <span
+                                        data-testid="dt-card-pool-search-leading-icon"
+                                        className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-red-100/70"
                                     >
-                                        <CardPreview
-                                            previewRef={previewRef}
-                                            locale={locale}
-                                            className="h-full w-full"
-                                            style={{
-                                                backgroundColor: '#0f172a',
-                                                borderRadius: '0.5rem',
-                                            }}
-                                            alt={cardName}
-                                        />
+                                        <Search className="h-4 w-4" strokeWidth={2.1} />
+                                    </span>
+                                    <input
+                                        type="search"
+                                        value={cardPoolSearch}
+                                        onChange={(event) => setCardPoolSearch(event.target.value)}
+                                        placeholder={t('interaction.cardPoolSearchPlaceholder')}
+                                        data-testid="dt-card-pool-search-input"
+                                        className="h-9 w-full rounded-full border border-red-200/25 bg-[#1a0509]/72 pl-10 pr-10 text-sm font-bold text-amber-50 outline-none placeholder:text-red-100/38 focus:border-red-200/60 focus:ring-2 focus:ring-red-300/20"
+                                    />
+                                    {normalizedCardPoolSearch.length > 0 ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCardPoolSearch('')}
+                                            data-testid="dt-card-pool-search-clear"
+                                            className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-red-100/10 text-amber-50 transition-colors hover:bg-red-100/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
+                                            aria-label={t('interaction.cardPoolSearchClear')}
+                                        >
+                                            <X size={14} strokeWidth={2.2} />
+                                        </button>
+                                    ) : null}
+                                </div>
+                                <div
+                                    data-testid="dt-card-pool-result-count"
+                                    className="mt-1.5 text-center text-[11px] font-bold tracking-[0.08em] text-amber-100/68"
+                                >
+                                    {t('interaction.cardPoolFilterResultCount', {
+                                        visible: visibleCardSelectionCards.length,
+                                        total: cardSelectionCards.length,
+                                    })}
+                                </div>
+                            </div>
+                        ) : null}
+                        <div
+                            data-testid="dt-card-pool-selection"
+                            data-card-pool-kind={isDeckCardSelection ? 'deck' : 'hand'}
+                            className="scrollbar-thin mx-auto max-h-[min(34vh,22rem)] w-full overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
+                        >
+                            <div
+                                data-testid="dt-card-pool-track"
+                                className="mx-auto flex min-w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3"
+                            >
+                                {visibleCardSelectionCards.length === 0 ? (
+                                    <div
+                                        data-testid="dt-card-pool-empty"
+                                        className="flex min-h-[9rem] min-w-[min(22rem,76vw)] items-center justify-center rounded-[0.35rem] border border-dashed border-red-200/22 bg-[#120407]/58 px-6 text-center text-sm font-bold tracking-[0.08em] text-amber-100/72"
+                                    >
+                                        {t('interaction.cardPoolSearchEmpty')}
                                     </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                    <div className="mt-4 flex items-center justify-center gap-3">
-                        <GameButton
-                            onClick={onCancel}
-                            variant="secondary"
-                            className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
+                                ) : visibleCardSelectionCards.map(card => {
+                                    const ownerCharacterId = players[interaction.playerId]?.characterId;
+                                    const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
+                                    const cardName = resolveCardName(card);
+                                    const isSelected = selectedItems.includes(card.id);
+                                    return (
+                                        <button
+                                            key={card.id}
+                                            type="button"
+                                            data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
+                                            data-selected={isSelected ? 'true' : 'false'}
+                                            data-card-pool-mode="preview"
+                                            data-card-preview-ready={previewRef ? 'true' : 'false'}
+                                            aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
+                                            aria-pressed={isSelected}
+                                            onClick={() => onSelectHandCard(card.id)}
+                                            className={`
+                                                group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
+                                                ${isSelected ? '-translate-y-2 z-10' : 'hover:-translate-y-1 hover:z-10'}
+                                            `}
+                                        >
+                                            <div
+                                                data-testid={`dt-card-choice-preview-${card.id}`}
+                                                className={`
+                                                    overflow-hidden rounded-[0.3rem] transition-[box-shadow,filter] duration-200
+                                                    ${isSelected
+                                                        ? 'ring-2 ring-amber-200 shadow-[0_0_0_1px_rgba(127,29,29,0.86),0_0_24px_rgba(248,113,113,0.52),0_14px_24px_rgba(0,0,0,0.48)]'
+                                                        : 'shadow-[0_12px_22px_rgba(0,0,0,0.42)] group-hover:ring-1 group-hover:ring-red-200/75 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
+                                                `}
+                                            >
+                                                <CardPreview
+                                                    previewRef={previewRef}
+                                                    locale={locale}
+                                                    className="rounded-[0.3rem] bg-[#150609]"
+                                                    style={cardPoolCardStyle}
+                                                    alt={cardName}
+                                                />
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div
+                            data-testid="dt-card-pool-actions"
+                            className="mt-2 flex items-center justify-center gap-3"
                         >
-                            {t('common.cancel')}
-                        </GameButton>
-                        <GameButton
-                            onClick={onConfirm}
-                            disabled={!canConfirm}
-                            variant="primary"
-                            className="px-8 -translate-y-0.5 shadow-[0_6px_0_#b45309] active:translate-y-[3px] active:shadow-[0_2px_0_#b45309]"
-                        >
-                            {t('common.confirm')}
-                        </GameButton>
+                            <GameButton
+                                onClick={onCancel}
+                                variant="secondary"
+                                size="sm"
+                            >
+                                {t('common.cancel')}
+                            </GameButton>
+                            <GameButton
+                                onClick={onConfirm}
+                                disabled={!canConfirm}
+                                variant="primary"
+                                size="sm"
+                            >
+                                {t('common.confirm')}
+                            </GameButton>
+                        </div>
                     </div>
                 </div>
             </div>

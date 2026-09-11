@@ -12,7 +12,7 @@ import { act, render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { InteractionOverlay } from '../InteractionOverlay';
-import type { InteractionDescriptor, HeroState } from '../../domain/types';
+import type { AbilityCard, InteractionDescriptor, HeroState } from '../../domain/types';
 import type { PlayerId } from '../../../../engine/types';
 import { ModalStackProvider, useModalStack } from '../../../../contexts/ModalStackContext';
 import { ModalStackRoot } from '../../../../components/system/ModalStackRoot';
@@ -30,6 +30,9 @@ vi.mock('react-i18next', () => ({
                 'interaction.selectStatusToTransfer': '选择要移除的状态效果',
                 'interaction.transferSelectTarget': '选择目标玩家',
                 'interaction.selectDeckCardToAddToHand': '从抽牌堆选择 1 张牌加入手牌',
+                'interaction.cardPoolSearchPlaceholder': '搜索牌名或关键词',
+                'interaction.cardPoolSearchClear': '清空搜索',
+                'interaction.cardPoolSearchEmpty': '没有匹配的牌',
                 'interaction.noStatus': '无状态',
                 'common.self': '自己',
                 'common.opponent': '对手',
@@ -47,6 +50,9 @@ vi.mock('react-i18next', () => ({
                 'tokens.purify.name': '净化',
                 'tokens.purify.description': '移除 1 个负面状态效果。',
             };
+            if (key === 'interaction.cardPoolFilterResultCount') {
+                return `显示 ${_params?.visible ?? 0} / ${_params?.total ?? 0}`;
+            }
             return translations[key] || key;
         },
         i18n: {
@@ -63,10 +69,12 @@ vi.mock('../../../../components/common/media/CardPreview', () => ({
     CardPreview: ({
         previewRef,
         className,
+        style,
         alt,
     }: {
         previewRef?: { type?: string; atlasId?: string; index?: number } | null;
         className?: string;
+        style?: React.CSSProperties;
         alt?: string;
     }) => (
         <div
@@ -74,8 +82,10 @@ vi.mock('../../../../components/common/media/CardPreview', () => ({
             data-preview-type={previewRef?.type ?? 'missing'}
             data-preview-atlas-id={previewRef?.atlasId ?? ''}
             data-preview-index={previewRef?.index ?? ''}
+            data-preview-width={String(style?.width ?? '')}
             aria-label={alt}
             className={className}
+            style={style}
         />
     ),
 }));
@@ -746,41 +756,52 @@ describe('InteractionOverlay', () => {
             selected: [],
         };
 
-        const playersWithDeckCards: Record<PlayerId, HeroState> = {
+        const makeDeckCard = (
+            id: string,
+            name: string,
+            index: number,
+            extra?: Partial<AbilityCard>,
+        ): AbilityCard => ({
+            id,
+            name,
+            type: 'action',
+            cpCost: 0,
+            timing: 'main',
+            description: '',
+            previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index },
+            ...extra,
+        });
+
+        const smallDeckCards: AbilityCard[] = [
+            makeDeckCard('card-vampire-lord-blood-surge', '血潮', 17, { cpCost: 1 }),
+            makeDeckCard('card-vampire-lord-drink-up', '畅饮！', 31),
+            makeDeckCard('card-vampire-lord-gushing-blood', '涌血', 21),
+        ];
+
+        const largeDeckCards: AbilityCard[] = [
+            makeDeckCard('card-vampire-lord-blood-surge', '血潮', 17, { cpCost: 1 }),
+            makeDeckCard('card-vampire-lord-blood-from-above', '血袭天降', 18, { cpCost: 1 }),
+            makeDeckCard('card-vampire-lord-total-demise', '彻底毁灭', 19, { timing: 'roll' }),
+            makeDeckCard('card-vampire-lord-boiling-blood', '沸腾鲜血', 20, { timing: 'roll' }),
+            makeDeckCard('card-vampire-lord-gushing-blood', '血流如注！', 21),
+            makeDeckCard('upgrade-vampire-lord-undying-2', '不死 II', 22, { type: 'upgrade', cpCost: 2 }),
+            makeDeckCard('upgrade-vampire-lord-blood-thirst-2-blood-river', '嗜血 II：血河', 23, { type: 'upgrade', cpCost: 2 }),
+            makeDeckCard('card-vampire-lord-drink-up', '畅饮！', 31),
+            makeDeckCard('card-vampire-lord-bloodstone', '血石', 32, { cpCost: 4 }),
+            makeDeckCard('card-play-six', '六出奇招', 1),
+        ];
+
+        const withDeckCards = (deck: AbilityCard[]): Record<PlayerId, HeroState> => ({
             ...mockPlayers,
             '0': {
                 ...mockPlayers['0'],
                 characterId: 'vampire_lord',
-                deck: [
-                    {
-                        id: 'card-vampire-lord-blood-surge',
-                        name: '血潮',
-                        type: 'action',
-                        cpCost: 1,
-                        timing: 'main',
-                        description: '',
-                        previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index: 17 },
-                    },
-                    {
-                        id: 'card-vampire-lord-drink-up',
-                        name: '畅饮！',
-                        type: 'action',
-                        cpCost: 0,
-                        timing: 'main',
-                        description: '',
-                        previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index: 31 },
-                    },
-                    {
-                        id: 'card-vampire-lord-gushing-blood',
-                        name: '涌血',
-                        type: 'action',
-                        cpCost: 0,
-                        timing: 'main',
-                        description: '',
-                        previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index: 21 },
-                    },
-                ],
+                deck,
             } as HeroState,
+        });
+
+        const playersWithDeckCards: Record<PlayerId, HeroState> = {
+            ...withDeckCards(smallDeckCards),
         };
 
         it('牌库候选应使用真实卡面牌池，不退化成文字按钮列表或重复说明卡牌本身信息', () => {
@@ -797,27 +818,103 @@ describe('InteractionOverlay', () => {
             );
 
             expect(screen.getByText('从抽牌堆选择 1 张牌加入手牌')).toBeInTheDocument();
-            expect(screen.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-layout', 'bottom-shelf');
+            expect(screen.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-layout', 'center-stage');
+            expect(screen.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-hand-protection', 'preserve-visible-hand');
+            expect(screen.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-browse-mode', 'grid-scroll');
+            expect(screen.getByTestId('dt-card-pool-overlay').className).toContain('pointer-events-none');
+            expect(screen.getByTestId('dt-card-pool-overlay').className).not.toContain('bg-black');
+            expect(screen.getByTestId('dt-card-pool-panel')).toBeInTheDocument();
+            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('inset-x-0');
+            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('top-[clamp(4.25rem,9vh,6.25rem)]');
+            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('pointer-events-auto');
+            expect(screen.getByTestId('dt-card-pool-surface').className).toContain('max-w-[70rem]');
+            expect(screen.getByTestId('dt-card-pool-backdrop').className).toContain('border-y');
+            expect(screen.getByTestId('dt-card-pool-title').className).toContain('text-center');
             expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
+            expect(screen.getByTestId('dt-card-pool-selection').className).toContain('scrollbar-thin');
+            expect(screen.getByTestId('dt-card-pool-selection').className).toContain('overflow-y-auto');
+            expect(screen.getByTestId('dt-card-pool-selection').className).not.toContain('overflow-x-auto');
+            expect(screen.getByTestId('dt-card-pool-track').className).toContain('justify-center');
+            expect(screen.getByTestId('dt-card-pool-track').className).toContain('min-w-full');
+            expect(screen.getByTestId('dt-card-pool-track').className).toContain('flex-wrap');
+            expect(screen.getByTestId('dt-card-pool-actions')).toBeInTheDocument();
             expect(screen.queryByTestId('prompt-card-search-input')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('dt-card-pool-search-input')).not.toBeInTheDocument();
             expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(3);
 
             const targetOption = screen.getByTestId('dt-deck-card-option-card-vampire-lord-gushing-blood');
             expect(targetOption).toHaveAttribute('data-card-pool-mode', 'preview');
             expect(targetOption).toHaveAttribute('data-card-preview-ready', 'true');
+            expect(targetOption).toHaveAttribute('aria-pressed', 'false');
+            expect(targetOption.className).toContain('flex-col');
+            expect(targetOption.className).toContain('hover:-translate-y-1');
             expect(screen.getByTestId('dt-card-choice-preview-card-vampire-lord-gushing-blood')).toContainElement(
                 screen.getAllByTestId('mock-card-preview')[2],
             );
+            expect(screen.getByTestId('dt-card-choice-preview-card-vampire-lord-gushing-blood').className).not.toContain('aspect-[0.61]');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-atlas-id', 'dicethrone:vampire_lord-cards');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-index', '21');
+            expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-width', 'clamp(88px, min(7.2vw, 12.5vh), 132px)');
+            expect(screen.getAllByTestId('mock-card-preview')[2].className).toContain('bg-[#150609]');
             expect(targetOption.textContent?.trim()).toBe('');
             expect(screen.queryByText('血潮')).not.toBeInTheDocument();
             expect(screen.queryByText('畅饮！')).not.toBeInTheDocument();
             expect(screen.queryByText('涌血')).not.toBeInTheDocument();
             expect(screen.queryByText(/action\s*[·•]\s*\d+\s*CP/i)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: '取消' }).className).toContain('min-h-[32px]');
+            expect(screen.getByRole('button', { name: '取消' }).className).not.toContain('px-8');
+            expect(screen.getByRole('button', { name: '确认' }).className).toContain('min-h-[32px]');
+            expect(screen.getByRole('button', { name: '确认' }).className).not.toContain('px-8');
 
             fireEvent.click(targetOption);
             expect(onSelectHandCard).toHaveBeenCalledWith('card-vampire-lord-gushing-blood');
+        });
+
+        it('大牌库候选应显示 DiceThrone 自己的搜索框并真实过滤卡面集合', () => {
+            const onSelectHandCard = vi.fn();
+
+            render(
+                <InteractionOverlay
+                    interaction={deckCardInteraction}
+                    players={withDeckCards(largeDeckCards)}
+                    currentPlayerId="0"
+                    onSelectHandCard={onSelectHandCard}
+                    {...mockHandlers}
+                />
+            );
+
+            expect(screen.getByTestId('dt-card-pool-search-input')).toBeInTheDocument();
+            expect(screen.queryByTestId('prompt-card-search-input')).not.toBeInTheDocument();
+            expect(screen.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-browse-mode', 'grid-scroll');
+            expect(screen.getByTestId('dt-card-pool-selection').className).toContain('overflow-y-auto');
+            expect(screen.getByTestId('dt-card-pool-track').className).toContain('flex-wrap');
+            expect(screen.getByTestId('dt-card-pool-result-count')).toHaveTextContent('显示 10 / 10');
+            expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(10);
+
+            const searchInput = screen.getByTestId('dt-card-pool-search-input');
+            fireEvent.change(searchInput, { target: { value: '不存在的血牌' } });
+            expect(screen.getByTestId('dt-card-pool-result-count')).toHaveTextContent('显示 0 / 10');
+            expect(screen.getByTestId('dt-card-pool-empty')).toHaveTextContent('没有匹配的牌');
+            expect(screen.queryAllByTestId('mock-card-preview')).toHaveLength(0);
+
+            fireEvent.change(searchInput, { target: { value: '血流如注' } });
+            expect(screen.getByTestId('dt-card-pool-result-count')).toHaveTextContent('显示 1 / 10');
+            expect(screen.queryByTestId('dt-card-pool-empty')).not.toBeInTheDocument();
+            expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(1);
+            const targetOption = screen.getByTestId('dt-deck-card-option-card-vampire-lord-gushing-blood');
+            expect(targetOption).toBeInTheDocument();
+            expect(screen.queryByTestId('dt-deck-card-option-card-vampire-lord-blood-surge')).not.toBeInTheDocument();
+            expect(targetOption.textContent?.trim()).toBe('');
+            expect(screen.queryByText('血流如注！')).not.toBeInTheDocument();
+            expect(screen.queryByText(/action\s*[·•]\s*\d+\s*CP/i)).not.toBeInTheDocument();
+
+            fireEvent.click(targetOption);
+            expect(onSelectHandCard).toHaveBeenCalledWith('card-vampire-lord-gushing-blood');
+
+            fireEvent.click(screen.getByTestId('dt-card-pool-search-clear'));
+            expect(screen.getByTestId('dt-card-pool-result-count')).toHaveTextContent('显示 10 / 10');
+            expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(10);
+            expect(screen.queryByTestId('dt-card-pool-search-clear')).not.toBeInTheDocument();
         });
     });
 

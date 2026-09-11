@@ -40,6 +40,7 @@ export type LatestDiscoverySelectionPresentation = {
 export type BetrayalLatestDiscoveryContinueButtonState = {
   label: string;
   disabled: boolean;
+  eventRollReadable?: boolean;
   pendingCardResolutionId?: string;
   pendingCardResolutionStep?: string;
   cardResolutionConfirmedCount?: number;
@@ -509,6 +510,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   shouldShowHauntRevealCue: boolean;
   latestDiscoverySearchRevealIndex: number;
   eventRollConfirmation: EventRollConfirmationPresentation;
+  isRecentRollReadable: boolean;
   t: LatestDiscoveryTranslation;
 }): BetrayalLatestDiscoveryPanelPresentation {
   const {
@@ -523,6 +525,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     shouldShowHauntRevealCue,
     latestDiscoverySearchRevealIndex,
     eventRollConfirmation,
+    isRecentRollReadable,
     t,
   } = options;
   const { discovery, recentRoll, ownerPlayerId, key } = selection;
@@ -543,6 +546,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   const hasActionableRollModifier = Boolean(
     discovery &&
       recentRoll &&
+      isRecentRollReadable &&
       hasRecentRollModifier &&
       selection.coreRecentRollDisplayKey === selection.recentRollDisplayKey &&
       recentRoll.playerId === inventoryActionPlayerId,
@@ -573,6 +577,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   );
   const canCurrentPlayerModifyRoll = Boolean(
     shouldShowRoll &&
+      isRecentRollReadable &&
       hasRecentRollModifier &&
       recentRoll &&
       selection.coreRecentRollDisplayKey === selection.recentRollDisplayKey &&
@@ -764,11 +769,15 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       label: continueLabel,
       disabled: Boolean(
         (core.pendingEventRollResolution &&
-          !eventRollConfirmation.canViewerAcknowledge) ||
+          (!eventRollConfirmation.canViewerAcknowledge ||
+            !isRecentRollReadable)) ||
           (pendingCardResolution &&
             !canAdvanceSearch &&
             !canCurrentViewerAcknowledgeCardResolution),
       ),
+      eventRollReadable: core.pendingEventRollResolution
+        ? isRecentRollReadable
+        : undefined,
       pendingCardResolutionId: pendingCardResolution?.id ?? undefined,
       pendingCardResolutionStep:
         pendingCardResolution && !isSearchFinalAcknowledgement

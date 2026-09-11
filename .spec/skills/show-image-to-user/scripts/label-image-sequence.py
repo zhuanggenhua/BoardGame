@@ -185,10 +185,9 @@ def draw_labeled_image(
     small_font = load_font(max(14, min(21, int(banner_height * 0.15))))
 
     canvas = Image.new("RGBA", (width, height + banner_height), (17, 24, 39, 255))
-    canvas.alpha_composite(image, (0, banner_height))
     draw = ImageDraw.Draw(canvas)
     draw.rectangle((0, 0, width, banner_height), fill=(17, 24, 39, 220))
-    draw.rectangle((0, banner_height - 4, width, banner_height), fill=(37, 99, 235, 255))
+    draw.rectangle((0, banner_height - 4, width, banner_height - 1), fill=(37, 99, 235, 255))
 
     badge = f"{sequence:02d} / {total:02d}"
     badge_box = draw.textbbox((0, 0), badge, font=badge_font)
@@ -226,6 +225,7 @@ def draw_labeled_image(
     source_text = truncate_to_width(draw, f"原图: {image_path.name}", small_font, max_label_width)
     draw.text((label_x, banner_height - 30), source_text, fill=(209, 213, 219, 255), font=small_font)
 
+    canvas.alpha_composite(image, (0, banner_height))
     labeled = canvas.convert("RGB")
     labeled.save(out_path, format="PNG", optimize=True)
 

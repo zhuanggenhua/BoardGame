@@ -352,4 +352,42 @@ describe('TutorialDispatchBridge', () => {
             { manifest },
         ));
     });
+
+    it('恢复到旧版本教程状态时会重启当前清单，避免按钮和命令许可错位', async () => {
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            revision: 2,
+            steps: [
+                { id: 'objective-and-turn', content: 'objective' },
+                { id: 'rabbit-foot-result', content: 'rabbit-foot-result', allowedCommands: ['FINALIZE_EVENT_ROLL'] },
+            ],
+            stepValidator: () => true,
+        };
+        gameClientState = buildState({
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: 1,
+            stepIndex: 1,
+            steps: [
+                { id: 'use-rabbit-foot', content: 'old', allowedCommands: ['USE_RABBIT_FOOT'] },
+                { id: 'rabbit-foot-result', content: 'old-result', allowedCommands: ['USE_RABBIT_FOOT'] },
+            ],
+            step: { id: 'rabbit-foot-result', content: 'old-result', allowedCommands: ['USE_RABBIT_FOOT'] },
+        });
+
+        render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.START,
+            { manifest },
+        ));
+        expect(dispatch).not.toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        );
+    });
 });

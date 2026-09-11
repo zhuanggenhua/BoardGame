@@ -16,6 +16,7 @@ const OPPONENT_HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-read-opponent-hud-hid
 const STAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-read-round-stage.png`;
 const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-channel-result-mana-increased.png`;
 const SPELL_CARD_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-read-spell-card-legend.png`;
+const PLANNING_SKIP_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05A-skip-planning-no-spells.png`;
 const PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-plan-open-creature-category.png`;
 const PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-plan-creature-next-page-wolf-hidden.png`;
 const PLAN_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-plan-select-wolf-visible.png`;
@@ -37,7 +38,25 @@ const BACK_TO_SELF_VIEW_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/23-back-to-self-vie
 const QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/24-skip-initiative-quickcast.png`;
 const MOVE_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/25-move-select-wolf.png`;
 const MOVE_TARGET_ZONE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/26-move-target-zone-a2.png`;
-const FINISH_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/27-finish-wolf-moved-to-a2-no-extra-fx.png`;
+const END_CREATURE_ACTION_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/27-end-creature-action.png`;
+const FINAL_QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/28-skip-final-quickcast.png`;
+const ROUND_TWO_PLANNING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/29-round-two-planning-wolf-ready.png`;
+const PLAN_OPEN_ALL_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/30-plan-open-all-category.png`;
+const PLAN_WALL_NEXT_PAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/31-plan-wall-next-page-wall-hidden.png`;
+const PLAN_SELECT_THORNS_WALL_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/32-plan-select-thorns-wall-visible.png`;
+const PLAN_CONFIRM_THORNS_WALL_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/33-plan-confirm-thorns-wall.png`;
+const WALL_PREPARED_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/34-wall-prepared.png`;
+const WALL_SELECT_SPELL_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/35-wall-select-spell-prepared-card.png`;
+const WALL_TARGET_EDGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/36-wall-target-edge-a3-b3.png`;
+const WALL_CARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/37-wall-card-result.png`;
+const WALL_EFFECT_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/38-wall-effect-reading.png`;
+const END_SECOND_DEPLOYMENT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/39-end-second-deployment.png`;
+const SKIP_SECOND_INITIATIVE_QUICKCAST_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/40-skip-second-initiative-quickcast.png`;
+const GUARD_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/41-guard-select-wolf.png`;
+const GUARD_ACTION_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/42-guard-action.png`;
+const GUARD_TOKEN_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/43-guard-token-result.png`;
+const END_SECOND_CREATURE_ACTION_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/44-end-second-creature-action.png`;
+const FINISH_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/45-finish-wall-and-guard.png`;
 const RESPONSIVE_PLAN_SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive';
 const RESUME_PLANNING_DRAFT_SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial-resume-planning-draft';
 const RESUME_PLANNING_DRAFT_BEFORE_RELOAD_SCREENSHOT_PATH = `${RESUME_PLANNING_DRAFT_SCREENSHOT_DIR}/00-before-reload-wolf-in-plan-slot.png`;
@@ -93,6 +112,7 @@ const TUTORIAL_FLOW_SCREENSHOT_PATHS = [
     STAGE_SCREENSHOT_PATH,
     CHANNEL_RESULT_SCREENSHOT_PATH,
     SPELL_CARD_READING_SCREENSHOT_PATH,
+    PLANNING_SKIP_SCREENSHOT_PATH,
     PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH,
     PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH,
     PLAN_SELECT_WOLF_SCREENSHOT_PATH,
@@ -114,6 +134,24 @@ const TUTORIAL_FLOW_SCREENSHOT_PATHS = [
     QUICKCAST_PASS_SCREENSHOT_PATH,
     MOVE_SELECT_WOLF_SCREENSHOT_PATH,
     MOVE_TARGET_ZONE_SCREENSHOT_PATH,
+    END_CREATURE_ACTION_SCREENSHOT_PATH,
+    FINAL_QUICKCAST_PASS_SCREENSHOT_PATH,
+    ROUND_TWO_PLANNING_SCREENSHOT_PATH,
+    PLAN_OPEN_ALL_CATEGORY_SCREENSHOT_PATH,
+    PLAN_WALL_NEXT_PAGE_SCREENSHOT_PATH,
+    PLAN_SELECT_THORNS_WALL_SCREENSHOT_PATH,
+    PLAN_CONFIRM_THORNS_WALL_SCREENSHOT_PATH,
+    WALL_PREPARED_SCREENSHOT_PATH,
+    WALL_SELECT_SPELL_SCREENSHOT_PATH,
+    WALL_TARGET_EDGE_SCREENSHOT_PATH,
+    WALL_CARD_RESULT_SCREENSHOT_PATH,
+    WALL_EFFECT_READING_SCREENSHOT_PATH,
+    END_SECOND_DEPLOYMENT_SCREENSHOT_PATH,
+    SKIP_SECOND_INITIATIVE_QUICKCAST_SCREENSHOT_PATH,
+    GUARD_SELECT_WOLF_SCREENSHOT_PATH,
+    GUARD_ACTION_SCREENSHOT_PATH,
+    GUARD_TOKEN_RESULT_SCREENSHOT_PATH,
+    END_SECOND_CREATURE_ACTION_SCREENSHOT_PATH,
     FINISH_SCREENSHOT_PATH,
 ];
 
@@ -130,6 +168,7 @@ type MageWarsTutorialState = {
         };
     };
     core?: {
+        currentPlayerId?: string;
         phaseActorId?: string;
         objects?: Record<string, {
             sourceSpellCardId?: number;
@@ -144,6 +183,11 @@ type MageWarsTutorialState = {
             mana?: number;
             preparedSpellCardIds?: number[];
             discardSpellCardIds?: number[];
+        }>;
+        walls?: Record<string, {
+            sourceSpellCardId?: number;
+            edgeId?: string;
+            blocksLineOfSight?: boolean;
         }>;
     };
 };
@@ -245,6 +289,8 @@ const MAGE_WARS_TUTORIAL_ARENA_TARGET_PREFIXES = [
     'mw-field-object-',
     'mw-arena-object-',
     'mw-mage-entity-',
+    'mw-wall-edge-',
+    'mw-wall-card-',
 ] as const;
 
 function isMageWarsTutorialArenaTarget(tutorialId: string) {
@@ -272,7 +318,11 @@ async function clickTutorialTarget(page: Page, tutorialId: string) {
     await expect(target).toBeEnabled({ timeout: 10_000 });
     await waitForTutorialArenaPanSettled(page, tutorialId);
     const targetTestId = await target.evaluate((element) => element.getAttribute('data-testid'));
-    if (targetTestId === 'mage-wars-zone-field-card' || targetTestId === 'mage-wars-zone-mage-entity') {
+    if (
+        targetTestId === 'mage-wars-zone-field-card'
+        || targetTestId === 'mage-wars-zone-mage-entity'
+        || targetTestId === 'mage-wars-desktop-prepared-card'
+    ) {
         await clickTutorialPrimaryActionBodyTarget(page, target, tutorialId);
         return;
     }
@@ -1087,10 +1137,58 @@ async function assertVisibleActionTokensLoaded(page: Page, label: string) {
     ).toEqual([]);
 }
 
+async function visibleGuardTokenLoadFailures(page: Page) {
+    return page.evaluate(() => {
+        const isVisible = (element: HTMLElement) => {
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && rect.width > 8
+                && rect.height > 8;
+        };
+
+        return Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-guard-token-slot"]'))
+            .filter(isVisible)
+            .flatMap((slot) => {
+                const image = slot.querySelector<HTMLImageElement>('img');
+                const imageStyle = image ? window.getComputedStyle(image) : null;
+                const imageOpacity = imageStyle ? Number.parseFloat(imageStyle.opacity || '1') : 0;
+                const base = {
+                    tokenPosition: slot.dataset.guardTokenPosition ?? null,
+                    tutorialId: slot.closest<HTMLElement>('[data-tutorial-id]')?.dataset.tutorialId ?? null,
+                    sourceCardId: slot.closest<HTMLElement>('[data-source-card-id]')?.dataset.sourceCardId ?? null,
+                    imageComplete: image?.complete ?? false,
+                    naturalWidth: image?.naturalWidth ?? 0,
+                    naturalHeight: image?.naturalHeight ?? 0,
+                    imageOpacity,
+                };
+
+                if (!image) return [{ ...base, reason: 'guard-token-missing-image' }];
+                if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+                    return [{ ...base, reason: 'guard-token-image-not-loaded' }];
+                }
+                if (imageOpacity < 0.95) return [{ ...base, reason: 'guard-token-image-transparent' }];
+                return [];
+            });
+    });
+}
+
+async function assertVisibleGuardTokensLoaded(page: Page, label: string) {
+    await expect.poll(
+        async () => (await visibleGuardTokenLoadFailures(page)).slice(0, 8),
+        {
+            timeout: 90_000,
+            message: `${label} 截图前可见守卫 token 必须完成真实图片渲染，不能停在透明加载态`,
+        },
+    ).toEqual([]);
+}
+
 async function screenshot(page: Page, path: string) {
     await mkdir(dirname(path), { recursive: true });
     await assertVisibleAtlasFramesLoaded(page, path);
     await assertVisibleActionTokensLoaded(page, path);
+    await assertVisibleGuardTokensLoaded(page, path);
     await page.screenshot({ path, fullPage: false });
 }
 
@@ -1146,6 +1244,8 @@ async function advanceTutorialToOneWolfPlanningDraft(page: Page) {
     await clickTutorialNext(page);
     await waitForTutorialStep(page, 'spell-card-reading', 45_000);
     await clickTutorialNext(page);
+    await waitForTutorialStep(page, 'planning-skip');
+    await clickTutorialNext(page);
     await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
     await clickTutorialTarget(page, 'mw-spellbook-category-creature');
     await waitForTutorialStep(page, 'plan-creature-next-page');
@@ -1166,7 +1266,7 @@ async function assertTutorialScreenshotEvidenceSet() {
 
     expect(actual, `教程主流程截图必须只包含当前 ${expected.length} 张玩家可见教程卡截图，不能混入专题/代表态/旧图`).toEqual(expected);
     expect(actual.filter((name) => /drag|dragged|zoom|map/i.test(name)), '教程主流程截图不得混入地图拖拽/缩放专项图').toEqual([]);
-    expect(actual.filter((name) => /wall|guard|heal|restore|burn|transition/i.test(name)), '基础自然主线不得混入墙体/守卫/治疗/复原术代表态专题图').toEqual([]);
+    expect(actual.filter((name) => /heal|restore|burn|transition/i.test(name)), '教程主流程截图不得混入治疗/复原术/燃烧/过渡诊断专题图').toEqual([]);
 }
 
 async function assertAllVisibleImagesLoaded(page: Page) {
@@ -1254,7 +1354,7 @@ async function expectAttackBarLegendVisualLoaded(page: Page) {
 }
 
 test.describe('Mage Wars tutorial', () => {
-    test('单入口教程按玩家自然流程覆盖读局、读牌、计划、召唤、攻击条、公开弃牌、快速施法窗口和移动', async ({ context, page }) => {
+    test('单入口教程按玩家自然流程覆盖读局、读牌、计划、召唤、攻击条、公开弃牌、快速施法窗口、移动、墙体和守卫', async ({ context, page }) => {
         test.setTimeout(240_000);
         await rm(SCREENSHOT_DIR, { recursive: true, force: true });
         const diagnostics = await openMageWarsTutorial(context, page);
@@ -1298,6 +1398,13 @@ test.describe('Mage Wars tutorial', () => {
         await expectSpellCardLegendVisualLoaded(page);
         await expectMagnifyOverlayHidden(page);
         await screenshotTutorialStep(page, 'spell-card-reading', SPELL_CARD_READING_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'planning-skip');
+        await expect(page.getByTestId('mage-wars-turn-end')).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByTestId('mage-wars-turn-end')).toContainText('跳过准备法术');
+        await expect(page.getByTestId('mage-wars-turn-end')).toBeDisabled();
+        await screenshotTutorialStep(page, 'planning-skip', PLANNING_SKIP_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
@@ -1558,12 +1665,247 @@ test.describe('Mage Wars tutorial', () => {
             '[data-testid="mage-wars-fx-move-arrival"]',
             '[data-testid="mock-cone-blast"]',
         ].join(', '))).toHaveCount(0);
-        await waitForTutorialStep(page, 'finish', 45_000);
+        await waitForTutorialStep(page, 'end-creature-action', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return { phase: state.sys?.phase ?? null, phaseActorId: state.core?.phaseActorId ?? null };
+        }, { timeout: 15_000 }).toEqual({ phase: 'creatureAction', phaseActorId: '0' });
+        await expect(page.getByTestId('mage-wars-turn-end')).toContainText('结束行动');
+        await screenshotTutorialStep(page, 'end-creature-action', END_CREATURE_ACTION_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+
+        await expectTutorialStepNotVisible(page, 'opponent-pass-creature-action');
+        await waitForTutorialStep(page, 'skip-final-quickcast', 60_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return { phase: state.sys?.phase ?? null, phaseActorId: state.core?.phaseActorId ?? null };
+        }, { timeout: 15_000 }).toEqual({ phase: 'finalQuickcast', phaseActorId: '0' });
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('最终快速施法');
+        await screenshotTutorialStep(page, 'skip-final-quickcast', FINAL_QUICKCAST_PASS_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+
+        await waitForTutorialStep(page, 'round-two-planning', 60_000);
         await expect.poll(async () => {
             const state = await readMageWarsState(page);
             const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
-            return { zoneId: wolf?.zoneId ?? null, actionReady: wolf?.actionReady ?? null };
-        }, { timeout: 15_000 }).toEqual({ zoneId: 'a2', actionReady: false });
+            return {
+                phase: state.sys?.phase ?? null,
+                currentPlayerId: state.core?.currentPlayerId ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+                zoneId: wolf?.zoneId ?? null,
+                actionReady: wolf?.actionReady ?? null,
+                guarding: wolf?.guarding ?? null,
+            };
+        }, { timeout: 20_000 }).toEqual({
+            phase: 'planning',
+            currentPlayerId: '1',
+            phaseActorId: '1',
+            zoneId: 'a2',
+            actionReady: true,
+            guarding: false,
+        });
+        await expect(summonedWolf).toHaveAttribute('data-action-ready', 'true');
+        await expect(summonedWolf).toHaveAttribute('data-action-token-state', 'ready');
+        await expect(summonedWolfActionToken).toHaveAttribute('data-action-token-image-key', /ready-token-front/);
+        await screenshotTutorialStep(page, 'round-two-planning', ROUND_TWO_PLANNING_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'plan-open-all-category', 45_000);
+        await screenshotTutorialStep(page, 'plan-open-all-category', PLAN_OPEN_ALL_CATEGORY_SCREENSHOT_PATH);
+        const beforeAllCategoryIds = await visibleDesktopSpellbookCardIds(page);
+        await clickTutorialTarget(page, 'mw-spellbook-category-all');
+        await waitForTutorialStep(page, 'plan-wall-next-page');
+        await expect(page.getByTestId('mage-wars-spellbook-category-all')).toHaveAttribute('aria-pressed', 'true');
+        const firstAllPageIds = await visibleDesktopSpellbookCardIds(page);
+        expect(firstAllPageIds.join('|')).not.toBe(beforeAllCategoryIds.join('|'));
+        expect(firstAllPageIds, '6 张法术书页下，荆棘之墙不在全部分类第一页，翻页步骤是真实必要动作').not.toContain('25700');
+        await screenshotTutorialStep(page, 'plan-wall-next-page', PLAN_WALL_NEXT_PAGE_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-spellbook-next-page');
+        await waitForTutorialStep(page, 'plan-select-thorns-wall');
+        expect(await visibleDesktopSpellbookCardIds(page)).toContain('25700');
+        const thornsWallSpellbookCard = await findTutorialSpellbookCard(page, 25700);
+        await screenshotTutorialStep(page, 'plan-select-thorns-wall', PLAN_SELECT_THORNS_WALL_SCREENSHOT_PATH);
+        await clickTutorialSpellbookCardBody(page, thornsWallSpellbookCard, 25700);
+        await waitForTutorialStep(page, 'plan-confirm-thorns-wall');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '1/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('1/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toBeEnabled();
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
+            .toHaveCount(1);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="25700"]'))
+            .toHaveCount(1);
+        expect(await readPlanningDrafts(page)).toEqual([
+            { sourceCardId: '25700', planSlotIndex: '1' },
+        ]);
+        await expectPlanControlsUnblocked(page, 1);
+        await screenshotTutorialStep(page, 'plan-confirm-thorns-wall', PLAN_CONFIRM_THORNS_WALL_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-plan-spells');
+
+        await expectTutorialStepNotVisible(page, 'prepare-opponent-empty-plan');
+        await expectTutorialStepNotVisible(page, 'opponent-pass-second-deployment');
+        await waitForTutorialStep(page, 'wall-prepared', 60_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+                prepared: state.core?.players?.['0']?.preparedSpellCardIds ?? [],
+            };
+        }, { timeout: 20_000 }).toEqual({
+            phase: 'deployment',
+            phaseActorId: '0',
+            prepared: [25700],
+        });
+        await expect(page.locator('[data-tutorial-id="mw-prepared-card-25700"]')).toBeVisible({ timeout: 10_000 });
+        await screenshotTutorialStep(page, 'wall-prepared', WALL_PREPARED_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'wall-select-spell');
+        await screenshotTutorialStep(page, 'wall-select-spell', WALL_SELECT_SPELL_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-prepared-card-25700');
+        await waitForTutorialStep(page, 'wall-target-edge');
+        const wallTargetEdge = page.getByTestId('mage-wars-wall-edge-a3-b3');
+        await expect(wallTargetEdge).toBeVisible({ timeout: 10_000 });
+        await expect(wallTargetEdge).toHaveAttribute('data-legal-target-wall-edge', 'true');
+        await expectNoTutorialCardOverlap(wallTargetEdge, 'A3-B3 墙体边界');
+        await screenshotTutorialStep(page, 'wall-target-edge', WALL_TARGET_EDGE_SCREENSHOT_PATH);
+        await clickLocatorCenterAsPlayer(page, wallTargetEdge, 'A3-B3 墙体边界');
+
+        await waitForTutorialStep(page, 'wall-card-result', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            const wall = state.core?.walls?.['a3-b3'];
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+                wallCardId: wall?.sourceSpellCardId ?? null,
+                wallEdgeId: wall?.edgeId ?? null,
+                blocksLineOfSight: wall?.blocksLineOfSight ?? null,
+            };
+        }, { timeout: 20_000 }).toEqual({
+            phase: 'deployment',
+            phaseActorId: '0',
+            wallCardId: 25700,
+            wallEdgeId: 'a3-b3',
+            blocksLineOfSight: true,
+        });
+        await expect(wallTargetEdge).toHaveAttribute('data-wall-object', 'true');
+        const wallCardPreview = page.locator('[data-tutorial-id="mw-wall-card-25700"]');
+        await expect(wallCardPreview).toBeVisible({ timeout: 10_000 });
+        await expect(wallCardPreview).toHaveAttribute('data-source-card-id', '25700');
+        await screenshotTutorialStep(page, 'wall-card-result', WALL_CARD_RESULT_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'wall-effect-reading');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('挡住');
+        await screenshotTutorialStep(page, 'wall-effect-reading', WALL_EFFECT_READING_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'end-second-deployment');
+        await expect(page.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-phase', 'deployment');
+        await screenshotTutorialStep(page, 'end-second-deployment', END_SECOND_DEPLOYMENT_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+
+        await expectTutorialStepNotVisible(page, 'opponent-pass-second-initiative-quickcast');
+        await waitForTutorialStep(page, 'skip-second-initiative-quickcast', 60_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return { phase: state.sys?.phase ?? null, phaseActorId: state.core?.phaseActorId ?? null };
+        }, { timeout: 20_000 }).toEqual({ phase: 'initiativeQuickcast', phaseActorId: '0' });
+        await screenshotTutorialStep(page, 'skip-second-initiative-quickcast', SKIP_SECOND_INITIATIVE_QUICKCAST_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+
+        await expectTutorialStepNotVisible(page, 'opponent-pass-second-creature-action');
+        await waitForTutorialStep(page, 'guard-select-wolf', 60_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+                zoneId: wolf?.zoneId ?? null,
+                actionReady: wolf?.actionReady ?? null,
+                guarding: wolf?.guarding ?? null,
+            };
+        }, { timeout: 20_000 }).toEqual({
+            phase: 'creatureAction',
+            phaseActorId: '0',
+            zoneId: 'a2',
+            actionReady: true,
+            guarding: false,
+        });
+        await screenshotTutorialStep(page, 'guard-select-wolf', GUARD_SELECT_WOLF_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-field-object-2819');
+
+        await waitForTutorialStep(page, 'guard-action');
+        await expect(page.locator('[data-tutorial-id="mw-field-object-2819"][data-field-card-role="source"]')).toBeVisible({ timeout: 10_000 });
+        const guardActionButton = page.getByTestId('mage-wars-selected-unit-guard');
+        await expect(guardActionButton).toBeVisible({ timeout: 10_000 });
+        await expect(guardActionButton).toHaveAttribute('data-action-kind', 'guard');
+        await expect(guardActionButton).toHaveAttribute('data-action-visual', 'text-action');
+        await expect(guardActionButton).toContainText('守卫');
+        await expectNoTutorialCardOverlap(guardActionButton, '守卫动作按钮');
+        await screenshotTutorialStep(page, 'guard-action', GUARD_ACTION_SCREENSHOT_PATH);
+        await clickLocatorCenterAsPlayer(page, guardActionButton, '守卫动作按钮');
+
+        await waitForTutorialStep(page, 'guard-token-result', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+                zoneId: wolf?.zoneId ?? null,
+                actionReady: wolf?.actionReady ?? null,
+                guarding: wolf?.guarding ?? null,
+            };
+        }, { timeout: 20_000 }).toEqual({
+            phase: 'creatureAction',
+            phaseActorId: '0',
+            zoneId: 'a2',
+            actionReady: false,
+            guarding: true,
+        });
+        await expect(summonedWolf).toHaveAttribute('data-action-ready', 'false');
+        await expect(summonedWolf).toHaveAttribute('data-action-token-state', 'spent');
+        await expect(summonedWolfActionToken).toHaveAttribute('data-action-token-image-key', /ready-token-back/);
+        const guardToken = summonedWolf.locator('[data-testid="mage-wars-guard-token-slot"]');
+        await expect(guardToken).toBeVisible({ timeout: 10_000 });
+        await expect(guardToken).toHaveAttribute('data-guard-token-position', 'entity-left-inside-midline');
+        await screenshotTutorialStep(page, 'guard-token-result', GUARD_TOKEN_RESULT_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'end-second-creature-action');
+        await expect(page.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-phase', 'creatureAction');
+        await screenshotTutorialStep(page, 'end-second-creature-action', END_SECOND_CREATURE_ACTION_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+
+        await expectTutorialStepNotVisible(page, 'opponent-pass-second-final-quickcast');
+        await waitForTutorialStep(page, 'finish', 60_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
+            const wall = state.core?.walls?.['a3-b3'];
+            return {
+                phase: state.sys?.phase ?? null,
+                currentPlayerId: state.core?.currentPlayerId ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+                zoneId: wolf?.zoneId ?? null,
+                actionReady: wolf?.actionReady ?? null,
+                guarding: wolf?.guarding ?? null,
+                wallCardId: wall?.sourceSpellCardId ?? null,
+            };
+        }, { timeout: 20_000 }).toEqual({
+            phase: 'planning',
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            zoneId: 'a2',
+            actionReady: true,
+            guarding: false,
+            wallCardId: 25700,
+        });
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('墙体');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('守卫');
         await expect(page.locator([
             '[data-testid="mage-wars-fx-move-trail"]',
             '[data-testid="mage-wars-fx-move-step"]',
@@ -1623,6 +1965,8 @@ test.describe('Mage Wars tutorial', () => {
         await waitForTutorialStep(page, 'channel-result');
         await clickTutorialNext(page);
         await waitForTutorialStep(page, 'spell-card-reading', 45_000);
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'planning-skip');
         await clickTutorialNext(page);
         await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
 

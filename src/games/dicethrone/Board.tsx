@@ -1598,6 +1598,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         } : undefined,
         closeOnBackdrop: false,
         closeOnEsc: false,
+        allowPointerThrough: statusInteraction?.type === 'selectHandCard' || statusInteraction?.type === 'selectDeckCard',
         onClose: () => undefined,
         render: () => (
             <InteractionOverlay
@@ -2425,6 +2426,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 disableCardPointerEvents={Boolean(diceMultistepInteraction) || isHandHidden}
                                 playCardOnClick={shouldPlayTutorialHandCardOnClick}
                                 isHidden={isHandHidden}
+                                preserveCardVisibility={pendingInteraction?.type === 'selectHandCard' || pendingInteraction?.type === 'selectDeckCard'}
                             />
                         </>
                     );

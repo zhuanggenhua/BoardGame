@@ -1,6 +1,6 @@
 {
   "title": "法师战争",
-  "description": "双人法术战棋。首轮基础流程覆盖法师状态、法术书与事件驱动特效。",
+    "description": "双人法术战棋。首轮基础流程覆盖法师状态、法术书、墙体、守卫与事件驱动特效。",
   "players": "2 人",
   "arena": {
     "actionStage": "行动环节",
@@ -178,10 +178,7 @@
     "guardCreature": "守卫",
     "attack": "基础攻击",
     "attackCreature": "生物攻击",
-    "advanceReset": "继续重置",
-    "advanceChannel": "继续聚魔",
-    "advanceUpkeep": "继续维持",
-    "passPlanning": "确认不计划",
+    "skipPlanning": "跳过准备法术",
     "passDeployment": "结束部署",
     "passQuickcast": "让过快速施法",
     "endAction": "结束行动",
@@ -377,7 +374,7 @@
     "catalog": {
       "basic": {
         "title": "首局流程：读局、计划与常见结算",
-        "description": "从胜利条件、法师读数、聚魔和计划开始，接着走召唤、公开弃牌、快速施法窗口与移动。"
+        "description": "从胜利条件、法师读数、聚魔和计划开始，接着走召唤、公开弃牌、快速施法窗口、移动、墙体与守卫。"
       }
     },
     "visuals": {
@@ -390,12 +387,13 @@
       "intro": "法师战争中，游戏将持续数个回合，直到一方法师受到的伤害足以将其毁灭。最后一个屹立不倒的法师赢得游戏的胜利。",
       "selfHud": "你的法师面板显示生命、伤害、法力、聚魔、行动标记和快速施法标记。学徒法师起始生命24、初始法力10、聚魔10；目标是让对方法师累计足够伤害并被击败。",
       "opponentHud": "对手面板同样显示这些读数。对手的已计划法术用牌背和数量表示，未公开前不能看见牌名。",
-      "stage": "每个游戏回合分为准备环节和行动环节。准备环节完成后行动环节才会开始。",
+      "stage": "每个回合依次经过重置、聚魔、维持、计划、部署、先手快速施法、生物行动和末尾快速施法。重置、聚魔以及没有待处理选择的维持会自动完成；计划阶段准备0至2张法术，不准备时用“跳过准备法术”提交空计划。部署和两个快速施法窗口按顺序决定是否行动，生物行动中完成移动或攻击。",
       "prepareChannelResult": "准备环节正在结算。",
       "prepareUpkeep": "维持阶段正在结算。",
       "channelResult": "兽王当前聚魔为10；聚魔后法力池加入10点法力。",
       "preparePlanning": "维持结算完成，正在进入计划阶段。",
       "spellCardReading": "先看计划法术会用到的基础字段：费用、行动、范围、目标、类型、派系和等级决定能不能计划与施放。",
+      "planningSkip": "计划阶段可以准备0至2张法术。空计划表示本回合不准备任何法术；正式牌桌会用“跳过准备法术”提交，另一名法师完成计划后双方进入部署阶段。本教程接下来会准备两张法术。",
       "attackBarReading": "准备区里的丛林灰狼即将被打出。先读它的攻击条：左侧图标区分快速或标准行动、近战或远程；右侧读范围、伤害类型、攻击骰子、附加效果和特性。读完点下一步继续。",
       "planOpenCreatureCategory": "点击“生物”分类。",
       "planCreatureNextPage": "点击下一页，找到“丛林灰狼”。",
@@ -421,7 +419,31 @@
       "opponentPassInitiativeQuickcast": "对手也让过先手快速施法后，轮到你的生物行动。接下来使用丛林灰狼移动。",
       "moveSelectWolf": "点击场上的“丛林灰狼”卡牌本体，选它作为这次移动的来源。",
       "moveTargetZone": "点击相邻区域移动。",
-      "finish": "你已经走过首局读局、读牌、聚魔、计划、召唤、攻击条、唤醒、公开弃牌、快速施法窗口和一次生物移动。基础教程完成。"
+      "endCreatureAction": "移动已经消耗了灰狼的行动。点击“结束行动”，让双方完成生物行动并进入最终快速施法。",
+      "opponentPassCreatureAction": "对手的生物行动按正式流程结算中。",
+      "skipFinalQuickcast": "现在是你的最终快速施法窗口。本次不施放快速法术，点击“让过快速施法”。",
+      "roundTwoPlanning": "新一轮的重置、聚魔和维持已经自动完成；丛林灰狼的行动标记重新就绪。本轮准备荆棘之墙，看墙体怎样占住两个区域之间的边界。",
+      "planOpenAllCategory": "点击“全部”分类。",
+      "planWallNextPage": "点击下一页，找到“荆棘之墙”。",
+      "planSelectThornsWall": "荆棘之墙是墙体法术，会放在两个相邻区域之间的边界上。点击“荆棘之墙”卡牌本体，把它放进计划槽。",
+      "planConfirmThornsWall": "点击“确认计划 1/2”提交本回合计划。",
+      "prepareOpponentEmptyPlan": "对手本回合不准备法术，双方进入部署阶段。",
+      "opponentPassSecondDeployment": "对手先让过部署，轮到你施放准备好的墙体法术。",
+      "wallPrepared": "荆棘之墙已经在准备区。墙体法术不是召唤到格子里，而是选择两个区域之间的边界。",
+      "wallSelectSpell": "点击准备区的“荆棘之墙”。",
+      "wallTargetEdge": "点击左后区与中左后区之间的边界。",
+      "wallCardResult": "荆棘之墙已经贴在这条边界上，墙体用自己的法术牌面表示，不是普通单位卡位。",
+      "wallEffectReading": "这张墙会挡住边界上的移动和视线；后续攻击或法术需要按墙体位置判断能不能穿过。",
+      "endSecondDeployment": "墙体已经完成部署。点击“结束部署”，进入先手快速施法窗口。",
+      "opponentPassSecondInitiativeQuickcast": "对手让过先手快速施法后，轮到你决定是否快速施法。",
+      "skipSecondInitiativeQuickcast": "本轮仍不使用快速施法，点击“让过快速施法”。",
+      "opponentPassSecondCreatureAction": "对手让过生物行动后，轮到你的丛林灰狼行动。",
+      "guardSelectWolf": "点击场上的“丛林灰狼”卡牌本体，选它作为这次行动来源。",
+      "guardAction": "点击行动条里的“守卫”。守卫是一个行动，结算后才会在单位上出现守卫标记。",
+      "guardTokenResult": "丛林灰狼获得守卫标记，并消耗本回合行动。守卫标记贴在单位上，表示它会保护同区域的友方对象。",
+      "endSecondCreatureAction": "守卫已经消耗灰狼行动。点击“结束行动”，进入最终快速施法。",
+      "opponentPassSecondFinalQuickcast": "对手让过最终快速施法后，轮到你收尾本回合。",
+      "finish": "你已经走过重置、聚魔、维持、计划、部署、先手快速施法、生物行动和最终快速施法，也看过读局、读牌、召唤、公开弃牌、移动、墙体与守卫。"
     }
   },
   "actionLog": {

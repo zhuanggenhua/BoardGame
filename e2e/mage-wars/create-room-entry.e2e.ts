@@ -58,7 +58,10 @@ async function saveEntryScreenshot(page: Page, testInfo: TestInfo, name: string)
     return path;
 }
 
-async function expectCreateRoomEntrySelectionLayout(page: Page) {
+async function expectCreateRoomEntrySelectionLayout(
+    page: Page,
+    expectedViewport: { width: number; height: number },
+) {
     const audit = await page.getByTestId('mage-wars-mage-selection-gate').evaluate((gate) => {
         const oldDescription = '为双方各直接选择一本法术书；每本法术书已绑定法师，确认后按所选书初始化开局。';
         const oldLibraryHelp = '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。';
@@ -69,13 +72,54 @@ async function expectCreateRoomEntrySelectionLayout(page: Page) {
         const confirmStyle = confirmButton ? window.getComputedStyle(confirmButton) : null;
         const header = gate.querySelector<HTMLElement>('header');
         const main = gate.querySelector<HTMLElement>('main');
+        const stage = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-stage"]');
         const mainRect = main?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        const standardCards = Array.from(gate.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-mage-selection-standard-spellbook"]',
+        )).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                height: rect.height,
+                top: rect.top,
+                width: rect.width,
+            };
+        });
+        const standardPreviews = Array.from(gate.querySelectorAll<HTMLElement>(
+            '[data-testid^="mage-wars-mage-selection-standard-spellbook-"][data-testid$="-preview"]',
+        )).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                height: rect.height,
+                width: rect.width,
+            };
+        });
+        const declaredScale = Number(stage?.dataset.layoutScale ?? Number.NaN);
+        const declaredWidth = Number(stage?.dataset.layoutWidth ?? Number.NaN);
+        const declaredHeight = Number(stage?.dataset.layoutHeight ?? Number.NaN);
+        const expectedScale = Number.isFinite(declaredWidth) && Number.isFinite(declaredHeight)
+            ? Math.min(window.innerWidth / declaredWidth, window.innerHeight / declaredHeight)
+            : Number.NaN;
+        const standardTopSpread = standardCards.length > 0
+            ? Math.max(...standardCards.map((rect) => rect.top)) - Math.min(...standardCards.map((rect) => rect.top))
+            : 0;
+        const standardPreviewMinRatio = standardPreviews.length > 0
+            ? Math.min(...standardPreviews.map((rect) => rect.height / Math.max(rect.width, 1)))
+            : 0;
         const gateText = gate.textContent ?? '';
 
         return {
             viewport: { width: window.innerWidth, height: window.innerHeight },
             oldDescriptionVisible: gateText.includes(oldDescription),
             oldLibraryHelpVisible: gateText.includes(oldLibraryHelp),
+            stageMode: stage?.dataset.layoutMode ?? '',
+            declaredScale,
+            expectedScale,
+            stageWithinViewport: Boolean(stageRect
+                && stageRect.left >= -1
+                && stageRect.top >= -1
+                && stageRect.right <= window.innerWidth + 1
+                && stageRect.bottom <= window.innerHeight + 1),
             confirmInHeader: Boolean(confirmButton && header?.contains(confirmButton)),
             confirmBelowEdit: Boolean(editRect && confirmRect && confirmRect.top > editRect.bottom),
             confirmColor: confirmStyle?.backgroundColor ?? '',
@@ -84,16 +128,38 @@ async function expectCreateRoomEntrySelectionLayout(page: Page) {
                 && mainRect.top >= -1
                 && mainRect.right <= window.innerWidth + 1
                 && mainRect.bottom <= window.innerHeight + 1),
+            standardCardCount: standardCards.length,
+            standardTopSpread,
+            standardPreviewMinRatio,
+            gateOverflow: {
+                x: gate.scrollWidth - gate.clientWidth,
+                y: gate.scrollHeight - gate.clientHeight,
+            },
+            bodyOverflow: {
+                x: document.documentElement.scrollWidth - window.innerWidth,
+                y: document.documentElement.scrollHeight - window.innerHeight,
+            },
         };
     });
 
-    expect(audit.viewport).toEqual({ width: 2560, height: 1304 });
-    expect(audit.oldDescriptionVisible, `真实首页建房入口选书页不应显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.oldLibraryHelpVisible, `真实首页建房入口选书页不应显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.confirmInHeader, `真实首页建房入口开始按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.confirmBelowEdit, `真实首页建房入口开始按钮必须在编辑选中书下方: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.confirmColor, `真实首页建房入口开始按钮应是绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
-    expect(audit.mainWithinViewport, `真实首页建房入口 2560x1304 主体必须自然落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    const label = `${expectedViewport.width}x${expectedViewport.height}`;
+    expect(audit.viewport).toEqual(expectedViewport);
+    expect(audit.oldDescriptionVisible, `真实首页建房入口 ${label} 选书页不应显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.oldLibraryHelpVisible, `真实首页建房入口 ${label} 选书页不应显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.stageMode, `真实首页建房入口 ${label} 必须使用固定主构图等比容纳: ${JSON.stringify(audit)}`).toBe('contain-scale');
+    expect(audit.declaredScale, `真实首页建房入口 ${label} 等比缩放倍率必须匹配当前视口: ${JSON.stringify(audit)}`)
+        .toBeCloseTo(audit.expectedScale, 2);
+    expect(audit.stageWithinViewport, `真实首页建房入口 ${label} 等比缩放舞台必须完整落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmInHeader, `真实首页建房入口 ${label} 开始按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.confirmBelowEdit, `真实首页建房入口 ${label} 开始按钮必须在编辑选中书下方: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmColor, `真实首页建房入口 ${label} 开始按钮应是绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
+    expect(audit.mainWithinViewport, `真实首页建房入口 ${label} 主体必须随舞台缩放后完整落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.standardCardCount, `真实首页建房入口 ${label} 四本标准书不能减少或折叠: ${JSON.stringify(audit)}`).toBe(4);
+    expect(audit.standardTopSpread, `真实首页建房入口 ${label} 标准书卡不能被压成纵向换行列表: ${JSON.stringify(audit)}`).toBeLessThan(3);
+    expect(audit.standardPreviewMinRatio, `真实首页建房入口 ${label} 法师书预览不能被压成横条: ${JSON.stringify(audit)}`).toBeGreaterThan(0.45);
+    expect(audit.gateOverflow.x, `真实首页建房入口 ${label} 选书层自身不能横向溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    expect(audit.gateOverflow.y, `真实首页建房入口 ${label} 选书层自身不能依赖纵向滚动隐藏裁切: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    expect(audit.bodyOverflow.x, `真实首页建房入口 ${label} 不能产生横向页面溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
 }
 
 test('Mage Wars 大厅创建房间会先选择法师法术书再进入正式牌桌', async ({ context, page }, testInfo) => {
@@ -144,8 +210,12 @@ test('Mage Wars 大厅创建房间会先选择法师法术书再进入正式牌�
     await expect(page.getByTestId('create-room-setup-gate-overlay')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 30_000 });
     await expect(createRoomModal).toHaveCount(0);
-    await expectCreateRoomEntrySelectionLayout(page);
+    await expectCreateRoomEntrySelectionLayout(page, { width: 2560, height: 1304 });
     await saveEntryScreenshot(page, testInfo, '03-确认建房后进入法师法术书选择页-2560x1304');
+
+    await page.setViewportSize({ width: 1081, height: 585 });
+    await expectCreateRoomEntrySelectionLayout(page, { width: 1081, height: 585 });
+    await saveEntryScreenshot(page, testInfo, '03b-确认建房后进入法师法术书选择页-1081x585等比缩放');
 
     await page.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice').click();
     await expect(page.getByTestId('mage-wars-mage-selection-summary-0'))

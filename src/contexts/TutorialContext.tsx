@@ -481,6 +481,7 @@ export const useTutorialBridge = (
         if (!context) return;
         // 只在教程模式下同步状态，防止在线对局的 sys.tutorial 污染 TutorialContext
         if (!isTutorialMode) return;
+        if (!tutorial) return;
         if (context.tutorial.active && !tutorial?.active && !context.isLastStep) {
             return;
         }

@@ -152,6 +152,7 @@ const MAGE_WARS_DESKTOP_BOTTOM_GAP_PX = 8;
 const MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT = 6;
 const MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID = 2819;
 const MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID = 3403;
+const MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID = 25700;
 const MAGE_WARS_LOCAL_PLANNING_TUTORIAL_STEP_IDS = new Set([
     'plan-open-creature-category',
     'plan-creature-next-page',
@@ -159,6 +160,9 @@ const MAGE_WARS_LOCAL_PLANNING_TUTORIAL_STEP_IDS = new Set([
     'plan-open-incantation-category',
     'plan-incantation-next-page',
     'plan-select-rouse',
+    'plan-open-all-category',
+    'plan-wall-next-page',
+    'plan-select-thorns-wall',
 ]);
 
 function resolveMageWarsTutorialPlanningDraftCardIds(stepId?: string): number[] {
@@ -171,6 +175,9 @@ function resolveMageWarsTutorialPlanningDraftCardIds(stepId?: string): number[] 
     }
     if (stepId === 'plan-confirm') {
         return [MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID, MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID];
+    }
+    if (stepId === 'plan-confirm-thorns-wall') {
+        return [MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID];
     }
     return [];
 }
@@ -187,6 +194,8 @@ const MAGE_WARS_TUTORIAL_ARENA_TARGET_PREFIXES = [
     'mw-field-object-',
     'mw-arena-object-',
     'mw-mage-entity-',
+    'mw-wall-edge-',
+    'mw-wall-card-',
 ] as const;
 
 type MageWarsMagnifiedPreview = {
@@ -267,13 +276,11 @@ const SPELL_CARD_BACK_ASPECT_RATIO = 992 / 1391;
 function resolvePhaseAdvanceActionLabelKey(phase: MageWarsPhase): string {
     switch (phase) {
         case 'reset':
-            return 'actions.advanceReset';
         case 'channel':
-            return 'actions.advanceChannel';
         case 'upkeep':
-            return 'actions.advanceUpkeep';
+            throw new Error(`Mage Wars automatic phase cannot expose a manual action: ${phase}`);
         case 'planning':
-            return 'actions.passPlanning';
+            return 'actions.skipPlanning';
         case 'deployment':
             return 'actions.passDeployment';
         case 'initiativeQuickcast':
@@ -285,6 +292,7 @@ function resolvePhaseAdvanceActionLabelKey(phase: MageWarsPhase): string {
 }
 
 const CAST_PHASES = new Set(['deployment', 'initiativeQuickcast', 'creatureAction', 'finalQuickcast']);
+const AUTOMATIC_PHASES = new Set<MageWarsPhase>(['reset', 'channel', 'upkeep']);
 const SIMULTANEOUS_PREPARATION_PHASES = new Set(['reset', 'channel', 'upkeep', 'planning']);
 
 type SpellbookCategoryId = 'all' | 'attack' | 'enchantment' | 'creature' | 'incantation' | 'equipment';
@@ -1881,6 +1889,9 @@ function SpellbookShelf({
         if (willAdd && cardId === MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID) {
             completeTutorialPlanningStep('plan-select-rouse');
         }
+        if (willAdd && cardId === MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID) {
+            completeTutorialPlanningStep('plan-select-thorns-wall');
+        }
     };
 
     return (
@@ -1920,6 +1931,9 @@ function SpellbookShelf({
                             setPage(0);
                             if (id === 'creature') {
                                 completeTutorialPlanningStep('plan-open-creature-category');
+                            }
+                            if (id === 'all') {
+                                completeTutorialPlanningStep('plan-open-all-category');
                             }
                             if (id === 'incantation') {
                                 completeTutorialPlanningStep('plan-open-incantation-category');
@@ -1993,6 +2007,9 @@ function SpellbookShelf({
                         }
                         if (category === 'incantation') {
                             completeTutorialPlanningStep('plan-incantation-next-page');
+                        }
+                        if (category === 'all') {
+                            completeTutorialPlanningStep('plan-wall-next-page');
                         }
                     }}
                 >
@@ -2114,7 +2131,10 @@ function TurnStatusDock({
     onPlanSpells?: () => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    const planningActionVisible = planSpellCount > 0;
+    // 这些阶段由正式流程自动推进；不要把内部阶段推进命令暴露成“继续重置”按钮。
+    if (AUTOMATIC_PHASES.has(phase)) return null;
+
+    const planningActionVisible = phase === 'planning' && planSpellCount > 0;
     const planningActionActive = Boolean(onPlanSpells && planningActionVisible);
     const actionDisabled = planningActionVisible ? !planningActionActive : disabled;
     const buttonTestId = planningActionVisible ? 'mage-wars-plan-spells' : 'mage-wars-turn-end';
@@ -3618,6 +3638,13 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         ) {
             previousStep();
         }
+        if (
+            isTutorialActive
+            && tutorialStep?.id === 'plan-confirm-thorns-wall'
+            && removedCardId === MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID
+        ) {
+            previousStep();
+        }
     };
     const completeLocalTutorialStep = (expectedStepId: string) => {
         if (isTutorialActive && tutorialStep?.id === expectedStepId) {
@@ -4345,6 +4372,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         setSelectedObjectId((current) => current === objectId ? null : objectId);
         if (willSelectObject && object?.sourceSpellCardId === MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID) {
             completeLocalTutorialStep('move-select-wolf');
+            completeLocalTutorialStep('guard-select-wolf');
         }
     };
     const handleActorMageSelect = (mageId: PlayerId) => {
@@ -4462,6 +4490,9 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
         if (willSelectPreparedSpell && cardId === MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID) {
             completeLocalTutorialStep('rouse-select-spell');
+        }
+        if (willSelectPreparedSpell && cardId === MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID) {
+            completeLocalTutorialStep('wall-select-spell');
         }
     };
     const renderPipelineSettings = useRenderPipelineSettings();

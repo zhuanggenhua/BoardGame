@@ -14,7 +14,7 @@ export const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
   lightIntensity: 1.08,
   baseScale: 64,
   cameraZoom: 0.9,
-  strength: 0.16,
+  strength: 0.12,
   iterationLimit: 900,
   projectedLayoutMargin: 18,
   projectedLayoutMinGap: 12,
@@ -57,11 +57,16 @@ export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR = 0xff2dfb;
 export const BETRAYAL_REROLL_HIGHLIGHT_RENDERER =
   "threejs-backside-shader-shell";
 export const BETRAYAL_REROLL_VISUAL_CONTRACT =
-  "threejs-shader-shell-plus-transparent-hitbox";
-export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE = 1.045;
-export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE = 1.074;
-export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY = 1;
-export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY = 1;
+  "threejs-shader-shell-plus-projected-edge-outline-plus-transparent-hitbox";
+export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE = 1.022;
+export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE = 1.038;
+export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY = 0.72;
+export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY = 0.95;
+export const BETRAYAL_REROLL_TARGET_OUTLINE_SCALE = 1.04;
+export const BETRAYAL_REROLL_TARGET_OUTLINE_GAP = 1.5;
+export const BETRAYAL_REROLL_TARGET_HIT_PADDING = 6;
+export const BETRAYAL_REROLL_TARGET_CENTER_SOURCE =
+  "projected-die-body-center";
 
 const BETRAYAL_HOUSE_DICE_FACE_CANVAS_SIZE = 1024;
 const betrayalHouseDieFaceCanvasCache: Partial<
@@ -249,9 +254,44 @@ function getBetrayalHouseDieEdgeCanvas(): HTMLCanvasElement {
 export function getBetrayalRerollTargetVisibleSize(
   layout: DicePhysicsProjectedLayout,
 ) {
+  const outlineSize = getBetrayalRerollTargetOutlineSize(layout);
   return {
-    width: layout.outlineWidth ?? layout.visualWidth ?? layout.width,
-    height: layout.outlineHeight ?? layout.visualHeight ?? layout.height,
+    width: outlineSize.width,
+    height: outlineSize.height,
+  };
+}
+
+export function getBetrayalRerollTargetOutlineSize(
+  layout: DicePhysicsProjectedLayout,
+) {
+  const baseWidth = layout.visualWidth ?? layout.width;
+  const baseHeight = layout.visualHeight ?? layout.height;
+  const width = Math.max(
+    42,
+    Math.min(
+      72,
+      baseWidth * BETRAYAL_REROLL_TARGET_OUTLINE_SCALE +
+        BETRAYAL_REROLL_TARGET_OUTLINE_GAP * 2,
+    ),
+  );
+  const height = Math.max(
+    42,
+    Math.min(
+      72,
+      baseHeight * BETRAYAL_REROLL_TARGET_OUTLINE_SCALE +
+        BETRAYAL_REROLL_TARGET_OUTLINE_GAP * 2,
+    ),
+  );
+  return { width, height };
+}
+
+export function getBetrayalRerollTargetHitSize(
+  layout: DicePhysicsProjectedLayout,
+) {
+  const outlineSize = getBetrayalRerollTargetOutlineSize(layout);
+  return {
+    width: Math.max(44, outlineSize.width + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2),
+    height: Math.max(44, outlineSize.height + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2),
   };
 }
 
@@ -259,8 +299,8 @@ export function getBetrayalRerollTargetVisualCenter(
   layout: DicePhysicsProjectedLayout,
 ) {
   return {
-    x: layout.outlineX ?? layout.x,
-    y: layout.outlineY ?? layout.y,
+    x: layout.x,
+    y: layout.y,
   };
 }
 

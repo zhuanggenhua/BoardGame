@@ -84,6 +84,7 @@
 | `bloodthirsty-claws` II | 3/4/5 利爪分别造成 3/5/7 点攻击伤害；若攻击骰里有 3 个相同数字，攻击者获得 1 个鲜血之力 | `abilities.ts` II variants -> `bloodthirstyClawsBloodPowerIfKind(3)` | 对手 HP 按伤害下降；攻击者 `blood_power` 增加 1 | `vampire-lord-mechanics.test.ts` II 级三同 / 五同最终状态断言 | 已修功能实现阻塞 | `passed for domain` |
 | `bloodthirsty-claws` III | 3/4/5 利爪分别造成 4/6/8 点攻击伤害；若攻击骰里有 3 个相同数字，攻击者获得 1 个鲜血之力 | `abilities.ts` III variants -> `damage` + `bloodthirstyClawsBloodPowerIfKind(3)`；E2E 点击玩家板 `fist` 物理槽 | E2E 中对手 HP 50 -> 42；攻击者 `blood_power` 0 -> 1；攻击上下文清空并进入主阶段 2 | `vampire-lord-mechanics.test.ts`；`vampire-lord-real-entry.e2e.ts` 截图组 | 已修功能实现阻塞 | `passed for domain and real entry` |
 | 攻击骰快照 | 嗜血之爪奖励必须读取发起攻击时的骰值，不能被防御阶段当前骰覆盖 | custom action 注册 `usesAttackDiceSnapshot: true`，最终读取攻击上下文中的 `attackDiceValues` | 攻击骰无三同则不加血力；即使当前骰区防御骰全相同也不得误加 | `vampire-lord-mechanics.test.ts` 快照负向断言 | 已修语义不一致风险 | `passed` |
+| `vampire-lord-mesmerize` 主动消费 | 不是任意时刻可点；只有持有催眠且对手当前骰区仍有可重掷骰子时才高亮“催眠重掷”。点击后消耗 1 个催眠并投 1 颗临时骰；5/6 后选择 1 颗对手骰强迫重掷 | `tokens.ts` 的被动动作定义要求 `requiresOpponentRollDice`，`passiveAbility.ts` 校验可重掷当前骰区，`customActions/vampire_lord.ts` 生成临时骰和对手骰选择交互 | 按钮可见且有绿色高亮；点击后催眠 1 -> 0；临时骰为 6；对手骰可选、选中后确认按钮可用；确认后对手骰 6 -> 2，交互清空 | `vampire-lord-mechanics.test.ts`；`vampire-lord-real-entry.e2e.ts`；`vampire-lord-mesmerize-clickable-highlight-pass-2026-09-11.json` | 已补可见高亮证据和过期描述清理 | `passed for domain and real entry` |
 | 玩家可见生命周期 | 审计通过后进入实施中；真人明确批准后才移除实施中标记进入完成态 | `core-types.ts` 生命周期过滤与徽标 | 玩家入口在审计前隐藏；实施中允许玩家选择并显示标记；完成态才允许玩家与 AI 选择且无标记 | 隐藏态与实施中生命周期 E2E、目录 / 命令 / AI 测试；完成态仅保留历史候选证据 | 当前已进入实施中，等待真人批准 | `passed` |
 
 ## 阶段、触发队列与流程收口证据
@@ -92,6 +93,7 @@
 - 真实 E2E 逐步确认：投骰前 -> 投出 5 个利爪且三同 -> `fist` 槽可触发 -> 进入防御阶段 -> 防御确认 -> 结算收口。结算最终状态为主阶段 2、对手生命 42、攻击者鲜血之力 1、攻击上下文为空，并出现 `DAMAGE_DEALT`、`TOKEN_GRANTED`、`ATTACK_RESOLVED` 三类正式事件。
 - 不死防御真实 E2E 逐步确认：进入防御阶段 -> 显示 4 颗吸血鬼骰 -> 玩家确认骰面 -> 点击结束防御 -> 进入主阶段 2；最终攻击上下文为空，并同时落地反击伤害、自疗和 `ATTACK_RESOLVED`。
 - 鲜血之力四档真实 E2E 逐档确认按钮入口、使用后的扣除事件、对应效果和本回合禁用；第二档无可移除状态时保持可发现但禁用，不产生状态选择残留。上述证据覆盖触发队列、阶段推进、确认边界、正式事件和无残留收口。
+- 催眠真实 E2E 重新确认：合法时机下右侧“催眠重掷”按钮有静态绿色高亮、可点击且中心点命中按钮本体；点击后消耗催眠并投临时骰，5/6 后对手骰本体变为可选，确认后对手骰被正式重掷并清空交互。2026-09-11 PASS 清单：`evidence/dicethrone/vampire-lord-mesmerize-clickable-highlight-pass-2026-09-11.json`。
 
 其它基础共享效果、攻击修正、鲜血之力四档主动能力、催眠主动消费、复合升级下区 variants、`slot-32` 血石归属、不死防御入口链的旧低层证据仍可作为当前实现证据保留；它们与本轮原子语义、最终状态和真实入口证据共同支撑当前范围复验。
 
@@ -116,6 +118,8 @@
 - 结果：通过，TypeScript 无新增类型错误。
 - 命令：`node scripts/infra/run-e2e-command.mjs isolated e2e/dicethrone/vampire-lord-real-entry.e2e.ts`。
 - 结果：本轮隔离真实入口 9 条全部通过，覆盖四档鲜血之力、催眠、嗜血之爪、不死防御和实施中玩家入口；审计前隐藏态入口的历史证据另行保留，完成态候选截图不作为当前完成依据。
+- 命令：`node scripts/infra/run-e2e-command.mjs isolated e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep "催眠应通过玩家按钮投临时骰并选择对手骰重掷"`。
+- 结果：2026-09-11 重新通过 1 条；补强断言覆盖按钮可用高亮、中心点命中、临时骰、对手骰选择、确认按钮和重掷收口；同时生成本轮专用 PASS 图组。
 - 证明了什么：嗜血之爪三同 / 四同奖励和鲜血之力四档领域消费链已有代码与领域测试证据；真实入口证明按钮、禁用态、临时骰、选择、扣除和最终状态；实施中入口证明玩家可见、带实施中标记、可选择并进入牌桌；AI 上下文测试证明实施中角色仍被过滤；审计前隐藏态历史入口仍保留生命周期门禁证据；资源链仍保留原有有效证据。
 - 没有证明什么：没有证明未锁定的其它 DiceThrone 英雄；I/II 利爪未逐分支重复浏览器截图，但已由 `dt-bloodthirsty-claws-damage-and-kind-blood-power-v2` 共享流程判等和逐分支领域最终状态测试覆盖，不构成本轮 blocker。
 - 截图 / 日志路径（2026-08-30 本轮重跑）：

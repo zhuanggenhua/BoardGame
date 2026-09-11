@@ -26,6 +26,9 @@ const isRabbitFootAlreadyUsed = (core: Partial<BetrayalCore> | undefined): boole
         || core?.recentRoll?.consumedRabbitFootCardIds?.includes('rope'),
     );
 
+const isWaitingForEventRollConfirmation = (core: Partial<BetrayalCore> | undefined): boolean =>
+    Boolean(core?.pendingEventRollResolution);
+
 const validateBetrayalBasicSetupStep = (
     state: MatchState<unknown>,
     step: TutorialStepSnapshot,
@@ -37,11 +40,18 @@ const validateBetrayalBasicSetupStep = (
     if (step.id === 'use-rabbit-foot') {
         return !isRabbitFootAlreadyUsed(core);
     }
+    if (step.id === 'finish') {
+        return !isWaitingForEventRollConfirmation(core) && Boolean(core?.pendingDamageAllocation);
+    }
+    if (step.id === 'return-to-table-after-damage') {
+        return !isWaitingForEventRollConfirmation(core) && !core?.pendingDamageAllocation;
+    }
     return true;
 };
 
 const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
     id: 'basic-setup-and-turn',
+    revision: 2,
     numPlayers: 3,
     allowManualSkip: true,
     stepValidator: validateBetrayalBasicSetupStep,
@@ -707,6 +717,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
 
 const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
     id: 'basic-setup-and-turn',
+    revision: 2,
     numPlayers: 3,
     allowManualSkip: true,
     stepValidator: validateBetrayalBasicSetupStep,

@@ -267,7 +267,10 @@ async function expectNoRepeatedInvariantMageStats(page: Page) {
     }
 }
 
-async function expectMageSelectionWideNaturalLayout(page: Page) {
+async function expectMageSelectionContainScaleLayout(
+    page: Page,
+    expectedViewport: { width: number; height: number },
+) {
     const audit = await page.getByTestId('mage-wars-mage-selection-gate').evaluate((gate) => {
         const oldDescription = '为双方各直接选择一本法术书；每本法术书已绑定法师，确认后按所选书初始化开局。';
         const oldLibraryHelp = '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。';
@@ -275,23 +278,65 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
         const confirmButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-confirm"]');
         const header = gate.querySelector<HTMLElement>('header');
         const main = gate.querySelector<HTMLElement>('main');
+        const stage = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-stage"]');
         const library = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-spellbook-library"]');
         const summary = confirmButton?.closest('aside') as HTMLElement | null;
         const editRect = editButton?.getBoundingClientRect();
         const confirmRect = confirmButton?.getBoundingClientRect();
         const mainRect = main?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
         const libraryRect = library?.getBoundingClientRect();
         const summaryRect = summary?.getBoundingClientRect();
         const confirmStyle = confirmButton ? window.getComputedStyle(confirmButton) : null;
+        const standardCards = Array.from(gate.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-mage-selection-standard-spellbook"]',
+        )).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                height: rect.height,
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+            };
+        });
+        const standardPreviews = Array.from(gate.querySelectorAll<HTMLElement>(
+            '[data-testid^="mage-wars-mage-selection-standard-spellbook-"][data-testid$="-preview"]',
+        )).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                height: rect.height,
+                width: rect.width,
+            };
+        });
+        const standardTopSpread = standardCards.length > 0
+            ? Math.max(...standardCards.map((rect) => rect.top)) - Math.min(...standardCards.map((rect) => rect.top))
+            : 0;
+        const standardPreviewMinRatio = standardPreviews.length > 0
+            ? Math.min(...standardPreviews.map((rect) => rect.height / Math.max(rect.width, 1)))
+            : 0;
+        const declaredScale = Number(stage?.dataset.layoutScale ?? Number.NaN);
+        const declaredWidth = Number(stage?.dataset.layoutWidth ?? Number.NaN);
+        const declaredHeight = Number(stage?.dataset.layoutHeight ?? Number.NaN);
+        const expectedScale = Number.isFinite(declaredWidth) && Number.isFinite(declaredHeight)
+            ? Math.min(window.innerWidth / declaredWidth, window.innerHeight / declaredHeight)
+            : Number.NaN;
 
         return {
             viewport: { width: window.innerWidth, height: window.innerHeight },
             oldDescriptionVisible: (gate.textContent ?? '').includes(oldDescription),
             oldLibraryHelpVisible: (gate.textContent ?? '').includes(oldLibraryHelp),
+            stageMode: stage?.dataset.layoutMode ?? '',
+            declaredScale,
+            expectedScale,
             confirmInHeader: Boolean(confirmButton && header?.contains(confirmButton)),
             confirmBelowEdit: Boolean(editRect && confirmRect && confirmRect.top > editRect.bottom),
             confirmSharesActionGroup: Boolean(editButton && confirmButton && editButton.parentElement === confirmButton.parentElement),
             confirmColor: confirmStyle?.backgroundColor ?? '',
+            stageWithinViewport: Boolean(stageRect
+                && stageRect.left >= -1
+                && stageRect.top >= -1
+                && stageRect.right <= window.innerWidth + 1
+                && stageRect.bottom <= window.innerHeight + 1),
             mainWithinViewport: Boolean(mainRect
                 && mainRect.left >= -1
                 && mainRect.top >= -1
@@ -299,6 +344,13 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
                 && mainRect.bottom <= window.innerHeight + 1),
             libraryWidth: libraryRect?.width ?? 0,
             summaryWidth: summaryRect?.width ?? 0,
+            standardCardCount: standardCards.length,
+            standardTopSpread,
+            standardPreviewMinRatio,
+            gateOverflow: {
+                x: gate.scrollWidth - gate.clientWidth,
+                y: gate.scrollHeight - gate.clientHeight,
+            },
             bodyOverflow: {
                 x: document.documentElement.scrollWidth - window.innerWidth,
                 y: document.documentElement.scrollHeight - window.innerHeight,
@@ -306,17 +358,27 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
         };
     });
 
-    expect(audit.viewport).toEqual({ width: 2560, height: 1304 });
-    expect(audit.oldDescriptionVisible, `2560x1304 选书页不应继续显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.oldLibraryHelpVisible, `2560x1304 选书页不应继续显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.confirmInHeader, `2560x1304 开始游戏按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.confirmSharesActionGroup, `2560x1304 开始游戏按钮必须和编辑选中书在同一右侧动作组: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.confirmBelowEdit, `2560x1304 开始游戏按钮必须在编辑选中书下面: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.confirmColor, `2560x1304 开始游戏按钮要换成绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
-    expect(audit.mainWithinViewport, `2560x1304 三栏主体必须自然落在视口内: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.libraryWidth, `2560x1304 法术书库主列不能被侧栏挤窄: ${JSON.stringify(audit)}`).toBeGreaterThan(1400);
-    expect(audit.summaryWidth, `2560x1304 右侧摘要栏必须保留自然宽度: ${JSON.stringify(audit)}`).toBeGreaterThan(300);
-    expect(audit.bodyOverflow.x, `2560x1304 不能产生横向页面溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    const label = `${expectedViewport.width}x${expectedViewport.height}`;
+    expect(audit.viewport).toEqual(expectedViewport);
+    expect(audit.oldDescriptionVisible, `${label} 选书页不应继续显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.oldLibraryHelpVisible, `${label} 选书页不应继续显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.stageMode, `${label} 选书页必须使用固定主构图等比容纳，而不是按小窗口重排: ${JSON.stringify(audit)}`).toBe('contain-scale');
+    expect(audit.declaredScale, `${label} 等比缩放倍率必须匹配当前视口: ${JSON.stringify(audit)}`)
+        .toBeCloseTo(audit.expectedScale, 2);
+    expect(audit.stageWithinViewport, `${label} 等比缩放舞台必须完整落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmInHeader, `${label} 开始按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.confirmSharesActionGroup, `${label} 开始按钮必须和编辑选中书在同一右侧动作组: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmBelowEdit, `${label} 开始按钮必须在编辑选中书下面: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmColor, `${label} 开始按钮要换成绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
+    expect(audit.mainWithinViewport, `${label} 三栏主体必须随舞台缩放后完整落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.standardCardCount, `${label} 四本标准书不能因为小窗口减少或折叠: ${JSON.stringify(audit)}`).toBe(4);
+    expect(audit.standardTopSpread, `${label} 标准书卡不能被小窗口压成纵向换行列表: ${JSON.stringify(audit)}`).toBeLessThan(3);
+    expect(audit.standardPreviewMinRatio, `${label} 法师书预览不能被压成横条: ${JSON.stringify(audit)}`).toBeGreaterThan(0.45);
+    expect(audit.libraryWidth, `${label} 法术书库主列必须保留主视觉空间: ${JSON.stringify(audit)}`).toBeGreaterThan(expectedViewport.width * 0.5);
+    expect(audit.summaryWidth, `${label} 右侧摘要栏必须保留自然宽度: ${JSON.stringify(audit)}`).toBeGreaterThan(expectedViewport.width * 0.13);
+    expect(audit.gateOverflow.x, `${label} 选书层自身不能横向溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    expect(audit.gateOverflow.y, `${label} 选书层自身不能依赖纵向滚动隐藏裁切: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    expect(audit.bodyOverflow.x, `${label} 不能产生横向页面溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
 }
 
 test('Mage Wars 选书页：2560x1304 非 16:9 视口自然适配按钮和说明文案', async ({ context, page }, testInfo) => {
@@ -340,12 +402,49 @@ test('Mage Wars 选书页：2560x1304 非 16:9 视口自然适配按钮和说明
     await expect(page.getByRole('heading', { name: '选择双方法术书' })).toBeVisible();
     await expectMageSelectionPreviewAspectRatios(page);
     await expectNoRepeatedInvariantMageStats(page);
-    await expectMageSelectionWideNaturalLayout(page);
+    await expectMageSelectionContainScaleLayout(page, { width: 2560, height: 1304 });
     const screenshot = await saveEvidenceScreenshot(page, testInfo, '01-2560x1304-选书页-开始游戏在编辑按钮下方');
 
     await assertNoFatalFrontendErrors([{ label: 'mage-selection-2560x1304', diagnostics }]);
     testInfo.annotations.push({
         type: 'mage-wars-selection-2560x1304-screenshot',
+        description: screenshot,
+    });
+});
+
+test('Mage Wars 选书页：1081x585 小桌面窗口等比缩放而不是换行压扁', async ({ context, page }, testInfo) => {
+    await clearEvidenceScreenshotsForTest(testInfo);
+    await page.setViewportSize({ width: 1081, height: 585 });
+    await initContext(context, {
+        storageKey: 'mage-wars-mage-selection-1081x585',
+        skipImageGate: false,
+        blockCdnAssets: false,
+        locale: 'zh-CN',
+    });
+    const diagnostics = attachPageDiagnostics(page);
+
+    await page.goto('/play/mage-wars?setupGate=true&seed=mage-selection-1081x585&disableLocalAiAutomation=true', {
+        waitUntil: 'domcontentloaded',
+    });
+    await waitForFrontendAssets(page, 45_000);
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+
+    await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole('heading', { name: '选择双方法术书' })).toBeVisible();
+    await expectMageSelectionPreviewAspectRatios(page);
+    await expectNoRepeatedInvariantMageStats(page);
+    await expectMageSelectionContainScaleLayout(page, { width: 1081, height: 585 });
+    const screenshot = await saveEvidenceScreenshot(page, testInfo, '01-1081x585-选书页-等比缩放不换行');
+
+    await page.getByTestId('mage-wars-mage-selection-standard-spellbook-warlock_apprentice').click();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute('data-mage-id', 'warlock_apprentice');
+    await page.getByTestId('mage-wars-mage-selection-seat-1').click();
+    await page.getByTestId('mage-wars-mage-selection-standard-spellbook-wizard_apprentice').click();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-1')).toHaveAttribute('data-mage-id', 'wizard_apprentice');
+
+    await assertNoFatalFrontendErrors([{ label: 'mage-selection-1081x585', diagnostics }]);
+    testInfo.annotations.push({
+        type: 'mage-wars-selection-1081x585-screenshot',
         description: screenshot,
     });
 });

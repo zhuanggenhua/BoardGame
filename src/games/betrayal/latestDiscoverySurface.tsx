@@ -20,6 +20,7 @@ import { RecentRollPanel } from "./recentRollSurface";
 type BetrayalLatestDiscoveryContinueButtonState = {
   label: string;
   disabled: boolean;
+  eventRollReadable?: boolean;
   pendingCardResolutionId?: string;
   pendingCardResolutionStep?: string;
   cardResolutionConfirmedCount?: number;
@@ -123,7 +124,7 @@ export function BetrayalLatestDiscoverySurface({
       data-allows-inventory-roll-modifiers={canModifyRoll ? "true" : "false"}
       data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
       onClick={canDismissByBackdrop ? onDismiss : undefined}
-      className={`pointer-events-auto absolute flex cursor-default ${
+      className={`${canDismissByBackdrop ? "pointer-events-auto" : "pointer-events-none"} absolute flex cursor-default ${
         isPhoneLandscapeLayout
           ? shouldUseMobileEventOpenTableChrome
             ? "inset-0 z-50 items-start justify-end bg-transparent px-2 pb-[74px] pr-[8.25rem] pt-[92px]"
@@ -174,7 +175,7 @@ export function BetrayalLatestDiscoverySurface({
       <div
         data-testid="betrayal-discovery-panel-content"
         onClick={(event) => event.stopPropagation()}
-        className={`flex flex-col items-center ${
+        className={`pointer-events-none flex flex-col items-center ${
           shouldShowRoll && recentRoll ? "w-full" : "w-fit"
         } ${
           isPhoneLandscapeLayout
@@ -315,7 +316,7 @@ export function BetrayalLatestDiscoverySurface({
         {shouldHideExternalActionDock ? null : (
           <div
             data-testid="betrayal-discovery-card-external-action-dock"
-            className={`pointer-events-auto z-10 flex min-h-[62px] justify-center ${
+            className={`pointer-events-none z-10 flex min-h-[62px] justify-center ${
               isPhoneLandscapeLayout ? "relative w-full" : "relative mt-2 w-full"
             }`}
           >
@@ -323,7 +324,7 @@ export function BetrayalLatestDiscoverySurface({
               <button
                 type="button"
                 data-testid="betrayal-event-roll-start"
-                className={BETRAYAL_CONFIRM_BUTTON_CLASS}
+                className={`pointer-events-auto ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
                 disabled={!canStartPendingEventRoll}
                 onClick={onRollLatestDiscoveryEvent}
               >
@@ -359,6 +360,11 @@ export function BetrayalLatestDiscoverySurface({
                 data-event-roll-required-count={
                   typeof continueButton.eventRollRequiredCount === "number"
                     ? String(continueButton.eventRollRequiredCount)
+                    : undefined
+                }
+                data-event-roll-readable={
+                  typeof continueButton.eventRollReadable === "boolean"
+                    ? String(continueButton.eventRollReadable)
                     : undefined
                 }
                 disabled={continueButton.disabled}

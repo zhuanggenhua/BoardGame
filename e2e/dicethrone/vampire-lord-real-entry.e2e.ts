@@ -1,4 +1,4 @@
-import type { Browser, Page, TestInfo } from '@playwright/test';
+import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { test, expect } from '../framework';
@@ -34,6 +34,12 @@ const VAMPIRE_LORD_HERO_ID = 'vampire_lord';
 const VISIBLE_HOST_HERO_ID = 'monk';
 const VISIBLE_GUEST_HERO_ID = 'barbarian';
 const VAMPIRE_LORD_CARD_ATLAS_ID = 'dicethrone:vampire_lord-cards';
+const VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID = 'card-vampire-lord-blood-from-above';
+const VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID = 'card-vampire-lord-gushing-blood';
+const VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_CARD_IDS = VAMPIRE_LORD_CARDS
+    .map((card) => card.id)
+    .filter((cardId) => cardId !== VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID);
+const VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE = VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_CARD_IDS.length;
 const VAMPIRE_LORD_PROOF_HAND = [
     { id: 'card-vampire-lord-blood-surge', atlasIndex: 17 },
     { id: 'card-vampire-lord-gushing-blood', atlasIndex: 21 },
@@ -270,7 +276,7 @@ const expectVampireLordCardChoicePreview = async (
     await expect(option).toBeVisible({ timeout: 15000 });
     await expect(option).toHaveAttribute('data-card-pool-mode', 'preview');
     await expect(option).toHaveAttribute('data-card-preview-ready', 'true');
-    await expect(option).not.toContainText(/血潮|畅饮|涌血|action|CP/i);
+    await expect(option).not.toContainText(/血潮|畅饮|涌血|血流如注|action|CP/i);
     const previewShell = page.getByTestId(`dt-card-choice-preview-${cardId}`);
     await expect(previewShell).toBeVisible({ timeout: 15000 });
     const atlasFrame = option.locator(`[data-card-atlas-id="${VAMPIRE_LORD_CARD_ATLAS_ID}"]`).first();
@@ -282,6 +288,279 @@ const expectVampireLordCardChoicePreview = async (
         async () => atlasImage.getAttribute('src'),
         { timeout: 15000 },
     ).toMatch(/dicethrone\/images\/xixuegui\/(?:compressed\/)?ability-cards\.webp/i);
+};
+
+const expectVisibleUsablePassiveAction = async (button: Locator): Promise<void> => {
+    await expect(button).toBeVisible({ timeout: 10000 });
+    await expect(button).toBeEnabled();
+    await expect(button).toHaveAttribute('data-passive-action-usable', 'true');
+    await expect(button).toHaveClass(/ring-2/);
+    await expect(button).toHaveClass(/ring-emerald-300/);
+    await expect.poll(async () => button.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const centerX = Math.min(window.innerWidth - 1, Math.max(0, rect.left + rect.width / 2));
+        const centerY = Math.min(window.innerHeight - 1, Math.max(0, rect.top + rect.height / 2));
+        const hit = document.elementFromPoint(centerX, centerY);
+        return {
+            visibleSize: rect.width >= 30 && rect.height >= 24,
+            pointerEvents: style.pointerEvents,
+            cursorAllowsClick: style.cursor.includes('pointer'),
+            hasGlow: style.boxShadow !== 'none',
+            hitSelf: hit === element || element.contains(hit),
+        };
+    }), { timeout: 10000 }).toEqual({
+        visibleSize: true,
+        pointerEvents: 'auto',
+        cursorAllowsClick: true,
+        hasGlow: true,
+        hitSelf: true,
+    });
+};
+
+const readVampireLordCardPoolMetrics = async (page: Page) => (
+    page.getByTestId('dt-card-pool-selection').locator('[data-card-pool-mode="preview"]').evaluateAll((options) => {
+        const panel = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-panel"]');
+        const surface = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-surface"]');
+        const title = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-title"]');
+        const selection = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-selection"]');
+        const actions = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-actions"]');
+        const cards = options.map((option) => {
+            const frame = option.querySelector<HTMLElement>('[data-card-atlas-frame="true"]');
+            const shell = option.querySelector<HTMLElement>('[data-testid^="dt-card-choice-preview-"]');
+            if (!frame) return null;
+            const rect = frame.getBoundingClientRect();
+            const aspectRatio = Number(frame.getAttribute('data-card-atlas-aspect-ratio') ?? '0');
+            return {
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+                ratioDelta: aspectRatio > 0 ? Math.abs((rect.width / rect.height) - aspectRatio) : 999,
+                hasForcedAspect: String(shell?.className ?? '').includes('aspect-[0.61]'),
+            };
+        }).filter((card): card is NonNullable<typeof card> => Boolean(card));
+        const panelRect = panel?.getBoundingClientRect();
+        const surfaceRect = surface?.getBoundingClientRect();
+        const titleRect = title?.getBoundingClientRect();
+        const selectionRect = selection?.getBoundingClientRect();
+        const actionsRect = actions?.getBoundingClientRect();
+
+        if (cards.length === 0) {
+            return {
+                count: 0,
+                widthDelta: 999,
+                heightDelta: 999,
+                minWidth: 0,
+                minHeight: 0,
+                maxRatioDelta: 999,
+                hasForcedAspect: true,
+                rowCount: 0,
+                firstRowCount: 0,
+                maxRowTopDelta: 999,
+                maxRowCenterDelta: 999,
+                hasVerticalBrowse: false,
+                panelCenterDelta: 999,
+                surfaceCenterDelta: 999,
+                titleCenterDelta: 999,
+                firstRowCenterDelta: 999,
+                titleToCardsGap: -999,
+                cardsToActionsGap: -999,
+                panelInsideViewport: Boolean(
+                    panelRect
+                    && panelRect.left >= -1
+                    && panelRect.right <= window.innerWidth + 1
+                    && panelRect.top >= 0
+                    && panelRect.bottom <= window.innerHeight + 1
+                ),
+                selectionInsideViewport: Boolean(
+                    selectionRect
+                    && selectionRect.left >= -1
+                    && selectionRect.right <= window.innerWidth + 1
+                    && selectionRect.top >= 0
+                    && selectionRect.bottom <= window.innerHeight + 1
+                ),
+            };
+        }
+
+        const viewportCenter = window.innerWidth / 2;
+        const sortedCards = [...cards].sort((a, b) => a.top - b.top || a.left - b.left);
+        const rows: Array<{ top: number; bottom: number; left: number; right: number; count: number; topDelta: number; centerDelta: number }> = [];
+        for (const card of sortedCards) {
+            const row = rows.find(candidate => Math.abs(candidate.top - card.top) < 4);
+            if (row) {
+                row.topDelta = Math.max(row.topDelta, Math.abs(row.top - card.top));
+                row.top = Math.min(row.top, card.top);
+                row.bottom = Math.max(row.bottom, card.bottom);
+                row.left = Math.min(row.left, card.left);
+                row.right = Math.max(row.right, card.right);
+                row.count += 1;
+                row.centerDelta = Math.abs((row.left + row.right) / 2 - viewportCenter);
+            } else {
+                rows.push({
+                    top: card.top,
+                    bottom: card.bottom,
+                    left: card.left,
+                    right: card.right,
+                    count: 1,
+                    topDelta: 0,
+                    centerDelta: Math.abs((card.left + card.right) / 2 - viewportCenter),
+                });
+            }
+        }
+        const firstRow = rows[0];
+        const visibleCards = selectionRect
+            ? cards.filter(card => card.bottom > selectionRect.top && card.top < selectionRect.bottom)
+            : cards;
+        const visibleCardBottom = visibleCards.length > 0
+            ? Math.max(...visibleCards.map((card) => Math.min(card.bottom, selectionRect?.bottom ?? card.bottom)))
+            : (selectionRect?.top ?? 0);
+
+        return {
+            count: cards.length,
+            widthDelta: Math.max(...cards.map((card) => card.width)) - Math.min(...cards.map((card) => card.width)),
+            heightDelta: Math.max(...cards.map((card) => card.height)) - Math.min(...cards.map((card) => card.height)),
+            minWidth: Math.min(...cards.map((card) => card.width)),
+            minHeight: Math.min(...cards.map((card) => card.height)),
+            maxRatioDelta: Math.max(...cards.map((card) => card.ratioDelta)),
+            hasForcedAspect: cards.some((card) => card.hasForcedAspect),
+            rowCount: rows.length,
+            firstRowCount: firstRow?.count ?? 0,
+            maxRowTopDelta: Math.max(...rows.map((row) => row.topDelta)),
+            maxRowCenterDelta: Math.max(...rows.map((row) => row.centerDelta)),
+            hasVerticalBrowse: Boolean(selection && selection.scrollHeight > selection.clientHeight + 4),
+            panelCenterDelta: panelRect ? Math.abs((panelRect.left + panelRect.right) / 2 - viewportCenter) : 999,
+            surfaceCenterDelta: surfaceRect ? Math.abs((surfaceRect.left + surfaceRect.right) / 2 - viewportCenter) : 999,
+            titleCenterDelta: titleRect ? Math.abs((titleRect.left + titleRect.right) / 2 - viewportCenter) : 999,
+            firstRowCenterDelta: firstRow ? firstRow.centerDelta : 999,
+            titleToCardsGap: titleRect && firstRow ? firstRow.top - titleRect.bottom : -999,
+            cardsToActionsGap: actionsRect ? actionsRect.top - visibleCardBottom : -999,
+            panelInsideViewport: Boolean(
+                panelRect
+                && panelRect.left >= -1
+                && panelRect.right <= window.innerWidth + 1
+                && panelRect.top >= 0
+                && panelRect.bottom <= window.innerHeight + 1
+            ),
+            selectionInsideViewport: Boolean(
+                selectionRect
+                && selectionRect.left >= -1
+                && selectionRect.right <= window.innerWidth + 1
+                && selectionRect.top >= 0
+                && selectionRect.bottom <= window.innerHeight + 1
+            ),
+        };
+    })
+);
+
+const expectVampireLordCardPoolLayout = async (
+    page: Page,
+    expectedVisibleCount: number,
+    options: { requireCenteredCards?: boolean } = {},
+): Promise<void> => {
+    const requireCenteredCards = options.requireCenteredCards ?? expectedVisibleCount <= 5;
+    await expect(page.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-layout', 'center-stage');
+    await expect(page.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-hand-protection', 'preserve-visible-hand');
+    await expect(page.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-browse-mode', 'grid-scroll');
+    await expect(page.getByTestId('dt-card-pool-panel')).toBeVisible();
+    await expect(page.getByTestId('dt-card-pool-surface')).toBeVisible();
+    await expect(page.getByTestId('dt-card-pool-title')).toBeVisible();
+    await expect(page.getByTestId('dt-card-pool-actions')).toBeVisible();
+    await expect(page.getByTestId('dt-card-pool-selection')).toHaveClass(/scrollbar-thin/);
+
+    await expect.poll(async () => {
+        const metrics = await readVampireLordCardPoolMetrics(page);
+        return (
+            metrics.count === expectedVisibleCount
+            && metrics.minWidth > 80
+            && metrics.minHeight > 120
+            && metrics.widthDelta < 2
+            && metrics.heightDelta < 2
+            && metrics.maxRatioDelta < 0.02
+            && !metrics.hasForcedAspect
+            && metrics.rowCount >= (expectedVisibleCount > 6 ? 2 : 1)
+            && metrics.firstRowCount >= (expectedVisibleCount > 6 ? 5 : expectedVisibleCount)
+            && metrics.maxRowTopDelta < 4
+            && (expectedVisibleCount <= 6 || metrics.hasVerticalBrowse || metrics.rowCount > 1)
+            && metrics.panelCenterDelta < 2
+            && metrics.surfaceCenterDelta < 2
+            && metrics.titleCenterDelta < 2
+            && (!requireCenteredCards || metrics.firstRowCenterDelta < 2)
+            && metrics.titleToCardsGap >= 6
+            && metrics.cardsToActionsGap >= 6
+            && metrics.panelInsideViewport
+            && metrics.selectionInsideViewport
+        );
+    }, { timeout: 15000 }).toBe(true);
+};
+
+const expectVampireLordCardPoolKeepsHandVisible = async (page: Page, cardId: string): Promise<void> => {
+    const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(page.getByTestId('hand-area')).toHaveAttribute('data-hand-hidden', 'false');
+    await expect(handCard).toBeVisible({ timeout: 10000 });
+
+    await expect.poll(async () => page.evaluate((protectedCardId) => {
+        const panel = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-panel"]');
+        const card = document.querySelector<HTMLElement>(`[data-testid="hand-area"] [data-card-id="${protectedCardId}"]`);
+        const visual = card?.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card;
+        if (!panel || !visual) {
+            return false;
+        }
+
+        const panelRect = panel.getBoundingClientRect();
+        const handRect = visual.getBoundingClientRect();
+        const overlaps = !(
+            panelRect.right <= handRect.left
+            || panelRect.left >= handRect.right
+            || panelRect.bottom <= handRect.top
+            || panelRect.top >= handRect.bottom
+        );
+
+        return handRect.width > 40
+            && handRect.height > 60
+            && handRect.bottom > 0
+            && handRect.bottom <= window.innerHeight + 1
+            && handRect.top < window.innerHeight
+            && handRect.left < window.innerWidth
+            && handRect.right > 0
+            && handRect.top - panelRect.bottom >= 4
+            && !overlaps;
+    }, cardId), { timeout: 15000 }).toBe(true);
+
+    await expect.poll(async () => page.evaluate((protectedCardId) => {
+        const overlay = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-overlay"]');
+        const panel = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-panel"]');
+        const card = document.querySelector<HTMLElement>(`[data-testid="hand-area"] [data-card-id="${protectedCardId}"]`);
+        const visual = card?.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card;
+        if (!overlay || !panel || !visual) return false;
+
+        const overlayStyle = getComputedStyle(overlay);
+        const panelStyle = getComputedStyle(panel);
+        const visualStyle = getComputedStyle(visual);
+
+        return overlayStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+            && overlayStyle.backgroundImage === 'none'
+            && panelStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+            && panelStyle.backgroundImage === 'none'
+            && visualStyle.opacity === '1'
+            && visualStyle.filter === 'none'
+            && visualStyle.visibility === 'visible';
+    }, cardId), { timeout: 15000 }).toBe(true);
+
+    await expect.poll(async () => page.evaluate((protectedCardId) => {
+        const card = document.querySelector<HTMLElement>(`[data-testid="hand-area"] [data-card-id="${protectedCardId}"]`);
+        const visual = card?.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card;
+        if (!card || !visual) return false;
+
+        const rect = visual.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+            Math.min(window.innerWidth - 1, Math.max(0, rect.left + rect.width / 2)),
+            Math.min(window.innerHeight - 1, Math.max(0, rect.top + rect.height / 2)),
+        );
+        return hit?.closest(`[data-testid="hand-area"] [data-card-id="${protectedCardId}"]`) === card;
+    }, cardId), { timeout: 15000 }).toBe(true);
 };
 
 const expectStatusAtlasSprite = async (
@@ -634,13 +913,13 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         const mesmerizeButton = page.getByTestId('passive-action-vampire-lord-mesmerize-0');
         const diceTray = getRightTrayDiceTray(page);
         const firstOpponentDie = diceTray.getByTestId('die-button-0').first();
-        await expect(mesmerizeButton).toBeVisible({ timeout: 10000 });
-        await expect(mesmerizeButton).toBeEnabled();
+        await expectVisibleUsablePassiveAction(mesmerizeButton);
+        await expect(mesmerizeButton).toHaveAccessibleName(/1\s*(个)?\s*催眠|1 Mesmerize/);
         await expect(firstOpponentDie).toBeVisible({ timeout: 10000 });
         await expect(firstOpponentDie).toHaveAttribute('data-owner-id', '1');
         await expect(firstOpponentDie).toHaveAttribute('data-display-value', '6');
         await expect(firstOpponentDie).toHaveAttribute('data-clickable', 'false');
-        await game.screenshot('吸血鬼领主-催眠入口-对手骰重掷前', testInfo);
+        await game.screenshot('吸血鬼领主-催眠按钮可用高亮-对手骰重掷前', testInfo);
 
         await setDiceThroneBonusDiceValues(page, [6]);
         await mesmerizeButton.click();
@@ -1031,16 +1310,16 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
 
     test('血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算', async ({ page, game }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
+        expect(VAMPIRE_LORD_CARDS.length).toBeGreaterThan(30);
+        expect(VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE).toBe(VAMPIRE_LORD_CARDS.length - 1);
+        expect(VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_CARD_IDS).toContain(VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID);
+        expect(VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_CARD_IDS).not.toContain(VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID);
         await game.openTestGame('dicethrone', VAMPIRE_LORD_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
-                hand: [],
-                deck: [
-                    'card-vampire-lord-blood-surge',
-                    'card-vampire-lord-drink-up',
-                    'card-vampire-lord-gushing-blood',
-                ],
+                hand: [VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID],
+                deck: VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_CARD_IDS,
                 resources: { CP: 2, HP: 50 },
                 tokens: { [TOKEN_IDS.BLOOD_POWER]: 0 },
             },
@@ -1080,7 +1359,9 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(ultimateSlot).toHaveAttribute('data-resolved-ability-id', 'bloody-slaughter', { timeout: 10000 });
         await expect(ultimateSlot).toHaveAttribute('data-available-ability-id', 'bloody-slaughter', { timeout: 10000 });
         await expect(ultimateSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
-        await expect(page.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(1);
+        await expect(page.locator(`[data-testid="hand-area"] [data-card-id="${VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID}"]`))
+            .toBeVisible({ timeout: 10000 });
         await game.screenshot('01-血色杀戮触发前-五个血滴终极技可点', testInfo);
 
         await clickResolvedAbilitySlot(page, 'ultimate', 'bloody-slaughter', 'bloody-slaughter');
@@ -1109,7 +1390,11 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 sourceId: current?.data?.sourceId ?? null,
                 bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 hand: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
-                deck: (state?.core?.players?.['0']?.deck ?? []).map((card: any) => card.id),
+                deckSize: state?.core?.players?.['0']?.deck?.length ?? 0,
+                deckHasTarget: (state?.core?.players?.['0']?.deck ?? [])
+                    .some((card: any) => card.id === VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID),
+                deckHasProtectedCard: (state?.core?.players?.['0']?.deck ?? [])
+                    .some((card: any) => card.id === VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID),
             };
         }, { timeout: 10000 }).toEqual({
             kind: 'dt:card-interaction',
@@ -1117,33 +1402,58 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             interactionType: 'selectDeckCard',
             sourceId: 'bloody-slaughter',
             bloodPower: 2,
-            hand: [],
-            deck: [
-                'card-vampire-lord-blood-surge',
-                'card-vampire-lord-drink-up',
-                'card-vampire-lord-gushing-blood',
-            ],
+            hand: [VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID],
+            deckSize: VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE,
+            deckHasTarget: true,
+            deckHasProtectedCard: false,
         });
 
-        const targetCardOption = page.getByTestId('dt-deck-card-option-card-vampire-lord-gushing-blood');
+        const targetCardOption = page.getByTestId(`dt-deck-card-option-${VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID}`);
         const confirmButton = page.getByRole('button', { name: /确认|Confirm/i }).last();
+        const searchInput = page.getByTestId('dt-card-pool-search-input');
+        const resultCount = page.getByTestId('dt-card-pool-result-count');
+        const cardOptions = page.getByTestId('dt-card-pool-selection').locator('[data-card-pool-mode="preview"]');
         await expect(page.getByText('从抽牌堆选择 1 张牌加入手牌')).toBeVisible({ timeout: 10000 });
         await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-blood-surge')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-drink-up')).toBeVisible({ timeout: 10000 });
-        await expect(targetCardOption).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-layout', 'bottom-shelf');
         await expect(page.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
+        await expect(cardOptions).toHaveCount(VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE);
+        await expect(searchInput).toBeVisible({ timeout: 10000 });
+        await expect(resultCount).toHaveText(new RegExp(`显示\\s+${VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE}\\s*/\\s*${VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE}`));
         await expect(page.getByTestId('prompt-card-search-input')).toHaveCount(0);
         await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-blood-surge', 17);
-        await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-drink-up', 31);
-        await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-gushing-blood', 21);
+        await expectVampireLordCardPoolLayout(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE, { requireCenteredCards: false });
+        await page.mouse.move(20, 20);
+        await expectVampireLordCardPoolKeepsHandVisible(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID);
         await expect(confirmButton).toBeDisabled();
-        await game.screenshot('02-血色杀戮搜牌窗口-抽牌堆三张候选可选', testInfo);
+        await game.screenshot('02-血色杀戮搜牌窗口-真实抽牌堆大牌库可搜索', testInfo);
+
+        await searchInput.fill('不存在的血牌');
+        await expect(cardOptions).toHaveCount(0);
+        await expect(resultCount).toHaveText(new RegExp(`显示\\s+0\\s*/\\s*${VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE}`));
+        await expect(page.getByTestId('dt-card-pool-empty')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('dt-card-pool-empty')).toContainText('没有匹配的牌');
+        await expectVampireLordCardPoolKeepsHandVisible(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID);
+        await game.screenshot('03-血色杀戮搜牌窗口-空搜索无匹配候选', testInfo);
+
+        await searchInput.fill('血流如注');
+        await expect(cardOptions).toHaveCount(1);
+        await expect(resultCount).toHaveText(new RegExp(`显示\\s+1\\s*/\\s*${VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE}`));
+        await expect(page.getByTestId('dt-card-pool-empty')).toHaveCount(0);
+        await expect(targetCardOption).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-blood-surge')).toHaveCount(0);
+        await expectVampireLordCardChoicePreview(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID, 21);
+        await expectVampireLordCardPoolLayout(page, 1, { requireCenteredCards: true });
+        await expectVampireLordCardPoolKeepsHandVisible(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID);
+        await game.screenshot('04-血色杀戮搜牌窗口-血流如注过滤命中', testInfo);
 
         await targetCardOption.click();
         await expect(targetCardOption).toHaveAttribute('data-selected', 'true', { timeout: 5000 });
+        await expect(targetCardOption).toHaveAttribute('aria-pressed', 'true');
+        await expect(targetCardOption).toHaveClass(/-translate-y-2/);
+        await page.mouse.move(20, 20);
+        await expectVampireLordCardPoolKeepsHandVisible(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID);
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await game.screenshot('03-血色杀戮已选择牌库牌-待确认加入手牌', testInfo);
+        await game.screenshot('05-血色杀戮已选择血流如注-待确认加入手牌', testInfo);
         await confirmButton.click();
 
         await expect.poll(async () => {
@@ -1153,7 +1463,11 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
                 bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 hand: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
-                deck: (state?.core?.players?.['0']?.deck ?? []).map((card: any) => card.id),
+                deckSize: state?.core?.players?.['0']?.deck?.length ?? 0,
+                deckHasTarget: (state?.core?.players?.['0']?.deck ?? [])
+                    .some((card: any) => card.id === VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID),
+                deckHasProtectedCard: (state?.core?.players?.['0']?.deck ?? [])
+                    .some((card: any) => card.id === VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID),
                 defenderHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 pendingAttack: state?.core?.pendingAttack ?? null,
                 events: getLastEventTypes(state),
@@ -1162,20 +1476,22 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             phase: 'main2',
             interactionKind: null,
             bloodPower: 2,
-            hand: ['card-vampire-lord-gushing-blood'],
-            deck: expect.arrayContaining([
-                'card-vampire-lord-blood-surge',
-                'card-vampire-lord-drink-up',
-            ]),
+            hand: [
+                VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID,
+                VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID,
+            ],
+            deckSize: VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE - 1,
+            deckHasTarget: false,
+            deckHasProtectedCard: false,
             defenderHp: 40,
             pendingAttack: null,
             events: expect.arrayContaining(['CARD_DRAWN', 'DECK_SHUFFLED', 'DAMAGE_DEALT', 'ATTACK_RESOLVED']),
         });
-        await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-vampire-lord-gushing-blood"]'))
+        await expect(page.locator(`[data-testid="hand-area"] [data-card-id="${VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID}"]`))
             .toBeVisible({ timeout: 10000 });
-        await expectVampireLordCardPreview(page, 'card-vampire-lord-gushing-blood', 21);
+        await expectVampireLordCardPreview(page, VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID, 21);
         await waitForDiceThroneVisualIdle(page);
-        await game.screenshot('04-血色杀戮结算后-选中牌入手并造成十点伤害', testInfo);
+        await game.screenshot('06-血色杀戮结算后-血流如注入手并造成十点伤害', testInfo);
     });
 
     test('嗜血之爪 III 5 利爪三同应通过真实投骰获得鲜血之力并造成 8 点攻击伤害', async ({ page, game }, testInfo) => {

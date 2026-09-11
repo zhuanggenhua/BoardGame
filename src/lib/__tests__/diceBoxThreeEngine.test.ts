@@ -227,14 +227,14 @@ describe('DiceBoxThreeEngine', () => {
         expect(box.strength).toBe(0.92);
         expect(Math.abs(vector.pos.x)).toBeLessThanOrEqual(130);
         expect(Math.abs(vector.pos.y)).toBeLessThanOrEqual(81);
-        expect(vector.pos.z).toBeGreaterThanOrEqual(11);
-        expect(vector.pos.z).toBeLessThanOrEqual(20);
-        expect(vector.velocity.z).toBeGreaterThanOrEqual(-3.1);
-        expect(vector.velocity.z).toBeLessThanOrEqual(-2.2);
+        expect(vector.pos.z).toBeGreaterThanOrEqual(7);
+        expect(vector.pos.z).toBeLessThanOrEqual(13);
+        expect(vector.velocity.z).toBeGreaterThanOrEqual(-2.2);
+        expect(vector.velocity.z).toBeLessThanOrEqual(-1.5);
         expect(vector.velocity.x * vector.pos.x).toBeLessThanOrEqual(0);
         expect(vector.velocity.y * vector.pos.y).toBeLessThanOrEqual(0);
-        expect(Math.abs(vector.angle.x)).toBeLessThanOrEqual(6.5);
-        expect(Math.abs(vector.angle.y)).toBeLessThanOrEqual(6.5);
+        expect(Math.abs(vector.angle.x)).toBeLessThanOrEqual(5);
+        expect(Math.abs(vector.angle.y)).toBeLessThanOrEqual(5);
         expect(box.animateThrow).not.toHaveBeenCalled();
         expect(box.swapDiceFace).toHaveBeenCalledWith(die, 6);
         expect(box.onRollComplete).toHaveBeenCalledWith({ total: 6 });
@@ -457,7 +457,17 @@ describe('DiceBoxThreeEngine', () => {
         };
         const box = {
             diceList: [die],
-            renderer: { render: vi.fn(), clear: vi.fn(), domElement: null },
+            renderer: {
+                render: vi.fn(),
+                clear: vi.fn(),
+                domElement: {
+                    clientWidth: 240,
+                    clientHeight: 160,
+                    width: 240,
+                    height: 160,
+                    dataset: {},
+                } as HTMLCanvasElement,
+            },
             scene: { updateMatrixWorld: vi.fn() },
             camera: { updateProjectionMatrix: vi.fn(), updateMatrixWorld: vi.fn() },
         };
@@ -471,24 +481,70 @@ describe('DiceBoxThreeEngine', () => {
         engine.diceHighlights = [];
         engine.diceHighlightShells = new Map();
         engine.styleProfile = { baseScale: 64 };
+        const engineInternals = engine as unknown as {
+            getProjectedLayout: ReturnType<typeof vi.fn>;
+            translateDieByScreenDelta: ReturnType<typeof vi.fn>;
+            keepProjectedDieInsideCanvas: ReturnType<typeof vi.fn>;
+        };
+        engineInternals.getProjectedLayout = vi.fn(() => ({
+            id: 1,
+            x: 120,
+            y: 80,
+            width: 48,
+            height: 48,
+            visualWidth: 44,
+            visualHeight: 44,
+            minX: 98,
+            maxX: 142,
+            minY: 58,
+            maxY: 102,
+            rotateX: 0,
+            rotateY: 0,
+            rotateZ: 0,
+        }));
+        engineInternals.translateDieByScreenDelta = vi.fn((
+            targetDie: typeof die,
+            _layout: unknown,
+            dx: number,
+            dy: number,
+        ) => {
+            const nextPosition = {
+                x: targetDie.position.x + dx / 10,
+                y: targetDie.position.y + dy / 10,
+                z: targetDie.position.z,
+            };
+            targetDie.position.set(nextPosition.x, nextPosition.y, nextPosition.z);
+            targetDie.body.position.set(nextPosition.x, nextPosition.y, nextPosition.z);
+            return true;
+        });
+        engineInternals.keepProjectedDieInsideCanvas = vi.fn();
 
         try {
             const spin = (engine as unknown as {
                 playContainedRerollSpin: (indices: number[], durationMs?: number) => Promise<void>;
             }).playContainedRerollSpin([0], 300);
+            let resolved = false;
+            void spin.then(() => {
+                resolved = true;
+            });
 
             animationFrames.shift()?.(1000);
             animationFrames.shift()?.(1150);
 
+            await Promise.resolve();
+            expect(resolved).toBe(false);
             expect(Math.abs(die.body.quaternion.x) + Math.abs(die.body.quaternion.y)).toBeGreaterThan(0.01);
             expect(Math.abs(die.quaternion.x) + Math.abs(die.quaternion.y)).toBeGreaterThan(0.01);
             expect(Math.hypot(die.body.position.x - 1, die.body.position.y - 2)).toBeGreaterThan(1);
-            expect(die.body.position.z - 3).toBeLessThanOrEqual(11.25);
+            expect(die.body.position.z - 3).toBeLessThanOrEqual(5.25);
+            expect(engineInternals.translateDieByScreenDelta).toHaveBeenCalled();
+            expect(engineInternals.keepProjectedDieInsideCanvas).toHaveBeenCalled();
 
-            for (let frame = 0; frame < 24; frame += 1) {
+            for (let frame = 0; frame < 32; frame += 1) {
                 animationFrames.shift()?.(1300 + frame * 33);
             }
             await spin;
+            expect(resolved).toBe(true);
 
             expect(die.body.quaternion.x).toBeCloseTo(0, 5);
             expect(die.body.quaternion.y).toBeCloseTo(0, 5);

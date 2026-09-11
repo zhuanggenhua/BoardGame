@@ -18,10 +18,19 @@ import type {
   RandomFn,
 } from '../../../engine/types';
 import { TutorialProvider } from '../../../contexts/TutorialContext';
-import { GameModeProvider } from '../../../contexts/GameModeContext';
+import { GameModeProvider, type GameMode } from '../../../contexts/GameModeContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import Board from '../Board';
 import { resolveBetrayalRerollTargetBoxSize } from '../recentRollPresentation';
+import {
+    BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
+    BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE,
+    BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE,
+    BETRAYAL_REROLL_TARGET_HIT_PADDING,
+    BETRAYAL_REROLL_TARGET_OUTLINE_SCALE,
+    getBetrayalRerollTargetHitSize,
+    getBetrayalRerollTargetOutlineSize,
+} from '../houseDicePresentation';
 import { canUseRabbitFootForRecentRoll } from '../possessionActionReadModel';
 import {
   resolvePendingEventRollResolutionRequiredPlayerIds,
@@ -180,6 +189,43 @@ describe('Betrayal dice reroll hit targets', () => {
 
         expect(size).toBeCloseTo(31.98, 2);
         expect(transparentHitBoxPadding).toBe(0);
+    });
+
+    it('兔脚选骰描边贴合完整骰体投影，透明热区只负责点击容错', () => {
+        expect(BETRAYAL_HOUSE_DICE_STYLE_PROFILE.strength).toBeLessThanOrEqual(0.12);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE).toBeGreaterThan(1);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE).toBeLessThanOrEqual(1.04);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE).toBeGreaterThan(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE).toBeLessThanOrEqual(1.05);
+        expect(BETRAYAL_REROLL_TARGET_OUTLINE_SCALE).toBeGreaterThan(1);
+        expect(BETRAYAL_REROLL_TARGET_OUTLINE_SCALE).toBeLessThanOrEqual(1.08);
+        expect(BETRAYAL_REROLL_TARGET_HIT_PADDING).toBeGreaterThan(0);
+
+        const layout = {
+            id: 1,
+            x: 500,
+            y: 300,
+            width: 64,
+            height: 64,
+            visualWidth: 64,
+            visualHeight: 64,
+            minX: 468,
+            maxX: 532,
+            minY: 268,
+            maxY: 332,
+            rotateX: 0,
+            rotateY: 0,
+            rotateZ: 0,
+        };
+        const outline = getBetrayalRerollTargetOutlineSize(layout);
+        const hit = getBetrayalRerollTargetHitSize(layout);
+
+        expect(outline.width).toBeGreaterThan(layout.visualWidth);
+        expect(outline.height).toBeGreaterThan(layout.visualHeight);
+        expect(outline.width - layout.visualWidth).toBeLessThanOrEqual(10);
+        expect(outline.height - layout.visualHeight).toBeLessThanOrEqual(10);
+        expect(hit.width).toBeGreaterThanOrEqual(outline.width + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2);
+        expect(hit.height).toBeGreaterThanOrEqual(outline.height + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2);
     });
 });
 
@@ -715,12 +761,13 @@ function renderBoardTree(
     options?: {
         playerID?: string;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
+        mode?: GameMode;
     },
 ) {
     return (
         <ToastProvider>
             <TutorialProvider>
-                <GameModeProvider mode="local">
+                <GameModeProvider mode={options?.mode ?? 'local'}>
                     <Board
                         G={{
                             core,
@@ -743,12 +790,13 @@ function renderBoardWithDispatch(
     options?: {
         playerID?: string;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
+        mode?: GameMode;
     },
 ) {
     return render(
         <ToastProvider>
             <TutorialProvider>
-                <GameModeProvider mode="local">
+                <GameModeProvider mode={options?.mode ?? 'local'}>
                     <Board
                         G={{
                             core,
@@ -770,6 +818,7 @@ function renderBoard(
     options?: {
         playerID?: string;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
+        mode?: GameMode;
     },
 ) {
     return render(
@@ -1811,6 +1860,18 @@ describe('Betrayal Board foundation', () => {
         expect(abilitySummary).toHaveTextContent('基础版角色背景不改变规则');
         expect(abilitySummary).not.toHaveAttribute('title');
         expect(screen.queryByTestId('betrayal-character-ability-trigger')).not.toBeInTheDocument();
+    });
+
+    it('教程模式恢复到选角状态时只显示初始化 gate，不暴露角色选择页', () => {
+        renderBoard(createBetrayalCharacterSelectCore(['0', '1', '2']), {
+            playerID: '0',
+            matchData: defaultMatchData.slice(0, 3),
+            mode: 'tutorial',
+        });
+
+        expect(screen.getByTestId('loading-screen')).toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-character-select-screen')).not.toBeInTheDocument();
+        expect(screen.queryByText('选择探索者')).not.toBeInTheDocument();
     });
 
     it('发现牌特写背景遮罩必须覆盖全屏而不是中间竖条', () => {
@@ -6200,8 +6261,24 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-inventory-rope'));
         expect(screen.getByTestId('betrayal-selected-inventory-card-name')).toHaveTextContent('兔脚');
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute('data-reroll-target-count', '3');
+        expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute(
+            'data-reroll-visual-contract',
+            'threejs-shader-shell-plus-projected-edge-outline-plus-transparent-hitbox',
+        );
+        const firstTarget = screen.getByTestId('betrayal-house-dice-reroll-target-0');
+        const firstOutline = screen.getByTestId('betrayal-house-dice-reroll-target-outline-0');
+        expect(firstTarget).toHaveAttribute('data-reroll-target-visual-layer', 'projected-edge-outline-plus-transparent-hitbox');
+        expect(firstTarget).toHaveAttribute('data-reroll-target-outline-paint', 'projected-edge-outline');
+        expect(Number(firstTarget.getAttribute('data-reroll-target-outline-width'))).toBeLessThan(
+            Number(firstTarget.getAttribute('data-reroll-target-hit-width')),
+        );
+        expect(firstOutline).toHaveAttribute('data-reroll-target-outline-selected', 'false');
 
         fireEvent.click(screen.getByTestId('betrayal-house-dice-reroll-target-0'));
+        expect(screen.getByTestId('betrayal-house-dice-reroll-target-outline-0')).toHaveAttribute(
+            'data-reroll-target-outline-selected',
+            'true',
+        );
         expect(screen.getByTestId('betrayal-roll-modifier-confirm')).toHaveTextContent('确认使用兔脚');
         fireEvent.click(screen.getByTestId('betrayal-roll-modifier-confirm'));
 

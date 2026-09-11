@@ -279,17 +279,40 @@ export function DiceBoxPhysicsSource({
     React.useEffect(() => {
         let cancelled = false;
 
+        const debugLifecycle = (stage: string, details: Record<string, unknown> = {}) => {
+            if (typeof window === 'undefined' || !(window as { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__) {
+                return;
+            }
+            console.warn('[DEBUG-DICE-SOURCE]', stage, {
+                testId,
+                canvasTestId,
+                diceLength: diceLengthRef.current,
+                motionType,
+                ...details,
+            });
+        };
+
         const init = async () => {
             const container = containerRef.current;
-            if (!container || engineRef.current || !containerSizeReady) return;
+            if (!container || engineRef.current || !containerSizeReady) {
+                debugLifecycle('init-skipped', {
+                    hasContainer: Boolean(container),
+                    hasEngine: Boolean(engineRef.current),
+                    containerSizeReady,
+                });
+                return;
+            }
             try {
+                debugLifecycle('init-start');
                 const engine = await DiceBoxThreeEngine.create(container, {
                     styleProfile,
                     rendererMode,
                     canvasTestId,
                 });
+                debugLifecycle('create-resolved', { cancelled });
                 if (cancelled) {
                     engine.destroy();
+                    debugLifecycle('create-destroyed-after-cancel');
                     return;
                 }
                 engineRef.current = engine;
@@ -301,7 +324,11 @@ export function DiceBoxPhysicsSource({
                 });
                 setEngineReady(true);
                 setEngineVersion((count) => count + 1);
+                debugLifecycle('engine-ready');
             } catch (error) {
+                debugLifecycle('create-error', {
+                    message: error instanceof Error ? error.message : String(error),
+                });
                 if (cancelled) return;
                 failEngine(error);
             }
@@ -311,6 +338,9 @@ export function DiceBoxPhysicsSource({
 
         return () => {
             cancelled = true;
+            debugLifecycle('cleanup', {
+                hadEngine: Boolean(engineRef.current),
+            });
             activeMotionRef.current = null;
             engineRef.current?.destroy();
             engineRef.current = null;

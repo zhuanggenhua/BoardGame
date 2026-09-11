@@ -1,5 +1,5 @@
 import { chromium } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const BASE_URL = process.env.BG_REPRO_URL ?? "http://127.0.0.1:4274";
@@ -7,6 +7,21 @@ const TARGET_PATH = "/play/betrayal/tutorial/basic-setup-and-turn";
 const TARGET_URL = `${BASE_URL}${TARGET_PATH}`;
 const HEADLESS = process.env.BG_REPRO_HEADLESS !== "0";
 const SKIP_IMAGE_GATE = process.env.BG_REPRO_SKIP_IMAGE_GATE === "1";
+const DICE_SETTLE_TIMEOUT_MS = Number(process.env.BG_REPRO_DICE_SETTLE_TIMEOUT_MS ?? 120000);
+const DEFAULT_SCENARIOS = [
+  "direct-entry",
+  "stale-character-select",
+  "rabbit-confirm",
+  "rabbit-immediate-confirm",
+  "rabbit-confirm-after-reload",
+];
+const SCENARIO_FILTER = new Set(
+  (process.env.BG_REPRO_SCENARIOS ?? DEFAULT_SCENARIOS.join(","))
+    .split(",")
+    .map((scenario) => scenario.trim())
+    .filter(Boolean),
+);
+const REAL_SNAPSHOT_EXPORT = process.env.BG_REPRO_STORAGE_EXPORT;
 const OUT_DIR = join(
   process.cwd(),
   "artifacts",
@@ -16,6 +31,13 @@ const OUT_DIR = join(
 );
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function shouldRunScenario(name) {
+  if (name === "real-snapshot" && !REAL_SNAPSHOT_EXPORT && SCENARIO_FILTER.has("all")) {
+    return false;
+  }
+  return SCENARIO_FILTER.has("all") || SCENARIO_FILTER.has(name);
+}
 
 function ensureOutDir() {
   mkdirSync(OUT_DIR, { recursive: true });
@@ -58,7 +80,10 @@ async function attachDiagnostics(page, label) {
 async function gotoTutorial(page, { clearStorage = false } = {}) {
   // Each scenario uses a fresh browser context. Avoid loading the lobby root only
   // to clear storage; the lobby warms unrelated assets and can mask tutorial bugs.
-  await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
+  await page.goto(TARGET_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: 90000,
+  });
   if (clearStorage) {
     await page.evaluate(() => {
       localStorage.clear();
@@ -66,7 +91,10 @@ async function gotoTutorial(page, { clearStorage = false } = {}) {
       localStorage.setItem("i18nextLng", "zh-CN");
       localStorage.setItem("boardgame:audio-muted", "true");
     });
-    await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(TARGET_URL, {
+      waitUntil: "domcontentloaded",
+      timeout: 90000,
+    });
   }
 }
 
@@ -77,6 +105,7 @@ async function waitForBoardOrSelection(page, timeout = 45000) {
         document.querySelector('[data-testid="betrayal-board"]') ||
           document.querySelector('[data-testid="betrayal-character-select-screen"]'),
       ),
+    undefined,
     { timeout },
   );
 }
@@ -192,6 +221,13 @@ async function snapshot(page) {
         key,
         valueStart: localStorage.getItem(key)?.slice(0, 500) ?? null,
       }));
+    const fullStorage = Object.keys(localStorage)
+      .filter((key) => key.includes("tutorial") || key.includes("local_match_snapshot"))
+      .sort()
+      .map((key) => ({
+        key,
+        value: localStorage.getItem(key) ?? null,
+      }));
 
     return {
       href: window.location.href,
@@ -253,13 +289,186 @@ async function snapshot(page) {
             disabled: confirmButton.disabled === true,
             confirmed: confirmButton.getAttribute("data-event-roll-confirmed-count"),
             required: confirmButton.getAttribute("data-event-roll-required-count"),
+            eventRollReadable: confirmButton.getAttribute("data-event-roll-readable"),
             rect: rect(confirmButton),
           }
         : null,
       bodyText: document.body.textContent?.replace(/\s+/g, " ").trim().slice(0, 1000) ?? "",
       storage,
+      fullStorage,
     };
   });
+}
+
+async function readDiceVisualState(page) {
+  return page.evaluate(() => {
+    const rect = (element) => {
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        x: Math.round(box.x),
+        y: Math.round(box.y),
+        width: Math.round(box.width),
+        height: Math.round(box.height),
+      };
+    };
+    const datasetOf = (element) => {
+      if (!element) return null;
+      return Object.fromEntries(Object.entries(element.dataset ?? {}).sort());
+    };
+    const source = document.querySelector('[data-testid="betrayal-house-dice-physics-source"]');
+    const canvas =
+      document.querySelector('canvas[data-testid^="betrayal-house-dice-box-canvas-"]') ||
+      document.querySelector('[data-dice-physics-source="dice-box-threejs"][data-testid^="betrayal-house-dice-box-canvas-"]');
+    const canvasTestId = canvas?.getAttribute("data-testid") ?? null;
+    const debugSnapshot = canvasTestId
+      ? window.__diceBoxThreeDebug?.[canvasTestId]?.() ?? null
+      : null;
+    const rerollGroup = document.querySelector('[data-testid="betrayal-rabbit-foot-dice"]');
+    const continueButton = document.querySelector('[data-testid="betrayal-discovery-continue"]');
+    const targets = [...document.querySelectorAll('[data-testid^="betrayal-house-dice-reroll-target-"]')]
+      .filter((target) => target.getAttribute("data-reroll-target-shape") === "die-face")
+      .map((target) => {
+        const testId = target.getAttribute("data-testid");
+        const outline = testId
+          ? document.querySelector(`[data-testid="${testId.replace("betrayal-house-dice-reroll-target-", "betrayal-house-dice-reroll-target-outline-")}"]`)
+          : null;
+        const outlineStyle = outline ? getComputedStyle(outline) : null;
+        return {
+          testId,
+          selected: target.getAttribute("data-reroll-target-selected"),
+          hitWidth: target.getAttribute("data-reroll-target-hit-width"),
+          hitHeight: target.getAttribute("data-reroll-target-hit-height"),
+          visualWidth: target.getAttribute("data-reroll-target-visual-width"),
+          visualHeight: target.getAttribute("data-reroll-target-visual-height"),
+          projectedWidth: target.getAttribute("data-reroll-target-projected-width"),
+          projectedHeight: target.getAttribute("data-reroll-target-projected-height"),
+          outlineWidth: target.getAttribute("data-reroll-target-outline-width"),
+          outlineHeight: target.getAttribute("data-reroll-target-outline-height"),
+          outlineGap: target.getAttribute("data-reroll-target-outline-gap"),
+          outlinePaint: target.getAttribute("data-reroll-target-outline-paint"),
+          visualLayer: target.getAttribute("data-reroll-target-visual-layer"),
+          rect: rect(target),
+          outlineRect: rect(outline),
+          outlineBorderColor: outlineStyle?.borderTopColor ?? null,
+          outlineBoxShadow: outlineStyle?.boxShadow ?? null,
+          outlineSelected: outline?.getAttribute("data-reroll-target-outline-selected") ?? null,
+        };
+      });
+    return {
+      source: datasetOf(source),
+      canvas: datasetOf(canvas),
+      debugSnapshot,
+      continueButton: continueButton
+        ? {
+            text: continueButton.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+            disabled: continueButton.hasAttribute('disabled'),
+            eventRollReadable: continueButton.getAttribute('data-event-roll-readable'),
+            rect: rect(continueButton),
+          }
+        : null,
+      rerollGroup: datasetOf(rerollGroup),
+      targets,
+    };
+  });
+}
+
+async function captureDiceFrame(page, fileName, settleProbeTimeout = 1200) {
+  await page
+    .waitForFunction(
+      () =>
+        document
+          .querySelector('[data-testid="betrayal-house-dice-physics-source"]')
+          ?.getAttribute("data-dice-settled") === "false",
+      undefined,
+      { timeout: settleProbeTimeout },
+    )
+    .catch(() => {});
+  await sleep(180);
+  const shot = join(OUT_DIR, fileName);
+  await page.screenshot({ path: shot, fullPage: true });
+  return {
+    screenshot: shot,
+    state: await readDiceVisualState(page),
+  };
+}
+
+async function waitForVisibleDiceSettled(page, diagnostics, label) {
+  try {
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll('[data-testid="betrayal-house-dice-physics-source"]')]
+          .some((node) => {
+            if (node.getAttribute("data-dice-settled") === "true") {
+              return true;
+            }
+            return [...node.querySelectorAll('canvas[data-testid^="betrayal-house-dice-box-canvas-"]')]
+              .some((canvas) => canvas.getAttribute("data-dice-visual-settled") === "true");
+          }),
+      undefined,
+      { timeout: DICE_SETTLE_TIMEOUT_MS },
+    );
+  } catch (error) {
+    const failureShot = join(OUT_DIR, `${label}-dice-settle-timeout.png`);
+    await page.screenshot({ path: failureShot, fullPage: true });
+    diagnostics.write({
+      label,
+      snapshot: await snapshot(page),
+      diceSources: await page.evaluate(() =>
+        [...document.querySelectorAll('[data-testid="betrayal-house-dice-physics-source"]')].map((node) => ({
+          settled: node.getAttribute("data-dice-settled"),
+          visualSettled: node.getAttribute("data-dice-visual-settled"),
+          motion: node.getAttribute("data-dice-motion-type"),
+          motionId: node.getAttribute("data-dice-motion-id"),
+          engineReady: node.getAttribute("data-dice-engine-ready"),
+          skinsReady: node.getAttribute("data-dice-skins-ready"),
+          stateCount: node.getAttribute("data-dice-physics-state-count"),
+          sourceRect: (() => {
+            const rect = node.getBoundingClientRect();
+            return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+          })(),
+          canvas: (() => {
+            const canvas = node.querySelector('canvas[data-testid^="betrayal-house-dice-box-canvas-"]');
+            if (!canvas) return null;
+            const testId = canvas.getAttribute('data-testid');
+            return {
+              testId,
+              dataset: { ...canvas.dataset },
+              debugSnapshot: testId ? window.__diceBoxThreeDebug?.[testId]?.() ?? null : null,
+            };
+          })(),
+        })),
+      ),
+      screenshot: failureShot,
+      waitFailure: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+}
+
+async function waitForEventRollConfirmReady(page, label, timeout = 45000) {
+  try {
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector('[data-testid="betrayal-discovery-continue"]');
+        return Boolean(
+          button &&
+            !button.hasAttribute('disabled') &&
+            button.getAttribute('data-event-roll-readable') === 'true',
+        );
+      },
+      undefined,
+      { timeout },
+    );
+  } catch (error) {
+    const failureShot = join(OUT_DIR, `${label}-confirm-not-ready.png`);
+    await page.screenshot({ path: failureShot, fullPage: true });
+    throw new Error(
+      `${label}: event roll confirm button did not become readable/enabled before timeout; screenshot=${failureShot}; ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
 }
 
 async function runDirectEntry(browser) {
@@ -331,7 +540,7 @@ async function runStaleCharacterSelectRestore(browser) {
     };
     localStorage.setItem(key, JSON.stringify(payload));
   });
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 90000 });
   await waitForDirectTutorialEntry(page, 90000);
   await sleep(500);
   const shot = join(OUT_DIR, "stale-character-select-restore.png");
@@ -340,6 +549,87 @@ async function runStaleCharacterSelectRestore(browser) {
   diagnostics.write({ snapshot: snap, screenshot: shot });
   await context.close();
   return { ...snap, screenshot: shot };
+}
+
+async function runRealSnapshotRestore(browser) {
+  if (!REAL_SNAPSHOT_EXPORT) {
+    throw new Error("BG_REPRO_STORAGE_EXPORT is required for the real-snapshot scenario");
+  }
+  const rawSnapshot = readFileSync(REAL_SNAPSHOT_EXPORT, "utf8");
+  const snapshotPayload = JSON.parse(rawSnapshot);
+  if (!snapshotPayload?.gameId || !snapshotPayload?.seed) {
+    throw new Error(`Invalid local match snapshot export: ${REAL_SNAPSHOT_EXPORT}`);
+  }
+  const storageKey = `local_match_snapshot_v1:${snapshotPayload.gameId}:${snapshotPayload.seed}`;
+  const context = await browser.newContext({
+    locale: "zh-CN",
+    viewport: { width: 1366, height: 768 },
+  });
+  await context.addInitScript((skipImageGate) => {
+    window.__E2E_TEST_MODE__ = true;
+    if (skipImageGate) {
+      window.__E2E_SKIP_IMAGE_GATE__ = true;
+    }
+    window.localStorage.setItem("i18nextLng", "zh-CN");
+    window.localStorage.setItem("boardgame:audio-muted", "true");
+  }, SKIP_IMAGE_GATE);
+  const page = await context.newPage();
+  const diagnostics = await attachDiagnostics(page, "real-snapshot-restore");
+  await page.goto(TARGET_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: 90000,
+  });
+  await page.evaluate(({ key, value }) => {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem("i18nextLng", "zh-CN");
+    localStorage.setItem("boardgame:audio-muted", "true");
+    localStorage.setItem(key, value);
+  }, { key: storageKey, value: rawSnapshot });
+  await page.goto(TARGET_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: 90000,
+  });
+
+  const resumeButton = page.getByRole("button", { name: /从上次继续/ });
+  const hasResumePrompt = await resumeButton
+    .waitFor({ state: "visible", timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+  if (hasResumePrompt) {
+    await resumeButton.click();
+  }
+
+  await waitForBoardOrSelection(page, 90000);
+  await sleep(1000);
+  const beforeShot = join(OUT_DIR, "real-snapshot-before-confirm.png");
+  await page.screenshot({ path: beforeShot, fullPage: true });
+  const before = await snapshot(page);
+  if (before.continueButton && !before.continueButton.disabled) {
+    await page.locator('[data-testid="betrayal-discovery-continue"]').click();
+    await sleep(1200);
+  }
+  const afterShot = join(OUT_DIR, "real-snapshot-after-confirm.png");
+  await page.screenshot({ path: afterShot, fullPage: true });
+  const after = await snapshot(page);
+  diagnostics.write({
+    storageKey,
+    savedAt: snapshotPayload.savedAt ?? null,
+    hasResumePrompt,
+    before,
+    after,
+    screenshots: { before: beforeShot, after: afterShot },
+  });
+  await context.close();
+  return {
+    storageKey,
+    savedAt: snapshotPayload.savedAt ?? null,
+    hasResumePrompt,
+    before,
+    after,
+    screenshots: { before: beforeShot, after: afterShot },
+    logs: diagnostics.logs,
+  };
 }
 
 async function runRabbitConfirm(browser) {
@@ -387,8 +677,36 @@ async function runRabbitConfirm(browser) {
   await waitForStep(page, "discovery-card-type");
   await clickNextUntil(page, "roll-event", 3);
   await page.locator('[data-testid="betrayal-event-roll-start"]').click();
+  const firstRollMotion = await captureDiceFrame(page, "first-roll-motion.png");
   await waitForStep(page, "view-book");
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-confirm-view-book");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="betrayal-inventory-omen-book"]')
+        ?.getAttribute("data-event-roll-book-available") === "true",
+    undefined,
+    { timeout: 45000 },
+  );
+  await page.locator('[data-testid="betrayal-inventory-omen-book-magnify"]').click();
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay"]').waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay-close"]').click();
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay"]').waitFor({
+    state: "hidden",
+    timeout: 10000,
+  });
   await clickNextUntil(page, "use-book", 3);
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="betrayal-inventory-omen-book"]')
+        ?.getAttribute("data-event-roll-book-available") === "true",
+    undefined,
+    { timeout: 45000 },
+  );
   await page.evaluate(() => window.__BG_TEST_HARNESS__?.random?.setQueue?.([0.99, 0, 0, 0, 0, 0]));
   await page.locator('[data-testid="betrayal-inventory-omen-book"]').click();
   await waitForStep(page, "use-rabbit-foot", 45000);
@@ -413,15 +731,23 @@ async function runRabbitConfirm(browser) {
     selectedDieTestId,
     { timeout: 5000 },
   );
+  const selectedHighlight = {
+    screenshot: join(OUT_DIR, "rabbit-selection-highlight.png"),
+    state: await readDiceVisualState(page),
+  };
+  await page.screenshot({ path: selectedHighlight.screenshot, fullPage: true });
   await page.locator('[data-testid="betrayal-roll-modifier-confirm"]').waitFor({
     state: "visible",
     timeout: 10000,
   });
   await page.locator('[data-testid="betrayal-roll-modifier-confirm"]').click();
+  const rerollMotion = await captureDiceFrame(page, "rabbit-reroll-motion.png");
   await waitForStep(page, "rabbit-foot-result", 45000);
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-confirm-after-reroll");
   await page
     .locator('[data-testid="betrayal-discovery-continue"]')
     .waitFor({ state: "visible", timeout: 45000 });
+  await waitForEventRollConfirmReady(page, "rabbit-confirm");
   const beforeShot = join(OUT_DIR, "rabbit-before-confirm.png");
   await page.screenshot({ path: beforeShot, fullPage: true });
   const before = await snapshot(page);
@@ -430,10 +756,148 @@ async function runRabbitConfirm(browser) {
   const afterShot = join(OUT_DIR, "rabbit-after-confirm.png");
   await page.screenshot({ path: afterShot, fullPage: true });
   const after = await snapshot(page);
+  diagnostics.write({
+    before,
+    after,
+    visual: {
+      firstRollMotion,
+      selectedHighlight,
+      rerollMotion,
+    },
+    screenshots: { before: beforeShot, after: afterShot },
+  });
+  await context.close();
+  return {
+    before,
+    after,
+    visual: {
+      firstRollMotion,
+      selectedHighlight,
+      rerollMotion,
+    },
+    screenshots: { before: beforeShot, after: afterShot },
+    logs: diagnostics.logs,
+  };
+}
+
+async function runRabbitImmediateConfirm(browser) {
+  const context = await browser.newContext({
+    locale: "zh-CN",
+    viewport: { width: 1366, height: 768 },
+  });
+  await context.addInitScript((skipImageGate) => {
+    window.__E2E_TEST_MODE__ = true;
+    if (skipImageGate) {
+      window.__E2E_SKIP_IMAGE_GATE__ = true;
+    }
+    window.localStorage.setItem("i18nextLng", "zh-CN");
+    window.localStorage.setItem("boardgame:audio-muted", "true");
+  }, SKIP_IMAGE_GATE);
+  const page = await context.newPage();
+  const diagnostics = await attachDiagnostics(page, "rabbit-immediate-confirm");
+  await gotoTutorial(page, { clearStorage: true });
+  await waitForBoardOrSelection(page);
+  await waitForStep(page, "objective-and-turn", 45000);
+  await clickNextUntil(page, "open-move-targets", 10);
+  await page.locator('[data-testid="betrayal-action-move"]').click();
+  await waitForStep(page, "move-to-hallway");
+  await page.locator('[data-testid="betrayal-room-hallway"]').click();
+  await waitForStep(page, "explore-upper");
+  await page.locator('[data-testid="betrayal-action-explore"]').click();
+  await page.locator('[data-testid^="betrayal-room-explore-target-"]').first().waitFor({
+    state: "visible",
+    timeout: 15000,
+  });
+  const targetRoomTestId = await page
+    .locator('[data-testid^="betrayal-room-explore-target-"]')
+    .first()
+    .getAttribute("data-testid");
+  const roomId = targetRoomTestId?.replace("betrayal-room-explore-target-", "");
+  await page.locator(`[data-testid="betrayal-room-${roomId}"]`).click();
+  await waitForStep(page, "rotate-room-placement");
+  await page.locator('[data-testid="betrayal-room-placement-rotate-right"]').click();
+  await waitForStep(page, "confirm-room-placement");
+  const adjustment = page.locator('[data-testid="betrayal-room-tile-adjustment-option"]').first();
+  if (await adjustment.isVisible().catch(() => false)) {
+    await adjustment.click();
+  }
+  await page.locator('[data-testid="betrayal-room-placement-confirm"]').click();
+  await waitForStep(page, "discovery-card-type");
+  await clickNextUntil(page, "roll-event", 3);
+  await page.locator('[data-testid="betrayal-event-roll-start"]').click();
+  await waitForStep(page, "view-book");
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-immediate-view-book");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="betrayal-inventory-omen-book"]')
+        ?.getAttribute("data-event-roll-book-available") === "true",
+    undefined,
+    { timeout: 45000 },
+  );
+  await page.locator('[data-testid="betrayal-inventory-omen-book-magnify"]').click();
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay"]').waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay-close"]').click();
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay"]').waitFor({
+    state: "hidden",
+    timeout: 10000,
+  });
+  await clickNextUntil(page, "use-book", 3);
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="betrayal-inventory-omen-book"]')
+        ?.getAttribute("data-event-roll-book-available") === "true",
+    undefined,
+    { timeout: 45000 },
+  );
+  await page.evaluate(() => window.__BG_TEST_HARNESS__?.random?.setQueue?.([0.99, 0, 0, 0, 0, 0]));
+  await page.locator('[data-testid="betrayal-inventory-omen-book"]').click();
+  await waitForStep(page, "use-rabbit-foot", 45000);
+  await page.locator('[data-testid="betrayal-inventory-rope"]').click();
+  await page.locator('[data-testid="betrayal-rabbit-foot-dice"]').waitFor({
+    state: "visible",
+    timeout: 45000,
+  });
+  const firstRerollTarget = page.locator('[data-testid^="betrayal-house-dice-reroll-target-"]').first();
+  await firstRerollTarget.waitFor({
+    state: "visible",
+    timeout: 45000,
+  });
+  await firstRerollTarget.click();
+  await page.locator('[data-testid="betrayal-roll-modifier-confirm"]').waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
+  await page.locator('[data-testid="betrayal-roll-modifier-confirm"]').click();
+  const immediateButton = page.locator('[data-testid="betrayal-discovery-continue"]');
+  await immediateButton.waitFor({ state: "visible", timeout: 45000 });
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-immediate-after-reroll");
+  await waitForEventRollConfirmReady(page, "rabbit-immediate-confirm");
+  const beforeShot = join(OUT_DIR, "rabbit-immediate-before-confirm.png");
+  await page.screenshot({ path: beforeShot, fullPage: true });
+  const before = await snapshot(page);
+  await immediateButton.click();
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelector('[data-tutorial-step="finish"]') ||
+        document.querySelector('[data-testid="betrayal-damage-allocation-panel"]'),
+      undefined,
+      { timeout: 45000 },
+    )
+    .catch(() => {});
+  const afterShot = join(OUT_DIR, "rabbit-immediate-after-confirm.png");
+  await page.screenshot({ path: afterShot, fullPage: true });
+  const after = await snapshot(page);
   diagnostics.write({ before, after, screenshots: { before: beforeShot, after: afterShot } });
   await context.close();
   return { before, after, screenshots: { before: beforeShot, after: afterShot }, logs: diagnostics.logs };
 }
+
 
 async function runRabbitConfirmAfterReload(browser) {
   const context = await browser.newContext({
@@ -481,7 +945,34 @@ async function runRabbitConfirmAfterReload(browser) {
   await clickNextUntil(page, "roll-event", 3);
   await page.locator('[data-testid="betrayal-event-roll-start"]').click();
   await waitForStep(page, "view-book");
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-reload-view-book");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="betrayal-inventory-omen-book"]')
+        ?.getAttribute("data-event-roll-book-available") === "true",
+    undefined,
+    { timeout: 45000 },
+  );
+  await page.locator('[data-testid="betrayal-inventory-omen-book-magnify"]').click();
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay"]').waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay-close"]').click();
+  await page.locator('[data-testid="betrayal-inventory-preview-overlay"]').waitFor({
+    state: "hidden",
+    timeout: 10000,
+  });
   await clickNextUntil(page, "use-book", 3);
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="betrayal-inventory-omen-book"]')
+        ?.getAttribute("data-event-roll-book-available") === "true",
+    undefined,
+    { timeout: 45000 },
+  );
   await page.evaluate(() => window.__BG_TEST_HARNESS__?.random?.setQueue?.([0.99, 0, 0, 0, 0, 0]));
   await page.locator('[data-testid="betrayal-inventory-omen-book"]').click();
   await waitForStep(page, "use-rabbit-foot", 45000);
@@ -502,23 +993,45 @@ async function runRabbitConfirmAfterReload(browser) {
   });
   await page.locator('[data-testid="betrayal-roll-modifier-confirm"]').click();
   await waitForStep(page, "rabbit-foot-result", 45000);
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-immediate-after-reroll");
   await page
     .locator('[data-testid="betrayal-discovery-continue"]')
     .waitFor({ state: "visible", timeout: 45000 });
+  await waitForEventRollConfirmReady(page, "rabbit-reload-before-reload");
 
   const beforeReloadShot = join(OUT_DIR, "rabbit-before-reload.png");
   await page.screenshot({ path: beforeReloadShot, fullPage: true });
   const beforeReload = await snapshot(page);
 
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 90000 });
   const resumeButton = page.getByRole("button", { name: /从上次继续/ });
-  if (await resumeButton.isVisible({ timeout: 15000 }).catch(() => false)) {
+  if (await resumeButton.waitFor({ state: "visible", timeout: 15000 }).then(() => true).catch(() => false)) {
     await resumeButton.click();
   }
-  await waitForStep(page, "rabbit-foot-result", 90000);
+  try {
+    await waitForStep(page, "rabbit-foot-result", 90000);
+  } catch (error) {
+    const afterReloadFailureShot = join(OUT_DIR, "rabbit-after-reload-failure.png");
+    await page.screenshot({ path: afterReloadFailureShot, fullPage: true });
+    const afterReloadFailure = await snapshot(page);
+    diagnostics.write({
+      beforeReload,
+      afterReloadFailure,
+      screenshots: {
+        beforeReload: beforeReloadShot,
+        afterReloadFailure: afterReloadFailureShot,
+      },
+      waitFailure: {
+        message: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
   await page
     .locator('[data-testid="betrayal-discovery-continue"]')
     .waitFor({ state: "visible", timeout: 45000 });
+  await waitForVisibleDiceSettled(page, diagnostics, "rabbit-after-reload-reroll");
+  await waitForEventRollConfirmReady(page, "rabbit-after-reload-confirm");
   const beforeConfirmShot = join(OUT_DIR, "rabbit-after-reload-before-confirm.png");
   await page.screenshot({ path: beforeConfirmShot, fullPage: true });
   const beforeConfirm = await snapshot(page);
@@ -557,70 +1070,174 @@ async function main() {
   const browser = await chromium.launch({ headless: HEADLESS });
   const result = { outDir: OUT_DIR, targetUrl: TARGET_URL, skipImageGate: SKIP_IMAGE_GATE };
   try {
-    result.directEntry = await runDirectEntry(browser);
-    result.staleCharacterSelectRestore = await runStaleCharacterSelectRestore(browser);
-    result.rabbitConfirm = await runRabbitConfirm(browser);
-    result.rabbitConfirmAfterReload = await runRabbitConfirmAfterReload(browser);
+    if (shouldRunScenario("direct-entry")) {
+      result.directEntry = await runDirectEntry(browser);
+    }
+    if (shouldRunScenario("stale-character-select")) {
+      result.staleCharacterSelectRestore = await runStaleCharacterSelectRestore(browser);
+    }
+    if (shouldRunScenario("real-snapshot")) {
+      result.realSnapshotRestore = await runRealSnapshotRestore(browser);
+    }
+    if (shouldRunScenario("rabbit-confirm")) {
+      result.rabbitConfirm = await runRabbitConfirm(browser);
+    }
+    if (shouldRunScenario("rabbit-immediate-confirm")) {
+      result.rabbitImmediateConfirm = await runRabbitImmediateConfirm(browser);
+    }
+    if (shouldRunScenario("rabbit-confirm-after-reload")) {
+      result.rabbitConfirmAfterReload = await runRabbitConfirmAfterReload(browser);
+    }
   } finally {
     await browser.close();
   }
   writeFileSync(join(OUT_DIR, "result.json"), JSON.stringify(result, null, 2));
 
   const failures = [];
-  if (result.directEntry.hasCharacterSelect) {
+  if (result.directEntry?.hasCharacterSelect) {
     failures.push("direct entry showed character selection");
   }
-  if (result.directEntry.hasLoadingScreen) {
+  if (result.directEntry?.hasLoadingScreen) {
     failures.push("direct entry stayed behind loading screen");
   }
-  if (!result.directEntry.hasTutorialOverlayCard || result.directEntry.activeStepDom !== "objective-and-turn") {
+  if (result.directEntry && (!result.directEntry.hasTutorialOverlayCard || result.directEntry.activeStepDom !== "objective-and-turn")) {
     failures.push("direct entry did not show an active tutorial overlay");
   }
-  if (result.staleCharacterSelectRestore.hasResumePrompt) {
+  if (result.staleCharacterSelectRestore?.hasResumePrompt) {
     failures.push("stale character-select snapshot still asked to continue");
   }
-  if (result.staleCharacterSelectRestore.hasCharacterSelect) {
+  if (result.staleCharacterSelectRestore?.hasCharacterSelect) {
     failures.push("stale character-select snapshot restored character selection");
   }
   if (
-    !result.staleCharacterSelectRestore.hasTutorialOverlayCard ||
+    result.staleCharacterSelectRestore &&
+    (!result.staleCharacterSelectRestore.hasTutorialOverlayCard ||
     result.staleCharacterSelectRestore.activeStepDom !== "objective-and-turn"
+    )
   ) {
     failures.push("stale character-select snapshot did not restart to tutorial board");
   }
-  const rabbitBefore = result.rabbitConfirm.before;
-  const rabbitAfter = result.rabbitConfirm.after;
-  const rejected = result.rabbitConfirm.logs.some((entry) =>
-    entry.text.includes("FINALIZE_EVENT_ROLL") && entry.text.includes("tutorial_command_blocked"),
-  );
-  if (rabbitBefore.activeStepDom !== "rabbit-foot-result") {
-    failures.push(`rabbit confirm started from ${rabbitBefore.activeStepDom}`);
+  if (result.realSnapshotRestore) {
+    const real = result.realSnapshotRestore;
+    const rejected = real.logs.some((entry) =>
+      entry.text.includes("FINALIZE_EVENT_ROLL") && entry.text.includes("tutorial_command_blocked"),
+    );
+    if (real.hasResumePrompt) {
+      failures.push("real legacy snapshot was still restorable");
+    }
+    if (real.before.activeStepDom !== "objective-and-turn") {
+      failures.push(`real legacy snapshot did not restart from the current tutorial; saw ${real.before.activeStepDom}`);
+    }
+    if (real.before.continueButton || rejected) {
+      failures.push("real legacy snapshot still exposed the stale event confirm path");
+    }
   }
-  if (!rabbitBefore.tutorial?.stepAllowedCommands?.includes("FINALIZE_EVENT_ROLL")) {
-    failures.push("rabbit-foot-result did not allow FINALIZE_EVENT_ROLL before click");
+  if (result.rabbitConfirm) {
+    const rabbitBefore = result.rabbitConfirm.before;
+    const rabbitAfter = result.rabbitConfirm.after;
+    const rejected = result.rabbitConfirm.logs.some((entry) =>
+      entry.text.includes("FINALIZE_EVENT_ROLL") && entry.text.includes("tutorial_command_blocked"),
+    );
+    if (rabbitBefore.activeStepDom !== "rabbit-foot-result") {
+      failures.push(`rabbit confirm started from ${rabbitBefore.activeStepDom}`);
+    }
+    if (!rabbitBefore.tutorial?.stepAllowedCommands?.includes("FINALIZE_EVENT_ROLL")) {
+      failures.push("rabbit-foot-result did not allow FINALIZE_EVENT_ROLL before click");
+    }
+    if (!rabbitBefore.continueButton || rabbitBefore.continueButton.disabled || rabbitBefore.continueButton.eventRollReadable !== "true") {
+      failures.push("rabbit confirm did not expose an enabled readable confirm button after dice settled");
+    }
+    if (rejected) {
+      failures.push("FINALIZE_EVENT_ROLL was rejected by tutorial_command_blocked");
+    }
+    if (rabbitAfter.activeStepDom !== "finish" || rabbitAfter.core?.pendingDamageAllocation?.playerId !== "0") {
+      failures.push("rabbit confirm did not advance to damage allocation");
+    }
+    const firstRollMotion = result.rabbitConfirm.visual.firstRollMotion.state.source;
+    if (firstRollMotion?.diceMotionType !== "roll" || firstRollMotion?.diceSettled !== "false") {
+      failures.push("first event roll did not expose a visible rolling process frame");
+    }
+    const selectedHighlight = result.rabbitConfirm.visual.selectedHighlight.state;
+    const selectedHighlightScale = Number(selectedHighlight.rerollGroup?.rerollHighlightSelectedScale ?? "0");
+    const candidateHighlightScale = Number(selectedHighlight.rerollGroup?.rerollHighlightCandidateScale ?? "0");
+    const selectedHighlightTarget = selectedHighlight.targets.find((target) => target.selected === "true");
+    const selectedHitWidth = Number(selectedHighlightTarget?.hitWidth ?? "0");
+    const selectedHitHeight = Number(selectedHighlightTarget?.hitHeight ?? "0");
+    const selectedProjectedWidth = Number(selectedHighlightTarget?.projectedWidth ?? "0");
+    const selectedProjectedHeight = Number(selectedHighlightTarget?.projectedHeight ?? "0");
+    const selectedOutlineWidth = Number(selectedHighlightTarget?.outlineWidth ?? "0");
+    const selectedOutlineHeight = Number(selectedHighlightTarget?.outlineHeight ?? "0");
+    if (
+      !selectedHighlightTarget ||
+      !(candidateHighlightScale > 1 && candidateHighlightScale <= 1.04) ||
+      !(selectedHighlightScale > candidateHighlightScale && selectedHighlightScale <= 1.05) ||
+      selectedHighlightTarget.outlinePaint !== "projected-edge-outline" ||
+      selectedHighlightTarget.visualLayer !== "projected-edge-outline-plus-transparent-hitbox" ||
+      selectedHighlightTarget.outlineSelected !== "true" ||
+      !(selectedOutlineWidth > selectedProjectedWidth && selectedOutlineWidth - selectedProjectedWidth <= 10) ||
+      !(selectedOutlineHeight > selectedProjectedHeight && selectedOutlineHeight - selectedProjectedHeight <= 10) ||
+      !(selectedHitWidth >= selectedOutlineWidth + 12) ||
+      !(selectedHitHeight >= selectedOutlineHeight + 12)
+    ) {
+      failures.push("rabbit-foot dice highlight was not projected-edge tight and visibly selected");
+    }
+    const rerollMotion = result.rabbitConfirm.visual.rerollMotion.state.source;
+    if (rerollMotion?.diceMotionType !== "reroll" || rerollMotion?.diceSettled !== "false") {
+      failures.push("rabbit-foot reroll did not expose a visible reroll process frame");
+    }
+    if (
+      result.rabbitConfirm.visual.rerollMotion.state.continueButton &&
+      result.rabbitConfirm.visual.rerollMotion.state.continueButton.disabled !== true
+    ) {
+      failures.push("rabbit-foot reroll exposed enabled confirm before dice settled");
+    }
+    if (result.rabbitConfirm.visual.rerollMotion.state.continueButton?.eventRollReadable === "true") {
+      failures.push("rabbit-foot reroll marked event result readable before dice settled");
+    }
   }
-  if (rejected) {
-    failures.push("FINALIZE_EVENT_ROLL was rejected by tutorial_command_blocked");
+  if (result.rabbitImmediateConfirm) {
+    const rabbitImmediateBefore = result.rabbitImmediateConfirm.before;
+    const rabbitImmediateAfter = result.rabbitImmediateConfirm.after;
+    const immediateRejected = result.rabbitImmediateConfirm.logs.some((entry) =>
+      entry.text.includes("FINALIZE_EVENT_ROLL") && entry.text.includes("tutorial_command_blocked"),
+    );
+    if (!rabbitImmediateBefore.continueButton || rabbitImmediateBefore.continueButton.disabled) {
+      failures.push("rabbit immediate confirm did not find an enabled confirm button");
+    }
+    if (rabbitImmediateBefore.continueButton?.eventRollReadable !== "true") {
+      failures.push("rabbit immediate confirm did not wait for readable dice result");
+    }
+    if (rabbitImmediateBefore.activeStepDom !== "rabbit-foot-result") {
+      failures.push(`rabbit immediate confirm button appeared on ${rabbitImmediateBefore.activeStepDom}`);
+    }
+    if (!rabbitImmediateBefore.tutorial?.stepAllowedCommands?.includes("FINALIZE_EVENT_ROLL")) {
+      failures.push("rabbit immediate confirm did not allow FINALIZE_EVENT_ROLL before click");
+    }
+    if (immediateRejected) {
+      failures.push("immediate FINALIZE_EVENT_ROLL was rejected by tutorial_command_blocked");
+    }
+    if (rabbitImmediateAfter.activeStepDom !== "finish" || rabbitImmediateAfter.core?.pendingDamageAllocation?.playerId !== "0") {
+      failures.push("rabbit immediate confirm did not advance to damage allocation");
+    }
   }
-  if (rabbitAfter.activeStepDom !== "finish" || rabbitAfter.core?.pendingDamageAllocation?.playerId !== "0") {
-    failures.push("rabbit confirm did not advance to damage allocation");
-  }
-  const rabbitReloadBefore = result.rabbitConfirmAfterReload.beforeConfirm;
-  const rabbitReloadAfter = result.rabbitConfirmAfterReload.afterConfirm;
-  const reloadRejected = result.rabbitConfirmAfterReload.logs.some((entry) =>
-    entry.text.includes("FINALIZE_EVENT_ROLL") && entry.text.includes("tutorial_command_blocked"),
-  );
-  if (rabbitReloadBefore.activeStepDom !== "rabbit-foot-result") {
-    failures.push(`rabbit confirm after reload started from ${rabbitReloadBefore.activeStepDom}`);
-  }
-  if (!rabbitReloadBefore.tutorial?.stepAllowedCommands?.includes("FINALIZE_EVENT_ROLL")) {
-    failures.push("rabbit-foot-result after reload did not allow FINALIZE_EVENT_ROLL before click");
-  }
-  if (reloadRejected) {
-    failures.push("FINALIZE_EVENT_ROLL after reload was rejected by tutorial_command_blocked");
-  }
-  if (rabbitReloadAfter.activeStepDom !== "finish" || rabbitReloadAfter.core?.pendingDamageAllocation?.playerId !== "0") {
-    failures.push("rabbit confirm after reload did not advance to damage allocation");
+  if (result.rabbitConfirmAfterReload) {
+    const rabbitReloadBefore = result.rabbitConfirmAfterReload.beforeConfirm;
+    const rabbitReloadAfter = result.rabbitConfirmAfterReload.afterConfirm;
+    const reloadRejected = result.rabbitConfirmAfterReload.logs.some((entry) =>
+      entry.text.includes("FINALIZE_EVENT_ROLL") && entry.text.includes("tutorial_command_blocked"),
+    );
+    if (rabbitReloadBefore.activeStepDom !== "rabbit-foot-result") {
+      failures.push(`rabbit confirm after reload started from ${rabbitReloadBefore.activeStepDom}`);
+    }
+    if (!rabbitReloadBefore.tutorial?.stepAllowedCommands?.includes("FINALIZE_EVENT_ROLL")) {
+      failures.push("rabbit-foot-result after reload did not allow FINALIZE_EVENT_ROLL before click");
+    }
+    if (reloadRejected) {
+      failures.push("FINALIZE_EVENT_ROLL after reload was rejected by tutorial_command_blocked");
+    }
+    if (rabbitReloadAfter.activeStepDom !== "finish" || rabbitReloadAfter.core?.pendingDamageAllocation?.playerId !== "0") {
+      failures.push("rabbit confirm after reload did not advance to damage allocation");
+    }
   }
 
   if (failures.length > 0) {

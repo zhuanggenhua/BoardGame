@@ -3165,7 +3165,7 @@ describe('MageWarsBoard mage ability status choices', () => {
 
 describe('MageWarsBoard spellbook planning UI', () => {
     it.each([
-        ['planning', 'actions.passPlanning'],
+        ['planning', 'actions.skipPlanning'],
         ['deployment', 'actions.passDeployment'],
         ['initiativeQuickcast', 'actions.passQuickcast'],
         ['creatureAction', 'actions.endAction'],
@@ -3184,6 +3184,21 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(mainAction.textContent).not.toBe('actions.endTurn');
         unmount();
     });
+
+    it.each(['reset', 'channel', 'upkeep'] as const)(
+        'does not expose a manual phase button during automatic %s',
+        (phase) => {
+            const { unmount } = renderBoardWithProviders(
+                <MageWarsBoard
+                    {...boardProps(undefined, '0', { phase })}
+                />,
+            );
+
+            expect(screen.queryByTestId('mage-wars-turn-end')).toBeNull();
+            expect(screen.queryByTestId('mage-wars-plan-spells')).toBeNull();
+            unmount();
+        },
+    );
 
     it('shows spellbook copy counts and lets one visible card select multiple owned copies', () => {
         const dispatch = vi.fn();
@@ -3208,7 +3223,7 @@ describe('MageWarsBoard spellbook planning UI', () => {
         const initialMainAction = screen.getByTestId('mage-wars-turn-end');
         expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(initialMainAction);
         expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
-        expect(initialMainAction.textContent).toBe('actions.passPlanning');
+        expect(initialMainAction.textContent).toBe('actions.skipPlanning');
         expect(screen.queryByTestId('mage-wars-plan-spells')).toBeNull();
         expect(screen.getByTestId('mage-wars-mage-hud-self').getAttribute('data-mage-wars-hud-density')).toBe('full');
         expect(screen.getByTestId('mage-wars-mage-hud-opponent').getAttribute('data-mage-wars-hud-density')).toBe('full');

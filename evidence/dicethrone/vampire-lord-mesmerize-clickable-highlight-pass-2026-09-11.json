@@ -1,0 +1,80 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "testRun": {
+    "command": "node scripts/infra/run-e2e-command.mjs isolated e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"催眠应通过玩家按钮投临时骰并选择对手骰重掷\"",
+    "result": "1 passed",
+    "finishedAtLocal": "2026-09-11 00:25:28 Asia/Shanghai"
+  },
+  "requirements": [
+    {
+      "requirement": "催眠按钮在合法时机必须出现可用高亮，并且真实点击命中按钮本体",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言“催眠重掷”按钮可见、启用、data-passive-action-usable=true、带 emerald 高亮 ring、带发光阴影、中心点命中按钮本体，且鼠标语义允许点击。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠按钮可用高亮-对手骰重掷前.jpg"
+      ]
+    },
+    {
+      "requirement": "点击催眠后必须真实消耗 1 个催眠并投 1 颗临时骰",
+      "status": "PASS",
+      "evidence": [
+        "E2E 点击可用高亮按钮后，断言催眠数量变为 0，临时骰来源为 vampire-lord-mesmerize，临时骰结果为 6。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠临时骰-确认前.jpg"
+      ]
+    },
+    {
+      "requirement": "5-6 结果后必须能选择 1 颗对手骰并确认强迫重掷",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言进入对手骰选择状态，允许的对手骰为 0 和 1；点击第一颗对手骰后进入选中态，确认按钮可用。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠选择对手骰.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠对手骰已选待确认.jpg"
+      ]
+    },
+    {
+      "requirement": "确认后必须实际改变对手骰并清空交互，牌桌可继续",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言第一颗对手骰从 6 重掷为 2，交互状态清空，并出现 DIE_REROLLED 事件。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠重掷后收口.jpg"
+      ]
+    },
+    {
+      "requirement": "催眠描述必须去掉过期的 E2E 实施中文案，并说明它不是任意时刻可点",
+      "status": "PASS",
+      "evidence": [
+        "public/locales/zh-CN/game-dicethrone.json 中 tokens.mesmerize.description 已改为说明：不是任意时刻可点；只有对手当前骰区仍有可重掷骰子时才会高亮“催眠重掷”。",
+        "public/locales/en/game-dicethrone.json 已同步同义描述，避免中英文漂移。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠按钮可用高亮-对手骰重掷前.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠临时骰-确认前.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠选择对手骰.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠对手骰已选待确认.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/吸血鬼领主-催眠重掷后收口.jpg"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/_labeled-for-pureref-20260911/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/_labeled-for-pureref-20260911/01-labeled-吸血鬼领主-催眠按钮可用高亮-对手骰重掷前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/_labeled-for-pureref-20260911/02-labeled-吸血鬼领主-催眠临时骰-确认前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/_labeled-for-pureref-20260911/03-labeled-吸血鬼领主-催眠选择对手骰.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/_labeled-for-pureref-20260911/04-labeled-吸血鬼领主-催眠对手骰已选待确认.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应通过玩家按钮投临时骰并选择对手骰重掷/_labeled-for-pureref-20260911/05-labeled-吸血鬼领主-催眠重掷后收口.png"
+  ],
+  "observations": [
+    "首图证明合法时机下“催眠重掷”不是灰掉按钮，而是带绿色描边和发光的可点击按钮。",
+    "临时骰图证明点击后进入催眠投骰结果确认。",
+    "对手骰选择图证明 5-6 后目标骰本体进入可点状态。",
+    "待确认图证明玩家点击对手骰后出现选中态与可用确认按钮。",
+    "收口图证明对手骰结果已变化，交互清空，回到可继续牌桌。"
+  ]
+}

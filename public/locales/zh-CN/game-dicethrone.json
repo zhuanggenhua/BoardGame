@@ -610,7 +610,7 @@
     "mesmerize": {
       "name": "催眠",
       "description": [
-        "正面标记，上限 1。对手有当前骰区时可花费并投 1 颗骰子；5-6 时选择 1 颗对手骰子强迫重掷。真实入口 E2E 仍处于实施中。"
+        "正面标记，上限 1。不是任意时刻可点；当对手当前骰区仍有可重掷骰子时，牌桌会高亮“催眠重掷”：花费 1 个催眠并投 1 颗骰子，5-6 时再选择 1 颗对手骰子强迫重掷。"
       ]
     }
   },
@@ -1855,6 +1855,10 @@
     "targetingRollPlayerOption": "{{player}}",
     "selectHandCardToDiscard": "选择 1 张手牌弃置",
     "selectDeckCardToAddToHand": "从抽牌堆选择 1 张牌加入手牌，然后洗混抽牌堆",
+    "cardPoolSearchPlaceholder": "搜索牌名或关键词",
+    "cardPoolSearchClear": "清空搜索",
+    "cardPoolFilterResultCount": "显示 {{visible}} / {{total}}",
+    "cardPoolSearchEmpty": "没有匹配的牌",
     "selectStatusToTransfer": "选择要转移的状态效果",
     "hint_copy_step1": "选择要复制的源骰子",
     "hint_copy_step2": "选择要设为{{value}}的目标骰子",
@@ -5784,7 +5788,7 @@
     "vampireLordMesmerize": {
       "name": "催眠",
       "useShort": "催眠重掷",
-      "use": "消耗 1 个催眠并投 1 颗骰子；结果为 5-6 时，选择 1 颗对手骰子强迫重掷"
+      "use": "当对手当前骰区仍有可重掷骰子时，消耗 1 个催眠并投 1 颗骰子；结果为 5-6 时，选择 1 颗对手骰子强迫重掷"
     },
     "artificerWorkshop": {
       "buildNanobotShort": "制造纳米",

@@ -1,6 +1,6 @@
 {
   "title": "Mage Wars",
-  "description": "A 2-player spell tactics game. This foundation locks the formal arena, mage state, spellbook zones, and event-driven spell FX contract.",
+  "description": "A 2-player spell tactics game. This foundation locks the formal arena, mage state, spellbook zones, walls, guarding, and event-driven spell FX contract.",
   "players": "2 players",
   "arena": {
     "actionStage": "Action phase",
@@ -178,10 +178,7 @@
     "guardCreature": "Guard",
     "attack": "Basic attack",
     "attackCreature": "Creature attack",
-    "advanceReset": "Continue reset",
-    "advanceChannel": "Continue channeling",
-    "advanceUpkeep": "Continue upkeep",
-    "passPlanning": "Confirm no prep",
+    "skipPlanning": "Skip spell preparation",
     "passDeployment": "End deployment",
     "passQuickcast": "Pass quickcast",
     "endAction": "End action",
@@ -377,7 +374,7 @@
     "catalog": {
       "basic": {
         "title": "First Game Flow: Read, Prepare, Resolve",
-        "description": "Start with the win condition, mage readouts, channeling, and planning, then continue through summoning, public discard, the quickcast window, and movement."
+        "description": "Start with the win condition, mage readouts, channeling, and planning, then continue through summoning, public discard, the quickcast window, movement, walls, and guarding."
       }
     },
     "visuals": {
@@ -390,12 +387,13 @@
       "intro": "Mage Wars lasts several rounds, until one mage has taken enough damage to be destroyed. The last mage standing wins the game.",
       "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; your goal is to deal enough damage to defeat the opposing mage.",
       "opponentHud": "The opponent panel shows the same readouts. Opponent prepared spells use card backs and a count, so card names stay hidden until revealed.",
-      "stage": "Each game round has two stages: the Ready Stage and the Action Stage. The Action Stage begins after the Ready Stage is complete.",
+      "stage": "Each round moves through Reset, Channel, Upkeep, Planning, Deployment, Initiative Quickcast, Creature Action, and Final Quickcast. Reset, Channel, and Upkeep with no pending choice resolve automatically; during Planning, prepare 0 to 2 spells, or use “Skip spell preparation” to submit an empty plan. Deployment and both quickcast windows then resolve in order, with creature movement or attacks during Creature Action.",
       "prepareChannelResult": "The ready stage is resolving.",
       "channelResult": "The Beastmaster currently has Channeling 10; after channeling, the mana supply gains 10 mana.",
       "prepareUpkeep": "Upkeep is resolving.",
       "preparePlanning": "Upkeep is resolving before planning begins.",
       "spellCardReading": "Use this spell-card legend first: cost, action, range, target, type, school, and level determine how you prepare and cast.",
+      "planningSkip": "Planning allows 0 to 2 prepared spells. An empty plan means preparing no spells this round; on the normal table, “Skip spell preparation” submits it, and both players enter Deployment after the other mage finishes planning. This tutorial prepares two spells next.",
       "attackBarReading": "Jungle Wolf is in your prepared spells and is about to be cast. Read its attack bar first: the left icons tell quick or full action and melee or ranged attack; the right side shows range, damage type, attack dice, extra effects, and traits. Click Next when done.",
       "planOpenCreatureCategory": "Click the Creature category.",
       "planCreatureNextPage": "Click the next page to find Jungle Wolf.",
@@ -421,7 +419,31 @@
       "opponentPassInitiativeQuickcast": "The opponent also passes initiative quickcast, so your creature action begins. Next, use Jungle Wolf to move.",
       "moveSelectWolf": "Click the Jungle Wolf card body in the arena to choose it as the moving creature.",
       "moveTargetZone": "Click an adjacent zone to move.",
-      "finish": "You have now read the board and spell cards, channeled, prepared spells, summoned Jungle Wolf, read its attack bar, roused it, checked public discard, passed the quickcast window, and moved a creature. The basic tutorial is complete."
+      "endCreatureAction": "Moving has used the wolf's action. Click “End action” so both players finish Creature Action and enter Final Quickcast.",
+      "opponentPassCreatureAction": "The opponent's Creature Action resolves through the formal flow.",
+      "skipFinalQuickcast": "This is your Final Quickcast window. You are not casting a quick spell now, so click “Pass quickcast”.",
+      "roundTwoPlanning": "The new round's Reset, Channel, and Upkeep have resolved automatically; Jungle Wolf's action marker is ready again. Prepare Wall of Thorns this round and see how a wall occupies the edge between two zones.",
+      "planOpenAllCategory": "Click the All category.",
+      "planWallNextPage": "Click the next page to find Wall of Thorns.",
+      "planSelectThornsWall": "Wall of Thorns is a Wall spell: it is placed on the edge between two adjacent zones. Click the Wall of Thorns card body to put it into the prepared slot.",
+      "planConfirmThornsWall": "Click “Confirm prep 1/2” to submit this round's plan.",
+      "prepareOpponentEmptyPlan": "The opponent prepares no spells this round, so both players enter Deployment.",
+      "opponentPassSecondDeployment": "The opponent passes Deployment first, so it is your turn to cast the prepared Wall spell.",
+      "wallPrepared": "Wall of Thorns is in your prepared spells. A Wall spell does not summon into a zone; it targets the edge between two zones.",
+      "wallSelectSpell": "Click Wall of Thorns in your prepared spells.",
+      "wallTargetEdge": "Click the edge between the Beastmaster's zone and the zone to its right.",
+      "wallCardResult": "Wall of Thorns is now attached to that edge, shown by its own spell card rather than a normal creature slot.",
+      "wallEffectReading": "This wall blocks movement and line of sight across the edge; later attacks or spells must check whether the wall lies between source and target.",
+      "endSecondDeployment": "The wall has been deployed. Click “End deployment” to enter the initiative quickcast window.",
+      "opponentPassSecondInitiativeQuickcast": "The opponent passes initiative quickcast, so now you decide whether to quickcast.",
+      "skipSecondInitiativeQuickcast": "You are still not using quickcast this round, so click “Pass quickcast”.",
+      "opponentPassSecondCreatureAction": "The opponent passes Creature Action, so Jungle Wolf can act now.",
+      "guardSelectWolf": "Click the Jungle Wolf card body in the arena to choose it as this action's source.",
+      "guardAction": "Click “Guard” in the action dock. Guard is the action; the guard marker appears on the unit after it resolves.",
+      "guardTokenResult": "Jungle Wolf gains the guard marker and spends its action for the round. The marker stays on the unit to show it protects friendly objects in the same zone.",
+      "endSecondCreatureAction": "Guarding has spent Jungle Wolf's action. Click “End action” to enter Final Quickcast.",
+      "opponentPassSecondFinalQuickcast": "The opponent passes Final Quickcast, so it is your turn to close the round.",
+      "finish": "You have now gone through Reset, Channel, Upkeep, Planning, Deployment, Initiative Quickcast, Creature Action, and Final Quickcast, while reading the board and cards, summoning Jungle Wolf, checking public discard, moving a creature, casting a wall, and guarding with a unit."
     }
   },
   "actionLog": {

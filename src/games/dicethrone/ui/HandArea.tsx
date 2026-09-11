@@ -227,6 +227,7 @@ export const HandArea = ({
     disableCardPointerEvents = false,
     playCardOnClick = false,
     isHidden = false,
+    preserveCardVisibility = false,
 }: {
     hand: AbilityCard[];
     locale?: string;
@@ -257,6 +258,8 @@ export const HandArea = ({
     /** 教程等引导模式下，点击手牌直接承接真实出牌动作；普通对局仍点击预览。 */
     playCardOnClick?: boolean;
     isHidden?: boolean;
+    /** 牌池选择等交互中，保持手牌完整落在视口内，不用底部裁切换空间。 */
+    preserveCardVisibility?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isCoarsePointer = useCoarsePointer();
@@ -434,7 +437,9 @@ export const HandArea = ({
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
     const hasRespondableCards = (respondableCardIds?.size ?? 0) > 0;
-    const handCardBottomOffset = buildBoardShellInlineUnitValue(hasRespondableCards ? 0.75 : (isCoarsePointer ? 0 : -2));
+    const handCardBottomOffset = buildBoardShellInlineUnitValue(
+        preserveCardVisibility ? 0 : (hasRespondableCards ? 0.75 : (isCoarsePointer ? 0 : -2)),
+    );
 
     const clearAnimationTimers = React.useCallback(() => {
         dealTimersRef.current.forEach(timerId => window.clearTimeout(timerId));

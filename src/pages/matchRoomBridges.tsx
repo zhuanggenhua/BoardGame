@@ -106,6 +106,8 @@ export const TutorialDispatchBridge = ({
             && Number.isInteger(tutorial.manifestRevision)
             && tutorial.manifestRevision !== tutorialManifest.revision
         ) {
+            boundManifestRef.current = { manifest: tutorialManifest, stateKey: 'restart-version-mismatched-tutorial' };
+            dispatchRef.current(TUTORIAL_COMMANDS.START, { manifest: tutorialManifest });
             return;
         }
         if (tutorial.stepIndex <= 0 && !tutorialManifest.stepValidator) {

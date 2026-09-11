@@ -232,6 +232,9 @@ describe('BoardBridge remountKey', () => {
 
         return waitFor(() => {
             expect(screen.getByTestId('current-player').textContent).toBe('0');
+            const rawSnapshot = window.localStorage.getItem(`local_match_snapshot_v1:tutorial-route-id:${seed}`);
+            expect(rawSnapshot).not.toBeNull();
+            expect(rawSnapshot).not.toContain('"currentPlayer":"stale"');
         });
     });
 

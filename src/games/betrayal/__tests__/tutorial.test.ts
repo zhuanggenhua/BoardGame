@@ -130,6 +130,7 @@ describe('Betrayal 教程配置', () => {
 
     it('默认教程沿真实基础回合主线推进，只有叛徒视角另列目录章节', () => {
         const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
+        expect(manifest?.revision).toBe(2);
         expect(manifest?.steps.map((step) => step.id)).toEqual([
             'setup-runtime',
             'objective-and-turn',
@@ -372,6 +373,60 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.stepValidator?.(baseState, useRabbitFootStep!)).toBe(true);
         expect(manifest?.stepValidator?.(afterRabbitFootState, useRabbitFootStep!)).toBe(false);
         expect(manifest?.stepValidator?.(afterRabbitFootState, rabbitFootResultStep!)).toBe(true);
+    });
+
+    it('默认教程不会把仍待确认事件骰的旧存档恢复到伤害分配步骤', () => {
+        const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
+        const rabbitFootResultStep = manifest?.steps.find((step) => step.id === 'rabbit-foot-result');
+        const finishStep = manifest?.steps.find((step) => step.id === 'finish');
+        const returnToTableStep = manifest?.steps.find((step) => step.id === 'return-to-table-after-damage');
+        expect(rabbitFootResultStep).toBeTruthy();
+        expect(finishStep).toBeTruthy();
+        expect(returnToTableStep).toBeTruthy();
+
+        const pendingEventRollState = {
+            core: {
+                phase: 'preHaunt',
+                usedCardIdsThisTurn: ['omen-book', 'rope'],
+                recentRoll: {
+                    id: 'roll-1',
+                    kind: 'eventTraitCheck',
+                    consumedRabbitFootCardIds: ['rope'],
+                },
+                pendingEventRollResolution: {
+                    rollId: 'roll-1',
+                    playerId: '0',
+                    sourceTitle: '标本剥制',
+                    effect: { mode: 'fixedDamage', amount: 1, damageKind: 'physical' },
+                    requiredPlayerIds: ['0'],
+                    acknowledgedPlayerIds: [],
+                    requiresAcknowledgement: true,
+                },
+                pendingDamageAllocation: null,
+            },
+            sys: {},
+        } as MatchState<Partial<BetrayalCore>>;
+        const pendingDamageState = {
+            ...pendingEventRollState,
+            core: {
+                ...pendingEventRollState.core,
+                pendingEventRollResolution: null,
+                pendingDamageAllocation: {
+                    id: 'damage-1',
+                    playerId: '0',
+                    amount: 1,
+                    originalAmount: 1,
+                    damageKind: 'physical',
+                    traits: ['might'],
+                },
+            },
+        } as MatchState<Partial<BetrayalCore>>;
+
+        expect(manifest?.stepValidator?.(pendingEventRollState, rabbitFootResultStep!)).toBe(true);
+        expect(manifest?.stepValidator?.(pendingEventRollState, finishStep!)).toBe(false);
+        expect(manifest?.stepValidator?.(pendingEventRollState, returnToTableStep!)).toBe(false);
+        expect(manifest?.stepValidator?.(pendingDamageState, finishStep!)).toBe(true);
+        expect(manifest?.stepValidator?.(pendingDamageState, returnToTableStep!)).toBe(false);
     });
 
     it('默认教程不会把选择角色阶段的旧存档恢复成后续牌桌步骤', () => {

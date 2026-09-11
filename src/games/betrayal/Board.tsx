@@ -15,7 +15,8 @@ import {
   playSound,
   useGameAudio,
 } from "../../lib/audio/useGameAudio";
-import { useVisualSequenceGate } from "../../components/game/framework";
+import { TutorialSelectionGate, useVisualSequenceGate } from "../../components/game/framework";
+import { useGameMode } from "../../contexts/GameModeContext";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 import type { GameBoardProps } from "../../engine/transport/protocol";
 import type {
@@ -302,11 +303,13 @@ export default function BetrayalBoard({
   locale,
 }: Props) {
   const { t } = useTranslation(["game-betrayal", "common"]);
+  const gameMode = useGameMode();
   const {
     isActive: isTutorialActive,
     currentStep: tutorialStep,
     nextStep,
   } = useTutorial();
+  const isTutorialMode = gameMode?.mode === "tutorial";
   const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
   const runtimeDispatch = dispatch as unknown as (
     type: string,
@@ -457,7 +460,14 @@ export default function BetrayalBoard({
   >(null);
   const [settledRecentRollId, setSettledRecentRollId] = React.useState<
     string | null
-  >(null);
+  >(() => {
+    const displayKey = buildRecentRollDisplayKey(baseCore.recentRoll);
+    const pendingEventRollId = baseCore.pendingEventRollResolution?.rollId ?? null;
+    if (!displayKey || baseCore.recentRoll?.id === pendingEventRollId) {
+      return null;
+    }
+    return displayKey;
+  });
   const [selectedRoomMapFloor, setSelectedRoomMapFloor] = React.useState<
     BetrayalRoomNode["floor"]
   >(() => resolveExplorerFloor(baseCore));
@@ -2139,6 +2149,13 @@ export default function BetrayalBoard({
   const selectedCardUsedThisTurn = selectedInventoryCard
     ? core.usedCardIdsThisTurn.includes(selectedInventoryCard.id)
     : false;
+  const modifierRecentRollDisplayKey = core.recentRoll
+    ? buildRecentRollDisplayKey(core.recentRoll)
+    : null;
+  const isModifierRecentRollReadable = Boolean(
+    modifierRecentRollDisplayKey &&
+      settledRecentRollId === modifierRecentRollDisplayKey,
+  );
   const lastUsedInventoryCardStillUsed =
     previewState.lastUsedInventoryCardId !== null &&
     core.usedCardIdsThisTurn.includes(previewState.lastUsedInventoryCardId);
@@ -2147,7 +2164,7 @@ export default function BetrayalBoard({
         core,
         inventoryActionPlayerId,
         selectedInventoryCard.id,
-      )
+      ) && isModifierRecentRollReadable
     : false;
   const selectedCardSpecialActionStatus = selectedInventoryCard
     ? resolveBetrayalPossessionSpecialActionStatus(
@@ -2196,7 +2213,8 @@ export default function BetrayalBoard({
   const confirmSelectedRollModifier = React.useCallback(() => {
     if (
       selectedRollModifierCardId === null ||
-      selectedRollModifierDieIndex === null
+      selectedRollModifierDieIndex === null ||
+      !isModifierRecentRollReadable
     ) {
       return;
     }
@@ -2212,12 +2230,14 @@ export default function BetrayalBoard({
     }));
   }, [
     dispatchCommand,
+    isModifierRecentRollReadable,
     selectedRollModifierCardId,
     selectedRollModifierDieIndex,
   ]);
   const rollModifierCardIds = new Set(
     actionInventoryCards
       .filter((card) =>
+        isModifierRecentRollReadable &&
         canUseRecentRollRerollItemForRecentRoll(
           core,
           inventoryActionPlayerId,
@@ -2229,6 +2249,7 @@ export default function BetrayalBoard({
   const eventRollBookCardIds = new Set(
     actionInventoryCards
       .filter((card) =>
+        isModifierRecentRollReadable &&
         canUseBookForPendingEventRoll(core, inventoryActionPlayerId, card.id),
       )
       .map((card) => card.id),
@@ -2951,6 +2972,13 @@ export default function BetrayalBoard({
     () => resolveEventRollConfirmationPresentation(core, viewerPlayerId),
     [core, viewerPlayerId],
   );
+  const isLatestDiscoveryRecentRollReadable = Boolean(
+    latestDiscoverySelection.coreRecentRollDisplayKey &&
+      latestDiscoverySelection.recentRollDisplayKey &&
+      latestDiscoverySelection.coreRecentRollDisplayKey ===
+        latestDiscoverySelection.recentRollDisplayKey &&
+      settledRecentRollId === latestDiscoverySelection.coreRecentRollDisplayKey,
+  );
   const latestDiscoveryPresentation = React.useMemo(
     () =>
       resolveBetrayalLatestDiscoveryPanelPresentation({
@@ -2965,6 +2993,7 @@ export default function BetrayalBoard({
         shouldShowHauntRevealCue,
         latestDiscoverySearchRevealIndex,
         eventRollConfirmation,
+        isRecentRollReadable: isLatestDiscoveryRecentRollReadable,
         t,
       }),
     [
@@ -2978,6 +3007,7 @@ export default function BetrayalBoard({
       previewState.dismissedLatestDiscoveryKey,
       previewState.dismissedRecentRollId,
       shouldShowHauntRevealCue,
+      isLatestDiscoveryRecentRollReadable,
       t,
       viewerPlayerId,
     ],
@@ -3275,7 +3305,10 @@ export default function BetrayalBoard({
       return;
     }
     if (core.pendingEventRollResolution) {
-      if (!eventRollConfirmation.canViewerAcknowledge) {
+      if (
+        latestDiscoveryContinueButton.disabled ||
+        !eventRollConfirmation.canViewerAcknowledge
+      ) {
         return;
       }
       dispatchCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, {
@@ -3314,6 +3347,7 @@ export default function BetrayalBoard({
     core.pendingEventRollResolution,
     dispatchCommand,
     eventRollConfirmation.canViewerAcknowledge,
+    latestDiscoveryContinueButton.disabled,
     handleDismissLatestDiscovery,
     isVisualBusy,
     canAdvanceLatestDiscoverySearch,
@@ -5511,20 +5545,27 @@ export default function BetrayalBoard({
   if (baseCore.phase === "characterSelect") {
     return (
       <UndoProvider value={undoProviderValue}>
-        <CharacterSelectScreen
-          core={baseCore}
-          matchData={matchData}
-          effectiveLocale={effectiveLocale}
-          isPhoneLandscapeLayout={isPhoneLandscapeLayout}
-          viewerPlayerId={viewerPlayerId}
-          selectedExplorerId={selectedExplorerId}
-          onSelectExplorer={handleSelectExplorer}
-          onConfirmExplorer={handleConfirmExplorer}
-          onProposeScenarioCard={handleProposeScenarioCard}
-          onConfirmScenarioCard={handleConfirmScenarioCard}
-          onStartScenario={handleStartScenario}
-        />
-        <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
+        <TutorialSelectionGate
+          isTutorialMode={isTutorialMode}
+          isTutorialActive={isTutorialActive}
+          containerClassName="bg-[#0c1512] text-[#f1e8d4]"
+          textClassName="text-lg font-semibold"
+        >
+          <CharacterSelectScreen
+            core={baseCore}
+            matchData={matchData}
+            effectiveLocale={effectiveLocale}
+            isPhoneLandscapeLayout={isPhoneLandscapeLayout}
+            viewerPlayerId={viewerPlayerId}
+            selectedExplorerId={selectedExplorerId}
+            onSelectExplorer={handleSelectExplorer}
+            onConfirmExplorer={handleConfirmExplorer}
+            onProposeScenarioCard={handleProposeScenarioCard}
+            onConfirmScenarioCard={handleConfirmScenarioCard}
+            onStartScenario={handleStartScenario}
+          />
+          <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
+        </TutorialSelectionGate>
       </UndoProvider>
     );
   }
@@ -5899,8 +5940,8 @@ export default function BetrayalBoard({
                 shouldShowLatestDiscovery &&
                 !shouldAutoReturnAfterLatestDiscovery &&
                 !pendingEventChoice
-                  ? "z-[130]"
-                  : "z-10"
+                  ? "z-[130] pointer-events-none"
+                  : "z-10 pointer-events-auto"
               }`}
             >
               <div className="sr-only">

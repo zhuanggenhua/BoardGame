@@ -616,6 +616,8 @@ export class DiceBoxThreeEngine {
     private transparentSurfaceHiddenObjects: string[] = [];
     private diceHighlights: DicePhysicsHighlightState[] = [];
     private diceHighlightShells = new Map<number, DiceBoxHighlightShell>();
+    private debugAnimationStage = 'idle';
+    private debugAnimationStageAt = 0;
 
     private constructor(
         box: InstanceType<typeof DiceBoxModule>,
@@ -672,6 +674,8 @@ export class DiceBoxThreeEngine {
             : 'theme-surface';
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
+            box.renderer.domElement.setAttribute('data-testid', config.canvasTestId);
+            box.renderer.domElement.dataset.diceCanvasTestId = config.canvasTestId;
         }
         engine.updateCanvasHighlightDiagnostics();
         engine.applySurfaceVisibility();
@@ -725,6 +729,19 @@ export class DiceBoxThreeEngine {
         }
         if (settled) {
             this.finalizeSettledFrame();
+        }
+    }
+
+    private setDebugAnimationStage(stage: string): void {
+        this.debugAnimationStage = stage;
+        this.debugAnimationStageAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const canvas = this.box.renderer?.domElement;
+        if (canvas) {
+            canvas.dataset.diceAnimationStage = stage;
+            canvas.dataset.diceAnimationStageAt = String(Math.round(this.debugAnimationStageAt));
+        }
+        if (typeof window !== 'undefined' && (window as { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__) {
+            console.warn(`[DEBUG-DICE-SETTLE] ${stage}`);
         }
     }
 
@@ -1058,6 +1075,8 @@ export class DiceBoxThreeEngine {
                     z: shell.mesh.position.z,
                 },
             })),
+            debugAnimationStage: this.debugAnimationStage,
+            debugAnimationStageAt: this.debugAnimationStageAt,
             dice: this.box.diceList.map((die, index) => {
                 const dieWithBody = die as DiceBoxDieWithBody;
                 if (!die.geometry.boundingBox) {
@@ -1287,15 +1306,19 @@ export class DiceBoxThreeEngine {
             this.clear();
             return;
         }
+        this.setDebugAnimationStage('roll-start');
         this.applyPrimarySkinToDicePreset();
         const didUseContainedThrow = await this.rollWithContainedThrow(values);
         if (!didUseContainedThrow) {
+            this.setDebugAnimationStage('third-party-roll-start');
             await this.rollWithThirdPartyDefault(values);
         }
+        this.setDebugAnimationStage('roll-apply-final-values');
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
         this.syncDiceHighlightShells();
         this.finalizeSettledFrame();
+        this.setDebugAnimationStage('roll-complete');
     }
 
     async restoreValues(values: number[]): Promise<void> {
@@ -1312,6 +1335,7 @@ export class DiceBoxThreeEngine {
 
     async rerollToValues(indices: number[], values: number[], lockedIndices: number[] = []): Promise<void> {
         if (indices.length === 0) return;
+        this.setDebugAnimationStage('reroll-start');
         const lockedSnapshots = this.captureDieTransforms(lockedIndices);
         this.freezeDice(lockedSnapshots);
         let shouldFinalize = false;
@@ -1322,11 +1346,13 @@ export class DiceBoxThreeEngine {
             this.applyCurrentSkins();
             this.syncDiceHighlightShells();
             shouldFinalize = true;
+            this.setDebugAnimationStage('reroll-final-values-applied');
         } finally {
             this.restoreDieTransforms(lockedSnapshots, false);
             if (shouldFinalize) {
                 this.finalizeSettledFrame();
             }
+            this.setDebugAnimationStage('reroll-complete');
         }
     }
 
@@ -1368,17 +1394,24 @@ export class DiceBoxThreeEngine {
         if (snapshots.length === 0) return;
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 64;
-        const lift = Math.max(5.5, Math.min(11, baseScale * 0.14));
-        const sideTravel = Math.max(7, Math.min(14, baseScale * 0.19));
-        const forwardTravel = Math.max(2.8, Math.min(7, baseScale * 0.08));
-        const duration = Math.max(240, durationMs);
-        const totalSteps = Math.max(18, Math.ceil(duration / 33));
+        const lift = Math.max(2.2, Math.min(5, baseScale * 0.06));
+        const sideTravel = Math.max(3.2, Math.min(6.4, baseScale * 0.09));
+        const forwardTravel = Math.max(1.6, Math.min(4, baseScale * 0.05));
+        const screenSideTravel = Math.max(24, Math.min(44, baseScale * 0.62));
+        const screenForwardTravel = Math.max(8, Math.min(18, baseScale * 0.22));
+        const duration = Math.max(1100, durationMs);
+        const minimumVisibleFrames = Math.max(24, Math.min(32, Math.ceil(duration / 46)));
+        const canvas = this.box.renderer?.domElement;
+        const canvasWidth = canvas?.clientWidth || canvas?.width || 0;
+        const canvasHeight = canvas?.clientHeight || canvas?.height || 0;
+        const motionScreenMargin = Math.max(2, Math.min(6, baseScale * 0.06));
 
         await new Promise<void>((resolve) => {
-            let stepIndex = 0;
             let frameId: number | null = null;
             let timerId: number | null = null;
             let completed = false;
+            let startAt: number | null = null;
+            let frameIndex = 0;
             const clearScheduledStep = () => {
                 if (frameId !== null) {
                     window.cancelAnimationFrame(frameId);
@@ -1393,10 +1426,18 @@ export class DiceBoxThreeEngine {
                 frameId = window.requestAnimationFrame(step);
                 timerId = window.setTimeout(() => step(), 33);
             };
-            const step = () => {
+            const step = (frameTime?: number) => {
                 if (completed) return;
                 clearScheduledStep();
-                const progress = Math.min(1, stepIndex / totalSteps);
+                const now = typeof frameTime === 'number'
+                    ? frameTime
+                    : (typeof performance !== 'undefined' ? performance.now() : Date.now());
+                if (startAt === null) {
+                    startAt = now;
+                }
+                const elapsedProgress = Math.min(1, Math.max(0, (now - startAt) / duration));
+                const frameProgress = Math.min(1, (frameIndex + 1) / minimumVisibleFrames);
+                const progress = Math.min(elapsedProgress, frameProgress);
                 const eased = progress < 0.5
                     ? 2 * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 2) / 2;
@@ -1405,8 +1446,8 @@ export class DiceBoxThreeEngine {
 
                 for (const snapshot of snapshots) {
                     const direction = snapshot.order % 2 === 0 ? 1 : -1;
-                    const lateralPulse = Math.sin(progress * Math.PI * 2);
-                    const forwardPulse = Math.sin(progress * Math.PI);
+                    const lateralPulse = Math.sin(progress * Math.PI);
+                    const forwardPulse = Math.sin(progress * Math.PI * 2);
                     this.setVector(snapshot.die.position, {
                         x: snapshot.position.x + sideTravel * lateralPulse * direction,
                         y: snapshot.position.y + forwardTravel * forwardPulse,
@@ -1434,6 +1475,28 @@ export class DiceBoxThreeEngine {
                         snapshot.die.body.aabbNeedsUpdate = true;
                     }
                     snapshot.die.updateMatrixWorld?.(true);
+                    if (canvasWidth > 0 && canvasHeight > 0) {
+                        const projectedLayout = this.getProjectedLayout(
+                            this.box.diceList.indexOf(snapshot.die),
+                            -1,
+                        );
+                        if (projectedLayout) {
+                            this.translateDieByScreenDelta(
+                                snapshot.die,
+                                projectedLayout,
+                                screenSideTravel * lateralPulse * direction,
+                                screenForwardTravel * forwardPulse,
+                                canvasWidth,
+                                canvasHeight,
+                            );
+                        }
+                        this.keepProjectedDieInsideCanvas(
+                            snapshot.die,
+                            canvasWidth,
+                            canvasHeight,
+                            motionScreenMargin,
+                        );
+                    }
                 }
                 this.box.scene?.updateMatrixWorld?.(true);
                 this.syncDiceHighlightShells();
@@ -1468,7 +1531,7 @@ export class DiceBoxThreeEngine {
                     return;
                 }
 
-                stepIndex += 1;
+                frameIndex += 1;
                 scheduleStep();
             };
             scheduleStep();
@@ -2015,6 +2078,7 @@ export class DiceBoxThreeEngine {
     private async rollWithContainedThrow(values: number[]): Promise<boolean> {
         const runtime = this.box as DiceBoxInternalRuntime;
         if (!runtime.startClickThrow || !runtime.spawnDice || !runtime.simulateThrow) {
+            this.setDebugAnimationStage('contained-throw-unavailable');
             return false;
         }
 
@@ -2028,9 +2092,11 @@ export class DiceBoxThreeEngine {
         }
         const vectors = notationVectors?.vectors;
         if (!notationVectors || !Array.isArray(vectors) || vectors.length === 0) {
+            this.setDebugAnimationStage('contained-throw-vectors-unavailable');
             return false;
         }
 
+        this.setDebugAnimationStage('contained-throw-simulate-start');
         this.constrainThrowVectorsToVisibleTray(vectors);
         runtime.notationVectors = notationVectors;
         this.clear();
@@ -2038,6 +2104,7 @@ export class DiceBoxThreeEngine {
             runtime.spawnDice(vector);
         }
         runtime.simulateThrow();
+        this.setDebugAnimationStage('contained-throw-simulate-complete');
         runtime.steps = 0;
         runtime.iteration = 0;
 
@@ -2059,6 +2126,7 @@ export class DiceBoxThreeEngine {
         this.syncDiceHighlightShells();
         this.renderFrame();
         await this.playContainedRollToSettledTransforms(targetSnapshots, 1000);
+        this.setDebugAnimationStage('contained-throw-visible-animation-complete');
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
         this.syncDiceHighlightShells();
@@ -2071,6 +2139,7 @@ export class DiceBoxThreeEngine {
         if (typeof document !== 'undefined') {
             document.dispatchEvent(new CustomEvent('rollComplete', { detail: result }));
         }
+        this.setDebugAnimationStage('contained-throw-complete');
         return true;
     }
 
@@ -2234,13 +2303,13 @@ export class DiceBoxThreeEngine {
         );
         const startRowY = -Math.min(halfY * 0.28, baseScale * 0.28);
         const throwHeight = Math.max(
-            baseScale * 0.18,
-            Math.min(baseScale * 0.3, Math.min(bounds.width, bounds.height) * 0.07),
+            baseScale * 0.12,
+            Math.min(baseScale * 0.19, Math.min(bounds.width, bounds.height) * 0.045),
         );
-        const maxVelocityX = Math.max(baseScale * 0.28, bounds.width * 0.12);
-        const maxVelocityY = Math.max(baseScale * 0.24, bounds.height * 0.1);
-        const verticalVelocity = -Math.max(2.2, baseScale * 0.045);
-        const maxAngularVelocity = Math.max(5.5, baseScale * 0.1);
+        const maxVelocityX = Math.max(baseScale * 0.22, bounds.width * 0.09);
+        const maxVelocityY = Math.max(baseScale * 0.18, bounds.height * 0.075);
+        const verticalVelocity = -Math.max(1.55, baseScale * 0.032);
+        const maxAngularVelocity = Math.max(4.4, baseScale * 0.075);
 
         vectors.forEach((vector, index) => {
             const orderOffset = index - (count - 1) / 2;
@@ -2254,13 +2323,13 @@ export class DiceBoxThreeEngine {
                 this.setVector(vector.pos, {
                     x: targetX,
                     y: targetY,
-                    z: throwHeight + (index % 3) * baseScale * 0.02,
+                    z: throwHeight + (index % 3) * baseScale * 0.012,
                 });
             }
             if (vector.velocity) {
                 const scaledVelocity = {
-                    x: -targetX * 0.72 + (index % 2 === 0 ? 1 : -1) * baseScale * 0.1,
-                    y: -targetY * 0.68 + Math.sin(index + 1) * baseScale * 0.08,
+                    x: -targetX * 0.56 + (index % 2 === 0 ? 1 : -1) * baseScale * 0.07,
+                    y: -targetY * 0.5 + Math.sin(index + 1) * baseScale * 0.055,
                 };
                 this.setVector(vector.velocity, {
                     x: clampNumber(scaledVelocity.x, -maxVelocityX, maxVelocityX),
@@ -2270,9 +2339,9 @@ export class DiceBoxThreeEngine {
             }
             if (vector.angle) {
                 this.setVector(vector.angle, {
-                    x: clampNumber(vector.angle.x * 0.72, -maxAngularVelocity, maxAngularVelocity),
-                    y: clampNumber(vector.angle.y * 0.72, -maxAngularVelocity, maxAngularVelocity),
-                    z: clampNumber(vector.angle.z * 0.72, -maxAngularVelocity, maxAngularVelocity),
+                    x: clampNumber(vector.angle.x * 0.58, -maxAngularVelocity, maxAngularVelocity),
+                    y: clampNumber(vector.angle.y * 0.58, -maxAngularVelocity, maxAngularVelocity),
+                    z: clampNumber(vector.angle.z * 0.58, -maxAngularVelocity, maxAngularVelocity),
                 });
             }
         });

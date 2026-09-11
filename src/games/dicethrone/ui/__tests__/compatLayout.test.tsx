@@ -131,6 +131,45 @@ describe('DiceThrone compatibility sizing', () => {
         expect(handCard?.style.height).toContain('--mobile-board-shell-inline-unit');
     });
 
+    it('牌池选择时应取消手牌底部裁切，保持卡牌完整落在视口内', () => {
+        vi.useFakeTimers();
+
+        const topCard: AbilityCard = {
+            id: 'c1',
+            name: 'Card',
+            cpCost: 1,
+            previewRef: { type: 'image', src: 'x' },
+            effects: [],
+        };
+
+        const { rerender } = render(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+            />,
+        );
+
+        act(() => {
+            vi.runAllTimers();
+        });
+
+        const defaultCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(defaultCard?.style.bottom).toContain('* -2');
+
+        rerender(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+                preserveCardVisibility
+            />,
+        );
+
+        const protectedCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(protectedCard?.style.bottom).toContain('* 0');
+    });
+
     it('隐藏手牌时只隐藏 UI，不卸载手牌区导致重新发牌', () => {
         vi.useFakeTimers();
 

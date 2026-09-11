@@ -1,108 +1,31 @@
 {
-  "verdict": "PASS",
-  "scope": "current-user-request",
-  "display": {
-    "purpose": "final-user-visible-delivery",
-    "trigger": "user-requested-open",
-    "viewer": "pureref",
-    "finalPassBeforeOpen": true
+  "verdict": "INVALIDATED",
+  "invalidatedAt": "2026-09-11T00:00:00+08:00",
+  "scope": "historical-evidence-only",
+  "reason": "旧 PASS 清单和截图只使用了 3 张测试候选牌，不能证明血色杀戮会在真实吸血鬼领主抽牌堆规模下提供牌库搜查 UI。",
+  "invalidatedCoverage": {
+    "oldDeckSize": 3,
+    "missingRequirements": [
+      "未证明候选集合来自当前玩家真实抽牌堆全集",
+      "未证明大集合初始容量和结果计数",
+      "未证明搜索框真实过滤当前可见卡面集合",
+      "未证明空搜索状态",
+      "未证明过滤后 1 张不等于初始牌库只有 1 张或 3 张",
+      "未证明真实大牌库状态下手牌仍可见、可读、可恢复查看"
+    ]
   },
-  "testRun": {
-    "command": "npm run test:e2e:file -- e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"血色杀戮\"",
-    "result": "1 passed (36.5s)",
-    "ranAt": "2026-09-10T11:58:18+08:00",
-    "head": "1a38ca675"
-  },
-  "supersedes": {
-    "priorPassChecklist": "same-file earlier PASS checklist with ranAt=2026-09-10T00:56:29Z and 2026-09-10T10:14:16+08:00",
-    "reason": "旧 PASS 只证明血色杀戮规则链路和卡面出现，未核对大杀四方成熟牌池的底部牌架、轻外框和不重复解释卡牌信息口径，因此不能继续作为本轮用户要看的新交互图证据。"
-  },
-  "requirements": [
-    {
-      "requirement": "血色杀戮新交互截图必须来自当前真实入口，并按触发前、搜牌窗口、选择确认、结算后收口展示。",
-      "status": "PASS",
-      "evidence": [
-        "E2E 命令通过：npm run test:e2e:file -- e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"血色杀戮\"；结果 1 passed (36.5s)。",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/01-血色杀戮触发前-五个血滴终极技可点.jpg",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/02-血色杀戮搜牌窗口-抽牌堆三张候选可选.jpg",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/03-血色杀戮已选择牌库牌-待确认加入手牌.jpg",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/04-血色杀戮结算后-选中牌入手并造成十点伤害.jpg"
-      ]
-    },
-    {
-      "requirement": "抽牌堆候选必须按大杀四方的成熟牌池规律展示为底部真实卡面牌池，不能退化为居中解释弹窗或只有文字的按钮列表。",
-      "status": "PASS",
-      "evidence": [
-        "大杀四方 DeckDiscardZone 把牌库和弃牌堆候选聚合后传给 PromptOverlay.displayCards，PromptOverlay 使用底部牌池和 CardPreview 渲染真实卡面集合。",
-        "DiceThrone InteractionOverlay 的 selectDeckCard/selectHandCard 已改为 dt-card-pool-overlay bottom-shelf，并为每张候选渲染 CardPreview。",
-        "E2E 断言三张候选卡均存在 data-card-pool-mode=\"preview\"、data-card-preview-ready=\"true\"，且预览来源命中 vampire-lord atlas。"
-      ]
-    },
-    {
-      "requirement": "候选牌外层不能再解释或复写卡面本身已有的信息，例如卡名、类型、费用、效果或关键词。",
-      "status": "PASS",
-      "evidence": [
-        "组件测试断言目标候选外层 textContent 为空，并禁止额外显示“血潮”“畅饮！”“涌血”和 action/CP 复写。",
-        "真实入口 E2E 断言三张候选外层不包含“血潮 / 畅饮 / 涌血 / action / CP”。",
-        "截图 02 中三张候选只显示真实卡面本体；卡名、类型和费用只来自牌面自身。"
-      ]
-    },
-    {
-      "requirement": "三张候选属于小牌池，应直接铺开展示，不显示搜索框或筛选框。",
-      "status": "PASS",
-      "evidence": [
-        "大杀四方搜索阈值 E2E 已有规律：1 张和 5 张不显示 prompt-card-search-input，10 张才显示搜索框。",
-        "本轮血色杀戮截图 02 显示三张卡面横向展示，没有搜索框。",
-        "本轮血色杀戮 E2E 断言 prompt-card-search-input 数量为 0。"
-      ]
-    },
-    {
-      "requirement": "玩家能从玩家板终极技触发抽牌堆搜牌窗口，并从三张候选中选择 1 张牌后确认。",
-      "status": "PASS",
-      "evidence": [
-        "E2E 断言终极技槽位可点击：data-ability-slot=\"ultimate\"、data-available-ability-id=\"bloody-slaughter\"、data-can-click=\"true\"。",
-        "E2E 断言搜牌窗口出现：从抽牌堆选择 1 张牌加入手牌；三张候选牌均可见。",
-        "E2E 断言选择 card-vampire-lord-gushing-blood 后 data-selected=\"true\"，确认按钮变为可用。",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/03-血色杀戮已选择牌库牌-待确认加入手牌.jpg"
-      ]
-    },
-    {
-      "requirement": "确认后必须完成规则结果：选中牌进手牌、剩余抽牌堆洗混、获得 2 鲜血之力、对手生命从 50 降到 40，并回到可继续的主阶段。",
-      "status": "PASS",
-      "evidence": [
-        "E2E 最终状态断言：phase=main2、pendingAttack=null、bloodPower=2、hand=[card-vampire-lord-gushing-blood]、defenderHp=40。",
-        "E2E 事件断言包含 CARD_DRAWN、DECK_SHUFFLED、DAMAGE_DEALT、ATTACK_RESOLVED。",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/04-血色杀戮结算后-选中牌入手并造成十点伤害.jpg"
-      ]
-    },
-    {
-      "requirement": "用户展示图组必须是无遮挡序号副本，且保留对应原始截图。",
-      "status": "PASS",
-      "evidence": [
-        "原始截图均为 1920x1080；标号副本为 1920x1252，说明区在原图上方扩展，没有覆盖原始截图。",
-        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/_labeled-for-pureref/00-sequence-index.png"
-      ]
-    },
-    {
-      "requirement": "项目规范必须补上这类牌库/牌池选择的 UI 规律，避免以后把可搜牌池做成文字按钮壳、厚外框或解释卡牌本身信息。",
-      "status": "PASS",
-      "evidence": [
-        ".spec/knowledge/standards/rule-driven-interaction-design.md 已补充：牌池选择默认承载是真实卡面集合，少量候选直接铺开，多到难比较时才提供搜索/筛选；不得在卡面外复写卡面已有的卡名、费用、类型、效果或关键词。",
-        "规范落点是项目通用规则交互标准，作用范围是全项目/多游戏；没有改系统 AGENTS，也没有建立第二套 skill。"
-      ]
-    }
-  ],
-  "sourceImages": [
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/01-血色杀戮触发前-五个血滴终极技可点.jpg",
+  "supersededImages": [
     "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/02-血色杀戮搜牌窗口-抽牌堆三张候选可选.jpg",
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/03-血色杀戮已选择牌库牌-待确认加入手牌.jpg",
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/04-血色杀戮结算后-选中牌入手并造成十点伤害.jpg"
+    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/03-血色杀戮已选择牌库牌-待确认加入手牌.jpg"
   ],
-  "images": [
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/_labeled-for-pureref/00-sequence-index.png",
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/_labeled-for-pureref/01-labeled-01-血色杀戮触发前-五个血滴终极技可点.png",
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/_labeled-for-pureref/02-labeled-02-血色杀戮搜牌窗口-抽牌堆三张候选可选.png",
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/_labeled-for-pureref/03-labeled-03-血色杀戮已选择牌库牌-待确认加入手牌.png",
-    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/_labeled-for-pureref/04-labeled-04-血色杀戮结算后-选中牌入手并造成十点伤害.png"
-  ]
+  "currentRequiredEvidence": {
+    "status": "pending-new-run",
+    "requirements": [
+      "真实牌库容量使用 VAMPIRE_LORD_CARDS 扣除预置手牌后的当前 deck，而不是 3 张缩小测试池",
+      "截图覆盖触发前、真实大牌库初始搜索窗口、空搜索、命中过滤、选择待确认、结算收口",
+      "E2E 实际输入搜索词并断言可见集合、空态和恢复/选择结果",
+      "最终状态断言手牌新增目标牌、抽牌堆减少 1 张且不再含目标牌、获得 2 鲜血之力、造成 10 点伤害并回到 main2",
+      "AI 图面复核确认没有复制大杀四方视觉壳、没有卡外复写牌面信息、没有隐藏手牌"
+    ]
+  }
 }

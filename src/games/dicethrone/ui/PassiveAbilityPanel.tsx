@@ -128,6 +128,8 @@ const PassiveActionButton: React.FC<{
         <GameButton
             onClick={onClick}
             data-testid={`passive-action-${passiveId}-${actionIndex}`}
+            data-passive-action-usable={isUsable ? 'true' : 'false'}
+            data-passive-action-selecting={isSelecting ? 'true' : 'false'}
             title={accessibleLabel}
             aria-label={accessibleLabel}
             disabled={!isUsable && !isSelecting}
@@ -136,7 +138,7 @@ const PassiveActionButton: React.FC<{
             className={`
                 !min-h-0 flex min-w-0 flex-col items-center overflow-hidden
                 ${isSelecting ? 'ring-2 ring-amber-400 animate-pulse' : ''}
-                ${isUsable && !isSelecting ? 'hover:!bg-emerald-500/20 hover:border-emerald-400/50' : ''}
+                ${isUsable && !isSelecting ? 'cursor-pointer !border-emerald-300/80 !bg-emerald-500/20 ring-2 ring-emerald-300/80 ring-offset-1 ring-offset-slate-950 !shadow-[0_0_18px_rgba(16,185,129,0.45)] hover:!bg-emerald-500/30 hover:!border-emerald-200' : ''}
             `}
             style={{
                 paddingInline: dtUnit(0.28),

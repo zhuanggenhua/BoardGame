@@ -39,6 +39,9 @@ describe('PassiveAbilityPanel', () => {
         expect(button).toHaveTextContent('passive.vampireLordBloodPower.attackBonusShort');
         expect(button).not.toHaveTextContent('1 tokens.blood_power.name');
         expect(button).toBeEnabled();
+        expect(button).toHaveAttribute('data-passive-action-usable', 'true');
+        expect(button).toHaveClass('ring-2');
+        expect(button).toHaveClass('ring-emerald-300/80');
         expect(button).toHaveAttribute(
             'aria-label',
             expect.stringContaining('1 tokens.blood_power.name'),

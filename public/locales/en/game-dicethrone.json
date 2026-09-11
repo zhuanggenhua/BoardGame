@@ -610,7 +610,7 @@
     "mesmerize": {
       "name": "Mesmerize",
       "description": [
-        "Positive token, limit 1. When an opponent has current dice, spend it and roll 1 die; on 5-6, choose 1 opponent die to force a reroll. Real-entry E2E remains in progress."
+        "Positive token, limit 1. It is not always clickable; when an opponent still has rerollable dice in the current dice area, the board highlights Mesmerize: spend 1 Mesmerize and roll 1 die, then on 5-6 choose 1 opponent die to force a reroll."
       ]
     }
   },
@@ -1787,6 +1787,10 @@
     "targetingRollPlayerOption": "{{player}}",
       "selectHandCardToDiscard": "Select 1 card from your hand to discard",
       "selectDeckCardToAddToHand": "Search your draw pile for 1 card, add it to your hand, then shuffle your draw pile",
+      "cardPoolSearchPlaceholder": "Search card name or keyword",
+      "cardPoolSearchClear": "Clear search",
+      "cardPoolFilterResultCount": "Showing {{visible}} / {{total}}",
+      "cardPoolSearchEmpty": "No matching cards",
       "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",
     "hint_copy_step2": "Select target die to set to {{value}}",
@@ -5709,7 +5713,7 @@
   "vampireLordMesmerize": {
     "name": "Mesmerize",
     "useShort": "Mesmerize",
-    "use": "Spend 1 Mesmerize and roll 1 die; on 5-6, choose 1 opponent die to force a reroll"
+    "use": "When an opponent still has rerollable dice in the current dice area, spend 1 Mesmerize and roll 1 die; on 5-6, choose 1 opponent die to force a reroll"
   },
   "artificerWorkshop": {
     "buildNanobotShort": "Build Nano",

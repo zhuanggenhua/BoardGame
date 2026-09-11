@@ -1,0 +1,90 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "run": {
+    "date": "2026-09-10",
+    "entry": "/play/mage-wars/tutorial",
+    "browser": "chromium",
+    "command": "node scripts/infra/run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial.e2e.ts",
+    "result": "5 passed"
+  },
+  "requirements": [
+    {
+      "requirement": "重置、聚魔、维持由正式流程自动完成，不向玩家暴露“继续重置”等内部推进按钮。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx 在 reset、channel、upkeep 返回空，不渲染手动推进按钮。",
+        "真实教程 E2E 从入口进入计划阶段并继续完成主流程，没有卡在自动阶段。"
+      ]
+    },
+    {
+      "requirement": "空计划必须用玩家能理解的按钮和教程说明表达。",
+      "status": "PASS",
+      "evidence": [
+        "空计划按钮显示“跳过准备法术”，不再显示“确认不计划”。",
+        "05A-skip-planning-no-spells.png 同帧显示按钮和“提交空计划”的教程说明。"
+      ]
+    },
+    {
+      "requirement": "教程覆盖正式基础流程中的全部一级阶段，并教清玩家动作、自动收口和下一入口。",
+      "status": "PASS",
+      "evidence": [
+        "教程文案覆盖重置、聚魔、维持、计划、部署、先手快速施法、生物行动和最终快速施法。",
+        "真实主流程在 27-end-creature-action.png 进入结束生物行动，在 28-skip-final-quickcast.png 让过最终快速施法，在 29-finish-next-round-started.png 回到下一回合计划阶段。"
+      ]
+    },
+    {
+      "requirement": "生物行动第一次结束后，教程状态必须跟随正式流程切到对手自动收口，再进入最终快速施法。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/domain/flowHooks.ts 为第一名玩家结束 creatureAction 发出 PHASE_WINDOW_COMPLETED。",
+        "phase-flow、教程单测和真实 Playwright 主流程均通过。"
+      ]
+    },
+    {
+      "requirement": "教程截图只使用本次真实入口运行生成的连续主流程原图。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/ 当前有 31 张 00、01、02、03、04、05A、06-29 原图。",
+        "Playwright 本次运行结果为 5 passed，包含主自然流程、继续进度和 1366x768、1920x1080、2560x1304 三个真实浏览器压力态。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-self-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-read-opponent-hud-hidden-plans.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-read-round-stage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-read-spell-card-legend.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05A-skip-planning-no-spells.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-open-creature-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-plan-creature-next-page-wolf-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-plan-select-wolf-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-plan-wolf-in-slot-one-open-incantation-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-plan-incantation-next-page-rouse-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-plan-rouse-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-plan-rouse-in-slot-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-read-attack-bar-before-deploy-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-deploy-select-wolf-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-deploy-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-rouse-select-spell-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-pass-your-deployment-wolf-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-move-select-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-move-target-zone-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-end-creature-action.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/28-skip-final-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/29-finish-next-round-started.png"
+  ],
+  "historicalEvidence": [
+    "evidence/mage-wars-tutorial/pass-manifest-20260905-single-natural-flow-00-27.json",
+    "evidence/mage-wars-tutorial/e2e-test.md"
+  ]
+}

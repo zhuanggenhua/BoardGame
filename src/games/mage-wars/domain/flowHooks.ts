@@ -569,7 +569,17 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                         phaseReadyPlayerIds: ready,
                         phaseActorId: getOpponentId(state.core, command.playerId),
                     }),
-                    events: actionEndEvents,
+                    events: [
+                        createPhaseWindowCompletedEvent(
+                            command.playerId,
+                            phase,
+                            ready,
+                            command.type,
+                            timestamp,
+                            getOpponentId(state.core, command.playerId),
+                        ),
+                        ...actionEndEvents,
+                    ],
                 };
             }
 
@@ -578,7 +588,16 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                     phaseReadyPlayerIds: [],
                     phaseActorId: state.core.currentPlayerId,
                 }),
-                events: actionEndEvents,
+                events: [
+                    createPhaseWindowCompletedEvent(
+                        command.playerId,
+                        phase,
+                        ready,
+                        command.type,
+                        timestamp,
+                    ),
+                    ...actionEndEvents,
+                ],
             };
         }
 
@@ -621,6 +640,15 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
 
         if (from !== 'finalQuickcast') return;
         const nextPlayer = resolveNextPlayer(state.core);
+        const actionReadinessResetEvents: MageWarsEvent[] = state.core.playerOrder.map((playerId) => ({
+            type: MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
+            payload: {
+                playerId,
+                objectIds: getCreatureObjectIdsForOwner(state.core, playerId),
+            },
+            sourceCommandType: command.type,
+            timestamp: command.timestamp ?? 0,
+        }));
         return {
             updatedState: updatePhaseControl(state, {
                 phaseReadyPlayerIds: [],
@@ -635,15 +663,7 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                 },
                 sourceCommandType: command.type,
                 timestamp: command.timestamp ?? 0,
-            }, {
-                type: MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
-                payload: {
-                    playerId: nextPlayer.playerId,
-                    objectIds: getCreatureObjectIdsForOwner(state.core, nextPlayer.playerId),
-                },
-                sourceCommandType: command.type,
-                timestamp: command.timestamp ?? 0,
-            }],
+            }, ...actionReadinessResetEvents],
         };
     },
 

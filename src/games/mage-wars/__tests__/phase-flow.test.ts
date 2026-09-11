@@ -141,11 +141,28 @@ describe('mage-wars setup and phase flow', () => {
             MAGE_WARS_EVENTS.MANA_CHANNELED,
         ]));
 
+        const playerZeroResetCreature = makeArenaObject('flow-reset-creature-0', '0', PLAYER_ZERO_START_ZONE, {
+            actionReady: false,
+            guarding: true,
+        });
+        const playerOneResetCreature = makeArenaObject('flow-reset-creature-1', '1', PLAYER_ONE_START_ZONE, {
+            actionReady: false,
+            guarding: true,
+        });
         const finalQuickcastState: MatchState<MageWarsCore> = {
             core: {
-                ...channelResult.state.core,
+                ...withArenaObject(
+                    withArenaObject(channelResult.state.core, playerZeroResetCreature),
+                    playerOneResetCreature,
+                ),
                 players: {
                     ...channelResult.state.core.players,
+                    '0': {
+                        ...channelResult.state.core.players['0'],
+                        actionReady: false,
+                        quickcastReady: false,
+                        guarding: true,
+                    },
                     '1': {
                         ...channelResult.state.core.players['1'],
                         actionReady: false,
@@ -168,14 +185,43 @@ describe('mage-wars setup and phase flow', () => {
         expect(nextTurn.state.core.currentPlayerId).toBe('1');
         expect(nextTurn.state.core.phaseActorId).toBe('1');
         expect(nextTurn.state.core.turnNumber).toBe(1);
+        expect(nextTurn.state.core.players['0']).toMatchObject({
+            actionReady: true,
+            quickcastReady: true,
+            guarding: false,
+        });
         expect(nextTurn.state.core.players['1']).toMatchObject({
             actionReady: true,
             quickcastReady: true,
             guarding: false,
         });
+        expect(nextTurn.state.core.objects[playerZeroResetCreature.id]).toMatchObject({
+            actionReady: true,
+            guarding: false,
+        });
+        expect(nextTurn.state.core.objects[playerOneResetCreature.id]).toMatchObject({
+            actionReady: true,
+            guarding: false,
+        });
         expect(nextTurn.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.TURN_ADVANCED,
             MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
+        ]));
+        expect(nextTurn.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    objectIds: [playerZeroResetCreature.id],
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    objectIds: [playerOneResetCreature.id],
+                }),
+            }),
         ]));
         expect(actionLogKinds(nextTurn.state)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.TURN_ADVANCED,
@@ -242,6 +288,72 @@ describe('mage-wars setup and phase flow', () => {
                     phase: 'initiativeQuickcast',
                     nextActorId: '1',
                     readyPlayerIds: ['0'],
+                }),
+            }),
+        ]));
+    });
+
+    it('emits a visible phase-window completion event when the first creature-action player ends their window', () => {
+        const base = setupState('creatureAction');
+        const state: MatchState<MageWarsCore> = {
+            core: {
+                ...base.core,
+                phaseReadyPlayerIds: [],
+                phaseActorId: '0',
+            },
+            sys: base.sys,
+        };
+
+        const result = runCommand(state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.state.sys.phase).toBe('creatureAction');
+        expect(result.state.core.phaseActorId).toBe('1');
+        expect(result.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    phase: 'creatureAction',
+                    nextActorId: '1',
+                    readyPlayerIds: ['0'],
+                }),
+            }),
+        ]));
+    });
+
+    it('emits a visible phase-window completion event when the final creature-action player ends their window', () => {
+        const base = setupState('creatureAction');
+        const state: MatchState<MageWarsCore> = {
+            core: {
+                ...base.core,
+                currentPlayerId: '1',
+                phaseReadyPlayerIds: ['1'],
+                phaseActorId: '0',
+            },
+            sys: base.sys,
+        };
+
+        const result = runCommand(state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.state.sys.phase).toBe('finalQuickcast');
+        expect(result.state.core.phaseActorId).toBe('1');
+        expect(result.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    phase: 'creatureAction',
+                    readyPlayerIds: ['1', '0'],
                 }),
             }),
         ]));
