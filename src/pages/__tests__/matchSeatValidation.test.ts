@@ -265,7 +265,7 @@ describe('isTutorialRoutePath', () => {
 });
 
 describe('resolveMissingMatchConfirmationSignal', () => {
-    it('只有联机同步通道明确的 match_not_found 信号才会确认缺房', () => {
+    it('联机同步通道或房间状态接口确认缺房时会确认缺房', () => {
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
             matchId: 'match-1',
@@ -273,7 +273,17 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             isAutoJoining: false,
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
-        })).toBe('transport_not_found');
+        })).toBe('match_not_found');
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: null,
+            matchStatusErrorKind: 'not_found',
+        })).toBe('match_not_found');
 
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
@@ -285,7 +295,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
         })).toBeNull();
     });
 
-    it('网络态、REST 404 或自动加入阶段不会把房间误判成不存在', () => {
+    it('网络态或自动加入阶段不会把房间误判成不存在', () => {
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
             matchId: 'match-1',

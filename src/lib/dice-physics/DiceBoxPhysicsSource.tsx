@@ -76,6 +76,7 @@ export function DiceBoxPhysicsSource({
     const [settled, setSettled] = React.useState(() => dice.length === 0);
     const [engineFailureMessage, setEngineFailureMessage] = React.useState('');
     const [containerSizeReady, setContainerSizeReady] = React.useState(() => typeof ResizeObserver !== 'function');
+    const debugContextRef = React.useRef({ testId, canvasTestId, motionType: motion.type });
 
     diceLengthRef.current = dice.length;
 
@@ -140,6 +141,7 @@ export function DiceBoxPhysicsSource({
         [dice],
     );
     const motionType = motion.type;
+    debugContextRef.current = { testId, canvasTestId, motionType };
     const rollMotionId = motion.type === 'roll' ? motion.id : '';
     const rerollMotionId = motion.type === 'reroll' ? motion.id : '';
     const rerollMotionDieIds = React.useMemo(
@@ -283,11 +285,12 @@ export function DiceBoxPhysicsSource({
             if (typeof window === 'undefined' || !(window as { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__) {
                 return;
             }
+            const debugContext = debugContextRef.current;
             console.warn('[DEBUG-DICE-SOURCE]', stage, {
-                testId,
-                canvasTestId,
+                testId: debugContext.testId,
+                canvasTestId: debugContext.canvasTestId,
                 diceLength: diceLengthRef.current,
-                motionType,
+                motionType: debugContext.motionType,
                 ...details,
             });
         };

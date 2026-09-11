@@ -41,7 +41,6 @@ const ACTION_ICON: Record<string, React.ReactNode> = {
 export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
     passives,
     actionUsability,
-    currentCp,
     rerollSelectingAction,
     onActionClick,
     onCancelRerollSelect,
@@ -80,7 +79,6 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
                         passiveName={t(passive.nameKey)}
                         isUsable={isUsable}
                         isSelecting={isSelecting}
-                        currentCp={currentCp}
                         onClick={() => {
                             if (isSelecting && onCancelRerollSelect) {
                                 onCancelRerollSelect();
@@ -103,9 +101,8 @@ const PassiveActionButton: React.FC<{
     passiveName: string;
     isUsable: boolean;
     isSelecting: boolean;
-    currentCp: number;
     onClick: () => void;
-}> = ({ action, passiveId, actionIndex, passiveName, isUsable, isSelecting, currentCp, onClick }) => {
+}> = ({ action, passiveId, actionIndex, passiveName, isUsable, isSelecting, onClick }) => {
     const { t } = useTranslation('game-dicethrone');
     const icon = ACTION_ICON[action.type];
     const label = action.type === 'rerollDie'

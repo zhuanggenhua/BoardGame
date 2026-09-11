@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export type MissingMatchConfirmationSignal = 'transport_not_found' | null;
+export type MissingMatchConfirmationSignal = 'match_not_found' | null;
 
 export type ResolveMissingMatchConfirmationArgs = {
     isTutorialRoute: boolean;
@@ -17,8 +17,8 @@ export function resolveMissingMatchConfirmationSignal(
 ): MissingMatchConfirmationSignal {
     if (args.isTutorialRoute || !args.matchId) return null;
     if (args.shouldAutoJoin || args.isAutoJoining || args.autoJoinGraceActive) return null;
-    if (args.onlineTransportError === 'match_not_found') {
-        return 'transport_not_found';
+    if (args.onlineTransportError === 'match_not_found' || args.matchStatusErrorKind === 'not_found') {
+        return 'match_not_found';
     }
     return null;
 }
