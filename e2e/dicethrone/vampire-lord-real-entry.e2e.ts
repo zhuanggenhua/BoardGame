@@ -1543,9 +1543,9 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 const players = asRecordMap(core.players);
                 const p0 = asRecord(players['0']);
                 const p1 = asRecord(players['1']);
-                const entries = (asRecord(asRecord(sys.eventStream).entries) as unknown) as never;
-                const events = Array.isArray(asRecord(sys.eventStream).entries)
-                    ? (asRecord(sys.eventStream).entries as Array<{ event?: JsonRecord }>)
+                const eventEntries = asRecord(sys.eventStream).entries;
+                const events = Array.isArray(eventEntries)
+                    ? (eventEntries as Array<{ event?: JsonRecord }>)
                         .map((entry) => entry.event)
                         .filter(Boolean)
                     : [];
@@ -1558,7 +1558,6 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                     event?.type === 'SYS_INTERACTION_CONFIRMED'
                     && asRecord(event.payload).sourceId === 'card-get-away'
                 ));
-                void entries;
                 return {
                     mesmerize: asRecord(p0.tokens)[TOKEN_IDS.MESMERIZE] ?? 0,
                     dazzle: asRecord(p0.statusEffects)[STATUS_IDS.DAZZLE] ?? 0,
