@@ -4,19 +4,13 @@ import type { TFunction } from 'i18next';
 import { HelpCircle, Maximize2, Move, MousePointerClick, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useModalStack } from '../../contexts/ModalStackContext';
+import {
+    buildOperationGuideFabEntries,
+    resolveOperationGuideFabLabel,
+    type OperationGuideFabEntry,
+} from './operationGuideFabModel';
 
 export type OperationGuideSurface = 'web' | 'app';
-
-export interface OperationGuideFabEntry {
-    id: string;
-    label: string;
-    description: string;
-}
-
-type OperationGuideActionInput = {
-    id: string;
-    label: string;
-};
 
 type OperationGuideButtonVariant = 'classic' | 'book';
 
@@ -70,49 +64,6 @@ const operationGuideScreenshotAltKeys: Record<OperationGuideSurface, string> = {
     app: 'hud.operationGuide.visual.appFabImageAlt',
 };
 
-const resolveFabDescriptionKey = (id: string) => {
-    if (id.startsWith('undo-') || id === 'undo') return 'undo';
-
-    switch (id) {
-        case 'action-log':
-            return 'actionLog';
-        case 'display-theme':
-            return 'displayTheme';
-        case 'download-app':
-            return 'downloadApp';
-        case 'check-update':
-            return 'checkUpdate';
-        case 'force-actions':
-            return 'forceActions';
-        case 'seat-swap':
-            return 'seatSwap';
-        default:
-            return id;
-    }
-};
-
-const resolveFabLabel = (t: TFunction, id: string) => {
-    const descriptionKey = resolveFabDescriptionKey(id);
-    return String(t(`hud.operationGuide.fabLabels.${descriptionKey}`, {
-        defaultValue: t(`hud.actions.${descriptionKey}`, {
-            defaultValue: id,
-        }),
-    }));
-};
-
-export const buildOperationGuideFabEntries = (
-    t: TFunction,
-    actions: OperationGuideActionInput[],
-): OperationGuideFabEntry[] => actions
-    .filter((action) => action.id !== 'operation-guide')
-    .map((action) => ({
-        id: action.id,
-        label: action.label,
-        description: String(t(`hud.operationGuide.fab.${resolveFabDescriptionKey(action.id)}`, {
-            defaultValue: t('hud.operationGuide.fab.custom'),
-        })),
-    }));
-
 const buildDefaultOperationGuideFabEntries = (
     t: TFunction,
     surface: OperationGuideSurface,
@@ -121,11 +72,11 @@ const buildDefaultOperationGuideFabEntries = (
     return {
         global: buildOperationGuideFabEntries(
             t,
-            globalIds.map((id) => ({ id, label: resolveFabLabel(t, id) })),
+            globalIds.map((id) => ({ id, label: resolveOperationGuideFabLabel(t, id) })),
         ),
         game: buildOperationGuideFabEntries(
             t,
-            gameFloatingActionIds.map((id) => ({ id, label: resolveFabLabel(t, id) })),
+            gameFloatingActionIds.map((id) => ({ id, label: resolveOperationGuideFabLabel(t, id) })),
         ),
     };
 };

@@ -14,7 +14,7 @@ import { useDebug } from '../contexts/DebugContext';
 import type { TutorialManifest } from '../engine/types';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';
-import { buildTutorialSessionScope } from '../contexts/TutorialContext';
+import { buildTutorialSessionScope } from '../contexts/tutorialSessionScope';
 import { resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 import {
     buildTutorialProgressSeed,

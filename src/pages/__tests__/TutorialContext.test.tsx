@@ -5,11 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameModeProvider } from '../../contexts/GameModeContext';
 import { ToastProvider } from '../../contexts/ToastContext';
 import {
-    buildTutorialSessionScope,
     TutorialProvider,
     useTutorial,
     useTutorialBridge,
 } from '../../contexts/TutorialContext';
+import { buildTutorialSessionScope } from '../../contexts/tutorialSessionScope';
 import { TUTORIAL_COMMANDS } from '../../engine/systems/TutorialSystem';
 import type { TutorialManifest, TutorialState } from '../../engine/types';
 

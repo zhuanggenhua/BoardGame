@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
+import { useTutorial } from '../contexts/TutorialContext';
 import {
     buildTutorialSessionScope,
     isSameTutorialSessionScope,
-    useTutorial,
-} from '../contexts/TutorialContext';
+} from '../contexts/tutorialSessionScope';
 import type { ModalEntry } from '../contexts/ModalStackContext';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';

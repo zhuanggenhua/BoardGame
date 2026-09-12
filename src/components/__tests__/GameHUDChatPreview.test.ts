@@ -20,7 +20,7 @@ import {
     shouldTrackFabButtonRect,
 } from '../system/FabMenu';
 import { GLOBAL_HUD_FAB_Z_INDEX } from '../system/GlobalHUD';
-import { buildOperationGuideFabEntries } from '../system/OperationGuidePanel';
+import { buildOperationGuideFabEntries } from '../system/operationGuideFabModel';
 import { shouldAllowFabDragFromTarget } from '../system/fabDrag';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
