@@ -215,8 +215,7 @@
       "eyebrow": "Player help",
       "surface": {
         "web": "Open this guide from the top-right area on web. It is not inside the floating button, because the guide teaches what that button does.",
-        "app": "Open this guide from the top-right area in the App. It explains touch controls, long-press inspect, and the floating button functions.",
-        "game": "This summarizes in-game controls and the floating menu buttons currently available in this game state."
+        "app": "Open this guide from the top-right area in the App. It explains touch controls, long-press inspect, and the floating button functions."
       },
       "visual": {
         "realScreenshotsTitle": "Real interface screenshots",
@@ -241,7 +240,6 @@
         "webTitle": "Web floating button",
         "appTitle": "App floating button",
         "gameTitle": "In-game floating button",
-        "operationGuide": "The operation guide stays in the top-right area and is not a floating button function.",
         "settings": "Adjust audio, home style, or current game runtime settings.",
         "displayTheme": "Switch between day and night display.",
         "fullscreen": "Enter or exit fullscreen; some App pages hide this entry.",

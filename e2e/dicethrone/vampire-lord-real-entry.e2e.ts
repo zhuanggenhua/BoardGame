@@ -31,9 +31,11 @@ import { VAMPIRE_LORD_CARDS } from '../../src/games/dicethrone/heroes/vampire_lo
 const VAMPIRE_LORD_QUERY = { playerID: '0', disableLocalAiAutomation: true };
 const VAMPIRE_LORD_DEFENSE_QUERY = { playerID: '1', disableLocalAiAutomation: true };
 const VAMPIRE_LORD_HERO_ID = 'vampire_lord';
+const TIANSHI_HERO_ID = 'tianshi';
 const VISIBLE_HOST_HERO_ID = 'monk';
 const VISIBLE_GUEST_HERO_ID = 'barbarian';
 const VAMPIRE_LORD_CARD_ATLAS_ID = 'dicethrone:vampire_lord-cards';
+const TIANSHI_CARD_ATLAS_ID = 'dicethrone:tianshi-cards';
 const VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID = 'card-vampire-lord-blood-from-above';
 const VAMPIRE_LORD_BLOODY_SLAUGHTER_TARGET_CARD_ID = 'card-vampire-lord-gushing-blood';
 const VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_CARD_IDS = VAMPIRE_LORD_CARDS
@@ -254,22 +256,85 @@ const injectVampireLordMainProofState = async (matchId: string, page: Page): Pro
     await injectMatchState(matchId, next as never, page);
 };
 
-const expectVampireLordCardPreview = async (
+const expectHandCardPreview = async (
     page: Page,
     cardId: string,
+    expectedAtlasId: string,
     expectedAtlasIndex: number,
+    expectedSrcPattern: RegExp,
 ): Promise<void> => {
     const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(card).toBeVisible({ timeout: 15000 });
-    const atlasFrame = card.locator(`[data-card-atlas-id="${VAMPIRE_LORD_CARD_ATLAS_ID}"]`).first();
+    const atlasFrame = card.locator(`[data-card-atlas-id="${expectedAtlasId}"]`).first();
     await expect(atlasFrame).toBeVisible({ timeout: 15000 });
     await expect(atlasFrame).toHaveAttribute('data-card-atlas-index', String(expectedAtlasIndex));
     const atlasImage = atlasFrame.locator('img[data-card-atlas-img="true"]').first();
     await expect(atlasImage).toBeVisible({ timeout: 15000 });
     await expect.poll(
+        async () => atlasImage.evaluate((node) => {
+            const image = node as HTMLImageElement;
+            return image.complete && image.naturalWidth > 0;
+        }),
+        { timeout: 15000 },
+    ).toBe(true);
+    await expect.poll(
         async () => atlasImage.getAttribute('src'),
         { timeout: 15000 },
-    ).toMatch(/dicethrone\/images\/xixuegui\/(?:compressed\/)?ability-cards\.webp/i);
+    ).toMatch(expectedSrcPattern);
+};
+
+const expectVampireLordCardPreview = async (
+    page: Page,
+    cardId: string,
+    expectedAtlasIndex: number,
+): Promise<void> => expectHandCardPreview(
+    page,
+    cardId,
+    VAMPIRE_LORD_CARD_ATLAS_ID,
+    expectedAtlasIndex,
+    /dicethrone\/images\/xixuegui\/(?:compressed\/)?ability-cards\.webp/i,
+);
+
+const expectTianshiCardPreview = async (
+    page: Page,
+    cardId: string,
+    expectedAtlasIndex: number,
+): Promise<void> => expectHandCardPreview(
+    page,
+    cardId,
+    TIANSHI_CARD_ATLAS_ID,
+    expectedAtlasIndex,
+    /dicethrone\/images\/tianshi\/(?:compressed\/)?ability-cards\.webp/i,
+);
+
+const expectCardSpotlightPreview = async (
+    page: Page,
+    cardId: string,
+    expectedPlayerId: string,
+    expectedAtlasId: string,
+    expectedAtlasIndex: number,
+    expectedSrcPattern: RegExp,
+): Promise<void> => {
+    const spotlight = page.getByTestId('card-spotlight-overlay');
+    await expect(spotlight).toBeVisible({ timeout: 15000 });
+    await expect(spotlight).toHaveAttribute('data-card-id', cardId);
+    await expect(spotlight).toHaveAttribute('data-player-id', expectedPlayerId);
+    const atlasFrame = spotlight.locator(`[data-card-atlas-id="${expectedAtlasId}"]`).first();
+    await expect(atlasFrame).toBeVisible({ timeout: 15000 });
+    await expect(atlasFrame).toHaveAttribute('data-card-atlas-index', String(expectedAtlasIndex));
+    const atlasImage = atlasFrame.locator('img[data-card-atlas-img="true"]').first();
+    await expect(atlasImage).toBeVisible({ timeout: 15000 });
+    await expect.poll(
+        async () => atlasImage.evaluate((node) => {
+            const image = node as HTMLImageElement;
+            return image.complete && image.naturalWidth > 0;
+        }),
+        { timeout: 15000 },
+    ).toBe(true);
+    await expect.poll(
+        async () => atlasImage.getAttribute('src'),
+        { timeout: 15000 },
+    ).toMatch(expectedSrcPattern);
 };
 
 const expectVampireLordCardChoicePreview = async (
@@ -325,7 +390,7 @@ const expectVisibleUsableTokenAction = async (token: Locator, hitTarget: Locator
     });
 };
 
-const dragVampireLordHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
+const dragHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
     const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(handCard).toBeVisible({ timeout: 10000 });
     await expect(handCard).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
@@ -366,6 +431,51 @@ const dragVampireLordHandCardToPlay = async (page: Page, cardId: string): Promis
     await page.mouse.move(2, 2);
     await page.waitForTimeout(450);
 };
+
+const dragVampireLordHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
+    await dragHandCardToPlay(page, cardId);
+};
+
+const closeCardSpotlight = async (page: Page): Promise<void> => {
+    const root = page.getByTestId('spotlight-container-root');
+    await expect(root).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(250);
+    await root.click({ position: { x: 8, y: 8 } });
+    await expect(root).toBeHidden({ timeout: 10000 });
+};
+
+async function openFabPanel(page: Page, panelId: string): Promise<void> {
+    const panel = page.locator(`[data-testid="fab-panel-${panelId}"]`).first();
+    if (await panel.isVisible().catch(() => false)) {
+        return;
+    }
+
+    const panelButton = page.locator(`[data-fab-id="${panelId}"]`).first();
+    if (!(await panelButton.isVisible().catch(() => false))) {
+        const mainButton = page.locator('[data-testid="fab-menu"] [data-fab-id]').first();
+        await expect(mainButton).toBeVisible({ timeout: 10000 });
+        await mainButton.click();
+        await expect(panelButton).toBeVisible({ timeout: 10000 });
+    }
+
+    await panelButton.click();
+    await expect(panel).toBeVisible({ timeout: 10000 });
+}
+
+async function expectActionLogContains(
+    page: Page,
+    parts: string[],
+): Promise<void> {
+    await openFabPanel(page, 'action-log');
+    const rows = page.locator('[data-testid="hud-action-log-row"]');
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
+    const texts = (await rows.allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim());
+    const matched = texts.find((text) => parts.every((part) => text.includes(part)));
+    expect(
+        matched,
+        `ActionLog 面板未找到预期记录: ${parts.join(' / ')}; 实际=${JSON.stringify(texts)}`,
+    ).toBeTruthy();
+}
 
 const readVampireLordCardPoolMetrics = async (page: Page) => (
     page.getByTestId('dt-card-pool-selection').locator('[data-card-pool-mode="preview"]').evaluateAll((options) => {
@@ -1226,6 +1336,256 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         }, { timeout: 10000 }).toBeNull();
         await waitForDiceThroneVisualIdle(page);
         await game.screenshot('吸血鬼领主-催眠响应窗口-重掷后收口', testInfo);
+    });
+
+    test('起开！应显示吸血鬼卡图，并在对手打出后清楚记录移除的是催眠', async ({ browser }, testInfo) => {
+        test.setTimeout(300000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const baseURL = testInfo.project.use.baseURL as string | undefined ?? getGameServerBaseURL();
+        const match = await setupOnlineMatch(browser, baseURL, {
+            skipImageGate: true,
+            characterSelectionTimeout: 240000,
+        });
+        if (!match) {
+            test.skip(true, '游戏服务器不可用或创建 DiceThrone 房间失败');
+            return;
+        }
+
+        const getHeroCard = (playerState: { hand?: unknown[]; deck?: unknown[]; discard?: unknown[] }, cardId: string) => {
+            const card = [...(playerState.hand ?? []), ...(playerState.deck ?? []), ...(playerState.discard ?? [])]
+                .find((item) => asRecord(item).id === cardId);
+            if (!card) {
+                throw new Error(`角色牌库缺少 E2E 证明用卡牌: ${cardId}`);
+            }
+            return structuredClone(card);
+        };
+
+        const readRoot = (state: JsonRecord): JsonRecord => asRecord(state.G ?? state);
+        const resetInteractionState = (sys: JsonRecord): JsonRecord => ({
+            ...sys,
+            responseWindow: {
+                ...asRecord(sys.responseWindow),
+                current: null,
+            },
+            interaction: {
+                ...asRecord(sys.interaction),
+                current: null,
+                queue: [],
+                isBlocked: false,
+            },
+        });
+        const injectGetAwayScene = async (activePlayerId: '0' | '1') => {
+            const current = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+            const next = structuredClone(current) as JsonRecord;
+            const root = readRoot(next);
+            const core = asRecord(root.core);
+            const sys = asRecord(root.sys);
+            const players = asRecordMap(core.players);
+            const vampireBase = initHeroState('0', VAMPIRE_LORD_HERO_ID, FIXED_E2E_RANDOM);
+            const tianshiBase = initHeroState('1', TIANSHI_HERO_ID, FIXED_E2E_RANDOM);
+
+            const vampireGetAway = getHeroCard(vampireBase, 'card-get-away');
+            const tianshiGetAway = getHeroCard(tianshiBase, 'card-get-away');
+
+            root.core = {
+                ...core,
+                phase: 'main1',
+                activePlayerId,
+                selectedCharacters: {
+                    ...asRecord(core.selectedCharacters),
+                    '0': VAMPIRE_LORD_HERO_ID,
+                    '1': TIANSHI_HERO_ID,
+                },
+                hostStarted: true,
+                rollCount: 0,
+                rollLimit: 3,
+                rollDiceCount: 5,
+                rollConfirmed: false,
+                dice: [],
+                currentRollContext: undefined,
+                pendingAttack: null,
+                pendingDamage: undefined,
+                pendingBonusDiceSettlement: undefined,
+                passiveActionUsedThisTurn: {
+                    ...asRecord(core.passiveActionUsedThisTurn),
+                    [activePlayerId]: {},
+                },
+                players: {
+                    ...players,
+                    '0': {
+                        ...vampireBase,
+                        id: '0',
+                        characterId: VAMPIRE_LORD_HERO_ID,
+                        resources: {
+                            ...vampireBase.resources,
+                            [RESOURCE_IDS.HP]: 50,
+                            [RESOURCE_IDS.CP]: 2,
+                        },
+                        tokens: {
+                            ...vampireBase.tokens,
+                            [TOKEN_IDS.BLOOD_POWER]: 0,
+                            [TOKEN_IDS.MESMERIZE]: 1,
+                        },
+                        statusEffects: {
+                            ...vampireBase.statusEffects,
+                            [STATUS_IDS.DAZZLE]: activePlayerId === '1' ? 1 : 0,
+                        },
+                        hand: activePlayerId === '0' ? [vampireGetAway] : [],
+                        deck: [],
+                        discard: [],
+                    },
+                    '1': {
+                        ...tianshiBase,
+                        id: '1',
+                        characterId: TIANSHI_HERO_ID,
+                        resources: {
+                            ...tianshiBase.resources,
+                            [RESOURCE_IDS.HP]: 50,
+                            [RESOURCE_IDS.CP]: 2,
+                        },
+                        hand: activePlayerId === '1' ? [tianshiGetAway] : [],
+                        deck: [],
+                        discard: [],
+                    },
+                },
+            };
+            const turnOrder = ['0', '1'];
+            root.sys = {
+                ...resetInteractionState(sys),
+                phase: 'main1',
+                turnOrder,
+                currentPlayerIndex: turnOrder.indexOf(activePlayerId),
+            };
+
+            await injectMatchState(match.matchId, next as never, match.hostPage);
+            await Promise.all([match.hostPage, match.guestPage].map((targetPage) => (
+                targetPage.waitForFunction((expectedActivePlayerId) => {
+                    const state = window.__BG_TEST_HARNESS__?.state?.get?.();
+                    return state?.core?.activePlayerId === expectedActivePlayerId
+                        && state?.sys?.phase === 'main1'
+                        && state?.core?.selectedCharacters?.['0'] === 'vampire_lord'
+                        && state?.core?.selectedCharacters?.['1'] === 'tianshi';
+                }, activePlayerId, { timeout: 15000, polling: 200 })
+            )));
+        };
+
+        try {
+            await selectCharacter(match.hostPage, VAMPIRE_LORD_HERO_ID);
+            await selectCharacter(match.guestPage, TIANSHI_HERO_ID);
+            await readyAndStartGame(match.hostPage, match.guestPage);
+            await Promise.all([
+                waitForGameBoard(match.hostPage),
+                waitForGameBoard(match.guestPage),
+                waitForDiceThroneHarness(match.hostPage),
+                waitForDiceThroneHarness(match.guestPage),
+            ]);
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeDebugPanelIfOpen(match.guestPage);
+            await match.hostPage.setViewportSize({ width: 1280, height: 720 });
+            await match.guestPage.setViewportSize({ width: 1280, height: 720 });
+
+            await injectGetAwayScene('0');
+            await expectVampireLordCardPreview(match.hostPage, 'card-get-away', 11);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-吸血鬼领主-起开手牌卡图可见');
+
+            await injectGetAwayScene('1');
+            await expectTianshiCardPreview(match.guestPage, 'card-get-away', 11);
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '02-天使视角-起开手牌卡图可见');
+
+            await dragHandCardToPlay(match.guestPage, 'card-get-away');
+            await expectCardSpotlightPreview(
+                match.hostPage,
+                'card-get-away',
+                '1',
+                TIANSHI_CARD_ATLAS_ID,
+                11,
+                /dicethrone\/images\/tianshi\/(?:compressed\/)?ability-cards\.webp/i,
+            );
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-吸血鬼视角-对手起开打出特写卡图可见');
+            await closeCardSpotlight(match.hostPage);
+
+            await expect.poll(async () => {
+                const state = await getMatchState(match.matchId, match.guestPage) as JsonRecord;
+                const root = readRoot(state);
+                const current = asRecord(asRecord(root.sys).interaction).current as JsonRecord | undefined;
+                return {
+                    kind: current?.kind ?? null,
+                    playerId: current?.playerId ?? null,
+                    interactionType: asRecord(current?.data).type ?? null,
+                    targetPlayerIds: asRecord(current?.data).targetPlayerIds ?? [],
+                    sourceId: asRecord(current?.data).sourceId ?? null,
+                };
+            }, { timeout: 15000 }).toEqual({
+                kind: 'dt:card-interaction',
+                playerId: '1',
+                interactionType: 'selectStatus',
+                targetPlayerIds: ['0', '1'],
+                sourceId: 'card-get-away',
+            });
+
+            const vampireStatusOwner = match.guestPage.getByTestId('dt-status-owner-0');
+            const mesmerizeOption = vampireStatusOwner.getByTestId(`dt-status-effect-0-${TOKEN_IDS.MESMERIZE}`);
+            const dazzleOption = vampireStatusOwner.getByTestId(`dt-status-effect-0-${STATUS_IDS.DAZZLE}`);
+            await expect(mesmerizeOption).toBeVisible({ timeout: 10000 });
+            await expect(dazzleOption).toBeVisible({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '04-天使视角-起开可选择催眠且眩光仍可见');
+
+            await mesmerizeOption.click();
+            const confirmButton = match.guestPage.getByRole('button', { name: /确认|Confirm/i }).last();
+            await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+            await confirmButton.click();
+
+            await expect.poll(async () => {
+                const state = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = readRoot(state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const entries = (asRecord(asRecord(sys.eventStream).entries) as unknown) as never;
+                const events = Array.isArray(asRecord(sys.eventStream).entries)
+                    ? (asRecord(sys.eventStream).entries as Array<{ event?: JsonRecord }>)
+                        .map((entry) => entry.event)
+                        .filter(Boolean)
+                    : [];
+                const consumed = events.find((event) => (
+                    event?.type === 'TOKEN_CONSUMED'
+                    && asRecord(event.payload).tokenId === TOKEN_IDS.MESMERIZE
+                    && asRecord(event.payload).playerId === '0'
+                ));
+                const confirmed = events.find((event) => (
+                    event?.type === 'SYS_INTERACTION_CONFIRMED'
+                    && asRecord(event.payload).sourceId === 'card-get-away'
+                ));
+                void entries;
+                return {
+                    mesmerize: asRecord(p0.tokens)[TOKEN_IDS.MESMERIZE] ?? 0,
+                    dazzle: asRecord(p0.statusEffects)[STATUS_IDS.DAZZLE] ?? 0,
+                    tianshiCp: asRecord(p1.resources)[RESOURCE_IDS.CP] ?? null,
+                    interactionKind: asRecord(asRecord(sys.interaction).current).kind ?? null,
+                    consumedSourceCommandType: consumed?.sourceCommandType ?? null,
+                    consumedAmount: asRecord(consumed?.payload).amount ?? null,
+                    confirmedPlayerId: asRecord(confirmed?.payload).playerId ?? null,
+                };
+            }, { timeout: 15000 }).toEqual({
+                mesmerize: 0,
+                dazzle: 1,
+                tianshiCp: 1,
+                interactionKind: null,
+                consumedSourceCommandType: 'REMOVE_STATUS',
+                consumedAmount: 1,
+                confirmedPlayerId: '1',
+            });
+
+            await expect(match.hostPage.getByTestId(`dt-player-0-token-${TOKEN_IDS.MESMERIZE}`)).toHaveCount(0);
+            await expect(match.hostPage.getByTestId(`dt-player-0-status-${STATUS_IDS.DAZZLE}`)).toBeVisible({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-吸血鬼视角-起开后催眠移除眩光仍在');
+            await expectActionLogContains(match.hostPage, ['起开', '催眠']);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-吸血鬼视角-行动日志写清起开移除催眠');
+        } finally {
+            await cleanupDTMatch(match);
+        }
     });
 
     test('鲜血之力 2 档应通过状态选择移除流血', async ({ page, game }, testInfo) => {

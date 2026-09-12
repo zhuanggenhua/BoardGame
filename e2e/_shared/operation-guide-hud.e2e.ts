@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../framework';
 import { dismissViteOverlay, initContext, waitForFrontendAssets, waitForHomeGameList, waitForTestHarness } from '../helpers/common';
 
@@ -21,6 +21,14 @@ const screenshotPath = (filename: string) => {
 const assertOperationGuideImagesLoaded = async (modal: ReturnType<Page['getByTestId']>) => {
     const images = modal.locator('img[data-testid^="operation-guide-real-screenshot-"]');
     await expect(images).toHaveCount(2);
+
+    await expect.poll(async () => images.evaluateAll((nodes) => nodes.every((node) => {
+        const image = node as HTMLImageElement;
+        return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+    })), {
+        message: '操作指南弹窗内两张真实截图必须加载完成',
+        timeout: 10000,
+    }).toBe(true);
 
     const imageStatuses = await images.evaluateAll((nodes) => nodes.map((node) => {
         const image = node as HTMLImageElement;
@@ -51,45 +59,13 @@ const assertOperationGuideImagesLoaded = async (modal: ReturnType<Page['getByTes
     }
 };
 
-const assertGuideButtonIsLeftOfAccountArea = async (page: Page, accountSelector: string) => {
-    const metrics = await page.evaluate((selector) => {
-        const guide = document.querySelector('[data-testid="home-operation-guide-entry"]') as HTMLElement | null;
-        const account = document.querySelector(selector) as HTMLElement | null;
-        const fabGuide = document.querySelector('[data-fab-id="operation-guide"]');
-        const modal = document.querySelector('[data-testid="operation-guide-modal"]') as HTMLElement | null;
-        if (!guide || !account) return null;
-        const guideRect = guide.getBoundingClientRect();
-        const accountRect = account.getBoundingClientRect();
-        const modalRect = modal?.getBoundingClientRect();
-        return {
-            guideRect: {
-                left: guideRect.left,
-                right: guideRect.right,
-                top: guideRect.top,
-                bottom: guideRect.bottom,
-            },
-            accountRect: {
-                left: accountRect.left,
-                right: accountRect.right,
-            },
-            modalRect: modalRect
-                ? {
-                    left: modalRect.left,
-                    right: modalRect.right,
-                    top: modalRect.top,
-                    bottom: modalRect.bottom,
-                    centerX: modalRect.left + modalRect.width / 2,
-                    centerY: modalRect.top + modalRect.height / 2,
-                }
-                : null,
-            viewport: { width: window.innerWidth, height: window.innerHeight },
-            hasOperationGuideInsideFab: Boolean(fabGuide),
-        };
-    }, accountSelector);
+const assertGuideButtonIsLeftOfAccountArea = async (guide: Locator, account: Locator) => {
+    const guideBox = await guide.boundingBox();
+    const accountBox = await account.boundingBox();
 
-    expect(metrics).not.toBeNull();
-    expect(metrics!.guideRect.right).toBeLessThanOrEqual(metrics!.accountRect.left + 4);
-    expect(metrics!.hasOperationGuideInsideFab).toBe(false);
+    expect(guideBox).not.toBeNull();
+    expect(accountBox).not.toBeNull();
+    expect(guideBox!.x + guideBox!.width).toBeLessThanOrEqual(accountBox!.x + 4);
 };
 
 const openOperationGuide = async (page: Page, testId: string) => {
@@ -119,7 +95,10 @@ test.describe('共享操作指南真实首页入口', () => {
         await dismissViteOverlay(page);
 
         await expect(page.locator('[data-fab-id="operation-guide"]')).toHaveCount(0);
-        await assertGuideButtonIsLeftOfAccountArea(page, 'button:has-text("登录")');
+        await assertGuideButtonIsLeftOfAccountArea(
+            page.getByTestId('home-operation-guide-entry'),
+            page.getByRole('button', { name: '登录' }),
+        );
         await page.screenshot({
             path: screenshotPath('01-web-home-right-top-entry.png'),
             fullPage: false,
@@ -171,7 +150,10 @@ test.describe('共享操作指南真实首页入口', () => {
         await dismissViteOverlay(page);
 
         await expect(page.locator('[data-fab-id="operation-guide"]')).toHaveCount(0);
-        await expect(page.getByTestId('home-operation-guide-entry')).toBeVisible();
+        await assertGuideButtonIsLeftOfAccountArea(
+            page.getByTestId('home-operation-guide-entry'),
+            page.getByRole('button', { name: '登录' }),
+        );
         await page.screenshot({
             path: screenshotPath('03-app-home-right-top-entry.png'),
             fullPage: false,

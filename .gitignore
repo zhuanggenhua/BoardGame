@@ -119,6 +119,11 @@ public/**/*.webm
 !public/logos/
 !public/logos/**
 
+# 操作指南必须使用真实页面截图，允许提交这一组入口说明图。
+!public/images/
+!public/images/operation-guide/
+!public/images/operation-guide/*.png
+
 # 可能的 3D/模型/动画/纹理素材
 public/**/*.glb
 public/**/*.gltf

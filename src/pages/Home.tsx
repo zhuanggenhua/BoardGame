@@ -1021,7 +1021,7 @@ export const Home = () => {
                 description={seoT('lobby:home.subtitle')}
                 canonical="https://easyboardgame.top/"
             />
-            <header className="w-full relative px-6 md:px-12 pt-[calc(env(safe-area-inset-top)+1.25rem)] md:pt-8 pb-0">
+            <header className="w-full relative px-6 md:px-12 pt-[calc(env(safe-area-inset-top)+4.25rem)] md:pt-8 pb-0">
                 {/* 居中大标题 - 极简布局，Logo作为标题点缀 */}
                 <div className="flex flex-col items-center justify-center mb-1 md:mb-4">
                     {/* 标题行：Logo + H1 */}
@@ -1038,8 +1038,8 @@ export const Home = () => {
                     </p>
                 </div>
 
-                {/* 顶级操作区域 - 移动端放在标题下方，桌面端锁定右上角 */}
-                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-0 md:absolute md:top-8 md:right-12 md:mb-0 md:flex-nowrap md:justify-end">
+                {/* 顶级操作区域 - 固定在右上角，操作指南位于账号入口左侧 */}
+                <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+0.875rem)] mb-0 flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-end gap-x-3 gap-y-2 md:right-12 md:top-8 md:flex-nowrap md:gap-x-4">
                     <OperationGuideButton
                         surface={isNativeMobileRuntime() ? 'app' : 'web'}
                         dataTestId="home-operation-guide-entry"
