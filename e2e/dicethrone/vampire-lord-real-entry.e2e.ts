@@ -469,12 +469,13 @@ async function expectActionLogContains(
     await openFabPanel(page, 'action-log');
     const rows = page.locator('[data-testid="hud-action-log-row"]');
     await expect(rows.first()).toBeVisible({ timeout: 10000 });
-    const texts = (await rows.allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim());
-    const matched = texts.find((text) => parts.every((part) => text.includes(part)));
-    expect(
-        matched,
-        `ActionLog 面板未找到预期记录: ${parts.join(' / ')}; 实际=${JSON.stringify(texts)}`,
-    ).toBeTruthy();
+    await expect.poll(
+        async () => {
+            const texts = (await rows.allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim());
+            return texts.find((text) => parts.every((part) => text.includes(part))) ?? '';
+        },
+        { timeout: 15000 },
+    ).not.toBe('');
 }
 
 const readVampireLordCardPoolMetrics = async (page: Page) => (

@@ -102,6 +102,9 @@ const ACTION_LOG_ALLOWLIST = [
     'CONFIRM_COMPARE_ROLL',
     // 交互确认会承载关键选择结果（如暴击/精准），需要进入操作日志
     'SYS_INTERACTION_RESPOND',
+    // 状态选择类卡牌效果会直接发出 REMOVE_STATUS，后续 TOKEN_CONSUMED / STATUS_REMOVED
+    // 是玩家需要看到的结算结果。
+    'REMOVE_STATUS',
     // 调试/测试直接伤害仍走正式 DAMAGE_DEALT 事件链，需要验证 ActionLog 渲染。
     DICETHRONE_CHEAT_COMMANDS.DEAL_DAMAGE,
 ] as const;
@@ -240,10 +243,51 @@ function formatDiceThroneActionEntry({
         return rawName;
     };
 
+    const buildCardSource = (sourceId: string, actorId: PlayerId): {
+        actorId: PlayerId;
+        cardSegment: ActionLogSegment;
+    } => {
+        const card = findDiceThroneCard(core, sourceId, actorId) ?? findDiceThroneCard(core, sourceId);
+        const previewText = card?.name ?? sourceId;
+        const isI18nKey = previewText.includes('.');
+        return {
+            actorId,
+            cardSegment: {
+                type: 'card',
+                cardId: sourceId,
+                previewText,
+                ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
+                ...(card?.previewRef ? { previewRef: card.previewRef } : {}),
+            },
+        };
+    };
+
+    const resolveCurrentInteractionSourceCard = (): {
+        actorId: PlayerId;
+        cardSegment: ActionLogSegment;
+    } | null => {
+        const currentInteraction = (state as MatchState<DiceThroneCore>).sys?.interaction?.current as {
+            kind?: unknown;
+            playerId?: unknown;
+            data?: unknown;
+        } | undefined;
+        if (currentInteraction?.kind !== 'dt:card-interaction') return null;
+        if (currentInteraction.playerId !== command.playerId) return null;
+        const interactionData = currentInteraction.data as { sourceId?: unknown; sourceCardId?: unknown } | undefined;
+        const sourceId = typeof interactionData?.sourceId === 'string'
+            ? interactionData.sourceId
+            : interactionData?.sourceCardId;
+        if (typeof sourceId !== 'string' || !sourceId.startsWith('card-')) return null;
+        return buildCardSource(sourceId, command.playerId);
+    };
+
     const resolveConfirmedInteractionSourceCard = (): {
         actorId: PlayerId;
         cardSegment: ActionLogSegment;
     } | null => {
+        const currentSource = resolveCurrentInteractionSourceCard();
+        if (currentSource) return currentSource;
+
         for (let i = events.length - 1; i >= 0; i -= 1) {
             const event = events[i] as GameEvent & {
                 payload?: {
@@ -257,19 +301,7 @@ function formatDiceThroneActionEntry({
             const actorId = typeof event.payload?.playerId === 'string'
                 ? event.payload.playerId as PlayerId
                 : command.playerId;
-            const card = findDiceThroneCard(core, sourceId, actorId) ?? findDiceThroneCard(core, sourceId);
-            const previewText = card?.name ?? sourceId;
-            const isI18nKey = previewText.includes('.');
-            return {
-                actorId,
-                cardSegment: {
-                    type: 'card',
-                    cardId: sourceId,
-                    previewText,
-                    ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
-                    ...(card?.previewRef ? { previewRef: card.previewRef } : {}),
-                },
-            };
+            return buildCardSource(sourceId, actorId);
         }
         return null;
     };

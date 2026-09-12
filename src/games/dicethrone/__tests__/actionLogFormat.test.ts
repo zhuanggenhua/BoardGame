@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { executePipeline } from '../../../engine/pipeline';
 import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState } from '../../../engine/types';
 import type {
     AbilityActivatedEvent,
@@ -12,6 +13,7 @@ import type {
     ChoiceResolvedEvent,
     DamageDealtEvent,
     DiceThroneCore,
+    DiceThroneCommand,
     PendingBonusDiceSettlement,
     HealAppliedEvent,
     StatusAppliedEvent,
@@ -22,8 +24,10 @@ import type {
     BonusDieRolledEvent,
 } from '../domain/types';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
-import { createInitializedState, fixedRandom, fistAttackAbilityId, getCardById } from './test-utils';
+import { RESOURCE_IDS } from '../domain/resources';
+import { createInitializedState, createSetupWithHand, fixedRandom, fistAttackAbilityId, getCardById, cmd, testSystems } from './test-utils';
 import { formatDiceThroneActionEntry } from '../game';
+import { DiceThroneDomain } from '../domain';
 import { createBonusRollContextFromSettlement } from '../domain/rollContext';
 
 const normalizeEntries = (result: ActionLogEntry | ActionLogEntry[] | null): ActionLogEntry[] => {
@@ -795,6 +799,71 @@ describe('formatDiceThroneActionEntry', () => {
             amount: 1,
         });
         expect(resultSeg?.paramI18nKeys).toContain('tokenLabel');
+    });
+
+    it('起开移除催眠应通过正式日志系统写入玩家日志', () => {
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        let state = createSetupWithHand(['card-get-away'], {
+            playerId: '1',
+            cp: 1,
+            mutate: (core) => {
+                core.phase = 'main1';
+                core.activePlayerId = '1';
+                core.players['0'].tokens[TOKEN_IDS.MESMERIZE] = 1;
+                core.players['1'].resources[RESOURCE_IDS.CP] = 1;
+            },
+        })(['0', '1'], fixedRandom);
+
+        const played = executePipeline(
+            pipelineConfig,
+            state,
+            {
+                ...cmd('PLAY_CARD', '1', { cardId: 'card-get-away' }),
+                timestamp: 42,
+            } as DiceThroneCommand,
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(played.success).toBe(true);
+        state = played.state as MatchState<DiceThroneCore>;
+        expect(state.sys.interaction.current?.kind).toBe('dt:card-interaction');
+
+        const removed = executePipeline(
+            pipelineConfig,
+            state,
+            {
+                ...cmd('REMOVE_STATUS', '1', {
+                    targetPlayerId: '0',
+                    statusId: TOKEN_IDS.MESMERIZE,
+                }),
+                timestamp: 43,
+            } as DiceThroneCommand,
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(removed.success).toBe(true);
+        state = removed.state as MatchState<DiceThroneCore>;
+
+        const tokenEntry = state.sys.actionLog.entries.find(entry => entry.kind === 'TOKEN_CONSUMED');
+        expect(tokenEntry).toBeTruthy();
+        expect(tokenEntry?.actorId).toBe('1');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourcePrefix');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourceResult');
+        expect(tokenEntry?.segments).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'card',
+                cardId: 'card-get-away',
+                previewText: 'cards.card-get-away.name',
+            }),
+        ]));
+        expect(findI18nSegment(
+            tokenEntry!.segments,
+            'actionLog.tokenRemovedBySourceResult',
+        )?.params).toMatchObject({
+            targetPlayerId: '0',
+            tokenLabel: 'tokens.mesmerize.name',
+            amount: 1,
+        });
     });
 
     it('奖励骰出现、修改和被动重投临时骰应写入可区分的操作日志', () => {
