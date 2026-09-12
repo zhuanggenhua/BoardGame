@@ -72,6 +72,25 @@ export interface PipelineResult<TCore> {
     error?: string;
 }
 
+const DEFAULT_MAX_AFTER_EVENTS_ROUNDS = 10;
+
+function applyGameoverCheck<TCore>(
+    domain: DomainCore<TCore, Command, GameEvent>,
+    state: MatchState<TCore>,
+): MatchState<TCore> {
+    if (!domain.isGameOver) return state;
+    const result = domain.isGameOver(state.core);
+    // 仅在状态变化时更新（避免无意义的对象创建）
+    if (result === state.sys.gameover) return state;
+    if (result && !state.sys.gameover) {
+        return { ...state, sys: { ...state.sys, gameover: result } };
+    }
+    if (!result && state.sys.gameover) {
+        return { ...state, sys: { ...state.sys, gameover: undefined } };
+    }
+    return { ...state, sys: { ...state.sys, gameover: result } };
+}
+
 // ============================================================================
 // 创建初始系统状态
 // ============================================================================
@@ -424,21 +443,6 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
 
 
-    // 辅助：检测游戏结束并写入 sys.gameover
-    const applyGameoverCheck = (s: MatchState<TCore>): MatchState<TCore> => {
-        if (!domain.isGameOver) return s;
-        const result = domain.isGameOver(s.core);
-        // 仅在状态变化时更新（避免无意义的对象创建）
-        if (result === s.sys.gameover) return s;
-        if (result && !s.sys.gameover) {
-            return { ...s, sys: { ...s.sys, gameover: result } };
-        }
-        if (!result && s.sys.gameover) {
-            return { ...s, sys: { ...s.sys, gameover: undefined } };
-        }
-        return { ...s, sys: { ...s.sys, gameover: result } };
-    };
-
     for (let round = 0; round < maxRounds; round++) {
         ctx.afterEventsRound = round;
         ctx.pendingAfterEventsToReduceCount = 0;
@@ -532,7 +536,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
         // ⚠️ 关键修复：每轮 afterEvents 结束后检测游戏结束
         // 这样可以在阶段自动推进之前捕获胜利条件（如 end 阶段的印戒胜利）
-        currentState = applyGameoverCheck(currentState);
+        currentState = applyGameoverCheck(domain as DomainCore<TCore, Command, GameEvent>, currentState);
         ctx.state = currentState;
         ctx.pendingAfterEventsToReduceCount = 0;
 
@@ -605,6 +609,78 @@ function applyTutorialRandomPolicy(tutorial: TutorialState | undefined, baseRand
 // 执行管线
 // ============================================================================
 
+export interface AutomaticSystemFlowOptions {
+    maxRounds?: number;
+    playerId?: PlayerId;
+    timestamp?: number;
+}
+
+/**
+ * Runs system after-events without pretending a player command happened.
+ *
+ * Setup can land on a phase that is designed to auto-advance. This helper lets
+ * those systems finish their own automatic lifecycle while action log and undo
+ * systems still see a non-player setup command, so no fake player action is
+ * recorded before the match becomes visible.
+ */
+export function executeAutomaticSystemFlow<
+    TCore,
+    TCommand extends Command = Command,
+    TEvent extends GameEvent = GameEvent
+>(
+    config: PipelineConfig<TCore, TCommand, TEvent>,
+    state: MatchState<TCore>,
+    random: RandomFn,
+    playerIds: PlayerId[],
+    options: AutomaticSystemFlowOptions = {},
+): PipelineResult<TCore> {
+    const domain = config.domain as DomainCore<TCore, Command, GameEvent>;
+    const systems = sortSystems(config.systems);
+    const currentPlayerId = options.playerId ?? playerIds[0] ?? 'system';
+    const allEvents: GameEvent[] = [];
+    const eventCommitEvidence: EventCommitEvidence[] = [];
+    const systemEventsToReduce: GameEvent[] = [];
+    let currentState = domain.normalizeRuntimeState ? domain.normalizeRuntimeState(state) : state;
+
+    const ctx: PipelineContext<TCore> = {
+        state: currentState,
+        command: {
+            type: '__SYSTEM_AUTO_FLOW__',
+            playerId: currentPlayerId,
+            payload: undefined,
+            timestamp: options.timestamp ?? 0,
+        },
+        events: [],
+        random,
+        playerIds,
+    };
+
+    currentState = runAfterEventsRounds({
+        domain,
+        systems,
+        ctx,
+        allEvents,
+        eventCommitEvidence,
+        systemEventsToReduce,
+        random,
+        maxRounds: options.maxRounds ?? DEFAULT_MAX_AFTER_EVENTS_ROUNDS,
+    });
+    currentState = applyGameoverCheck(domain, currentState);
+
+    return eventCommitEvidence.length > 0
+        ? {
+            success: true,
+            state: currentState,
+            events: allEvents,
+            eventCommitEvidence,
+        }
+        : {
+            success: true,
+            state: currentState,
+            events: allEvents,
+        };
+}
+
 export function executePipeline<
     TCore,
     TCommand extends Command = Command,
@@ -618,7 +694,6 @@ export function executePipeline<
 ): PipelineResult<TCore> {
     const { domain } = config;
     const systems = sortSystems(config.systems);
-    const MAX_AFTER_EVENTS_ROUNDS = 10;
 
     let currentState = domain.normalizeRuntimeState ? domain.normalizeRuntimeState(state) : state;
     const allEvents: GameEvent[] = [];
@@ -654,21 +729,6 @@ export function executePipeline<
         events: [],
         random: effectiveRandom,
         playerIds,
-    };
-
-    // 辅助：检测游戏结束并写入 sys.gameover
-    const applyGameoverCheck = (s: MatchState<TCore>): MatchState<TCore> => {
-        if (!domain.isGameOver) return s;
-        const result = domain.isGameOver(s.core);
-        // 仅在状态变化时更新（避免无意义的对象创建）
-        if (result === s.sys.gameover) return s;
-        if (result && !s.sys.gameover) {
-            return { ...s, sys: { ...s.sys, gameover: result } };
-        }
-        if (!result && s.sys.gameover) {
-            return { ...s, sys: { ...s.sys, gameover: undefined } };
-        }
-        return { ...s, sys: { ...s.sys, gameover: result } };
     };
 
     const buildResult = (
@@ -755,11 +815,11 @@ export function executePipeline<
             // 执行 afterEvents hooks（多轮迭代）
             currentState = runAfterEventsRounds({
                 domain, systems, ctx, allEvents, eventCommitEvidence, systemEventsToReduce, random: effectiveRandom,
-                maxRounds: MAX_AFTER_EVENTS_ROUNDS,
+                maxRounds: DEFAULT_MAX_AFTER_EVENTS_ROUNDS,
             });
 
             // 检测游戏结束
-            currentState = applyGameoverCheck(currentState);
+            currentState = applyGameoverCheck(domain as DomainCore<TCore, Command, GameEvent>, currentState);
 
             // 持久化教程 sequence cursor
             currentState = persistRandomCursor(currentState);
@@ -872,12 +932,12 @@ export function executePipeline<
     // 5. 执行 Systems.afterEvents hooks -> 更新 state.sys（多轮迭代）
     currentState = runAfterEventsRounds({
         domain, systems, ctx, allEvents, eventCommitEvidence, systemEventsToReduce, random: effectiveRandom,
-        maxRounds: MAX_AFTER_EVENTS_ROUNDS,
+        maxRounds: DEFAULT_MAX_AFTER_EVENTS_ROUNDS,
     });
 
 
     // 6. 检测游戏结束
-    currentState = applyGameoverCheck(currentState);
+    currentState = applyGameoverCheck(domain as DomainCore<TCore, Command, GameEvent>, currentState);
 
     // 7. 持久化教程 sequence cursor
     currentState = persistRandomCursor(currentState);

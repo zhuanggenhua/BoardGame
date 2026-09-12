@@ -251,6 +251,11 @@ export interface CardPlayCondition {
     requireMinDamageDealt?: number;
     /** 必须消耗装填指示物（Loaded） */
     requireLoaded?: boolean;
+    /** 必须拥有指定数量的 Token / 正面标记，适用于卡牌自身写明的资源门槛。 */
+    requireTokenStacks?: {
+        tokenId: string;
+        min: number;
+    };
     /** 场上任意玩家必须有至少 1 个状态效果或 token（用于状态移除/转移类卡牌） */
     requireAnyStatusOnBoard?: boolean;
     /** 必须存在待结算伤害，并满足指定的伤害响应角色/时机 */
@@ -299,6 +304,12 @@ export type PendingAttackSettlementStage =
     | 'postDamagePending'
     | 'readyToResolve';
 
+export interface AttackBonusDamageSource {
+    amount: number;
+    sourceId?: string;
+    sourceName?: string;
+}
+
 export interface PendingAttack {
     attackerId: PlayerId;
     defenderId?: PlayerId;
@@ -320,6 +331,8 @@ export interface PendingAttack {
     bonusDamage?: number;
     /** 仅来自攻击修正卡的额外伤害，用于右上角攻击修正 UI，避免混入暴击等其他来源 */
     attackModifierBonusDamage?: number;
+    /** bonusDamage 的玩家可见来源明细，用于伤害 breakdown / ActionLog 展示。 */
+    bonusDamageSources?: AttackBonusDamageSource[];
     /**
      * 在 2v2 targetingRoll 的手选目标窗口内提前打出的攻击修正卡。
      * 这些卡会在主攻击 defenderId 最终确定后按出牌顺序补结算，避免额外弹出二次选人交互。
@@ -711,7 +724,7 @@ export interface PendingBonusDiceSettlement {
         effectTargetId?: PlayerId;
         /** bonusDamage 是否应交给同一效果链后续的主伤害消费。 */
         bonusDamageMode?: 'inline' | 'standalone';
-        resolutionMode?: 'damage' | 'attackBonus';
+        resolutionMode?: 'damage' | 'attackBonus' | 'none';
         attackBonusSourceCardId?: string;
         isDefensiveContext?: boolean;
         sfxKey?: string;
@@ -861,6 +874,8 @@ export interface HeroState {
     passiveAbilities?: PassiveAbilityDef[];
     /** 待处理的攻击修正卡伤害（在 pendingAttack 创建前累积，创建时转移到 pendingAttack.attackModifierBonusDamage） */
     pendingBonusDamage?: number;
+    /** pendingBonusDamage 的玩家可见来源明细，创建 pendingAttack 时一起转移。 */
+    pendingBonusDamageSources?: AttackBonusDamageSource[];
     /** 女猎手专属伙伴。伙伴生命独立于英雄生命，并在妮拉倒下时失去激活效果。 */
     companion?: {
         id: 'nyra';

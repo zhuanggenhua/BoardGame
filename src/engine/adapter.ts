@@ -43,6 +43,10 @@ export interface AdapterConfig<
     eventTelemetry?: GameEventTelemetryFormatter<TEvent>;
     /** 是否禁用撤销 */
     disableUndo?: boolean;
+    /** 正式 setup 后是否运行系统级自动流程。 */
+    postSetupAutoFlow?: {
+        maxRounds?: number;
+    };
 }
 
 // ============================================================================
@@ -103,5 +107,6 @@ export function createGameEngine<
         minPlayers: config.minPlayers,
         maxPlayers: config.maxPlayers,
         disableUndo: config.disableUndo,
+        postSetupAutoFlow: config.postSetupAutoFlow,
     };
 }

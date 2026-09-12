@@ -224,6 +224,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             allowedCommands: [BETRAYAL_COMMANDS.USE_POSSESSION],
             allowedTargets: ['omen-book'],
             advanceOnEvents: [{ type: 'POSSESSION_USED', match: { playerId: '0', cardId: 'omen-book' } }],
+            waitForAnimation: true,
             viewAs: '0',
         },
         {
@@ -238,6 +239,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             ],
             allowedTargets: ['rope'],
             advanceOnEvents: [{ type: 'RABBIT_FOOT_USED', match: { playerId: '0', cardId: 'rope' } }],
+            waitForAnimation: true,
             viewAs: '0',
         },
         {
@@ -265,10 +267,11 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'return-to-table-after-damage',
             content: 'game-betrayal:tutorial.basicSetup.steps.returnToTableAfterDamage',
-            highlightTarget: 'betrayal-discovery-continue',
-            position: 'top',
+            highlightTarget: 'betrayal-action-endTurn',
+            position: 'left',
             requireAction: true,
-            allowedCommands: [],
+            allowedCommands: [BETRAYAL_COMMANDS.END_TURN],
+            advanceOnEvents: [{ type: 'TURN_ENDED', match: { previousPlayerId: '0', nextPlayerId: '1' } }],
             viewAs: '0',
         },
     ],
@@ -487,8 +490,8 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'watch-teammate-two-omen-turn',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.watchTeammateTwoOmenTurn',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             infoStep: true,
             viewAs: '0',
             aiActions: [
@@ -537,8 +540,8 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'watch-teammate-haunt-trigger',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.watchTeammateHauntTrigger',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             infoStep: true,
             viewAs: '0',
             aiActions: [
@@ -553,7 +556,6 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'teammate-confirm-haunt-trigger',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.teammateConfirmHauntTrigger',
-            position: 'center',
             viewAs: '0',
             aiActions: [
                 {
@@ -561,6 +563,7 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                     playerId: '1',
                 },
             ],
+            aiDelayMs: 0,
         },
         ...BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS,
     ],
@@ -636,7 +639,7 @@ const BETRAYAL_TRADE_AND_AGREEMENT: TutorialManifest = {
             position: 'top',
             infoStep: true,
             viewAs: '0',
-            aiDelayMs: 1800,
+            aiDelayMs: 2500,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT,
@@ -724,16 +727,6 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
     steps: [
         ...BETRAYAL_BASIC_SETUP_AND_TURN.steps,
         {
-            id: 'end-turn-after-event',
-            content: 'game-betrayal:tutorial.mainPath.steps.endTurnAfterEvent',
-            highlightTarget: 'betrayal-action-endTurn',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [BETRAYAL_COMMANDS.END_TURN],
-            advanceOnEvents: [{ type: 'TURN_ENDED', match: { previousPlayerId: '0', nextPlayerId: '1' } }],
-            viewAs: '0',
-        },
-        {
             id: 'watch-teammate-one-omen-turn',
             content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateOneOmenTurn',
             highlightTarget: 'betrayal-haunt-risk-status',
@@ -777,8 +770,8 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
         {
             id: 'watch-teammate-two-omen-turn',
             content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateTwoOmenTurn',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             infoStep: true,
             viewAs: '0',
             randomPolicy: { mode: 'fixed', values: [1] },
@@ -859,8 +852,8 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
         {
             id: 'watch-teammate-haunt-trigger',
             content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateHauntTrigger',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             infoStep: true,
             viewAs: '0',
             randomPolicy: { mode: 'fixed', values: [3] },
@@ -876,7 +869,6 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
         {
             id: 'teammate-confirm-haunt-trigger',
             content: 'game-betrayal:tutorial.mainPath.steps.teammateConfirmHauntTrigger',
-            position: 'center',
             viewAs: '0',
             aiActions: [
                 {
@@ -884,6 +876,7 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
                     playerId: '1',
                 },
             ],
+            aiDelayMs: 0,
         },
         ...BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS,
     ],

@@ -32,7 +32,7 @@ describe('SmashUp 房间设置解析', () => {
         })).toEqual(['titans']);
     });
 
-    it('余牌查询默认开启，显式关闭时返回 false', () => {
+    it('牌堆可查默认开启，显式关闭时返回 false', () => {
         expect(readSmashUpDeckQueryEnabled()).toBe(true);
         expect(readSmashUpDeckQueryEnabled({
             deckQuery: 'off',
@@ -93,7 +93,7 @@ describe('SmashUp 房间设置解析', () => {
         }, 2)).toBe('ffa');
     });
 
-    it('公开房间摘要会带出余牌查询 tag，但不泄露无关私有字段', () => {
+    it('公开房间摘要会带出牌堆可查 tag，但不泄露无关私有字段', () => {
         expect(buildSmashUpPublicRoomSummary({
             roomName: '不应泄露',
             password: '1234',

@@ -471,11 +471,36 @@ describe('小黑屋操作日志与撤回', () => {
         expect(state.core.recentRoll?.sourceEventRoll).toBeUndefined();
         expect(mentalTraitTotal(state.core, '0')).toBe(8);
 
+        const radioRollId = state.core.recentRoll?.id;
         state = runCommand(state, {
             type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
             playerId: '0',
-            payload: { rollId: state.core.recentRoll?.id },
+            payload: { rollId: radioRollId },
             timestamp: 30,
+        });
+        expect(state.core.pendingEventRollResolution).toMatchObject({
+            rollId: radioRollId,
+            acknowledgedPlayerIds: ['0'],
+            requiredPlayerIds: playerIds,
+        });
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            playerId: '1',
+            payload: { rollId: radioRollId },
+            timestamp: 31,
+        });
+        expect(state.core.pendingEventRollResolution).toMatchObject({
+            rollId: radioRollId,
+            acknowledgedPlayerIds: ['0', '1'],
+            requiredPlayerIds: playerIds,
+        });
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            playerId: '2',
+            payload: { rollId: radioRollId },
+            timestamp: 32,
         }, createBetrayalScriptedRandom(3));
 
         expect(state.core.pendingEventRollResolution).toBeNull();

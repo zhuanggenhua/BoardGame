@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
@@ -9,8 +9,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SocialProvider } from './contexts/SocialContext';
 import { CursorPreferenceProvider } from './core/cursor/CursorPreferenceContext';
 import { useTokenRefresh } from './hooks/useTokenRefresh';
-import { ModalStackProvider } from './contexts/ModalStackContext';
-import { ToastProvider } from './contexts/ToastContext';
+import { ModalStackProvider, useModalStack } from './contexts/ModalStackContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { EngineNotificationListener } from './components/system/EngineNotificationListener';
 import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
@@ -33,6 +33,7 @@ import { GAME_MANIFEST, GAME_MANIFEST_BY_ID } from './games/manifest';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 import { GlobalHUD } from './components/system/GlobalHUD';
 import { CONFIG_REVIEW_PAGE_ROUTES, ConfigReviewRoutePage } from './pages/ConfigReviewRoutes';
+import { useOnlineMatchRouteMissingGuard } from './pages/useOnlineMatchRouteMissingGuard';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
@@ -59,6 +60,27 @@ const LazyToastViewport = React.lazy(loadToastViewportModule);
 const LazyMobileLiveUpdateManager = React.lazy(() => import('./components/system/MobileLiveUpdateManager').then((module) => ({ default: module.MobileLiveUpdateManager })));
 const LazyAndroidNativeUpdateManager = React.lazy(() => import('./components/system/AndroidNativeUpdateManager').then((module) => ({ default: module.AndroidNativeUpdateManager })));
 const LazyAndroidBackNavigationBridge = React.lazy(() => import('./components/system/AndroidBackNavigationBridge').then((module) => ({ default: module.AndroidBackNavigationBridge })));
+
+const OnlineMatchRoomRoute = ({ fallback }: { fallback: React.ReactNode }) => {
+  const { gameId, matchId } = useParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { closeAll } = useModalStack();
+
+  useOnlineMatchRouteMissingGuard({
+    gameId,
+    matchId,
+    navigate,
+    closeAll,
+    toastWarning: toast.warning,
+  });
+
+  return (
+    <React.Suspense fallback={fallback}>
+      <MatchRoom />
+    </React.Suspense>
+  );
+};
 
 const queryClient = new QueryClient();
 
@@ -246,9 +268,7 @@ const AppContent = () => {
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(
-                        <React.Suspense fallback={playRouteFallback}>
-                          <MatchRoom />
-                        </React.Suspense>
+                        <OnlineMatchRoomRoute fallback={playRouteFallback} />
                       )}
                     />
                     <Route

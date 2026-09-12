@@ -933,6 +933,80 @@ export class DiceBoxThreeEngine {
         }
     }
 
+    private resolveContainedRerollLandingScreenDelta(
+        dieIndex: number,
+        layout: DiceBoxProjectedLayout,
+        order: number,
+        canvasWidth: number,
+        canvasHeight: number,
+        baseScale: number,
+    ): { x: number; y: number } {
+        const visualWidth = layout.visualWidth ?? layout.width;
+        const visualHeight = layout.visualHeight ?? layout.height;
+        const margin = Math.max(
+            12,
+            this.styleProfile.projectedLayoutMargin ?? 0,
+            Math.min(20, baseScale * 0.22),
+        );
+        const minDx = margin + visualWidth / 2 - layout.x;
+        const maxDx = canvasWidth - margin - visualWidth / 2 - layout.x;
+        const minDy = margin + visualHeight / 2 - layout.y;
+        const maxDy = canvasHeight - margin - visualHeight / 2 - layout.y;
+        const clampDelta = (value: number, min: number, max: number): number => {
+            if (min > max) return 0;
+            return clampNumber(value, min, max);
+        };
+
+        const towardCenterX = layout.x <= canvasWidth / 2 ? 1 : -1;
+        const towardCenterY = layout.y <= canvasHeight / 2 ? 1 : -1;
+        const alternatingX = order % 2 === 0 ? 1 : -1;
+        const primaryDistance = Math.max(30, Math.min(42, baseScale * 0.58));
+        const secondaryDistance = Math.max(10, Math.min(18, baseScale * 0.22));
+        const candidates = [
+            { x: towardCenterX * primaryDistance, y: towardCenterY * secondaryDistance },
+            { x: towardCenterX * primaryDistance, y: -towardCenterY * secondaryDistance },
+            { x: -towardCenterX * primaryDistance, y: towardCenterY * secondaryDistance },
+            { x: alternatingX * primaryDistance, y: secondaryDistance },
+            { x: alternatingX * primaryDistance, y: -secondaryDistance },
+            { x: towardCenterX * primaryDistance * 0.78, y: 0 },
+            { x: 0, y: towardCenterY * primaryDistance * 0.78 },
+        ];
+        const otherLayouts = this.box.diceList
+            .map((_, index) => (index === dieIndex ? null : this.getProjectedLayout(index, index)))
+            .filter((candidate): candidate is DiceBoxProjectedLayout => Boolean(candidate));
+        const minVisibleDistance = 24;
+        let best: { x: number; y: number; score: number; distance: number } | null = null;
+
+        for (const candidate of candidates) {
+            const x = clampDelta(candidate.x, minDx, maxDx);
+            const y = clampDelta(candidate.y, minDy, maxDy);
+            const distance = Math.hypot(x, y);
+            if (distance < 0.5) continue;
+
+            let crowdingPenalty = 0;
+            for (const other of otherLayouts) {
+                const otherWidth = other.visualWidth ?? other.width;
+                const otherHeight = other.visualHeight ?? other.height;
+                const centerDistance = Math.hypot(layout.x + x - other.x, layout.y + y - other.y);
+                const minimumSeparation = (
+                    Math.min(visualWidth, visualHeight) + Math.min(otherWidth, otherHeight)
+                ) / 2 + (this.styleProfile.projectedLayoutMinGap ?? 8) * 0.65;
+                crowdingPenalty += Math.max(0, minimumSeparation - centerDistance) * 5;
+            }
+
+            const visibilityPenalty = distance < minVisibleDistance ? (minVisibleDistance - distance) * 12 : 0;
+            const distancePenalty = Math.abs(distance - primaryDistance) * 0.8;
+            const directionBias = candidate.x * towardCenterX > 0 ? 4 : 0;
+            const score = directionBias - crowdingPenalty - visibilityPenalty - distancePenalty;
+            if (!best || score > best.score || (score === best.score && distance > best.distance)) {
+                best = { x, y, score, distance };
+            }
+        }
+
+        if (!best) return { x: 0, y: 0 };
+        return { x: best.x, y: best.y };
+    }
+
     private translateDieByScreenDelta(
         die: DiceBoxDieWithBody,
         layout: DiceBoxProjectedLayout,
@@ -1367,6 +1441,7 @@ export class DiceBoxThreeEngine {
             position: { x: number; y: number; z: number };
             rotation: { x: number; y: number; z: number } | null;
             order: number;
+            landingScreenDelta: { x: number; y: number };
         };
 
         const snapshots = indices
@@ -1388,6 +1463,7 @@ export class DiceBoxThreeEngine {
                         }
                         : null,
                     order,
+                    landingScreenDelta: { x: 0, y: 0 },
                 };
             })
             .filter((snapshot): snapshot is RerollSpinSnapshot => Boolean(snapshot));
@@ -1405,6 +1481,21 @@ export class DiceBoxThreeEngine {
         const canvasWidth = canvas?.clientWidth || canvas?.width || 0;
         const canvasHeight = canvas?.clientHeight || canvas?.height || 0;
         const motionScreenMargin = Math.max(2, Math.min(6, baseScale * 0.06));
+        if (canvasWidth > 0 && canvasHeight > 0) {
+            for (const snapshot of snapshots) {
+                const dieIndex = this.box.diceList.indexOf(snapshot.die);
+                const layout = this.getProjectedLayout(dieIndex, dieIndex);
+                if (!layout) continue;
+                snapshot.landingScreenDelta = this.resolveContainedRerollLandingScreenDelta(
+                    dieIndex,
+                    layout,
+                    snapshot.order,
+                    canvasWidth,
+                    canvasHeight,
+                    baseScale,
+                );
+            }
+        }
 
         await new Promise<void>((resolve) => {
             let frameId: number | null = null;
@@ -1484,8 +1575,8 @@ export class DiceBoxThreeEngine {
                             this.translateDieByScreenDelta(
                                 snapshot.die,
                                 projectedLayout,
-                                screenSideTravel * lateralPulse * direction,
-                                screenForwardTravel * forwardPulse,
+                                snapshot.landingScreenDelta.x * eased + screenSideTravel * lateralPulse * direction,
+                                snapshot.landingScreenDelta.y * eased + screenForwardTravel * forwardPulse,
                                 canvasWidth,
                                 canvasHeight,
                             );
@@ -1523,6 +1614,28 @@ export class DiceBoxThreeEngine {
                             snapshot.die.body.aabbNeedsUpdate = true;
                         }
                         snapshot.die.updateMatrixWorld?.(true);
+                        if (canvasWidth > 0 && canvasHeight > 0) {
+                            const projectedLayout = this.getProjectedLayout(
+                                this.box.diceList.indexOf(snapshot.die),
+                                -1,
+                            );
+                            if (projectedLayout) {
+                                this.translateDieByScreenDelta(
+                                    snapshot.die,
+                                    projectedLayout,
+                                    snapshot.landingScreenDelta.x,
+                                    snapshot.landingScreenDelta.y,
+                                    canvasWidth,
+                                    canvasHeight,
+                                );
+                            }
+                            this.keepProjectedDieInsideCanvas(
+                                snapshot.die,
+                                canvasWidth,
+                                canvasHeight,
+                                motionScreenMargin,
+                            );
+                        }
                     }
                     this.box.scene?.updateMatrixWorld?.(true);
                     this.syncDiceHighlightShells();

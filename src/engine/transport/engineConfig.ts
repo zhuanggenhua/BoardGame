@@ -57,6 +57,10 @@ export interface GameEngineConfig<
     maxPlayers?: number;
     /** 是否禁用撤销 */
     disableUndo?: boolean;
+    /** 正式 setup 后是否运行系统级自动流程；仅适用于开局会落在无玩家决策自动阶段的游戏。 */
+    postSetupAutoFlow?: {
+        maxRounds?: number;
+    };
     /** 本地模式开局阶段由游戏声明是否需要代控某个 seat */
     resolveLocalPregameControlledPlayerId?: LocalPregameControlResolver;
     /** 本地热座运行中由游戏声明实际操作者；在线命令不会使用此解析。 */

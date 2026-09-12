@@ -377,7 +377,7 @@ describe('smashup', () => {
         });
     });
 
-    it('余牌查询默认开启', () => {
+    it('牌堆可查默认开启', () => {
         const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
             setupSelections: {
                 expansions: ['titans', 'diy', 'deckQuery'],
@@ -387,7 +387,7 @@ describe('smashup', () => {
         expect(state.deckQueryEnabled).toBe(true);
     });
 
-    it('余牌查询关闭后不会进入运行时状态', () => {
+    it('牌堆可查关闭后不会进入运行时状态', () => {
         const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
             setupSelections: {
                 expansions: ['titans', 'diy'],

@@ -152,6 +152,55 @@ describe('DiceBoxPhysicsSource', () => {
         expect(engineMock.destroy).not.toHaveBeenCalled();
     });
 
+    it('已稳定的骰面身份变化时会重新通知上层 settled 状态', async () => {
+        const onSettledChange = vi.fn();
+        const engineMock = {
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            setCanvasDiagnostics: vi.fn(),
+            setDieSkins: vi.fn(),
+            setDiceHighlights: vi.fn(),
+            getPhysicsState: vi.fn(),
+            hasDice: vi.fn()
+                .mockReturnValueOnce(false)
+                .mockReturnValue(true),
+            rollToValues: vi.fn(),
+            rerollToValues: vi.fn(),
+            syncSettledValues: vi.fn(),
+            previewValues: vi.fn(),
+            clear: vi.fn(),
+            removeDice: vi.fn(),
+            restoreValues: vi.fn().mockResolvedValue(undefined),
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+
+        const view = render(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 2, isKept: false }]}
+                motion={settledMotion}
+                onSettledChange={onSettledChange}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(onSettledChange).toHaveBeenCalledWith(true);
+        });
+        onSettledChange.mockClear();
+
+        view.rerender(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 5, isKept: false }]}
+                motion={settledMotion}
+                onSettledChange={onSettledChange}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(engineMock.syncSettledValues).toHaveBeenCalledWith([5]);
+            expect(onSettledChange).toHaveBeenCalledWith(true);
+        });
+    });
+
     it('同一个投骰动画 key 的确认进度重渲染不会重新滚动骰子', async () => {
         const engineMock = {
             resize: vi.fn(),

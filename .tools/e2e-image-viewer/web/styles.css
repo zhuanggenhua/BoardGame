@@ -1,0 +1,367 @@
+:root {
+  color-scheme: dark;
+  font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+  background: #0e1013;
+  color: #eef2f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0e1013;
+  overflow: hidden;
+  user-select: none;
+}
+
+button {
+  border: 1px solid #3a4250;
+  border-radius: 4px;
+  background: #1b2029;
+  color: #eef2f7;
+  cursor: pointer;
+  font: inherit;
+  min-height: 32px;
+  padding: 6px 10px;
+}
+
+button:hover {
+  background: #2b3344;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #66d9ef;
+  outline-offset: 2px;
+}
+
+.toolbar {
+  align-items: center;
+  border-bottom: 1px solid #2a303a;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 10px 14px;
+}
+
+.title-block {
+  min-width: 0;
+}
+
+.toolbar h1 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.directory {
+  color: #aab4c3;
+  font-size: 12px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.toggle {
+  align-items: center;
+  color: #c8d0dc;
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 59px);
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.viewport {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    #12151b;
+  background-size: 48px 48px;
+  cursor: grab;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+
+.index-panel {
+  background: #10141b;
+  border-right: 1px solid #2a303a;
+  display: flex;
+  flex: 0 0 360px;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  transition: flex-basis 150ms ease;
+}
+
+.index-panel.collapsed {
+  flex-basis: 44px;
+}
+
+.index-header {
+  border-bottom: 1px solid #2a303a;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 10px 8px 10px 14px;
+}
+
+.index-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.index-header strong {
+  color: #eef2f7;
+  font-size: 14px;
+}
+
+.index-header span {
+  color: #8c98aa;
+  font-size: 12px;
+}
+
+.index-toggle {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  font-weight: 700;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 2px 6px;
+}
+
+.index-panel.collapsed .index-header {
+  align-items: center;
+  border-bottom: 0;
+  justify-content: center;
+  padding: 8px;
+}
+
+.index-panel.collapsed .index-title,
+.index-panel.collapsed .index-list {
+  display: none;
+}
+
+.index-list {
+  overflow: auto;
+  padding: 8px;
+  scrollbar-color: #465063 transparent;
+  scrollbar-width: thin;
+}
+
+.index-list::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.index-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.index-list::-webkit-scrollbar-thumb {
+  background: #3a4250;
+  border-radius: 999px;
+}
+
+.index-list::-webkit-scrollbar-thumb:hover {
+  background: #566176;
+}
+
+.index-item {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #dce5f2;
+  display: block;
+  min-height: 0;
+  padding: 9px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.index-item:hover {
+  background: #1b2029;
+  border-color: #323b4b;
+}
+
+.index-item.selected {
+  background: #162a34;
+  border-color: #66d9ef;
+}
+
+.index-item-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.index-item-description {
+  color: #9faabc;
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.viewport.dragging {
+  cursor: grabbing;
+}
+
+.empty {
+  color: #8793a5;
+  left: 50%;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.hidden {
+  display: none;
+}
+
+.board {
+  left: 0;
+  min-height: 1px;
+  min-width: 1px;
+  position: absolute;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+.tile {
+  background: #07090d;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.34);
+  contain: layout paint style;
+  color: #dce5f2;
+  cursor: grab;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  text-align: left;
+}
+
+.viewport.dragging .tile {
+  cursor: grabbing;
+}
+
+.tile.selected {
+  border-color: #66d9ef;
+  box-shadow: 0 0 0 2px #66d9ef, 0 16px 36px rgba(0, 0, 0, 0.42);
+}
+
+.tile.placeholder {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent),
+    #111821;
+}
+
+.tile img,
+.tile video {
+  align-self: center;
+  background: #05070a;
+  display: block;
+  height: 100%;
+  justify-self: center;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  width: 100%;
+}
+
+.tile-placeholder {
+  align-self: center;
+  color: #748094;
+  font-size: 13px;
+  justify-self: center;
+}
+
+.tile-label {
+  background: rgba(10, 13, 18, 0.88);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #dce5f2;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow: hidden;
+  padding: 7px 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusbar {
+  align-items: center;
+  border-top: 1px solid #2a303a;
+  color: #aab4c3;
+  display: flex;
+  font-size: 12px;
+  gap: 16px;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 7px 12px;
+}
+
+#summary,
+#selection {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .content {
+    flex-direction: row;
+  }
+
+  .index-panel {
+    border-right: 1px solid #2a303a;
+    flex: 0 0 280px;
+  }
+
+  .index-panel.collapsed {
+    flex-basis: 44px;
+  }
+
+  .statusbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

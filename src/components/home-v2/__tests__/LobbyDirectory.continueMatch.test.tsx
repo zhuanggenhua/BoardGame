@@ -24,6 +24,13 @@ vi.mock('../../../contexts/AuthContext', () => ({
     }),
 }));
 
+vi.mock('../../../contexts/ModalStackContext', () => ({
+    useModalStack: () => ({
+        openModal: vi.fn(() => 'operation-guide-modal'),
+        closeModal: vi.fn(),
+    }),
+}));
+
 vi.mock('../../lobby/gameDetailsContent', () => ({
     resolveGameDisplayName: (game: { id: string }) => game.id,
 }));

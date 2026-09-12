@@ -31,6 +31,7 @@ import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as re
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LanguageSwitcher } from '../components/common/i18n/LanguageSwitcher';
 import { UserMenu } from '../components/social/UserMenu';
+import { OperationGuideButton } from '../components/system/OperationGuidePanel';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
 import { useUrlModal } from '../hooks/routing/useUrlModal';
@@ -1038,7 +1039,11 @@ export const Home = () => {
                 </div>
 
                 {/* 顶级操作区域 - 移动端放在标题下方，桌面端锁定右上角 */}
-                <div className="flex items-center justify-center gap-4 mb-0 md:absolute md:top-8 md:right-12 md:mb-0 md:gap-4 md:justify-end">
+                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-0 md:absolute md:top-8 md:right-12 md:mb-0 md:flex-nowrap md:justify-end">
+                    <OperationGuideButton
+                        surface={isNativeMobileRuntime() ? 'app' : 'web'}
+                        dataTestId="home-operation-guide-entry"
+                    />
                     {user ? (
                         <UserMenu onLogout={handleLogout} />
                     ) : (

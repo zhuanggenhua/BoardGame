@@ -1,23 +1,87 @@
 import type {
+    BonusDamageAddedEvent,
+    BonusDieInfo,
+    BonusDieRolledEvent,
+    ChoiceRequestedEvent,
+    CpChangedEvent,
     DiceThroneEvent,
     DiceThroneRollContext,
     DamageDealtEvent,
     HealAppliedEvent,
     InteractionRequestedEvent,
     PendingInteraction,
+    TokenConsumedEvent,
     TokenGrantedEvent,
 } from '../types';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceEffectHandler } from '../choiceEffects';
+import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { STATUS_IDS, TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { buildStatusAppliedOrChoiceEvents } from '../statusEvents';
+import { CP_MAX } from '../types';
 
 const VAMPIRE_LORD_MESMERIZE_SETTLEMENT_ID = 'vampire-lord-mesmerize-roll';
+const VAMPIRE_LORD_BLOOD_FROM_ABOVE_SETTLEMENT_ID = 'vampire-lord-blood-from-above-roll';
+const VAMPIRE_LORD_TOTAL_DEMISE_SETTLEMENT_ID = 'vampire-lord-total-demise-roll';
 const VAMPIRE_LORD_BLOOD_MAGIC_SPEND_MESMERIZE_CHOICE_ID = 'vampire-lord-blood-magic-spend-mesmerize';
 const VAMPIRE_LORD_BLOOD_MAGIC_KEEP_DEFENDABLE_CHOICE_ID = 'vampire-lord-blood-magic-keep-defendable';
+const VAMPIRE_LORD_DRINK_UP_CHOICE_ID = 'vampire-lord-drink-up-spend';
+
+const bloodFromAboveAmount = (value: number): number => Math.ceil(value / 2);
+
+function createVampireLordBonusDie(
+    state: CustomActionContext['state'],
+    playerId: string,
+    value: number,
+    index: number,
+    effectKey: string,
+    effectParams?: Record<string, string | number>,
+): BonusDieInfo {
+    const face = getPlayerDieFace(state, playerId, value) ?? '';
+    return {
+        index,
+        value,
+        face,
+        effectKey,
+        effectParams: {
+            value,
+            index,
+            ...(effectParams ?? {}),
+        },
+    };
+}
+
+function buildBloodPowerGrantEvent(
+    state: CustomActionContext['state'],
+    playerId: string,
+    amount: number,
+    sourceAbilityId: string,
+    sourceCommandType: string,
+    timestamp: number,
+): TokenGrantedEvent | null {
+    if (amount <= 0) return null;
+    const currentAmount = state.players[playerId]?.tokens[TOKEN_IDS.BLOOD_POWER] ?? 0;
+    const maxStacks = getTokenStackLimit(state, playerId, TOKEN_IDS.BLOOD_POWER);
+    const newTotal = Math.min(currentAmount + amount, maxStacks);
+    const granted = Math.max(0, newTotal - currentAmount);
+    if (granted <= 0) return null;
+
+    return {
+        type: 'TOKEN_GRANTED',
+        payload: {
+            targetId: playerId,
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: granted,
+            newTotal,
+            sourceAbilityId,
+        },
+        sourceCommandType,
+        timestamp,
+    };
+}
 
 function getSuspendedOpponentRollContext(
     state: CustomActionContext['state'],
@@ -117,6 +181,185 @@ function handleMesmerizeRoll({
             },
         ),
     ];
+}
+
+function handleBloodFromAboveRoll({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+    random,
+}: CustomActionContext): DiceThroneEvent[] {
+    if (!random) return [];
+
+    const value = random.d(6);
+    const die = createVampireLordBonusDie(
+        state,
+        attackerId,
+        value,
+        0,
+        'bonusDie.effect.vampireLordBloodFromAboveDie',
+        { amount: bloodFromAboveAmount(value) },
+    );
+
+    return [
+        {
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face: die.face,
+                playerId: attackerId,
+                targetPlayerId: attackerId,
+                effectKey: die.effectKey,
+                effectParams: die.effectParams,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as BonusDieRolledEvent,
+        createDisplayOnlySettlement(
+            sourceAbilityId,
+            attackerId,
+            attackerId,
+            [die],
+            timestamp + 1,
+            {
+                customResolutionId: VAMPIRE_LORD_BLOOD_FROM_ABOVE_SETTLEMENT_ID,
+                continuation: { kind: 'complete' },
+            },
+        ),
+    ];
+}
+
+function handleTotalDemiseRoll({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+    random,
+}: CustomActionContext): DiceThroneEvent[] {
+    const pendingAttack = state.pendingAttack;
+    if (!random || !pendingAttack || pendingAttack.attackerId !== attackerId) return [];
+
+    const targetPlayerId = pendingAttack.defenderId ?? attackerId;
+    const dice: BonusDieInfo[] = [];
+    const events: DiceThroneEvent[] = [];
+
+    for (let index = 0; index < 5; index += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const isBloodDrop = face === VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP;
+        const die = createVampireLordBonusDie(
+            state,
+            attackerId,
+            value,
+            index,
+            isBloodDrop
+                ? 'bonusDie.effect.vampireLordTotalDemiseDie'
+                : 'bonusDie.effect.vampireLordTotalDemiseOther',
+            { bonusDamage: isBloodDrop ? 1 : 0 },
+        );
+        dice.push(die);
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId,
+                effectKey: die.effectKey,
+                effectParams: die.effectParams,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + index,
+        } as BonusDieRolledEvent);
+    }
+
+    const bloodDropCount = dice.filter(die => die.face === VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP).length;
+    events.push(createDisplayOnlySettlement(
+        sourceAbilityId,
+        attackerId,
+        targetPlayerId,
+        dice,
+        timestamp + dice.length,
+        {
+            summaryEffectKey: 'bonusDie.effect.vampireLordTotalDemiseResult',
+            summaryEffectParams: {
+                bloodDropCount,
+                bonusDamage: bloodDropCount,
+            },
+            customResolutionId: VAMPIRE_LORD_TOTAL_DEMISE_SETTLEMENT_ID,
+            continuation: {
+                kind: 'attack',
+                settlementStage: 'readyToResolve',
+                markBonusDiceResolved: false,
+            },
+        },
+    ));
+
+    return events;
+}
+
+function handleBoilingBloodBonus({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const pendingAttack = state.pendingAttack;
+    if (!pendingAttack || pendingAttack.attackerId !== attackerId) return [];
+
+    const defenderId = pendingAttack.defenderId;
+    const bleedStacks = defenderId
+        ? state.players[defenderId]?.statusEffects[STATUS_IDS.BLEED] ?? 0
+        : 0;
+
+    return [{
+        type: 'BONUS_DAMAGE_ADDED',
+        payload: {
+            playerId: attackerId,
+            amount: 1 + bleedStacks,
+            sourceCardId: sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as BonusDamageAddedEvent];
+}
+
+function handleDrinkUpChoice({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const currentBloodPower = state.players[attackerId]?.tokens[TOKEN_IDS.BLOOD_POWER] ?? 0;
+    if (currentBloodPower < 2) return [];
+
+    const maxSpend = Math.min(currentBloodPower, getTokenStackLimit(state, attackerId, TOKEN_IDS.BLOOD_POWER));
+    const options = Array.from({ length: maxSpend - 1 }, (_, index) => {
+        const value = index + 2;
+        return {
+            value,
+            customId: VAMPIRE_LORD_DRINK_UP_CHOICE_ID,
+            labelKey: 'choices.vampireLordDrinkUp.spend',
+            labelParams: { value },
+        };
+    });
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: attackerId,
+            sourceAbilityId,
+            titleKey: 'choices.vampireLordDrinkUp.title',
+            choiceContext: {
+                attackerId,
+                currentBloodPower,
+            },
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
 }
 
 function handleBloodPowerHealAttackDamage({
@@ -381,8 +624,79 @@ export function registerVampireLordCustomActions(): void {
         return { totalDamage: 0, followupEvents: followup ? [followup] : [] };
     });
 
+    registerBonusDiceSettlementHandler(VAMPIRE_LORD_BLOOD_FROM_ABOVE_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const die = getPendingBonusSettlementDice(settlement)[0];
+        if (!die) return { totalDamage: 0, followupEvents: [] };
+
+        const amount = bloodFromAboveAmount(die.value);
+        const grantEvent = buildBloodPowerGrantEvent(
+            state,
+            settlement.attackerId,
+            amount,
+            settlement.sourceAbilityId,
+            'BONUS_DICE_SETTLED',
+            timestamp + 1,
+        );
+        return {
+            totalDamage: 0,
+            followupEvents: grantEvent ? [grantEvent] : [],
+        };
+    });
+
+    registerBonusDiceSettlementHandler(VAMPIRE_LORD_TOTAL_DEMISE_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const bloodDropCount = getPendingBonusSettlementDice(settlement)
+            .filter(die => die.face === VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP)
+            .length;
+        const followupEvents: DiceThroneEvent[] = [];
+
+        if (bloodDropCount > 0) {
+            followupEvents.push({
+                type: 'BONUS_DAMAGE_ADDED',
+                payload: {
+                    playerId: settlement.attackerId,
+                    amount: bloodDropCount,
+                    sourceCardId: settlement.sourceAbilityId,
+                },
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp: timestamp + 1,
+            } as BonusDamageAddedEvent);
+        }
+
+        if (bloodDropCount >= 3) {
+            followupEvents.push(...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId: settlement.targetId,
+                statusId: STATUS_IDS.BLEED,
+                stacks: 1,
+                sourceAbilityId: settlement.sourceAbilityId,
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp: timestamp + 2,
+            }));
+        }
+
+        return {
+            totalDamage: bloodDropCount,
+            followupEvents,
+        };
+    });
+
     registerCustomActionHandler('vampire-lord-mesmerize-roll', handleMesmerizeRoll, {
         categories: ['token', 'dice'],
+    });
+    registerCustomActionHandler('vampire-lord-blood-from-above-roll', handleBloodFromAboveRoll, {
+        categories: ['dice', 'token'],
+    });
+    registerCustomActionHandler('vampire-lord-total-demise-roll', handleTotalDemiseRoll, {
+        categories: ['dice', 'damage', 'status'],
+        requiresSelectedDefender: true,
+    });
+    registerCustomActionHandler('vampire-lord-boiling-blood-bonus', handleBoilingBloodBonus, {
+        categories: ['damage', 'status'],
+        requiresSelectedDefender: true,
+    });
+    registerCustomActionHandler('vampire-lord-drink-up-choice', handleDrinkUpChoice, {
+        categories: ['choice', 'token', 'resource'],
+        requiresInteraction: true,
     });
     registerCustomActionHandler('vampire-lord-blood-power-heal-attack-damage', handleBloodPowerHealAttackDamage, {
         categories: ['resource', 'passive'],
@@ -428,6 +742,46 @@ export function registerVampireLordCustomActions(): void {
         };
     });
     registerChoiceEffectHandler(VAMPIRE_LORD_BLOOD_MAGIC_KEEP_DEFENDABLE_CHOICE_ID, () => ({}));
+    registerChoiceResolvedEventHandler(VAMPIRE_LORD_DRINK_UP_CHOICE_ID, ({ state, playerId, sourceAbilityId, value, timestamp }) => {
+        if (!sourceAbilityId) return [];
+        const player = state.players[playerId];
+        if (!player) return [];
+
+        const currentBloodPower = player.tokens[TOKEN_IDS.BLOOD_POWER] ?? 0;
+        const spend = typeof value === 'number' && Number.isFinite(value)
+            ? Math.trunc(value)
+            : 0;
+        if (spend < 2 || spend > currentBloodPower) return [];
+
+        const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
+        const newCp = Math.min(currentCp + spend * 2, CP_MAX);
+        const events: DiceThroneEvent[] = [{
+            type: 'TOKEN_CONSUMED',
+            payload: {
+                playerId,
+                tokenId: TOKEN_IDS.BLOOD_POWER,
+                amount: spend,
+                newTotal: currentBloodPower - spend,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'CHOICE_RESOLVED',
+            timestamp,
+        } as TokenConsumedEvent];
+
+        events.push({
+            type: 'CP_CHANGED',
+            payload: {
+                playerId,
+                delta: newCp - currentCp,
+                newValue: newCp,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'CHOICE_RESOLVED',
+            timestamp: timestamp + 1,
+        } as CpChangedEvent);
+
+        return events;
+    });
     registerChoiceEffectHandler('vampire-lord-blood-possessed-inflict-bleed', ({ state, playerId, value }) => {
         const targetId = getBloodPossessedChoiceDefenderId(state, playerId);
         if (!targetId) return undefined;

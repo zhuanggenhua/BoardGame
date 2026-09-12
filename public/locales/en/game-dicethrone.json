@@ -610,7 +610,7 @@
     "mesmerize": {
       "name": "Mesmerize",
       "description": [
-        "Positive token, limit 1. It is not always clickable; when an opponent still has rerollable dice in the current dice area, the board highlights Mesmerize: spend 1 Mesmerize and roll 1 die, then on 5-6 choose 1 opponent die to force a reroll."
+        "Positive status effect, stack limit 1. Force an opponent to reroll 1 die: a player with this token may spend 1 Mesmerize to roll 1 die. On 5-6, they may force an opponent to reroll any 1 die."
       ]
     }
   },
@@ -667,10 +667,14 @@
     "statusApplied": "Applied status {{statusLabel}} to Player {{targetPlayerId}}",
     "statusAppliedDelta": "(+{{stacks}}, now {{total}})",
     "statusRemoved": "Removed status {{statusLabel}} from Player {{targetPlayerId}}",
+    "statusRemovedBySourcePrefix": "With ",
+    "statusRemovedBySourceResult": ", removed status {{statusLabel}} x{{stacks}} from Player {{targetPlayerId}}",
     "statusRemovedDelta": "(-{{stacks}})",
     "tokenGranted": "Granted {{tokenLabel}} x{{amount}} to Player {{targetPlayerId}}",
     "tokenTotal": "(Now {{total}})",
     "tokenConsumed": "Consumed {{tokenLabel}} x{{amount}}",
+    "tokenRemovedBySourcePrefix": "With ",
+    "tokenRemovedBySourceResult": ", removed {{tokenLabel}} x{{amount}} from Player {{targetPlayerId}}",
     "tokenRemaining": "(Remaining {{total}})",
     "tokenUsed": "Use {{tokenLabel}} ({{effectLabel}})",
     "tokenModifier": "(Adjust {{amount}})",
@@ -920,6 +924,7 @@
     "confirm": "Confirm",
     "confirmed": "Confirmed",
     "bonusRoll": "Bonus Roll",
+    "bonusRollOwner": "{{owner}}'s Bonus Roll",
     "bonusRolled": "Bonus roll: {{value}} ({{face}})",
     "face": {
       "fist": "Fist",
@@ -1022,6 +1027,12 @@
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack and inflict Knockdown",
       "tianshi.divinePunishment": "Divine Punishment: resolve damage, Flight, Purify, and Dazzle from the extra dice",
       "vampireLordMesmerizeDie": "Mesmerize roll: {{value}} (5-6 forces 1 opponent die reroll)",
+      "vampireLordBloodSurgeClaw": "Claw: gain 3 Blood Power",
+      "vampireLordBloodSurgeOther": "Non-Claw: draw 1 card",
+      "vampireLordBloodFromAboveDie": "Blood from Above: rolled {{value}}, gain {{amount}} Blood Power",
+      "vampireLordTotalDemiseDie": "Blood Drop: +1 attack damage",
+      "vampireLordTotalDemiseOther": "Non-Blood Drop: no extra attack damage",
+      "vampireLordTotalDemiseResult": "{{bloodDropCount}} Blood Drop: +{{bonusDamage}} attack damage",
       "vampireLordBloodPossessedClaw": "Claw: inflict 1 Bleed on the opponent",
       "vampireLordBloodPossessedMesmerize": "Mesmerize: gain 1 Mesmerize",
       "vampireLordBloodPossessedBloodDrop": "Blood Drop: gain 1 Mesmerize",
@@ -1361,6 +1372,7 @@
     "magnify": "View Large Image",
     "inspectDiscardPile": "View Discard Pile",
     "undoSell": "Undo Sell",
+    "sellCard": "Sell card",
     "play": "Play",
     "upgrade": "Upgrade",
     "sell": "Sell",
@@ -1490,6 +1502,10 @@
       "title": "Blood Magic: spend Mesmerize to make this attack undefendable?",
       "spendMesmerize": "Spend 1 Mesmerize: this attack is undefendable",
       "keepDefendable": "Do not spend"
+    },
+    "vampireLordDrinkUp": {
+      "title": "Drink Up!: choose Blood Power to spend",
+      "spend": "Spend {{value}} Blood Power"
     },
     "lotusPalmUnblockable": {
       "title": "Lotus Bloom",
@@ -5627,10 +5643,10 @@
     "upgrade-lieren-life-revival-2": { "name": "Life Revival II", "description": "Upgrade Life Revival to level II." },
     "upgrade-lieren-savage-force-2": { "name": "Savage Force II / Hunting", "description": "Upgrade Savage Force and add the Hunting branch." },
     "upgrade-lieren-wild-force-2": { "name": "Wild Force II", "description": "Upgrade Wild Force to level II." },
-    "card-vampire-lord-blood-surge": { "name": "Blood Surge!", "description": "Gain 1 Blood Power." },
-    "card-vampire-lord-blood-from-above": { "name": "Blood from Above!", "description": "Gain 1 Blood Power." },
-    "card-vampire-lord-total-demise": { "name": "Total Demise!", "description": "Attack modifier: add +1 attack damage." },
-    "card-vampire-lord-boiling-blood": { "name": "Boiling Blood!", "description": "Attack modifier: add +1 attack damage." },
+    "card-vampire-lord-blood-surge": { "name": "Blood Surge!", "description": "Roll 1 die: if you roll a Claw, gain 3 Blood Power; otherwise draw 1 card." },
+    "card-vampire-lord-blood-from-above": { "name": "Blood from Above!", "description": "Roll 1 die and gain half its value, rounded up, as Blood Power." },
+    "card-vampire-lord-total-demise": { "name": "Total Demise!", "description": "Attack modifier: roll 5 dice; add +1 attack damage for each Blood Drop. If at least 3 damage was added, inflict 1 Bleed." },
+    "card-vampire-lord-boiling-blood": { "name": "Boiling Blood!", "description": "Attack modifier: add +1 attack damage. Also add +1 more attack damage for each Bleed on the attacked opponent." },
     "card-vampire-lord-gushing-blood": { "name": "Gushing Blood!", "description": "Gain 1 Blood Power and 1 Mesmerize." },
     "upgrade-vampire-lord-undying-2": { "name": "Undying II", "description": "Upgrade Undying to level II." },
     "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "Blood Thirst II / Blood River", "description": "Upgrade Blood Thirst to level II and keep the lower Blood River section as a variant of the upgraded ability." },
@@ -5641,8 +5657,8 @@
     "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "Mesmerize Power II / Soul Gaze", "description": "Upgrade Mesmerize Power to level II and keep the lower Soul Gaze section as a variant of the upgraded ability." },
     "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "Upgrade Bloodthirsty Claws to level III." },
     "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "Upgrade Bloodthirsty Claws to level II." },
-    "card-vampire-lord-drink-up": { "name": "Drink Up!", "description": "Gain 2 Blood Power." },
-    "card-vampire-lord-bloodstone": { "name": "Bloodstone!", "description": "Gain 1 Mesmerize and 2 Blood Power, inflict 1 Bleed, and draw 1 card." }
+    "card-vampire-lord-drink-up": { "name": "Drink Up!", "description": "Spend at least 2 Blood Power. Then gain 2 CP for each Blood Power spent." },
+    "card-vampire-lord-bloodstone": { "name": "Bloodstone!", "description": "Gain 1 Mesmerize and 2 Blood Power. Inflict 1 Bleed on an opponent." }
   },
   "passive": {
     "tithes": {
@@ -5708,12 +5724,12 @@
     "drawShort": "Draw 2",
     "draw": "With at least 3 Blood Power, spend 3 Blood Power to draw 2 cards; each effect can be activated once per turn",
     "healShort": "Blood Heal",
-    "heal": "With at least 4 Blood Power, spend 4 Blood Power to heal equal to the damage successfully dealt by this attack; activate only during the Attack Phase, once per effect per turn"
+    "heal": "With at least 4 Blood Power, spend 4 Blood Power to heal equal to the damage successfully dealt by this attack; activate only during your Roll Phase, once per effect per turn"
   },
   "vampireLordMesmerize": {
     "name": "Mesmerize",
-    "useShort": "Mesmerize",
-    "use": "When an opponent still has rerollable dice in the current dice area, spend 1 Mesmerize and roll 1 die; on 5-6, choose 1 opponent die to force a reroll"
+    "useShort": "Use Mesmerize",
+    "use": "Force an opponent to reroll 1 die: a player with this token may spend 1 Mesmerize to roll 1 die. On 5-6, they may force an opponent to reroll any 1 die"
   },
   "artificerWorkshop": {
     "buildNanobotShort": "Build Nano",

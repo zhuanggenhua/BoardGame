@@ -41,6 +41,9 @@ export const engineConfig = createGameEngine<MageWarsCore, MageWarsCommand, Mage
     minPlayers: 2,
     maxPlayers: 2,
     commandTypes: Object.values(MAGE_WARS_COMMANDS),
+    postSetupAutoFlow: {
+        maxRounds: 10,
+    },
 });
 
 registerCriticalImageResolver('mage-wars', mageWarsCriticalImageResolver);

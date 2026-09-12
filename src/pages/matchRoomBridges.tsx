@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useGameClient } from '../engine/transport/react';
 import type { MatchState, TutorialManifest } from '../engine/types';
 import { TUTORIAL_COMMANDS } from '../engine/systems/TutorialSystem';
-import { useTutorial } from '../contexts/TutorialContext';
+import { useTutorial, type TutorialSessionScope } from '../contexts/TutorialContext';
 import { useGameMode } from '../contexts/GameModeContext';
 import type { OnlineAiDebugWindow } from './onlineAiRuntimeSupport';
 
@@ -39,9 +39,11 @@ export type MatchRoomOnlineRuntimeDebugBridgeProps = {
 export const TutorialDispatchBridge = ({
     children,
     tutorialManifest,
+    sessionScope,
 }: {
     children: ReactNode;
     tutorialManifest?: TutorialManifest | null;
+    sessionScope?: TutorialSessionScope | null;
 }) => {
     const { dispatch, state } = useGameClient();
     const { bindDispatch, unbindDispatch, syncTutorialState, tutorial: contextTutorial } = useTutorial();
@@ -53,6 +55,7 @@ export const TutorialDispatchBridge = ({
         manifest: TutorialManifest | null;
         stateKey: string | null;
     }>({ manifest: null, stateKey: null });
+    const sessionScopeKey = sessionScope?.key ?? '';
 
     useLayoutEffect(() => {
         dispatchRef.current = dispatch;
@@ -68,13 +71,14 @@ export const TutorialDispatchBridge = ({
     // playing 阶段的 state，只需预加载一次。
     useLayoutEffect(() => {
         if (!isTutorialMode) return;
-        const gen = contextRef.current.bindDispatch(
-            (...args: [string, unknown?]) => dispatchRef.current(...args),
-        );
+        const dispatchTutorialCommand = (...args: [string, unknown?]) => dispatchRef.current(...args);
+        const gen = sessionScope
+            ? contextRef.current.bindDispatch(dispatchTutorialCommand, sessionScope)
+            : contextRef.current.bindDispatch(dispatchTutorialCommand);
         return () => {
             contextRef.current.unbindDispatch(gen);
         };
-    }, [isTutorialMode]);
+    }, [isTutorialMode, sessionScope]);
 
     useLayoutEffect(() => {
         if (!isTutorialMode || !tutorialManifest) {
@@ -116,6 +120,7 @@ export const TutorialDispatchBridge = ({
         }
 
         const stateKey = [
+            sessionScopeKey,
             tutorial.manifestId,
             tutorial.manifestRevision ?? '',
             tutorial.stepIndex,
@@ -138,6 +143,7 @@ export const TutorialDispatchBridge = ({
         contextTutorial.manifestId,
         contextTutorial.manifestRevision,
         isTutorialMode,
+        sessionScopeKey,
         state,
         tutorialManifest,
     ]);
@@ -162,6 +168,7 @@ export const TutorialDispatchBridge = ({
             return;
         }
         const sig = [
+            sessionScopeKey,
             tutorial.active,
             tutorial.stepIndex,
             tutorial.step?.id ?? '',
@@ -171,12 +178,18 @@ export const TutorialDispatchBridge = ({
         ].join('-');
         if (lastSyncRef.current === sig) return;
         lastSyncRef.current = sig;
-        contextRef.current.syncTutorialState(tutorial);
+        if (sessionScope) {
+            contextRef.current.syncTutorialState(tutorial, undefined, sessionScope);
+        } else {
+            contextRef.current.syncTutorialState(tutorial);
+        }
     }, [
         contextTutorial.active,
         contextTutorial.manifestId,
         contextTutorial.manifestRevision,
         isTutorialMode,
+        sessionScope,
+        sessionScopeKey,
         state,
         tutorialManifest,
     ]);

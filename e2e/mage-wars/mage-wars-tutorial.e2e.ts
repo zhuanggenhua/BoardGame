@@ -16,7 +16,7 @@ const OPPONENT_HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-read-opponent-hud-hid
 const STAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-read-round-stage.png`;
 const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-channel-result-mana-increased.png`;
 const SPELL_CARD_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-read-spell-card-legend.png`;
-const PLANNING_SKIP_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05A-skip-planning-no-spells.png`;
+const PLANNING_SKIP_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05A-confirm-empty-plan-read-only.png`;
 const PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-plan-open-creature-category.png`;
 const PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-plan-creature-next-page-wolf-hidden.png`;
 const PLAN_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-plan-select-wolf-visible.png`;
@@ -391,6 +391,13 @@ function expectPointerCursor(cursor: string, label: string) {
     ).toBe(false);
 }
 
+function expectNotZoomCursor(cursor: string, label: string) {
+    expect(
+        /(?:^|,\s*)zoom-in\s*$/.test(cursor),
+        `${label} 本体不能退回整卡放大 zoom-in 光标: ${cursor}`,
+    ).toBe(false);
+}
+
 async function clickTutorialPrimaryActionBodyTarget(page: Page, target: Locator, tutorialId: string) {
     if (!isMageWarsTutorialArenaTarget(tutorialId)) {
         await target.evaluate((element) => {
@@ -564,6 +571,32 @@ async function clickTutorialSpellbookCardBody(page: Page, card: Locator, cardId:
     await page.mouse.move(audit.point.x, audit.point.y);
     await page.mouse.click(audit.point.x, audit.point.y);
     await expectMagnifyOverlayHidden(page);
+}
+
+async function expectSpellbookCardBodyDoesNotPlanWhenNotTutorialTarget(page: Page, card: Locator, label: string) {
+    await expect(card, `${label} 必须是同屏可见的非目标法术书卡`).toBeVisible({ timeout: 10_000 });
+    const sourceCardId = Number(await card.getAttribute('data-source-card-id'));
+    expect(Number.isFinite(sourceCardId), `${label} 必须保留真实法术卡 id`).toBe(true);
+    await expect(card, `${label} 处于计划操作族时仍必须保留本体主操作语义`).toHaveAttribute('data-primary-action', 'true');
+    await expect(card, `${label} 非当前教程目标时主操作必须置为不可执行`).toHaveAttribute('data-primary-action-state', 'disabled');
+    await expect(card, `${label} 非当前教程目标时本体不能退回整卡浏览放大`).not.toHaveAttribute('data-browse-inspectable', 'true');
+    await expect(card, `${label} 必须保留独立次级检视入口`).toHaveAttribute('data-secondary-inspect', 'true');
+    await expect(card, `${label} 非当前教程目标时本体按钮应不可执行`).toBeDisabled();
+    await expectMagnifyOverlayHidden(page);
+    const draftsBefore = await readPlanningDrafts(page);
+    const audit = await expectLocatorPointUnblocked(card, `${label} ${CARD_BODY_PLAYER_CLICK_POINT.label}`, CARD_BODY_PLAYER_CLICK_POINT);
+    expect(audit.hitInspectButton, `${label} ${CARD_BODY_PLAYER_CLICK_POINT.label}不能命中放大镜按钮: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.hitPrimaryAction, `${label} ${CARD_BODY_PLAYER_CLICK_POINT.label}必须命中本体主操作面，不能命中旁路浏览面: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.hitBrowseInspectable, `${label} ${CARD_BODY_PLAYER_CLICK_POINT.label}不应命中普通浏览放大入口: ${JSON.stringify(audit)}`).toBe(false);
+    expectNotZoomCursor(audit.targetCursor, `${label} ${CARD_BODY_PLAYER_CLICK_POINT.label}`);
+    await page.mouse.move(audit.point.x, audit.point.y);
+    await page.mouse.click(audit.point.x, audit.point.y);
+    expect(await readPlanningDrafts(page)).toEqual(draftsBefore);
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '0/2');
+    await expect(page.getByTestId('mage-wars-plan-spells')).toBeDisabled();
+    await expectMagnifyOverlayHidden(page);
+    await page.mouse.move(4, 4);
+    await expectSpellbookInspectIconOpensWithoutPlanning(page, card, sourceCardId);
 }
 
 async function clickPlanningDraftCardBody(page: Page, cardId: number, planSlotIndex: number) {
@@ -1401,16 +1434,24 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'planning-skip');
-        await expect(page.getByTestId('mage-wars-turn-end')).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByTestId('mage-wars-turn-end')).toContainText('跳过准备法术');
-        await expect(page.getByTestId('mage-wars-turn-end')).toBeDisabled();
+        await expect(page.getByTestId('mage-wars-plan-spells')).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('确认计划 0/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toBeDisabled();
+        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-main-action-mode', 'plan-spells');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '0/2');
         await screenshotTutorialStep(page, 'planning-skip', PLANNING_SKIP_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
-        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
+        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'false');
         await screenshotTutorialStep(page, 'plan-open-creature-category', PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH);
         const beforeCreatureCategoryIds = await visibleDesktopSpellbookCardIds(page);
+        const firstNonTargetSpellbookCard = page.locator('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]').nth(1);
+        await expectSpellbookCardBodyDoesNotPlanWhenNotTutorialTarget(
+            page,
+            firstNonTargetSpellbookCard,
+            '点生物分类步骤里的非目标法术书卡',
+        );
         await clickTutorialTarget(page, 'mw-spellbook-category-creature');
         await waitForTutorialStep(page, 'plan-creature-next-page');
         await expect(page.getByTestId('mage-wars-spellbook-category-creature')).toHaveAttribute('aria-pressed', 'true');
@@ -1970,10 +2011,16 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialNext(page);
         await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
 
-        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
+        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'false');
         await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-visible-card-count', '6');
         await expect(page.getByTestId('mage-wars-desktop-ui-plane')).toHaveAttribute('data-mage-wars-spellbook-visible-card-count', '6');
         await expectMageWarsReadableViewport(page, viewport);
+        const firstNonTargetSpellbookCard = page.locator('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]').nth(1);
+        await expectSpellbookCardBodyDoesNotPlanWhenNotTutorialTarget(
+            page,
+            firstNonTargetSpellbookCard,
+            `${viewport.label} 点生物分类步骤里的非目标法术书卡`,
+        );
         await clickTutorialTarget(page, 'mw-spellbook-category-creature');
         await waitForTutorialStep(page, 'plan-creature-next-page');
         expect(await visibleDesktopSpellbookCardIds(page)).not.toContain('2819');
@@ -1999,7 +2046,9 @@ test.describe('Mage Wars tutorial', () => {
         await clickPlanningDraftCardBody(page, 2819, 1);
         await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
             .toHaveCount(0);
-        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveCount(0);
+        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '0/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('确认计划 0/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toBeDisabled();
         expect(await readPlanningDrafts(page)).toEqual([]);
         await waitForTutorialStep(page, 'plan-select-wolf');
         await expectMageWarsReadableViewport(page, viewport);

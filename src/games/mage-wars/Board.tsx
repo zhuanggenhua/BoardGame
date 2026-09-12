@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useLayoutEffect,
     useId,
     useMemo,
@@ -143,6 +144,11 @@ import {
     isMageWarsActionableCreatureObject,
 } from './ui/actionReadModel';
 import { MageWarsSelectedAbilityActionDock } from './ui/selectedAbilityActionDock';
+import {
+    getMageWarsTurnMainActionModel,
+    type MageWarsTurnMainActionModel,
+} from './ui/turnMainActionModel';
+import { useMageWarsPlanningDraft } from './ui/useMageWarsPlanningDraft';
 
 type Props = GameBoardProps<MageWarsCore>;
 
@@ -153,34 +159,6 @@ const MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT = 6;
 const MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID = 2819;
 const MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID = 3403;
 const MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID = 25700;
-const MAGE_WARS_LOCAL_PLANNING_TUTORIAL_STEP_IDS = new Set([
-    'plan-open-creature-category',
-    'plan-creature-next-page',
-    'plan-select-wolf',
-    'plan-open-incantation-category',
-    'plan-incantation-next-page',
-    'plan-select-rouse',
-    'plan-open-all-category',
-    'plan-wall-next-page',
-    'plan-select-thorns-wall',
-]);
-
-function resolveMageWarsTutorialPlanningDraftCardIds(stepId?: string): number[] {
-    if (
-        stepId === 'plan-open-incantation-category'
-        || stepId === 'plan-incantation-next-page'
-        || stepId === 'plan-select-rouse'
-    ) {
-        return [MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID];
-    }
-    if (stepId === 'plan-confirm') {
-        return [MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID, MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID];
-    }
-    if (stepId === 'plan-confirm-thorns-wall') {
-        return [MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID];
-    }
-    return [];
-}
 // 与大杀四方手牌放大镜同量级：2vw / 8.5vw ≈ 23.5% 卡宽；用卡牌容器宽度自适应，避免 16:9 放大后图标相对变小。
 const MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE = 'clamp(28px, 18.5cqw, 34px)';
 const MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE = 'clamp(15px, 10cqw, 19px)';
@@ -273,26 +251,7 @@ const getVisibleStatusTokenLabel = (
 const SPELL_CARD_BACK = 'mage-wars/cards/backs/spell-card-back';
 const SPELL_CARD_BACK_ASPECT_RATIO = 992 / 1391;
 
-function resolvePhaseAdvanceActionLabelKey(phase: MageWarsPhase): string {
-    switch (phase) {
-        case 'reset':
-        case 'channel':
-        case 'upkeep':
-            throw new Error(`Mage Wars automatic phase cannot expose a manual action: ${phase}`);
-        case 'planning':
-            return 'actions.skipPlanning';
-        case 'deployment':
-            return 'actions.passDeployment';
-        case 'initiativeQuickcast':
-        case 'finalQuickcast':
-            return 'actions.passQuickcast';
-        case 'creatureAction':
-            return 'actions.endAction';
-    }
-}
-
 const CAST_PHASES = new Set(['deployment', 'initiativeQuickcast', 'creatureAction', 'finalQuickcast']);
-const AUTOMATIC_PHASES = new Set<MageWarsPhase>(['reset', 'channel', 'upkeep']);
 const SIMULTANEOUS_PREPARATION_PHASES = new Set(['reset', 'channel', 'upkeep', 'planning']);
 
 type SpellbookCategoryId = 'all' | 'attack' | 'enchantment' | 'creature' | 'incantation' | 'equipment';
@@ -328,6 +287,7 @@ function CardInspectButton({
     title,
     sourceCardId,
     compact = false,
+    readableCompact = false,
     alwaysVisible = false,
     revealOnGroupHover = true,
     onInspect,
@@ -335,6 +295,7 @@ function CardInspectButton({
     title: string;
     sourceCardId?: number;
     compact?: boolean;
+    readableCompact?: boolean;
     alwaysVisible?: boolean;
     revealOnGroupHover?: boolean;
     onInspect: () => void;
@@ -357,7 +318,7 @@ function CardInspectButton({
             type="button"
             className={cx(
                 'absolute right-1 top-1 z-40 grid place-items-center rounded-full border border-amber-100/55 bg-black/74 text-amber-50 shadow-[0_6px_14px_rgba(0,0,0,0.5)] transition-[opacity,border-color,background-color,color] duration-150 hover:border-amber-100 hover:bg-amber-300 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
-                compact && 'h-5 w-5',
+                compact && (readableCompact ? 'h-10 w-10' : 'h-5 w-5'),
                 alwaysVisible
                     ? 'pointer-events-auto opacity-100'
                     : cx(
@@ -380,7 +341,7 @@ function CardInspectButton({
                 onInspect();
             }}
         >
-            <ZoomIn aria-hidden="true" className={compact ? 'h-3 w-3' : undefined} style={referenceIconStyle} strokeWidth={2.3} />
+            <ZoomIn aria-hidden="true" className={compact ? (readableCompact ? 'h-5 w-5' : 'h-3 w-3') : undefined} style={referenceIconStyle} strokeWidth={2.3} />
         </button>
     );
 }
@@ -1152,6 +1113,7 @@ function PreparedSpellCard({
     planSlotIndex,
     copyCount,
     disabled = false,
+    primaryActionIntent = false,
     onClick,
     onInspect,
     tutorialId,
@@ -1169,6 +1131,7 @@ function PreparedSpellCard({
     planSlotIndex?: number;
     copyCount?: number;
     disabled?: boolean;
+    primaryActionIntent?: boolean;
     onClick?: () => void;
     onInspect?: () => void;
     tutorialId?: string;
@@ -1185,9 +1148,10 @@ function PreparedSpellCard({
         ...(!compact ? { containerType: 'inline-size' as const } : {}),
         ...(!compact ? { height: 'var(--mage-wars-desktop-card-height, 14rem)' } : {}),
     };
-    const handleCardClick = onClick ?? onInspect;
-    const canInteract = Boolean(handleCardClick);
-    const hasSecondaryInspect = Boolean(onClick && onInspect);
+    const hasPrimaryActionIntent = Boolean(primaryActionIntent || onClick);
+    const primaryActionEnabled = Boolean(onClick && !disabled);
+    const hasBrowseInspectAction = !hasPrimaryActionIntent && Boolean(onInspect);
+    const hasSecondaryInspect = Boolean(hasPrimaryActionIntent && onInspect);
 
     const content = (
         <>
@@ -1241,48 +1205,52 @@ function PreparedSpellCard({
         </>
     );
 
-    if (canInteract) {
-        if (hasSecondaryInspect) {
-            return (
-                <div className={cx('group relative shrink-0 overflow-visible', cardSizeClass)} style={cardSizeStyle}>
-                    <button
-                        type="button"
-                        className={cx(
-                            'relative block h-full w-full cursor-pointer text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
-                            disabled && !onInspect && 'cursor-not-allowed opacity-45',
-                        )}
-                        data-testid={testId}
-                        data-tutorial-id={tutorialId}
-                        data-mage-wars-prepared-card={preparedScope}
-                        data-source-card-id={cardId ?? undefined}
-                        data-spell-type={cardId == null ? undefined : getMageWarsSpellCardFromConfig(cardId)?.spellType}
-                        data-copy-count={copyCount ?? undefined}
-                        data-selected-count={selectedCount > 0 ? selectedCount : undefined}
-                        data-selected={selected ? 'true' : undefined}
-                        data-planning-draft={planningDraft ? 'true' : undefined}
-                        data-plan-slot-index={planSlotIndex ?? undefined}
-                        data-primary-action="true"
-                        data-secondary-inspect="true"
-                        disabled={disabled}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onClick?.();
-                        }}
-                        aria-label={title}
-                        title={title}
-                    >
-                        {content}
-                    </button>
+    if (hasPrimaryActionIntent) {
+        return (
+            <div className={cx('group relative shrink-0 overflow-visible', cardSizeClass)} style={cardSizeStyle}>
+                <button
+                    type="button"
+                    className={cx(
+                        'relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                        primaryActionEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-65',
+                    )}
+                    data-testid={testId}
+                    data-tutorial-id={tutorialId}
+                    data-mage-wars-prepared-card={preparedScope}
+                    data-source-card-id={cardId ?? undefined}
+                    data-spell-type={cardId == null ? undefined : getMageWarsSpellCardFromConfig(cardId)?.spellType}
+                    data-copy-count={copyCount ?? undefined}
+                    data-selected-count={selectedCount > 0 ? selectedCount : undefined}
+                    data-selected={selected ? 'true' : undefined}
+                    data-planning-draft={planningDraft ? 'true' : undefined}
+                    data-plan-slot-index={planSlotIndex ?? undefined}
+                    data-primary-action="true"
+                    data-primary-action-state={primaryActionEnabled ? 'enabled' : 'disabled'}
+                    data-secondary-inspect={hasSecondaryInspect ? 'true' : undefined}
+                    disabled={!primaryActionEnabled}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        if (!primaryActionEnabled) return;
+                        onClick?.();
+                    }}
+                    aria-label={title}
+                    title={title}
+                >
+                    {content}
+                </button>
+                {hasSecondaryInspect ? (
                     <CardInspectButton
                         title={title}
                         sourceCardId={cardId}
                         compact={compact}
                         onInspect={onInspect!}
                     />
-                </div>
-            );
-        }
+                ) : null}
+            </div>
+        );
+    }
 
+    if (hasBrowseInspectAction) {
         return (
             <button
                 type="button"
@@ -1304,10 +1272,10 @@ function PreparedSpellCard({
                 data-planning-draft={planningDraft ? 'true' : undefined}
                 data-plan-slot-index={planSlotIndex ?? undefined}
                 data-browse-inspectable={onInspect ? 'true' : undefined}
-                disabled={!canInteract}
+                disabled={false}
                 onClick={(event) => {
                     event.stopPropagation();
-                    handleCardClick?.();
+                    onInspect?.();
                 }}
                 aria-label={title}
                 title={title}
@@ -1345,6 +1313,7 @@ function ZoneFieldCard({
     density = 'solo',
     ownerSide,
     tutorialHighlightTarget,
+    primaryActionIntent = false,
     onClick,
     onInspect,
     visualDamage = object?.damage,
@@ -1359,6 +1328,7 @@ function ZoneFieldCard({
     density?: ZoneEntityDensity;
     ownerSide?: SeatOwnerSide;
     tutorialHighlightTarget?: string;
+    primaryActionIntent?: boolean;
     onClick?: () => void;
     onInspect?: () => void;
     visualDamage?: number;
@@ -1384,8 +1354,10 @@ function ZoneFieldCard({
     const damage = visualDamage ?? 0;
 
     if (!previewRef) return null;
-    const handleCardClick = onClick ?? onInspect;
-    const hasSecondaryInspect = Boolean(onClick && onInspect);
+    const hasPrimaryActionIntent = Boolean(primaryActionIntent || onClick);
+    const primaryActionEnabled = Boolean(onClick);
+    const hasBrowseInspectAction = !hasPrimaryActionIntent && Boolean(onInspect);
+    const hasSecondaryInspect = Boolean(hasPrimaryActionIntent && onInspect);
     const objectTutorialTargetId = object ? `mw-arena-object-${object.id}` : undefined;
     const primaryTutorialId = objectTutorialTargetId && tutorialHighlightTarget === objectTutorialTargetId
         ? objectTutorialTargetId
@@ -1447,15 +1419,27 @@ function ZoneFieldCard({
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
                 role === 'target' && 'shadow-[0_0_32px_rgba(16,185,129,0.46)]',
                 role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
-                handleCardClick ? (onClick ? 'cursor-pointer' : 'cursor-zoom-in') : 'pointer-events-none',
-                handleCardClick && 'hover:brightness-110 hover:shadow-[0_0_24px_rgba(251,191,36,0.32)]',
+                primaryActionEnabled
+                    ? 'cursor-pointer'
+                    : hasPrimaryActionIntent
+                        ? 'cursor-not-allowed'
+                        : hasBrowseInspectAction
+                            ? 'cursor-zoom-in'
+                            : 'pointer-events-none',
+                (primaryActionEnabled || hasBrowseInspectAction) && 'hover:brightness-110 hover:shadow-[0_0_24px_rgba(251,191,36,0.32)]',
             )}
             ref={fxAnchorRef}
             style={cardSizeStyle}
-            disabled={!handleCardClick}
+            disabled={!primaryActionEnabled && !hasBrowseInspectAction}
             onClick={(event) => {
                 event.stopPropagation();
-                handleCardClick?.();
+                if (primaryActionEnabled) {
+                    onClick?.();
+                    return;
+                }
+                if (hasBrowseInspectAction) {
+                    onInspect?.();
+                }
             }}
             aria-label={title}
             title={title}
@@ -1470,9 +1454,10 @@ function ZoneFieldCard({
             data-visual-held={visualHeld ? 'true' : undefined}
             data-action-ready={object ? String(object.actionReady) : undefined}
             data-action-token-state={object?.kind === 'creature' ? (object.actionReady ? 'ready' : 'spent') : undefined}
-            data-browse-inspectable={!onClick && onInspect ? 'true' : undefined}
+            data-browse-inspectable={hasBrowseInspectAction ? 'true' : undefined}
             data-secondary-inspect={hasSecondaryInspect ? 'true' : undefined}
-            data-primary-action={onClick ? 'true' : undefined}
+            data-primary-action={hasPrimaryActionIntent ? 'true' : undefined}
+            data-primary-action-state={hasPrimaryActionIntent ? (primaryActionEnabled ? 'enabled' : 'disabled') : undefined}
         >
             {object ? (
                 <span
@@ -1492,6 +1477,7 @@ function ZoneFieldCard({
                     title={title}
                     sourceCardId={cardId}
                     compact={compact}
+                    readableCompact={compact}
                     onInspect={onInspect!}
                 />
             ) : null}
@@ -1504,6 +1490,7 @@ function ArenaAttachmentCard({
     role,
     density = 'solo',
     ownerSide,
+    primaryActionIntent = false,
     onClick,
     onInspect,
     fxAnchorRef,
@@ -1512,6 +1499,7 @@ function ArenaAttachmentCard({
     role?: FieldCardRole;
     density?: ZoneEntityDensity;
     ownerSide?: SeatOwnerSide;
+    primaryActionIntent?: boolean;
     onClick?: () => void;
     onInspect?: () => void;
     fxAnchorRef?: (element: HTMLElement | null) => void;
@@ -1530,8 +1518,10 @@ function ArenaAttachmentCard({
     const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
 
     if (!previewRef) return null;
-    const handleCardClick = onClick ?? onInspect;
-    const hasSecondaryInspect = Boolean(onClick && onInspect);
+    const hasPrimaryActionIntent = Boolean(primaryActionIntent || onClick);
+    const primaryActionEnabled = Boolean(onClick);
+    const hasBrowseInspectAction = !hasPrimaryActionIntent && Boolean(onInspect);
+    const hasSecondaryInspect = Boolean(hasPrimaryActionIntent && onInspect);
 
     const content = (
         <>
@@ -1562,7 +1552,13 @@ function ArenaAttachmentCard({
         'relative block h-full w-full rounded-[0.16rem] text-left shadow-[0_7px_14px_rgba(0,0,0,0.48)]',
         role === 'target' && 'shadow-[0_0_18px_rgba(16,185,129,0.45)]',
         role === 'source' && 'shadow-[0_0_18px_rgba(34,211,238,0.52)]',
-        handleCardClick ? (onClick ? 'cursor-pointer' : 'cursor-zoom-in') : 'pointer-events-none',
+        primaryActionEnabled
+            ? 'cursor-pointer'
+            : hasPrimaryActionIntent
+                ? 'cursor-not-allowed'
+                : hasBrowseInspectAction
+                    ? 'cursor-zoom-in'
+                    : 'pointer-events-none',
     );
 
     const dataProps = {
@@ -1572,19 +1568,28 @@ function ArenaAttachmentCard({
         'data-owner-side': ownerSide,
         'data-attachment-kind': object.kind,
         'data-attachment-role': role,
-        'data-browse-inspectable': !onClick && onInspect ? 'true' : undefined,
+        'data-browse-inspectable': hasBrowseInspectAction ? 'true' : undefined,
         'data-secondary-inspect': hasSecondaryInspect ? 'true' : undefined,
+        'data-primary-action': hasPrimaryActionIntent ? 'true' : undefined,
+        'data-primary-action-state': hasPrimaryActionIntent ? (primaryActionEnabled ? 'enabled' : 'disabled') : undefined,
     };
 
-    if (handleCardClick) {
+    if (primaryActionEnabled || hasBrowseInspectAction || hasPrimaryActionIntent) {
         const primaryButton = (
             <button
                 type="button"
                 className={className}
                 ref={fxAnchorRef as (element: HTMLButtonElement | null) => void}
+                disabled={!primaryActionEnabled && !hasBrowseInspectAction}
                 onClick={(event) => {
                     event.stopPropagation();
-                    handleCardClick();
+                    if (primaryActionEnabled) {
+                        onClick?.();
+                        return;
+                    }
+                    if (hasBrowseInspectAction) {
+                        onInspect?.();
+                    }
                 }}
                 aria-label={title}
                 title={title}
@@ -1603,6 +1608,7 @@ function ArenaAttachmentCard({
                         title={title}
                         sourceCardId={object.sourceSpellCardId}
                         compact
+                        readableCompact
                         onInspect={onInspect!}
                     />
                 ) : null}
@@ -1663,28 +1669,33 @@ function ArenaAttachmentStrip({
             )}
             data-testid={`mage-wars-${hostKind}-attachment-strip`}
         >
-            {objects.map((object) => (
-                <div
-                    key={object.id}
-                    className={cx(
-                        'relative shrink-0',
-                        selectedObjectId === object.id && shouldShowSelectedAbilityActionDock && 'pointer-events-auto z-50',
-                    )}
-                    data-mage-wars-ability-source={selectedObjectId === object.id && shouldShowSelectedAbilityActionDock
-                        ? `object:${object.id}`
-                        : undefined}
-                >
-                    <ArenaAttachmentCard
-                        object={object}
-                        density={density}
-                        role={getRole(object)}
-                        ownerSide={ownerSide}
-                        onClick={getOnClick(object)}
-                        onInspect={getOnInspect?.(object)}
-                        fxAnchorRef={getFxAnchorRef?.(object)}
-                    />
-                </div>
-            ))}
+            {objects.map((object) => {
+                const role = getRole(object);
+                const onAttachmentClick = getOnClick(object);
+                return (
+                    <div
+                        key={object.id}
+                        className={cx(
+                            'relative shrink-0',
+                            selectedObjectId === object.id && shouldShowSelectedAbilityActionDock && 'pointer-events-auto z-50',
+                        )}
+                        data-mage-wars-ability-source={selectedObjectId === object.id && shouldShowSelectedAbilityActionDock
+                            ? `object:${object.id}`
+                            : undefined}
+                    >
+                        <ArenaAttachmentCard
+                            object={object}
+                            density={density}
+                            role={role}
+                            ownerSide={ownerSide}
+                            primaryActionIntent={role != null || onAttachmentClick != null}
+                            onClick={onAttachmentClick}
+                            onInspect={getOnInspect?.(object)}
+                            fxAnchorRef={getFxAnchorRef?.(object)}
+                        />
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -1811,6 +1822,7 @@ function SpellbookShelf({
     onInspectCard,
     tutorialStepId,
     onTutorialPlanningStepComplete,
+    isTutorialTargetAllowed,
     visibleCardCount = MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT,
 }: {
     player: MageWarsPlayerState;
@@ -1822,6 +1834,7 @@ function SpellbookShelf({
     onInspectCard?: (cardId: number, label?: string) => void;
     tutorialStepId?: string;
     onTutorialPlanningStepComplete?: (stepId: string) => void;
+    isTutorialTargetAllowed?: (targetId: string) => boolean;
     visibleCardCount?: number;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -1859,6 +1872,11 @@ function SpellbookShelf({
     const pageCount = Math.max(1, Math.ceil(filteredEntries.length / cardsPerPage));
     const currentPage = Math.min(page, pageCount - 1);
     const previewEntries = filteredEntries.slice(currentPage * cardsPerPage, currentPage * cardsPerPage + cardsPerPage);
+    const canUseTutorialTarget = (targetId: string) => isTutorialTargetAllowed?.(targetId) ?? true;
+    const canPlanVisibleCard = (cardId: number) => (
+        planning && canUseTutorialTarget(`mw-spellbook-card-${cardId}`)
+    );
+    const hasVisiblePlanningAction = previewEntries.some((entry) => canPlanVisibleCard(entry.spellCardId));
     const completeTutorialPlanningStep = (expectedStepId: string) => {
         if (tutorialStepId === expectedStepId) {
             onTutorialPlanningStepComplete?.(expectedStepId);
@@ -1905,7 +1923,7 @@ function SpellbookShelf({
             data-testid="mage-wars-desktop-spellbook-shelf"
             data-tutorial-id="mw-spellbook"
             aria-label={t('privateZones.spellbook')}
-            data-planning-enabled={planning ? 'true' : 'false'}
+            data-planning-enabled={hasVisiblePlanningAction ? 'true' : 'false'}
             data-visible-card-count={cardsPerPage}
         >
             <span className="sr-only">{t('privateZones.spellbook')}</span>
@@ -1913,59 +1931,70 @@ function SpellbookShelf({
                 className="flex h-[var(--mage-wars-spellbook-category-stack-height,13.25rem)] shrink-0 flex-col justify-end gap-[0.25rem]"
                 style={{ width: 'var(--mage-wars-spellbook-control-width, 5rem)' }}
             >
-                {categories.map(({ id, label }) => (
-                    <button
-                        key={id}
-                        type="button"
-                        className={cx(
-                            'min-h-[2rem] whitespace-nowrap rounded-[0.28rem] px-2.5 text-[0.78rem] font-bold leading-none transition',
-                            category === id
-                                ? 'bg-amber-200/85 text-stone-950 shadow-[0_6px_14px_rgba(0,0,0,0.25)]'
-                                : 'bg-black/26 text-stone-200 hover:bg-black/38',
-                        )}
-                        aria-pressed={category === id}
-                        data-testid={`mage-wars-spellbook-category-${id}`}
-                        data-tutorial-id={`mw-spellbook-category-${id}`}
-                        onClick={() => {
-                            setCategory(id);
-                            setPage(0);
-                            if (id === 'creature') {
-                                completeTutorialPlanningStep('plan-open-creature-category');
-                            }
-                            if (id === 'all') {
-                                completeTutorialPlanningStep('plan-open-all-category');
-                            }
-                            if (id === 'incantation') {
-                                completeTutorialPlanningStep('plan-open-incantation-category');
-                            }
-                        }}
-                    >
-                        {label}
-                    </button>
-                ))}
+                {categories.map(({ id, label }) => {
+                    const categoryTutorialId = `mw-spellbook-category-${id}`;
+                    const categoryAllowed = canUseTutorialTarget(categoryTutorialId);
+                    return (
+                        <button
+                            key={id}
+                            type="button"
+                            className={cx(
+                                'min-h-[2rem] whitespace-nowrap rounded-[0.28rem] px-2.5 text-[0.78rem] font-bold leading-none transition',
+                                category === id
+                                    ? 'bg-amber-200/85 text-stone-950 shadow-[0_6px_14px_rgba(0,0,0,0.25)]'
+                                    : 'bg-black/26 text-stone-200 hover:bg-black/38',
+                                !categoryAllowed && 'cursor-not-allowed opacity-45',
+                            )}
+                            aria-pressed={category === id}
+                            disabled={!categoryAllowed}
+                            data-testid={`mage-wars-spellbook-category-${id}`}
+                            data-tutorial-id={categoryTutorialId}
+                            onClick={() => {
+                                if (!categoryAllowed) return;
+                                setCategory(id);
+                                setPage(0);
+                                if (id === 'creature') {
+                                    completeTutorialPlanningStep('plan-open-creature-category');
+                                }
+                                if (id === 'all') {
+                                    completeTutorialPlanningStep('plan-open-all-category');
+                                }
+                                if (id === 'incantation') {
+                                    completeTutorialPlanningStep('plan-open-incantation-category');
+                                }
+                            }}
+                        >
+                            {label}
+                        </button>
+                    );
+                })}
             </div>
             <div
                 className="relative z-10 flex min-w-0 shrink-0 items-end overflow-visible"
                 style={{ gap: 'var(--mage-wars-desktop-card-gap, 0.75rem)' }}
             >
-                {previewEntries.map((entry) => (
-                    <PreparedSpellCard
-                        key={`${player.id}-spellbook-desktop-${entry.spellCardId}`}
-                        cardId={entry.spellCardId}
-                        label={getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell')}
-                        testId="mage-wars-desktop-spellbook-card"
-                        tutorialId={`mw-spellbook-card-${entry.spellCardId}`}
-                        selected={(selectedCountsByCardId.get(entry.spellCardId) ?? 0) > 0}
-                        selectedCount={selectedCountsByCardId.get(entry.spellCardId) ?? 0}
-                        copyCount={entry.count}
-                        disabled={!planning}
-                        onClick={planning ? () => togglePlannedCard(entry.spellCardId, entry.count) : undefined}
-                        onInspect={() => onInspectCard?.(
-                            entry.spellCardId,
-                            getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell'),
-                        )}
-                    />
-                ))}
+                {previewEntries.map((entry) => {
+                    const cardCanPlan = canPlanVisibleCard(entry.spellCardId);
+                    return (
+                        <PreparedSpellCard
+                            key={`${player.id}-spellbook-desktop-${entry.spellCardId}`}
+                            cardId={entry.spellCardId}
+                            label={getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell')}
+                            testId="mage-wars-desktop-spellbook-card"
+                            tutorialId={`mw-spellbook-card-${entry.spellCardId}`}
+                            selected={(selectedCountsByCardId.get(entry.spellCardId) ?? 0) > 0}
+                            selectedCount={selectedCountsByCardId.get(entry.spellCardId) ?? 0}
+                            copyCount={entry.count}
+                            disabled={!cardCanPlan}
+                            primaryActionIntent={planning}
+                            onClick={cardCanPlan ? () => togglePlannedCard(entry.spellCardId, entry.count) : undefined}
+                            onInspect={() => onInspectCard?.(
+                                entry.spellCardId,
+                                getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell'),
+                            )}
+                        />
+                    );
+                })}
             </div>
             <div
                 className="relative z-20 flex h-[11.75rem] shrink-0 flex-col items-center justify-center gap-2 text-stone-100"
@@ -1979,10 +2008,13 @@ function SpellbookShelf({
                         width: 'var(--mage-wars-spellbook-page-button-size, 2.5rem)',
                     }}
                     aria-label={t('spellbook.previousPage')}
-                    disabled={currentPage === 0}
+                    disabled={currentPage === 0 || !canUseTutorialTarget('mw-spellbook-previous-page')}
                     data-testid="mage-wars-spellbook-previous-page"
                     data-tutorial-id="mw-spellbook-previous-page"
-                    onClick={() => setPage((value) => Math.max(0, value - 1))}
+                    onClick={() => {
+                        if (!canUseTutorialTarget('mw-spellbook-previous-page')) return;
+                        setPage((value) => Math.max(0, value - 1));
+                    }}
                 >
                     ‹
                 </button>
@@ -1997,10 +2029,11 @@ function SpellbookShelf({
                         width: 'var(--mage-wars-spellbook-page-button-size, 2.5rem)',
                     }}
                     aria-label={t('spellbook.nextPage')}
-                    disabled={currentPage >= pageCount - 1}
+                    disabled={currentPage >= pageCount - 1 || !canUseTutorialTarget('mw-spellbook-next-page')}
                     data-testid="mage-wars-spellbook-next-page"
                     data-tutorial-id="mw-spellbook-next-page"
                     onClick={() => {
+                        if (!canUseTutorialTarget('mw-spellbook-next-page')) return;
                         setPage((value) => Math.min(pageCount - 1, value + 1));
                         if (category === 'creature') {
                             completeTutorialPlanningStep('plan-creature-next-page');
@@ -2050,6 +2083,7 @@ function PreparedSpellsDock({
     const visibleIds = showingPlanningDraft ? planningDraftIds : preparedIds;
     const visibleSlotTotal = showingPlanningDraft ? MAGE_WARS_MAX_PREPARED_SPELLS : player.preparedSpellSlots;
     const canSelectSpell = canAct && canCast && CAST_PHASES.has(phase);
+    const shouldShowPreparedSummary = phase !== 'planning';
 
     return (
         <section
@@ -2059,12 +2093,14 @@ function PreparedSpellsDock({
             data-tutorial-id="mw-prepared"
             data-layout-position="below-turn-action"
         >
-            <div className="text-center text-[0.66rem] font-semibold text-amber-100">
-                {t('privateZones.preparedSpellsWithCount', {
-                    count: visibleIds.length,
-                    total: visibleSlotTotal,
-                })}
-            </div>
+            {shouldShowPreparedSummary ? (
+                <div className="text-center text-[0.66rem] font-semibold text-amber-100">
+                    {t('privateZones.preparedSpellsWithCount', {
+                        count: visibleIds.length,
+                        total: visibleSlotTotal,
+                    })}
+                </div>
+            ) : null}
             <div
                 className="flex flex-row-reverse justify-end"
                 style={{
@@ -2092,6 +2128,7 @@ function PreparedSpellsDock({
                             planningDraft={isPlanningDraftCard}
                             planSlotIndex={slot + 1}
                             disabled={visibleCardId == null || (!canSelectSpell && !canRemovePlanningDraft)}
+                            primaryActionIntent={visibleCardId != null && (canSelectSpell || canRemovePlanningDraft)}
                             onClick={visibleCardId == null
                                 ? undefined
                                 : canRemovePlanningDraft
@@ -2114,34 +2151,18 @@ function PreparedSpellsDock({
 }
 
 function TurnStatusDock({
-    dispatch,
-    disabled,
-    phase,
+    action,
     compact = false,
-    planSpellCount = 0,
-    planSpellTotal = MAGE_WARS_MAX_PREPARED_SPELLS,
-    onPlanSpells,
+    onAction,
 }: {
-    dispatch: Props['dispatch'];
-    disabled?: boolean;
-    phase: MageWarsPhase;
+    action: MageWarsTurnMainActionModel | null;
     compact?: boolean;
-    planSpellCount?: number;
-    planSpellTotal?: number;
-    onPlanSpells?: () => void;
+    onAction: () => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    // 这些阶段由正式流程自动推进；不要把内部阶段推进命令暴露成“继续重置”按钮。
-    if (AUTOMATIC_PHASES.has(phase)) return null;
+    if (!action) return null;
 
-    const planningActionVisible = phase === 'planning' && planSpellCount > 0;
-    const planningActionActive = Boolean(onPlanSpells && planningActionVisible);
-    const actionDisabled = planningActionVisible ? !planningActionActive : disabled;
-    const buttonTestId = planningActionVisible ? 'mage-wars-plan-spells' : 'mage-wars-turn-end';
-    const tutorialId = planningActionVisible ? 'mw-plan-spells' : 'mw-turn-end';
-    const actionLabel = planningActionVisible
-        ? t('spellbook.planSelected', { count: planSpellCount, total: planSpellTotal })
-        : t(resolvePhaseAdvanceActionLabelKey(phase));
+    const actionLabel = t(action.labelKey, action.labelParams);
 
     return (
         <section
@@ -2154,25 +2175,19 @@ function TurnStatusDock({
                 className={cx(
                     'grid place-items-center whitespace-nowrap rounded-[0.32rem] border border-amber-200/24 font-black text-amber-50 shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition',
                     compact ? 'min-h-11 min-w-28 w-max px-3 py-2 text-base' : 'min-h-[3.25rem] min-w-[13rem] w-max px-5 py-2 text-xl',
-                    actionDisabled
+                    action.disabled
                         ? 'cursor-not-allowed bg-black/20 text-stone-500'
-                        : planningActionActive
+                        : action.emphasized
                             ? 'bg-emerald-300 text-emerald-950 hover:bg-emerald-200'
                             : 'bg-amber-950/36 hover:bg-amber-900/42',
                 )}
-                disabled={actionDisabled}
-                onClick={() => {
-                    if (planningActionActive) {
-                        onPlanSpells?.();
-                        return;
-                    }
-                    dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
-                }}
-                data-testid={buttonTestId}
-                data-tutorial-id={tutorialId}
-                data-main-action-mode={planningActionVisible ? 'plan-spells' : 'advance-phase'}
-                data-main-action-phase={phase}
-                data-plan-progress={planningActionVisible ? `${planSpellCount}/${planSpellTotal}` : undefined}
+                disabled={action.disabled}
+                onClick={onAction}
+                data-testid={action.testId}
+                data-tutorial-id={action.tutorialId}
+                data-main-action-mode={action.mode}
+                data-main-action-phase={action.phase}
+                data-plan-progress={action.planProgress}
             >
                 {actionLabel}
             </button>
@@ -2731,6 +2746,32 @@ function ArenaStage({
                         : isSpellObjectTarget || isObjectAttackTarget || isObjectAbilityTarget || isMageAbilityTarget
                             ? 'target'
                             : undefined;
+                    const fieldCardInPrimaryActionFamily = Boolean(
+                        fieldRole
+                        || canSelectObjectActor
+                        || (
+                            !selectedSpell
+                            && !hasPendingAbilityTarget
+                            && creatureActionActive
+                            && object.ownerId === activePlayer?.id
+                        )
+                        || (
+                            canAct
+                            && object.kind === 'creature'
+                            && object.ownerId === activePlayer?.id
+                            && object.actionReady === false
+                        )
+                        || (
+                            selectedSpell
+                            && spellNeedsObjectTarget
+                        )
+                        || (
+                            selectedObject
+                            && selectedObjectCanAttack
+                            && object.ownerId !== activePlayer?.id
+                        )
+                        || hasPendingAbilityTarget
+                    );
                     return (
                         <div
                             key={object.id}
@@ -2760,6 +2801,7 @@ function ArenaStage({
                                     visualHeld={visualHeld}
                                     showLifeTotals={showLifeTotals}
                                     role={fieldRole}
+                                    primaryActionIntent={fieldCardInPrimaryActionFamily}
                                     onClick={isObjectAbilityTarget || isMageAbilityTarget
                                         ? () => onObjectSelect?.(object.id)
                                         : isSpellObjectTarget
@@ -3492,10 +3534,6 @@ function MageWarsInteractionDock({
 export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData, isMultiplayer }: Props) {
     const { t } = useTranslation('game-mage-wars');
     const [selectedSpellCardId, setSelectedSpellCardId] = useState<number | null>(null);
-    const [planningDraftSelection, setPlanningDraftSelection] = useState<{
-        stepId: string | null;
-        cardIds: number[];
-    } | null>(null);
     const [pendingSpellCastSelection, setPendingSpellCastSelection] = useState<PendingSpellCastSelection | null>(null);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
     const [selectedMageId, setSelectedMageId] = useState<PlayerId | null>(null);
@@ -3567,9 +3605,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         if (tutorialStep.allowedCommands) return tutorialStep.allowedCommands.includes(commandType);
         return !tutorialStep.infoStep;
     };
-    const isLocalPlanningTutorialStep = isTutorialActive
-        && tutorialStep?.id != null
-        && MAGE_WARS_LOCAL_PLANNING_TUTORIAL_STEP_IDS.has(tutorialStep.id);
+    const isTutorialTargetAllowed = useCallback((targetId: string | null | undefined): boolean => {
+        if (!isTutorialActive || !tutorialStep?.allowedTargets || tutorialStep.allowedTargets.length <= 0) {
+            return true;
+        }
+        return !!targetId && tutorialStep.allowedTargets.includes(targetId);
+    }, [isTutorialActive, tutorialStep]);
     const canAdvance = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
         && (SIMULTANEOUS_PREPARATION_PHASES.has(phase) || playerID === phaseActorId)
@@ -3578,29 +3619,23 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         && !readyPlayerIds.includes(playerID)
             && (phase === 'planning' || playerID === phaseActorId);
     const canPlanSpells = isCommandAllowed(MAGE_WARS_COMMANDS.PLAN_SPELLS);
-    const canEditPlanningDrafts = canPlanSpells || isLocalPlanningTutorialStep;
-    const planningDraftStepId = boardTutorialStep?.id ?? tutorialStep?.id ?? null;
-    const tutorialPlanningDraftCardIds = boardTutorialActive && phase === 'planning' && viewingPlayerId === '0'
-        ? resolveMageWarsTutorialPlanningDraftCardIds(planningDraftStepId ?? undefined)
-        : [];
-    const selectedPlanningSpellCardIds = planningDraftSelection?.stepId === planningDraftStepId
-        ? planningDraftSelection.cardIds
-        : tutorialPlanningDraftCardIds;
-    const setSelectedPlanningSpellCardIds: Dispatch<SetStateAction<number[]>> = (nextValue) => {
-        setPlanningDraftSelection((current) => {
-            const currentCardIds = current?.stepId === planningDraftStepId
-                ? current.cardIds
-                : selectedPlanningSpellCardIds;
-            const cardIds = typeof nextValue === 'function'
-                ? nextValue(currentCardIds)
-                : nextValue;
-            return { stepId: planningDraftStepId, cardIds };
-        });
-    };
+    const canEditPlanningDrafts = phase === 'planning'
+        && viewingPlayerId === playerID
+        && (!isTutorialActive || tutorialStep?.infoStep !== true);
+    const {
+        selectedCardIds: selectedPlanningSpellCardIds,
+        setSelectedCardIds: setSelectedPlanningSpellCardIds,
+        clearSelectedCardIds: clearSelectedPlanningSpellCardIds,
+    } = useMageWarsPlanningDraft({
+        phase,
+        viewingPlayerId,
+        currentPlayerId: core.currentPlayerId,
+        phaseActorId,
+        turnNumber: core.turnNumber,
+    });
     const canSubmitSelectedPlanningSpells = phase === 'planning'
         && canAct
-        && canPlanSpells
-        && selectedPlanningSpellCardIds.length > 0;
+        && canPlanSpells;
     const togglePublicViewTarget = (targetPlayerId: PlayerId | null) => {
         if (!targetPlayerId || targetPlayerId === viewingPlayerId) {
             setPublicViewTargetPlayerId(null);
@@ -3619,7 +3654,22 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const planSelectedSpells = () => {
         if (!canSubmitSelectedPlanningSpells) return;
         dispatch(MAGE_WARS_COMMANDS.PLAN_SPELLS, { spellCardIds: selectedPlanningSpellCardIds });
-        setSelectedPlanningSpellCardIds([]);
+        clearSelectedPlanningSpellCardIds();
+    };
+    const turnMainAction = getMageWarsTurnMainActionModel({
+        phase,
+        canAdvance,
+        canSubmitPlanningSpells: canSubmitSelectedPlanningSpells,
+        planSpellCount: selectedPlanningSpellCardIds.length,
+        planSpellTotal: MAGE_WARS_MAX_PREPARED_SPELLS,
+    });
+    const handleTurnMainAction = () => {
+        if (!turnMainAction || turnMainAction.disabled) return;
+        if (turnMainAction.mode === 'plan-spells') {
+            planSelectedSpells();
+            return;
+        }
+        dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
     };
     const removePlanningDraftAtSlot = (slotIndex: number) => {
         const removedCardId = selectedPlanningSpellCardIds[slotIndex];
@@ -4840,6 +4890,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                             onInspectCard={handleInspectSpellCard}
                             tutorialStepId={tutorialStep?.id}
                             onTutorialPlanningStepComplete={() => nextStep('manual')}
+                            isTutorialTargetAllowed={isTutorialTargetAllowed}
                             visibleCardCount={spellbookVisibleCardCount}
                         />
                     ) : null}
@@ -4847,12 +4898,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 <aside className="pointer-events-none flex flex-col items-center gap-2 justify-self-end">
                     <div className="pointer-events-auto">
                         <TurnStatusDock
-                            dispatch={dispatch}
-                            disabled={!canAdvance}
-                            phase={phase}
-                            planSpellCount={selectedPlanningSpellCardIds.length}
-                            planSpellTotal={MAGE_WARS_MAX_PREPARED_SPELLS}
-                            onPlanSpells={canSubmitSelectedPlanningSpells ? planSelectedSpells : undefined}
+                            action={turnMainAction}
+                            onAction={handleTurnMainAction}
                         />
                     </div>
                     {viewingPlayer ? (

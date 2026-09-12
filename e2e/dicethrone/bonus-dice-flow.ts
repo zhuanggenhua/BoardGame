@@ -6,6 +6,9 @@ type ReadGameState = () => Promise<JsonRecord>;
 
 type RightTrayBonusDiceOptions = {
     sourceAbilityId?: string;
+    expectedOwnerId?: string;
+    expectedDefinitionId?: string;
+    expectedOwnerName?: string | RegExp;
 };
 
 type RightTrayBonusDiceReviewOptions = {
@@ -63,7 +66,7 @@ export const expectNoCentralBonusDicePresentation = async (
 
 /**
  * 返回当前页面真实可见的右侧 2D 骰盘。
- * 奖励骰的所有者由页面视角决定，调用方不应再用领域 playerId 猜 DOM 容器。
+ * 右侧栏位置由页面视角决定；奖励骰归属必须由当前奖励骰自己的 ownerId / definitionId 和可见归属标签证明。
  */
 export const getRightTrayDiceTray = (page: Page) => rightTrayRail(page).diceTray;
 
@@ -96,7 +99,12 @@ export const waitForDiceThroneVisualIdle = async (page: Page): Promise<void> => 
 export const expectRightTrayBonusDiceConfirmation = async (
     page: Page,
     readState: ReadGameState,
-    { sourceAbilityId }: RightTrayBonusDiceOptions = {},
+    {
+        sourceAbilityId,
+        expectedOwnerId,
+        expectedDefinitionId,
+        expectedOwnerName,
+    }: RightTrayBonusDiceOptions = {},
 ): Promise<void> => {
     const settlement = async () => {
         return readPendingBonusSettlement(readState);
@@ -114,8 +122,22 @@ export const expectRightTrayBonusDiceConfirmation = async (
     const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]:visible').first();
     const rail = confirmButton.locator('xpath=ancestor::*[@data-player-seat-anchor][1]');
     const diceTray = rail.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
+    const ownerLabel = rail.getByTestId('bonus-dice-owner-label');
+    const firstDie = diceTray.locator('[data-testid^="die-button-"]').first();
     await expectNoCentralBonusDicePresentation(page);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
+    await expect(ownerLabel).toBeVisible({ timeout: 10000 });
+    if (expectedOwnerId) {
+        await expect(firstDie).toHaveAttribute('data-owner-id', expectedOwnerId);
+        await expect(ownerLabel).toHaveAttribute('data-bonus-dice-owner-id', expectedOwnerId);
+    }
+    if (expectedDefinitionId) {
+        await expect(firstDie).toHaveAttribute('data-definition-id', expectedDefinitionId);
+        await expect(ownerLabel).toHaveAttribute('data-bonus-dice-definition-id', expectedDefinitionId);
+    }
+    if (expectedOwnerName) {
+        await expect(ownerLabel).toContainText(expectedOwnerName);
+    }
     await expect(confirmButton).toBeVisible({ timeout: 10000 });
     await expect(confirmButton).toBeEnabled();
     await expect(confirmButton).toHaveText(/^(确认|Confirm)$/);

@@ -14,6 +14,7 @@ import { useDebug } from '../contexts/DebugContext';
 import type { TutorialManifest } from '../engine/types';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';
+import { buildTutorialSessionScope } from '../contexts/TutorialContext';
 import { resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 import {
     buildTutorialProgressSeed,
@@ -62,6 +63,15 @@ const TutorialLocalGameRuntime = ({
         runtime.tutorialManifest?.id,
         runtime.tutorialManifest?.revision,
     ) ?? `tutorial-${runtime.gameId ?? 'unknown'}`;
+    const tutorialSessionScope = useMemo(() => buildTutorialSessionScope({
+        gameId: runtime.gameId,
+        tutorialId: runtime.tutorialId,
+        manifest: runtime.tutorialManifest,
+    }), [
+        runtime.gameId,
+        runtime.tutorialId,
+        runtime.tutorialManifest,
+    ]);
     const restorableProgress = useMemo(() => readRestorableTutorialProgress({
         gameId: runtime.gameId,
         tutorialId: runtime.tutorialId,
@@ -193,8 +203,12 @@ const TutorialLocalGameRuntime = ({
             persistSession={Boolean(runtime.gameId)}
             persistGameId={runtime.gameId}
             shouldRestorePersistedSession={shouldRestorePersistedSession}
+            disableLocalAiAutomation
         >
-            <TutorialDispatchBridge tutorialManifest={runtime.tutorialManifest}>
+            <TutorialDispatchBridge
+                tutorialManifest={runtime.tutorialManifest}
+                sessionScope={tutorialSessionScope}
+            >
                 <BoardBridge
                     board={runtime.board}
                     renderer={runtime.boardRenderer}

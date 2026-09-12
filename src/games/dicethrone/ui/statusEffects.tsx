@@ -1008,7 +1008,7 @@ export const TokenBadge = ({
                     type="button"
                     aria-label={info.name}
                     data-testid={dataTestId ? `${dataTestId}-hit-target` : undefined}
-                    className="absolute left-1/2 top-1/2 z-20 min-h-[50px] min-w-[50px] -translate-x-1/2 -translate-y-1/2 rounded-full border-0 bg-transparent p-0 opacity-0"
+                    className="absolute left-1/2 top-1/2 z-20 min-h-[50px] min-w-[50px] -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-0 bg-transparent p-0 opacity-0"
                     onClick={(event) => {
                         event.stopPropagation();
                         onClick?.();

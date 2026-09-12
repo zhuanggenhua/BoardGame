@@ -1,0 +1,84 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-e2e-proof",
+    "viewer": "inline-screenshot-and-paths",
+    "finalPassBeforeOpen": true
+  },
+  "testRun": {
+    "command": "node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/vampire-lord-real-entry.e2e.ts \"催眠应在对手确认骰后打开响应窗口，并通过点击 token 本体改对手骰\"",
+    "result": "1 passed",
+    "finishedAtLocal": "2026-09-12 22:19:39 Asia/Shanghai",
+    "runtime": "project run-e2e-single wrapper attached to managed shared-single runtime"
+  },
+  "requirements": [
+    {
+      "requirement": "对手确认当前骰区后必须触发 afterRollConfirmed 响应窗口",
+      "status": "PASS",
+      "evidence": [
+        "E2E 先确认催眠不是常驻可点：对手确认前 token data-token-clickable=false，页面没有响应窗口提示。",
+        "对手通过正式 CONFIRM_ROLL 后，E2E 断言 rollConfirmed=true、响应窗口类型为 afterRollConfirmed、当前响应者为吸血鬼玩家 0、当前骰区 owner 为对手玩家 1。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-token本体高亮.jpg"
+      ]
+    },
+    {
+      "requirement": "合法入口必须是左侧催眠 token 本体高亮并点击，不是新增按钮",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言旧右侧 passive-action-vampire-lord-mesmerize-0 按钮不存在。",
+        "E2E 断言左侧催眠 token 本体可见，data-token-clickable=true，available halo/body 可见，真实命中区大于 44x44，中心点命中 token 命中区且 cursor 为 pointer。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-token本体高亮.jpg"
+      ]
+    },
+    {
+      "requirement": "点击 token 本体后必须消耗 1 个催眠并投 1 颗临时骰",
+      "status": "PASS",
+      "evidence": [
+        "E2E 点击 dt-player-0-token-mesmerize-hit-target 后，断言催眠数量变为 0，临时骰来源为 mesmerize，临时骰结果为 6，面为 blood_drop。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-临时骰确认前.jpg"
+      ]
+    },
+    {
+      "requirement": "临时骰 5-6 后必须选择 1 颗对手骰并强迫重掷",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言进入对手骰选择状态，当前可选对手骰为 0 和 1，点击第一颗后它进入选中态，确认按钮可用。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-选择对手骰.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-对手骰已选待确认.jpg"
+      ]
+    },
+    {
+      "requirement": "确认后必须改掉对手骰并关闭响应窗口",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言第一颗对手骰从 6 重掷为 2，出现 DIE_REROLLED，响应窗口 current 清空。",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-重掷后收口.jpg"
+      ]
+    },
+    {
+      "requirement": "玩家可见描述必须只保留规则效果，不混入响应窗口、高亮、点击路径、E2E 或实施中说明",
+      "status": "PASS",
+      "evidence": [
+        "public/locales/zh-CN/game-dicethrone.json 的 tokens.mesmerize.description 只保留正面状态、堆叠上限、花费 1 个催眠并投 1 颗骰子、5-6 强迫对手重掷 1 颗骰子。",
+        "public/locales/en/game-dicethrone.json 已同步 spend 1 Mesmerize to roll 1 die 口径。",
+        "src/games/dicethrone/__tests__/vampire-lord-intake.test.ts 已断言中英文催眠规则描述和使用文案不包含响应窗口、高亮、点击、左侧、E2E 或 implementation 等界面/验收说明。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-token本体高亮.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-临时骰确认前.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-选择对手骰.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-对手骰已选待确认.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-重掷后收口.jpg"
+  ],
+  "observations": [
+    "首图里桌面中央出现“可以响应 / 跳过”响应窗口，左侧催眠 token 本体有白色高亮圈；右侧没有旧的催眠按钮。",
+    "临时骰图证明点击 token 后进入催眠投骰结果确认。",
+    "对手骰选择图证明 5-6 后右侧对手骰本体变为可选。",
+    "待确认图证明玩家点击对手骰后有选中态和可用确认按钮。",
+    "收口图证明对手骰结果已从 6 变为 2，响应窗口和选择状态退场。"
+  ]
+}

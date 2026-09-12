@@ -405,7 +405,7 @@ describe('小黑屋本地 AI', () => {
             .toBeUndefined();
         expect(result.state.core.pendingDamageAllocation).toBeNull();
 
-        const finalized = executePipeline(
+        const triggeringPlayerAcknowledged = executePipeline(
             {
                 domain: engineConfig.domain,
                 systems: engineConfig.systems,
@@ -415,6 +415,53 @@ describe('小黑屋本地 AI', () => {
                 type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
                 playerId: '2',
                 payload: { rollId: result.state.core.pendingEventRollResolution?.rollId },
+                timestamp: 201,
+            } as BetrayalCommand,
+            createBetrayalScriptedRandom(3),
+            core.playerIds,
+        );
+
+        expect(triggeringPlayerAcknowledged.success).toBe(true);
+        expect(triggeringPlayerAcknowledged.state.core.pendingEventRollResolution).toMatchObject({
+            playerId: '2',
+            sourceTitle: '无线电广播',
+            acknowledgedPlayerIds: ['2'],
+            requiredPlayerIds: ['0', '1', '2', '3'],
+        });
+        expect(triggeringPlayerAcknowledged.state.core.pendingDamageAllocation).toBeNull();
+
+        let finalState = triggeringPlayerAcknowledged.state;
+        for (const playerId of ['0', '1']) {
+            const acknowledgement = executePipeline(
+                {
+                    domain: engineConfig.domain,
+                    systems: engineConfig.systems,
+                },
+                finalState,
+                {
+                    type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                    playerId,
+                    payload: { rollId: finalState.core.pendingEventRollResolution?.rollId },
+                    timestamp: 201,
+                } as BetrayalCommand,
+                BETRAYAL_FIXED_RANDOM,
+                core.playerIds,
+            );
+            expect(acknowledgement.success).toBe(true);
+            expect(acknowledgement.state.core.pendingDamageAllocation).toBeNull();
+            finalState = acknowledgement.state;
+        }
+
+        const finalized = executePipeline(
+            {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems,
+            },
+            finalState,
+            {
+                type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                playerId: '3',
+                payload: { rollId: finalState.core.pendingEventRollResolution?.rollId },
                 timestamp: 201,
             } as BetrayalCommand,
             createBetrayalScriptedRandom(3),

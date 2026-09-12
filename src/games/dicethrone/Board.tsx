@@ -90,6 +90,7 @@ import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
 import { useDieRerollAnimationConsumer } from './hooks/useDieRerollAnimationConsumer';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { getCurrentRollDice, isCurrentBonusRollSettlement, isSettledReplayOnlyRollContext } from './domain/rollContext';
+import { getUsableActiveRollToken, getUsableActiveRollTokens } from './domain/activeRollTokens';
 import { getAutoResponseEnabled } from './ui/responsePreferences';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import {
@@ -633,6 +634,28 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingDamage,
         isTeamDirectActor: isDirectDiceActor,
     });
+    const defensiveAutoObserveKey = currentPhase === 'defensiveRoll' && shouldAutoObserve && G.pendingAttack
+        ? [
+            G.turnNumber,
+            G.pendingAttack.attackerId,
+            G.pendingAttack.defenderId,
+            G.pendingAttack.sourceAbilityId,
+            rollerId,
+        ].join(':')
+        : null;
+    const appliedDefensiveAutoObserveKeyRef = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        if (!defensiveAutoObserveKey) {
+            appliedDefensiveAutoObserveKeyRef.current = null;
+            return;
+        }
+        if (appliedDefensiveAutoObserveKeyRef.current === defensiveAutoObserveKey) return;
+        appliedDefensiveAutoObserveKeyRef.current = defensiveAutoObserveKey;
+        if (manualViewMode !== 'opponent') {
+            setViewMode('opponent');
+        }
+    }, [defensiveAutoObserveKey, manualViewMode, setViewMode]);
 
     const responseViewSuggestionKey = getResponseViewSuggestionKey({
         rootPlayerId: rootPid,
@@ -670,8 +693,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     const isFourPlayerView = otherPids.length > 1;
     const handleOpponentHeaderSelect = React.useCallback((targetPid: string) => {
-        if (shouldAutoObserve) return;
-
         if (targetPid !== focusedPid || isSelfView) {
             setFocusedPid(targetPid);
             setViewMode('opponent');
@@ -684,7 +705,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
 
         toggleViewMode();
-    }, [shouldAutoObserve, focusedPid, isSelfView, isFourPlayerView, setViewMode, toggleViewMode]);
+    }, [focusedPid, isSelfView, isFourPlayerView, setViewMode, toggleViewMode]);
 
     const viewPid = isSelfView ? rootPid : otherPid;
     const viewPlayer = (isSelfView ? player : opponent) || player;
@@ -1169,6 +1190,32 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         && (player.tokens?.[TOKEN_IDS.NYRAS_BOND] ?? 0) > 0
         && Boolean(player.companion)
         && (player.companion?.hp ?? 0) < (player.companion?.maxHp ?? 0);
+
+    const activeRollTokenIds = React.useMemo(() => {
+        if (isSpectator || G.pendingDamage || (currentPhase !== 'offensiveRoll' && currentPhase !== 'defensiveRoll')) {
+            return [];
+        }
+        if (isResponseWindowOpen) {
+            if (currentResponseWindow?.windowType !== 'afterRollConfirmed') return [];
+            if (currentResponderId !== rootPid && !isDirectDiceActor) return [];
+        }
+
+        const responseWindowType = currentResponseWindow?.windowType === 'afterRollConfirmed'
+            ? currentResponseWindow.windowType
+            : undefined;
+        return getUsableActiveRollTokens(G, rootPid, currentPhase, { responseWindowType })
+            .map(entry => entry.tokenId);
+    }, [G, currentPhase, currentResponderId, currentResponseWindow, isDirectDiceActor, isResponseWindowOpen, isSpectator, rootPid]);
+
+    const handleActiveRollTokenClick = React.useCallback((tokenId: string) => {
+        if (!activeRollTokenIds.includes(tokenId)) return;
+        const responseWindowType = currentResponseWindow?.windowType === 'afterRollConfirmed'
+            ? currentResponseWindow.windowType
+            : undefined;
+        const activeRollToken = getUsableActiveRollToken(G, rootPid, currentPhase, tokenId, { responseWindowType });
+        if (!activeRollToken) return;
+        engineMoves.useToken(tokenId, activeRollToken.defaultAmount);
+    }, [G, activeRollTokenIds, currentPhase, currentResponseWindow, engineMoves, rootPid]);
 
     // 是否可以移除击倒（有击倒状态且 CP >= 2 且在 offensiveRoll 前的阶段）
     const canRemoveKnockdown = !isSpectator && isActivePlayer &&
@@ -2192,6 +2239,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         tokenDefinitions={G.tokenDefinitions}
                         responseTokenIds={tokenInteraction?.tokenIds}
                         onResponseTokenClick={tokenInteraction?.onTokenClick}
+                        activeTokenIds={activeRollTokenIds}
+                        onActiveTokenClick={handleActiveRollTokenClick}
                         isHandHidden={isHandHidden}
                         onToggleHandHidden={handleToggleHandHidden}
                         onKnockdownClick={() => openUiModal('removeKnockdown')}

@@ -19,6 +19,7 @@ import {
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY,
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE,
   BETRAYAL_REROLL_TARGET_CENTER_SOURCE,
+  BETRAYAL_REROLL_TARGET_OUTLINE_GAP,
   BETRAYAL_REROLL_VISUAL_CONTRACT,
   createBetrayalHouseDiceSkin,
   getBetrayalRerollTargetHitSize,
@@ -45,6 +46,7 @@ type BetrayalHouseDice3DGroupProps = {
   locale: string;
   canvasTestId: string;
   animateInitialRoll?: boolean;
+  animateRerollMotion?: boolean;
   styleProfile?: DiceBoxStyleProfile;
   visualScale?: number;
   rerollSelection?: RecentRollRerollSelection | null;
@@ -56,6 +58,7 @@ export function BetrayalHouseDice3DGroup({
   className = "",
   canvasTestId,
   animateInitialRoll = true,
+  animateRerollMotion = true,
   rerollSelection,
   styleProfile = BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
   visualScale = 1,
@@ -94,6 +97,9 @@ export function BetrayalHouseDice3DGroup({
   const diceMotion = React.useMemo(
     () => {
       if (rerollingDieIndex !== null) {
+        if (!animateRerollMotion) {
+          return { type: "settled" as const };
+        }
         return {
           type: "reroll" as const,
           id: [
@@ -118,6 +124,7 @@ export function BetrayalHouseDice3DGroup({
     },
     [
       animateInitialRoll,
+      animateRerollMotion,
       consumedRabbitFootSignature,
       diceSignature,
       previousRerollDiceSignature,
@@ -390,11 +397,6 @@ export function BetrayalHouseDice3DGroup({
               targetOutlineSize.width,
               targetOutlineSize.height,
             );
-            const outlineBorderWidth = isSelectedRerollTarget ? 2.5 : 1.75;
-            const outlineColor = isSelectedRerollTarget ? "#ff4df8" : "#00e7ff";
-            const outlineShadow = isSelectedRerollTarget
-              ? "0 0 0 1px rgba(255, 244, 210, 0.78), 0 0 12px rgba(255, 77, 248, 0.88)"
-              : "0 0 0 1px rgba(245, 255, 255, 0.58), 0 0 8px rgba(0, 231, 255, 0.68)";
             return (
               <div
                 key={`${roll.id}-reroll-target-${target.dieIndex}`}
@@ -419,13 +421,13 @@ export function BetrayalHouseDice3DGroup({
                 data-reroll-target-projected-height={targetProjectedHeight.toFixed(2)}
                 data-reroll-target-outline-width={targetOutlineSize.width.toFixed(2)}
                 data-reroll-target-outline-height={targetOutlineSize.height.toFixed(2)}
-                data-reroll-target-outline-gap="1.50"
-                data-reroll-target-outline-paint="projected-edge-outline"
+                data-reroll-target-outline-gap={BETRAYAL_REROLL_TARGET_OUTLINE_GAP.toFixed(2)}
+                data-reroll-target-outline-paint={BETRAYAL_REROLL_HIGHLIGHT_RENDERER}
                 data-reroll-target-outline-point-count={0}
                 data-reroll-target-outline-points=""
                 data-reroll-target-highlight-renderer={BETRAYAL_REROLL_HIGHLIGHT_RENDERER}
                 data-reroll-target-visual-contract={BETRAYAL_REROLL_VISUAL_CONTRACT}
-                data-reroll-target-visual-layer="projected-edge-outline-plus-transparent-hitbox"
+                data-reroll-target-visual-layer="transparent-hitbox-only"
                 className="group pointer-events-auto absolute outline-none"
                 style={{
                   left:
@@ -438,7 +440,7 @@ export function BetrayalHouseDice3DGroup({
                       : `${targetVisualCenter.y}px`,
                   width: `${targetWidth}px`,
                   height: `${targetHeight}px`,
-                  transform: `translate(-50%, -50%) rotate(${targetVisualRotation}rad)`,
+                  transform: "translate(-50%, -50%)",
                   transformOrigin: "center center",
                 }}
                 onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
@@ -449,21 +451,6 @@ export function BetrayalHouseDice3DGroup({
                 <span className="sr-only">
                   {rerollSelection.getDieActionLabel(target.dieIndex)}
                 </span>
-                <span
-                  aria-hidden="true"
-                  data-testid={`betrayal-house-dice-reroll-target-outline-${target.dieIndex}`}
-                  data-reroll-target-outline-selected={isSelectedRerollTarget ? "true" : "false"}
-                  className="pointer-events-none absolute left-1/2 top-1/2 block"
-                  style={{
-                    width: `${targetOutlineSize.width}px`,
-                    height: `${targetOutlineSize.height}px`,
-                    transform: "translate(-50%, -50%)",
-                    border: `${outlineBorderWidth}px solid ${outlineColor}`,
-                    borderRadius: `${Math.max(7, Math.min(10, targetMaxSize * 0.19))}px`,
-                    boxShadow: outlineShadow,
-                    background: "transparent",
-                  }}
-                />
               </div>
             );
           })}

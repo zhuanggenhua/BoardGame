@@ -17,6 +17,8 @@ const tutorialState = {
     tutorial: {
         manifestId: null as string | null,
     },
+    activeSessionScope: null as import('../../contexts/TutorialContext').TutorialSessionScope | null,
+    activateTutorialSession: vi.fn(),
     startTutorial: vi.fn(),
     closeTutorial: vi.fn(),
     isActive: false,
@@ -28,9 +30,13 @@ vi.mock('../../components/tutorial/TutorialOverlay', () => ({
     TutorialOverlay: () => null,
 }));
 
-vi.mock('../../contexts/TutorialContext', () => ({
-    useTutorial: () => tutorialState,
-}));
+vi.mock('../../contexts/TutorialContext', async () => {
+    const actual = await vi.importActual<typeof import('../../contexts/TutorialContext')>('../../contexts/TutorialContext');
+    return {
+        ...actual,
+        useTutorial: () => tutorialState,
+    };
+});
 
 const makeManifest = (id: string, stepIds: string[]): TutorialManifest => ({
     id,
@@ -55,6 +61,17 @@ const makeCatalog = (entries: Array<{
             manifest: makeManifest(entry.id, ['overview', 'finish']),
         },
     ])),
+});
+
+const expectTutorialScope = (
+    gameId: string,
+    tutorialId: string | undefined,
+    manifest: TutorialManifest,
+) => expect.objectContaining({
+    gameId,
+    tutorialId: tutorialId ?? manifest.id,
+    manifestId: manifest.id,
+    manifestRevision: manifest.revision ?? null,
 });
 
 const persistTutorialSnapshot = (args: {
@@ -127,7 +144,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         window.localStorage.clear();
         tutorialState.startTutorial.mockReset();
         tutorialState.closeTutorial.mockReset();
+        tutorialState.activateTutorialSession.mockReset();
         tutorialState.isActive = false;
+        tutorialState.activeSessionScope = null;
         tutorialState.tutorial.manifestId = null;
         tutorialState.currentStep = null;
         tutorialState.isBoardMounted = false;
@@ -173,7 +192,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender(secondManifest);
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(secondManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            secondManifest,
+            expectTutorialScope('qidahen', 'field-battle', secondManifest),
+        );
     });
 
     it('当前教程最后一步不是 finish 时，结束后仍会按完成态返回上一页', async () => {
@@ -271,13 +293,19 @@ describe('useMatchRoomTutorialLifecycle', () => {
         }));
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
-        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
 
         tutorialState.isBoardMounted = true;
         rerender();
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(2);
-        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
     });
 
     it('从一个教程路由切到另一个教程路由时，旧实例的延迟清理不能把新教程误关掉', async () => {
@@ -331,8 +359,41 @@ describe('useMatchRoomTutorialLifecycle', () => {
             await vi.advanceTimersByTimeAsync(0);
         });
 
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(secondManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            secondManifest,
+            expectTutorialScope('betrayal', 'haunt-actions-and-finish', secondManifest),
+        );
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
+
+    it('从教程残留状态进入在线房间时，会清理全局教程状态，避免选角页卡在教程初始化', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', ['setup-runtime', 'overview', 'finish']);
+
+        tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
+        tutorialState.currentStep = manifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'dicethrone',
+            tutorialId: undefined,
+            tutorialCatalog: null,
+            isTutorialRoute: false,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: null,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.closeTutorial).toHaveBeenCalledTimes(1);
+        expect(tutorialState.startTutorial).not.toHaveBeenCalled();
     });
 
     it('同一教程 URL 的临时卸载不会关闭正在启动的教程', async () => {
@@ -362,7 +423,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
             closeModal,
         }));
 
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
 
         hook.unmount();
 
@@ -613,7 +677,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         }));
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
-        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
 
         tutorialState.isActive = true;
         tutorialState.tutorial.manifestId = manifest.id;
@@ -627,7 +694,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender();
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(2);
-        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
         expect(navigate).not.toHaveBeenCalled();
     });
 
@@ -705,7 +775,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
             closeModal,
         }));
 
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(attackManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            attackManifest,
+            expectTutorialScope('qidahen', 'attack-and-battle', attackManifest),
+        );
         tutorialState.startTutorial.mockClear();
         tutorialState.closeTutorial.mockClear();
 
@@ -714,7 +787,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender();
 
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(retreatManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            retreatManifest,
+            expectTutorialScope('qidahen', 'retreat-and-rout', retreatManifest),
+        );
     });
 
     it('旧章节仍处于激活态时切到隐藏续章，也会用当前 manifest 替换旧教程', () => {
@@ -757,7 +833,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender();
 
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(retreatManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            retreatManifest,
+            expectTutorialScope('qidahen', 'retreat-and-rout', retreatManifest),
+        );
     });
 
     it('隐藏续章完成后，会把对应的可见章节标记为已完成', async () => {

@@ -147,6 +147,7 @@ function createPendingEventRollResolution(core: BetrayalCore, input: {
     sourceTitle: string;
     eventEffect?: EventChoiceResolvedEvent['payload']['eventEffect'];
     nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+    requiredPlayerIds?: readonly string[];
     deathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
     hauntTriggered?: boolean;
     hauntCardNumber?: number;
@@ -172,13 +173,17 @@ function createPendingEventRollResolution(core: BetrayalCore, input: {
         helpingHandsSetup: input.helpingHandsSetup,
         uponReflectionSetup: input.uponReflectionSetup,
     });
+    const configuredRequiredPlayerIds = input.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    const requiredPlayerIds = configuredRequiredPlayerIds.length > 0
+        ? [...configuredRequiredPlayerIds]
+        : needsSharedEventRollAcknowledgement && core.playerIds.length > 0
+            ? [...core.playerIds]
+            : [input.playerId];
     return {
         rollId: input.rollId,
         playerId: input.playerId,
         sourceTitle: input.sourceTitle,
-        requiredPlayerIds: needsSharedEventRollAcknowledgement && core.playerIds.length > 0
-            ? [...core.playerIds]
-            : [input.playerId],
+        requiredPlayerIds,
         acknowledgedPlayerIds: [],
         effect: cloneUseEffect(input.eventEffect ?? nextPendingEventChoice!.effect),
         nextPendingEventChoice,
@@ -361,6 +366,7 @@ export function applyBetrayalEventChoiceResolvedState(
             sourceTitle: event.payload.sourceTitle,
             eventEffect: event.payload.eventEffect,
             nextPendingEventChoice: event.payload.nextPendingEventChoice,
+            requiredPlayerIds: core.playerIds.length > 0 ? core.playerIds : [event.payload.playerId],
             deathPrevention: event.payload.deathPrevention,
             hauntTriggered: event.payload.hauntTriggered,
             hauntCardNumber: event.payload.hauntCardNumber,
@@ -510,6 +516,7 @@ export function applyBetrayalEventRolledState(
             sourceTitle: event.payload.sourceTitle,
             eventEffect: event.payload.eventEffect,
             nextPendingEventChoice: event.payload.nextPendingEventChoice,
+            requiredPlayerIds: core.playerIds.length > 0 ? core.playerIds : [event.payload.playerId],
             deathPrevention: event.payload.deathPrevention,
         });
     } else {
@@ -576,8 +583,14 @@ export function applyBetrayalEventRollFinalizedState(
         event.timestamp,
         event.payload.deathPrevention,
     );
+    const eventRollWasSharedAcknowledgement =
+        event.payload.requiredPlayerIds.length > 1
+        && event.payload.requiredPlayerIds.every((playerId) => (
+            event.payload.acknowledgedPlayerIds.includes(playerId)
+        ));
     const eventEffectCardResolutionQueue =
-        core.latestDiscovery?.kind === 'event'
+        !eventRollWasSharedAcknowledgement
+        && core.latestDiscovery?.kind === 'event'
         && core.latestDiscovery.title === event.payload.sourceTitle
         && (core.latestDiscovery.resolutionSteps?.length ?? 0) > 0
             ? createPendingCardResolutionQueue({

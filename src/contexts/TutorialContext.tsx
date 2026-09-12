@@ -16,6 +16,82 @@ import { useGameMode } from './GameModeContext';
 
 type TutorialNextReason = 'manual' | 'auto';
 
+export interface TutorialSessionScope {
+    key: string;
+    gameId: string | null;
+    tutorialId: string | null;
+    manifestId: string;
+    manifestRevision: number | null;
+}
+
+type TutorialSessionScopeInput = {
+    gameId?: string | null;
+    tutorialId?: string | null;
+    manifest?: TutorialManifest | null;
+    manifestId?: string | null;
+    manifestRevision?: number | null;
+};
+
+const normalizeScopePart = (value: string | null | undefined): string | null => {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+};
+
+const encodeScopePart = (value: string | null) => encodeURIComponent(value ?? '');
+
+export const buildTutorialSessionScope = ({
+    gameId,
+    tutorialId,
+    manifest,
+    manifestId,
+    manifestRevision,
+}: TutorialSessionScopeInput): TutorialSessionScope | null => {
+    const resolvedManifestId = normalizeScopePart(manifest?.id ?? manifestId);
+    if (!resolvedManifestId) return null;
+
+    const resolvedGameId = normalizeScopePart(gameId);
+    const resolvedTutorialId = normalizeScopePart(tutorialId) ?? resolvedManifestId;
+    const resolvedRevision = Number.isInteger(manifest?.revision)
+        ? manifest?.revision ?? null
+        : (Number.isInteger(manifestRevision) ? manifestRevision ?? null : null);
+    const keyParts = [
+        'tutorial-session:v1',
+        encodeScopePart(resolvedGameId),
+        encodeScopePart(resolvedTutorialId),
+        encodeScopePart(resolvedManifestId),
+    ];
+    if (resolvedRevision !== null) {
+        keyParts.push(`r${resolvedRevision}`);
+    }
+
+    return {
+        key: keyParts.join(':'),
+        gameId: resolvedGameId,
+        tutorialId: resolvedTutorialId,
+        manifestId: resolvedManifestId,
+        manifestRevision: resolvedRevision,
+    };
+};
+
+export const isSameTutorialSessionScope = (
+    left: TutorialSessionScope | null | undefined,
+    right: TutorialSessionScope | null | undefined,
+): boolean => Boolean(left && right && left.key === right.key);
+
+const canUseControllerForSession = (
+    sessionScope: TutorialSessionScope | null | undefined,
+    controllerScope: TutorialSessionScope | null | undefined,
+): boolean => !sessionScope || !controllerScope || isSameTutorialSessionScope(sessionScope, controllerScope);
+
+const shouldExposeTutorialToConsumer = (gameMode: ReturnType<typeof useGameMode>): boolean => (
+    !gameMode || gameMode.mode === 'tutorial'
+);
+
+type PendingTutorialStart = {
+    manifest: TutorialManifest;
+    sessionScope: TutorialSessionScope | null;
+};
+
 interface TutorialController {
     start: (manifest: TutorialManifest) => void;
     next: (reason?: TutorialNextReason) => void;
@@ -38,21 +114,23 @@ interface TutorialContextType {
     isAiExecutingRef: React.MutableRefObject<boolean>;
     /** Board 组件已挂载并完成 useTutorialBridge 注册（区别于 TutorialDispatchBridge 的提前注册） */
     isBoardMounted: boolean;
-    startTutorial: (manifest: TutorialManifest) => void;
+    activeSessionScope: TutorialSessionScope | null;
+    activateTutorialSession: (scope: TutorialSessionScope | null) => void;
+    startTutorial: (manifest: TutorialManifest, scope?: TutorialSessionScope | null) => void;
     nextStep: (reason?: TutorialNextReason) => void;
     previousStep: () => void;
-    closeTutorial: () => void;
+    closeTutorial: (scope?: TutorialSessionScope | null) => void;
     consumeAi: (stepId?: string) => void;
     /** 动画完成回调：通知教程系统动画已播放完毕，可以推进到下一步 */
     animationComplete: () => void;
-    bindDispatch: (dispatch: (type: string, payload?: unknown) => void) => number;
+    bindDispatch: (dispatch: (type: string, payload?: unknown) => void, scope?: TutorialSessionScope | null) => number;
     /** Board 卸载时清理 controller，防止残留的 dispatch 指向已销毁的 Provider */
     unbindDispatch: (generation?: number) => void;
-    syncTutorialState: (tutorial: TutorialState, runtimeSyncKey?: string) => void;
+    syncTutorialState: (tutorial: TutorialState, runtimeSyncKey?: string, scope?: TutorialSessionScope | null) => void;
     /** 由 useTutorialBridge 调用，标记 Board 已挂载 */
-    notifyBoardMounted: (generation?: number) => void;
+    notifyBoardMounted: (generation?: number, scope?: TutorialSessionScope | null) => void;
     /** 由 useTutorialBridge 调用，标记 Board 已卸载 */
-    notifyBoardUnmounted: (generation?: number) => void;
+    notifyBoardUnmounted: (generation?: number, scope?: TutorialSessionScope | null) => void;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -106,7 +184,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const isAiExecutingRef = useRef(false);
     const [isAiExecuting, setIsAiExecuting] = useState(false);
     const controllerRef = useRef<TutorialController | null>(null);
-    const pendingStartRef = useRef<TutorialManifest | null>(null);
+    const controllerScopeRef = useRef<TutorialSessionScope | null>(null);
+    const [activeSessionScope, setActiveSessionScope] = useState<TutorialSessionScope | null>(null);
+    const activeSessionScopeRef = useRef<TutorialSessionScope | null>(null);
+    const pendingStartRef = useRef<PendingTutorialStart | null>(null);
     const executedAiStepsRef = useRef<Set<string>>(new Set());
     // 代际计数器：防止旧 Board 的 unbindDispatch 清除新 Board 的 controller
     const bindGenerationRef = useRef(0);
@@ -145,7 +226,24 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
     }, [isBoardMounted, isControllerReady, tutorial]);
 
-    const bindDispatch = useCallback((dispatch: DispatchFn) => {
+    const activateTutorialSession = useCallback((scope: TutorialSessionScope | null) => {
+        activeSessionScopeRef.current = scope;
+        setActiveSessionScope(scope);
+    }, []);
+
+    const bindDispatch = useCallback((dispatch: DispatchFn, scope?: TutorialSessionScope | null) => {
+        const sessionScope = scope ?? activeSessionScopeRef.current;
+        if (
+            sessionScope
+            && activeSessionScopeRef.current
+            && !isSameTutorialSessionScope(sessionScope, activeSessionScopeRef.current)
+        ) {
+            return 0;
+        }
+        if (sessionScope) {
+            activateTutorialSession(sessionScope);
+        }
+
         // 清除兜底 timer（正常路径：bindDispatch 被调用）
         if (fallbackTimerRef.current !== undefined) {
             window.clearTimeout(fallbackTimerRef.current);
@@ -155,17 +253,21 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         bindGenerationRef.current += 1;
         
         controllerRef.current = buildTutorialController(dispatch);
+        controllerScopeRef.current = sessionScope ?? null;
         setIsControllerReady(true);
         if (pendingStartRef.current) {
-            controllerRef.current.start(pendingStartRef.current);
-            pendingStartRef.current = null;
-            if (fallbackTimerRef.current !== undefined) {
-                window.clearTimeout(fallbackTimerRef.current);
-                fallbackTimerRef.current = undefined;
+            const pendingStart = pendingStartRef.current;
+            if (canUseControllerForSession(pendingStart.sessionScope, controllerScopeRef.current)) {
+                controllerRef.current.start(pendingStart.manifest);
+                pendingStartRef.current = null;
+                if (fallbackTimerRef.current !== undefined) {
+                    window.clearTimeout(fallbackTimerRef.current);
+                    fallbackTimerRef.current = undefined;
+                }
             }
         }
         return bindGenerationRef.current;
-    }, []);
+    }, [activateTutorialSession]);
 
     // unbindDispatch 不再主动清除 controller。
     // 原因：CriticalImageGate / StrictMode / i18n 加载等场景会导致 Board 反复卸载重挂载，
@@ -177,22 +279,40 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // controller 内部通过 dispatchRef 间接调用，Board 重挂载后 ref 自动指向新 dispatch
     }, []);
 
-    const notifyBoardMounted = useCallback((generation?: number) => {
+    const notifyBoardMounted = useCallback((generation?: number, scope?: TutorialSessionScope | null) => {
+        if (generation !== undefined && generation <= 0) return;
+        if (
+            scope
+            && activeSessionScopeRef.current
+            && !isSameTutorialSessionScope(scope, activeSessionScopeRef.current)
+        ) {
+            return;
+        }
         const activeGeneration = generation ?? bindGenerationRef.current;
         boardMountGenerationRef.current = activeGeneration;
         isBoardMountedRef.current = true;
         setIsBoardMounted(true);
         if (pendingStartRef.current && controllerRef.current) {
-            controllerRef.current.start(pendingStartRef.current);
-            pendingStartRef.current = null;
-            if (fallbackTimerRef.current !== undefined) {
-                window.clearTimeout(fallbackTimerRef.current);
-                fallbackTimerRef.current = undefined;
+            const pendingStart = pendingStartRef.current;
+            if (canUseControllerForSession(pendingStart.sessionScope, controllerScopeRef.current)) {
+                controllerRef.current.start(pendingStart.manifest);
+                pendingStartRef.current = null;
+                if (fallbackTimerRef.current !== undefined) {
+                    window.clearTimeout(fallbackTimerRef.current);
+                    fallbackTimerRef.current = undefined;
+                }
             }
         }
     }, []);
 
-    const notifyBoardUnmounted = useCallback((generation?: number) => {
+    const notifyBoardUnmounted = useCallback((generation?: number, scope?: TutorialSessionScope | null) => {
+        if (
+            scope
+            && activeSessionScopeRef.current
+            && !isSameTutorialSessionScope(scope, activeSessionScopeRef.current)
+        ) {
+            return;
+        }
         if (
             generation !== undefined
             && boardMountGenerationRef.current !== generation
@@ -204,7 +324,17 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsBoardMounted(false);
     }, []);
 
-    const syncTutorialState = useCallback((nextTutorial: TutorialState, _runtimeSyncKey?: string) => {
+    const syncTutorialState = useCallback((nextTutorial: TutorialState, _runtimeSyncKey?: string, scope?: TutorialSessionScope | null) => {
+        if (scope) {
+            if (
+                activeSessionScopeRef.current
+                && !isSameTutorialSessionScope(scope, activeSessionScopeRef.current)
+            ) {
+                return;
+            }
+            activateTutorialSession(scope);
+        }
+
         boardSyncVersionRef.current += 1;
         const normalized = normalizeTutorialState(nextTutorial);
         const nextStepId = normalized.active ? (normalized.step?.id ?? null) : null;
@@ -221,10 +351,18 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTutorial(normalized);
         if (!normalized.active) {
             executedAiStepsRef.current = new Set();
+            if (!scope || isSameTutorialSessionScope(scope, activeSessionScopeRef.current)) {
+                activateTutorialSession(null);
+            }
         }
-    }, []);
+    }, [activateTutorialSession]);
 
-    const startTutorial = useCallback((manifest: TutorialManifest) => {
+    const startTutorial = useCallback((manifest: TutorialManifest, scope?: TutorialSessionScope | null) => {
+        if (scope) {
+            activateTutorialSession(scope);
+        }
+        const sessionScope = scope ?? activeSessionScopeRef.current;
+
         // 清除旧的兜底 timer
         if (fallbackTimerRef.current !== undefined) {
             window.clearTimeout(fallbackTimerRef.current);
@@ -243,29 +381,33 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         // START 只要求命令桥已就绪；真实棋盘挂载只控制浮层显示和 AI 自动动作。
         // 这样 CriticalImageGate 能先看到 playing 状态并完成预加载，不会反过来卡住教程启动。
-        if (controllerRef.current) {
+        if (controllerRef.current && canUseControllerForSession(sessionScope, controllerScopeRef.current)) {
             controllerRef.current.start(manifest);
             pendingStartRef.current = null;
             return;
         }
         
         // Controller 尚未就绪（Board 还没挂载），存入 pendingStartRef
-        pendingStartRef.current = manifest;
+        pendingStartRef.current = { manifest, sessionScope: sessionScope ?? null };
         
         // 兜底机制：10 秒后如果仍未启动，提示用户
         fallbackTimerRef.current = window.setTimeout(() => {
             fallbackTimerRef.current = undefined;
             
-            if (pendingStartRef.current && controllerRef.current) {
+            if (
+                pendingStartRef.current
+                && controllerRef.current
+                && canUseControllerForSession(pendingStartRef.current.sessionScope, controllerScopeRef.current)
+            ) {
                 // controller 在等待期间就绪了，直接启动；浮层/AI 仍等 Board mounted。
-                controllerRef.current.start(pendingStartRef.current);
+                controllerRef.current.start(pendingStartRef.current.manifest);
                 pendingStartRef.current = null;
             } else if (pendingStartRef.current) {
                 console.error('[TutorialContext] 教程启动超时：Board 未挂载');
                 toastRef.current.error('教程加载超时，请刷新页面重试');
             }
         }, 10000);
-    }, []);
+    }, [activateTutorialSession]);
 
     const nextStep = useCallback((reason?: TutorialNextReason) => {
         controllerRef.current?.next(reason);
@@ -275,7 +417,15 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         controllerRef.current?.previous();
     }, []);
 
-    const closeTutorial = useCallback(() => {
+    const closeTutorial = useCallback((scope?: TutorialSessionScope | null) => {
+        if (
+            scope
+            && activeSessionScopeRef.current
+            && !isSameTutorialSessionScope(scope, activeSessionScopeRef.current)
+        ) {
+            return;
+        }
+
         aiExecutionGenerationRef.current += 1;
         if (aiTimerRef.current !== undefined) {
             window.clearTimeout(aiTimerRef.current);
@@ -284,9 +434,12 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isAiExecutingRef.current = false;
         setIsAiExecuting(false);
         latestTutorialStepIdRef.current = null;
-        controllerRef.current?.close();
+        if (canUseControllerForSession(scope ?? activeSessionScopeRef.current, controllerScopeRef.current)) {
+            controllerRef.current?.close();
+        }
         // 教程关闭时清除 controller（唯一清除点）
         controllerRef.current = null;
+        controllerScopeRef.current = null;
         // 清除未消费的 pending start，防止下次 bindDispatch 时误启动旧教程
         pendingStartRef.current = null;
         if (fallbackTimerRef.current !== undefined) {
@@ -299,7 +452,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // 重置 Board 挂载标记，防止下次进入教程时残留 true 导致弹窗提前出现
         isBoardMountedRef.current = false;
         setIsBoardMounted(false);
-    }, []);
+        activateTutorialSession(null);
+    }, [activateTutorialSession]);
 
     const consumeAi = useCallback((stepId?: string) => {
         controllerRef.current?.consumeAi(stepId);
@@ -429,6 +583,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             isAiExecuting,
             isAiExecutingRef,
             isBoardMounted,
+            activeSessionScope,
+            activateTutorialSession,
             startTutorial,
             nextStep,
             previousStep,
@@ -441,7 +597,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             notifyBoardMounted,
             notifyBoardUnmounted,
         };
-    }, [tutorial, isAiExecuting, isBoardMounted, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, previousStep, startTutorial, syncTutorialState, notifyBoardMounted, notifyBoardUnmounted]);
+    }, [tutorial, isAiExecuting, isBoardMounted, activeSessionScope, activateTutorialSession, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, previousStep, startTutorial, syncTutorialState, notifyBoardMounted, notifyBoardUnmounted]);
 
     return (
         <TutorialContext.Provider value={value}>
@@ -452,20 +608,37 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const useTutorial = () => {
     const context = useContext(TutorialContext);
+    const gameMode = useGameMode();
     if (!context) {
         throw new Error('useTutorial must be used within a TutorialProvider');
     }
-    return context;
+    if (shouldExposeTutorialToConsumer(gameMode)) {
+        return context;
+    }
+
+    return {
+        ...context,
+        tutorial: { ...DEFAULT_TUTORIAL_STATE },
+        currentStep: null,
+        isActive: false,
+        isLastStep: false,
+        isPendingAnimation: false,
+        isAiExecuting: false,
+        isBoardMounted: false,
+        activeSessionScope: null,
+    };
 };
 
 export const useTutorialBridge = (
     tutorial: TutorialState,
     dispatch: (type: string, payload?: unknown) => void,
     runtimeSyncKey?: string,
+    sessionScope?: TutorialSessionScope | null,
 ) => {
     const context = useContext(TutorialContext);
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
+    const effectiveSessionScope = sessionScope ?? context?.activeSessionScope ?? null;
     const lastSyncSignatureRef = useRef<string | null>(null);
     // 用 ref 保持最新的 context 和 dispatch，供挂载时的 effect 使用
     const contextRef = useRef(context);
@@ -485,22 +658,22 @@ export const useTutorialBridge = (
         if (context.tutorial.active && !tutorial?.active && !context.isLastStep) {
             return;
         }
-        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}-${runtimeSyncKey ?? ''}`;
+        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}-${runtimeSyncKey ?? ''}-${effectiveSessionScope?.key ?? ''}`;
         if (lastSyncSignatureRef.current === signature) return;
         lastSyncSignatureRef.current = signature;
-        context.syncTutorialState(tutorial, runtimeSyncKey);
-    }, [context, tutorial, isTutorialMode, runtimeSyncKey]);
+        context.syncTutorialState(tutorial, runtimeSyncKey, effectiveSessionScope);
+    }, [context, tutorial, isTutorialMode, runtimeSyncKey, effectiveSessionScope]);
 
     useEffect(() => {
         // 只在教程模式下注册 controller，在线/本地模式的 Board 不应污染教程状态
         if (!isTutorialMode) return;
         // bindDispatch 返回代际号，cleanup 时传入以防止旧 Board 误清新 Board 的 controller
-        const gen = contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args));
+        const gen = contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args), effectiveSessionScope);
         // 通知 TutorialContext Board 已挂载
-        contextRef.current?.notifyBoardMounted(gen);
+        contextRef.current?.notifyBoardMounted(gen, effectiveSessionScope);
         return () => {
             contextRef.current?.unbindDispatch(gen);
-            contextRef.current?.notifyBoardUnmounted(gen);
+            contextRef.current?.notifyBoardUnmounted(gen, effectiveSessionScope);
         };
-    }, [isTutorialMode]);  
+    }, [isTutorialMode, effectiveSessionScope]);
 };

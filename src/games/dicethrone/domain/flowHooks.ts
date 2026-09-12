@@ -67,7 +67,12 @@ import { getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects, playerAbil
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
-import { hasSpentTreantTreeSpiritThisTurn, hasUsableOwnUpkeepPassiveAction } from './passiveAbility';
+import {
+    getPlayerPassiveAbilities,
+    hasSpentTreantTreeSpiritThisTurn,
+    hasUsableOwnUpkeepPassiveAction,
+    isPassiveActionUsable,
+} from './passiveAbility';
 import { registerBonusDiceSettlementHandler } from './bonusDiceSettlement';
 import { isCurrentBonusRollSettlement } from './rollContext';
 import {
@@ -152,6 +157,37 @@ const hasInteractivePendingBonusDiceSettlement = (core: DiceThroneCore): boolean
 
 const hasOpenedInteractiveBonusDiceSettlement = (events: readonly GameEvent[]): boolean =>
     events.some(event => isInteractiveBonusDiceRerollEvent(event as DiceThroneEvent));
+
+const shouldPauseForPostDamagePassiveAction = (
+    core: DiceThroneCore,
+    events: readonly GameEvent[],
+    phase: TurnPhase,
+): { events: GameEvent[]; halt: true } | null => {
+    const attackResolvedIndex = events.findIndex(event => event.type === 'ATTACK_RESOLVED');
+    if (attackResolvedIndex < 0) return null;
+
+    const eventsBeforeAttackResolved = events.slice(0, attackResolvedIndex) as DiceThroneEvent[];
+    if (!eventsBeforeAttackResolved.some(event => event.type === 'DAMAGE_DEALT')) return null;
+
+    const attackResolved = events[attackResolvedIndex] as Extract<DiceThroneEvent, { type: 'ATTACK_RESOLVED' }>;
+    const attackerId = attackResolved.payload.attackerId;
+    const coreBeforeAttackResolved = applyEvents(core, eventsBeforeAttackResolved, reduce);
+    if (!coreBeforeAttackResolved.pendingAttack || coreBeforeAttackResolved.pendingAttack.attackerId !== attackerId) {
+        return null;
+    }
+
+    const hasUsablePostDamagePassive = getPlayerPassiveAbilities(coreBeforeAttackResolved, attackerId)
+        .some(passive => passive.actions.some((action, actionIndex) => (
+            action.requiresCurrentAttackDamageDealt === true
+            && isPassiveActionUsable(coreBeforeAttackResolved, attackerId, passive.id, actionIndex, phase)
+        )));
+    if (!hasUsablePostDamagePassive) return null;
+
+    return {
+        events: events.filter((_, index) => index !== attackResolvedIndex),
+        halt: true,
+    };
+};
 
 registerBonusDiceSettlementHandler(POWDER_KEG_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
     const playerId = settlement.attackerId;
@@ -789,6 +825,11 @@ function resolvePostAttackFollowUp(
     timestamp: number,
     phase: TurnPhase
 ): PhaseExitResult {
+    const postDamagePassivePause = shouldPauseForPostDamagePassiveAction(core, events, phase);
+    if (postDamagePassivePause) {
+        return postDamagePassivePause;
+    }
+
     const isWarMongerExtraOffensiveRoll =
         core.extraAttackInProgress?.sourceStatusId === 'war-monger';
     const parleyStacks = core.players[core.activePlayerId]?.statusEffects[STATUS_IDS.PARLEY] ?? 0;

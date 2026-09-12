@@ -307,7 +307,9 @@ export default function BetrayalBoard({
   const {
     isActive: isTutorialActive,
     currentStep: tutorialStep,
+    isPendingAnimation: isTutorialPendingAnimation,
     nextStep,
+    animationComplete,
   } = useTutorial();
   const isTutorialMode = gameMode?.mode === "tutorial";
   const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
@@ -468,6 +470,10 @@ export default function BetrayalBoard({
     }
     return displayKey;
   });
+  const completedTutorialUseBookRollKeyRef = React.useRef<string | null>(null);
+  const completedTutorialUseRabbitFootRollKeyRef = React.useRef<string | null>(
+    null,
+  );
   const [selectedRoomMapFloor, setSelectedRoomMapFloor] = React.useState<
     BetrayalRoomNode["floor"]
   >(() => resolveExplorerFloor(baseCore));
@@ -2734,6 +2740,125 @@ export default function BetrayalBoard({
       previousRollId === coreRecentRollDisplayKey ? previousRollId : null,
     );
   }, [coreRecentRollDisplayKey]);
+  React.useEffect(() => {
+    if (!(isTutorialActive && tutorialStep?.id === "use-book")) {
+      completedTutorialUseBookRollKeyRef.current = null;
+    }
+    if (!(isTutorialActive && tutorialStep?.id === "use-rabbit-foot")) {
+      completedTutorialUseRabbitFootRollKeyRef.current = null;
+    }
+  }, [isTutorialActive, tutorialStep?.id]);
+  React.useEffect(() => {
+    const recentRoll = core.recentRoll;
+    const pendingEventRoll = core.pendingEventRollResolution;
+    const tutorialActorPlayerId = tutorialStep?.viewAs ?? viewerPlayerId;
+    const canFinishUseBookAnimation = Boolean(
+      isTutorialActive &&
+        isTutorialPendingAnimation &&
+        tutorialStep?.id === "use-book" &&
+        coreRecentRollDisplayKey &&
+        settledRecentRollId === coreRecentRollDisplayKey &&
+        pendingEventRoll &&
+        recentRoll &&
+        pendingEventRoll.rollId === recentRoll.id &&
+        recentRoll.kind === "eventTraitCheck" &&
+        recentRoll.trait === "knowledge" &&
+        recentRoll.playerId === tutorialActorPlayerId &&
+        core.usedCardIdsThisTurn.includes("omen-book"),
+    );
+    if (!canFinishUseBookAnimation || !coreRecentRollDisplayKey) {
+      return;
+    }
+    if (completedTutorialUseBookRollKeyRef.current === coreRecentRollDisplayKey) {
+      return;
+    }
+    completedTutorialUseBookRollKeyRef.current = coreRecentRollDisplayKey;
+    animationComplete();
+  }, [
+    animationComplete,
+    core.pendingEventRollResolution,
+    core.recentRoll,
+    core.usedCardIdsThisTurn,
+    coreRecentRollDisplayKey,
+    isTutorialActive,
+    isTutorialPendingAnimation,
+    settledRecentRollId,
+    tutorialStep?.id,
+    tutorialStep?.viewAs,
+    viewerPlayerId,
+  ]);
+  React.useEffect(() => {
+    const recentRoll = core.recentRoll;
+    const pendingEventRoll = core.pendingEventRollResolution;
+    const tutorialActorPlayerId = tutorialStep?.viewAs ?? viewerPlayerId;
+    const rabbitFootWasUsed = Boolean(
+      recentRoll?.consumedRabbitFootCardIds.includes("rope") ||
+        core.usedCardIdsThisTurn.includes("rope"),
+    );
+    const canFinishUseRabbitFootAnimation = Boolean(
+      isTutorialActive &&
+        isTutorialPendingAnimation &&
+        tutorialStep?.id === "use-rabbit-foot" &&
+        coreRecentRollDisplayKey &&
+        settledRecentRollId === coreRecentRollDisplayKey &&
+        pendingEventRoll &&
+        recentRoll &&
+        pendingEventRoll.rollId === recentRoll.id &&
+        recentRoll.playerId === tutorialActorPlayerId &&
+        rabbitFootWasUsed,
+    );
+    if (!canFinishUseRabbitFootAnimation || !coreRecentRollDisplayKey) {
+      return;
+    }
+    if (
+      completedTutorialUseRabbitFootRollKeyRef.current ===
+      coreRecentRollDisplayKey
+    ) {
+      return;
+    }
+    completedTutorialUseRabbitFootRollKeyRef.current = coreRecentRollDisplayKey;
+    animationComplete();
+  }, [
+    animationComplete,
+    core.pendingEventRollResolution,
+    core.recentRoll,
+    core.usedCardIdsThisTurn,
+    coreRecentRollDisplayKey,
+    isTutorialActive,
+    isTutorialPendingAnimation,
+    settledRecentRollId,
+    tutorialStep?.id,
+    tutorialStep?.viewAs,
+    viewerPlayerId,
+  ]);
+  React.useEffect(() => {
+    const recentRoll = core.recentRoll;
+    const pendingEventRoll = core.pendingEventRollResolution;
+    if (
+      !(
+        isTutorialActive &&
+        tutorialStep?.id === "rabbit-foot-result" &&
+        coreRecentRollDisplayKey &&
+        pendingEventRoll &&
+        recentRoll &&
+        pendingEventRoll.rollId === recentRoll.id &&
+        recentRoll.consumedRabbitFootCardIds.includes("rope")
+      )
+    ) {
+      return;
+    }
+    setSettledRecentRollId((previousRollId) =>
+      previousRollId === coreRecentRollDisplayKey
+        ? previousRollId
+        : coreRecentRollDisplayKey,
+    );
+  }, [
+    core.pendingEventRollResolution,
+    core.recentRoll,
+    coreRecentRollDisplayKey,
+    isTutorialActive,
+    tutorialStep?.id,
+  ]);
   const handleRecentRollDiceSettledChange = React.useCallback(
     (rollId: string, settled: boolean) => {
       setSettledRecentRollId((previousRollId) => {
@@ -2978,6 +3103,11 @@ export default function BetrayalBoard({
       latestDiscoverySelection.coreRecentRollDisplayKey ===
         latestDiscoverySelection.recentRollDisplayKey &&
       settledRecentRollId === latestDiscoverySelection.coreRecentRollDisplayKey,
+  );
+  const shouldAnimateLatestDiscoveryRerollMotion = !(
+    isTutorialActive &&
+    tutorialStep?.id === "rabbit-foot-result" &&
+    latestDiscoveryRecentRoll?.consumedRabbitFootCardIds.includes("rope")
   );
   const latestDiscoveryPresentation = React.useMemo(
     () =>
@@ -3249,20 +3379,26 @@ export default function BetrayalBoard({
     if (!latestDiscoveryKey) {
       return;
     }
-    const shouldAdvanceLatestDiscoveryDismissTutorial =
-      isTutorialActive && tutorialStep?.id === "return-to-table-after-damage";
     setDismissedLatestDiscoveryKeys((previousKeys) => {
-      if (previousKeys.has(latestDiscoveryKey)) {
+      const latestDiscoverySourceKey = latestDiscoveryEntry?.sourceKey ?? null;
+      if (
+        previousKeys.has(latestDiscoveryKey) &&
+        (!latestDiscoverySourceKey ||
+          previousKeys.has(latestDiscoverySourceKey))
+      ) {
         return previousKeys;
       }
       const nextKeys = new Set(previousKeys);
       nextKeys.add(latestDiscoveryKey);
+      if (latestDiscoverySourceKey) {
+        nextKeys.add(latestDiscoverySourceKey);
+      }
       return nextKeys;
     });
     setLatestDiscoveryQueue((previousQueue) =>
       removeBetrayalLatestDiscoveryQueueEntry(
         previousQueue,
-        latestDiscoveryKey,
+        latestDiscoveryEntry?.sourceKey ?? latestDiscoveryKey,
       ),
     );
     setPreviewState((previousState) => ({
@@ -3274,18 +3410,13 @@ export default function BetrayalBoard({
           ? latestDiscoveryRecentRollDisplayKey
           : previousState.dismissedRecentRollId,
     }));
-    if (shouldAdvanceLatestDiscoveryDismissTutorial) {
-      nextStep("auto");
-    }
   }, [
-    isTutorialActive,
     latestDiscoveryKey,
     latestDiscoveryRecentRoll?.kind,
     latestDiscoveryRecentRoll?.sourceTitle,
     latestDiscoveryRecentRollDisplayKey,
+    latestDiscoveryEntry?.sourceKey,
     latestDiscoveryTitle,
-    nextStep,
-    tutorialStep?.id,
   ]);
   const handleRollLatestDiscoveryEvent = React.useCallback(() => {
     if (!canCurrentViewerStartLatestDiscoveryEventRoll || isVisualBusy) {
@@ -6020,6 +6151,7 @@ export default function BetrayalBoard({
                   shouldShowCardFace={shouldShowLatestDiscoveryCardFace}
                   shouldShowRoll={shouldShowLatestDiscoveryRoll}
                   recentRoll={latestDiscoveryRecentRoll}
+                  animateRerollMotion={shouldAnimateLatestDiscoveryRerollMotion}
                   rerollSelection={latestDiscoveryRerollSelection}
                   canModifyRoll={canCurrentPlayerModifyLatestDiscoveryRoll}
                   rollActorLabel={

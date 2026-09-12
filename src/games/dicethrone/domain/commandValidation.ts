@@ -73,6 +73,7 @@ import { canRemoveStatusFromPlayer, isPurifiableDebuffId, isRemovableStatusId } 
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { isPendingDamageResponseBonusSettlement } from './damageSummary';
+import { getUsableActiveRollToken } from './activeRollTokens';
 
 // ============================================================================
 // 验证函数
@@ -1361,6 +1362,8 @@ const validateUseToken = (
     cmd: UseTokenCommand,
     playerId: PlayerId,
     phase: TurnPhase,
+    responseWindowType?: DtResponseWindowType,
+    currentResponseWindow?: ResponseWindowState['current'],
 ): ValidationResult => {
     const pendingDamage = state.pendingDamage;
     const pendingDamageMismatch = validateCommandPendingDamageId(pendingDamage, cmd.payload);
@@ -1405,21 +1408,38 @@ const validateUseToken = (
         && isRollPhase
         && tokenDef.activeUse?.timing?.includes('duringRoll');
     if (canUseDuringRoll) {
-        if (getRollerId(state, phase) !== playerId) {
-            return fail('player_mismatch');
-        }
-        if (!state.pendingAttack) {
-            return fail('no_pending_attack');
+        if (responseWindowType) {
+            const responseWindowActorCheck = validateCurrentResponseWindowActor(
+                state,
+                currentResponseWindow,
+                playerId,
+                true,
+            );
+            if (!responseWindowActorCheck.valid) {
+                return responseWindowActorCheck;
+            }
         }
 
-        const currentAmount = state.players[playerId]?.tokens[cmd.payload.tokenId] ?? 0;
-        if (currentAmount <= 0) {
+        const activeRollToken = getUsableActiveRollToken(state, playerId, phase, cmd.payload.tokenId, {
+            responseWindowType,
+        });
+        if (!activeRollToken) {
+            const currentAmount = state.players[playerId]?.tokens[cmd.payload.tokenId] ?? 0;
+            if (currentAmount <= 0) {
+                return fail('no_token');
+            }
+            if (!state.pendingAttack) {
+                return fail('no_pending_attack');
+            }
+            return fail('invalid_token_timing');
+        }
+        if (activeRollToken.allowedAmounts.length === 0) {
             return fail('no_token');
         }
         if (cmd.payload.amount <= 0) {
             return fail('invalid_amount');
         }
-        if (!getTokenUseOptions(tokenDef, currentAmount).includes(cmd.payload.amount)) {
+        if (!activeRollToken.allowedAmounts.includes(cmd.payload.amount)) {
             return fail('invalid_amount');
         }
         return ok();
@@ -1798,7 +1818,7 @@ export const validateCommand = (
     if (isCommandType(command, 'RESOLVE_INTERACTION')) return validateResolveInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CONFIRM_INTERACTION')) return validateConfirmInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CANCEL_INTERACTION')) return validateCancelInteraction(state, command, playerId, pendingInteraction);
-    if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId, phase);
+    if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId, phase, responseWindowType, currentResponseWindow);
     if (isCommandType(command, 'SKIP_TOKEN_RESPONSE')) return validateSkipTokenResponse(state, command, playerId);
     if (isCommandType(command, 'USE_PURIFY')) return validateUsePurify(state, command, playerId);
     if (isCommandType(command, DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN)) {

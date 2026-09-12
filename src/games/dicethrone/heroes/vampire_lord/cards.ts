@@ -10,7 +10,7 @@ import {
     injectCommonCardPreviewRefs,
     type CommonCardAtlasIndexMap,
 } from '../../domain/commonCards';
-import { DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
+import { DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS, TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from '../../domain/ids';
 import {
     BLOOD_FEAST_2,
     BLOOD_MAGIC_2,
@@ -67,20 +67,38 @@ const grantBleed = (value: number, description: string): AbilityEffect => ({
     timing: 'immediate',
 });
 
-const addAttackBonus = (value: number, description: string): AbilityEffect => ({
+const customAction = (
+    customActionId: string,
+    description: string,
+    params?: Record<string, string | number | boolean>,
+): AbilityEffect => ({
     description,
     action: {
         type: 'custom',
         target: 'self',
-        customActionId: 'common-add-attack-bonus',
-        params: { amount: value },
+        customActionId,
+        ...(params ? { params } : {}),
     },
     timing: 'immediate',
 });
 
-const drawCard = (count: number, description: string): AbilityEffect => ({
+const rollBloodSurge = (description: string): AbilityEffect => ({
     description,
-    action: { type: 'drawCard', target: 'self', drawCount: count },
+    action: {
+        type: 'rollDie',
+        target: 'self',
+        diceCount: 1,
+        conditionalEffects: [{
+            face: VAMPIRE_LORD_DICE_FACE_IDS.CLAW,
+            grantToken: { tokenId: TOKEN_IDS.BLOOD_POWER, value: 3, target: 'self' },
+            effectKey: 'bonusDie.effect.vampireLordBloodSurgeClaw',
+        }],
+        defaultEffect: {
+            drawCard: 1,
+            effectKey: 'bonusDie.effect.vampireLordBloodSurgeOther',
+        },
+        resolutionMode: 'none',
+    },
     timing: 'immediate',
 });
 
@@ -89,12 +107,12 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         id: 'card-vampire-lord-blood-surge',
         name: cardText('card-vampire-lord-blood-surge', 'name'),
         type: 'action',
-        cpCost: 1,
+        cpCost: 0,
         timing: 'main',
         description: cardText('card-vampire-lord-blood-surge', 'description'),
         sfxKey: VAMPIRE_LORD_SFX_LIGHT,
         ...vampireLordCardRef(17),
-        effects: [grantBloodPower(1, cardText('card-vampire-lord-blood-surge', 'description'))],
+        effects: [rollBloodSurge(cardText('card-vampire-lord-blood-surge', 'description'))],
     },
     {
         id: 'card-vampire-lord-blood-from-above',
@@ -105,7 +123,7 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-vampire-lord-blood-from-above', 'description'),
         sfxKey: VAMPIRE_LORD_SFX_HEAVY,
         ...vampireLordCardRef(18),
-        effects: [grantBloodPower(1, cardText('card-vampire-lord-blood-from-above', 'description'))],
+        effects: [customAction('vampire-lord-blood-from-above-roll', cardText('card-vampire-lord-blood-from-above', 'description'))],
     },
     {
         id: 'card-vampire-lord-total-demise',
@@ -118,7 +136,7 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         ...vampireLordCardRef(19),
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [addAttackBonus(1, cardText('card-vampire-lord-total-demise', 'description'))],
+        effects: [customAction('vampire-lord-total-demise-roll', cardText('card-vampire-lord-total-demise', 'description'))],
     },
     {
         id: 'card-vampire-lord-boiling-blood',
@@ -131,7 +149,7 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         ...vampireLordCardRef(20),
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [addAttackBonus(1, cardText('card-vampire-lord-boiling-blood', 'description'))],
+        effects: [customAction('vampire-lord-boiling-blood-bonus', cardText('card-vampire-lord-boiling-blood', 'description'))],
     },
     {
         id: 'card-vampire-lord-gushing-blood',
@@ -228,7 +246,7 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         id: 'upgrade-vampire-lord-bloodthirsty-claws-3',
         name: cardText('upgrade-vampire-lord-bloodthirsty-claws-3', 'name'),
         type: 'upgrade',
-        cpCost: 4,
+        cpCost: 2,
         timing: 'main',
         description: cardText('upgrade-vampire-lord-bloodthirsty-claws-3', 'description'),
         sfxKey: VAMPIRE_LORD_SFX_HEAVY,
@@ -239,7 +257,7 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         id: 'upgrade-vampire-lord-bloodthirsty-claws-2',
         name: cardText('upgrade-vampire-lord-bloodthirsty-claws-2', 'name'),
         type: 'upgrade',
-        cpCost: 2,
+        cpCost: 1,
         timing: 'main',
         description: cardText('upgrade-vampire-lord-bloodthirsty-claws-2', 'description'),
         sfxKey: VAMPIRE_LORD_SFX_HEAVY,
@@ -255,7 +273,8 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-vampire-lord-drink-up', 'description'),
         sfxKey: VAMPIRE_LORD_SFX_LIGHT,
         ...vampireLordCardRef(31),
-        effects: [grantBloodPower(2, cardText('card-vampire-lord-drink-up', 'description'))],
+        playCondition: { requireTokenStacks: { tokenId: TOKEN_IDS.BLOOD_POWER, min: 2 } },
+        effects: [customAction('vampire-lord-drink-up-choice', cardText('card-vampire-lord-drink-up', 'description'))],
     },
     {
         id: 'card-vampire-lord-bloodstone',
@@ -270,7 +289,6 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
             grantMesmerize(cardText('card-vampire-lord-bloodstone', 'description')),
             grantBloodPower(2, cardText('card-vampire-lord-bloodstone', 'description')),
             grantBleed(1, cardText('card-vampire-lord-bloodstone', 'description')),
-            drawCard(1, cardText('card-vampire-lord-bloodstone', 'description')),
         ],
     },
 ];

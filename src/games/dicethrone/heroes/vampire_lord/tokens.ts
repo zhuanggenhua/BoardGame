@@ -27,6 +27,13 @@ export const VAMPIRE_LORD_TOKENS: TokenDef[] = [
         sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_001',
         stackLimit: 1,
         category: 'consumable',
+        activeUse: {
+            timing: ['duringRoll'],
+            consumeAmount: 1,
+            customActionId: 'vampire-lord-mesmerize-roll',
+            requiresOpponentRollDice: true,
+            effect: { type: 'custom' },
+        },
         frameId: TOKEN_IDS.MESMERIZE,
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.VAMPIRE_LORD,
     },
@@ -52,22 +59,6 @@ export const VAMPIRE_LORD_TOKEN_MAP: Record<string, TokenDef> = Object.fromEntri
 ) as Record<string, TokenDef>;
 
 export const VAMPIRE_LORD_PASSIVE_ABILITIES: PassiveAbilityDef[] = [
-    {
-        id: 'vampire-lord-mesmerize',
-        nameKey: 'passive.vampireLordMesmerize.name',
-        actions: [
-            {
-                type: 'custom',
-                labelKey: 'passive.vampireLordMesmerize.useShort',
-                cpCost: 0,
-                tokenCost: { tokenId: TOKEN_IDS.MESMERIZE, amount: 1 },
-                timing: 'anytime',
-                descriptionKey: 'passive.vampireLordMesmerize.use',
-                customActionId: 'vampire-lord-mesmerize-roll',
-                requiresOpponentRollDice: true,
-            },
-        ],
-    },
     {
         id: 'vampire-lord-blood-power',
         nameKey: 'passive.vampireLordBloodPower.name',

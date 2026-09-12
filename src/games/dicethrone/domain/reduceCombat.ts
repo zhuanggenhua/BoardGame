@@ -3,7 +3,7 @@
  * 从 reducer.ts 提取
  */
 
-import type { DiceThroneCore, DiceThroneEvent } from './types';
+import type { AttackBonusDamageSource, DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
@@ -26,6 +26,30 @@ type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
     event: E
 ) => DiceThroneCore;
+
+const buildAttackBonusDamageSource = (
+    amount: number,
+    sourceId?: string,
+): AttackBonusDamageSource | undefined => (
+    sourceId ? { amount, sourceId } : undefined
+);
+
+const appendAttackBonusDamageSource = (
+    sources: AttackBonusDamageSource[] | undefined,
+    source: AttackBonusDamageSource | undefined,
+): AttackBonusDamageSource[] | undefined => {
+    if (!source || source.amount === 0) return sources;
+    const current = sources ?? [];
+    const existingIndex = current.findIndex(entry =>
+        entry.sourceId === source.sourceId
+        && entry.sourceName === source.sourceName
+    );
+    if (existingIndex < 0) return [...current, source];
+    return current.map((entry, index) => index === existingIndex
+        ? { ...entry, amount: entry.amount + source.amount }
+        : entry
+    );
+};
 
 const buildPlayersWithSyncedHp = (
     state: DiceThroneCore,
@@ -386,12 +410,22 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
         ? state.pendingAttack.attackModifierBonusDamage ?? 0
         : 0;
     const queuedAttackModifierBonusDamage = previousAttackModifierBonusDamage + (attacker?.pendingBonusDamage ?? 0);
-    const players = attacker?.pendingBonusDamage !== undefined
+    const previousBonusDamageSources = state.pendingAttack?.attackerId === attackerId
+        ? state.pendingAttack.bonusDamageSources ?? []
+        : [];
+    const queuedBonusDamageSources = [
+        ...previousBonusDamageSources,
+        ...(attacker?.pendingBonusDamageSources ?? []),
+    ];
+    const hasQueuedPendingBonusDamage = attacker?.pendingBonusDamage !== undefined
+        || (attacker?.pendingBonusDamageSources?.length ?? 0) > 0;
+    const players = hasQueuedPendingBonusDamage && attacker
         ? {
             ...state.players,
             [attackerId]: {
                 ...attacker,
                 pendingBonusDamage: undefined,
+                pendingBonusDamageSources: undefined,
             },
         }
         : state.players;
@@ -415,6 +449,7 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             attackDiceValues,
             bonusDamage: queuedAttackModifierBonusDamage,
             attackModifierBonusDamage: queuedAttackModifierBonusDamage,
+            bonusDamageSources: queuedBonusDamageSources.length > 0 ? queuedBonusDamageSources : undefined,
         },
         lastResolvedAttackDamage: undefined,
         offensiveRollAttackMadeThisTurn: {
@@ -438,6 +473,7 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
 ) => {
     const { playerId, amount, sourceCardId } = event.payload;
     if (amount === 0) return state;
+    const bonusDamageSource = buildAttackBonusDamageSource(amount, sourceCardId);
 
     if (state.pendingAttack && state.pendingAttack.attackerId === playerId) {
         const pendingDamage = state.pendingDamage?.sourcePlayerId === playerId
@@ -465,6 +501,10 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
                 attackModifierBonusDamage: sourceCardId
                     ? (state.pendingAttack.attackModifierBonusDamage ?? 0) + amount
                     : state.pendingAttack.attackModifierBonusDamage,
+                bonusDamageSources: appendAttackBonusDamageSource(
+                    state.pendingAttack.bonusDamageSources,
+                    bonusDamageSource,
+                ),
             },
             pendingDamage,
         };
@@ -480,6 +520,10 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
             [playerId]: {
                 ...player,
                 pendingBonusDamage: (player.pendingBonusDamage ?? 0) + amount,
+                pendingBonusDamageSources: appendAttackBonusDamageSource(
+                    player.pendingBonusDamageSources,
+                    bonusDamageSource,
+                ),
             },
         },
     };
@@ -656,7 +700,8 @@ export const handleAbilityReselectionRequired: EventHandler<Extract<DiceThroneEv
     }
 
     const attackModifierBonusDamage = pendingAttack.attackModifierBonusDamage ?? 0;
-    if (attackModifierBonusDamage <= 0) {
+    const attackModifierBonusDamageSources = pendingAttack.bonusDamageSources ?? [];
+    if (attackModifierBonusDamage <= 0 && attackModifierBonusDamageSources.length === 0) {
         return { ...state, pendingAttack: null, rollConfirmed: false };
     }
 
@@ -675,6 +720,10 @@ export const handleAbilityReselectionRequired: EventHandler<Extract<DiceThroneEv
             [attackerId]: {
                 ...attacker,
                 pendingBonusDamage: (attacker.pendingBonusDamage ?? 0) + attackModifierBonusDamage,
+                pendingBonusDamageSources: [
+                    ...(attacker.pendingBonusDamageSources ?? []),
+                    ...attackModifierBonusDamageSources,
+                ],
             },
         },
     };

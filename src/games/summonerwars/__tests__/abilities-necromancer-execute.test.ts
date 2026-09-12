@@ -107,6 +107,15 @@ function makeCultist(id: string): UnitCard {
   };
 }
 
+function makeMoguSporePlagueBody(id: string): UnitCard {
+  return {
+    id, cardType: 'unit', name: '菌袍疫病体', unitClass: 'common',
+    faction: 'mogu', strength: 2, life: 2, cost: 0,
+    attackType: 'melee', attackRange: 1,
+    abilities: ['mogu_burst', 'mogu_fungal_mutation'], deckSymbols: [],
+  };
+}
+
 function makeFireSacrifice(id: string): UnitCard {
   return {
     id, cardType: 'unit', name: '火祭召唤师', unitClass: 'champion',
@@ -234,6 +243,50 @@ describe('古尔-达斯 - 复活死灵 (revive_undead) execute 流程', () => {
     expect(events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED)).toBe(false);
     expect(events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
     expect(newState.board[4][2].unit?.damage).toBe(0);
+  });
+
+  it('复活死灵不能选择同阵营但不是亡灵的地狱火教徒', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const summoner = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makeSummoner('test-summoner'),
+      owner: '0',
+    });
+
+    state.players['0'].discard.push(makeCultist('hellfire-cultist-discard'));
+    state.phase = 'summon';
+    state.currentPlayer = '0';
+
+    const validateResult = SummonerWarsDomain.validate(
+      { core: state, sys: {} as any },
+      {
+        type: SW_COMMANDS.ACTIVATE_ABILITY,
+        payload: {
+          abilityId: 'revive_undead',
+          sourceUnitId: summoner.instanceId,
+          targetCardId: 'hellfire-cultist-discard',
+          targetPosition: { row: 4, col: 3 },
+        },
+        playerId: '0',
+        timestamp: fixedTimestamp,
+      },
+    );
+    expect(validateResult.valid).toBe(false);
+    expect(validateResult.error).toContain('亡灵单位');
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'revive_undead',
+      sourceUnitId: summoner.instanceId,
+      targetCardId: 'hellfire-cultist-discard',
+      targetPosition: { row: 4, col: 3 },
+    });
+
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED)).toBe(false);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(newState.board[4][2].unit?.damage).toBe(0);
+    expect(newState.board[4][3].unit).toBeUndefined();
   });
 
   it('执行器收到非相邻位置时不应自伤或召唤', () => {
@@ -778,6 +831,48 @@ describe('感染 (infection) execute 流程', () => {
     });
     expect(occupiedResult.events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
     expect(occupiedResult.newState.board[4][3].unit?.cardId).toBe('occupied-unit');
+  });
+
+  it('感染不能把莫古的菌袍疫病体当成亡灵法师疫病体', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const plague = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-plague',
+      card: makePlagueZombie('test-plague'),
+      owner: '0',
+    });
+    state.players['0'].discard.push(makeMoguSporePlagueBody('mogu-spore-plague-body-discard'));
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const validateResult = SummonerWarsDomain.validate(
+      { core: state, sys: {} as any },
+      {
+        type: SW_COMMANDS.ACTIVATE_ABILITY,
+        payload: {
+          abilityId: 'infection',
+          sourceUnitId: plague.instanceId,
+          targetCardId: 'mogu-spore-plague-body-discard',
+          targetPosition: { row: 4, col: 3 },
+        },
+        playerId: '0',
+        timestamp: fixedTimestamp,
+      },
+    );
+    expect(validateResult.valid).toBe(false);
+    expect(validateResult.error).toContain('疫病体');
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'infection',
+      sourceUnitId: plague.instanceId,
+      targetCardId: 'mogu-spore-plague-body-discard',
+      targetPosition: { row: 4, col: 3 },
+    });
+
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(newState.board[4][3].unit).toBeUndefined();
+    expect(newState.players['0'].discard.map(card => card.id)).toContain('mogu-spore-plague-body-discard');
   });
 
   it('弃牌堆无疫病体时验证拒绝', () => {

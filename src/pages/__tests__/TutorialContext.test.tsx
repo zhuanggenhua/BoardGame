@@ -4,12 +4,27 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameModeProvider } from '../../contexts/GameModeContext';
 import { ToastProvider } from '../../contexts/ToastContext';
-import { TutorialProvider, useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
+import {
+    buildTutorialSessionScope,
+    TutorialProvider,
+    useTutorial,
+    useTutorialBridge,
+} from '../../contexts/TutorialContext';
 import { TUTORIAL_COMMANDS } from '../../engine/systems/TutorialSystem';
 import type { TutorialManifest, TutorialState } from '../../engine/types';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <GameModeProvider mode="tutorial">
+        <ToastProvider>
+            <TutorialProvider>
+                {children}
+            </TutorialProvider>
+        </ToastProvider>
+    </GameModeProvider>
+);
+
+const onlineWrapper = ({ children }: { children: React.ReactNode }) => (
+    <GameModeProvider mode="online">
         <ToastProvider>
             <TutorialProvider>
                 {children}
@@ -156,6 +171,35 @@ describe('TutorialContext', () => {
             type: TUTORIAL_COMMANDS.PREVIOUS,
             payload: {},
         });
+    });
+
+    it('普通在线房间不会暴露残留教程会话运行态', () => {
+        const manifest = makeManifest();
+        const scope = buildTutorialSessionScope({
+            gameId: 'dicethrone',
+            tutorialId: 'basic-setup-and-turn',
+            manifest,
+        });
+        expect(scope).not.toBeNull();
+        const { result } = renderHook(() => useTutorial(), { wrapper: onlineWrapper });
+
+        act(() => {
+            result.current.activateTutorialSession(scope);
+            result.current.syncTutorialState({
+                active: true,
+                manifestId: manifest.id,
+                stepIndex: 0,
+                steps: manifest.steps,
+                step: manifest.steps[0],
+            }, 'residual-online-state', scope);
+        });
+
+        expect(result.current.tutorial.active).toBe(false);
+        expect(result.current.isActive).toBe(false);
+        expect(result.current.currentStep).toBeNull();
+        expect(result.current.isBoardMounted).toBe(false);
+        expect(result.current.activeSessionScope).toBeNull();
+        expect(result.current.startTutorial).toEqual(expect.any(Function));
     });
 
     it('Board 重挂载的空白教程状态不会关闭非最后一步的教程上下文', async () => {

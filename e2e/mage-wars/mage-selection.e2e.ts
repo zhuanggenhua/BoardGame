@@ -45,6 +45,15 @@ type MageWarsHarness = {
     };
 };
 
+const CARD_BODY_PRIMARY_HIT_POINTS = [
+    { label: '中心主体', xRatio: 0.5, yRatio: 0.5 },
+    { label: '右上卡面主体', xRatio: 0.7, yRatio: 0.24 },
+    { label: '右中卡面主体', xRatio: 0.78, yRatio: 0.42 },
+    { label: '标题下方主体', xRatio: 0.62, yRatio: 0.18 },
+] as const;
+
+const CARD_BODY_PLAYER_CLICK_POINT = { label: '玩家中心点击卡牌本体', xRatio: 0.5, yRatio: 0.5 } as const;
+
 async function waitForVisibleImages(page: Page) {
     await page.waitForFunction(() => Array.from(document.images)
         .filter((image) => {
@@ -187,6 +196,86 @@ async function expectSpellbookBuilderCardPoolReadable(builder: Locator) {
     expect(metrics.cardWidth, `组书卡池普通法术卡太窄：${metrics.cardWidth.toFixed(1)}px`).toBeGreaterThanOrEqual(160);
     expect(metrics.artWidth, `组书卡池普通法术牌面太窄：${metrics.artWidth.toFixed(1)}px`).toBeGreaterThanOrEqual(150);
     expect(metrics.artHeight, `组书卡池普通法术牌面太矮：${metrics.artHeight.toFixed(1)}px`).toBeGreaterThanOrEqual(205);
+}
+
+async function expectMagnifyOverlayHidden(page: Page) {
+    const overlay = page.getByTestId('mage-wars-card-magnify-overlay');
+    await expect(overlay).toBeHidden({ timeout: 5_000 });
+    if (await overlay.count()) {
+        await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+    }
+}
+
+async function expectLocatorPointUnblocked(
+    locator: Locator,
+    label: string,
+    point: { xRatio: number; yRatio: number } = { xRatio: 0.5, yRatio: 0.5 },
+) {
+    const audit = await locator.evaluate((element, hitPoint) => {
+        const rect = element.getBoundingClientRect();
+        const x = rect.left + rect.width * hitPoint.xRatio;
+        const y = rect.top + rect.height * hitPoint.yRatio;
+        const hit = document.elementFromPoint(x, y);
+        const primaryAction = hit?.closest<HTMLElement>('[data-primary-action="true"]') ?? null;
+        return {
+            point: { x, y },
+            rect: {
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            },
+            containsHit: hit != null && element.contains(hit),
+            hitTestId: hit?.closest<HTMLElement>('[data-testid]')?.getAttribute('data-testid') ?? null,
+            hitInspectButton: Boolean(hit?.closest<HTMLElement>('[data-testid="mage-wars-card-inspect-button"]')),
+            hitPrimaryAction: primaryAction === element,
+            hitBrowseInspectable: Boolean(hit?.closest<HTMLElement>('[data-browse-inspectable="true"]')),
+            targetBrowseInspectable: element.getAttribute('data-browse-inspectable'),
+            targetCursor: window.getComputedStyle(element).cursor,
+            hitTag: hit?.tagName ?? null,
+        };
+    }, point);
+    expect(audit.containsHit, `${label} 必须真实命中自身或子元素，实际命中 ${JSON.stringify(audit)}`).toBe(true);
+    return audit;
+}
+
+function expectPointerCursor(cursor: string, label: string) {
+    expect(
+        /(?:^|,\s*)pointer\s*$/.test(cursor),
+        `${label} 本体鼠标语义必须是主操作 pointer，可以是项目自定义手形光标: ${cursor}`,
+    ).toBe(true);
+    expect(
+        /(?:^|,\s*)zoom-in\s*$/.test(cursor),
+        `${label} 本体不能是放大 zoom-in 光标: ${cursor}`,
+    ).toBe(false);
+}
+
+async function clickFormalSpellbookCardBody(page: Page, card: Locator, cardId: string | number) {
+    const cardLabel = String(cardId);
+    await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
+    await card.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'center' }));
+    await expect(card, `正式入口法术书卡牌 ${cardLabel} 本体必须承担计划主操作`).toHaveAttribute('data-primary-action', 'true');
+    await expect(card, `正式入口法术书卡牌 ${cardLabel} 本体不能被标记为浏览放大入口`).not.toHaveAttribute('data-browse-inspectable', 'true');
+    await expectMagnifyOverlayHidden(page);
+    for (const hitPoint of CARD_BODY_PRIMARY_HIT_POINTS) {
+        const audit = await expectLocatorPointUnblocked(card, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}`, hitPoint);
+        expect(audit.hitInspectButton, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+        expect(audit.hitPrimaryAction, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}必须命中本体主操作: ${JSON.stringify(audit)}`).toBe(true);
+        expect(audit.hitBrowseInspectable, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}不应命中浏览放大入口: ${JSON.stringify(audit)}`).toBe(false);
+        expectPointerCursor(audit.targetCursor, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}`);
+        await page.mouse.move(audit.point.x, audit.point.y);
+        await expectMagnifyOverlayHidden(page);
+    }
+    const audit = await expectLocatorPointUnblocked(card, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}`, CARD_BODY_PLAYER_CLICK_POINT);
+    expect(audit.hitInspectButton, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.hitPrimaryAction, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}必须命中本体主操作: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.hitBrowseInspectable, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}不应命中浏览放大入口: ${JSON.stringify(audit)}`).toBe(false);
+    expectPointerCursor(audit.targetCursor, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}`);
+    await page.mouse.move(audit.point.x, audit.point.y);
+    await page.mouse.click(audit.point.x, audit.point.y);
+    await expectMagnifyOverlayHidden(page);
 }
 
 async function readMageWarsState(page: Page): Promise<MageWarsHarnessState | null> {
@@ -860,13 +949,14 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
         runtimeSpellbookCard.locator('[data-card-atlas-frame="true"]'),
         '牌桌法术书缠绕藤蔓牌面',
     );
-    await runtimeSpellbookCard.click();
+    await clickFormalSpellbookCardBody(page, runtimeSpellbookCard, 2224);
     await expect(runtimeSpellbookCard).toHaveAttribute('data-selected-count', '1');
     await expect(runtimeSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
     await expect(page.locator(
         '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2224"]',
     )).toHaveCount(1);
-    await runtimeSpellbookCard.click();
+    const runtimeFirstPlanningDraftScreenshot = await saveEvidenceScreenshot(page, testInfo, '11-正式牌桌计划态-中心点击缠绕藤蔓进入计划槽1');
+    await clickFormalSpellbookCardBody(page, runtimeSpellbookCard, 2224);
     await expect(runtimeSpellbookCard).toHaveAttribute('data-selected-count', '2');
     await expect(runtimeSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
     await expect(page.locator(
@@ -874,6 +964,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     )).toHaveCount(2);
     await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划 2/2');
     await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '2/2');
+    const runtimeSecondPlanningDraftScreenshot = await saveEvidenceScreenshot(page, testInfo, '12-正式牌桌计划态-中心点击缠绕藤蔓满2张');
     await page.getByTestId('mage-wars-plan-spells').click();
     await expect.poll(async () => {
         const state = await readMageWarsState(page);
@@ -882,7 +973,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     }).toEqual([2224, 2224]);
     await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="2224"]'))
         .toHaveCount(2);
-    const runtimePlanningScreenshot = await saveEvidenceScreenshot(page, testInfo, '11-牌桌计划态-命名副本进入可计划牌列');
+    const runtimePlanningScreenshot = await saveEvidenceScreenshot(page, testInfo, '13-正式牌桌提交计划后-命名副本进入准备区');
 
     await assertNoFatalFrontendErrors([{ label: 'mage-wars-spellbook-builder', diagnostics }]);
     testInfo.annotations.push({
@@ -898,6 +989,8 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
             directUseScreenshot,
             updatedSpellbookScreenshot,
             deleteSpellbookScreenshot,
+            runtimeFirstPlanningDraftScreenshot,
+            runtimeSecondPlanningDraftScreenshot,
             runtimePlanningScreenshot,
         ]),
     });

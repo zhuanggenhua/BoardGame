@@ -21,7 +21,7 @@ import {
 } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
-import { TOKEN_IDS } from './ids';
+import { TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
@@ -963,14 +963,16 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
     for (const playerId of Object.keys(state.players)) {
         const player = state.players[playerId];
         const hasPendingBonusDamage = player?.pendingBonusDamage !== undefined;
+        const hasPendingBonusDamageSources = (player?.pendingBonusDamageSources?.length ?? 0) > 0;
         const hasArtificerBotState = !!player?.artificerBotState;
-        if (!hasPendingBonusDamage && !hasArtificerBotState) continue;
+        if (!hasPendingBonusDamage && !hasPendingBonusDamageSources && !hasArtificerBotState) continue;
         if (players === state.players) {
             players = { ...state.players };
         }
         players[playerId] = {
             ...player,
             pendingBonusDamage: undefined,
+            pendingBonusDamageSources: undefined,
             artificerBotState: player?.artificerBotState
                 ? Object.fromEntries(
                     Object.entries(player.artificerBotState).map(([tokenId, botState]) => [
@@ -1093,6 +1095,16 @@ const resolveBonusDieEffectKeyForValue = (
     if (effectKey.startsWith('bonusDie.effect.blinded.')) {
         return value <= 2 ? 'bonusDie.effect.blinded.miss' : 'bonusDie.effect.blinded.hit';
     }
+    if (effectKey.startsWith('bonusDie.effect.vampireLordBloodSurge')) {
+        return face === VAMPIRE_LORD_DICE_FACE_IDS.CLAW
+            ? 'bonusDie.effect.vampireLordBloodSurgeClaw'
+            : 'bonusDie.effect.vampireLordBloodSurgeOther';
+    }
+    if (effectKey.startsWith('bonusDie.effect.vampireLordTotalDemise')) {
+        return face === VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP
+            ? 'bonusDie.effect.vampireLordTotalDemiseDie'
+            : 'bonusDie.effect.vampireLordTotalDemiseOther';
+    }
 
     for (const prefix of [
         'bonusDie.effect.treantWildGrowth2.',
@@ -1131,6 +1143,13 @@ const rebuildBonusDieEffectParams = (
             break;
         case 'bonusDie.effect.gunslingerLoadedDie':
             params.bonusDamage = halfUp(value);
+            break;
+        case 'bonusDie.effect.vampireLordBloodFromAboveDie':
+            params.amount = halfUp(value);
+            break;
+        case 'bonusDie.effect.vampireLordTotalDemiseDie':
+        case 'bonusDie.effect.vampireLordTotalDemiseOther':
+            params.bonusDamage = face === VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP ? 1 : 0;
             break;
         case 'bonusDie.effect.artificerPerfectlyCalibrated':
             params.synth = halfUp(value);
@@ -1210,6 +1229,10 @@ const rebuildBonusSettlementSummary = (
             const leafCount = countBonusFaces(dice, 'leaf');
             const spiritCount = countBonusFaces(dice, 'spirit');
             return { summaryEffectParams: { branchCount, leafCount, spiritCount } };
+        }
+        case 'bonusDie.effect.vampireLordTotalDemiseResult': {
+            const bloodDropCount = countBonusFaces(dice, VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP);
+            return { summaryEffectParams: { bloodDropCount, bonusDamage: bloodDropCount } };
         }
         default:
             return {};
@@ -1934,12 +1957,16 @@ export const reduce = (
                     // 清理攻击相关状态
                     let players = state.players;
                     const activePlayer = state.players[activePlayerId];
-                    if (activePlayer?.pendingBonusDamage !== undefined) {
+                    if (
+                        activePlayer?.pendingBonusDamage !== undefined
+                        || (activePlayer?.pendingBonusDamageSources?.length ?? 0) > 0
+                    ) {
                         players = {
                             ...state.players,
                             [activePlayerId]: {
                                 ...activePlayer,
                                 pendingBonusDamage: undefined,
+                                pendingBonusDamageSources: undefined,
                             },
                         };
                     }

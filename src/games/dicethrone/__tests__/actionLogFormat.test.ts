@@ -16,6 +16,7 @@ import type {
     HealAppliedEvent,
     StatusAppliedEvent,
     StatusRemovedEvent,
+    TokenConsumedEvent,
     TokenGrantedEvent,
     TokenUsedEvent,
     BonusDieRolledEvent,
@@ -131,6 +132,92 @@ describe('formatDiceThroneActionEntry', () => {
             expect(breakdownSeg.lines[0].value).toBe(4);
             // source fallback 为 'test-ability'（技能表中找不到）
             expect(breakdownSeg.lines[0].label).toBe('test-ability');
+        }
+    });
+
+    it('breakdown 中的被动和卡牌加伤来源应显示可读名称', () => {
+        const state = createState();
+        const cardId = 'card-vampire-lord-total-demise';
+        const card = getCardById(cardId);
+        state.core.players['0'].passiveAbilities = [{
+            id: 'vampire-lord-blood-power',
+            nameKey: 'passive.vampireLordBloodPower.name',
+            actions: [],
+        }];
+        state.core.players['0'].discard = [card];
+        const command: Command = {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: {},
+            timestamp: 10,
+        };
+        const damageEvent: DamageDealtEvent = {
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '1',
+                amount: 9,
+                actualDamage: 9,
+                sourceAbilityId: 'test-ability',
+                breakdown: {
+                    base: {
+                        value: 5,
+                        sourceId: 'test-ability',
+                        sourceName: 'test-ability',
+                        sourceNameIsI18n: false,
+                    },
+                    steps: [
+                        {
+                            type: 'flat',
+                            value: 3,
+                            sourceId: 'vampire-lord-blood-power',
+                            runningTotal: 8,
+                        },
+                        {
+                            type: 'flat',
+                            value: 1,
+                            sourceId: cardId,
+                            sourceName: cardId,
+                            sourceNameIsI18n: false,
+                            runningTotal: 9,
+                        },
+                    ],
+                },
+            },
+            timestamp: 10,
+        };
+        const resolvedEvent: AttackResolvedEvent = {
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'test-ability',
+                defenseAbilityId: undefined,
+                totalDamage: 9,
+            },
+            timestamp: 11,
+        };
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [damageEvent, resolvedEvent] as GameEvent[],
+        }));
+
+        const damageEntry = entries.find(entry => entry.kind === 'DAMAGE_DEALT');
+        expect(damageEntry).toBeTruthy();
+        const breakdownSeg = damageEntry?.segments.find(s => s.type === 'breakdown');
+        expect(breakdownSeg).toBeTruthy();
+        if (breakdownSeg?.type === 'breakdown') {
+            expect(breakdownSeg.lines[1]).toMatchObject({
+                label: 'passive.vampireLordBloodPower.name',
+                labelIsI18n: true,
+                value: 3,
+            });
+            expect(breakdownSeg.lines[2]).toMatchObject({
+                label: card.name,
+                labelIsI18n: true,
+                value: 1,
+            });
         }
     });
 
@@ -648,6 +735,66 @@ describe('formatDiceThroneActionEntry', () => {
         const statusSeg = findI18nSegment(entries[0].segments, 'actionLog.statusRemoved');
         expect(statusSeg?.params?.statusLabel).toBe('statusEffects.daze.name');
         expect(statusSeg?.paramI18nKeys).toContain('statusLabel');
+    });
+
+    it('起开移除催眠时，日志应写清来源卡和被移除的 token', () => {
+        const state = createState();
+        state.core.players['1'].discard = [getCardById('card-get-away')];
+        const command: Command = {
+            type: 'REMOVE_STATUS',
+            playerId: '1',
+            payload: { targetPlayerId: '0', statusId: TOKEN_IDS.MESMERIZE },
+            timestamp: 41,
+        };
+        const tokenConsumedEvent: TokenConsumedEvent = {
+            type: 'TOKEN_CONSUMED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.MESMERIZE,
+                amount: 1,
+                newTotal: 0,
+            },
+            sourceCommandType: 'REMOVE_STATUS',
+            timestamp: 41,
+        };
+        const confirmedEvent = {
+            type: 'SYS_INTERACTION_CONFIRMED',
+            payload: {
+                interactionId: 'dt-interaction-card-get-away-40',
+                playerId: '1',
+                sourceId: 'card-get-away',
+            },
+            timestamp: 41,
+        } as GameEvent;
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [tokenConsumedEvent, confirmedEvent] as GameEvent[],
+            afterEventsRound: 1,
+        }));
+
+        const tokenEntry = entries.find(entry => entry.kind === 'TOKEN_CONSUMED');
+        expect(tokenEntry).toBeTruthy();
+        expect(tokenEntry?.actorId).toBe('1');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourcePrefix');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourceResult');
+        expect(tokenEntry?.segments).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'card',
+                cardId: 'card-get-away',
+                previewText: 'cards.card-get-away.name',
+                previewTextNs: 'game-dicethrone',
+                previewRef: expect.objectContaining({ type: 'atlas' }),
+            }),
+        ]));
+        const resultSeg = findI18nSegment(tokenEntry!.segments, 'actionLog.tokenRemovedBySourceResult');
+        expect(resultSeg?.params).toMatchObject({
+            targetPlayerId: '0',
+            tokenLabel: 'tokens.mesmerize.name',
+            amount: 1,
+        });
+        expect(resultSeg?.paramI18nKeys).toContain('tokenLabel');
     });
 
     it('奖励骰出现、修改和被动重投临时骰应写入可区分的操作日志', () => {

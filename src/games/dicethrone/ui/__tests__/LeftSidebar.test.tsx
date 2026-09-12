@@ -6,6 +6,7 @@ import { STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
 import { createQueuedRandom } from '../../__tests__/test-utils';
 import { LIEREN_TOKENS } from '../../heroes/lieren/tokens';
 import { TIANSHI_TOKENS } from '../../heroes/tianshi/tokens';
+import { VAMPIRE_LORD_TOKENS } from '../../heroes/vampire_lord/tokens';
 import { LeftSidebar } from '../LeftSidebar';
 
 vi.mock('react-i18next', () => ({
@@ -176,5 +177,31 @@ describe('LeftSidebar 飞行 Token 入口', () => {
         fireEvent.click(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.NYRAS_BOND}-hit-target`));
 
         expect(onNyraBondHealClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('主动 Token 入口直接高亮并点击 Token 本体', () => {
+        const player = initHeroState('0', 'vampire_lord', createQueuedRandom([1]));
+        player.tokens[TOKEN_IDS.MESMERIZE] = 1;
+        const onActiveTokenClick = vi.fn();
+
+        render(
+            <LeftSidebar
+                currentPhase="defensiveRoll"
+                viewPlayer={player}
+                playerId="0"
+                locale="zh-CN"
+                tokenDefinitions={VAMPIRE_LORD_TOKENS}
+                activeTokenIds={[TOKEN_IDS.MESMERIZE]}
+                onActiveTokenClick={onActiveTokenClick}
+            />,
+        );
+
+        const mesmerizeToken = screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.MESMERIZE}`);
+        expect(mesmerizeToken).toHaveAttribute('data-token-clickable', 'true');
+        expect(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.MESMERIZE}-available-halo`)).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.MESMERIZE}-hit-target`));
+
+        expect(onActiveTokenClick).toHaveBeenCalledWith(TOKEN_IDS.MESMERIZE);
     });
 });

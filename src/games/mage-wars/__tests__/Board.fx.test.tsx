@@ -11,6 +11,7 @@ import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import type { RandomFn, SystemState } from '../../../engine/types';
 import MageWarsBoard from '../Board';
+import { MageWarsTutorial } from '../tutorial';
 import {
     getPresetSpellbookCountFromConfig,
     getPresetSpellbookEntriesFromConfig,
@@ -320,6 +321,26 @@ function withBoardProviders(board: ReactElement, mode: GameMode = 'test'): React
 
 function renderBoardWithProviders(board: ReactElement, mode?: GameMode) {
     return render(withBoardProviders(board, mode));
+}
+
+function getMageWarsTutorialStep(stepId: string) {
+    const step = MageWarsTutorial.steps.find((item) => item.id === stepId);
+    if (!step) throw new Error(`Missing Mage Wars tutorial step ${stepId}`);
+    return step;
+}
+
+function tutorialSysOverride(stepId: string): Partial<SystemState> {
+    const step = getMageWarsTutorialStep(stepId);
+    return {
+        phase: 'planning',
+        tutorial: {
+            active: true,
+            manifestId: MageWarsTutorial.id,
+            stepIndex: MageWarsTutorial.steps.indexOf(step),
+            steps: MageWarsTutorial.steps,
+            step,
+        },
+    };
 }
 
 function visibleDesktopSpellbookCardIds(container: HTMLElement): string[] {
@@ -3164,13 +3185,16 @@ describe('MageWarsBoard mage ability status choices', () => {
 });
 
 describe('MageWarsBoard spellbook planning UI', () => {
+    const preparedSummaryText = (count: number, total: number) => (
+        `privateZones.preparedSpellsWithCount:${JSON.stringify({ count, total })}`
+    );
+
     it.each([
-        ['planning', 'actions.skipPlanning'],
         ['deployment', 'actions.passDeployment'],
         ['initiativeQuickcast', 'actions.passQuickcast'],
         ['creatureAction', 'actions.endAction'],
         ['finalQuickcast', 'actions.passQuickcast'],
-    ])('labels the phase advance action for %s instead of reusing end turn', (phase, expectedLabel) => {
+    ])('labels the phase advance action for non-planning %s instead of reusing end turn', (phase, expectedLabel) => {
         const { unmount } = renderBoardWithProviders(
             <MageWarsBoard
                 {...boardProps(undefined, '0', { phase })}
@@ -3182,6 +3206,31 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(mainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
         expect(mainAction.getAttribute('data-main-action-phase')).toBe(phase);
         expect(mainAction.textContent).not.toBe('actions.endTurn');
+        unmount();
+    });
+
+    it('submits an empty planning selection through the same plan confirmation action', () => {
+        const dispatch = vi.fn();
+        const { unmount } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(undefined, '0', { phase: 'planning' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const planButton = screen.getByTestId('mage-wars-plan-spells');
+        expect(planButton.textContent).toBe('spellbook.planSelected:{"count":0,"total":2}');
+        expect(planButton.getAttribute('data-main-action-mode')).toBe('plan-spells');
+        expect(planButton.getAttribute('data-main-action-phase')).toBe('planning');
+        expect(planButton.getAttribute('data-plan-progress')).toBe('0/2');
+        expect(planButton).not.toBeDisabled();
+        expect(screen.queryByTestId('mage-wars-turn-end')).toBeNull();
+        expect(screen.queryByText(preparedSummaryText(0, 0))).toBeNull();
+        expect(screen.queryByText(preparedSummaryText(0, 2))).toBeNull();
+
+        fireEvent.click(planButton);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.PLAN_SPELLS, { spellCardIds: [] });
         unmount();
     });
 
@@ -3220,11 +3269,14 @@ describe('MageWarsBoard spellbook planning UI', () => {
                 '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2224"]',
             );
         }
-        const initialMainAction = screen.getByTestId('mage-wars-turn-end');
+        const initialMainAction = screen.getByTestId('mage-wars-plan-spells');
         expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(initialMainAction);
-        expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
-        expect(initialMainAction.textContent).toBe('actions.skipPlanning');
-        expect(screen.queryByTestId('mage-wars-plan-spells')).toBeNull();
+        expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('plan-spells');
+        expect(initialMainAction.getAttribute('data-plan-progress')).toBe('0/2');
+        expect(initialMainAction.textContent).toBe('spellbook.planSelected:{"count":0,"total":2}');
+        expect(screen.queryByTestId('mage-wars-turn-end')).toBeNull();
+        expect(screen.queryByText(preparedSummaryText(0, 0))).toBeNull();
+        expect(screen.queryByText(preparedSummaryText(0, 2))).toBeNull();
         expect(screen.getByTestId('mage-wars-mage-hud-self').getAttribute('data-mage-wars-hud-density')).toBe('full');
         expect(screen.getByTestId('mage-wars-mage-hud-opponent').getAttribute('data-mage-wars-hud-density')).toBe('full');
 
@@ -3255,6 +3307,7 @@ describe('MageWarsBoard spellbook planning UI', () => {
         fireEvent.click(tanglevine!);
         expect(tanglevine?.getAttribute('data-selected-count')).toBe('1');
         expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')).toBeNull();
+        expect(screen.queryByText(preparedSummaryText(1, 2))).toBeNull();
         expect(container.querySelectorAll('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2224"]'))
             .toHaveLength(1);
 
@@ -3263,6 +3316,7 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')).toBeNull();
         expect(screen.getByTestId('mage-wars-mage-hud-self').getAttribute('data-mage-wars-hud-density')).toBe('full');
         expect(screen.getByTestId('mage-wars-mage-hud-opponent').getAttribute('data-mage-wars-hud-density')).toBe('full');
+        expect(screen.queryByText(preparedSummaryText(2, 2))).toBeNull();
         const draftSlots = Array.from(container.querySelectorAll<HTMLElement>(
             '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2224"]',
         ));
@@ -3280,6 +3334,89 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.PLAN_SPELLS, {
             spellCardIds: [2224, 2224],
         });
+    });
+
+    it('gates tutorial spellbook planning to the current real tutorial target', async () => {
+        window.localStorage.clear();
+
+        const skippedClickRender = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(undefined, '0', tutorialSysOverride('plan-open-creature-category'))}
+            />,
+            'tutorial',
+        );
+        const firstVisibleCard = skippedClickRender.container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]',
+        );
+        expect(firstVisibleCard).not.toBeNull();
+        expect(firstVisibleCard?.getAttribute('data-primary-action')).toBe('true');
+        expect(firstVisibleCard?.getAttribute('data-primary-action-state')).toBe('disabled');
+        expect(firstVisibleCard?.getAttribute('data-browse-inspectable')).toBeNull();
+        expect(firstVisibleCard?.getAttribute('data-secondary-inspect')).toBe('true');
+        expect(firstVisibleCard).toBeDisabled();
+        expect(screen.getByTestId('mage-wars-desktop-spellbook-shelf').getAttribute('data-planning-enabled')).toBe('false');
+        expect(screen.getByTestId('mage-wars-spellbook-category-creature')).toBeEnabled();
+        expect(screen.getByTestId('mage-wars-spellbook-category-all')).toBeDisabled();
+        expect(screen.getByTestId('mage-wars-spellbook-next-page')).toBeDisabled();
+
+        fireEvent.click(firstVisibleCard!);
+        await waitFor(() => {
+            expect(skippedClickRender.container.querySelectorAll(
+                '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]',
+            )).toHaveLength(0);
+        });
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('true');
+        const gatedPlanButton = screen.getByTestId('mage-wars-plan-spells');
+        expect(gatedPlanButton.textContent).toBe('spellbook.planSelected:{"count":0,"total":2}');
+        expect(gatedPlanButton).toBeDisabled();
+        skippedClickRender.unmount();
+        window.localStorage.clear();
+
+        const { container, rerender } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(undefined, '0', tutorialSysOverride('plan-open-creature-category'))}
+            />,
+            'tutorial',
+        );
+
+        fireEvent.click(screen.getByTestId('mage-wars-spellbook-category-creature'));
+        rerender(withBoardProviders(
+            <MageWarsBoard {...boardProps(undefined, '0', tutorialSysOverride('plan-creature-next-page'))} />,
+            'tutorial',
+        ));
+        fireEvent.click(screen.getByTestId('mage-wars-spellbook-next-page'));
+        rerender(withBoardProviders(
+            <MageWarsBoard {...boardProps(undefined, '0', tutorialSysOverride('plan-select-wolf'))} />,
+            'tutorial',
+        ));
+
+        let wolfCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2819"]',
+        );
+        for (let pageIndex = 0; pageIndex < 12 && !wolfCard; pageIndex += 1) {
+            const nextPage = screen.getByTestId('mage-wars-spellbook-next-page') as HTMLButtonElement;
+            if (nextPage.disabled) break;
+            fireEvent.click(nextPage);
+            wolfCard = container.querySelector<HTMLElement>(
+                '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2819"]',
+            );
+        }
+
+        expect(wolfCard).not.toBeNull();
+        expect(wolfCard?.getAttribute('data-primary-action')).toBe('true');
+        expect(wolfCard?.getAttribute('data-browse-inspectable')).toBeNull();
+        expect(container.querySelectorAll(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]',
+        )).toHaveLength(0);
+
+        fireEvent.click(wolfCard!);
+
+        await waitFor(() => {
+            expect(container.querySelectorAll(
+                '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2819"]',
+            )).toHaveLength(1);
+        });
+        expect(screen.queryByText(preparedSummaryText(1, 2))).toBeNull();
     });
 });
 

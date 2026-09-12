@@ -673,6 +673,12 @@ const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThro
             success: true,
         };
     },
+
+    custom: (_ctx) => {
+        return {
+            success: true,
+        };
+    },
 };
 
 /**
@@ -820,6 +826,8 @@ export function processTokenUsage(
         ? 'evasionAttempt'
         : effect.type === 'removeDebuff'
             ? 'removeDebuff'
+            : effect.type === 'custom'
+                ? 'custom'
             : effectType;
     const event: TokenUsedEvent = {
         type: 'TOKEN_USED',

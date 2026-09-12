@@ -219,7 +219,7 @@ export const OpponentHeader = ({
             <div className="flex justify-center items-center pointer-events-auto">
                 <div
                     onClick={() => {
-                        if (disabled || shouldAutoObserve) return;
+                        if (disabled) return;
                         onToggleView();
                     }}
                     className={[

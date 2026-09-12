@@ -18,6 +18,7 @@ export function RecentRollPanel({
   className = "",
   diceClassName,
   animateInitialRoll = true,
+  animateRerollMotion = true,
   rerollSelection = null,
   effectiveLocale = "zh-CN",
   showSource = true,
@@ -44,6 +45,7 @@ export function RecentRollPanel({
   className?: string;
   diceClassName?: string;
   animateInitialRoll?: boolean;
+  animateRerollMotion?: boolean;
   rerollSelection?: RecentRollRerollSelection | null;
   effectiveLocale?: string;
   showSource?: boolean;
@@ -201,6 +203,7 @@ export function RecentRollPanel({
       locale={effectiveLocale}
       canvasTestId={canvasTestId}
       animateInitialRoll={animateInitialRoll}
+      animateRerollMotion={animateRerollMotion}
       rerollSelection={rerollSelection}
       styleProfile={diceStyleProfile}
       visualScale={diceVisualScale}

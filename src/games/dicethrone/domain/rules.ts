@@ -27,6 +27,7 @@ import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from '
 import { getCurrentRollDice, getCurrentRollOwnerId, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { canRerollBonusDiceSettlement } from './bonusDiceSettlement';
 import { hasUsableDiceRerollPassiveAction } from './passiveAbility';
+import { hasUsableActiveRollToken } from './activeRollTokens';
 import {
     areTeammates,
     getSeatingOrder,
@@ -830,6 +831,7 @@ export type CardPlayFailReason =
     | 'requireRollConfirmed'       // 卡牌需要骰面已确认（响应对手确认后）
     | 'requireNotRollConfirmed'    // 骰面已确认，不能再打出该卡
     | 'requireMinDamageDealt'      // 本回合未造成足够伤害
+    | 'requireTokenStacks'         // 卡牌需要拥有足够的指定 Token / 正面标记
     | 'noStatusOnBoard'            // 场上没有任何状态效果或 token
     | 'rollContextLocked'          // 当前骰区不允许改骰牌
     | 'requirePendingDamage';      // 需要处于待结算伤害响应窗口
@@ -1164,6 +1166,15 @@ const checkStandardCardPlay = (
             const loaded = state.players[playerId]?.tokens?.[TOKEN_IDS.LOADED] ?? 0;
             if (loaded < 1) {
                 return { ok: false, reason: 'requireLoaded' };
+            }
+        }
+
+        if (cond.requireTokenStacks) {
+            const { tokenId, min } = cond.requireTokenStacks;
+            const requiredStacks = Math.max(0, Math.trunc(min));
+            const currentStacks = state.players[playerId]?.tokens?.[tokenId] ?? 0;
+            if (currentStacks < requiredStacks) {
+                return { ok: false, reason: 'requireTokenStacks' };
             }
         }
 
@@ -1689,6 +1700,12 @@ export const hasRespondableContent = (
         if (stacks > 0) {
             return true;
         }
+    }
+
+    if (windowType === 'afterRollConfirmed' && hasUsableActiveRollToken(state, playerId, phase, {
+        responseWindowType: windowType,
+    })) {
+        return true;
     }
 
     // 奖励骰已投出后，只有实际能重投当前骰区的被动能力才算介入手段。

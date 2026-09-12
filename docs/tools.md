@@ -1,6 +1,6 @@
 # 项目工具脚本索引
 
-本文只做 `scripts/` 的稳定导航，不维护全量文件清单。查精确脚本位置用 `rg --files scripts`，查用法优先读脚本头部、`package.json` scripts 和对应专项文档。
+本文只做项目工具入口的稳定导航，不维护全量文件清单。查精确脚本位置用 `rg --files scripts`，查外部工具用 `rg --files .tools`，查用法优先读脚本头部、`package.json` scripts 和对应专项文档。
 
 ## 目录职责
 
@@ -21,6 +21,17 @@
 
 根目录下历史修复脚本、一次性分析脚本和专项迁移脚本不作为新任务默认入口。修改或复用前先确认它是否仍有当前职责。
 
+## 外部工具目录
+
+| 目录 | 职责 |
+| --- | --- |
+| `.tools/<tool-name>/` | AI / 开发者本机使用的外部辅助工具主体；不进入产品运行时，不放到 `src/`。 |
+| `scripts/<category>/` | 可审计、可复用、可被 npm scripts 调用的项目薄入口；只转发或编排外部工具，不承载完整外部工具源码。 |
+
+- 项目自有外部工具可以放在 `.tools/<tool-name>/` 并随仓库维护；第三方源码安装副本按工具逐项写入 `.gitignore`，例如 `.tools/open-design/`。
+- 端到端图片目录查看器属于外部辅助工具：主体放 `.tools/e2e-image-viewer/`，`scripts/verify/open-e2e-image-viewer.mjs` 只负责启动 / 复用和传参；传入证据根目录、游戏目录或测试目录时默认自动定位最新具体截图目录，不递归混合多个游戏。查看器会复用同目录或同游戏证据里的图组索引 / `label-source-manifest.json` 显示中文标题和承接说明，页面不展示完整本地路径。
+- 外部辅助工具可以读取 `test-results/`、`artifacts/` 或 `evidence/` 的本地证据，但不得把候选图、失败图或过程图升级成最终用户展示；最终用户展示仍回到 PASS 清单和看图入口，默认由本地网页查看器打开，不再默认使用 PureRef。
+
 ## 常用入口
 
 | 目标 | 命令 |
@@ -36,6 +47,7 @@
 | PDF 转 Markdown | `npm run pdf:md -- <pdf路径> -o <md路径>` |
 | 模拟房主流程 | `npx tsx scripts/infra/simulate-host.ts` |
 | E2E 单 worker 服务 | `node scripts/infra/start-single-worker-servers.js` |
+| 端到端图片目录查看器 | `node scripts/verify/open-e2e-image-viewer.mjs --dir <证据目录>` |
 | Android 发布 | `node scripts/mobile/release-android.mjs <ota|native|packages>` |
 | 完整部署 + OTA | `node scripts/release/deploy-and-ota.mjs` |
 | 结构规范校验 | `npm run spec:lint` |
@@ -58,3 +70,4 @@
 - `assets:download` 默认按明确游戏下载；无目标、`--list` 和共享测试不得扩大成全站镜像。
 - 临时裁图、OCR、截图、探针输出和下载样本放 `temp/` 或 `tmp/`，不要放仓库根目录。
 - 项目脚本默认在仓库根目录执行。
+- 带 `--dir`、`--paths`、`--no-open` 等参数的本地查看器优先直接调用 `node scripts/...`；当前 npm 会把部分长参数解析成自己的配置，容易导致查看器选项失效。

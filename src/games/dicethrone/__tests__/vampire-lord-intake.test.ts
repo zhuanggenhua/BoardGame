@@ -50,6 +50,19 @@ const hasI18nKey = (data: Record<string, unknown>, key: string): boolean => {
     return current !== undefined;
 };
 
+const getI18nValue = (data: Record<string, unknown>, key: string): unknown => {
+    const parts = key.split('.');
+    let current: unknown = data;
+    for (let index = 0; index < parts.length; index += 1) {
+        if (!current || typeof current !== 'object') return undefined;
+        const record = current as Record<string, unknown>;
+        const remaining = parts.slice(index).join('.');
+        if (Object.prototype.hasOwnProperty.call(record, remaining)) return record[remaining];
+        current = record[parts[index]];
+    }
+    return current;
+};
+
 const manifestHas = (path: string, assetPath: string): boolean => {
     const manifest = readJson<{ files?: Record<string, unknown> }>(path);
     return Object.prototype.hasOwnProperty.call(manifest.files ?? {}, assetPath);
@@ -321,6 +334,31 @@ describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
             for (const key of VAMPIRE_LORD_I18N_KEYS) {
                 expect(hasI18nKey(data, key), `${locale} 缺少 ${key}`).toBe(true);
             }
+        }
+    });
+
+    it('催眠规则描述使用提示卡原文口径，不混入响应窗口和点击路径', () => {
+        const zh = readJson<Record<string, unknown>>(join(process.cwd(), 'public', 'locales', 'zh-CN', 'game-dicethrone.json'));
+        const en = readJson<Record<string, unknown>>(join(process.cwd(), 'public', 'locales', 'en', 'game-dicethrone.json'));
+
+        const zhDescription = getI18nValue(zh, 'tokens.mesmerize.description') as string[];
+        const zhUse = getI18nValue(zh, 'passive.vampireLordMesmerize.use') as string;
+        const enDescription = getI18nValue(en, 'tokens.mesmerize.description') as string[];
+        const enUse = getI18nValue(en, 'passive.vampireLordMesmerize.use') as string;
+
+        expect(zhDescription.join('')).toContain('正面状态效果');
+        expect(zhDescription.join('')).toContain('堆叠上限：1');
+        expect(zhDescription.join('')).toContain('强迫一名对手重掷 1 颗骰子');
+        expect(zhUse).toContain('花费 1 个催眠并投掷 1 颗骰子');
+        expect(zhUse).toContain('可以强迫对手重掷任意 1 颗骰子');
+
+        for (const uiPhrase of ['响应窗口', '高亮', '点击', '左侧', 'E2E', '实施中']) {
+            expect(zhDescription.join('')).not.toContain(uiPhrase);
+            expect(zhUse).not.toContain(uiPhrase);
+        }
+        for (const uiPhrase of ['response window', 'highlight', 'click', 'left sidebar', 'E2E', 'implementation']) {
+            expect(enDescription.join('')).not.toContain(uiPhrase);
+            expect(enUse).not.toContain(uiPhrase);
         }
     });
 });

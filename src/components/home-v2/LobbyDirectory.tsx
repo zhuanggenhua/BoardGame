@@ -4,10 +4,12 @@ import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
+import { isNativeMobileRuntime } from '../../lib/mobile/mobileRuntime';
 import { ImplementationStatusRibbon } from '../game/framework';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { sortGamesForLobbyDirectory } from './lobbyDirectorySorting';
 import { UserMenu } from '../social/UserMenu';
+import { OperationGuideButton } from '../system/OperationGuidePanel';
 
 export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
@@ -59,6 +61,7 @@ const PAGE_SIZE = HOMEPAGE_CATALOG_LAYOUT.length;
 
 const ACCOUNT_RECT: PositionedRect = { left: '71.0%', top: '7.6%', width: '10.0%', height: '5.2%' };
 const LANGUAGE_RECT: PositionedRect = { left: '82.2%', top: '7.6%', width: '8.8%', height: '5.2%' };
+const OPERATION_GUIDE_RECT: PositionedRect = { left: '61.2%', top: '7.6%', width: '8.6%', height: '5.2%' };
 const PREVIOUS_PAGE_RECT: PositionedRect = { left: '33.7%', top: '75.4%', width: '2.4%', height: '5.6%' };
 const PAGE_LABEL_RECT: PositionedRect = { left: '37.3%', top: '75.4%', width: '5.8%', height: '5.6%' };
 const NEXT_PAGE_RECT: PositionedRect = { left: '44.2%', top: '75.4%', width: '2.4%', height: '5.6%' };
@@ -443,6 +446,22 @@ export const OverviewSpread = ({
                     transform: 'translateX(-50%) rotate(45deg)',
                 }}
             />
+
+            <div
+                className="absolute"
+                style={asAbsoluteStyle(OPERATION_GUIDE_RECT)}
+            >
+                <OperationGuideButton
+                    surface={isNativeMobileRuntime() ? 'app' : 'web'}
+                    variant="book"
+                    iconSize={scaled(19)}
+                    dataTestId="home-v2-operation-guide-entry"
+                    style={{
+                        gap: scaled(6),
+                        fontSize: scaled(16),
+                    }}
+                />
+            </div>
 
             <div
                 className="absolute"

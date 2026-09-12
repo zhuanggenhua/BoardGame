@@ -120,6 +120,38 @@ const DRAG_PLAY_THRESHOLD = -150; // 向上拖拽超过此距离触发打出
 const LONG_PRESS_DURATION_MS = 420;
 const LONG_PRESS_MOVE_CANCEL_PX = 14;
 const LONG_PRESS_CLICK_BLOCK_MS = 450;
+const DISCARD_PILE_MOUSE_HIT_PADDING_PX = 20;
+const DISCARD_PILE_TOUCH_HIT_PADDING_PX = 96;
+const TOUCH_SELL_BUTTON_MIN_SIZE = 'calc(44px / var(--mobile-board-shell-scale, 1))';
+
+const canSellCardsInPhase = (phase?: TurnPhase) => phase === 'main1' || phase === 'main2';
+
+type RectLike = Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height'>;
+
+const overlapsExpandedRect = (rect: RectLike, target: RectLike, padding: number) => (
+    rect.right >= target.left - padding &&
+    rect.left <= target.right + padding &&
+    rect.bottom >= target.top - padding &&
+    rect.top <= target.bottom + padding
+);
+
+export const isHandCardOverDiscardPile = (
+    cardRect: RectLike,
+    discardRect: RectLike,
+    options: { isCoarsePointer: boolean },
+) => {
+    const padding = options.isCoarsePointer ? DISCARD_PILE_TOUCH_HIT_PADDING_PX : DISCARD_PILE_MOUSE_HIT_PADDING_PX;
+    if (options.isCoarsePointer) {
+        return overlapsExpandedRect(cardRect, discardRect, padding);
+    }
+
+    const cardCenterX = cardRect.left + cardRect.width / 2;
+    const cardCenterY = cardRect.top + cardRect.height / 2;
+    return cardCenterX >= discardRect.left - padding &&
+        cardCenterX <= discardRect.right + padding &&
+        cardCenterY >= discardRect.top - padding &&
+        cardCenterY <= discardRect.bottom + padding;
+};
 
 const HandCardCostBadge = ({ cost, affordable }: { cost: number; affordable: boolean }) => {
     const gradientId = React.useId();
@@ -456,6 +488,18 @@ export const HandArea = ({
         }
     }, []);
 
+    const beginPendingCardAction = React.useCallback((entry: HandCardEntry, offset: CardOffset, originalIndex: number) => {
+        lastDragEndRef.current = { cardKey: entry.key, timestamp: Date.now() };
+        pendingPlayRef.current = { cardKey: entry.key, card: entry.card, offset, originalIndex };
+        if (pendingPlayTimeoutRef.current) {
+            window.clearTimeout(pendingPlayTimeoutRef.current);
+        }
+        pendingPlayTimeoutRef.current = window.setTimeout(() => {
+            resetDragValues(entry.key, 'drag');
+            clearPendingPlay();
+        }, PENDING_PLAY_TIMEOUT);
+    }, [clearPendingPlay, resetDragValues]);
+
     const triggerReturn = React.useCallback((cardKey: string, offset: { x: number; y: number }, originalIndex: number) => {
         // 回弹时清除 hover 状态（事件驱动模型下，元素移动不会触发 onHoverStart）
         setHoveredCardKey(prev => prev === cardKey ? null : prev);
@@ -670,20 +714,14 @@ export const HandArea = ({
     }, [centerIndex, clearAnimationTimers, getDeckOffset, getDiscardPileOffset, handEntryByKey, handKeyToCardId, handKeys, undoCardId]);
 
     const isOverDiscardPile = React.useCallback(() => {
-        if (!discardPileRef?.current || !draggingCardKey) return false;
+        const activeDraggingCardKey = draggingCardKey ?? draggingCardRef.current?.key;
+        if (!discardPileRef?.current || !activeDraggingCardKey) return false;
         const discardRect = discardPileRef.current.getBoundingClientRect();
-        const draggedEl = document.querySelector(`[data-card-key="${draggingCardKey}"]`) as HTMLElement | null;
+        const draggedEl = document.querySelector(`[data-card-key="${activeDraggingCardKey}"]`) as HTMLElement | null;
         if (!draggedEl) return false;
         const cardRect = draggedEl.getBoundingClientRect();
-        const cardCenterX = cardRect.left + cardRect.width / 2;
-        const cardCenterY = cardRect.top + cardRect.height / 2;
-        const padding = 20;
-        const result = cardCenterX >= discardRect.left - padding &&
-            cardCenterX <= discardRect.right + padding &&
-            cardCenterY >= discardRect.top - padding &&
-            cardCenterY <= discardRect.bottom + padding;
-        return result;
-    }, [discardPileRef, draggingCardKey]);
+        return isHandCardOverDiscardPile(cardRect, discardRect, { isCoarsePointer });
+    }, [discardPileRef, draggingCardKey, isCoarsePointer]);
 
     const handleDragEnd = React.useCallback((entry: HandCardEntry, source: 'drag' | 'window' = 'drag') => {
         clearLongPressState(entry.key);
@@ -700,18 +738,7 @@ export const HandArea = ({
         // 向上拖拽打出：直接调用引擎，由引擎返回错误
         if (y < DRAG_PLAY_THRESHOLD) {
             if (onPlayCard) {
-                // 记录拖拽操作，防止后续点击事件重复触发
-                lastDragEndRef.current = { cardKey: entry.key, timestamp: Date.now() };
-                
-                pendingPlayRef.current = { cardKey: entry.key, card, offset, originalIndex: currentIndex };
-                if (pendingPlayTimeoutRef.current) {
-                    window.clearTimeout(pendingPlayTimeoutRef.current);
-                }
-                pendingPlayTimeoutRef.current = window.setTimeout(() => {
-                    // 超时安全网：reset drag values 并回弹
-                    resetDragValues(entry.key, 'drag');
-                    clearPendingPlay();
-                }, PENDING_PLAY_TIMEOUT);
+                beginPendingCardAction(entry, offset, currentIndex);
                 const playAccepted = onPlayCard(card);
                 if (playAccepted === false) {
                     clearPendingPlay();
@@ -725,18 +752,7 @@ export const HandArea = ({
             if (!canSellCards && onError) {
                 onError(t('error.notYourTurn'));
             } else if (onSellCard) {
-                // 记录拖拽操作，防止后续点击事件重复触发
-                lastDragEndRef.current = { cardKey: entry.key, timestamp: Date.now() };
-                
-                // 和拖拽打出一样，记录 pending 状态，卡牌移除后触发飞向弃牌堆动画
-                pendingPlayRef.current = { cardKey: entry.key, card, offset, originalIndex: currentIndex };
-                if (pendingPlayTimeoutRef.current) {
-                    window.clearTimeout(pendingPlayTimeoutRef.current);
-                }
-                pendingPlayTimeoutRef.current = window.setTimeout(() => {
-                    resetDragValues(entry.key, 'drag');
-                    clearPendingPlay();
-                }, PENDING_PLAY_TIMEOUT);
+                beginPendingCardAction(entry, offset, currentIndex);
                 onSellCard(card.id);
                 actionTaken = true;
             }
@@ -756,6 +772,7 @@ export const HandArea = ({
     }, [
         canInteract,
         canSellCards,
+        beginPendingCardAction,
         clearLongPressState,
         clearPendingPlay,
         handEntries,
@@ -773,7 +790,7 @@ export const HandArea = ({
 
     const handleDrag = (_cardKey: string, info: { offset: { x: number; y: number } }) => {
         dragOffsetRef.current = info.offset;
-        const canSellInPhase = currentPhase === 'main1' || currentPhase === 'main2';
+        const canSellInPhase = canSellCardsInPhase(currentPhase);
         const nextSellHint = canSellInPhase && isOverDiscardPile();
         if (showSellHint !== nextSellHint) {
             setShowSellHint(nextSellHint);
@@ -822,20 +839,7 @@ export const HandArea = ({
 
         if (canClickPlay && onPlayCard) {
             const currentIndex = handEntries.findIndex(item => item.key === entry.key);
-            pendingPlayRef.current = {
-                cardKey: entry.key,
-                card: entry.card,
-                offset: { x: 0, y: 0 },
-                originalIndex: currentIndex,
-            };
-            if (pendingPlayTimeoutRef.current) {
-                window.clearTimeout(pendingPlayTimeoutRef.current);
-            }
-            pendingPlayTimeoutRef.current = window.setTimeout(() => {
-                resetDragValues(entry.key, 'drag');
-                clearPendingPlay();
-            }, PENDING_PLAY_TIMEOUT);
-
+            beginPendingCardAction(entry, { x: 0, y: 0 }, currentIndex);
             const playAccepted = onPlayCard(entry.card);
             if (playAccepted === false) {
                 clearPendingPlay();
@@ -847,6 +851,7 @@ export const HandArea = ({
             onMagnifyCard?.(entry.card);
         }
     }, [
+        beginPendingCardAction,
         clearPendingPlay,
         handEntries,
         onDiscardCard,
@@ -855,6 +860,21 @@ export const HandArea = ({
         resetDragValues,
         shouldBlockLongPressClick,
     ]);
+
+    const handleTouchSellClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>, entry: HandCardEntry) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!canInteract) return;
+        if (!canSellCards) {
+            onError?.(t('error.notYourTurn'));
+            return;
+        }
+        if (!onSellCard) return;
+
+        const currentIndex = handEntries.findIndex(item => item.key === entry.key);
+        beginPendingCardAction(entry, { x: 0, y: 0 }, currentIndex);
+        onSellCard(entry.card.id);
+    }, [beginPendingCardAction, canInteract, canSellCards, handEntries, onError, onSellCard, t]);
 
     React.useEffect(() => {
         const handlePointerEnd = (_event: PointerEvent) => {
@@ -940,6 +960,15 @@ export const HandArea = ({
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
                         const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode;
+                        const canTouchSellCard = isCoarsePointer
+                            && canSellCardsInPhase(currentPhase)
+                            && canInteract
+                            && canSellCards
+                            && isFlipped
+                            && !isReturning
+                            && !isDiscardMode
+                            && !disableCardPointerEvents
+                            && Boolean(onSellCard);
                         const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning;
                         const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))
                             && !disableCardPointerEvents;
@@ -1079,6 +1108,32 @@ export const HandArea = ({
                                                     }}
                                                 />
                                                 <HandCardCostBadge cost={card.cpCost} affordable={canAffordCard} />
+                                                {canTouchSellCard && (
+                                                    <button
+                                                        type="button"
+                                                        data-testid="dt-hand-card-sell-button"
+                                                        aria-label={t('actions.sellCard')}
+                                                        className="absolute z-20 flex items-center justify-center border border-amber-100/80 bg-amber-500/95 px-1 font-black uppercase tracking-wide text-slate-950 shadow-lg shadow-black/40 active:scale-95"
+                                                        style={{
+                                                            left: buildBoardShellInlineUnitValue(0.45),
+                                                            bottom: buildBoardShellInlineUnitValue(0.45),
+                                                            minWidth: TOUCH_SELL_BUTTON_MIN_SIZE,
+                                                            minHeight: TOUCH_SELL_BUTTON_MIN_SIZE,
+                                                            height: buildBoardShellInlineUnitValue(2.45),
+                                                            paddingInline: buildBoardShellInlineUnitValue(0.52),
+                                                            borderRadius: buildBoardShellInlineUnitValue(0.48),
+                                                            fontSize: buildBoardShellInlineUnitValue(0.68),
+                                                            lineHeight: '1',
+                                                            touchAction: 'manipulation',
+                                                        }}
+                                                        onPointerDown={(event) => {
+                                                            event.stopPropagation();
+                                                        }}
+                                                        onClick={(event) => handleTouchSellClick(event, entry)}
+                                                    >
+                                                        {t('actions.sell')}
+                                                    </button>
+                                                )}
                                             </div>
                                             <div
                                                 data-card-face="back"

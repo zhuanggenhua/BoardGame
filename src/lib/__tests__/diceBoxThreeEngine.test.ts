@@ -550,6 +550,8 @@ describe('DiceBoxThreeEngine', () => {
             expect(die.body.quaternion.y).toBeCloseTo(0, 5);
             expect(die.body.quaternion.z).toBeCloseTo(0, 5);
             expect(die.body.quaternion.w).toBeCloseTo(1, 5);
+            expect(Math.hypot(die.body.position.x - 1, die.body.position.y - 2)).toBeGreaterThan(2.4);
+            expect(Math.hypot(die.position.x - 1, die.position.y - 2)).toBeGreaterThan(2.4);
         } finally {
             window.requestAnimationFrame = originalRequestAnimationFrame;
             window.cancelAnimationFrame = originalCancelAnimationFrame;

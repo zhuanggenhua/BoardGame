@@ -4,11 +4,15 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
 const MEDIA_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]);
-const OPEN_STATE_PATH = path.resolve('test-results/evidence-screenshots/.open-verified-image-state.json');
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const E2E_IMAGE_VIEWER_ENTRY = path.join(PROJECT_ROOT, 'scripts', 'verify', 'open-e2e-image-viewer.mjs');
+const OPEN_STATE_PATH = path.join(PROJECT_ROOT, 'test-results', 'evidence-screenshots', '.open-verified-image-state.json');
 const OPEN_HISTORY_LIMIT = 50;
 const FINAL_DISPLAY_PURPOSE = 'final-user-visible-delivery';
 const VALID_DISPLAY_TRIGGERS = new Set(['user-requested-open', 'task-final-delivery']);
@@ -16,17 +20,18 @@ const VALID_DISPLAY_TRIGGERS = new Set(['user-requested-open', 'task-final-deliv
 const usage = () => {
     console.log(`用法:
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <图片路径>
-  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --viewer system --path <录屏/视频路径>
+  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <录屏/视频路径>
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <00-sequence-index.png> --path <01-labeled-*.png>
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --paths <00-sequence-index.png> <01-labeled-*.png> <02-labeled-*.png> ...
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --latest [目录]
 
 选项:
-  --path <路径>     打开指定图片/GIF/视频；可重复传入多次，默认 PureRef 多图只接受带序号标记组
-  --paths <路径...> 依次打开多张指定图片/GIF/视频；默认 PureRef 多图只接受带序号标记组
+  --path <路径>     打开指定图片/GIF/视频；可重复传入多次，默认用本地网页查看器
+  --paths <路径...> 依次打开多张指定图片/GIF/视频；默认用本地网页查看器，要求同一目录
   --latest [目录]   递归查找目录下最后修改的一张图片/GIF/视频，默认 test-results/evidence-screenshots
-  --viewer <system|pureref>  指定查看器；默认 pureref，pureref 只用于图片/GIF，视频请用 system
-  --pureref         等同于 --viewer pureref
+  --viewer <web|system|pureref>  指定查看器；默认 web。pureref 只保留为显式旧通道
+  --web             等同于 --viewer web
+  --pureref         等同于 --viewer pureref；非默认
   --pass-manifest <路径>  本轮用户要求达标清单；没有清单禁止实际开图
   --confirmed-pass  历史参数，已废弃；请使用 --pass-manifest
   --force-reopen    强制重开同一份已 PASS 媒体；只在用户明确说没看到、打开错图或要求重开时使用
@@ -111,7 +116,7 @@ const parseArgs = (argv) => {
         path: null,
         paths: [],
         latest: null,
-        viewer: process.env.BG_IMAGE_VIEWER ?? 'pureref',
+        viewer: process.env.BG_IMAGE_VIEWER ?? 'web',
         dryRun: false,
         confirmedPass: false,
         forceReopen: false,
@@ -144,6 +149,10 @@ const parseArgs = (argv) => {
             }
             parsed.passManifest = manifestPath;
             index += 1;
+            continue;
+        }
+        if (current === '--web') {
+            parsed.viewer = 'web';
             continue;
         }
         if (current === '--pureref') {
@@ -295,7 +304,7 @@ const validatePureRefSequence = (imagePaths) => {
 const normalizeForCompare = (targetPath) => path.resolve(targetPath).toLowerCase();
 
 const validateLabeledImagesPreserveSourcePixels = (manifest, imagePaths, viewer) => {
-    if (viewer !== 'pureref' || imagePaths.length <= 1) {
+    if (!['pureref', 'web'].includes(viewer) || imagePaths.length <= 1) {
         return;
     }
 
@@ -556,6 +565,37 @@ const openImagesWithPureRef = (imagePaths) => {
     console.log(`OPENED_WITH_PUREREF=${pureRefPath}`);
 };
 
+const resolveSingleMediaDirectory = (imagePaths) => {
+    const directories = [...new Set(imagePaths.map((imagePath) => path.dirname(imagePath).toLowerCase()))];
+    if (directories.length !== 1) {
+        throw new Error('网页查看器一次只打开一个截图目录；多图展示请先把最终图组放在同一目录，或分目录分别打开。');
+    }
+    return path.dirname(imagePaths[0]);
+};
+
+const openImagesWithWebViewer = (imagePaths, { forceReopen = false } = {}) => {
+    const directory = resolveSingleMediaDirectory(imagePaths);
+    const args = [E2E_IMAGE_VIEWER_ENTRY, '--dir', directory, '--focus', path.basename(imagePaths[0])];
+    if (forceReopen) {
+        args.push('--reopen');
+    }
+    const result = spawnSync(process.execPath, args, {
+        cwd: PROJECT_ROOT,
+        env: process.env,
+        encoding: 'utf8',
+        stdio: 'pipe',
+    });
+    if (result.stdout?.trim()) {
+        console.log(result.stdout.trim());
+    }
+    if (result.status !== 0) {
+        const stderr = result.stderr?.trim();
+        const stdout = result.stdout?.trim();
+        throw new Error(stderr || stdout || `网页查看器打开失败，退出码: ${result.status}`);
+    }
+    console.log(`OPENED_WITH_WEB_VIEWER=${directory}`);
+};
+
 const main = () => {
     const parsed = parseArgs(process.argv.slice(2));
 
@@ -576,7 +616,7 @@ const main = () => {
     }
 
     const normalizedViewer = parsed.viewer.toLowerCase();
-    if (!['system', 'pureref'].includes(normalizedViewer)) {
+    if (!['web', 'system', 'pureref'].includes(normalizedViewer)) {
         throw new Error(`不支持的 viewer: ${parsed.viewer}`);
     }
 
@@ -606,7 +646,9 @@ const main = () => {
         forceReopen: parsed.forceReopen,
     });
 
-    if (normalizedViewer === 'pureref') {
+    if (normalizedViewer === 'web') {
+        openImagesWithWebViewer(resolvedImages, { forceReopen: parsed.forceReopen });
+    } else if (normalizedViewer === 'pureref') {
         openImagesWithPureRef(resolvedImages);
     } else {
         openImages(resolvedImages);

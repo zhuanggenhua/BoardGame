@@ -180,6 +180,15 @@ describe('召唤师战争卡面数值录入', () => {
         });
     });
 
+    it('先锋军团起始阵型应与提示图一致：城塞骑士在前、圣殿牧师在后', () => {
+        const deck = createDeckByFactionId('paladin');
+
+        expect(deck.startingUnits.map(({ unit, position }) => ({ name: unit.name, position }))).toEqual([
+            { name: '城塞骑士', position: { row: 3, col: 2 } },
+            { name: '圣殿牧师', position: { row: 2, col: 4 } },
+        ]);
+    });
+
     it('莫古应作为实施中新派系接入基础牌组与新格式图集', () => {
         const catalogEntry = FACTION_CATALOG.find(faction => faction.id === 'mogu');
         expect(catalogEntry?.statusTag).toBe('under_construction');
@@ -190,6 +199,20 @@ describe('召唤师战争卡面数值录入', () => {
 
         const cardsAtlasCard = deck.deck.find(card => card.spriteAtlas === 'cards' && card.spriteIndex === 10);
         expect(cardsAtlasCard?.name).toBe('菌袍疫病体');
+    });
+
+    it('莫古起始阵型应与提示图一致：菌化野兽在前、菌袍疫病体在后', () => {
+        const deck = createDeckByFactionId('mogu');
+
+        expect(deck.startingGatePosition).toEqual({ row: 1, col: 3 });
+        expect(deck.startingUnits.map(({ unit, position }) => ({
+            id: unit.id,
+            name: unit.name,
+            position,
+        }))).toEqual([
+            { id: 'mogu-start-fungal-beast', name: '菌化野兽', position: { row: 2, col: 3 } },
+            { id: 'mogu-start-spore-plague-body', name: '菌袍疫病体', position: { row: 2, col: 2 } },
+        ]);
     });
 
     it('灰烬应作为实施中新派系接入基础牌组与独立召唤师图集', () => {

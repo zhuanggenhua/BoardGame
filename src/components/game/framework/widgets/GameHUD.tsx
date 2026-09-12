@@ -1185,6 +1185,7 @@ export const GameHUD = ({
                 />
             )}
             <SeatEmoteOverlay events={seatEmoteEvents} resolveEmote={resolveHudEmote} />
+
             <FabMenu
                 isDark={true}
                 items={items}

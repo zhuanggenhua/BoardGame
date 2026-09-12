@@ -44,6 +44,7 @@ type BetrayalLatestDiscoverySurfaceProps = {
   shouldShowCardFace: boolean;
   shouldShowRoll: boolean;
   recentRoll: BetrayalRecentRollState | null;
+  animateRerollMotion: boolean;
   rerollSelection: RecentRollRerollSelection | null;
   canModifyRoll: boolean;
   rollActorLabel: string;
@@ -78,6 +79,7 @@ export function BetrayalLatestDiscoverySurface({
   shouldShowCardFace,
   shouldShowRoll,
   recentRoll,
+  animateRerollMotion,
   rerollSelection,
   canModifyRoll,
   rollActorLabel,
@@ -294,6 +296,7 @@ export function BetrayalLatestDiscoverySurface({
                 diceClassName={
                   isPhoneLandscapeLayout ? "min-h-[164px]" : "min-h-[236px]"
                 }
+                animateRerollMotion={animateRerollMotion}
                 rerollSelection={rerollSelection}
                 deferEventDamageStage={false}
                 effectiveLocale={effectiveLocale}

@@ -169,9 +169,9 @@ describe('diceThroneCriticalImageResolver', () => {
         for (const characterId of ['monk', 'gunslinger', 'samurai', 'tianshi', 'vampire_lord'] as const) {
             const tuning = getPlayerBoardUiTuning(characterId);
 
-            expect(tuning.playerBoardBaseHeightVw, `${characterId} 缺少 playerBoardBaseHeightVw`).toBeGreaterThan(0);
-            expect(tuning.tipBoardHeightVw, `${characterId} 缺少 tipBoardHeightVw`).toBeGreaterThan(0);
-            expect(tuning.centerBoardGapVw, `${characterId} 缺少 centerBoardGapVw`).toBeGreaterThanOrEqual(0);
+            expect(tuning.playerBoardBaseHeightUnits, `${characterId} 缺少 playerBoardBaseHeightUnits`).toBeGreaterThan(0);
+            expect(tuning.tipBoardHeightUnits, `${characterId} 缺少 tipBoardHeightUnits`).toBeGreaterThan(0);
+            expect(tuning.centerBoardGapUnits, `${characterId} 缺少 centerBoardGapUnits`).toBeGreaterThanOrEqual(0);
         }
     });
 

@@ -1,6 +1,5 @@
 import {
     eventRollResolutionNeedsSharedAcknowledgement,
-    resolvePendingEventRollResolutionRequiredPlayerIds,
 } from './acknowledgementReadModel';
 import {
     canDeferOrdinaryAttackDamageToDefender,
@@ -264,7 +263,7 @@ function applyEventRecentRollRerollState(
             ...pendingEventRoll,
             requiredPlayerIds: requiresSharedAcknowledgement && core.playerIds.length > 0
                 ? [...core.playerIds]
-                : resolvePendingEventRollResolutionRequiredPlayerIds(core, pendingEventRoll),
+                : [pendingEventRoll.playerId],
             acknowledgedPlayerIds: [],
             effect: cloneUseEffect(nextEffect),
             nextPendingEventChoice,

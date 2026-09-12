@@ -12,7 +12,7 @@ import {
     waitForHandArea,
 } from './smashup-helpers';
 
-test.describe('SmashUp 余牌查询真实开房链路', () => {
+test.describe('SmashUp 牌堆可查真实开房链路', () => {
     test('真实双人房进入正式对局后可以点击牌堆查看余牌', async ({ browser }, testInfo) => {
         test.setTimeout(180000);
 

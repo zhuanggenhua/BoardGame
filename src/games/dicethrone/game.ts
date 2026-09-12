@@ -178,6 +178,13 @@ function resolveAbilitySourceLabel(
             }
         }
     }
+    // 被动能力也会作为伤害来源，例如吸血鬼领主的“鲜血之力”加伤。
+    for (const player of Object.values(core.players)) {
+        const passive = player.passiveAbilities?.find(ability => ability.id === sourceAbilityId);
+        if (passive?.nameKey) {
+            return { label: passive.nameKey, isI18n: true, ns: DT_NS };
+        }
+    }
     // 卡牌 ID 解析
     if (sourceAbilityId.startsWith('card-')) {
         const card = findDiceThroneCard(core, sourceAbilityId);
@@ -232,6 +239,44 @@ function formatDiceThroneActionEntry({
         if (rawName.includes('.')) return rawName;
         return rawName;
     };
+
+    const resolveConfirmedInteractionSourceCard = (): {
+        actorId: PlayerId;
+        cardSegment: ActionLogSegment;
+    } | null => {
+        for (let i = events.length - 1; i >= 0; i -= 1) {
+            const event = events[i] as GameEvent & {
+                payload?: {
+                    playerId?: unknown;
+                    sourceId?: unknown;
+                };
+            };
+            if (event.type !== 'SYS_INTERACTION_CONFIRMED') continue;
+            const sourceId = event.payload?.sourceId;
+            if (typeof sourceId !== 'string' || !sourceId.startsWith('card-')) continue;
+            const actorId = typeof event.payload?.playerId === 'string'
+                ? event.payload.playerId as PlayerId
+                : command.playerId;
+            const card = findDiceThroneCard(core, sourceId, actorId) ?? findDiceThroneCard(core, sourceId);
+            const previewText = card?.name ?? sourceId;
+            const isI18nKey = previewText.includes('.');
+            return {
+                actorId,
+                cardSegment: {
+                    type: 'card',
+                    cardId: sourceId,
+                    previewText,
+                    ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
+                    ...(card?.previewRef ? { previewRef: card.previewRef } : {}),
+                },
+            };
+        }
+        return null;
+    };
+
+    const isRemoveStatusResolutionEvent = (event: GameEvent): boolean => (
+        (event as { sourceCommandType?: string }).sourceCommandType === 'REMOVE_STATUS'
+    );
 
     const buildCompareRollParticipantLabelSegment = (participant: {
         label?: string;
@@ -876,6 +921,27 @@ function formatDiceThroneActionEntry({
             const { targetId, statusId, stacks } = statusEvent.payload;
             const tokenKey = getTokenI18nKey(statusId);
             const isI18nKey = tokenKey.includes('.');
+            const sourceCard = isRemoveStatusResolutionEvent(event)
+                ? resolveConfirmedInteractionSourceCard()
+                : null;
+            if (sourceCard) {
+                entries.push({
+                    id: `STATUS_REMOVED-${targetId}-${entryTimestamp}-${index}`,
+                    timestamp: entryTimestamp,
+                    actorId: sourceCard.actorId,
+                    kind: 'STATUS_REMOVED',
+                    segments: [
+                        i18nSeg('actionLog.statusRemovedBySourcePrefix'),
+                        sourceCard.cardSegment,
+                        i18nSeg('actionLog.statusRemovedBySourceResult', {
+                            targetPlayerId: targetId,
+                            statusLabel: tokenKey,
+                            stacks,
+                        }, isI18nKey ? ['statusLabel'] : undefined),
+                    ],
+                });
+                return;
+            }
             entries.push({
                 id: `STATUS_REMOVED-${targetId}-${entryTimestamp}-${index}`,
                 timestamp: entryTimestamp,
@@ -919,6 +985,28 @@ function formatDiceThroneActionEntry({
             const { playerId, tokenId, amount, newTotal } = tokenEvent.payload;
             const tokenKey = getTokenI18nKey(tokenId);
             const isI18nKey = tokenKey.includes('.');
+            const sourceCard = isRemoveStatusResolutionEvent(event)
+                ? resolveConfirmedInteractionSourceCard()
+                : null;
+            if (sourceCard) {
+                entries.push({
+                    id: `TOKEN_CONSUMED-${playerId}-${entryTimestamp}-${index}`,
+                    timestamp: entryTimestamp,
+                    actorId: sourceCard.actorId,
+                    kind: 'TOKEN_CONSUMED',
+                    segments: [
+                        i18nSeg('actionLog.tokenRemovedBySourcePrefix'),
+                        sourceCard.cardSegment,
+                        i18nSeg('actionLog.tokenRemovedBySourceResult', {
+                            targetPlayerId: playerId,
+                            tokenLabel: tokenKey,
+                            amount,
+                        }, isI18nKey ? ['tokenLabel'] : undefined),
+                        i18nSeg('actionLog.tokenRemaining', { total: newTotal }),
+                    ],
+                });
+                return;
+            }
             entries.push({
                 id: `TOKEN_CONSUMED-${playerId}-${entryTimestamp}-${index}`,
                 timestamp: entryTimestamp,

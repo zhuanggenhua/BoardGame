@@ -1,0 +1,43 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "棋盘上的主动技能单位卡本体必须入镜，并处于死灵法师召唤阶段可用状态。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\01-召唤阶段-棋盘主动技能单位卡本体显示青色波纹.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\01-召唤阶段-棋盘主动技能单位卡本体显示青色波纹.json",
+        "currentState.phase=summon; currentState.targetUnitName=瑞特-塔鲁斯; currentState.targetUnitIsBoardUnit=true; currentState.discardUndeadCount=1"
+      ]
+    },
+    {
+      "requirement": "技能就绪提示必须是可见呼吸波纹，不是普通静态高亮。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\05-局部连续帧拼图-诊断.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\01-召唤阶段-棋盘主动技能单位卡本体显示青色波纹.json",
+        "abilityReadySequence.summary.cropMotionDetected=true; maxPerimeterChangedPixelRatio=0.1176; indicatorWidthRange=46; indicatorHeightRange=32"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\01-召唤阶段-棋盘主动技能单位卡本体显示青色波纹.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\05-局部连续帧拼图-诊断.jpg"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\_labeled-for-pureref\\01-labeled-01-召唤阶段-棋盘主动技能单位卡本体显示青色波纹.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\summonerwars\\summonerwars-current-evidence.tmp.e2e\\当前工作树：棋盘主动技能单位卡本体显示技能就绪波纹\\_labeled-for-pureref\\02-labeled-05-局部连续帧拼图-诊断.png"
+  ],
+  "notes": [
+    "这份清单只覆盖本轮用户要求查看的 Summoner Wars 技能就绪呼吸波纹证据图。",
+    "带序号图片没有覆盖原始截图像素；原图路径记录在 sourceImages。"
+  ]
+}

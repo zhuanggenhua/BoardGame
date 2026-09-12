@@ -1,11 +1,13 @@
 {
-  "verdict": "PASS",
-  "scope": "current-user-request",
+  "verdict": "SUPERSEDED",
+  "scope": "historical-superseded-evidence",
+  "supersededBy": "evidence/dicethrone/vampire-lord-mesmerize-after-roll-response-pass-2026-09-12.json",
+  "supersededReason": "此清单证明的是右侧“催眠重掷”按钮入口；当前项目规范要求可直接点击 token 本体时主路径必须点击 token 本体，因此该按钮证据不能再作为最终验收。",
   "display": {
-    "purpose": "final-user-visible-delivery",
-    "trigger": "user-requested-open",
+    "purpose": "historical-superseded-evidence",
+    "trigger": "superseded-by-token-entry",
     "viewer": "pureref",
-    "finalPassBeforeOpen": true
+    "finalPassBeforeOpen": false
   },
   "testRun": {
     "command": "node scripts/infra/run-e2e-command.mjs isolated e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"催眠应通过玩家按钮投临时骰并选择对手骰重掷\"",

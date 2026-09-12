@@ -13,6 +13,7 @@ import { UI_Z_INDEX } from '../../../core';
 import { ActiveModifierBadge } from './ActiveModifierBadge';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
 import { PassiveAbilityPanel, type PassiveAbilityPanelProps } from './PassiveAbilityPanel';
+import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 type SidebarDiceMeta = {
@@ -183,11 +184,34 @@ export const RightSidebar = ({
     const hintTextStyle: CSSProperties = {
         fontSize: buildBoardShellInlineUnitValue(0.75),
     };
+    const bonusDiceOwnerLabelStyle: CSSProperties = {
+        zIndex: UI_Z_INDEX.hint,
+        top: buildBoardShellInlineUnitValue(0.15),
+        right: `calc(100% + ${buildBoardShellInlineUnitValue(0.35)})`,
+        maxWidth: buildBoardShellInlineUnitValue(8.8),
+        gap: buildBoardShellInlineUnitValue(0.35),
+        borderRadius: buildBoardShellInlineUnitValue(0.5),
+        paddingInline: buildBoardShellInlineUnitValue(0.55),
+        paddingBlock: buildBoardShellInlineUnitValue(0.3),
+        fontSize: buildBoardShellInlineUnitValue(0.68),
+    };
     const hasCurrentDamageSummary = typeof damageSummary?.currentDamage === 'number' && Number.isFinite(damageSummary.currentDamage);
     const hasModifierBadgeRow = Boolean(
         (activeModifiers && activeModifiers.length > 0)
         || (attackModifierBonusDamage && attackModifierBonusDamage > 0),
     );
+    const bonusDiceOwner = useMemo(() => {
+        if (!isBonusDiceSettlement) return null;
+        const ownerDie = dice.find((die) => die.ownerId || die.definitionId);
+        const characterId = resolveCharacterIdFromDiceDefinitionId(ownerDie?.definitionId);
+        if (!ownerDie || !characterId) return null;
+        const ownerName = t(`characters.${characterId}`);
+        return {
+            ownerId: ownerDie.ownerId,
+            definitionId: ownerDie.definitionId,
+            label: t('dice.bonusRollOwner', { owner: ownerName }),
+        };
+    }, [dice, isBonusDiceSettlement, t]);
     const interactionHint = useMemo(() => {
         if (!isDiceMultistep || !interaction) return null;
         const dtMeta = getSidebarDiceMeta(interaction);
@@ -265,6 +289,19 @@ export const RightSidebar = ({
                             )}
                         </div>
                     ) : null}
+                    {bonusDiceOwner && (
+                        <div
+                            className="pointer-events-none absolute flex min-w-max items-center overflow-hidden border border-sky-400/55 bg-slate-950/95 font-semibold leading-tight text-sky-100 shadow-lg shadow-slate-950/45 backdrop-blur-sm whitespace-nowrap"
+                            style={bonusDiceOwnerLabelStyle}
+                            data-testid="bonus-dice-owner-label"
+                            data-bonus-dice-owner-id={bonusDiceOwner.ownerId ?? ''}
+                            data-bonus-dice-definition-id={bonusDiceOwner.definitionId ?? ''}
+                        >
+                            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                {bonusDiceOwner.label}
+                            </span>
+                        </div>
+                    )}
                     {hasCurrentDamageSummary && (
                         <div
                             className="pointer-events-none absolute top-0 z-20"

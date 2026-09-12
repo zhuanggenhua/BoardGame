@@ -344,4 +344,23 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('fab-content-settings')).toBeInTheDocument();
         expect(screen.getByTestId('runtime-settings-slot')).toHaveTextContent('runtime settings');
     });
+
+    it('局内悬浮菜单不应把操作指南作为子项', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="fantasyrealms"
+                myPlayerId="0"
+                isPregameSetupPhase={false}
+            />,
+        );
+
+        expect(screen.queryByTestId('fab-action-operation-guide')).toBeNull();
+        expect(screen.queryByTestId('operation-guide-common-list')).toBeNull();
+        expect(screen.getByTestId('fab-action-chat')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-settings')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-action-log')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+    });
 });

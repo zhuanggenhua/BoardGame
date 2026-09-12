@@ -4,7 +4,7 @@
  */
 
 import type { PlayerId, RandomFn, GameEvent } from '../../../engine/types';
-import { createDamageCalculation, type PassiveTriggerHandler } from '../../../engine/primitives/damageCalculation';
+import { createDamageCalculation, type DamageCalculationConfig, type PassiveTriggerHandler } from '../../../engine/primitives/damageCalculation';
 import type { EffectAction, RollDieConditionalEffect, RollDieDefaultEffect } from './tokenTypes';
 
 export type { RollDieConditionalEffect, RollDieDefaultEffect };
@@ -556,11 +556,31 @@ function resolveEffectAction(
                 const dazzlePercent = isCurrentAttackDamage
                     ? state.pendingAttack?.dazzleDamagePercent
                     : undefined;
-                const additionalModifiers = [
-                    ...(bonusDmg !== 0 ? [{
+                const bonusDamageSources = isCurrentAttackDamage
+                    ? (state.pendingAttack?.bonusDamageSources ?? [])
+                        .filter(source => source.amount > 0)
+                    : [];
+                const bonusDamageSourcesTotal = bonusDamageSources.reduce((sum, source) => sum + source.amount, 0);
+                const canUseBonusDamageSources = bonusDmg > 0
+                    && bonusDamageSourcesTotal > 0
+                    && bonusDamageSourcesTotal <= bonusDmg;
+                const sourcedBonusModifiers: NonNullable<DamageCalculationConfig['additionalModifiers']> = canUseBonusDamageSources
+                    ? bonusDamageSources.map((source, index) => ({
+                        id: `__bonus_damage_source_${index}_${source.sourceId ?? 'unknown'}__`,
+                        type: 'flat' as const,
+                        value: source.amount,
+                        priority: 15 + index * 0.01,
+                        source: source.sourceId ?? 'attack_modifier',
+                        description: source.sourceName,
+                    }))
+                    : [];
+                const genericBonusDamage = bonusDmg - sourcedBonusModifiers.reduce((sum, source) => sum + (source.value ?? 0), 0);
+                const additionalModifiers: NonNullable<DamageCalculationConfig['additionalModifiers']> = [
+                    ...sourcedBonusModifiers,
+                    ...(genericBonusDamage !== 0 ? [{
                         id: '__bonus_damage_from_config__',
                         type: 'flat' as const,
-                        value: bonusDmg,
+                        value: genericBonusDamage,
                         priority: 15,
                         source: 'attack_modifier',
                         description: 'actionLog.damageSource.attackModifier',

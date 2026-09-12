@@ -2,10 +2,23 @@
 
 import type { PropsWithChildren, ReactNode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const toastViewportMock = vi.hoisted(() => ({
     module: { ToastViewport: () => null } as Record<string, unknown>,
+}));
+const routerState = vi.hoisted(() => ({
+    initialEntries: ['/play/fantasyrealms/local'],
+}));
+const routeGuardMocks = vi.hoisted(() => ({
+    closeAll: vi.fn(),
+    clearMatchCredentials: vi.fn(),
+    clearOwnerActiveMatch: vi.fn(),
+    getMatch: vi.fn(),
+    suppressOwnerActiveMatch: vi.fn(),
+    toastError: vi.fn(),
+    toastSuccess: vi.fn(),
+    toastWarning: vi.fn(),
 }));
 
 const PassThrough = ({ children }: PropsWithChildren) => <>{children}</>;
@@ -27,7 +40,7 @@ vi.mock('react-router-dom', async () => {
     return {
         ...actual,
         BrowserRouter: ({ children }: { children: ReactNode }) => (
-            <MemoryRouter initialEntries={['/play/fantasyrealms/local']}>{children}</MemoryRouter>
+            <MemoryRouter initialEntries={routerState.initialEntries}>{children}</MemoryRouter>
         ),
     };
 });
@@ -46,6 +59,22 @@ vi.mock('../../lib/feedback/errorContext', () => ({
     installGlobalErrorContextCapture: () => undefined,
 }));
 
+vi.mock('../../services/matchApi', () => ({
+    getMatch: routeGuardMocks.getMatch,
+}));
+
+vi.mock('../../hooks/match/useMatchStatus', () => ({
+    clearMatchCredentials: routeGuardMocks.clearMatchCredentials,
+    clearOwnerActiveMatch: routeGuardMocks.clearOwnerActiveMatch,
+    isMatchNotFoundError: (error: unknown) => {
+        if (typeof error === 'object' && error !== null && 'status' in error) {
+            return (error as { status?: unknown }).status === 404;
+        }
+        return error instanceof Error && error.message.includes('404');
+    },
+    suppressOwnerActiveMatch: routeGuardMocks.suppressOwnerActiveMatch,
+}));
+
 vi.mock('../../lib/mobile/androidRuntime', () => ({
     isNativeAndroidRuntime: () => runtimeState.nativeAndroid,
 }));
@@ -59,10 +88,17 @@ vi.mock('../../contexts/TutorialContext', () => ({ TutorialProvider: PassThrough
 vi.mock('../../contexts/AuthContext', () => ({ AuthProvider: PassThrough }));
 vi.mock('../../contexts/SocialContext', () => ({ SocialProvider: PassThrough }));
 vi.mock('../../core/cursor/CursorPreferenceContext', () => ({ CursorPreferenceProvider: PassThrough }));
-vi.mock('../../contexts/ModalStackContext', () => ({ ModalStackProvider: PassThrough }));
+vi.mock('../../contexts/ModalStackContext', () => ({
+    ModalStackProvider: PassThrough,
+    useModalStack: () => ({ closeAll: routeGuardMocks.closeAll }),
+}));
 vi.mock('../../contexts/ToastContext', () => ({
     ToastProvider: PassThrough,
-    useToast: () => ({ warning: vi.fn(), error: vi.fn(), success: vi.fn() }),
+    useToast: () => ({
+        warning: routeGuardMocks.toastWarning,
+        error: routeGuardMocks.toastError,
+        success: routeGuardMocks.toastSuccess,
+    }),
 }));
 vi.mock('../../components/game/framework/InteractionGuard', () => ({ InteractionGuardProvider: PassThrough }));
 
@@ -113,6 +149,7 @@ vi.mock('../TutorialMatchRoomWithAudio', () => ({
 }));
 
 vi.mock('../HomeEntry', () => ({
+    default: () => <div data-testid="home-entry">home</div>,
     HomeEntry: () => <div data-testid="home-entry">home</div>,
 }));
 
@@ -133,12 +170,22 @@ vi.mock('../admin/components/AdminSkeletons', () => ({
 }));
 
 describe('App local route', () => {
+    beforeEach(() => {
+        routerState.initialEntries = ['/play/fantasyrealms/local'];
+        routeGuardMocks.getMatch.mockResolvedValue({
+            matchID: 'existing-match',
+            gameName: 'fantasyrealms',
+            players: [],
+        });
+    });
+
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
         vi.useRealTimers();
         runtimeState.nativeAndroid = false;
         runtimeState.nativeMobile = false;
+        routerState.initialEntries = ['/play/fantasyrealms/local'];
         toastViewportMock.module = { ToastViewport: NullComponent };
         vi.resetModules();
     });
@@ -152,6 +199,32 @@ describe('App local route', () => {
             expect(screen.getByTestId('local-match-room')).toBeInTheDocument();
         });
         expect(screen.queryByTestId('test-match-room')).toBeNull();
+    });
+
+    it('在线对局路由懒加载前确认房间不存在时应清理本地记录并返回大厅', async () => {
+        routerState.initialEntries = ['/play/dicethrone/match/VN_Zn4ofCG2?playerID=0'];
+        const notFoundError = Object.assign(new Error('404: Match VN_Zn4ofCG2 not found'), { status: 404 });
+        routeGuardMocks.getMatch.mockRejectedValueOnce(notFoundError);
+
+        const { default: App } = await import('../../App');
+
+        render(<App />);
+
+        await waitFor(() => {
+            expect(routeGuardMocks.clearMatchCredentials).toHaveBeenCalledWith('VN_Zn4ofCG2');
+        });
+        expect(routeGuardMocks.clearOwnerActiveMatch).toHaveBeenCalledWith('VN_Zn4ofCG2');
+        expect(routeGuardMocks.suppressOwnerActiveMatch).toHaveBeenCalledWith('VN_Zn4ofCG2');
+        expect(routeGuardMocks.toastWarning).toHaveBeenCalledWith(
+            { kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' },
+            undefined,
+            { dedupeKey: 'matchRoom.missing.VN_Zn4ofCG2' },
+        );
+        expect(routeGuardMocks.closeAll).toHaveBeenCalledWith({ skipOnClose: true });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('home-entry')).toBeInTheDocument();
+        });
     });
 
     it('旧 Android 壳桥接晚到时应刷新全局返回桥，而不是要求游戏单独接侧滑', async () => {

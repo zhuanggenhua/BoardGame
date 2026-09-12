@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
-import { useTutorial } from '../contexts/TutorialContext';
+import {
+    buildTutorialSessionScope,
+    isSameTutorialSessionScope,
+    useTutorial,
+} from '../contexts/TutorialContext';
 import type { ModalEntry } from '../contexts/ModalStackContext';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';
@@ -272,6 +276,8 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     } = args;
     const {
         tutorial,
+        activeSessionScope,
+        activateTutorialSession,
         startTutorial,
         closeTutorial,
         isActive,
@@ -296,6 +302,24 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const currentTutorialRouteKey = isTutorialRoute && currentManifestId
         ? `${tutorialId ?? currentManifestId}:${currentManifestId}`
         : null;
+    const currentTutorialSessionScope = useMemo(() => (
+        isTutorialRoute
+            ? buildTutorialSessionScope({
+                gameId,
+                tutorialId,
+                manifest: resolvedTutorialManifest,
+            })
+            : null
+    ), [gameId, isTutorialRoute, resolvedTutorialManifest, tutorialId]);
+    const activeTutorialBelongsToCurrentRoute = Boolean(
+        isActive
+        && activeTutorialManifestId === currentManifestId
+        && (
+            !activeSessionScope
+            || !currentTutorialSessionScope
+            || isSameTutorialSessionScope(activeSessionScope, currentTutorialSessionScope)
+        ),
+    );
     const effectiveTutorialId = tutorialId ?? currentManifestId ?? undefined;
     const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, effectiveTutorialId);
     const nextTutorialId = currentTutorialEntry?.nextTutorialId;
@@ -351,10 +375,19 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
 
     const startResolvedTutorial = useCallback(() => {
         if (!resolvedTutorialManifest) return;
+        if (currentTutorialSessionScope) {
+            activateTutorialSession(currentTutorialSessionScope);
+        }
         tutorialStartedRef.current = true;
         tutorialStartWaitingForBoardRef.current = !isBoardMounted;
-        startTutorial(resolvedTutorialManifest);
-    }, [isBoardMounted, resolvedTutorialManifest, startTutorial]);
+        startTutorial(resolvedTutorialManifest, currentTutorialSessionScope);
+    }, [
+        activateTutorialSession,
+        currentTutorialSessionScope,
+        isBoardMounted,
+        resolvedTutorialManifest,
+        startTutorial,
+    ]);
 
     // 教程启动 effect
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
@@ -376,15 +409,14 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         // 不依赖 tutorial.manifestId/steps.length，避免 startTutorial 的 setTutorial 触发循环
         const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
             && !tutorialStartedRef.current
-            && (!isActive || activeTutorialManifestId !== currentManifestId);
+            && !activeTutorialBelongsToCurrentRoute;
         if (shouldStartCurrentTutorial && resolvedTutorialManifest) {
             startResolvedTutorial();
         }
     }, [
-        activeTutorialManifestId,
+        activeTutorialBelongsToCurrentRoute,
         currentManifestId,
         gameImplReady,
-        isActive,
         isBoardMounted,
         isGameNamespaceReady,
         isTutorialRoute,
@@ -404,16 +436,15 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (shouldWaitForTutorialResumeDecision) return;
         const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
             && !tutorialStartedRef.current
-            && (!isActive || activeTutorialManifestId !== currentManifestId);
+            && !activeTutorialBelongsToCurrentRoute;
         if (!shouldStartCurrentTutorial) return;
         if (resolvedTutorialManifest) {
             startResolvedTutorial();
         }
     }, [
-        activeTutorialManifestId,
+        activeTutorialBelongsToCurrentRoute,
         currentManifestId,
         gameImplReady,
-        isActive,
         isBoardMounted,
         isGameNamespaceReady,
         isTutorialRoute,
@@ -430,7 +461,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (shouldWaitForTutorialResumeDecision) return;
         const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
             && !tutorialStartedRef.current
-            && (!isActive || activeTutorialManifestId !== currentManifestId);
+            && !activeTutorialBelongsToCurrentRoute;
         if (
             lastTutorialProgressRef.current.manifestId === currentManifestId
             && lastTutorialProgressRef.current.stepId != null
@@ -441,13 +472,13 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         const shouldRetryBoardPendingStart = Boolean(resolvedTutorialManifest)
             && tutorialStartWaitingForBoardRef.current
             && !isActive
-            && activeTutorialManifestId !== currentManifestId;
+            && !activeTutorialBelongsToCurrentRoute;
         const shouldRetryDroppedTutorialStart = Boolean(resolvedTutorialManifest)
             && tutorialStartedRef.current
             && lastTutorialProgressRef.current.manifestId === currentManifestId
             && lastTutorialProgressRef.current.stepId != null
             && !isActive
-            && activeTutorialManifestId !== currentManifestId;
+            && !activeTutorialBelongsToCurrentRoute;
         if (
             !shouldStartCurrentTutorial
             && !shouldRetryBoardPendingStart
@@ -457,7 +488,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
 
         startResolvedTutorial();
     }, [
-        activeTutorialManifestId,
+        activeTutorialBelongsToCurrentRoute,
         currentManifestId,
         currentManifestLastStepId,
         gameImplReady,
@@ -486,6 +517,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                 const capturedMountId = lifecycleMountIdRef.current;
                 const capturedTutorialRouteKey = tutorialRouteKeyRef.current;
                 const capturedPath = window.location.pathname;
+                const capturedTutorialSessionScope = currentTutorialSessionScope;
                 // 延迟清理：给 StrictMode remount 一个取消的机会
                 cleanupTimerRef.current = window.setTimeout(() => {
                     cleanupTimerRef.current = undefined;
@@ -506,12 +538,12 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                     }
                     if (tutorialStartedRef.current) {
                         tutorialStartedRef.current = false;
-                        closeTutorial();
+                        closeTutorial(capturedTutorialSessionScope);
                     }
                 }, 0);
             }
         };
-    }, [closeTutorial]);
+    }, [closeTutorial, currentTutorialSessionScope]);
 
     useEffect(() => {
         if (!isTutorialRoute) return;
@@ -545,6 +577,13 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         const targetView = currentStep?.viewAs ?? '0';
         setPlayerID(targetView);
     }, [currentStep?.viewAs, isTutorialRoute, setPlayerID]);
+
+    useLayoutEffect(() => {
+        // 离开教程路由后若仍暴露激活教程，必须关闭旧教程会话，避免普通房间被教程初始化层遮住。
+        if (isTutorialRoute) return;
+        if (!isActive) return;
+        closeTutorial();
+    }, [closeTutorial, isActive, isTutorialRoute]);
 
     useEffect(() => {
         if (!isTutorialRoute) return;
@@ -603,7 +642,6 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                 closeModal(tutorialModalIdRef.current);
                 tutorialModalIdRef.current = null;
             }
-            // 联机/非教程路由下，不主动 closeTutorial()，避免在用户确实处于教程流程但路由切换瞬间被误关。
             return;
         }
 

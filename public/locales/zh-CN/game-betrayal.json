@@ -973,6 +973,7 @@
       "confirmCard": "确认",
       "confirmWithProgress": "确认 {{confirmed}}/{{total}}",
       "confirmedWithProgress": "已确认 {{confirmed}}/{{total}}",
+      "waitingForCardConfirmation": "等待确认 {{confirmed}}/{{total}}",
       "nextSearchCard": "下一张",
       "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "已翻出带事件符号的房间；现在选择跳过事件，或抽取事件牌。",
@@ -1073,14 +1074,14 @@
         "endTurnAfterEvent": "伤害分配完成后，事件房探索已经结束你的回合。点“结束回合”，把轮序交给队友。",
         "watchTeammateOneOmenTurn": "现在不是你的回合。队友 1 先移动回入口大厅旁，探索一层预兆房间并翻出指环；这次作祟检定未触发。",
         "teammateOneOmenResults": "队友 1 获得指环，作祟仍未开始；轮到队友 2 继续行动。",
-        "watchTeammateTwoOmenTurn": "队友 2 移动到刚发现的一层房间，继续探索相邻预兆房间并翻出狗；这次作祟检定仍未触发。",
+        "watchTeammateTwoOmenTurn": "队友 2 移动到刚发现的一层房间，继续探索相邻预兆房间并翻出狗；这次作祟检定仍未触发。确认按钮显示等待，因为这张狗由队友 2 确认；点“下一步”让他确认后交回你的回合。",
         "teammateTwoOmenResults": "狗确认后，回合回到你。你仍在厨房；这一回合先移动到上层平台，图书馆就在旁边，等作祟目标出现后再决定是否进去。",
         "moveToGrandStaircase": "你已经学过移动。保持移动模式，沿厨房、门厅移动到大阶梯；这里连接上下楼层。",
         "switchToUpperFloor": "到大阶梯后，右侧楼层按钮会提示上层还有移动目标。点上箭头切到上层地图，先看见上层平台。",
         "moveToUpperLanding": "现在上层平台已经在画面里。点击上层平台，到达图书馆旁边；这一步先只完成真实可达的移动。",
         "endTurnFromUpperLanding": "你现在在上层平台，图书馆就在西侧；这次先不继续探索。点“结束回合”，接下来队友继续探索，直到预兆检定自然触发作祟。",
-        "watchTeammateHauntTrigger": "队友 1 从一层新房间继续探索，翻出面具；这次预兆检定达到 5+，作祟自然开始。",
-        "teammateConfirmHauntTrigger": "队友 1 看清面具和作祟检定结果后确认，随后公开进入作祟。"
+        "watchTeammateHauntTrigger": "队友 1 从一层新房间继续探索，翻出面具；这次预兆检定达到 5+，作祟自然开始。确认按钮显示等待，因为这张面具由队友 1 确认；点“下一步”让他确认后进入作祟。",
+        "teammateConfirmHauntTrigger": "队友 1 已确认面具和作祟检定的公开结果。"
       }
     },
     "basicSetup": {
@@ -1109,7 +1110,7 @@
         "useRabbitFoot": "书本已把检定改成知识。现在点兔脚，再选择一颗骰子重掷；选好后点“确认使用兔脚”。",
         "rabbitFootResult": "兔脚重掷完成。先看清新的骰面和总点数，再点“确认”确认结果；确认后如果仍失败，游戏会进入伤害分配。",
         "finish": "这里选择承受 1 点物理伤害的属性，再点确认完成分配。",
-        "returnToTableAfterDamage": "伤害已经分配到属性轨。点“返回牌桌”，回到你的行动入口。"
+        "returnToTableAfterDamage": "伤害已经分配到属性轨。事件房探索已经结束你的回合；点“结束回合”，把轮序交给队友。"
       }
     },
     "omenConfirmation": {
@@ -1130,11 +1131,11 @@
         "handOffToTeammateOne": "点“结束回合”，把行动交给下一名探索者。作祟风险会随着大家实际获得的预兆增加。",
         "watchTeammateOmenTurns": "现在不是你的回合。等待队友 1 探索预兆房间；这次只公开第一张预兆和一次未触发的检定。",
         "teammateOmenResults": "队友 1 获得指环，1 颗作祟骰低于 5+；回合自然交给队友 2。",
-        "watchTeammateTwoOmenTurn": "队友 2 移动到观测台旁，探索下一间预兆房间并翻出狗。第二张预兆用 2 颗骰检定。",
+        "watchTeammateTwoOmenTurn": "队友 2 移动到观测台旁，探索下一间预兆房间并翻出狗。第二张预兆用 2 颗骰检定；确认按钮显示等待，因为这张狗由队友 2 确认。点“下一步”让他确认后回到你的视角。",
         "teammateTwoOmenResults": "队友 2 确认狗后，回合回到你；桌上已有指环和狗，下一张预兆会掷 3 颗骰。",
         "handOffToTeammateSecondCycle": "现在又轮到你。点“结束回合”，继续让队友按正式流程探索；你不会替队友操作。",
-        "watchTeammateHauntTrigger": "队友 1 继续探索，从观测台向南翻出带预兆符号的房间并获得面具；第三张预兆会掷 3 颗作祟骰。",
-        "teammateConfirmHauntTrigger": "队友 1 读完面具和 3 颗作祟骰后确认；这一步由触发者看清公开结果后继续。",
+        "watchTeammateHauntTrigger": "队友 1 继续探索，从观测台向南翻出带预兆符号的房间并获得面具；第三张预兆会掷 3 颗作祟骰。确认按钮显示等待，因为这张面具由队友 1 确认；点“下一步”让他确认后进入作祟。",
+        "teammateConfirmHauntTrigger": "队友 1 已确认面具和 3 颗作祟骰的公开结果。",
         "heroReaderOpened": "作祟公开揭示后，队友 1 是揭秘者并成为叛徒。你仍是英雄；系统先显示英雄开场过场，不是剧本书目标页。先读这段一次性开场。",
         "heroReaderTurnPage": "开场过场读完后，点底部“进入剧本书”打开英雄剧本书目标页；那里才写找真名、学法术和驱逐木乃伊。",
         "heroReaderGoal": "英雄剧本书目标页写明：在石棺房、研究室或图书馆找真名；你当前就在图书馆旁边，所以读完后先移动进图书馆。",

@@ -830,6 +830,11 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'moon_elf-exploding-arrow-resolve-1',
             'moon_elf-exploding-arrow-resolve-2',
             'moon_elf-exploding-arrow-resolve-3',
+            // 吸血鬼领主：死亡终结伤害在奖励骰结算链路落地；沸腾鲜血只给当前攻击加伤；
+            // 不死之身防御伤害依赖吸血鬼防御骰面，基础 mock 不保证血滴面。
+            'vampire-lord-total-demise-roll',
+            'vampire-lord-boiling-blood-bonus',
+            'vampire-lord-undying-defense',
             // 火法师熔岩护甲：防御技能，伤害依赖防御投掷骰面结果（火面数量），mock 骰子无 symbol 字段
             'magma-armor-resolve',
             'magma-armor-2-resolve',

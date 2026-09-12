@@ -146,6 +146,36 @@ describe('DiceTray', () => {
         expect(screen.queryByTestId('mock-dice-box-physics-source')).toBeNull();
     });
 
+    it('奖励骰骰面按自身 definitionId 渲染，并保留真实 ownerId', () => {
+        render(
+            <DiceTray
+                dice={[
+                    {
+                        id: 0,
+                        value: 1,
+                        symbol: 'claw',
+                        symbols: ['claw'],
+                        isKept: false,
+                        definitionId: 'vampire_lord-dice',
+                        ownerId: '0',
+                    },
+                ]}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="defensiveRoll"
+                canInteract={false}
+                isRolling={false}
+            />,
+        );
+
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-owner-id', '0');
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-definition-id', 'vampire_lord-dice');
+        expect(dice2DCalls[0]).toMatchObject({
+            characterId: 'vampire_lord',
+            definitionId: 'vampire_lord-dice',
+        });
+    });
+
     it('投掷完成后可以直接锁定右侧骰子', () => {
         const onToggleLock = vi.fn();
         render(

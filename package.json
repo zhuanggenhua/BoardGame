@@ -123,6 +123,7 @@
     "merge:audit:strict": "node scripts/verify/merge-conflict-audit.mjs --fail-on-single-side",
     "verify:betrayal:readable-closeout": "node scripts/verify/create-betrayal-readable-closeout.mjs",
     "verify:open-image": "node scripts/verify/open-verified-image.mjs",
+    "verify:e2e-images": "node scripts/verify/open-e2e-image-viewer.mjs",
     "verify:qidahen:handcards": "node scripts/verify/qidahen-hand-card-image-validation.mjs && node scripts/verify/qidahen-hand-card-manual-entry.mjs",
     "check:jwt": "node scripts/check-jwt-config.mjs",
     "diagnose:auth": "node scripts/diagnose-auth.mjs",

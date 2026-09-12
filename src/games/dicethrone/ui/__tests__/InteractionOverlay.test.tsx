@@ -773,13 +773,13 @@ describe('InteractionOverlay', () => {
         });
 
         const smallDeckCards: AbilityCard[] = [
-            makeDeckCard('card-vampire-lord-blood-surge', '血潮', 17, { cpCost: 1 }),
+            makeDeckCard('card-vampire-lord-blood-surge', '血潮', 17),
             makeDeckCard('card-vampire-lord-drink-up', '畅饮！', 31),
             makeDeckCard('card-vampire-lord-gushing-blood', '涌血', 21),
         ];
 
         const largeDeckCards: AbilityCard[] = [
-            makeDeckCard('card-vampire-lord-blood-surge', '血潮', 17, { cpCost: 1 }),
+            makeDeckCard('card-vampire-lord-blood-surge', '血潮', 17),
             makeDeckCard('card-vampire-lord-blood-from-above', '血袭天降', 18, { cpCost: 1 }),
             makeDeckCard('card-vampire-lord-total-demise', '彻底毁灭', 19, { timing: 'roll' }),
             makeDeckCard('card-vampire-lord-boiling-blood', '沸腾鲜血', 20, { timing: 'roll' }),

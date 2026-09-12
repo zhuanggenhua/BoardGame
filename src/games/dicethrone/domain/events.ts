@@ -899,7 +899,7 @@ export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
         /** 来源结算 frame，用于把 Token 使用追回当前伤害响应事务。 */
         resolutionFrameId?: string;
         /** 效果类型 */
-        effectType: 'damageBoost' | 'damageReduction' | 'evasionAttempt' | 'removeDebuff' | 'botActivation';
+        effectType: 'damageBoost' | 'damageReduction' | 'evasionAttempt' | 'removeDebuff' | 'botActivation' | 'custom';
         /** 伤害修改量（加伤/减伤） */
         damageModifier?: number;
         /** 闪避投骰结果（仅 evasionAttempt） */

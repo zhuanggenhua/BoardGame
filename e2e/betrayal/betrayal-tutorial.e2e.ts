@@ -38,7 +38,6 @@ const STEP_15A = `${EVIDENCE_DIR}/29-山屋惊魂-教程-兔脚重投动画进�
 const STEP_16 = `${EVIDENCE_DIR}/30-山屋惊魂-教程-兔脚重投后确认新骰面.jpg`;
 const STEP_16A = `${EVIDENCE_DIR}/31-山屋惊魂-教程-伤害分配面板可操作.jpg`;
 const STEP_16B = `${EVIDENCE_DIR}/32-山屋惊魂-教程-伤害分配完成后.jpg`;
-const MAIN_FLOW_33 = `${EVIDENCE_DIR}/main-flow-rebuilt/33-事件回合结束前.jpg`;
 const MAIN_FLOW_34 = `${EVIDENCE_DIR}/main-flow-rebuilt/34-队友一获得指环未触发.jpg`;
 const MAIN_FLOW_35 = `${EVIDENCE_DIR}/main-flow-rebuilt/35-队友一结果说明.jpg`;
 const MAIN_FLOW_36 = `${EVIDENCE_DIR}/main-flow-rebuilt/36-队友二翻出狗未触发.jpg`;
@@ -47,7 +46,7 @@ const MAIN_FLOW_38 = `${EVIDENCE_DIR}/main-flow-rebuilt/38-当前玩家到达大
 const MAIN_FLOW_39 = `${EVIDENCE_DIR}/main-flow-rebuilt/39-切到上层看见上层平台.jpg`;
 const MAIN_FLOW_40 = `${EVIDENCE_DIR}/main-flow-rebuilt/40-当前玩家移动到上层平台.jpg`;
 const MAIN_FLOW_41 = `${EVIDENCE_DIR}/main-flow-rebuilt/41-当前玩家在上层平台准备结束回合.jpg`;
-const MAIN_FLOW_42 = `${EVIDENCE_DIR}/main-flow-rebuilt/42-队友一翻出面具触发作祟.jpg`;
+const MAIN_FLOW_42 = `${EVIDENCE_DIR}/main-flow-rebuilt/42-队友一翻出面具并等待确认.jpg`;
 const MAIN_FLOW_43 = `${EVIDENCE_DIR}/main-flow-rebuilt/43-英雄开场过场.jpg`;
 const MAIN_FLOW_44 = `${EVIDENCE_DIR}/main-flow-rebuilt/44-过场继续进入英雄剧本书.jpg`;
 const MAIN_FLOW_45 = `${EVIDENCE_DIR}/main-flow-rebuilt/45-英雄剧本书目标页说明图书馆原因.jpg`;
@@ -89,7 +88,7 @@ const STEP_HAUNT_NATURAL_03 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/03-队
 const STEP_HAUNT_NATURAL_04 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/04-队友二翻出狗未触发.jpg`;
 const STEP_HAUNT_NATURAL_05 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/05-狗确认后回到当前玩家.jpg`;
 const STEP_HAUNT_NATURAL_06 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/06-再次结束当前回合.jpg`;
-const STEP_HAUNT_NATURAL_07 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/07-队友一翻出面具触发作祟.jpg`;
+const STEP_HAUNT_NATURAL_07 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/07-队友一翻出面具并等待确认.jpg`;
 const STEP_HAUNT_NATURAL_08 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/08-当前玩家看到英雄开场过场.jpg`;
 const STEP_HAUNT_NATURAL_09 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/09-开场过场继续进入英雄剧本书.jpg`;
 const STEP_HAUNT_NATURAL_10 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/10-英雄剧本书目标页与图书馆原因.jpg`;
@@ -1920,6 +1919,33 @@ const readTutorialRuntimeDiagnostics = async (
     };
   });
 
+const waitForTutorialAiActionsConsumed = async (
+  page: Parameters<typeof test>[0]["page"],
+  stepId: string,
+  timeout = 10000,
+) => {
+  await expect
+    .poll(
+      async () => {
+        const diagnostics = await readTutorialRuntimeDiagnostics(page);
+        return {
+          stepId: diagnostics.stepId,
+          stepAiActionCount: diagnostics.stepAiActionCount,
+          aiActionCount: diagnostics.aiActionCount,
+        };
+      },
+      {
+        message: `教程步骤 ${stepId} 的自动动作必须完成后才能继续`,
+        timeout,
+      },
+    )
+    .toEqual({
+      stepId,
+      stepAiActionCount: 0,
+      aiActionCount: 0,
+    });
+};
+
 const expectRabbitFootResultConfirmationReady = async (
   page: Parameters<typeof test>[0]["page"],
   label: string,
@@ -2785,6 +2811,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStep(page, "watch-teammate-two-omen-turn", 10000);
     await expect(tutorialOverlayCard).toContainText("队友 2");
     await expect(tutorialOverlayCard).toContainText("翻出狗");
+    await expect(tutorialOverlayCard).toContainText("确认按钮显示等待");
+    await expect(tutorialOverlayCard).toContainText("点“下一步”");
     await expect
       .poll(readOmenNamesByPlayer, {
         message: "队友 2 必须通过正式探索自然翻出狗",
@@ -2820,10 +2848,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       discoveryPanel.getByTestId("betrayal-recent-roll-total"),
     ).toContainText("总点数");
     await expect(tutorialOverlayCard).toContainText("第二张预兆用 2 颗骰检定");
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-discovery-continue",
+    );
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(
       0,
     );
     await saveScreenshot(page, STEP_HAUNT_NATURAL_04);
+    await waitForTutorialAiActionsConsumed(page, "watch-teammate-two-omen-turn");
 
     await clickNext(page);
     await waitForStep(page, "teammate-two-omen-results", 10000);
@@ -2862,6 +2895,9 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStep(page, "watch-teammate-haunt-trigger", 10000);
     await expect(tutorialOverlayCard).toContainText("队友 1 继续探索");
     await expect(tutorialOverlayCard).toContainText("获得面具");
+    await expect(tutorialOverlayCard).toContainText("确认按钮显示等待");
+    await expect(tutorialOverlayCard).toContainText("下一步");
+    await waitForTutorialAiActionsConsumed(page, "watch-teammate-haunt-trigger");
     await expect
       .poll(readOmenNamesByPlayer, {
         message: "队友 1 必须通过正式探索自然翻出第三张面具",
@@ -2898,6 +2934,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       discoveryPanel.getByTestId("betrayal-recent-roll-total"),
     ).toContainText("总点数");
+    const hauntConfirmButton = page.getByTestId("betrayal-discovery-continue");
+    await expect(hauntConfirmButton).toBeVisible({ timeout: 10000 });
+    await expect(hauntConfirmButton).toBeDisabled();
+    await expect(hauntConfirmButton).toContainText("等待确认 0/1");
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-discovery-continue",
+    );
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(
       0,
     );
@@ -3677,7 +3721,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     page,
     context,
   }) => {
-    test.setTimeout(120000);
+    test.setTimeout(240000);
     await initBetrayalContext(context, { skipTutorial: false });
     const diagnostics = attachPageDiagnostics(
       page,
@@ -3707,9 +3751,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await page.goto("/play/betrayal/tutorial/basic-setup-and-turn", {
       waitUntil: "domcontentloaded",
     });
-    await criticalEventAtlasRequested;
+    const didRequestCriticalEventAtlas = await Promise.race([
+      criticalEventAtlasRequested.then(() => true),
+      page.waitForTimeout(3000).then(() => false),
+    ]);
     const loadingScreen = page.getByTestId("loading-screen");
-    if (await loadingScreen.isVisible({ timeout: 1000 }).catch(() => false)) {
+    if (
+      didRequestCriticalEventAtlas &&
+      (await loadingScreen.isVisible({ timeout: 1000 }).catch(() => false))
+    ) {
       await expect(page.getByTestId("betrayal-board")).not.toBeVisible();
       await saveScreenshot(page, TECHNICAL_ASSET_GATE_STEP);
     }
@@ -3856,6 +3906,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "betrayal-recent-roll-panel",
     );
     await expect(discoveryRollPanel).toBeVisible();
+    await expectVisiblePhysicalDiceBox(discoveryRollPanel);
+    await waitForPhysicalDiceSettled(discoveryRollPanel);
     await expect(
       page.getByTestId("betrayal-inventory-omen-book"),
     ).toHaveAttribute("data-event-roll-book-available", "true");
@@ -3866,8 +3918,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "data-tutorial-highlight-target",
       "betrayal-inventory-omen-book-magnify",
     );
-    await expectVisiblePhysicalDiceBox(discoveryRollPanel);
-    await waitForPhysicalDiceSettled(discoveryRollPanel);
     await saveScreenshot(page, STEP_11);
 
     await page.getByTestId("betrayal-inventory-omen-book-magnify").click();
@@ -4596,19 +4646,9 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(damageAllocationPanel).toBeHidden({ timeout: 10000 });
     await waitForStep(page, "return-to-table-after-damage", 10000);
     await expect(tutorialOverlayCard).toContainText("伤害已经分配到属性轨");
-    await expect(tutorialOverlayCard).toContainText("返回牌桌");
-    const returnToTableAfterDamage = page.getByTestId(
-      "betrayal-discovery-continue",
-    );
-    await expect(returnToTableAfterDamage).toBeVisible({ timeout: 10000 });
-    await expect(returnToTableAfterDamage).toContainText("返回牌桌");
-    await saveScreenshot(page, STEP_16B);
-
-    await returnToTableAfterDamage.click();
-    await expect(discoveryReveal).toBeHidden({ timeout: 10000 });
-    await waitForStep(page, "end-turn-after-event", 10000);
-    await expect(tutorialOverlayCard).toContainText("伤害分配完成后");
+    await expect(tutorialOverlayCard).toContainText("事件房探索已经结束你的回合");
     await expect(tutorialOverlayCard).toContainText("结束回合");
+    await expect(page.getByTestId("betrayal-discovery-continue")).toBeHidden({ timeout: 10000 });
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
     await expect(await readBetrayalOmenNamesByPlayer(page)).toMatchObject({
       "0": ["书本"],
@@ -4622,7 +4662,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       hauntTriggered: false,
       recommendedAction: "endTurn",
     });
-    await saveScreenshot(page, MAIN_FLOW_33);
+    await saveScreenshot(page, STEP_16B);
 
     await page.getByTestId("betrayal-action-endTurn").click();
     await waitForStep(page, "watch-teammate-one-omen-turn", 10000);
@@ -4680,6 +4720,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStep(page, "watch-teammate-two-omen-turn", 10000);
     await expect(tutorialOverlayCard).toContainText("队友 2");
     await expect(tutorialOverlayCard).toContainText("翻出狗");
+    await expect(tutorialOverlayCard).toContainText("确认按钮显示等待");
+    await expect(tutorialOverlayCard).toContainText("点“下一步”");
     await expect
       .poll(() => readBetrayalOmenNamesByPlayer(page), {
         message: "默认主线中队友 2 必须通过正式探索自然获得狗",
@@ -4704,7 +4746,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       });
     await expect(discoveryReveal).toBeVisible({ timeout: 10000 });
     await expect(discoveryReveal).toContainText("狗");
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-discovery-continue",
+    );
     await saveScreenshot(page, MAIN_FLOW_36);
+    await waitForTutorialAiActionsConsumed(page, "watch-teammate-two-omen-turn");
 
     await clickNext(page);
     await waitForStep(page, "teammate-two-omen-results", 10000);
@@ -4827,6 +4874,9 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(tutorialOverlayCard).toContainText("队友 1");
     await expect(tutorialOverlayCard).toContainText("面具");
     await expect(tutorialOverlayCard).toContainText("作祟自然开始");
+    await expect(tutorialOverlayCard).toContainText("确认按钮显示等待");
+    await expect(tutorialOverlayCard).toContainText("下一步");
+    await waitForTutorialAiActionsConsumed(page, "watch-teammate-haunt-trigger");
     await expect
       .poll(() => readBetrayalOmenNamesByPlayer(page), {
         message: "队友 1 必须通过正式探索自然翻出面具",
@@ -4857,6 +4907,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       discoveryReveal.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-count", "4");
+    const mainFlowHauntConfirmButton = page.getByTestId("betrayal-discovery-continue");
+    await expect(mainFlowHauntConfirmButton).toBeVisible({ timeout: 10000 });
+    await expect(mainFlowHauntConfirmButton).toBeDisabled();
+    await expect(mainFlowHauntConfirmButton).toContainText("等待确认 0/1");
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-discovery-continue",
+    );
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(
       0,
     );

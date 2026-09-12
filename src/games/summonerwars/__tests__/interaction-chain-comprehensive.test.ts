@@ -585,12 +585,12 @@ describe('SummonerWars 系统交互桥接回归', () => {
       name: '雷塔勒斯',
       life: 8,
     }), '0');
-    const undeadCard = mkUnit('skeleton-warrior-l4', {
+    const undeadCard = mkUnit('necro-undead-warrior-l4', {
       faction: 'necromancer',
       unitClass: 'common',
-      name: '骷髅战士',
+      name: '亡灵战士',
     });
-    const discardCard = { ...undeadCard, id: 'skeleton-warrior-l4-discard' };
+    const discardCard = { ...undeadCard, id: 'necro-undead-warrior-l4-discard' };
     core.players['0'].discard.push(discardCard as UnitCard);
 
     let state: MatchState<SummonerWarsCore> = {
@@ -2779,14 +2779,18 @@ describe('亡灵法师交互链', () => {
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
 
     // 在弃牌堆放一个亡灵单位
-    const undeadCard = mkUnit('skeleton-warrior', { faction: 'necromancer', unitClass: 'common' });
-    const discardCard = { ...undeadCard, id: 'skeleton_warrior-0-discard' };
+    const undeadCard = mkUnit('necro-undead-warrior', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      name: '亡灵战士',
+    });
+    const discardCard = { ...undeadCard, id: 'necro-undead-warrior-0-discard' };
     core.players['0'].discard.push(discardCard as any);
 
     const events = exec(core, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'revive_undead',
       sourceUnitId: unit.instanceId,
-      targetCardId: 'skeleton_warrior-0-discard',
+      targetCardId: 'necro-undead-warrior-0-discard',
       targetPosition: { row: 4, col: 4 },
     });
     const damageEvent = events.find(e =>
@@ -2822,7 +2826,7 @@ describe('亡灵法师交互链', () => {
       abilities: ['revive_undead'], unitClass: 'summoner', faction: 'necromancer', life: 8,
     });
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
-    const discardCard = mkUnit('skeleton_warrior', { faction: 'necromancer' });
+    const discardCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', name: '亡灵战士' });
     core.players['0'].discard.push({ ...discardCard, id: 'sk-discard' } as any);
 
     const result = validate(core, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -2861,7 +2865,7 @@ describe('亡灵法师交互链', () => {
       abilities: ['revive_undead'], unitClass: 'summoner', faction: 'necromancer', life: 8,
     });
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
-    const discardCard = mkUnit('skeleton_warrior', { faction: 'necromancer' });
+    const discardCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', name: '亡灵战士' });
     core.players['0'].discard.push({ ...discardCard, id: 'sk-discard' } as any);
 
     const result = validate(core, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -2881,7 +2885,7 @@ describe('亡灵法师交互链', () => {
       abilities: ['revive_undead'], unitClass: 'summoner', faction: 'necromancer', life: 8,
     });
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
-    const discardCard = mkUnit('skeleton_warrior', { faction: 'necromancer' });
+    const discardCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', name: '亡灵战士' });
     core.players['0'].discard.push({ ...discardCard, id: 'sk-discard' } as any);
     putUnit(core, { row: 4, col: 4 }, mkUnit('occupied', { faction: 'necromancer' }), '0');
 

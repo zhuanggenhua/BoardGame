@@ -210,7 +210,7 @@ describe('mage-wars tutorial', () => {
         });
         expect(MageWarsTutorial.steps.find((step) => step.id === 'planning-skip')).toMatchObject({
             infoStep: true,
-            highlightTarget: 'mw-turn-end',
+            highlightTarget: 'mw-plan-spells',
         });
         const attackBarReading = MageWarsTutorial.steps.find((step) => step.id === 'attack-bar-reading');
         expect(attackBarReading).toMatchObject({
@@ -507,7 +507,7 @@ describe('mage-wars tutorial', () => {
         expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.spellCardReading'))
             .toBe('先看计划法术会用到的基础字段：费用、行动、范围、目标、类型、派系和等级决定能不能计划与施放。');
         expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.planningSkip'))
-            .toBe('计划阶段可以准备0至2张法术。空计划表示本回合不准备任何法术；正式牌桌会用“跳过准备法术”提交，另一名法师完成计划后双方进入部署阶段。本教程接下来会准备两张法术。');
+            .toBe('计划阶段可以准备0至2张法术。空计划表示本回合不准备任何法术；正式牌桌同样用“确认计划 0/2”提交空计划。本教程会先准备两张法术，所以这里先读规则，不提交空计划。');
         expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.endCreatureAction'))
             .toBe('移动已经消耗了灰狼的行动。点击“结束行动”，让双方完成生物行动并进入最终快速施法。');
         expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.skipFinalQuickcast'))
@@ -535,7 +535,7 @@ describe('mage-wars tutorial', () => {
         expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.spellCardReading'))
             .toBe('Use this spell-card legend first: cost, action, range, target, type, school, and level determine how you prepare and cast.');
         expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.planningSkip'))
-            .toBe('Planning allows 0 to 2 prepared spells. An empty plan means preparing no spells this round; on the normal table, “Skip spell preparation” submits it, and both players enter Deployment after the other mage finishes planning. This tutorial prepares two spells next.');
+            .toBe('Planning allows 0 to 2 prepared spells. An empty plan means preparing no spells this round; the normal table still submits it with “Confirm plan 0/2”. This tutorial prepares two spells first, so read this rule without submitting an empty plan here.');
         expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.endCreatureAction'))
             .toBe('Moving has used the wolf\'s action. Click “End action” so both players finish Creature Action and enter Final Quickcast.');
         expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.skipFinalQuickcast'))
@@ -557,7 +557,7 @@ describe('mage-wars tutorial', () => {
             ['planOpenIncantationCategory', '点击“咒语”分类。', 'Click the Incantation category.'],
             ['planIncantationNextPage', '点击下一页，找到“兽性觉醒”。', 'Click the next page to find Rouse the Beast.'],
             ['planSelectRouse', '兽性觉醒是咒语类法术，咒语按牌面效果结算后进入弃牌堆。点击“兽性觉醒”卡牌本体，把它放进第二个计划槽。', 'Rouse the Beast is an Incantation spell: it resolves a one-time text effect, then goes to your discard pile. Click the Rouse the Beast card body to put it into the second prepared slot.'],
-            ['planConfirm', '点击“确认计划 2/2”提交本回合计划。', 'Click “Confirm prep 2/2” to submit this round\'s plan.'],
+            ['planConfirm', '点击“确认计划 2/2”提交本回合计划。', 'Click “Confirm plan 2/2” to submit this round\'s plan.'],
             ['deploySelectWolf', '点击准备区的“丛林灰狼”。', 'Click Jungle Wolf in your prepared spells.'],
             ['deployTargetZone', '点击兽王所在区域。', 'Click the Beastmaster\'s zone.'],
             ['wolfSummoned', '丛林灰狼已经被召唤到兽王所在区域；刚进场时行动未就绪，行动标记显示已用面表示它现在还不能行动。这一步先读状态，不点灰狼，点下一步继续。', 'Jungle Wolf has been summoned into the Beastmaster\'s zone. It enters without a ready action, so the spent action marker means it cannot act yet. This is a reading step: do not click the wolf yet, click Next to continue.'],
@@ -568,7 +568,7 @@ describe('mage-wars tutorial', () => {
             ['planOpenAllCategory', '点击“全部”分类。', 'Click the All category.'],
             ['planWallNextPage', '点击下一页，找到“荆棘之墙”。', 'Click the next page to find Wall of Thorns.'],
             ['planSelectThornsWall', '荆棘之墙是墙体法术，会放在两个相邻区域之间的边界上。点击“荆棘之墙”卡牌本体，把它放进计划槽。', 'Wall of Thorns is a Wall spell: it is placed on the edge between two adjacent zones. Click the Wall of Thorns card body to put it into the prepared slot.'],
-            ['planConfirmThornsWall', '点击“确认计划 1/2”提交本回合计划。', 'Click “Confirm prep 1/2” to submit this round\'s plan.'],
+            ['planConfirmThornsWall', '点击“确认计划 1/2”提交本回合计划。', 'Click “Confirm plan 1/2” to submit this round\'s plan.'],
             ['wallSelectSpell', '点击准备区的“荆棘之墙”。', 'Click Wall of Thorns in your prepared spells.'],
             ['wallTargetEdge', '点击左后区与中左后区之间的边界。', 'Click the edge between the Beastmaster\'s zone and the zone to its right.'],
             ['guardSelectWolf', '点击场上的“丛林灰狼”卡牌本体，选它作为这次行动来源。', 'Click the Jungle Wolf card body in the arena to choose it as this action\'s source.'],
@@ -767,7 +767,11 @@ describe('mage-wars tutorial', () => {
             path.join(process.cwd(), 'src', 'games', 'mage-wars', 'ui', 'selectedAbilityActionDock.tsx'),
             'utf8',
         );
-        const tutorialAnchorSources = [boardSource, selectedAbilityActionDockSource].join('\n');
+        const turnMainActionModelSource = fs.readFileSync(
+            path.join(process.cwd(), 'src', 'games', 'mage-wars', 'ui', 'turnMainActionModel.ts'),
+            'utf8',
+        );
+        const tutorialAnchorSources = [boardSource, selectedAbilityActionDockSource, turnMainActionModelSource].join('\n');
         for (const anchor of [
             'mw-board',
             'mw-stage',

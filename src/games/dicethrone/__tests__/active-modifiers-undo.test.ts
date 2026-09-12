@@ -294,6 +294,58 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).not.toContain('absolute inset-x-0 bottom-full');
     });
 
+    it('奖励骰显示在右侧栏时，应可见标明真实掷骰者而不是沿用右侧座位归属', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [
+                    {
+                        id: 0,
+                        value: 1,
+                        symbol: 'claw',
+                        symbols: ['claw'],
+                        isKept: false,
+                        definitionId: 'vampire_lord-dice',
+                        ownerId: '0',
+                    },
+                ],
+                rollCount: 1,
+                rollLimit: 1,
+                rollConfirmed: false,
+                currentPhase: 'defensiveRoll',
+                canInteractDice: true,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                isBonusDiceSettlement: true,
+                rootPlayerId: '1',
+                teamIdByPlayerId: { '0': 'A', '1': 'B' },
+            })
+        );
+
+        expect(html).toContain('data-player-seat-anchor="1"');
+        expect(html).toContain('data-testid="bonus-dice-owner-label"');
+        expect(html).toContain('data-bonus-dice-owner-id="0"');
+        expect(html).toContain('data-bonus-dice-definition-id="vampire_lord-dice"');
+        expect(html).toContain('dice.bonusRollOwner:owner=characters.vampire_lord');
+        expect(html).toContain('data-owner-id="0"');
+        expect(html).toContain('data-definition-id="vampire_lord-dice"');
+    });
+
     it('右侧栏阶段推进按钮不可用时仍应保留显示，只禁用点击', () => {
         const html = renderToStaticMarkup(
             React.createElement(RightSidebar, {

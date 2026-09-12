@@ -610,7 +610,7 @@
     "mesmerize": {
       "name": "催眠",
       "description": [
-        "正面标记，上限 1。不是任意时刻可点；当对手当前骰区仍有可重掷骰子时，牌桌会高亮“催眠重掷”：花费 1 个催眠并投 1 颗骰子，5-6 时再选择 1 颗对手骰子强迫重掷。"
+        "正面状态效果，堆叠上限：1。强迫一名对手重掷 1 颗骰子：拥有该指示物的玩家可以花费 1 个催眠并投掷 1 颗骰子。如果投出 5-6，你可以强迫对手重掷任意 1 颗骰子。"
       ]
     }
   },
@@ -667,10 +667,14 @@
     "statusApplied": "对玩家{{targetPlayerId}}施加状态 {{statusLabel}}",
     "statusAppliedDelta": "（+{{stacks}}，当前 {{total}}）",
     "statusRemoved": "对玩家{{targetPlayerId}}移除状态 {{statusLabel}}",
+    "statusRemovedBySourcePrefix": "以",
+    "statusRemovedBySourceResult": "从玩家{{targetPlayerId}}身上移除状态 {{statusLabel}} ×{{stacks}}",
     "statusRemovedDelta": "（-{{stacks}}）",
     "tokenGranted": "为玩家{{targetPlayerId}}获得 {{tokenLabel}} ×{{amount}}",
     "tokenTotal": "（当前 {{total}}）",
     "tokenConsumed": "消耗 {{tokenLabel}} ×{{amount}}",
+    "tokenRemovedBySourcePrefix": "以",
+    "tokenRemovedBySourceResult": "从玩家{{targetPlayerId}}身上移除 {{tokenLabel}} ×{{amount}}",
     "tokenRemaining": "（剩余 {{total}}）",
     "tokenUsed": "使用 {{tokenLabel}}（{{effectLabel}}）",
     "tokenModifier": "（调整 {{amount}}）",
@@ -1003,6 +1007,7 @@
     "confirm": "确认",
     "confirmed": "已确认",
     "bonusRoll": "额外投掷",
+    "bonusRollOwner": "{{owner}}的奖励骰",
     "bonusRolled": "额外掷骰：{{value}}（{{face}}）",
     "face": {
       "fist": "拳",
@@ -1105,6 +1110,12 @@
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}，并施加击倒",
       "tianshi.divinePunishment": "神圣惩戒：按额外骰面结算伤害、飞行、净化和眩光",
       "vampireLordMesmerizeDie": "催眠投掷：{{value}}（5-6 可强迫对手重掷 1 颗骰子）",
+      "vampireLordBloodSurgeClaw": "利爪：获得 3 个鲜血之力",
+      "vampireLordBloodSurgeOther": "非利爪：抽 1 张牌",
+      "vampireLordBloodFromAboveDie": "血从天降：掷出 {{value}}，获得 {{amount}} 个鲜血之力",
+      "vampireLordTotalDemiseDie": "血滴：本次攻击伤害 +1",
+      "vampireLordTotalDemiseOther": "非血滴：本次攻击伤害不增加",
+      "vampireLordTotalDemiseResult": "血滴 {{bloodDropCount}} 个：本次攻击伤害 +{{bonusDamage}}",
       "vampireLordBloodPossessedClaw": "利爪：对手获得 1 层流血",
       "vampireLordBloodPossessedMesmerize": "催眠：获得 1 个催眠",
       "vampireLordBloodPossessedBloodDrop": "血滴：获得 1 个催眠",
@@ -1429,6 +1440,7 @@
     "magnify": "查看大图",
     "inspectDiscardPile": "查看弃牌堆",
     "undoSell": "撤回售出",
+    "sellCard": "卖出卡牌",
     "play": "打出",
     "upgrade": "升级",
     "sell": "售卖",
@@ -1558,6 +1570,10 @@
       "title": "鲜血魔法：是否花费催眠使本次攻击不可防御？",
       "spendMesmerize": "花费 1 个催眠：本次攻击不可防御",
       "keepDefendable": "不花费"
+    },
+    "vampireLordDrinkUp": {
+      "title": "饮血如酒：选择花费的鲜血之力",
+      "spend": "花费 {{value}} 个鲜血之力"
     },
     "lotusPalmUnblockable": {
       "title": "是否花费 2 个太极标记令此次攻击不可防御？",
@@ -5702,10 +5718,10 @@
     "upgrade-lieren-life-revival-2": { "name": "生命复苏 II", "description": "升级生命复苏至 II 级。" },
     "upgrade-lieren-savage-force-2": { "name": "蛮荒之力 II / 狩猎", "description": "升级蛮荒之力，并加入狩猎分支。" },
     "upgrade-lieren-wild-force-2": { "name": "野性之力 II", "description": "升级野性之力至 II 级。" },
-    "card-vampire-lord-blood-surge": { "name": "血潮汹涌！", "description": "获得 1 个鲜血之力。" },
-    "card-vampire-lord-blood-from-above": { "name": "血从天降！", "description": "获得 1 个鲜血之力。" },
-    "card-vampire-lord-total-demise": { "name": "死无全尸！", "description": "攻击修正：本次攻击伤害 +1。" },
-    "card-vampire-lord-boiling-blood": { "name": "沸血之力！", "description": "攻击修正：本次攻击伤害 +1。" },
+    "card-vampire-lord-blood-surge": { "name": "血潮汹涌！", "description": "投掷 1 颗骰子：如果掷出利爪，获得 3 个鲜血之力；否则抽 1 张牌。" },
+    "card-vampire-lord-blood-from-above": { "name": "血从天降！", "description": "投掷 1 颗骰子，获得该骰值向上取整一半的鲜血之力。" },
+    "card-vampire-lord-total-demise": { "name": "死无全尸！", "description": "攻击修正：投掷 5 颗骰子；每掷出 1 个血滴，本次攻击伤害 +1；如果至少增加 3 点伤害，施加 1 层流血。" },
+    "card-vampire-lord-boiling-blood": { "name": "沸血之力！", "description": "攻击修正：本次攻击伤害 +1；此外，被攻击对手每有 1 层流血，本次攻击伤害再 +1。" },
     "card-vampire-lord-gushing-blood": { "name": "血流如注！", "description": "获得 1 个鲜血之力和 1 个催眠。" },
     "upgrade-vampire-lord-undying-2": { "name": "不死之身 II", "description": "升级不死之身至 II 级。" },
     "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "血之渴望 II / 血流成河", "description": "升级血之渴望至 II 级，并保留卡面下区“血流成河”作为同一升级后的可选技能变体。" },
@@ -5716,8 +5732,8 @@
     "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "魅惑之力 II / 摄魂术", "description": "升级魅惑之力至 II 级，并保留卡面下区“摄魂术”作为同一升级后的可选技能变体。" },
     "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "升级嗜血之爪至 III 级。" },
     "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "升级嗜血之爪至 II 级。" },
-    "card-vampire-lord-drink-up": { "name": "饮血如酒！", "description": "获得 2 个鲜血之力。" },
-    "card-vampire-lord-bloodstone": { "name": "血石！", "description": "获得 1 个催眠和 2 个鲜血之力，施加 1 层流血，并抽 1 张牌。" }
+    "card-vampire-lord-drink-up": { "name": "饮血如酒！", "description": "花费至少 2 个鲜血之力；然后每花费 1 个鲜血之力，获得 2 CP。" },
+    "card-vampire-lord-bloodstone": { "name": "血石！", "description": "获得 1 个催眠和 2 个鲜血之力；对一名对手施加 1 层流血。" }
   },
   "passive": {
     "tithes": {
@@ -5783,12 +5799,12 @@
       "drawShort": "抽 2 张",
       "draw": "拥有至少 3 个鲜血之力时，消耗 3 个鲜血之力，抽 2 张牌；每回合每个效果只能激活一次",
       "healShort": "吸血治疗",
-      "heal": "拥有至少 4 个鲜血之力时，消耗 4 个鲜血之力，治疗等同于本次成功攻击造成的伤害；只能在攻击阶段激活，每回合每个效果只能激活一次"
+      "heal": "拥有至少 4 个鲜血之力时，消耗 4 个鲜血之力，治疗等同于本次成功攻击造成的伤害；只能在你的投掷阶段激活，每回合每个效果只能激活一次"
     },
     "vampireLordMesmerize": {
       "name": "催眠",
-      "useShort": "催眠重掷",
-      "use": "当对手当前骰区仍有可重掷骰子时，消耗 1 个催眠并投 1 颗骰子；结果为 5-6 时，选择 1 颗对手骰子强迫重掷"
+      "useShort": "使用催眠",
+      "use": "强迫一名对手重掷 1 颗骰子：拥有该指示物的玩家可以花费 1 个催眠并投掷 1 颗骰子。如果投出 5-6，你可以强迫对手重掷任意 1 颗骰子"
     },
     "artificerWorkshop": {
       "buildNanobotShort": "制造纳米",

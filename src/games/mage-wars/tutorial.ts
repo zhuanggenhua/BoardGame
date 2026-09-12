@@ -76,7 +76,7 @@ export const MageWarsTutorial: TutorialManifest = {
         {
             id: 'planning-skip',
             content: 'game-mage-wars:tutorial.steps.planningSkip',
-            highlightTarget: 'mw-turn-end',
+            highlightTarget: 'mw-plan-spells',
             position: 'top',
             infoStep: true,
         },

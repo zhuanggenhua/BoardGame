@@ -40,7 +40,7 @@ describe('DiceThrone compatibility source guards', () => {
     it('CenterBoard tip 图应提供显式宽度，避免旧 WebView 丢失 aspect 类后横条化', () => {
         const centerBoard = readUiSource('CenterBoard.tsx');
 
-        expect(centerBoard).toContain('width: `calc(${tipBoardHeightVw}vw * ${1311 / 2048})`');
+        expect(centerBoard).toContain('width: `calc(${buildBoardShellInlineUnitValue(tipBoardHeightUnits)} * ${1311 / 2048})`');
         expect(centerBoard).not.toContain('aspect-[1311/2048]');
     });
 

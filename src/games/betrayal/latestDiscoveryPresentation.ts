@@ -100,6 +100,15 @@ export function buildLatestDiscoveryKey(core: BetrayalCore): string | null {
     : null;
 }
 
+function hasPendingLatestDiscoveryResolution(core: BetrayalCore): boolean {
+  return Boolean(
+    core.pendingEventChoice ||
+      core.pendingEventRollStart ||
+      core.pendingEventRollResolution ||
+      (core.pendingCardResolutionQueue?.length ?? 0) > 0,
+  );
+}
+
 export function isHauntScenarioOpeningDiscoverySummary(
   discovery: BetrayalDiscoverySummary | null,
 ): boolean {
@@ -177,9 +186,125 @@ function cloneRecentRollForDiscoveryDisplay(
     : null;
 }
 
+function resolvePendingCardResolutionDiscoveryKind(
+  pendingResolution: BetrayalPendingCardResolutionState,
+): BetrayalDiscoverySummary["kind"] {
+  return pendingResolution.deckKind === "event" ||
+    pendingResolution.deckKind === "item" ||
+    pendingResolution.deckKind === "omen"
+    ? pendingResolution.deckKind
+    : "none";
+}
+
+function buildPendingCardResolutionSourceKey(
+  core: BetrayalCore,
+  pendingResolution: BetrayalPendingCardResolutionState,
+): string {
+  const matchingLatestDiscovery =
+    core.latestDiscoveryOwnerPlayerId === pendingResolution.playerId &&
+    core.latestDiscovery?.title === pendingResolution.discoveryTitle
+      ? core.latestDiscovery
+      : null;
+  if (matchingLatestDiscovery) {
+    return buildLatestDiscoverySourceKey(
+      pendingResolution.playerId,
+      matchingLatestDiscovery,
+    );
+  }
+  return [
+    pendingResolution.playerId,
+    resolvePendingCardResolutionDiscoveryKind(pendingResolution),
+    pendingResolution.discoveryTitle,
+  ].join("::");
+}
+
+function cloneResolutionStepFromPendingCardResolution(
+  pendingResolution: BetrayalPendingCardResolutionState,
+): BetrayalDiscoveryResolutionStep {
+  return {
+    id: `pending-card-resolution-${pendingResolution.id}`,
+    kind: pendingResolution.stepKind,
+    text: pendingResolution.text,
+    deckKind: pendingResolution.deckKind,
+    cardId: pendingResolution.cardId,
+  };
+}
+
+function buildPendingCardResolutionDiscoverySummary(
+  core: BetrayalCore,
+  pendingResolution: BetrayalPendingCardResolutionState,
+): BetrayalDiscoverySummary {
+  const matchingLatestDiscovery =
+    core.latestDiscoveryOwnerPlayerId === pendingResolution.playerId &&
+    core.latestDiscovery?.title === pendingResolution.discoveryTitle
+      ? core.latestDiscovery
+      : null;
+  const kind = matchingLatestDiscovery?.kind ?? resolvePendingCardResolutionDiscoveryKind(pendingResolution);
+  const resolutionSteps = matchingLatestDiscovery?.resolutionSteps?.length
+    ? matchingLatestDiscovery.resolutionSteps.map((step) => ({ ...step }))
+    : [cloneResolutionStepFromPendingCardResolution(pendingResolution)];
+  const summary =
+    matchingLatestDiscovery?.summary?.trim() ||
+    (kind === "none" ? pendingResolution.text : "等待确认");
+  const detail =
+    matchingLatestDiscovery?.detail?.trim() || pendingResolution.text;
+
+  return {
+    kind,
+    title: pendingResolution.discoveryTitle,
+    summary,
+    detail,
+    tone: matchingLatestDiscovery?.tone ?? "accent",
+    resolutionSteps,
+  };
+}
+
+function buildPendingCardResolutionDisplayEntry(
+  core: BetrayalCore,
+): LatestDiscoveryDisplayEntry | null {
+  const pendingResolution = core.pendingCardResolutionQueue?.[0] ?? null;
+  if (!pendingResolution) {
+    return null;
+  }
+  const discovery = buildPendingCardResolutionDiscoverySummary(
+    core,
+    pendingResolution,
+  );
+  if (
+    isHauntScenarioOpeningDiscovery(core) &&
+    isHauntScenarioBookRevealDiscoverySummary(discovery)
+  ) {
+    return null;
+  }
+  const relatedRecentRoll =
+    core.recentRoll?.sourceTitle === pendingResolution.discoveryTitle &&
+    core.recentRoll.playerId === pendingResolution.playerId
+      ? core.recentRoll
+      : null;
+  const sourceKey = buildPendingCardResolutionSourceKey(
+    core,
+    pendingResolution,
+  );
+  const recentRollId = relatedRecentRoll?.id ?? "";
+  const activityId = core.activityLog[0]?.id ?? "";
+
+  return {
+    key: [sourceKey, pendingResolution.id, recentRollId, activityId].join("::"),
+    sourceKey,
+    discovery,
+    ownerPlayerId: pendingResolution.playerId,
+    recentRoll: cloneRecentRollForDiscoveryDisplay(relatedRecentRoll),
+  };
+}
+
 export function buildLatestDiscoveryDisplayEntry(
   core: BetrayalCore,
 ): LatestDiscoveryDisplayEntry | null {
+  const pendingCardResolutionEntry =
+    buildPendingCardResolutionDisplayEntry(core);
+  if (pendingCardResolutionEntry) {
+    return pendingCardResolutionEntry;
+  }
   if (
     isHauntScenarioOpeningDiscovery(core) &&
     isHauntScenarioBookRevealDiscoverySummary(core.latestDiscovery)
@@ -246,15 +371,68 @@ export function resolveBetrayalLatestDiscoverySelectionPresentation(options: {
     dismissedLatestDiscoveryKey,
     dismissedLatestDiscoveryKeys,
   } = options;
-  const queuedEntry = queue[0] ?? null;
+  const activePendingCardResolution =
+    core.pendingCardResolutionQueue?.[0] ?? null;
+  const pendingCardResolutionSourceKey = activePendingCardResolution
+    ? buildPendingCardResolutionSourceKey(core, activePendingCardResolution)
+    : null;
+  const stateRelevantQueue = queue.filter((entry) => {
+    const entryTargetsActivePendingResolution = Boolean(
+      pendingCardResolutionSourceKey &&
+        entry.sourceKey === pendingCardResolutionSourceKey,
+    );
+    if (
+      pendingCardResolutionSourceKey &&
+      entry.sourceKey !== pendingCardResolutionSourceKey
+    ) {
+      return false;
+    }
+    if (
+      entry.key === dismissedLatestDiscoveryKey ||
+      dismissedLatestDiscoveryKeys.has(entry.key)
+    ) {
+      return false;
+    }
+    if (
+      !entryTargetsActivePendingResolution &&
+      (entry.sourceKey === dismissedLatestDiscoveryKey ||
+        dismissedLatestDiscoveryKeys.has(entry.sourceKey))
+    ) {
+      return false;
+    }
+    if (
+      !hasPendingLatestDiscoveryResolution(core) &&
+      core.turnEndedByDiscovery &&
+      entry.discovery.kind === "event"
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const queuedEntry = stateRelevantQueue[0] ?? null;
+  const currentEntryTargetsActivePendingResolution = Boolean(
+    currentEntry &&
+      pendingCardResolutionSourceKey &&
+      currentEntry.sourceKey === pendingCardResolutionSourceKey,
+  );
   const visibleCurrentEntry =
     currentEntry &&
     currentEntry.key !== dismissedLatestDiscoveryKey &&
-    !dismissedLatestDiscoveryKeys.has(currentEntry.key)
+    !dismissedLatestDiscoveryKeys.has(currentEntry.key) &&
+    (currentEntryTargetsActivePendingResolution ||
+      (currentEntry.sourceKey !== dismissedLatestDiscoveryKey &&
+        !dismissedLatestDiscoveryKeys.has(currentEntry.sourceKey)))
       ? currentEntry
       : null;
-  const entry =
+  const shouldPreferCurrentPendingResolution = Boolean(
     visibleCurrentEntry &&
+      activePendingCardResolution &&
+      visibleCurrentEntry.sourceKey === pendingCardResolutionSourceKey,
+  );
+  const entry =
+    shouldPreferCurrentPendingResolution
+      ? visibleCurrentEntry
+      : visibleCurrentEntry &&
     (!queuedEntry || queuedEntry.sourceKey === visibleCurrentEntry.sourceKey)
       ? visibleCurrentEntry
       : queuedEntry;
@@ -305,29 +483,96 @@ export function resolveBetrayalLatestDiscoveryQueueAfterCurrentEntry(options: {
   }
 
   if (!currentEntry) {
-    return [...queue];
+    return queue.filter((entry) => {
+      if (
+        !hasPendingLatestDiscoveryResolution(core) &&
+        core.turnEndedByDiscovery &&
+        entry.discovery.kind === "event"
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
+  const pendingCardResolutionSourceKey = core.pendingCardResolutionQueue?.[0]
+    ? buildPendingCardResolutionSourceKey(
+        core,
+        core.pendingCardResolutionQueue[0],
+      )
+    : null;
+  const queueForCurrentState = queue.filter((entry) => {
+    const entryTargetsActivePendingResolution = Boolean(
+      pendingCardResolutionSourceKey &&
+        entry.sourceKey === pendingCardResolutionSourceKey,
+    );
+    if (
+      pendingCardResolutionSourceKey &&
+      entry.sourceKey !== pendingCardResolutionSourceKey &&
+      entry.sourceKey !== currentEntry.sourceKey
+    ) {
+      return false;
+    }
+    if (
+      entry.key === dismissedLatestDiscoveryKey ||
+      dismissedLatestDiscoveryKeys.has(entry.key)
+    ) {
+      return false;
+    }
+    if (
+      !entryTargetsActivePendingResolution &&
+      (entry.sourceKey === dismissedLatestDiscoveryKey ||
+        dismissedLatestDiscoveryKeys.has(entry.sourceKey))
+    ) {
+      return false;
+    }
+    if (
+      !hasPendingLatestDiscoveryResolution(core) &&
+      core.turnEndedByDiscovery &&
+      entry.discovery.kind === "event"
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const currentEntryTargetsActivePendingResolution = Boolean(
+    pendingCardResolutionSourceKey &&
+      currentEntry.sourceKey === pendingCardResolutionSourceKey,
+  );
+  if (
+    !hasPendingLatestDiscoveryResolution(core) &&
+    core.turnEndedByDiscovery &&
+    currentEntry.discovery.kind === "event"
+  ) {
+    return queueForCurrentState.filter(
+      (entry) => entry.sourceKey !== currentEntry.sourceKey,
+    );
   }
   if (
     currentEntry.key === dismissedLatestDiscoveryKey ||
-    dismissedLatestDiscoveryKeys.has(currentEntry.key)
+    dismissedLatestDiscoveryKeys.has(currentEntry.key) ||
+    (!currentEntryTargetsActivePendingResolution &&
+      (currentEntry.sourceKey === dismissedLatestDiscoveryKey ||
+        dismissedLatestDiscoveryKeys.has(currentEntry.sourceKey)))
   ) {
-    return [...queue];
+    return queueForCurrentState.filter(
+      (entry) => entry.sourceKey !== currentEntry.sourceKey,
+    );
   }
 
-  const existingIndex = queue.findIndex(
+  const existingIndex = queueForCurrentState.findIndex(
     (entry) => entry.key === currentEntry.key,
   );
   if (existingIndex >= 0) {
-    return queue.map((entry, index) =>
+    return queueForCurrentState.map((entry, index) =>
       index === existingIndex ? currentEntry : entry,
     );
   }
 
-  const existingSourceIndex = queue.findIndex(
+  const existingSourceIndex = queueForCurrentState.findIndex(
     (entry) => entry.sourceKey === currentEntry.sourceKey,
   );
   if (existingSourceIndex >= 0) {
-    return queue
+    return queueForCurrentState
       .map((entry, index) =>
         index === existingSourceIndex ? currentEntry : entry,
       )
@@ -338,17 +583,17 @@ export function resolveBetrayalLatestDiscoveryQueueAfterCurrentEntry(options: {
       );
   }
 
-  return [...queue, currentEntry];
+  return [...queueForCurrentState, currentEntry];
 }
 
 export function removeBetrayalLatestDiscoveryQueueEntry(
   queue: readonly LatestDiscoveryDisplayEntry[],
   key: string,
 ): LatestDiscoveryDisplayEntry[] {
-  if (queue[0]?.key === key) {
+  if (queue[0]?.key === key || queue[0]?.sourceKey === key) {
     return queue.slice(1);
   }
-  return queue.filter((entry) => entry.key !== key);
+  return queue.filter((entry) => entry.key !== key && entry.sourceKey !== key);
 }
 
 export function shouldRestoreBetrayalDiscoveryAfterHauntRevealDismiss(options: {
@@ -367,7 +612,9 @@ export function shouldRestoreBetrayalDiscoveryAfterHauntRevealDismiss(options: {
     nextEntry &&
       nextEntry.ownerPlayerId === viewerPlayerId &&
       nextEntry.key !== dismissedLatestDiscoveryKey &&
-      !dismissedLatestDiscoveryKeys.has(nextEntry.key),
+      nextEntry.sourceKey !== dismissedLatestDiscoveryKey &&
+      !dismissedLatestDiscoveryKeys.has(nextEntry.key) &&
+      !dismissedLatestDiscoveryKeys.has(nextEntry.sourceKey),
   );
 }
 
@@ -528,7 +775,8 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     isRecentRollReadable,
     t,
   } = options;
-  const { discovery, recentRoll, ownerPlayerId, key } = selection;
+  const { entry, visibleCurrentEntry, discovery, recentRoll, ownerPlayerId, key } =
+    selection;
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
   const hasDisplayEntry = Boolean(
@@ -551,6 +799,16 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       selection.coreRecentRollDisplayKey === selection.recentRollDisplayKey &&
       recentRoll.playerId === inventoryActionPlayerId,
   );
+  const shouldHideResolvedEventDiscovery = Boolean(
+    entry &&
+      visibleCurrentEntry &&
+      entry.sourceKey === visibleCurrentEntry.sourceKey &&
+      discovery?.kind === "event" &&
+      core.latestDiscovery?.kind === "event" &&
+      core.turnEndedByDiscovery &&
+      !hasPendingLatestDiscoveryResolution(core) &&
+      !hasActionableRollModifier,
+  );
   const shouldAutoReturnAfterLatestDiscovery = Boolean(
     !pendingEventChoice &&
       (core.pendingCardResolutionQueue?.length ?? 0) === 0 &&
@@ -558,9 +816,20 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) &&
       !hasActionableRollModifier,
   );
+  const shouldHideAcknowledgedSearchResolutionForViewer = Boolean(
+    activePendingCardResolution &&
+      activePendingCardResolution.playerId === ownerPlayerId &&
+      activePendingCardResolution.discoveryTitle === discovery?.title &&
+      (activePendingCardResolution.processCards?.length ?? 0) > 0 &&
+      activePendingCardResolution.acknowledgedPlayerIds?.includes(
+        viewerPlayerId,
+      ),
+  );
   const shouldShow = Boolean(
     hasDisplayEntry &&
       !shouldAutoReturnAfterLatestDiscovery &&
+      !shouldHideResolvedEventDiscovery &&
+      !shouldHideAcknowledgedSearchResolutionForViewer &&
       !shouldShowHauntRevealCue &&
       !shouldDisplayEventRolledDamageAsIndependentRoll,
   );
@@ -694,6 +963,16 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     }
     if (!pendingCardResolution) {
       return t("board.roll.backToBoard");
+    }
+    if (
+      !viewerHasAcknowledgedCardResolution &&
+      !canAdvanceSearch &&
+      !canCurrentViewerAcknowledgeCardResolution
+    ) {
+      return t("board.discovery.waitingForCardConfirmation", {
+        confirmed: cardResolutionConfirmedCount,
+        total: cardResolutionTotalCount,
+      });
     }
     if (viewerHasAcknowledgedCardResolution) {
       return t("board.discovery.confirmedWithProgress", {

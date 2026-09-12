@@ -1,6 +1,6 @@
 /**
  * 视角与自动观战计算工具
- * - 防御阶段仅在存在 pendingAttack 时强制切到防守方
+ * - 防御阶段仅在存在 pendingAttack 时提示切到防守方
  * - 响应窗口是否应自动引导切换，由 Board 层在窗口打开瞬间单次处理
  */
 import type { PlayerId } from '../../../engine/types';
@@ -193,12 +193,8 @@ export const computeViewModeState = (params: ViewModeParams): ViewModeResult => 
         isResponseAutoSwitch = pendingDamage.responderId === rootPlayerId;
     }
 
-    // 优先级：防御阶段自动观战 > 手动视角
-    // 响应窗口自动切换只做一次性引导，不在这里强制覆盖手动选择
+    // 防御阶段和响应窗口都只做一次性引导，不在这里强制覆盖手动选择。
     let viewMode = manualViewMode;
-    if (shouldAutoObserve) {
-        viewMode = 'opponent';
-    }
 
     const isSelfView = viewMode === 'self';
 

@@ -304,14 +304,14 @@ export function createMoguDeck(): {
     deck.push({ ...STRUCTURE_CARDS_MOGU[1], id: `mogu-portal-${i + 1}` });
   }
 
-  const witheringMage = COMMON_UNITS_MOGU.find(u => u.id === 'mogu-withering-mage')!;
+  const fungalBeast = COMMON_UNITS_MOGU.find(u => u.id === 'mogu-fungal-beast')!;
   const sporePlagueBody = COMMON_UNITS_MOGU.find(u => u.id === 'mogu-spore-plague-body')!;
 
   return {
     summoner: SUMMONER_MOGU,
     summonerPosition: { row: 0, col: 3 },
     startingUnits: [
-      { unit: { ...witheringMage, id: 'mogu-start-withering-mage' }, position: { row: 2, col: 3 } },
+      { unit: { ...fungalBeast, id: 'mogu-start-fungal-beast' }, position: { row: 2, col: 3 } },
       { unit: { ...sporePlagueBody, id: 'mogu-start-spore-plague-body' }, position: { row: 2, col: 2 } },
     ],
     startingGate: { ...STRUCTURE_CARDS_MOGU[0], id: `${STRUCTURE_CARDS_MOGU[0].id}-0` },

@@ -367,6 +367,23 @@ const clearAiActions = (tutorial: TutorialState): TutorialState => ({
     step: tutorial.step ? { ...tutorial.step, aiActions: undefined } : tutorial.step,
 });
 
+const hasPendingAiActions = (tutorial: TutorialState): boolean =>
+    Boolean(tutorial.step?.aiActions?.length || tutorial.aiActions?.length);
+
+const shouldAdvanceInvalidCurrentStep = <TCore>(
+    state: MatchState<TCore>,
+    validator?: StepValidatorFn,
+): boolean => {
+    const tutorial = state.sys.tutorial;
+    return Boolean(
+        validator
+        && tutorial.active
+        && tutorial.step
+        && !tutorial.pendingAnimationAdvance
+        && !validator(state, tutorial.step),
+    );
+};
+
 const shouldAutoAdvanceAfterAiConsumed = (
     tutorial: TutorialState,
     payload?: TutorialAiConsumedPayload,
@@ -434,12 +451,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 activeManifestById.set(manifest.id, manifest);
                 activeStepValidator = manifest.stepValidator;
                 const reboundState = bindManifestToExistingTutorialState(state, manifest);
-                if (
-                    activeStepValidator
-                    && reboundState.sys.tutorial.active
-                    && reboundState.sys.tutorial.step
-                    && !activeStepValidator(reboundState, reboundState.sys.tutorial.step)
-                ) {
+                if (shouldAdvanceInvalidCurrentStep(reboundState, activeStepValidator)) {
                     const timestamp = resolveTimestamp(command);
                     const result = advanceStep(
                         reboundState,
@@ -507,6 +519,9 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 if (!state.sys.tutorial.allowManualSkip) {
                     return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
                 }
+                if (hasPendingAiActions(state.sys.tutorial)) {
+                    return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
+                }
                 const timestamp = resolveTimestamp(command);
                 const result = advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
                 return { ...result, halt: true };
@@ -515,6 +530,9 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             if (command.type === TUTORIAL_COMMANDS.PREVIOUS) {
                 if (!state.sys.tutorial.active) {
                     return { halt: true, state };
+                }
+                if (hasPendingAiActions(state.sys.tutorial)) {
+                    return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
                 }
                 const timestamp = resolveTimestamp(command);
                 const result = retreatStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
@@ -533,12 +551,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
             let commandState = state;
             let staleStepEvents: GameEvent[] | undefined;
-            if (
-                activeStepValidator
-                && commandState.sys.tutorial.active
-                && commandState.sys.tutorial.step
-                && !activeStepValidator(commandState, commandState.sys.tutorial.step)
-            ) {
+            if (shouldAdvanceInvalidCurrentStep(commandState, activeStepValidator)) {
                 const timestamp = resolveTimestamp(command);
                 const result = advanceStep(
                     commandState,
@@ -590,8 +603,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
             if (!matched) {
                 // 事件未匹配：检查 stepValidator 是否判定当前步骤不可满足
-                if (activeStepValidator && tutorial.step
-                    && !activeStepValidator(state, tutorial.step)) {
+                if (shouldAdvanceInvalidCurrentStep(state, activeStepValidator)) {
                     const timestamp = resolveTimestamp(command, events);
                     return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(tutorial));
                 }

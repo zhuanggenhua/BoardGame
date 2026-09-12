@@ -115,6 +115,8 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
             'treant-mother-tree-roll',
             'treant-rooted-roll',
             'vampire-lord-mesmerize-roll',
+            'vampire-lord-blood-from-above-roll',
+            'vampire-lord-total-demise-roll',
             'zhanshujia-war-monger-roll',
             'zhanshujia-war-monger-2-roll',
             'zhanshujia-war-room-roll',

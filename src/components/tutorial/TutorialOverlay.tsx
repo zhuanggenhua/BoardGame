@@ -790,11 +790,9 @@ export const TutorialOverlay: React.FC = () => {
     return null;
   }
 
-  // 依赖高亮目标的步骤必须等目标真实出现在 DOM 后再显示，
-  // 否则提示卡会提前盖在 loading 或未完成装载的页面上。
-  if (currentStep.highlightTarget && !visibleTargetRect) {
-    return null;
-  }
+  const isHighlightTargetMissing = Boolean(
+    currentStep.highlightTarget && !visibleTargetRect,
+  );
 
   // 矢量路径用于带孔洞的遮罩
   const viewportWidth = rootViewportWidth;
@@ -829,17 +827,24 @@ export const TutorialOverlay: React.FC = () => {
   const canGoPrevious =
     tutorial.active &&
     hasPreviousVisibleTutorialStep(tutorial.steps ?? [], tutorial.stepIndex);
+  const hasPendingAiActions = Boolean(
+    currentStep.aiActions?.length || tutorial.aiActions?.length,
+  );
   const navigationButtonSizeClass = isBottomConfirmStep
     ? "rounded-sm py-2.5 text-xs tracking-[0.12em]"
     : isCompactTutorialLayout
       ? "rounded-lg py-2 text-[12px] tracking-[0.14em]"
       : "py-2 text-sm tracking-widest";
-  const navigationButtonBaseClass = `touch-target-min font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${navigationButtonSizeClass}`;
-  const previousButtonClass = `${navigationButtonBaseClass} shrink-0 border border-[#c9b995] bg-[#fcfbf9] px-3 text-[#5f4a2f] hover:bg-[#f3f0e6]`;
-  const nextButtonClass = `${navigationButtonBaseClass} ${canGoPrevious ? "flex-1" : "w-full"} bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] ${
+  const navigationDisabledClass = hasPendingAiActions
+    ? "cursor-not-allowed opacity-55"
+    : "cursor-pointer";
+  const navigationButtonBaseClass = `touch-target-min font-bold uppercase transition-all flex items-center justify-center text-center relative z-10 pointer-events-auto ${navigationButtonSizeClass} ${navigationDisabledClass}`;
+  const previousButtonClass = `${navigationButtonBaseClass} shrink-0 border border-[#c9b995] bg-[#fcfbf9] px-3 text-[#5f4a2f] ${hasPendingAiActions ? "" : "hover:bg-[#f3f0e6]"}`;
+  const nextButtonClass = `${navigationButtonBaseClass} ${canGoPrevious ? "flex-1" : "w-full"} bg-[#433422] ${hasPendingAiActions ? "" : "hover:bg-[#2b2114]"} text-[#fcfbf9] ${
     isBottomConfirmStep ? "border border-[#f3e8cc]/70 shadow-[0_6px_18px_rgba(0,0,0,0.34)]" : ""
   }`;
   const handlePreviousStep = () => {
+    if (hasPendingAiActions) return;
     playSound(TUTORIAL_NEXT_SOUND_KEY);
     previousStep();
   };
@@ -849,6 +854,9 @@ export const TutorialOverlay: React.FC = () => {
       className="fixed inset-0 pointer-events-none"
       style={{ zIndex: UI_Z_INDEX.tutorial }}
       data-tutorial-step={currentStep.id ?? "unknown"}
+      data-tutorial-highlight-missing={
+        isHighlightTargetMissing ? "true" : undefined
+      }
     >
       {/* 遮罩层 - 仅在遮罩开关为真且目标存在时阻止点击 */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300">
@@ -972,6 +980,7 @@ export const TutorialOverlay: React.FC = () => {
               {canGoPrevious ? (
                 <button
                   data-testid="tutorial-previous-button"
+                  disabled={hasPendingAiActions}
                   onClick={handlePreviousStep}
                   className={previousButtonClass}
                 >
@@ -980,7 +989,9 @@ export const TutorialOverlay: React.FC = () => {
               ) : null}
               <button
                 data-testid="tutorial-next-button"
+                disabled={hasPendingAiActions}
                 onClick={() => {
+                  if (hasPendingAiActions) return;
                   playSound(TUTORIAL_NEXT_SOUND_KEY);
                   nextStep("manual");
                 }}
@@ -1000,6 +1011,7 @@ export const TutorialOverlay: React.FC = () => {
               {canGoPrevious ? (
                 <button
                   data-testid="tutorial-previous-button"
+                  disabled={hasPendingAiActions}
                   onClick={handlePreviousStep}
                   className={previousButtonClass}
                 >

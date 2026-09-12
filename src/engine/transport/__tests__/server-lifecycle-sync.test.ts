@@ -9,6 +9,7 @@ import type { GameEngineConfig } from '../engineConfig';
 import { createSimpleChoice } from '../../systems/InteractionSystem';
 import type { MatchMetadata, StoredMatchState } from '../storage';
 import smashUpEngineConfig from '../../../games/smashup/game';
+import mageWarsEngineConfig from '../../../games/mage-wars/game';
 import {
     InMemoryStorage,
     MockIO,
@@ -179,6 +180,32 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         );
 
         expect(receivedPlayerIds).toEqual(['0', '1']);
+    });
+
+    it('setupMatch 创建 Mage Wars 正式房间后应完成开局自动准备阶段并进入计划阶段', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [mageWarsEngineConfig],
+        });
+
+        const result = await server.setupMatch(
+            'match-mage-wars-initial-auto-flow',
+            'mage-wars',
+            ['0', '1'],
+            'seed-mage-wars-initial-auto-flow',
+        );
+
+        expect(result).toBeTruthy();
+        expect(result?.state.sys.phase).toBe('planning');
+        expect(result?.state.core).toMatchObject({
+            currentPlayerId: '0',
+            phaseReadyPlayerIds: [],
+            turnNumber: 1,
+        });
+        expect(result?.state.sys.undo.snapshots).toEqual([]);
     });
 
     it('offline adjudication should use generic cancel for unknown interaction kinds', async () => {

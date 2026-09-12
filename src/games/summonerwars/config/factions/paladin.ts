@@ -323,7 +323,7 @@ export function createPaladinDeck(): {
     deck.push({ ...STRUCTURE_CARDS_PALADIN[1], id: `paladin-portal-${i + 1}` });
   }
 
-  // 起始单位：圣殿牧师（■）和 城塞弓箭手（▲）
+  // 起始单位：城塞骑士（■）和 圣殿牧师（▲）
   // 
   // ┌─────────────────────────────────────────────────────────────────┐
   // │ 坐标系：【左下角原点】（玩家0视角）                              │
@@ -338,9 +338,9 @@ export function createPaladinDeck(): {
   // │       ├───┼───┼───┼───┼───┼───┤                                 │
   // │   ... │   │   │   │   │   │   │                                 │
   // │       ├───┼───┼───┼───┼───┼───┤                                 │
-  // │  row 3│   │   │ ■ │   │   │   │  ← 圣殿牧师                     │
+  // │  row 3│   │   │ ■ │   │   │   │  ← 城塞骑士                     │
   // │       ├───┼───┼───┼───┼───┼───┤                                 │
-  // │  row 2│   │   │   │ 门 │ ▲ │   │  ← 城门、城塞弓箭手            │
+  // │  row 2│   │   │   │ 门 │ ▲ │   │  ← 城门、圣殿牧师              │
   // │       ├───┼───┼───┼───┼───┼───┤                                 │
   // │  row 1│   │   │   │   │   │   │  ← 空                           │
   // │       ├───┼───┼───┼───┼───┼───┤                                 │
@@ -351,17 +351,17 @@ export function createPaladinDeck(): {
   // 根据召唤师卡背面图片（tip.png）：
   //   - 召唤师：row 0, col 3
   //   - 城门：row 2, col 3
-  //   - 圣殿牧师(■)：row 3, col 2
-  //   - 城塞弓箭手(▲)：row 2, col 4
+  //   - 城塞骑士(■)：row 3, col 2
+  //   - 圣殿牧师(▲)：row 2, col 4
   const templePriest = COMMON_UNITS_PALADIN.find(u => u.id === 'paladin-temple-priest')!;
-  const fortressArcher = COMMON_UNITS_PALADIN.find(u => u.id === 'paladin-fortress-archer')!;
+  const fortressKnight = COMMON_UNITS_PALADIN.find(u => u.id === 'paladin-fortress-knight')!;
 
   return {
     summoner: SUMMONER_PALADIN,
     summonerPosition: { row: 0, col: 3 },
     startingUnits: [
-      { unit: { ...templePriest, id: 'paladin-start-priest' }, position: { row: 3, col: 2 } },      // ■
-      { unit: { ...fortressArcher, id: 'paladin-start-archer' }, position: { row: 2, col: 4 } },   // ▲
+      { unit: { ...fortressKnight, id: 'paladin-start-knight' }, position: { row: 3, col: 2 } },   // ■
+      { unit: { ...templePriest, id: 'paladin-start-priest' }, position: { row: 2, col: 4 } },      // ▲
     ],
     startingGate: { ...STRUCTURE_CARDS_PALADIN[0], id: `${STRUCTURE_CARDS_PALADIN[0].id}-0` },
     startingGatePosition: { row: 2, col: 3 },

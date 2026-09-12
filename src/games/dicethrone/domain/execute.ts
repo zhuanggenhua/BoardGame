@@ -1171,11 +1171,12 @@ export function execute(
 
         case 'USE_TOKEN':
         case 'SKIP_TOKEN_RESPONSE': {
+            const responseWindowType = matchState.sys?.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
             const choiceSource = resolveDiceThroneTokenResponseChoiceCommandSource(
                 matchState.sys?.interaction?.current,
                 command,
             );
-            return executeTokenCommand(state, command, random, timestamp, phase, choiceSource);
+            return executeTokenCommand(state, command, random, timestamp, phase, choiceSource, responseWindowType);
         }
         case 'USE_PURIFY':
         case DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN:

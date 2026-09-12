@@ -107,12 +107,16 @@ export function getBaseCardId(id: string): string {
 }
 
 /**
- * 判断卡牌是否为疫病体
+ * 判断卡牌是否为亡灵法师的疫病体
  *
- * 疫病体判定：id 含 'plague-zombie' 或名称含 '疫病体'
+ * 莫古也有“菌袍疫病体”，不能按名称模糊匹配混入亡灵法师感染链。
  */
-export function isPlagueZombieCard(card: { id: string; name: string }): boolean {
-  return card.id.includes('plague-zombie') || card.name.includes('疫病体');
+export function isPlagueZombieCard(card: { id: string; name: string; faction?: string }): boolean {
+  if (card.faction !== 'necromancer') return false;
+  const baseId = getBaseCardId(card.id);
+  return baseId.includes('plague-zombie')
+    || baseId === 'necro-start-zombie'
+    || card.name.includes('疫病体');
 }
 
 /** 判断卡牌是否为莫古的菌袍疫病体 */
@@ -140,12 +144,17 @@ export function isFortressUnit(card: { id: string; name: string; cardType?: stri
 /**
  * 判断卡牌是否为亡灵单位
  *
- * 亡灵判定：id 含 'undead'、名称含 '亡灵'、或阵营为 necromancer
+ * 亡灵判定看卡牌自身种族语义，不等于整个亡灵法师阵营。
+ * 地狱火教徒同属 necromancer，但不是复活死灵可选择的亡灵单位。
  */
 export function isUndeadCard(card: { id: string; name: string; cardType: string; faction?: string }): boolean {
   if (card.cardType !== 'unit') return false;
-  return card.id.includes('undead')
+  const baseId = getBaseCardId(card.id);
+  return baseId.includes('undead')
     || card.name.includes('亡灵')
-    || (card as UnitCard).faction === 'necromancer';
+    || (
+      card.faction === 'necromancer'
+      && (baseId.includes('plague-zombie') || card.name.includes('疫病体'))
+    );
 }
 

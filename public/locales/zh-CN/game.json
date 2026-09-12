@@ -133,6 +133,7 @@
       "nightMode": "夜间模式",
       "lightMode": "日间模式",
       "settings": "设置",
+      "operationGuide": "操作指南",
       "audio": "音频",
       "chat": "聊天",
       "emotes": "表情",
@@ -176,18 +177,18 @@
       "imageAdded": "已添加截图",
       "contactLabel": "联系方式（可选）",
       "contactPlaceholder": "邮箱或 QQ（便于跟进）",
-    "attachLog": "附带操作日志",
-    "attachState": "附带状态快照（用于精确复现）",
-    "configProposal": {
-      "title": "配置修正提案",
-      "batchTitle": "配置修正提案批量提交",
-      "batchSummary": "本次将提交 {{count}} 项配置字段修正，统一进入 AI 首轮审查。",
-      "batchItem": "{{index}}. {{objectName}} · {{fieldName}}：当前值：{{currentValue}}；修改后值：{{updatedValue}}",
-      "batchMore": "另有 {{count}} 项未在此处展开。",
-      "target": "对象：{{objectName}}；字段：{{fieldName}}",
-      "change": "当前值：{{currentValue}}；修改后值：{{updatedValue}}"
-    },
-    "submit": "提交反馈",
+      "attachLog": "附带操作日志",
+      "attachState": "附带状态快照（用于精确复现）",
+      "configProposal": {
+        "title": "配置修正提案",
+        "batchTitle": "配置修正提案批量提交",
+        "batchSummary": "本次将提交 {{count}} 项配置字段修正，统一进入 AI 首轮审查。",
+        "batchItem": "{{index}}. {{objectName}} · {{fieldName}}：当前值：{{currentValue}}；修改后值：{{updatedValue}}",
+        "batchMore": "另有 {{count}} 项未在此处展开。",
+        "target": "对象：{{objectName}}；字段：{{fieldName}}",
+        "change": "当前值：{{currentValue}}；修改后值：{{updatedValue}}"
+      },
+      "submit": "提交反馈",
       "success": "反馈已提交，感谢支持！",
       "errors": {
         "loginRequired": "登录后可获得更好的反馈跟进体验",
@@ -208,6 +209,72 @@
     },
     "actionLog": {
       "empty": "暂无行为日志"
+    },
+    "operationGuide": {
+      "title": "操作指南",
+      "eyebrow": "新手帮助",
+      "surface": {
+        "web": "网页端从右上角打开本指南；指南不放进悬浮球，避免把要学习的控件藏在它自己里面。",
+        "app": "App 端从右上角打开本指南；重点说明触控、长按放大和页面悬浮球的各个功能。",
+        "game": "这里汇总局内常见操作和悬浮球按钮。不同游戏会按规则状态显示不同入口。"
+      },
+      "visual": {
+        "realScreenshotsTitle": "真实界面截图",
+        "webFabImageAlt": "网页端悬浮球标注截图",
+        "appFabImageAlt": "App 端悬浮球标注截图",
+        "dragCallout": "主球：可拖动",
+        "expandCallout": "展开后点小球",
+        "longPressTitle": "移动端长按放大",
+        "longPressImageAlt": "移动端长按放大标注截图",
+        "longPressDescription": "在手机或 App 里，卡牌、棋子、状态和部分棋盘对象支持长按查看大图；松手或点关闭后回到原页面。"
+      },
+      "common": {
+        "title": "常见操作",
+        "fabMenu": "悬浮球就是页面边缘的小圆球：点击主球展开菜单，再点主球收起；也可以拖到不挡操作的位置。",
+        "mobileLongPress": "移动端：支持检视的卡牌、单位、状态和棋盘对象，长按可放大查看。",
+        "desktopInspect": "网页端：悬停按钮可看名称；点击对象本体或放大镜查看详情。",
+        "boardZoom": "棋盘或地图支持时，可滚轮缩放、双指缩放或拖拽查看边缘内容。",
+        "closeLayer": "打开的面板或放大层通常点右上角关闭，移动端也可点遮罩返回。"
+      },
+      "fab": {
+        "title": "悬浮球功能说明",
+        "webTitle": "网页端悬浮球",
+        "appTitle": "App 端悬浮球",
+        "gameTitle": "局内悬浮球",
+        "operationGuide": "操作指南入口固定在右上角，不属于悬浮球功能。",
+        "settings": "调整声音、首页样式或当前游戏运行设置。",
+        "displayTheme": "切换日间或夜间显示。",
+        "fullscreen": "进入或退出全屏；App 内部分页面会隐藏这个入口。",
+        "downloadApp": "从网页端下载 App 安装包。",
+        "checkUpdate": "在 App 端检查可用更新。",
+        "about": "查看项目介绍、社区和赞助信息。",
+        "feedback": "提交问题或建议；局内会附带操作记录和状态快照帮助复现。",
+        "social": "打开好友和私聊入口。",
+        "chat": "打开局内聊天；有新消息时会显示提醒。",
+        "actionLog": "查看本局已经发生的玩家操作和关键记录。",
+        "undo": "查看或申请撤回；收到对方申请时可同意或拒绝。",
+        "forceActions": "AI 或前台交互卡住时使用的应急推进入口。",
+        "seatSwap": "请求或处理换位。",
+        "exit": "离开对局、返回大厅，或按身份销毁/退出房间。",
+        "custom": "当前游戏或页面提供的专属辅助入口。"
+      },
+      "fabLabels": {
+        "settings": "设置",
+        "displayTheme": "日夜模式",
+        "fullscreen": "全屏",
+        "downloadApp": "下载应用",
+        "checkUpdate": "检查更新",
+        "about": "关于",
+        "feedback": "反馈",
+        "social": "好友",
+        "chat": "聊天",
+        "emotes": "表情",
+        "actionLog": "行为日志",
+        "undo": "撤回",
+        "forceActions": "应急推进",
+        "seatSwap": "换位",
+        "exit": "离开"
+      }
     },
     "chat": {
       "placeholder": "输入消息…",

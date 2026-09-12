@@ -43,6 +43,8 @@ export const LeftSidebar = ({
     onAutoResponseToggle,
     responseTokenIds,
     onResponseTokenClick,
+    activeTokenIds,
+    onActiveTokenClick,
     isHandHidden,
     onToggleHandHidden,
 }: {
@@ -90,6 +92,9 @@ export const LeftSidebar = ({
     /** 当前响应中可直接点击使用的 Token。提示与跳过由手牌上方的共享响应框承接。 */
     responseTokenIds?: string[];
     onResponseTokenClick?: (tokenId: string) => void;
+    /** 当前非响应窗口中可从 Token 本体主动点击使用的 Token。 */
+    activeTokenIds?: string[];
+    onActiveTokenClick?: (tokenId: string) => void;
     /** 手牌层是否临时隐藏，仅影响本地 UI。 */
     isHandHidden?: boolean;
     onToggleHandHidden?: () => void;
@@ -100,6 +105,22 @@ export const LeftSidebar = ({
         bottom: dtUnit(1.5),
         width: dtUnit(16),
     } as CSSProperties;
+    const clickableTokenIds = React.useMemo(() => Array.from(new Set([
+        ...(responseTokenIds ?? []),
+        ...(activeTokenIds ?? []),
+        ...(canUsePurify
+            ? (tokenDefinitions ?? []).filter(def => def.activeUse?.effect.type === 'removeDebuff').map(def => def.id)
+            : []),
+        ...(canUseFlight ? [TOKEN_IDS.FLIGHT] : []),
+        ...(canUseNyraBondHeal ? [TOKEN_IDS.NYRAS_BOND] : []),
+    ])), [
+        activeTokenIds,
+        canUseFlight,
+        canUseNyraBondHeal,
+        canUsePurify,
+        responseTokenIds,
+        tokenDefinitions,
+    ]);
 
     return (
         <div
@@ -149,6 +170,10 @@ export const LeftSidebar = ({
                                 onResponseTokenClick?.(tokenId);
                                 return;
                             }
+                            if (activeTokenIds?.includes(tokenId)) {
+                                onActiveTokenClick?.(tokenId);
+                                return;
+                            }
                             if (tokenId === TOKEN_IDS.FLIGHT && onFlightClick) {
                                 onFlightClick();
                                 return;
@@ -163,14 +188,7 @@ export const LeftSidebar = ({
                                 onPurifyClick();
                             }
                         }}
-                        clickableTokens={[
-                            ...(responseTokenIds ?? []),
-                            ...(canUsePurify
-                                ? (tokenDefinitions ?? []).filter(def => def.activeUse?.effect.type === 'removeDebuff').map(def => def.id)
-                                : []),
-                            ...(canUseFlight ? [TOKEN_IDS.FLIGHT] : []),
-                            ...(canUseNyraBondHeal ? [TOKEN_IDS.NYRAS_BOND] : []),
-                        ]}
+                        clickableTokens={clickableTokenIds}
                     />
                     <StatusEffectsContainer
                         effects={viewPlayer.statusEffects ?? {}}

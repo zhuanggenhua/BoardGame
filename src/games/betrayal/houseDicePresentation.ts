@@ -57,14 +57,14 @@ export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR = 0xff2dfb;
 export const BETRAYAL_REROLL_HIGHLIGHT_RENDERER =
   "threejs-backside-shader-shell";
 export const BETRAYAL_REROLL_VISUAL_CONTRACT =
-  "threejs-shader-shell-plus-projected-edge-outline-plus-transparent-hitbox";
-export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE = 1.022;
-export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE = 1.038;
-export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY = 0.72;
+  "threejs-shader-shell-plus-transparent-hitbox";
+export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE = 1.045;
+export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE = 1.07;
+export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY = 0.92;
 export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY = 0.95;
-export const BETRAYAL_REROLL_TARGET_OUTLINE_SCALE = 1.04;
-export const BETRAYAL_REROLL_TARGET_OUTLINE_GAP = 1.5;
-export const BETRAYAL_REROLL_TARGET_HIT_PADDING = 6;
+export const BETRAYAL_REROLL_TARGET_OUTLINE_SCALE = 1;
+export const BETRAYAL_REROLL_TARGET_OUTLINE_GAP = 0;
+export const BETRAYAL_REROLL_TARGET_HIT_PADDING = 0;
 export const BETRAYAL_REROLL_TARGET_CENTER_SOURCE =
   "projected-die-body-center";
 
@@ -266,23 +266,13 @@ export function getBetrayalRerollTargetOutlineSize(
 ) {
   const baseWidth = layout.visualWidth ?? layout.width;
   const baseHeight = layout.visualHeight ?? layout.height;
-  const width = Math.max(
-    42,
-    Math.min(
-      72,
-      baseWidth * BETRAYAL_REROLL_TARGET_OUTLINE_SCALE +
-        BETRAYAL_REROLL_TARGET_OUTLINE_GAP * 2,
-    ),
+  const baseSize = Math.max(baseWidth, baseHeight);
+  const size = Math.max(
+    1,
+    baseSize * BETRAYAL_REROLL_TARGET_OUTLINE_SCALE +
+      BETRAYAL_REROLL_TARGET_OUTLINE_GAP * 2,
   );
-  const height = Math.max(
-    42,
-    Math.min(
-      72,
-      baseHeight * BETRAYAL_REROLL_TARGET_OUTLINE_SCALE +
-        BETRAYAL_REROLL_TARGET_OUTLINE_GAP * 2,
-    ),
-  );
-  return { width, height };
+  return { width: size, height: size };
 }
 
 export function getBetrayalRerollTargetHitSize(
@@ -290,8 +280,8 @@ export function getBetrayalRerollTargetHitSize(
 ) {
   const outlineSize = getBetrayalRerollTargetOutlineSize(layout);
   return {
-    width: Math.max(44, outlineSize.width + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2),
-    height: Math.max(44, outlineSize.height + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2),
+    width: outlineSize.width + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2,
+    height: outlineSize.height + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2,
   };
 }
 

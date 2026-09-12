@@ -1,6 +1,5 @@
 import type { RandomFn } from '../../engine/types';
 import {
-    eventRollResolutionNeedsSharedAcknowledgement,
     resolveRoomExploredCardResolutionRequiredPlayerIds,
 } from './acknowledgementReadModel';
 import {
@@ -323,19 +322,11 @@ export function applyBetrayalRoomExploredState(
         && core.recentRoll
         && event.payload.eventEffect
     ) {
-        const needsSharedEventRollAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement({
-            hauntRevealResolution: event.payload.hauntRevealResolution,
-            hauntTraitorResolution: event.payload.hauntTraitorResolution,
-            dustSetup: event.payload.dustSetup,
-            magicCameraSetup: event.payload.magicCameraSetup,
-            helpingHandsSetup: event.payload.helpingHandsSetup,
-            uponReflectionSetup: event.payload.uponReflectionSetup,
-        });
         core.pendingEventRollResolution = {
             rollId: core.recentRoll.id,
             playerId: event.payload.playerId,
             sourceTitle: event.payload.discovery.title,
-            requiredPlayerIds: needsSharedEventRollAcknowledgement && core.playerIds.length > 0
+            requiredPlayerIds: core.playerIds.length > 0
                 ? [...core.playerIds]
                 : [event.payload.playerId],
             acknowledgedPlayerIds: [],

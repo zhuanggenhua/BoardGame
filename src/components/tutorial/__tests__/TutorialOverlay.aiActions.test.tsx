@@ -127,6 +127,21 @@ describe('TutorialOverlay aiActions visibility', () => {
             .toBe('game-mage-wars:tutorial.visuals.spellCardLegendCaption');
     });
 
+    it('高亮目标暂时缺失时仍显示教程提示卡，避免恢复态无提示', () => {
+        renderWithStep({
+            id: 'dog-confirm-waiting',
+            content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateTwoOmenTurn',
+            infoStep: true,
+            highlightTarget: 'betrayal-stale-dog-confirm-target',
+            position: 'top',
+        });
+
+        expect(document.querySelector('[data-tutorial-step="dog-confirm-waiting"]'))
+            .toHaveAttribute('data-tutorial-highlight-missing', 'true');
+        expect(screen.getByTestId('tutorial-overlay-card')).toBeTruthy();
+        expect(screen.queryByTestId('tutorial-highlight-ring')).toBeNull();
+    });
+
     it('首张教程卡不显示上一步按钮', () => {
         renderWithStep({
             id: 'intro',
@@ -157,6 +172,25 @@ describe('TutorialOverlay aiActions visibility', () => {
 
         expect(screen.queryByTestId('tutorial-previous-button')).toBeNull();
         expect(screen.getByTestId('tutorial-next-button')).toBeTruthy();
+    });
+
+    it('自动动作未消费前禁用教程导航', () => {
+        const { nextStep, previousStep } = renderWithStep({
+            id: 'watch-ai',
+            content: 'tutorial.watchAi',
+            infoStep: true,
+            aiActions: [{ commandType: 'AI_MOVE', playerId: '1' }],
+        }, { stepIndex: 1 });
+
+        const previousButton = screen.getByTestId('tutorial-previous-button') as HTMLButtonElement;
+        const nextButton = screen.getByTestId('tutorial-next-button') as HTMLButtonElement;
+
+        expect(previousButton.disabled).toBe(true);
+        expect(nextButton.disabled).toBe(true);
+        fireEvent.click(previousButton);
+        fireEvent.click(nextButton);
+        expect(previousStep).not.toHaveBeenCalled();
+        expect(nextStep).not.toHaveBeenCalled();
     });
 
     it('后续教程卡可以点击上一步，只触发教程回退', () => {

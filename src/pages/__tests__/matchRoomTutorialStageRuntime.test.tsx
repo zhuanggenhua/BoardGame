@@ -22,6 +22,7 @@ let latestLocalProviderProps: null | {
     seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
     followCurrentTurnPlayer?: boolean;
     shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
+    disableLocalAiAutomation?: boolean;
 } = null;
 const localProviderSeeds: string[] = [];
 const localProviderLifecycle: string[] = [];
@@ -63,20 +64,24 @@ vi.mock('../../contexts/ModalStackContext', () => ({
     }),
 }));
 
-vi.mock('../../contexts/TutorialContext', () => ({
-    useTutorial: () => ({
-        tutorial: {
-            active: false,
-            manifestId: null,
-            stepIndex: 0,
-            steps: [],
-            step: null,
-        },
-        bindDispatch: vi.fn(),
-        unbindDispatch: vi.fn(),
-        syncTutorialState: vi.fn(),
-    }),
-}));
+vi.mock('../../contexts/TutorialContext', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../contexts/TutorialContext')>();
+    return {
+        ...actual,
+        useTutorial: () => ({
+            tutorial: {
+                active: false,
+                manifestId: null,
+                stepIndex: 0,
+                steps: [],
+                step: null,
+            },
+            bindDispatch: vi.fn(),
+            unbindDispatch: vi.fn(),
+            syncTutorialState: vi.fn(),
+        }),
+    };
+});
 
 vi.mock('../../contexts/GameModeContext', () => ({
     useGameMode: () => ({ mode: 'tutorial' }),
@@ -130,6 +135,7 @@ vi.mock('../../engine/transport/react', () => ({
         seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
         followCurrentTurnPlayer?: boolean;
         shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
+        disableLocalAiAutomation?: boolean;
         children?: React.ReactNode;
     }) => {
         const mountedSeed = useRef(props.seed).current;
@@ -148,6 +154,7 @@ vi.mock('../../engine/transport/react', () => ({
             seatControllers: props.seatControllers,
             followCurrentTurnPlayer: props.followCurrentTurnPlayer,
             shouldRestorePersistedSession: props.shouldRestorePersistedSession,
+            disableLocalAiAutomation: props.disableLocalAiAutomation,
         };
         localProviderSeeds.push(props.seed);
         return <div data-testid="local-game-provider">{props.children}</div>;
@@ -271,6 +278,7 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
             TUTORIAL_COMMANDS.BIND_MANIFEST,
             { manifest },
         ));
+        expect(latestLocalProviderProps?.disableLocalAiAutomation).toBe(true);
     });
 
     it('有可恢复进度时先弹窗，选择继续后用章节 seed 恢复本地教程', async () => {

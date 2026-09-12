@@ -401,6 +401,36 @@ describe('犀牛 - 速度强化 (speed_up)', () => {
     expect(canMoveToEnhanced(state, { row: 4, col: 0 }, { row: 7, col: 4 })).toBe(true); // 7格
     expect(canMoveToEnhanced(state, { row: 4, col: 0 }, { row: 7, col: 5 })).toBe(false); // 8格，不能把8充能当+8
   });
+
+  it('践踏只允许穿过士兵，不能穿过传送门', () => {
+    const state = createBarbaricState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 0 }, {
+      cardId: 'test-rhino',
+      card: makeRhino('test-rhino'),
+      owner: '0',
+      boosts: 0,
+    });
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'enemy-soldier',
+      card: makeEnemy('enemy-soldier'),
+      owner: '1',
+    });
+
+    expect(canMoveToEnhanced(state, { row: 4, col: 0 }, { row: 4, col: 2 })).toBe(true);
+
+    state.board[4][1].unit = undefined;
+    state.board[4][1].structure = {
+      cardId: 'enemy-portal',
+      card: makeStructure('enemy-portal', { name: '传送门', isGate: true }),
+      owner: '1',
+      position: { row: 4, col: 1 },
+      damage: 0,
+    };
+
+    expect(canMoveToEnhanced(state, { row: 4, col: 0 }, { row: 4, col: 2 })).toBe(false);
+  });
 });
 
 // ============================================================================

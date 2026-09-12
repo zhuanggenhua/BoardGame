@@ -8,9 +8,10 @@ const defaultAtlasConfig = 'public/assets/atlas-configs/dicethrone/ability-cards
 
 function printHelp() {
   console.log(`用法:
-  npm run dicethrone:intake:crops -- --hero <heroId> --source ability-cards [--max-index 39]
-  npm run dicethrone:intake:crops -- --hero <heroId> --source player-board --rects <json路径>
-  npm run dicethrone:intake:crops -- --hero <heroId> --source tip --rects <json路径>
+  npm run dicethrone:intake:crops -- -- --hero <heroId> --source ability-cards [--max-index 39]
+  npm run dicethrone:intake:crops -- -- --hero <heroId> --source player-board --rects <json路径>
+  npm run dicethrone:intake:crops -- -- --hero <heroId> --source tip --rects <json路径>
+  node scripts/games/dicethrone/assets/extract-dicethrone-intake-crops.mjs --hero <heroId> --source ability-cards [--max-index 39]
 
 说明:
   - 本工具只服务 Dice Throne 录入核对
@@ -22,7 +23,7 @@ function printHelp() {
   --source <type>        ability-cards | player-board | tip
   --input <path>         源图路径，默认 public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/<source>.webp
   --rects <path>         player-board / tip 使用的裁图 JSON
-  --atlas-config <path>  ability-cards 使用的 atlas 配置，默认 ability-cards-common.atlas.json
+  --atlas-config <path>  ability-cards 使用的 atlas 配置，默认优先使用角色专属配置，再退回 common
   --start-index <n>      ability-cards 起始索引，默认 0
   --max-index <n>        ability-cards 结束索引，默认取 atlas 最大索引
   --output-dir <path>    自定义输出目录；必须位于 temp/ 下
@@ -158,13 +159,57 @@ function assertWithinTemp(relativeOrAbsolutePath) {
 }
 
 function resolveDefaultInput(hero, source) {
+  const assetDir = resolveCharacterAssetDir(hero);
   const fileName = `${source}.webp`;
   return path.join(
     'public/assets/i18n/zh-CN/dicethrone/images',
-    hero,
+    assetDir,
     'compressed',
     fileName,
   );
+}
+
+const characterAssetDirById = new Map([
+  ['artificer', 'artificial'],
+  ['cursed_pirate', 'cursed'],
+  ['vampire_lord', 'xixuegui'],
+]);
+
+const characterIdByAssetDir = new Map(
+  Array.from(characterAssetDirById.entries()).map(([characterId, assetDir]) => [assetDir, characterId]),
+);
+
+function resolveCharacterAssetDir(hero) {
+  return characterAssetDirById.get(hero) ?? hero;
+}
+
+async function fileExists(relativePath) {
+  try {
+    await fs.access(path.resolve(rootDir, relativePath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveAtlasConfigPath(parsed) {
+  if (parsed.source !== 'ability-cards' || parsed.atlasConfig !== defaultAtlasConfig) {
+    return parsed.atlasConfig;
+  }
+
+  const candidates = Array.from(new Set([
+    parsed.hero,
+    characterIdByAssetDir.get(parsed.hero),
+  ].filter(Boolean)));
+
+  for (const candidate of candidates) {
+    const relativePath = `public/assets/atlas-configs/dicethrone/ability-cards-${candidate}.atlas.json`;
+    if (await fileExists(relativePath)) {
+      return relativePath;
+    }
+  }
+
+  return defaultAtlasConfig;
 }
 
 function resolveDefaultOutputDir(hero, source) {
@@ -293,7 +338,9 @@ async function runRectMode(parsed, sourcePath, outputDir) {
 }
 
 async function runAtlasMode(parsed, sourcePath, outputDir) {
-  const atlasConfig = await readJson(parsed.atlasConfig);
+  const atlasConfigPath = await resolveAtlasConfigPath(parsed);
+  console.log(`ATLAS_CONFIG=${path.resolve(rootDir, atlasConfigPath)}`);
+  const atlasConfig = await readJson(atlasConfigPath);
   const metadata = await sharp(sourcePath).metadata();
   const maxIndex = parsed.maxIndex ?? getAtlasMaxIndex(atlasConfig);
   if (!Number.isInteger(parsed.startIndex) || parsed.startIndex < 0) {

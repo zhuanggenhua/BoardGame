@@ -1,0 +1,10 @@
+{
+  "name": "boardgame-e2e-image-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BoardGame 本地端到端截图目录查看器",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

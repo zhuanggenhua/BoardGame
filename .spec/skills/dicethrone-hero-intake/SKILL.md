@@ -131,12 +131,13 @@ Dice Throne 资源常被 `.gitignore` 忽略，不能只看 `git status`。资�
 
 先把整图切到单对象可读粒度：玩家板逐槽、提示板逐 Token / 关键词 / 骰面说明、卡图逐卡或逐 slot。优先复用：
 
-- `npm run dicethrone:intake:crops -- --hero <heroId> --source ability-cards --max-index <n>`
+- `npm run dicethrone:intake:crops -- -- --hero <heroId> --source ability-cards --max-index <n>`（当前 npm 11 需要双分隔符才能把 `--hero` 等参数原样交给脚本；也可直接用 `node scripts/games/dicethrone/assets/extract-dicethrone-intake-crops.mjs --hero <heroId> --source ability-cards --max-index <n>`）
 - `scripts/games/dicethrone/assets/*`
 
 裁图裁决：
 
 - 默认优先复用原 `ability-cards` atlas。
+- 生成 `ability-cards` 临时单卡裁图时，必须记录源图路径、源图尺寸、使用的 atlas 配置、slot 尺寸和输出路径；角色存在专属 `ability-cards-<character>.atlas.json` 时，裁图必须使用与运行时一致的角色专属 atlas，不能退回公共 common atlas。
 - 临时裁片可辅助读字；若与正式 atlas 冲突，先重切高清裁片，再裁定。
 - 核对图看起来异常时，先查裁图参数、后处理链、老角色同位和正式 UI；不得直接推翻 atlas 合同。
 - `previewRef.type='atlas'` 表示正式 atlas + index；`previewRef.type='image'` 仅限用户批准的正式单卡图。

@@ -2,6 +2,8 @@ import { chromium } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY ??= "1";
+
 const BASE_URL = process.env.BG_REPRO_URL ?? "http://127.0.0.1:4274";
 const TARGET_PATH = "/play/betrayal/tutorial/basic-setup-and-turn";
 const TARGET_URL = `${BASE_URL}${TARGET_PATH}`;
@@ -31,6 +33,63 @@ const OUT_DIR = join(
 );
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function parseRerollTargetDieIndex(testId) {
+  const match = String(testId ?? "").match(/betrayal-house-dice-reroll-target-(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function getDebugDieLayout(visualState, dieIndex) {
+  const dice = visualState?.debugSnapshot?.dice;
+  if (!Array.isArray(dice) || typeof dieIndex !== "number") return null;
+  const debugDie = dice.find((die) => die?.index === dieIndex);
+  const layout = debugDie?.layout;
+  if (!layout) return null;
+  const x = Number(layout.x);
+  const y = Number(layout.y);
+  const width = Number(layout.visualWidth ?? layout.width);
+  const height = Number(layout.visualHeight ?? layout.height);
+  if (![x, y, width, height].every(Number.isFinite)) return null;
+  return {
+    x,
+    y,
+    width,
+    height,
+    minX: x - width / 2,
+    maxX: x + width / 2,
+    minY: y - height / 2,
+    maxY: y + height / 2,
+  };
+}
+
+function getDebugCanvasSize(visualState) {
+  const canvas = visualState?.debugSnapshot?.canvas;
+  const width = Number(canvas?.clientWidth ?? canvas?.width);
+  const height = Number(canvas?.clientHeight ?? canvas?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null;
+  }
+  return { width, height };
+}
+
+function measureLayoutDelta(from, to) {
+  if (!from || !to) return null;
+  return {
+    x: Math.round((to.x - from.x) * 10) / 10,
+    y: Math.round((to.y - from.y) * 10) / 10,
+    distance: Math.round(Math.hypot(to.x - from.x, to.y - from.y) * 10) / 10,
+  };
+}
+
+function isLayoutInsideCanvas(layout, canvas, margin = 2) {
+  if (!layout || !canvas) return false;
+  return (
+    layout.minX >= margin &&
+    layout.maxX <= canvas.width - margin &&
+    layout.minY >= margin &&
+    layout.maxY <= canvas.height - margin
+  );
+}
 
 function shouldRunScenario(name) {
   if (name === "real-snapshot" && !REAL_SNAPSHOT_EXPORT && SCENARIO_FILTER.has("all")) {
@@ -98,7 +157,7 @@ async function gotoTutorial(page, { clearStorage = false } = {}) {
   }
 }
 
-async function waitForBoardOrSelection(page, timeout = 45000) {
+async function waitForBoardOrSelection(page, timeout = 120000) {
   await page.waitForFunction(
     () =>
       Boolean(
@@ -374,6 +433,7 @@ async function readDiceVisualState(page) {
 }
 
 async function captureDiceFrame(page, fileName, settleProbeTimeout = 1200) {
+  let observedUnsettled = false;
   await page
     .waitForFunction(
       () =>
@@ -383,13 +443,20 @@ async function captureDiceFrame(page, fileName, settleProbeTimeout = 1200) {
       undefined,
       { timeout: settleProbeTimeout },
     )
+    .then(() => {
+      observedUnsettled = true;
+    })
     .catch(() => {});
   await sleep(180);
+  const stateBeforeScreenshot = await readDiceVisualState(page);
   const shot = join(OUT_DIR, fileName);
   await page.screenshot({ path: shot, fullPage: true });
+  const stateAfterScreenshot = await readDiceVisualState(page);
   return {
     screenshot: shot,
-    state: await readDiceVisualState(page),
+    observedUnsettled,
+    state: stateBeforeScreenshot,
+    stateAfterScreenshot,
   };
 }
 
@@ -469,6 +536,63 @@ async function waitForEventRollConfirmReady(page, label, timeout = 45000) {
       }`,
     );
   }
+}
+
+async function resolveDamageAndTryEndTurn(page) {
+  await page
+    .locator('[data-testid="betrayal-damage-allocation-panel"]')
+    .waitFor({ state: "visible", timeout: 45000 });
+  const beforeDamageShot = join(OUT_DIR, "rabbit-before-damage-allocation.png");
+  await page.screenshot({ path: beforeDamageShot, fullPage: true });
+  const beforeDamage = await snapshot(page);
+
+  const damageTrait = page
+    .locator('[data-testid^="betrayal-damage-allocation-trait-"][data-testid$="-increase"]')
+    .first();
+  await damageTrait.waitFor({ state: "visible", timeout: 10000 });
+  await damageTrait.click();
+  const damageConfirm = page.locator('[data-testid="betrayal-damage-allocation-confirm"]');
+  await page.waitForFunction(
+    () => {
+      const confirm = document.querySelector('[data-testid="betrayal-damage-allocation-confirm"]');
+      return Boolean(confirm && !confirm.hasAttribute("disabled"));
+    },
+    undefined,
+    { timeout: 10000 },
+  );
+  await damageConfirm.click();
+  await waitForStep(page, "return-to-table-after-damage", 15000);
+  await sleep(800);
+
+  const afterDamageShot = join(OUT_DIR, "rabbit-after-damage-allocation.png");
+  await page.screenshot({ path: afterDamageShot, fullPage: true });
+  const afterDamage = await snapshot(page);
+
+  const beforeEndTurnShot = join(OUT_DIR, "rabbit-before-end-turn.png");
+  await page.screenshot({ path: beforeEndTurnShot, fullPage: true });
+  const beforeEndTurn = await snapshot(page);
+
+  const endTurn = page.locator('[data-testid="betrayal-action-endTurn"]');
+  await endTurn.waitFor({ state: "visible", timeout: 15000 });
+  await endTurn.click();
+  await sleep(1000);
+
+  const afterEndTurnShot = join(OUT_DIR, "rabbit-after-end-turn.png");
+  await page.screenshot({ path: afterEndTurnShot, fullPage: true });
+  const afterEndTurn = await snapshot(page);
+
+  return {
+    beforeDamage,
+    afterDamage,
+    beforeEndTurn,
+    afterEndTurn,
+    screenshots: {
+      beforeDamage: beforeDamageShot,
+      afterDamage: afterDamageShot,
+      beforeEndTurn: beforeEndTurnShot,
+      afterEndTurn: afterEndTurnShot,
+    },
+  };
 }
 
 async function runDirectEntry(browser) {
@@ -744,6 +868,25 @@ async function runRabbitConfirm(browser) {
   const rerollMotion = await captureDiceFrame(page, "rabbit-reroll-motion.png");
   await waitForStep(page, "rabbit-foot-result", 45000);
   await waitForVisibleDiceSettled(page, diagnostics, "rabbit-confirm-after-reroll");
+  const settledAfterReroll = {
+    screenshot: join(OUT_DIR, "rabbit-after-reroll-settled.png"),
+    state: await readDiceVisualState(page),
+  };
+  await page.screenshot({ path: settledAfterReroll.screenshot, fullPage: true });
+  const selectedDieIndex = parseRerollTargetDieIndex(selectedDieTestId);
+  const rerollLanding = {
+    selectedDieIndex,
+    beforeLayout: getDebugDieLayout(selectedHighlight.state, selectedDieIndex),
+    motionLayout: getDebugDieLayout(rerollMotion.state, selectedDieIndex),
+    afterLayout: getDebugDieLayout(settledAfterReroll.state, selectedDieIndex),
+    settledCanvas: getDebugCanvasSize(settledAfterReroll.state),
+  };
+  rerollLanding.motionDelta = measureLayoutDelta(rerollLanding.beforeLayout, rerollLanding.motionLayout);
+  rerollLanding.finalDelta = measureLayoutDelta(rerollLanding.beforeLayout, rerollLanding.afterLayout);
+  rerollLanding.afterInsideCanvas = isLayoutInsideCanvas(
+    rerollLanding.afterLayout,
+    rerollLanding.settledCanvas,
+  );
   await page
     .locator('[data-testid="betrayal-discovery-continue"]')
     .waitFor({ state: "visible", timeout: 45000 });
@@ -756,13 +899,17 @@ async function runRabbitConfirm(browser) {
   const afterShot = join(OUT_DIR, "rabbit-after-confirm.png");
   await page.screenshot({ path: afterShot, fullPage: true });
   const after = await snapshot(page);
+  const endTurnFollowup = await resolveDamageAndTryEndTurn(page);
   diagnostics.write({
     before,
     after,
+    endTurnFollowup,
     visual: {
       firstRollMotion,
       selectedHighlight,
       rerollMotion,
+      settledAfterReroll,
+      rerollLanding,
     },
     screenshots: { before: beforeShot, after: afterShot },
   });
@@ -770,10 +917,13 @@ async function runRabbitConfirm(browser) {
   return {
     before,
     after,
+    endTurnFollowup,
     visual: {
       firstRollMotion,
       selectedHighlight,
       rerollMotion,
+      settledAfterReroll,
+      rerollLanding,
     },
     screenshots: { before: beforeShot, after: afterShot },
     logs: diagnostics.logs,
@@ -1153,6 +1303,49 @@ async function main() {
     if (rabbitAfter.activeStepDom !== "finish" || rabbitAfter.core?.pendingDamageAllocation?.playerId !== "0") {
       failures.push("rabbit confirm did not advance to damage allocation");
     }
+    const endTurnFollowup = result.rabbitConfirm.endTurnFollowup;
+    const endTurnRejected = result.rabbitConfirm.logs.some((entry) =>
+      entry.text.includes("END_TURN") && entry.text.includes("tutorial_command_blocked"),
+    );
+    if (endTurnRejected) {
+      failures.push("END_TURN after rabbit-foot damage allocation was rejected by tutorial_command_blocked");
+    }
+    if (!endTurnFollowup?.afterDamage) {
+      failures.push("rabbit confirm did not capture the post-damage end-turn follow-up state");
+    } else {
+      const afterDamage = endTurnFollowup.afterDamage;
+      if (afterDamage.activeStepDom !== "return-to-table-after-damage") {
+        failures.push(`rabbit post-damage step was ${afterDamage.activeStepDom}`);
+      }
+      if (!afterDamage.tutorial?.stepAllowedCommands?.includes("END_TURN")) {
+        failures.push("rabbit post-damage tutorial step did not allow END_TURN before click");
+      }
+      if (afterDamage.overlayText?.includes("返回牌桌")) {
+        failures.push("rabbit post-damage tutorial still told the player to return to table");
+      }
+      if (!afterDamage.overlayText?.includes("结束回合")) {
+        failures.push("rabbit post-damage tutorial did not tell the player to end the turn");
+      }
+      if (afterDamage.continueButton) {
+        failures.push(
+          `rabbit post-damage still exposed stale discovery continue button: ${afterDamage.continueButton.text ?? "missing label"}`,
+        );
+      }
+    }
+    if (!endTurnFollowup?.afterEndTurn) {
+      failures.push("rabbit confirm did not capture the state after clicking End Turn");
+    } else {
+      const afterEndTurn = endTurnFollowup.afterEndTurn;
+      if (afterEndTurn.core?.currentPlayer !== "1") {
+        failures.push(`rabbit post-damage END_TURN did not pass play to player 1; saw ${afterEndTurn.core?.currentPlayer ?? "missing"}`);
+      }
+      if (afterEndTurn.activeStepDom === "return-to-table-after-damage") {
+        failures.push("rabbit post-damage END_TURN left the tutorial on the stale post-damage step");
+      }
+      if (!["watch-teammate-one-omen-turn", "teammate-one-omen-results"].includes(afterEndTurn.activeStepDom)) {
+        failures.push(`rabbit post-damage END_TURN did not advance to teammate follow-up; saw ${afterEndTurn.activeStepDom}`);
+      }
+    }
     const firstRollMotion = result.rabbitConfirm.visual.firstRollMotion.state.source;
     if (firstRollMotion?.diceMotionType !== "roll" || firstRollMotion?.diceSettled !== "false") {
       failures.push("first event roll did not expose a visible rolling process frame");
@@ -1167,23 +1360,58 @@ async function main() {
     const selectedProjectedHeight = Number(selectedHighlightTarget?.projectedHeight ?? "0");
     const selectedOutlineWidth = Number(selectedHighlightTarget?.outlineWidth ?? "0");
     const selectedOutlineHeight = Number(selectedHighlightTarget?.outlineHeight ?? "0");
+    const selectedDieIndex = parseRerollTargetDieIndex(selectedHighlightTarget?.testId);
+    const selectedHighlightState = selectedHighlight.debugSnapshot?.diceHighlights?.find(
+      (highlight) => highlight?.dieIndex === selectedDieIndex,
+    );
+    const selectedHighlightShell = selectedHighlight.debugSnapshot?.diceHighlightShells?.find(
+      (shell) => shell?.dieIndex === selectedDieIndex,
+    );
     if (
       !selectedHighlightTarget ||
-      !(candidateHighlightScale > 1 && candidateHighlightScale <= 1.04) ||
-      !(selectedHighlightScale > candidateHighlightScale && selectedHighlightScale <= 1.05) ||
-      selectedHighlightTarget.outlinePaint !== "projected-edge-outline" ||
-      selectedHighlightTarget.visualLayer !== "projected-edge-outline-plus-transparent-hitbox" ||
-      selectedHighlightTarget.outlineSelected !== "true" ||
-      !(selectedOutlineWidth > selectedProjectedWidth && selectedOutlineWidth - selectedProjectedWidth <= 10) ||
-      !(selectedOutlineHeight > selectedProjectedHeight && selectedOutlineHeight - selectedProjectedHeight <= 10) ||
-      !(selectedHitWidth >= selectedOutlineWidth + 12) ||
-      !(selectedHitHeight >= selectedOutlineHeight + 12)
+      !(candidateHighlightScale >= 1.04 && candidateHighlightScale <= 1.055) ||
+      !(selectedHighlightScale > candidateHighlightScale && selectedHighlightScale <= 1.075) ||
+      selectedHighlightTarget.outlinePaint !== "threejs-backside-shader-shell" ||
+      selectedHighlightTarget.visualLayer !== "transparent-hitbox-only" ||
+      selectedHighlightTarget.outlineSelected !== null ||
+      Math.abs(selectedHitWidth - selectedHitHeight) > 1 ||
+      selectedHighlightState?.variant !== "selected" ||
+      selectedHighlightShell?.variant !== "selected" ||
+      selectedHighlightShell?.visible !== true ||
+      selectedHighlightShell?.materialType !== "ShaderMaterial" ||
+      selectedHighlightShell?.depthWrite !== false ||
+      selectedHighlightShell?.transparent !== true ||
+      !(selectedOutlineWidth >= selectedProjectedWidth - 0.5 && selectedOutlineWidth - selectedProjectedWidth <= 10) ||
+      !(selectedOutlineHeight >= selectedProjectedHeight - 0.5 && selectedOutlineHeight - selectedProjectedHeight <= 10) ||
+      Math.abs(selectedHitWidth - selectedOutlineWidth) > 1.5 ||
+      Math.abs(selectedHitHeight - selectedOutlineHeight) > 1.5
     ) {
-      failures.push("rabbit-foot dice highlight was not projected-edge tight and visibly selected");
+      failures.push("rabbit-foot dice highlight was not shader-shell tight with a body-aligned transparent hitbox");
     }
     const rerollMotion = result.rabbitConfirm.visual.rerollMotion.state.source;
     if (rerollMotion?.diceMotionType !== "reroll" || rerollMotion?.diceSettled !== "false") {
       failures.push("rabbit-foot reroll did not expose a visible reroll process frame");
+    }
+    const rerollLanding = result.rabbitConfirm.visual.rerollLanding;
+    if (!rerollLanding?.beforeLayout || !rerollLanding?.motionLayout || !rerollLanding?.afterLayout) {
+      failures.push("rabbit-foot reroll did not expose before/motion/after dice layouts for the selected die");
+    }
+    if (!rerollLanding?.motionDelta || rerollLanding.motionDelta.distance < 16) {
+      failures.push(
+        `rabbit-foot reroll process looked stationary; motion delta=${rerollLanding?.motionDelta?.distance ?? "missing"}px`,
+      );
+    }
+    if (
+      !rerollLanding?.finalDelta ||
+      rerollLanding.finalDelta.distance < 24 ||
+      rerollLanding.finalDelta.distance > 80
+    ) {
+      failures.push(
+        `rabbit-foot reroll final landing did not visibly change without a large gap; final delta=${rerollLanding?.finalDelta?.distance ?? "missing"}px`,
+      );
+    }
+    if (rerollLanding?.afterInsideCanvas !== true) {
+      failures.push("rabbit-foot reroll final landing was not fully visible inside the dice tray");
     }
     if (
       result.rabbitConfirm.visual.rerollMotion.state.continueButton &&

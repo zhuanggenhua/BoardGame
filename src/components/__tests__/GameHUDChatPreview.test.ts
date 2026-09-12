@@ -20,6 +20,7 @@ import {
     shouldTrackFabButtonRect,
 } from '../system/FabMenu';
 import { GLOBAL_HUD_FAB_Z_INDEX } from '../system/GlobalHUD';
+import { buildOperationGuideFabEntries } from '../system/OperationGuidePanel';
 import { shouldAllowFabDragFromTarget } from '../system/fabDrag';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
@@ -266,6 +267,41 @@ describe('FabMenu helpers', () => {
             limit: MOBILE_FAB_VISIBLE_ITEM_LIMIT,
             itemIds: actions.map((action) => action.id),
         });
+    });
+
+    it('操作指南会说明悬浮球功能，但不会把自己登记成悬浮球子项', () => {
+        const knownKeys = new Set([
+            'hud.operationGuide.fab.undo',
+            'hud.operationGuide.fab.forceActions',
+        ]);
+        const t = ((key: string, options?: { defaultValue?: string }) => {
+            if (key === 'hud.operationGuide.fab.custom') return '自定义入口说明';
+            if (knownKeys.has(key)) return key;
+            return options?.defaultValue ?? key;
+        }) as never;
+
+        expect(buildOperationGuideFabEntries(t, [
+            { id: 'operation-guide', label: '操作指南' },
+            { id: 'undo-request', label: '申请撤回' },
+            { id: 'force-actions', label: '强制结束 AI 阶段' },
+            { id: 'unknown-page-action', label: '页面专属入口' },
+        ])).toEqual([
+            {
+                id: 'undo-request',
+                label: '申请撤回',
+                description: 'hud.operationGuide.fab.undo',
+            },
+            {
+                id: 'force-actions',
+                label: '强制结束 AI 阶段',
+                description: 'hud.operationGuide.fab.forceActions',
+            },
+            {
+                id: 'unknown-page-action',
+                label: '页面专属入口',
+                description: '自定义入口说明',
+            },
+        ]);
     });
 
     it('预览、tooltip 和激活中的内容面板都需要持续追踪按钮锚点位置', () => {

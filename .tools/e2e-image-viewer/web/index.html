@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoardGame E2E 图片查看器</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="title-block">
+        <h1>E2E 图片画布</h1>
+        <p id="directory" class="directory">等待目录...</p>
+      </div>
+      <div class="actions" role="group" aria-label="画布控制">
+        <button id="zoomOut" type="button" title="缩小">-</button>
+        <button id="zoomIn" type="button" title="放大">+</button>
+        <button id="fitView" type="button">适配</button>
+        <button id="resetView" type="button">重置</button>
+        <label class="toggle">
+          <input id="autoRefresh" type="checkbox" checked />
+          自动刷新
+        </label>
+        <button id="refresh" type="button">刷新</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <div class="content">
+        <aside id="indexPanel" class="index-panel" aria-label="截图索引">
+          <div class="index-header">
+            <div class="index-title">
+              <strong>截图索引</strong>
+              <span id="indexMeta">读取中...</span>
+            </div>
+            <button id="toggleIndex" class="index-toggle" type="button" aria-expanded="true" aria-label="收起截图索引" title="收起截图索引">&lt;</button>
+          </div>
+          <div id="indexList" class="index-list"></div>
+        </aside>
+        <section id="viewport" class="viewport" aria-label="E2E 图片画布">
+          <div id="empty" class="empty">正在读取截图目录...</div>
+          <div id="board" class="board"></div>
+        </section>
+      </div>
+      <footer class="statusbar">
+        <span id="summary">正在读取...</span>
+        <span id="selection">拖拽画布或图片平移，滚轮缩放。</span>
+      </footer>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

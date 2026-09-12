@@ -58,7 +58,8 @@ export type TokenUseEffectType =
     | 'modifyDamageDealt'     // 修改造成的伤害
     | 'modifyDamageReceived'  // 修改受到的伤害
     | 'rollToNegate'          // 掷骰尝试免伤（闪避）
-    | 'removeDebuff';         // 移除负面状态（净化）
+    | 'removeDebuff'          // 移除负面状态（净化）
+    | 'custom';               // 只消耗 Token 并交给 customActionId 处理
 
 /**
  * Token 使用效果
@@ -236,8 +237,8 @@ export interface EffectAction {
     conditionalEffects?: RollDieConditionalEffect[];
     /** rollDie 的"否则/默认"分支：当所有 conditionalEffects 都不匹配时触发 */
     defaultEffect?: RollDieDefaultEffect;
-    /** rollDie 中 bonusDamage 的结算去向；attackBonus 表示写入当前攻击加伤而不是直接造成伤害 */
-    resolutionMode?: 'damage' | 'attackBonus';
+    /** rollDie 中 bonusDamage 的结算去向；none 表示只结算条件/默认分支，不把骰点当伤害 */
+    resolutionMode?: 'damage' | 'attackBonus' | 'none';
     /** attackBonus 模式下计入攻击修正汇总的来源卡牌 ID */
     attackBonusSourceCardId?: string;
     damageMode?: 'sumValues' | 'conditional';
@@ -317,6 +318,8 @@ export interface ActiveUseConfig {
     minimumAttackDamage?: number;
     /** 主动使用时需要额外触发的 custom action */
     customActionId?: string;
+    /** 是否要求当前可操作骰区里存在对手骰子 */
+    requiresOpponentRollDice?: boolean;
     /** 使用效果 */
     effect: TokenUseEffect;
 }

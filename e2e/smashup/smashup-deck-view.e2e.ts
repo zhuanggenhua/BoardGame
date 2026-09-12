@@ -72,7 +72,7 @@ async function openDeckViewScene(
 }
 
 test.describe('SmashUp 牌库查看', () => {
-    test('余牌查询关闭时仍显示数量，但不能点开牌库详情', async ({ page, game }, testInfo) => {
+    test('牌堆可查关闭时仍显示数量，但不能点开牌库详情', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
         await openDeckViewScene(page, game, { deckQueryEnabled: false });
 
@@ -87,7 +87,7 @@ test.describe('SmashUp 牌库查看', () => {
         await game.screenshot('smashup-deck-view-disabled', testInfo);
     });
 
-    test('余牌查询开启后应按固定顺序展示剩余卡牌并显示聚合数量', async ({ page, game }, testInfo) => {
+    test('牌堆可查开启后应按固定顺序展示剩余卡牌并显示聚合数量', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
         await openDeckViewScene(page, game, { deckQueryEnabled: true });
 
@@ -115,7 +115,7 @@ test.describe('SmashUp 牌库查看', () => {
         await game.screenshot('smashup-deck-view-grouped', testInfo);
     });
 
-    test('余牌查询开启后切到对手视角也能查看对方牌库', async ({ page, game }, testInfo) => {
+    test('牌堆可查开启后切到对手视角也能查看对方牌库', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
         await openDeckViewScene(page, game, { deckQueryEnabled: true });
 

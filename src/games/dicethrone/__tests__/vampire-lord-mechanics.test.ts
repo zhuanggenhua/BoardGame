@@ -20,6 +20,8 @@ import {
     fixedRandom,
     getCardById,
     getMultistepChoicePrompt,
+    getSimpleChoicePrompt,
+    respondToPrompt,
     testSystems,
 } from './test-utils';
 
@@ -41,6 +43,25 @@ const eventsOfType = <T extends DiceThroneEvent['type']>(events: DiceThroneEvent
     events.filter((event): event is Extract<DiceThroneEvent, { type: T }> => event.type === type);
 
 const createVampireLordState = () => createHeroMatchup('vampire_lord', 'monk')(['0', '1'], fixedRandom);
+
+const createAfterRollConfirmedWindow = (responderQueue: string[] = ['0']) => ({
+    id: 'mesmerize-after-roll-confirmed',
+    windowType: 'afterRollConfirmed' as const,
+    responderQueue,
+    currentResponderIndex: 0,
+    passedPlayers: [] as string[],
+});
+
+const setAfterRollConfirmedWindow = (state: ReturnType<typeof createVampireLordState>, responderQueue: string[] = ['0']) => {
+    const current = createAfterRollConfirmedWindow(responderQueue);
+    state.sys.responseWindow = { current };
+    return current;
+};
+
+const withMesmerizeResponseWindow = (state: ReturnType<typeof createVampireLordState>, responderQueue: string[] = ['0']) => {
+    setAfterRollConfirmedWindow(state, responderQueue);
+    return state;
+};
 
 const vampireFaceForValue = (value: number): string => {
     if (value <= 3) return VAMPIRE_LORD_DICE_FACE_IDS.CLAW;
@@ -172,18 +193,25 @@ const resolveBloodthirstyClawsVariant = (
     return applyEvents(afterDamage, postDamageEvents);
 };
 
-const playVampireLordCard = (cardId: string, options: { cp?: number } = {}) => {
+const playVampireLordCard = (
+    cardId: string,
+    options: { cp?: number; bloodPower?: number; deck?: string[] } = {},
+    random = fixedRandom,
+) => {
     const state = createVampireLordState();
     state.sys.phase = 'main1';
     state.core.players['0'].resources[RESOURCE_IDS.CP] = options.cp ?? 10;
+    if (options.bloodPower !== undefined) {
+        state.core.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] = options.bloodPower;
+    }
     state.core.players['0'].hand = [getCardById(cardId)];
-    state.core.players['0'].deck = [];
+    state.core.players['0'].deck = (options.deck ?? []).map(getCardById);
     state.core.players['0'].discard = [];
 
     const events = execute(
         state,
         command('PLAY_CARD', '0', { cardId }),
-        fixedRandom,
+        random,
     ) as DiceThroneEvent[];
     const next = applyEvents(state.core, events);
 
@@ -195,14 +223,7 @@ const createAttackModifierCardState = (cardId: string) => {
     state.sys.phase = 'offensiveRoll';
     state.core.rollCount = 1;
     state.core.rollDiceCount = 5;
-    state.core.dice = [{
-        id: 0,
-        definitionId: 'vampire_lord-dice',
-        value: 1,
-        symbol: 'blood_drop',
-        symbols: ['blood_drop'],
-        isKept: false,
-    }];
+    setVampireDice(state.core, [1]);
     state.core.pendingAttack = {
         attackerId: '0',
         defenderId: '1',
@@ -233,9 +254,9 @@ const useBloodPower = (actionIndex: number) => command('USE_PASSIVE_ABILITY', '0
     actionIndex,
 });
 
-const useMesmerize = () => command('USE_PASSIVE_ABILITY', '0', {
-    passiveId: 'vampire-lord-mesmerize',
-    actionIndex: 0,
+const useMesmerize = () => command('USE_TOKEN', '0', {
+    tokenId: TOKEN_IDS.MESMERIZE,
+    amount: 1,
 });
 
 const createMesmerizeOpponentRollState = (tokens = 1) => {
@@ -282,33 +303,75 @@ const createMesmerizeOpponentRollState = (tokens = 1) => {
 };
 
 describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
-    it('死无全尸与沸血之力按攻击修正增加本次攻击伤害，不直接扣对手 HP', () => {
-        const cases = [
-            { cardId: 'card-vampire-lord-total-demise', cpCost: 1 },
-            { cardId: 'card-vampire-lord-boiling-blood', cpCost: 0 },
-        ];
+    it('死无全尸投 5 骰，按血滴数量给当前攻击加伤，3 点以上再施加流血', () => {
+        const cardId = 'card-vampire-lord-total-demise';
+        const state = createAttackModifierCardState(cardId);
+        const playCommand = command('PLAY_CARD', '0', { cardId });
 
-        for (const { cardId, cpCost } of cases) {
-            const state = createAttackModifierCardState(cardId);
-            const playCommand = command('PLAY_CARD', '0', { cardId });
+        expect(validateCommand(state.core, playCommand, 'offensiveRoll').valid).toBe(true);
 
-            expect(validateCommand(state.core, playCommand, 'offensiveRoll').valid).toBe(true);
+        const events = execute(state, playCommand, createQueuedRandom([6, 6, 6, 1, 4]));
+        const afterRoll = applyEvents(state.core, events);
 
-            const events = execute(state, playCommand, fixedRandom);
-            const next = applyEvents(state.core, events);
+        expect(eventsOfType(events, 'BONUS_DIE_ROLLED').map(event => event.payload.face)).toEqual([
+            VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP,
+            VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP,
+            VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP,
+            VAMPIRE_LORD_DICE_FACE_IDS.CLAW,
+            VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE,
+        ]);
+        expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(eventsOfType(events, 'BONUS_DAMAGE_ADDED')).toHaveLength(0);
+        expect(afterRoll.pendingBonusDiceSettlement?.displayOnly).toBe(true);
+        expect(afterRoll.pendingBonusDiceSettlement?.dice).toHaveLength(5);
+        expect(afterRoll.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+        expect(afterRoll.players['0'].discard.map(card => card.id)).toEqual([cardId]);
 
-            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
-            expect(eventsOfType(events, 'BONUS_DAMAGE_ADDED')[0]?.payload).toMatchObject({
-                playerId: '0',
-                amount: 1,
-                sourceCardId: cardId,
-            });
-            expect(next.pendingAttack?.bonusDamage).toBe(1);
-            expect(next.pendingAttack?.attackModifierBonusDamage).toBe(1);
-            expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
-            expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(10 - cpCost);
-            expect(next.players['0'].discard.map(card => card.id)).toEqual([cardId]);
-        }
+        const settled = confirmPendingBonusDice(afterRoll);
+        expect(eventsOfType(settled.events, 'BONUS_DICE_SETTLED')[0]?.payload).toMatchObject({
+            sourceAbilityId: cardId,
+            totalDamage: 3,
+            displayOnly: true,
+        });
+        expect(eventsOfType(settled.events, 'BONUS_DAMAGE_ADDED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            amount: 3,
+            sourceCardId: cardId,
+        });
+        expect(eventsOfType(settled.events, 'STATUS_APPLIED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.BLEED,
+            stacks: 1,
+            newTotal: 1,
+        });
+        expect(settled.next.pendingAttack?.bonusDamage).toBe(3);
+        expect(settled.next.pendingAttack?.attackModifierBonusDamage).toBe(3);
+        expect(settled.next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
+        expect(settled.next.players['1'].statusEffects[STATUS_IDS.BLEED]).toBe(1);
+    });
+
+    it('沸血之力按基础 1 伤害加对手每层流血加伤，不直接扣对手 HP', () => {
+        const cardId = 'card-vampire-lord-boiling-blood';
+        const state = createAttackModifierCardState(cardId);
+        state.core.players['1'].statusEffects[STATUS_IDS.BLEED] = 2;
+        const playCommand = command('PLAY_CARD', '0', { cardId });
+
+        expect(validateCommand(state.core, playCommand, 'offensiveRoll').valid).toBe(true);
+
+        const events = execute(state, playCommand, fixedRandom);
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(eventsOfType(events, 'BONUS_DAMAGE_ADDED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            amount: 3,
+            sourceCardId: cardId,
+        });
+        expect(next.pendingAttack?.bonusDamage).toBe(3);
+        expect(next.pendingAttack?.attackModifierBonusDamage).toBe(3);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
+        expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(10);
+        expect(next.players['0'].discard.map(card => card.id)).toEqual([cardId]);
     });
 
     it('鲜血之力 1 档消耗 1 个标记、按攻击修正给当前攻击 +3，并在本回合限制一次', () => {
@@ -349,6 +412,58 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(next.pendingAttack?.attackModifierBonusDamage).toBe(3);
         expect(next.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-attack-bonus']).toBe(true);
         expect(validateCommand(next, passiveCommand, 'offensiveRoll').valid).toBe(false);
+    });
+
+    it('伤害明细拆出鲜血之力和死无全尸来源，不合并成攻击修正 +4', () => {
+        const cardId = 'card-vampire-lord-total-demise';
+        const state = createAttackModifierCardState(cardId);
+        state.core.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] = 1;
+
+        const bloodPowerEvents = execute(state, useBloodPower(0), fixedRandom);
+        const afterBloodPower = applyEvents(
+            state.core,
+            bloodPowerEvents.filter(event => event.type !== 'INTERACTION_REQUESTED'),
+        );
+
+        expect(afterBloodPower.pendingAttack?.bonusDamage).toBe(3);
+        expect(afterBloodPower.pendingAttack?.bonusDamageSources).toEqual([
+            { amount: 3, sourceId: 'vampire-lord-blood-power' },
+        ]);
+
+        const totalDemiseEvents = execute(
+            { ...state, core: afterBloodPower },
+            command('PLAY_CARD', '0', { cardId }),
+            createQueuedRandom([6, 1, 1, 1, 1]),
+        );
+        const afterTotalDemiseRoll = applyEvents(afterBloodPower, totalDemiseEvents);
+        const settled = confirmPendingBonusDice(afterTotalDemiseRoll);
+
+        expect(eventsOfType(settled.events, 'BONUS_DAMAGE_ADDED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            amount: 1,
+            sourceCardId: cardId,
+        });
+        expect(settled.next.pendingAttack?.bonusDamage).toBe(4);
+        expect(settled.next.pendingAttack?.attackModifierBonusDamage).toBe(4);
+        expect(settled.next.pendingAttack?.bonusDamageSources).toEqual([
+            { amount: 3, sourceId: 'vampire-lord-blood-power' },
+            { amount: 1, sourceId: cardId },
+        ]);
+
+        const damageEvents = resolveWithDamageAfterChoice(settled.next, fixedRandom, 130);
+        const damage = eventsOfType(damageEvents, 'DAMAGE_DEALT')[0];
+
+        expect(damage?.payload).toMatchObject({
+            targetId: '1',
+            amount: 9,
+            actualDamage: 9,
+            sourceAbilityId: 'blood-thirst',
+        });
+        expect(damage?.payload.breakdown?.steps).toEqual(expect.arrayContaining([
+            expect.objectContaining({ sourceId: 'vampire-lord-blood-power', value: 3 }),
+            expect.objectContaining({ sourceId: cardId, value: 1 }),
+        ]));
+        expect(damage?.payload.breakdown?.steps.some(step => step.sourceId === 'attack_modifier')).toBe(false);
     });
 
     it('鲜血之力 2 档需要至少 2 个标记，在主要阶段消耗 2 个并分别限制一次', () => {
@@ -471,6 +586,64 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(validateCommand(next, useBloodPower(3), 'offensiveRoll').valid).toBe(false);
     });
 
+    it('自然攻击造成伤害后先暂停，让鲜血之力 4 档可被玩家使用', () => {
+        const state = createBloodPowerPassiveState(4);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        setVampireDice(state.core, [6, 6, 6, 6]);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'blood-thirst',
+            settlementStage: 'preDamage',
+            isDefendable: false,
+            bonusDamage: 0,
+            attackModifierBonusDamage: 0,
+            damageResolved: false,
+            resolvedDamage: 0,
+        };
+
+        const exitResult = diceThroneFlowHooks.onPhaseExit?.({
+            state,
+            from: 'offensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const exitEvents = (Array.isArray(exitResult) ? exitResult : exitResult?.events ?? []) as DiceThroneEvent[];
+        const paused = applyEvents(state.core, exitEvents);
+
+        expect(Array.isArray(exitResult) ? undefined : exitResult?.halt).toBe(true);
+        expect(eventsOfType(exitEvents, 'DAMAGE_DEALT')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 5,
+            actualDamage: 5,
+            sourceAbilityId: 'blood-thirst',
+        });
+        expect(eventsOfType(exitEvents, 'ATTACK_RESOLVED')).toHaveLength(0);
+        expect(paused.pendingAttack?.settlementStage).toBe('postDamagePending');
+        expect(paused.pendingAttack?.resolvedDamage).toBe(5);
+        expect(validateCommand(paused, useBloodPower(3), 'offensiveRoll').valid).toBe(true);
+
+        const skipResult = diceThroneFlowHooks.onPhaseExit?.({
+            state: { core: paused, sys: state.sys },
+            from: 'offensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const skipEvents = (Array.isArray(skipResult) ? skipResult : skipResult?.events ?? []) as DiceThroneEvent[];
+        expect(Array.isArray(skipResult) ? undefined : skipResult?.overrideNextPhase).toBe('main2');
+        expect(eventsOfType(skipEvents, 'ATTACK_RESOLVED')[0]?.payload).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'blood-thirst',
+            totalDamage: 5,
+        });
+    });
+
     it('攻击成功伤害到 2 层流血对手后，回合结束获得 1 个鲜血之力', () => {
         const state = createBloodPowerPassiveState(0);
         state.sys.phase = 'discard';
@@ -559,9 +732,18 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(oneBleedNext.vampireLordBloodPowerEndTurnPending).toBeUndefined();
     });
 
-    it('催眠只有在持有催眠且当前骰区存在对手骰时可用', () => {
+    it('催眠只有在 afterRollConfirmed 响应窗口、持有催眠且当前骰区存在对手骰时可用', () => {
         const noToken = createMesmerizeOpponentRollState(0);
-        expect(validateCommand(noToken.core, useMesmerize(), 'defensiveRoll').valid).toBe(false);
+        setAfterRollConfirmedWindow(noToken);
+        expect(validateCommand(
+            noToken.core,
+            useMesmerize(),
+            'defensiveRoll',
+            undefined,
+            undefined,
+            'afterRollConfirmed',
+            noToken.sys.responseWindow.current,
+        ).valid).toBe(false);
         expect(execute(noToken, useMesmerize(), fixedRandom)).toHaveLength(0);
 
         const noOpponentDice = createVampireLordState();
@@ -583,11 +765,77 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(execute(noOpponentDice, useMesmerize(), fixedRandom)).toHaveLength(0);
 
         const usable = createMesmerizeOpponentRollState(1);
-        expect(validateCommand(usable.core, useMesmerize(), 'defensiveRoll').valid).toBe(true);
+        const usableWindow = createAfterRollConfirmedWindow(['0']);
+        expect(validateCommand(
+            usable.core,
+            useMesmerize(),
+            'defensiveRoll',
+            undefined,
+            undefined,
+            'afterRollConfirmed',
+            usableWindow,
+        ).valid).toBe(true);
+    });
+
+    it('对手确认防御骰后，吸血鬼持有催眠应打开 afterRollConfirmed 响应窗口', () => {
+        const state = createMesmerizeOpponentRollState(1);
+        state.core.rollConfirmed = false;
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+
+        const confirmed = executePipeline(
+            pipelineConfig,
+            state,
+            command('CONFIRM_ROLL', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(confirmed.success).toBe(true);
+        if (!confirmed.success) return;
+        expect(confirmed.state.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['0'],
+        });
+    });
+
+    it('催眠在 afterRollConfirmed 响应窗口中只能由当前响应者使用', () => {
+        const state = createMesmerizeOpponentRollState(1);
+        const currentResponderWindow = {
+            id: 'mesmerize-response-current',
+            windowType: 'afterRollConfirmed' as const,
+            responderQueue: ['0'],
+            currentResponderIndex: 0,
+            passedPlayers: [],
+        };
+        const waitingResponderWindow = {
+            ...currentResponderWindow,
+            id: 'mesmerize-response-waiting',
+            responderQueue: ['1', '0'],
+        };
+
+        expect(validateCommand(
+            state.core,
+            useMesmerize(),
+            'defensiveRoll',
+            undefined,
+            undefined,
+            'afterRollConfirmed',
+            currentResponderWindow,
+        ).valid).toBe(true);
+        expect(validateCommand(
+            state.core,
+            useMesmerize(),
+            'defensiveRoll',
+            undefined,
+            undefined,
+            'afterRollConfirmed',
+            waitingResponderWindow,
+        ).valid).toBe(false);
     });
 
     it('催眠投出 4 时只消耗催眠并确认临时骰，不生成强制重掷选择', () => {
         const state = createMesmerizeOpponentRollState(1);
+        setAfterRollConfirmedWindow(state);
         const random = createQueuedRandom([4]);
 
         const useEvents = execute(state, useMesmerize(), random);
@@ -599,12 +847,11 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         ) as DiceThroneEvent[];
         const afterSettle = applyEvents(afterRoll, settleEvents);
 
-        expect(eventsOfType(useEvents, 'TOKEN_CONSUMED')[0]?.payload).toMatchObject({
+        expect(eventsOfType(useEvents, 'TOKEN_USED')[0]?.payload).toMatchObject({
             playerId: '0',
             tokenId: TOKEN_IDS.MESMERIZE,
             amount: 1,
-            newTotal: 0,
-            sourceAbilityId: 'vampire-lord-mesmerize',
+            effectType: 'custom',
         });
         expect(eventsOfType(useEvents, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
             value: 4,
@@ -612,7 +859,7 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
             targetPlayerId: '1',
         });
         expect(eventsOfType(settleEvents, 'BONUS_DICE_SETTLED')[0]?.payload).toMatchObject({
-            sourceAbilityId: 'vampire-lord-mesmerize',
+            sourceAbilityId: TOKEN_IDS.MESMERIZE,
             displayOnly: true,
         });
         expect(eventsOfType(settleEvents, 'INTERACTION_REQUESTED')).toHaveLength(0);
@@ -623,6 +870,7 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
 
     it('催眠投出 5/6 后选择一颗对手骰并通过正式重掷命令改变该骰', () => {
         const state = createMesmerizeOpponentRollState(1);
+        setAfterRollConfirmedWindow(state);
         const random = createQueuedRandom([5, 2]);
         const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
 
@@ -1234,7 +1482,7 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         }
     });
 
-    it('血石行动牌扣 CP、进入弃牌堆，并结算催眠、鲜血之力、流血和抽牌', () => {
+    it('血石行动牌扣 CP、进入弃牌堆，并只结算催眠、鲜血之力和流血，不抽牌', () => {
         const state = createVampireLordState();
         state.sys.phase = 'main1';
         state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
@@ -1260,41 +1508,177 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
             stacks: 1,
             newTotal: 1,
         });
-        expect(eventsOfType(events, 'CARD_DRAWN')[0]?.payload).toMatchObject({
-            playerId: '0',
-            cardId: 'card-vampire-lord-blood-surge',
-            sourceAbilityId: 'card-vampire-lord-bloodstone',
-        });
+        expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(0);
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(6);
         expect(next.players['0'].tokens[TOKEN_IDS.MESMERIZE]).toBe(1);
         expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(2);
         expect(next.players['1'].statusEffects[STATUS_IDS.BLEED]).toBe(1);
-        expect(next.players['0'].hand.map(card => card.id)).toEqual(['card-vampire-lord-blood-surge']);
+        expect(next.players['0'].hand).toHaveLength(0);
+        expect(next.players['0'].deck.map(card => card.id)).toEqual(['card-vampire-lord-blood-surge']);
         expect(next.players['0'].discard.map(card => card.id)).toEqual(['card-vampire-lord-bloodstone']);
     });
 
-    it('主阶段获得类专属行动牌扣费后进入弃牌堆，并授予对应标记', () => {
-        const cases = [
-            { cardId: 'card-vampire-lord-blood-surge', cpCost: 1, expectedBloodPower: 1, expectedMesmerize: 0 },
-            { cardId: 'card-vampire-lord-blood-from-above', cpCost: 1, expectedBloodPower: 1, expectedMesmerize: 0 },
-            { cardId: 'card-vampire-lord-gushing-blood', cpCost: 0, expectedBloodPower: 1, expectedMesmerize: 1 },
-            { cardId: 'card-vampire-lord-drink-up', cpCost: 0, expectedBloodPower: 2, expectedMesmerize: 0 },
-        ];
+    it('血流如注直接获得 1 鲜血之力和 1 催眠，并进入弃牌堆', () => {
+        const cardId = 'card-vampire-lord-gushing-blood';
+        const { events, next } = playVampireLordCard(cardId, { cp: 10 });
 
-        for (const { cardId, cpCost, expectedBloodPower, expectedMesmerize } of cases) {
-            const { events, next } = playVampireLordCard(cardId, { cp: 10 });
+        expect(eventsOfType(events, 'CARD_PLAYED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            cardId,
+            cpCost: 0,
+        });
+        expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(10);
+        expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.MESMERIZE]).toBe(1);
+        expect(next.players['0'].hand).toHaveLength(0);
+        expect(next.players['0'].discard.map(card => card.id)).toEqual([cardId]);
+    });
 
-            expect(eventsOfType(events, 'CARD_PLAYED')[0]?.payload).toMatchObject({
-                playerId: '0',
-                cardId,
-                cpCost,
-            });
-            expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(10 - cpCost);
-            expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(expectedBloodPower);
-            expect(next.players['0'].tokens[TOKEN_IDS.MESMERIZE]).toBe(expectedMesmerize);
-            expect(next.players['0'].hand).toHaveLength(0);
-            expect(next.players['0'].discard.map(card => card.id)).toEqual([cardId]);
-        }
+    it('血潮汹涌投 1 骰：利爪给 3 鲜血之力，非利爪抽 1 张牌', () => {
+        const cardId = 'card-vampire-lord-blood-surge';
+        const claw = playVampireLordCard(cardId, { cp: 0 }, createQueuedRandom([1]));
+
+        expect(eventsOfType(claw.events, 'CARD_PLAYED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            cardId,
+            cpCost: 0,
+        });
+        expect(eventsOfType(claw.events, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
+            value: 1,
+            face: VAMPIRE_LORD_DICE_FACE_IDS.CLAW,
+            playerId: '0',
+            targetPlayerId: '0',
+        });
+        expect(claw.next.pendingBonusDiceSettlement?.rollDieResolution?.resolutionMode).toBe('none');
+        expect(claw.next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] ?? 0).toBe(0);
+
+        const clawSettled = confirmPendingBonusDice(claw.next);
+        expect(eventsOfType(clawSettled.events, 'TOKEN_GRANTED')[0]?.payload).toMatchObject({
+            targetId: '0',
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: 3,
+            newTotal: 3,
+            sourceAbilityId: cardId,
+        });
+        expect(eventsOfType(clawSettled.events, 'CARD_DRAWN')).toHaveLength(0);
+        expect(clawSettled.next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(3);
+        expect(clawSettled.next.players['0'].resources[RESOURCE_IDS.CP]).toBe(0);
+
+        const other = playVampireLordCard(
+            cardId,
+            { cp: 0, deck: ['card-vampire-lord-gushing-blood'] },
+            createQueuedRandom([4]),
+        );
+        expect(eventsOfType(other.events, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
+            value: 4,
+            face: VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE,
+        });
+
+        const otherSettled = confirmPendingBonusDice(other.next);
+        expect(eventsOfType(otherSettled.events, 'TOKEN_GRANTED')).toHaveLength(0);
+        expect(eventsOfType(otherSettled.events, 'CARD_DRAWN')[0]?.payload).toMatchObject({
+            playerId: '0',
+            cardId: 'card-vampire-lord-gushing-blood',
+            sourceAbilityId: cardId,
+        });
+        expect(otherSettled.next.players['0'].hand.map(card => card.id)).toEqual(['card-vampire-lord-gushing-blood']);
+        expect(otherSettled.next.players['0'].resources[RESOURCE_IDS.CP]).toBe(0);
+        expect(otherSettled.next.players['0'].discard.map(card => card.id)).toEqual([cardId]);
+    });
+
+    it('血从天降投 1 骰，按骰值一半向上取整获得鲜血之力', () => {
+        const cardId = 'card-vampire-lord-blood-from-above';
+        const { events, next } = playVampireLordCard(cardId, { cp: 10 }, createQueuedRandom([5]));
+
+        expect(eventsOfType(events, 'CARD_PLAYED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            cardId,
+            cpCost: 1,
+        });
+        expect(eventsOfType(events, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
+            value: 5,
+            face: VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE,
+            playerId: '0',
+            targetPlayerId: '0',
+            effectParams: expect.objectContaining({ amount: 3 }),
+        });
+        expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] ?? 0).toBe(0);
+
+        const settled = confirmPendingBonusDice(next);
+        expect(eventsOfType(settled.events, 'TOKEN_GRANTED')[0]?.payload).toMatchObject({
+            targetId: '0',
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: 3,
+            newTotal: 3,
+            sourceAbilityId: cardId,
+        });
+        expect(eventsOfType(settled.events, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(settled.next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(3);
+        expect(settled.next.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+        expect(settled.next.players['0'].discard.map(card => card.id)).toEqual([cardId]);
+    });
+
+    it('饮血如酒至少花费 2 鲜血之力，并按每花费 1 个获得 2 CP', () => {
+        const cardId = 'card-vampire-lord-drink-up';
+        const blocked = createVampireLordState();
+        blocked.sys.phase = 'main1';
+        blocked.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+        blocked.core.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] = 1;
+        blocked.core.players['0'].hand = [getCardById(cardId)];
+        const playCommand = command('PLAY_CARD', '0', { cardId });
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+
+        expect(validateCommand(blocked.core, playCommand, 'main1').valid).toBe(false);
+        expect(executePipeline(pipelineConfig, blocked, playCommand, fixedRandom, ['0', '1']).success).toBe(false);
+
+        const state = createVampireLordState();
+        state.sys.phase = 'main1';
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] = 4;
+        state.core.players['0'].hand = [getCardById(cardId)];
+        state.core.players['0'].discard = [];
+
+        const played = executePipeline(pipelineConfig, state, playCommand, fixedRandom, ['0', '1']);
+        expect(played.success).toBe(true);
+        if (!played.success) return;
+
+        expect(eventsOfType(played.events as DiceThroneEvent[], 'CARD_PLAYED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            cardId,
+            cpCost: 0,
+        });
+        expect(played.state.core.players['0'].discard.map(card => card.id)).toEqual([cardId]);
+        const choice = getSimpleChoicePrompt(played.state, cardId);
+        expect(choice.options.map(option => option.id)).toEqual(['option-0', 'option-1', 'option-2']);
+        expect(choice.options.map(option => option.value.value)).toEqual([2, 3, 4]);
+
+        const resolved = respondToPrompt(played.state, 'option-1', '0', fixedRandom, ['0', '1']);
+        expect(resolved.success).toBe(true);
+        if (!resolved.success) return;
+
+        const resolvedEvents = resolved.events as DiceThroneEvent[];
+        expect(eventsOfType(resolvedEvents, 'CHOICE_RESOLVED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            customId: 'vampire-lord-drink-up-spend',
+            value: 3,
+            sourceAbilityId: cardId,
+        });
+        expect(eventsOfType(resolvedEvents, 'TOKEN_CONSUMED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: 3,
+            newTotal: 1,
+            sourceAbilityId: cardId,
+        });
+        expect(eventsOfType(resolvedEvents, 'CP_CHANGED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            delta: 6,
+            newValue: 6,
+            sourceAbilityId: cardId,
+        });
+        expect(resolved.state.core.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(1);
+        expect(resolved.state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(6);
+        expect(resolved.state.core.players['0'].hand).toHaveLength(0);
     });
 
     it('嗜血之爪 II 升级牌替换基础技能并更新升级等级', () => {
@@ -1314,8 +1698,8 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
 
         expect(eventsOfType(events, 'CP_CHANGED')[0]?.payload).toMatchObject({
             playerId: '0',
-            delta: -2,
-            newValue: 8,
+            delta: -1,
+            newValue: 9,
         });
         expect(eventsOfType(events, 'ABILITY_REPLACED')[0]?.payload).toMatchObject({
             playerId: '0',
@@ -1326,13 +1710,36 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(next.players['0'].abilityLevels['bloodthirsty-claws']).toBe(2);
         expect(next.players['0'].upgradeCardByAbilityId['bloodthirsty-claws']).toEqual({
             cardId: 'upgrade-vampire-lord-bloodthirsty-claws-2',
-            cpCost: 2,
+            cpCost: 1,
         });
         expect(upgradedAbility?.id).toBe('bloodthirsty-claws');
         expect(upgradedFourClaws?.effects[0]?.action).toMatchObject({
             type: 'damage',
             target: 'opponent',
             value: 5,
+        });
+        expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+        expect(next.players['0'].hand).toHaveLength(0);
+    });
+
+    it('嗜血之爪 III 升级牌按图面扣 2 CP 并替换升级槽', () => {
+        const { events, next } = playVampireLordCard('upgrade-vampire-lord-bloodthirsty-claws-3', { cp: 10 });
+
+        expect(eventsOfType(events, 'CP_CHANGED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            delta: -2,
+            newValue: 8,
+        });
+        expect(eventsOfType(events, 'ABILITY_REPLACED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            oldAbilityId: 'bloodthirsty-claws',
+            cardId: 'upgrade-vampire-lord-bloodthirsty-claws-3',
+            newLevel: 3,
+        });
+        expect(next.players['0'].abilityLevels['bloodthirsty-claws']).toBe(3);
+        expect(next.players['0'].upgradeCardByAbilityId['bloodthirsty-claws']).toEqual({
+            cardId: 'upgrade-vampire-lord-bloodthirsty-claws-3',
+            cpCost: 2,
         });
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(8);
         expect(next.players['0'].hand).toHaveLength(0);

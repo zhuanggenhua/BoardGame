@@ -155,7 +155,6 @@ describe('Betrayal 教程配置', () => {
             'rabbit-foot-result',
             'finish',
             'return-to-table-after-damage',
-            'end-turn-after-event',
             'watch-teammate-one-omen-turn',
             'teammate-one-omen-results',
             'watch-teammate-two-omen-turn',
@@ -210,7 +209,9 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'view-book')?.highlightTarget).toBe('betrayal-inventory-omen-book-magnify');
         expect(manifest?.steps.find((step) => step.id === 'view-book')?.infoStep).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
+        expect(manifest?.steps.find((step) => step.id === 'use-book')?.waitForAnimation).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'use-rabbit-foot')?.highlightTarget).toBe('betrayal-inventory-rope');
+        expect(manifest?.steps.find((step) => step.id === 'use-rabbit-foot')?.waitForAnimation).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.highlightTarget).toBe('betrayal-discovery-continue');
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.infoStep).toBeUndefined();
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.requireAction).toBe(true);
@@ -224,18 +225,14 @@ describe('Betrayal 教程配置', () => {
             advanceOnEvents: [{ type: 'DAMAGE_ALLOCATION_RESOLVED', match: { playerId: '0' } }],
         });
         expect(manifest?.steps.find((step) => step.id === 'return-to-table-after-damage')).toMatchObject({
-            highlightTarget: 'betrayal-discovery-continue',
-            requireAction: true,
-            allowedCommands: [],
-            viewAs: '0',
-        });
-        expect(manifest?.steps.find((step) => step.id === 'end-turn-after-event')).toMatchObject({
             highlightTarget: 'betrayal-action-endTurn',
+            position: 'left',
             requireAction: true,
             allowedCommands: ['END_TURN'],
             advanceOnEvents: [{ type: 'TURN_ENDED', match: { previousPlayerId: '0', nextPlayerId: '1' } }],
             viewAs: '0',
         });
+        expect(manifest?.steps.find((step) => step.id === 'end-turn-after-event')).toBeUndefined();
         expect(manifest?.steps.find((step) => step.id === 'watch-teammate-one-omen-turn')).toMatchObject({
             infoStep: true,
             viewAs: '0',
@@ -261,6 +258,8 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'watch-teammate-two-omen-turn')).toMatchObject({
             infoStep: true,
             viewAs: '0',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             randomPolicy: { mode: 'fixed', values: [1] },
             autoAdvanceAfterAi: false,
         });
@@ -298,6 +297,8 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'watch-teammate-haunt-trigger')).toMatchObject({
             infoStep: true,
             viewAs: '0',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             randomPolicy: { mode: 'fixed', values: [3] },
             autoAdvanceAfterAi: false,
         });
@@ -315,6 +316,13 @@ describe('Betrayal 教程配置', () => {
         }))).toEqual([
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1', payload: undefined },
         ]);
+        expect(manifest?.steps.find((step) => step.id === 'teammate-confirm-haunt-trigger')).toMatchObject({
+            aiDelayMs: 0,
+            viewAs: '0',
+        });
+        expect(manifest?.steps.find((step) => step.id === 'teammate-confirm-haunt-trigger')?.infoStep).toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'teammate-confirm-haunt-trigger')?.highlightTarget).toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'teammate-confirm-haunt-trigger')?.autoAdvanceAfterAi).toBeUndefined();
         expect(manifest?.steps.filter((step) => (
             (step.viewAs === '1' || step.viewAs === '2') &&
             step.requireAction === true
@@ -347,6 +355,37 @@ describe('Betrayal 教程配置', () => {
         });
         expect(manifest?.steps.find((step) => step.id === 'confirm-omen-card')).toBeUndefined();
         expect(manifest?.steps.find((step) => step.id === 'banish-mummy')).toBeUndefined();
+    });
+
+    it('自动代队友确认翻牌结果时必须保留玩家可见教程承接', () => {
+        for (const tutorialId of ['basic-setup-and-turn', 'haunt-natural-trigger-flow'] as const) {
+            const manifest = tutorialCatalog.tutorials[tutorialId]?.manifest;
+            expect(manifest).toBeTruthy();
+            const hiddenCardConfirmationSteps = manifest?.steps.filter((step) => (
+                step.aiActions?.some((action) => action.commandType === BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION)
+                && step.requireAction !== true
+                && step.infoStep !== true
+            )) ?? [];
+
+            expect(hiddenCardConfirmationSteps.map((step) => step.id)).toEqual(['teammate-confirm-haunt-trigger']);
+            for (const hiddenStep of hiddenCardConfirmationSteps) {
+                const hiddenStepIndex = manifest?.steps.findIndex((step) => step.id === hiddenStep.id) ?? -1;
+                const visibleStep = hiddenStepIndex > 0 ? manifest?.steps[hiddenStepIndex - 1] : undefined;
+                expect(visibleStep).toMatchObject({
+                    infoStep: true,
+                    viewAs: '0',
+                    highlightTarget: 'betrayal-discovery-continue',
+                    position: 'right',
+                    autoAdvanceAfterAi: false,
+                });
+                expect(hiddenStep).toMatchObject({
+                    aiDelayMs: 0,
+                    viewAs: '0',
+                });
+                expect(hiddenStep.highlightTarget).toBeUndefined();
+                expect(hiddenStep.autoAdvanceAfterAi).toBeUndefined();
+            }
+        }
     });
 
     it('默认教程在兔脚已消费后会判定“使用兔脚”步骤过期', () => {
@@ -427,6 +466,15 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.stepValidator?.(pendingEventRollState, returnToTableStep!)).toBe(false);
         expect(manifest?.stepValidator?.(pendingDamageState, finishStep!)).toBe(true);
         expect(manifest?.stepValidator?.(pendingDamageState, returnToTableStep!)).toBe(false);
+
+        const resolvedDamageState = {
+            ...pendingDamageState,
+            core: {
+                ...pendingDamageState.core,
+                pendingDamageAllocation: null,
+            },
+        } as MatchState<Partial<BetrayalCore>>;
+        expect(manifest?.stepValidator?.(resolvedDamageState, returnToTableStep!)).toBe(true);
     });
 
     it('默认教程不会把选择角色阶段的旧存档恢复成后续牌桌步骤', () => {
@@ -493,7 +541,7 @@ describe('Betrayal 教程配置', () => {
             ['USE_RABBIT_FOOT', 'USE_ROLL_REROLL_ITEM'],
             ['FINALIZE_EVENT_ROLL'],
             ['RESOLVE_DAMAGE_ALLOCATION'],
-            [],
+            ['END_TURN'],
         ]);
         expect(actionSteps.map((step) => step.allowedTargets ?? null)).toEqual([
             ['hallway'],
@@ -512,7 +560,12 @@ describe('Betrayal 教程配置', () => {
         expect(actionSteps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(actionSteps.find((step) => step.id === 'use-rabbit-foot')?.highlightTarget).toBe('betrayal-inventory-rope');
         expect(actionSteps.find((step) => step.id === 'finish')?.highlightTarget).toBe('betrayal-damage-allocation-panel');
-        expect(actionSteps.at(-1)?.highlightTarget).toBe('betrayal-discovery-continue');
+        expect(actionSteps.find((step) => step.id === 'return-to-table-after-damage')?.highlightTarget)
+            .toBe('betrayal-action-endTurn');
+        expect(actionSteps.find((step) => step.id === 'return-to-table-after-damage')?.advanceOnEvents).toEqual([
+            { type: 'TURN_ENDED', match: { previousPlayerId: '0', nextPlayerId: '1' } },
+        ]);
+        expect(actionSteps.at(-1)?.highlightTarget).toBe('betrayal-action-endTurn');
         expect(setupInventory?.map((card) => card.id)).toEqual(['rope', 'omen-book']);
         expect(JSON.stringify(setupFields)).toContain('地图');
         expect(JSON.stringify(setupFields)).not.toContain('头骨');
@@ -671,7 +724,8 @@ describe('Betrayal 教程配置', () => {
         expect(teammateTwoOmenStep).toMatchObject({
             infoStep: true,
             viewAs: '0',
-            highlightTarget: 'betrayal-haunt-risk-status',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             autoAdvanceAfterAi: false,
         });
         expect(teammateTwoOmenStep?.aiActions?.map((action) => ({
@@ -703,7 +757,8 @@ describe('Betrayal 教程配置', () => {
         expect(teammateHauntTriggerStep).toMatchObject({
             infoStep: true,
             viewAs: '0',
-            highlightTarget: 'betrayal-haunt-risk-status',
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'right',
             autoAdvanceAfterAi: false,
         });
         expect(teammateHauntTriggerStep?.aiActions?.map((action) => ({
@@ -721,7 +776,13 @@ describe('Betrayal 教程配置', () => {
         }))).toEqual([
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1', payload: undefined },
         ]);
+        expect(teammateConfirmStep).toMatchObject({
+            aiDelayMs: 0,
+        });
         expect(teammateConfirmStep?.viewAs).toBe('0');
+        expect(teammateConfirmStep?.infoStep).toBeUndefined();
+        expect(teammateConfirmStep?.highlightTarget).toBeUndefined();
+        expect(teammateConfirmStep?.autoAdvanceAfterAi).toBeUndefined();
         expect(manifest?.steps.filter((step) => (
             (step.viewAs === '1' || step.viewAs === '2') &&
             step.requireAction === true
@@ -1350,6 +1411,9 @@ describe('Betrayal 教程配置', () => {
         expect(basicSteps.finish).toContain('承受 1 点物理伤害');
         expect(basicSteps.finish).not.toContain('改用知识重新投骰');
         expect(basicSteps.finish).not.toContain('兔脚');
+        expect(basicSteps.returnToTableAfterDamage).toContain('事件房探索已经结束你的回合');
+        expect(basicSteps.returnToTableAfterDamage).toContain('结束回合');
+        expect(basicSteps.returnToTableAfterDamage).not.toContain('返回牌桌');
         expect([
             [basicSteps.moveToHallway, tradeSteps.startTrade],
             [tradeSteps.startTrade, tradeSteps.chooseTradeItem],
@@ -1368,6 +1432,7 @@ describe('Betrayal 教程配置', () => {
             [basicSteps.useBook, basicSteps.useRabbitFoot],
             [basicSteps.useRabbitFoot, basicSteps.rabbitFootResult],
             [basicSteps.rabbitFootResult, basicSteps.finish],
+            [basicSteps.finish, basicSteps.returnToTableAfterDamage],
         ].flatMap(([previous, current]) => {
             const previousSentences = previous.split(/[。；]/).map((part) => part.trim()).filter((part) => part.length >= 8);
             return previousSentences.filter((sentence) => current.includes(sentence));
@@ -1413,6 +1478,8 @@ describe('Betrayal 教程配置', () => {
         expect(hauntTriggerSteps.watchTeammateTwoOmenTurn).toContain('队友 2');
         expect(hauntTriggerSteps.watchTeammateTwoOmenTurn).toContain('翻出狗');
         expect(hauntTriggerSteps.watchTeammateTwoOmenTurn).toContain('2 颗骰');
+        expect(hauntTriggerSteps.watchTeammateTwoOmenTurn).toContain('确认按钮显示等待');
+        expect(hauntTriggerSteps.watchTeammateTwoOmenTurn).toContain('点“下一步”');
         expect(hauntTriggerSteps.teammateTwoOmenResults).toContain('回合回到你');
         expect(hauntTriggerSteps.teammateTwoOmenResults).toContain('下一张预兆会掷 3 颗骰');
         expect(hauntTriggerSteps.handOffToTeammateSecondCycle).toContain('现在又轮到你');
@@ -1420,9 +1487,10 @@ describe('Betrayal 教程配置', () => {
         expect(hauntTriggerSteps.watchTeammateHauntTrigger).toContain('队友 1 继续探索');
         expect(hauntTriggerSteps.watchTeammateHauntTrigger).toContain('获得面具');
         expect(hauntTriggerSteps.watchTeammateHauntTrigger).toContain('3 颗作祟骰');
-        expect(hauntTriggerSteps.teammateConfirmHauntTrigger).toContain('队友 1');
-        expect(hauntTriggerSteps.teammateConfirmHauntTrigger).toContain('3 颗作祟骰');
-        expect(hauntTriggerSteps.teammateConfirmHauntTrigger).toContain('触发者看清公开结果');
+        expect(hauntTriggerSteps.watchTeammateHauntTrigger).toContain('确认按钮显示等待');
+        expect(hauntTriggerSteps.watchTeammateHauntTrigger).toContain('这张面具由队友 1 确认');
+        expect(hauntTriggerSteps.watchTeammateHauntTrigger).toContain('点“下一步”');
+        expect(hauntTriggerSteps.teammateConfirmHauntTrigger).toContain('队友 1 已确认面具');
         expect(hauntTriggerSteps.heroReaderOpened).toContain('队友 1 是揭秘者并成为叛徒');
         expect(hauntTriggerSteps.heroReaderOpened).toContain('你仍是英雄');
         expect(hauntTriggerSteps.heroReaderOpened).toContain('英雄开场过场');

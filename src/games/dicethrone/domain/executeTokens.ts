@@ -14,8 +14,9 @@ import type {
     PendingDamage,
     DamageDealtEvent,
     StatusAppliedEvent,
+    DtResponseWindowType,
 } from './types';
-import { getPendingBonusSettlementDice, getPlayerDieFace, getRollerId, getTokenStackLimit } from './rules';
+import { getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { reduce } from './reducer';
 import { RESOURCE_IDS } from './resources';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
@@ -36,6 +37,7 @@ import { applyEvents } from './utils';
 import { findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { rollDieValue } from './reroll';
 import type { DiceThroneTokenResponseChoiceCommandSource } from './tokenResponseChoiceContract';
+import { getUsableActiveRollToken } from './activeRollTokens';
 
 const normalizeBonusDiceFollowupEvents = (
     state: DiceThroneCore,
@@ -260,6 +262,7 @@ export function executeTokenCommand(
     timestamp: number,
     phase: TurnPhase = 'setup',
     choiceSource?: DiceThroneTokenResponseChoiceCommandSource | null,
+    responseWindowType?: DtResponseWindowType,
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
 
@@ -399,14 +402,13 @@ export function executeTokenCommand(
             }
 
             if (!pendingDamage) {
-                const tokenDef = state.tokenDefinitions.find(t => t.id === tokenId);
-                const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
+                const activeRollToken = getUsableActiveRollToken(state, command.playerId, phase, tokenId, {
+                    responseWindowType,
+                });
+                const tokenDef = activeRollToken?.tokenDef;
                 if (
-                    !tokenDef
-                    || !isRollPhase
-                    || !tokenDef.activeUse?.timing?.includes('duringRoll')
-                    || getRollerId(state, phase) !== command.playerId
-                    || !state.pendingAttack
+                    !activeRollToken
+                    || !tokenDef
                     || !Number.isInteger(amount)
                     || amount <= 0
                 ) {
@@ -414,9 +416,13 @@ export function executeTokenCommand(
                     break;
                 }
 
-                const availableAmount = state.players[command.playerId]?.tokens[tokenId] ?? 0;
-                if (!getTokenUseOptions(tokenDef, availableAmount).includes(amount)) {
+                if (!activeRollToken.allowedAmounts.includes(amount)) {
                     console.warn('[DiceThrone] USE_TOKEN: invalid roll token amount');
+                    break;
+                }
+                const pendingAttack = state.pendingAttack;
+                if (!pendingAttack) {
+                    console.warn('[DiceThrone] USE_TOKEN: missing pending attack for roll token');
                     break;
                 }
 
@@ -432,9 +438,11 @@ export function executeTokenCommand(
                 events.push(...tokenEvents);
 
                 if (result.success && tokenDef.activeUse.customActionId) {
-                    const targetId = phase === 'defensiveRoll'
-                        ? state.pendingAttack.attackerId
-                        : (state.pendingAttack.defenderId ?? state.pendingAttack.attackerId);
+                    const targetId = activeRollToken.requiresOpponentRollDice
+                        ? activeRollToken.currentRollContext.ownerPlayerId
+                        : phase === 'defensiveRoll'
+                            ? pendingAttack.attackerId
+                            : (pendingAttack.defenderId ?? pendingAttack.attackerId);
                     const handler = getCustomActionHandler(tokenDef.activeUse.customActionId);
                     if (handler) {
                         events.push(...handler({

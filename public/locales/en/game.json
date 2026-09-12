@@ -133,6 +133,7 @@
       "nightMode": "Night Mode",
       "lightMode": "Day Mode",
       "settings": "Settings",
+      "operationGuide": "Operation Guide",
       "audio": "Audio",
       "chat": "Chat",
       "emotes": "Emotes",
@@ -176,18 +177,18 @@
       "imageAdded": "Screenshot added",
       "contactLabel": "Contact (optional)",
       "contactPlaceholder": "Email or QQ (for follow-up)",
-    "attachLog": "Attach action log",
-    "attachState": "Attach state snapshot (for precise reproduction)",
-    "configProposal": {
-      "title": "Config correction proposal",
-      "batchTitle": "Config correction proposal batch",
-      "batchSummary": "This submits {{count}} configuration field corrections for AI review.",
-      "batchItem": "{{index}}. {{objectName}} · {{fieldName}}: current value: {{currentValue}}; updated value: {{updatedValue}}",
-      "batchMore": "{{count}} more item(s) are not expanded here.",
-      "target": "Object: {{objectName}}; field: {{fieldName}}",
-      "change": "Current value: {{currentValue}}; updated value: {{updatedValue}}"
-    },
-    "submit": "Submit Feedback",
+      "attachLog": "Attach action log",
+      "attachState": "Attach state snapshot (for precise reproduction)",
+      "configProposal": {
+        "title": "Config correction proposal",
+        "batchTitle": "Config correction proposal batch",
+        "batchSummary": "This submits {{count}} configuration field corrections for AI review.",
+        "batchItem": "{{index}}. {{objectName}} · {{fieldName}}: current value: {{currentValue}}; updated value: {{updatedValue}}",
+        "batchMore": "{{count}} more item(s) are not expanded here.",
+        "target": "Object: {{objectName}}; field: {{fieldName}}",
+        "change": "Current value: {{currentValue}}; updated value: {{updatedValue}}"
+      },
+      "submit": "Submit Feedback",
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {
         "loginRequired": "Login for better feedback tracking experience",
@@ -208,6 +209,72 @@
     },
     "actionLog": {
       "empty": "No action log yet"
+    },
+    "operationGuide": {
+      "title": "Operation Guide",
+      "eyebrow": "Player help",
+      "surface": {
+        "web": "Open this guide from the top-right area on web. It is not inside the floating button, because the guide teaches what that button does.",
+        "app": "Open this guide from the top-right area in the App. It explains touch controls, long-press inspect, and the floating button functions.",
+        "game": "This summarizes in-game controls and the floating menu buttons currently available in this game state."
+      },
+      "visual": {
+        "realScreenshotsTitle": "Real interface screenshots",
+        "webFabImageAlt": "Annotated web floating button screenshot",
+        "appFabImageAlt": "Annotated App floating button screenshot",
+        "dragCallout": "Main button: drag it",
+        "expandCallout": "Tap small buttons",
+        "longPressTitle": "Long-press to enlarge",
+        "longPressImageAlt": "Annotated mobile long-press enlargement screenshot",
+        "longPressDescription": "On mobile or in the App, cards, pieces, statuses, and some board objects can be long-pressed for an enlarged view. Release or close to return."
+      },
+      "common": {
+        "title": "Common Controls",
+        "fabMenu": "The floating button is the small round button near the page edge: tap it to expand or collapse the menu, and drag it away from active controls.",
+        "mobileLongPress": "Mobile: long-press supported cards, units, statuses, and board objects to inspect them enlarged.",
+        "desktopInspect": "Web: hover buttons to see names, then click an object body or magnifier entry to inspect details.",
+        "boardZoom": "When a board or map supports it, use wheel zoom, pinch zoom, or drag to inspect edge content.",
+        "closeLayer": "Most panels or enlarged views close from the top-right button; on mobile, tapping the backdrop also returns."
+      },
+      "fab": {
+        "title": "Floating Button Functions",
+        "webTitle": "Web floating button",
+        "appTitle": "App floating button",
+        "gameTitle": "In-game floating button",
+        "operationGuide": "The operation guide stays in the top-right area and is not a floating button function.",
+        "settings": "Adjust audio, home style, or current game runtime settings.",
+        "displayTheme": "Switch between day and night display.",
+        "fullscreen": "Enter or exit fullscreen; some App pages hide this entry.",
+        "downloadApp": "Download the App installer from the web page.",
+        "checkUpdate": "Check for updates in the App.",
+        "about": "View project, community, and sponsor information.",
+        "feedback": "Submit issues or suggestions; in-game feedback includes action logs and state snapshots for reproduction.",
+        "social": "Open friends and direct messages.",
+        "chat": "Open in-game chat; new messages show a notification.",
+        "actionLog": "View player actions and key records from this match.",
+        "undo": "Review or request undo; approve or reject incoming undo requests.",
+        "forceActions": "Emergency advance controls for stuck AI or foreground interactions.",
+        "seatSwap": "Request or respond to a seat swap.",
+        "exit": "Leave the match, return to the lobby, or destroy/exit the room depending on your role.",
+        "custom": "A page-specific or game-specific support entry."
+      },
+      "fabLabels": {
+        "settings": "Settings",
+        "displayTheme": "Day/Night",
+        "fullscreen": "Fullscreen",
+        "downloadApp": "Download App",
+        "checkUpdate": "Check Update",
+        "about": "About",
+        "feedback": "Feedback",
+        "social": "Friends",
+        "chat": "Chat",
+        "emotes": "Emotes",
+        "actionLog": "Action Log",
+        "undo": "Undo",
+        "forceActions": "Emergency Advance",
+        "seatSwap": "Seat Swap",
+        "exit": "Exit"
+      }
     },
     "chat": {
       "placeholder": "Type a message...",

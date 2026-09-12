@@ -972,6 +972,7 @@
       "confirmCard": "Confirm",
       "confirmWithProgress": "Confirm {{confirmed}}/{{total}}",
       "confirmedWithProgress": "Confirmed {{confirmed}}/{{total}}",
+      "waitingForCardConfirmation": "Waiting {{confirmed}}/{{total}}",
       "nextSearchCard": "Next card",
       "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "A room with an event symbol has been revealed; choose to skip the event or draw an event card.",
@@ -1072,14 +1073,14 @@
         "endTurnAfterEvent": "After damage allocation, discovering the Event room has already ended your turn. Choose End Turn to pass play to your teammate.",
         "watchTeammateOneOmenTurn": "It is not your turn now. Teammate 1 first moves back beside the Entrance Hall, explores a ground-floor Omen room, and reveals the Ring; this haunt roll does not trigger.",
         "teammateOneOmenResults": "Teammate 1 gains the Ring, and the haunt has not started. Play passes to teammate 2.",
-        "watchTeammateTwoOmenTurn": "Teammate 2 moves into the newly discovered ground-floor room, explores an adjacent Omen room, and reveals Dog; this haunt roll still does not trigger.",
+        "watchTeammateTwoOmenTurn": "Teammate 2 moves into the newly discovered ground-floor room, explores an adjacent Omen room, and reveals Dog; this haunt roll still does not trigger. The confirmation button shows waiting because Dog is teammate 2's confirmation; choose Next to let them confirm it and pass the turn back to you.",
         "teammateTwoOmenResults": "After Dog is confirmed, play returns to you. You are still in the Kitchen; this turn, move to the Upper Landing beside the Library, then wait for the haunt goal before entering it.",
         "moveToGrandStaircase": "You already know movement. Stay in move mode and move from the Kitchen through the Hallway to the Grand Staircase; it connects the floors.",
         "switchToUpperFloor": "At the Grand Staircase, the floor switcher shows an upper-floor move target. Choose the up arrow to switch the map to the upper floor and reveal the Upper Landing.",
         "moveToUpperLanding": "The Upper Landing is now visible. Choose it to move beside the Library; this step only completes the movement you can legally make this turn.",
         "endTurnFromUpperLanding": "You are on the Upper Landing, with the Library to the west. Do not continue exploring this turn; choose End Turn so your teammate can keep exploring until an Omen roll naturally starts the haunt.",
-        "watchTeammateHauntTrigger": "Teammate 1 explores from the new ground-floor room and reveals the Mask. This Omen roll reaches 5+, so the haunt starts naturally.",
-        "teammateConfirmHauntTrigger": "Teammate 1 reads the Mask and haunt roll result, confirms it, and the game moves into the haunt."
+        "watchTeammateHauntTrigger": "Teammate 1 explores from the new ground-floor room and reveals the Mask. This Omen roll reaches 5+, so the haunt starts naturally. The confirmation button shows waiting because Mask is teammate 1's confirmation; choose Next to let them confirm it and enter the haunt.",
+        "teammateConfirmHauntTrigger": "Teammate 1 has confirmed the Mask and the public haunt roll result."
       }
     },
     "basicSetup": {
@@ -1108,7 +1109,7 @@
         "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
         "rabbitFootResult": "Rabbit's Foot has finished the reroll. Read the new dice faces and total, then choose Confirm to acknowledge the result; if the check still fails, the game moves into damage allocation after confirmation.",
         "finish": "Choose the trait that takes 1 physical damage, then confirm the allocation.",
-        "returnToTableAfterDamage": "The damage is now applied to the trait track. Choose Return to Table to go back to your action entry."
+        "returnToTableAfterDamage": "The damage is now applied to the trait track. Discovering the Event room has ended your turn; choose End Turn to pass play to your teammate."
       }
     },
     "omenConfirmation": {
@@ -1129,11 +1130,11 @@
         "handOffToTeammateOne": "Choose End Turn to pass play to the next explorer. Haunt risk rises as players actually gain Omens.",
         "watchTeammateOmenTurns": "It is not your turn now. Wait while teammate 1 explores an Omen room; this only reveals the first Omen and a failed haunt roll.",
         "teammateOmenResults": "Teammate 1 gains the Ring, and one haunt die stays below 5+. Play now passes normally to teammate 2.",
-        "watchTeammateTwoOmenTurn": "Teammate 2 moves beside the Observatory, explores the next Omen room, and reveals Dog. The second Omen uses two dice for the haunt roll.",
+        "watchTeammateTwoOmenTurn": "Teammate 2 moves beside the Observatory, explores the next Omen room, and reveals Dog. The second Omen uses two dice for the haunt roll; the confirmation button shows waiting because Dog is teammate 2's confirmation. Choose Next to let them confirm it and return to your view.",
         "teammateTwoOmenResults": "After teammate 2 confirms Dog, the turn returns to you. Ring and Dog are in play, so the next Omen will roll three dice.",
         "handOffToTeammateSecondCycle": "It is your turn again. Choose End Turn to keep watching teammates explore through the normal rules; you are not acting for them.",
-        "watchTeammateHauntTrigger": "Teammate 1 explores south from the Observatory, reveals another Omen room, and gains the Mask. The third Omen rolls three haunt dice.",
-        "teammateConfirmHauntTrigger": "Teammate 1 reads the Mask and the three haunt dice, then confirms after seeing the public result.",
+        "watchTeammateHauntTrigger": "Teammate 1 explores south from the Observatory, reveals another Omen room, and gains the Mask. The third Omen rolls three haunt dice. The confirmation button shows waiting because Mask is teammate 1's confirmation; choose Next to let them confirm it and enter the haunt.",
+        "teammateConfirmHauntTrigger": "Teammate 1 has confirmed the Mask and the public result from the three haunt dice.",
         "heroReaderOpened": "After the public haunt reveal, teammate 1 is the revealer and becomes the traitor. You are still a hero; the game first shows the hero opening cutscene, not the goal page of the Scenario Book. Read this one-time opening.",
         "heroReaderTurnPage": "After the opening cutscene, choose Enter Scenario Book to open the Hero Scenario Book goal page; that page explains finding the true name, learning the spell, and banishing the Mummy.",
         "heroReaderGoal": "The Hero Scenario Book goal page says the hero can find the true name in the Sarcophagus room, Study, or Library. You are beside the Library now, so after reading you should move into it.",

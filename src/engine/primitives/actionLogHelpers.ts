@@ -105,6 +105,34 @@ function extractSourceId(payload: DamageLogPayload): string | undefined {
     return payload.sourceAbilityId ?? payload.reason ?? undefined;
 }
 
+function resolveBreakdownLineLabel(
+    sourceId: string,
+    sourceName: string | undefined,
+    sourceNameIsI18n: boolean | undefined,
+    resolver: DamageSourceResolver,
+    fallbackNs?: string,
+): Pick<BreakdownLine, 'label' | 'labelIsI18n' | 'labelNs'> {
+    const resolvedSource = resolver.resolve(sourceId);
+    const hasSpecificResolvedSource = !!resolvedSource
+        && (resolvedSource.isI18n || resolvedSource.label !== sourceId);
+    const shouldUseResolvedSource = hasSpecificResolvedSource
+        && (
+            !sourceName
+            || sourceName === sourceId
+            || sourceName === 'actionLog.damageSource.attackModifier'
+        );
+    const label = shouldUseResolvedSource
+        ? resolvedSource.label
+        : (sourceName || sourceId);
+    const labelIsI18n = shouldUseResolvedSource
+        ? resolvedSource.isI18n
+        : (sourceNameIsI18n ?? false);
+    const labelNs = labelIsI18n
+        ? (shouldUseResolvedSource ? resolvedSource.ns ?? fallbackNs : fallbackNs)
+        : undefined;
+    return { label, labelIsI18n, labelNs };
+}
+
 /**
  * 构建 breakdown segment（带 tooltip 的数值片段）
  *
@@ -155,10 +183,15 @@ export function buildDamageBreakdownSegment(
         });
 
         breakdown.steps.forEach(step => {
+            const labelParts = resolveBreakdownLineLabel(
+                step.sourceId,
+                step.sourceName,
+                step.sourceNameIsI18n,
+                resolver,
+                fallbackNs,
+            );
             lines.push({
-                label: step.sourceName || step.sourceId,
-                labelIsI18n: step.sourceNameIsI18n ?? false,
-                labelNs: step.sourceNameIsI18n ? fallbackNs : undefined,
+                ...labelParts,
                 value: step.value,
                 color: step.value > 0 ? 'positive' : 'negative',
             });
@@ -181,11 +214,15 @@ export function buildDamageBreakdownSegment(
             color: 'neutral',
         });
         payload.modifiers.forEach(mod => {
-            const isI18n = !!mod.sourceName?.includes('.');
+            const labelParts = resolveBreakdownLineLabel(
+                mod.sourceId,
+                mod.sourceName,
+                !!mod.sourceName?.includes('.'),
+                resolver,
+                fallbackNs,
+            );
             lines.push({
-                label: mod.sourceName || mod.sourceId || mod.type,
-                labelIsI18n: isI18n,
-                labelNs: isI18n ? fallbackNs : undefined,
+                ...labelParts,
                 value: mod.value,
                 color: mod.value > 0 ? 'positive' : 'negative',
             });

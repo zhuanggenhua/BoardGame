@@ -194,12 +194,13 @@ describe('Betrayal dice reroll hit targets', () => {
     it('兔脚选骰描边贴合完整骰体投影，透明热区只负责点击容错', () => {
         expect(BETRAYAL_HOUSE_DICE_STYLE_PROFILE.strength).toBeLessThanOrEqual(0.12);
         expect(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE).toBeGreaterThan(1);
-        expect(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE).toBeLessThanOrEqual(1.04);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE).toBeGreaterThanOrEqual(1.04);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE).toBeLessThanOrEqual(1.055);
         expect(BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE).toBeGreaterThan(BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE);
-        expect(BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE).toBeLessThanOrEqual(1.05);
-        expect(BETRAYAL_REROLL_TARGET_OUTLINE_SCALE).toBeGreaterThan(1);
-        expect(BETRAYAL_REROLL_TARGET_OUTLINE_SCALE).toBeLessThanOrEqual(1.08);
-        expect(BETRAYAL_REROLL_TARGET_HIT_PADDING).toBeGreaterThan(0);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE).toBeGreaterThanOrEqual(1.06);
+        expect(BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE).toBeLessThanOrEqual(1.075);
+        expect(BETRAYAL_REROLL_TARGET_OUTLINE_SCALE).toBe(1);
+        expect(BETRAYAL_REROLL_TARGET_HIT_PADDING).toBe(0);
 
         const layout = {
             id: 1,
@@ -220,12 +221,14 @@ describe('Betrayal dice reroll hit targets', () => {
         const outline = getBetrayalRerollTargetOutlineSize(layout);
         const hit = getBetrayalRerollTargetHitSize(layout);
 
-        expect(outline.width).toBeGreaterThan(layout.visualWidth);
-        expect(outline.height).toBeGreaterThan(layout.visualHeight);
-        expect(outline.width - layout.visualWidth).toBeLessThanOrEqual(10);
-        expect(outline.height - layout.visualHeight).toBeLessThanOrEqual(10);
-        expect(hit.width).toBeGreaterThanOrEqual(outline.width + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2);
-        expect(hit.height).toBeGreaterThanOrEqual(outline.height + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2);
+        expect(outline.width).toBe(layout.visualWidth);
+        expect(outline.height).toBe(layout.visualHeight);
+        expect(outline.width).toBe(outline.height);
+        expect(outline.width - layout.visualWidth).toBe(0);
+        expect(outline.height - layout.visualHeight).toBe(0);
+        expect(hit.width).toBe(outline.width);
+        expect(hit.height).toBe(outline.height);
+        expect(hit.width).toBe(hit.height);
     });
 });
 
@@ -5426,7 +5429,9 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-required-count', '4');
         expect(screen.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
-        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        });
         expect(screen.getByTestId('betrayal-inventory-hunting-knife-armory-0-1')).toBeInTheDocument();
 
         expect(screen.queryByTestId('betrayal-deck-resolution-ledger')).not.toBeInTheDocument();
@@ -5539,14 +5544,71 @@ describe('Betrayal Board foundation', () => {
         expect(alienGeometrySteps[0]).toHaveTextContent('事件效果');
         expect(alienGeometrySteps[0]).toHaveTextContent('知识 +1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/4');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-confirmed-count', '0');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-required-count', '1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-required-count', '4');
         expect(screen.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await waitFor(() => {
             expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
         });
+    });
+
+    it('事件骰造成伤害并分配完成后不再复活发现牌返回按钮', async () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '标本剥制')!];
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'hallway',
+            traits: {
+                ...core.currentExplorer.traits,
+                might: 4,
+                speed: 4,
+                sanity: 4,
+            },
+            inventory: [],
+        };
+        core.activeRoomId = 'hallway';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+                diceResults={[1, 1, 1, 1]}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('betrayal-action-explore'));
+        fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
+        await confirmPendingRoomPlacement({ confirmEventRoll: false });
+
+        expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
+            'aria-label',
+            expect.stringContaining('事件牌 标本剥制'),
+        );
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到 1 点物理伤害');
+        const eventRollConfirm = screen.getByTestId('betrayal-discovery-continue');
+        expect(eventRollConfirm).toHaveTextContent('确认 0/4');
+        fireEvent.click(eventRollConfirm);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();
+        });
+        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-might-increase'));
+        expect(screen.getByTestId('betrayal-damage-allocation-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-confirm'));
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
+        });
+        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-action-endTurn')).toBeInTheDocument();
     });
 
     it('事件骰待确认时点击书本直接派发使用命令，不再进入二次确认', () => {
@@ -6263,22 +6325,19 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute('data-reroll-target-count', '3');
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute(
             'data-reroll-visual-contract',
-            'threejs-shader-shell-plus-projected-edge-outline-plus-transparent-hitbox',
+            'threejs-shader-shell-plus-transparent-hitbox',
         );
         const firstTarget = screen.getByTestId('betrayal-house-dice-reroll-target-0');
-        const firstOutline = screen.getByTestId('betrayal-house-dice-reroll-target-outline-0');
-        expect(firstTarget).toHaveAttribute('data-reroll-target-visual-layer', 'projected-edge-outline-plus-transparent-hitbox');
-        expect(firstTarget).toHaveAttribute('data-reroll-target-outline-paint', 'projected-edge-outline');
-        expect(Number(firstTarget.getAttribute('data-reroll-target-outline-width'))).toBeLessThan(
-            Number(firstTarget.getAttribute('data-reroll-target-hit-width')),
+        expect(firstTarget).toHaveAttribute('data-reroll-target-visual-layer', 'transparent-hitbox-only');
+        expect(firstTarget).toHaveAttribute('data-reroll-target-outline-paint', 'threejs-backside-shader-shell');
+        expect(screen.queryByTestId('betrayal-house-dice-reroll-target-outline-0')).not.toBeInTheDocument();
+        expect(Number(firstTarget.getAttribute('data-reroll-target-hit-width'))).toBe(
+            Number(firstTarget.getAttribute('data-reroll-target-hit-height')),
         );
-        expect(firstOutline).toHaveAttribute('data-reroll-target-outline-selected', 'false');
 
         fireEvent.click(screen.getByTestId('betrayal-house-dice-reroll-target-0'));
-        expect(screen.getByTestId('betrayal-house-dice-reroll-target-outline-0')).toHaveAttribute(
-            'data-reroll-target-outline-selected',
-            'true',
-        );
+        expect(screen.getByTestId('betrayal-house-dice-reroll-target-0')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.queryByTestId('betrayal-house-dice-reroll-target-outline-0')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-roll-modifier-confirm')).toHaveTextContent('确认使用兔脚');
         fireEvent.click(screen.getByTestId('betrayal-roll-modifier-confirm'));
 
@@ -9192,7 +9251,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rule-subtotal', '0');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到一颗骰子的精神伤害');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('重新投掷 1 颗骰子');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/4');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
 
         await waitFor(() => {
@@ -9258,9 +9317,9 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveTextContent('无线电广播');
         expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveAttribute(
             'data-visible-source-owner',
-            'discovery-card',
+            'panel',
         );
-        expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveClass('sr-only');
+        expect(screen.getByTestId('betrayal-damage-allocation-source')).not.toHaveClass('sr-only');
 
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-knowledge-increase'));
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-sanity-increase'));
@@ -9956,11 +10015,8 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        await expectEventDamageAllocation('地狱蝙蝠', '分配 1 点物理伤害', ['力量', '速度'], 'discovery-card');
-        expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
-            'aria-label',
-            expect.stringContaining('地狱蝙蝠'),
-        );
+        await expectEventDamageAllocation('地狱蝙蝠', '分配 1 点物理伤害', ['力量', '速度']);
+        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
     });
 
     it('轮到约拿了待选事件会在真实页面只展示可弃置的非武器物品并承接拒绝精神伤害', async () => {

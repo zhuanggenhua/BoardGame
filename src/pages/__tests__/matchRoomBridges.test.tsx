@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MatchState, TutorialManifest, TutorialState } from '../../engine/types';
 import { TUTORIAL_COMMANDS } from '../../engine/systems/TutorialSystem';
 import { TutorialDispatchBridge } from '../matchRoomBridges';
+import type { TutorialSessionScope } from '../../contexts/TutorialContext';
 
 let gameClientState: MatchState<unknown>;
 let contextTutorialState: TutorialState;
@@ -62,6 +63,50 @@ describe('TutorialDispatchBridge', () => {
             steps: [],
             step: null,
         };
+    });
+
+    it('会把当前教程会话范围传给提前绑定和状态同步', async () => {
+        const sessionScope: TutorialSessionScope = {
+            key: 'tutorial-session:v1:dicethrone:basic-setup-and-turn:basic-setup-and-turn:r2',
+            gameId: 'dicethrone',
+            tutorialId: 'basic-setup-and-turn',
+            manifestId: 'basic-setup-and-turn',
+            manifestRevision: 2,
+        };
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            revision: 2,
+            steps: [
+                { id: 'setup-runtime', content: 'setup' },
+            ],
+        };
+        gameClientState = buildState({
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: manifest.revision,
+            stepIndex: 0,
+            steps: manifest.steps,
+            step: manifest.steps[0],
+        });
+
+        render(
+            <TutorialDispatchBridge tutorialManifest={manifest} sessionScope={sessionScope}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(bindDispatch).toHaveBeenCalledWith(
+            expect.any(Function),
+            sessionScope,
+        ));
+        await waitFor(() => expect(syncTutorialState).toHaveBeenCalledWith(
+            expect.objectContaining({
+                active: true,
+                manifestId: manifest.id,
+            }),
+            undefined,
+            sessionScope,
+        ));
     });
 
     it('同一步 AI 动作被消费后也会同步教程上下文，避免首个可见步骤卡住', async () => {
