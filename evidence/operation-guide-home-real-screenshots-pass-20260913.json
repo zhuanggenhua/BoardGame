@@ -1,0 +1,74 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "操作指南入口只在首页出现，不放在游戏页任务栏、HUD 或任何悬浮球里。",
+      "status": "PASS",
+      "evidence": [
+        "src/pages/Home.tsx:1043 places home-operation-guide-entry in the home top action area.",
+        "src/components/home-v2/LobbyDirectory.tsx:454 places home-v2-operation-guide-entry in the home-v2 top account area.",
+        "src/components/system/operationGuideFabModel.ts:48 filters action.id !== 'operation-guide'.",
+        "e2e/_shared/operation-guide-hud.e2e.ts:172 verifies game pages no longer expose an operation guide entry.",
+        "Playwright run 2026-09-13: 3 passed, including 游戏页不再提供操作指南入口."
+      ]
+    },
+    {
+      "requirement": "未登录网页和 App 首页，操作指南按钮位于登录/注册入口左侧；登录后代码顺序仍在用户按钮左侧。",
+      "status": "PASS",
+      "evidence": [
+        "src/pages/Home.tsx:1039-1052 renders OperationGuideButton before UserMenu or login/register controls.",
+        "src/components/home-v2/LobbyDirectory.tsx:454-461 renders OperationGuideButton before the account entry.",
+        "test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/01-web-home-right-top-entry.png shows the web home entry beside login/register.",
+        "test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/03-app-home-right-top-entry.png shows the app home entry beside login/register."
+      ]
+    },
+    {
+      "requirement": "点击操作指南后，打开屏幕正中的弹窗页面。",
+      "status": "PASS",
+      "evidence": [
+        "src/components/system/OperationGuidePanel.tsx:164 uses fixed inset-0 flex items-center justify-center for the modal shell.",
+        "test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/02-web-home-centered-guide-modal.png shows the web centered modal.",
+        "test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/04-app-home-centered-guide-modal.png shows the app centered modal."
+      ]
+    },
+    {
+      "requirement": "指南内容使用真实截图，并在截图上用红圈、箭头等标注解释悬浮球和移动端长按放大；不能用手绘替代。",
+      "status": "PASS",
+      "evidence": [
+        "src/components/system/OperationGuidePanel.tsx:57-59 uses real PNG assets under public/images/operation-guide.",
+        "public/images/operation-guide/home-web-fab-annotated.png is a real web home screenshot with annotations.",
+        "public/images/operation-guide/home-app-fab-annotated.png is a real app home screenshot with annotations.",
+        "public/images/operation-guide/mobile-long-press-annotated.png is a real mobile game long-press screenshot with annotations."
+      ]
+    },
+    {
+      "requirement": "最终截图组是当前工作树重新跑出的真实入口截图，且标注副本没有遮挡原始截图内容。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-single.mjs default e2e/_shared/operation-guide-hud.e2e.ts passed 3 tests on 2026-09-13.",
+        ".spec/skills/show-image-to-user/scripts/label-image-sequence.py regenerated labeled screenshots from the current originals on 2026-09-13.",
+        "scripts/verify/open-verified-image.mjs validates sourceImages against labeled dimensions before opening."
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/_labeled-for-pureref/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/_labeled-for-pureref/01-labeled-01-web-home-right-top-entry.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/_labeled-for-pureref/02-labeled-02-web-home-centered-guide-modal.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/_labeled-for-pureref/03-labeled-03-app-home-right-top-entry.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/_labeled-for-pureref/04-labeled-04-app-home-centered-guide-modal.png"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/01-web-home-right-top-entry.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/02-web-home-centered-guide-modal.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/03-app-home-right-top-entry.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/04-app-home-centered-guide-modal.png"
+  ]
+}
