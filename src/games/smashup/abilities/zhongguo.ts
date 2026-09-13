@@ -5442,6 +5442,9 @@ export function registerZhongguoAbilities(): void {
     registerAbilityProgram('truckers_turn_the_beat_around', 'special', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersTurnTheBeatAround),
     });
+    registerAbilityProgram('disco_dancers_turn_the_beat_around_pod', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersTurnTheBeatAround),
+    });
     registerAbilityProgram('disco_dancers_get_down_tonight', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoGetDownTonight),
     });

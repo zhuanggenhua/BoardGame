@@ -72,7 +72,9 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
         trickster_hideout: { ongoing: 'separate' },
     }),
     createVariantProfile(SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.GHOSTS_POD),
-    createVariantProfile(SMASHUP_FACTION_IDS.BEAR_CAVALRY, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.BEAR_CAVALRY, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD, {
+        bear_cavalry_polar_commando: { ability: 'separate', ongoing: 'separate', powerModifier: 'baseOnly' },
+    }),
     createVariantProfile(SMASHUP_FACTION_IDS.STEAMPUNKS, SMASHUP_FACTION_IDS.STEAMPUNKS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.KILLER_PLANTS, SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, {
         base_secret_garden: { baseAbility: 'separate' },
@@ -92,6 +94,25 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
     createVariantProfile(SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.SHARKS, SMASHUP_FACTION_IDS.SHARKS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.SKELETONS, SMASHUP_FACTION_IDS.SKELETONS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.FAIRIES, SMASHUP_FACTION_IDS.FAIRIES_POD, {
+        fairies_titania: { ability: 'separate' },
+        fairies_leaf_armor: { ability: 'separate', powerModifier: 'baseOnly' },
+        fairies_daisy_chain: { powerModifier: 'baseOnly' },
+        fairies_enchantment: { powerModifier: 'baseOnly' },
+    }),
+    createVariantProfile(SMASHUP_FACTION_IDS.KITTY_CATS, SMASHUP_FACTION_IDS.KITTY_CATS_POD, {
+        kitty_cats_muffin: { ability: 'separate', interaction: 'separate' },
+        kitty_cats_whiskers: { ability: 'separate', interaction: 'separate' },
+        kitty_cats_nine_lives: { ability: 'separate', interaction: 'separate' },
+        kitty_cats_can_has_cheeseburger: { ability: 'separate', interaction: 'separate' },
+    }),
+    createVariantProfile(SMASHUP_FACTION_IDS.MERMAIDS, SMASHUP_FACTION_IDS.MERMAIDS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.PRINCESSES, SMASHUP_FACTION_IDS.PRINCESSES_POD, {
+        princesses_fairy_godmother: { ability: 'separate' },
+        princesses_skillet: { ability: 'separate' },
+        princesses_griselda: { ability: 'separate' },
+        princesses_woodland_helpers: { ongoing: 'separate' },
+    }),
     createVariantProfile(SMASHUP_FACTION_IDS.MYTHIC_HORSES, SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD, {
         mythic_horses_seastar: { ability: 'separate' },
     }),
@@ -100,7 +121,6 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
     createVariantProfile(SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.DRAGONS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.COWBOYS, SMASHUP_FACTION_IDS.COWBOYS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.SAMURAI_POD),
-    createVariantProfile(SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.DRAGONS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.SUPERHEROES, SMASHUP_FACTION_IDS.SUPERHEROES_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.AVENGERS, SMASHUP_FACTION_IDS.AVENGERS_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
     createVariantProfile(SMASHUP_FACTION_IDS.SHIELD, SMASHUP_FACTION_IDS.SHIELD_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
@@ -117,7 +137,7 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
         mega_troopers_its_blitzin_time: { ability: 'separate', interaction: 'separate' },
         mega_troopers_lightning_rescue: { ability: 'separate', interaction: 'separate' },
         mega_troopers_lightning_crystal: { ability: 'separate', interaction: 'separate' },
-        mega_troopers_mega_attack: { ability: 'same', interaction: 'same' },
+        mega_troopers_mega_attack: { ability: 'shared', interaction: 'shared' },
         mega_troopers_plan_for_more: { ability: 'separate', interaction: 'separate' },
         mega_troopers_beta_6: { ability: 'separate', interaction: 'separate' },
         mega_troopers_blue_trooper: { ability: 'separate', interaction: 'separate' },
@@ -130,6 +150,7 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
     createVariantProfile(SMASHUP_FACTION_IDS.KAIJU, SMASHUP_FACTION_IDS.KAIJU_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.TIME_TRAVELERS, SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.EXPLORERS, SMASHUP_FACTION_IDS.EXPLORERS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.TEDDY_BEARS, SMASHUP_FACTION_IDS.TEDDY_BEARS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.STAR_ROAMERS, SMASHUP_FACTION_IDS.STAR_ROAMERS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.LUCHADORS, SMASHUP_FACTION_IDS.LUCHADORS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.VIGILANTES, SMASHUP_FACTION_IDS.VIGILANTES_POD, {
@@ -143,8 +164,11 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
         vigilantes_who_loves_ya_baby: { ability: 'separate' },
         vigilantes_dusty_henry: { ability: 'separate', interaction: 'separate' },
     }),
-    createVariantProfile(SMASHUP_FACTION_IDS.SHARKS, SMASHUP_FACTION_IDS.SHARKS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.ALL_STARS, SMASHUP_FACTION_IDS.ALL_STARS_POD, {
+        all_stars_full_moon: { powerModifier: 'separate' },
+    }, { basePool: 'shared' }),
     createVariantProfile(SMASHUP_FACTION_IDS.TORNADOS, SMASHUP_FACTION_IDS.TORNADOS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.DISCO_DANCERS, SMASHUP_FACTION_IDS.DISCO_DANCERS_POD),
     createVariantProfile(
         SMASHUP_FACTION_IDS.ANANSI_TALES,
         SMASHUP_FACTION_IDS.ANANSI_TALES_POD,

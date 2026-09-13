@@ -93,6 +93,42 @@
           "mime": "image/png"
         }
       }
+    },
+    "cards/disco_dancers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "11e3a92eee5e2499eb5c401af132e1ca39f590a5130f950ae4bc6eb573d8d589",
+          "bytes": 5292989,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/disco_dancers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "8b1354124fa21e6acdff4b06a8f0ee5f65590220fa27de68bf6a7887cf3638bb",
+          "bytes": 1189354,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/teddy_bears_pod": {
+      "variants": {
+        "png": {
+          "sha256": "dadb48ffcfc7585a9d6b9a80e264e1d6e32fc4aaa0582b2e0c859e089450f3bd",
+          "bytes": 5074270,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/teddy_bears_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "917b57c5222e5aec1627291d3ac2d82e877f73fb96c78b164bc08e63757395fb",
+          "bytes": 1296994,
+          "mime": "image/webp"
+        }
+      }
     }
   }
 }

@@ -2,7 +2,7 @@ import type { ActionCardDef, BaseCardDef, CardDef, MinionCardDef } from '../../d
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.ANCIENT_INCAS;
-const CARD_ATLAS = SMASHUP_ATLAS_IDS.CULTURE_SHOCK_CARDS;
+const CARD_ATLAS = SMASHUP_ATLAS_IDS.ANCIENT_INCAS_POD_CARDS;
 const BASE_ATLAS = SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES;
 
 export const ANCIENT_INCAS_MINIONS: MinionCardDef[] = [
@@ -15,7 +15,7 @@ export const ANCIENT_INCAS_MINIONS: MinionCardDef[] = [
         power: 2,
         abilityTags: ['onPlay', 'extra'],
         count: 4,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 51 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 10 },
     },
     {
         id: 'ancient_incas_incan_engineer',
@@ -26,7 +26,7 @@ export const ANCIENT_INCAS_MINIONS: MinionCardDef[] = [
         power: 3,
         abilityTags: ['onPlay'],
         count: 3,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 52 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 14 },
     },
     {
         id: 'ancient_incas_child_of_the_sun',
@@ -37,7 +37,7 @@ export const ANCIENT_INCAS_MINIONS: MinionCardDef[] = [
         power: 4,
         abilityTags: ['ongoing', 'extra'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 53 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 17 },
     },
     {
         id: 'ancient_incas_sapa_inca',
@@ -48,7 +48,7 @@ export const ANCIENT_INCAS_MINIONS: MinionCardDef[] = [
         power: 5,
         abilityTags: ['onPlay', 'ongoing'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 58 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 19 },
     },
 ];
 
@@ -64,7 +64,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         specialTiming: 'afterScoring',
         specialNeedsBase: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 47 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 8 },
     },
     {
         id: 'ancient_incas_golden_condor',
@@ -75,7 +75,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 48 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 7 },
     },
     {
         id: 'ancient_incas_royal_highway',
@@ -88,7 +88,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'base',
         playNeedsBase: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 49 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 6 },
     },
     {
         id: 'ancient_incas_quipu_strings',
@@ -99,7 +99,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 50 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 9 },
     },
     {
         id: 'ancient_incas_armory',
@@ -112,7 +112,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'base',
         playNeedsBase: true,
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 54 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 4 },
     },
     {
         id: 'ancient_incas_fortress_walls',
@@ -125,7 +125,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'base',
         playNeedsBase: true,
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 55 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 2 },
     },
     {
         id: 'ancient_incas_temple_of_the_sun',
@@ -138,7 +138,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'base',
         playNeedsBase: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 56 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 1 },
     },
     {
         id: 'ancient_incas_signs_in_the_stars',
@@ -151,7 +151,7 @@ export const ANCIENT_INCAS_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'base',
         playNeedsBase: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 57 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 },
     },
 ];
 

@@ -35,6 +35,7 @@ describe('POD power modifier registration', () => {
         const { powerModifierIds } = getRegisteredModifierIds();
         expect(powerModifierIds.has('ghost_haunting_pod')).toBe(true);
         expect(powerModifierIds.has('killer_plant_weed_eater_pod')).toBe(true);
+        expect(powerModifierIds.has('all_stars_full_moon_pod')).toBe(true);
         expect(powerModifierIds.has('bear_cavalry_polar_commando_pod')).toBe(false);
         expect(powerModifierIds.has('base_monkey_lab_pod')).toBe(false);
         expect(powerModifierIds.has('fairies_daisy_chain_pod')).toBe(false);
@@ -287,6 +288,26 @@ describe('registerPodPowerModifierAliases completion audit', () => {
 
         expect(getBasePowerModifiers(state, 0, '0')).toBe(5);
         expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint + 3);
+    });
+
+    it('synthetic breakpoint modifier 即使命中真实实体，也不应生成 POD alias 导致基础版双算', () => {
+        registerCustomBreakpointModifiers([
+            {
+                sourceDefId: 'base_storytellers_hut',
+                runtimeIdentity: 'synthetic',
+                compute: (ctx) => ctx.base.defId === 'base_storytellers_hut'
+                    ? -2 * Number(ctx.base.metadata?.storytellersHutCounters ?? 0)
+                    : 0,
+            },
+        ]);
+        registerPodPowerModifierAliases();
+
+        const base = makeBase('base_storytellers_hut');
+        base.metadata = { storytellersHutCounters: 1 };
+        const state = makeStateWithBases([base]);
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(22);
+        expect(getRegisteredModifierIds().breakpointModifierIds.has('base_storytellers_hut_pod')).toBe(false);
     });
 });
 

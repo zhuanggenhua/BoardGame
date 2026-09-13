@@ -2291,6 +2291,10 @@
       "name": "Disco Dancers",
       "description": "Chain extra actions, movement, and power counters into scoring-floor momentum."
     },
+    "disco_dancers_pod": {
+      "name": "Disco Dancers (POD)",
+      "description": "POD card-art edition with a separate card atlas, sharing Disco Dancers' extra-action and dance-floor momentum gameplay."
+    },
     "kitty_cats_pod": {
       "name": "Kitty Cats (POD)",
       "description": "POD version of Kitty Cats, using the official POD card sheet."
@@ -2450,6 +2454,10 @@
     "teddy_bears": {
       "name": "Teddy Bears",
       "description": "Control, transfer, move, and protect around low-power minions. Gameplay implementation is still in progress."
+    },
+    "teddy_bears_pod": {
+      "name": "Teddy Bears (POD)",
+      "description": "POD card-art edition with a separate card atlas, sharing Teddy Bears' low-power control and protection gameplay."
     },
     "grannies": {
       "name": "Grannies",
@@ -3048,6 +3056,62 @@
     "disco_dancers_stayin_alive": {
       "name": "Stayin' Alive",
       "effectText": "Choose one of your minions in play. Place a card with the same name from your discard pile into your hand."
+    },
+    "disco_dancers_its_raining_men_pod": {
+      "name": "It's Raining Men",
+      "effectText": "Play an extra minion."
+    },
+    "disco_dancers_i_will_survive_pod": {
+      "name": "I Will Survive",
+      "effectText": "Special: After a base scores, return one of your minions there to its owner's hand instead of the discard pile."
+    },
+    "disco_dancers_im_so_excited_pod": {
+      "name": "I'm So Excited",
+      "effectText": "Move one of your minions. Draw a card."
+    },
+    "disco_dancers_we_are_family_pod": {
+      "name": "We Are Family",
+      "effectText": "Play on a minion. Ongoing: Once per turn, after a standard action directly affects another minion here, you may have this minion be affected the same way."
+    },
+    "disco_dancers_get_down_tonight_pod": {
+      "name": "Get Down Tonight",
+      "effectText": "A minion has +2 power until the end of the turn. Draw a card."
+    },
+    "disco_dancers_stayin_alive_pod": {
+      "name": "Stayin' Alive",
+      "effectText": "Choose one of your minions in play. Place a card with the same name from your discard pile into your hand."
+    },
+    "disco_dancers_disco_inferno_pod": {
+      "name": "Disco Inferno",
+      "effectText": "Each player may place a +1 power counter on a minion. Draw a card for each minion affected."
+    },
+    "disco_dancers_last_dance_pod": {
+      "name": "Last Dance",
+      "effectText": "Each player may destroy one of their own minions. Each minion actually destroyed this way gives its controller 1 VP."
+    },
+    "disco_dancers_celebration_pod": {
+      "name": "Celebration",
+      "effectText": "Play two extra actions."
+    },
+    "disco_dancers_turn_the_beat_around_pod": {
+      "name": "Turn The Beat Around",
+      "effectText": "Give a minion +1 power until the end of the turn. For each minion affected, choose a minion there to get -1 power until the end of the turn. Special: You may play this before a base scores."
+    },
+    "disco_dancers_roller_pod": {
+      "name": "Roller",
+      "abilityText": "Ongoing: After this minion is directly affected by a standard action, if it did not already have a +1 power counter, place one on it."
+    },
+    "disco_dancers_diva_pod": {
+      "name": "Diva",
+      "abilityText": "Ongoing: Once per turn, after a standard action directly affects one of your other minions here, you may have this minion be affected the same way."
+    },
+    "disco_dancers_ul_disco_lou_pod": {
+      "name": "Disco Lou",
+      "abilityText": "Play an extra action, or place an action from your discard pile on top of your deck."
+    },
+    "disco_dancers_dancing_king_pod": {
+      "name": "Dancing King",
+      "abilityText": "Ongoing: After a standard action directly affects a minion here, you may have another minion here be affected the same way."
     },
     "base_funky_town": {
       "name": "Funky Town",
@@ -9589,6 +9653,54 @@
     "teddy_bears_snuggly_bear": {
       "name": "Snuggly Bear",
       "abilityText": "Special: After you play your first minion in a turn, you may immediately play this minion there as an extra minion."
+    },
+    "teddy_bears_tea_party_pod": {
+      "name": "Tea Party",
+      "effectText": "Play on a base. Talent: If there are two or more minions here and at least one is yours, draw a card."
+    },
+    "teddy_bears_cuddle_pod": {
+      "name": "Cuddle",
+      "effectText": "Play on a minion. Ongoing: This minion’s abilities are cancelled."
+    },
+    "teddy_bears_care_package_pod": {
+      "name": "Care Package",
+      "effectText": "Draw a card and play an extra minion."
+    },
+    "teddy_bears_group_hug_pod": {
+      "name": "Group Hug",
+      "effectText": "Give one of your minions +1 power for each other minion at the same base until the end of the turn."
+    },
+    "teddy_bears_bear_picnic_pod": {
+      "name": "Bear Picnic",
+      "effectText": "Play on a base. Ongoing: Other players cannot play minions they own of power 2 or less on other bases."
+    },
+    "teddy_bears_too_cute_pod": {
+      "name": "Too Cute",
+      "effectText": "Play on a base. Ongoing: Your minions here cannot be destroyed by other player’s cards."
+    },
+    "teddy_bears_love_overload_pod": {
+      "name": "Love Overload",
+      "effectText": "Special: Before a base scores, destroy the minion there with the most power. If tied, destroy all tied minions."
+    },
+    "teddy_bears_square_deal_pod": {
+      "name": "Square Deal",
+      "effectText": "Draw cards until at least one player has fewer cards in their hand than you."
+    },
+    "teddy_bears_snuggly_bear_pod": {
+      "name": "Snuggly Bear",
+      "abilityText": "Special: After you play your first minion in a turn, you may immediately play this minion there as an extra minion."
+    },
+    "teddy_bears_lovey_bear_pod": {
+      "name": "Lovey Bear",
+      "abilityText": "Ongoing: This minion’s starting power is increased to the highest starting power of an opponent’s minion here."
+    },
+    "teddy_bears_fun_bear_pod": {
+      "name": "Fun Bear",
+      "abilityText": "Ongoing: After another player plays or moves a minion to here, place a +1 power counter on this minion."
+    },
+    "teddy_bears_sir_squeezes_pod": {
+      "name": "Sir Squeezes",
+      "abilityText": "Play up to three minions of power 3 or less, whose total power is 5 or less, as extra minions here."
     },
     "grannies_chicken_soup": {
       "name": "Chicken Soup",

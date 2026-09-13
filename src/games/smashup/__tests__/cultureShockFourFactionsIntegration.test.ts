@@ -45,19 +45,44 @@ describe('文化冲击四派系静态接入', () => {
         expect(getFactionCards(SMASHUP_FACTION_IDS.ANCIENT_INCAS)).toHaveLength(12);
     });
 
-    it('四派系卡图槽位覆盖文化冲击 atlas 的 0-58，且不注册标识格 59', () => {
+    it('前三个文化冲击派系继续覆盖文化冲击 atlas 的 0-46，且不注册后续格', () => {
         const slots = [
             ...ANANSI_TALES_CARDS,
             ...GRIMMS_FAIRY_TALES_CARDS,
             ...RUSSIAN_FAIRY_TALES_CARDS,
-            ...ANCIENT_INCAS_CARDS,
         ]
             .map(card => card.previewRef?.type === 'atlas' ? card.previewRef.index : -1)
             .sort((left, right) => left - right);
 
-        expect(slots).toEqual(Array.from({ length: 59 }, (_value, index) => index));
-        expect(slots).not.toContain(59);
-        expect(new Set(slots).size).toBe(59);
+        expect(slots).toEqual(Array.from({ length: 47 }, (_value, index) => index));
+        expect(slots).not.toContain(47);
+        expect(new Set(slots).size).toBe(47);
+    });
+
+    it('古代印加人迁移到独立 POD atlas，保留 20 张实体牌构成', () => {
+        const slots = Object.fromEntries(ANCIENT_INCAS_CARDS.map(card => [
+            card.id,
+            card.previewRef?.type === 'atlas' ? card.previewRef.index : -1,
+        ]));
+
+        expect(slots).toEqual({
+            ancient_incas_llama: 10,
+            ancient_incas_incan_engineer: 14,
+            ancient_incas_child_of_the_sun: 17,
+            ancient_incas_sapa_inca: 19,
+            ancient_incas_ashlar_masonry: 8,
+            ancient_incas_golden_condor: 7,
+            ancient_incas_royal_highway: 6,
+            ancient_incas_quipu_strings: 9,
+            ancient_incas_armory: 4,
+            ancient_incas_fortress_walls: 2,
+            ancient_incas_temple_of_the_sun: 1,
+            ancient_incas_signs_in_the_stars: 0,
+        });
+        expect(new Set(ANCIENT_INCAS_CARDS.map(card => (
+            card.previewRef?.type === 'atlas' ? card.previewRef.atlasId : null
+        )))).toEqual(new Set([SMASHUP_ATLAS_IDS.ANCIENT_INCAS_POD_CARDS]));
+        expect(ANCIENT_INCAS_CARDS.find(card => card.id === 'ancient_incas_incan_engineer')?.count).toBe(3);
     });
 
     it('八张基地复用唯一文化冲击基地 atlas', () => {
@@ -98,6 +123,7 @@ describe('文化冲击四派系静态接入', () => {
 
     it('注册卡牌 atlas 与派系选择元数据', () => {
         expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.CULTURE_SHOCK_CARDS)).toBe('smashup/cards/culture_shock/atlas');
+        expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.ANCIENT_INCAS_POD_CARDS)).toBe('smashup/cards/ancient_incas_pod');
         expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES)).toBe('smashup/base/polynesian_voyagers/atlas');
 
         const byId = new Map(FACTION_METADATA.map(meta => [meta.id, meta]));

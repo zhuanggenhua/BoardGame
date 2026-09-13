@@ -4,6 +4,7 @@ import { collectTriggers } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { SU_EVENTS } from '../../domain/types';
+import { SMASHUP_ATLAS_IDS } from '../../domain/ids';
 import {
     applyEvents,
     expectRegisteredAbilityContract,
@@ -35,9 +36,26 @@ describe('古代印加人代表性玩法行为', () => {
     it('静态牌组合同保持 12 张唯一卡面、20 张实体牌、2 张基地', () => {
         expect(ANCIENT_INCAS_CARDS).toHaveLength(12);
         expect(ANCIENT_INCAS_CARDS.reduce((total, card) => total + card.count, 0)).toBe(20);
-        expect(ANCIENT_INCAS_CARDS.map(card => card.previewRef?.index).sort((a, b) => Number(a) - Number(b))).toEqual(
-            Array.from({ length: 12 }, (_value, index) => index + 47),
-        );
+        expect(Object.fromEntries(ANCIENT_INCAS_CARDS.map(card => [
+            card.id,
+            card.previewRef?.type === 'atlas' ? card.previewRef.index : -1,
+        ]))).toEqual({
+            ancient_incas_llama: 10,
+            ancient_incas_incan_engineer: 14,
+            ancient_incas_child_of_the_sun: 17,
+            ancient_incas_sapa_inca: 19,
+            ancient_incas_ashlar_masonry: 8,
+            ancient_incas_golden_condor: 7,
+            ancient_incas_royal_highway: 6,
+            ancient_incas_quipu_strings: 9,
+            ancient_incas_armory: 4,
+            ancient_incas_fortress_walls: 2,
+            ancient_incas_temple_of_the_sun: 1,
+            ancient_incas_signs_in_the_stars: 0,
+        });
+        expect(new Set(ANCIENT_INCAS_CARDS.map(card => (
+            card.previewRef?.type === 'atlas' ? card.previewRef.atlasId : null
+        )))).toEqual(new Set([SMASHUP_ATLAS_IDS.ANCIENT_INCAS_POD_CARDS]));
         expect(ANCIENT_INCAS_BASES.map(base => base.id).sort()).toEqual([
             'base_cuzcu',
             'base_machu_picchu',
