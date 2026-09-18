@@ -119,6 +119,20 @@ export const fetchAssetInventory = async ({ inventoryUrl = process.env.ASSET_SER
 
 const hashBuffer = (buffer) => createHash('sha256').update(buffer).digest('hex');
 
+const replaceFile = (tempPath, filePath) => {
+    try {
+        renameSync(tempPath, filePath);
+        return;
+    } catch (error) {
+        if (!existsSync(filePath) || !['EEXIST', 'EPERM'].includes(error?.code)) {
+            throw error;
+        }
+    }
+
+    rmSync(filePath, { force: true });
+    renameSync(tempPath, filePath);
+};
+
 const shouldSkipExisting = (filePath, object) => {
     if (!existsSync(filePath)) return false;
     const stats = statSync(filePath);
@@ -172,7 +186,7 @@ export const downloadAssetKeys = async ({
             mkdirSync(path.dirname(filePath), { recursive: true });
             const tempPath = `${filePath}.download-${process.pid}`;
             await pipeline(Readable.from([body]), createWriteStream(tempPath));
-            renameSync(tempPath, filePath);
+            replaceFile(tempPath, filePath);
             downloaded += 1;
         }
     };

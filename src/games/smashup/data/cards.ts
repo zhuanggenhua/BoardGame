@@ -108,6 +108,7 @@ import { MEGA_TROOPERS_POD_CARDS } from './factions/mega_troopers_pod';
 import { CEASE_AND_DESIST_BASES, CEASE_AND_DESIST_CARDS } from './factions/cease_and_desist';
 import { INTERNATIONAL_INCIDENT_BASES, INTERNATIONAL_INCIDENT_CARDS } from './factions/international_incident';
 import { WHAT_WERE_WE_THINKING_BASES, WHAT_WERE_WE_THINKING_CARDS } from './factions/what_were_we_thinking';
+import { TEDDY_BEARS_POD_CARDS } from './factions/teddy_bears_pod';
 import { EXCELLENT_MOVIES_TEENS_BASES, EXCELLENT_MOVIES_TEENS_CARDS } from './factions/excellent_movies_teens';
 import { ACTION_HEROES_POD_CARDS } from './factions/action_heroes_pod';
 import { DIY_KILLERS_BASES, DIY_KILLERS_CARDS } from './factions/diy_killers';
@@ -152,6 +153,7 @@ import {
     TRUCKERS_CARDS,
     VIGILANTES_CARDS,
 } from './factions/zhongguo';
+import { DISCO_DANCERS_POD_CARDS } from './factions/disco_dancers_pod';
 import { BIG_HERO_6_BASES, BIG_HERO_6_CARDS } from './factions/big_hero_6';
 import { FROZEN_BASES, FROZEN_CARDS } from './factions/frozen';
 import { LION_KING_BASES, LION_KING_CARDS } from './factions/lion_king';
@@ -319,6 +321,7 @@ registerCards(STAR_ROAMERS_POD_CARDS);
 registerCards(INTERNATIONAL_INCIDENT_CARDS);
 registerCards(LUCHADORS_POD_CARDS);
 registerCards(WHAT_WERE_WE_THINKING_CARDS);
+registerCards(TEDDY_BEARS_POD_CARDS);
 registerCards(EXCELLENT_MOVIES_TEENS_CARDS);
 registerCards(ACTION_HEROES_POD_CARDS);
 registerCards(DIY_KILLERS_CARDS);
@@ -362,6 +365,7 @@ registerCards(VIGILANTES_CARDS);
 registerCards(VIGILANTES_POD_CARDS);
 registerCards(TRUCKERS_CARDS);
 registerCards(DISCO_DANCERS_CARDS);
+registerCards(DISCO_DANCERS_POD_CARDS);
 registerCards(BIG_HERO_6_CARDS);
 registerCards(FROZEN_CARDS);
 registerCards(LION_KING_CARDS);

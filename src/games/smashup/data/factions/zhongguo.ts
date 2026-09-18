@@ -2,6 +2,11 @@ import type { ActionCardDef, CardDef, MinionCardDef } from '../../domain/types';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const ZHONGGUO_ATLAS = SMASHUP_ATLAS_IDS.CARDS13;
+const KUNG_FU_FIGHTERS_ATLAS = SMASHUP_ATLAS_IDS.KUNG_FU_FIGHTERS_POD_CARDS;
+
+function atlasPreview(atlasId: string, index: number) {
+    return { type: 'atlas' as const, atlasId, index };
+}
 
 function minion(
     id: string,
@@ -54,48 +59,60 @@ const TRUCKERS = SMASHUP_FACTION_IDS.TRUCKERS;
 const DISCO_DANCERS = SMASHUP_FACTION_IDS.DISCO_DANCERS;
 
 export const KUNG_FU_FIGHTERS_CARDS: CardDef[] = [
-    action('kung_fu_fighters_fast_as_lightning', '快如闪电', 'Fast as Lightning', KUNG_FU_FIGHTERS, 2, 0, {
+    action('kung_fu_fighters_fast_as_lightning', '快如闪电', 'Fast as Lightning', KUNG_FU_FIGHTERS, 2, 8, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 8),
         abilityTags: ['onPlay'],
     }),
-    minion('kung_fu_fighters_dragon_warrior', '神龙武者', 'Dragon Warrior', KUNG_FU_FIGHTERS, 5, 1, 1, {
+    minion('kung_fu_fighters_dragon_warrior', '神龙武者', 'Dragon Warrior', KUNG_FU_FIGHTERS, 5, 1, 19, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 19),
         abilityTags: ['ongoing', 'talent'],
     }),
-    minion('kung_fu_fighters_cricket', '蟋蟀', 'Cricket', KUNG_FU_FIGHTERS, 2, 4, 2, {
+    minion('kung_fu_fighters_cricket', '蟋蟀', 'Cricket', KUNG_FU_FIGHTERS, 2, 4, 12, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 12),
         abilityTags: ['onPlay'],
     }),
-    action('kung_fu_fighters_oh_hoh_hoh_hoah', '哦-厚-厚-厚-厚', 'Oh-hoh-hoh-hoah', KUNG_FU_FIGHTERS, 1, 3, {
+    action('kung_fu_fighters_oh_hoh_hoh_hoah', '哦-厚-厚-厚-厚', 'Oh-hoh-hoh-hoah', KUNG_FU_FIGHTERS, 1, 7, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 7),
         subtype: 'ongoing',
         ongoingTarget: 'base',
         playNeedsBase: true,
         abilityTags: ['ongoing'],
     }),
-    action('kung_fu_fighters_everybody_knew_their_part', '各尽其责', 'Everybody Knew Their Part', KUNG_FU_FIGHTERS, 1, 4, {
+    action('kung_fu_fighters_everybody_knew_their_part', '各尽其责', 'Everybody Knew Their Part', KUNG_FU_FIGHTERS, 1, 6, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 6),
         abilityTags: ['onPlay'],
     }),
-    action('kung_fu_fighters_everybody_was_kung_fu_fighting', '人人都是功夫高手', 'Everybody was Kung Fu Fighting', KUNG_FU_FIGHTERS, 1, 5, {
+    action('kung_fu_fighters_everybody_was_kung_fu_fighting', '人人都是功夫高手', 'Everybody was Kung Fu Fighting', KUNG_FU_FIGHTERS, 1, 0, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 0),
         abilityTags: ['onPlay'],
     }),
-    action('kung_fu_fighters_expert_timing', '掌握时机', 'Expert Timing', KUNG_FU_FIGHTERS, 1, 6, {
+    action('kung_fu_fighters_expert_timing', '掌握时机', 'Expert Timing', KUNG_FU_FIGHTERS, 1, 1, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 1),
         subtype: 'special',
         specialTiming: 'beforeScoring',
         abilityTags: ['onPlay', 'special'],
     }),
-    action('kung_fu_fighters_ancient_chinese_art', '古老的中国艺术', 'Ancient Chinese Art', KUNG_FU_FIGHTERS, 2, 7, {
+    action('kung_fu_fighters_ancient_chinese_art', '古老的中国艺术', 'Ancient Chinese Art', KUNG_FU_FIGHTERS, 2, 2, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 2),
         subtype: 'ongoing',
         ongoingTarget: 'base',
         playNeedsBase: true,
         abilityTags: ['ongoing', 'talent'],
     }),
-    action('kung_fu_fighters_a_little_bit_frightening', '有些胆寒', 'A Little Bit Frightening', KUNG_FU_FIGHTERS, 1, 8, {
+    action('kung_fu_fighters_a_little_bit_frightening', '有些胆寒', 'A Little Bit Frightening', KUNG_FU_FIGHTERS, 1, 4, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 4),
         abilityTags: ['onPlay'],
     }),
-    minion('kung_fu_fighters_drunken_master', '醉酒宗师', 'Drunken Master', KUNG_FU_FIGHTERS, 3, 3, 9, {
+    minion('kung_fu_fighters_drunken_master', '醉酒宗师', 'Drunken Master', KUNG_FU_FIGHTERS, 3, 3, 16, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 16),
         abilityTags: ['talent'],
     }),
-    minion('kung_fu_fighters_lady_whirlwind', '旋风女侠', 'Lady Whirlwind', KUNG_FU_FIGHTERS, 4, 2, 10, {
+    minion('kung_fu_fighters_lady_whirlwind', '旋风女侠', 'Lady Whirlwind', KUNG_FU_FIGHTERS, 4, 2, 18, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 18),
         abilityTags: ['talent'],
     }),
-    action('kung_fu_fighters_lets_get_it_on', '让我们躁起来', "Let's Get It On", KUNG_FU_FIGHTERS, 1, 11, {
+    action('kung_fu_fighters_lets_get_it_on', '让我们躁起来', "Let's Get It On", KUNG_FU_FIGHTERS, 1, 5, {
+        previewRef: atlasPreview(KUNG_FU_FIGHTERS_ATLAS, 5),
         abilityTags: ['onPlay'],
     }),
 ];

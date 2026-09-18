@@ -2248,6 +2248,10 @@
       "name": "迪厅舞王",
       "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
     },
+    "disco_dancers_pod": {
+      "name": "迪厅舞王（POD版）",
+      "description": "POD 卡图版本，使用独立卡图图集，并沿用迪厅舞王的额外战术与舞池连锁玩法。"
+    },
     "kitty_cats_pod": {
       "name": "猫咪 (POD版)",
       "description": "猫咪 POD 版，使用官方 POD 卡图。"
@@ -2407,6 +2411,10 @@
     "teddy_bears": {
       "name": "泰迪熊",
       "description": "以控制、转移、移动和保护围绕小战力仆从展开；玩法仍在实现中。"
+    },
+    "teddy_bears_pod": {
+      "name": "泰迪熊（POD版）",
+      "description": "POD 卡图版本，使用独立卡图图集，并沿用泰迪熊的小战力控制与保护玩法。"
     },
     "grannies": {
       "name": "外婆",
@@ -3005,6 +3013,62 @@
     "disco_dancers_stayin_alive": {
       "name": "活着",
       "effectText": "选择你的一个在场随从。将你弃牌堆中的一张同名牌置于手牌。"
+    },
+    "disco_dancers_its_raining_men_pod": {
+      "name": "男人雨",
+      "effectText": "额外打出一个随从。"
+    },
+    "disco_dancers_i_will_survive_pod": {
+      "name": "我会活下去",
+      "effectText": "特殊：基地计分后，将该处你的一个随从返回其拥有者手牌而不进入弃牌堆。"
+    },
+    "disco_dancers_im_so_excited_pod": {
+      "name": "我很亢奋",
+      "effectText": "移动你的一个随从。抓 1 张牌。"
+    },
+    "disco_dancers_we_are_family_pod": {
+      "name": "我们是一家人",
+      "effectText": "对随从打出。持续：每回合一次，当有普通战术直接影响本基地中的其他随从时，你可以使此随从受到同样的影响。"
+    },
+    "disco_dancers_get_down_tonight_pod": {
+      "name": "就在今晚",
+      "effectText": "一个随从 +2 战力直至回合结束。抓一张牌。"
+    },
+    "disco_dancers_stayin_alive_pod": {
+      "name": "活着",
+      "effectText": "选择你的一个在场随从。将你弃牌堆中的一张同名牌置于手牌。"
+    },
+    "disco_dancers_disco_inferno_pod": {
+      "name": "迪斯科地狱",
+      "effectText": "每位玩家可以为一个随从放置 1 枚 +1 战力标记。每有 1 个随从受到影响，抓 1 张牌。"
+    },
+    "disco_dancers_last_dance_pod": {
+      "name": "最后的舞曲",
+      "effectText": "每位玩家可以消灭自己的一个随从。每一个实际被消灭的随从使其控制者获得 1 VP。"
+    },
+    "disco_dancers_celebration_pod": {
+      "name": "庆祝",
+      "effectText": "额外打出 2 张战术。"
+    },
+    "disco_dancers_turn_the_beat_around_pod": {
+      "name": "节拍一转",
+      "effectText": "使一个随从 +1 战力直至回合结束。每有 1 个随从受到影响，你选择该处 1 个随从 -1 战力直至回合结束。特殊：可以在基地计分前打出。"
+    },
+    "disco_dancers_roller_pod": {
+      "name": "轮滑舞娘",
+      "abilityText": "持续：当此随从被普通战术直接影响后，若之前此随从上没有 +1 战力标记，则放置 1 枚于其上。"
+    },
+    "disco_dancers_diva_pod": {
+      "name": "主唱",
+      "abilityText": "持续：每回合一次，当有普通战术直接影响本基地中你的其他随从时，你可以使此随从受到同样的影响。"
+    },
+    "disco_dancers_ul_disco_lou_pod": {
+      "name": "迪斯科·卢",
+      "abilityText": "额外打出一张战术，或将你弃牌堆中的一张战术置于你的牌库顶。"
+    },
+    "disco_dancers_dancing_king_pod": {
+      "name": "舞王",
+      "abilityText": "持续：当有普通战术直接影响本基地中的随从时，你可以使此处另一个随从受到同样的影响。"
     },
     "base_funky_town": {
       "name": "时髦镇",
@@ -9546,6 +9610,54 @@
     "teddy_bears_snuggly_bear": {
       "name": "依偎熊",
       "abilityText": "特殊：某回合中你打出第一个佣兵后，你可以立即额外打出本佣兵至同基地。"
+    },
+    "teddy_bears_tea_party_pod": {
+      "name": "茶会",
+      "effectText": "对基地打出。天赋：若本基地有至少两个佣兵，且其中有你的佣兵，抓一张牌。"
+    },
+    "teddy_bears_cuddle_pod": {
+      "name": "抱抱",
+      "effectText": "对佣兵打出。持续：此佣兵能力被取消。"
+    },
+    "teddy_bears_care_package_pod": {
+      "name": "爱心包裹",
+      "effectText": "抓一张牌并打出一个额外佣兵。"
+    },
+    "teddy_bears_group_hug_pod": {
+      "name": "集体拥抱",
+      "effectText": "你的一个佣兵战力上升直到回合结束，上升数值等于该基地其他佣兵的数量。"
+    },
+    "teddy_bears_bear_picnic_pod": {
+      "name": "泰迪熊野餐",
+      "effectText": "对基地打出。持续：其他玩家不能向本基地以外的基地打出自己拥有的战力 2 或更低的佣兵。"
+    },
+    "teddy_bears_too_cute_pod": {
+      "name": "太可爱",
+      "effectText": "对基地打出。持续：本基地你的佣兵无法被其他玩家的卡牌消灭。"
+    },
+    "teddy_bears_love_overload_pod": {
+      "name": "爱意过载",
+      "effectText": "特殊：基地计分前，消灭该处战力最高的佣兵。若多个佣兵平手，将其全部消灭。"
+    },
+    "teddy_bears_square_deal_pod": {
+      "name": "公平交易",
+      "effectText": "抓牌直到至少有一位玩家手牌数少于你。"
+    },
+    "teddy_bears_snuggly_bear_pod": {
+      "name": "依偎熊",
+      "abilityText": "特殊：某回合中你打出第一个佣兵后，你可以立即额外打出本佣兵至同基地。"
+    },
+    "teddy_bears_lovey_bear_pod": {
+      "name": "爱心熊",
+      "abilityText": "持续：此佣兵的初始战力增加至本基地中对手佣兵初始战力的最高值。"
+    },
+    "teddy_bears_fun_bear_pod": {
+      "name": "欢乐熊",
+      "abilityText": "持续：另一位玩家打出或移动一个佣兵至本基地后，此佣兵获得 +1 战力标记。"
+    },
+    "teddy_bears_sir_squeezes_pod": {
+      "name": "挤挤爵士",
+      "abilityText": "额外打出至多 3 个战力 3 或更低，且战力总和为 5 或更低的佣兵至本基地。"
     },
     "grannies_chicken_soup": {
       "name": "鸡汤",

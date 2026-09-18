@@ -1047,7 +1047,7 @@ export function registerAllStarsAbilities(): void {
     registerAbility('all_stars_prepare_for_battle_pod', 'onPlay', allStarsPodPrepareForBattle);
     registerAbility('all_stars_gelf_pod', 'talent', allStarsPodGelf);
     registerAbility('all_stars_granny_pod', 'talent', allStarsPodGranny);
-    registerPowerModifier('all_stars_full_moon_pod', allStarsPodFullMoonModifier, { podStrategy: 'override' });
+    registerPowerModifier('all_stars_full_moon_pod', allStarsPodFullMoonModifier);
 
     registerOngoingPowerModifier('all_stars_full_moon', 'base', 'ownerMinions', 1);
     registerBaseAbility('base_locker_room', 'onTurnStart', lockerRoom, {

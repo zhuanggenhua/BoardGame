@@ -192,7 +192,7 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/base/base4');
     });
 
-    it('四个原版派系预热各自中文组合图集而不是 POD 图集', () => {
+    it('原版派系按现行卡面来源预热中文组合图集或 POD 图集', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({
                 '0': ['astroknights', 'kung_fu_fighters'],
@@ -203,15 +203,14 @@ describe('smashUpCriticalImageResolver', () => {
         );
 
         expect(result.critical).toContain('smashup/cards/cease_and_desist');
-        expect(result.critical).toContain('smashup/cards/zhongguo');
+        expect(result.critical).toContain('smashup/cards/kung_fu_fighters_pod');
         expect(result.critical).toContain('smashup/cards/culture_shock/atlas');
         expect(result.critical).not.toContain('smashup/cards/astroknights_pod');
-        expect(result.critical).not.toContain('smashup/cards/kung_fu_fighters_pod');
         expect(result.critical).not.toContain('smashup/cards/anansi_tales_pod');
         expect(result.critical).not.toContain('smashup/cards/russian_fairy_tales_pod');
     });
 
-    it('文化冲击四派系会共享预热文化冲击卡图与基地 atlas', () => {
+    it('文化冲击四派系按现行卡图预热共享 atlas 与古代印加 POD atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({
                 '0': ['anansi_tales', 'grimms_fairy_tales'],
@@ -222,8 +221,10 @@ describe('smashUpCriticalImageResolver', () => {
         );
 
         expect(result.critical).toContain('smashup/cards/culture_shock/atlas');
+        expect(result.critical).toContain('smashup/cards/ancient_incas_pod');
         expect(result.critical).toContain('smashup/base/polynesian_voyagers/atlas');
         expect(result.critical.filter(path => path === 'smashup/cards/culture_shock/atlas')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/cards/ancient_incas_pod')).toHaveLength(1);
         expect(result.critical.filter(path => path === 'smashup/base/polynesian_voyagers/atlas')).toHaveLength(1);
     });
 

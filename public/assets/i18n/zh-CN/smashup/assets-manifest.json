@@ -580,6 +580,15 @@
         }
       }
     },
+    "cards/ancient_incas_pod": {
+      "variants": {
+        "png": {
+          "sha256": "1523cd2cc537a11b70c5262deb81485fb57b36b63b3c4d37d7604c573b83cd6c",
+          "bytes": 6291256,
+          "mime": "image/png"
+        }
+      }
+    },
     "cards/astroknights_pod": {
       "variants": {
         "png": {
@@ -630,6 +639,15 @@
         "webp": {
           "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
           "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ancient_incas_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "0f57ea2aa73ba500ad3d021a7c189f44900b506feb462618341c52d8a279f5d6",
+          "bytes": 1644142,
           "mime": "image/webp"
         }
       }
