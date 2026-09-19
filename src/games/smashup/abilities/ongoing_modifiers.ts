@@ -207,7 +207,6 @@ function registerBearCavalryModifiers(): void {
     registerPowerModifiers([
         {
             sourceDefId: 'bear_cavalry_polar_commando',
-            podStrategy: 'baseOnly',
             modifier: (ctx: PowerModifierContext) => {
                 if (ctx.minion.defId === 'bear_cavalry_polar_commando_pod') return 0;
                 if (ctx.minion.defId !== 'bear_cavalry_polar_commando') return 0;
