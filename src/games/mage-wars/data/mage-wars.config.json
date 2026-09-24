@@ -83,12 +83,6 @@
       "kind": "status-token"
     },
     {
-      "id": "effect-die-d12-face",
-      "path": "mage-wars/dice/effect-die-d12-face",
-      "kind": "die-texture",
-      "description": "效果骰 D12 面参考"
-    },
-    {
       "id": "guard-token",
       "path": "mage-wars/tokens/status/guard-token",
       "kind": "status-token"
@@ -1587,9 +1581,6 @@
       "tags": [
         "effect",
         "random-source"
-      ],
-      "assetRefs": [
-        "effect-die-d12-face"
       ],
       "data": {
         "rulesObject": "effect-die"

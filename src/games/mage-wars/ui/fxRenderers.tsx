@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
     BoardBurstImpactPreset,
     BoardDamageImpactPreset,
@@ -74,6 +75,24 @@ function AttackDieResult({ result }: { result: number }) {
     );
 }
 
+function EffectDieResult({ result }: { result: number }) {
+    const { t } = useTranslation('game-mage-wars');
+
+    return (
+        <span
+            className="inline-flex min-h-[2.5rem] shrink-0 items-center rounded-[0.22rem] border border-sky-100/35 bg-slate-950/72 px-2.5 text-[clamp(0.8rem,1.15vw,1rem)] font-black tracking-[0.08em] text-sky-100 shadow-[0_6px_14px_rgba(0,0,0,0.42)]"
+            data-testid="mage-wars-fx-effect-die-face"
+            data-visual-role="effect-die-result"
+            data-die-kind="d12"
+            data-asset-status="tts-native-not-embedded"
+            aria-label={`效果骰 ${result}`}
+            title={t('dice.effectNativeAssetNote')}
+        >
+            {t('dice.effectResult', { result })}
+        </span>
+    );
+}
+
 function AttackDiceFeedback({
     diceResults,
     effectDieResult,
@@ -91,6 +110,7 @@ function AttackDiceFeedback({
             data-testid="mage-wars-fx-attack-dice"
             data-placement="board-center"
             data-visual-role="attack-dice-result"
+            data-visible-duration-ms={visibleDurationMs}
             initial={{ opacity: 0, scale: 0.68, y: 10 }}
             animate={{ opacity: [0, 1, 1, 1, 0], scale: [0.68, 1, 1, 1, 1.04], y: [10, 0, 0, 0, -6] }}
             transition={{ duration: visibleDurationMs / 1000, ease: 'easeOut' }}
@@ -100,18 +120,7 @@ function AttackDiceFeedback({
                     <AttackDieResult key={`${index}-${result}`} result={result} />
                 ))}
                 {effectDieResult !== undefined ? (
-                    <span
-                        className="grid h-[clamp(3rem,4vw,5rem)] w-[clamp(3rem,4vw,5rem)] shrink-0 place-items-center overflow-hidden rounded-full bg-black/42 shadow-[0_8px_18px_rgba(0,0,0,0.52)]"
-                        data-testid="mage-wars-fx-effect-die-face"
-                        aria-label={`效果骰 ${effectDieResult}`}
-                    >
-                        <OptimizedImage
-                            src="mage-wars/dice/effect-die-d12-face"
-                            alt={`效果骰 ${effectDieResult}`}
-                            className="h-full w-full object-contain"
-                            placeholder={false}
-                        />
-                    </span>
+                    <EffectDieResult result={effectDieResult} />
                 ) : null}
             </div>
         </motion.div>
@@ -598,102 +607,6 @@ export const MovementRenderer: React.FC<FxRendererProps> = ({
     );
 };
 
-function MeleeSlashEffect({
-    sourceBox,
-    targetBox,
-    sourceRow,
-    sourceCol,
-    targetRow,
-    targetCol,
-}: {
-    sourceBox: FxBox;
-    targetBox: FxBox;
-    sourceRow?: number;
-    sourceCol?: number;
-    targetRow: number;
-    targetCol: number;
-}) {
-    const path = createFxPathBox(sourceBox, targetBox, {
-        paddingCells: 0.7,
-        minSizeCells: 2.2,
-        overflow: 'visible',
-    });
-    const dx = path.end.xPct - path.start.xPct;
-    const dy = path.end.yPct - path.start.yPct;
-    const travelAngle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-    return (
-        <div
-            className="pointer-events-none absolute z-40"
-            data-testid="mage-wars-fx-attack-melee-strike"
-            data-visual-role="melee-slash"
-            data-strike-style="target-arc"
-            data-source-row={sourceRow}
-            data-source-col={sourceCol}
-            data-target-row={targetRow}
-            data-target-col={targetCol}
-            style={path.style}
-        >
-            <motion.div
-                className="absolute"
-                data-testid="mage-wars-fx-attack-melee-slash-sweep"
-                style={{
-                    left: `${path.end.xPct}%`,
-                    top: `${path.end.yPct}%`,
-                    width: 'clamp(4.5rem, 9vw, 9rem)',
-                    height: 'clamp(4.5rem, 9vw, 9rem)',
-                    transform: `translate(-50%, -50%) rotate(${travelAngle}deg)`,
-                }}
-                initial={{ opacity: 0, scale: 0.48, rotate: -28 }}
-                animate={{
-                    opacity: [0, 1, 1, 0],
-                    scale: [0.48, 1.06, 1.12, 1.18],
-                    rotate: [-28, -10, 8, 24],
-                }}
-                transition={{
-                    delay: MAGE_WARS_FX_TIMING.meleeStrikeMs / 1000,
-                    duration: 0.18,
-                    times: [0, 0.24, 0.62, 1],
-                    ease: 'easeOut',
-                }}
-            >
-                {[0, 1, 2].map((index) => (
-                    <motion.span
-                        key={index}
-                        className="absolute block"
-                        data-testid="mage-wars-fx-attack-melee-slash-mark"
-                        style={{
-                            left: `${18 + index * 24}%`,
-                            top: `${8 + index * 6}%`,
-                            width: '24%',
-                            height: '84%',
-                            background: index === 1
-                                ? 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(254,202,202,0.96) 38%, rgba(220,38,38,0.78) 100%)'
-                                : 'linear-gradient(180deg, rgba(254,226,226,0.95) 0%, rgba(239,68,68,0.9) 52%, rgba(127,29,29,0.65) 100%)',
-                            clipPath: 'polygon(18% 0%, 100% 8%, 74% 92%, 0% 100%, 34% 48%)',
-                            filter: 'drop-shadow(0 0 10px rgba(248,113,113,0.82))',
-                            transform: `rotate(${index === 1 ? 22 : index === 0 ? 14 : 30}deg)`,
-                            transformOrigin: '50% 50%',
-                        }}
-                        initial={{ opacity: 0, scaleY: 0.18, x: -10 }}
-                        animate={{
-                            opacity: [0, 1, 0.92, 0],
-                            scaleY: [0.18, 1.04, 0.92, 0.78],
-                            x: [-10, 0, 8, 16],
-                        }}
-                        transition={{
-                            delay: MAGE_WARS_FX_TIMING.meleeStrikeMs / 1000 + index * 0.025,
-                            duration: 0.18,
-                            times: [0, 0.24, 0.6, 1],
-                            ease: 'easeOut',
-                        }}
-                    />
-                ))}
-            </motion.div>
-        </div>
-    );
-}
-
 export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     event,
     getCellPosition,
@@ -713,7 +626,7 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
         rangeKind === 'melee' ? onImpact : undefined,
         rangeKind === 'melee' ? onComplete : undefined,
         MAGE_WARS_FX_TIMING.meleeStrikeMs,
-        MAGE_WARS_FX_TIMING.meleeCompleteMs,
+        MAGE_WARS_FX_TIMING.meleeResultVisibleMs,
     );
 
     if (!cell) return null;
@@ -729,31 +642,15 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const quality = resolveEventQuality(event);
 
     if (rangeKind === 'melee') {
-        const sourceBox = sourceSnapshot?.box
-            ?? (source ? getCellPosition(source.row, source.col) : null);
         const targetBox = targetSnapshot?.box ?? getCellPosition(cell.row, cell.col);
 
         return (
             <>
-                {sourceBox ? (
-                    <MeleeSlashEffect
-                        sourceBox={sourceBox}
-                        targetBox={targetBox}
-                        sourceRow={source?.row}
-                        sourceCol={source?.col}
-                        targetRow={cell.row}
-                        targetCol={cell.col}
-                    />
-                ) : null}
                 <div
-                    className="absolute pointer-events-none z-30 grid place-items-center"
-                    data-testid="mage-wars-fx-attack-melee-impact"
-                    data-source-anchor-id={sourceAnchorId ?? undefined}
-                    data-target-anchor-id={targetAnchorId ?? undefined}
-                    data-source-snapshot-anchor-id={sourceSnapshot?.anchorId ?? ''}
-                    data-target-snapshot-anchor-id={targetSnapshot?.anchorId ?? ''}
-                    data-source-snapshot-surface-id={sourceSnapshot?.surfaceId ?? ''}
-                    data-target-snapshot-surface-id={targetSnapshot?.surfaceId ?? ''}
+                    className="absolute pointer-events-none z-30"
+                    data-testid="mage-wars-fx-attack-melee-strike"
+                    data-visual-role="melee-unified-impact"
+                    data-strike-style="shared-impact"
                     data-source-row={source?.row}
                     data-source-col={source?.col}
                     data-target-row={cell.row}
@@ -766,6 +663,17 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                         overflow: 'visible',
                     }}
                 >
+                    <div
+                        className="grid h-full w-full place-items-center"
+                        data-testid="mage-wars-fx-attack-melee-impact"
+                    data-source-anchor-id={sourceAnchorId ?? undefined}
+                    data-target-anchor-id={targetAnchorId ?? undefined}
+                    data-source-snapshot-anchor-id={sourceSnapshot?.anchorId ?? ''}
+                    data-target-snapshot-anchor-id={targetSnapshot?.anchorId ?? ''}
+                    data-source-snapshot-surface-id={sourceSnapshot?.surfaceId ?? ''}
+                    data-target-snapshot-surface-id={targetSnapshot?.surfaceId ?? ''}
+                        style={{ overflow: 'visible' }}
+                    >
                     <BoardDamageImpactPreset
                         damage={damage}
                         quality={quality}
@@ -787,11 +695,12 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                         impactEffects={MAGE_WARS_ATTACK_FX_TUNING.impactEffects}
                         damageFlashCompleteMs={MAGE_WARS_ATTACK_FX_TUNING.damageFlashCompleteMs}
                     />
+                    </div>
                 </div>
                 <AttackDiceFeedback
                     diceResults={diceResults}
                     effectDieResult={effectDieResult}
-                    visibleDurationMs={MAGE_WARS_FX_TIMING.meleeCompleteMs}
+                    visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
                 />
             </>
         );

@@ -7,6 +7,13 @@ export const QIDAHEN_DEFAULT_TUTORIAL_ID = 'basic-opening';
 
 const asCore = (state: MatchState<unknown>): QidahenCore => state.core as QidahenCore;
 
+const QIDAHEN_MAP_RESULT_STEP_FOCUS = {
+    highlightTarget: 'qidahen-map-result-feedback',
+    position: 'right' as const,
+    avoidOverlapSelectors: ['[data-testid="qidahen-map-result-feedback-safe-zone"]'],
+    tooltipMaxWidth: 300,
+};
+
 const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
@@ -61,6 +68,8 @@ const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: st
         case 'battle-damage':
             return Boolean(core.pendingTargetAction);
         case 'retreat-and-defeat':
+            return Boolean(core.postBattleSelection);
+        case 'post-battle-choice':
             return Boolean(core.postBattleSelection);
         case 'battle-result':
             return Boolean(core.postBattleSelection);
@@ -306,8 +315,9 @@ const siegeStepValidator = (state: MatchState<unknown>, step: { id: string }): b
                 && pendingTargetAction?.battleMode === 'city';
         case 'city-result':
         case 'besiege-choice':
-        case 'occupy-choice':
             return Boolean(core.postBattleSelection);
+        case 'occupy-choice':
+            return Boolean(core.lastSeasonSummary);
         case 'finish':
             return Boolean(core.lastSeasonSummary);
         default:
@@ -326,9 +336,6 @@ const diplomacyHireStepValidator = (state: MatchState<unknown>, step: { id: stri
             return core.turnPhase === 'diplomacy-choice';
         case 'remove-mark':
             return core.turnPhase === 'diplomacy-choice';
-        case 'hire-only':
-            return core.turnPhase === 'diplomacy-choice'
-                && (core.diplomacyProgress?.resolvedSteps.length ?? 0) >= 1;
         case 'finish':
             return Boolean(core.lastSeasonSummary);
         default:
@@ -418,14 +425,15 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
         {
             id: 'wheel-result',
             content: 'game-qidahen:tutorial.basic.steps.wheelResult',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-map-result-feedback',
+            position: 'right',
+            avoidOverlapSelectors: ['[data-testid="qidahen-map-result-feedback-safe-zone"]'],
+            tooltipMaxWidth: 300,
             infoStep: true,
         },
         {
             id: 'wheel-branch-finish',
             content: 'game-qidahen:tutorial.basic.steps.wheelBranchFinish',
-            highlightTarget: 'qidahen-season-summary',
             position: 'center',
             infoStep: true,
             showMask: true,
@@ -460,8 +468,7 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
         {
             id: 'action-result',
             content: 'game-qidahen:tutorial.basic.steps.actionResult',
-            highlightTarget: 'qidahen-map-layer',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -549,10 +556,18 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
+            id: 'post-battle-choice',
+            content: 'game-qidahen:tutorial.attackAndBattle.steps.postBattleChoice',
+            highlightTarget: 'qidahen-post-battle-selection',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION],
+            advanceOnEvents: [{ type: 'POST_BATTLE_DECISION_RESOLVED' }],
+        },
+        {
             id: 'battle-finish',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
     ],
@@ -607,15 +622,13 @@ const QIDAHEN_SIEGE_TUTORIAL: TutorialManifest = {
         {
             id: 'occupy-choice',
             content: 'game-qidahen:tutorial.siege.steps.occupyChoice',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
             id: 'finish',
             content: 'game-qidahen:tutorial.siege.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
     ],
@@ -644,14 +657,14 @@ const QIDAHEN_RETREAT_AND_ROUT_TUTORIAL: TutorialManifest = {
         {
             id: 'rout-result',
             content: 'game-qidahen:tutorial.retreatAndRout.steps.routResult',
-            highlightTarget: 'qidahen-player-ming',
+            highlightTarget: 'qidahen-player-float',
             position: 'top',
             infoStep: true,
         },
         {
             id: 'finish',
             content: 'game-qidahen:tutorial.retreatAndRout.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
+            highlightTarget: 'qidahen-player-float',
             position: 'top',
             infoStep: true,
         },
@@ -681,15 +694,13 @@ const QIDAHEN_CAVALRY_PLUNDER_TUTORIAL: TutorialManifest = {
         {
             id: 'plunder-result',
             content: 'game-qidahen:tutorial.cavalryPlunder.steps.plunderResult',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
             id: 'finish',
             content: 'game-qidahen:tutorial.cavalryPlunder.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
     ],
@@ -718,15 +729,13 @@ const QIDAHEN_CAVALRY_EVASION_TUTORIAL: TutorialManifest = {
         {
             id: 'evasion-result',
             content: 'game-qidahen:tutorial.cavalryEvasion.steps.evasionResult',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
             id: 'finish',
             content: 'game-qidahen:tutorial.cavalryEvasion.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
     ],
@@ -755,8 +764,7 @@ const QIDAHEN_NEUTRAL_INVASION_TUTORIAL: TutorialManifest = {
         {
             id: 'neutral-result',
             content: 'game-qidahen:tutorial.neutralInvasion.steps.neutralResult',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -872,8 +880,7 @@ const QIDAHEN_WHEEL_RECLAIM_TUTORIAL: TutorialManifest = {
         {
             id: 'result',
             content: 'game-qidahen:tutorial.wheelReclaim.steps.result',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -909,8 +916,7 @@ const QIDAHEN_WHEEL_MILITARY_FARM_TUTORIAL: TutorialManifest = {
         {
             id: 'result',
             content: 'game-qidahen:tutorial.wheelMilitaryFarm.steps.result',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -946,8 +952,10 @@ const QIDAHEN_WHEEL_RECRUIT_TRAIN_TUTORIAL: TutorialManifest = {
         {
             id: 'result',
             content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.result',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-map-result-feedback',
+            position: 'right',
+            avoidOverlapSelectors: ['[data-testid="qidahen-map-result-feedback-safe-zone"]'],
+            tooltipMaxWidth: 300,
             infoStep: true,
         },
         {
@@ -1050,8 +1058,7 @@ const QIDAHEN_EVENT_ACTION_TUTORIAL: TutorialManifest = {
         {
             id: 'result',
             content: 'game-qidahen:tutorial.eventAction.steps.result',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
             viewAs: '1',
         },
@@ -1121,19 +1128,9 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'remove-marker' } }],
         },
         {
-            id: 'hire-only',
-            content: 'game-qidahen:tutorial.diplomacy.steps.hireOnly',
-            highlightTarget: 'qidahen-diplomacy-choice-hire-only',
-            position: 'left',
-            requireAction: true,
-            allowManualSkip: true,
-            allowedCommands: [INTERACTION_COMMANDS.RESPOND],
-        },
-        {
             id: 'finish',
             content: 'game-qidahen:tutorial.diplomacy.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
     ],
@@ -1163,16 +1160,16 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
         {
             id: 'midyear-tax',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.midyearTax',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-player-float',
+            position: 'bottom',
             viewAs: '1',
             infoStep: true,
         },
         {
             id: 'midyear-characters',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.midyearCharacters',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-player-float',
+            position: 'bottom',
             viewAs: '1',
             infoStep: true,
         },
@@ -1207,8 +1204,8 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
         {
             id: 'new-year-attrition',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearAttrition',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-player-float',
+            position: 'bottom',
             viewAs: '2',
             infoStep: true,
         },
@@ -1231,8 +1228,8 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
         {
             id: 'finish',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.finish',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-turn-banner',
+            position: 'bottom',
             viewAs: '2',
             infoStep: true,
         },
@@ -1283,15 +1280,14 @@ const QIDAHEN_KOREA_SPECIAL_TUTORIAL: TutorialManifest = {
         {
             id: 'korea-attrition',
             content: 'game-qidahen:tutorial.koreaSpecial.steps.koreaAttrition',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {
             id: 'shanhaiguan',
             content: 'game-qidahen:tutorial.koreaSpecial.steps.shanhaiguan',
-            highlightTarget: 'qidahen-season-summary',
-            position: 'top',
+            highlightTarget: 'qidahen-map-layer',
+            position: 'right',
             infoStep: true,
         },
         {

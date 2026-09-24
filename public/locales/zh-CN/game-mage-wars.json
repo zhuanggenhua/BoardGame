@@ -162,6 +162,8 @@
     "attack": "攻击骰",
     "effect": "12 面效果骰",
     "effectShort": "d12",
+    "effectResult": "D12 · {{result}}",
+    "effectNativeAssetNote": "TTS 原生效果骰 Die_12；当前仅显示结果，不伪造骰体外观",
     "settlement": "掷骰预备"
   },
   "actionDock": {

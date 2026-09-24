@@ -183,7 +183,10 @@ describe('OnlineAiManualRecoveryCoordinator', () => {
         expect(waitForRecoveryAvailability).toHaveBeenCalledWith(match);
         expect(hooks.runRecoverySequence).toHaveBeenCalledWith(expect.objectContaining({
             match,
-            options: { allowManualImmediateAiContinuation: true },
+            options: {
+                allowManualImmediateAiContinuation: true,
+                forceManualCommandExecution: true,
+            },
         }));
         expect(hooks.finishInFlight).toHaveBeenCalledWith(match.matchID);
     });
@@ -213,7 +216,10 @@ describe('OnlineAiManualRecoveryCoordinator', () => {
         expect(hooks.runRecoverySequence).toHaveBeenCalledWith(expect.objectContaining({
             match,
             candidate,
-            options: { allowManualImmediateAiContinuation: true },
+            options: {
+                allowManualImmediateAiContinuation: true,
+                forceManualCommandExecution: true,
+            },
         }));
         expect(hooks.finishInFlight).toHaveBeenCalledWith(match.matchID);
     });

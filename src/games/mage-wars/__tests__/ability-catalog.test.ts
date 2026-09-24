@@ -22,6 +22,7 @@ import {
 import { MageWarsDomain } from '../domain';
 import { MAGE_WARS_COMMANDS } from '../domain/commands';
 import { MAGE_WARS_EVENTS } from '../domain/events';
+import { validateCommand } from '../domain/validate';
 import {
     buildMageWarsObjectAbilityActivationOpportunity,
     MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG,
@@ -186,6 +187,53 @@ function withPreparedMageWarsSpell(
 }
 
 describe('mage-wars ability catalog', () => {
+    test('keeps 2206 cost separate from the player mana pool', () => {
+        const spellCardId = 2206;
+        const state = withPreparedMageWarsSpell(
+            makeMageWarsAbilityState({
+                mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                mana: 18,
+                phase: 'deployment',
+            }),
+            '0',
+            spellCardId,
+        );
+
+        expect(getMageWarsSpellCardFromConfig(spellCardId)).toMatchObject({
+            name: '尖齿与利爪',
+            manaCost: 7,
+            rawCost: '7',
+        });
+
+        const opportunity = buildMageWarsSpellCastOpportunity({
+            state,
+            playerId: '0',
+            spellCardId,
+        });
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        const enabledCandidates = request.candidates.filter((candidate) => candidate.disabled !== true);
+
+        expect(enabledCandidates.length).toBeGreaterThan(0);
+        expect(enabledCandidates.every((candidate) => candidate.value?.manaCost === 7)).toBe(true);
+        expect(enabledCandidates.every((candidate) => candidate.commands?.[0]?.payload.manaCost === 7)).toBe(true);
+
+        const validCommand = enabledCandidates[0]?.commands?.[0];
+        const commandWithPlayer = validCommand && { ...validCommand, playerId: '0' };
+        expect(commandWithPlayer && validateCommand(state, commandWithPlayer)).toEqual({ valid: true });
+
+        const wrongManaPoolCommand = {
+            ...commandWithPlayer!,
+            payload: {
+                ...commandWithPlayer!.payload,
+                manaCost: 18,
+            },
+        };
+        expect(validateCommand(state, wrongManaPoolCommand)).toMatchObject({
+            valid: false,
+            error: 'manaCostMismatch',
+        });
+    });
+
     test('registers every current arena object ability with an executor', () => {
         const objectAbilityIds = Object.values(MAGE_WARS_OBJECT_ABILITY_IDS);
 

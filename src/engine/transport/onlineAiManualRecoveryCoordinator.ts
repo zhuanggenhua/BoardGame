@@ -220,7 +220,10 @@ export class OnlineAiManualRecoveryCoordinator<TMatch extends OnlineAiManualReco
                 candidate,
                 progressMarker,
                 seatControllers,
-                options: { allowManualImmediateAiContinuation: true },
+                options: {
+                    allowManualImmediateAiContinuation: true,
+                    forceManualCommandExecution: true,
+                },
             });
         } finally {
             this.hooks.finishInFlight(match.matchID);

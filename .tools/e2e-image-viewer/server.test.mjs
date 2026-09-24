@@ -175,6 +175,60 @@ test("focus and selected files keep the listing on the requested directory", asy
   }
 });
 
+test("media supports byte-range playback for videos", async () => {
+  const hadState = existsSync(STATE_PATH);
+  const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;
+  const tempRoot = join(EVIDENCE_ROOT, `viewer-range-${process.pid}-${Date.now()}`);
+  let child = null;
+
+  try {
+    await mkdir(tempRoot, { recursive: true });
+    await writeFile(join(tempRoot, "clip.webm"), Buffer.from("0123456789abcdef", "ascii"));
+    const targetDir = await realpath(tempRoot);
+    const port = await getFreePort();
+    const logs = [];
+    child = spawn(process.execPath, [SERVER_ENTRY, "--serve", "--port", String(port)], {
+      cwd: PROJECT_ROOT,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    child.stdout.on("data", (chunk) => logs.push(String(chunk)));
+    child.stderr.on("data", (chunk) => logs.push(String(chunk)));
+
+    await waitForHealth(port, () => logs.join(""));
+    const registered = await requestJson(port, "/api/register", {
+      method: "POST",
+      body: JSON.stringify({
+        dir: targetDir,
+        focus: "clip.webm",
+        files: ["clip.webm"],
+      }),
+    });
+    const item = (await requestJson(
+      port,
+      `/api/list?dir=${encodeURIComponent(targetDir)}`,
+    )).items[0];
+    assert.ok(item?.url, "registered video must be listed");
+
+    const response = await fetch(`http://127.0.0.1:${port}${item.url}`, {
+      headers: { range: "bytes=4-7" },
+    });
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get("accept-ranges"), "bytes");
+    assert.equal(response.headers.get("content-range"), "bytes 4-7/16");
+    assert.equal(response.headers.get("content-length"), "4");
+    assert.equal(await response.text(), "4567");
+  } finally {
+    await waitForExit(child);
+    await rm(tempRoot, { recursive: true, force: true });
+    if (hadState && stateSnapshot !== null) {
+      await writeFile(STATE_PATH, stateSnapshot, "utf8");
+    } else {
+      await rm(STATE_PATH, { force: true });
+    }
+  }
+});
+
 test("concurrent launches reuse one fixed viewer service", async () => {
   const hadState = existsSync(STATE_PATH);
   const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;

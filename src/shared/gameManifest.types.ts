@@ -159,6 +159,8 @@ export interface GameManifestEntry {
     preferredOrientation?: GameOrientationPreference;
     mobileLayoutPreset?: GameMobileLayoutPreset;
     mobileBattlefieldZoom?: GameMobileBattlefieldZoom;
+    /** 通用运行时 HUD 的坐标归属；固定牌桌可显式脱离 board-shell。 */
+    mobileHudPlacement?: 'in-shell' | 'portal';
     shellTargets?: GameShellTarget[];
     mobileDelivery?: GameManifestMobileDelivery;
     mobileBoardShellLayout?: GameMobileBoardShellLayout;

@@ -16,6 +16,7 @@ type BetrayalInventoryRailSurfaceProps = {
   explorer: BetrayalExplorerSummary;
   cards: BetrayalInventoryCard[];
   isReadOnly: boolean;
+  isObservedOther: boolean;
   ownerLabel: string | null;
   selectedDisplayText: string;
   hasSelectedDisplay: boolean;
@@ -43,6 +44,7 @@ export function BetrayalInventoryRailSurface({
   explorer,
   cards,
   isReadOnly,
+  isObservedOther,
   ownerLabel,
   selectedDisplayText,
   hasSelectedDisplay,
@@ -107,7 +109,7 @@ export function BetrayalInventoryRailSurface({
       data-testid="betrayal-inventory-section"
       data-tutorial-id="betrayal-inventory-zone"
       data-player-id={explorer.playerId}
-      data-observed-player={isReadOnly ? "true" : "false"}
+      data-observed-player={isObservedOther ? "true" : "false"}
       className={`pointer-events-none absolute ${
         elevatedForRollModifier ? "z-[150]" : "z-40"
       } bottom-2 left-1 mt-0 w-[calc(62px*5.35+0.5rem*4+0.75rem)] max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] px-0 ${

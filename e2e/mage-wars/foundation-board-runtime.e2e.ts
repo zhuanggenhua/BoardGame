@@ -1330,7 +1330,7 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.phaseProgress.placement, '阶段进度必须落在左侧参考轨道').toBe('left-reference-rail');
     expect(layoutAudit.rects.phaseProgressIndicator!.x, '阶段进度必须贴左侧 UI 锚点').toBeLessThanOrEqual(24);
     expect(layoutAudit.rects.lifeToggle!.x, '生命显示眼睛是辅助控件，应在阶段轨道右侧避让正式 UI').toBeGreaterThanOrEqual(layoutAudit.rects.phaseProgressIndicator!.right + 6);
-    expect(layoutAudit.rects.phaseProgressIndicator!.y, '阶段轨道应保持在生命显示眼睛下方的独立槽位').toBeGreaterThanOrEqual(layoutAudit.rects.lifeToggle!.bottom + 4);
+    expect(layoutAudit.rects.phaseProgressIndicator!.y, '阶段轨道必须直接贴齐左上视口锚点，不得为右侧辅助眼睛预留上方空白').toBeLessThanOrEqual(24);
     expect(layoutAudit.rects.phaseProgressIndicator!.right, '阶段进度不应横向铺成顶部主条').toBeLessThan(layoutAudit.viewport.width * 0.25);
     expect(layoutAudit.rects.phaseProgressIndicator!.width, '左侧阶段轨道仍要可读，不能缩成角标').toBeGreaterThanOrEqual(160);
     expect(layoutAudit.rects.phaseProgressIndicator!.height, '阶段轨道应是竖向列表').toBeGreaterThan(layoutAudit.rects.phaseProgressIndicator!.width * 1.4);
@@ -2535,7 +2535,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.phaseProgress!.placement, '阶段进度必须落在左侧参考轨道').toBe('left-reference-rail');
         expect(desktopLayoutAudit.phaseProgress!.rect!.x, '左侧阶段进度必须贴左侧锚点').toBeLessThanOrEqual(24);
         expect(desktopLayoutAudit.lifeToggle!.rect!.x, '生命显示眼睛是辅助控件，应在阶段轨道右侧避让正式 UI').toBeGreaterThanOrEqual(desktopLayoutAudit.phaseProgress!.rect!.right + 6);
-        expect(desktopLayoutAudit.phaseProgress!.rect!.y, '阶段轨道应保持在生命显示眼睛下方的独立槽位').toBeGreaterThanOrEqual(desktopLayoutAudit.lifeToggle!.rect!.bottom + 4);
+        expect(desktopLayoutAudit.phaseProgress!.rect!.y, '2560 阶段轨道必须直接贴齐左上视口锚点，不得为右侧辅助眼睛预留上方空白').toBeLessThanOrEqual(24);
         expect(desktopLayoutAudit.phaseProgress!.rect!.right, '阶段进度不应横向铺成顶部主条').toBeLessThan(desktopLayoutAudit.viewportWidth * 0.25);
         expect(desktopLayoutAudit.phaseProgress!.rect!.width, '左侧阶段轨道仍要可读，不能缩成角标').toBeGreaterThanOrEqual(160);
         expect(desktopLayoutAudit.phaseProgress!.rect!.height, '阶段轨道应是竖向列表').toBeGreaterThan(desktopLayoutAudit.phaseProgress!.rect!.width * 1.4);

@@ -11,6 +11,22 @@ metadata:
 
 > 导航行与各文档 frontmatter `description` 同一句话口径，只写“是什么 + 何时查”。交付历史在 git，不进文档；长度、status 枚举、登记覆盖和链接可达由 `npm run spec:lint` 机械校验。
 
+## 规范角色与唯一主源
+
+先按角色找文件，不能因为某个 skill 或 evidence 里出现了相似句子，就把它当成新的通用规范：
+
+| 角色 | 唯一主源 / 入口 | 负责什么 |
+| --- | --- | --- |
+| 项目入口 | [`../AGENTS.md`](../AGENTS.md) | 项目边界、宿主加载、任务路由和 skill 名册 |
+| 硬规则与治理顺序 | [`../rules/system.md`](../rules/system.md) | 跨任务不变量、规范整理顺序、证据不得越权和规范更新后的闭环 |
+| 通用目标锁定 | [`standards/conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 原话保真、问题对象 / 真相源 / 入口环境 / 验收口径，以及目标不明时的停手格式 |
+| 领域执行标准 | `standards/*.md` | 跨游戏可复用的“怎么做”；同一判断只在一个标准正文维护 |
+| 项目 workflow | `../skills/*/SKILL.md` | 把主源编排成某类任务的执行入口；适配层不得复制主源正文 |
+| 证据 / drift-check | 对应 skill 的 `references/`、任务记录或 `evidence/` | 记录事实、案例和缺口；不能反向成为新规范 |
+| 规范维护 | [`../skills/spec-steward/SKILL.md`](../skills/spec-steward/SKILL.md) | 文档落点、去重、迁移、索引和结构校验 |
+
+`img2threejs` 目录内的 `docs/`、`grimoire/`、`skills/` 是上游参考资料，不是 BoardGame 通用执行规范。
+
 ## standards/（开发规范 · 要遵守的“怎么做”）
 
 | 文档 | 一句话 |
@@ -45,15 +61,7 @@ metadata:
 | [`rule-contract-audit.md`](standards/rule-contract-audit.md) | 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查 |
 | [`shared-refactor-guard.md`](standards/shared-refactor-guard.md) | 共享重构护栏：共享层影响面、代表场景和防误伤验收——改公共代码时查 |
 | [`code-design.md`](standards/code-design.md) | 代码设计原则、设计模式选择和反模式预防规范：写业务代码、拆职责、加抽象或审查反模式时查 |
-| [`testing-audit-core-principles.md`](standards/testing-audit-core-principles.md) | 历史归档：旧测试审计原则分卷，当前只作兼容入口——旧链接命中时查 |
-| [`testing-audit-d1-power-modifier-subject.md`](standards/testing-audit-d1-power-modifier-subject.md) | 历史归档：旧力量修正主语 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
-| [`testing-audit-d48-ui-rendering.md`](standards/testing-audit-d48-ui-rendering.md) | 历史归档：旧 UI 渲染 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
-| [`testing-audit-dimensions-deferred-interaction.md`](standards/testing-audit-dimensions-deferred-interaction.md) | 历史归档：旧延迟交互 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
-| [`testing-audit-dimensions-resource-timing.md`](standards/testing-audit-dimensions-resource-timing.md) | 历史归档：旧资源时机 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
-| [`testing-audit-dimensions-semantics-interaction.md`](standards/testing-audit-dimensions-semantics-interaction.md) | 历史归档：旧语义交互 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
-| [`testing-audit-dimensions-state-pipeline.md`](standards/testing-audit-dimensions-state-pipeline.md) | 历史归档：旧状态管线 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
-| [`testing-audit-dimensions.md`](standards/testing-audit-dimensions.md) | 历史归档：旧 D 维度编号对照，不再作为机械审计清单——旧 evidence 对账时查 |
-| [`testing-audit.md`](standards/testing-audit.md) | 测试审计总入口：审计路由、证据边界和旧分卷兼容——做规则或玩法审计时查 |
+| [`testing-audit.md`](standards/testing-audit.md) | 测试审计总入口：审计路由和证据边界——做规则或玩法审计时查 |
 | [`testing-tdd.md`](standards/testing-tdd.md) | TDD 标准：先红测、再实现、保留回归保护——新功能或修 bug 前查 |
 | [`timing-opportunity-resolution.md`](standards/timing-opportunity-resolution.md) | 时点-机会-结算标准：TimingPoint、Opportunity、Choice Request 和 Resolution Stack——接入复杂触发、响应、替代、防止或长事务规则时查 |
 | [`tutorial-design.md`](standards/tutorial-design.md) | 教程设计标准：教学目标、提示、截图和交互顺序——改新手引导时查 |
@@ -80,4 +88,4 @@ metadata:
 
 ---
 
-新增、修改或维护知识文档，先用 [`spec-steward`](../skills/spec-steward/SKILL.md) 判落点并同步导航；结构裁决记录进 [`../decisions/`](../decisions/README.md)。
+知识文档改动先按 [`../rules/system.md`](../rules/system.md) 判定落点，再用 [`spec-steward`](../skills/spec-steward/SKILL.md) 同步索引；结构裁决记录进 [`../decisions/`](../decisions/README.md)。

@@ -360,19 +360,6 @@ const expectMapContentToCoverLayer = async (page: Page) => {
     expect(mapContentBox.y + mapContentBox.height).toBeGreaterThanOrEqual(mapLayerBox.y + mapLayerBox.height - 1);
 };
 
-const clickQidahenHandCardVisibleZone = async (
-    page: import('@playwright/test').Page,
-    index: number,
-) => {
-    const locator = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])').nth(index);
-    await locator.evaluate((element) => {
-        if (!(element instanceof HTMLElement)) {
-            throw new Error('qidahen hand card is not an HTMLElement');
-        }
-        element.click();
-    });
-};
-
 const dispatchHarnessCommand = async (
     page: import('@playwright/test').Page,
     command: { type: string; playerId: string; payload: Record<string, unknown> },
@@ -418,7 +405,10 @@ const selectActionPaymentCards = async (
     ));
     if (visibleCurrentPlayerCardIds.length >= count) {
         for (let selectedCount = 1; selectedCount <= count; selectedCount += 1) {
-            await clickQidahenHandCardVisibleZone(page, selectedCount - 1);
+            const cardId = visibleCurrentPlayerCardIds[selectedCount - 1];
+            const card = page.locator(`[data-testid="qidahen-hand-card-${cardId}"]`);
+            await expect(card).toBeVisible();
+            await card.click();
             await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText(`已选 ${selectedCount} 张`);
         }
         return;

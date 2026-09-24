@@ -50,6 +50,125 @@ describe('mage-wars arena object attacks', () => {
         })).toBe('objectStunned');
     });
 
+    it('does not roll or expose an effect die for an attack without an effect-die rule', () => {
+        const baseState = setupState('creatureAction');
+        const attacker = makeArenaObject('cat-0', '0', PLAYER_ZERO_START_ZONE);
+        const target = makeArenaObject('target-1', '1', PLAYER_ZERO_START_ZONE, {
+            life: 30,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(withArenaObject(baseState.core, attacker), target),
+            sys: baseState.sys,
+        };
+        const effectDieSides: number[] = [];
+        const events = resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: {
+                ...fixedRandom,
+                d: (sides) => {
+                    if (sides === 12) effectDieSides.push(sides);
+                    return 12;
+                },
+            },
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: target.id,
+        });
+        const declared = events.find((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
+
+        expect(effectDieSides).toEqual([]);
+        expect(declared?.payload).toBeDefined();
+        expect(declared?.payload).not.toHaveProperty('effectDieResult');
+        expect(declared?.payload).not.toHaveProperty('rawEffectDieResult');
+        expect(events.filter((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE)).toHaveLength(0);
+    });
+
+    it('rolls and resolves an effect die only for an attack that declares thresholds', () => {
+        const baseState = setupState('creatureAction');
+        const attacker = makeArenaObject('imp-0', '0', PLAYER_ZERO_START_ZONE, {
+            sourceSpellCardId: 2801,
+            sourceObjectId: 'spell-card-2801',
+            name: '火烙魔婴',
+            combatProfilesSource: 'config',
+            attackOrTraitLine: '狱火利爪：快速近战火焰 2 骰，效果骰 8+=燃烧；除霜；火焰免疫',
+        });
+        const target = makeArenaObject('target-1', '1', PLAYER_ZERO_START_ZONE, {
+            life: 30,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(withArenaObject(baseState.core, attacker), target),
+            sys: baseState.sys,
+        };
+        const runWithEffectDie = (value: number) => resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: {
+                ...fixedRandom,
+                d: () => value,
+            },
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: target.id,
+        });
+
+        const thresholdMet = runWithEffectDie(8);
+        const thresholdMissed = runWithEffectDie(7);
+        const thresholdMetAttack = thresholdMet.find((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
+        const thresholdMissedAttack = thresholdMissed.find((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
+
+        expect(thresholdMetAttack?.payload).toMatchObject({
+            effectDieResult: 8,
+            rawEffectDieResult: 8,
+        });
+        expect(thresholdMet.filter((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE)).toHaveLength(1);
+        expect(thresholdMet.find((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE)).toMatchObject({
+            payload: {
+                statusTokenId: STATUS_TOKEN_IDS.BURN,
+                amount: 1,
+                effectDieResult: 8,
+            },
+        });
+        expect(thresholdMissedAttack?.payload).toMatchObject({
+            effectDieResult: 7,
+            rawEffectDieResult: 7,
+        });
+        expect(thresholdMissed.filter((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE)).toHaveLength(0);
+    });
+
+    it('rejects a creature attacking its own mage or another friendly creature', () => {
+        const baseState = setupState('creatureAction');
+        const attacker = makeArenaObject('attacker-0', '0', PLAYER_ZERO_START_ZONE);
+        const friendlyTarget = makeArenaObject('friendly-target-0', '0', PLAYER_ZERO_START_ZONE, {
+            life: 30,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(withArenaObject(baseState.core, attacker), friendlyTarget),
+            sys: baseState.sys,
+        };
+
+        expect(validateCommand(state, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: {
+                attackerObjectId: attacker.id,
+                attackProfileId: 'attack-0',
+                targetPlayerId: '0',
+            },
+        })).toBe('cannotAttackSelf');
+        expect(validateCommand(state, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: {
+                attackerObjectId: attacker.id,
+                attackProfileId: 'attack-0',
+                targetObjectId: friendlyTarget.id,
+            },
+        })).toBe('cannotAttackFriendlyObject');
+    });
+
     it('applies weak only to non-spell attack dice without reducing below one die', () => {
         const baseState = setupState('creatureAction');
         const weakenedCleric = makeArenaObject('cleric-0', '0', PLAYER_ZERO_START_ZONE, {

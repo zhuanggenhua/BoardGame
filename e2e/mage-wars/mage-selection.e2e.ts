@@ -632,6 +632,51 @@ test('Mage Wars 法术书选择：双方直接选择法术书后进入对应开�
     });
 });
 
+test('Mage Wars 新建法术书法师选择：取消后回到选书页且不打开编辑器', async ({ context, page }, testInfo) => {
+    await clearEvidenceScreenshotsForTest(testInfo);
+    await initContext(context, {
+        storageKey: 'mage-wars-new-spellbook-mage-picker-cancel',
+        skipImageGate: false,
+        blockCdnAssets: false,
+        locale: 'zh-CN',
+    });
+    const diagnostics = attachPageDiagnostics(page);
+
+    await page.goto('/play/mage-wars?setupGate=true&seed=mage-new-spellbook-mage-picker-cancel&disableLocalAiAutomation=true', {
+        waitUntil: 'domcontentloaded',
+    });
+    await waitForFrontendAssets(page, 45_000);
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+
+    await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 60_000 });
+    await page.getByTestId('mage-wars-mage-selection-seat-0').click();
+    await page.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice').click();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute(
+        'data-mage-id',
+        'beastmaster_apprentice',
+    );
+
+    await page.getByTestId('mage-wars-mage-selection-new-spellbook-entry').click();
+    const picker = page.getByTestId('mage-wars-new-spellbook-mage-picker');
+    await expect(picker).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid^="mage-wars-new-spellbook-mage-option-"]')).toHaveCount(4);
+    await waitForVisibleImages(page);
+    await saveEvidenceScreenshot(page, testInfo, '01-新建法术书法师选择-取消前四个候选可见');
+
+    await picker.getByTestId('mage-wars-new-spellbook-mage-picker-cancel').click();
+    await expect(picker).toBeHidden({ timeout: 5_000 });
+    await expect(page.getByTestId('mage-wars-spellbook-builder')).toHaveCount(0);
+    await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute(
+        'data-mage-id',
+        'beastmaster_apprentice',
+    );
+    await expect(page.getByTestId('mage-wars-mage-selection-new-spellbook-entry')).toBeVisible();
+    await saveEvidenceScreenshot(page, testInfo, '02-新建法术书法师选择-取消后回到选书页');
+
+    await assertNoFatalFrontendErrors([{ label: 'new-spellbook-mage-picker-cancel', diagnostics }]);
+});
+
 test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用、编辑、删除，再进入计划代表态', async ({ context, page }, testInfo) => {
     testInfo.setTimeout(180_000);
     await clearEvidenceScreenshotsForTest(testInfo);
@@ -729,6 +774,43 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
         '组书卡池野性山猫牌面',
     );
     await expectSpellbookBuilderCardPoolReadable(builder);
+    await builder.getByTestId('mage-wars-spellbook-builder-import-open').click();
+    const importPanel = builder.getByTestId('mage-wars-spellbook-builder-import-panel');
+    await expect(importPanel).toBeVisible();
+    await importPanel.getByRole('textbox').fill('2906 x2\n2224 x1');
+    await importPanel.getByTestId('mage-wars-spellbook-builder-import-apply').click();
+    await expect(importPanel).toHaveCount(0);
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-row')).toHaveCount(2);
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-deck-row"][data-source-card-id="2906"]',
+    )).toContainText('2 / 6');
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-deck-row"][data-source-card-id="2224"]',
+    )).toContainText('1 / 6');
+    const importScreenshot = await saveEvidenceScreenshot(page, testInfo, '03A-导入列表-两张法术进入当前构筑');
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
+    await builder.getByTestId('mage-wars-spellbook-builder-standard').click();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-row')).toHaveCount(50);
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
+    const searchInput = builder.getByTestId('mage-wars-spellbook-builder-search');
+    await searchInput.fill('野性山猫');
+    await expect(builder.locator('[data-testid="mage-wars-spellbook-builder-card"]')).toHaveCount(1);
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="2906"]',
+    )).toBeVisible();
+    await searchInput.fill('');
+    for (const [testId, value] of [
+        ['mage-wars-spellbook-builder-filter-school', '自然'],
+        ['mage-wars-spellbook-builder-filter-level', '2'],
+        ['mage-wars-spellbook-builder-filter-mana', '3-5'],
+        ['mage-wars-spellbook-builder-filter-legality', 'inBook'],
+    ] as const) {
+        const filter = builder.getByTestId(testId);
+        await filter.selectOption(value);
+        await expect(filter).toHaveValue(value);
+        await expect(builder.locator('[data-testid="mage-wars-spellbook-builder-card"]')).not.toHaveCount(0);
+        await filter.selectOption('all');
+    }
     await expectNoDuplicateUiOwners(
         builder,
         testInfo,
@@ -743,18 +825,19 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
         '点这里看法师能力牌',
     );
     await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('墙体');
-    const wallFilterScreenshot = await saveEvidenceScreenshot(page, testInfo, '04-类型筛选墙体-横向墙牌保真');
-    await expectAtlasFrameAspectRatioPreserved(
-        builder.locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"] [data-card-atlas-frame="true"]'),
-        '组书卡池荆棘之墙横向牌面',
+    const wallFilterScreenshot = await saveEvidenceScreenshot(page, testInfo, '04-类型筛选墙体-竖向墙牌保真');
+    const wallAtlasFrame = builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"] [data-card-atlas-frame="true"]',
     );
+    const wallAtlasAspectRatio = await wallAtlasFrame.getAttribute('data-card-atlas-aspect-ratio');
+    expect(Number(wallAtlasAspectRatio), '组书卡池荆棘之墙原始牌面素材必须保留横向源比例').toBeGreaterThan(1);
     const wallCardBox = await builder
         .locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"]')
         .evaluate((element) => {
             const rect = element.getBoundingClientRect();
             return { width: rect.width, height: rect.height };
     });
-    expect(wallCardBox.width / wallCardBox.height, '墙体牌在组书页必须按横向比例显示').toBeGreaterThan(1);
+    expect(wallCardBox.width / wallCardBox.height, '墙体牌在组书页必须按普通手牌竖向比例显示').toBeLessThan(1);
 
     await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('all');
     await builder.getByTestId('mage-wars-spellbook-builder-mage-context').click();
@@ -983,6 +1066,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
             newSpellbookMagePickerScreenshot,
             builderDefaultScreenshot,
             wallFilterScreenshot,
+            importScreenshot,
             mageDetailScreenshot,
             savedSpellbookScreenshot,
             selectionLibraryScreenshot,

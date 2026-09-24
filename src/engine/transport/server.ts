@@ -1411,7 +1411,11 @@ export class GameTransportServer {
         candidate: ForceEndTurnStalledAiResolution,
         progressMarkerBeforeRecovery: string,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
-        options?: { reuseExecutionLock?: boolean; allowManualImmediateAiContinuation?: boolean },
+        options?: {
+            reuseExecutionLock?: boolean;
+            allowManualImmediateAiContinuation?: boolean;
+            forceManualCommandExecution?: boolean;
+        },
     ): Promise<void> {
         return this.onlineAiRecoverySequenceRunner.run({
             match,

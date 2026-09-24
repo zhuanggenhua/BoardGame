@@ -31,7 +31,7 @@
 - 项目自有外部工具可以放在 `.tools/<tool-name>/` 并随仓库维护；第三方源码安装副本按工具逐项写入 `.gitignore`，例如 `.tools/open-design/`。
 - 端到端图片目录查看器的唯一项目入口是 `scripts/verify/open-verified-image.mjs --dir <证据目录>`；主体仍放 `.tools/e2e-image-viewer/`，但目录解析、网页注册、焦点和媒体筛选统一从这一条入口进入。传入证据根目录、游戏目录或测试目录时默认自动定位最新具体截图目录，不递归混合多个游戏。查看器会复用同目录或同游戏证据里的图组索引 / `label-source-manifest.json` 显示中文标题和承接说明，页面不展示完整本地路径。
 - 查看器网址统一以截图目录 key 作为稳定身份；`VIEWER_URL` 必须原样采用脚本输出，不能手工改写图片文件名、`focus`、`show` 或 `files` 参数。该条是 `.spec/skills/show-image-to-user/SKILL.md` 的适配说明，不建立第二份看图规范。
-- 外部辅助工具可以读取 `test-results/`、`artifacts/` 或 `evidence/` 的本地证据，但不得把候选图、失败图或过程图升级成最终用户展示；最终用户展示仍回到 PASS 清单和看图入口，默认由本地网页查看器打开，不再默认使用 PureRef。
+- 外部辅助工具可以读取 `test-results/`、`artifacts/` 或 `evidence/` 的本地证据，但不得把候选图、失败图或过程图升级成最终用户展示；最终用户展示仍回到 PASS 清单和看图入口：单张静态图只做一次单图展示，多图 / 图组、GIF、视频和录屏由本地网页查看器一次性打开，不再默认使用 PureRef。
 
 ## 常用入口
 

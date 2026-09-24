@@ -2337,6 +2337,29 @@ describe('Betrayal Board foundation', () => {
         expect(anitaMapToken?.querySelector('[data-testid="betrayal-explorer-figure-token-missing-1"]')).toBeNull();
     });
 
+    it('旁观他人回合时默认显示本地玩家面板和持有物，不自动带入当前行动者物品', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        activateBoardExplorer(core, '1');
+        core.currentExplorer.inventory = [{ id: 'holy-symbol', name: '圣符', kind: 'omen' }];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, inventory: [{ id: 'map', name: '地图', kind: 'item' }] }
+                : explorer
+        ));
+
+        renderBoard(core, {
+            playerID: '0',
+            matchData: defaultMatchData,
+        });
+
+        expect(screen.getByTestId('betrayal-observed-explorer-panel')).toHaveAttribute('data-player-id', '0');
+        expect(screen.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-player-id', '0');
+        expect(screen.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-observed-player', 'false');
+        expect(screen.getByTestId('betrayal-inventory-map')).toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-inventory-holy-symbol')).not.toBeInTheDocument();
+    });
+
     it('牌堆区常驻显示预兆状态，并隐藏完整作祟检定规则说明', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.currentExplorer.inventory = [

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19",
+  "generatedAt": "2026-09-24",
   "source": "src/games/betrayal/scenarioConfig.ts::BETRAYAL_DISCOVERY_POOLS",
   "counts": {
     "rooms": {
@@ -236,7 +236,6 @@
         ],
         "doorways": [
           "east",
-          "south",
           "west"
         ],
         "discoveryReward": null,

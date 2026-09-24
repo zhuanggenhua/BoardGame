@@ -83,7 +83,7 @@ export function BetrayalReferenceOverlaySurface({
       onClose={onClose}
       closeOnBackdrop={false}
       closeButtonClassName="hidden"
-      renderInPlace
+      renderInPlace={!scenarioReaderOpen}
       overlayTestId={
         scenarioReaderOpen
           ? "betrayal-scenario-reader-dialog"
@@ -105,12 +105,12 @@ export function BetrayalReferenceOverlaySurface({
           scenarioReaderOpen
             ? isReferenceScenarioOpeningStage
               ? {
-                  width: "1920px",
-                  height: "1080px",
+                  width: "min(1920px, 100vw)",
+                  height: "min(1080px, 100vh)",
                 }
               : {
-                  width: SCENARIO_REFERENCE_BOOK_FRAME_WIDTH,
-                  height: SCENARIO_REFERENCE_BOOK_FRAME_HEIGHT,
+                  width: `min(${SCENARIO_REFERENCE_BOOK_FRAME_WIDTH}, calc(100vw - 2rem))`,
+                  height: `min(${SCENARIO_REFERENCE_BOOK_FRAME_HEIGHT}, calc(100vh - 2rem))`,
                 }
             : {
                 width: REFERENCE_CARD_FRAME_WIDTH,

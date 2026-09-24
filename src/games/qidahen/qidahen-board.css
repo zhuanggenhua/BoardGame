@@ -235,6 +235,56 @@
     transform-origin: top left;
 }
 
+@keyframes qidahen-map-result-flash {
+    0%,
+    100% {
+        opacity: 0.28;
+    }
+    22%,
+    58% {
+        opacity: 0.96;
+    }
+}
+
+@keyframes qidahen-map-result-anchor-pulse {
+    0%,
+    100% {
+        opacity: 0.72;
+        transform: translate(-50%, -50%) scale(0.94);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.04);
+    }
+}
+
+@keyframes qidahen-map-result-troop-fade {
+    0% {
+        opacity: 0.96;
+        transform: translate(-50%, -34%) scale(0.86) rotate(-5deg);
+    }
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -64%) scale(1) rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -190%) scale(0.86) rotate(5deg);
+    }
+}
+
+[data-testid='qidahen-map-result-feedback'] {
+    animation: qidahen-map-result-anchor-pulse 900ms ease-in-out infinite;
+}
+
+[data-testid='qidahen-map-result-feedback-canvas'] {
+    animation: qidahen-map-result-flash 620ms ease-in-out 3;
+}
+
+[data-testid='qidahen-map-result-troop-fade'] {
+    animation: qidahen-map-result-troop-fade 1.55s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
     [data-testid='qidahen-board'] *,
     [data-testid='qidahen-board'] *::before,

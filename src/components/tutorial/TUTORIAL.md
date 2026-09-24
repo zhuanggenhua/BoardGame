@@ -13,6 +13,7 @@
 export interface TutorialStep {
     id: string;          // 步骤唯一标识
     content: string;     // 气泡内显示的文本内容
+    hideOverlay?: boolean; // 仅保留教程状态推进，不显示重复文字浮层
     visual?: {           // 可选参考图；src 用逻辑资源路径，不写 /assets、compressed 或扩展名
         src: string;
         alt: string;     // 纯文本或 i18n key

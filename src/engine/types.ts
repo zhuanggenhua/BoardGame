@@ -394,6 +394,8 @@ export interface TutorialStepVisual {
 export interface TutorialStepSnapshot {
     id: string;
     content: string;
+    /** 仅保留教程状态推进，不渲染重复文字浮层；适用于地图结果动画等自解释反馈。 */
+    hideOverlay?: boolean;
     /** 可选的教程内参考图，用于首次讲清卡面、图标或帮助卡读法。 */
     visual?: TutorialStepVisual;
     highlightTarget?: string;

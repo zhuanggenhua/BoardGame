@@ -1888,11 +1888,18 @@ const MapSceneLayer: React.FC<{
     const currentFactionId = perspectiveFactionId;
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
+    const resultFeedbackCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const hitmapRef = React.useRef<Uint8ClampedArray | null>(null);
     const runtimeRegionIdByPixelRef = React.useRef<Array<string | null> | null>(null);
+    const previousRegionSnapshotRef = React.useRef<Map<string, string> | null>(null);
     const [runtimeRegionOwnership, setRuntimeRegionOwnership] = React.useState<Array<string | null> | null>(null);
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const [maskVersion, setMaskVersion] = React.useState(0);
+    const [resultFeedback, setResultFeedback] = React.useState<{
+        resultId: string;
+        regionId: string;
+        troopDelta: number;
+    } | null>(null);
 
     React.useEffect(() => {
         if (typeof Image === 'undefined') return undefined;
@@ -1926,6 +1933,77 @@ const MapSceneLayer: React.FC<{
         () => getQidahenDefeatInDetailSelectableSourceRegionIds(pendingTargetAction),
         [pendingTargetAction],
     );
+
+    React.useEffect(() => {
+        const currentRegionSnapshot = new Map(core.regions.map((region) => [
+            region.id,
+            JSON.stringify({
+                troops: region.troops,
+                population: region.population,
+                controller: region.controller,
+                cityState: region.cityState,
+                siegeState: region.siegeState,
+            }),
+        ]));
+        const previousRegionSnapshot = previousRegionSnapshotRef.current;
+        const resultId = core.lastSeasonSummary?.id ?? null;
+        if (previousRegionSnapshot && resultId) {
+            const changedRegion = core.regions
+                .filter((region) => !region.isLogicalRegion)
+                .map((region) => {
+                    const previous = previousRegionSnapshot.get(region.id);
+                    const previousState = previous ? JSON.parse(previous) as {
+                        troops?: number;
+                        population?: number;
+                        controller?: string;
+                        cityState?: unknown;
+                        siegeState?: unknown;
+                    } : null;
+                    const troopDelta = region.troops - (previousState?.troops ?? region.troops);
+                    const populationDelta = region.population - (previousState?.population ?? region.population);
+                    const stateChanged = previousState != null
+                        && JSON.stringify({
+                            controller: region.controller,
+                            cityState: region.cityState,
+                            siegeState: region.siegeState,
+                        }) !== JSON.stringify({
+                            controller: previousState.controller,
+                            cityState: previousState.cityState,
+                            siegeState: previousState.siegeState,
+                        });
+                    return {
+                        regionId: region.id,
+                        troopDelta,
+                        changeScore: Math.abs(troopDelta) + Math.abs(populationDelta) + (stateChanged ? 1 : 0),
+                    };
+                })
+                .filter((change) => change.changeScore > 0)
+                .sort((left, right) => right.changeScore - left.changeScore || right.troopDelta - left.troopDelta)[0];
+            if (changedRegion) {
+                setResultFeedback({
+                    resultId,
+                    regionId: changedRegion.regionId,
+                    troopDelta: Math.max(0, changedRegion.troopDelta),
+                });
+            }
+        }
+        previousRegionSnapshotRef.current = currentRegionSnapshot;
+    }, [
+        core.lastSeasonSummary?.id,
+        core.lastSeasonSummary?.title,
+        core.regions,
+        core.selectedRegionId,
+    ]);
+
+    React.useEffect(() => {
+        if (!resultFeedback) {
+            return undefined;
+        }
+        const timeoutId = window.setTimeout(() => {
+            setResultFeedback(null);
+        }, 2500);
+        return () => window.clearTimeout(timeoutId);
+    }, [resultFeedback?.resultId]);
 
     React.useEffect(() => {
         const canvas = overlayCanvasRef.current;
@@ -2033,6 +2111,25 @@ const MapSceneLayer: React.FC<{
         tutorialGuideTargetRegionId,
         maskVersion,
     ]);
+
+    React.useEffect(() => {
+        const canvas = resultFeedbackCanvasRef.current;
+        const runtimeRegionIdByPixel = runtimeRegionIdByPixelRef.current;
+        if (!canvas || !runtimeRegionIdByPixel) {
+            return;
+        }
+        const toneByRegionId = new Map<string, RegionMaskOverlayToneKey>();
+        if (resultFeedback?.regionId) {
+            toneByRegionId.set(resultFeedback.regionId, 'result');
+        }
+        renderRegionOwnershipOverlay(
+            canvas,
+            runtimeRegionIdByPixel,
+            QIDAHEN_MAP_WIDTH,
+            QIDAHEN_MAP_HEIGHT,
+            toneByRegionId,
+        );
+    }, [resultFeedback?.regionId, runtimeRegionOwnership, maskVersion]);
 
     const selectedRegion = core.explicitRegionId
         ? core.regions.find((region) => region.id === core.explicitRegionId)
@@ -2809,6 +2906,18 @@ const MapSceneLayer: React.FC<{
                     data-testid="qidahen-map-region-mask-overlay"
                     aria-hidden="true"
                 />
+                {resultFeedback ? (
+                    <canvas
+                        ref={resultFeedbackCanvasRef}
+                        width={QIDAHEN_MAP_WIDTH}
+                        height={QIDAHEN_MAP_HEIGHT}
+                        className="pointer-events-none absolute inset-0 h-full w-full"
+                        data-testid="qidahen-map-result-feedback-canvas"
+                        data-qidahen-map-result-region={resultFeedback.regionId}
+                        data-qidahen-map-result-troop-delta={resultFeedback.troopDelta}
+                        aria-hidden="true"
+                    />
+                ) : null}
                 {core.mapTokens.map((token) => {
                     const pincerAdvanceChoice = core.pincerAdvanceSelection?.choices.find((choice) => (
                         choice.tokenId === token.id
@@ -2847,6 +2956,71 @@ const MapSceneLayer: React.FC<{
                         />
                     );
                 })}
+                {resultFeedback != null ? (() => {
+                    const resultRegion = core.regions.find((region) => region.id === resultFeedback.regionId);
+                    if (!resultRegion) {
+                        return null;
+                    }
+                    const troopDelta = resultFeedback?.troopDelta ?? 0;
+                    const resultTroop = core.mapTokens.find((token) => (
+                        token.type === 'army'
+                        && token.regionId === resultFeedback.regionId
+                        && token.imageSrc != null
+                    ));
+                    const resultTroopImageSrc = resultTroop?.imageSrc;
+                    const resultTroopSize = resultTroop?.size ?? 30;
+                    return (
+                        <div
+                            className="pointer-events-none absolute z-[58] h-1 w-1"
+                            data-testid="qidahen-map-result-feedback"
+                            data-tutorial-id="qidahen-map-result-feedback"
+                            data-qidahen-map-result-region={resultFeedback.regionId}
+                            data-qidahen-map-result-troop-delta={troopDelta}
+                            style={{
+                                left: resultRegion.x * QIDAHEN_MAP_WIDTH,
+                                top: resultRegion.y * QIDAHEN_MAP_HEIGHT,
+                                transform: 'translate(-50%, -50%)',
+                            }}
+                            aria-hidden="true"
+                        >
+                            <div
+                                className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[280px] -translate-x-1/2 -translate-y-1/2"
+                                data-testid="qidahen-map-result-feedback-safe-zone"
+                                aria-hidden="true"
+                            />
+                            {Array.from({ length: troopDelta }, (_, index) => (
+                                <span
+                                    key={`${resultFeedback?.resultId ?? 'tutorial'}-troop-${String(index + 1)}`}
+                                    className="qidahen-map-result-troop-fade absolute left-1/2 top-1/2 grid place-items-center overflow-hidden rounded-[6px] border-[2px] border-[#fff0b0] bg-[rgba(168,63,38,0.94)] shadow-[0_3px_10px_rgba(42,23,6,0.72),0_0_18px_rgba(255,214,93,0.92)]"
+                                    data-testid="qidahen-map-result-troop-fade"
+                                    data-qidahen-map-result-troop-index={String(index + 1)}
+                                    style={{
+                                        width: resultTroopSize,
+                                        height: resultTroopSize,
+                                        marginLeft: (index - (troopDelta - 1) / 2) * 22,
+                                        marginTop: (index % 2 === 0 ? -1 : 1) * (14 + Math.floor(index / 2) * 7),
+                                        animationDelay: `${index * 70}ms`,
+                                    }}
+                                >
+                                    {resultTroopImageSrc ? (
+                                        <OptimizedImage
+                                            src={resultTroopImageSrc}
+                                            alt=""
+                                            className="h-full w-full object-cover"
+                                            draggable={false}
+                                            placeholder={false}
+                                        />
+                                    ) : (
+                                        <span
+                                            className="h-[18px] w-[11px] rounded-[3px] border-2 border-[#fff0b0] bg-[#bb432f]"
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                </span>
+                            ))}
+                        </div>
+                    );
+                })() : null}
                 {mapSelectionGuideDrawsRoute ? (
                     <svg
                         className="pointer-events-none absolute inset-0 h-full w-full"
@@ -3870,6 +4044,7 @@ const ActionsZone: React.FC<{
     const seasonSummaryLines = tutorialHighlightsSeasonSummary
         ? core.lastSeasonSummary?.lines ?? []
         : core.lastSeasonSummary?.lines.slice(0, 5) ?? [];
+    const hideWheelRecruitTrainSummary = isTutorialActive && core.lastSeasonSummary?.title === '轮盘征兵/训练';
     const explicitSelectedRuntimeRegionId = core.explicitRegionId
         ? resolveQidahenPrimaryRuntimeRegionId(core.explicitRegionId)
         : null;
@@ -3917,19 +4092,26 @@ const ActionsZone: React.FC<{
                 data-tutorial-id="qidahen-turn-banner"
                 style={{ borderColor: 'rgba(49,35,21,0.42)', background: 'rgba(255,246,220,0.88)', color: UI_STYLE.ink, boxShadow: '0 2px 7px rgba(56,35,15,0.08)', borderRadius: 9 }}
             >
+                {isTutorialActive ? (
+                    <div className="mb-0.5 text-[9px] font-black tracking-[0.06em]" data-testid="qidahen-turn-year" style={{ color: UI_STYLE.bronze }}>
+                        {core.currentYear}
+                    </div>
+                ) : null}
                 <div>{formatQidahenVisibleTurnLabel(visibleTurnLabel)}</div>
-                <div className="mt-0.5 text-[9px]" style={{ color: UI_STYLE.bronze }}>
-                    {t('board.actions.turnStatus', {
-                        year: core.currentYear,
-                        wheelStatus: core.wheelActionUsed
-                            ? t('board.actions.status.used', { defaultValue: '已用' })
-                            : t('board.actions.status.unused', { defaultValue: '未用' }),
-                        factionStatus: core.factionActionUsed
-                            ? t('board.actions.status.used', { defaultValue: '已用' })
-                            : t('board.actions.status.unused', { defaultValue: '未用' }),
-                        defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}',
-                    })}
-                </div>
+                {!isTutorialActive ? (
+                    <div className="mt-0.5 text-[9px]" data-testid="qidahen-turn-status" style={{ color: UI_STYLE.bronze }}>
+                        {t('board.actions.turnStatus', {
+                            year: core.currentYear,
+                            wheelStatus: core.wheelActionUsed
+                                ? t('board.actions.status.used', { defaultValue: '已用' })
+                                : t('board.actions.status.unused', { defaultValue: '未用' }),
+                            factionStatus: core.factionActionUsed
+                                ? t('board.actions.status.used', { defaultValue: '已用' })
+                                : t('board.actions.status.unused', { defaultValue: '未用' }),
+                            defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}',
+                        })}
+                    </div>
+                ) : null}
                 {pendingScenarioChoices ? (
                     <div className="mt-1 text-[11px]" data-testid="qidahen-actions-blocked-by-scenario" style={{ color: '#f3d1a5' }}>
                         {core.scenarioVote
@@ -3993,7 +4175,7 @@ const ActionsZone: React.FC<{
                     ))}
                 </div>
             ) : null}
-            {(!suppressPassiveActionContext || tutorialHighlightsSeasonSummary) && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (
+            {!hideWheelRecruitTrainSummary && (!isTutorialActive || tutorialHighlightsSeasonSummary) && (!suppressPassiveActionContext || tutorialHighlightsSeasonSummary) && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
                     data-testid="qidahen-season-summary"
@@ -6330,12 +6512,35 @@ const QidahenFactionSelectionScreen: React.FC<{
 
 export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, isMultiplayer, reset, matchData }) => {
     const { t } = useTranslation('game-qidahen');
-    const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
+    const {
+        isActive: isTutorialActive,
+        currentStep: tutorialStep,
+        nextStep: nextTutorialStep,
+    } = useTutorial();
     const core = G.core;
     const isGameOver = Boolean(G.sys?.gameover);
     const gameOverResult = G.sys?.gameover;
     const runtimeDispatch = dispatch as (type: string, payload?: unknown) => void;
     useTutorialBridge(G.sys.tutorial, runtimeDispatch);
+    React.useEffect(() => {
+        if (!isTutorialActive || !tutorialStep?.hideOverlay) {
+            return undefined;
+        }
+        if (core.lastSeasonSummary?.title !== '轮盘征兵/训练') {
+            return undefined;
+        }
+        const timeoutId = window.setTimeout(() => {
+            nextTutorialStep('auto');
+        }, 2200);
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        core.lastSeasonSummary?.id,
+        core.lastSeasonSummary?.title,
+        isTutorialActive,
+        nextTutorialStep,
+        tutorialStep?.hideOverlay,
+        tutorialStep?.id,
+    ]);
     const { overlayProps: endgameProps } = useEndgame({
         result: gameOverResult || undefined,
         playerID,

@@ -1009,7 +1009,7 @@ const serveStatic = (res, relativePath) => {
   createReadStream(real).pipe(res);
 };
 
-const serveMedia = (res, url) => {
+const serveMedia = (req, res, url) => {
   const mediaKey = url.searchParams.get("key");
   const dirPath = mediaKey ? resolveDirectoryFromKey(mediaKey) : resolveDirectory(url.searchParams.get("dir"));
   const relativeFile = url.searchParams.get("file");
@@ -1027,11 +1027,83 @@ const serveMedia = (res, url) => {
   if (!MEDIA_EXTENSIONS.has(extension)) {
     throw new Error(`不支持的媒体格式: ${relativeFile}`);
   }
-  res.writeHead(200, {
+  const stats = statSync(real);
+  const totalSize = stats.size;
+  const rangeHeader = req.headers.range;
+  const commonHeaders = {
     "content-type": MIME_TYPES.get(extension) ?? "application/octet-stream",
     "cache-control": "public, max-age=31536000, immutable",
+    "accept-ranges": "bytes",
+    "last-modified": stats.mtime.toUTCString(),
+  };
+
+  if (!rangeHeader) {
+    res.writeHead(200, {
+      ...commonHeaders,
+      "content-length": totalSize,
+    });
+    if (req.method !== "HEAD") {
+      createReadStream(real).pipe(res);
+      return;
+    }
+    res.end();
+    return;
+  }
+
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
+  if (!match) {
+    res.writeHead(416, {
+      ...commonHeaders,
+      "content-range": `bytes */${totalSize}`,
+    });
+    res.end();
+    return;
+  }
+
+  const requestedStart = match[1] ? Number(match[1]) : null;
+  const requestedEnd = match[2] ? Number(match[2]) : null;
+  let start;
+  let end;
+
+  if (requestedStart !== null) {
+    start = requestedStart;
+    end = requestedEnd !== null ? requestedEnd : totalSize - 1;
+  } else if (requestedEnd !== null) {
+    const suffixLength = requestedEnd;
+    start = Math.max(0, totalSize - suffixLength);
+    end = totalSize - 1;
+  } else {
+    start = 0;
+    end = totalSize - 1;
+  }
+
+  if (
+    !Number.isSafeInteger(start)
+    || !Number.isSafeInteger(end)
+    || start < 0
+    || end < start
+    || start >= totalSize
+  ) {
+    res.writeHead(416, {
+      ...commonHeaders,
+      "content-range": `bytes */${totalSize}`,
+    });
+    res.end();
+    return;
+  }
+
+  end = Math.min(end, totalSize - 1);
+  const contentLength = end - start + 1;
+  res.writeHead(206, {
+    ...commonHeaders,
+    "content-length": contentLength,
+    "content-range": `bytes ${start}-${end}/${totalSize}`,
   });
-  createReadStream(real).pipe(res);
+  if (req.method !== "HEAD") {
+    createReadStream(real, { start, end }).pipe(res);
+    return;
+  }
+  res.end();
 };
 
 const createViewerServer = (port) => createServer(async (req, res) => {
@@ -1086,8 +1158,8 @@ const createViewerServer = (port) => createServer(async (req, res) => {
       });
       return;
     }
-    if (req.method === "GET" && url.pathname === "/media") {
-      serveMedia(res, url);
+    if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/media") {
+      serveMedia(req, res, url);
       return;
     }
     if (req.method === "GET" && url.pathname === "/") {

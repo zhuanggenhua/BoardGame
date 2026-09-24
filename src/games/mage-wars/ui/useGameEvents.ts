@@ -9,6 +9,7 @@ import type { MageWarsArenaObjectState, MageWarsCore, MageWarsEvent } from '../d
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { mapMageWarsEventToFx } from './eventFxMapper';
 import { MW_FX } from './fxCues';
+import { MAGE_WARS_FX_TIMING } from './fxTuning';
 
 interface UseMageWarsGameEventsParams {
     G: MatchState<MageWarsCore>;
@@ -367,6 +368,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
     const fxImpactMapRef = useRef(new Map<string, string[]>());
     const meleeFxSourceMapRef = useRef(new Map<string, string>());
     const scheduledHeldFxRef = useRef(new Set<FxFrameSubscription>());
+    const scheduledMeleeCleanupRef = useRef(new Set<FxFrameSubscription>());
     const previousCoreRef = useRef(G.core);
     const anchorSnapshotCacheRef = useRef(new Map<string, FxAnchorSnapshot>());
     const damageBuffer = useVisualStateBuffer();
@@ -388,6 +390,10 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             cancel();
         }
         scheduledHeldFxRef.current.clear();
+        for (const cancel of scheduledMeleeCleanupRef.current) {
+            cancel();
+        }
+        scheduledMeleeCleanupRef.current.clear();
     }, []);
 
     const entries = getEventStreamEntries(G);
@@ -412,6 +418,10 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
                 cancel();
             }
             scheduledHeldFxRef.current.clear();
+            for (const cancel of scheduledMeleeCleanupRef.current) {
+                cancel();
+            }
+            scheduledMeleeCleanupRef.current.clear();
             fxImpactMapRef.current.clear();
             meleeFxSourceMapRef.current.clear();
             queueMicrotask(() => setMeleeAttack(null));
@@ -506,6 +516,16 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
                         sourceSnapshot,
                         targetSnapshot,
                     });
+                    const cancelMeleeCleanup = scheduleFxFrameCallback(
+                        MAGE_WARS_FX_TIMING.meleeCompleteMs,
+                        () => {
+                            scheduledMeleeCleanupRef.current.delete(cancelMeleeCleanup);
+                            setMeleeAttack((current) => (
+                                current?.sourceObjectId === sourceObjectId ? null : current
+                            ));
+                        },
+                    );
+                    scheduledMeleeCleanupRef.current.add(cancelMeleeCleanup);
                 }
             }
             if (holdOwnerId) {

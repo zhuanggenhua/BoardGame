@@ -62,7 +62,7 @@ type BetrayalLatestDiscoverySurfaceProps = {
   onDiceSettledChange: (rollId: string, settled: boolean) => void;
 };
 
-function resolveDisplayedDiscoveryDetail(
+export function resolveDisplayedDiscoveryDetail(
   discovery: BetrayalDiscoverySummary,
   resolutionSteps: readonly BetrayalDiscoveryResolutionStep[],
 ): string {
@@ -81,8 +81,8 @@ function resolveDisplayedDiscoveryDetail(
     discovery.detail,
   )
     .replace(
-      /(?:抽到预兆后进行|选择进行|进行)?\s*作祟检定\s*[:：]\s*总点数\s*[-+]?\d+\s*[（(][^）)]*[）)]/g,
-      "",
+      /((?:抽到预兆后进行|选择进行|进行)?\s*作祟检定\s*[:：]\s*)总点数\s*[-+]?\d+\s*[（(]\s*(\d+)\s*颗骰子[^）)]*[）)]/g,
+      "$1投 $2 颗骰子",
     )
     .replace(
       /预兆牌堆耗尽，自动触发作祟/g,
@@ -93,14 +93,10 @@ function resolveDisplayedDiscoveryDetail(
       "",
     )
     .replace(
-      /投\s*\d+\s*颗骰子\s*[-+]?\d+\s*[:：]\s*/g,
-      "",
+      /(投\s*\d+\s*颗骰子)\s*[-+]?\d+\s*[:：]\s*/g,
+      "$1：",
     );
-  const displayDetail = detail.replace(
-    /判定要求\s*[（(]总点数[）)]\s*[:：]?\s*达到\s*[-+]?\d+\s*点?\s*[:：]?\s*[^；;·。\n]+(?:\s*[·；;]\s*达到\s*[-+]?\d+\s*点?\s*[:：]?\s*[^；;·。\n]+)*/g,
-    "",
-  );
-  return displayDetail
+  return detail
     .replace(/[；;]\s*[；;]/g, "；")
     .replace(/^[；;]\s*|[；;]\s*$/g, "")
     .trim();

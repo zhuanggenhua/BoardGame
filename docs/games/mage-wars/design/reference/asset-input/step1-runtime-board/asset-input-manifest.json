@@ -57,19 +57,6 @@
     {
       "kind": "copy",
       "role": "visible-subject",
-      "outName": "effect-die-d12-face.png",
-      "formalSource": "public/assets/i18n/zh-CN/mage-wars/dice/effect-die-d12-face.png",
-      "workshopSource": "Workshop 2607721556 / Nickname 效果骰 / Name Die_12 / CardID 20400 / deck 204",
-      "localPath": "docs/games/mage-wars/design/reference/asset-input/step1-runtime-board/effect-die-d12-face.png",
-      "odPath": "refs/mage-wars-step1/effect-die-d12-face.png",
-      "width": 329,
-      "height": 329,
-      "bytes": 310177,
-      "sha16": "9161c1037c5037b6"
-    },
-    {
-      "kind": "copy",
-      "role": "visible-subject",
       "outName": "action-marker-red-front.png",
       "formalSource": "public/assets/i18n/zh-CN/mage-wars/tokens/action/action-marker-red-front.png",
       "localPath": "docs/games/mage-wars/design/reference/asset-input/step1-runtime-board/action-marker-red-front.png",
@@ -361,7 +348,6 @@
         "standard-arena.jpg",
         "spell-card-back.jpg",
         "attack-die-texture.png",
-        "effect-die-d12-face.png",
         "action-marker-red-front.png",
         "action-marker-blue-front.png",
         "ready-token-front.png",

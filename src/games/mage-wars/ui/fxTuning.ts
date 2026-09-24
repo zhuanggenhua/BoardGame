@@ -25,6 +25,7 @@ export const MAGE_WARS_FX_TIMING = {
     projectileSameCellCompleteMs: 1_450,
     meleeStrikeMs: 160,
     meleeCompleteMs: 400,
+    meleeResultVisibleMs: 3_000,
     teleportTravelImpactMs: 2_600,
     teleportSameCellImpactMs: 180,
     teleportTravelCompleteMs: 3_600,

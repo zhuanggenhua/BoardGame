@@ -12,6 +12,8 @@ metadata:
 
 ## 资源准入
 
+- **程序化承载不进入图片链**：如果规则合同把对象锁定为内置物件、程序化绘制、CSS / SVG 或运行时几何，配置不得为它建立图片 assetRef，也不得把同名图片放进正式图片 manifest 作为“备用真相”。需要展示参考图时只能放 docs/** / evidence/** 并标为 reference，不得被运行时路径消费。
+
 - 规则、组件清单、用户素材或官方素材已经证明存在的卡牌、地图/区域、token、棋子、骰面、角色板、提示板、读本页等对象，必须走正式资源链。
 - 正式资源链最低闭合：`真相源 -> 语义命名 -> 正式目录 -> 压缩产物 -> manifest / 索引 -> 运行时引用 -> 测试或截图消费证据`。
 - 代码里出现 `tokenAsset`、`portraitAsset`、卡面路径、图集路径、骰面路径或等价资源引用时，验收必须证明该路径能解析到源图、压缩产物和 manifest / 索引 key。
@@ -54,6 +56,8 @@ metadata:
 - 关键图片在移动端或离线包里缺失时，先查是否绕过统一图片组件和候选链；不要先归因缓存、CDN 或旧素材包，除非请求链已闭合。
 
 ## Manifest
+
+- manifest 校验必须扫描不同逻辑键之间的 sha256 重复。不同语义对象共享 hash 默认是录入 / 接线错误并阻塞；只有配置中显式登记的 alias 才能例外。程序化对象不应在 manifest 中出现，若出现必须回到配置和资源合同清理引用，而不是只修文件名。
 
 - 默认 `npm run assets:manifest` / `npm run assets:validate` 是增量模式：更新本地存在的资源，保留 manifest 中已有但本地缺失的远端资源条目。
 - 只有确认本地拥有完整资源镜像时，才用 `npm run assets:manifest:full` / `npm run assets:validate:full`；full 模式会把 manifest 当成本地目录快照。

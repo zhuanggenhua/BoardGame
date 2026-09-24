@@ -36,6 +36,7 @@ import {
 } from '../ui/fxRenderers';
 import { mageWarsFxRegistry } from '../ui/fxSetup';
 import { MW_FX } from '../ui/fxCues';
+import { MAGE_WARS_FX_TIMING } from '../ui/fxTuning';
 import { MAGE_WARS_ARENA_FX_SURFACE_ID, useMageWarsGameEvents } from '../ui/useGameEvents';
 
 vi.mock('react-i18next', () => ({
@@ -940,7 +941,7 @@ describe('MageWarsBoard FX wiring', () => {
             const targetCard = screen.getByText('缓冲目标').closest('[data-testid="mage-wars-zone-field-card"]');
             expect(targetCard?.getAttribute('data-visual-damage')).toBe('0');
             expect(screen.queryByTestId('mage-wars-fx-attack-melee-strike')).not.toBeNull();
-            expect(screen.getByTestId('mage-wars-fx-attack-melee-strike').getAttribute('data-visual-role')).toBe('melee-slash');
+            expect(screen.getByTestId('mage-wars-fx-attack-melee-strike').getAttribute('data-visual-role')).toBe('melee-unified-impact');
             expect(screen.queryByTestId('mage-wars-fx-attack-melee-impact')).not.toBeNull();
 
             act(() => {
@@ -1331,6 +1332,86 @@ describe('MageWarsBoard FX wiring', () => {
             resetFxFrameClockForTests();
             vi.useRealTimers();
         }
+    });
+
+    it('keeps melee dice results visible after the strike has already completed', () => {
+        vi.useFakeTimers();
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-melee-attack',
+            cue: 'mage-wars.attack.impact',
+            ctx: { cell: { row: 1, col: 1 }, intensity: 'strong' },
+            params: {
+                source: { row: 1, col: 0 },
+                rangeKind: 'melee',
+                damageAmount: 4,
+                diceResults: [2, 5],
+                effectDieResult: 9,
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <AttackImpactRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
+            expect(attackDice.getAttribute('data-visible-duration-ms')).toBe(String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs));
+            const effectDie = screen.getByTestId('mage-wars-fx-effect-die-face');
+            expect(effectDie).toHaveAttribute('aria-label', '效果骰 9');
+            expect(effectDie).toHaveAttribute('data-visual-role', 'effect-die-result');
+            expect(effectDie).toHaveAttribute('data-die-kind', 'd12');
+            expect(effectDie).toHaveAttribute('data-asset-status', 'tts-native-not-embedded');
+            expect(effectDie.querySelector('img')).toBeNull();
+            expect(attackDice.querySelector('[data-token-kind]')).toBeNull();
+
+            act(() => {
+                advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.meleeCompleteMs);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+            expect(onComplete).not.toHaveBeenCalled();
+            expect(screen.getByTestId('mage-wars-fx-attack-dice')).toBeTruthy();
+
+            act(() => {
+                advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.meleeResultVisibleMs - MAGE_WARS_FX_TIMING.meleeCompleteMs);
+            });
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        } finally {
+            resetFxFrameClockForTests();
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not render an effect die when the attack event omits the effect result', () => {
+        const event: FxEvent = {
+            id: 'fx-melee-attack-without-effect-die',
+            cue: 'mage-wars.attack.impact',
+            ctx: { cell: { row: 1, col: 1 }, intensity: 'normal' },
+            params: {
+                source: { row: 1, col: 0 },
+                rangeKind: 'melee',
+                damageAmount: 4,
+                diceResults: [3, 3],
+            },
+        };
+
+        renderFxRenderer(
+            <AttackImpactRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={vi.fn()}
+                onComplete={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByTestId('mage-wars-fx-attack-dice')).toBeTruthy();
+        expect(screen.queryByTestId('mage-wars-fx-effect-die-face')).toBeNull();
     });
 
     it('renders direct damage with Mage Wars light impact tuning through the shared preset', () => {
@@ -1928,6 +2009,36 @@ describe('MageWarsBoard spell cast choices', () => {
         };
     }
 
+    function createMageStaffChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3725],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
     function createBlockedSpellChoiceCore(): MageWarsCore {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const beastmaster = baseCore.players['0'];
@@ -2276,6 +2387,47 @@ describe('MageWarsBoard spell cast choices', () => {
         expect(dispatch).not.toHaveBeenCalled();
     });
 
+    it('casts 尖齿与利爪 with 18 mana using its fixed cost of 7', async () => {
+        const dispatch = vi.fn();
+        const core = createSummonZoneChoiceCore();
+        const preparedCore: MageWarsCore = {
+            ...core,
+            players: {
+                ...core.players,
+                '0': {
+                    ...core.players['0'],
+                    preparedSpellCardIds: [2206],
+                },
+            },
+        };
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(preparedCore, '0', { phase: 'deployment' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const preparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="2206"]',
+        );
+        expect(preparedCard).not.toBeNull();
+        fireEvent.click(preparedCard!);
+
+        const targetZone = screen.getByTestId('mage-wars-arena-zone-a3');
+        await waitFor(() => {
+            expect(targetZone.getAttribute('data-legal-target-zone')).toBe('true');
+            expect(targetZone.getAttribute('data-zone-target-scope')).toBe('zone');
+        });
+
+        fireEvent.click(targetZone);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 2206,
+            manaCost: 7,
+            targetZoneId: ARENA_ZONE_IDS.A3,
+        });
+    });
+
     it('does not fall back to a hand-built Force Push command for an illegal destination zone', async () => {
         const dispatch = vi.fn();
         const { container } = renderBoardWithProviders(
@@ -2463,6 +2615,55 @@ describe('MageWarsBoard spell cast choices', () => {
             spellCardId: 3707,
             manaCost: 6,
             targetPlayerId: '0',
+        });
+    });
+
+    it('highlights Mage Staff only on the own mage, without exposing its zone as a spell target', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createMageStaffChoiceCore(), '0', { phase: 'creatureAction' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const mageStaffPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3725"]',
+        );
+        expect(mageStaffPreparedCard).not.toBeNull();
+        fireEvent.click(mageStaffPreparedCard!);
+
+        const ownMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        );
+        expect(ownMage).not.toBeNull();
+        await waitFor(() => {
+            expect(ownMage?.getAttribute('role')).toBe('button');
+            expect(ownMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        const ownMageZone = screen.getByTestId('mage-wars-arena-zone-a3');
+        expect(ownMageZone.getAttribute('data-legal-target-zone')).toBeNull();
+        expect(ownMageZone.getAttribute('data-zone-target-scope')).toBeNull();
+        expect(ownMageZone.getAttribute('role')).toBeNull();
+
+        fireEvent.click(ownMage!);
+
+        expect(dispatch).not.toHaveBeenCalled();
+        await waitFor(() => {
+            expect(screen.queryByTestId('mage-wars-spell-cast-choice-dock')).not.toBeNull();
+        });
+
+        const boundSpellOption = screen.getAllByTestId('mage-wars-spell-cast-choice-option')
+            .find((option) => option.getAttribute('data-bound-spell-card-id') === '3409');
+        expect(boundSpellOption).not.toBeUndefined();
+        fireEvent.click(boundSpellOption!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3725,
+            manaCost: 5,
+            targetPlayerId: '0',
+            boundSpellCardId: 3409,
         });
     });
 
@@ -3891,6 +4092,8 @@ describe('MageWarsBoard wall targeting', () => {
 
         const wallPreparedCard = container.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="25700"]');
         expect(wallPreparedCard).not.toBeNull();
+        expect(wallPreparedCard?.querySelector('[data-card-display-orientation]')?.getAttribute('data-card-display-orientation'))
+            .toBe('portrait-rotated-wall');
         fireEvent.click(wallPreparedCard!);
 
         await waitFor(() => {

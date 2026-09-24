@@ -36,12 +36,14 @@ description: "BoardGame 游戏支撑能力接入 workflow。用于用户要求�
 
 ## 前提锁定
 
-动手前写清四项：
+通用的四项前提按 [`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 锁定。本 workflow 额外写清：
 
-- `gameId` 和入口文件：通常是 `src/games/<gameId>/game.ts`、`actionLog.ts`、`audio.config.ts`、`Board.tsx`。
-- 本轮能力范围：`action-log`、`undo-system`、`audio-feedback`、`game-ai-system`、`tutorial-engine`、`debug-config` 中哪些要接入、哪些只审计；若用户说“接入可选”且没有限定，六项全部标为`本轮接入`。
-- 真相来源：用户要求、OpenSpec / tasks、现有实现、对应主源规范和红测。
-- 验收口径：目标测试、i18n 检查、类型检查、真实入口或截图是否需要。
+- `gameId` 和实际入口文件；
+- `action-log`、`undo-system`、`audio-feedback`、`game-ai-system`、`tutorial-engine`、`debug-config` 哪些本轮接入、哪些只审计；
+- 对应能力的主源规范、现有实现和红测；
+- 每项能力需要的测试、i18n、类型检查、真实入口或截图。
+
+若用户说“接入可选”且没有限定，六项全部标为“本轮接入”。
 
 ## 实施流程
 

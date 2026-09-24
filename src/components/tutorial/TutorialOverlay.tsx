@@ -230,6 +230,7 @@ export const TutorialOverlay: React.FC = () => {
 
     /** 从 DOMRect 直接算出提示框位置，和 targetRect 一起原子更新 */
     const applyLayout = (rect: DOMRect | null) => {
+      const protectedGap = 8;
       const protectedRegionRects = (
         currentStep.avoidOverlapSelectors ?? []
       ).flatMap((selector) =>
@@ -245,7 +246,13 @@ export const TutorialOverlay: React.FC = () => {
       }) =>
         protectedRegionRects.reduce(
           (area, protectedBounds) =>
-            area + getRectIntersectionArea(bounds, protectedBounds),
+            area +
+            getRectIntersectionArea(bounds, {
+              left: protectedBounds.left - protectedGap,
+              top: protectedBounds.top - protectedGap,
+              right: protectedBounds.right + protectedGap,
+              bottom: protectedBounds.bottom + protectedGap,
+            }),
           0,
         );
 
@@ -553,11 +560,19 @@ export const TutorialOverlay: React.FC = () => {
       const defaultTooltipWidth = hasStepVisual ? 520 : 384;
       const rightmostProtectedEdge =
         protectedRegionRects.length > 0
-          ? Math.max(...protectedRegionRects.map((bounds) => bounds.right))
+          ? Math.max(
+              ...protectedRegionRects.map(
+                (bounds) => bounds.right + protectedGap,
+              ),
+            )
           : null;
       const leftmostProtectedEdge =
         protectedRegionRects.length > 0
-          ? Math.min(...protectedRegionRects.map((bounds) => bounds.left))
+          ? Math.min(
+              ...protectedRegionRects.map(
+                (bounds) => bounds.left - protectedGap,
+              ),
+            )
           : null;
       const protectedSideWidth =
         rightmostProtectedEdge !== null && leftmostProtectedEdge !== null
@@ -857,6 +872,10 @@ export const TutorialOverlay: React.FC = () => {
   ]);
 
   if (!isActive || !currentStep) {
+    return null;
+  }
+
+  if (currentStep.hideOverlay) {
     return null;
   }
 

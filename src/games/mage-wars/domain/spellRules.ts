@@ -3258,6 +3258,17 @@ export function resolveMageWarsObjectAttackStatusTokenEffects(
     return resolveMageWarsAttackLineStatusTokenEffects(profile.line, effectDieResult);
 }
 
+export function hasMageWarsObjectAttackEffectDie(
+    source: MageWarsObjectCombatSource | string | undefined,
+    attackProfileId: string,
+): boolean {
+    const profile = getMageWarsObjectAttackProfile(source, attackProfileId);
+    if (!profile) return false;
+    if ((profile.statusEffects?.length ?? 0) > 0) return true;
+    return profile.line.includes('效果骰')
+        || /\d+(?:-\d+|\+)=/.test(profile.line);
+}
+
 export function resolveMageWarsObjectAttackManaDrain(
     source: MageWarsObjectCombatSource | string | undefined,
     attackProfileId: string,

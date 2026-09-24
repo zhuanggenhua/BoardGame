@@ -1,5 +1,6 @@
-import { readdir, rm, unlink } from 'node:fs/promises';
-import { join, parse } from 'node:path';
+import { mkdir, readdir, rename, rm, unlink } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { dirname, join, parse } from 'node:path';
 import type { TestInfo } from '@playwright/test';
 
 const EVIDENCE_GAME_IDS = new Set(['betrayal', 'smashup', 'dicethrone', 'summonerwars', 'tictactoe', 'cardia', 'the-gang', 'mage-wars', '_shared']);
@@ -15,6 +16,13 @@ export interface EvidenceScreenshotOptions {
     format?: EvidenceScreenshotFormat;
     /** 新增或本轮重跑的主证据截图应开启，运行时硬卡英文/抽象命名。 */
     requireChineseName?: boolean;
+}
+
+export interface EvidenceScreenshotRun {
+    runId: string;
+    stableDir: string;
+    stagingDir: string;
+    historyDir: string;
 }
 
 const CJK_CHARACTER_REGEX = /[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/;
@@ -131,14 +139,78 @@ export function getEvidenceScreenshotPath(
     name: string,
     options: EvidenceScreenshotOptions = {},
 ): string {
-    const dir = getEvidenceScreenshotDir(testInfo, options.subdir, options);
+    return getEvidenceScreenshotPathInDirectory(
+        getEvidenceScreenshotDir(testInfo, options.subdir, options),
+        name,
+        options,
+    );
+}
+
+export function getEvidenceScreenshotPathInDirectory(
+    directory: string,
+    name: string,
+    options: Pick<EvidenceScreenshotOptions, 'filename' | 'format' | 'requireChineseName'> = {},
+): string {
     const filename =
         options.filename ??
         `${sanitizeEvidencePathSegment(name) || 'screenshot'}${options.format === 'png' ? '.png' : EVIDENCE_SCREENSHOT_EXTENSION}`;
     if (shouldRequireChineseEvidenceName(options)) {
         assertChineseEvidenceSegment(filename, '文件名');
     }
-    return join(dir, sanitizeEvidenceFileName(filename, options.format));
+    return join(directory, sanitizeEvidenceFileName(filename, options.format));
+}
+
+export async function createEvidenceScreenshotRun(
+    testInfo: TestInfo,
+    options: Pick<EvidenceScreenshotOptions, 'requireChineseName'> = {},
+): Promise<EvidenceScreenshotRun> {
+    const stableDir = getEvidenceScreenshotDir(testInfo, undefined, options);
+    const caseSubdir = sanitizeEvidencePathSegment(testInfo.title || 'unnamed-test') || 'unnamed-test';
+    const runId = `${Date.now()}-${process.pid}-${randomUUID()}`;
+    const stagingDir = join(
+        process.cwd(),
+        'test-results',
+        'evidence-screenshots',
+        '_temporary',
+        getEvidenceScreenshotFileSubdir(testInfo),
+        caseSubdir,
+        runId,
+    );
+    const historyDir = join(
+        process.cwd(),
+        'test-results',
+        'evidence-screenshots',
+        '_history',
+        getEvidenceScreenshotCaseSubdir(testInfo),
+        runId,
+    );
+
+    await mkdir(stagingDir, { recursive: true });
+    return { runId, stableDir, stagingDir, historyDir };
+}
+
+export async function promoteEvidenceScreenshotRun(run: EvidenceScreenshotRun): Promise<string> {
+    let movedPrevious = false;
+    try {
+        await mkdir(dirname(run.historyDir), { recursive: true });
+        await rename(run.stableDir, run.historyDir);
+        movedPrevious = true;
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException | undefined)?.code;
+        if (code !== 'ENOENT') throw error;
+    }
+
+    try {
+        await mkdir(dirname(run.stableDir), { recursive: true });
+        await rename(run.stagingDir, run.stableDir);
+    } catch (error) {
+        if (movedPrevious) {
+            await rename(run.historyDir, run.stableDir).catch(() => undefined);
+        }
+        throw error;
+    }
+
+    return run.stableDir;
 }
 
 export function toJpegEvidenceScreenshotPath(path: string): string {
@@ -163,7 +235,21 @@ export function withJpegEvidenceScreenshotOptions<T extends Record<string, unkno
 
 export async function clearEvidenceScreenshotsForTest(testInfo: TestInfo): Promise<void> {
     const caseDir = getEvidenceScreenshotDir(testInfo);
-    await rm(caseDir, { recursive: true, force: true });
+    const historyCaseDir = join(
+        process.cwd(),
+        'test-results',
+        'evidence-screenshots',
+        '_history',
+        getEvidenceScreenshotCaseSubdir(testInfo),
+        `${Date.now()}-${process.pid}-${randomUUID()}`,
+    );
+    try {
+        await mkdir(dirname(historyCaseDir), { recursive: true });
+        await rename(caseDir, historyCaseDir);
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException | undefined)?.code;
+        if (code !== 'ENOENT') throw error;
+    }
 
     // 兼容旧目录：首次截图前清掉当前用例在 legacy 路径下的历史遗留（含“平铺文件”和“用例子目录”两种结构）。
     const legacyFileSubdir =

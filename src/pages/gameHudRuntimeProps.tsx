@@ -15,6 +15,7 @@ type GameHudRuntimeGameConfig = Pick<
     | 'preferredOrientation'
     | 'mobileLayoutPreset'
     | 'mobileBattlefieldZoom'
+    | 'mobileHudPlacement'
     | 'shellTargets'
     | 'mobileDelivery'
 > | null | undefined;
@@ -24,6 +25,9 @@ export type GameHudPlacement = 'in-shell' | 'portal';
 export function resolveGameHudPlacement(
     gameConfig?: GameHudRuntimeGameConfig,
 ): GameHudPlacement {
+    if (gameConfig?.mobileHudPlacement) {
+        return gameConfig.mobileHudPlacement;
+    }
     return resolveGameMobileSupport(gameConfig).mobileLayoutPreset === 'board-shell'
         ? 'in-shell'
         : 'portal';

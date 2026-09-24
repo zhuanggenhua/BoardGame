@@ -46,6 +46,7 @@ const entry: GameManifestEntry = {
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
     mobileLayoutPreset: 'board-shell',
+    mobileHudPlacement: 'portal',
     mobileBoardShellLayout: {
         designWidth: DESKTOP_REFERENCE_VIEWPORT.width,
         designHeight: DESKTOP_REFERENCE_VIEWPORT.height,

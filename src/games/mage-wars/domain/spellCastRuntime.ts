@@ -944,6 +944,7 @@ function buildMageWarsSpellCastCandidates(args: {
             args.family === 'summon-creature'
             || args.family === 'zone-attack'
             || args.family === 'zone-healing'
+            || args.family === 'visible-area-conjuration'
             || args.family === 'visible-area-enchantment'
         ) {
             const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;

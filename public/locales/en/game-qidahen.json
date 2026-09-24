@@ -386,7 +386,7 @@
         "welcome": "Seven Hatreds has three victory paths: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige first.",
         "wheelFirst": "The starting setup gives Ming 3 hand cards, and Ming's hand limit is 15. The turn begins by checking whether the hand is over the limit; 3 is not over 15, so this check passes automatically and no card is discarded. The rules then move to the shared wheel.",
         "wheelMove": "The wheel has three rule choices: move 1 with no opponent draw; name one opponent to draw 2 cards and move 2; or make every opponent draw 2 cards and move 3. The green destinations only show clickable choices; none is selected yet. Click one destination to execute that exact rule choice.",
-        "wheelResult": "You just chose the free move of 1, advancing the shared wheel from Military Farm to Recruit / Train. This wheel action has already resolved. The right-side Recruit / Train summary shows the actual result: Ming recruits in Xuanfu and gains 2 troops. Focus on this summary to confirm the wheel result, then continue to the hand action.",
+        "wheelResult": "You just chose the free move of 1, advancing the shared wheel from Military Farm to Recruit / Train. The wheel action has resolved; read the two new regular troops appearing on the map as the result. Once the board change is clear, continue to the hand action.",
         "wheelBranchFinish": "The wheel action is complete. Each turn contains one hand action and one wheel action, in either order; this run now takes Ming's hand action, so the next rule is Grant Pardon.",
         "pickAction": "It is now the hand-action window. Ming's Grant Pardon rule is: discard 3 hand cards, name one opponent, and have the named player choose one troop adjacent to a Ming-controlled region to move into that adjacent Ming-controlled region and become a Ming troop. Click Grant Pardon to begin paying its cost.",
         "payCards": "Grant Pardon is selected, but the map has not changed because its rule requires payment first. Select 3 hand cards and confirm; this step only pays the cost. The map choice appears after the payment is complete.",
@@ -406,9 +406,10 @@
         "battleOpen": "When one player's troops enter a region occupied by another player's troops, a battle begins. Both sides reveal all troops first, then the tactic phase allows one tactic card or no tactic card; tactics are used only in this battle phase.",
         "tacticWindow": "Look at the hand area, click Cavalry Charge to select it, then click Play Tactic Card to confirm. The selected card lifts up; click it again to cancel if you picked the wrong card.",
         "battleDamage": "The tactic card is now in the battle. Click Rear Guard in the right battle panel to finish this battle resolution; the system rolls artillery, cavalry, then infantry, and each 3 points deals 1 damage.",
-        "battleResult": "After the field battle resolves, compare the surviving infantry and cavalry on both sides. If the totals tie, the defender wins. This result has now moved into post-battle handling.",
-        "retreatAndDefeat": "In post-battle handling, the losing side chooses rear guard or rout and takes a defeat marker. Defeat markers wait for Midyear character checks.",
-        "finish": "The basic attack chain is: choose Raid, pay with a card, enter the battlefield, play tactics, resolve damage, then handle victory and retreat."
+        "battleResult": "After the field battle resolves, the right post-battle panel keeps the surviving troops and the next handling entry. Read the surviving count there before choosing retreat or another post-battle action.",
+        "retreatAndDefeat": "In post-battle handling, the losing side chooses rear guard or rout. After it closes, the player strip shows the new defeat marker.",
+        "postBattleChoice": "The defeat marker is now on the player strip. Use the right post-battle panel to choose the formal closing action; only then will the map show the final troop position and control changes.",
+        "finish": "Return to the map for the result: troop positions have changed, the right post-battle panel has closed, and the next action window is ready."
       }
     },
     "siege": {
@@ -418,10 +419,10 @@
         "overview": "This chapter starts with Ming attacking Shanhaiguan. City battle is not just another field battle: defenders can fall back into the city, and the attacker still has to choose siege or occupation after winning.",
         "defendCity": "Click Hold City now. The defender moves up to 2 troops and 2 population into Shanhaiguan, while the units left outside keep fighting.",
         "cityBattle": "After the defenders enter the city, click Rear Guard in the right battle panel to resolve the city battle. City battle resolves artillery first, then cavalry and infantry; cavalry takes a -1 penalty here.",
-        "cityResult": "The city-battle result tells you whether the city defenders were cleared. Even if the attacker wins, the battle still closes through siege or occupation.",
+        "cityResult": "After the city battle, the right post-battle panel keeps the surviving troops and city state. That panel is the formal entry for siege or occupation.",
         "besiegeChoice": "Click Besiege first to open the siege options, then click Besiege This Region to confirm. Besieging leaves Ming pressure outside the city, but Shanhaiguan control stays with the defender for the moment.",
-        "occupyChoice": "Compare the occupation result: if you choose occupation, Shanhaiguan actually changes to Ming control and clears both city and siege states.",
-        "finish": "The main point of this chapter: winning the city battle is only the first half. The final siege-or-occupy choice decides the city's state."
+        "occupyChoice": "After besieging or occupying, look at Shanhaiguan on the map: a siege keeps defender control and leaves the siege state; occupation changes control to Ming and clears the city garrison.",
+        "finish": "The siege chain closes on the map: the city battle changes surviving troops, then siege or occupation decides Shanhaiguan control and city state."
       }
     },
     "retreatAndRout": {
@@ -430,8 +431,8 @@
       "steps": {
         "overview": "This section continues from a lost field battle. The defeated side does not simply disappear; it chooses rear guard or rout as the price of retreat.",
         "chooseRout": "Click Rout now. This closes the retreat with heavier losses.",
-        "routResult": "After routing, the source region is cleared of the defeated force and Ming gains 1 more defeat marker.",
-        "finish": "Rear guard leaves a remnant behind, while rout loses more troops; both matter later during Midyear character checks."
+        "routResult": "After routing, the player strip gains 1 defeat marker, and the source region no longer keeps the routed force.",
+        "finish": "Read the difference in two places: the map shows survivors, while the player strip shows defeat markers."
       }
     },
     "cavalryPlunder": {
@@ -440,8 +441,8 @@
       "steps": {
         "overview": "Cavalry in field battle does not always have to make a normal attack. When the conditions are right, it can declare plunder.",
         "choosePlunder": "Click \"Cavalry plunder\". This sample plunders the defender deck, then removes population, draws cards, and retreats the cavalry.",
-        "plunderResult": "The plunder result is now in the resolution summary: population was removed, and the deck and hand changed together.",
-        "finish": "Cavalry plunder happens during the battle: the plundering cavalry first takes the defender's artillery and cavalry attacks, then removes population, draws cards, and retreats based on surviving cavalry. It is not only a post-battle note."
+        "plunderResult": "After plunder resolves, look at the map first: the target population is lower and the plundering cavalry has returned to its retreat position. The player strip and card areas carry the resource changes.",
+        "finish": "Cavalry plunder happens during the battle: it takes artillery and cavalry counterfire first, then removes population, draws cards, and retreats based on surviving cavalry."
       }
     },
     "cavalryEvasion": {
@@ -450,8 +451,8 @@
       "steps": {
         "overview": "Cavalry can also evade in field battle. Once the defenders leave, the original battle still resolves whether the attacker breaks through.",
         "chooseEvasion": "Click the highlighted retreat destination to move the defending cavalry into an adjacent friendly region.",
-        "evasionResult": "The evasion result is now in the resolution summary: cavalry leaves the battle and enters the retreat destination.",
-        "finish": "Cavalry evasion happens before the battle continues. Eligible defending cavalry may retreat by its movement value to another friendly controlled region without retreat loss or a defeat marker; it changes troop positions before the remaining battle resolves."
+        "evasionResult": "After evasion resolves, look at the map: the defending cavalry has left the original battle and entered the highlighted retreat region; the original battle continues.",
+        "finish": "Cavalry evasion happens before the battle continues. It changes troop positions on the map first, then the remaining battle resolves without a defeat-retreat penalty."
       }
     },
     "neutralInvasion": {
@@ -460,7 +461,7 @@
       "steps": {
         "overview": "A neutral region is not empty when it has population. If an attack enters a neutral region with no player troops, the rule creates level-2 neutral troops from the remaining population (cavalry when the region has horses, otherwise infantry, up to 3) before the battle is resolved.",
         "resolveNeutral": "This run attacks Tumed. Click the battle-resolution control so the rule creates neutral defenders from Tumed's population; the region's control changes only after the battle result.",
-        "neutralResult": "The resolution summary now records neutral defenders: the attacker did not break through, so the region stays neutral.",
+        "neutralResult": "Look back at Tumed on the map: neutral defenders now occupy the region, and because the attacker did not break through, the control marker stays neutral.",
         "finish": "Neutral invasion is a battle-resolution rule, not just a map note. Control changes only if the attack actually breaks through."
       }
     },
@@ -480,7 +481,7 @@
       "steps": {
         "overview": "The shared-wheel push is never free. The farther you move, the more cards your opponents recover, and the more it changes this turn's landing gate.",
         "chooseMove": "Pick the shared-wheel move \"All opponents draw 2, move 3.\" This is still the wheel push, not the fight itself.",
-        "drawResult": "After the shared wheel moves 3 spaces, both the Mongols and Later Jin each draw 2 cards.",
+        "drawResult": "After the wheel moves 3 spaces, look at the player strip: both the Mongols and Later Jin gain 2 hand cards.",
         "dispatchReady": "Both opponents have drawn 2 cards and the wheel has moved 3 spaces, so this turn lands on Attack / Dispatch. Under that rule, discard 1 card, move up to 6 troops, and trigger battle only when entering an enemy or non-friendly region.",
         "finish": "The shared wheel does more than move a few spaces. It decides which wheel-result action this turn will enter, and who gets cards back because of that push."
       }
@@ -491,7 +492,7 @@
       "steps": {
         "overview": "Reclaim is not an off-turn bonus. It is a formal wheel result.",
         "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel into Reclaim.",
-        "result": "Once the wheel lands on Reclaim, it adds 1 population to Xuanfu. Population later decides taxes, supply, and how much force you can sustain.",
+        "result": "Once the wheel lands on Reclaim, look at Xuanfu on the map: population increases by 1. Population later decides taxes, supply, and how much force you can sustain.",
         "finish": "Reclaim matters because it thickens the base for later taxes and supply before it gives you more troops."
       }
     },
@@ -501,7 +502,7 @@
       "steps": {
         "overview": "Military Farm differs from Reclaim because it converts that base directly into current cards and troops.",
         "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel from Reclaim into Military Farm.",
-        "result": "Wheel Military Farm draws 2 cards and then builds 1 level-2 regular troop in Xuanfu. It increases both resources and live board presence.",
+        "result": "After Wheel Military Farm resolves, look at Xuanfu on the map first: 1 level-2 regular troop appears. The hand-card gain is carried by the player strip.",
         "finish": "Military Farm is one of the wheel's clearest snowball actions: your hand grows and your regular force rises with it."
       }
     },
@@ -511,7 +512,7 @@
       "steps": {
         "overview": "Wheel Recruit / Train is not only about placing new blocks. It also consumes the armament levels you have already developed.",
         "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel from Military Farm into Recruit / Train.",
-        "result": "Wheel Recruit / Train builds 2 level-2 regular troops in Xuanfu. If Artillery Technology has already advanced, existing artillery is trained upward at the same time.",
+        "result": "Wheel Recruit / Train has resolved. The two new level-2 regular troops on the map are the recruitment result; if Artillery Technology has already advanced, existing artillery is trained upward at the same time.",
         "finish": "This shows the wheel is not just rotating through labels. It is tying armaments, troop growth, and the live front together in one real result."
       }
     },
@@ -534,7 +535,7 @@
         "chooseAction": "Click the Khan's Edict faction action on the right. After it starts, discard 1 hand card to enter the effect choice.",
         "payCards": "Pick 1 card from the hand at the bottom, then confirm the action.",
         "chooseEffect": "Click Shanhaiguan on the map first to confirm where Khan's Edict will add troops, then choose Recruit / Train to resolve the gain.",
-        "result": "The result has landed: Khan's Edict raised Mongol troops at Shanhaiguan from 2 to 4, so this action has already changed live board strength.",
+        "result": "After Khan's Edict resolves, look at Shanhaiguan on the map: Mongol troops increase from 2 to 4.",
         "finish": "That is the faction-action rhythm: spend a card to fire it, then let the action effect change the live position immediately."
       }
     },
@@ -548,8 +549,7 @@
         "friendlyMark": "Click Ningyuan on the map to place a friendly marker. A reverse-side marker means your troops may pass through and station there, but it is not yet a controlled region.",
         "tributeMark": "Flip the friendly marker you just placed into a vassal marker. Only a face-up marker counts as your controlled region; neutral regions taken by battle also become this state directly.",
         "removeMark": "Click Dongjiang on the map and remove the existing rival control marker. Diplomacy not only places your own markers; it can also push back markers already placed by someone else.",
-        "hireOnly": "Mercenary troops can only be built in controlled regions. They do not appear freely in ordinary neutral territory.",
-        "finish": "When diplomacy and hiring resolve together, you get two benefits at once: map relationships change, and force structure changes with them."
+        "finish": "After diplomacy and hiring finish, return to the map: the Ningyuan marker changed, and hired troops landed in a controlled region."
       }
     },
     "yearAndCharacters": {
@@ -558,15 +558,15 @@
       "steps": {
         "overview": "This chapter first advances the public wheel into Midyear, then into New Year, so taxes, character checks, fortification maintenance, and attrition resolve in sequence.",
         "advanceMidyear": "Click the wheel's \"one opponent draws 2, move 2\" option to advance the action marker into Midyear.",
-        "midyearTax": "Midyear taxes resolve first. Here Xuanfu has more population than troops, so resources return to your hand; besieged controlled regions do not collect that tax.",
-        "midyearCharacters": "Then come character checks. Eligible characters roll for resolution, and defeat markers are processed one by one during the character check.",
+        "midyearTax": "After Midyear taxes resolve, look at the player strip: Xuanfu's population surplus has become resources; besieged controlled regions do not collect that tax.",
+        "midyearCharacters": "After the character checks resolve, look at the player strip: character states and defeat markers have updated.",
         "advanceNewYear": "After Midyear resolves, click the wheel's \"Move 1 for free\" option to advance the action marker into New Year.",
         "newYearTribute": "New Year Korean tribute: whoever controls Korean regions draws the matching number of Korea cards shown on the map.",
         "newYearMaintenance": "Then click \"Auto pay\" to handle fortification maintenance. If the Great Wall, Shanhaiguan, Ningyuan, or Jinzhou cannot be maintained, they fall into ruin and their border and city effects fail with them.",
-        "newYearAttrition": "After maintenance you still resolve attrition. If population cannot support the troops, you either discard to keep them or cut them yourself.",
+        "newYearAttrition": "After maintenance, look at the player strip and map: unsupported troops have entered attrition, and the remaining force is what you can actually use next year.",
         "chronologyScore": "Chronology cards are not just year markers. The player with the highest score must pay half their hand to claim that year's prestige, or pass the chance to the next player.",
         "turnOrderRefresh": "Once chronology resolves, both turn order and new characters refresh, and next year's tempo changes with them.",
-        "finish": "When a year ends, what you lose and gain is never just a few cards. The map's resources, characters, and order are all reshuffled."
+        "finish": "When a year closes, read three formal areas: the player strip for resources and characters, the map for troops, and the turn banner for next year's current actor."
       }
     },
     "koreaSpecial": {
@@ -578,8 +578,8 @@
         "hanseongVp": "Then check Hanseong prestige on the player bar. Once Ming loses its initial control, whoever controls Hanseong effectively gains 1 prestige.",
         "waterLimit": "Sea routes between anchor regions can move at most 2 troops at a time, and cavalry cannot use sea routes to evade battle.",
         "newYearMaintenance": "Now click \"Auto pay\" to handle New Year maintenance. After maintenance resolves, troops in Korea also enter attrition resolution.",
-        "koreaAttrition": "Korean regions provide no population support. Troops left in Korea must be paid entirely with cards during New Year, or Korea attrition removes them directly.",
-        "shanhaiguan": "Shanhaiguan is both a city and a special border between Jizhen and Liaoxi. While it stands, the border stays narrow; once ruined, that border collapses into open plain.",
+        "koreaAttrition": "Korean regions provide no population support. After New Year resolves, read the Korea rail and map troops together to see which units took attrition.",
+        "shanhaiguan": "Look at Shanhaiguan on the map: it is both a city and a special border between Jizhen and Liaoxi; intact keeps the border narrow, while ruin widens it.",
         "finish": "These special cases produce real turn results: Korea decides who draws tribute at New Year, waterways decide how troops move, Shanhaiguan changes borders and city defense, and Hanseong changes prestige. They are not merely optional notes."
       }
     }

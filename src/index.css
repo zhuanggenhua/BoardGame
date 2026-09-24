@@ -850,6 +850,62 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     pointer-events: auto;
 }
 
+.betrayal-hud-portal-region {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    width: var(--runtime-viewport-width, 100vw);
+    height: var(--runtime-viewport-height, 100vh);
+    max-width: var(--runtime-viewport-width, 100vw);
+    max-height: var(--runtime-viewport-height, 100vh);
+    pointer-events: none;
+    overflow: visible;
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > header,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > header {
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: top center;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"] {
+        max-height: none;
+        overflow: visible;
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: top left;
+        scrollbar-width: none;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"]::-webkit-scrollbar,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"]::-webkit-scrollbar {
+        display: none;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-inventory-section"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-inventory-section"] {
+        bottom: 0;
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: bottom left;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-status-rail"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-status-rail"] {
+        bottom: auto;
+        height: var(--betrayal-hud-expanded-rail-height);
+        overflow: visible;
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: top right;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-action-rail"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-action-rail"] {
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: bottom center;
+    }
+}
+
 @keyframes the-gang-chip-transfer-line {
     0% {
         clip-path: inset(0 100% 0 0);
@@ -952,7 +1008,8 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]) {
         overflow: hidden;
         overscroll-behavior: none;
-        background: #000;
+        background: #000 !important;
+        background-image: none !important;
     }
 
     body[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] #root,
@@ -960,6 +1017,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         width: 100%;
         height: 100%;
         overflow: hidden;
+        background: #000;
     }
 
     [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {
@@ -974,6 +1032,13 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         height: var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1)));
         max-width: none;
         padding: 0;
+    }
+
+    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .game-page-viewport,
+    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__canvas,
+    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__content {
+        background-color: #000 !important;
+        background-image: none !important;
     }
 
     html[data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"] [data-testid="fab-menu"] {

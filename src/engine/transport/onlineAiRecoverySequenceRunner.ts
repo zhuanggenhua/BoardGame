@@ -163,7 +163,11 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
         candidate: ForceEndTurnStalledAiResolution;
         progressMarkerBeforeRecovery: string;
         seatControllers: Record<string, OnlineAiWatchdogSeatController>;
-        options?: { reuseExecutionLock?: boolean; allowManualImmediateAiContinuation?: boolean };
+        options?: {
+            reuseExecutionLock?: boolean;
+            allowManualImmediateAiContinuation?: boolean;
+            forceManualCommandExecution?: boolean;
+        };
     }): Promise<void> {
         const {
             match,
@@ -282,6 +286,150 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
         let lastForcedReason: ForceEndTurnStalledAiResolution['reason'] | null = null;
         let lastForcedPhaseLabel: OnlineAiRecoveryPhaseLabel = phaseLabel;
 
+        const prepareManualForcedCommandCandidate = (
+            candidateToPrepare: ForceEndTurnStalledAiResolution,
+        ): ForceEndTurnStalledAiResolution => {
+            if (
+                options?.forceManualCommandExecution !== true
+                || candidateToPrepare.resolution.action.commands.length > 0
+                || candidateToPrepare.legalActionOnly !== true
+                || (
+                    candidateToPrepare.reason !== 'active-turn-legal-only'
+                    && candidateToPrepare.reason !== 'seat-legal-only'
+                )
+                || candidate.reason === 'response-window'
+                || (
+                    !usedForcedRecoveryCommand
+                    && match.engineConfig.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+                        state: match.state,
+                        phase: typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '',
+                        previousCandidate: candidateToPrepare,
+                        nextCandidate: candidateToPrepare,
+                    }) !== true
+                )
+            ) {
+                return candidateToPrepare;
+            }
+
+            const forcedAdvanceResolution = resolveForceAdvancePhaseAfterRecovery({
+                authoritativeState: match.state,
+                seatControllers,
+                playerId: candidateToPrepare.playerId,
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
+            if (!forcedAdvanceResolution) {
+                return candidateToPrepare;
+            }
+
+            const attemptKey = `manual-force-advance:${candidateToPrepare.playerId}:${buildAiProgressMarker(
+                match.state,
+                {
+                    engineConfig: match.engineConfig,
+                    gameId: match.gameId,
+                },
+            )}`;
+            return {
+                ...candidateToPrepare,
+                reason: 'active-turn',
+                legalActionOnly: false,
+                fingerprintHint: attemptKey,
+                resolution: {
+                    ...forcedAdvanceResolution,
+                    attemptKey,
+                    action: {
+                        ...forcedAdvanceResolution.action,
+                        actionId: attemptKey,
+                        kind: 'manual-force-advance',
+                        label: '手动强制结束 AI 阶段',
+                    },
+                },
+            };
+        };
+
+        const shouldExecuteManualForcedCommands = (
+            candidateToExecute: ForceEndTurnStalledAiResolution,
+        ): boolean => {
+            if (options?.forceManualCommandExecution !== true) {
+                return false;
+            }
+            if (candidateToExecute.reason === 'response-window') {
+                return false;
+            }
+            if (
+                isOnlineAiInteractionRecoveryReason(candidateToExecute.reason)
+                || candidateToExecute.reason === 'response-loop'
+                || candidateToExecute.reason === 'seat-legal-only'
+            ) {
+                return candidateToExecute.resolution.action.commands.length > 0;
+            }
+            if (
+                candidateToExecute.reason !== 'active-turn'
+                && candidateToExecute.reason !== 'active-turn-legal-only'
+            ) {
+                return false;
+            }
+            if (candidate.reason === 'response-window') {
+                return false;
+            }
+
+            return usedForcedRecoveryCommand
+                || match.engineConfig.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+                    state: match.state,
+                    phase: typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '',
+                    previousCandidate: candidateToExecute,
+                    nextCandidate: candidateToExecute,
+                }) === true;
+        };
+
+        const executeManualForcedCommands = async (
+            candidateToExecute: ForceEndTurnStalledAiResolution,
+        ): Promise<OnlineAiLegalActionRecoveryResult> => {
+            const commands = candidateToExecute.resolution.action.commands;
+            if (commands.length === 0) {
+                return {
+                    applied: false,
+                    resolved: false,
+                    blockedReason: null,
+                    executedCommandTypes: [],
+                    outcome: 'no-legal-action',
+                    reportedAction: null,
+                };
+            }
+
+            const executedCommandTypes: string[] = [];
+            for (const command of commands) {
+                const commandSucceeded = await this.hooks.executeRecoveryCommand({
+                    match,
+                    playerId: candidateToExecute.playerId,
+                    commandType: command.type,
+                    commandPayload: command.payload,
+                });
+                if (!commandSucceeded) {
+                    return {
+                        applied: false,
+                        resolved: false,
+                        blockedReason: null,
+                        executedCommandTypes,
+                        outcome: 'legal-action-command-failed',
+                        failedCommandType: command.type,
+                        commandFailureReason: this.hooks.getLastCommandFailureReason(match) ?? null,
+                        reportedAction: null,
+                    };
+                }
+                executedCommandTypes.push(command.type);
+            }
+
+            return {
+                applied: true,
+                resolved: false,
+                blockedReason: null,
+                executedCommandTypes,
+                outcome: 'applied',
+                reportedAction: null,
+            };
+        };
+
         const tryHardCancelCurrentAiInteraction = async (
             candidateToCancel: ForceEndTurnStalledAiResolution,
         ): Promise<boolean> => {
@@ -353,13 +501,26 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
                     engineConfig: match.engineConfig,
                     gameId: match.gameId,
                 });
-                const actionRecovery = await this.hooks.tryRecoverWithLegalAction({
-                    match,
-                    candidate: currentCandidate,
-                    tracker,
-                    seatControllers,
-                    delayContext,
-                });
+                currentCandidate = prepareManualForcedCommandCandidate(currentCandidate);
+                phaseLabel = resolveOnlineAiRecoveryPhaseLabel(currentCandidate);
+                const actionRecovery = shouldExecuteManualForcedCommands(currentCandidate)
+                    ? await executeManualForcedCommands(currentCandidate)
+                    : await this.hooks.tryRecoverWithLegalAction({
+                        match,
+                        candidate: currentCandidate,
+                        tracker,
+                        seatControllers,
+                        delayContext,
+                    });
+                if (options?.forceManualCommandExecution === true && actionRecovery.applied) {
+                    usedForcedRecoveryCommand = true;
+                    totalForcedCommands += actionRecovery.executedCommandTypes.length;
+                    lastForcedReason = currentCandidate.reason;
+                    lastForcedPhaseLabel = phaseLabel;
+                    totalAdvanceSteps += actionRecovery.executedCommandTypes.filter(
+                        (commandType) => commandType === 'ADVANCE_PHASE',
+                    ).length;
+                }
                 this.hooks.logExecutionTrace({
                     matchId: match.matchID,
                     gameId: match.gameId,

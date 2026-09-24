@@ -7,12 +7,15 @@ import {
 } from "../../contexts/TutorialContext";
 import { UndoProvider } from "../../contexts/UndoContext";
 import type { ActionBarAction } from "../../core/ui/types";
+import { HudPortal } from "../../core";
 import {
   playSound,
   useGameAudio,
 } from "../../lib/audio/useGameAudio";
 import { TutorialSelectionGate, useVisualSequenceGate } from "../../components/game/framework";
 import { useGameMode } from "../../contexts/GameModeContext";
+import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
+import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import type { GameBoardProps } from "../../engine/transport/protocol";
 import type {
   BetrayalCore,
@@ -292,6 +295,43 @@ const ASSETS = {
   } as const,
 } as const;
 
+const BETRAYAL_PHONE_HUD_BASE_SCALE = 0.6;
+
+function BetrayalHudRegion({
+  portal,
+  scale = 1,
+  viewportHeight = 0,
+  children,
+}: {
+  portal: boolean;
+  scale?: number;
+  viewportHeight?: number;
+  children: React.ReactNode;
+}) {
+  if (!portal) {
+    return <>{children}</>;
+  }
+
+  return (
+    <HudPortal>
+      <div
+        className="betrayal-hud-portal-region"
+        style={
+          {
+            "--betrayal-hud-scale": String(scale),
+            "--betrayal-hud-expanded-rail-height": `${Math.max(
+              0,
+              viewportHeight - 24,
+            ) / Math.max(scale, 0.01)}px`,
+          } as React.CSSProperties
+        }
+      >
+        {children}
+      </div>
+    </HudPortal>
+  );
+}
+
 export default function BetrayalBoard({
   G,
   dispatch,
@@ -302,6 +342,79 @@ export default function BetrayalBoard({
 }: Props) {
   const { t } = useTranslation(["game-betrayal", "common"]);
   const gameMode = useGameMode();
+  const runtimeViewport = useRuntimeViewport();
+  const useViewportAnchoredHud =
+    BETRAYAL_MANIFEST.mobileHudPlacement === "portal" &&
+    runtimeViewport.width > 0 &&
+    runtimeViewport.height > 0 &&
+    runtimeViewport.width <= MOBILE_MAX_VIEWPORT_WIDTH &&
+    runtimeViewport.width > runtimeViewport.height;
+  const statusRailRef = React.useRef<HTMLElement | null>(null);
+  const [measuredPhoneHudScale, setMeasuredPhoneHudScale] = React.useState<
+    number | null
+  >(null);
+  React.useEffect(() => {
+    if (!useViewportAnchoredHud) {
+      setMeasuredPhoneHudScale(null);
+      return;
+    }
+    const availableHeight = Math.max(0, runtimeViewport.height - 24);
+    const measure = () => {
+      const rail =
+        statusRailRef.current ??
+        document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-status-rail"]',
+        );
+      if (!rail) return;
+      const contentHeight = rail.scrollHeight;
+      if (contentHeight <= 0) return;
+      const nextScale = Math.min(
+        BETRAYAL_PHONE_HUD_BASE_SCALE,
+        availableHeight / contentHeight,
+      );
+      setMeasuredPhoneHudScale((previous) =>
+        previous !== null && Math.abs(previous - nextScale) < 0.002
+          ? previous
+          : nextScale,
+      );
+    };
+
+    const portalRoot =
+      document.getElementById("hud-root") ?? document.body;
+    let railObserver: MutationObserver | null = null;
+    const attachRailObserver = () => {
+      measure();
+      if (railObserver) return;
+      const rail =
+        statusRailRef.current ??
+        document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-status-rail"]',
+        );
+      if (!rail) return;
+      railObserver = new MutationObserver(() => {
+        requestAnimationFrame(measure);
+      });
+      railObserver.observe(rail, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    };
+    const portalObserver = new MutationObserver(attachRailObserver);
+    portalObserver.observe(portalRoot, { childList: true, subtree: true });
+    const frame = requestAnimationFrame(attachRailObserver);
+    return () => {
+      cancelAnimationFrame(frame);
+      portalObserver.disconnect();
+      railObserver?.disconnect();
+    };
+  }, [runtimeViewport.height, useViewportAnchoredHud]);
+  const viewportHudScale = useViewportAnchoredHud
+    ? measuredPhoneHudScale ?? BETRAYAL_PHONE_HUD_BASE_SCALE
+    : Math.min(
+        1,
+        Math.max(BETRAYAL_PHONE_HUD_BASE_SCALE, runtimeViewport.width / 1920),
+      );
   const {
     isActive: isTutorialActive,
     currentStep: tutorialStep,
@@ -594,6 +707,9 @@ export default function BetrayalBoard({
     () => [core.currentExplorer, ...core.otherExplorers],
     [core.currentExplorer, core.otherExplorers],
   );
+  const viewerExplorer =
+    allExplorers.find((explorer) => explorer.playerId === viewerPlayerId) ??
+    core.currentExplorer;
   const resolveRecentRollActorLabel = React.useCallback(
     (roll: BetrayalRecentRollState | null | undefined) =>
       resolveRecentRollActorLabelPresentation({
@@ -612,7 +728,7 @@ export default function BetrayalBoard({
       ? allExplorers.find(
           (explorer) => explorer.playerId === observedExplorerPlayerId,
         )
-      : null) ?? core.currentExplorer;
+      : null) ?? viewerExplorer;
   const observedExplorerRoomName =
     core.rooms.find((room) => room.id === observedExplorer.roomId)?.name ??
     t("board.rooms.unknown");
@@ -680,7 +796,7 @@ export default function BetrayalBoard({
       const targetExplorer =
         (playerId
           ? allExplorers.find((explorer) => explorer.playerId === playerId)
-          : null) ?? core.currentExplorer;
+          : null) ?? viewerExplorer;
       const targetRoom = core.rooms.find(
         (room) => room.id === targetExplorer.roomId,
       );
@@ -689,7 +805,7 @@ export default function BetrayalBoard({
       }
       focusRoomOnMap(targetRoom.id);
     },
-    [allExplorers, core.currentExplorer, core.rooms, focusRoomOnMap],
+    [allExplorers, core.rooms, focusRoomOnMap, viewerExplorer],
   );
   const focusMonsterRoom = React.useCallback(
     (monsterId: string | null) => {
@@ -5903,29 +6019,34 @@ export default function BetrayalBoard({
           data-testid="betrayal-desktop-layout"
           data-layout-mode="desktop-board"
         >
-          <header className="pointer-events-none absolute inset-x-4 top-3 z-30 block">
-            <div
-              className="relative min-h-[58px]"
-              data-testid="betrayal-runtime-header-grid"
-            >
-              <span className="sr-only">{phaseLabel}</span>
-              {!shouldHideTableChromeForBlockingOverlay ? (
-                <div
-                  data-testid="betrayal-phase-chip"
-                  className="absolute left-1/2 top-0 flex min-w-[210px] -translate-x-1/2 flex-col items-center justify-center rounded-[8px] border border-[rgba(114,91,52,0.36)] bg-[rgba(8,13,11,0.68)] px-5 py-2 text-center shadow-[0_14px_30px_rgba(0,0,0,0.2)] backdrop-blur-md"
-                >
-                  <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">
-                    {t("board.hud.phaseLabel")}
-                  </span>
-                  <span className="mt-0.5 text-[21px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
-                    {phaseLabel}
-                  </span>
-                </div>
-              ) : null}
+          <BetrayalHudRegion
+            portal={useViewportAnchoredHud}
+            scale={viewportHudScale}
+            viewportHeight={runtimeViewport.height}
+          >
+            <header className="pointer-events-none absolute inset-x-4 top-3 z-30 block">
               <div
-                className="absolute right-[244px] top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md"
-                data-testid="betrayal-status-chip"
+                className="relative min-h-[58px]"
+                data-testid="betrayal-runtime-header-grid"
               >
+                <span className="sr-only">{phaseLabel}</span>
+                {!shouldHideTableChromeForBlockingOverlay ? (
+                  <div
+                    data-testid="betrayal-phase-chip"
+                    className="absolute left-1/2 top-0 flex min-w-[210px] -translate-x-1/2 flex-col items-center justify-center rounded-[8px] border border-[rgba(114,91,52,0.36)] bg-[rgba(8,13,11,0.68)] px-5 py-2 text-center shadow-[0_14px_30px_rgba(0,0,0,0.2)] backdrop-blur-md"
+                  >
+                    <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">
+                      {t("board.hud.phaseLabel")}
+                    </span>
+                    <span className="mt-0.5 text-[21px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
+                      {phaseLabel}
+                    </span>
+                  </div>
+                ) : null}
+                <div
+                  className="absolute right-[244px] top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md"
+                  data-testid="betrayal-status-chip"
+                >
                 <div className="text-right">
                   <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">
                     {t("board.hud.turnLabel")}
@@ -5970,9 +6091,10 @@ export default function BetrayalBoard({
                     </span>
                   </div>
                 </div>
+                </div>
               </div>
-            </div>
-          </header>
+            </header>
+          </BetrayalHudRegion>
 
           <main className="absolute inset-0 overflow-hidden">
             {shouldShowHauntRevealCue && !scenarioReaderOpen ? (
@@ -5984,12 +6106,17 @@ export default function BetrayalBoard({
               />
             ) : null}
 
-            <section
-              data-testid="betrayal-left-status-rail"
-              className={`pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(1080px-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible ${
-                activeHauntTargetGuide ? "opacity-[0.72]" : ""
-              }`}
+            <BetrayalHudRegion
+              portal={useViewportAnchoredHud}
+              scale={viewportHudScale}
+              viewportHeight={runtimeViewport.height}
             >
+              <section
+                data-testid="betrayal-left-status-rail"
+                className={`pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(1080px-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible ${
+                  activeHauntTargetGuide ? "opacity-[0.72]" : ""
+                }`}
+              >
               <BetrayalObservedExplorerPanelSurface
                 explorer={observedExplorer}
                 roomName={observedExplorerRoomName}
@@ -6054,48 +6181,59 @@ export default function BetrayalBoard({
                   />
                 </div>
               </article>
-            </section>
-            <BetrayalInventoryRailSurface
-              explorer={inventoryDisplayExplorer}
-              cards={visibleInventoryCardsDuringTransition}
-              isReadOnly={isInventoryDisplayReadOnly}
-              ownerLabel={
-                isInventoryDisplayReadOnly
-                  ? resolvePlayerName(
-                      inventoryDisplayExplorer.playerId,
-                      inventoryDisplayExplorer.displayName,
-                      matchData,
-                    )
-                  : null
-              }
-              selectedDisplayText={selectedInventoryDisplayText}
-              hasSelectedDisplay={hasSelectedInventoryDisplay}
-              lastUsedInventoryCardStillUsed={lastUsedInventoryCardStillUsed}
-              useStatusText={useStatusText}
-              isDimmed={Boolean(activeHauntTargetGuide)}
-              elevatedForRollModifier={
-                shouldShowLatestDiscovery &&
-                !shouldAutoReturnAfterLatestDiscovery &&
-                !pendingEventChoice &&
-                canCurrentPlayerModifyLatestDiscoveryRoll
-              }
-              usedCardIdsThisTurn={core.usedCardIdsThisTurn}
-              availableCardIdsThisTurn={core.turnStartInventoryCardIds}
-              isTradeDraftActive={isTradeDraftActive}
-              rollModifierCardIds={rollModifierCardIds}
-              eventRollBookCardIds={eventRollBookCardIds}
-              isTutorialUseBookActive={
-                isTutorialActive && tutorialStep?.id === "use-book"
-              }
-              deckAssets={ASSETS.deck}
-              traitAssets={ASSETS.trait}
-              locale={effectiveLocale}
-              resolveCardSelected={resolveInventoryCardSurfaceSelected}
-              resolveTradeStatus={resolveInventoryCardSurfaceTradeStatus}
-              onUseBookForEventRoll={handleInventoryCardSurfaceEventRollBookUse}
-              onPrimarySelect={handleInventoryCardSurfacePrimarySelect}
-              onPreview={setInventoryPreviewCardId}
-            />
+              </section>
+            </BetrayalHudRegion>
+            <BetrayalHudRegion
+              portal={useViewportAnchoredHud}
+              scale={viewportHudScale}
+              viewportHeight={runtimeViewport.height}
+            >
+              <BetrayalInventoryRailSurface
+                explorer={inventoryDisplayExplorer}
+                cards={visibleInventoryCardsDuringTransition}
+                isReadOnly={isInventoryDisplayReadOnly}
+                isObservedOther={
+                  inventoryDisplayExplorer.playerId !== viewerPlayerId
+                }
+                ownerLabel={
+                  isInventoryDisplayReadOnly &&
+                  inventoryDisplayExplorer.playerId !== viewerPlayerId
+                    ? resolvePlayerName(
+                        inventoryDisplayExplorer.playerId,
+                        inventoryDisplayExplorer.displayName,
+                        matchData,
+                      )
+                    : null
+                }
+                selectedDisplayText={selectedInventoryDisplayText}
+                hasSelectedDisplay={hasSelectedInventoryDisplay}
+                lastUsedInventoryCardStillUsed={lastUsedInventoryCardStillUsed}
+                useStatusText={useStatusText}
+                isDimmed={Boolean(activeHauntTargetGuide)}
+                elevatedForRollModifier={
+                  shouldShowLatestDiscovery &&
+                  !shouldAutoReturnAfterLatestDiscovery &&
+                  !pendingEventChoice &&
+                  canCurrentPlayerModifyLatestDiscoveryRoll
+                }
+                usedCardIdsThisTurn={core.usedCardIdsThisTurn}
+                availableCardIdsThisTurn={core.turnStartInventoryCardIds}
+                isTradeDraftActive={isTradeDraftActive}
+                rollModifierCardIds={rollModifierCardIds}
+                eventRollBookCardIds={eventRollBookCardIds}
+                isTutorialUseBookActive={
+                  isTutorialActive && tutorialStep?.id === "use-book"
+                }
+                deckAssets={ASSETS.deck}
+                traitAssets={ASSETS.trait}
+                locale={effectiveLocale}
+                resolveCardSelected={resolveInventoryCardSurfaceSelected}
+                resolveTradeStatus={resolveInventoryCardSurfaceTradeStatus}
+                onUseBookForEventRoll={handleInventoryCardSurfaceEventRollBookUse}
+                onPrimarySelect={handleInventoryCardSurfacePrimarySelect}
+                onPreview={setInventoryPreviewCardId}
+              />
+            </BetrayalHudRegion>
 
             <section
               className={`absolute inset-0 grid min-h-0 ${
@@ -6657,10 +6795,15 @@ export default function BetrayalBoard({
                 {visibleActionItems.length > 0 &&
                 !isEndgameExorciseRollReview &&
                 !shouldHideTableChromeForBlockingOverlay ? (
-                  <div
-                    data-testid="betrayal-action-rail"
-                    className="pointer-events-none absolute inset-x-0 bottom-1 z-50 flex flex-col items-center justify-end gap-0.5"
+                  <BetrayalHudRegion
+                    portal={useViewportAnchoredHud}
+                    scale={viewportHudScale}
+                    viewportHeight={runtimeViewport.height}
                   >
+                    <div
+                      data-testid="betrayal-action-rail"
+                      className="pointer-events-none absolute inset-x-0 bottom-1 z-50 flex flex-col items-center justify-end gap-0.5"
+                    >
                     {mummyPendingReward && isMummyRewardChooser ? (
                       <BetrayalMummyRewardActionsSurface
                         damage={mummyPendingReward.damageToHero}
@@ -6870,21 +7013,28 @@ export default function BetrayalBoard({
                         actionHandlers={actionHandlerMap}
                       />
                     </div>
-                  </div>
+                    </div>
+                  </BetrayalHudRegion>
                 ) : null}
               </article>
             </section>
 
-            <section
-              data-testid="betrayal-status-rail"
-              className={`no-scrollbar pointer-events-auto absolute bottom-[72px] right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 ${
-                shouldHideTableChromeForBlockingOverlay
-                  ? "hidden"
-                  : activeHauntTargetGuide
-                    ? "opacity-[0.72]"
-                    : ""
-              }`}
+            <BetrayalHudRegion
+              portal={useViewportAnchoredHud}
+              scale={viewportHudScale}
+              viewportHeight={runtimeViewport.height}
             >
+              <section
+                ref={statusRailRef}
+                data-testid="betrayal-status-rail"
+                className={`no-scrollbar pointer-events-auto absolute bottom-[72px] right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 ${
+                  shouldHideTableChromeForBlockingOverlay
+                    ? "hidden"
+                    : activeHauntTargetGuide
+                      ? "opacity-[0.72]"
+                      : ""
+                }`}
+              >
               <BetrayalDeckStatusRailSurface
                 deckItems={deckItems}
                 discardItems={discardItems}
@@ -6976,7 +7126,8 @@ export default function BetrayalBoard({
                   )}
                 </div>
               </article>
-            </section>
+              </section>
+            </BetrayalHudRegion>
           </main>
 
           <BetrayalReferenceOverlaySurface

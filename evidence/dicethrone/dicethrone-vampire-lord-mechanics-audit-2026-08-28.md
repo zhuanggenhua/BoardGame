@@ -3,7 +3,7 @@
 ## 基本信息
 
 - 对象：Dice Throne 新英雄吸血鬼领主（`vampire_lord` / Vampire Lord）。
-- 日期：2026-08-28；最近更新：2026-09-16（追加重审基础魅惑之力不可防御自然攻击后的鲜血之力第 4 档机会：旧 9/14 四档证据只证明预置伤害后窗口的消费链，不能证明不可防御自然流程会从“造成伤害”暂停到“是否发动鲜血之力”；本轮已补首跑红测、实现修复、领域测试、真实入口 E2E 和 PASS 清单）。
+- 日期：2026-08-28；最近更新：2026-09-23（追加重审“饮血如酒”卡图限定词：旧合同、实现和测试把“至多 2”错误建成“至少 2”，现已补齐 0/1/2 与超过上限边界，并回写旧结论）。
 - 文档类型：`invalidation` + `audit`。
 - 关联需求：新增 DiceThrone 吸血鬼新派系；修复旧审计把“角色可选 / 一条伤害代表链”误当完整派系完成的问题。
 - 当前工作目录：`D:\gongzuo\webgame\BoardGame`。
@@ -11,7 +11,7 @@
 ## 本轮范围
 
 - 本轮覆盖对象：`vampire_lord` 角色、玩家板基础 / 升级技能、专属行动牌、升级替换壳、鲜血之力、催眠、流血、玩家可见生命周期。
-- 本轮重点规则子句：旧“+1 伤害”问题已不是当前讨论核心；继续扩审的是专属行动牌旧录入把不同卡牌简化成统一获得血力、统一攻击修正 +1 或错误抽牌的问题，以及嗜血之爪 I / II / III 的伤害、相同数字奖励和 `slot-29/30` 升级费用角标。
+- 本轮重点规则子句：旧“+1 伤害”问题已不是当前讨论核心；继续扩审的是专属行动牌旧录入把不同卡牌简化成统一获得血力、统一攻击修正 +1 或错误抽牌的问题，以及嗜血之爪 I / II / III 的伤害、相同数字奖励、`slot-29/30` 升级费用角标和 `slot-31` “至多 2”花费上限。
 - 本轮目标入口 / 环境：领域测试入口 `src/games/dicethrone/__tests__/vampire-lord-mechanics.test.ts`，目录 / 命令 / AI 候选测试，真实浏览器入口 `e2e/dicethrone/vampire-lord-real-entry.e2e.ts`。
 - 明确不在本轮范围内：扩大到其它 DiceThrone 英雄或新增未锁定规则；本轮仅收口吸血鬼领主当前锁定范围，不把结论外推到其它英雄。
 
@@ -51,7 +51,7 @@
 | 专属行动牌 17/18 | `temp/dicethrone-intake/xixuegui/ability-card-slots/slot-17.webp`、`slot-18.webp` | `36D76F503FEB6780873A12E2F7BA635E03773F0AEFDD6A62F2820C06DC8B95D1`；`A9AE0772C146244554DDF47E27C6AB2EC3A7D0C1C0013FCBC429D21F7813DF08` | 血潮汹涌 0 CP、利爪 / 否则分支；血从天降 1 CP、骰值一半向上取整 | 已登记并拆入专属行动牌原子语义 |
 | 攻击修正牌 19/20 | `temp/dicethrone-intake/xixuegui/ability-card-slots/slot-19.webp`、`slot-20.webp` | `B5106D8801202F3BD52DF71EFB89209C228626A15F14D2264CA4F6D59FE29DA2`；`84EB217446B0E2D3B44085A2B82A2CE2843B41A1CC91C1C1BAFD354DF9C3C77C` | 死无全尸 1 CP、5 骰按利爪数量加伤 / 3+ 流血；沸血之力 0 CP、基础 +1 和按对手流血层数追加 | 已登记并拆入攻击修正原子语义 |
 | 专属行动牌 21 | `temp/dicethrone-intake/xixuegui/ability-card-slots/slot-21.webp` | `10DB70ABA43249FEC46F39A20F65F0E4F58626B693A09B473A15631971000C76` | 血流如注 0 CP，获得 1 鲜血之力和 1 CP | 已登记并保留独立最终状态断言 |
-| 专属行动牌 31/32 | `temp/dicethrone-intake/xixuegui/ability-card-slots/slot-31.webp`、`slot-32.webp` | `C5460E8D400A3862D051582DD33002CEADAA387F359E1C8C53B29D0A5D12B814`；`7A41C2CFCDE7C0436292D4DF05619DF3A6753803014F8F20A3C1235646892BB2` | 饮血如酒 0 CP、至少花费 2 鲜血之力 / 每个 2 CP；血石 4 CP、催眠 + 鲜血之力 + 流血且无抽牌 | 已登记并拆入专属行动牌原子语义 |
+| 专属行动牌 31/32 | `temp/dicethrone-intake/xixuegui/ability-card-slots-current-scaled/slot-31.png`、`temp/dicethrone-intake/xixuegui/ability-card-slots/slot-32.webp` | `slot-31.png` 当前裁图；`7A41C2CFCDE7C0436292D4DF05619DF3A6753803014F8F20A3C1235646892BB2` | 饮血如酒 0 CP、花费 0 至最多 2 鲜血之力 / 每个 2 CP；血石 4 CP、催眠 + 鲜血之力 + 流血且无抽牌 | 已登记并拆入专属行动牌原子语义；旧“至少花费 2”结论失效 |
 
 裁图清单即本轮 `crop manifest`：玩家板 1 张总览 + 1 张规则裁图，提示卡 1 张，能力卡 `slot-00..32` 33 张单卡，嗜血之爪规则裁图 2 张，并在 2026-09-11 用 `contact-sheet-focus-17-32.png` 重点复看 `slot-17/18/19/20/21/31/32`，用 `contact-sheet-focus-22-30.png`、`slot-29.webp` 与 `slot-30.webp` 复看升级牌费用和上下区；未以未登记图片推导运行时规则。
 
@@ -97,7 +97,7 @@
 | `card-vampire-lord-total-demise` | 死无全尸不是固定 +1；卡图写明扣 1 CP、攻击修正投 5 骰，每个利爪 +1 伤害，至少加总 3 伤害时施加流血 | `cards.ts` 走吸血鬼专属 custom action；`customActions/vampire_lord.ts` 投 5 骰、按利爪数量写入当前攻击加伤，3+ 利爪再施加流血 | 3 个利爪结算后当前攻击修正 +3、对手获得 1 层流血；不直接扣对手 HP | `slot-19.webp`；`vampire-lord-mechanics.test.ts` 3 利爪攻击修正与流血断言 | 旧测试合同错误，当前已修 | `passed` |
 | `card-vampire-lord-boiling-blood` | 沸血之力不是固定 +1；卡图写明 0 CP 攻击修正，基础 +1，此外被攻击对手每有 1 层流血再 +1 | `cards.ts` 走吸血鬼专属 custom action；`customActions/vampire_lord.ts` 读取被攻击对手当前流血层数后写入攻击修正 | 对手有 2 层流血时当前攻击修正合计 +3；不直接扣对手 HP | `slot-20.webp`；`vampire-lord-mechanics.test.ts` 2 层流血 +3 断言 | 用户点名旧 bug 已修，当前作为同类扩审证据保留 | `passed` |
 | `card-vampire-lord-gushing-blood` | 血流如注是 0 CP 行动牌，直接获得 1 鲜血之力和 1 CP，作为专属行动牌的简单获得类保留独立断言 | `cards.ts` 普通效果发放 `blood_power` 和 `CP` | 鲜血之力 0 -> 1，CP 10 -> 11；催眠保持 0；卡牌进入弃牌堆 | `slot-21.webp`；`vampire-lord-mechanics.test.ts` 最终状态断言 | 旧录入合同错误，当前已修 | `passed` |
-| `card-vampire-lord-drink-up` | 饮血如酒不是获得 2 鲜血之力；卡图写明 0 CP、至少花费 2 鲜血之力，然后每花费 1 个获得 2 CP | `cards.ts` 用持有门槛拦截低于 2 个鲜血之力；`customActions/vampire_lord.ts` 生成 2..当前持有数量的花费选择，选择后消耗血力并增加 CP | 只有 1 个鲜血之力时不能打出；持有 4 个时出现花费 2/3/4 选项；选 3 后鲜血之力 4 -> 1，CP 0 -> 6 | `slot-31.webp`；`vampire-lord-mechanics.test.ts` 正式命令拒绝与选择结算断言 | 旧录入合同错误，当前已修 | `passed` |
+| `card-vampire-lord-drink-up` | 0 CP；可花费 `0..min(2, 当前鲜血之力)`；花费 0 不消耗血力、不增加 CP，花费 1/2 分别增加 2/4 CP；卡牌进入弃牌堆 | `cards.ts` 不再设置鲜血之力门槛；`customActions/vampire_lord.ts` 生成 0..上限选择并在结算时拒绝超过 2 的输入 | 0 血力可打出并只有“不花费”；1 血力出现 0/1；4 血力只出现 0/1/2；选 2 后鲜血之力 4 -> 2、CP 0 -> 4 | `slot-31.png`；`vampire-lord-mechanics.test.ts`；`vampire-lord-real-entry.e2e.ts` | 旧录入合同、实现和测试错误，当前已修 | `passed` |
 | `card-vampire-lord-bloodstone` | 血石不是抽牌牌；卡图写明扣 4 CP，获得 1 催眠和 2 鲜血之力，并对一名对手施加 1 层流血 | `cards.ts` 保留催眠、鲜血之力和流血三个效果，移除抽牌效果 | 扣 4 CP 后催眠 0 -> 1、鲜血之力 0 -> 2、对手流血 0 -> 1；手牌清空、牌库不被抽走、血石进弃牌堆 | `slot-32.webp`；`vampire-lord-mechanics.test.ts` 不抽牌负向断言 | 旧录入合同错误，当前已修 | `passed` |
 | 鲜血之力第 4 档攻击后吸血 | 只要本次攻击已经造成伤害，玩家拥有 4 个鲜血之力且本回合未用过该档，即使攻击不可防御或来自终极技能，也必须先暂停给一次可选窗口；发动时消耗 4 个鲜血之力并按已造成伤害治疗自己；不发动时不治疗、不消耗，并继续收口 | 伤害扣血后，攻击状态进入伤害后等待阶段并记录已造成伤害；`flowHooks.ts` 的伤害后机会判断在攻击收口前写入“已给过一次机会”（`postDamagePassiveActionOpportunityOffered`）并同步“伤害已落地”（`damageResolved`）；`Board.tsx` 只显示一次性弹窗；`customActions/vampire_lord.ts` 按本次攻击已造成伤害治疗 | 基础魅惑之力不可防御自然流程中，对手 HP 50->46 后没有直接进主要阶段二，而是弹出“是否发动鲜血之力”；发动后吸血鬼领主 HP 40->44，鲜血之力 4->0；终极血色杀戮完成真实搜牌并造成 10 点伤害后，仍弹出同一吸血窗口；发动后吸血鬼领主 HP 40->50、鲜血之力 4->0、进入主要阶段二 | `vampire-lord-mechanics.test.ts` 两条领域用例；`e2e/dicethrone/vampire-lord-real-entry.e2e.ts` 基础魅惑自然流程和血色杀戮终极流程用例；`evidence/dicethrone/vampire-lord-blood-power-unblockable-natural-flow-pass-2026-09-16.json`；`evidence/dicethrone/vampire-lord-bloody-slaughter-blood-power-pass-20260918.json` | 旧证据代表态冒充自然流程，当前已修；不可防御自然攻击和终极技能两条真实入口均已补齐 | `passed for domain and real entry; ultimate screenshot evidence 2026-09-18` |
 | `vampire-lord-mesmerize` 主动消费 | 不是任意时刻可点；对手确认当前骰区后，若仍有可重掷的对手骰子，必须打开 `afterRollConfirmed` 响应窗口，左侧催眠 token 本体高亮并成为主入口。点击后消耗 1 个催眠并投 1 颗临时骰；5/6 后选择 1 颗对手骰强迫重掷 | `tokens.ts` 的 Token 主动使用定义要求 `requiresOpponentRollDice`，`rules.ts` 将可用 active roll token 纳入响应队列，`commandValidation.ts` 和 `executeTokens.ts` 校验当前响应窗口与可重掷骰区，`LeftSidebar.tsx` 只把合法 token 本体标成可点，`customActions/vampire_lord.ts` 生成临时骰和对手骰选择交互 | 对手正式确认骰后响应窗口出现；催眠 token 本体可见且有可用高亮；旧右侧“催眠重掷”按钮不存在；点击 token 本体后催眠 1 -> 0；临时骰为 6；对手骰可选、选中后确认按钮可用；确认后对手骰 6 -> 2，响应窗口和交互清空 | `vampire-lord-mechanics.test.ts`；`LeftSidebar.test.tsx`；`vampire-lord-real-entry.e2e.ts`；`vampire-lord-mesmerize-after-roll-response-pass-2026-09-12.json` | 已按项目 UI 规范改回 token 本体入口，并把 9/11 旧按钮 / 非开窗证据降级为历史证据 | `passed for domain and real entry` |
@@ -133,7 +133,7 @@
 - 命令：`npm run typecheck`。
 - 结果：2026-09-12 本轮复跑通过，TypeScript 无新增类型错误。
 - 命令：`npm run i18n:check`。
-- 结果：2026-09-12 本轮复跑通过，未发现缺失文案键；保留既有 legacy warning baseline 1 条。
+- 结果：2026-09-23 复跑通过，未发现缺失文案键；脚本现在会从 `rules.ts` 的 `CARD_PLAY_FAIL_REASONS` 展开 `error.${cardCheck.reason}` 运行时错误码，避免动态 key 只停留在告警层；保留既有 legacy warning baseline 1 条。
 - 命令：`npm run audit:evidence:selfcheck -- evidence/dicethrone/dicethrone-vampire-lord-mechanics-audit-2026-08-28.md`。
 - 结果：2026-09-12 本轮复跑通过，审计 evidence 结构自检 OK。
 - 命令：`npx vitest run src/games/dicethrone/__tests__/vampire-lord-mechanics.test.ts src/games/dicethrone/__tests__/vampire-lord-intake.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`。
@@ -238,7 +238,7 @@
 
 - 用户纠偏边界：`沸血之力` 对方两个流血仍只 +1 的问题已经修复；本节继续查的是同一录入失守模式下是否还有其它规则和消费 bug。
 - 本地卡图第一真相：已用吸血鬼专属 `ability-cards-vampire_lord.atlas.json` 重切并重新查看 `slot-17/18/19/20/21/31/32.webp`，并继续用 `contact-sheet-focus-22-30.png`、`slot-29.webp` 与 `slot-30.webp` 复看升级费用和上下区；2026-09-11 外部复查只确认官方 FAQ 挂有 Vampire Lord / Huntress / Tactician 的 Leaflet Patch Kit、官方商店说明该补丁是三名 Season Two 英雄的 leaflet 小加强、RulePop 是官方规则参考且能索引 Vampire Lord 与 `Blood Power` / `Mesmerize` / `Bleed` 状态入口；未抓到血潮汹涌、血从天降、饮血如酒、血色杀戮等完整单卡/技能正文，Fandom 当前直连不可用。因此外部来源只能做对照源，不能替代本地清晰单卡图裁定。
-- 确认并修正的其它旧合同污染：血潮汹涌从 1 CP / 固定血力改为 0 CP / 投骰利爪 / 否则分支；血从天降从固定血力改为骰值一半向上取整；死无全尸从固定 +1 改为投 5 骰按利爪加伤并在 3+ 时施加流血；饮血如酒从获得 2 鲜血之力改为花费至少 2 并按每个 2 CP；血石移除错误抽牌；`slot-29 嗜血之爪 III` 从 4 CP 改为图面 2 CP，`slot-30 嗜血之爪 II` 从 2 CP 改为图面 1 CP。
+- 确认并修正的其它旧合同污染：血潮汹涌从 1 CP / 固定血力改为 0 CP / 投骰利爪 / 否则分支；血从天降从固定血力改为骰值一半向上取整；死无全尸从固定 +1 改为投 5 骰按利爪加伤并在 3+ 时施加流血；饮血如酒先从获得 2 鲜血之力改为花费选择，2026-09-23 又从错误的“至少花费 2”改为图面明确的“至多花费 2”，并补 0/1/2 边界；血石移除错误抽牌；`slot-29 嗜血之爪 III` 从 4 CP 改为图面 2 CP，`slot-30 嗜血之爪 II` 从 2 CP 改为图面 1 CP。
 - 规则 / 录入规范结论：通用规范已经要求完整录入所有特殊含义元素，不管当前能不能用；本次根因不是规范没有要求，而是没有执行逐卡回图、费用角标等特殊图案信息未逐项登记，旧 evidence 错标 `passed`，旧测试把不同牌混成同一类。
 - 工具层补救：录入裁图脚本原默认 `ability-cards-common.atlas.json`，对吸血鬼 5x7 图集会裁错；当前已改为未显式传 `--atlas-config` 时优先自动选择角色专属 atlas，并用 `xixuegui` / `vampire_lord` 两种直接 `node` 入口验证都命中 `ability-cards-vampire_lord.atlas.json`。当前 npm 11 会吞掉旧示例里的 `--hero` 等参数，脚本帮助和 DiceThrone intake workflow 已同步改成双分隔符命令；新 npm 示例已实测命中吸血鬼专属 atlas。
 
@@ -254,3 +254,30 @@
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\鲜血之力-2-档应通过状态选择移除流血\吸血鬼领主-鲜血之力移除状态后收口.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\鲜血之力-3-档应通过玩家板按钮抽-2-张牌\吸血鬼领主-鲜血之力抽牌后收口.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\鲜血之力-4-档应通过玩家板按钮按已造成伤害治疗\吸血鬼领主-鲜血之力治疗后收口.jpg`
+
+## 2026-09-23 饮血如酒“至多”限定词复核
+
+- 用户原始纠偏：卡图写的是“花费至多 2 鲜血之力”，不是“至少花费 2”。
+- 主真相源：`temp/dicethrone-intake/xixuegui/ability-card-slots-current-scaled/slot-31.png`；卡面完整语义为“花费至多 2 鲜血之力。然后每花费 1 鲜血之力，就获得 2 CP。”
+- 首次错误状态：`cards.ts` 通过 `requireTokenStacks(min: 2)` 把低于 2 血力的合法出牌直接拒绝；`customActions/vampire_lord.ts` 又生成 2..当前血力的选择，导致 4 血力时出现 2/3/4，并允许超过卡面上限。
+- 修复后的消费链：行动牌不再设置持有门槛；选择器生成 `0..min(2, 当前鲜血之力)`；选择 0 只完成选择和弃牌，不产生资源事件；选择 1/2 分别产生 2/4 CP；服务端处理再次拒绝超过 2 的输入。
+- 边界矩阵：0 血力可打出且只有“不花费”；1 血力出现 0/1；4 血力只出现 0/1/2；直接提交 3 被拒绝，不产生血力消耗或 CP 变化。
+- 漏审归因：不是项目规范缺少“至多 / 至少 / 然后”等限定词要求，属于执行时没有逐项保留卡面限定词，且旧测试把错误的 2/3/4 选择范围当作正确结果。审计维度本身已经覆盖语义一致性、消费完整性、功能结果和负向路径；本次补的是执行证据与边界矩阵，不新增项目级规范。i18n 侧另有独立检测缺口：`Board.tsx` 的 `error.${cardCheck.reason}` 无法靠源码字面量扫描展开，现已复用 `CARD_PLAY_FAIL_REASONS` 注册表补入静态检查；运行时错误码测试仍保留，负责直接验证中英文资源。
+- 旧结论失效：本文旧的 `slot-31` 行、两份吸血鬼录入合同和旧机制测试中的“至少 2 / 2/3/4”表述均已降级并同步回写。
+
+## 2026-09-23 全游戏同类限定词复核
+
+- **审计对象**：所有当前注册游戏的中英文 `game-*.json` 可见规则描述，重点扫描“至少 / 至多 / 最多 / 任意数量 / 任意”以及英文 `at least / up to / any number / any`；共覆盖 11 个游戏：`betrayal`、`cardia`、`dicethrone`、`fantasyrealms`、`mage-wars`、`qidahen`、`smashup`、`splendor`、`summonerwars`、`the-gang`、`tictactoe`。
+- **扫描结果**：双语合计 1,596 个限定词候选命中。候选词只用于建立逐条复核清单，不能直接当作语义错误；中英文句式不同，不能用简单词面一一对齐替代规则合同和运行时消费审计。
+- **唯一确认的语义冲突**：DiceThrone `card-vampire-lord-drink-up` 曾把卡图“花费至多 2 个鲜血之力”写成中文“花费至少 2 个鲜血之力”、英文“Spend at least 2 Blood Power”。对应运行时也曾把合法范围错误限制成最低 2；本轮已同步改为 `0..min(2, 当前鲜血之力)`，并补 0 / 1 / 2、超过 2 拒绝和双语正文回归断言。
+- **其它游戏的当前裁定**：本轮未发现有证据证明量词文案与运行时冲突的其它对象。该结论应写作“未确认冲突”，不是“所有游戏已逐对象功能通过”；候选命中仍需在各自规则合同、实现消费链和专项 evidence 中按对象继续追溯。
+- **已知同类正向证据**：Smash Up 已有“至多 / 任意数量 / 可空选 / 玩家选择”的行为审计和选择器测试；本轮只复用其已有证据，不把量词搜索结果冒充新的全量运行时证明。其它游戏没有被本轮重新跑全量真实入口，因此保留为“未确认冲突 / 非本轮收口”。
+- **i18n 脚本边界**：`scripts/verify/i18n-check.ts` 已补入 DiceThrone `CARD_PLAY_FAIL_REASONS` 注册表，能够覆盖 `error.${cardCheck.reason}` 这类运行时拼接 key；`npm run i18n:check` 通过。该脚本负责 key、结构和合同引用完整性，不负责判断“至少”和“至多”的规则语义，因此“key 存在但方向写反”不会由它单独报错。没有新增跨语言词面自动判错门禁，避免把合法的中英文句式差异误报成失败。
+- **广泛审计边界**：`npm run test:games:audit` 当前仍受 Cardia 日志 ID 唯一性、DiceThrone 音效 / 旧 customAction 登记 / 文案 key，以及 Smash Up 旧能力迁移与 target 类型等既有失败阻塞；这些失败与本轮量词复核不是同一故障，不能解释成“所有游戏量词描述失败”，也不能据此宣称全游戏整体审计收口。
+
+### 本轮证据与回归
+
+- `npm run i18n:check`：通过，未发现缺失 key。
+- `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/vampire-lord-mechanics.test.ts src/games/__tests__/errorI18n.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`：2 个测试文件、124 条通过；其中吸血鬼领主机制测试 44 条，包含饮血如酒 0 / 1 / 2 和超上限负向边界，错误文案测试 80 条。
+- `npm run audit:evidence:selfcheck -- evidence/dicethrone/dicethrone-vampire-lord-mechanics-audit-2026-08-28.md`：通过。
+- 全仓精确复查：`public/locales` 中不再出现 `花费至少 2` 或 `Spend at least 2`。

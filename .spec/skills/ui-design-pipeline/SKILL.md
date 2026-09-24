@@ -37,14 +37,8 @@ description: "复杂 UI 设计生成链路。用于新页面、新游戏 UI、�
 
 ## 开始前锁定
 
-任何出图、写 brief、做 HTML 预览或实现前，先锁四项：
-
-1. 问题对象：哪个页面、组件、游戏、路由或设计稿。
-2. 真相来源：用户素材、规则、数据、截图、Figma、设计系统、现有页面或项目规范。
-3. 目标入口 / 环境：设计稿、真实页面、桌面端、移动端、项目 workflow 或通用 skill。
-4. 验收口径：用户批准、evaluator、截图复看、真实页面 E2E 或项目门禁。
-
-缺任一项，只能补证据或问最小问题。
+任何出图、写 brief、做 HTML 预览或实现前，先按
+[`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 锁定四项通用前提。本 skill 额外要求写清设计交付形态（Open Design、位图、文字设计或前端实现）和批准门槛；缺任一项，只能补证据或问最小问题。
 
 ## 设计前置包
 

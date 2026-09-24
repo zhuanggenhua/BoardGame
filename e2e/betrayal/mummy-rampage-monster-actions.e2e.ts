@@ -1,11 +1,11 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import sharp from 'sharp';
+import type { BetrayalCore } from '../../src/games/betrayal/game';
 import {
     resolveExplorableRoomSlots,
     resolveNextRoomDiscoveryDeckKind,
-    type BetrayalCore,
-} from '../../src/games/betrayal/game';
+} from '../../src/games/betrayal/roomDiscoveryModel';
 import { BETRAYAL_COMMANDS } from '../../src/games/betrayal/commands';
 import {
     resolveBetrayalMonsterMoveTargetRooms,
@@ -2216,11 +2216,15 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             'aria-label',
             /事件牌 外星几何/,
         );
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('知识检定');
+        const openingEventRollStart = page.getByTestId('betrayal-event-roll-start');
+        await expect(openingEventRollStart).toBeVisible();
+        await expect(openingEventRollStart).toBeEnabled();
+        await openingEventRollStart.click();
         const openingEventRollPanel = page.getByTestId('betrayal-recent-roll-panel');
+        await expect(openingEventRollPanel).toBeVisible();
         await expect(openingEventRollPanel).toContainText('总点数');
-        await expect(openingEventRollPanel).toContainText('获得 1 点知识');
         await waitForPhysicalDiceSettled(openingEventRollPanel);
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('获得 1 点知识');
         await expect.poll(() => readMummyGoldenDiscoveryState(page)).toMatchObject({
             latestDiscoveryKind: 'event',
             latestDiscoveryTitle: eventFixture.expectedCardName,

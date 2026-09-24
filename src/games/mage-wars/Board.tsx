@@ -39,6 +39,7 @@ import type { GameBoardProps } from '../../engine/transport/protocol';
 import { useTouchInspectGesture } from '../../hooks/ui/useTouchInspectGesture';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useToast } from '../../contexts/ToastContext';
+import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import {
     MAGE_WARS_OBJECT_ABILITY_IDS,
@@ -94,6 +95,7 @@ import {
 import {
     canMageWarsObjectUsePostMoveQuickAction,
     getMageWarsObjectAttackProfiles,
+    isMageWarsWallSpell,
     isMageWarsArenaObjectRestrained,
     resolveMageWarsSpellCastChoiceFamily,
     resolveMageWarsObjectEffectiveLife,
@@ -252,6 +254,7 @@ const getVisibleStatusTokenLabel = (
 
 const SPELL_CARD_BACK = 'mage-wars/cards/backs/spell-card-back';
 const SPELL_CARD_BACK_ASPECT_RATIO = 992 / 1391;
+const ROTATED_WALL_CARD_WIDTH_PERCENT = `${(100 / SPELL_CARD_BACK_ASPECT_RATIO).toFixed(2)}%`;
 
 const CAST_PHASES = new Set(['deployment', 'initiativeQuickcast', 'creatureAction', 'finalQuickcast']);
 const SIMULTANEOUS_PREPARATION_PHASES = new Set(['reset', 'channel', 'upkeep', 'planning']);
@@ -659,7 +662,7 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
             className="pointer-events-none absolute z-20 rounded-[0.42rem] border border-amber-100/18 bg-stone-950/50 px-2 py-2 text-amber-50 shadow-[0_10px_26px_rgba(0,0,0,0.35)] backdrop-blur-[2px]"
             style={{
                 left: 'var(--mage-wars-desktop-side-inset, 1rem)',
-                top: 'calc(var(--mage-wars-desktop-top-inset, 0.875rem) + 3.25rem)',
+                top: 'var(--mage-wars-desktop-top-inset, 0.875rem)',
                 width: MAGE_WARS_PHASE_PROGRESS_RAIL_WIDTH,
             }}
             data-testid="mage-wars-phase-progress-indicator"
@@ -1232,9 +1235,16 @@ function PreparedSpellCard({
     const previewRef = cardId == null || hidden ? null : getMageWarsSpellCardPreviewRef(cardId);
     const title = cardId == null ? label : getMageWarsSpellCardName(cardId) ?? label;
     const showLabel = hidden || cardId == null;
-    const cardAspectRatio = cardId == null || hidden
+    const sourceCardAspectRatio = cardId == null || hidden
         ? SPELL_CARD_BACK_ASPECT_RATIO
         : getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
+    const wallCard = cardId != null
+        && !hidden
+        && (() => {
+            const spell = getMageWarsSpellCardFromConfig(cardId);
+            return spell ? isMageWarsWallSpell(spell) : false;
+        })();
+    const cardAspectRatio = wallCard ? SPELL_CARD_BACK_ASPECT_RATIO : sourceCardAspectRatio;
     const cardSizeClass = compact ? 'h-[5.05rem]' : '';
     const cardSizeStyle: CSSProperties = {
         aspectRatio: cardAspectRatio,
@@ -1264,11 +1274,33 @@ function PreparedSpellCard({
     const content = (
         <>
             {previewRef ? (
-                <CardPreview
-                    previewRef={previewRef}
-                    className="h-full w-full rounded-[0.18rem] shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
-                    title={title}
-                />
+                wallCard ? (
+                    <div
+                        className="relative h-full w-full overflow-hidden rounded-[0.18rem]"
+                        data-card-display-orientation="portrait-rotated-wall"
+                    >
+                        <div
+                            className="absolute left-1/2 top-1/2 block"
+                            style={{
+                                width: ROTATED_WALL_CARD_WIDTH_PERCENT,
+                                aspectRatio: sourceCardAspectRatio,
+                                transform: 'translate(-50%, -50%) rotate(90deg)',
+                            }}
+                        >
+                            <CardPreview
+                                previewRef={previewRef}
+                                className="h-full w-full rounded-[0.18rem] shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
+                                title={title}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <CardPreview
+                        previewRef={previewRef}
+                        className="h-full w-full rounded-[0.18rem] shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
+                        title={title}
+                    />
+                )
             ) : hidden ? (
                 <OptimizedImage
                     src={SPELL_CARD_BACK}
@@ -2761,8 +2793,7 @@ function ArenaStage({
                     if (!pendingSpellTargetObject && selectedSpellCastTargetZoneIds) {
                         return selectedSpellCastTargetZoneIds.has(zone.id);
                     }
-                    return fieldObjects.some((object) => isSelectedSpellObjectTarget(object))
-                        || zoneOccupants.some((occupant) => isSelectedSpellPlayerTarget(occupant));
+                    return fieldObjects.some((object) => isSelectedSpellObjectTarget(object));
                 })
                 .map((zone) => zone.id)
             : [],
@@ -2791,7 +2822,7 @@ function ArenaStage({
                 className="absolute inset-0 h-full w-full max-w-none object-contain"
                 placeholder={false}
             />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,231,166,0.06),rgba(6,5,4,0.1)_56%,rgba(3,2,1,0.44))]" />
+            <div className="absolute inset-0 bg-black/12" />
             {core.arena.map((zone) => {
                 const rect = ZONE_RECTS[zone.id];
                 const fieldCardIds = zone.fieldCardIds ?? [];
@@ -2842,6 +2873,13 @@ function ArenaStage({
                     ),
                 );
                 const isLegalObjectOrPlayerTargetZone = isLegalTargetZone && !isLegalExplicitZoneTarget;
+                const canSelectZoneTarget = targeting && (
+                    isLegalMoveZone
+                    || isLegalExplicitZoneTarget
+                    || spellNeedsZoneTarget
+                    || hasPendingSpellDestination
+                    || Boolean(pendingObjectAbility || pendingMageAbility)
+                );
                 const zoneAriaLabel = [
                     t('arena.zoneAria', { zone: t(`zones.${zone.id}`) }),
                     isSourceZone ? t('arena.source') : null,
@@ -3211,13 +3249,13 @@ function ArenaStage({
                             height: pct(rect.height),
                         }}
                         aria-label={zoneAriaLabel}
-                        role="button"
-                        tabIndex={targeting ? 0 : -1}
+                        role={canSelectZoneTarget ? 'button' : undefined}
+                        tabIndex={canSelectZoneTarget ? 0 : -1}
                         onClick={() => {
-                            if (targeting) onZoneSelect?.(zone.id);
+                            if (canSelectZoneTarget) onZoneSelect?.(zone.id);
                         }}
                         onKeyDown={(event) => {
-                            if ((event.key === 'Enter' || event.key === ' ') && targeting) {
+                            if ((event.key === 'Enter' || event.key === ' ') && canSelectZoneTarget) {
                                 event.preventDefault();
                                 onZoneSelect?.(zone.id);
                             }
@@ -3437,8 +3475,8 @@ function WallSpellCardOnEdge({
                 )}
                 style={{
                     width: isVerticalEdge
-                        ? 'clamp(4.9rem, 9.4vmin, 6.4rem)'
-                        : 'clamp(5.8rem, 11vmin, 8.2rem)',
+                        ? 'clamp(11.5rem, 22vmin, 15rem)'
+                        : 'clamp(11.5rem, 22vmin, 16rem)',
                     aspectRatio: cardAspectRatio,
                     transform: `translate(-50%, -50%)${isVerticalEdge ? ' rotate(90deg)' : ''}`,
                 }}
@@ -4961,25 +4999,34 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     } as CSSProperties;
     const spellbookVisibleCardCount = MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT;
     return (
-        <div
-            className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
-            data-testid="mage-wars-board"
-            data-tutorial-id="mw-board"
-            data-mage-wars-phase={phase}
-            data-mage-wars-current-player-id={core.currentPlayerId}
-            data-mage-wars-phase-actor-id={phaseActorId}
-            data-mage-wars-turn-number={core.turnNumber}
-            data-mage-wars-ready-player-ids={readyPlayerIds.join(',')}
-            data-mage-wars-event-count={mageWarsEvents.debug.eventCount}
-            data-mage-wars-event-latest-id={mageWarsEvents.debug.latestEntryId}
-            data-mage-wars-event-cursor={mageWarsEvents.debug.cursor}
-            data-mage-wars-last-consumed-events={mageWarsEvents.debug.lastConsumedTypes.join(',')}
-            data-mage-wars-last-fx-cues={mageWarsEvents.debug.lastFxCues.join(',')}
-            data-mage-wars-viewing-player-id={viewingPlayerId}
-            data-mage-wars-public-view-player-id={publicViewPlayerId}
-            data-mage-wars-public-view-role={isOpponentPublicView ? 'opponent' : 'self'}
-            style={{ background: '#151311' }}
+        <UndoProvider
+            value={{
+                G,
+                dispatch,
+                playerID,
+                isGameOver: Boolean(gameOverResult),
+                isLocalMode: !isMultiplayer,
+            }}
         >
+            <div
+                className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
+                data-testid="mage-wars-board"
+                data-tutorial-id="mw-board"
+                data-mage-wars-phase={phase}
+                data-mage-wars-current-player-id={core.currentPlayerId}
+                data-mage-wars-phase-actor-id={phaseActorId}
+                data-mage-wars-turn-number={core.turnNumber}
+                data-mage-wars-ready-player-ids={readyPlayerIds.join(',')}
+                data-mage-wars-event-count={mageWarsEvents.debug.eventCount}
+                data-mage-wars-event-latest-id={mageWarsEvents.debug.latestEntryId}
+                data-mage-wars-event-cursor={mageWarsEvents.debug.cursor}
+                data-mage-wars-last-consumed-events={mageWarsEvents.debug.lastConsumedTypes.join(',')}
+                data-mage-wars-last-fx-cues={mageWarsEvents.debug.lastFxCues.join(',')}
+                data-mage-wars-viewing-player-id={viewingPlayerId}
+                data-mage-wars-public-view-player-id={publicViewPlayerId}
+                data-mage-wars-public-view-role={isOpponentPublicView ? 'opponent' : 'self'}
+                style={{ background: '#151311' }}
+            >
             <div
                 className="absolute inset-0 z-10"
                 data-testid="mage-wars-arena-viewport-shell"
@@ -5332,6 +5379,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 ) : null}
             </MagnifyOverlay>
             <EndgameOverlay {...endgameProps} />
-        </div>
+            </div>
+        </UndoProvider>
     );
 }

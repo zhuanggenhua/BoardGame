@@ -4399,9 +4399,22 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
             );
             await expect(
               playerPage.getByTestId(`betrayal-inventory-${cardCase.cardId}`),
+            ).toHaveCount(0);
+            const settledCore = await readCurrentCore(playerPage);
+            const recipient = [
+              settledCore.currentExplorer,
+              ...settledCore.otherExplorers,
+            ].find((explorer) => explorer.playerId === "0");
+            expect(
+              recipient?.inventory.some((card) => card.id === cardCase.cardId),
+              `${cardCase.title} 最终必须落到实际获得者玩家 0 的持有物状态`,
+            ).toBe(true);
+            await injectCore(page, settledCore);
+            await expect(
+              page.getByTestId(`betrayal-inventory-${cardCase.cardId}`),
             ).toBeVisible();
             await saveScreenshot(
-              playerPage,
+              page,
               `${screenshotBase}-${kindLabel}-04-动画结束最终落位.jpg`,
             );
           }

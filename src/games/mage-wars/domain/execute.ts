@@ -63,6 +63,7 @@ import {
     resolveMageWarsObjectEffectiveLife,
     resolveMageWarsObjectMeleeDiceModifier,
     resolveMageWarsObjectRangedDiceModifier,
+    hasMageWarsObjectAttackEffectDie,
     resolveMageWarsObjectAttackStatusTokenEffects,
     resolveMageWarsObjectAttackManaDrain,
     resolveMageWarsPentagramForObjectAttack,
@@ -1112,10 +1113,13 @@ export function resolveMageWarsObjectAttackEvents(
         if (attackProfile.rangeKind === 'melee' && diceResults.length > 0) {
             hasRolledMeleeAttackDice = true;
         }
-        const rawEffectDieResult = random.d(12);
-        const effectDieResult = rawEffectDieResult
-            + damageTypeAdjustment.effectDieModifier
-            + mageEquipmentAttackDiceModifier.value;
+        const hasEffectDie = hasMageWarsObjectAttackEffectDie(attacker, attackProfile.id);
+        const rawEffectDieResult = hasEffectDie ? random.d(12) : undefined;
+        const effectDieResult = rawEffectDieResult === undefined
+            ? undefined
+            : rawEffectDieResult
+                + damageTypeAdjustment.effectDieModifier
+                + mageEquipmentAttackDiceModifier.value;
         const baseDamage = diceResults.reduce((total, result) => total + result, 0);
         const damageEvents = createDamageCalculation({
             state,
@@ -1160,8 +1164,10 @@ export function resolveMageWarsObjectAttackEvents(
                 targetObjectId: target.targetObjectId,
                 targetZoneId: target.zoneId,
                 diceResults,
-                effectDieResult,
-                rawEffectDieResult,
+                ...(effectDieResult === undefined ? {} : {
+                    effectDieResult,
+                    rawEffectDieResult,
+                }),
                 strikeIndex,
                 strikeCount: attackProfile.strikeCount,
                 baseDamage,
@@ -1233,11 +1239,13 @@ export function resolveMageWarsObjectAttackEvents(
         const resolvedTargetObject = target.targetObjectId
             ? getArenaObject(state.core, target.targetObjectId)
             : undefined;
-        const statusEffects = resolveMageWarsObjectAttackStatusTokenEffects(
-            attacker,
-            attackProfile.id,
-            effectDieResult,
-        )
+        const statusEffects = effectDieResult === undefined
+            ? []
+            : resolveMageWarsObjectAttackStatusTokenEffects(
+                attacker,
+                attackProfile.id,
+                effectDieResult,
+            )
             .filter((statusEffect) => (
                 !resolvedTargetObject
                 || canMageWarsStatusTokenAffectArenaObject(statusEffect.statusTokenId, resolvedTargetObject)

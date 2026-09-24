@@ -13,42 +13,6 @@
         }
       }
     },
-    "en/smashup/base/compressed/disney_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "f901157e1f01d33bf47024dc42c58b49974df40e988620510c9ba644b94dfeea",
-          "bytes": 1016654,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/base/compressed/disney_four_faction_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "0702bbada2cf35f45d46f55754a47a400ca57753bf3d00a4ecb6e311528367d4",
-          "bytes": 1064666,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/base/disney_bases": {
-      "variants": {
-        "jpg": {
-          "sha256": "ef0b81fe9a25314903a5e22901f96639d3543cee9ff1c599f724326c16240572",
-          "bytes": 3224843,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "en/smashup/base/disney_four_faction_bases": {
-      "variants": {
-        "jpg": {
-          "sha256": "00e533350eac1b5dfe81ba891aa6e188e86697bbf50212d4524cff9b8958730d",
-          "bytes": 3341993,
-          "mime": "image/jpeg"
-        }
-      }
-    },
     "en/smashup/cards/action_heroes_pod": {
       "variants": {
         "png": {
@@ -63,15 +27,6 @@
         "png": {
           "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
           "bytes": 6213661,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/astroknights_pod": {
-      "variants": {
-        "png": {
-          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
-          "bytes": 6565353,
           "mime": "image/png"
         }
       }
@@ -99,33 +54,6 @@
         "webp": {
           "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
           "bytes": 1624082,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/disco_dancers_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "8b1354124fa21e6acdff4b06a8f0ee5f65590220fa27de68bf6a7887cf3638bb",
-          "bytes": 1189354,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/disney": {
-      "variants": {
-        "webp": {
-          "sha256": "79f07743e43de2f380d1abc37ab202a436915ae247e8adaebfd02093216cffb8",
-          "bytes": 3992798,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/disney_four_factions": {
-      "variants": {
-        "webp": {
-          "sha256": "15fa5154e7b88c59a913aeb7277950475e55c288e835bd43e9ddc3c47de19f11",
-          "bytes": 3795192,
           "mime": "image/webp"
         }
       }
@@ -270,15 +198,6 @@
         "webp": {
           "sha256": "2e7eeb4137ebe476931c2ee671e9be138e5a1b945ec232f29077b8cd629cf755",
           "bytes": 1007544,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/teddy_bears_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "917b57c5222e5aec1627291d3ac2d82e877f73fb96c78b164bc08e63757395fb",
-          "bytes": 1296994,
           "mime": "image/webp"
         }
       }
@@ -2542,83 +2461,11 @@
         }
       }
     },
-    "en/smashup/cards/disco_dancers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "11e3a92eee5e2499eb5c401af132e1ca39f590a5130f950ae4bc6eb573d8d589",
-          "bytes": 5292989,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/disney": {
-      "variants": {
-        "png": {
-          "sha256": "ab35ed10b863de226c3bdda0e391ddb5e4f9a01ed666a6867fd5280e67b0915d",
-          "bytes": 33283832,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/disney_four_factions": {
-      "variants": {
-        "png": {
-          "sha256": "daad522f77d5e4b256aad3f23fe22f76860ec0183cfa137f1f4305c03ae54406",
-          "bytes": 34764781,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/dragons_pod": {
-      "variants": {
-        "png": {
-          "sha256": "3b7a5d5a132e2ac2d67b61e8496cd87c58dc5b29c24bd3e20e96d18938724996",
-          "bytes": 20757916,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/explorers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "82a3c99ebb7aa5a57c521607af09d9ea790a605f0a96de3a36b7947d13f683fa",
-          "bytes": 6223028,
-          "mime": "image/png"
-        }
-      }
-    },
     "en/smashup/cards/half_the_battle_geckos": {
       "variants": {
         "png": {
           "sha256": "071489bdcf5675347c52354acf3cf0eb00eac8c170ef2dba458e85a51fcbd19e",
           "bytes": 4959241,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/kung_fu_fighters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
-          "bytes": 5995300,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/luchadors_pod": {
-      "variants": {
-        "png": {
-          "sha256": "a0c1df6b6c99f47df59e2eae7bbf6abd7f6755746c31ee8c0800c3a21a4775e4",
-          "bytes": 6191722,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/magical_girls_pod": {
-      "variants": {
-        "png": {
-          "sha256": "5a9458c4a338dc4d0c3f542bf098f20b5619373d9309735223f72fbdfb8af7d2",
-          "bytes": 6451853,
           "mime": "image/png"
         }
       }
@@ -2641,92 +2488,11 @@
         }
       }
     },
-    "en/smashup/cards/mega_troopers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "415d5b3d99625a17fd884abd8e2543b3099ffe74df3416edfbfb8188172822d5",
-          "bytes": 5865058,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/mythic_greeks_pod": {
-      "variants": {
-        "png": {
-          "sha256": "a7cae381519c53a4d4f103203bb5a5f1bb1aabbfa19b57eb81d02a559e8f0bf9",
-          "bytes": 19967305,
-          "mime": "image/png"
-        }
-      }
-    },
     "en/smashup/cards/russian_fairy_tales_pod": {
       "variants": {
         "png": {
           "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
           "bytes": 6438382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/shapeshifters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "ee5b80f58a857fa326997545c4f13f01a122fb0e3d390c7926f5588245f39279",
-          "bytes": 18179178,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/sharks_pod": {
-      "variants": {
-        "png": {
-          "sha256": "3a176f4109ba219ebcb7bf59498a253cb6d16977a7de03b9e32ab71fe17bcae3",
-          "bytes": 21756218,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/skeletons_pod": {
-      "variants": {
-        "png": {
-          "sha256": "4fcfedda0230418b37cba4df4da2bd889ead2776a3e8984d6967b1b57cae10e8",
-          "bytes": 6696654,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/star_roamers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "285ab1ad04096c2616cabbd301b87c3d46467a1c9a1327ea01ceeab11a176305",
-          "bytes": 5711799,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/superheroes_pod": {
-      "variants": {
-        "png": {
-          "sha256": "141e5bf1d0a775d33c3ca60f55db1e832c66a32bf4e1c57b820e107233f459ac",
-          "bytes": 21859039,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/teddy_bears_pod": {
-      "variants": {
-        "png": {
-          "sha256": "dadb48ffcfc7585a9d6b9a80e264e1d6e32fc4aaa0582b2e0c859e089450f3bd",
-          "bytes": 5074270,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/vigilantes_pod": {
-      "variants": {
-        "png": {
-          "sha256": "fb88983da554fbef5e0308b43b25e40bb3c344d653b437ebe570529487e111c4",
-          "bytes": 7775772,
           "mime": "image/png"
         }
       }
@@ -3979,15 +3745,6 @@
           "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
           "bytes": 2185502,
           "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/taitan/taitan1": {
-      "variants": {
-        "png": {
-          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
-          "bytes": 23674169,
-          "mime": "image/png"
         }
       }
     },
@@ -5692,15 +5449,6 @@
         }
       }
     },
-    "zh-CN/betrayal/tokens/explorers/rebecca-allen": {
-      "variants": {
-        "png": {
-          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
-          "bytes": 182697,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/betrayal/tokens/explorers/sammy-angler": {
       "variants": {
         "png": {
@@ -7272,15 +7020,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/artificial/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "0df23aa8f4032900736ebb80c5a20a31dab87f9fdb80485349ff4b875e88c328",
-          "bytes": 771,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/artificial/status/电能机器人1次使用机会": {
       "variants": {
         "png": {
@@ -7498,15 +7237,6 @@
       }
     },
     "zh-CN/dicethrone/images/barbarian/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
-          "bytes": 387,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/barbarian/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
@@ -7769,15 +7499,6 @@
           "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
           "bytes": 317204,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
-          "bytes": 647,
-          "mime": "application/json"
         }
       }
     },
@@ -8429,15 +8150,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/gunslinger/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
-          "bytes": 738,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/lieren/ability-cards": {
       "variants": {
         "png": {
@@ -8646,15 +8358,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/monk/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
-          "bytes": 640,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/monk/tip": {
       "variants": {
         "png": {
@@ -8719,15 +8422,6 @@
       }
     },
     "zh-CN/dicethrone/images/moon_elf/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
-          "bytes": 642,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/moon_elf/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
@@ -8862,15 +8556,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/ninja/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
-          "bytes": 526,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/paladin/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -8926,15 +8611,6 @@
       }
     },
     "zh-CN/dicethrone/images/paladin/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
-          "bytes": 797,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/paladin/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
@@ -9016,15 +8692,6 @@
       }
     },
     "zh-CN/dicethrone/images/pyromancer/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
-          "bytes": 664,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/pyromancer/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
@@ -9618,15 +9285,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/samurai/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
-          "bytes": 627,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/shadow_thief/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -9682,15 +9340,6 @@
       }
     },
     "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
-          "bytes": 521,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
@@ -10011,15 +9660,6 @@
       }
     },
     "zh-CN/dicethrone/images/treant/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
-          "bytes": 789,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/treant/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
@@ -10350,15 +9990,6 @@
           "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
           "bytes": 135997,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
-          "bytes": 397,
-          "mime": "application/json"
         }
       }
     },
@@ -12725,24 +12356,6 @@
         }
       }
     },
-    "zh-CN/mage-wars/dice/compressed/effect-die-d12-face": {
-      "variants": {
-        "webp": {
-          "sha256": "16b74e234e2aae109d57f7181b8e2e7b14de6b11c767887e08ee4cb748b3ed04",
-          "bytes": 63228,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/mage-wars/dice/effect-die-d12-face": {
-      "variants": {
-        "png": {
-          "sha256": "9161c1037c5037b6b11e6a7037b4a7d9114bc02f802e94c98dd982ef1b5d7250",
-          "bytes": 310177,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/mage-wars/references/attack-bar-legend": {
       "variants": {
         "png": {
@@ -14336,15 +13949,6 @@
         }
       }
     },
-    "zh-CN/smashup/base/base3": {
-      "variants": {
-        "png": {
-          "sha256": "cca1be600566e4212366f405181a6ef8c73fc201fc5973f9119ad0dcef5dbf48",
-          "bytes": 8991232,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/base/cease_and_desist": {
       "variants": {
         "png": {
@@ -14678,87 +14282,6 @@
         }
       }
     },
-    "zh-CN/smashup/base/disney_bases": {
-      "variants": {
-        "jpg": {
-          "sha256": "8f3acc0b73b890c607e6a2d2aca79ec30827481f2f46b07ff51190e844ad5059",
-          "bytes": 3250237,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/smashup/base/disney_four_faction_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "c3a28ecf191dcc601f3fdf1d71963f40d5b863fc54c10d0bedbeb756fbae0214",
-          "bytes": 2646702,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/base/diy_clowns_bases": {
-      "variants": {
-        "png": {
-          "sha256": "fce66e379485e0a3dd6d21468c40218677a13bdd697d7c37e356506e80b732b8",
-          "bytes": 2871712,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/diy_killers_bases": {
-      "variants": {
-        "png": {
-          "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
-          "bytes": 2862123,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/excellent_movies_teens_bases": {
-      "variants": {
-        "png": {
-          "sha256": "7482f58e74fe014eb496d401ea661c3b3602a95ec8cce0664a1c1abf51bbbdee",
-          "bytes": 15527208,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/goblins_bases": {
-      "variants": {
-        "png": {
-          "sha256": "de25f5e7efe8e7edc26d0ba3a23b1ab4803cfbc3c21f4674d3de16a9e541a257",
-          "bytes": 2778756,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/half_the_battle_bases": {
-      "variants": {
-        "png": {
-          "sha256": "b2ebf074e8c1a0855ebe80a36a4f52462f0563879c39d1a8b02f4461d91c14fb",
-          "bytes": 10812801,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/huluwawa_bases": {
-      "variants": {
-        "png": {
-          "sha256": "a84672e60bdc7b4e9b25e4ace4354733c8559d0fc617d6b99642512205c4e6f1",
-          "bytes": 5469582,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/international_incident_bases": {
-      "variants": {
-        "png": {
-          "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
-          "bytes": 30275972,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/base/munchkin_clerics_bases": {
       "variants": {
         "png": {
@@ -14831,24 +14354,6 @@
         }
       }
     },
-    "zh-CN/smashup/base/penguins": {
-      "variants": {
-        "png": {
-          "sha256": "6bee13fe3b910d0a4dd48c0f260ebdd5d38c0a958d434c4ba0ac4bdf164619c2",
-          "bytes": 4443493,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/polynesian_voyagers/atlas": {
-      "variants": {
-        "png": {
-          "sha256": "253dda49b347392e8657fdb2cda21a7b6ea4cfa667421e44b821d38756c6e0be",
-          "bytes": 4793419,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/base/polynesian_voyagers/compressed/atlas": {
       "variants": {
         "webp": {
@@ -14858,29 +14363,11 @@
         }
       }
     },
-    "zh-CN/smashup/base/round_table_knights_bases": {
-      "variants": {
-        "png": {
-          "sha256": "3afd85778effdf3442c1ce2b6a9269b709269d486c31c5aa6c23d7299beaa99a",
-          "bytes": 2679470,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/base/shayu": {
       "variants": {
         "png": {
           "sha256": "bce7b42d41111d454117c40b32efad6e13ae512d3f03980757793ca1e6ebd607",
           "bytes": 17007487,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/what_were_we_thinking_bases": {
-      "variants": {
-        "png": {
-          "sha256": "cfeda490f5133a6f9a18c01831d4c809630f5171e3dc8c58e4fec741f5f8f548",
-          "bytes": 15998657,
           "mime": "image/png"
         }
       }
@@ -14908,15 +14395,6 @@
         "png": {
           "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
           "bytes": 6213661,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/astroknights_pod": {
-      "variants": {
-        "png": {
-          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
-          "bytes": 6565353,
           "mime": "image/png"
         }
       }
@@ -15533,57 +15011,12 @@
         }
       }
     },
-    "zh-CN/smashup/cards/culture_shock/atlas": {
-      "variants": {
-        "png": {
-          "sha256": "5ca8838ed9c57f1a53c2c864837e56d2279ece101e1fe39e74be74828b61f08e",
-          "bytes": 42094823,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/cards/culture_shock/compressed/atlas": {
       "variants": {
         "webp": {
           "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
           "bytes": 1110284,
           "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/disney": {
-      "variants": {
-        "png": {
-          "sha256": "d156b6428665ffc1f4182cc955fd7aa7d35d7638e0e6d593e238a9b3b02674cc",
-          "bytes": 39745874,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/disney_four_factions": {
-      "variants": {
-        "png": {
-          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
-          "bytes": 41387810,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/diy_clowns": {
-      "variants": {
-        "png": {
-          "sha256": "1a5a08ea1b67781e17c6e14c21db6dd2c946cf297faacd77778a5fd6a9e947b3",
-          "bytes": 23916659,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/diy_killers": {
-      "variants": {
-        "png": {
-          "sha256": "8dc9089f8230d725ed7f44a25074ba3c8ee65e3d5df5891af64dcd26283e3186",
-          "bytes": 26436318,
-          "mime": "image/png"
         }
       }
     },
@@ -15659,146 +15092,11 @@
         }
       }
     },
-    "zh-CN/smashup/cards/excellent_movies_teens": {
-      "variants": {
-        "png": {
-          "sha256": "62a150f66f95e4fafc84d5cfbc22dfe57783511d19ad4a7ea8f8e49948ab07ad",
-          "bytes": 57778043,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/goblins": {
-      "variants": {
-        "png": {
-          "sha256": "8136163f1799bb828e1c0c06b3e7a78f2f1e87858e94aff0e57ef138fef601b6",
-          "bytes": 18409367,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/half_the_battle_cosmos": {
-      "variants": {
-        "png": {
-          "sha256": "585e59539514f2ba180c0e05e5c277e453ec0d5cc713835301bb756852248ec8",
-          "bytes": 24294207,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/half_the_battle_geckos": {
-      "variants": {
-        "png": {
-          "sha256": "59e0eb702c9e4ef3501280c3b013ab16a81c84529a565e0e04b6b14653834f36",
-          "bytes": 22800669,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/half_the_battle_gerald": {
-      "variants": {
-        "png": {
-          "sha256": "5674b78fa3b27177ec97d93a6d1450a260618966d56fd4e9c25b5bbf31d53ec9",
-          "bytes": 22101189,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/half_the_battle_pearl_images": {
-      "variants": {
-        "png": {
-          "sha256": "8a25cc8893363c33797c08f12d352c490aa336438ba5ca4bfefc77a6d0e96fde",
-          "bytes": 17679181,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/huluwawa_cards": {
-      "variants": {
-        "png": {
-          "sha256": "402e7b2e90216a162a1876c71c2c66efab69663194911c1e4b52fa6a0b9be4c8",
-          "bytes": 47501004,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/international_incident": {
-      "variants": {
-        "png": {
-          "sha256": "a04e696d6d3ab50a4fa5bdbc31c58c7385657e73ccbc36a3a7fde6ba44d3ca55",
-          "bytes": 37758563,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/itty_critters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "b6650817dad672723aadcc792d6d8af5ec07f4891760715b5300f9a1fe17de19",
-          "bytes": 5208504,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/cards/kaiju_pod": {
       "variants": {
         "png": {
           "sha256": "887f27dde9579b9ba77e1c67653f9f29a2da33f76899cbbc479419ad52c901e3",
           "bytes": 5928968,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/kung_fu_fighters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
-          "bytes": 5995300,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/longzu": {
-      "variants": {
-        "png": {
-          "sha256": "090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13",
-          "bytes": 42040387,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/marvel_villains": {
-      "variants": {
-        "png": {
-          "sha256": "44ae80f5629ad1d33a2c438a2955112a38c1ae5d7addaa2d8ae44418ef15a5fb",
-          "bytes": 33423555,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/marvel_villains_pod": {
-      "variants": {
-        "png": {
-          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
-          "bytes": 34711937,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/marvel_wave_one": {
-      "variants": {
-        "png": {
-          "sha256": "1d0e1bdfc79005ae2fdac697c4d5ac47f5b00bb219e707c1e44258a4986d95e1",
-          "bytes": 36067834,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/marvel_wave_one_pod": {
-      "variants": {
-        "png": {
-          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
-          "bytes": 35943625,
           "mime": "image/png"
         }
       }
@@ -15893,51 +15191,6 @@
         }
       }
     },
-    "zh-CN/smashup/cards/penguins": {
-      "variants": {
-        "png": {
-          "sha256": "b34ac6108260ecdcb21b3896a179438fa637fff65b73535c3b1e0bd2868b22b7",
-          "bytes": 26245540,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/polynesian_voyagers": {
-      "variants": {
-        "png": {
-          "sha256": "97299d31a0a98eba7e00411e75a612ad8cf3611fb1c25fec3349a73901b677d8",
-          "bytes": 11247201,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/pretty_pretty": {
-      "variants": {
-        "png": {
-          "sha256": "360bda45784ff280418ab80a1959e28a66790a11b669ddd758d057e9b4233a1f",
-          "bytes": 25271332,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/promos_sheep_all_stars": {
-      "variants": {
-        "png": {
-          "sha256": "f01d0ab000a18f0e167045f1279372c9a54b13d16d9794cf02bc1640e4fbc7c3",
-          "bytes": 34483656,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/round_table_knights": {
-      "variants": {
-        "png": {
-          "sha256": "ae94250d829759bc88863b8099fcf48f710bfcc2f66a15029e956acfcddb0cc9",
-          "bytes": 30567071,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/cards/russian_fairy_tales_pod": {
       "variants": {
         "png": {
@@ -15952,24 +15205,6 @@
         "png": {
           "sha256": "2b8146e44fbd1e7eb79115e848f20ef30d323b8dbb924ab462b8432e64110fac",
           "bytes": 42559123,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/time_travelers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "1793e25b548566f6a8973ba8d09d9c824dc94e593fdf5a7e8963cca979dda200",
-          "bytes": 4723065,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/what_were_we_thinking": {
-      "variants": {
-        "png": {
-          "sha256": "a1530f6940431609ce42bfad6908b3ce27f0dd783c507d880914d687feaf76aa",
-          "bytes": 48780520,
           "mime": "image/png"
         }
       }
@@ -16019,15 +15254,6 @@
         }
       }
     },
-    "zh-CN/smashup/emotes/smug-v1": {
-      "variants": {
-        "png": {
-          "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
-          "bytes": 1932442,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/smashup/emotes/supreme-overlord/compressed/smug-v1": {
       "variants": {
         "webp": {
@@ -16070,24 +15296,6 @@
           "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
           "bytes": 2185502,
           "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/taitan/huluwawa_titan": {
-      "variants": {
-        "png": {
-          "sha256": "ccbf162296b3ebcf62d3b050685e2761530e88e02e0e8e1ad1c75bb1531a29ad",
-          "bytes": 2591063,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/taitan/taitan1": {
-      "variants": {
-        "png": {
-          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
-          "bytes": 23674169,
-          "mime": "image/png"
         }
       }
     },
@@ -19349,30 +18557,12 @@
         }
       }
     },
-    "zh-CN/the-gang/thumbnails/compressed/cover": {
-      "variants": {
-        "webp": {
-          "sha256": "5ecfea83b34e860ff53fe71817539d88a3b276f270a793fe1d4eafeae7838536",
-          "bytes": 43054,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail": {
       "variants": {
         "webp": {
           "sha256": "467b496553441c48a946e782e391613f55de814cc10e878cae15bf55573883eb",
           "bytes": 67012,
           "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/the-gang/thumbnails/cover": {
-      "variants": {
-        "png": {
-          "sha256": "0dbbfae7081bacc90d95b80e13a0e5f1c0ede27a57b58f4b09ba5f8a3065c04f",
-          "bytes": 71553,
-          "mime": "image/png"
         }
       }
     },

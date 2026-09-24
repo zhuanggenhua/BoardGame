@@ -54,7 +54,7 @@ description: "Smash Up 派系玩法实现、旧派系参考、测试、E2E 与�
 - **真实入口**：从真实打牌、真实触发或真实响应窗口进入；对象、目标、支付物、顺序、数量和模式选择都必须由玩家手动选择，即使只有一个合法候选。
 - **生命周期**：涉及 reaction、afterScoring、beforeScoring、uncover、discard special、ongoing talent、deferred 或多段交互时，必须观察 `finalState / triggerQueue / reaction session`。
 
-新增交互类型、新 UI 或新操作方式时，必须至少补一条该类型的 direct E2E，覆盖真实入口和生命周期；共享证据只能在首条 direct 证据之后复用。最终验收必须给出 E2E 文件路径、至少一张本轮核对过的截图绝对路径，以及截图证明的新交互类型 / 新 UI 名称。
+新增交互类型、新 UI 或新操作方式时，必须至少补一条该类型的 direct E2E，覆盖真实入口和生命周期；共享证据只能在首条 direct 证据之后复用。最终验收必须给出 E2E 文件链接、本轮截图 `VIEWER_URL`，以及截图证明的新交互类型 / 新 UI 名称；不在最终回复裸露完整图片路径。
 
 ## 代表链复用
 

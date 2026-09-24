@@ -247,8 +247,10 @@ function createSafeOmenPendingResolutionCore(
 
 function createItemPendingResolutionCore(
     itemCard: ItemDiscoveryCard,
+    actorPlayerId = '0',
 ): BetrayalCore {
-    const core = createStartedFirstScenarioCore(['0', '1', '2']);
+    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core = focusFixtureOnPlayer(core, actorPlayerId);
     core.currentExplorer.inventory = [{ ...itemCard }];
     core.currentExplorerInventory = [{ ...itemCard }];
     core.otherExplorers = core.otherExplorers.map((explorer) => ({
@@ -534,11 +536,11 @@ test('旁观视角也先看触发预兆和检定，再本地进入剧本阅读',
     await expect(discoveryPanel).toHaveCount(0);
     const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
     await expect(scenarioReader, '旁观者本地确认看完结果后才进入剧本阅读').toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('betrayal-scenario-reader-next-zone')).toBeVisible();
+    await page.getByTestId('betrayal-scenario-reader-next-zone').click();
     await expect(scenarioReader).toContainText('木乃伊横行');
     await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
-        pendingSteps: [
-            { stepKind: 'drawn-card', index: 1, total: 1, cardName: DOG_OMEN_CARD.name },
-        ],
+        pendingSteps: [],
         rejected: null,
     });
 
@@ -649,6 +651,71 @@ test('普通物品停留三秒后自动飞入持有区，未来可改写骰子�
     await assertNoFatalFrontendErrors([
         { label: 'betrayal-item-discovery-confirmation-rules', diagnostics },
     ]);
+});
+
+test('物品展示手机横屏不越界且默认保留本地玩家持有区', async ({ page, context }, testInfo) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context);
+    await warmBetrayalFrontend(context);
+
+    await page.setViewportSize({ width: 936, height: 432 });
+    await page.goto(TEST_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForBetrayalPageReady(page);
+
+    const core = createItemPendingResolutionCore(MEDICAL_KIT_ITEM_CARD, '1');
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === '0'
+            ? { ...explorer, inventory: [{ id: 'map', name: '地图', kind: 'item' }] }
+            : explorer
+    ));
+    await injectCore(page, core);
+
+    await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('betrayal-observed-explorer-panel')).toHaveAttribute('data-player-id', '0');
+    await expect(page.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-player-id', '0');
+    await expect(page.getByTestId('betrayal-inventory-map')).toBeVisible();
+    await expect(page.getByTestId('betrayal-inventory-section')).not.toContainText('急救包');
+    await page.waitForTimeout(500);
+    await saveEvidenceScreenshot(page, testInfo, '物品展示-手机横屏-本地持有区与顶部边界稳定.jpg');
+
+    const metrics = await page.evaluate(() => {
+        const selectors = [
+            '[data-testid="betrayal-runtime-header-grid"]',
+            '[data-testid="betrayal-status-chip"]',
+            '[data-testid="betrayal-discovery-panel"]',
+            '[data-testid="betrayal-discovery-panel-content"]',
+            '[data-testid="betrayal-discovery-card-front-atlas"]',
+            '[data-testid="betrayal-left-status-rail"]',
+            '[data-testid="betrayal-inventory-section"]',
+        ];
+        const rect = (selector: string) => {
+            const element = document.querySelector<HTMLElement>(selector);
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            return {
+                left: Number(box.left.toFixed(2)),
+                top: Number(box.top.toFixed(2)),
+                right: Number(box.right.toFixed(2)),
+                bottom: Number(box.bottom.toFixed(2)),
+            };
+        };
+        return {
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            documentWidth: document.documentElement.scrollWidth,
+            bodyWidth: document.body.scrollWidth,
+            elements: Object.fromEntries(selectors.map((selector) => [selector, rect(selector)])),
+        };
+    });
+
+    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport.width + 1);
+    expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport.width + 1);
+    for (const [selector, box] of Object.entries(metrics.elements)) {
+        expect(box, `${selector} 应存在`).not.toBeNull();
+        expect(box!.left, `${selector} 左侧越界`).toBeGreaterThanOrEqual(-1);
+        expect(box!.top, `${selector} 顶部越界`).toBeGreaterThanOrEqual(-1);
+        expect(box!.right, `${selector} 右侧越界`).toBeLessThanOrEqual(metrics.viewport.width + 1);
+        expect(box!.bottom, `${selector} 底部越界`).toBeLessThanOrEqual(metrics.viewport.height + 1);
+    }
 });
 
 test('当前9张预兆未触发作祟时均需所有玩家完成一个确认步骤并进入持有区', async ({ page, context }, testInfo) => {
@@ -776,7 +843,7 @@ test('当前9张预兆触发作祟时均先确认预兆和检定，再进入作�
         await closeScenarioReaderIfPresent(page);
         await expect(revealCue, `预兆「${omenCard.name}」剧本书承接后不得再显示作祟揭示横幅`).toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-panel'), `预兆「${omenCard.name}」确认过后关闭剧本书不得重复弹出`).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟中|恶兆后|Haunt/i);
         await expect.poll(async () => {
             const state = await readHauntDiscoveryConfirmationState(page);
             const revealer = state.explorers?.find((explorer) => (

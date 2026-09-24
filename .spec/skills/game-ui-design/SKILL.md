@@ -9,7 +9,7 @@ description: "游戏 UI 设计流程与验收入口。用于游戏 HUD、棋盘/
 
 ## 使用顺序
 
-1. 先锁四项前提：问题对象、真相来源、目标入口/环境、验收口径。
+1. 先按 [`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 锁定问题对象、真相来源、目标入口 / 环境和验收口径；本 skill 只补 UI 的对象职责、玩家任务和空间预算。
 2. 先读当前项目 `AGENTS.md`、项目 UI/素材 skill、规则书/状态机/脚本/素材合同，再读本 skill。
 3. 若 UI 依赖规则、卡牌、棋盘、token、骰子、TTS/Workshop、旧平台或物理配件，先读 `references/rule-to-ui-design.md`。
 4. 进入布局和交互前，读 `references/layout-interaction-patterns.md`。

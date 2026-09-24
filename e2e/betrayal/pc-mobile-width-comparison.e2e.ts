@@ -22,6 +22,7 @@ const PHONE_SHELL_SCALE = Math.min(
   PHONE_VIEWPORT.width / PC_VIEWPORT.width,
   PHONE_VIEWPORT.height / PC_VIEWPORT.height,
 );
+const PHONE_HUD_MAX_SCALE = 0.6;
 const PHONE_SHELL_WIDTH = PC_VIEWPORT.width * PHONE_SHELL_SCALE;
 const PHONE_SHELL_OFFSET_X = (PHONE_VIEWPORT.width - PHONE_SHELL_WIDTH) / 2;
 const EVIDENCE_DIR = "evidence/betrayal-width-comparison-20260920-board-shell";
@@ -159,6 +160,69 @@ async function readLayoutMetrics(page: Page) {
       statusRail: rect('[data-testid="betrayal-status-rail"]'),
       actionRail: rect('[data-testid="betrayal-action-rail"]'),
       phaseChip: rect('[data-testid="betrayal-phase-chip"]'),
+      hudScale: (() => {
+        const portal = document.querySelector<HTMLElement>(
+          ".betrayal-hud-portal-region",
+        );
+        return portal
+          ? Number.parseFloat(
+              getComputedStyle(portal).getPropertyValue(
+                "--betrayal-hud-scale",
+              ),
+            )
+          : 1;
+      })(),
+      statusRailContentBottom: (() => {
+        const element = document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-status-rail"]',
+        );
+        if (!element) return null;
+        return Math.max(
+          element.getBoundingClientRect().bottom,
+          ...Array.from(element.children).map(
+            (child) => (child as HTMLElement).getBoundingClientRect().bottom,
+          ),
+        );
+      })(),
+      leftRailContentBottom: (() => {
+        const element = document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-left-status-rail"]',
+        );
+        if (!element) return null;
+        return Math.max(
+          element.getBoundingClientRect().bottom,
+          ...Array.from(element.children).map(
+            (child) => (child as HTMLElement).getBoundingClientRect().bottom,
+          ),
+        );
+      })(),
+      hudPlacement: {
+        leftRailInShell: Boolean(
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-left-status-rail"]',
+          )?.closest('.mobile-board-shell'),
+        ),
+        inventoryInShell: Boolean(
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-inventory-section"]',
+          )?.closest('.mobile-board-shell'),
+        ),
+        statusRailInShell: Boolean(
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-status-rail"]',
+          )?.closest('.mobile-board-shell'),
+        ),
+        actionRailInShell: Boolean(
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-action-rail"]',
+          )?.closest('.mobile-board-shell'),
+        ),
+        phaseChipInShell: Boolean(
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-phase-chip"]',
+          )?.closest('.mobile-board-shell'),
+        ),
+      },
       actions: rectList('[data-testid^="betrayal-action-"]'),
       fabs: Array.from(
         document.querySelectorAll<HTMLElement>('[data-testid="fab-menu"]'),
@@ -166,14 +230,26 @@ async function readLayoutMetrics(page: Page) {
         placement: element.dataset.hudPlacement ?? null,
         inShell: Boolean(element.closest('.mobile-board-shell')),
         position: element.dataset.fabPosition ?? null,
-        rect: rect('[data-testid="fab-menu"]'),
+        rect: (() => {
+          const box = element.getBoundingClientRect();
+          return {
+            left: Number(box.left.toFixed(2)),
+            top: Number(box.top.toFixed(2)),
+            right: Number(box.right.toFixed(2)),
+            bottom: Number(box.bottom.toFixed(2)),
+            width: Number(box.width.toFixed(2)),
+            height: Number(box.height.toFixed(2)),
+          };
+        })(),
       })),
       fabInShell: Boolean(
-        document.querySelector<HTMLElement>('.mobile-board-shell [data-testid="fab-menu"]'),
+        document.querySelector<HTMLElement>(
+          '.mobile-board-shell [data-testid="fab-menu"]',
+        ),
       ),
-      fabPlacement: document.querySelector<HTMLElement>(
-        '.mobile-board-shell [data-testid="fab-menu"]',
-      )?.dataset.hudPlacement ?? null,
+      fabPlacement:
+        document.querySelector<HTMLElement>('[data-testid="fab-menu"]')?.dataset
+          .hudPlacement ?? null,
       nativeMobileUi: {
         layout: document.querySelectorAll(
           '[data-testid="betrayal-mobile-landscape-layout"]',
@@ -405,11 +481,16 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
           all: phoneMetrics.fabs,
         }),
       );
-      expect(phoneMetrics.fabInShell).toBe(true);
+      expect(phoneMetrics.fabInShell).toBe(false);
       expect(phoneMetrics.layoutMode).toBe("desktop-board");
-      expect(phoneMetrics.fabs.filter((fab) => fab.inShell)).toHaveLength(1);
-      expect(phoneMetrics.fabs.find((fab) => fab.inShell)?.rect.width ?? 0).toBeCloseTo(44, 0);
-      expect(phoneMetrics.fabs.find((fab) => fab.inShell)?.rect.height ?? 0).toBeCloseTo(44, 0);
+      expect(phoneMetrics.fabs).toHaveLength(1);
+      expect(phoneMetrics.fabs[0]?.placement).toBe("portal");
+      expect(phoneMetrics.fabs[0]?.rect.width ?? 0).toBeCloseTo(44, 0);
+      expect(phoneMetrics.fabs[0]?.rect.height ?? 0).toBeCloseTo(44, 0);
+      expect(phoneMetrics.fabs[0]?.rect.left ?? -1).toBeGreaterThanOrEqual(0);
+      expect(phoneMetrics.fabs[0]?.rect.right ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.width,
+      );
       expect(phoneMetrics.nativeMobileUi).toEqual({
         layout: 0,
         actionRail: 0,
@@ -418,10 +499,54 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
       expect(phoneMetrics.leftRail?.width ?? 0).toBeGreaterThan(0);
       expect(phoneMetrics.statusRail?.width ?? 0).toBeGreaterThan(0);
       expect(phoneMetrics.actionRail?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.hudScale).toBeGreaterThan(0.5);
+      expect(phoneMetrics.hudScale).toBeLessThanOrEqual(PHONE_HUD_MAX_SCALE);
       expect(phoneMetrics.rooms.length).toBe(pcMetrics.rooms.length);
       expect(phoneMetrics.rooms.every((room) => room.visible)).toBe(true);
+      expect(phoneMetrics.hudPlacement).toEqual({
+        leftRailInShell: false,
+        inventoryInShell: false,
+        statusRailInShell: false,
+        actionRailInShell: false,
+        phaseChipInShell: false,
+      });
+      expect(phoneMetrics.leftRail?.width ?? 0).toBeCloseTo(
+        (pcMetrics.leftRail?.width ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
+      expect(phoneMetrics.statusRail?.width ?? 0).toBeCloseTo(
+        (pcMetrics.statusRail?.width ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
+      expect(phoneMetrics.statusRail?.height ?? 0).toBeGreaterThan(300);
+      expect(phoneMetrics.statusRail?.bottom ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.height,
+      );
+      expect(phoneMetrics.statusRailContentBottom ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.height,
+      );
+      expect(phoneMetrics.leftRailContentBottom ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.height,
+      );
+      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(
+        (pcMetrics.actionRail?.height ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
+      expect(phoneMetrics.phaseChip?.width ?? 0).toBeCloseTo(
+        (pcMetrics.phaseChip?.width ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
       expect(phoneMetrics.inventory?.height ?? 0).toBeCloseTo(
-        (pcMetrics.inventory?.height ?? 0) * 0.4,
+        (pcMetrics.inventory?.height ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
+      expect(phoneMetrics.leftRail?.left ?? 0).toBeCloseTo(12, 0);
+      expect(phoneMetrics.statusRail?.right ?? 0).toBeCloseTo(
+        PHONE_VIEWPORT.width - 12,
+        0,
+      );
+      expect(phoneMetrics.actionRail?.width ?? 0).toBeCloseTo(
+        PHONE_VIEWPORT.width * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.roomCanvas?.width ?? 0).toBeCloseTo(
@@ -621,6 +746,21 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
       expect(phoneMetrics.leftRail?.width ?? 0).toBeGreaterThan(0);
       expect(phoneMetrics.statusRail?.width ?? 0).toBeGreaterThan(0);
       expect(phoneMetrics.actionRail?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.hudScale).toBeGreaterThan(0.5);
+      expect(phoneMetrics.hudScale).toBeLessThanOrEqual(PHONE_HUD_MAX_SCALE);
+      expect(phoneMetrics.fabPlacement).toBe("portal");
+      expect(phoneMetrics.fabInShell).toBe(false);
+      expect(phoneMetrics.fabs.every((fab) => fab.placement === "portal")).toBe(
+        true,
+      );
+      expect(
+        phoneMetrics.fabs.every(
+          (fab) =>
+            !fab.inShell &&
+            (fab.rect?.left ?? -1) >= 0 &&
+            (fab.rect?.right ?? 0) <= PHONE_VIEWPORT.width,
+        ),
+      ).toBe(true);
       expect(phoneMetrics.rooms.length).toBe(pcMetrics.rooms.length);
       expect(phoneMetrics.rooms.every((room) => room.visible)).toBe(true);
       expect(phoneMetrics.roomCanvas?.width ?? 0).toBeCloseTo(
@@ -631,32 +771,63 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
         (pcMetrics.roomCanvas?.height ?? 0) * 0.4,
         0,
       );
-      expect(phoneMetrics.inventory?.left ?? 0).toBeCloseTo(
-        (phoneMetrics.shell?.left ?? 0) +
-          (pcMetrics.inventory?.left ?? 0) * 0.4,
+      expect(phoneMetrics.hudPlacement).toEqual({
+        leftRailInShell: false,
+        inventoryInShell: false,
+        statusRailInShell: false,
+        actionRailInShell: false,
+        phaseChipInShell: false,
+      });
+      expect(phoneMetrics.leftRail?.width ?? 0).toBeCloseTo(
+        (pcMetrics.leftRail?.width ?? 0) * phoneMetrics.hudScale,
         0,
       );
-      expect(phoneMetrics.inventory?.top ?? 0).toBeCloseTo(
-        (phoneMetrics.shell?.top ?? 0) +
-          (pcMetrics.inventory?.top ?? 0) * 0.4,
+      expect(phoneMetrics.statusRail?.width ?? 0).toBeCloseTo(
+        (pcMetrics.statusRail?.width ?? 0) * phoneMetrics.hudScale,
         0,
       );
-      expect(phoneMetrics.inventory?.right ?? 0).toBeCloseTo(
-        (phoneMetrics.shell?.left ?? 0) +
-          (pcMetrics.inventory?.right ?? 0) * 0.4,
+      expect(phoneMetrics.statusRail?.height ?? 0).toBeGreaterThan(300);
+      expect(phoneMetrics.statusRail?.bottom ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.height,
+      );
+      expect(phoneMetrics.statusRailContentBottom ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.height,
+      );
+      expect(phoneMetrics.leftRailContentBottom ?? 0).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.height,
+      );
+      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(
+        (pcMetrics.actionRail?.height ?? 0) * phoneMetrics.hudScale,
         0,
       );
-      expect(phoneMetrics.inventory?.bottom ?? 0).toBeCloseTo(
-        (phoneMetrics.shell?.top ?? 0) +
-          (pcMetrics.inventory?.bottom ?? 0) * 0.4,
+      expect(phoneMetrics.phaseChip?.width ?? 0).toBeCloseTo(
+        (pcMetrics.phaseChip?.width ?? 0) * phoneMetrics.hudScale,
         0,
       );
+      expect(phoneMetrics.fabPlacement).toBe("portal");
+      expect(phoneMetrics.fabInShell).toBe(false);
+      expect(phoneMetrics.fabs.every((fab) => fab.placement === "portal")).toBe(
+        true,
+      );
+      expect(
+        phoneMetrics.fabs.every(
+          (fab) =>
+            !fab.inShell &&
+            (fab.rect?.left ?? -1) >= 0 &&
+            (fab.rect?.right ?? 0) <= PHONE_VIEWPORT.width,
+        ),
+      ).toBe(true);
       expect(phoneMetrics.inventory?.width ?? 0).toBeCloseTo(
-        (pcMetrics.inventory?.width ?? 0) * 0.4,
+        (pcMetrics.inventory?.width ?? 0) * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.inventory?.height ?? 0).toBeCloseTo(
-        (pcMetrics.inventory?.height ?? 0) * 0.4,
+        (pcMetrics.inventory?.height ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
+      expect(phoneMetrics.inventory?.left ?? 0).toBeCloseTo(4, 0);
+      expect(phoneMetrics.inventory?.bottom ?? 0).toBeCloseTo(
+        PHONE_VIEWPORT.height,
         0,
       );
       expect(phoneMetrics.overflow.document).toBeLessThanOrEqual(

@@ -364,24 +364,6 @@
         }
       }
     },
-    "dice/compressed/effect-die-d12-face": {
-      "variants": {
-        "webp": {
-          "sha256": "16b74e234e2aae109d57f7181b8e2e7b14de6b11c767887e08ee4cb748b3ed04",
-          "bytes": 63228,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "dice/effect-die-d12-face": {
-      "variants": {
-        "png": {
-          "sha256": "9161c1037c5037b6b11e6a7037b4a7d9114bc02f802e94c98dd982ef1b5d7250",
-          "bytes": 310177,
-          "mime": "image/png"
-        }
-      }
-    },
     "references/attack-bar-legend": {
       "variants": {
         "png": {

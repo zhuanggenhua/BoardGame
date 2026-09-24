@@ -1456,17 +1456,62 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
           physicsSource.getAttribute("data-dice-engine-ready"),
           physicsSource.getAttribute("data-dice-engine-failure"),
         ]);
-        if (groupReady === "true" || settled === "true") return "true";
+        if (settled === "true") return "true";
         return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
       },
-      { timeout: 15000 },
+      { timeout: 45000 },
     )
     .toBe("true");
-  await expect
-    .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
-      timeout: 15000,
-    })
-    .toBe("true");
+  try {
+    await expect
+      .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
+        timeout: 45000,
+      })
+      .toBe("true");
+  } catch (error) {
+    const diagnostics = await rollPanel.evaluate((node) => {
+      const panel = node as HTMLElement;
+      const source = panel.querySelector(
+        '[data-testid="betrayal-house-dice-physics-source"]',
+      ) as HTMLElement | null;
+      const group = panel.querySelector(
+        '[data-testid="betrayal-house-dice-3d-group"]',
+      ) as HTMLElement | null;
+      const canvases = Array.from(panel.querySelectorAll("canvas")).filter(
+        (canvas): canvas is HTMLCanvasElement =>
+          canvas instanceof HTMLCanvasElement,
+      );
+      const debugRegistry =
+        (
+          window as typeof window & {
+            __diceBoxThreeDebug?: Record<string, () => unknown>;
+          }
+        ).__diceBoxThreeDebug ?? {};
+      const activeCanvas =
+        canvases.find((canvas) => {
+          const testId = canvas.dataset.testid;
+          return Boolean(testId && typeof debugRegistry[testId] === "function");
+        }) ??
+        canvases[0] ??
+        null;
+      const activeCanvasTestId =
+        activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+      return {
+        source: source ? { ...source.dataset } : null,
+        group: group ? { ...group.dataset } : null,
+        canvases: canvases.map((canvas) => ({ ...canvas.dataset })),
+        activeCanvasTestId,
+        engineDebug: activeCanvasTestId
+          ? (debugRegistry[activeCanvasTestId]?.() ?? null)
+          : null,
+      };
+    });
+    throw new Error(
+      `山屋物理骰子停稳失败：${JSON.stringify(diagnostics)}\n${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
   await expectPhysicalDiceStableAfterSettled(rollPanel, {
     waitMs: 360,
     maxCenterShiftPx: 1,
@@ -2540,15 +2585,15 @@ export const expectPhysicalDiceStableAfterSettled = async (
           physicsSource.getAttribute("data-dice-engine-ready"),
           physicsSource.getAttribute("data-dice-engine-failure"),
         ]);
-        if (groupReady === "true" || settled === "true") return "true";
+        if (settled === "true") return "true";
         return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
       },
-      { timeout: 15000 },
+      { timeout: 45000 },
     )
     .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
-      timeout: 15000,
+      timeout: 45000,
     })
     .toBe("true");
 

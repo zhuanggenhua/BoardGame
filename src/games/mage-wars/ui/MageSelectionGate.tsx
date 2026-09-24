@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
+import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { GameRuntimeLocalSetupGateProps } from '../../gameRuntimeAdapter';
 import {
     getPresetMageSetupFromConfig,
@@ -269,8 +270,14 @@ function MageWarsMageSelectionGateContent({
             className="absolute inset-0 overflow-hidden bg-[#140604] text-stone-100"
             data-testid="mage-wars-mage-selection-gate"
         >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(245,158,11,0.24),transparent_34%),radial-gradient(circle_at_12%_84%,rgba(22,163,74,0.2),transparent_28%),linear-gradient(135deg,#180604_0%,#3b1409_55%,#070201_100%)]" />
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.58)_0%,rgba(0,0,0,0.08)_42%,rgba(0,0,0,0.62)_100%)]" />
+            <OptimizedImage
+                src="mage-wars/thumbnails/cover"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover opacity-40"
+                placeholder={false}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-black/60" />
 
             <div
                 className="absolute left-1/2 top-1/2 z-10 flex min-h-0 flex-col px-12 py-8"

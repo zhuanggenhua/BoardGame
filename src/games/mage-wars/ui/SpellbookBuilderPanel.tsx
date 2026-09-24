@@ -65,7 +65,7 @@ const TYPE_FILTER_LABEL_KEYS: Record<Exclude<TypeFilter, 'all'>, string> = {
 const SPELL_CARD_BACK_PATH = 'mage-wars/cards/backs/spell-card-back';
 const WALL_CARD_BACK_PATH = 'mage-wars/cards/backs/wall-card-back';
 const SPELL_CARD_BACK_RATIO = 992 / 1391;
-const WALL_CARD_BACK_RATIO = 1386 / 992;
+const ROTATED_WALL_CARD_WIDTH_PERCENT = `${(100 / SPELL_CARD_BACK_RATIO).toFixed(2)}%`;
 
 function cx(...classes: Array<string | false | null | undefined>): string {
     return classes.filter(Boolean).join(' ');
@@ -190,6 +190,48 @@ function SpellCardArt({
             title={spell.name}
             data-card-fallback={isWallSpell(spell) ? 'wall-card-back' : 'spell-card-back'}
         />
+    );
+}
+
+function SpellCardDisplay({
+    spell,
+    className,
+}: {
+    spell: MageWarsConfigSpellCard;
+    className?: string;
+}) {
+    const sourceAspectRatio = getCardAspectRatio(spell);
+    const wallCard = isWallSpell(spell);
+
+    if (!wallCard) {
+        return (
+            <div
+                className={cx('overflow-hidden bg-black/45', className)}
+                style={{ aspectRatio: sourceAspectRatio }}
+                data-card-display-orientation="portrait"
+            >
+                <SpellCardArt spell={spell} />
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className={cx('relative overflow-hidden bg-black/45', className)}
+            style={{ aspectRatio: SPELL_CARD_BACK_RATIO }}
+            data-card-display-orientation="portrait-rotated-wall"
+        >
+            <div
+                className="absolute left-1/2 top-1/2 block"
+                style={{
+                    width: ROTATED_WALL_CARD_WIDTH_PERCENT,
+                    aspectRatio: sourceAspectRatio,
+                    transform: 'translate(-50%, -50%) rotate(90deg)',
+                }}
+            >
+                <SpellCardArt spell={spell} />
+            </div>
+        </div>
     );
 }
 
@@ -444,7 +486,14 @@ export function MageWarsSpellbookBuilderPanel({
             data-saved-spellbook-count={savedSpellbookTotalCount}
             data-saved-spellbook-limit={MAGE_WARS_SAVED_SPELLBOOK_LIMIT}
         >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(146,98,38,0.25),transparent_30%),radial-gradient(circle_at_76%_16%,rgba(69,105,119,0.19),transparent_29%),linear-gradient(135deg,#211712_0%,#2b211b_52%,#111414_100%)]" />
+            <OptimizedImage
+                src="mage-wars/board/standard-arena"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover opacity-32"
+                placeholder={false}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-black/68" />
             <div className="relative z-10 grid h-full min-h-0 grid-rows-[4.625rem_minmax(0,1fr)] gap-2.5 px-5 pb-5 pt-3">
                 <header
                     className="builder-topbar grid min-h-0 grid-cols-[15.25rem_minmax(0,1fr)_21rem_auto] items-stretch gap-2.5"
@@ -918,7 +967,6 @@ export function MageWarsSpellbookBuilderPanel({
                                                 'group relative min-w-0 border bg-black/20 p-1.5 transition',
                                                 currentCount > 0 ? 'border-amber-200/80 shadow-[0_0_0_2px_rgba(232,187,102,0.14)]' : 'border-white/15 hover:border-amber-200/65',
                                                 restricted && 'opacity-55 saturate-50',
-                                                isWallSpell(spell) && 'col-span-2',
                                             )}
                                             data-testid="mage-wars-spellbook-builder-card"
                                             data-source-card-id={spell.spellCardId}
@@ -929,9 +977,7 @@ export function MageWarsSpellbookBuilderPanel({
                                             aria-label={t('spellbookBuilder.cardAria', { name: spell.name, status })}
                                             onClick={() => addSpell(spell)}
                                         >
-                                            <div className="mx-auto w-full overflow-hidden bg-black/45" style={{ aspectRatio: getCardAspectRatio(spell) }}>
-                                                <SpellCardArt spell={spell} className="transition duration-150 group-hover:scale-[1.018]" />
-                                            </div>
+                                            <SpellCardDisplay spell={spell} className="mx-auto w-full" />
                                             <span
                                                 className={cx(
                                                     'absolute bottom-2 left-1/2 min-w-[4.6rem] -translate-x-1/2 border px-2 py-1 text-center text-[0.63rem] font-black leading-none opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.42)] transition-opacity group-active:opacity-100 group-focus-visible:opacity-100 group-hover:opacity-100',
@@ -985,12 +1031,7 @@ export function MageWarsSpellbookBuilderPanel({
                                         data-testid="mage-wars-spellbook-builder-deck-row"
                                         data-source-card-id={entry.spellCardId}
                                     >
-                                        <div
-                                            className={cx('overflow-hidden bg-black/45', isWallSpell(spell) ? 'h-6 w-[2.1rem]' : 'h-11 w-[2.1rem]')}
-                                            style={{ aspectRatio: getCardAspectRatio(spell) }}
-                                        >
-                                            <SpellCardArt spell={spell} />
-                                        </div>
+                                        <SpellCardDisplay spell={spell} className="h-11 w-[2.1rem]" />
                                         <div className="min-w-0">
                                             <div className="truncate text-[0.69rem] font-black leading-tight text-stone-50">{spell.name}</div>
                                             <div className="mt-1 truncate text-[0.58rem] font-semibold leading-none text-stone-200/55">

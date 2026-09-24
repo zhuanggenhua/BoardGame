@@ -54,6 +54,9 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 缺口只能写成 `blocked / disputed / out-of-scope / approved-programmatic` 等可追溯状态，不能用占位素材、CSS 图形、示意图或 E2E 绿灯顶替。
 
+凡主真相源包含 TTS/Workshop、官方客户端、官方图集、模型或可直接读取的实体组件时，S0 必须先按
+[`references/preflight-gates.md`](references/preflight-gates.md) 的“源素材直接使用优先”门禁处理：先定位真实素材、对象字段和用法，并优先直接接入；只有技术上确实无法直接使用时，才允许进入有来源依据的等价复现。不得先用自创 CSS、渐变、文字、emoji、普通几何或其它相似素材顶替，再把它写成素材已闭合。
+
 新游戏的正式 OpenSpec proposal 也必须建立在 S0 之上：proposal 不是 intake 的替代物，而是基于已录入事实做架构、数据模型、流程和任务拆分的规划产物。无需录完全部卡库，但至少要录入能跑通目标主流程的规则对象、卡牌/能力效果、状态变化、玩家决策和所需素材；另需主动查询尚未录入的派系/角色特色机制，凡可能改变共享引擎、对象模型或流程边界的机制都必须写入风险和设计依据。
 
 ### S1 骨架与 Manifest

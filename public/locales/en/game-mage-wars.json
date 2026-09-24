@@ -162,6 +162,8 @@
     "attack": "Attack die",
     "effect": "12-sided effect die",
     "effectShort": "d12",
+    "effectResult": "D12 · {{result}}",
+    "effectNativeAssetNote": "Native TTS effect die Die_12; showing the result without fabricating a die model",
     "settlement": "Dice ready"
   },
   "actionDock": {

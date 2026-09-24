@@ -186,7 +186,9 @@ const openDetail = (item) => {
   media.draggable = false;
   if (item.kind === "video") {
     media.controls = true;
-    media.preload = "metadata";
+    media.preload = "auto";
+    media.playsInline = true;
+    media.setAttribute("aria-label", `播放视频：${displayTitle(item)}`);
   } else {
     media.alt = displayTitle(item);
     media.decoding = "sync";
@@ -315,9 +317,10 @@ const createTile = (entry, shouldLoadMedia) => {
     const media = entry.item.kind === "video" ? document.createElement("video") : document.createElement("img");
     media.src = entry.item.url;
     if (entry.item.kind === "video") {
-      media.controls = true;
       media.muted = true;
       media.preload = "metadata";
+      media.playsInline = true;
+      media.setAttribute("aria-label", `打开视频详情：${displayTitle(entry.item)}`);
     } else {
       media.alt = displayTitle(entry.item);
       media.loading = "lazy";
@@ -653,6 +656,7 @@ imageDetailViewport.addEventListener("wheel", (event) => {
 imageDetailViewport.addEventListener("pointerdown", (event) => {
   event.stopPropagation();
   if (event.button !== 0 && event.button !== 1) return;
+  if (event.target instanceof Element && event.target.closest("video")) return;
   detailDragState = {
     pointerId: event.pointerId,
     startX: event.clientX,
