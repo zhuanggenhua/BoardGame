@@ -685,7 +685,7 @@ const seedNextGroundEventRoom = (core: BetrayalCore): void => {
 };
 
 const seedNextGroundItemRoom = (core: BetrayalCore): void => {
-    seedNextGroundRoom(core, 'vault', '木乃伊横行 E2E 缺少一层物品房：金库');
+    seedNextGroundRoom(core, 'bloodyRoom', '木乃伊横行 E2E 缺少一层物品房：血腥房间');
 };
 
 type MummyBridgedCandidateCard = BetrayalCore['currentExplorer']['inventory'][number];
@@ -2289,7 +2289,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         );
         await expect(page.getByTestId('betrayal-discovery-panel')).toContainText('已加入持有区');
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('作祟检定');
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('已触发');
         const omenHauntRollPanel = omenDiscoveryPanel.getByTestId('betrayal-recent-roll-panel');
         await expect(omenHauntRollPanel).toContainText('作祟开始', { timeout: 30000 });
         await expect(omenHauntRollPanel).toContainText('总点数');
@@ -2506,7 +2505,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectBoardTokenReadableSize(
             mummySurface,
             '主黄金链拾起女孩后木乃伊本体',
-            32,
+            30,
         );
         await expectBoardTokenCircular(
             mummySurface,

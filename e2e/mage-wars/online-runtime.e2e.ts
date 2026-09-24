@@ -7442,8 +7442,6 @@ test.describe('Mage Wars formal online runtime', () => {
                 : undefined).toBe(20);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '06-复原术多状态选择-取消后状态和法力不变');
 
-            await clickMageEntity(match.hostPage, '0', '复原术状态选择确认分支再次选择女祭司');
-            await match.hostPage.getByTestId('mage-wars-selected-mage-ability-restore').click({ timeout: 3_000, noWaitAfter: true });
             await clickFieldObject(match.hostPage, afflictedAngelCard, '复原术状态选择确认分支再次选择受创天使');
             await expect(statusChoiceDock).toBeVisible({ timeout: 3_000 });
             const fullRestoreOption = statusChoiceDock.locator(
@@ -7459,7 +7457,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect.poll(async () => {
                 const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
                 return hasEvent(snapshot, MAGE_WARS_EVENTS.MAGE_ABILITY_RESOLVED, (payload) => (
-                    payload.abilityId === MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_STANDARD
+                    payload.abilityId === MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_QUICK
                         && payload.targetObjectId === afflictedAngelId
                 ));
             }, {

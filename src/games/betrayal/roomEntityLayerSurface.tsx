@@ -496,7 +496,7 @@ export function BetrayalRoomEntityLayerSurface({
                 <span
                   className={
                     monsterCarriesGirl
-                      ? "relative z-10 inline-flex min-h-[58px] min-w-[112px] items-end justify-center gap-1.5"
+                      ? "relative z-10 inline-flex min-h-[98px] min-w-[58px] flex-col items-center justify-center gap-1.5"
                       : "relative z-10 inline-flex items-end gap-1.5"
                   }
                   data-monster-token-cluster={
