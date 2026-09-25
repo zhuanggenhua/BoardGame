@@ -1,0 +1,521 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "fate-domination",
+  "basePrefix": "official/i18n/zh-CN/fate-domination/",
+  "files": {
+    "board/compressed/fuyuki-city": {
+      "variants": {
+        "webp": {
+          "sha256": "cab9d01b400e42e72a7c6bc15110ef30da9ab86723cc8c972d260ccccd8fe654",
+          "bytes": 359298,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-magic-high": {
+      "variants": {
+        "webp": {
+          "sha256": "f8e15949cc04ea85cbbcf4c9a44f51e729123076061daa79c4a81db2ef2d2e79",
+          "bytes": 82978,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-magic-low": {
+      "variants": {
+        "webp": {
+          "sha256": "c0ad8f58898efd6725bff20f3e7a4a47730171ece9001b33eb49f9cceb4b49e2",
+          "bytes": 52700,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-magic-mid": {
+      "variants": {
+        "webp": {
+          "sha256": "da708dd9f698a4296eea8d7f5e67dbab552aa03e9b3c243bb69df48fa01bcc1b",
+          "bytes": 77704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-magic-super": {
+      "variants": {
+        "webp": {
+          "sha256": "82b0d4bf0247352345222f2ffb9aaf945840503d22bae5a4a7b0a0c9dbd553e2",
+          "bytes": 79720,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-strength-high": {
+      "variants": {
+        "webp": {
+          "sha256": "5cc23d1f9f6588d8934323cd15dde864a52524d3242e13d4e113a628c28eabef",
+          "bytes": 30192,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-strength-low": {
+      "variants": {
+        "webp": {
+          "sha256": "da20e3657dfb4b0140980c85b6c0af04ea778d016463126e47112868bebaa10c",
+          "bytes": 24226,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-strength-mid": {
+      "variants": {
+        "webp": {
+          "sha256": "c36da14f16a2dee9b03e103b4d9630024cd98c17de22bd0a691ee5681676e0a1",
+          "bytes": 26870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/attack-strength-super": {
+      "variants": {
+        "webp": {
+          "sha256": "2045e8a8f06464333ce681b07b1cf3715c01ef4baf4a8a90911b24d71efe2324",
+          "bytes": 32350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-fumble": {
+      "variants": {
+        "webp": {
+          "sha256": "0e41a0c57ad1a5d2d57c000749d327eb814cbadafe457487cc7a110977effd87",
+          "bytes": 18454,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-instant-move": {
+      "variants": {
+        "webp": {
+          "sha256": "a792a3b644cffe8ac31ced5a4073fbacb0c188d1484fad2b79b59652bce48262",
+          "bytes": 20132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-luck": {
+      "variants": {
+        "webp": {
+          "sha256": "ec1cc65eba1636d8597cbed92b93d28c796c1817810a7a33abf683b3c14ce33b",
+          "bytes": 60470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-moment": {
+      "variants": {
+        "webp": {
+          "sha256": "aa28623d96bd36055aecc29ddbd0791b9d564f5230a7127023a061470b166788",
+          "bytes": 23314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-preparation": {
+      "variants": {
+        "webp": {
+          "sha256": "3a01888393eca1b0f3943b678ece99aa5afbda9ce1efc5655247909aef882e9c",
+          "bytes": 93414,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-surveil": {
+      "variants": {
+        "webp": {
+          "sha256": "42ed35955c320c5339ff7359737fa6bddd49c41acdc10bc29dc3eeac5da90b2a",
+          "bytes": 49870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/skill-unknown": {
+      "variants": {
+        "webp": {
+          "sha256": "a82513a71384b78111bf54fba149ede01b36520700eb8c33c23871865e8f1362",
+          "bytes": 21772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/ambush": {
+      "variants": {
+        "webp": {
+          "sha256": "53bd7fb71ae3bb7962fadbfb4b5b0675cb02d1c42db6104b793c9d2cbb08a2fa",
+          "bytes": 158946,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/back": {
+      "variants": {
+        "webp": {
+          "sha256": "76963a11ec37b132c01cad6d80b9efb2fec8bfcb03c2857136cffe0dc1c2fbcc",
+          "bytes": 48492,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/fate-battle": {
+      "variants": {
+        "webp": {
+          "sha256": "3ce592dff233ce30b6930aae648be41f8de833b0bfa61b08d8e963180e800447",
+          "bytes": 76450,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/fear-of-future": {
+      "variants": {
+        "webp": {
+          "sha256": "268909dd571fd1a3cc0e5d5a8585b442bc455a0c29bfaf73659dd915696c8b9e",
+          "bytes": 60084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/fire-suppression": {
+      "variants": {
+        "webp": {
+          "sha256": "2994de70feb612df1877f504af6dc3857f6d3f7e33d78f064ea8270556e354a5",
+          "bytes": 83500,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/glorious-duel": {
+      "variants": {
+        "webp": {
+          "sha256": "761ac6f5e924da4cd99ccad8e523d9e327d13243632278c92c054964a8c60582",
+          "bytes": 163080,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/ground-zero": {
+      "variants": {
+        "webp": {
+          "sha256": "33a8e21213ade8a67d94bfafe32954ab6de46d31088dca5bb9cd5644b7c5c52e",
+          "bytes": 44036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/high-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "2bea97fc9e93e5af27fa0d3405a14fd1b11e009c8136c3d62facb9826910ebea",
+          "bytes": 55158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/holy-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "de9c517930e3d488bd400bb6971c16e700dbbf801b646ab59d89240e37940c16",
+          "bytes": 80950,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/leyline": {
+      "variants": {
+        "webp": {
+          "sha256": "84a91005b7707baaeb2d1e0f911086e0c422f8e3309e217fff5cdcda9e680c76",
+          "bytes": 65516,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/milk-sea": {
+      "variants": {
+        "webp": {
+          "sha256": "0bbe9acf6cf5b1b7ea43bc6aa7ea6ea3485b9abcd789c945f80e654735bde0cc",
+          "bytes": 59292,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/power-test": {
+      "variants": {
+        "webp": {
+          "sha256": "df148a2a4ddfe601270a9f6a1bb02cf9fc3371d6d5f85516a63ad6f159ca81be",
+          "bytes": 142456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/reality-marble": {
+      "variants": {
+        "webp": {
+          "sha256": "35c8001d01d00da2a58847b7302f3b59642fe207a3903fea5f4689e2553ad693",
+          "bytes": 80060,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/reclaim-illya": {
+      "variants": {
+        "webp": {
+          "sha256": "ec662299c4827a766c1840b858be914cde183d08e57d00b4e7f8b41f1706d758",
+          "bytes": 79502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/risk-it-all": {
+      "variants": {
+        "webp": {
+          "sha256": "bbbdd0a4ebfeb73ff8a415d41f5eb5b30b040c31bb5a9d62aa8145f2d3211105",
+          "bytes": 84320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/ritual-site": {
+      "variants": {
+        "webp": {
+          "sha256": "329db70e70c2dd5e284237106b59aaa40700615009dea8a40c843943f348d986",
+          "bytes": 124302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/suppress-threat": {
+      "variants": {
+        "webp": {
+          "sha256": "78755436a6a2068878f62557b4341d932182108acc092871e9bfc85662944514",
+          "bytes": 140184,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/synergy": {
+      "variants": {
+        "webp": {
+          "sha256": "bc5d85bc661bd748be066e6be382b7129ea6d77e1d73da687e3282e772d55686",
+          "bytes": 84112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "events/compressed/treacherous-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "ae941d9dde7e9b9c84280a0b176f6f0477fd1e169e4ee41cfe6e59c9c58c1ad5",
+          "bytes": 135176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "masters/compressed/emiya-shirou": {
+      "variants": {
+        "webp": {
+          "sha256": "ca5fff2fc192cb6248eb775e7fd394c0250c2b41ded9c182c394cfe8c965ce91",
+          "bytes": 73754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "masters/compressed/master-slot-b": {
+      "variants": {
+        "webp": {
+          "sha256": "0675d9717ab2c6bc4eda8e7ffc9eca6f6ad5250a9ac9016d0e90de6c5aabb6ca",
+          "bytes": 109762,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "servants/compressed/saber": {
+      "variants": {
+        "webp": {
+          "sha256": "d3482030d69d988f332f3379636de3822a981ad3f079b7e88ec2f9e6388101f7",
+          "bytes": 473940,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "servants/compressed/saber-skill-1": {
+      "variants": {
+        "webp": {
+          "sha256": "6d876d2d56f460098f2c92489c397ed2dc6c6d51e040a3b21a8047b9aeeead7f",
+          "bytes": 420090,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "servants/compressed/saber-skill-2": {
+      "variants": {
+        "webp": {
+          "sha256": "b335deb8866d2bfe959fe1a80da1cca74ddab14ee63ed08b70791a9e8edb42d3",
+          "bytes": 545458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "servants/compressed/saber-skill-3": {
+      "variants": {
+        "webp": {
+          "sha256": "e91c5c0d2d1baa086658571fbddea18f83abaa6491580c8a576c75911cba0330",
+          "bytes": 336542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "servants/compressed/unlocked-pending": {
+      "variants": {
+        "webp": {
+          "sha256": "97636a6fa2f06ada1df63f471d1569d31e26d93ecbc8f661566eadb44130d428",
+          "bytes": 171492,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/angra-curse": {
+      "variants": {
+        "webp": {
+          "sha256": "f2d81f827764ced91030593a9d746534845367a95402ca7f5a91b9b23663b9cc",
+          "bytes": 76758,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/angra-shadow": {
+      "variants": {
+        "webp": {
+          "sha256": "2c733f8ed8897f60881fde22135ef5eb26f99ad2a0839cc86a13edb762ec4fe4",
+          "bytes": 49954,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/angra-substance": {
+      "variants": {
+        "webp": {
+          "sha256": "252eba01b5b8adb2ea60f2882a8a782b73bcf7186cc200b2a026ee246068a040",
+          "bytes": 59358,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/back": {
+      "variants": {
+        "webp": {
+          "sha256": "d79092bc9fd60e429c42f34a63334ec0521bb56cffa07aae568d9eef107458cb",
+          "bytes": 106004,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/calm-before-storm": {
+      "variants": {
+        "webp": {
+          "sha256": "f6485ca3ee418224e55daa6377646f32676d696969777a3a050cedb401b4477c",
+          "bytes": 84732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/fate-night": {
+      "variants": {
+        "webp": {
+          "sha256": "61acb74bdca8ba2cf0aa3045582078b3817d33604ed91f72eb65197beaaf2eaa",
+          "bytes": 63032,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/future-hope": {
+      "variants": {
+        "webp": {
+          "sha256": "6208f5d4ed8e351f1b0610cb1627bdb2481e3dcbb6f01ee41b63302730b2e9f3",
+          "bytes": 106642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/heavens-feel": {
+      "variants": {
+        "webp": {
+          "sha256": "cf5f4432f374f5e4f71571a8dcf8abc4a8d8fb24d56764986557a2da93a6b8e9",
+          "bytes": 58220,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/hell-gate": {
+      "variants": {
+        "webp": {
+          "sha256": "04d5164c5bb75f9e4dd8f4011977a1664d79550bfe86b4f101f9fede959271ba",
+          "bytes": 78394,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/miyama-killer": {
+      "variants": {
+        "webp": {
+          "sha256": "6aa9db09b5b7b10c3902713a1cb95b6053b88158d1d045685c12436515fa5696",
+          "bytes": 70686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/new-city-battle": {
+      "variants": {
+        "webp": {
+          "sha256": "0bea305a470535fd17197d705f01bd863784ed30498c9e3c65e2f3bfa3bb9501",
+          "bytes": 66306,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/perfect-flow": {
+      "variants": {
+        "webp": {
+          "sha256": "007fdb9ea27be407c52252b6758ce1d196bd782cb21b969dea55e0577dc64afa",
+          "bytes": 91246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/rage": {
+      "variants": {
+        "webp": {
+          "sha256": "635ebf258844b507942773f14a3dce450dcb24a02e73e73f68a0f98e36a44bb4",
+          "bytes": 78560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "situations/compressed/turning-point": {
+      "variants": {
+        "webp": {
+          "sha256": "7096be3a74c4d96d75fcc6baa720e0a554f4db1bdce4492863a5295b9810b07a",
+          "bytes": 112366,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "cdd4622798e0498832312424a4d67e8fb1361219b547bdcbcc524e9a0ddc7748",
+          "bytes": 68462,
+          "mime": "image/webp"
+        }
+      }
+    }
+  }
+}

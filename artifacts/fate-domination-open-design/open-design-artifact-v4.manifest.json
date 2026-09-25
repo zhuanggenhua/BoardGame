@@ -1,0 +1,29 @@
+{
+  "kind": "html",
+  "renderer": "html",
+  "exports": ["html", "pdf"],
+  "title": "Fate/Domination 开放式牌桌候选稿 v4",
+  "supportingFiles": [
+    "assets/fuyuki-city.webp",
+    "assets/event-back.webp",
+    "assets/master-emiya.webp",
+    "assets/master-slot-b.webp",
+    "assets/attack-magic-low.webp",
+    "assets/attack-strength-high.webp",
+    "assets/skill-luck.webp",
+    "assets/skill-moment.webp"
+  ],
+  "metadata": {
+    "gameId": "fate-domination",
+    "artifactKind": "open-design-artifact-candidate",
+    "humanReview": "not-approved",
+    "openDesignProjectId": "b4bb4fbb-ee71-4465-9e34-e4c24f397155",
+    "canvas": "1920x1080",
+    "referenceImage": "reference-image-not-committed",
+    "annotatedBoardReference": "repository-relative-reference-not-committed",
+    "annotatedBoardUsage": "reference-only-coordinate-guide",
+    "mediaGenerate": false,
+    "revision": "v4-2-reference-only-board-hotspots",
+    "currentArtifact": "fate-domination-v4-2.html"
+  }
+}

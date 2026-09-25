@@ -1,0 +1,98 @@
+{
+  "title": "命运支配",
+  "brand": "命运支配",
+  "subtitle": "冬木市 · 圣杯战争牌桌",
+  "dev": {
+    "title": "命运支配开发验证入口"
+  },
+  "round": "回合",
+  "phases": {
+    "preparation": "准备",
+    "outpost": "部署",
+    "action": "行动",
+    "battle": "战斗",
+    "complete": "结束"
+  },
+  "zones": {
+    "situation": "当前局势",
+    "miyamaEvent": "深山町事件",
+    "situationDeck": "局势牌堆",
+    "eventDeck": "事件牌堆",
+    "eventDiscard": "事件弃牌"
+  },
+  "board": {
+    "sceneLabel": "冬木市牌桌地图",
+    "mapAlt": "冬木市地图板块",
+    "mapTitle": "冬木市",
+    "mapSubtitle": "魔术工房 · 深山町 · 新都 · 侦察",
+    "movementCost": "移动代价",
+    "cost": "代价",
+    "terrain": "地形"
+  },
+  "currentPlayer": "当前玩家",
+  "resources": {
+    "mana": "魔力",
+    "victoryPoints": "胜利点",
+    "commandSpells": "令咒"
+  },
+  "identity": {
+    "title": "身份牌",
+    "subtitle": "本方御主 / 从者",
+    "sectionLabel": "御主与从者选择",
+    "servant": "从者",
+    "servantFallback": "从者",
+    "notDeployed": "尚未部署"
+  },
+  "scoreboard": "玩家状态",
+  "players": "位玩家",
+  "actionLog": "行动记录",
+  "actionLogEmpty": "尚无行动记录",
+  "hand": "攻击手牌",
+  "handStatus": "选中两张后确认",
+  "inspect": "查看",
+  "attackZone": "攻击区",
+  "battlePower": "总威力",
+  "attackPending": "尚未确认攻击",
+  "sourceNote": "局势效果状态",
+  "cardInspection": "卡牌检视",
+  "cardTextPending": "该牌效果文字尚在逐张核验，本轮仅展示真实牌图与已确认数据。",
+  "close": "关闭",
+  "notices": {
+    "preparation": "准备阶段",
+    "outpost": "部署阶段",
+    "action": "行动阶段",
+    "battle": "战斗阶段",
+    "complete": "演示结束"
+  },
+  "commands": {
+    "toOutpost": "进入部署",
+    "toAction": "进入行动",
+    "confirmAttack": "确认攻击",
+    "resolveBattle": "结算战斗",
+    "actionControls": "行动操作",
+    "battleControls": "战斗结算操作",
+    "moveTo": "移动至",
+    "playSkill": "发动技能",
+    "passAction": "结束行动",
+    "resolveLocation": "结算地点"
+  },
+  "error": {
+    "unknownPlayer": "未知玩家",
+    "gameOver": "对局已结束",
+    "unknownMaster": "御主素材未登记",
+    "unknownServant": "从者素材未登记",
+    "wrongPhase": "当前阶段不可执行",
+    "notYourTurn": "不是你的回合",
+    "alreadyDeployed": "本轮已经部署",
+    "unknownLocation": "未知地点",
+    "locationFull": "地点已满",
+    "staleCard": "卡牌已不在当前手牌",
+    "cardAlreadySelected": "这张牌已选中",
+    "tooManyAttackCards": "最多选择两张攻击牌",
+    "notEnoughMana": "魔力不足",
+    "needExactlyTwoCards": "需要恰好两张攻击牌",
+    "cardNotVisible": "这张牌当前不可查看",
+    "deploymentRequired": "请先部署御主",
+    "actionMustBeConfirmed": "请先确认攻击"
+  }
+}

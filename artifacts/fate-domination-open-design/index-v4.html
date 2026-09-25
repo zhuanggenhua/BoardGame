@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fate/Domination 开放式牌桌设计稿 v4</title>
+  <style>
+    :root {
+      --void: #0f0e0c;
+      --floor: #514437;
+      --ink: #131617;
+      --ink-soft: #24292a;
+      --paper: #f4eee4;
+      --muted: #bcb1a2;
+      --gold: #edbd48;
+      --gold-soft: #ffe8a5;
+      --cyan: #70d7e7;
+      --red: #b85d57;
+      --line: rgba(244,238,228,.32);
+      --shadow: rgba(0,0,0,.66);
+      --mask: rgba(255,255,255,.34);
+      --mask-active: rgba(112,215,231,.42);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+      color: var(--paper);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 320px; min-height: 100%; background: var(--void); }
+    body { overflow: hidden; }
+    button { font: inherit; color: inherit; }
+
+    .stage { position: relative; width: 100vw; height: 100vh; min-height: 760px; overflow: hidden; background: var(--floor); }
+    .stage::before { content: ""; position: absolute; inset: 0; opacity: .38; background: repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 2px, transparent 2px 12px), repeating-linear-gradient(-45deg, rgba(0,0,0,.08) 0 2px, transparent 2px 16px); }
+    .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 170px rgba(0,0,0,.62); }
+    .topbar, .board-wrap, .seat, .hand-dock, .player-hud { position: absolute; z-index: 2; }
+
+    .topbar { top: 0; right: 0; left: 0; height: 82px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 13px 30px; background: rgba(12,12,11,.82); border-bottom: 1px solid rgba(237,189,72,.22); }
+    .brand { border-left: 3px solid var(--gold); padding-left: 12px; }
+    .brand span { display: block; color: var(--gold-soft); font-size: 10px; letter-spacing: .14em; }
+    .brand strong { display: block; margin-top: 4px; font-size: 18px; }
+    .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .deck-fan { position: relative; width: 260px; height: 74px; }
+    .deck-fan img { position: absolute; top: 0; width: 53px; height: 73px; object-fit: cover; border: 1px solid rgba(255,255,255,.58); box-shadow: 0 8px 16px var(--shadow); }
+    .deck-fan img:nth-child(1) { left: 17px; transform: rotate(-15deg); }
+    .deck-fan img:nth-child(2) { left: 58px; transform: rotate(-8deg); }
+    .deck-fan img:nth-child(3) { left: 103px; top: -3px; }
+    .deck-fan img:nth-child(4) { left: 148px; transform: rotate(8deg); }
+    .deck-fan img:nth-child(5) { left: 189px; transform: rotate(15deg); }
+    .top-actions { justify-self: end; display: flex; gap: 18px; align-items: center; }
+    .tool { display: grid; justify-items: center; gap: 4px; cursor: pointer; border: 0; background: transparent; }
+    .tool i { display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid rgba(244,238,228,.68); color: var(--gold-soft); font-style: normal; font-size: 15px; }
+    .tool span { font-size: 9px; letter-spacing: .08em; }
+    .test-toggle { min-width: 88px; padding: 7px 10px; cursor: pointer; border: 1px solid var(--cyan); background: rgba(18,32,34,.8); color: var(--cyan); font-size: 10px; }
+
+    .board-wrap { top: 99px; right: 50%; width: min(1160px, 66vw); transform: translateX(50%); }
+    .board-frame { position: relative; width: 100%; padding: 13px; border: 1px solid var(--gold); background: var(--ink); box-shadow: 0 25px 55px var(--shadow), 0 0 0 8px rgba(24,19,16,.5); }
+    .board-image { position: relative; width: 100%; aspect-ratio: 5 / 3; overflow: hidden; border: 5px solid #050606; background: #101415; }
+    .board-image > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .board-caption { position: absolute; top: 15px; left: 15px; z-index: 3; padding: 8px 12px; border-left: 3px solid var(--gold); background: rgba(12,15,16,.8); pointer-events: none; }
+    .board-caption strong { display: block; color: var(--gold-soft); font-size: 16px; }
+    .board-caption span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .board-status { position: absolute; top: 15px; right: 15px; z-index: 3; display: flex; gap: 7px; pointer-events: none; }
+    .board-status span { padding: 7px 9px; border: 1px solid rgba(112,215,231,.65); background: rgba(12,15,16,.8); color: var(--cyan); font-size: 10px; }
+    .test-overlay { position: absolute; inset: 0; z-index: 4; }
+    .test-overlay.is-hidden { display: none; }
+    .hotspot { position: absolute; display: grid; place-items: center; padding: 0; cursor: pointer; border: 1px solid rgba(255,255,255,.8); background: var(--mask); color: #211b14; font-family: Georgia, serif; font-size: clamp(13px, 1.5vw, 26px); font-weight: 700; text-shadow: 0 1px rgba(255,255,255,.8); transition: background .15s ease, box-shadow .15s ease, transform .15s ease; }
+    .hotspot:hover, .hotspot.is-active { background: var(--mask-active); border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(112,215,231,.72), 0 0 18px rgba(112,215,231,.52); transform: translateY(-2px); }
+    .hotspot::after { content: attr(data-name); position: absolute; top: calc(100% + 4px); left: 0; display: none; width: max-content; max-width: 140px; padding: 4px 6px; background: rgba(12,15,16,.9); color: var(--paper); font-family: inherit; font-size: 10px; font-weight: 400; white-space: nowrap; }
+    .hotspot:hover::after, .hotspot.is-active::after { display: block; }
+    .a1 { left: 2%; top: 3%; width: 17.2%; height: 30%; }
+    .a2 { left: 20%; top: 3%; width: 30.2%; height: 30%; }
+    .b1 { left: 2%; top: 35%; width: 17.2%; height: 31%; }
+    .b2-1 { left: 20%; top: 35%; width: 11%; height: 31%; }
+    .b2-2 { left: 31.5%; top: 35%; width: 11%; height: 31%; }
+    .b2-3 { left: 43%; top: 35%; width: 10.5%; height: 31%; }
+    .b3-1 { left: 20%; top: 67%; width: 16%; height: 30%; }
+    .b3-2 { left: 36.5%; top: 67%; width: 16.5%; height: 30%; }
+    .c-1 { left: 51%; top: 7%; width: 8%; height: 10%; }
+    .c-2 { left: 62%; top: 7%; width: 8%; height: 10%; }
+    .c-3 { left: 51%; top: 18%; width: 8%; height: 10%; }
+    .c-4 { left: 62%; top: 18%; width: 8%; height: 10%; }
+    .d1-1 { left: 54%; top: 35%; width: 9%; height: 14%; }
+    .d1-2 { left: 64%; top: 35%; width: 9%; height: 14%; }
+    .d2-1 { left: 54%; top: 67%; width: 9%; height: 14%; }
+    .d2-2 { left: 64%; top: 67%; width: 9%; height: 14%; }
+    .e-1 { left: 70%; top: 24%; width: 10%; height: 8%; }
+    .e-2 { left: 70%; top: 56%; width: 10%; height: 8%; }
+    .e-3 { left: 70%; top: 88%; width: 10%; height: 8%; }
+    .f-1 { right: 0; top: 34%; width: 23%; height: 30%; }
+    .f-2 { right: 0; top: 66%; width: 23%; height: 31%; }
+    .g { left: 5%; top: 74%; width: 8%; height: 13%; }
+    .h { right: 1%; bottom: 1%; width: 22%; height: 8%; }
+    .board-help { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px 0; color: var(--muted); font-size: 10px; }
+    .board-help b { color: var(--gold-soft); }
+    .board-help span:last-child { color: var(--cyan); }
+
+    .seat { top: 32%; width: 242px; }
+    .seat-left { left: 18px; }
+    .seat-right { right: 18px; }
+    .seat-card { display: grid; grid-template-columns: 58px 1fr 24px; align-items: center; gap: 10px; min-height: 63px; margin-bottom: 18px; padding: 6px 10px 6px 6px; border: 1px solid var(--line); background: linear-gradient(90deg, rgba(16,18,18,.94), rgba(16,18,18,.55)); box-shadow: 0 8px 18px rgba(0,0,0,.34); }
+    .seat-right .seat-card { grid-template-columns: 24px 1fr 58px; padding: 6px 6px 6px 10px; background: linear-gradient(270deg, rgba(16,18,18,.94), rgba(16,18,18,.55)); }
+    .avatar { width: 53px; height: 53px; object-fit: cover; border: 2px solid var(--gold); border-radius: 50%; }
+    .seat-copy b { display: block; font-size: 14px; }
+    .seat-copy small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .seat-arrow { color: var(--muted); font-size: 22px; text-align: center; }
+    .seat-right .avatar { grid-column: 3; }
+    .seat-right .seat-copy { grid-column: 2; grid-row: 1; text-align: right; }
+    .seat-right .seat-arrow { grid-column: 1; grid-row: 1; }
+
+    .hand-dock { right: 50%; bottom: -57px; z-index: 5; width: min(910px, 60vw); height: 290px; transform: translateX(50%); pointer-events: none; }
+    .hand-dock::before { content: ""; position: absolute; right: -45px; bottom: 15px; left: -45px; height: 215px; border: 1px solid rgba(244,238,228,.48); background: rgba(18,18,16,.87); box-shadow: 0 -10px 28px rgba(0,0,0,.34); }
+    .hand-title { position: absolute; top: 4px; left: -26px; z-index: 2; color: var(--paper); font-size: 12px; pointer-events: auto; }
+    .hand-title b { color: var(--gold-soft); }
+    .hand-card { position: absolute; bottom: 0; width: 165px; height: 236px; padding: 0; cursor: pointer; pointer-events: auto; border: 4px solid var(--paper); background: var(--ink); box-shadow: 0 15px 25px var(--shadow); transition: transform .16s ease, border-color .16s ease; }
+    .hand-card:hover, .hand-card.is-selected { border-color: var(--gold-soft); transform: translateY(-28px) rotate(0deg) !important; z-index: 9 !important; }
+    .hand-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .hand-card span { position: absolute; top: 5px; right: 7px; left: 7px; display: flex; justify-content: space-between; color: var(--paper); font-size: 10px; text-shadow: 0 1px 4px #000; }
+    .hand-card span b { color: var(--gold-soft); }
+    .inspect { position: absolute; top: -14px; right: -13px; z-index: 2; display: grid; place-items: center; width: 27px; height: 27px; cursor: pointer; border: 1px solid var(--cyan); border-radius: 50%; background: var(--ink); color: var(--cyan); }
+    .card-1 { left: 4%; transform: rotate(-18deg); z-index: 1; }
+    .card-2 { left: 21%; transform: rotate(-9deg); z-index: 3; }
+    .card-3 { left: 38%; transform: rotate(-1deg); z-index: 5; }
+    .card-4 { left: 55%; transform: rotate(8deg); z-index: 4; }
+    .card-5 { left: 72%; transform: rotate(17deg); z-index: 2; }
+
+    .player-hud { right: 28px; bottom: 25px; left: 28px; z-index: 6; pointer-events: none; }
+    .you { display: flex; align-items: center; gap: 11px; width: 286px; min-height: 72px; padding: 7px 12px 7px 7px; pointer-events: auto; border: 1px solid var(--gold); background: linear-gradient(90deg, rgba(11,12,12,.96), rgba(11,12,12,.46)); }
+    .you .avatar { width: 54px; height: 54px; }
+    .you-copy b { display: block; color: var(--gold-soft); font-size: 14px; }
+    .you-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .stats { display: flex; gap: 9px; margin-top: 6px; color: var(--paper); font-size: 9px; }
+    .stats b { color: var(--gold); font-size: 12px; }
+    .phase { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; gap: 13px; pointer-events: auto; }
+    .phase-disc { display: grid; place-items: center; width: 82px; height: 82px; border: 3px solid var(--paper); border-radius: 50%; background: var(--red); text-align: center; box-shadow: 0 9px 18px rgba(0,0,0,.45); }
+    .phase-disc b { display: block; font-size: 16px; }
+    .phase-disc small { display: block; margin-top: 2px; font-size: 9px; }
+    .next { min-width: 220px; padding: 13px 16px; cursor: pointer; border: 1px solid var(--paper); background: rgba(10,12,12,.88); text-align: left; }
+    .next:hover { border-color: var(--gold-soft); }
+    .next span { display: block; color: var(--muted); font-size: 10px; }
+    .next b { display: flex; justify-content: space-between; margin-top: 5px; color: var(--paper); font-size: 17px; }
+    .next b i { color: var(--gold); font-size: 24px; font-style: normal; line-height: 16px; }
+
+    .toast { position: fixed; top: 94px; left: 50%; z-index: 20; display: none; transform: translateX(-50%); padding: 9px 13px; border: 1px solid var(--gold); background: rgba(12,15,16,.92); color: var(--gold-soft); font-size: 11px; }
+    .toast.is-open { display: block; }
+    .overlay { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; padding: 22px; background: rgba(5,7,7,.8); }
+    .overlay.is-open { display: grid; }
+    .inspect-panel { position: relative; display: grid; grid-template-columns: 230px 1fr; gap: 20px; width: min(575px, 100%); padding: 20px; border: 1px solid var(--gold); background: var(--ink); box-shadow: 0 26px 80px rgba(0,0,0,.72); }
+    .inspect-panel img { width: 230px; height: 328px; object-fit: cover; }
+    .inspect-panel h2 { margin: 12px 0 0; color: var(--gold-soft); font-size: 24px; }
+    .inspect-panel p { margin-top: 15px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+    .close { position: absolute; top: 8px; right: 8px; width: 29px; height: 29px; cursor: pointer; border: 1px solid var(--line); background: var(--ink-soft); font-size: 20px; }
+    @media (max-width: 1250px) {
+      .board-wrap { width: min(960px, 67vw); }
+      .seat { width: 205px; }
+      .hand-dock { width: min(840px, 67vw); }
+    }
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .stage { height: auto; min-height: 1040px; overflow: hidden; }
+      .topbar { position: relative; height: 78px; grid-template-columns: 1fr auto; padding: 11px 13px; }
+      .deck-fan { display: none; }
+      .top-actions { gap: 8px; }
+      .tool span { display: none; }
+      .test-toggle { min-width: 76px; padding: 6px; }
+      .board-wrap { position: relative; top: auto; right: auto; width: 96vw; margin: 20px auto 0; transform: none; }
+      .board-frame { padding: 7px; }
+      .board-caption { top: 8px; left: 8px; padding: 6px 8px; }
+      .board-caption strong { font-size: 13px; }
+      .board-status { top: 8px; right: 8px; }
+      .board-status span { padding: 5px; font-size: 8px; }
+      .board-help { font-size: 9px; }
+      .seat { display: none; }
+      .hand-dock { position: relative; right: auto; bottom: auto; width: 100%; height: 292px; margin-top: 20px; transform: none; }
+      .hand-dock::before { right: 8px; left: 8px; height: 228px; }
+      .hand-title { top: 8px; left: 19px; }
+      .hand-card { width: 122px; height: 184px; }
+      .card-1 { left: 6%; }
+      .card-2 { left: 20%; }
+      .card-3 { left: 35%; }
+      .card-4 { left: 50%; }
+      .card-5 { left: 65%; }
+      .player-hud { position: relative; right: auto; bottom: auto; left: auto; height: 158px; margin: 0 12px; }
+      .you { position: absolute; bottom: 12px; left: 0; width: 205px; }
+      .phase { right: 0; bottom: 12px; gap: 7px; }
+      .phase-disc { width: 62px; height: 62px; }
+      .next { min-width: 138px; padding: 10px; }
+      .next b { font-size: 13px; }
+      .overlay { padding: 12px; }
+      .inspect-panel { grid-template-columns: 110px 1fr; gap: 13px; padding: 15px; }
+      .inspect-panel img { width: 110px; height: 157px; }
+      .inspect-panel h2 { font-size: 18px; }
+    }
+    @media (max-width: 520px) {
+      .stage { min-height: 1035px; }
+      .brand strong { font-size: 15px; }
+      .brand small { font-size: 9px; }
+      .board-wrap { margin-top: 12px; }
+      .board-help span:first-child { max-width: 220px; }
+      .hotspot::after { display: none !important; }
+      .hand-dock { height: 245px; margin-top: 10px; }
+      .hand-dock::before { height: 190px; }
+      .hand-card { width: 94px; height: 142px; border-width: 3px; }
+      .player-hud { height: 145px; }
+      .you { width: 175px; gap: 7px; padding-right: 5px; }
+      .you .avatar { width: 42px; height: 42px; }
+      .you-copy b { font-size: 12px; }
+      .stats { gap: 4px; }
+      .phase-disc { display: none; }
+      .next { min-width: 136px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="topbar">
+      <div class="brand"><span>FATE / DOMINATION</span><strong>冬木市圣杯战争</strong><small>Round 04 · 行动阶段 · 你的回合</small></div>
+      <div class="deck-fan" aria-label="事件牌库"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"></div>
+      <nav class="top-actions" aria-label="桌面工具"><button class="tool" data-toast="供应区已打开"><i>▣</i><span>SUPPLY</span></button><button class="tool" data-toast="行动记录已打开"><i>▤</i><span>LOG</span></button><button class="tool" data-toast="菜单已打开"><i>⚙</i><span>MENU</span></button><button class="test-toggle" id="toggle-overlay" aria-pressed="true">测试标记：开</button></nav>
+    </header>
+
+    <main class="board-wrap" data-od-id="annotated-fuyuki-board">
+      <div class="board-frame"><div class="board-image"><img src="assets/fuyuki-city.webp" alt="冬木市地图"><div class="board-caption"><strong>冬木市 · 战场</strong><span>白色方格为测试阶段交互热点</span></div><div class="board-status"><span>行动点 02</span><span>魔力 04</span></div><div class="test-overlay" id="test-overlay">
+        <button class="hotspot a1" data-name="事件牌槽" data-zone="A1">A1</button><button class="hotspot a2" data-name="局势/中央区域" data-zone="A2">A2</button><button class="hotspot b1" data-name="目标牌槽" data-zone="B1">B1</button><button class="hotspot b2-1" data-name="深山町区域 1" data-zone="B2-1">B2</button><button class="hotspot b2-2" data-name="深山町区域 2" data-zone="B2-2">B2</button><button class="hotspot b2-3" data-name="深山町区域 3" data-zone="B2-3">B2</button><button class="hotspot b3-1" data-name="新都区域 1" data-zone="B3-1">B3</button><button class="hotspot b3-2" data-name="新都区域 2" data-zone="B3-2">B3</button><button class="hotspot c-1" data-name="工房资源 1" data-zone="C1">C</button><button class="hotspot c-2" data-name="工房资源 2" data-zone="C2">C</button><button class="hotspot c-3" data-name="工房资源 3" data-zone="C3">C</button><button class="hotspot c-4" data-name="工房资源 4" data-zone="C4">C</button><button class="hotspot d1-1" data-name="深山町加成 1" data-zone="D1-1">D1</button><button class="hotspot d1-2" data-name="深山町加成 2" data-zone="D1-2">D1</button><button class="hotspot d2-1" data-name="新都加成 1" data-zone="D2-1">D2</button><button class="hotspot d2-2" data-name="新都加成 2" data-zone="D2-2">D2</button><button class="hotspot e-1" data-name="工房行动出口" data-zone="E1">E</button><button class="hotspot e-2" data-name="深山町行动出口" data-zone="E2">E</button><button class="hotspot e-3" data-name="新都行动出口" data-zone="E3">E</button><button class="hotspot f-1" data-name="Servant 轨道上半区" data-zone="F1">F</button><button class="hotspot f-2" data-name="Servant 轨道下半区" data-zone="F2">F</button><button class="hotspot g" data-name="侦察入口" data-zone="G">G</button><button class="hotspot h" data-name="分数轨道" data-zone="H">H</button>
+      </div></div><div class="board-help"><span><b id="selected-zone">A1</b> · 已选中测试热点，点击棋盘方格查看反馈</span><span>INTERACTION GRID · TEST MODE</span></div></div>
+    </main>
+
+    <aside class="seat seat-left" data-od-id="opponent-seats"><div class="seat-card"><img class="avatar" src="assets/master-slot-b.webp" alt="间桐慎二"><div class="seat-copy"><b>间桐慎二</b><small>深山町 · 05 VP</small></div><span class="seat-arrow">›</span></div><div class="seat-card"><img class="avatar" src="assets/master-emiya.webp" alt="言峰绮礼"><div class="seat-copy"><b>言峰绮礼</b><small>新都中心 · 04 VP</small></div><span class="seat-arrow">›</span></div></aside>
+    <aside class="seat seat-right"><div class="seat-card"><span class="seat-arrow">‹</span><div class="seat-copy"><b>Enemy</b><small>未部署 · 03 VP</small></div><img class="avatar" src="assets/master-slot-b.webp" alt="Enemy"></div><div class="seat-card"><span class="seat-arrow">‹</span><div class="seat-copy"><b>Rival</b><small>侦察线 · 02 VP</small></div><img class="avatar" src="assets/master-emiya.webp" alt="Rival"></div></aside>
+
+    <section class="hand-dock" data-od-id="dicethrone-fan-hand"><div class="hand-title">我的手牌 <b>02 / 05 已编成</b></div><div class="hand-card card-1" data-hand-card="skill-moment" role="button" tabindex="0"><img src="assets/skill-moment.webp" alt="技能：瞬间"><span><b>10</b><i>02 M</i></span><button class="inspect" data-card="skill-moment" aria-label="检查技能瞬间">+</button></div><div class="hand-card card-2" data-hand-card="attack-magic-low" role="button" tabindex="0"><img src="assets/attack-magic-low.webp" alt="魔术：低阶"><span><b>12</b><i>02 M</i></span><button class="inspect" data-card="attack-magic-low" aria-label="检查魔术低阶">+</button></div><div class="hand-card card-3 is-selected" data-hand-card="attack-strength-high" role="button" tabindex="0"><img src="assets/attack-strength-high.webp" alt="力量：高阶"><span><b>18</b><i>03 M</i></span><button class="inspect" data-card="attack-strength-high" aria-label="检查力量高阶">+</button></div><div class="hand-card card-4" data-hand-card="skill-luck" role="button" tabindex="0"><img src="assets/skill-luck.webp" alt="技能：幸运"><span><b>08</b><i>01 M</i></span><button class="inspect" data-card="skill-luck" aria-label="检查技能幸运">+</button></div><div class="hand-card card-5" data-hand-card="attack-strength-high" role="button" tabindex="0"><img src="assets/attack-strength-high.webp" alt="力量：高阶"><span><b>18</b><i>03 M</i></span><button class="inspect" data-card="attack-strength-high" aria-label="检查力量高阶">+</button></div></section>
+
+    <footer class="player-hud"><section class="you" data-od-id="you-status"><img class="avatar" src="assets/master-emiya.webp" alt="卫宫士郎"><div class="you-copy"><b>YOU · 卫宫士郎</b><small>Saber · 远坂工房</small><div class="stats"><span>魔力 <b>04</b></span><span>VP <b>06</b></span><span>咒 <b>02</b></span></div></div></section><div class="phase" data-od-id="phase-control"><div class="phase-disc"><div><b>行动</b><small>PHASE 04</small></div></div><button class="next" id="next"><span>已编成 02 张攻击牌</span><b><span>下一阶段</span><i>↗</i></b></button></div></footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="卡牌检查"><div class="inspect-panel"><button class="close" id="close" aria-label="关闭">×</button><img id="inspect-image" src="assets/attack-strength-high.webp" alt="力量：高阶"><div><span style="color:var(--cyan);font-size:10px;letter-spacing:.1em">CARD INSPECTION</span><h2 id="inspect-title">力量：高阶</h2><p id="inspect-copy">基础威力 18，消耗 3 魔力。与另一张攻击牌组合后确认本轮战斗。</p><span style="color:var(--cyan);font-size:10px;letter-spacing:.1em">正式素材 · 已核验</span></div></div></div>
+  <script>
+    const cards = { 'skill-moment': ['assets/skill-moment.webp', '技能：瞬间', '移动后保留一次行动机会。'], 'attack-magic-low': ['assets/attack-magic-low.webp', '魔术：低阶', '基础威力 12，消耗 2 魔力。'], 'attack-strength-high': ['assets/attack-strength-high.webp', '力量：高阶', '基础威力 18，消耗 3 魔力。'], 'skill-luck': ['assets/skill-luck.webp', '技能：幸运', '战斗结算时可重掷一次判定。'] };
+    const overlay = document.querySelector('#overlay');
+    const openCard = id => { const data = cards[id]; if (!data) return; document.querySelector('#inspect-image').src = data[0]; document.querySelector('#inspect-image').alt = data[1]; document.querySelector('#inspect-title').textContent = data[1]; document.querySelector('#inspect-copy').textContent = data[2]; overlay.classList.add('is-open'); };
+    document.querySelectorAll('.inspect').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); openCard(button.dataset.card); }));
+    document.querySelectorAll('[data-hand-card]').forEach(card => card.addEventListener('click', () => card.classList.toggle('is-selected')));
+    document.querySelectorAll('.hotspot').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.hotspot').forEach(item => item.classList.remove('is-active')); button.classList.add('is-active'); document.querySelector('#selected-zone').textContent = button.dataset.zone; showToast(`${button.dataset.zone} · ${button.dataset.name}`); }));
+    document.querySelectorAll('[data-toast]').forEach(button => button.addEventListener('click', () => showToast(button.dataset.toast)));
+    document.querySelector('#toggle-overlay').addEventListener('click', event => { const button = event.currentTarget; const map = document.querySelector('#test-overlay'); const hidden = map.classList.toggle('is-hidden'); button.setAttribute('aria-pressed', String(!hidden)); button.textContent = `测试标记：${hidden ? '关' : '开'}`; });
+    document.querySelector('#next').addEventListener('click', () => { document.querySelector('#next b span').textContent = '等待对手响应'; showToast('攻击已确认 · 等待对手响应'); });
+    document.querySelector('#close').addEventListener('click', () => overlay.classList.remove('is-open'));
+    overlay.addEventListener('click', event => { if (event.target === overlay) overlay.classList.remove('is-open'); });
+    let toastTimer;
+    function showToast(message) { const toast = document.querySelector('#toast'); toast.textContent = message; toast.classList.add('is-open'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('is-open'), 1700); }
+  </script>
+</body>
+</html>

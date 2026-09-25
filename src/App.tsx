@@ -44,6 +44,7 @@ const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'))
 const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 const LazyHomeEntry = React.lazy(() => import('./pages/HomeEntry'));
+const LazyFateDominationDev = React.lazy(() => import('./pages/FateDominationDev'));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
 const EmptyToastViewport: React.FC = () => null;
 
@@ -257,6 +258,31 @@ const AppContent = () => {
                   loadGameMobileEntry={loadDynamicGameMobileEntry}
                 >
                   <Routes>
+                    {/* 独立开发版入口，保留旧地址兼容访问。 */}
+                    <Route
+                      path="/fate-domination-dev/index.html"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <LazyFateDominationDev />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/dev/fate-domination"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <LazyFateDominationDev />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/play/fate-domination/match/:matchId"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <MatchRoom />
+                        </React.Suspense>
+                      )}
+                    />
                     <Route
                       path="/"
                       element={(
