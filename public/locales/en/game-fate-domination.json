@@ -1,0 +1,98 @@
+{
+  "title": "Fate / Domination",
+  "brand": "FATE / DOMINATION",
+  "subtitle": "Fuyuki City · Holy Grail War tabletop",
+  "dev": {
+    "title": "Fate / Domination development verification"
+  },
+  "round": "Round",
+  "phases": {
+    "preparation": "Preparation",
+    "outpost": "Outpost",
+    "action": "Action",
+    "battle": "Battle",
+    "complete": "Complete"
+  },
+  "zones": {
+    "situation": "Situation",
+    "miyamaEvent": "Miyama event",
+    "situationDeck": "Situation deck",
+    "eventDeck": "Event deck",
+    "eventDiscard": "Event discard"
+  },
+  "board": {
+    "sceneLabel": "Fuyuki City tabletop map",
+    "mapAlt": "Fuyuki City map board",
+    "mapTitle": "Fuyuki City",
+    "mapSubtitle": "Magic Workshop · Miyama · Shinto · Recon",
+    "movementCost": "Movement cost",
+    "cost": "Cost",
+    "terrain": "Terrain"
+  },
+  "currentPlayer": "Current player",
+  "resources": {
+    "mana": "Mana",
+    "victoryPoints": "Victory points",
+    "commandSpells": "Command spells"
+  },
+  "identity": {
+    "title": "Identity cards",
+    "subtitle": "Your Master / Servant",
+    "sectionLabel": "Master and Servant selection",
+    "servant": "Servant",
+    "servantFallback": "Servant",
+    "notDeployed": "Not deployed"
+  },
+  "scoreboard": "Players",
+  "players": "players",
+  "actionLog": "Action log",
+  "actionLogEmpty": "No actions yet",
+  "hand": "Attack hand",
+  "handStatus": "Select two cards to confirm",
+  "inspect": "Inspect",
+  "attackZone": "Attack zone",
+  "battlePower": "Total power",
+  "attackPending": "Attack not confirmed",
+  "sourceNote": "Situation effect status",
+  "cardInspection": "Card inspection",
+  "cardTextPending": "This card's effect text is still being verified. This round shows only the real card art and confirmed data.",
+  "close": "Close",
+  "notices": {
+    "preparation": "Preparation phase",
+    "outpost": "Outpost phase",
+    "action": "Action phase",
+    "battle": "Battle phase",
+    "complete": "Demonstration complete"
+  },
+  "commands": {
+    "toOutpost": "Enter outpost",
+    "toAction": "Enter action",
+    "confirmAttack": "Confirm attack",
+    "resolveBattle": "Resolve battle",
+    "actionControls": "Action controls",
+    "battleControls": "Battle resolution controls",
+    "moveTo": "Move to",
+    "playSkill": "Play skill",
+    "passAction": "End action",
+    "resolveLocation": "Resolve location"
+  },
+  "error": {
+    "unknownPlayer": "Unknown player",
+    "gameOver": "The game is over",
+    "unknownMaster": "Master asset is not registered",
+    "unknownServant": "Servant asset is not registered",
+    "wrongPhase": "This action is not available in the current phase",
+    "notYourTurn": "It is not your turn",
+    "alreadyDeployed": "You have already deployed this round",
+    "unknownLocation": "Unknown location",
+    "locationFull": "Location is full",
+    "staleCard": "The card is no longer in your hand",
+    "cardAlreadySelected": "This card is already selected",
+    "tooManyAttackCards": "Select no more than two attack cards",
+    "notEnoughMana": "Not enough mana",
+    "needExactlyTwoCards": "Select exactly two attack cards",
+    "cardNotVisible": "This card is not currently visible",
+    "deploymentRequired": "Deploy your Master first",
+    "actionMustBeConfirmed": "Confirm the attack first"
+  }
+}

@@ -204,6 +204,11 @@
       "title": "Summoner Wars",
       "description": "Summoner Wars is a fast-paced, tactical 2-player game. Players take on the role of Summoners, leading their faction to conquer the war-torn world of Itharia through the power of mysterious Summoning Stones.",
       "players": "2 Players"
+    },
+    "fate-domination": {
+      "title": "Fate / Domination",
+      "description": "A Holy Grail War tabletop prototype set in Fuyuki City.",
+      "players": "3-7 Players"
     }
   },
   "qidahenBoard": {

@@ -204,6 +204,11 @@
       "title": "召唤师战争",
       "description": "召唤师战争是一款快速紧凑的 2 人游戏。玩家扮演召唤者，通过控制神秘召唤石的力量，率领各自种族征服饱受战争创伤的 Itharia 星球。",
       "players": "2 人"
+    },
+    "fate-domination": {
+      "title": "命运支配",
+      "description": "以冬木市为舞台的圣杯战争桌游牌桌原型。",
+      "players": "3-7 人"
     }
   },
   "qidahenBoard": {
