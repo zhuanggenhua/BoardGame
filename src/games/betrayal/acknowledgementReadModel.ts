@@ -72,6 +72,10 @@ export function resolvePendingEventRollResolutionRequiredPlayerIds(
     if (resolution.requiresAcknowledgement === false) {
         return [resolution.playerId];
     }
+    const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    if (configuredPlayerIds.length > 0) {
+        return Array.from(new Set(configuredPlayerIds));
+    }
     return resolveHumanAcknowledgementPlayerIds(core, resolution.playerId);
 }
 
@@ -153,6 +157,10 @@ export function resolveRecentRollRequiredPlayerIds(
     core: PlayerRoster,
     recentRoll: BetrayalRecentRollState,
 ): string[] {
+    const configuredPlayerIds = recentRoll.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    if (configuredPlayerIds.length > 0) {
+        return Array.from(new Set(configuredPlayerIds));
+    }
     const publicJudgementKinds: BetrayalRecentRollState['kind'][] = [
         'eventTraitCheck',
         'eventDiceRoll',
@@ -162,9 +170,8 @@ export function resolveRecentRollRequiredPlayerIds(
     if (publicJudgementKinds.includes(recentRoll.kind)) {
         return resolveHumanAcknowledgementPlayerIds(core, recentRoll.playerId);
     }
-    const configuredPlayerIds = recentRoll.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
     if (configuredPlayerIds.length > 0) {
-        return configuredPlayerIds;
+        return Array.from(new Set(configuredPlayerIds));
     }
     return [recentRoll.playerId];
 }

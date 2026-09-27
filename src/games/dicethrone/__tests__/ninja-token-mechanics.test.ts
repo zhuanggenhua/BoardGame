@@ -375,7 +375,7 @@ describe('DiceThrone Ninja Token 机制', () => {
         expect(resolveResult.events.some(event => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
     });
 
-    it('基础死亡盛放应先结算 5 颗技能骰，再恢复到防御流程', () => {
+    it('基础死亡盛放应按卡图结算伤害，并在出现面具时将攻击改为不可防御', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
         state.core.pendingAttack = {
@@ -412,21 +412,11 @@ describe('DiceThrone Ninja Token 机制', () => {
 
         expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(5);
         expect(next.pendingAttack?.bonusDamage).toBe(5);
-        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
         expect(settled.finalState.sys.interaction.current).toBeUndefined();
         expect(settled.finalState.sys.phase).toBe('offensiveRoll');
-        expect(next.pendingAttack?.isDefendable).toBe(true);
-
-        const advanced = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
-        expect(advanced.success).toBe(true);
-        expect(advanced.finalState.sys.phase).toBe('offensiveRoll');
-        const tokenPrompt = getSimpleChoicePrompt(advanced.finalState, 'death-blossom');
-        const skipOption = tokenPrompt.options.find(option => option.value?.customId === 'skip');
-        expect(skipOption).toBeTruthy();
-
-        const skipped = runner.dispatch('SYS_INTERACTION_RESPOND', { playerId: '0', optionId: skipOption!.id });
-        expect(skipped.success).toBe(true);
-        expect(skipped.finalState.sys.phase).toBe('defensiveRoll');
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(settled.events.some(event => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
     });
 
     it('死亡盛放 II 在奖励骰收口出面具后，应先把当前攻击改成不可防御', () => {

@@ -29,6 +29,7 @@ const ATTACK_BAR_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-read-attack-bar
 const DEPLOY_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-deploy-select-wolf-prepared-card.png`;
 const DEPLOY_TARGET_ZONE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-deploy-target-zone-highlight.png`;
 const WOLF_SUMMONED_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-wolf-summoned-not-ready.png`;
+const ARMOR_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17A-armor-reading-wolf-defense.png`;
 const ROUSE_SELECT_SPELL_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-rouse-select-spell-prepared-card.png`;
 const ROUSE_TARGET_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-rouse-target-wolf-highlight.png`;
 const PASS_DEPLOYMENT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-pass-your-deployment-wolf-ready.png`;
@@ -125,6 +126,7 @@ const TUTORIAL_FLOW_SCREENSHOT_PATHS = [
     DEPLOY_SELECT_WOLF_SCREENSHOT_PATH,
     DEPLOY_TARGET_ZONE_SCREENSHOT_PATH,
     WOLF_SUMMONED_SCREENSHOT_PATH,
+    ARMOR_READING_SCREENSHOT_PATH,
     ROUSE_SELECT_SPELL_SCREENSHOT_PATH,
     ROUSE_TARGET_WOLF_SCREENSHOT_PATH,
     PASS_DEPLOYMENT_SCREENSHOT_PATH,
@@ -1590,6 +1592,11 @@ test.describe('Mage Wars tutorial', () => {
         await screenshotTutorialStep(page, 'wolf-summoned', WOLF_SUMMONED_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
+        await waitForTutorialStep(page, 'armor-reading');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('护甲');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('穿刺+N');
+        await screenshotTutorialStep(page, 'armor-reading', ARMOR_READING_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
         await waitForTutorialStep(page, 'rouse-select-spell');
         await screenshotTutorialStep(page, 'rouse-select-spell', ROUSE_SELECT_SPELL_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-prepared-card-3403');

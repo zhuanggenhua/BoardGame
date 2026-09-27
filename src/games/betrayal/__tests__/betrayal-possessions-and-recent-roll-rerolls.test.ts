@@ -85,7 +85,7 @@ it('物品发现默认只由获得者确认，不按未来能力扩大确认范�
         })).toEqual(['0']);
     });
 
-it('事件结果确认只统计真人，不能被兔脚重投前遗留名单覆盖', () => {
+it('事件结果确认只统计真人，确认快照不会把 AI 重新纳入名单', () => {
         const core = createStartedFirstScenarioCore();
         core.seatControllers = {
             '0': { type: 'human' },
@@ -97,7 +97,7 @@ it('事件结果确认只统计真人，不能被兔脚重投前遗留名单覆�
             playerId: '0',
             sourceTitle: '墙中低语',
             effect: { mode: 'trait' as const, trait: 'knowledge' as const, amount: -1 },
-            requiredPlayerIds: [...core.playerIds],
+            requiredPlayerIds: ['0', '2'],
             acknowledgedPlayerIds: [],
             requiresAcknowledgement: true,
         };

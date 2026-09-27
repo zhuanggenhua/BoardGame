@@ -79,6 +79,7 @@ describe('DiceBoxPhysicsSource', () => {
             render(
                 <DiceBoxPhysicsSource
                     dice={[{ id: 7, value: 6, isKept: false }]}
+                    dieType="d12"
                     motion={rollMotion('layout-roll')}
                 />,
             );
@@ -94,6 +95,10 @@ describe('DiceBoxPhysicsSource', () => {
             await waitFor(() => {
                 expect(createEngineMock).toHaveBeenCalledTimes(1);
             });
+            expect(createEngineMock).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.objectContaining({ dieType: 'd12' }),
+            );
             await waitFor(() => {
                 expect(engineMock.rollToValues).toHaveBeenCalledWith([6]);
             });

@@ -1781,6 +1781,24 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         height: 100%;
                         min-height: 0;
                     }
+                    /* 壳内内容必须继续使用 1920×1080 设计坐标，不能被真实手机 vw/vh 二次缩放。 */
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live {
+                        width: 100%;
+                        height: 100%;
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone,
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                        width: min(1320px, calc(var(--fr-board-shell-reference-width) - 520px));
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                        width: min(1520px, calc(var(--fr-board-shell-reference-width) - 260px));
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--opening .fr-zone-empty--silent {
+                        width: min(780px, calc(var(--fr-board-shell-reference-width) * 0.52));
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-action-zone {
+                        right: 44px;
+                    }
                 }
                 .fr-board--minimal-live {
                     width: calc(100vw - 28px);

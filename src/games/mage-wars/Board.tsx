@@ -85,6 +85,7 @@ import {
     getMageWarsSpellCardPreviewRef,
 } from './ui/cardAtlas';
 import { mageWarsFxRegistry } from './ui/fxSetup';
+import { MAGE_WARS_FX_TIMING } from './ui/fxTuning';
 import {
     mageWarsObjectDamageKey,
     mageWarsPlayerDamageKey,
@@ -1537,16 +1538,16 @@ function ZoneFieldCard({
                     y: `${meleeLungeY}%`,
                     scale: 1.05,
                 }, {
-                    duration: 0.16,
+                    duration: MAGE_WARS_FX_TIMING.meleeLungeOutMs / 1000,
                     ease: [0.2, 0, 0.3, 1],
                 });
-                await new Promise((resolve) => window.setTimeout(resolve, 80));
+                await new Promise((resolve) => window.setTimeout(resolve, MAGE_WARS_FX_TIMING.meleeLungePauseMs));
                 await meleeAnimate(meleeScope.current, {
                     x: '0%',
                     y: '0%',
                     scale: 1,
                 }, {
-                    duration: 0.16,
+                    duration: MAGE_WARS_FX_TIMING.meleeLungeReturnMs / 1000,
                     ease: [0, 0, 0.2, 1],
                 });
             } finally {

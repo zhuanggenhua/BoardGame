@@ -4709,6 +4709,60 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         expect(solo.finalState.core.treasureDeck).toEqual(['munchkin_treasure_wishing_ring']);
     });
 
+    it('扒手识别翘课天才提供的临时同名，且别名过回合后失效', () => {
+        const aliasedMinion = makeMinion('aliased-minion', 'munchkin_mages_blaster_master', '0', 2);
+        aliasedMinion.metadata = {
+            teensAbeFrohmanNames: ['munchkin_thieves_pickpocket'],
+            teensAbeFrohmanTurn: 0,
+        };
+        const state = makeState({
+            turnNumber: 0,
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [aliasedMinion],
+            })],
+            treasureDeck: ['munchkin_treasure_wishing_ring', 'munchkin_treasure_spiky_boots'],
+            nextUid: 1940,
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [makeCard('pickpocket-alias', 'munchkin_thieves_pickpocket', 'minion', '0')],
+            minionsPlayed: 0,
+            minionLimit: 1,
+        };
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'pickpocket-alias', baseIndex: 0 },
+        } as const, fixedRandom);
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MUNCHKIN_TREASURES_DRAWN)).toBe(true);
+
+        const expired = {
+            ...state,
+            turnNumber: 1,
+            players: {
+                ...state.players,
+                '0': {
+                    ...state.players['0'],
+                    hand: [makeCard('pickpocket-expired', 'munchkin_thieves_pickpocket', 'minion', '0')],
+                },
+            },
+            bases: [makeBase({ defId: 'base_the_mines', minions: [aliasedMinion] })],
+            treasureDeck: ['munchkin_treasure_wishing_ring'],
+        };
+        const expiredResult = runCommand(makeMatchState(expired), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'pickpocket-expired', baseIndex: 0 },
+        } as const, fixedRandom);
+
+        expect(expiredResult.success).toBe(true);
+        expect(expiredResult.events.some(event => event.type === SU_EVENTS.MUNCHKIN_TREASURES_DRAWN)).toBe(false);
+    });
+
     it('猫咪窃贼展示任意数量手牌宝藏并按数量给自己 +1 指示物，也允许空选', () => {
         const state = makeState({
             bases: [makeBase({ defId: 'base_the_mines' })],

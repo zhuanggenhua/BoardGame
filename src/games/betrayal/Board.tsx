@@ -687,12 +687,31 @@ export default function BetrayalBoard({
   const [latestDiscoveryQueue, setLatestDiscoveryQueue] = React.useState<
     LatestDiscoveryDisplayEntry[]
   >([]);
+  const [optimisticCardResolutionAcknowledgement, setOptimisticCardResolutionAcknowledgement] =
+    React.useState<{ resolutionId: string; playerId: string } | null>(null);
   const [
     dismissedHauntRevealDiscoveryKey,
     setDismissedHauntRevealDiscoveryKey,
   ] = React.useState<string | null>(null);
   const [dismissedLatestDiscoveryKeys, setDismissedLatestDiscoveryKeys] =
     React.useState<ReadonlySet<string>>(() => new Set());
+  React.useEffect(() => {
+    const optimisticAcknowledgement = optimisticCardResolutionAcknowledgement;
+    if (!optimisticAcknowledgement) {
+      return;
+    }
+    const pendingResolution = baseCore.pendingCardResolutionQueue?.find(
+      (resolution) => resolution.id === optimisticAcknowledgement.resolutionId,
+    );
+    if (
+      !pendingResolution ||
+      pendingResolution.acknowledgedPlayerIds?.includes(
+        optimisticAcknowledgement.playerId,
+      )
+    ) {
+      setOptimisticCardResolutionAcknowledgement(null);
+    }
+  }, [baseCore.pendingCardResolutionQueue, optimisticCardResolutionAcknowledgement]);
   const autoOpenedHauntScenarioReaderKeysRef = React.useRef<Set<string>>(
     new Set(),
   );
@@ -3299,6 +3318,7 @@ export default function BetrayalBoard({
         latestDiscoverySearchRevealIndex,
         eventRollConfirmation,
         isRecentRollReadable: isLatestDiscoveryRecentRollReadable,
+        optimisticCardResolutionAcknowledgement,
         t,
       }),
     [
@@ -3311,6 +3331,7 @@ export default function BetrayalBoard({
       inventoryActionPlayerId,
       latestDiscoverySearchRevealIndex,
       latestDiscoverySelection,
+      optimisticCardResolutionAcknowledgement,
       pendingEventChoice,
       previewState.dismissedRecentRollId,
       scenarioReaderOpen,
@@ -3345,6 +3366,7 @@ export default function BetrayalBoard({
     searchFinalEffectText: latestDiscoverySearchFinalEffectText,
     canAdvanceSearch: canAdvanceLatestDiscoverySearch,
     canCurrentViewerAcknowledgeCardResolution,
+    isStandaloneItemGain: latestDiscoveryIsStandaloneItemGain,
     pendingPossessionCard: latestDiscoveryPendingPossessionCard,
     displayedKindLabel: latestDiscoveryDisplayedKindLabel,
     displayedTitle: latestDiscoveryDisplayedTitle,
@@ -3654,9 +3676,15 @@ export default function BetrayalBoard({
         return;
       }
       const acknowledge = () =>
-        dispatch(BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, {
+        dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, {
           resolutionId: latestDiscoveryPendingCardResolution.id,
         });
+      if (!latestDiscoveryIsStandaloneItemGain) {
+        setOptimisticCardResolutionAcknowledgement({
+          resolutionId: latestDiscoveryPendingCardResolution.id,
+          playerId: viewerPlayerId,
+        });
+      }
       acknowledge();
       return;
     }
@@ -3671,8 +3699,41 @@ export default function BetrayalBoard({
     isVisualBusy,
     canAdvanceLatestDiscoverySearch,
     canCurrentViewerAcknowledgeCardResolution,
+    latestDiscoveryIsStandaloneItemGain,
     latestDiscoveryPendingCardResolution,
     latestDiscoverySearchSequence.length,
+    viewerPlayerId,
+  ]);
+  React.useEffect(() => {
+    const pendingResolution = latestDiscoveryPendingCardResolution;
+    if (
+      !pendingResolution ||
+      !latestDiscoveryIsStandaloneItemGain ||
+      pendingResolution.acknowledgedPlayerIds?.includes(viewerPlayerId)
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const currentResolution = latestDiscoveryPendingCardResolution;
+      if (
+        currentResolution?.id !== pendingResolution?.id ||
+        !canCurrentViewerAcknowledgeCardResolution ||
+        isVisualBusy
+      ) {
+        return;
+      }
+      dispatch(BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, {
+        resolutionId: currentResolution.id,
+      });
+    }, BETRAYAL_DISCOVERY_ITEM_AUTO_ADVANCE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [
+    canCurrentViewerAcknowledgeCardResolution,
+    dispatch,
+    isVisualBusy,
+    latestDiscoveryPendingCardResolution,
+    latestDiscoveryIsStandaloneItemGain,
+    viewerPlayerId,
   ]);
   React.useEffect(() => {
     const pendingResolution = latestDiscoveryPendingCardResolution;
@@ -3723,41 +3784,6 @@ export default function BetrayalBoard({
     handleDismissLatestDiscovery,
     latestDiscoveryEntry?.sourceKey,
     latestDiscoveryPendingCardResolution,
-  ]);
-  React.useEffect(() => {
-    const pendingResolution = latestDiscoveryPendingCardResolution;
-    if (
-      !pendingResolution
-      || latestDiscoveryPendingPossessionCard?.kind !== "item"
-      || pendingResolution.stepKind !== "drawn-card"
-      || pendingResolution.total !== 1
-      || pendingResolution.requiredPlayerIds?.length !== 1
-      || pendingResolution.playerId !== viewerPlayerId
-      || pendingResolution.acknowledgedPlayerIds?.includes(viewerPlayerId)
-    ) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      const currentResolution = latestDiscoveryPendingCardResolution;
-      if (
-        currentResolution?.id !== pendingResolution.id
-        || !canCurrentViewerAcknowledgeCardResolution
-        || isVisualBusy
-      ) {
-        return;
-      }
-      dispatch(BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, {
-        resolutionId: pendingResolution.id,
-      });
-    }, BETRAYAL_DISCOVERY_ITEM_AUTO_ADVANCE_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [
-    canCurrentViewerAcknowledgeCardResolution,
-    dispatch,
-    isVisualBusy,
-    latestDiscoveryPendingCardResolution,
-    latestDiscoveryPendingPossessionCard?.kind,
-    viewerPlayerId,
   ]);
   const handleDismissHauntRevealCue = () => {
     if (!hauntRevealDiscoveryKey) {

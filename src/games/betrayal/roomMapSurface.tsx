@@ -524,16 +524,6 @@ export function BetrayalRoomMapSurface({
             >
               <button
                 type="button"
-                onPointerDown={(event) => {
-                  if (canSelectRoom) {
-                    event.stopPropagation();
-                  }
-                }}
-                onPointerUp={(event) => {
-                  if (canSelectRoom) {
-                    event.stopPropagation();
-                  }
-                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   if (canSelectEventRoom) {
@@ -574,9 +564,11 @@ export function BetrayalRoomMapSurface({
                   }
                   if (canMoveToRoom) {
                     onMoveToRoom(room.id);
+                    return;
                   }
+                  onOpenRoomPreview(room.id);
                 }}
-                disabled={!canSelectRoom}
+                tabIndex={0}
                 data-testid={`betrayal-room-${room.id}`}
                 data-room-state={room.state}
                 data-room-visual-id={room.visualId}

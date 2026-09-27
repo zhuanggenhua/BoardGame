@@ -273,6 +273,26 @@ describe('qidahen tutorial flow', () => {
         expect(directResultSteps.some((step) => step.highlightTarget === 'qidahen-player-float')).toBe(true);
     });
 
+    it('教程卡避让正式承接区，不遮支付面板、玩家条和右侧动作区', () => {
+        const allSteps = Object.values(QIDAHEN_TUTORIALS.tutorials)
+            .flatMap((tutorial) => tutorial.manifest.steps);
+        const hasSelector = (step: (typeof allSteps)[number], selector: string) =>
+            step.avoidOverlapSelectors?.includes(selector) ?? false;
+
+        expect(allSteps.filter((step) => step.id === 'pay-cards')
+            .every((step) => hasSelector(step, '[data-testid="qidahen-action-payment-panel"]'))).toBe(true);
+        expect(allSteps.filter((step) => step.highlightTarget === 'qidahen-player-float')
+            .every((step) => hasSelector(step, '[data-testid="qidahen-actions-zone"]'))).toBe(true);
+        expect(allSteps.find((step) => step.id === 'shanhaiguan'))
+            .toEqual(expect.objectContaining({
+                avoidOverlapSelectors: expect.arrayContaining([
+                    '[data-testid="qidahen-actions-zone"]',
+                    '[data-testid="qidahen-player-float"]',
+                    '[data-testid="qidahen-hand-zone"]',
+                ]),
+            }));
+    });
+
     it('基础教程从正式开局进入轮盘推进，读取自动落点结算，再示范一次手牌行动', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();

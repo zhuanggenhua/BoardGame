@@ -41,15 +41,6 @@
     min-height: 44px !important;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-turn-banner'] {
-    font-size: 12px !important;
-    line-height: 16px !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-turn-banner'] > div:last-child {
-    font-size: 11px !important;
-}
-
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-bottom-dock'] {
     bottom: 0 !important;
 }

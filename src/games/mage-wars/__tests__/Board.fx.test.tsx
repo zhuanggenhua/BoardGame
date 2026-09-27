@@ -1334,7 +1334,11 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
-    it('keeps melee dice results visible after the strike has already completed', () => {
+    it.each([
+        ['melee', { row: 1, col: 0 }, 12, 13],
+        ['ranged', { row: 1, col: 0 }, 1, 0],
+        ['ranged', { row: 1, col: 1 }, 9, 9],
+    ] as const)('keeps %s dice results for 3 seconds and preserves the raw face', (rangeKind, source, rawEffectDieResult, effectDieResult) => {
         vi.useFakeTimers();
         const onImpact = vi.fn();
         const onComplete = vi.fn();
@@ -1343,16 +1347,17 @@ describe('MageWarsBoard FX wiring', () => {
             cue: 'mage-wars.attack.impact',
             ctx: { cell: { row: 1, col: 1 }, intensity: 'strong' },
             params: {
-                source: { row: 1, col: 0 },
-                rangeKind: 'melee',
+                source,
+                rangeKind,
                 damageAmount: 4,
                 diceResults: [2, 5],
-                effectDieResult: 9,
+                rawEffectDieResult,
+                effectDieResult,
             },
         };
 
         try {
-            renderFxRenderer(
+            const view = renderFxRenderer(
                 <AttackImpactRenderer
                     event={event}
                     getCellPosition={getCellPosition}
@@ -1364,22 +1369,53 @@ describe('MageWarsBoard FX wiring', () => {
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
             expect(attackDice.getAttribute('data-visible-duration-ms')).toBe(String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs));
             const effectDie = screen.getByTestId('mage-wars-fx-effect-die-face');
-            expect(effectDie).toHaveAttribute('aria-label', '效果骰 9');
+            expect(effectDie).toHaveAttribute('aria-label', `效果骰 ${rawEffectDieResult}`);
             expect(effectDie).toHaveAttribute('data-visual-role', 'effect-die-result');
             expect(effectDie).toHaveAttribute('data-die-kind', 'd12');
-            expect(effectDie).toHaveAttribute('data-asset-status', 'tts-native-not-embedded');
-            expect(effectDie.querySelector('img')).toBeNull();
+            expect(effectDie).toHaveAttribute('data-asset-status', 'functional-only');
+            expect(effectDie).toHaveAttribute('data-model-source', 'tts-native:Die_12:f9cb19');
+            expect(effectDie).toHaveAttribute('data-rendering-mode', 'css-native-mesh-faces');
+            expect(effectDie).toHaveClass('h-[clamp(3rem,4vw,5rem)]', 'w-[clamp(3rem,4vw,5rem)]');
+            const effectDieBody = effectDie.querySelector('[data-die-renderer="css-d12"]');
+            expect(effectDieBody).toBeTruthy();
+            expect(effectDieBody?.querySelectorAll('img')).toHaveLength(12);
+            expect(effectDieBody?.querySelectorAll('[data-d12-face-value]')).toHaveLength(12);
+            expect(Array.from(effectDieBody?.querySelectorAll('[data-d12-face-value]') ?? []).map((face) => face.getAttribute('data-d12-face-value')).sort((a, b) => Number(a) - Number(b))).toEqual(
+                Array.from({ length: 12 }, (_, index) => String(index + 1)),
+            );
+            expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-face-value', String(rawEffectDieResult));
+            expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-tilt', 'none');
+            expect(effectDieBody).toHaveAttribute('data-roll-duration-ms', String(MAGE_WARS_FX_TIMING.diceResultRollMs));
+            expect(attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"][data-roll-duration-ms]').length).toBe(2);
+            expect(attackDice).toHaveAttribute('data-visible-duration-ms', '3000');
             expect(attackDice.querySelector('[data-token-kind]')).toBeNull();
+            // jsdom exposes WebkitAnimation but no AnimationEvent, so React listens to the prefixed event.
+            fireEvent(effectDieBody!, new Event('webkitAnimationEnd', { bubbles: true }));
+            if (rawEffectDieResult !== effectDieResult) {
+                expect(screen.getByTestId('mage-wars-effect-die-modifier')).toHaveTextContent(
+                    rawEffectDieResult === 12 ? '12 + 1 = 13' : '1 − 1 = 0',
+                );
+            } else {
+                expect(screen.queryByTestId('mage-wars-effect-die-modifier')).toBeNull();
+            }
 
             act(() => {
-                advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.meleeCompleteMs);
+                advanceSharedFxClockDelay(2_900);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
             expect(onComplete).not.toHaveBeenCalled();
             expect(screen.getByTestId('mage-wars-fx-attack-dice')).toBeTruthy();
 
+            // FxLayer supplies new callback closures whenever other effects change.
+            view.rerender(
+                <div style={{ position: 'relative', width: 800, height: 600 }}>
+                    <AttackImpactRenderer event={event} getCellPosition={getCellPosition}
+                        onImpact={() => onImpact()} onComplete={() => onComplete()} />
+                </div>,
+            );
+
             act(() => {
-                advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.meleeResultVisibleMs - MAGE_WARS_FX_TIMING.meleeCompleteMs);
+                advanceSharedFxClockDelay(100);
             });
             expect(onComplete).toHaveBeenCalledTimes(1);
         } finally {

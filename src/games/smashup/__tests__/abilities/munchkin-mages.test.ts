@@ -305,6 +305,35 @@ describe('Munchkin 法师派系能力', () => {
         }));
     });
 
+    it('魔杖天才可以跳过，跳过后不弃牌也不进入额外出牌模式', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('cost', 'test_action', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [makeMinion('wand', 'munchkin_mages_wand_whiz', '0', 3)])],
+        });
+        const ability = invoke(core, 'munchkin_mages_wand_whiz', 'onPlay', 'wand');
+        const prompt = getSimpleChoicePrompt(ability.matchState!, 'munchkin_mages_wand_whiz_discard');
+        expect(prompt.options.some(option => option.value?.skip === true)).toBe(true);
+
+        const skipped = respondToPromptOption(
+            ability.matchState!,
+            option => option.value?.skip === true,
+            '跳过魔杖天才',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(skipped.success).toBe(true);
+        expect(skipped.finalState.core.players['0'].hand).toEqual([
+            expect.objectContaining({ uid: 'cost', defId: 'test_action' }),
+        ]);
+        expect(skipped.events.some((event: any) => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(skipped.events.some((event: any) => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+        expect(skipped.finalState.interaction).toBeUndefined();
+    });
+
     it('魅力控制怪物到回合结束，并恢复为公共怪物', () => {
         const core = makeState({
             players: {

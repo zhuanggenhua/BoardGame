@@ -734,81 +734,6 @@ const formatQidahenCandidateRegionSummary = (regionNames: string[]): string => {
     return `${uniqueNames.slice(0, 4).join('、')} 等 ${uniqueNames.length} 处`;
 };
 
-const _buildQidahenPrimaryStageHeadline = (
-    core: QidahenCore,
-    primaryStageMode: QidahenPrimaryStageMode | null,
-    selectedAction: QidahenActionChoice | null,
-): string => {
-    if (primaryStageMode === 'wheel') {
-        if (core.wheelActionUsed) {
-            return '轮盘已完成';
-        }
-        return '轮盘落点行动';
-    }
-    if (primaryStageMode === 'faction') {
-        if (core.factionActionUsed) {
-            return '行动已完成';
-        }
-        return selectedAction ? selectedAction.label : '手牌行动';
-    }
-    return '等待中';
-};
-
-const _buildQidahenPrimaryStageHint = (
-    core: QidahenCore,
-    primaryStageMode: QidahenPrimaryStageMode | null,
-    selectedAction: QidahenActionChoice | null,
-): string => {
-    if (primaryStageMode === 'wheel') {
-        return core.wheelActionUsed
-            ? '等待结算'
-            : '选择轮盘格';
-    }
-    if (primaryStageMode === 'faction') {
-        if (!selectedAction) {
-            return '选择手牌行动';
-        }
-        if (selectedAction.id === 'upgrade-armament') {
-            return '选军备牌升级';
-        }
-        return '选择行动目标';
-    }
-    return '等待中';
-};
-
-const buildQidahenPrimaryActionEntryText = (
-    core: QidahenCore,
-    selectedAction: QidahenActionChoice | null,
-): string => {
-    if (!selectedAction) {
-        return '选择手牌行动';
-    }
-    const currentFactionId = getCurrentFactionId(core);
-    const directHandActionIds = getQidahenDirectHandActionIdsForFaction(core, currentFactionId);
-    if (core.factionActionUsed) {
-        return core.wheelActionUsed
-            ? '等待结算'
-            : '选择轮盘格';
-    }
-    if (directHandActionIds.has(selectedAction.id)) {
-        return '打出手牌';
-    }
-    switch (selectedAction.id) {
-        case 'raid':
-        case 'marriage-subjugation':
-        case 'grant-pardon':
-        case 'drive-tiger':
-        case 'khan-edict':
-        case 'recruit':
-        case 'ma-shi-trade':
-            return '选择行动目标';
-        case 'upgrade-armament':
-            return '选军备牌升级';
-        default:
-            return selectedAction ? selectedAction.label : '选择手牌行动';
-    }
-};
-
 const isQidahenGaoDiTargetSelectionActive = (
     selection: QidahenCore['gaoDiDispatchSelection'] | null | undefined,
 ): boolean => Boolean(selection?.selectedCardId);
@@ -846,16 +771,6 @@ const getQidahenForegroundActionChoice = (
     }
     return null;
 };
-
-const formatQidahenVisibleTurnLabel = (turnLabel: string): string => (
-    turnLabel
-        .replace('势力行动', '行动窗口')
-        .replace('待结算', '处理中')
-);
-
-const formatQidahenTutorialWheelTurnLabel = (turnLabel: string): string => (
-    turnLabel.replace(/ · [^·]+$/, ' · 轮盘推进')
-);
 
 const normalizeQidahenBattleRollSummary = (summary?: string | null): string | null => {
     if (!summary) {
@@ -1639,6 +1554,7 @@ const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => {
         <div
             className="pointer-events-auto absolute left-[740px] top-[16px] z-40 flex w-[720px] gap-2"
             data-testid="qidahen-player-float"
+            data-tutorial-id="qidahen-player-float"
             data-ui-anchor="top-right"
             style={{
                 left: 'calc(740px + var(--qidahen-mobile-edge-pull, 0px))',
@@ -3667,6 +3583,7 @@ const ChronologyZone: React.FC<{
     <div
         className="pointer-events-auto absolute left-[80px] top-[542px] z-20"
         data-testid="qidahen-chronology-zone"
+        data-tutorial-id="qidahen-chronology-zone"
         data-ui-anchor="left-middle"
         style={{ top: 'var(--qidahen-mobile-chronology-top, 542px)' }}
     >
@@ -3778,67 +3695,6 @@ const KoreaZone: React.FC<{
                 tone="red"
                 testId="qidahen-korea-discard-pile"
             />
-        </div>
-    );
-};
-
-const TopPromptBanner: React.FC<{
-    title: string;
-    badgeLabel: string;
-    hint?: string | null;
-    tone: 'wheel' | 'faction';
-    testId: string;
-}> = ({
-    title,
-    badgeLabel,
-    hint,
-    tone,
-    testId,
-}) => {
-    const isWheel = tone === 'wheel';
-    const width = 256;
-    const left = (STAGE_WIDTH - width) / 2;
-
-    return (
-        <div
-            className="pointer-events-none absolute z-50 border px-2.5 py-1.5"
-            data-testid={testId}
-            style={{
-                left,
-                top: `calc(${MAP_SELECTION_BANNER_TOP}px + var(--qidahen-mobile-top-inset, 0px))`,
-                width,
-                borderColor: isWheel ? '#5fb772' : UI_STYLE.oldGold,
-                background: isWheel ? 'rgba(225, 235, 190, 0.68)' : UI_SURFACE.mapOpenPanelSelected,
-                color: UI_STYLE.ink,
-                boxShadow: UI_SURFACE.mapOpenPanelShadow,
-                borderRadius: 10,
-            }}
-        >
-            <div
-                className="inline-flex items-center border px-1.5 py-0.5 text-[8px] font-black tracking-[0.1em]"
-                style={{
-                    borderColor: isWheel ? '#a7e6b4' : '#f6d5a8',
-                    color: UI_STYLE.ink,
-                    background: isWheel ? 'rgba(126, 166, 93, 0.2)' : 'rgba(109,74,23,0.18)',
-                }}
-            >
-                {badgeLabel}
-            </div>
-            <div
-                className="mt-0.5 text-[12px] font-black leading-4"
-                data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-title' : undefined}
-            >
-                {title}
-            </div>
-            {hint ? (
-                <div
-                    className="mt-0.5 text-[9px] font-black leading-3"
-                    data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-hint' : undefined}
-                    style={{ color: UI_STYLE.bronze }}
-                >
-                    {hint}
-                </div>
-            ) : null}
         </div>
     );
 };
@@ -4017,7 +3873,7 @@ const ActionsZone: React.FC<{
         || pendingTargetAction != null
         || postBattleSelection != null;
     const engagedActionId = core.confirmedActionId;
-    const showWheelNextStepBanner = !pendingScenarioChoices
+    const wheelMoveChoiceSurfaceActive = !pendingScenarioChoices
         && !tutorialInfoStepActive
         && primaryStageMode === 'wheel'
         && !core.wheelActionUsed
@@ -4025,7 +3881,7 @@ const ActionsZone: React.FC<{
         && !wheelStageActiveSelection
         && core.wheelMoveChoices.length > 0;
     const suppressPassiveActionContext = actionPaymentPreviewVisible
-        || showWheelNextStepBanner
+        || wheelMoveChoiceSurfaceActive
         || factionStageActiveSelection
         || wheelStageActiveSelection
         || wheelDispatchSelection != null
@@ -4033,12 +3889,6 @@ const ActionsZone: React.FC<{
         || postBattleSelection != null;
     const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
     const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';
-    const visibleTurnLabel = isTutorialActive
-        && primaryStageMode === 'wheel'
-        && !core.wheelActionUsed
-        && !core.factionActionUsed
-        ? formatQidahenTutorialWheelTurnLabel(core.turnLabel)
-        : core.turnLabel;
     const directHandActionIds = getQidahenDirectHandActionIdsForFaction(core, getCurrentFactionId(core));
     const visibleActionChoices = core.actionChoices.filter((action) => !directHandActionIds.has(action.id));
     const seasonSummaryLines = tutorialHighlightsSeasonSummary
@@ -4086,44 +3936,6 @@ const ActionsZone: React.FC<{
                 height: ACTIONS_DOCK_HEIGHT,
             }}
         >
-            <div
-                className="mb-1.5 w-fit shrink-0 border px-2 py-1 text-[10px] font-black leading-3"
-                data-testid="qidahen-turn-banner"
-                data-tutorial-id="qidahen-turn-banner"
-                style={{ borderColor: 'rgba(49,35,21,0.42)', background: 'rgba(255,246,220,0.88)', color: UI_STYLE.ink, boxShadow: '0 2px 7px rgba(56,35,15,0.08)', borderRadius: 9 }}
-            >
-                {isTutorialActive ? (
-                    <div className="mb-0.5 text-[9px] font-black tracking-[0.06em]" data-testid="qidahen-turn-year" style={{ color: UI_STYLE.bronze }}>
-                        {core.currentYear}
-                    </div>
-                ) : null}
-                <div>{formatQidahenVisibleTurnLabel(visibleTurnLabel)}</div>
-                {!isTutorialActive ? (
-                    <div className="mt-0.5 text-[9px]" data-testid="qidahen-turn-status" style={{ color: UI_STYLE.bronze }}>
-                        {t('board.actions.turnStatus', {
-                            year: core.currentYear,
-                            wheelStatus: core.wheelActionUsed
-                                ? t('board.actions.status.used', { defaultValue: '已用' })
-                                : t('board.actions.status.unused', { defaultValue: '未用' }),
-                            factionStatus: core.factionActionUsed
-                                ? t('board.actions.status.used', { defaultValue: '已用' })
-                                : t('board.actions.status.unused', { defaultValue: '未用' }),
-                            defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}',
-                        })}
-                    </div>
-                ) : null}
-                {pendingScenarioChoices ? (
-                    <div className="mt-1 text-[11px]" data-testid="qidahen-actions-blocked-by-scenario" style={{ color: '#f3d1a5' }}>
-                        {core.scenarioVote
-                            ? t('board.actions.scenarioVoteBlocked', {
-                                defaultValue: '局内剧本选择尚未完成，当前只可处理剧本介绍与房主选择。',
-                            })
-                            : t('board.actions.scenarioBlocked', {
-                                defaultValue: '剧本待决项尚未确认，当前只可处理剧本选择。',
-                            })}
-                    </div>
-                ) : null}
-            </div>
             <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {core.victoryStatus ? (
                 <div
@@ -6511,7 +6323,6 @@ const QidahenFactionSelectionScreen: React.FC<{
 };
 
 export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, isMultiplayer, reset, matchData }) => {
-    const { t } = useTranslation('game-qidahen');
     const {
         isActive: isTutorialActive,
         currentStep: tutorialStep,
@@ -7079,43 +6890,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         || wheelDispatchSelection != null
         || pendingTargetAction != null
         || postBattleSelection != null;
-    const showTopWheelPrompt = primaryStageMode === 'wheel'
-        && wheelStageAvailable
-        && !tutorialInfoStepActive
-        && !actionPaymentPreviewVisible
-        && khanEdictSelection == null
-        && recruitSelection == null
-        && grantPardonSelection == null
-        && maShiTradeSelection == null
-        && diplomacySelection == null
-        && driveTigerConsentSelection == null
-        && fortificationMaintenanceSelection == null
-        && internalDispatchSelection == null
-        && wheelDispatchSelection == null
-        && pendingTargetAction == null
-        && postBattleSelection == null
-        && handLimitDiscardSelection == null
-        && core.gaoDiDispatchSelection == null
-        && core.sunYuanhuaTechSelection == null;
-    const showTopFactionPrompt = primaryStageMode === 'faction'
-        && factionStageAvailable
-        && !tutorialInfoStepActive
-        && !actionPaymentPreviewVisible
-        && khanEdictSelection == null
-        && recruitSelection == null
-        && grantPardonSelection == null
-        && maShiTradeSelection == null
-        && diplomacySelection == null
-        && driveTigerConsentSelection == null
-        && fortificationMaintenanceSelection == null
-        && internalDispatchSelection == null
-        && wheelDispatchSelection == null
-        && pendingTargetAction == null
-        && postBattleSelection == null
-        && handLimitDiscardSelection == null
-        && core.gaoDiDispatchSelection == null
-        && core.sunYuanhuaTechSelection == null;
-
     const debugPanel = (
         <GameDebugPanel
             G={G}
@@ -7127,15 +6901,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             <QidahenDebugConfig G={G} />
         </GameDebugPanel>
     );
-    const selectedPrimaryAction = getQidahenForegroundActionChoice(core, {
-        actionPaymentPreviewVisible,
-        recruitSelection,
-        grantPardonSelection,
-        maShiTradeSelection,
-        khanEdictSelection,
-        driveTigerConsentSelection,
-    });
-    const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedPrimaryAction);
     const defeatInDetailOrderSelectionActive = isQidahenDefeatInDetailOrderSelectionActive(
         pendingTargetAction,
     );
@@ -7411,9 +7176,9 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         const points = focusRegionIds
             .map((regionId) => getTopLevelGuideRegionMapPoint(regionId))
             .filter((point): point is { x: number; y: number } => point != null);
-        const viewport = activeTargetPoint
+        const viewport = tutorialMapFocusCandidateRegionId && activeTargetPoint
             ? buildQidahenFocusedMapViewport(activeTargetPoint, 1.82)
-            : buildQidahenFocusedMapViewportForPoints(points);
+            : buildQidahenFocusedMapViewportForPoints(points, points.length > 1 ? 1 : 1.48);
         if (!viewport) {
             return;
         }
@@ -7599,26 +7364,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                     onResolveScenarioCharacterChoice={resolveScenarioCharacterChoice}
                     onResolveScenarioArmamentChoice={resolveScenarioArmamentChoice}
                     onMagnifyCard={setMagnifyTarget}
-                />
-            ) : null}
-            {showTopWheelPrompt ? (
-                <TopPromptBanner
-                    testId="qidahen-wheel-next-step-banner"
-                    title={t('board.actions.wheelNextStepTitle', { defaultValue: '轮盘落点行动' })}
-                    hint={tutorialStep?.id === 'wheel-move'
-                        ? t('board.actions.wheelTutorialMoveHint', { defaultValue: '从正式可用落点中选择一项；点击绿色候选后立即执行' })
-                        : t('board.actions.wheelNextStepHint', { defaultValue: '选择轮盘格' })}
-                    badgeLabel={t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘' })}
-                    tone="wheel"
-                />
-            ) : null}
-            {showTopFactionPrompt ? (
-                <TopPromptBanner
-                    testId="qidahen-top-action-banner"
-                    title={t('board.actions.primaryActionSelectPrompt', { defaultValue: '手牌行动' })}
-                    hint={selectedPrimaryAction ? primaryActionEntryText : undefined}
-                    badgeLabel={t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
-                    tone="faction"
                 />
             ) : null}
             <PlayerFloat core={core} />

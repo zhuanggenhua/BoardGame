@@ -3722,9 +3722,9 @@
     },
     "death-blossom": {
       "name": "死亡盛放",
-      "description": "3 忍刀 + 2 手里剑：投 5 骰，按结果追加伤害或获得忍术。",
+      "description": "3 忍刀 + 2 手里剑：投掷 5 骰；造成 1×忍刀 + 2×手里剑伤害；若投出面具，本次攻击变为不可防御。",
       "effects": {
-        "roll5DiceResolveDamage": "投掷 5 骰并按忍刀/手里剑累计伤害"
+        "roll5DiceResolveDamage": "投掷 5 骰；造成 1×忍刀 + 2×手里剑伤害；若投出面具，本次攻击变为不可防御"
       }
     },
     "death-blossom-2": {

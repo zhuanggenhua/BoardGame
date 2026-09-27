@@ -60,6 +60,9 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 - `disabled=true`、已失效目标、不可移除状态、已确认阶段的旧动作不得进入 AI 动作。
 - legal actions 为空时，必须走 cancel / pass / skip / advance 之一；不能继续等。
 - 真人在同一规则状态下能选择的并列合法动作，AI legal actions 也要枚举；策略不想选时在评分层降权，不在合法动作层删掉。
+- 多个 interaction、response-window、pending settlement 或 deferred 状态并存时，不能只按 `current interaction.kind` 选分支；必须先解析当前有效阻塞、所属玩家和命令优先级，再生成动作。
+- AI 执行一条动作后，必须基于新状态重新计算 legal actions；返回的动作必须能通过当前 `validate()`，不得把会被并存阻塞拒绝的 cancel / pass / advance 当成可执行动作。
+- 同一 interaction / blocker 连续返回被领域层拒绝的动作，必须判为 AI 循环风险并在 AI 层停止重试或转入明确收口路径；不能交给 watchdog 无限重放。
 
 ### 2. 每个交互必须可收口
 
@@ -95,6 +98,22 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 4. watchdog 只处理剩余异常循环。
 
 不得用“加强推”掩盖无解交互、非法 legal actions 或重复 reopen。
+
+### 4.1 交互时序必须闭环
+
+遇到“动作执行后新增或保留另一层阻塞”的状态，必须按下面顺序验证：
+
+```text
+原始状态
+-> AI 选择动作
+-> 领域 validate / execute
+-> 新的权威状态
+-> 重新计算 legal actions
+-> 下一条动作可被领域接受
+-> interaction / response-window / pending 状态最终收口
+```
+
+只验证静态初始状态、只验证 prompt 出现、只验证第一条动作，不能证明 AI 交互闭环。
 
 ### 5. AI 动作延迟只覆盖可见动作
 
@@ -133,6 +152,8 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 - hidden interaction 需要 seat view 才能识别。
 - 无解交互能 cancel / pass / skip。
 - 重复动作循环被 AI guard 或 watchdog 打断。
+- 已有 interaction 保留且新增 pending / deferred blocker 时，AI 下一轮先处理有效阻塞，不返回会被领域拒绝的动作。
+- 至少验证一条动作执行后的下一状态和下一轮 legal actions，不得只断言首轮候选存在。
 
 ## Evidence
 

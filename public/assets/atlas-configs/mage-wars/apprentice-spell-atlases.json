@@ -49,16 +49,6 @@
       "cols": 7,
       "rows": 4
     },
-    "spell-conjuration-core-b-atlas": {
-      "deck": 23,
-      "label": "魔物 B",
-      "source": "mage-wars/cards/spells/spell-conjuration-core-b-atlas.png",
-      "compressed": "mage-wars/cards/spells/compressed/spell-conjuration-core-b-atlas.webp",
-      "width": 4096,
-      "height": 3282,
-      "cols": 7,
-      "rows": 4
-    },
     "spell-creature-core-a-atlas": {
       "deck": 28,
       "label": "生物 A",
@@ -114,16 +104,6 @@
       "label": "装备",
       "source": "mage-wars/cards/spells/spell-equipment-core-atlas.png",
       "compressed": "mage-wars/cards/spells/compressed/spell-equipment-core-atlas.webp",
-      "width": 4096,
-      "height": 3292,
-      "cols": 7,
-      "rows": 4
-    },
-    "spell-equipment-core-b-atlas": {
-      "deck": 38,
-      "label": "装备 B",
-      "source": "mage-wars/cards/spells/spell-equipment-core-b-atlas.png",
-      "compressed": "mage-wars/cards/spells/compressed/spell-equipment-core-b-atlas.webp",
       "width": 4096,
       "height": 3292,
       "cols": 7,
@@ -256,36 +236,6 @@
         "height": 0.25
       }
     },
-    "1707": {
-      "atlas": "spell-attack-core-atlas",
-      "cardId": 1707,
-      "name": "烈焰之环",
-      "deck": 17,
-      "slot": 7,
-      "col": 1,
-      "row": 2,
-      "normalized": {
-        "left": 0,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1708": {
-      "atlas": "spell-attack-core-atlas",
-      "cardId": 1708,
-      "name": "怒雷箭矢",
-      "deck": 17,
-      "slot": 8,
-      "col": 2,
-      "row": 2,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "1709": {
       "atlas": "spell-attack-core-atlas",
       "cardId": 1709,
@@ -391,21 +341,6 @@
         "height": 0.25
       }
     },
-    "1807": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1807,
-      "name": "剧痛锁链",
-      "deck": 18,
-      "slot": 7,
-      "col": 1,
-      "row": 2,
-      "normalized": {
-        "left": 0,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "1808": {
       "atlas": "spell-enchantment-core-a-atlas",
       "cardId": 1808,
@@ -436,51 +371,6 @@
         "height": 0.25
       }
     },
-    "1810": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1810,
-      "name": "闪电之环",
-      "deck": 18,
-      "slot": 10,
-      "col": 4,
-      "row": 2,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1811": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1811,
-      "name": "诱饵",
-      "deck": 18,
-      "slot": 11,
-      "col": 5,
-      "row": 2,
-      "normalized": {
-        "left": 0.571429,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1812": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1812,
-      "name": "神力干涉",
-      "deck": 18,
-      "slot": 12,
-      "col": 6,
-      "row": 2,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "1813": {
       "atlas": "spell-enchantment-core-a-atlas",
       "cardId": 1813,
@@ -492,21 +382,6 @@
       "normalized": {
         "left": 0.857143,
         "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1814": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1814,
-      "name": "雄鹰之翼",
-      "deck": 18,
-      "slot": 14,
-      "col": 1,
-      "row": 3,
-      "normalized": {
-        "left": 0,
-        "top": 0.5,
         "width": 0.142857,
         "height": 0.25
       }
@@ -556,21 +431,6 @@
         "height": 0.25
       }
     },
-    "1819": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1819,
-      "name": "原力法球",
-      "deck": 18,
-      "slot": 19,
-      "col": 6,
-      "row": 3,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "1820": {
       "atlas": "spell-enchantment-core-a-atlas",
       "cardId": 1820,
@@ -582,66 +442,6 @@
       "normalized": {
         "left": 0.857143,
         "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1821": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1821,
-      "name": "法力融合",
-      "deck": 18,
-      "slot": 21,
-      "col": 1,
-      "row": 4,
-      "normalized": {
-        "left": 0,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1822": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1822,
-      "name": "猎鹰之眼",
-      "deck": 18,
-      "slot": 22,
-      "col": 2,
-      "row": 4,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1823": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1823,
-      "name": "狱火陷阱",
-      "deck": 18,
-      "slot": 23,
-      "col": 3,
-      "row": 4,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1824": {
-      "atlas": "spell-enchantment-core-a-atlas",
-      "cardId": 1824,
-      "name": "折翼",
-      "deck": 18,
-      "slot": 24,
-      "col": 4,
-      "row": 4,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0.75,
         "width": 0.142857,
         "height": 0.25
       }
@@ -676,21 +476,6 @@
         "height": 0.25
       }
     },
-    "1900": {
-      "atlas": "spell-enchantment-core-b-atlas",
-      "cardId": 1900,
-      "name": "猫鼬灵步",
-      "deck": 19,
-      "slot": 0,
-      "col": 1,
-      "row": 1,
-      "normalized": {
-        "left": 0,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "1901": {
       "atlas": "spell-enchantment-core-b-atlas",
       "cardId": 1901,
@@ -701,21 +486,6 @@
       "row": 1,
       "normalized": {
         "left": 0.142857,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1902": {
-      "atlas": "spell-enchantment-core-b-atlas",
-      "cardId": 1902,
-      "name": "毒血攻心",
-      "deck": 19,
-      "slot": 2,
-      "col": 3,
-      "row": 1,
-      "normalized": {
-        "left": 0.285714,
         "top": 0,
         "width": 0.142857,
         "height": 0.25
@@ -747,36 +517,6 @@
       "normalized": {
         "left": 0.571429,
         "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1905": {
-      "atlas": "spell-enchantment-core-b-atlas",
-      "cardId": 1905,
-      "name": "魔法逆转",
-      "deck": 19,
-      "slot": 5,
-      "col": 6,
-      "row": 1,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "1907": {
-      "atlas": "spell-enchantment-core-b-atlas",
-      "cardId": 1907,
-      "name": "传送陷阱",
-      "deck": 19,
-      "slot": 7,
-      "col": 1,
-      "row": 2,
-      "normalized": {
-        "left": 0,
-        "top": 0.25,
         "width": 0.142857,
         "height": 0.25
       }
@@ -871,21 +611,6 @@
         "height": 0.25
       }
     },
-    "1915": {
-      "atlas": "spell-enchantment-core-b-atlas",
-      "cardId": 1915,
-      "name": "猎豹之速",
-      "deck": 19,
-      "slot": 15,
-      "col": 2,
-      "row": 3,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "1916": {
       "atlas": "spell-enchantment-core-b-atlas",
       "cardId": 1916,
@@ -916,171 +641,6 @@
         "height": 0.25
       }
     },
-    "2203": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2203,
-      "name": "阿希拉神殿",
-      "deck": 22,
-      "slot": 3,
-      "col": 4,
-      "row": 1,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2206": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2206,
-      "name": "尖齿与利爪",
-      "deck": 22,
-      "slot": 6,
-      "col": 7,
-      "row": 1,
-      "normalized": {
-        "left": 0.857143,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2207": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2207,
-      "name": "拉贾恩之怒",
-      "deck": 22,
-      "slot": 7,
-      "col": 1,
-      "row": 2,
-      "normalized": {
-        "left": 0,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2208": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2208,
-      "name": "毒气云雾",
-      "deck": 22,
-      "slot": 8,
-      "col": 2,
-      "row": 2,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2209": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2209,
-      "name": "五星魔阵",
-      "deck": 22,
-      "slot": 9,
-      "col": 3,
-      "row": 2,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2212": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2212,
-      "name": "战斗锻炉",
-      "deck": 22,
-      "slot": 12,
-      "col": 6,
-      "row": 2,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2218": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2218,
-      "name": "巢穴",
-      "deck": 22,
-      "slot": 18,
-      "col": 5,
-      "row": 3,
-      "normalized": {
-        "left": 0.571429,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2219": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2219,
-      "name": "宾莎拉之手",
-      "deck": 22,
-      "slot": 19,
-      "col": 6,
-      "row": 3,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2221": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2221,
-      "name": "法力水晶",
-      "deck": 22,
-      "slot": 21,
-      "col": 1,
-      "row": 4,
-      "normalized": {
-        "left": 0,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2222": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2222,
-      "name": "法力灵花",
-      "deck": 22,
-      "slot": 22,
-      "col": 2,
-      "row": 4,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2223": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2223,
-      "name": "法力虹吸",
-      "deck": 22,
-      "slot": 23,
-      "col": 3,
-      "row": 4,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "2224": {
       "atlas": "spell-conjuration-core-atlas",
       "cardId": 2224,
@@ -1092,21 +652,6 @@
       "normalized": {
         "left": 0.428571,
         "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2303": {
-      "atlas": "spell-conjuration-core-b-atlas",
-      "cardId": 2303,
-      "name": "生命巨树默克塔利",
-      "deck": 23,
-      "slot": 3,
-      "col": 4,
-      "row": 1,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0,
         "width": 0.142857,
         "height": 0.25
       }
@@ -1124,6 +669,21 @@
         "top": 0,
         "width": 0.25,
         "height": 0.25
+      }
+    },
+    "25700": {
+      "atlas": "spell-wall-thorns-atlas",
+      "cardId": 25700,
+      "name": "荆棘之墙",
+      "deck": 257,
+      "slot": 0,
+      "col": 1,
+      "row": 1,
+      "normalized": {
+        "left": 0,
+        "top": 0,
+        "width": 1,
+        "height": 1
       }
     },
     "2800": {
@@ -1196,21 +756,6 @@
       "row": 1,
       "normalized": {
         "left": 0.571429,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2806": {
-      "atlas": "spell-creature-core-a-atlas",
-      "cardId": 2806,
-      "name": "头狼赤爪",
-      "deck": 28,
-      "slot": 6,
-      "col": 7,
-      "row": 1,
-      "normalized": {
-        "left": 0.857143,
         "top": 0,
         "width": 0.142857,
         "height": 0.25
@@ -1351,36 +896,6 @@
         "height": 0.25
       }
     },
-    "2817": {
-      "atlas": "spell-creature-core-a-atlas",
-      "cardId": 2817,
-      "name": "闪电天使瓦尔莎拉",
-      "deck": 28,
-      "slot": 17,
-      "col": 4,
-      "row": 3,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2818": {
-      "atlas": "spell-creature-core-a-atlas",
-      "cardId": 2818,
-      "name": "火焰领主阿德拉梅莱克",
-      "deck": 28,
-      "slot": 18,
-      "col": 5,
-      "row": 3,
-      "normalized": {
-        "left": 0.571429,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "2819": {
       "atlas": "spell-creature-core-a-atlas",
       "cardId": 2819,
@@ -1407,21 +922,6 @@
       "normalized": {
         "left": 0.857143,
         "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2821": {
-      "atlas": "spell-creature-core-a-atlas",
-      "cardId": 2821,
-      "name": "雪貂伙伴索斯鲁柯",
-      "deck": 28,
-      "slot": 21,
-      "col": 1,
-      "row": 4,
-      "normalized": {
-        "left": 0,
-        "top": 0.75,
         "width": 0.142857,
         "height": 0.25
       }
@@ -1501,51 +1001,6 @@
         "height": 0.25
       }
     },
-    "2902": {
-      "atlas": "spell-creature-core-b-atlas",
-      "cardId": 2902,
-      "name": "死魂吸血鬼",
-      "deck": 29,
-      "slot": 2,
-      "col": 3,
-      "row": 1,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2903": {
-      "atlas": "spell-creature-core-b-atlas",
-      "cardId": 2903,
-      "name": "高山猩猩",
-      "deck": 29,
-      "slot": 3,
-      "col": 4,
-      "row": 1,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2904": {
-      "atlas": "spell-creature-core-b-atlas",
-      "cardId": 2904,
-      "name": "月光妖精",
-      "deck": 29,
-      "slot": 4,
-      "col": 5,
-      "row": 1,
-      "normalized": {
-        "left": 0.571429,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "2906": {
       "atlas": "spell-creature-core-b-atlas",
       "cardId": 2906,
@@ -1576,21 +1031,6 @@
         "height": 0.25
       }
     },
-    "2908": {
-      "atlas": "spell-creature-core-b-atlas",
-      "cardId": 2908,
-      "name": "乌鸦魔宠胡金",
-      "deck": 29,
-      "slot": 8,
-      "col": 2,
-      "row": 2,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "2909": {
       "atlas": "spell-creature-core-b-atlas",
       "cardId": 2909,
@@ -1601,21 +1041,6 @@
       "row": 2,
       "normalized": {
         "left": 0.285714,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2910": {
-      "atlas": "spell-creature-core-b-atlas",
-      "cardId": 2910,
-      "name": "玛拉寇达",
-      "deck": 29,
-      "slot": 10,
-      "col": 4,
-      "row": 2,
-      "normalized": {
-        "left": 0.428571,
         "top": 0.25,
         "width": 0.142857,
         "height": 0.25
@@ -1801,81 +1226,6 @@
         "height": 0.25
       }
     },
-    "3412": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3412,
-      "name": "结界迁移",
-      "deck": 34,
-      "slot": 12,
-      "col": 6,
-      "row": 2,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3413": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3413,
-      "name": "放逐",
-      "deck": 34,
-      "slot": 13,
-      "col": 7,
-      "row": 2,
-      "normalized": {
-        "left": 0.857143,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3414": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3414,
-      "name": "反隐驱散",
-      "deck": 34,
-      "slot": 14,
-      "col": 1,
-      "row": 3,
-      "normalized": {
-        "left": 0,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3415": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3415,
-      "name": "起死回生",
-      "deck": 34,
-      "slot": 15,
-      "col": 2,
-      "row": 3,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3416": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3416,
-      "name": "战斗怒火",
-      "deck": 34,
-      "slot": 16,
-      "col": 3,
-      "row": 3,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "3417": {
       "atlas": "spell-incantation-core-a-atlas",
       "cardId": 3417,
@@ -1886,21 +1236,6 @@
       "row": 3,
       "normalized": {
         "left": 0.428571,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3418": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3418,
-      "name": "毒素净化",
-      "deck": 34,
-      "slot": 18,
-      "col": 5,
-      "row": 3,
-      "normalized": {
-        "left": 0.571429,
         "top": 0.5,
         "width": 0.142857,
         "height": 0.25
@@ -1921,81 +1256,6 @@
         "height": 0.25
       }
     },
-    "3420": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3420,
-      "name": "魔法净化",
-      "deck": 34,
-      "slot": 20,
-      "col": 7,
-      "row": 3,
-      "normalized": {
-        "left": 0.857143,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3421": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3421,
-      "name": "穿刺突击",
-      "deck": 34,
-      "slot": 21,
-      "col": 1,
-      "row": 4,
-      "normalized": {
-        "left": 0,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3422": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3422,
-      "name": "完美一击",
-      "deck": 34,
-      "slot": 22,
-      "col": 2,
-      "row": 4,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3423": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3423,
-      "name": "圣疗神恩",
-      "deck": 34,
-      "slot": 23,
-      "col": 3,
-      "row": 4,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3424": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3424,
-      "name": "击倒",
-      "deck": 34,
-      "slot": 24,
-      "col": 4,
-      "row": 4,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "3425": {
       "atlas": "spell-incantation-core-a-atlas",
       "cardId": 3425,
@@ -2007,36 +1267,6 @@
       "normalized": {
         "left": 0.571429,
         "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3426": {
-      "atlas": "spell-incantation-core-a-atlas",
-      "cardId": 3426,
-      "name": "神行无阻",
-      "deck": 34,
-      "slot": 26,
-      "col": 6,
-      "row": 4,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3500": {
-      "atlas": "spell-incantation-core-b-atlas",
-      "cardId": 3500,
-      "name": "力量汲取",
-      "deck": 35,
-      "slot": 0,
-      "col": 1,
-      "row": 1,
-      "normalized": {
-        "left": 0,
-        "top": 0,
         "width": 0.142857,
         "height": 0.25
       }
@@ -2191,21 +1421,6 @@
         "height": 0.25
       }
     },
-    "3707": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3707,
-      "name": "重生腰带",
-      "deck": 37,
-      "slot": 7,
-      "col": 1,
-      "row": 2,
-      "normalized": {
-        "left": 0,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "3708": {
       "atlas": "spell-equipment-core-atlas",
       "cardId": 3708,
@@ -2266,51 +1481,6 @@
         "height": 0.25
       }
     },
-    "3712": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3712,
-      "name": "天护皇冠",
-      "deck": 37,
-      "slot": 12,
-      "col": 6,
-      "row": 2,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3713": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3713,
-      "name": "奥术戒指",
-      "deck": 37,
-      "slot": 13,
-      "col": 7,
-      "row": 2,
-      "normalized": {
-        "left": 0.857143,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3714": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3714,
-      "name": "破晓指环",
-      "deck": 37,
-      "slot": 14,
-      "col": 1,
-      "row": 3,
-      "normalized": {
-        "left": 0,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "3715": {
       "atlas": "spell-equipment-core-atlas",
       "cardId": 3715,
@@ -2341,36 +1511,6 @@
         "height": 0.25
       }
     },
-    "3719": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3719,
-      "name": "塑火指环",
-      "deck": 37,
-      "slot": 19,
-      "col": 6,
-      "row": 3,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3720": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3720,
-      "name": "恐惧头盔",
-      "deck": 37,
-      "slot": 20,
-      "col": 7,
-      "row": 3,
-      "normalized": {
-        "left": 0.857143,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "3721": {
       "atlas": "spell-equipment-core-atlas",
       "cardId": 3721,
@@ -2384,126 +1524,6 @@
         "top": 0.75,
         "width": 0.142857,
         "height": 0.25
-      }
-    },
-    "3722": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3722,
-      "name": "野银长弓",
-      "deck": 37,
-      "slot": 22,
-      "col": 2,
-      "row": 4,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3725": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3725,
-      "name": "法师魔杖",
-      "deck": 37,
-      "slot": 25,
-      "col": 5,
-      "row": 4,
-      "normalized": {
-        "left": 0.571429,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3726": {
-      "atlas": "spell-equipment-core-atlas",
-      "cardId": 3726,
-      "name": "摩洛王的折磨",
-      "deck": 37,
-      "slot": 26,
-      "col": 6,
-      "row": 4,
-      "normalized": {
-        "left": 0.714286,
-        "top": 0.75,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3800": {
-      "atlas": "spell-equipment-core-b-atlas",
-      "cardId": 3800,
-      "name": "月光项链",
-      "deck": 38,
-      "slot": 0,
-      "col": 1,
-      "row": 1,
-      "normalized": {
-        "left": 0,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3801": {
-      "atlas": "spell-equipment-core-b-atlas",
-      "cardId": 3801,
-      "name": "阿希拉之戒",
-      "deck": 38,
-      "slot": 1,
-      "col": 2,
-      "row": 1,
-      "normalized": {
-        "left": 0.142857,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3802": {
-      "atlas": "spell-equipment-core-b-atlas",
-      "cardId": 3802,
-      "name": "群兽之戒",
-      "deck": 38,
-      "slot": 2,
-      "col": 3,
-      "row": 1,
-      "normalized": {
-        "left": 0.285714,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "3803": {
-      "atlas": "spell-equipment-core-b-atlas",
-      "cardId": 3803,
-      "name": "诅咒之戒",
-      "deck": 38,
-      "slot": 3,
-      "col": 4,
-      "row": 1,
-      "normalized": {
-        "left": 0.428571,
-        "top": 0,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "25700": {
-      "atlas": "spell-wall-thorns-atlas",
-      "cardId": 25700,
-      "name": "荆棘之墙",
-      "deck": 257,
-      "slot": 0,
-      "col": 1,
-      "row": 1,
-      "normalized": {
-        "left": 0,
-        "top": 0,
-        "width": 1,
-        "height": 1
       }
     }
   }

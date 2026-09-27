@@ -62,6 +62,63 @@ function execWithSystems(state: MatchState<TestCore>, command: TestCommand, acti
 }
 
 describe('撤回后 EventStream 行为', () => {
+  it('教程上一步会同时恢复对应领域快照', () => {
+    const tutorialSystems = [
+      createUndoSystem<TestCore>({
+        requireApproval: false,
+        snapshotCommandAllowlist: ['INCREMENT'],
+      }),
+      createTutorialSystem<TestCore>(),
+    ];
+    const tutorialManifest = {
+      id: 'tutorial-previous-restores-state',
+      steps: [
+        {
+          id: 'before-increment',
+          content: 'before',
+          advanceOnEvents: [{ type: 'INCREMENTED' }],
+        },
+        {
+          id: 'after-increment',
+          content: 'after',
+        },
+      ],
+    };
+    let state: MatchState<TestCore> = {
+      core: testDomain.setup(),
+      sys: createInitialSystemState(['0'], tutorialSystems, 'local:tutorial-previous'),
+    };
+    const execTutorial = (command: TestCommand) => executePipeline({
+      domain: testDomain,
+      systems: tutorialSystems,
+    }, state, command, random, ['0']);
+
+    let result = execTutorial({
+      type: TUTORIAL_COMMANDS.START,
+      playerId: '0',
+      payload: { manifest: tutorialManifest },
+    });
+    expect(result.success).toBe(true);
+    state = result.state;
+
+    result = execTutorial({ type: 'INCREMENT', playerId: '0', payload: {} });
+    expect(result.success).toBe(true);
+    state = result.state;
+    expect(state.core.counter).toBe(1);
+    expect(state.sys.tutorial.step?.id).toBe('after-increment');
+
+    result = execTutorial({
+      type: TUTORIAL_COMMANDS.PREVIOUS,
+      playerId: '0',
+      payload: {},
+    });
+    expect(result.success).toBe(true);
+    state = result.state;
+    expect(state.core.counter).toBe(0);
+    expect(state.sys.tutorial.step?.id).toBe('before-increment');
+    expect(state.sys.undo.rollbackRevision).toBe(1);
+  });
+
   it('撤回恢复后重新执行命令，EventStream 应包含新事件', () => {
     let state = makeState();
 

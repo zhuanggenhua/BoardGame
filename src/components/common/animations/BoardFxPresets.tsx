@@ -392,6 +392,10 @@ export interface BoardDamageImpactPresetProps {
   shakeDuration?: number;
   impactEffects?: ImpactEffects;
   damageFlashCompleteMs?: number;
+  slashDurationMs?: number;
+  slashActiveMs?: number;
+  pulseDurationMs?: number;
+  pulseActiveMs?: number;
   sizeStyle?: React.CSSProperties;
   className?: string;
 }
@@ -416,6 +420,10 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
   shakeDuration = 620,
   impactEffects = { shake: true, hitStop: true },
   damageFlashCompleteMs = 1_550,
+  slashDurationMs = 560,
+  slashActiveMs = 220,
+  pulseDurationMs = 620,
+  pulseActiveMs = 620,
   sizeStyle,
   className = '',
 }) => {
@@ -463,10 +471,10 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
           numberColorClass={numberColorClass}
           numberDurationSeconds={numberDurationSeconds}
           quality={quality}
-          slashDurationMs={560}
-          slashActiveMs={220}
-          pulseDurationMs={620}
-          pulseActiveMs={620}
+          slashDurationMs={slashDurationMs}
+          slashActiveMs={slashActiveMs}
+          pulseDurationMs={pulseDurationMs}
+          pulseActiveMs={pulseActiveMs}
           pulseColor={pulseColor}
           completeMs={damageFlashCompleteMs}
         />

@@ -152,6 +152,10 @@ export function BetrayalLatestDiscoverySurface({
     .replace(/[；;]\s*没有事件、物品或预兆发现牌[。.]?\s*$/, "")
     .replace(/^没有事件、物品或预兆发现牌[。.]?\s*$/, "")
     .trim();
+  const shouldShowVisibleDiscoveryDetail = Boolean(
+    displayedDiscoveryDetail &&
+      (!panelVisual || !shouldShowCardFace),
+  );
 
   return (
     <div
@@ -162,7 +166,7 @@ export function BetrayalLatestDiscoverySurface({
       data-allows-inventory-roll-modifiers={canModifyRoll ? "true" : "false"}
       data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
       onClick={canDismissByBackdrop ? onDismiss : undefined}
-      className={`${canDismissByBackdrop ? "pointer-events-auto" : "pointer-events-none"} absolute inset-0 z-[120] flex cursor-default items-center justify-center px-4 py-16 ${
+      className={`pointer-events-auto absolute inset-0 z-[120] flex cursor-default items-center justify-center px-4 py-16 ${
         shouldShowRoll && recentRoll ? "" : "bg-[rgba(3,7,6,0.76)]"
       }`}
     >
@@ -209,7 +213,7 @@ export function BetrayalLatestDiscoverySurface({
           {displayedKindLabel} {displayedTitle} {displaySummary}{" "}
           {displayedDiscoveryDetail}
         </span>
-        {displayedDiscoveryDetail ? (
+        {shouldShowVisibleDiscoveryDetail ? (
           <div
             data-testid="betrayal-discovery-visible-detail"
             data-ui-role="visible-effect-description"

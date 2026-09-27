@@ -212,7 +212,8 @@ async function openMageWarsBoard(context: BrowserContext, page: Page, storageKey
     await expect(board).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('mage-wars-arena-viewport')).toBeVisible();
     await expect(board).toContainText('兽王');
-    await expect(board).toContainText('女祭司');
+    await expect(page.getByTestId('mage-wars-mage-hud-opponent')).toHaveAttribute('aria-label', /女祭司/);
+    await expect(page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]')).toHaveAttribute('data-mage-id', 'priestess_apprentice');
     await expect(board).toContainText('法术书');
     await expect(board).toContainText(/对手(已)?计划/);
 
@@ -1752,11 +1753,14 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(spentActionTokenOverlapsLifeReadout, '行动 token 不得遮住生物生命读数').toBe(false);
         await expectEntityTokenRailInsideHostHorizontally(spentCreature, 'mage-wars-action-token-slot', '已消耗生物行动 token');
         await expectFieldCardPrimaryInteractionContract(page, spentCreature, '已消耗生物场上卡', 'disabled', { clickBody: true });
+        const burnedTarget = page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-blue-archer"]');
+        await expect(burnedTarget.getByTestId('mage-wars-status-token-row')).toBeVisible();
         const spentCreatureInspectButton = spentCreature.locator('xpath=..').getByTestId('mage-wars-card-inspect-button');
         await expectMageWarsDesktopInspectHoverContract(page, spentCreature, spentCreatureInspectButton);
         await spentCreatureInspectButton.click();
         await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeVisible({ timeout: 5_000 });
         await expect(page.getByTestId('mage-wars-card-magnify-content')).toHaveAttribute('data-source-card-id', '2802');
+        await expect(page.getByTestId('mage-wars-card-magnify-rules')).toBeVisible();
         await page.getByTestId('mage-wars-card-magnify-overlay-close').click();
         await expectMagnifyOverlayHidden(page);
 
@@ -1848,8 +1852,11 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(mage.otherLaneMageCount).toBe(0);
         });
         await expectMageWarsDefaultBrowseInteractions(page);
+        await expect(page.getByTestId('mage-wars-observe-player-button')).toBeVisible();
         await expectMageHudDesktopInspectHoverContract(page, 'self');
         await expectMageHudDesktopInspectHoverContract(page, 'opponent');
+        await expect(page.getByTestId('mage-wars-mage-hud-name-badge').first()).toBeVisible();
+        await expect(page.getByTestId('mage-wars-mage-hud-stat-icon-fill').first()).toBeVisible();
         await mkdir(dirname(DEFAULT_MAGE_SPACE_SCREENSHOT_PATH), { recursive: true });
         await page.screenshot({ path: DEFAULT_MAGE_SPACE_SCREENSHOT_PATH, fullPage: false });
         await applyMageWarsPlanningState(page);
@@ -1902,6 +1909,7 @@ test.describe('Mage Wars foundation runtime board', () => {
 
         await clickFormalSpellbookCardBody(page, duplicateSpellbookCard, duplicateSpellbookCardInfo.cardId);
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '1');
+        await expect(duplicateSpellbookCard.getByTestId('mage-wars-selected-card-frame')).toBeVisible();
         await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
         const oneDraftSlot = page.locator(
             `[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="${duplicateSpellbookCardInfo.cardId}"]`,

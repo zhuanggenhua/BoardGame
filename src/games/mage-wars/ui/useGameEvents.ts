@@ -485,6 +485,22 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
                 if (holdOwnerId) visualEntityBuffer.releaseOwner(holdOwnerId);
                 return null;
             }
+            if (
+                resolvedInstruction.cue === MW_FX.ATTACK_IMPACT
+                && (globalThis as typeof globalThis & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__
+            ) {
+                const params = resolvedInstruction.params ?? {};
+                console.warn('[DEBUG-MAGE-WARS-ATTACK-FX]', {
+                    sourceEventId: resolvedInstruction.sourceEventId,
+                    fxId,
+                    rangeKind: params.rangeKind ?? null,
+                    diceResults: Array.isArray(params.diceResults) ? params.diceResults : null,
+                    effectDieResult: typeof params.effectDieResult === 'number' ? params.effectDieResult : null,
+                    source: params.source ?? null,
+                    targetObjectId: params.targetObjectId ?? null,
+                    targetPlayerId: params.targetPlayerId ?? null,
+                });
+            }
             if (releaseKeys.length > 0) {
                 fxImpactMapRef.current.set(fxId, releaseKeys);
             }

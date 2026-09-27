@@ -1867,6 +1867,25 @@ const buildInteractionActions = (
         if (!pendingDamage || pendingDamage.responderId !== playerId) {
             return [];
         }
+
+        // 使用飞行 / 伏击等 Token 后，Token 响应交互仍是当前 live 交互，
+        // 但奖励骰确认必须先完成；否则投 token 的 AI 会拿到一个被
+        // pendingBonusDiceSettlement 拒绝的紧急取消动作，反复重试而卡死。
+        const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+        if (
+            !state.sys.responseWindow?.current
+            && settlement
+            && settlement.attackerId === playerId
+            && isCurrentBonusRollSettlement(state.core, settlement)
+        ) {
+            const bonusDiceActions = [
+                ...buildBonusDicePlayableCardActions(state, playerId, phase),
+                ...buildPassiveActions(state, playerId, phase, { rerollOnly: true }),
+                ...buildBonusDiceActions(state, playerId),
+            ];
+            if (bonusDiceActions.length > 0) return bonusDiceActions;
+        }
+
         const choiceRequestActions = buildTokenResponseChoiceRequestActions(state, playerId, current);
         if (choiceRequestActions !== null) {
             return choiceRequestActions;

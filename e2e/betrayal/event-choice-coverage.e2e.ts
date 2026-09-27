@@ -37,6 +37,7 @@ import {
   waitForBetrayalPageReady,
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
+import { createBetrayalDynamicEvidenceRecorder } from "./betrayalDynamicEvidence";
 
 const EVIDENCE_DIR = "evidence/山屋惊魂-事件牌页面承接E2E";
 const ARMOR_EVIDENCE_DIR = "evidence/山屋惊魂-盔甲物理减伤完整链路";
@@ -51,6 +52,8 @@ const OMEN_BOOK_EVIDENCE_DIR = "evidence/山屋惊魂-书本非战斗检定替�
 const DUST_HAUNT_EVIDENCE_DIR = "evidence/山屋惊魂-灰尘作祟完整链路";
 const CARD_CONFIRMATION_EVIDENCE_DIR =
   "evidence/山屋惊魂-物品预兆全员确认与飞行动画";
+const DYNAMIC_EVIDENCE_DIR =
+  `${EVIDENCE_DIR}/外星几何-动态流畅性证据`;
 
 type EventChoiceCase = {
   title: string;
@@ -2596,19 +2599,22 @@ async function runDirectRollEventFullChain(
     0,
   );
   const discoveryDetail = page.getByTestId("betrayal-discovery-visible-detail");
-  await expect(discoveryDetail).toBeVisible();
-  const discoveryRollTexts =
-    eventCase.expectedDiscoveryRollTexts ??
-    eventCase.expectedRollTexts.filter(
-      (expectedText) => !expectedText.startsWith("总点数 "),
-    );
-  for (const expectedText of discoveryRollTexts) {
-    await expect(discoveryDetail).toContainText(expectedText);
-  }
-  await saveScreenshot(page, `${screenshotBase}-03-事件牌翻出已有检定.jpg`);
-
+  const discoveryDetailText = page.getByTestId("betrayal-discovery-detail");
+  await expect(discoveryDetail).toHaveCount(0);
+  await expect(discoveryDetailText).toContainText("事件牌已公开");
+  const eventRollStart = page.getByTestId("betrayal-event-roll-start");
+  await expect(eventRollStart).toBeVisible();
+  await expect(eventRollStart).toBeEnabled();
+  await eventRollStart.click();
   const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
   await expect(rollPanel).toBeVisible();
+  await expect(discoveryDetail).toHaveCount(0);
+  await expect(discoveryDetailText).toContainText("抽取一张物品卡");
+  await saveScreenshot(page, `${screenshotBase}-03-事件牌翻出已有检定.jpg`);
+
+  for (const expectedText of eventCase.expectedDiscoveryRollTexts ?? []) {
+    await expect(rollPanel).toContainText(expectedText);
+  }
   for (const expectedText of eventCase.expectedRollTexts) {
     await expect(rollPanel).toContainText(expectedText);
   }
@@ -2631,7 +2637,7 @@ async function runDirectRollEventFullChain(
   );
 
   for (const expectedText of eventCase.expectedDetailTexts) {
-    await expect(discoveryDetail).toContainText(expectedText);
+    await expect(discoveryDetailText).toContainText(expectedText);
   }
   await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
   if (eventCase.expectedEventRolledDamage) {
@@ -2921,6 +2927,83 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
         page
           .locator('button[data-testid^="betrayal-inventory-hunting-knife-"]')
           .first(),
+      ).toBeVisible();
+
+      const settledCore = await readCurrentCore(page);
+      const grandStaircase = settledCore.rooms.find(
+        (room) => room.id === "grand-staircase",
+      );
+      const roomShape = settledCore.rooms.find(
+        (room) => room.id === "ground-north",
+      ) ?? grandStaircase;
+      if (!grandStaircase || !roomShape) {
+        throw new Error("山屋移动录屏夹具缺少大阶梯房间");
+      }
+      const laboratory = {
+        ...roomShape,
+        id: "laboratory",
+        name: "实验室",
+        floor: "ground" as const,
+        x: 1,
+        y: 2,
+        connectedRoomIds: ["grand-staircase"],
+        entryRoomId: "grand-staircase",
+        entryEdge: "east" as const,
+        orientationTurns: 0 as const,
+        state: "discovered" as const,
+        hint: "仪器和试剂暗示这里会触发危险事件",
+        tags: ["一层", "危险"],
+        discoveryReward: null,
+        visualId: "laboratory",
+        doorways: [
+          { edge: "east" as const, connectsToRoomId: "grand-staircase" },
+        ],
+        backVisualId: "backGround",
+      };
+      const movementCore: BetrayalCore = {
+        ...settledCore,
+        rooms: [
+          ...settledCore.rooms.map((room) =>
+            room.id === "grand-staircase"
+              ? {
+                  ...room,
+                  connectedRoomIds: Array.from(
+                    new Set([...room.connectedRoomIds, "laboratory"]),
+                  ),
+                  doorways: [
+                    ...room.doorways,
+                    { edge: "west" as const, connectsToRoomId: "laboratory" },
+                  ],
+                }
+              : room,
+          ),
+          laboratory,
+        ],
+        currentPlayer: "0",
+        activePlayerId: null,
+        currentExplorer: {
+          ...settledCore.currentExplorer,
+          roomId: "grand-staircase",
+        },
+        activeRoomId: "grand-staircase",
+        turnStartSpeed: 5,
+        movesRemaining: 5,
+        turnEndedByDiscovery: false,
+        recommendedAction: "move",
+        latestDiscovery: null,
+        recentRoll: null,
+        pendingEventRollResolution: null,
+        pendingCardResolutionQueue: [],
+      };
+      await injectCore(page, movementCore);
+      await expect(page.getByTestId("betrayal-room-grand-staircase")).toBeVisible();
+      await page.getByTestId("betrayal-action-move").click();
+      const laboratoryRoom = page.getByTestId("betrayal-room-laboratory");
+      await expect(laboratoryRoom).toBeVisible();
+      await expect(laboratoryRoom).toBeEnabled();
+      await laboratoryRoom.click();
+      await expect(
+        page.getByTestId("betrayal-room-occupant-laboratory-0"),
       ).toBeVisible();
     },
   },
@@ -3943,8 +4026,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
-    const discoveryDetail = page.getByTestId("betrayal-discovery-visible-detail");
-    await expect(discoveryDetail).toBeVisible();
+    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
+    await expect(page.getByTestId("betrayal-discovery-visible-detail")).toHaveCount(0);
     await expect(discoveryDetail).toContainText("知识 +1");
     await expect(
       discoveryPanel.getByTestId("betrayal-recent-roll-panel"),
@@ -5229,8 +5312,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       /事件牌 大宅饿了/,
     );
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
-    const discoveryDetail = page.getByTestId("betrayal-discovery-visible-detail");
-    await expect(discoveryDetail).toBeVisible();
+    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
+    await expect(page.getByTestId("betrayal-discovery-visible-detail")).toHaveCount(0);
     await expect(discoveryDetail).toContainText("跳过作祟检定");
     await expect(discoveryDetail).toContainText("知识 +1");
     await expect(discoveryDetail).not.toContainText("力量 +1");
@@ -5980,6 +6063,16 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
+    const dynamicRecorder = createBetrayalDynamicEvidenceRecorder({
+      stableDir: DYNAMIC_EVIDENCE_DIR,
+      page,
+    });
+    await dynamicRecorder.start();
+    let dynamicEvidencePassed = false;
+    let dynamicEvidenceFinalizeError: unknown = null;
+
+    try {
+
     await page.getByTestId("betrayal-action-move").click();
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
@@ -5997,6 +6090,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
+    dynamicRecorder.mark("卡牌特写开始");
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
     await confirmGroundNorthRoomPlacement(page);
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
@@ -6021,17 +6115,17 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const eventRollStart = page.getByTestId("betrayal-event-roll-start");
     await expect(eventRollStart).toBeVisible();
     await expect(eventRollStart).toBeEnabled();
+    dynamicRecorder.mark("卡牌特写交互入口可见");
     await saveScreenshot(
       page,
       `${screenshotBase}-03-事件牌翻出投掷入口.jpg`,
     );
 
+    dynamicRecorder.mark("物理骰子开始");
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
     await eventRollStart.click();
-    const discoveryDetail = page.getByTestId(
-      "betrayal-discovery-visible-detail",
-    );
-    await expect(discoveryDetail).toBeVisible();
+    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
+    await expect(page.getByTestId("betrayal-discovery-visible-detail")).toHaveCount(0);
     await expect(discoveryDetail).toContainText(/知识\s*\+1|获得\s*1\s*点知识/);
     await expect(discoveryDetail).not.toContainText(
       /判定要求|知识检定|投\s*3\s*颗骰子|总点数/,
@@ -6068,6 +6162,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expectPhysicalDiceStableAfterSettled(rollPanel);
     await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 3 });
     await saveScreenshot(page, `${screenshotBase}-05-骰盘停稳直接结算.jpg`);
+    dynamicRecorder.mark("物理骰子结束");
 
     await expect(discoveryDetail).toBeVisible();
     await expect(discoveryDetail).toContainText(/知识\s*\+1|获得\s*1\s*点知识/);
@@ -6075,6 +6170,33 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       0,
     );
     await saveScreenshot(page, `${screenshotBase}-06-结算结果可见.jpg`);
+
+    const discoveryCoreBeforeBlockedMapClick = await readCurrentCore(page);
+    const roomGrid = page.getByTestId("betrayal-room-grid");
+    const activePanTargetBeforeBlockedMapClick = await roomGrid.getAttribute(
+      "data-zoom-pan-active-target",
+    );
+    const blockedRoom = page.getByTestId("betrayal-room-ground-north");
+    const blockedRoomBox = await blockedRoom.boundingBox();
+    expect(blockedRoomBox, "发现特写存在时地图房间仍应有可验证的底层对象").not.toBeNull();
+    await page.mouse.click(
+      blockedRoomBox!.x + blockedRoomBox!.width / 2,
+      blockedRoomBox!.y + blockedRoomBox!.height / 2,
+    );
+    await expect(
+      discoveryPanel,
+      "禁止背景关闭时，点击地图不能穿透发现特写",
+    ).toBeVisible();
+    expect(await roomGrid.getAttribute("data-zoom-pan-active-target")).toBe(
+      activePanTargetBeforeBlockedMapClick,
+    );
+    const discoveryCoreAfterBlockedMapClick = await readCurrentCore(page);
+    expect(discoveryCoreAfterBlockedMapClick.activeRoomId).toBe(
+      discoveryCoreBeforeBlockedMapClick.activeRoomId,
+    );
+    expect(discoveryCoreAfterBlockedMapClick.latestDiscovery?.title).toBe(
+      discoveryCoreBeforeBlockedMapClick.latestDiscovery?.title,
+    );
 
     await dismissDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
@@ -6085,11 +6207,162 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toHaveCount(0);
+    dynamicRecorder.mark("卡牌特写稳定退场");
     await saveScreenshot(page, `${screenshotBase}-07-关闭后.jpg`);
+
+    const roomGridAfterDismiss = page.getByTestId("betrayal-room-grid");
+    const roomCanvasAfterDismiss = page.getByTestId("betrayal-room-canvas");
+    const dragStartRoom = page.getByTestId("betrayal-room-ground-north");
+    const dragStartRoomBox = await dragStartRoom.boundingBox();
+    expect(dragStartRoomBox, "房间本体必须存在，才能验证实体起点拖拽").not.toBeNull();
+    const canvasTransformBeforeRoomDrag = await roomCanvasAfterDismiss.evaluate(
+      (element) => getComputedStyle(element).transform,
+    );
+    const dragStartX = dragStartRoomBox!.x + dragStartRoomBox!.width / 2;
+    const dragStartY = dragStartRoomBox!.y + dragStartRoomBox!.height / 2;
+    dynamicRecorder.mark("房间拖拽开始");
+    await page.mouse.move(dragStartX, dragStartY);
+    await page.mouse.down();
+    await page.mouse.move(dragStartX - 180, dragStartY + 48, { steps: 6 });
+    await page.mouse.up();
+    await expect
+      .poll(
+        () =>
+          roomCanvasAfterDismiss.evaluate(
+            (element) => getComputedStyle(element).transform,
+          ),
+        { timeout: 5000 },
+      )
+      .not.toBe(canvasTransformBeforeRoomDrag);
+    await expect(
+      page.getByTestId("betrayal-room-preview-overlay"),
+      "从房间本体拖拽后不能误触发房间放大",
+    ).not.toBeVisible();
+    await expect(roomGridAfterDismiss).toHaveAttribute(
+      "data-zoom-pan-target-state",
+      expect.any(String),
+    );
+    await saveScreenshot(page, `${screenshotBase}-08-房间本体拖拽.jpg`);
+    dynamicRecorder.mark("房间拖拽稳定收口");
+
+    const previewRoomBox = await dragStartRoom.boundingBox();
+    expect(previewRoomBox, "拖拽后房间本体仍应保留可点击区域").not.toBeNull();
+    const previewClickPoint = {
+      x: previewRoomBox!.x + 18,
+      y: previewRoomBox!.y + 18,
+    };
+    expect(
+      await page.evaluate(({ x, y }) => {
+        return document
+          .elementFromPoint(x, y)
+          ?.closest<HTMLElement>('[data-testid="betrayal-room-ground-north"]')
+          ?.getAttribute("data-testid");
+      }, previewClickPoint),
+    ).toBe("betrayal-room-ground-north");
+    await page.mouse.click(previewClickPoint.x, previewClickPoint.y);
+    await expect(
+      page.getByTestId("betrayal-room-preview-overlay"),
+      "非操作态普通房间点击应打开预览",
+    ).toBeVisible();
+    await saveScreenshot(page, `${screenshotBase}-09-房间点击放大.jpg`);
+    await page.getByTestId("betrayal-room-preview-card").click();
+    await expect(
+      page.getByTestId("betrayal-room-preview-overlay"),
+    ).not.toBeVisible();
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-外星几何-完整链路", diagnostics },
     ]);
+    dynamicEvidencePassed = true;
+    } finally {
+      try {
+        await dynamicRecorder.stop();
+        if (dynamicEvidencePassed) {
+          const dynamicEvidence = await dynamicRecorder.finalize({
+            testFile: "e2e/betrayal/event-choice-coverage.e2e.ts",
+            testTitle: "外星几何真实链路从探索翻牌到投掷事件结算关闭",
+            entry: "/play/betrayal",
+            flowMode: "representative-state",
+            stateInjection:
+              "createRuntimeCore + pinGroundNorthToEventRoom + injectCore + scripted random queue",
+            playerActions: [
+              "点击移动并选择门厅",
+              "点击探索并选择未知房间",
+              "点击投掷事件骰",
+              "等待物理骰子运动到停稳结果",
+              "确认并关闭事件特写",
+              "从房间本体拖拽地图",
+              "点击普通房间打开预览并关闭预览",
+            ],
+            segments: [
+              {
+                key: "card-spotlight",
+                label: "事件卡特写出现、投掷交互、结果承接、稳定退场",
+                startMarker: "卡牌特写开始",
+                endMarker: "卡牌特写稳定退场",
+                fileName: "外星几何-卡牌特写完整过程.gif",
+                evidence: [
+                  `${screenshotBase}-03-事件牌翻出投掷入口.jpg`,
+                  `${screenshotBase}-06-结算结果可见.jpg`,
+                  `${screenshotBase}-07-关闭后.jpg`,
+                ],
+              },
+              {
+                key: "physical-dice",
+                label: "物理骰子从运动中到停稳结果",
+                startMarker: "物理骰子开始",
+                endMarker: "物理骰子结束",
+                fileName: "外星几何-物理骰子完整过程.gif",
+                evidence: [
+                  `${screenshotBase}-05-骰盘停稳直接结算.jpg`,
+                ],
+              },
+              {
+                key: "room-drag",
+                label: "房间本体起点拖拽、地图移动、稳定收口",
+                startMarker: "房间拖拽开始",
+                endMarker: "房间拖拽稳定收口",
+                fileName: "外星几何-房间本体拖拽完整过程.gif",
+                evidence: [
+                  `${screenshotBase}-08-房间本体拖拽.jpg`,
+                  `${screenshotBase}-09-房间点击放大.jpg`,
+                ],
+              },
+            ],
+            screenshots: [
+              `${screenshotBase}-03-事件牌翻出投掷入口.jpg`,
+              `${screenshotBase}-05-骰盘停稳直接结算.jpg`,
+              `${screenshotBase}-06-结算结果可见.jpg`,
+              `${screenshotBase}-07-关闭后.jpg`,
+              `${screenshotBase}-08-房间本体拖拽.jpg`,
+              `${screenshotBase}-09-房间点击放大.jpg`,
+            ],
+            assertions: [
+              "发现特写存在时地图点击不穿透",
+              "事件牌特写出现投掷入口且结果层不重复描述检定过程",
+              "物理骰子可见、分离且最终停稳",
+              "事件特写关闭后地图恢复可交互",
+              "房间本体作为拖拽起点时地图 transform 真实改变",
+              "拖拽完成不误开预览，普通房间点击可打开预览",
+            ],
+          });
+          console.log(
+            `[Betrayal dynamic evidence] promoted ${dynamicEvidence?.manifestPath ?? "unknown"}`,
+          );
+        }
+      } catch (error) {
+        if (dynamicEvidencePassed) {
+          dynamicEvidenceFinalizeError = error;
+        } else {
+          console.error(
+            `[Betrayal dynamic evidence] diagnostic-only: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }
+    }
+    if (dynamicEvidenceFinalizeError) throw dynamicEvidenceFinalizeError;
   });
 
   for (const directRollCase of directRollFullChainCases) {

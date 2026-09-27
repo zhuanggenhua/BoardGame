@@ -39,9 +39,6 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-move-layer"',
     'data-testid={`qidahen-wheel-move-target-${choice.id}`}',
     'data-testid="qidahen-wheel-tip"',
-    'testId="qidahen-wheel-next-step-banner"',
-    "'qidahen-wheel-next-step-title'",
-    "'qidahen-wheel-next-step-hint'",
     '开垦',
     '军屯',
     '征兵',
@@ -68,10 +65,6 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-action-payment-hint"',
     'data-testid="qidahen-action-payment-confirm"',
     'data-testid="qidahen-action-payment-cancel"',
-    'data-testid="qidahen-turn-banner"',
-    'data-tutorial-id="qidahen-turn-banner"',
-    'testId="qidahen-top-action-banner"',
-    'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
     'data-testid="qidahen-hand-zone"',
@@ -208,7 +201,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(cardAtlasSource).toMatch(/export const qidahenJinHandPreview = \(index: number\): CardPreviewRef => \(\{[\s\S]*?type: 'atlas',[\s\S]*?atlasId: QIDAHEN_JIN_ATLAS_ID,[\s\S]*?index,/);
     });
 
-    it('Board 会把剧本待决项收口到局内 setup 页，而不是继续塞回建房页或主 HUD', () => {
+    it('Board 会把剧本待决项收口到局内 setup 页，而不是继续塞回建房页或动作区摘要', () => {
         expect(boardSource).toContain('qidahen-scenario-vote-screen');
         expect(boardSource).toContain('qidahen-scenario-vote-title');
         expect(boardSource).toContain('qidahen-scenario-host-selected');
@@ -245,18 +238,20 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('getQidahenSetupCharacterPreview(group.factionId, characterId)');
         expect(boardSource).toContain('getQidahenSetupArmamentPreview(armamentId)');
         expect(boardSource).toContain('<SelectableGameObject');
-        expect(boardSource).toContain('qidahen-actions-blocked-by-scenario');
+        expect(boardSource).not.toContain('qidahen-actions-blocked-by-scenario');
         expect(boardSource).toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
         expect(boardSource).toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
     });
 
-    it('剧本待决项出现时，动作区只保留阻断提示，真正交互在单独 setup 覆层里完成', () => {
-        expect(boardSource).toContain('局内剧本选择尚未完成');
-        expect(boardSource).toContain('当前只可处理剧本介绍与房主选择');
-        expect(boardSource).toContain('选择一张剧本卡');
-        expect(boardSource).toContain('剧本待决项尚未确认');
-        expect(boardSource).toContain('当前只可处理剧本选择');
-        expect(boardSource).toContain('等待其他玩家完成其所属阵营的前置项');
+    it('剧本待决项出现时，由专用 setup 覆层承载，不在动作区重复做状态摘要', () => {
+        expect(boardSource).toContain('const pendingScenarioChoices = core.scenarioVote != null');
+        expect(boardSource).toContain('const showActionRail = !pendingScenarioChoices');
+        expect(boardSource).toContain('if (scenarioVotePending) {');
+        expect(boardSource).toContain('{!scenarioVotePending && scenarioChoicesPending ? (');
+        expect(boardSource).toContain('<QidahenInMatchSetupOverlay');
+        expect(boardSource).not.toContain('qidahen-actions-blocked-by-scenario');
+        expect(boardSource).not.toContain('局内剧本选择尚未完成');
+        expect(boardSource).not.toContain('剧本待决项尚未确认');
     });
 
     it('手牌选中态必须绑定完整卡牌外层，禁止回到左右色块叠层', () => {
@@ -281,20 +276,18 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('const currentFactionId = viewerFactionId ?? getCurrentFactionId(core);');
     });
 
-    it('轮盘成为唯一下一步时，横幅只做提示，真正交互继续由轮盘本体热区承接', () => {
-        expect(boardSource).toContain('showTopWheelPrompt');
-        expect(boardSource).toContain("const showTopWheelPrompt = primaryStageMode === 'wheel'");
+    it('轮盘成为唯一下一步时，只由轮盘本体承接，不再生成重复顶部提示', () => {
+        expect(boardSource).not.toContain('TopPromptBanner');
+        expect(boardSource).not.toContain('qidahen-wheel-next-step-banner');
+        expect(boardSource).not.toContain('showTopWheelPrompt');
         expect(boardSource).toContain('tutorialInfoStepActive');
         expect(boardSource).toContain('!tutorialInfoStepActive');
         expect(boardSource).toContain('!actionPaymentPreviewVisible');
-        expect(boardSource).toContain('khanEdictSelection == null');
         expect(boardSource).toContain("const wheelStageEmphasized = wheelStageAvailable && tutorialStep?.id !== 'welcome';");
         expect(boardSource).toContain('emphasized={wheelStageEmphasized}');
         expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
-        expect(boardSource).toContain('轮盘落点行动');
-        expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
-        expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
-        expect(boardSource).toContain("defaultValue: '选择轮盘格'");
+        expect(boardSource).toContain('const wheelMoveChoiceSurfaceActive = !pendingScenarioChoices');
+        expect(boardSource).toContain('data-testid="qidahen-action-wheel"');
         expect(boardSource).toContain('data-testid={`qidahen-wheel-move-target-${choice.id}`}');
         expect(boardSource).toContain('data-tutorial-id={`qidahen-wheel-move-${choice.id}`}');
         expect(boardSource).toContain('directExecuteOnClick');
@@ -333,7 +326,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-tutorial-id="qidahen-action-wheel"');
         expect(boardSource).toContain('data-tutorial-id="qidahen-actions-zone"');
         expect(boardSource).toContain('data-tutorial-id="qidahen-hand-zone"');
-        expect(boardSource).toContain('data-tutorial-id="qidahen-turn-banner"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-player-float"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-chronology-zone"');
+        expect(boardSource).not.toContain('data-testid="qidahen-turn-banner"');
         expect(boardSource).toContain('data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}');
     });
 
@@ -345,8 +340,6 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("getQidahenHandCardBadgeKind,");
         expect(boardSource).toContain("const getQidahenDirectHandActionIdsForFaction = (");
         expect(boardSource).toContain(".map((card) => getQidahenDirectActionIdForHandCard(card))");
-        expect(boardSource).toContain("if (directHandActionIds.has(selectedAction.id)) {");
-        expect(boardSource).toContain("return '打出手牌';");
         expect(boardSource).toContain("const visibleActionChoices = core.actionChoices.filter((action) => !directHandActionIds.has(action.id));");
         expect(boardSource).toContain('{visibleActionChoices.map((action) => (');
         expect(boardSource).toContain('onPreviewActionFromHandCard: (card: QidahenHandCard) => void;');
@@ -417,26 +410,12 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('<EndgameOverlay {...endgameProps} />');
     });
 
-    it('一级行动入口会收口为顶部横幅与直达动作按钮，不再保留右侧说明式步骤卡', () => {
-        expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
-        expect(boardSource).toContain("return selectedAction ? selectedAction.label : '手牌行动';");
-        expect(boardSource).toContain("return '选择手牌行动';");
-        expect(boardSource).toContain("return '选择行动目标';");
-        expect(boardSource).toContain(": '选择轮盘格';");
-        expect(boardSource).toContain('showTopFactionPrompt');
-        expect(boardSource).toContain("const showTopFactionPrompt = primaryStageMode === 'faction'");
-        expect(boardSource).toContain("&& khanEdictSelection == null");
-        expect(boardSource).toContain("&& recruitSelection == null");
-        expect(boardSource).toContain("&& maShiTradeSelection == null");
-        expect(boardSource).toContain("&& diplomacySelection == null");
-        expect(boardSource).toContain("&& driveTigerConsentSelection == null");
-        expect(boardSource).toContain("&& internalDispatchSelection == null");
-        expect(boardSource).toContain("&& wheelDispatchSelection == null");
-        expect(boardSource).toContain("&& pendingTargetAction == null");
-        expect(boardSource).toContain("&& postBattleSelection == null");
-        expect(boardSource).toContain('qidahen-top-action-banner');
-        expect(boardSource).toContain('!tutorialInfoStepActive');
-        expect(boardSource).toContain('!actionPaymentPreviewVisible');
+    it('一级行动入口只保留真实动作按钮，不再生成重复顶部行动提示', () => {
+        expect(boardSource).not.toContain('buildQidahenPrimaryActionEntryText');
+        expect(boardSource).not.toContain('showTopFactionPrompt');
+        expect(boardSource).not.toContain('qidahen-top-action-banner');
+        expect(boardSource).toContain('data-testid="qidahen-action-rail"');
+        expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
         expect(boardSource).toContain('const isQidahenGaoDiTargetSelectionActive = (');
         expect(boardSource).toContain("const actionPaymentMapRegionSelectionActive = actionPaymentPreviewVisible");
         expect(boardSource).toContain("&& core.confirmedActionId === 'raid';");
@@ -444,10 +423,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const directMapRegionSelectionActive = actionPaymentMapRegionSelectionActive || gaoDiMapRegionSelectionActive;');
         expect(boardSource).toContain('const mapRegionSelectionDecisionActive = gaoDiMapRegionSelectionActive');
         expect(boardSource).toContain('if (!mapRegionSelectionDecisionActive) {');
-        expect(boardSource).toContain("t('board.actions.primaryActionSelectPrompt', { defaultValue: '手牌行动' })");
-        expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
-        expect(boardSource).toContain('hint={selectedPrimaryAction ? primaryActionEntryText : undefined}');
-        expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}'");
+        expect(boardSource).not.toContain("t('board.actions.primaryActionSelectPrompt'");
+        expect(boardSource).not.toContain("t('board.actions.primaryStageTagFaction'");
+        expect(boardSource).not.toContain('hint={selectedPrimaryAction ? primaryActionEntryText : undefined}');
+        expect(boardSource).not.toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}'");
+        expect(boardSource).not.toContain('data-testid="qidahen-turn-banner"');
         expect(boardSource).toContain("defaultValue: '选择建军方式'");
         expect(boardSource).toContain("defaultValue: '选择建军数量'");
         expect(boardSource).toContain("defaultValue: '选择执行效果'");
@@ -472,7 +452,6 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain("defaultValue: '选择进攻目标 · 可攻 {{count}} 处'");
         expect(boardSource).not.toContain("defaultValue: '正在查看 {{targetRegionName}} · {{targetHint}}'");
         expect(boardSource).not.toContain("defaultValue: '进攻 {{targetRegionName}} · 守方 {{defenderLabel}}'");
-        expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
         expect(boardSource).not.toContain('qidahen-primary-action-next-step');
         expect(boardSource).not.toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
         expect(boardSource).not.toContain("return '先从右侧选一项行动';");
@@ -546,7 +525,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const activeTargetPoint = getTopLevelGuideRegionMapPoint(activeTargetRegionId);');
         expect(boardSource).toContain('const focusRegionIds = [');
         expect(boardSource).toContain('? buildQidahenFocusedMapViewport(activeTargetPoint, 1.82)');
-        expect(boardSource).toContain(': buildQidahenFocusedMapViewportForPoints(points);');
+        expect(boardSource).toContain(': buildQidahenFocusedMapViewportForPoints(points, points.length > 1 ? 1 : 1.48);');
         expect(boardSource).not.toContain("const isGrantPardonTarget = candidate.action === 'grant-pardon';");
         expect(boardSource).not.toContain('data-testid={`qidahen-map-guide-target-label-${candidate.targetRegionId}`}');
         expect(boardSource).toContain('sr-only');
@@ -607,7 +586,7 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('朝鲜牌库在桌面端使用右侧小型 rail，禁止回到右上角大卡悬浮', () => {
         const koreaZoneStart = boardSource.indexOf('const KoreaZone: React.FC<{');
-        const koreaZoneEnd = boardSource.indexOf('const TopPromptBanner: React.FC<{', koreaZoneStart);
+        const koreaZoneEnd = boardSource.indexOf('const ActionButton: React.FC<{', koreaZoneStart);
         const koreaZoneSource = boardSource.slice(koreaZoneStart, koreaZoneEnd);
 
         expect(koreaZoneStart).toBeGreaterThanOrEqual(0);
@@ -768,7 +747,7 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('主交互槽位激活时，被动状态块必须让位，不再跟主交互面板争抢右侧动作槽位', () => {
         expect(boardSource).toContain('const suppressPassiveActionContext = actionPaymentPreviewVisible');
-        expect(boardSource).toContain('|| showWheelNextStepBanner');
+        expect(boardSource).toContain('|| wheelMoveChoiceSurfaceActive');
         expect(boardSource).toContain('|| pendingTargetAction != null');
         expect(boardSource).toContain('|| postBattleSelection != null;');
         expect(boardSource).toContain("const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';");

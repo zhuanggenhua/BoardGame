@@ -1,12 +1,12 @@
 ---
 name: asset-pipeline
-description: 图片资源与发布总规范：资源目录、manifest、上传和运行时加载——改素材链路时查
+description: 运行时素材与发布总规范：图片、图集、模型/贴图、引擎内置对象、manifest、上传和运行时加载——改素材链路时查
 metadata:
   type: doc
   status: 已交付
 ---
 
-# 图片资源与发布总规范
+# 运行时素材与发布总规范
 
 本文件只规定运行时媒体资源的准入、路径、压缩、manifest、上传和移动包边界。首屏预加载见 [`critical-image-preload`](critical-image-preload.md)，音频细则见 [`audio-assets`](audio-assets.md)。
 
@@ -20,6 +20,17 @@ metadata:
 - 图包 intake 必须先做“规则数量 vs 素材实测数量”对账：正面、背面、空格、非对象、复用 alias、缺口和争议分别登记。对不上且不能解释时，状态只能是 `blocked / disputed`。
 - HTML/CSS 假图、文字牌、程序化 token、插件默认样式、emoji、临时 SVG、截图裁片和 mock 图片都不是正式素材。除非用户明确批准并写入合同，否则只能标为 `temporary-placeholder`。
 - 缺素材时必须写清缺哪个现实对象、已查哪里、为什么不能闭合、最小补源动作；不能用“后续美术优化”或“先跑通 E2E”冒充完成。
+
+## 源素材与自创替代禁令（全项目）
+
+本节是“源对象存在时必须直接使用，禁止自行创造替代”的唯一项目级主源。新游戏、已有游戏重构、现有功能修复、素材替换、FX 改造和 E2E 录制都适用；专项 workflow 只能做阶段适配、合同填充和证据记录，不得另写相反规则。
+
+- 在创建或修改运行时视觉前，必须先锁定源对象本体、来源定位、承载类型和运行时 owner。不能只问“有没有图片”，还要检查图片、atlas、模型、贴图、TTS / Workshop 对象字段、官方文件、已有运行时资源以及引擎内置对象。
+- 只要源对象存在，固定顺序是：①直接接入源图片、atlas、模型/贴图、官方文件或引擎内置对象；②若直接接入确实不可行，记录尝试过的路径、技术阻塞和现实影响；③只有此时才允许来源忠实复现；④仍不能来源忠实时保持 `blocked`，不得用临时简陋产物推进。
+- 对象合同必须标明承载类型：`external-image`、`atlas`、`model-plus-texture`、`engine-native`、`source-locked-programmatic`、`source-faithful-reproduction` 或 `blocked`。`engine-native` / `source-locked-programmatic` 只表示源对象本身就是内置或程序化承载，不表示“没有外部文件所以可以随便画”。
+- 对 `engine-native` / `source-locked-programmatic` 对象，如果 TTS / Workshop / 官方对象记录明确没有 `CustomImage`、`CustomMesh` 或外部贴图，且直接接入该原生对象不可行，可以登记为 `source-faithful-reproduction`，使用 CSS / Canvas / WebGL 复现其可验证的几何、面数、面值映射、旋转 / 停稳映射、材质和动画语义。必须保留源对象定位、字段证据和映射表；不能额外捏造图案、纹理、符号或规则效果。
+- CSS 图形、渐变、纯数字、emoji、普通圆点、普通 D6、默认插件皮肤、文字壳、临时 HTML、相似占位物或无来源自创 renderer 仍不能替代已经存在的 `external-image` / `atlas` / `model-plus-texture` 正式素材。未完成来源忠实映射时，它们最多作为明确标注的诊断 / 阻塞显示，不能进入正式资源链，也不能升级为来源视觉 PASS。
+- 测试通过、截图存在、文件生成成功或页面能显示，只能证明链路触发；不能替代源对象样式、材质、面值、符号、归属和用法的一致性验收。
 
 ## 目录与路径
 

@@ -110,6 +110,8 @@ export const UNDO_COMMANDS = {
     CANCEL_UNDO: 'SYS_CANCEL_UNDO',
 } as const;
 
+const TUTORIAL_PREVIOUS_COMMAND = 'SYS_TUTORIAL_PREVIOUS';
+
 export function setUndoAiSeatIds<TCore>(
     state: MatchState<TCore>,
     aiSeatIds: readonly PlayerId[] | undefined,
@@ -233,6 +235,44 @@ export function createUndoSystem<TCore>(
             }
             if (command.type === UNDO_COMMANDS.CANCEL_UNDO) {
                 return handleCancelUndo(state, command.playerId);
+            }
+
+            // 教程“上一步”需要同时回退对局状态。
+            // 仅在最新快照正好来自当前步骤的前一个教程步骤时消费该快照，
+            // 避免从纯说明步骤回退时误撤销更早的领域动作。
+            if (command.type === TUTORIAL_PREVIOUS_COMMAND) {
+                const tutorial = state.sys.tutorial;
+                const undo = state.sys.undo;
+                const latestSnapshot = undo.snapshots[undo.snapshots.length - 1] as MatchState<TCore> | undefined;
+                const snapshotTutorial = latestSnapshot?.sys?.tutorial;
+                const expectedPreviousStepIndex = tutorial.stepIndex - 1;
+                if (
+                    tutorial.active
+                    && latestSnapshot
+                    && snapshotTutorial?.active
+                    && snapshotTutorial.stepIndex === expectedPreviousStepIndex
+                ) {
+                    const cursors = undo.snapshotCursors ?? [];
+                    const restoredCursor = cursors[cursors.length - 1] ?? -1;
+                    const restored = restoreSnapshotAfterUndo(
+                        state,
+                        latestSnapshot,
+                        undo.snapshots.slice(0, -1),
+                        cursors.slice(0, -1),
+                        restoredCursor,
+                    );
+                    // 保留当前教程索引，交给 TutorialSystem 统一计算可见上一步。
+                    return {
+                        state: {
+                            ...restored,
+                            sys: {
+                                ...restored.sys,
+                                tutorial,
+                            },
+                        },
+                    };
+                }
+                return;
             }
 
             // 普通命令：准备快照/清理请求（成功后再落地）

@@ -364,6 +364,33 @@
         }
       }
     },
+    "dice/compressed/effect-die-d12-face": {
+      "variants": {
+        "webp": {
+          "sha256": "16b74e234e2aae109d57f7181b8e2e7b14de6b11c767887e08ee4cb748b3ed04",
+          "bytes": 63228,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "dice/compressed/effect-die-numbers": {
+      "variants": {
+        "webp": {
+          "sha256": "897e3b023982a3e38efc41487425898574bac522df7e74d9cf4219bbe6da4ad4",
+          "bytes": 118002,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "dice/effect-die-numbers": {
+      "variants": {
+        "png": {
+          "sha256": "4d184163c15235e9be4a285708bdca1c5bf394fd54fbcfc68c77b2d23cae206d",
+          "bytes": 173251,
+          "mime": "image/png"
+        }
+      }
+    },
     "references/attack-bar-legend": {
       "variants": {
         "png": {

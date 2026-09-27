@@ -163,7 +163,7 @@
     "effect": "12 面效果骰",
     "effectShort": "d12",
     "effectResult": "D12 · {{result}}",
-    "effectNativeAssetNote": "TTS 原生效果骰 Die_12；当前仅显示结果，不伪造骰体外观",
+    "effectNativeAssetNote": "蓝色十二面效果骰",
     "settlement": "掷骰预备"
   },
   "actionDock": {

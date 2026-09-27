@@ -68,7 +68,7 @@ function ExplorerPentagonCard({
     : "w-full max-w-[348px]";
   const statusBadgeClass =
     taken && !selected
-      ? "border-[#5c5548] bg-[rgba(14,14,12,0.82)] text-[#9b917d]"
+      ? "border-[#b7a26e] bg-[rgba(24,23,18,0.92)] text-[#e8d7a9]"
       : ready
         ? "border-[#77bb77] bg-[rgba(19,43,25,0.86)] text-[#b8f0a8]"
         : selected
@@ -88,7 +88,7 @@ function ExplorerPentagonCard({
         selected
           ? "drop-shadow-[0_0_28px_rgba(181,239,66,0.44)]"
           : taken
-            ? "opacity-55 grayscale"
+            ? "cursor-not-allowed"
             : "hover:-translate-y-1 hover:drop-shadow-[0_0_18px_rgba(211,179,109,0.28)]"
       }`}
     >
@@ -119,20 +119,15 @@ function ExplorerPentagonCard({
           src={explorer.portraitAsset}
           locale={effectiveLocale}
           alt={explorer.displayName}
-          className="relative z-10 h-full w-full object-contain"
+          className={`relative z-10 h-full w-full object-contain ${
+            taken ? "opacity-55 grayscale" : ""
+          }`}
           draggable={false}
         />
-        {selected && playerLabel ? (
-          <div
-            className="pointer-events-none absolute left-1/2 top-[9%] z-30 -translate-x-1/2 border border-[#b5ef42] bg-[rgba(16,28,12,0.92)] px-2 py-1 text-[10px] font-black leading-none tracking-[0.12em] text-[#dfff8f] shadow-[0_8px_18px_rgba(0,0,0,0.34)]"
-            aria-hidden="true"
-          >
-            {playerLabel}
-          </div>
-        ) : null}
       </div>
-      {playerLabel && !selected ? (
+      {playerLabel ? (
         <div
+          data-testid={`betrayal-character-card-${explorer.explorerId}-player-label`}
           className={`pointer-events-none absolute right-2 top-2 z-30 min-w-8 border px-2 py-1 text-center text-[11px] font-black leading-none tracking-[0.08em] shadow-[0_8px_18px_rgba(0,0,0,0.32)] ${statusBadgeClass}`}
           aria-hidden="true"
         >

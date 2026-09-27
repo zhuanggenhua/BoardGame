@@ -14,6 +14,34 @@ const QIDAHEN_MAP_RESULT_STEP_FOCUS = {
     tooltipMaxWidth: 300,
 };
 
+const QIDAHEN_PAYMENT_STEP_FOCUS = {
+    avoidOverlapSelectors: [
+        '[data-testid="qidahen-action-payment-panel"]',
+        '[data-testid="qidahen-discard-anchor"]',
+    ],
+};
+
+const QIDAHEN_PLAYER_FLOAT_STEP_FOCUS = {
+    avoidOverlapSelectors: [
+        '[data-testid="qidahen-actions-zone"]',
+        '[data-testid="qidahen-hand-zone"]',
+        '[data-testid="qidahen-chronology-zone"]',
+        '[data-testid="qidahen-draw-anchor"]',
+        '[data-testid="qidahen-discard-anchor"]',
+    ],
+};
+
+const QIDAHEN_MAP_INFO_STEP_FOCUS = {
+    avoidOverlapSelectors: [
+        '[data-testid="qidahen-actions-zone"]',
+        '[data-testid="qidahen-player-float"]',
+        '[data-testid="qidahen-hand-zone"]',
+        '[data-testid="qidahen-chronology-zone"]',
+        '[data-testid="qidahen-draw-anchor"]',
+        '[data-testid="qidahen-discard-anchor"]',
+    ],
+};
+
 const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
@@ -452,6 +480,7 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.basic.steps.payCards',
             highlightTarget: 'qidahen-hand-zone',
             position: 'top',
+            ...QIDAHEN_PAYMENT_STEP_FOCUS,
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
             advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'grant-pardon' } }],
@@ -659,6 +688,7 @@ const QIDAHEN_RETREAT_AND_ROUT_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.retreatAndRout.steps.routResult',
             highlightTarget: 'qidahen-player-float',
             position: 'top',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -666,6 +696,7 @@ const QIDAHEN_RETREAT_AND_ROUT_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.retreatAndRout.steps.finish',
             highlightTarget: 'qidahen-player-float',
             position: 'top',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             infoStep: true,
         },
     ],
@@ -838,6 +869,7 @@ const QIDAHEN_WHEEL_SHARED_COST_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.wheelSharedCost.steps.drawResult',
             highlightTarget: 'qidahen-player-float',
             position: 'top',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -993,6 +1025,7 @@ const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.armamentUpgrade.steps.payCards',
             highlightTarget: 'qidahen-hand-zone',
             position: 'top',
+            ...QIDAHEN_PAYMENT_STEP_FOCUS,
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
             advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'upgrade-armament' } }],
@@ -1041,6 +1074,7 @@ const QIDAHEN_EVENT_ACTION_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.eventAction.steps.payCards',
             highlightTarget: 'qidahen-hand-zone',
             position: 'top',
+            ...QIDAHEN_PAYMENT_STEP_FOCUS,
             requireAction: true,
             viewAs: '1',
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
@@ -1162,6 +1196,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.midyearTax',
             highlightTarget: 'qidahen-player-float',
             position: 'bottom',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             viewAs: '1',
             infoStep: true,
         },
@@ -1170,6 +1205,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.midyearCharacters',
             highlightTarget: 'qidahen-player-float',
             position: 'bottom',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             viewAs: '1',
             infoStep: true,
         },
@@ -1206,6 +1242,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearAttrition',
             highlightTarget: 'qidahen-player-float',
             position: 'bottom',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             viewAs: '2',
             infoStep: true,
         },
@@ -1220,16 +1257,18 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
         {
             id: 'turn-order-refresh',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.turnOrderRefresh',
-            highlightTarget: 'qidahen-turn-banner',
-            position: 'top',
+            highlightTarget: 'qidahen-player-float',
+            position: 'bottom',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             viewAs: '2',
             infoStep: true,
         },
         {
             id: 'finish',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.finish',
-            highlightTarget: 'qidahen-turn-banner',
+            highlightTarget: 'qidahen-player-float',
             position: 'bottom',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             viewAs: '2',
             infoStep: true,
         },
@@ -1259,6 +1298,7 @@ const QIDAHEN_KOREA_SPECIAL_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.koreaSpecial.steps.hanseongVp',
             highlightTarget: 'qidahen-player-float',
             position: 'left',
+            ...QIDAHEN_PLAYER_FLOAT_STEP_FOCUS,
             infoStep: true,
         },
         {
@@ -1288,6 +1328,7 @@ const QIDAHEN_KOREA_SPECIAL_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.koreaSpecial.steps.shanhaiguan',
             highlightTarget: 'qidahen-map-layer',
             position: 'right',
+            ...QIDAHEN_MAP_INFO_STEP_FOCUS,
             infoStep: true,
         },
         {

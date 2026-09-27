@@ -23,6 +23,7 @@ welcome
   -> wheel-first
   -> wheel-move
   -> wheel-result
+  -> wheel-branch-finish
   -> pick-action
   -> pay-cards
   -> choose-grant-pardon-target
@@ -33,8 +34,9 @@ welcome
 承接规则：
 
 - 起手 3 张手牌、上限 15 张；没有超限时 `handLimitDiscardSelection` 必须为空。
-- `wheel-first` 是第一个真实玩家决策，不是弃牌、检视、士气或重复轮盘说明。
+- `wheel-first` 是正式开局检查与轮盘入口说明；第一个真实点击仍是 `wheel-move`，不是弃牌、检视、士气或重复轮盘说明。
 - `wheel-move` 使用正式公共轮盘点击；`wheel-result` 读取自动落点结算。
+- `wheel-branch-finish` 只解释轮盘落点如何把流程带回下一项一级行动，不新增状态条或代操作按钮。
 - `pick-action` 和 `pay-cards` 使用正式手牌行动入口与支付面板。
 - 目标选择必须落到真实地图目标；`action-result` 必须读取实际控制权变化。
 - `finish` 只结束基础教程，不跳到其它专题。

@@ -1871,6 +1871,9 @@ describe('Betrayal Board foundation', () => {
         expect(selectionCharacters.getByTestId('betrayal-character-card-isa-valencia')).not.toHaveTextContent('已选择');
         expect(selectionCharacters.getByTestId('betrayal-character-card-isa-valencia')).toHaveAttribute('aria-label', expect.stringContaining('已选择'));
         expect(selectionCharacters.getByTestId('betrayal-character-card-isa-valencia')).toHaveTextContent('P1');
+        const isaPlayerLabel = selectionCharacters.getByTestId('betrayal-character-card-isa-valencia-player-label');
+        expect(isaPlayerLabel).toHaveClass('right-2', 'top-2');
+        expect(isaPlayerLabel).toHaveClass('text-[#dfff8f]');
         expect(selectionCharacters.getByTestId('betrayal-character-card-isa-valencia-state-outline')).toHaveAttribute('data-highlight-shape', 'pentagon');
         [
             'isa-valencia',
@@ -2753,7 +2756,7 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId(girlTokenId)).toHaveAttribute('data-token-placement', 'mummy');
             expect(screen.getByTestId(`betrayal-girl-svg-token-${traitorRoomId}`)).toHaveAttribute(
                 'data-token-visual-size',
-                '54',
+                '28',
             );
             expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('交出圣符');
         });
@@ -5520,6 +5523,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-inventory-medical-kit-0')).not.toBeInTheDocument();
 
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        expect(screen.getByTestId('betrayal-discovery-panel')).toHaveClass('pointer-events-auto');
         expect(screen.getByTestId('betrayal-discovery-search-step')).toHaveTextContent('展示后埋葬急救包');
         expect(screen.getByTestId('betrayal-discovery-search-step')).toHaveAttribute('data-room-discovery-search-index', '1');
         expect(screen.getByTestId('betrayal-discovery-search-step')).toHaveAttribute('data-room-discovery-search-total', '2');
@@ -5550,6 +5554,194 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.queryByTestId('betrayal-deck-resolution-ledger')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-deck-resolution-ledger-step')).not.toBeInTheDocument();
+    });
+
+    it('单独获得物品卡会在 3 秒后自动收起', () => {
+        vi.useFakeTimers();
+        try {
+            const itemCard = BETRAYAL_DISCOVERY_POOLS.possessions.item[0]!;
+            const core = createBetrayalFoundationCore(['0', '1', '2']);
+            core.latestDiscovery = {
+                kind: 'item',
+                title: itemCard.name,
+                summary: '获得物品',
+                detail: `获得${itemCard.name}`,
+                tone: 'accent',
+            };
+            core.latestDiscoveryOwnerPlayerId = '0';
+            core.pendingCardResolutionQueue = [{
+                id: 'standalone-item-gain',
+                playerId: '0',
+                requiredPlayerIds: ['0'],
+                acknowledgedPlayerIds: [],
+                deckKind: 'item',
+                cardId: itemCard.id,
+                cardName: itemCard.name,
+                discoveryTitle: itemCard.name,
+                stepKind: 'drawn-card',
+                text: `获得${itemCard.name}`,
+                index: 1,
+                total: 1,
+            }];
+            const dispatch = vi.fn();
+
+            renderBoardWithDispatch(core, dispatch, {
+                playerID: '0',
+                matchData: defaultMatchData.slice(0, 3),
+            });
+
+            expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
+            act(() => vi.advanceTimersByTime(2999));
+            expect(dispatch).not.toHaveBeenCalledWith(
+                BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                { resolutionId: 'standalone-item-gain' },
+            );
+            act(() => vi.advanceTimersByTime(1));
+            expect(dispatch).toHaveBeenCalledWith(
+                BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                { resolutionId: 'standalone-item-gain' },
+            );
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('单独获得物品卡可以提前点击收起', () => {
+        const itemCard = BETRAYAL_DISCOVERY_POOLS.possessions.item[0]!;
+        const core = createBetrayalFoundationCore(['0', '1', '2']);
+        core.latestDiscovery = {
+            kind: 'item',
+            title: itemCard.name,
+            summary: '获得物品',
+            detail: `获得${itemCard.name}`,
+            tone: 'accent',
+        };
+        core.latestDiscoveryOwnerPlayerId = '0';
+        core.pendingCardResolutionQueue = [{
+            id: 'standalone-item-click',
+            playerId: '0',
+            requiredPlayerIds: ['0'],
+            acknowledgedPlayerIds: [],
+            deckKind: 'item',
+            cardId: itemCard.id,
+            cardName: itemCard.name,
+            discoveryTitle: itemCard.name,
+            stepKind: 'drawn-card',
+            text: `获得${itemCard.name}`,
+            index: 1,
+            total: 1,
+        }];
+        const dispatch = vi.fn();
+
+        renderBoardWithDispatch(core, dispatch, {
+            playerID: '0',
+            matchData: defaultMatchData.slice(0, 3),
+        });
+
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
+        expect(dispatch).toHaveBeenCalledWith(
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+            { resolutionId: 'standalone-item-click' },
+        );
+    });
+
+    it('带事件的翻牌确认不会被物品卡自动收起逻辑误提交', () => {
+        vi.useFakeTimers();
+        try {
+            const core = createBetrayalFoundationCore(['0', '1', '2']);
+            core.latestDiscovery = {
+                kind: 'event',
+                title: '测试事件',
+                summary: '即时生效',
+                detail: '事件效果：测试',
+                tone: 'accent',
+            };
+            core.latestDiscoveryOwnerPlayerId = '0';
+            core.pendingCardResolutionQueue = [{
+                id: 'event-resolution-needs-confirmation',
+                playerId: '0',
+                requiredPlayerIds: [...core.playerIds],
+                acknowledgedPlayerIds: [],
+                deckKind: 'event',
+                cardName: '测试事件',
+                discoveryTitle: '测试事件',
+                stepKind: 'event-effect',
+                text: '事件效果：测试',
+                index: 1,
+                total: 1,
+            }];
+            const dispatch = vi.fn();
+
+            renderBoardWithDispatch(core, dispatch, {
+                playerID: '0',
+                matchData: defaultMatchData.slice(0, 3),
+            });
+
+            act(() => vi.advanceTimersByTime(3000));
+            expect(dispatch).not.toHaveBeenCalledWith(
+                BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                { resolutionId: 'event-resolution-needs-confirmation' },
+            );
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('需要确认的事件骰子超过 3 秒也不会自动提交', () => {
+        vi.useFakeTimers();
+        try {
+            const core = createBetrayalFoundationCore(['0', '1', '2']);
+            core.recentRoll = {
+                id: 'event-roll-needs-confirmation',
+                kind: 'eventTraitCheck',
+                playerId: '0',
+                sourceTitle: '测试事件',
+                trait: 'knowledge',
+                dice: [1, 1, 0],
+                passiveBonus: 0,
+                latestLabel: '获得 1 点知识',
+                consumedRabbitFootCardIds: [],
+                branchThresholds: [
+                    {
+                        min: 0,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                ],
+            };
+            core.pendingEventRollResolution = {
+                rollId: 'event-roll-needs-confirmation',
+                playerId: '0',
+                sourceTitle: '测试事件',
+                requiredPlayerIds: [...core.playerIds],
+                acknowledgedPlayerIds: [],
+                requiresAcknowledgement: true,
+                effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+            };
+            core.latestDiscovery = {
+                kind: 'event',
+                title: '测试事件',
+                summary: '等待确认',
+                detail: '知识检定 2：等待所有玩家确认最终结果',
+                tone: 'accent',
+            };
+            core.latestDiscoveryOwnerPlayerId = '0';
+            const dispatch = vi.fn();
+
+            renderBoardWithDispatch(core, dispatch, {
+                playerID: '0',
+                matchData: defaultMatchData.slice(0, 3),
+            });
+
+            act(() => vi.advanceTimersByTime(3001));
+            expect(dispatch).not.toHaveBeenCalledWith(
+                BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                { rollId: 'event-roll-needs-confirmation' },
+                expect.anything(),
+            );
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('翻牌结算必须由所有玩家确认，当前玩家确认后窗口仍保留并显示最终效果', () => {
@@ -5655,16 +5847,9 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).not.toHaveTextContent(
             '知识检定',
         );
-        expect(screen.getByTestId('betrayal-discovery-visible-detail')).not.toHaveTextContent(
-            '判定要求',
-        );
-        expect(screen.getByTestId('betrayal-discovery-visible-detail')).not.toHaveTextContent(
-            '总点数',
-        );
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent(
-            '判定要求（总点数）：达到 5 点或以上：作祟开始 · 低于 5 点：未触发作祟',
-        );
-        expect(screen.getByTestId('betrayal-discovery-visible-detail')).toHaveTextContent('知识 +1');
+        expect(screen.queryByTestId('betrayal-discovery-visible-detail')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('知识检定');
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 6');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
         const alienGeometrySteps = expectDiscoveryResolutionLedgerTraceOnly(1);
         expect(alienGeometrySteps[0]).toHaveTextContent('事件效果');

@@ -29,6 +29,8 @@ import {
     grantExtraAction,
     grantExtraMinion,
     grantImmediateExtraPlayForStoredCard,
+    getMinionEffectiveNames,
+    minionHasEffectiveName,
     getMinionPower,
     inspectDeck,
     modifyBreakpoint,
@@ -3149,14 +3151,28 @@ function registerExtramorphs(): void {
 }
 
 function hasTeensMinionAtBase(core: SmashUpCore, baseIndex: number, defId: string, playerId: PlayerId): boolean {
-    return core.bases[baseIndex]?.minions.some(minion => minion.defId === defId && minion.controller === playerId) ?? false;
+    return core.bases[baseIndex]?.minions.some(minion =>
+        minion.controller === playerId && minionHasEffectiveName(core, minion, defId)
+    ) ?? false;
 }
 
-function firstOwnDifferentNamePrintedPower3Minion(core: SmashUpCore, playerId: PlayerId, baseIndex: number, defId: string) {
+function firstOwnDifferentNamePrintedPower3Minion(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    defId: string,
+    triggerMinionUid?: string,
+) {
+    const trigger = core.bases[baseIndex]?.minions.find(minion =>
+        minion.controller === playerId
+        && (triggerMinionUid ? minion.uid === triggerMinionUid : minion.defId === defId)
+    );
+    const triggerNames = new Set(trigger ? getMinionEffectiveNames(core, trigger) : [defId]);
     return firstMinionAtBase(core, baseIndex, minion =>
         minion.controller === playerId
-        && minion.defId !== defId
         && isPrintedPower(minion.defId, 3)
+        && minion.uid !== trigger?.uid
+        && getMinionEffectiveNames(core, minion).every(name => !triggerNames.has(name))
     );
 }
 
@@ -3175,9 +3191,12 @@ function playExtraPrintedPower3FromDeck(ctx: AbilityContext, baseIndex = ctx.bas
 }
 
 function countBrunchBunchNames(core: SmashUpCore, playerId: PlayerId, baseIndex: number): number {
-    return new Set((core.bases[baseIndex]?.minions ?? [])
-        .filter(minion => minion.controller === playerId && isPrintedPower(minion.defId, 3))
-        .map(minion => minion.defId)).size;
+    const names = new Set<string>();
+    for (const minion of core.bases[baseIndex]?.minions ?? []) {
+        if (minion.controller !== playerId || !isPrintedPower(minion.defId, 3)) continue;
+        for (const name of getMinionEffectiveNames(core, minion)) names.add(name);
+    }
+    return names.size;
 }
 
 function buildBrunchBunchEffectOptions(
@@ -4000,7 +4019,13 @@ function registerTeens(): void {
         const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
         if (baseIndex === undefined) return [];
         const target = ctx.triggerMinionDefId
-            ? firstOwnDifferentNamePrintedPower3Minion(ctx.state, ctx.playerId, baseIndex, ctx.triggerMinionDefId)
+            ? firstOwnDifferentNamePrintedPower3Minion(
+                ctx.state,
+                ctx.playerId,
+                baseIndex,
+                ctx.triggerMinionDefId,
+                ctx.triggerMinionUid,
+            )
             : undefined;
         return target ? [addPowerCounter(target.minion.uid, baseIndex, 1, 'base_montridge_high', ctx.now, {
             sourcePlayerId: ctx.playerId,

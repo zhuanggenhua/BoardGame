@@ -531,6 +531,31 @@ describe('SmashUp UI 交互验证', () => {
         expect(overlay.textContent).toContain('育巢');
     });
 
+    it('波利尼西亚航海者英文基地图集在中文牌桌上常显中文覆盖层', () => {
+        render(
+            React.createElement(SmashUpCardRenderer, {
+                previewRef: {
+                    type: 'renderer',
+                    rendererId: 'smashup-card-renderer',
+                    payload: { defId: 'base_island_chain' },
+                },
+            }),
+        );
+
+        const preview = screen.getByTestId('mock-card-preview');
+        expect(JSON.parse(preview.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'atlas',
+            atlasId: 'smashup:polynesian-voyagers-bases',
+            index: 8,
+        });
+        expect(preview.getAttribute('data-locale')).toBe('zh-CN');
+
+        const overlay = screen.getByTestId('su-card-text-overlay');
+        expect(overlay.getAttribute('data-overlay-visibility')).toBe('always');
+        expect(overlay.className).toContain('opacity-100');
+        expect(overlay.textContent).toContain('岛链');
+    });
+
     it('模仿者会把目标卡图的下半部叠到自己的卡面上', () => {
         render(
             React.createElement(SmashUpCardRenderer, {

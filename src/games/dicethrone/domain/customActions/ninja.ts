@@ -735,7 +735,7 @@ export function registerNinjaCustomActions(): void {
         };
     });
 
-    registerBonusDiceSettlementHandler(DEATH_BLOSSOM_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+    registerBonusDiceSettlementHandler(DEATH_BLOSSOM_SETTLEMENT_ID, ({ settlement, timestamp }) => {
         let katanaCount = 0;
         let shurikenCount = 0;
         let maskCount = 0;
@@ -755,8 +755,7 @@ export function registerNinjaCustomActions(): void {
             ));
         }
         if (maskCount > 0) {
-            const ninjutsuEvent = grantTokenEvent(state, settlement.sourceAbilityId, settlement.attackerId, TOKEN_IDS.NINJUTSU, maskCount, timestamp + 1);
-            if (ninjutsuEvent) followupEvents.push(ninjutsuEvent);
+            followupEvents.push(attackMadeUndefendable(settlement.attackerId, timestamp + 1));
         }
         return {
             totalDamage: 0,

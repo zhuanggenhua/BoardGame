@@ -133,6 +133,27 @@ async function readLayoutMetrics(page: Page) {
     return {
       viewport: { width: window.innerWidth, height: window.innerHeight },
       shell: rect(".mobile-board-shell"),
+      background: {
+        rect: rect('[data-testid="game-page-background"]'),
+        size: document.querySelector<HTMLElement>(
+          '[data-testid="game-page-background"]',
+        )
+          ? getComputedStyle(
+              document.querySelector<HTMLElement>(
+                '[data-testid="game-page-background"]',
+              )!,
+            ).backgroundSize
+          : null,
+        position: document.querySelector<HTMLElement>(
+          '[data-testid="game-page-background"]',
+        )
+          ? getComputedStyle(
+              document.querySelector<HTMLElement>(
+                '[data-testid="game-page-background"]',
+              )!,
+            ).backgroundPosition
+          : null,
+      },
       shellTransform: shell ? getComputedStyle(shell).transform : null,
       shellWidth: root.style.getPropertyValue(
         "--mobile-board-shell-design-width",
@@ -301,6 +322,27 @@ async function readCharacterLayoutMetrics(page: Page) {
     return {
       viewport: { width: window.innerWidth, height: window.innerHeight },
       shell: rect(".mobile-board-shell"),
+      background: {
+        rect: rect('[data-testid="game-page-background"]'),
+        size: document.querySelector<HTMLElement>(
+          '[data-testid="game-page-background"]',
+        )
+          ? getComputedStyle(
+              document.querySelector<HTMLElement>(
+                '[data-testid="game-page-background"]',
+              )!,
+            ).backgroundSize
+          : null,
+        position: document.querySelector<HTMLElement>(
+          '[data-testid="game-page-background"]',
+        )
+          ? getComputedStyle(
+              document.querySelector<HTMLElement>(
+                '[data-testid="game-page-background"]',
+              )!,
+            ).backgroundPosition
+          : null,
+      },
       shellWidth: root.style.getPropertyValue(
         "--mobile-board-shell-design-width",
       ),
@@ -402,6 +444,16 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
         PHONE_VIEWPORT.width - PHONE_SHELL_OFFSET_X,
         0,
       );
+      expect(phoneMetrics.background.rect).toEqual({
+        left: 0,
+        top: 0,
+        right: PHONE_VIEWPORT.width,
+        bottom: PHONE_VIEWPORT.height,
+        width: PHONE_VIEWPORT.width,
+        height: PHONE_VIEWPORT.height,
+      });
+      expect(phoneMetrics.background.size).toBe("cover");
+      expect(phoneMetrics.background.position).toBe("50% 50%");
       expect(phoneMetrics.nativeMobileUi).toEqual({
         mobileGrid: 0,
         mobileLayout: 0,

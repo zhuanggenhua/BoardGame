@@ -2,6 +2,7 @@ import React from 'react';
 
 import {
     DiceBoxThreeEngine,
+    type DiceBoxDieType,
     type DiceBoxDieSkin,
     type DiceBoxStyleProfile,
 } from '../dice-box-threejs/engine';
@@ -23,6 +24,7 @@ export type DiceBoxPhysicsMotion =
 export interface DiceBoxPhysicsSourceProps {
     dice: DicePhysicsDieInput[];
     motion: DiceBoxPhysicsMotion;
+    dieType?: DiceBoxDieType;
     styleProfile?: DiceBoxStyleProfile;
     dieSkins?: Array<DiceBoxDieSkin | null>;
     highlightedDice?: DicePhysicsHighlightState[];
@@ -41,6 +43,7 @@ export interface DiceBoxPhysicsSourceProps {
 export function DiceBoxPhysicsSource({
     dice,
     motion,
+    dieType = 'd6',
     styleProfile,
     dieSkins,
     highlightedDice = [],
@@ -336,6 +339,7 @@ export function DiceBoxPhysicsSource({
             try {
                 debugLifecycle('init-start');
                 const engine = await DiceBoxThreeEngine.create(container, {
+                    dieType,
                     styleProfile,
                     rendererMode,
                     canvasTestId,
@@ -376,7 +380,7 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [canvasTestId, containerSizeReady, failEngine, rendererMode, requireDieSkins, styleProfile]);
+    }, [canvasTestId, containerSizeReady, dieType, failEngine, rendererMode, requireDieSkins, styleProfile]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -613,6 +617,7 @@ export function DiceBoxPhysicsSource({
             data-dice-container-size-ready={containerSizeReady ? 'true' : 'false'}
             data-dice-motion-type={motion.type}
             data-dice-motion-id={motion.type === 'settled' ? undefined : motion.id}
+            data-die-type={dieType}
             {...dataAttributes}
         />
     );

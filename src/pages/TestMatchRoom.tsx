@@ -320,16 +320,29 @@ export const TestMatchRoom: React.FC = () => {
                 noIndex
             />
             <div
-                className="relative w-full game-page-viewport overflow-hidden font-sans"
+                className="relative isolate w-full game-page-viewport overflow-hidden font-sans"
                 {...gamePageDataAttributes}
                 style={{
-                    background: gameConfig.theme?.background || 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                    background: 'transparent',
                 } as React.CSSProperties}
             >
-                <GamePageRuntimeProvider gameId={gameId}>
-                    <GameModeProvider mode="test">
-                        <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
-                            <MobileBoardShell>
+                <div
+                    aria-hidden="true"
+                    className="game-page-viewport__background"
+                    data-testid="game-page-background"
+                    style={{
+                        background: gameConfig.theme?.background
+                            || 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: 'cover',
+                    }}
+                />
+                <div className="relative z-10 h-full">
+                    <GamePageRuntimeProvider gameId={gameId}>
+                        <GameModeProvider mode="test">
+                            <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
+                                <MobileBoardShell>
                                 {engineConfig && WrappedBoard ? (
                                     shouldShowLocalSetupGate && LocalSetupGate ? (
                                         <LocalSetupGate
@@ -378,10 +391,11 @@ export const TestMatchRoom: React.FC = () => {
                                             : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
                                     />
                                 )}
-                            </MobileBoardShell>
-                        </GameCursorProvider>
-                    </GameModeProvider>
-                </GamePageRuntimeProvider>
+                                </MobileBoardShell>
+                            </GameCursorProvider>
+                        </GameModeProvider>
+                    </GamePageRuntimeProvider>
+                </div>
             </div>
         </>
     );

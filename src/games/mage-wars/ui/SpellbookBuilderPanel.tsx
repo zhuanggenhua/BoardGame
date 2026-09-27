@@ -65,6 +65,7 @@ const TYPE_FILTER_LABEL_KEYS: Record<Exclude<TypeFilter, 'all'>, string> = {
 const SPELL_CARD_BACK_PATH = 'mage-wars/cards/backs/spell-card-back';
 const WALL_CARD_BACK_PATH = 'mage-wars/cards/backs/wall-card-back';
 const SPELL_CARD_BACK_RATIO = 992 / 1391;
+const WALL_CARD_BACK_RATIO = SPELL_CARD_BACK_RATIO;
 const ROTATED_WALL_CARD_WIDTH_PERCENT = `${(100 / SPELL_CARD_BACK_RATIO).toFixed(2)}%`;
 
 function cx(...classes: Array<string | false | null | undefined>): string {

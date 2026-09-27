@@ -75,7 +75,7 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 - 用户说“新增派系”“新增角色”“新增可玩单元”“从素材做到可玩”“数据录入、上传、审计、端到端全流程”“彻底完成才停”等语义时，先读 `.spec/skills/add-new-faction/SKILL.md`，再按 `gameId` 查是否已有专项 workflow。
 - 已有专项 workflow 时，本 skill 只负责通用录入纪律和批量门禁；具体素材来源、字段裁定、脚本、E2E 名称和游戏规则链都回到专项 workflow。
-- 没有专项 workflow 时，以 `.spec/knowledge/standards/data-entry.md` 为主流程，再补读该游戏自己的 `src/games/<gameId>/rule/` 文档；若本轮沉淀出可复用流程，按 spec-steward 裁定是否新建专项 workflow。
+- 没有专项 workflow 时，以 `.spec/knowledge/standards/data-entry.md` 为主流程，再补读该游戏自己的 `src/games/<gameId>/rule/` 文档；若本轮沉淀出可复用流程，按系统 `skill-governance` 裁定是否新建专项 workflow，再由 `spec-steward` 落地。
 - “新增已有游戏的可玩对象”不是“新增全新游戏”；只有新增全新 `gameId` 时才走 `.spec/skills/create-new-game/SKILL.md`。
 - 不得把某个游戏的字段结构、抓取站点、Wiki 规则、索引习惯或脚本命令提升成项目全局默认。
 

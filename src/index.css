@@ -438,6 +438,7 @@ body[data-system-display-theme="night"] :is(input, textarea, select) {
 
 /* 娓告垙椤甸潰瑙嗗彛楂樺害鍏滃簳锛氭棫 WebView 鍥為€€ 100vh锛屾柊娴忚鍣ㄤ紭鍏?100dvh */
 .game-page-viewport {
+    position: relative;
     min-height: 100vh;
     min-height: var(--runtime-viewport-height, 100vh);
     height: 100vh;
@@ -445,6 +446,16 @@ body[data-system-display-theme="night"] :is(input, textarea, select) {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+}
+
+.game-page-viewport__background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 #modal-root {
@@ -1034,10 +1045,10 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         padding: 0;
     }
 
-    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .game-page-viewport,
-    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__canvas,
-    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__content {
-        background-color: #000 !important;
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .game-page-viewport,
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__canvas,
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__content {
+        background-color: transparent !important;
         background-image: none !important;
     }
 

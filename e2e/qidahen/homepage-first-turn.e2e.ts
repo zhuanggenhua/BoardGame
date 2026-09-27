@@ -100,7 +100,8 @@ async function enterQidahenBoard(page: Page): Promise<void> {
         await page.getByTestId('qidahen-faction-option-ming').click();
         await page.getByTestId('qidahen-faction-selection-confirm').click();
     }
-    await expect(page.getByTestId('qidahen-turn-banner')).toContainText('大明', { timeout: 15000 });
+    await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前', { timeout: 15000 });
+    await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
 }
 
 test.describe('七大恨主页首回合黄金链', () => {
@@ -141,9 +142,8 @@ test.describe('七大恨主页首回合黄金链', () => {
         await hoverMapRegion(page, 'songjin');
         await expect(page.getByTestId('qidahen-map-region-tip')).toContainText('皮岛 · 大明', { timeout: 15000 });
         await wheelMoveTarget.click();
-        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('大明 · 行动窗口', { timeout: 15000 });
-        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('轮盘 已用', { timeout: 15000 });
-        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('手牌行动 未用', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
         await expect(page.getByTestId('qidahen-season-summary')).toContainText('轮盘征兵/训练', { timeout: 15000 });
         await expect(page.getByTestId('qidahen-season-summary')).toContainText('顺天', { timeout: 15000 });
 
@@ -169,7 +169,8 @@ test.describe('七大恨主页首回合黄金链', () => {
         await expect(confirmPaymentButton).toBeEnabled({ timeout: 15000 });
         await confirmPaymentButton.click();
 
-        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('蒙古 · 行动窗口', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
         await captureEvidence(page, testInfo, '七大恨-首页进入并完成首回合-04-首回合完成后.png');
     });
 });

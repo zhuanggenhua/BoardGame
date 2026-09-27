@@ -291,6 +291,7 @@ export function GirlBoardToken({
   token,
   t,
   attachedTo,
+  displaySize = "default",
   interactive = false,
   onClick,
   testIdPrefix = "betrayal-room-haunt-token",
@@ -298,6 +299,7 @@ export function GirlBoardToken({
   token: BetrayalHauntTokenInstanceSummary;
   t: ReturnType<typeof useTranslation>["t"];
   attachedTo: "room" | "explorer" | "mummy";
+  displaySize?: "default" | "mummy-carry";
   interactive?: boolean;
   onClick?: () => void;
   testIdPrefix?: string;
@@ -320,13 +322,15 @@ export function GirlBoardToken({
       ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`
       : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`;
   const isMummyAttachment = attachedTo === "mummy";
-  const tokenSizePx = 54;
+  const isMummyCarryDisplay = displaySize === "mummy-carry";
+  const tokenSizePx = isMummyCarryDisplay ? 28 : 54;
   const unit = (
     <span
-      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[4px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "p-[4px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
+      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyCarryDisplay ? "p-[2px]" : "p-[4px]"} ${isMummyAttachment ? "shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
       style={{ width: tokenSizePx, height: tokenSizePx }}
       data-testid={unitTestId}
       data-token-attachment={attachedTo}
+      data-token-display-size={displaySize}
       data-token-asset={tokenAsset ?? undefined}
       data-token-visual-size={String(tokenSizePx)}
       data-token-visual-tone="parchment-figure"

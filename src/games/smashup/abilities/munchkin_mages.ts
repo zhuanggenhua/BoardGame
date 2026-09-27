@@ -172,11 +172,16 @@ function buildDiscardCostInteraction(
     titleKey: string,
     sourceDefId: string,
     includeSourceBaseIndex = false,
+    allowSkip = false,
 ) {
-    const options = buildHandCardOptions(ctx.state, ctx.playerId);
+    const buildOptions = (state: SmashUpCore) => [
+        ...(allowSkip ? [createSkipOption('不使用效果', 'ui.skip')] : []),
+        ...buildHandCardOptions(state, ctx.playerId),
+    ];
+    const options = buildOptions(ctx.state);
     if (options.length === 0) return undefined;
 
-    const interaction = createSimpleChoice<HandCardChoice>(
+    const interaction = createSimpleChoice<HandCardChoice & { skip?: boolean }>(
         `${sourceId}_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '法师：选择一张手牌作为弃牌成本',
@@ -192,8 +197,7 @@ function buildDiscardCostInteraction(
             displayCard: { defId: ctx.defId, cardUid: ctx.cardUid },
         },
     );
-    interaction.data.optionsGenerator = (latestState) =>
-        buildHandCardOptions(latestState.core as SmashUpCore, ctx.playerId);
+    interaction.data.optionsGenerator = (latestState) => buildOptions(latestState.core as SmashUpCore);
 
     return queueInteraction(ctx.matchState, {
         ...interaction,
@@ -285,6 +289,7 @@ function wandWhizOnPlay(ctx: AbilityContext): AbilityResult {
         WAND_WHIZ_DISCARD_SOURCE_ID,
         'ui.munchkin_mages_wand_whiz_discard_title',
         WAND_WHIZ,
+        true,
         true,
     );
     return matchState ? { events: [], matchState } : { events: [] };
@@ -747,6 +752,8 @@ export function registerMunchkinMagesInteractionHandlers(): void {
 
     registerInteractionHandler(WAND_WHIZ_DISCARD_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const data = interactionData as CostInteractionData | undefined;
+        const choice = value as HandCardChoice & { skip?: boolean } | undefined;
+        if (choice?.skip) return { state, events: [] };
         const cost = getSelectedHandCard(state.core, playerId, value);
         if (!data || !isSourceCardValid(state.core, data, playerId) || !cost) return { state, events: [] };
         const interaction = createSimpleChoice<ExtraPlayModeChoice>(

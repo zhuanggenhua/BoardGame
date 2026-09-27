@@ -18,12 +18,12 @@ metadata:
 | 角色 | 唯一主源 / 入口 | 负责什么 |
 | --- | --- | --- |
 | 项目入口 | [`../AGENTS.md`](../AGENTS.md) | 项目边界、宿主加载、任务路由和 skill 名册 |
-| 硬规则与治理顺序 | [`../rules/system.md`](../rules/system.md) | 跨任务不变量、规范整理顺序、证据不得越权和规范更新后的闭环 |
+| 硬规则与证据边界 | [`../rules/system.md`](../rules/system.md) | 跨任务不变量、证据不得越权和规范更新后的闭环；规范整理方法由系统 `skill-governance` 负责 |
 | 通用目标锁定 | [`standards/conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 原话保真、问题对象 / 真相源 / 入口环境 / 验收口径，以及目标不明时的停手格式 |
 | 领域执行标准 | `standards/*.md` | 跨游戏可复用的“怎么做”；同一判断只在一个标准正文维护 |
 | 项目 workflow | `../skills/*/SKILL.md` | 把主源编排成某类任务的执行入口；适配层不得复制主源正文 |
 | 证据 / drift-check | 对应 skill 的 `references/`、任务记录或 `evidence/` | 记录事实、案例和缺口；不能反向成为新规范 |
-| 规范维护 | [`../skills/spec-steward/SKILL.md`](../skills/spec-steward/SKILL.md) | 文档落点、去重、迁移、索引和结构校验 |
+| 规范落地维护 | [`../skills/spec-steward/SKILL.md`](../skills/spec-steward/SKILL.md) | 执行治理裁决后的项目落点、迁移、索引和结构校验；治理方法由系统 `skill-governance` 统一负责 |
 
 `img2threejs` 目录内的 `docs/`、`grimoire/`、`skills/` 是上游参考资料，不是 BoardGame 通用执行规范。
 
@@ -32,7 +32,7 @@ metadata:
 | 文档 | 一句话 |
 | --- | --- |
 | [`animation-effects.md`](standards/animation-effects.md) | 动画与特效标准：FX、Shader、反馈包和性能边界——改视觉特效或动画系统时查 |
-| [`asset-pipeline.md`](standards/asset-pipeline.md) | 图片资源与发布总规范：资源目录、manifest、上传和运行时加载——改素材链路时查 |
+| [`asset-pipeline.md`](standards/asset-pipeline.md) | 运行时素材与发布总规范：图片、图集、模型/贴图、引擎内置对象、manifest、上传和运行时加载——改素材链路时查 |
 | [`audio-assets.md`](standards/audio-assets.md) | 音频资源标准：共享包、registry、触发路径和迁移策略——接入或排查音效时查 |
 | [`audit-evidence-template.md`](standards/audit-evidence-template.md) | 审计证据模板：范围、结论、缺口分类和自检口径——写审计 evidence 时查 |
 | [`conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 接续目标锁定：摘要、交接和当前目标防漂移——上下文压缩或接手任务时查 |
@@ -88,4 +88,4 @@ metadata:
 
 ---
 
-知识文档改动先按 [`../rules/system.md`](../rules/system.md) 判定落点，再用 [`spec-steward`](../skills/spec-steward/SKILL.md) 同步索引；结构裁决记录进 [`../decisions/`](../decisions/README.md)。
+知识文档改动先按系统 `skill-governance` 判定落点，再用 [`spec-steward`](../skills/spec-steward/SKILL.md) 同步索引和校验；结构裁决记录进 [`../decisions/`](../decisions/README.md)。

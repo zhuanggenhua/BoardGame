@@ -496,7 +496,7 @@ export function BetrayalRoomEntityLayerSurface({
                 <span
                   className={
                     monsterCarriesGirl
-                      ? "relative z-10 inline-flex min-h-[98px] min-w-[58px] flex-col items-center justify-center gap-1.5"
+                      ? "relative z-10 inline-flex min-h-[98px] min-w-[58px] flex-col items-center justify-center gap-0"
                       : "relative z-10 inline-flex items-end gap-1.5"
                   }
                   data-monster-token-cluster={
@@ -521,11 +521,12 @@ export function BetrayalRoomEntityLayerSurface({
                     }
                   />
                   {monsterCarriesGirl && visibleGirlToken ? (
-                    <span className="pointer-events-none z-30 inline-flex translate-y-[2px]">
+                    <span className="pointer-events-none z-30 inline-flex translate-x-0 translate-y-0">
                       <GirlBoardToken
                         token={visibleGirlToken}
                         t={t}
                         attachedTo="mummy"
+                        displaySize="mummy-carry"
                       />
                     </span>
                   ) : null}

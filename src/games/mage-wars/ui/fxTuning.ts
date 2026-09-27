@@ -23,8 +23,13 @@ export const MAGE_WARS_FX_TIMING = {
     rangedAttackTravelMs: 1_350,
     projectileRangedCompleteMs: 2_650,
     projectileSameCellCompleteMs: 1_450,
-    meleeStrikeMs: 160,
-    meleeCompleteMs: 400,
+    // 近战来源冲刺、命中和结果层必须在真实录屏中保持可读，不能只留下单帧闪光。
+    meleeLungeOutMs: 280,
+    meleeLungePauseMs: 140,
+    meleeLungeReturnMs: 280,
+    meleeStrikeMs: 260,
+    meleeCompleteMs: 900,
+    diceResultRollMs: 900,
     meleeResultVisibleMs: 3_000,
     teleportTravelImpactMs: 2_600,
     teleportSameCellImpactMs: 180,
@@ -64,6 +69,8 @@ export const MAGE_WARS_ATTACK_FX_TUNING = {
     shakeDuration: 620,
     impactEffects: { shake: true, hitStop: true } satisfies ImpactEffects,
     damageFlashCompleteMs: 1_550,
+    meleeSlashDurationMs: 860,
+    meleeSlashActiveMs: 460,
 } as const;
 
 export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTravelFxTuning> = {

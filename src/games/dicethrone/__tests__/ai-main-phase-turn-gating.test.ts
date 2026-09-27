@@ -15,7 +15,7 @@ import { canAdvancePhase, checkPlayCard } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { DiceThroneCommand, DiceThroneCore } from '../domain/types';
-import { cmd, createHeroMatchup, createQueuedRandom, createRunner, createSetupWithHand, fixedRandom, getCardById, testSystems } from './test-utils';
+import { advanceTo, cmd, createHeroMatchup, createQueuedRandom, createRunner, createSetupWithHand, fixedRandom, getCardById, testSystems } from './test-utils';
 
 describe('DiceThrone AI 主阶段候选门禁', () => {
     const dispatch = (
@@ -161,6 +161,75 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
             commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
         }));
         expect(actions.some((action) => action.kind === 'skip-token-response')).toBe(false);
+    });
+
+    it('AI 使用隐匿攻击后应先确认奖励骰，再回到当前 Token 响应，不得生成被拒绝的紧急取消', () => {
+        const random = createQueuedRandom([6, 6, 6, 6, 6, 5]);
+        let state = createHeroMatchup('shadow_thief', 'samurai', (core) => {
+            core.players['0'].tokens[TOKEN_IDS.SNEAK_ATTACK] = 1;
+            core.players['1'].tokens[TOKEN_IDS.TAIJI] = 0;
+            core.players['1'].tokens[TOKEN_IDS.EVASIVE] = 0;
+        })(['0', '1'], random);
+
+        for (const input of [
+            ...advanceTo('offensiveRoll'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+            cmd('SELECT_ABILITY', '0', { abilityId: 'shadow-shank' }),
+            cmd('ADVANCE_PHASE', '0'),
+        ]) {
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                { ...input, timestamp: 1 } as DiceThroneCommand,
+                random,
+                ['0', '1'],
+            );
+            expect(result.success, result.error).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+        }
+
+        const pendingDamageId = state.core.pendingDamage?.id;
+        expect(pendingDamageId).toBeTruthy();
+        const used = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.SNEAK_ATTACK, amount: 1, pendingDamageId },
+                timestamp: 2,
+            } as DiceThroneCommand,
+            random,
+            ['0', '1'],
+        );
+        expect(used.success, used.error).toBe(true);
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state: used.state as MatchState<DiceThroneCore>,
+        });
+        expect(actions.some((action) => action.kind === 'confirm-roll')).toBe(true);
+        expect(actions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
+
+        const confirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            used.state,
+            {
+                type: 'CONFIRM_ROLL',
+                playerId: '0',
+                payload: {},
+                timestamp: 3,
+            } as DiceThroneCommand,
+            random,
+            ['0', '1'],
+        );
+        expect(confirmed.success, confirmed.error).toBe(true);
+        const postBonusActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state: confirmed.state as MatchState<DiceThroneCore>,
+        });
+        expect(postBonusActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
     });
 
     it('未知阻塞交互属于 AI 时应紧急取消而不是继续走主阶段', () => {

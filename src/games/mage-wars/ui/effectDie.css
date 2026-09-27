@@ -1,0 +1,45 @@
+.mage-wars-effect-die {
+    --effect-die-size: clamp(3rem, 4vw, 5rem);
+    perspective: 900px;
+}
+
+.mage-wars-effect-die-shadow {
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    bottom: 0;
+    height: 14%;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 28%);
+    filter: blur(5px);
+}
+
+/* Filters, clipping and opacity here flatten the solid before it rotates. */
+.mage-wars-effect-die-body,
+.mage-wars-effect-die-solid {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+}
+
+.mage-wars-effect-die-face {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform-origin: 0 0;
+    backface-visibility: hidden;
+    overflow: hidden;
+    background-color: #1e87ff;
+    background-image: linear-gradient(135deg, rgb(255 255 255 / 14%), transparent 40%, rgb(0 20 60 / 24%));
+}
+
+@keyframes mage-wars-d12-tumble {
+    0% { transform: translateY(-12%) rotateX(-540deg) rotateY(-720deg) rotateZ(-180deg); }
+    70% { transform: translateY(3%) rotateX(-72deg) rotateY(-90deg) rotateZ(-20deg); }
+    88% { transform: translateY(-2%) rotateX(9deg) rotateY(12deg) rotateZ(3deg); }
+    100% { transform: translateY(0) rotateX(0) rotateY(0) rotateZ(0); }
+}
+
+.mage-wars-effect-die-rolling {
+    animation: mage-wars-d12-tumble 900ms cubic-bezier(0.2, 0.5, 0.5, 1) both;
+}

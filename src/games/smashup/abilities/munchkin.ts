@@ -13,6 +13,7 @@ import {
     buildValidatedReturnEvents,
     grantExtraAction,
     grantExtraMinion,
+    minionHasEffectiveName,
     recoverCardsFromDiscard,
     revealHand,
 } from '../domain/abilityHelpers';
@@ -1828,7 +1829,7 @@ function pickpocketOnPlay(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     const hasAnotherPickpocket = base?.minions.some(minion =>
         minion.uid !== ctx.cardUid
-        && minion.defId === THIEVES_PICKPOCKET
+        && minionHasEffectiveName(ctx.state, minion, THIEVES_PICKPOCKET)
     ) ?? false;
 
     return hasAnotherPickpocket

@@ -144,6 +144,31 @@ export function createSkipOption(label: string = '跳过', labelKey?: string): E
     };
 }
 
+/**
+ * 返回随从当前回合可用于规则比较的全部名称。
+ * Abe Frohman 的天赋通过元数据增加临时名称，其他定义/UID 校验不能复用此语义。
+ */
+export function getMinionEffectiveNames(core: SmashUpCore, minion: MinionOnBase): string[] {
+    const names = new Set<string>([minion.defId]);
+    if (minion.metadata?.teensAbeFrohmanTurn !== core.turnNumber) return [...names];
+
+    const aliases = minion.metadata?.teensAbeFrohmanNames;
+    if (Array.isArray(aliases)) {
+        for (const alias of aliases) {
+            if (typeof alias === 'string' && alias.length > 0) names.add(alias);
+        }
+    }
+    return [...names];
+}
+
+export function minionHasEffectiveName(
+    core: SmashUpCore,
+    minion: MinionOnBase,
+    targetDefId: string,
+): boolean {
+    return getMinionEffectiveNames(core, minion).includes(targetDefId);
+}
+
 // ============================================================================
 // 力量计算便捷函数
 // ============================================================================

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BetrayalCore, BetrayalDiscoverySummary } from '../game';
+import { resolveEventRollConfirmationPresentation } from '../recentRollPresentation';
 import {
   buildLatestDiscoveryDisplayEntry,
   removeBetrayalLatestDiscoveryQueueEntry,
@@ -33,6 +34,30 @@ const entry = (
 });
 
 describe('latest discovery presentation', () => {
+  it('事件骰确认名单以 pending 快照为准，不因缺少 seatControllers 把 AI 座位重新算进来', () => {
+    const core = {
+      playerIds: ['0', '1', '2', '3'],
+      pendingEventRollResolution: {
+        rollId: 'small-robot-roll',
+        playerId: '3',
+        sourceTitle: '小机器人',
+        effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
+        requiredPlayerIds: ['0'],
+        acknowledgedPlayerIds: ['0'],
+        requiresAcknowledgement: true,
+      },
+    } as unknown as BetrayalCore;
+
+    const presentation = resolveEventRollConfirmationPresentation(core, '0');
+
+    expect(presentation.requiredPlayerIds).toEqual(['0']);
+    expect(presentation.acknowledgedPlayerIds).toEqual(['0']);
+    expect(presentation.confirmedCount).toBe(1);
+    expect(presentation.totalCount).toBe(1);
+    expect(presentation.viewerHasAcknowledged).toBe(true);
+    expect(presentation.canViewerAcknowledge).toBe(false);
+  });
+
   it('removes queued discovery entries by stable source key', () => {
     const queued = [
       entry(

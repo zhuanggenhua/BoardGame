@@ -22,6 +22,8 @@ type EnglishMapConfig = { atlasId: string; index: number };
 const TTS_MAP = smashUpEnglishMap as Record<string, EnglishMapConfig>;
 const BUILT_IN_ENGLISH_TEXT_ATLASES = new Set<string>([
     SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES,
+    // 波利尼西亚航海者基地正式图集当前仍是英文卡面；中文名称与效果由同一覆盖层承载。
+    SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES,
 ]);
 
 interface SmashUpRendererArgs {
@@ -190,6 +192,9 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     // 检查是否使用了 TTS 英文图集（图集 ID 以 tts_atlas_ 开头）
     const usesTtsAtlas = finalAtlasId.startsWith('tts_atlas_');
     const usesBuiltInEnglishTextAtlas = BUILT_IN_ENGLISH_TEXT_ATLASES.has(finalAtlasId);
+    const shouldAlwaysShowEnglishBaseOverlay = isBase
+        && finalAtlasId === SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES
+        && !isEnglishVariant;
 
     // 悬浮窗显示逻辑：只有使用了英文图集的卡牌才需要悬浮窗
     // 1. POD 派系卡牌 → 需要悬浮窗（图片是英文的）
@@ -200,7 +205,7 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     const needsOverlay = (isPodVersion || shouldUseEnglishAtlas || usesTtsAtlas || usesBuiltInEnglishTextAtlas) && !isEnglishVariant;
     // 用户在英文环境下可以关闭覆盖层
     const shouldShowOverlay = needsOverlay && overlayEnabled;
-    const overlayVisibilityClass = forceShowOverlay
+    const overlayVisibilityClass = forceShowOverlay || shouldAlwaysShowEnglishBaseOverlay
         ? 'opacity-100'
         : disableHoverOverlay
             ? 'opacity-0'
@@ -259,7 +264,9 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
             {shouldShowOverlay && (
                 <div
                     data-testid="su-card-text-overlay"
-                    data-overlay-visibility={forceShowOverlay ? 'always' : (disableHoverOverlay ? 'disabled' : 'hover')}
+                    data-overlay-visibility={forceShowOverlay || shouldAlwaysShowEnglishBaseOverlay
+                        ? 'always'
+                        : (disableHoverOverlay ? 'disabled' : 'hover')}
                     className={`absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-[4%] transition-opacity duration-200 bg-black/20
                     ${overlayVisibilityClass}`}
                 >

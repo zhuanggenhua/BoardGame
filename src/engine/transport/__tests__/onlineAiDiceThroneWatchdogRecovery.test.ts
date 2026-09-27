@@ -902,6 +902,100 @@ describe('online AI watchdog DiceThrone recovery', () => {
         expect(candidate?.playerId).toBe('1');
         expect(candidate?.resolution.action.commands).toEqual([{ type: 'CONFIRM_ROLL', payload: {} }]);
     });
+    it('dicethrone: shared interaction 被阻塞且 AI 私有 Token 交互残留时，应优先确认 displayOnly 飞行骰', () => {
+        const sharedState = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1', '2', '3'],
+                pendingDamage: {
+                    id: 'damage-flight-token-chain',
+                    sourcePlayerId: '2',
+                    targetPlayerId: '1',
+                    currentDamage: 6,
+                    responseType: 'beforeDamageDealt',
+                    responderId: '2',
+                },
+                pendingBonusDiceSettlement: {
+                    id: 'flight-display-token-chain',
+                    sourceAbilityId: 'flight',
+                    attackerId: '2',
+                    targetId: '1',
+                    displayOnly: true,
+                    continuation: { kind: 'complete' },
+                    customResolutionId: 'tianshi-flight',
+                },
+                currentRollContext: {
+                    id: 'bonus:flight-display-token-chain',
+                    kind: 'bonus',
+                    ownerPlayerId: '2',
+                    targetPlayerId: '1',
+                    sourceAbilityId: 'flight',
+                    status: 'open',
+                    policy: { blocksPhaseFlow: true },
+                    display: { replayOnly: false },
+                },
+            },
+            sys: {
+                phase: 'defensiveRoll',
+                interaction: { current: undefined, queue: [], isBlocked: true },
+                responseWindow: { current: undefined },
+            },
+        } as any;
+
+        const aiSeatState = {
+            ...sharedState,
+            sys: {
+                ...sharedState.sys,
+                interaction: {
+                    current: {
+                        id: 'dt-token-response-damage-flight-token-chain',
+                        playerId: '2',
+                        kind: 'dt:token-response',
+                        data: {
+                            sourceId: 'dicethrone-token-response',
+                            choiceRequestContract: {
+                                requestId: 'token-request-flight-token-chain',
+                                playerId: '2',
+                                kind: 'token-response',
+                                metadata: {
+                                    pendingDamageId: 'damage-flight-token-chain',
+                                },
+                                candidates: [{
+                                    id: 'skip-token',
+                                    commands: [{
+                                        type: 'SKIP_TOKEN_RESPONSE',
+                                        payload: { pendingDamageId: 'damage-flight-token-chain' },
+                                    }],
+                                }],
+                                selection: { mode: 'single' },
+                                resolution: { mode: 'command' },
+                            },
+                        },
+                    },
+                    queue: [],
+                    isBlocked: true,
+                },
+            },
+        } as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+                '2': { type: 'local-ai' },
+                '3': { type: 'human' },
+            },
+            seatStates: { '2': aiSeatState },
+            engineConfig: createEngineConfigWithId('dicethrone'),
+            gameId: 'dicethrone',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('2');
+        expect(candidate?.resolution.action.commands).toEqual([{ type: 'CONFIRM_ROLL', payload: {} }]);
+    });
     it('dicethrone: human main1 遗留 AI displayOnly pendingBonusDiceSettlement 时，watchdog 应直接替 AI 确认收口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

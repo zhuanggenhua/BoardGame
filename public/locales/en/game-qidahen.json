@@ -160,22 +160,10 @@
       "mapClickable": "Choose target",
       "mapDirectClickHint": "Click a target to continue.",
       "currentClickableRegions": "Target regions",
-      "status": {
-        "used": "used",
-        "unused": "unused"
-      },
-      "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Hand action {{factionStatus}}",
-      "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
-      "scenarioVoteBlocked": "In-match scenario selection is not finished yet. Only the scenario briefing and host selection can be resolved right now.",
-      "primaryActionSelectPrompt": "Hand action",
       "grantPardon": {
         "mapFirstHint": "Click the receiving region on the map to complete Grant Pardon; the list below is only a fallback. {{summary}}",
         "fallbackListLabel": "Fallback choices"
       },
-      "wheelNextStepBadge": "Next",
-      "wheelNextStepTitle": "Advance public wheel",
-      "wheelNextStepHint": "Choose how many spaces to move",
-      "wheelTutorialMoveHint": "Use the rule-based wheel choices: move 1 with no opponent draw, name one opponent to draw 2 and move 2, or make all opponents draw 2 and move 3; click a destination to execute it",
       "wheelExecutePrompt": "Choose a wheel segment",
       "directExecute": "Execute now",
       "victoryAchieved": "{{winnerName}} has achieved {{condition}}",
@@ -566,7 +554,7 @@
         "newYearAttrition": "After maintenance, look at the player strip and map: unsupported troops have entered attrition, and the remaining force is what you can actually use next year.",
         "chronologyScore": "Chronology cards are not just year markers. The player with the highest score must pay half their hand to claim that year's prestige, or pass the chance to the next player.",
         "turnOrderRefresh": "Once chronology resolves, both turn order and new characters refresh, and next year's tempo changes with them.",
-        "finish": "When a year closes, read three formal areas: the player strip for resources and characters, the map for troops, and the turn banner for next year's current actor."
+        "finish": "When a year closes, read three formal areas: the player strip for the current actor, resources, and characters; the map for troops; and the chronology cards for the current year."
       }
     },
     "koreaSpecial": {

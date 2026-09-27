@@ -11,6 +11,7 @@ import type {
     RandomFn,
 } from '../../../engine/types';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
+import { resolveLocalAiActionWithRecovery } from '../../../engine/transport/localAiResolution';
 import { BETRAYAL_AI_ACTION_KINDS } from '../ai';
 import {
     BetrayalDomain,
@@ -540,6 +541,35 @@ describe('小黑屋本地 AI', () => {
         expect(candidate).toBeNull();
     });
 
+    test('本地 AI 决策缺少 core.seatControllers 时，不得替真人跳过小机器人事件确认', async () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.pendingEventRollResolution = {
+            rollId: 'human-robot-event-roll',
+            playerId: '0',
+            sourceTitle: '小机器人',
+            requiredPlayerIds: ['0'],
+            acknowledgedPlayerIds: [],
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+        };
+        const state = stateOf(core, 'betrayal-local-human-robot-event-roll');
+        state.sys.phase = 'preHaunt';
+
+        const resolution = await resolveLocalAiActionWithRecovery({
+            config: engineConfig,
+            state,
+            matchId: 'betrayal-local-human-robot-event-roll',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            activePhaseElapsedMs: 0,
+            stallRecoveryGraceMs: 1000,
+        });
+
+        expect(resolution).toBeNull();
+    });
+
     test('AI 会先确认翻牌结算，避免在线 watchdog 裸过阶段被拒', async () => {
         let core = createStartedFirstScenarioCore();
         core.roomDiscoveryOrderByFloor.ground = [
@@ -669,6 +699,40 @@ describe('小黑屋本地 AI', () => {
         );
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traits.knowledge).toBe(4);
+    });
+
+    test('事件确认名单已落快照时，缺少 seatControllers 也由单个真人确认立即结算', () => {
+        const baseCore = createStartedFirstScenarioCore(['0', '1', '2', '3']);
+        const core = {
+            ...baseCore,
+            seatControllers: undefined,
+            pendingEventRollResolution: {
+                rollId: 'small-robot-roll',
+                playerId: '3',
+                sourceTitle: '小机器人',
+                requiredPlayerIds: ['0'],
+                acknowledgedPlayerIds: [],
+                requiresAcknowledgement: true,
+                effect: {
+                    mode: 'trait',
+                    trait: 'knowledge',
+                    amount: 1,
+                },
+            },
+        } as unknown as BetrayalCore;
+
+        const nextCore = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: 'small-robot-roll' },
+            100,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+
+        expect(nextCore.pendingEventRollResolution).toBeNull();
+        expect(nextCore.currentExplorer.traits.knowledge).toBe(4);
     });
 
     test('待分配伤害时必须生成并执行伤害分配动作，不能把阶段推进当成唯一动作', async () => {

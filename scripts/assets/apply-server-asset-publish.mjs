@@ -25,7 +25,10 @@ import {
 } from './publish-primary-assets.mjs';
 import { resolveActiveAssetSet } from './active-server-assets.mjs';
 import { normalizePathOwnership } from './asset-publish-ownership.mjs';
-import { selectRetainedReleaseIds } from './release-retention.mjs';
+import {
+    selectExpiredReleaseIds,
+    selectRetainedReleaseIds,
+} from './release-retention.mjs';
 import { refreshAndroidPackageIndexesForPublishedAssets } from './server-android-package-refresh.mjs';
 
 const MANAGED_PUBLISH_PREFIXES = [
@@ -170,6 +173,33 @@ const pruneInactiveManagedObjects = async (releaseDir, publishedKeys) => {
     }
 };
 
+const listReleaseIds = (releasesRoot) => readdirSync(releasesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^\d{17}$/.test(entry.name))
+    .map((entry) => entry.name);
+
+const resolveCurrentReleaseId = (currentLink) => (
+    existsSync(currentLink) ? path.basename(realpathSync(currentLink)) : ''
+);
+
+const pruneExpiredReleases = ({ releasesRoot, currentLink }) => {
+    const releaseIds = listReleaseIds(releasesRoot);
+    const currentReleaseId = resolveCurrentReleaseId(currentLink);
+    if (!currentReleaseId) {
+        return [];
+    }
+
+    const expiredReleaseIds = selectExpiredReleaseIds(
+        releaseIds,
+        currentReleaseId,
+        RELEASE_RETENTION_COUNT,
+    );
+    for (const oldReleaseId of expiredReleaseIds) {
+        const oldReleaseDir = resolveWithin(releasesRoot, oldReleaseId);
+        rmSync(oldReleaseDir, { recursive: true, force: true });
+    }
+    return expiredReleaseIds;
+};
+
 const manifestPath = path.join(stagingRoot, SERVER_PUBLISH_MANIFEST_FILE);
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.objects) || manifest.objects.length === 0) {
@@ -192,17 +222,31 @@ for (const object of manifest.objects) {
     publishBytes += stats.size;
 }
 
-const fsStats = statfsSync(assetsRoot);
-const freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize);
-const minimumFreeBytes = 5 * 1024 * 1024 * 1024;
+const minimumFreeBytes = 1 * 1024 * 1024 * 1024;
+const releasesRoot = path.join(assetsRoot, 'releases');
+const currentLink = path.join(assetsRoot, 'current');
+let fsStats = statfsSync(assetsRoot);
+let freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize);
+let preflightDeletedReleaseIds = [];
+if (!preserveExistingAssets && freeBytes - publishBytes < minimumFreeBytes && existsSync(releasesRoot)) {
+    preflightDeletedReleaseIds = pruneExpiredReleases({ releasesRoot, currentLink });
+    if (preflightDeletedReleaseIds.length > 0) {
+        console.warn(
+            `服务器空间预检清理旧 release: ${preflightDeletedReleaseIds.join(', ')}`,
+        );
+        fsStats = statfsSync(assetsRoot);
+        freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize);
+    }
+}
 if (freeBytes - publishBytes < minimumFreeBytes) {
-    throw new Error(`服务器空间不足: free=${freeBytes} publish=${publishBytes} minimum=${minimumFreeBytes}`);
+    throw new Error(
+        `服务器空间不足: free=${freeBytes} publish=${publishBytes} minimum=${minimumFreeBytes}`
+        + ` preflightDeleted=${preflightDeletedReleaseIds.join(',') || 'none'}`,
+    );
 }
 
 const releaseId = new Date().toISOString().replace(/\D/g, '').slice(0, 17);
-const releasesRoot = path.join(assetsRoot, 'releases');
 const releaseDir = path.join(releasesRoot, releaseId);
-const currentLink = path.join(assetsRoot, 'current');
 mkdirSync(releaseDir, { recursive: true });
 
 if (existsSync(currentLink)) {
@@ -320,9 +364,7 @@ normalizePathOwnership({
     targetPath: auditRoot,
 });
 
-const releaseIds = readdirSync(releasesRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^\d{17}$/.test(entry.name))
-    .map((entry) => entry.name);
+const releaseIds = listReleaseIds(releasesRoot);
 const currentReleaseId = path.basename(realpathSync(currentLink));
 const retainedReleaseIds = selectRetainedReleaseIds(
     releaseIds,
@@ -333,6 +375,7 @@ const deletedReleaseIds = [];
 if (!preserveExistingAssets) {
     for (const oldReleaseId of releaseIds) {
         if (retainedReleaseIds.has(oldReleaseId)) continue;
+        if (preflightDeletedReleaseIds.includes(oldReleaseId)) continue;
         const oldReleaseDir = resolveWithin(releasesRoot, oldReleaseId);
         rmSync(oldReleaseDir, { recursive: true, force: true });
         deletedReleaseIds.push(oldReleaseId);
@@ -346,5 +389,9 @@ console.log(`androidPackageRefreshChannels=${androidPackageRefresh.channels.join
 console.log(`androidPackageRefreshObjects=${androidPackageRefresh.objects.length}`);
 console.log(`serverPrimaryIndexObjects=${Object.keys(assetIndex).length}`);
 console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
-console.log(`serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size} deleted=${deletedReleaseIds.length}`);
+console.log(
+    `serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size}`
+    + ` preflightDeleted=${preflightDeletedReleaseIds.length}`
+    + ` deleted=${deletedReleaseIds.length}`,
+);
 console.log('assetBackupQueue=disabled');

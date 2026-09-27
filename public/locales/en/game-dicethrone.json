@@ -3637,9 +3637,9 @@
     },
     "death-blossom": {
       "name": "Death Blossom",
-      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice and add damage or gain Ninjutsu by result.",
+      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice; deal 1 damage per Ninja Blade plus 2 damage per Shuriken; if you roll a Mask, this attack becomes undefendable.",
       "effects": {
-        "roll5DiceResolveDamage": "Roll 5 dice and total damage from Ninja Blade and Shuriken results"
+        "roll5DiceResolveDamage": "Roll 5 dice; deal 1 damage per Ninja Blade plus 2 damage per Shuriken; if you roll a Mask, this attack becomes undefendable"
       }
     },
     "death-blossom-2": {

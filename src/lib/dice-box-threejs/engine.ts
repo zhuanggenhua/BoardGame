@@ -23,6 +23,7 @@ import type {
 
 export type DiceBoxProjectedLayout = DicePhysicsProjectedLayout;
 export type DiceBoxMotionSnapshot = DicePhysicsMotionSnapshot;
+export type DiceBoxDieType = 'd6' | 'd12';
 
 export type DiceBoxMaterial = NonNullable<DiceBoxConfig['theme_material']>;
 export type DiceBoxCustomColorset = NonNullable<DiceBoxConfig['theme_customColorset']>;
@@ -58,6 +59,7 @@ export interface DiceBoxDieSkin {
 }
 
 export interface DiceBoxEngineConfig {
+    dieType?: DiceBoxDieType;
     styleProfile?: DiceBoxStyleProfile;
     rendererMode?: DicePhysicsRendererMode;
     canvasTestId?: string;
@@ -601,15 +603,16 @@ async function loadDiceBoxModule(): Promise<typeof DiceBoxModule> {
     return diceBoxModulePromise;
 }
 
-function createNotation(values: number[]): string {
-    if (values.length === 0) return '0d6';
-    return `${values.length}d6@${values.join(',')}`;
+function createNotation(values: number[], dieType: DiceBoxDieType): string {
+    if (values.length === 0) return `0${dieType}`;
+    return `${values.length}${dieType}@${values.join(',')}`;
 }
 
-function createControlledRollCompleteResult(values: number[]): DiceBoxRollCompleteResult {
+function createControlledRollCompleteResult(values: number[], dieType: DiceBoxDieType): DiceBoxRollCompleteResult {
+    const sides = dieType === 'd12' ? 12 : 6;
     const rolls = values.map((value, index) => ({
-        type: 'd6',
-        sides: 6,
+        type: dieType,
+        sides,
         id: index,
         value,
         label: String(value),
@@ -617,11 +620,11 @@ function createControlledRollCompleteResult(values: number[]): DiceBoxRollComple
     }));
     const total = values.reduce((sum, value) => sum + value, 0);
     return {
-        notation: createNotation(values),
+        notation: createNotation(values, dieType),
         sets: [{
             num: values.length,
-            type: 'd6',
-            sides: 6,
+            type: dieType,
+            sides,
             rolls,
             total,
         }],
@@ -702,6 +705,7 @@ export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
     private readonly styleProfile: DiceBoxStyleProfile;
+    private readonly dieType: DiceBoxDieType;
     private readonly debugCanvasTestId?: string;
     private debugSnapshotReader: (() => unknown) | null = null;
     private dieSkins: Array<DiceBoxDieSkin | null> = [];
@@ -717,11 +721,13 @@ export class DiceBoxThreeEngine {
         box: InstanceType<typeof DiceBoxModule>,
         container: HTMLElement,
         styleProfile: DiceBoxStyleProfile,
+        dieType: DiceBoxDieType,
         debugCanvasTestId?: string,
     ) {
         this.box = box;
         this.container = container;
         this.styleProfile = styleProfile;
+        this.dieType = dieType;
         this.debugCanvasTestId = debugCanvasTestId;
     }
 
@@ -729,6 +735,7 @@ export class DiceBoxThreeEngine {
         installWebGlInfoLogNullGuard();
         const DiceBox = await loadDiceBoxModule();
         const styleProfile = config?.styleProfile ?? DEFAULT_DICE_BOX_STYLE_PROFILE;
+        const dieType = config?.dieType ?? 'd6';
         if (!container.id) {
             nextContainerId += 1;
             container.id = `dice-box-threejs-${nextContainerId}`;
@@ -753,7 +760,7 @@ export class DiceBoxThreeEngine {
             iterationLimit: styleProfile.iterationLimit ?? DEFAULT_DICE_BOX_STYLE_PROFILE.iterationLimit,
         });
         await box.initialize();
-        const engine = new DiceBoxThreeEngine(box, container, styleProfile, config?.canvasTestId);
+        const engine = new DiceBoxThreeEngine(box, container, styleProfile, dieType, config?.canvasTestId);
         engine.applyCameraProfile();
         box.renderer.setClearColor?.(0x000000, 0);
         box.renderer.setClearAlpha?.(0);
@@ -802,6 +809,10 @@ export class DiceBoxThreeEngine {
 
     hasDice(count: number): boolean {
         return this.box.diceList.length === count && count > 0;
+    }
+
+    private getDieType(): DiceBoxDieType {
+        return this.dieType ?? 'd6';
     }
 
     setCanvasDiagnostics({
@@ -2284,7 +2295,7 @@ export class DiceBoxThreeEngine {
     }
 
     private async rollWithThirdPartyDefault(values: number[]): Promise<void> {
-        await this.box.roll(createNotation(values));
+        await this.box.roll(createNotation(values, this.getDieType()));
     }
 
     private async rollWithContainedThrow(values: number[]): Promise<boolean> {
@@ -2298,7 +2309,7 @@ export class DiceBoxThreeEngine {
         let notationVectors: DiceBoxInternalNotationVector | null;
         try {
             runtime.strength = this.resolveContainedThrowStrength();
-            notationVectors = runtime.startClickThrow(createNotation(values));
+            notationVectors = runtime.startClickThrow(createNotation(values, this.getDieType()));
         } finally {
             runtime.strength = previousStrength;
         }
@@ -2337,8 +2348,18 @@ export class DiceBoxThreeEngine {
         this.applyCurrentSkins();
         this.syncDiceHighlightShells();
         this.renderFrame();
-        await this.playContainedRollToSettledTransforms(targetSnapshots, 1500);
-        this.setDebugAnimationStage('contained-throw-visible-animation-complete');
+        try {
+            await this.playContainedRollToSettledTransforms(targetSnapshots, 1500);
+            this.setDebugAnimationStage('contained-throw-visible-animation-complete');
+        } catch {
+            // 动画帧回调可能在 promise 执行器外抛错；这里收口权威结果，避免永久停在运动中。
+            this.setDebugAnimationStage('contained-throw-visible-animation-recovered');
+            this.applyValues(values, undefined, true);
+            this.applyCurrentSkins();
+            this.syncDiceHighlightShells();
+            this.finalizeSettledFrame();
+            this.renderFrame();
+        }
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
         this.syncDiceHighlightShells();
@@ -2346,7 +2367,7 @@ export class DiceBoxThreeEngine {
 
         runtime.rolling = false;
         runtime.running = false;
-        const result = createControlledRollCompleteResult(values);
+        const result = createControlledRollCompleteResult(values, this.getDieType());
         runtime.onRollComplete?.(result);
         if (typeof document !== 'undefined') {
             document.dispatchEvent(new CustomEvent('rollComplete', { detail: result }));
@@ -2394,11 +2415,17 @@ export class DiceBoxThreeEngine {
         const canvasHeight = canvas?.clientHeight || canvas?.height || 0;
         const motionScreenMargin = Math.max(2, Math.min(6, baseScale * 0.06));
 
-        await new Promise<void>((resolve) => {
+        await new Promise<void>((resolve, reject) => {
             let stepIndex = 0;
             let frameId: number | null = null;
             let timerId: number | null = null;
             let completed = false;
+            const fail = (error: unknown) => {
+                if (completed) return;
+                completed = true;
+                clearScheduledStep();
+                reject(error);
+            };
             const clearScheduledStep = () => {
                 if (frameId !== null) {
                     window.cancelAnimationFrame(frameId);
@@ -2415,89 +2442,93 @@ export class DiceBoxThreeEngine {
             };
             const step = () => {
                 if (completed) return;
-                clearScheduledStep();
-                const progress = Math.min(1, stepIndex / totalSteps);
-                const eased = progress < 0.5
-                    ? 2 * progress * progress
-                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-                const liftPulse = Math.sin(progress * Math.PI);
+                try {
+                    clearScheduledStep();
+                    const progress = Math.min(1, stepIndex / totalSteps);
+                    const eased = progress < 0.5
+                        ? 2 * progress * progress
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    const liftPulse = Math.sin(progress * Math.PI);
 
-                for (const snapshot of snapshots) {
-                    const direction = snapshot.order % 2 === 0 ? 1 : -1;
-                    const wobble = Math.sin(progress * Math.PI * 2) * sideTravel * (1 - progress);
-                    const nextPosition = {
-                        x: snapshot.startPosition.x + (snapshot.end.position.x - snapshot.startPosition.x) * eased + wobble * direction,
-                        y: snapshot.startPosition.y + (snapshot.end.position.y - snapshot.startPosition.y) * eased + wobble * 0.42,
-                        z: snapshot.startPosition.z + (snapshot.end.position.z - snapshot.startPosition.z) * eased + lift * liftPulse,
-                    };
-                    this.setVector(snapshot.die.position, nextPosition);
-                    const startQuaternion = new Quaternion(
-                        snapshot.startQuaternion.x,
-                        snapshot.startQuaternion.y,
-                        snapshot.startQuaternion.z,
-                        snapshot.startQuaternion.w,
-                    );
-                    const endQuaternion = new Quaternion(
-                        snapshot.end.quaternion.x,
-                        snapshot.end.quaternion.y,
-                        snapshot.end.quaternion.z,
-                        snapshot.end.quaternion.w,
-                    );
-                    const currentQuaternion = startQuaternion.slerp(endQuaternion, eased);
-                    const tumble = new Quaternion().setFromAxisAngle(
-                        new Vector3(1, 1, 0.35).normalize(),
-                        Math.sin(progress * Math.PI) * Math.PI * 1.35,
-                    );
-                    currentQuaternion.multiply(tumble);
-                    this.setQuaternion(snapshot.die.quaternion as DiceBoxQuaternionLike | undefined, currentQuaternion);
-                    if (snapshot.die.body) {
-                        this.setVector(snapshot.die.body.position, nextPosition);
-                        this.setQuaternion(snapshot.die.body.quaternion, currentQuaternion);
-                        this.setVector(snapshot.die.body.velocity, { x: 0, y: 0, z: 0 });
-                        this.setVector(snapshot.die.body.angularVelocity, { x: 0, y: 0, z: 0 });
-                        snapshot.die.body.aabbNeedsUpdate = true;
-                    }
-                    snapshot.die.updateMatrixWorld?.(true);
-                    if (canvasWidth > 0 && canvasHeight > 0) {
-                        this.keepProjectedDieInsideCanvas(
-                            snapshot.die,
-                            canvasWidth,
-                            canvasHeight,
-                            motionScreenMargin,
+                    for (const snapshot of snapshots) {
+                        const direction = snapshot.order % 2 === 0 ? 1 : -1;
+                        const wobble = Math.sin(progress * Math.PI * 2) * sideTravel * (1 - progress);
+                        const nextPosition = {
+                            x: snapshot.startPosition.x + (snapshot.end.position.x - snapshot.startPosition.x) * eased + wobble * direction,
+                            y: snapshot.startPosition.y + (snapshot.end.position.y - snapshot.startPosition.y) * eased + wobble * 0.42,
+                            z: snapshot.startPosition.z + (snapshot.end.position.z - snapshot.startPosition.z) * eased + lift * liftPulse,
+                        };
+                        this.setVector(snapshot.die.position, nextPosition);
+                        const startQuaternion = new Quaternion(
+                            snapshot.startQuaternion.x,
+                            snapshot.startQuaternion.y,
+                            snapshot.startQuaternion.z,
+                            snapshot.startQuaternion.w,
                         );
-                    }
-                }
-
-                this.box.scene?.updateMatrixWorld?.(true);
-                this.syncDiceHighlightShells();
-                this.renderFrame();
-
-                if (progress >= 1) {
-                    completed = true;
-                    targetSnapshots.forEach((snapshot, index) => {
-                        const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
-                        if (!die) return;
-                        this.applyDieTransform(die, snapshot);
-                        if (die.body) {
-                            if (typeof snapshot.bodyType === 'number') {
-                                die.body.type = snapshot.bodyType;
-                            }
-                            if (typeof snapshot.bodyMass === 'number') {
-                                die.body.mass = snapshot.bodyMass;
-                            }
-                            die.body.updateMassProperties?.();
-                            die.body.sleep?.();
+                        const endQuaternion = new Quaternion(
+                            snapshot.end.quaternion.x,
+                            snapshot.end.quaternion.y,
+                            snapshot.end.quaternion.z,
+                            snapshot.end.quaternion.w,
+                        );
+                        const currentQuaternion = startQuaternion.slerp(endQuaternion, eased);
+                        const tumble = new Quaternion().setFromAxisAngle(
+                            new Vector3(1, 1, 0.35).normalize(),
+                            Math.sin(progress * Math.PI) * Math.PI * 1.35,
+                        );
+                        currentQuaternion.multiply(tumble);
+                        this.setQuaternion(snapshot.die.quaternion as DiceBoxQuaternionLike | undefined, currentQuaternion);
+                        if (snapshot.die.body) {
+                            this.setVector(snapshot.die.body.position, nextPosition);
+                            this.setQuaternion(snapshot.die.body.quaternion, currentQuaternion);
+                            this.setVector(snapshot.die.body.velocity, { x: 0, y: 0, z: 0 });
+                            this.setVector(snapshot.die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+                            snapshot.die.body.aabbNeedsUpdate = true;
                         }
-                    });
+                        snapshot.die.updateMatrixWorld?.(true);
+                        if (canvasWidth > 0 && canvasHeight > 0) {
+                            this.keepProjectedDieInsideCanvas(
+                                snapshot.die,
+                                canvasWidth,
+                                canvasHeight,
+                                motionScreenMargin,
+                            );
+                        }
+                    }
+
                     this.box.scene?.updateMatrixWorld?.(true);
                     this.syncDiceHighlightShells();
                     this.renderFrame();
-                    resolve();
-                    return;
-                }
 
-                stepIndex += 1;
-                scheduleStep();
+                    if (progress >= 1) {
+                        completed = true;
+                        targetSnapshots.forEach((snapshot, index) => {
+                            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+                            if (!die) return;
+                            this.applyDieTransform(die, snapshot);
+                            if (die.body) {
+                                if (typeof snapshot.bodyType === 'number') {
+                                    die.body.type = snapshot.bodyType;
+                                }
+                                if (typeof snapshot.bodyMass === 'number') {
+                                    die.body.mass = snapshot.bodyMass;
+                                }
+                                die.body.updateMassProperties?.();
+                                die.body.sleep?.();
+                            }
+                        });
+                        this.box.scene?.updateMatrixWorld?.(true);
+                        this.syncDiceHighlightShells();
+                        this.renderFrame();
+                        resolve();
+                        return;
+                    }
+
+                    stepIndex += 1;
+                    scheduleStep();
+                } catch (error) {
+                    fail(error);
+                }
             };
             scheduleStep();
         });
@@ -2618,7 +2649,7 @@ export class DiceBoxThreeEngine {
 
     private async restoreDiceWithoutVisibleThrow(values: number[]): Promise<void> {
         const box = this.box as DiceBoxInternalRuntime;
-        const notationVectors = box.startClickThrow?.(createNotation(values));
+        const notationVectors = box.startClickThrow?.(createNotation(values, this.getDieType()));
         const vectors = notationVectors?.vectors;
         if (!notationVectors || !Array.isArray(vectors) || vectors.length === 0 || !box.spawnDice || !box.simulateThrow) {
             await this.rollWithThirdPartyDefault(values);
@@ -2649,11 +2680,13 @@ export class DiceBoxThreeEngine {
         const primarySkin = this.dieSkins.find(Boolean);
         if (!primarySkin || this.activePresetSkinId === primarySkin.id) return false;
 
-        const preset = this.box.DiceFactory?.get('d6');
+        const preset = this.box.DiceFactory?.get(this.getDieType());
         if (!preset) return false;
 
-        const presetValues = Array.isArray(preset.values) ? preset.values : [1, 2, 3, 4, 5, 6];
-        const labels = ['', '', '', '', '', '', '', ''];
+        const presetValues = Array.isArray(preset.values)
+            ? preset.values
+            : Array.from({ length: this.getDieType() === 'd12' ? 12 : 6 }, (_, index) => index + 1);
+        const labels = Array.from({ length: presetValues.length + 2 }, () => '');
         for (const [valueIndex, faceValue] of presetValues.entries()) {
             const label = primarySkin.faceLabels?.[Number(faceValue)];
             labels[valueIndex + 2] = typeof label === 'string' ? label : '';
@@ -2669,13 +2702,13 @@ export class DiceBoxThreeEngine {
     }
 
     private rebuildExistingDicePresetMaterials(): void {
-        const preset = this.box.DiceFactory?.get?.('d6');
+        const preset = this.box.DiceFactory?.get?.(this.getDieType());
         const createMaterials = this.box.DiceFactory?.createMaterials?.bind(this.box.DiceFactory);
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
         if (!preset || !createMaterials || this.box.diceList.length === 0) return;
 
         this.box.diceList.forEach((die) => {
-            if (die.notation?.type !== 'd6') return;
+            if (die.notation?.type !== this.getDieType()) return;
             const materials = createMaterials(preset, baseScale / 2, 1);
             if (!materials.length) return;
             die.material = materials;
@@ -2700,16 +2733,16 @@ export class DiceBoxThreeEngine {
     }
 
     private getFaceValueForMaterialIndex(materialIndex: number): number | null {
-        const preset = this.box.DiceFactory?.get?.('d6');
-        const values = preset?.values ?? [1, 2, 3, 4, 5, 6];
+        const preset = this.box.DiceFactory?.get?.(this.getDieType());
+        const values = preset?.values ?? Array.from({ length: this.getDieType() === 'd12' ? 12 : 6 }, (_, index) => index + 1);
         const valueIndex = materialIndex - 2;
         const value = values[valueIndex];
         return typeof value === 'number' ? value : null;
     }
 
     private getMaterialIndexForFaceValue(faceValue: number): number | null {
-        const preset = this.box.DiceFactory?.get?.('d6');
-        const values = preset?.values ?? [1, 2, 3, 4, 5, 6];
+        const preset = this.box.DiceFactory?.get?.(this.getDieType());
+        const values = preset?.values ?? Array.from({ length: this.getDieType() === 'd12' ? 12 : 6 }, (_, index) => index + 1);
         const valueIndex = values.indexOf(faceValue);
         return valueIndex >= 0 ? valueIndex + 2 : null;
     }

@@ -202,6 +202,22 @@ function AdvanceThenUndoRequestProbe(): JSX.Element {
     );
 }
 
+function AdvanceThenToggleDieLockProbe(): JSX.Element {
+    const { dispatch } = useGameClient();
+
+    return (
+        <button
+            data-testid="dispatch-advance-then-toggle-die-lock"
+            onClick={() => {
+                dispatch('ADVANCE_PHASE', { step: 1 });
+                dispatch('TOGGLE_DIE_LOCK', { dieId: 2 });
+            }}
+        >
+            advance then toggle die lock
+        </button>
+    );
+}
+
 function BurstAdvanceProbe({ count }: { count: number }): JSX.Element {
     const { dispatch } = useGameClient();
 
@@ -1465,6 +1481,80 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
         expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
         expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'SYS_REQUEST_UNDO', {}, { expectedStateID: 2 });
+        expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandWaitingForPreviousStep');
+        expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandQueuedAfterPreviousStep');
+    });
+
+    it('sends die-lock selections without showing a previous-step wait toast', () => {
+        let hasPending = false;
+        const predictedNextTurnState = {
+            core: { marker: 'predicted-next-turn' },
+            sys: {
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => hasPending),
+            getPendingCommandCount: vi.fn(() => (hasPending ? 1 : 0)),
+            reconcile: vi.fn((state: unknown) => {
+                hasPending = false;
+                return { stateToRender: state, didRollback: false, optimisticEventWatermark: null };
+            }),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(() => { hasPending = false; }),
+            processCommand: vi.fn((type: string) => {
+                if (type === 'ADVANCE_PHASE') {
+                    hasPending = true;
+                    return { stateToRender: predictedNextTurnState, shouldSend: true, animationMode: 'wait-confirm' };
+                }
+                return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
+            }),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <ToastProvider>
+                <GameProvider
+                    server="http://127.0.0.1:3000"
+                    matchId="match-react-optimistic-die-lock-companion"
+                    playerId="0"
+                    engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                    latencyConfig={{
+                        optimistic: {
+                            enabled: true,
+                            pendingCompanionCommands: ['TOGGLE_DIE_LOCK'],
+                        },
+                    } as any}
+                >
+                    <StateProbe />
+                    <AdvanceThenToggleDieLockProbe />
+                </GameProvider>
+                <ToastProbe />
+            </ToastProvider>,
+        );
+
+        const client = mockClientInstances[0]!;
+        act(() => {
+            client.emitStateUpdate({
+                core: { marker: 'authoritative-before-advance' },
+                sys: {
+                    interaction: { current: undefined, queue: [], isBlocked: false },
+                    eventStream: { entries: [], nextId: 1 },
+                },
+            }, [], { stateID: 1, randomCursor: 0 });
+        });
+        client.lastReceivedStateID = 1;
+        client.sendCommand.mockClear();
+
+        act(() => {
+            screen.getByTestId('dispatch-advance-then-toggle-die-lock').click();
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
+        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'TOGGLE_DIE_LOCK', { dieId: 2 }, { expectedStateID: 2 });
         expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandWaitingForPreviousStep');
         expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandQueuedAfterPreviousStep');
     });

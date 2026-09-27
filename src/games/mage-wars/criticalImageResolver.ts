@@ -12,6 +12,7 @@ const MAGE_WARS_COMMON_CRITICAL_IMAGES = [
     MAGE_WARS_MAGES_ATLAS_IMAGE_PATH,
     'mage-wars/cards/backs/spell-card-back',
     'mage-wars/dice/attack-die-texture',
+    'mage-wars/dice/effect-die-numbers',
     'mage-wars/tokens/action/ready-token-front',
     'mage-wars/tokens/action/ready-token-back',
     'mage-wars/tokens/quickcast/quickcast-marker-front',

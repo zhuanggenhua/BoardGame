@@ -128,6 +128,7 @@ export function mapMageWarsEventToFx(
                 targetZoneId: payload.targetZoneId,
                 diceResults: payload.diceResults,
                 effectDieResult: payload.effectDieResult,
+                rawEffectDieResult: payload.rawEffectDieResult,
                 damageAmount: payload.baseDamage,
             },
         };
@@ -162,6 +163,7 @@ export function mapMageWarsEventToFx(
                 ...(rangeKind ? { rangeKind } : {}),
                 diceResults: payload.diceResults,
                 effectDieResult: payload.effectDieResult,
+                rawEffectDieResult: payload.rawEffectDieResult,
                 damageAmount: payload.baseDamage,
             },
         };

@@ -980,11 +980,27 @@ it('小机器人按官方锁定文本执行抽物品和骰数物理伤害分支'
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3),
+            false,
         );
 
         expect(core.latestDiscovery?.title).toBe('小机器人');
         expect(core.latestDiscovery?.detail).toContain('知识检定 8');
         expect(core.latestDiscovery?.detail).toContain('抽取一张物品卡');
+        expect(core.pendingEventRollResolution).toMatchObject({
+            sourceTitle: '小机器人',
+            playerId: '0',
+            acknowledgedPlayerIds: [],
+            requiresAcknowledgement: true,
+        });
+        expect(core.pendingEventRollResolution?.requiredPlayerIds).toEqual(
+            expect.arrayContaining(['0']),
+        );
+        expect(core.currentExplorer.inventory).toHaveLength(inventoryBefore);
+        expect(core.currentExplorerInventory).toHaveLength(inventoryBefore);
+        expect(core.deckCounts.item).toBe(itemDeckBefore);
+
+        core = acknowledgePendingEventRollResolution(core, 101, BETRAYAL_FIXED_RANDOM);
+
         expect(core.currentExplorer.inventory).toHaveLength(inventoryBefore + 1);
         expect(core.currentExplorerInventory).toHaveLength(inventoryBefore + 1);
         expect(core.deckCounts.item).toBe(itemDeckBefore - 1);

@@ -160,22 +160,10 @@
       "mapClickable": "选择目标",
       "mapDirectClickHint": "点击目标继续。",
       "currentClickableRegions": "目标地区",
-      "status": {
-        "used": "已用",
-        "unused": "未用"
-      },
-      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}",
-      "scenarioBlocked": "剧本待决项尚未确认，当前只可处理剧本选择。",
-      "scenarioVoteBlocked": "局内剧本选择尚未完成，当前只可处理剧本介绍与房主选择。",
-      "primaryActionSelectPrompt": "手牌行动",
       "grantPardon": {
         "mapFirstHint": "主路径：点击地图上的金色高亮接收区完成招安；下方列表只作备用选择。{{summary}}",
         "fallbackListLabel": "备用选择"
       },
-      "wheelNextStepBadge": "轮盘",
-      "wheelNextStepTitle": "公共轮盘推进",
-      "wheelNextStepHint": "选择推进几格",
-      "wheelTutorialMoveHint": "按规则选择轮盘推进：前进 1 格不让对手摸牌，前进 2 格指定一名对手摸 2 张，前进 3 格让所有对手各摸 2 张；点击对应落点立即执行",
       "wheelExecutePrompt": "选择轮盘格",
       "directExecute": "直接执行",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
@@ -565,8 +553,8 @@
         "newYearMaintenance": "然后点“自动支付”处理防线维护。长城、山海关、宁远、锦州保不住，就会破败，边界和城市效果也会跟着失效。",
         "newYearAttrition": "维护之后，直接看玩家条和地图：人口供不起的部队已经进入耗损结果，剩余兵力就是下一年真正能用的兵。",
         "chronologyScore": "纪年卡不只是年份牌。分数最高的人要付出一半手牌，才拿得到这一年的威望；不付，就把资格让给下一名。",
-        "turnOrderRefresh": "纪年卡结算后，新顺位和新人物会一起刷新，下一年的行动节奏也会跟着改。",
-        "finish": "一年收口后，看三个正式区域：玩家条看资源和人物，地图看兵力，轮盘顶部看下一年的当前行动人。"
+        "turnOrderRefresh": "纪年卡结算后，下一张正式纪年卡已经进入纪年区；玩家条上的“当前”标记也换到新顺位的行动人，人物状态随新年份刷新。",
+        "finish": "一年收口后，看三个正式区域：玩家条看当前行动人、资源和人物，地图看兵力，纪年区看当前纪年卡。"
       }
     },
     "koreaSpecial": {

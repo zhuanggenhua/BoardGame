@@ -196,7 +196,7 @@ describe('mage-wars event FX mapper', () => {
         });
     });
 
-    it('maps arena-object attacks with their rolled dice and both board endpoints', () => {
+    it.each([[12, 13], [1, 0]])('maps arena-object attacks preserving raw %i and resolved %i', (rawEffectDieResult, effectDieResult) => {
         const attackerId = 'mwobj-0-attacker';
         const targetId = 'mwobj-1-target';
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
@@ -252,7 +252,8 @@ describe('mage-wars event FX mapper', () => {
                 targetObjectId: targetId,
                 targetZoneId: ARENA_ZONE_IDS.B2,
                 diceResults: [1, 2, 3],
-                effectDieResult: 9,
+                rawEffectDieResult,
+                effectDieResult,
                 baseDamage: 6,
             },
             timestamp: 3,
@@ -270,13 +271,14 @@ describe('mage-wars event FX mapper', () => {
                 defenderId: targetId,
                 targetZoneId: ARENA_ZONE_IDS.B2,
                 diceResults: [1, 2, 3],
-                effectDieResult: 9,
+                rawEffectDieResult,
+                effectDieResult,
                 damageAmount: 6,
             },
         });
     });
 
-    it('maps spell attack and damage events to arena object zones', () => {
+    it.each([[12, 13], [1, 0]])('maps spell attacks preserving raw %i and resolved %i at target zones', (rawEffectDieResult, effectDieResult) => {
         const objectId = 'mwobj-0-2906-1';
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const core = {
@@ -314,6 +316,8 @@ describe('mage-wars event FX mapper', () => {
                 targetObjectId: objectId,
                 targetZoneId: ARENA_ZONE_IDS.A2,
                 diceResults: [3, 3, 3],
+                rawEffectDieResult,
+                effectDieResult,
                 baseDamage: 9,
             },
             timestamp: 3,
@@ -329,6 +333,8 @@ describe('mage-wars event FX mapper', () => {
                 defenderId: objectId,
                 damageAmount: 9,
                 rangeKind: 'ranged',
+                rawEffectDieResult,
+                effectDieResult,
             },
         });
 

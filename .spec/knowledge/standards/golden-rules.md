@@ -47,4 +47,4 @@ metadata:
 
 - 本文件只提供高频排查入口，不定义各专项的完整验收流程；最终证据回到 [`e2e-verification`](e2e-verification.md)、[`regression-closeout`](regression-closeout.md) 或命中的专项标准。
 - 如果只做了止血、降噪、跳过或兜底，要按止血汇报，不能称为根因修复。
-- 如果发现冲突，按 [`spec-steward`](../../skills/spec-steward/SKILL.md) 收口唯一主源，不在本文件新增反向覆盖。
+- 如果发现冲突，按系统 `skill-governance` 收口唯一主源，再由 [`spec-steward`](../../skills/spec-steward/SKILL.md) 执行项目落地；不在本文件新增反向覆盖。

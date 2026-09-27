@@ -76,6 +76,7 @@ export type BetrayalLatestDiscoveryPanelPresentation = {
   cardResolutionTotalCount: number;
   viewerHasAcknowledgedCardResolution: boolean;
   canCurrentViewerAcknowledgeCardResolution: boolean;
+  isStandaloneItemGain: boolean;
   searchSequence: readonly BetrayalPendingCardResolutionProcessCard[];
   hasSearchSequence: boolean;
   isSearchOperator: boolean;
@@ -792,6 +793,10 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   latestDiscoverySearchRevealIndex: number;
   eventRollConfirmation: EventRollConfirmationPresentation;
   isRecentRollReadable: boolean;
+  optimisticCardResolutionAcknowledgement?: {
+    resolutionId: string;
+    playerId: string;
+  } | null;
   t: LatestDiscoveryTranslation;
 }): BetrayalLatestDiscoveryPanelPresentation {
   const {
@@ -811,6 +816,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     latestDiscoverySearchRevealIndex,
     eventRollConfirmation,
     isRecentRollReadable,
+    optimisticCardResolutionAcknowledgement,
     t,
   } = options;
   const { entry, visibleCurrentEntry, discovery, recentRoll, ownerPlayerId, key } =
@@ -999,8 +1005,27 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       : pendingCardResolution
         ? [pendingCardResolution.playerId]
         : [];
-  const cardResolutionAcknowledgedPlayerIds =
+  const authoritativeCardResolutionAcknowledgedPlayerIds =
     pendingCardResolution?.acknowledgedPlayerIds ?? [];
+  const shouldApplyOptimisticCardResolutionAcknowledgement = Boolean(
+    pendingCardResolution &&
+      optimisticCardResolutionAcknowledgement?.resolutionId ===
+        pendingCardResolution.id &&
+      optimisticCardResolutionAcknowledgement.playerId &&
+      cardResolutionRequiredPlayerIds.includes(
+        optimisticCardResolutionAcknowledgement.playerId,
+      ) &&
+      !authoritativeCardResolutionAcknowledgedPlayerIds.includes(
+        optimisticCardResolutionAcknowledgement.playerId,
+      ),
+  );
+  const cardResolutionAcknowledgedPlayerIds =
+    shouldApplyOptimisticCardResolutionAcknowledgement
+      ? [
+          ...authoritativeCardResolutionAcknowledgedPlayerIds,
+          optimisticCardResolutionAcknowledgement!.playerId,
+        ]
+      : authoritativeCardResolutionAcknowledgedPlayerIds;
   const cardResolutionConfirmedCount =
     cardResolutionRequiredPlayerIds.filter((playerId) =>
       cardResolutionAcknowledgedPlayerIds.includes(playerId),
@@ -1052,6 +1077,22 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       !viewerHasAcknowledgedCardResolution &&
       !canAdvanceSearch,
   );
+  const pendingPossessionCard = resolveLatestDiscoveryPendingPossessionCard({
+    visibleProcessCard,
+    pendingCardResolution,
+  });
+  const isStandaloneItemGain = Boolean(
+    pendingCardResolution &&
+      discovery?.kind === "item" &&
+      pendingPossessionCard?.kind === "item" &&
+      pendingCardResolution.deckKind === "item" &&
+      pendingCardResolution.stepKind === "drawn-card" &&
+      pendingCardResolution.total === 1 &&
+      pendingCardResolution.requiredPlayerIds?.length === 1 &&
+      pendingCardResolution.playerId === viewerPlayerId &&
+      !core.pendingEventChoice &&
+      !core.pendingEventRollResolution,
+  );
   const continueLabel = (() => {
     if (core.pendingEventRollResolution) {
       if (core.pendingEventRollResolution.requiresAcknowledgement === false) {
@@ -1067,7 +1108,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
             total: eventRollConfirmation.totalCount,
           });
     }
-    if (!pendingCardResolution) {
+    if (isStandaloneItemGain || !pendingCardResolution) {
       return t("board.roll.backToBoard");
     }
     if (
@@ -1100,10 +1141,6 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       total: cardResolutionTotalCount,
     });
   })();
-  const pendingPossessionCard = resolveLatestDiscoveryPendingPossessionCard({
-    visibleProcessCard,
-    pendingCardResolution,
-  });
   const displayedKindLabel = pendingPossessionCard
     ? pendingPossessionCard.kind === "item"
       ? t("board.discovery.itemCard")
@@ -1143,6 +1180,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     cardResolutionTotalCount,
     viewerHasAcknowledgedCardResolution,
     canCurrentViewerAcknowledgeCardResolution,
+    isStandaloneItemGain,
     searchSequence,
     hasSearchSequence,
     isSearchOperator,

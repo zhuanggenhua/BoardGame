@@ -13,7 +13,7 @@ BoardGame 是多桌游 Web / 移动平台。`.spec/` 是 AI 规范唯一真相�
 ## 规范术语范围
 
 - 在本仓库任务里，用户说“规范 / 更新规范 / 项目规范 / 通用规范 / 全局规范”时，默认指 BoardGame 项目 Agent 知识体系里适用于全项目、多游戏和多人协作的规则；不是 DiceThrone 或其它单游戏专项规范，也不是 Codex 系统层，除非用户明确限定。
-- 修改项目规范前先按 [`rules/system.md`](rules/system.md) 判断是否真的缺执行规则、入口或验收；确认需要整理后，再用 [`spec-steward`](skills/spec-steward/SKILL.md) 处理文件落点、索引和去重。项目入口和共享边界放本文件，跨游戏做法放 `knowledge/standards/`，项目 workflow 放 `.spec/skills/`，单游戏特例只能放对应专项或任务记录。
+- 修改项目规范前先按系统 `skill-governance` 判断是否真的缺执行规则、入口或验收；确认需要整理后，再用 [`spec-steward`](skills/spec-steward/SKILL.md) 处理项目文件落点、索引和校验。项目入口和共享边界放本文件，跨游戏做法放 `knowledge/standards/`，项目 workflow 放 `.spec/skills/`，单游戏特例只能放对应专项或任务记录。
 
 ## 调度核心
 
@@ -28,13 +28,15 @@ BoardGame 是多桌游 Web / 移动平台。`.spec/` 是 AI 规范唯一真相�
 - 规则 bug、UI、资源录入、发布、反馈、合并、看图等专项工作，从 `knowledge/README.md` 找标准，再读对应 `skills/<name>/SKILL.md`。
 - 用户要求接入或排查可选能力、操作日志、撤回、音效等游戏支撑能力时，用 [`support-capability-integration`](skills/support-capability-integration/SKILL.md) 作为项目 workflow，再回到底层标准执行；“可选能力 / 可选都接 / 把可选接上”默认是跨游戏支撑能力语义，不是某个单游戏规则分支或当前任务文档待办。
 - 任务路由只由本文件和 `knowledge/README.md` 承担中心职责；workflow / skill 不维护平行规范清单。新增或迁移标准时，默认只登记到 `knowledge/README.md`；只有具体执行分卷直接消费该标准时，才保留一条指向主源的链接。
-- 修改 `.spec/` 结构、规则落点、skill、知识文档或文档去噪时，先按 `rules/system.md` 判定，再用 [`spec-steward`](skills/spec-steward/SKILL.md) 做维护动作。
+- 修改 `.spec/` 结构、规则落点、skill、知识文档或文档去噪时，先按系统 `skill-governance` 判定，再由 [`spec-steward`](skills/spec-steward/SKILL.md) 做项目落地。
+- 新游戏从零创建、资源 / 规则 intake 或接入新 `gameId` 时，先走 [`create-new-game`](skills/create-new-game/SKILL.md)；进入 proposal、design、tasks、spec delta、具体 runtime / UI 阶段拆分或架构级变更时，再读取 [`openspec/AGENTS.md`](../openspec/AGENTS.md)。两者是先后分工，不互相替代。
+- 图生 Three.js、参考图重建或官方 showcase 对齐时，先走 [`img2threejs-readiness`](skills/img2threejs-readiness/SKILL.md)，再按准入结果进入 [`img2threejs`](skills/img2threejs/SKILL.md)；缺官方流程、参考图或验收链路时，按项目 skill 阻塞，不得用手写原型冒充正式流程。
 
 ## 编码约定
 
 - 设计先查规范：新增业务功能、拆职责、选设计模式、审查 SOLID / 反模式 / 防护性架构时，先读 [`code-design`](knowledge/standards/code-design.md)。
 - 动手前的目标锁定、证据不足停手和验收口径统一按 [`conversation-handoff-target-lock`](knowledge/standards/conversation-handoff-target-lock.md)、[`rules/system.md`](rules/system.md) 及命中的专项标准执行；本入口不复制这些判断。
-- 只做当前目标要求的改动，不顺手重构、不新增平行真相源；职责归属和规范整理按 [`spec-steward`](skills/spec-steward/SKILL.md) 维护。
+- 只做当前目标要求的改动，不顺手重构、不新增平行真相源；规范治理先按系统 `skill-governance` 判定，项目文件落地再由 [`spec-steward`](skills/spec-steward/SKILL.md) 执行。
 - 新功能、修 bug 或改关键逻辑时按项目测试标准留验证证据；纯文档结构调整至少跑 `npm run spec:lint`。
 - 交付说明包含改动清单、验证命令与关键结果、剩余风险，以及是否需要知识沉淀。
 

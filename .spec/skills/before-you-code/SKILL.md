@@ -25,7 +25,7 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 | --- | --- | --- | --- |
 | 小 | 只改一个独立文件，逻辑不跨模块 | 涉及手写代码 / 测试 / 工具时先读 [`code-design`](../../knowledge/standards/code-design.md)，再读直接相关规范、项目 workflow 与源文件 | 直接实施 |
 | 中 | 涉及 2 至 5 个文件，或影响规则、UI、测试、数据、共享行为其中两项以上 | 涉及手写代码 / 测试 / 工具时先读 [`code-design`](../../knowledge/standards/code-design.md)，再读 [知识导航](../../knowledge/README.md)、全部命中标准、workflow 和关键源文件 | 先锁改动边界，再实施 |
-| 大 | 多模块、多步骤依赖、系统架构或 AI 规范结构变更 | 读取 [`code-design`](../../knowledge/standards/code-design.md)、知识导航和相关入口后停止直接编码 | 先锁定对应入口；本 skill 只覆盖 AI 规范的加载和结构裁决 |
+| 大 | 多模块、多步骤依赖、系统架构或 AI 规范结构变更 | 读取 [`code-design`](../../knowledge/standards/code-design.md)、知识导航和相关入口后停止直接编码 | 先锁定对应入口；本 skill 只覆盖上下文加载和下钻顺序，规范落点裁决走系统 `skill-governance` |
 
 ## 加载顺序
 
