@@ -22,7 +22,10 @@ function resultOrientation(face: Face) {
 export function EffectDie({ result, resolvedResult = result }: { result: number; resolvedResult?: number }) {
     const reducedMotion = useReducedMotion() === true;
     const [isRolling, setIsRolling] = useState(!reducedMotion);
-    useEffect(() => { setIsRolling(!reducedMotion); }, [result, reducedMotion]);
+    useEffect(() => {
+        const frame = window.requestAnimationFrame(() => setIsRolling(!reducedMotion));
+        return () => window.cancelAnimationFrame(frame);
+    }, [result, reducedMotion]);
     const resultFace = EFFECT_DIE_FACES.find((face) => face.value === result)!;
     return (
         <div
