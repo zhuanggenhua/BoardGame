@@ -936,7 +936,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     ]);
 
     const nyraDamageResponse = React.useMemo(() => {
-        const companion = player?.companion;
         const currentDamage = Math.max(0, pendingDamage?.currentDamage ?? 0);
         if (
             !isTokenResponseInteraction
