@@ -2851,7 +2851,11 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
         // ========== 进入 income 阶段：CP 和抽牌 ==========
         if (to === 'income') {
-            const player = core.players[core.activePlayerId];
+            const phaseEnterCore = exitEvents?.length
+                ? applyEvents(core, exitEvents as DiceThroneEvent[], reduce)
+                : core;
+            const activeId = phaseEnterCore.activePlayerId;
+            const player = phaseEnterCore.players[activeId];
             if (player) {
                 const cpDelta = 1;
                 const cpResult = resourceSystem.modify(
@@ -2862,7 +2866,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 const cpEvent: CpChangedEvent = {
                     type: 'CP_CHANGED',
                     payload: {
-                        playerId: core.activePlayerId,
+                        playerId: activeId,
                         delta: cpResult.actualDelta,
                         newValue: cpResult.newValue,
                     },
@@ -2873,7 +2877,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
                 // 抽牌（牌库为空则洗弃牌堆）
                 events.push(
-                    ...buildDrawEvents(core, core.activePlayerId, 1, random, command.type, timestamp)
+                    ...buildDrawEvents(phaseEnterCore, activeId, 1, random, command.type, timestamp)
                 );
             }
         }

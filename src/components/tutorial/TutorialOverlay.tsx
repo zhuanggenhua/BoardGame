@@ -701,6 +701,12 @@ export const TutorialOverlay: React.FC = () => {
         // 视口边界约束后再计算真实重叠，避免“先不遮挡、夹紧后遮挡”。
         if (typeof styles.top === "number") {
           styles.top = Math.max(minTop, Math.min(styles.top as number, maxTop));
+          if (currentStep.tooltipOffsetY) {
+            styles.top = Math.max(
+              minTop,
+              Math.min(styles.top + currentStep.tooltipOffsetY, maxTop),
+            );
+          }
         }
         if (typeof styles.left === "number") {
           styles.left = Math.max(

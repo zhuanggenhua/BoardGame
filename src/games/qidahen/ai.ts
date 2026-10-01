@@ -102,6 +102,29 @@ const getFactionIdForPlayer = (
     playerId: string,
 ): QidahenFactionId => getFactionIdByPlayerId(core, playerId);
 
+const buildFactionSelectionActions = (
+    state: QidahenState,
+    playerId: string,
+): AiLegalAction[] => {
+    const selection = state.core.factionSelection;
+    if (!selection || selection.selections[playerId] != null) {
+        return [];
+    }
+
+    const actions: AiLegalAction[] = [];
+    for (const factionId of selection.availableFactionIds) {
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('faction-selection', factionId),
+            kind: 'faction-selection',
+            label: `确认阵营：${factionId}`,
+            commandType: QIDAHEN_COMMANDS.SELECT_FACTION,
+            payload: { factionId },
+            metadata: { factionId },
+        }));
+    }
+    return actions;
+};
+
 const buildScenarioChoiceActions = (
     state: QidahenState,
     playerId: string,
@@ -807,6 +830,14 @@ export function buildQidahenAiLegalActions(args: {
     const core = state.core;
 
     if (core.victoryStatus) {
+        return [];
+    }
+
+    const factionSelectionActions = buildFactionSelectionActions(state, args.playerId);
+    if (factionSelectionActions.length > 0) {
+        return factionSelectionActions;
+    }
+    if (core.factionSelection) {
         return [];
     }
 

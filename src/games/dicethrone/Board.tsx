@@ -2308,6 +2308,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         isCompareRoll={isCompareRoll}
                         currentPhase={currentPhase}
                         canInteractDice={canInteractRightSidebarDice}
+                        isResponseWindowOpen={isResponseWindowOpen}
                         isRolling={isRolling}
                         setIsRolling={(rolling: boolean) => setIsRolling(rolling)}
                         rerollingDiceIds={rerollingDiceIds}

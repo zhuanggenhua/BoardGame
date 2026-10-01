@@ -18,6 +18,7 @@ const QIDAHEN_PAYMENT_STEP_FOCUS = {
     avoidOverlapSelectors: [
         '[data-testid="qidahen-action-payment-panel"]',
         '[data-testid="qidahen-discard-anchor"]',
+        '[data-testid="qidahen-hand-interaction-tray"]',
     ],
 };
 
@@ -481,6 +482,7 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             highlightTarget: 'qidahen-hand-zone',
             position: 'top',
             ...QIDAHEN_PAYMENT_STEP_FOCUS,
+            tooltipMaxWidth: 520,
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
             advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'grant-pardon' } }],
@@ -1327,8 +1329,9 @@ const QIDAHEN_KOREA_SPECIAL_TUTORIAL: TutorialManifest = {
             id: 'shanhaiguan',
             content: 'game-qidahen:tutorial.koreaSpecial.steps.shanhaiguan',
             highlightTarget: 'qidahen-map-layer',
-            position: 'right',
+            position: 'left',
             ...QIDAHEN_MAP_INFO_STEP_FOCUS,
+            tooltipOffsetY: 84,
             infoStep: true,
         },
         {

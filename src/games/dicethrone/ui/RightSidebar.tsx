@@ -64,6 +64,7 @@ export const RightSidebar = ({
     isCompareRoll = false,
     currentPhase,
     canInteractDice,
+    isResponseWindowOpen = false,
     isRolling,
     setIsRolling,
     rerollingDiceIds,
@@ -104,6 +105,7 @@ export const RightSidebar = ({
     isCompareRoll?: boolean;
     currentPhase: TurnPhase;
     canInteractDice: boolean;
+    isResponseWindowOpen?: boolean;
     isRolling: boolean;
     setIsRolling: (isRolling: boolean) => void;
     rerollingDiceIds?: number[];
@@ -359,6 +361,7 @@ export const RightSidebar = ({
                         }}
                         currentPhase={currentPhase}
                         canInteract={canInteractDice}
+                        isResponseWindowOpen={isResponseWindowOpen}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
                         rerollAnimationSeq={rerollAnimationSeq}
@@ -383,6 +386,7 @@ export const RightSidebar = ({
                         onConfirm={onConfirm}
                         currentPhase={currentPhase}
                         canInteract={canInteractDice}
+                        isResponseWindowOpen={isResponseWindowOpen}
                         isRolling={isRolling}
                         setIsRolling={setIsRolling}
                         interaction={isDiceMultistep ? interaction : undefined}

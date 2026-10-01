@@ -531,7 +531,7 @@ export class GameTransportClient {
         commands: Array<{ type: string; payload: unknown }>,
         onConfirmed?: (state: unknown) => void,
         onRejected?: (reason: string) => void,
-        dispatchContext?: Pick<BatchDispatchMeta, 'onlineAiAttemptKey'>,
+        dispatchContext?: Pick<BatchDispatchMeta, 'onlineAiAttemptKey' | 'expectedStateID'>,
     ): boolean {
         if (!this.socket || this._destroyed) return false;
         if (this._syncInFlight) {
@@ -584,7 +584,7 @@ export class GameTransportClient {
 
         // 发送批次
         const batchMeta: BatchDispatchMeta = {
-            expectedStateID: this._lastReceivedStateID ?? undefined,
+            expectedStateID: dispatchContext?.expectedStateID ?? this._lastReceivedStateID ?? undefined,
             ...(dispatchContext?.onlineAiAttemptKey
                 ? {
                     onlineAiAttemptKey: dispatchContext.onlineAiAttemptKey,

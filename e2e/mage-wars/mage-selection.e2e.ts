@@ -612,8 +612,8 @@ test('Mage Wars 法术书选择：双方直接选择法术书后进入对应开�
         .toHaveAttribute('data-mage-id', 'warlock_apprentice');
     await expect(page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]'))
         .toHaveAttribute('data-mage-id', 'wizard_apprentice');
-    await expect(page.getByTestId('mage-wars-board')).toContainText('邪术师');
-    await expect(page.getByTestId('mage-wars-board')).toContainText('巫师');
+    await expect(page.getByTestId('mage-wars-mage-hud-self')).toHaveAttribute('aria-label', /邪术师/u);
+    await expect(page.getByTestId('mage-wars-mage-hud-opponent')).toHaveAttribute('aria-label', /巫师/u);
     await waitForVisibleImages(page);
     await expectAtlasFrameAspectRatioPreserved(
         page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"] [data-card-atlas-frame="true"]'),

@@ -80,7 +80,9 @@ function resolveExpectedStateIDForSingleCommand(args: {
     if (args.serialized) {
         return args.lastStateID + Math.max(0, args.pendingCount - 1);
     }
-    return undefined;
+    return args.pendingCount > 0
+        ? args.lastStateID + args.pendingCount
+        : undefined;
 }
 
 type DeferredCommand = {
@@ -290,21 +292,33 @@ export function useGameProviderRuntime(args: {
                     const command = commands[0];
                     const pendingCount = optimisticEngineRef.current?.getPendingCommandCount?.() ?? 0;
                     const lastStateID = client.lastReceivedStateID;
-                    const expectedStateID = command.type === 'ADVANCE_PHASE'
-                        && typeof lastStateID === 'number'
+                    const expectedStateID = typeof lastStateID === 'number'
                         ? lastStateID + Math.max(0, pendingCount - 1)
                         : undefined;
-                    return expectedStateID === undefined
+                    const sent = expectedStateID === undefined
                         ? client.sendCommand(command.type, command.payload)
                         : client.sendCommand(command.type, command.payload, { expectedStateID });
+                    if (!sent) {
+                        rollbackOptimisticRenderAndResync();
+                    }
+                    return sent;
                 } else {
                     const batchId = `b-${++batchSeqRef.current}`;
-                    return client.sendBatch(batchId, commands, undefined, (reason) => {
+                    const pendingCount = optimisticEngineRef.current?.getPendingCommandCount?.() ?? 0;
+                    const lastStateID = client.lastReceivedStateID;
+                    const expectedStateID = typeof lastStateID === 'number'
+                        ? lastStateID + Math.max(0, pendingCount - commands.length)
+                        : undefined;
+                    const sent = client.sendBatch(batchId, commands, undefined, (reason) => {
                         recoverFromRejectedCommand(reason);
                         if (baseShouldForwardOnlineBatchRejectionToError(reason, shouldSilentlyRetryOnlineAiBatchRejection)) {
                             onErrorRef.current?.(reason);
                         }
-                    });
+                    }, { expectedStateID });
+                    if (!sent) {
+                        rollbackOptimisticRenderAndResync();
+                    }
+                    return sent;
                 }
             },
         });
@@ -313,7 +327,7 @@ export function useGameProviderRuntime(args: {
             batcher.destroy();
             batcherRef.current = null;
         };
-    }, [latencyConfig, recoverFromRejectedCommand]);
+    }, [latencyConfig, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
 
     useEffect(() => {
         const client = new GameTransportClient({
@@ -494,10 +508,6 @@ export function useGameProviderRuntime(args: {
             && canSendWhileOptimisticPending(type, pendingCompanionCommandTypes),
         );
         const serialized = shouldSerializeCommand(type);
-        if (engine?.hasPendingCommands() && !sendWithoutPrediction && !serialized) {
-            deferCommandWaitingForPreviousStep(type, payload);
-            return false;
-        }
         let shouldSend = true;
         let wasPredicted = false;
         if (engine && !sendWithoutPrediction) {
@@ -541,7 +551,7 @@ export function useGameProviderRuntime(args: {
                 ? client.sendCommand(type, payload)
                 : client.sendCommand(type, payload, { expectedStateID });
         }
-        if (!sent && engine) {
+        if (!sent && engine && !batcher) {
             rollbackOptimisticRenderAndResync();
             return false;
         }

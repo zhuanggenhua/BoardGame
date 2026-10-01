@@ -409,6 +409,8 @@ export interface TutorialStepSnapshot {
      * beside a protected reading surface without covering it.
      */
     tooltipMaxWidth?: number;
+    /** Optional vertical nudge applied after placement, in CSS pixels. */
+    tooltipOffsetY?: number;
     /**
      * Controls only the tutorial-drawn frame around the target.
      * Use `none` when the target is already a self-explanatory game object

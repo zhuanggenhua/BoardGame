@@ -83,6 +83,33 @@ export function centerBetrayalRect(
   };
 }
 
+export function resolveBetrayalVisualTransitionContentScale({
+  targetWidth,
+  targetHeight,
+  contentWidth,
+  contentHeight,
+}: {
+  targetWidth: number;
+  targetHeight: number;
+  contentWidth: number;
+  contentHeight: number;
+}) {
+  if (
+    !Number.isFinite(targetWidth) ||
+    !Number.isFinite(targetHeight) ||
+    !Number.isFinite(contentWidth) ||
+    !Number.isFinite(contentHeight) ||
+    targetWidth <= 0 ||
+    targetHeight <= 0 ||
+    contentWidth <= 0 ||
+    contentHeight <= 0
+  ) {
+    return 1;
+  }
+
+  return Math.min(1, targetWidth / contentWidth, targetHeight / contentHeight);
+}
+
 export function BetrayalVisualTransitionLayer({
   transition,
   onComplete,
@@ -117,6 +144,24 @@ export function BetrayalVisualTransitionLayer({
     transition.kind === "possession-gain"
       ? Math.min(transition.sourceRect.height, 320)
       : transition.sourceRect.height;
+  const contentBaseSize = transition.explorer
+    ? { width: 50, height: 54 }
+    : transition.monster
+      ? { width: 52, height: 52 }
+      : transition.girlToken
+        ? {
+            width: transition.attachedTo === "mummy" ? 28 : 54,
+            height: transition.attachedTo === "mummy" ? 28 : 54,
+          }
+        : null;
+  const contentScale = contentBaseSize
+    ? resolveBetrayalVisualTransitionContentScale({
+        targetWidth: transitionWidth,
+        targetHeight: transitionHeight,
+        contentWidth: contentBaseSize.width,
+        contentHeight: contentBaseSize.height,
+      })
+    : 1;
   const content = transition.explorer ? (
     <ExplorerFigureToken
       explorer={transition.explorer}
@@ -233,7 +278,15 @@ export function BetrayalVisualTransitionLayer({
             }}
             onAnimationComplete={handleAnimationComplete}
           >
-            {content}
+            <div
+              className="inline-flex items-center justify-center"
+              style={{
+                transform: `scale(${contentScale})`,
+                transformOrigin: "center center",
+              }}
+            >
+              {content}
+            </div>
           </motion.div>
         ) : null}
       </div>

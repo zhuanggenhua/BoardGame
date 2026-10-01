@@ -43,6 +43,24 @@ const applyAiResolution = (
 );
 
 describe('七大恨 AI', () => {
+    it('确认阵营阶段会为尚未选择的 AI 座位生成合法阵营动作', () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', false);
+        const state = createAiState({
+            ...baseCore,
+            factionSelection: {
+                availableFactionIds: ['ming', 'mongol', 'jin'],
+                selections: { '0': 'ming' },
+            },
+        });
+
+        const actions = buildQidahenAiLegalActions({ playerId: '1', state });
+
+        expect(actions.map((action) => action.commands[0])).toEqual([
+            { type: QIDAHEN_COMMANDS.SELECT_FACTION, payload: { factionId: 'mongol' } },
+            { type: QIDAHEN_COMMANDS.SELECT_FACTION, payload: { factionId: 'jin' } },
+        ]);
+    });
+
     it('会为对应势力生成剧本前置选择动作', () => {
         const core = createInitialCore(['0', '1', '2'], 'shanhaiguan-1622', false);
         const state = createAiState(core);

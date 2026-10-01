@@ -1218,6 +1218,7 @@ describe('GameProvider transport baseline', () => {
                 },
             }, [], { stateID: 1, randomCursor: 0 });
         });
+        client.lastReceivedStateID = 1;
 
         mockEngine.processCommand.mockClear();
         client.sendCommand.mockClear();
@@ -1229,7 +1230,7 @@ describe('GameProvider transport baseline', () => {
         expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
         expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
 
         act(() => {
@@ -1245,10 +1246,11 @@ describe('GameProvider transport baseline', () => {
                 },
             }, [], { stateID: 2, randomCursor: 0 });
         });
+        client.lastReceivedStateID = 2;
 
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, { expectedStateID: 1 });
         expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
 
         mockEngine.processCommand.mockClear();
@@ -1377,7 +1379,7 @@ describe('GameProvider transport baseline', () => {
         expect(mockEngine.processCommand).toHaveBeenCalledWith('PLAY_CARD', { cardId: 'card-get-away' }, '0');
         expect(client.sendBatch).not.toHaveBeenCalled();
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'PLAY_CARD', { cardId: 'card-get-away' });
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'PLAY_CARD', { cardId: 'card-get-away' }, { expectedStateID: 1 });
         expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'REMOVE_STATUS', {
             targetPlayerId: '0',
             statusId: 'hypnosis',
@@ -1639,6 +1641,7 @@ describe('GameProvider transport baseline', () => {
                 },
             }, [], { stateID: 1, randomCursor: 0 });
         });
+        client.lastReceivedStateID = 1;
 
         mockEngine.processCommand.mockClear();
         client.sendCommand.mockClear();
@@ -1649,11 +1652,15 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(screen.getByTestId('state').textContent).toContain('predicted-card-status-interaction');
-        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenCalledWith('PLAY_CARD', { cardId: 'card-get-away' }, '0');
         expect(client.sendBatch).not.toHaveBeenCalled();
-        expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('PLAY_CARD', { cardId: 'card-get-away' });
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('REMOVE_STATUS', {
+            targetPlayerId: '0',
+            statusId: 'hypnosis',
+            interactionId: 'dt-interaction-card-get-away-1',
+        }, { expectedStateID: 2 });
     });
 
     it('keeps only one retry for rapid serialized phase advances', () => {
@@ -1726,6 +1733,7 @@ describe('GameProvider transport baseline', () => {
                 },
             }, [], { stateID: 1, randomCursor: 0 });
         });
+        client.lastReceivedStateID = 1;
 
         mockEngine.processCommand.mockClear();
         client.sendCommand.mockClear();
@@ -1737,7 +1745,7 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, '0');
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
         expect(screen.getByTestId('state').textContent).toContain('predicted-step-1');
         expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
 
@@ -1754,11 +1762,12 @@ describe('GameProvider transport baseline', () => {
                 },
             }, [], { stateID: 2, randomCursor: 0 });
         });
+        client.lastReceivedStateID = 2;
 
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, '0');
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, { expectedStateID: 1 });
 
         act(() => {
             client.emitStateUpdate({

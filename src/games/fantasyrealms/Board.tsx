@@ -4685,6 +4685,19 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         padding: 8px 10px;
                         font-size: 12px;
                     }
+                    /* 点击放大属于 portal，移动横屏必须按真实视口限高，不能让卡牌按桌面宽度溢出。 */
+                    .fr-magnify-shell {
+                        width: min(
+                            430px,
+                            calc((var(--runtime-viewport-height, 100vh) - 64px) * 0.72),
+                            calc(var(--runtime-viewport-width, 100vw) - 64px)
+                        );
+                        max-height: calc(var(--runtime-viewport-height, 100vh) - 64px);
+                    }
+                    .fr-magnify-card-wrap,
+                    .fr-magnify-card-wrap .fr-card {
+                        max-height: calc(var(--runtime-viewport-height, 100vh) - 64px);
+                    }
                 }
             `}</style>
 

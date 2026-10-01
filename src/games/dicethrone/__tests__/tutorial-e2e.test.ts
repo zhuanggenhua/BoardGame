@@ -247,6 +247,8 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         expect(s.sys.phase).toBe('main1');
         expect(s.core.activePlayerId).toBe('0');
         expect(s.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN]).toBe(1);
+        expect(s.core.players['0'].hand.map(card => card.id)).toContain('card-meditation-2');
+        expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBeGreaterThanOrEqual(2);
 
         expect(s.sys.tutorial.step?.id).toBe('knockdown-explain');
         return s;
@@ -366,5 +368,20 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
             const playResult = tryExec(sellResult.state, 'PLAY_CARD', '0', { cardId: 'card-meditation-2' });
             expect(playResult.success).toBe(true);
         }
+    });
+
+    it('教程回到上一步时同时恢复净化前的对局状态', () => {
+        let s = runToKnockdownExplain();
+
+        s = nextStep(s, 'skip knockdown-explain');
+        s = exec(s, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN }, 'use-purify');
+        expect(s.sys.tutorial.step?.id).toBe('meditation-2');
+        expect(s.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN] ?? 0).toBe(0);
+        expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBe(0);
+
+        s = exec(s, TUTORIAL_COMMANDS.PREVIOUS, '0', {}, 'previous-after-purify');
+        expect(s.sys.tutorial.step?.id).toBe('purify-use');
+        expect(s.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN] ?? 0).toBe(1);
+        expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBe(1);
     });
 });

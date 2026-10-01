@@ -116,6 +116,7 @@ const UNDO_ALLOWLIST = [
     'SELL_CARD',
     'SELECT_ABILITY',
     'ADVANCE_PHASE',
+    'USE_PURIFY',
 ] as const;
 
 const DT_NS = 'game-dicethrone';

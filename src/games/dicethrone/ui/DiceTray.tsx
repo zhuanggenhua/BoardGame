@@ -460,6 +460,7 @@ export const DiceActions = ({
     onConfirm,
     currentPhase,
     canInteract,
+    isResponseWindowOpen = false,
     isRolling,
     setIsRolling,
     interaction,
@@ -474,6 +475,7 @@ export const DiceActions = ({
     onConfirm: () => void;
     currentPhase: TurnPhase;
     canInteract: boolean;
+    isResponseWindowOpen?: boolean;
     isRolling: boolean;
     setIsRolling: (isRolling: boolean) => void;
     interaction?: InteractionDescriptor;
@@ -523,7 +525,7 @@ export const DiceActions = ({
             multistepInteraction?.cancel();
             return;
         }
-        if (!isRollPhase || !canInteract || rollConfirmed || rollCount >= rollLimit) return;
+        if (!isRollPhase || !canInteract || isResponseWindowOpen || rollConfirmed || rollCount >= rollLimit) return;
         setIsRolling(true);
         rollStartTimeRef.current = Date.now();
         onRoll();
@@ -562,10 +564,10 @@ export const DiceActions = ({
 
     const leftDisabled = isInteractionMode
         ? false
-        : (!isRollPhase || !canInteract || rollConfirmed || rollCount >= rollLimit);
+        : (!isRollPhase || !canInteract || isResponseWindowOpen || rollConfirmed || rollCount >= rollLimit);
     const leftVariant = isInteractionMode
         ? 'secondary' as const
-        : (isRollPhase && canInteract && !rollConfirmed && rollCount < rollLimit ? 'primary' as const : 'secondary' as const);
+        : (isRollPhase && canInteract && !isResponseWindowOpen && !rollConfirmed && rollCount < rollLimit ? 'primary' as const : 'secondary' as const);
     const rightDisabled = isBonusDiceSettlement
         ? !canInteract
         : isInteractionMode
