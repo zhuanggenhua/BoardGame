@@ -105,6 +105,7 @@ export function getCardPreviewRenderer(id: string): CardPreviewRenderer | undefi
     return previewRendererRegistry.get(id);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getCardPreviewAspectRatio(
     previewRef: CardPreviewRef,
     locale?: string,

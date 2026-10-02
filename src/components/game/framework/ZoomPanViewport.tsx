@@ -784,6 +784,8 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         return () => cancelAnimationFrame(rafId);
     }, [
         activeZoomLevel,
+        activePosition.x,
+        activePosition.y,
         applyViewport,
         baseScale,
         clampViewportState,
