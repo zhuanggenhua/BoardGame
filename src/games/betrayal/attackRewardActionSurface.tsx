@@ -11,6 +11,7 @@ export interface BetrayalAttackRewardCardSummary {
 export interface BetrayalRewardActionSurfaceProps {
   damage: number;
   stealableCards: readonly BetrayalAttackRewardCardSummary[];
+  defenderName?: string | null;
   onResolveDamage: () => void;
   onStealCard: (cardId: string) => void;
 }
@@ -44,6 +45,7 @@ function resolveStealButtonClassName() {
 function RewardActionButtons({
   damage,
   stealableCards,
+  defenderName,
   onResolveDamage,
   onStealCard,
   rewardKind,
@@ -61,6 +63,14 @@ function RewardActionButtons({
       : t("board.status.helpingHandsRewardDamage", { damage });
   const buttons = (
     <>
+      {rewardKind === "mummy" && defenderName ? (
+        <span
+          data-testid="betrayal-mummy-reward-defender-holdings"
+          className="basis-full text-center text-[12px] font-semibold tracking-[0.04em] text-[#f1ddb0]"
+        >
+          {t("board.status.mummyRewardDefenderHoldings", { player: defenderName })}
+        </span>
+      ) : null}
       <button
         type="button"
         onClick={(event) => {
@@ -97,6 +107,7 @@ function RewardActionButtons({
 export function BetrayalMummyRewardActionsSurface({
   damage,
   stealableCards,
+  defenderName,
   onResolveDamage,
   onStealCard,
 }: BetrayalRewardActionSurfaceProps) {
@@ -111,6 +122,7 @@ export function BetrayalMummyRewardActionsSurface({
       <RewardActionButtons
         damage={damage}
         stealableCards={stealableCards}
+        defenderName={defenderName}
         onResolveDamage={onResolveDamage}
         onStealCard={onStealCard}
         rewardKind="mummy"

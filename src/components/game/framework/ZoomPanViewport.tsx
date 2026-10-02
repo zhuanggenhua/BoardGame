@@ -704,52 +704,64 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             const targetZoomLevel = panToScale != null
                 ? clampZoomLevel(panToScale)
                 : currentZoomLevel;
-            const targetScale = baseScale * targetZoomLevel;
-
-            containerEl.scrollTop = 0;
-            containerEl.scrollLeft = 0;
-
-            const savedTransform = contentEl.style.transform;
-            const savedTransition = contentEl.style.transition;
-            contentEl.style.transition = 'none';
-            contentEl.style.transform = 'translate(0px, 0px) scale(1)';
-            contentEl.getBoundingClientRect();
-
-            const contentRect = contentEl.getBoundingClientRect();
             const containerRect = containerEl.getBoundingClientRect();
             const elementRect = targetEl.getBoundingClientRect();
-            const targetCenterX = (elementRect.left + elementRect.right) / 2 - contentRect.left;
-            const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - contentRect.top;
-            const contentOffsetX = contentRect.left - containerRect.left;
-            const contentOffsetY = contentRect.top - containerRect.top;
-
-            contentEl.style.transform = savedTransform;
-            contentEl.getBoundingClientRect();
-            contentEl.style.transition = savedTransition;
-
-            const contentCenterX = contentWidth / 2;
-            const contentCenterY = contentHeight / 2;
             const viewportCenterX = containerSize.width / 2;
             const viewportCenterY = containerSize.height / 2;
-            const targetTx =
-                viewportCenterX -
-                (contentOffsetX +
-                    contentCenterX +
-                    (targetCenterX - contentCenterX) * targetScale);
-            const targetTy =
-                viewportCenterY -
-                (contentOffsetY +
-                    contentCenterY +
-                    (targetCenterY - contentCenterY) * targetScale);
-            const targetPosition = panBoundsMode === 'free'
-                ? {
-                    x: targetTx - fitCenterOffset.x,
-                    y: targetTy - fitCenterOffset.y,
-                }
-                : {
-                    x: targetTx,
-                    y: targetTy,
+
+            let targetPosition;
+            if (panToScale == null) {
+                // The target is already rendered at the user's current zoom and pan.
+                // Move by the observed screen-space center delta so nested transforms
+                // and portal/layout offsets cannot be counted twice.
+                const targetCenterX = (elementRect.left + elementRect.right) / 2 - containerRect.left;
+                const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - containerRect.top;
+                const deltaX = viewportCenterX - targetCenterX;
+                const deltaY = viewportCenterY - targetCenterY;
+                targetPosition = {
+                    x: activePosition.x + deltaX,
+                    y: activePosition.y + deltaY,
                 };
+            } else {
+                const savedTransform = contentEl.style.transform;
+                const savedTransition = contentEl.style.transition;
+                contentEl.style.transition = 'none';
+                contentEl.style.transform = 'translate(0px, 0px) scale(1)';
+                contentEl.getBoundingClientRect();
+
+                const contentRect = contentEl.getBoundingClientRect();
+                const resetElementRect = targetEl.getBoundingClientRect();
+                const targetCenterX = (resetElementRect.left + resetElementRect.right) / 2 - contentRect.left;
+                const targetCenterY = (resetElementRect.top + resetElementRect.bottom) / 2 - contentRect.top;
+                const contentOffsetX = contentRect.left - containerRect.left;
+                const contentOffsetY = contentRect.top - containerRect.top;
+
+                contentEl.style.transform = savedTransform;
+                contentEl.getBoundingClientRect();
+                contentEl.style.transition = savedTransition;
+
+                const contentCenterX = contentWidth / 2;
+                const contentCenterY = contentHeight / 2;
+                const targetTx =
+                    viewportCenterX -
+                    (contentOffsetX +
+                        contentCenterX +
+                        (targetCenterX - contentCenterX) * (baseScale * targetZoomLevel));
+                const targetTy =
+                    viewportCenterY -
+                    (contentOffsetY +
+                        contentCenterY +
+                        (targetCenterY - contentCenterY) * (baseScale * targetZoomLevel));
+                targetPosition = panBoundsMode === 'free'
+                    ? {
+                        x: targetTx - fitCenterOffset.x,
+                        y: targetTy - fitCenterOffset.y,
+                    }
+                    : {
+                        x: targetTx,
+                        y: targetTy,
+                    };
+            }
             const nextViewport = clampViewportState({
                 zoomLevel: targetZoomLevel,
                 position: targetPosition,

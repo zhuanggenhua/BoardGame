@@ -253,7 +253,15 @@ function applyEventRecentRollRerollState(
             acknowledgedPlayerIds: [],
             effect: cloneUseEffect(nextEffect),
             nextPendingEventChoice,
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: Boolean(
+                nextPendingEventChoice
+                || event.payload.eventRerollHaunt?.hauntRevealResolution
+                || event.payload.eventRerollHaunt?.hauntTraitorResolution
+                || event.payload.eventRerollHaunt?.dustSetup
+                || event.payload.eventRerollHaunt?.magicCameraSetup
+                || event.payload.eventRerollHaunt?.helpingHandsSetup
+                || event.payload.eventRerollHaunt?.uponReflectionSetup
+            ),
             deathPrevention: event.payload.eventRerollDeathPrevention
                 ? {
                     ...event.payload.eventRerollDeathPrevention,

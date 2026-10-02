@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ZoomPanViewport } from "../../components/game/framework";
+import type { ZoomPanViewportFitInsets } from "../../components/game/framework/ZoomPanViewport";
 import type { EntityRelation } from "../../engine/primitives";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import type {
@@ -82,6 +83,7 @@ export interface BetrayalRoomMapSurfaceProps {
   roomCanvasTransformStyle: React.CSSProperties;
   roomCanvasWidth: number;
   roomCanvasHeight: number;
+  roomMapFitInsets?: ZoomPanViewportFitInsets;
   isHauntTargetingMode: boolean;
   roomFocusPanTarget: string | null;
   attackLineOfSightSegments: readonly BetrayalAttackLineOfSightSegment[];
@@ -216,6 +218,7 @@ export function BetrayalRoomMapSurface({
   roomCanvasTransformStyle,
   roomCanvasWidth,
   roomCanvasHeight,
+  roomMapFitInsets,
   isHauntTargetingMode,
   roomFocusPanTarget,
   attackLineOfSightSegments,
@@ -354,6 +357,7 @@ export function BetrayalRoomMapSurface({
           roomFocusPanTarget ?? null
         }
         panBoundsMode="free"
+        fitInsets={roomMapFitInsets}
         dragBoundsPaddingRatioY={0.18}
         containerProps={{
           "data-haunt-targeting-mode": isHauntTargetingMode ? "true" : "false",
@@ -598,6 +602,9 @@ export function BetrayalRoomMapSurface({
                             ? "monster-move"
                             : undefined
                 }
+                disabled={
+                  isReachableRoom && interactionMode !== "move" && !canSelectRoom
+                }
                 data-tutorial-id={
                   tutorialMapTargetRoomId === room.id
                     ? tutorialHighlightTarget
@@ -796,6 +803,7 @@ export function BetrayalRoomMapSurface({
                   roomId={room.id}
                   markerTokens={room.markerTokens}
                   hauntTokens={visibleRoomHauntTokens}
+                  discoveryReward={room.discoveryReward}
                   locale={locale}
                 />
               </button>

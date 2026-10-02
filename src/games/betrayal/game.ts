@@ -70,6 +70,7 @@ import { applyBetrayalScenarioCompletedState } from './scenarioCompletionStateMo
 import { applyBetrayalHauntTriggeredState } from './hauntTriggeredStateModel';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import { createBetrayalAiRuntime } from './ai';
+import './cardPreview';
 import { BETRAYAL_COMMANDS } from './commands';
 import type { BetrayalCommand, BetrayalCommandMap } from './commandTypes';
 import { EVENTS, type BetrayalEvent } from './events';

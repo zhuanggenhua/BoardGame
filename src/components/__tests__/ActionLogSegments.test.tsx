@@ -4,6 +4,19 @@ import { setAssetsBaseUrl } from '../../core';
 import { OverlayLayerProvider } from '../common/overlays/OverlayLayerContext';
 import { ActionLogSegments } from '../game/framework/widgets/ActionLogSegments';
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, params?: Record<string, string | number>) => {
+            if (!params) return key;
+            return Object.entries(params).reduce(
+                (text, [paramKey, value]) => text.replace(`{{${paramKey}}}`, String(value)),
+                key,
+            );
+        },
+        i18n: { language: 'zh-CN' },
+    }),
+}));
+
 describe('ActionLogSegments', () => {
     beforeEach(() => {
         document.body.innerHTML = '<div id="modal-root"></div>';
@@ -111,6 +124,32 @@ describe('ActionLogSegments', () => {
         });
 
         fireEvent.mouseEnter(screen.getByTestId('card-preview-tooltip-anchor'));
+
+        expect(await screen.findByTestId('card-preview-tooltip')).toBeInTheDocument();
+    });
+
+    it('i18n 交互参数带 previewRef 时，关键词可直接打开卡图 tooltip', async () => {
+        render(
+            <ActionLogSegments
+                locale="zh-CN"
+                segments={[
+                    {
+                        type: 'i18n',
+                        ns: 'game-betrayal',
+                        key: '{{playerId}} 探索到{{room}}，触发事件：{{event}}',
+                        params: { playerId: '薇薇安', room: '厨房', event: '无线电广播' },
+                        interactiveParams: {
+                            room: {
+                                text: '厨房',
+                                previewRef: { type: 'image', src: 'betrayal/rooms/kitchen' },
+                            },
+                        },
+                    },
+                ]}
+            />
+        );
+
+        fireEvent.mouseEnter(screen.getByText('厨房'));
 
         expect(await screen.findByTestId('card-preview-tooltip')).toBeInTheDocument();
     });

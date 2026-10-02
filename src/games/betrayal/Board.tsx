@@ -535,6 +535,7 @@ export default function BetrayalBoard({
       baseCore.selectedExplorerByPlayerId[viewerPlayerId] ??
       EXPLORER_CATALOG[0]!.explorerId,
   );
+  const pendingExplorerConfirmationRef = React.useRef<string | null>(null);
   const [previewState, setPreviewState] = React.useState<PreviewState>(() =>
     createInitialPreviewState(baseCore),
   );
@@ -1169,6 +1170,20 @@ export default function BetrayalBoard({
     },
     [dispatch, isVisualBusy],
   );
+  React.useEffect(() => {
+    const pendingExplorerId = pendingExplorerConfirmationRef.current;
+    if (
+      !pendingExplorerId ||
+      baseCore.phase !== "characterSelect" ||
+      baseCore.selectedExplorerByPlayerId[viewerPlayerId] !== pendingExplorerId ||
+      baseCore.readyPlayerIds.includes(viewerPlayerId)
+    ) {
+      return;
+    }
+
+    pendingExplorerConfirmationRef.current = null;
+    dispatchCommand(BETRAYAL_COMMANDS.CONFIRM_EXPLORER, {});
+  }, [baseCore, dispatchCommand, viewerPlayerId]);
   const startExplorerMoveVisual = React.useCallback(
     (roomId: string, onComplete: () => void) => {
       const explorer = core.currentExplorer;
@@ -1327,6 +1342,7 @@ export default function BetrayalBoard({
 
   const handleSelectExplorer = React.useCallback(
     (explorerId: string) => {
+      pendingExplorerConfirmationRef.current = null;
       setSelectedExplorerId(explorerId);
       dispatchCommand(BETRAYAL_COMMANDS.SELECT_EXPLORER, { explorerId });
     },
@@ -1337,10 +1353,13 @@ export default function BetrayalBoard({
     if (
       baseCore.selectedExplorerByPlayerId[viewerPlayerId] !== selectedExplorerId
     ) {
+      pendingExplorerConfirmationRef.current = selectedExplorerId;
       dispatchCommand(BETRAYAL_COMMANDS.SELECT_EXPLORER, {
         explorerId: selectedExplorerId,
       });
+      return;
     }
+    pendingExplorerConfirmationRef.current = null;
     dispatchCommand(BETRAYAL_COMMANDS.CONFIRM_EXPLORER, {});
   }, [
     baseCore.selectedExplorerByPlayerId,
@@ -1487,6 +1506,13 @@ export default function BetrayalBoard({
       transformOrigin: "center center",
     }),
     [roomCanvasStyle],
+  );
+  const roomMapFitInsets = React.useMemo(
+    () =>
+      useViewportAnchoredHud
+        ? undefined
+        : { left: 302, right: 232, top: 74, bottom: 100 },
+    [useViewportAnchoredHud],
   );
 
   const phaseItems = React.useMemo(
@@ -3666,6 +3692,9 @@ export default function BetrayalBoard({
       return;
     }
     if (latestDiscoveryPendingCardResolution) {
+      if (pendingDamageAllocation) {
+        return;
+      }
       if (canAdvanceLatestDiscoverySearch) {
         setLatestDiscoverySearchRevealIndex((previousIndex) =>
           Math.min(previousIndex + 1, latestDiscoverySearchSequence.length - 1),
@@ -3702,6 +3731,7 @@ export default function BetrayalBoard({
     latestDiscoveryIsStandaloneItemGain,
     latestDiscoveryPendingCardResolution,
     latestDiscoverySearchSequence.length,
+    pendingDamageAllocation,
     viewerPlayerId,
   ]);
   React.useEffect(() => {
@@ -3709,6 +3739,7 @@ export default function BetrayalBoard({
     if (
       !pendingResolution ||
       !latestDiscoveryIsStandaloneItemGain ||
+      pendingDamageAllocation ||
       pendingResolution.acknowledgedPlayerIds?.includes(viewerPlayerId)
     ) {
       return;
@@ -3718,6 +3749,7 @@ export default function BetrayalBoard({
       if (
         currentResolution?.id !== pendingResolution?.id ||
         !canCurrentViewerAcknowledgeCardResolution ||
+        pendingDamageAllocation ||
         isVisualBusy
       ) {
         return;
@@ -3733,6 +3765,7 @@ export default function BetrayalBoard({
     isVisualBusy,
     latestDiscoveryPendingCardResolution,
     latestDiscoveryIsStandaloneItemGain,
+    pendingDamageAllocation,
     viewerPlayerId,
   ]);
   React.useEffect(() => {
@@ -3760,6 +3793,11 @@ export default function BetrayalBoard({
   ]);
   React.useEffect(() => {
     const pendingResolution = core.pendingEventRollResolution;
+    const recentRollIsDeferredDamage = core.recentRoll?.kind === "eventRolledDamage";
+    if (!pendingResolution && (recentRollIsDeferredDamage || pendingDamageAllocation)) {
+      latestDiscoveryPendingEventRollSeenRef.current = null;
+      return;
+    }
     if (pendingResolution && latestDiscoveryEntry?.sourceKey) {
       latestDiscoveryPendingEventRollSeenRef.current = {
         sourceKey: latestDiscoveryEntry.sourceKey,
@@ -3781,9 +3819,11 @@ export default function BetrayalBoard({
     handleDismissLatestDiscovery();
   }, [
     core.pendingEventRollResolution,
+    core.recentRoll?.kind,
     handleDismissLatestDiscovery,
     latestDiscoveryEntry?.sourceKey,
     latestDiscoveryPendingCardResolution,
+    pendingDamageAllocation,
   ]);
   const handleDismissHauntRevealCue = () => {
     if (!hauntRevealDiscoveryKey) {
@@ -3871,6 +3911,26 @@ export default function BetrayalBoard({
       {recentRollAcknowledgeLabel}
     </BetrayalConfirmButton>
   ) : null;
+  React.useEffect(() => {
+    if (
+      !coreRecentRollDisplayKey ||
+      latestDiscoveryEntry ||
+      !hasRecentRollAcknowledgement ||
+      !recentRollFullyAcknowledged
+    ) {
+      return;
+    }
+    setPreviewState((previousState) => (
+      previousState.dismissedRecentRollId === coreRecentRollDisplayKey
+        ? previousState
+        : { ...previousState, dismissedRecentRollId: coreRecentRollDisplayKey }
+    ));
+  }, [
+    coreRecentRollDisplayKey,
+    hasRecentRollAcknowledgement,
+    latestDiscoveryEntry,
+    recentRollFullyAcknowledged,
+  ]);
   const {
     turnHintText,
     roomFocusState,
@@ -4191,6 +4251,12 @@ export default function BetrayalBoard({
   const handleExploreAction = React.useCallback(() => {
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "explore") {
+        if (
+          core.recommendedAction === "explore" &&
+          !previousState.pendingRoomPlacementSlotId
+        ) {
+          return previousState;
+        }
         return {
           ...previousState,
           pendingRoomPlacementSlotId: null,
@@ -4214,7 +4280,7 @@ export default function BetrayalBoard({
         selectedMonsterAttackMonsterId: null,
       };
     });
-  }, [canStartExploreSelection]);
+  }, [canStartExploreSelection, core.recommendedAction]);
 
   const handlePrepareExploreRoom = React.useCallback(
     (roomId: string) => {
@@ -6574,6 +6640,7 @@ export default function BetrayalBoard({
                   roomCanvasTransformStyle={roomCanvasTransformStyle}
                   roomCanvasWidth={roomCanvasWidth}
                   roomCanvasHeight={roomCanvasHeight}
+                  roomMapFitInsets={roomMapFitInsets}
                   isHauntTargetingMode={isHauntTargetingMode}
                   roomFocusPanTarget={roomFocusPanTarget}
                   attackLineOfSightSegments={attackLineOfSightSegments}
@@ -6834,6 +6901,7 @@ export default function BetrayalBoard({
                       <BetrayalMummyRewardActionsSurface
                         damage={mummyPendingReward.damageToHero}
                         stealableCards={mummyStealableCards}
+                        defenderName={mummyRewardDefenderName}
                         onResolveDamage={() =>
                           handleResolveMummyAttackReward("damage")
                         }

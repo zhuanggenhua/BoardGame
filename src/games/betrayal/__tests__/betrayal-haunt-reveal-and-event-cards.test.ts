@@ -489,7 +489,7 @@ it('外星几何按官方锁定文本执行知识检定成功和失败分支', (
         expect(core.currentExplorer.traits.speed).toBe(3);
     });
 
-it('普通事件投掷先保留结果展示，无新选择时也需要全员确认', () => {
+it('普通事件投掷无后续选择时自动结算，不生成确认投掷窗口', () => {
         let core = createStartedFirstScenarioCore(['0', '1']);
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -522,7 +522,7 @@ it('普通事件投掷先保留结果展示，无新选择时也需要全员确�
             sourceTitle: '外星几何',
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -536,24 +536,14 @@ it('普通事件投掷先保留结果展示，无新选择时也需要全员确�
             createBetrayalCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '1', {
                 rollId: core.pendingEventRollResolution!.rollId,
             }),
+        ).valid).toBe(false);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '0', {
+                rollId: core.pendingEventRollResolution!.rollId,
+            }),
         ).valid).toBe(true);
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '1', {
-            rollId: core.pendingEventRollResolution!.rollId,
-        }, 100, BETRAYAL_FIXED_RANDOM, false);
-
-        expect(core.pendingEventRollResolution).toMatchObject({
-            acknowledgedPlayerIds: ['1'],
-        });
-        expect(core.currentExplorer.traits.knowledge).toBe(3);
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '0', {
-            rollId: core.pendingEventRollResolution!.rollId,
-        }, 101, BETRAYAL_FIXED_RANDOM, false);
-
-        expect(core.pendingEventRollResolution).toMatchObject({
-            acknowledgedPlayerIds: ['1', '0'],
-        });
-        expect(core.currentExplorer.traits.knowledge).toBe(3);
         core = acknowledgePendingEventRollResolution(core, 102, BETRAYAL_FIXED_RANDOM);
 
         expect(core.pendingCardResolutionQueue).toEqual([]);
@@ -990,7 +980,7 @@ it('小机器人按官方锁定文本执行抽物品和骰数物理伤害分支'
             sourceTitle: '小机器人',
             playerId: '0',
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.pendingEventRollResolution?.requiredPlayerIds).toEqual(
             expect.arrayContaining(['0']),

@@ -12,6 +12,7 @@ import {
   type EventRollConfirmationPresentation,
 } from "./recentRollPresentation";
 import { isPendingCardResolutionFullyAcknowledged } from "./acknowledgementReadModel";
+import { effectIsTraitOnly } from "./possessionEffects";
 
 export type LatestDiscoveryDisplayEntry = {
   key: string;
@@ -840,9 +841,10 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   const hasDisplayEntry = Boolean(
     discovery && (key !== dismissedLatestDiscoveryKey || isActivePendingEventRollEntry),
   );
+  const recentRollDismissalKey =
+    selection.recentRollDisplayKey ?? selection.coreRecentRollDisplayKey;
   const isRecentRollDismissed = Boolean(
-    selection.recentRollDisplayKey &&
-      dismissedRecentRollId === selection.recentRollDisplayKey,
+    recentRollDismissalKey && dismissedRecentRollId === recentRollDismissalKey,
   );
   const hasEventResultContext = Boolean(
     core.latestDiscovery?.kind === "event" &&
@@ -987,12 +989,24 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   const displaySummary = resolveLatestDiscoveryDisplaySummary(discovery);
   const latestDiscoveryIsEventSymbolNoCard =
     isEventSymbolNoCardDiscovery(discovery);
+  const presentedEventEffect =
+    core.pendingEventRollResolution?.effect ??
+    recentRoll?.branchThresholds?.find(
+      (branch) => branch.label === recentRoll.latestLabel,
+    )?.effect;
+  const shouldSuppressTraitOnlyEventCard = Boolean(
+    discovery?.kind === "event" &&
+      !pendingEventChoice &&
+      !core.pendingEventRollResolution?.nextPendingEventChoice &&
+      effectIsTraitOnly(presentedEventEffect),
+  );
   const shouldShowCardFace = Boolean(
     discovery &&
       ((discovery.kind !== "none" && !latestDiscoveryIsEventSymbolNoCard) ||
         (activePendingCardResolution?.cardId &&
           (activePendingCardResolution.deckKind === "item" ||
-            activePendingCardResolution.deckKind === "omen"))),
+            activePendingCardResolution.deckKind === "omen"))) &&
+      !shouldSuppressTraitOnlyEventCard,
   );
   const pendingCardResolution = resolveLatestDiscoveryPendingCardResolution({
     pendingResolution: activePendingCardResolution,

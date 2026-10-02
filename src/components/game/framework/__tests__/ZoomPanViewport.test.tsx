@@ -220,7 +220,7 @@ describe('ZoomPanViewport', () => {
         expect(content.style.transform).toContain('scale(0.7');
     });
 
-    it('accounts for content offset and base scale when centering a focused target', async () => {
+    it('centers a focused target from its current rendered screen position', async () => {
         render(
             <ZoomPanViewport
                 initialScale={1}
@@ -248,7 +248,7 @@ describe('ZoomPanViewport', () => {
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('translate(-150px, -45px)');
+            expect(content.style.transform).toContain('translate(0px, 80px)');
         });
     });
 });

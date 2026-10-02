@@ -35,10 +35,12 @@ type RoomEntityMaskTarget = {
 };
 
 type HealFeedback = {
-  kind: "heal";
+  kind: "heal" | "traitChange";
   targetName: string | null;
+  targetPlayerId?: string | null;
   traitSummary: string;
   traitCount: number;
+  deltaText?: string;
 };
 
 type RoomEntityLayerSurfaceProps = {
@@ -295,8 +297,11 @@ export function BetrayalRoomEntityLayerSurface({
               matchData,
             );
             const isVisibleFeedbackTarget =
-              visibleFeedback?.kind === "heal" &&
-              (visibleFeedback.targetName === tokenLabel ||
+              (visibleFeedback?.kind === "heal" ||
+                visibleFeedback?.kind === "traitChange") &&
+              ((visibleFeedback.targetPlayerId &&
+                visibleFeedback.targetPlayerId === occupant.playerId) ||
+                visibleFeedback.targetName === tokenLabel ||
                 visibleFeedback.targetName === occupant.displayName);
             const occupantCarriesGirl =
               girlHeldByExplorer &&
@@ -351,12 +356,14 @@ export function BetrayalRoomEntityLayerSurface({
                     data-feedback-anchor="target-token"
                     aria-label={`${t("board.feedback.healTraitCount", {
                       count: visibleFeedback.traitCount || 1,
-                    })}：${visibleFeedback.traitSummary}`}
+                    })}：${visibleFeedback.deltaText ?? visibleFeedback.traitSummary}`}
                     className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 -translate-x-1/2 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
                   >
-                    {t("board.feedback.healFloatingText", {
-                      count: visibleFeedback.traitCount || 1,
-                    })}
+                    {visibleFeedback.kind === "traitChange"
+                      ? visibleFeedback.deltaText
+                      : t("board.feedback.healFloatingText", {
+                          count: visibleFeedback.traitCount || 1,
+                        })}
                   </span>
                 ) : null}
               </>

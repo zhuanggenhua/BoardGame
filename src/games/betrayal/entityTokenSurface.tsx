@@ -316,7 +316,7 @@ export function GirlBoardToken({
             player: token.ownerName,
           })
         : t("board.hauntTokens.girlPlaced");
-  const label = `${t("board.hauntTokens.girl")}，${ownerLabel}`;
+  const label = `${t("board.hauntTokens.girl")}预兆标记，${ownerLabel}`;
   const unitTestId =
     testIdPrefix === "betrayal-room-haunt-token"
       ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`

@@ -426,6 +426,14 @@ describe('小黑屋操作日志与撤回', () => {
                 segments: [expect.objectContaining({
                     key: 'actionLog.exploreRoomEvent',
                     params: { playerId: '0', room: '厨房', event: '无线电广播' },
+                    interactiveParams: expect.objectContaining({
+                        room: expect.objectContaining({
+                            previewRef: expect.objectContaining({ type: 'renderer' }),
+                        }),
+                        event: expect.objectContaining({
+                            previewRef: expect.objectContaining({ type: 'renderer' }),
+                        }),
+                    }),
                 })],
             }),
             expect.objectContaining({

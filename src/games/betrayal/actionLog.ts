@@ -8,6 +8,11 @@ import type {
 } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
 import type { BetrayalCore, BetrayalTraitKey } from './game';
+import {
+    getBetrayalEventPreviewRef,
+    getBetrayalPossessionPreviewRef,
+    getBetrayalRoomPreviewRef,
+} from './cardPreviewRef';
 
 export const BETRAYAL_ACTION_LOG_ALLOWLIST = [
     BETRAYAL_COMMANDS.SELECT_EXPLORER,
@@ -135,13 +140,38 @@ const roomNameOf = (core: BetrayalCore, roomId: unknown) => (
         : undefined
 );
 
+const roomVisualIdOf = (core: BetrayalCore, roomId: unknown) => (
+    typeof roomId === 'string'
+        ? core.rooms.find((room) => room.id === roomId)?.visualId
+        : undefined
+);
+
 const roomInteractiveParam = (
     roomName: string,
+    visualId?: string,
 ): Record<string, ActionLogInteractiveParam> => ({
     room: {
         text: roomName,
         tooltip: `房间：${roomName}`,
+        ...(visualId ? { previewRef: getBetrayalRoomPreviewRef(visualId) } : {}),
     },
+});
+
+const possessionInteractiveParam = (
+    cardId: string,
+    cardName: string,
+): ActionLogInteractiveParam => ({
+    text: cardName,
+    tooltip: `卡牌：${cardName}`,
+    previewRef: getBetrayalPossessionPreviewRef(cardId),
+});
+
+const eventInteractiveParam = (
+    eventName: string,
+): ActionLogInteractiveParam => ({
+    text: eventName,
+    tooltip: `事件牌：${eventName}`,
+    previewRef: getBetrayalEventPreviewRef(eventName),
 });
 
 const playerParams = (
@@ -230,30 +260,67 @@ const buildRoomExploredEventEntries = (
         return [];
     }
 
-    const core = state.core as BetrayalCore;
     const payload = asRecord(event.payload);
-    if (!payload || payload.deckKind !== 'event') {
-        return [];
-    }
-
-    const discovery = asRecord(payload.discovery);
-    const eventTitle = stringValue(discovery?.title);
-    if (isGenericEventDiscoveryTitle(eventTitle)) {
+    if (!payload) {
         return [];
     }
 
     const room = asRecord(payload.room);
     const roomName = stringValue(room?.name);
-    const entries: ActionLogEntry[] = [
-        eventEntry(command, state, event, 'event-trigger', [i18nSeg(
-            roomName ? 'actionLog.exploreRoomEvent' : 'actionLog.exploreEvent',
-            roomName
-                ? playerParams(command.playerId, { room: roomName, event: eventTitle })
-                : playerParams(command.playerId, { event: eventTitle }),
+    const roomVisualId = stringValue(room?.visualId);
+    const roomParams = roomName ? { room: roomName } : {};
+    const roomInteractive = roomName ? roomInteractiveParam(roomName, roomVisualId) : undefined;
+    const discovery = asRecord(payload.discovery);
+    const eventTitle = stringValue(discovery?.title) ?? '事件';
+    const entries: ActionLogEntry[] = [];
+
+    if (payload.deckKind === 'event') {
+        if (!isGenericEventDiscoveryTitle(eventTitle)) {
+            entries.push(eventEntry(command, state, event, 'event-trigger', [i18nSeg(
+                roomName ? 'actionLog.exploreRoomEvent' : 'actionLog.exploreEvent',
+                roomName
+                    ? playerParams(command.playerId, { ...roomParams, event: eventTitle })
+                    : playerParams(command.playerId, { event: eventTitle }),
+                undefined,
+                {
+                    ...(roomInteractive ?? {}),
+                    event: eventInteractiveParam(eventTitle),
+                },
+            )]));
+        }
+    }
+
+    const appendGainedCardEntry = (card: Record<string, unknown>, suffix: string, key: string) => {
+        const cardId = stringValue(card.id);
+        const cardName = stringValue(card.name);
+        if (!cardId || !cardName) return;
+        entries.push(eventEntry(command, state, event, suffix, [i18nSeg(
+            key,
+            playerParams(command.playerId, {
+                ...roomParams,
+                card: cardName,
+            }),
             undefined,
-            roomName ? roomInteractiveParam(roomName) : undefined,
-        )]),
-    ];
+            {
+                ...(roomInteractive ?? {}),
+                card: possessionInteractiveParam(cardId, cardName),
+            },
+        )]));
+    };
+
+    const roomDiscoveryCards = Array.isArray(payload.roomDiscoveryCards)
+        ? payload.roomDiscoveryCards.map(asRecord).filter((card): card is Record<string, unknown> => Boolean(card))
+        : [];
+    roomDiscoveryCards.forEach((card, index) => appendGainedCardEntry(card, `room-reward-${index}`, 'actionLog.exploreRoomCard'));
+    const buriedRoomDiscoveryCards = Array.isArray(payload.buriedRoomDiscoveryCards)
+        ? payload.buriedRoomDiscoveryCards.map(asRecord).filter((card): card is Record<string, unknown> => Boolean(card))
+        : [];
+    buriedRoomDiscoveryCards.forEach((card, index) => appendGainedCardEntry(card, `room-buried-${index}`, 'actionLog.exploreRoomCardBuried'));
+
+    const drawnCard = asRecord(payload.drawnCard);
+    if (drawnCard && payload.deckKind !== 'event') {
+        appendGainedCardEntry(drawnCard, 'drawn-card', 'actionLog.exploreRoomCard');
+    }
 
     const eventRoll = asRecord(payload.eventRoll);
     const rollLabel = stringValue(eventRoll?.rollLabel);
@@ -263,6 +330,8 @@ const buildRoomExploredEventEntries = (
         entries.push(eventEntry(command, state, event, 'event-roll-result', [i18nSeg(
             'actionLog.eventRollResult',
             playerParams(command.playerId, { event: eventTitle, roll: rollLabel, total, result }),
+            undefined,
+            { event: eventInteractiveParam(eventTitle) },
         )]));
     }
 
@@ -366,7 +435,7 @@ export function formatBetrayalActionEntry({
                 room ? 'actionLog.moveToRoom' : 'actionLog.move',
                 room ? playerParams(command.playerId, { room }) : playerParams(command.playerId),
                 undefined,
-                room ? roomInteractiveParam(room) : undefined,
+                room ? roomInteractiveParam(room, typeof payload.roomId === 'string' ? core.rooms.find((candidate) => candidate.id === payload.roomId)?.visualId : undefined) : undefined,
             )]);
         }
         case BETRAYAL_COMMANDS.EXPLORE_ROOM: {
@@ -379,7 +448,7 @@ export function formatBetrayalActionEntry({
                     room ? 'actionLog.exploreRoom' : 'actionLog.explore',
                     room ? playerParams(command.playerId, { room }) : playerParams(command.playerId),
                     undefined,
-                    room ? roomInteractiveParam(room) : undefined,
+                    room ? roomInteractiveParam(room, typeof roomId === 'string' ? core.rooms.find((candidate) => candidate.id === roomId)?.visualId : undefined) : undefined,
                 )]),
                 ...events.flatMap((event) => buildRoomExploredEventEntries(
                     command,
@@ -433,7 +502,7 @@ export function formatBetrayalActionEntry({
                 room ? 'actionLog.useRoomEffectAt' : 'actionLog.useRoomEffect',
                 room ? playerParams(command.playerId, { room }) : playerParams(command.playerId),
                 undefined,
-                room ? roomInteractiveParam(room) : undefined,
+                room ? roomInteractiveParam(room, roomVisualIdOf(core, core.currentExplorer.roomId)) : undefined,
             )]);
         }
         case BETRAYAL_COMMANDS.TRADE_POSSESSION:

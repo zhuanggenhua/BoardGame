@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CardPreview } from '../../../common/media/CardPreview';
+import { CardPreview, getCardPreviewAspectRatio } from '../../../common/media/CardPreview';
 import { MagnifyOverlay } from '../../../common/overlays/MagnifyOverlay';
 import { useResolvedOverlayTooltipZIndex } from '../../../common/overlays/overlayLayer';
 import { UI_Z_INDEX, type CardPreviewRef } from '../../../../core';
@@ -72,7 +72,9 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
 
     // 根据卡牌宽高比动态计算预览尺寸
     // aspectRatio > 1 = 横向卡牌，aspectRatio < 1 = 竖向卡牌
-    const aspectRatio = 'aspectRatio' in previewRef ? previewRef.aspectRatio : undefined;
+    const aspectRatio = 'aspectRatio' in previewRef
+        ? previewRef.aspectRatio
+        : getCardPreviewAspectRatio(previewRef, locale);
     const previewSize = useMemo(() => {
         const maxDim = maxDimProp ?? 308; // 预览最大尺寸（像素）
         const ar = aspectRatio ?? (192 / 308); // 默认竖向卡牌比例

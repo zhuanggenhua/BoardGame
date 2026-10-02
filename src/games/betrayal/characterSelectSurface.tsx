@@ -68,12 +68,12 @@ function ExplorerPentagonCard({
     : "w-full max-w-[348px]";
   const statusBadgeClass =
     taken && !selected
-      ? "border-[#b7a26e] bg-[rgba(24,23,18,0.92)] text-[#e8d7a9]"
+      ? "bg-[rgba(24,23,18,0.92)] text-[#e8d7a9]"
       : ready
-        ? "border-[#77bb77] bg-[rgba(19,43,25,0.86)] text-[#b8f0a8]"
+        ? "bg-[rgba(19,43,25,0.86)] text-[#b8f0a8]"
         : selected
-          ? "border-[#b5ef42] bg-[rgba(34,55,18,0.88)] text-[#dfff8f]"
-          : "border-[#8b744d] bg-[rgba(22,17,12,0.76)] text-[#e4c983]";
+          ? "bg-[rgba(34,55,18,0.88)] text-[#dfff8f]"
+          : "bg-[rgba(22,17,12,0.76)] text-[#e4c983]";
   const pentagonClipPath = "polygon(50% 1%, 96% 35%, 79% 99%, 21% 99%, 4% 35%)";
 
   return (
@@ -209,6 +209,22 @@ export function CharacterSelectScreen({
   const scenarioAllParticipantsConfirmed =
     scenarioParticipantCount > 0 &&
     scenarioConfirmedCount === scenarioParticipantCount;
+  const allPlayersSelected =
+    core.playerIds.length > 0 &&
+    core.playerIds.every((playerId) => Boolean(core.selectedExplorerByPlayerId[playerId]));
+  const allPlayersReady =
+    core.playerIds.length > 0 &&
+    core.playerIds.every((playerId) => readySet.has(playerId));
+  const allPlayersConfirmedScenario =
+    allPlayersSelected &&
+    core.playerIds.every(
+      (playerId) => core.scenarioCardConfirmations[playerId] === core.proposedScenarioCardId,
+    );
+  const scenarioReadyForStart =
+    allPlayersSelected &&
+    allPlayersReady &&
+    allPlayersConfirmedScenario &&
+    scenarioAllParticipantsConfirmed;
   const scenarioConfirmationStatusLabel =
     scenarioParticipantCount > 0
       ? t("board.characterSelect.scenarioConfirmationCount", {
@@ -227,14 +243,14 @@ export function CharacterSelectScreen({
   const primaryActionDisabled =
     isReady &&
     scenarioCardConfirmed &&
-    (!scenarioAllParticipantsConfirmed ||
+    (!scenarioReadyForStart ||
       !proposedScenarioIsPlayable ||
       scenarioCardConfirmationSettling);
   const primaryActionLabel = !isReady
     ? t("board.characterSelect.confirm")
     : !scenarioCardConfirmed
       ? t("board.characterSelect.confirmScenarioCard")
-      : !scenarioAllParticipantsConfirmed
+      : !scenarioReadyForStart
         ? t("board.characterSelect.scenarioConfirmed")
         : proposedScenarioIsPlayable
           ? t("board.characterSelect.startScenario")
@@ -409,27 +425,21 @@ export function CharacterSelectScreen({
         ].join(","),
       }}
     >
-      <div className="mx-auto flex h-full w-full max-w-none p-4">
-        <div className="relative flex h-full w-full flex-col overflow-hidden border border-[#7d643a] bg-[rgba(8,15,13,0.94)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
-          <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
+      <div className="mx-auto flex h-full w-full max-w-none p-3">
+        <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[18px] bg-[rgba(8,15,13,0.94)] shadow-[0_24px_60px_rgba(0,0,0,0.42)] ring-1 ring-[rgba(216,191,129,0.16)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(132,170,82,0.06),transparent_28%)]" />
-          <div className="pointer-events-none absolute left-1 top-1 h-4 w-4 border-l border-t border-[rgba(216,191,129,0.6)]" />
-          <div className="pointer-events-none absolute right-1 top-1 h-4 w-4 border-r border-t border-[rgba(216,191,129,0.6)]" />
-          <div className="pointer-events-none absolute bottom-1 left-1 h-4 w-4 border-b border-l border-[rgba(216,191,129,0.6)]" />
-          <div className="pointer-events-none absolute bottom-1 right-1 h-4 w-4 border-b border-r border-[rgba(216,191,129,0.6)]" />
 
           <header
-            className="grid min-h-[104px] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]"
+            className="grid min-h-[104px] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]"
             style={{
               gridTemplateColumns:
                 "360px minmax(0, 1fr) 240px",
             }}
           >
-            <div className="relative flex items-center overflow-hidden border-r border-[#5e4b2e] px-6 py-3">
+            <div className="relative flex items-center overflow-hidden px-6 py-3">
               <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.26),transparent)]" />
               <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
-              <div className="relative flex h-[72px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.28)] bg-[linear-gradient(180deg,rgba(8,12,11,0.74),rgba(5,8,7,0.92))] px-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
-                <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
+              <div className="relative flex h-[72px] w-full items-center overflow-hidden bg-[linear-gradient(180deg,rgba(8,12,11,0.74),rgba(5,8,7,0.92))] px-3">
                 <OptimizedImage
                   src={BETRAYAL_TITLE_BANNER_ASSET}
                   locale={effectiveLocale}
@@ -452,7 +462,7 @@ export function CharacterSelectScreen({
                 {t("board.characterSelect.title")}
               </div>
             </div>
-            <div className="border-l border-[#5e4b2e]">
+            <div>
               <div className="flex h-full flex-col items-center justify-center px-4 py-3 text-center">
                 <div className="text-xs uppercase tracking-[0.2em] text-[#d8bf81]">
                   {t("board.characterSelect.playersLabel")}
@@ -475,13 +485,10 @@ export function CharacterSelectScreen({
             }}
           >
             <aside className="relative flex min-h-0 flex-col pr-6">
-              <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
               <section
                 data-testid="betrayal-character-detail-scroll"
                 className="custom-scrollbar relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain px-5 pb-4 pt-4"
               >
-                <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28),transparent)]" />
-                <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
                 <div className="flex justify-center px-2 pt-1">
                   <ExplorerPentagonCard
                     explorer={selectedExplorer}
@@ -499,11 +506,11 @@ export function CharacterSelectScreen({
                       {selectedExplorer.displayName}
                     </h2>
                     <div className="flex flex-wrap items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-[#b9aa84]">
-                      <span className="inline-flex items-center gap-1 rounded-[4px] border border-[rgba(214,191,129,0.18)] bg-[rgba(15,16,13,0.42)] px-2 py-1">
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-[rgba(15,16,13,0.42)] px-2 py-1">
                         <span className="h-1.5 w-1.5 rounded-[2px] bg-[#d8bf81]" />
                         {t("board.characterSelect.currentSelection")}
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-[4px] border border-[rgba(110,133,66,0.26)] bg-[rgba(23,33,19,0.36)] px-2 py-1 text-[#b5ef42]">
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-[rgba(23,33,19,0.36)] px-2 py-1 text-[#b5ef42]">
                         <span className="h-1.5 w-1.5 rounded-[2px] bg-[#b5ef42]" />
                         {isReady
                           ? t("board.characterSelect.ready")
@@ -566,7 +573,7 @@ export function CharacterSelectScreen({
                     <div className="relative px-0.5 py-0.5">
                       <div
                         data-testid="betrayal-character-ability-summary"
-                        className="relative flex min-h-[44px] w-full items-start gap-1.5 rounded-[6px] border border-[rgba(110,133,66,0.46)] bg-[rgba(23,33,19,0.62)] px-2.5 py-1.5 text-left text-[10px] font-medium leading-relaxed tracking-[0.06em] text-[#e4f3d4]"
+                        className="relative flex min-h-[44px] w-full items-start gap-1.5 rounded-[6px] bg-[rgba(23,33,19,0.62)] px-2.5 py-1.5 text-left text-[10px] font-medium leading-relaxed tracking-[0.06em] text-[#e4f3d4]"
                       >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-[2px] bg-[#b5ef42]" />
                         <span className="shrink-0 font-semibold text-[#d8bf81]">
@@ -586,8 +593,6 @@ export function CharacterSelectScreen({
             </aside>
 
             <section className="relative flex min-h-0 items-stretch justify-center px-5">
-              <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
-              <div className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
               <div
                 className="no-scrollbar grid h-full min-h-0 w-full max-w-[1200px] grid-cols-3 content-start justify-items-center gap-x-6 gap-y-8 overflow-x-hidden overflow-y-auto overscroll-contain py-4"
                 data-testid="betrayal-character-selection-grid"
@@ -642,7 +647,7 @@ export function CharacterSelectScreen({
                   "124px repeat(6, minmax(92px, 1fr))",
               }}
             >
-              <div className="flex flex-col justify-center border-r border-[#5e4b2e] px-3 py-3 text-center">
+              <div className="flex flex-col justify-center px-3 py-3 text-center">
                 <div className="text-[11px] uppercase tracking-[0.2em] text-[#d8bf81]">
                   {t("board.characterSelect.playersLabel")}
                 </div>
@@ -672,7 +677,7 @@ export function CharacterSelectScreen({
                 return (
                   <div
                     key={playerId ?? `empty-seat-${seatIndex}`}
-                    className={`flex min-w-0 flex-col items-center justify-center border-r border-[#5e4b2e] px-2 py-2 text-center last:border-r-0 ${
+                    className={`flex min-w-0 flex-col items-center justify-center px-2 py-2 text-center ${
                       selectedId
                         ? "bg-[rgba(75,116,59,0.08)] text-[#d9f0b8]"
                         : "bg-[rgba(9,13,12,0.22)] text-[#8d8678]"
@@ -706,10 +711,10 @@ export function CharacterSelectScreen({
                     <div
                       className={`mt-1 inline-flex items-center gap-1 rounded-[4px] px-2 py-0.5 text-[10px] ${
                         ready
-                          ? "border border-[rgba(132,171,82,0.42)] bg-[rgba(39,57,28,0.42)] text-[#b5ef42]"
+                          ? "bg-[rgba(39,57,28,0.42)] text-[#b5ef42]"
                           : selectedId
-                            ? "border border-[rgba(214,191,129,0.22)] bg-[rgba(39,31,18,0.28)] text-[#d8bf81]"
-                            : "border border-[rgba(93,79,54,0.18)] bg-transparent text-[#676253]"
+                            ? "bg-[rgba(39,31,18,0.28)] text-[#d8bf81]"
+                            : "bg-transparent text-[#676253]"
                       }`}
                     >
                       {ready
@@ -732,9 +737,8 @@ export function CharacterSelectScreen({
               <button
                 type="button"
                 onClick={() => onSelectExplorer(availableExplorer.explorerId)}
-                className="relative inline-flex min-h-[126px] items-center justify-center gap-3 border-l border-[#5e4b2e] px-1 text-[16px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
+                className="relative inline-flex min-h-[126px] items-center justify-center gap-3 px-1 text-[16px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
               >
-                <span className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                 {t("board.characterSelect.random")}
               </button>
               <button
@@ -743,7 +747,7 @@ export function CharacterSelectScreen({
                 data-testid="betrayal-character-scenario-button"
                 aria-haspopup="dialog"
                 aria-expanded={scenarioSelectionOpen}
-                className="relative inline-flex min-h-[126px] min-w-0 flex-col items-center justify-center gap-0.5 border-l border-[#5e4b2e] px-3 text-center transition hover:bg-[rgba(214,191,129,0.06)]"
+                className="relative inline-flex min-h-[126px] min-w-0 flex-col items-center justify-center gap-0.5 px-3 text-center transition hover:bg-[rgba(214,191,129,0.06)]"
               >
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c9a35e]">
                   {t("board.characterSelect.scenarioSelected")}
@@ -769,13 +773,12 @@ export function CharacterSelectScreen({
                 disabled={primaryActionDisabled}
                 data-testid="betrayal-character-confirm"
                 data-tutorial-id="betrayal-character-confirm"
-                className={`relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] px-2 text-[26px] font-semibold uppercase tracking-[0.18em] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition ${
+                className={`relative inline-flex min-h-[126px] items-center justify-center gap-2 px-2 text-[26px] font-semibold uppercase tracking-[0.18em] transition ${
                   primaryActionDisabled
                     ? "cursor-not-allowed bg-[linear-gradient(180deg,rgba(78,72,58,0.22),rgba(31,30,25,0.72))] text-[#9b9178]"
                     : "bg-[linear-gradient(180deg,rgba(95,135,44,0.24),rgba(54,81,22,0.76))] text-[#dfff8f] hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.3),rgba(61,91,25,0.82))]"
                 }`}
               >
-                <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
                 {primaryActionLabel}
               </button>
             </div>

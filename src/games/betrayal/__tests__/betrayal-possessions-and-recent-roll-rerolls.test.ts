@@ -439,7 +439,7 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
             effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = applyBetrayalCommand(
@@ -461,7 +461,7 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
             effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.usedCardIdsThisTurn).toContain('rope');
 
@@ -479,7 +479,7 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
         expect(secondUse.valid).toBe(false);
     });
 
-it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰面才结算', () => {
+it('兔脚重掷事件骰后，普通最终分支不再等待无意义的确认投掷', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -546,7 +546,7 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
             effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = finalizePendingEventRollForTest(core);
@@ -568,7 +568,7 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
             effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         };
         core.currentExplorer.traits.knowledge = 3;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -592,7 +592,7 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
             effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = finalizePendingEventRollForTest(core);
@@ -602,7 +602,7 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
         expect(core.pendingEventRollResolution).toBeNull();
     });
 
-it('恐怖玩偶重掷事件属性检定后，普通最终分支必须等待玩家确认新骰面才结算', () => {
+it('恐怖玩偶重掷事件属性检定后，普通最终分支不再等待无意义的确认投掷', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -677,7 +677,7 @@ it('恐怖玩偶重掷事件属性检定后，普通最终分支必须等待玩�
             effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = finalizePendingEventRollForTest(core);
@@ -789,7 +789,7 @@ it('幸运硬币只重掷刚刚属性检定的空白骰，重投后空白会生�
         expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeDamage - 1);
     });
 
-it('幸运硬币改写公开判定后，结果仍需所有真人确认才关闭', () => {
+it('幸运硬币改写公开判定后，结果自动进入后续结算', () => {
         let core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -828,7 +828,7 @@ it('幸运硬币改写公开判定后，结果仍需所有真人确认才关闭'
         expect(core.pendingEventRollResolution).toMatchObject({
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = applyBetrayalCommand(
@@ -839,12 +839,6 @@ it('幸运硬币改写公开判定后，结果仍需所有真人确认才关闭'
             101,
         );
 
-        expect(core.pendingEventRollResolution).toMatchObject({
-            requiredPlayerIds: core.playerIds,
-            acknowledgedPlayerIds: ['0'],
-            requiresAcknowledgement: true,
-        });
-        core = finalizePendingEventRollForTest(core);
         expect(core.pendingEventRollResolution).toBeNull();
     });
 
@@ -1023,7 +1017,7 @@ it('兔脚可以重掷刚刚事件固定投骰，并回写原事件分支结算'
             effect: { mode: 'trait', trait: 'sanity', amount: -1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
         expect(core.usedCardIdsThisTurn).toContain('rope');
@@ -1096,7 +1090,7 @@ it('兔脚可以重掷标本剥制力量检定，并在展示结束后只应用�
             effect: { mode: 'trait', trait: 'sanity', amount: 1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
@@ -1173,7 +1167,7 @@ it('事件骰出现后使用书本会立即支付神志并按知识重新投骰�
             rollId: core.recentRoll?.id,
             sourceTitle: '标本剥制',
             requiredPlayerIds: core.playerIds,
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
             effect: { mode: 'trait', trait: 'sanity', amount: 1 },
         });
         expect(core.latestDiscovery?.title).toBe('标本剥制');
@@ -1186,7 +1180,7 @@ it('事件骰出现后使用书本会立即支付神志并按知识重新投骰�
         expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
-it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤害分配', () => {
+it('书本改骰后兔脚仍失败时，自动进入固定物理伤害分配', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1251,7 +1245,7 @@ it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤�
         expect(core.pendingEventRollResolution).toMatchObject({
             sourceTitle: '标本剥制',
             requiredPlayerIds: core.playerIds,
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
             effect: expect.objectContaining({ mode: 'compound' }),
         });
         expect(core.pendingDamageAllocation).toBeNull();
@@ -1271,7 +1265,7 @@ it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤�
             sourceTitle: '标本剥制',
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
             effect: expect.objectContaining({ mode: 'compound' }),
         });
         expect(core.pendingDamageAllocation).toBeNull();
@@ -1296,7 +1290,7 @@ it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤�
         expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(physicalPositionBeforeDamage - 1);
     });
 
-it('兔脚重掷电话铃声时会在确认新骰面后应用新分支', () => {
+it('兔脚重掷电话铃声时会自动应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1353,7 +1347,7 @@ it('兔脚重掷电话铃声时会在确认新骰面后应用新分支', () => {
             effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.usedCardIdsThisTurn).toContain('rope');
@@ -1366,7 +1360,7 @@ it('兔脚重掷电话铃声时会在确认新骰面后应用新分支', () => {
         expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
-it('兔脚重掷小机器人时会在确认新骰面后应用新分支', () => {
+it('兔脚重掷小机器人时会自动应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1426,7 +1420,7 @@ it('兔脚重掷小机器人时会在确认新骰面后应用新分支', () => {
             effect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical' },
             requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.pendingDamageAllocation).toBeNull();
 

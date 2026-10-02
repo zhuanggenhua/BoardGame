@@ -14,11 +14,13 @@ export function BetrayalRoomMarkerLayerSurface({
   roomId,
   markerTokens,
   hauntTokens,
+  discoveryReward,
   locale,
 }: {
   roomId: string;
   markerTokens: BetrayalRoomNode["markerTokens"];
   hauntTokens: readonly BetrayalHauntTokenInstanceSummary[];
+  discoveryReward: BetrayalRoomNode["discoveryReward"];
   locale: string;
 }) {
   const { t } = useTranslation("game-betrayal");
@@ -27,6 +29,22 @@ export function BetrayalRoomMarkerLayerSurface({
 
   return (
     <>
+      {discoveryReward ? (
+        <span
+          data-testid={`betrayal-room-discovery-card-${roomId}`}
+          data-discovery-kind={discoveryReward}
+          className="pointer-events-none absolute right-2 top-2 z-20 h-8 w-6 overflow-hidden rounded-[3px] border border-[rgba(240,210,154,0.58)] bg-[rgba(13,10,7,0.88)] shadow-[0_0_10px_rgba(240,210,154,0.24)]"
+          title={`${discoveryReward === "event" ? "事件" : discoveryReward === "omen" ? "预兆" : "物品"}牌堆`}
+        >
+          <OptimizedImage
+            src={`betrayal/cards/back-${discoveryReward}`}
+            locale={locale}
+            alt=""
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
+        </span>
+      ) : null}
       {hasMarker("obstacle") ? (
         <span
           data-testid={`betrayal-room-marker-${roomId}-obstacle`}

@@ -26,6 +26,13 @@ export type CardPreviewRenderer = (args: {
     style?: CSSProperties;
 }) => ReactNode;
 
+export type CardPreviewRendererMeta = {
+    getAspectRatio?: (args: {
+        previewRef: CardPreviewRef;
+        locale?: string;
+    }) => number | undefined;
+};
+
 export type CardSvgRenderer = (props?: Record<string, string | number>) => ReactNode;
 
 // 向后兼容类型别名（游戏层可能直接引用）
@@ -72,10 +79,20 @@ const scaleAtlasConfig = (
 };
 
 const previewRendererRegistry = new Map<string, CardPreviewRenderer>();
+const previewRendererMetaRegistry = new Map<string, CardPreviewRendererMeta>();
 const svgRendererRegistry = new Map<string, CardSvgRenderer>();
 
-export function registerCardPreviewRenderer(id: string, renderer: CardPreviewRenderer): void {
+export function registerCardPreviewRenderer(
+    id: string,
+    renderer: CardPreviewRenderer,
+    meta?: CardPreviewRendererMeta,
+): void {
     previewRendererRegistry.set(id, renderer);
+    if (meta) {
+        previewRendererMetaRegistry.set(id, meta);
+    } else {
+        previewRendererMetaRegistry.delete(id);
+    }
 }
 
 export function registerCardSvgRenderer(id: string, renderer: CardSvgRenderer): void {
@@ -86,6 +103,19 @@ export { registerCardAtlasSource, getCardAtlasSource };
 
 export function getCardPreviewRenderer(id: string): CardPreviewRenderer | undefined {
     return previewRendererRegistry.get(id);
+}
+
+export function getCardPreviewAspectRatio(
+    previewRef: CardPreviewRef,
+    locale?: string,
+): number | undefined {
+    if (previewRef.type !== 'renderer') return undefined;
+    const ratio = previewRendererMetaRegistry
+        .get(previewRef.rendererId)
+        ?.getAspectRatio?.({ previewRef, locale });
+    return typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
+        ? ratio
+        : undefined;
 }
 
 export function getCardSvgRenderer(id: string): CardSvgRenderer | undefined {

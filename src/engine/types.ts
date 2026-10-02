@@ -157,6 +157,8 @@ export interface BreakdownLine {
 export interface ActionLogInteractiveParam {
     text: string;
     tooltip?: string;
+    /** 可选：悬停时显示对象预览（房间、事件牌或持有物） */
+    previewRef?: import('../core').CardPreviewRef;
 }
 
 export type ActionLogSegment =

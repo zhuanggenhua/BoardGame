@@ -8,7 +8,10 @@ import {
     createDustRuntimeState,
     createUponReflectionRuntimeState,
 } from './hauntRuntimeSetupModel';
-import { resolveHumanAcknowledgementPlayerIds } from './acknowledgementReadModel';
+import {
+    resolveEventRollResolutionRequiresAcknowledgement,
+    resolveHumanAcknowledgementPlayerIds,
+} from './acknowledgementReadModel';
 import {
     cloneHauntTraitorResolution,
     resolveHauntTraitorResolutionForTrigger,
@@ -260,7 +263,17 @@ export function applyBetrayalEventRollReplacementState(
         uponReflectionSetup: replacement.uponReflectionSetup
             ? cloneUponReflectionRuntimeState(replacement.uponReflectionSetup)
             : undefined,
-        requiresAcknowledgement: true,
+        requiresAcknowledgement: pending.requiresAcknowledgement === true || resolveEventRollResolutionRequiresAcknowledgement({
+            effect: replacement.effect,
+            nextPendingEventChoice,
+            hauntRevealResolution: replacement.hauntRevealResolution,
+            hauntTraitorResolution: replacement.hauntTraitorResolution,
+            dustSetup: replacement.dustSetup,
+            magicCameraSetup: replacement.magicCameraSetup,
+            helpingHandsSetup: replacement.helpingHandsSetup,
+            uponReflectionSetup: replacement.uponReflectionSetup,
+            hauntRoll: replacement.hauntRoll,
+        }),
     };
     core.usedCardIdsThisTurn = Array.from(new Set([
         ...core.usedCardIdsThisTurn,

@@ -110,11 +110,30 @@ export function eventRollResolutionNeedsAcknowledgement(
         | 'magicCameraSetup'
         | 'helpingHandsSetup'
         | 'uponReflectionSetup'
+        | 'hauntRoll'
+        | 'effect'
     >,
 ): boolean {
     if (resolution.requiresAcknowledgement !== undefined) {
         return resolution.requiresAcknowledgement;
     }
+    return resolveEventRollResolutionRequiresAcknowledgement(resolution);
+}
+
+export function resolveEventRollResolutionRequiresAcknowledgement(
+    resolution: Pick<
+        BetrayalPendingEventRollResolutionState,
+        | 'nextPendingEventChoice'
+        | 'hauntRevealResolution'
+        | 'hauntTraitorResolution'
+        | 'dustSetup'
+        | 'magicCameraSetup'
+        | 'helpingHandsSetup'
+        | 'uponReflectionSetup'
+        | 'hauntRoll'
+        | 'effect'
+    >,
+): boolean {
     return Boolean(
         resolution.nextPendingEventChoice
         || resolution.hauntRevealResolution
@@ -122,7 +141,9 @@ export function eventRollResolutionNeedsAcknowledgement(
         || resolution.dustSetup
         || resolution.magicCameraSetup
         || resolution.helpingHandsSetup
-        || resolution.uponReflectionSetup,
+        || resolution.uponReflectionSetup
+        || resolution.hauntRoll
+        || resolution.effect?.mode === 'rolledDamage',
     );
 }
 

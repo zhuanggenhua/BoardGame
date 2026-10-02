@@ -167,15 +167,6 @@ export const GameHUD = ({
     const toast = useToast();
     const { user } = useAuth();
     const { height: viewportHeight } = useRuntimeViewport({ syncCssVars: false });
-    const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_POSITION
-        : 'bottom-right';
-    const fabMenuStorageKey = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
-        : undefined;
-    const fabMenuLegacyOffsetStorageKey = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY
-        : undefined;
 
     // 从注册表获取游戏特定的卡牌预览函数
     const getCardPreviewRef = useMemo(() => {
@@ -211,6 +202,21 @@ export const GameHUD = ({
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
+    const isBetrayalGame = _gameId === 'betrayal';
+    // Betrayal 的底部确认/行动区固定占用右下角；悬浮球统一放到右上角。
+    const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
+        ? MAGE_WARS_GAME_HUD_FAB_POSITION
+        : isBetrayalGame
+            ? 'top-right'
+            : 'bottom-right';
+    const fabMenuStorageKey = _gameId === 'mage-wars'
+        ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
+        : isBetrayalGame
+            ? 'game_hud_fab_position:betrayal:v1'
+            : undefined;
+    const fabMenuLegacyOffsetStorageKey = _gameId === 'mage-wars'
+        ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY
+        : undefined;
 
     // 聊天逻辑
     const [chatMessages, setChatMessages] = useState<MatchChatMessage[]>([]);

@@ -2,7 +2,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useState } from 'react';
-import { CardPreview, getCardAtlasCandidateUrls, registerCardAtlasSource, registerCardPreviewRenderer } from '../CardPreview';
+import { CardPreview, getCardAtlasCandidateUrls, getCardPreviewAspectRatio, registerCardAtlasSource, registerCardPreviewRenderer } from '../CardPreview';
 import type { SpriteAtlasConfig } from '../../../../engine/primitives/spriteAtlas';
 import { getCardAtlasSource, getLazyRegistration, registerLazyCardAtlasSource } from '../cardAtlasRegistry';
 import { clearGameAssetBaseOverrides, markImageLoaded, setAssetsBaseUrl, setGameAssetBaseOverride } from '../../../../core';
@@ -72,6 +72,17 @@ describe('CardPreview i18n atlas path', () => {
         );
 
         expect(receivedLocale).toBe('zh-CN');
+    });
+
+    it('renderer 可提供素材宽高比，供外层 tooltip 先按真实比例布局', () => {
+        const rendererId = 'test:card-preview:renderer-aspect-ratio';
+        registerCardPreviewRenderer(
+            rendererId,
+            () => <span>ok</span>,
+            { getAspectRatio: () => 1.25 },
+        );
+
+        expect(getCardPreviewAspectRatio({ type: 'renderer', rendererId })).toBe(1.25);
     });
 
     it('同一个 CardPreview 在 atlas 与使用 Hooks 的 renderer 之间切换时，不应触发 Hooks 顺序错误', () => {

@@ -38,7 +38,10 @@ import {
     cloneUseEffect,
     type UseEffectProfile,
 } from './possessionEffects';
-import { resolveHumanAcknowledgementPlayerIds } from './acknowledgementReadModel';
+import {
+    resolveEventRollResolutionRequiresAcknowledgement,
+    resolveHumanAcknowledgementPlayerIds,
+} from './acknowledgementReadModel';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
 import { BETRAYAL_SCENARIO_CONFIGS } from './scenarioConfig';
 import { consumeNextNonCombatTraitReplacementAfterTraitRoll } from './traitRollModel';
@@ -174,7 +177,17 @@ function createPendingEventRollResolution(core: BetrayalCore, input: {
         effect: cloneUseEffect(input.eventEffect ?? nextPendingEventChoice!.effect),
         nextPendingEventChoice,
         deathPrevention: cloneEventDeathPrevention(input.deathPrevention),
-        requiresAcknowledgement: true,
+        requiresAcknowledgement: resolveEventRollResolutionRequiresAcknowledgement({
+            effect: input.eventEffect ?? nextPendingEventChoice!.effect,
+            nextPendingEventChoice,
+            hauntRevealResolution: input.hauntRevealResolution,
+            hauntTraitorResolution: input.hauntTraitorResolution,
+            dustSetup: input.dustSetup,
+            magicCameraSetup: input.magicCameraSetup,
+            helpingHandsSetup: input.helpingHandsSetup,
+            uponReflectionSetup: input.uponReflectionSetup,
+            hauntRoll: input.hauntRoll,
+        }),
         hauntTriggered: input.hauntTriggered,
         hauntCardNumber: input.hauntCardNumber,
         hauntTriggerLabel: input.hauntTriggerLabel,
@@ -461,7 +474,7 @@ export function applyBetrayalEventRolledState(
         && (eventDiscovery.resolutionSteps?.length ?? 0) > 1
         ? createPendingCardResolutionQueue({
             playerId: event.payload.playerId,
-            requiredPlayerIds: [event.payload.playerId],
+            requiredPlayerIds: resolveHumanAcknowledgementPlayerIds(core, event.payload.playerId),
             roomId: core.currentExplorer.roomId,
             timestamp: event.timestamp,
             deckKind: 'event',

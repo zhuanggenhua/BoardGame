@@ -60,15 +60,26 @@ const I18nSegment: React.FC<{
                     nextParts.push(piece);
                 }
                 if (pieceIndex < pieces.length - 1) {
+                    const label = interactiveParam.tooltip ?? interactiveParam.text;
                     nextParts.push(
-                        <span
-                            key={`${paramKey}-${partIndex}-${pieceIndex}`}
-                            className="cursor-help underline decoration-dotted decoration-1 underline-offset-2"
-                            title={interactiveParam.tooltip ?? interactiveParam.text}
-                            aria-label={interactiveParam.tooltip ?? interactiveParam.text}
-                        >
-                            {targetText}
-                        </span>,
+                        interactiveParam.previewRef ? (
+                            <CardPreviewTooltip
+                                key={`${paramKey}-${partIndex}-${pieceIndex}`}
+                                previewRef={interactiveParam.previewRef}
+                                locale={undefined}
+                            >
+                                {targetText}
+                            </CardPreviewTooltip>
+                        ) : (
+                            <span
+                                key={`${paramKey}-${partIndex}-${pieceIndex}`}
+                                className="cursor-help underline decoration-dotted decoration-1 underline-offset-2"
+                                title={label}
+                                aria-label={label}
+                            >
+                                {targetText}
+                            </span>
+                        ),
                     );
                 }
             });

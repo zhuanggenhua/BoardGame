@@ -85,6 +85,10 @@ export function resolveDisplayedDiscoveryDetail(
       "$1投 $2 颗骰子",
     )
     .replace(
+      /(?:抽到预兆后进行|选择进行|进行)?\s*作祟检定\s*[:：]\s*投\s*\d+\s*颗骰子/g,
+      "",
+    )
+    .replace(
       /预兆牌堆耗尽，自动触发作祟/g,
       "",
     )
@@ -154,7 +158,8 @@ export function BetrayalLatestDiscoverySurface({
     .trim();
   const shouldShowVisibleDiscoveryDetail = Boolean(
     displayedDiscoveryDetail &&
-      (!panelVisual || !shouldShowCardFace),
+      (!panelVisual || !shouldShowCardFace) &&
+      !(shouldShowRoll && recentRoll && !shouldShowCardFace),
   );
 
   return (
@@ -311,7 +316,11 @@ export function BetrayalLatestDiscoverySurface({
                 actorLabel={rollActorLabel}
                 showSource={false}
                 showRollLabel
-                showOutcome={recentRoll.kind === "eventRolledDamage"}
+                showOutcome={
+                  recentRoll.kind === "eventRolledDamage" ||
+                  recentRoll.kind === "eventTraitCheck" ||
+                  recentRoll.kind === "eventDiceRoll"
+                }
                 openTable
                 compactResult
                 denseResult={false}

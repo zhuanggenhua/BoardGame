@@ -1,6 +1,7 @@
 import type { RandomFn } from '../../engine/types';
 import {
     resolveRoomExploredCardResolutionRequiredPlayerIds,
+    resolveEventRollResolutionRequiresAcknowledgement,
 } from './acknowledgementReadModel';
 import {
     cloneDiscoverySummary,
@@ -330,7 +331,17 @@ export function applyBetrayalRoomExploredState(
             requiredPlayerIds: resolveHumanAcknowledgementPlayerIds(core, event.payload.playerId),
             acknowledgedPlayerIds: [],
             effect: cloneUseEffect(event.payload.eventEffect),
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: resolveEventRollResolutionRequiresAcknowledgement({
+                effect: event.payload.eventEffect,
+                nextPendingEventChoice: event.payload.nextPendingEventChoice,
+                hauntRevealResolution: event.payload.hauntRevealResolution,
+                hauntTraitorResolution: event.payload.hauntTraitorResolution,
+                dustSetup: event.payload.dustSetup,
+                magicCameraSetup: event.payload.magicCameraSetup,
+                helpingHandsSetup: event.payload.helpingHandsSetup,
+                uponReflectionSetup: event.payload.uponReflectionSetup,
+                hauntRoll: event.payload.hauntRoll,
+            }),
             deathPrevention: event.payload.deathPrevention
                 ? {
                     ...event.payload.deathPrevention,

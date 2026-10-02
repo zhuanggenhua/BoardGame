@@ -337,6 +337,19 @@ export function eventEffectNeedsPendingEventChoice(effect: UseEffectProfile | un
         );
 }
 
+export function effectIsTraitOnly(effect: UseEffectProfile | undefined): boolean {
+    if (!effect) {
+        return false;
+    }
+    if (effect.mode === 'trait' || effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
+        return true;
+    }
+    if (effect.mode === 'compound') {
+        return effect.effects.length > 0 && effect.effects.every(effectIsTraitOnly);
+    }
+    return false;
+}
+
 export function effectAllowsChosenTrait(effect: UseEffectProfile, trait: BetrayalTraitKey): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some((childEffect) => effectAllowsChosenTrait(childEffect, trait));
