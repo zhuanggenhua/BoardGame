@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import './load-dev-env.mjs';
+
 /**
  * Vite 启动包装器。
  *

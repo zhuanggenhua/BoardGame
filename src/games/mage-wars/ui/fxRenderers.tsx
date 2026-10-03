@@ -119,7 +119,10 @@ function AttackDiceFeedback({
             animate={{ opacity: [0, 1, 1, 1, 0], scale: [0.68, 1, 1, 1, 1.04], y: [10, 0, 0, 0, -6] }}
             transition={{ duration: visibleDurationMs / 1000, ease: 'easeOut' }}
         >
-            <div className="flex max-w-[34rem] items-center justify-center gap-[clamp(0.45rem,1vw,1rem)]">
+            <div
+                className="flex max-w-[34rem] items-center justify-center gap-[clamp(0.45rem,1vw,1rem)]"
+                data-testid="mage-wars-fx-attack-dice-content"
+            >
                 {diceResults.slice(0, 6).map((result, index) => (
                     <AttackDieResult key={`${index}-${result}`} result={result} index={index} />
                 ))}

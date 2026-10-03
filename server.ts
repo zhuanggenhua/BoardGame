@@ -8,7 +8,7 @@
  * - 默认 namespace：重赛/聊天（保持不变）
  */
 
-import 'dotenv/config';
+import './scripts/infra/load-dev-env.mjs';
 import http from 'node:http';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
@@ -28,6 +28,7 @@ import { GAME_STATE_VALIDATORS } from './src/games/stateValidators';
 import { mongoStorage } from './src/server/storage/MongoStorage';
 import { hybridStorage } from './src/server/storage/HybridStorage';
 import { runStartupCleanupTasks, type StartupCleanupTask } from './src/server/storage/startupCleanup';
+
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
 import { evaluateEmptyRoomJoinGuard } from './src/server/joinGuard';
 import { areAllSeatsOccupied, hasOccupiedPlayers, isSeatOccupied, isSupportedPlayerCount } from './src/server/matchOccupancy';

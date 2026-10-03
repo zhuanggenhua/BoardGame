@@ -19,7 +19,7 @@ import type {
     AbilityCard,
     SelectableCharacterId,
 } from './types';
-import { HAND_LIMIT, PHASE_ORDER } from './types';
+import { HAND_LIMIT, MAX_HEALTH, PHASE_ORDER, SKIRMISH_MAX_HEALTH } from './types';
 import { RESOURCE_IDS } from './resources';
 import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
@@ -34,6 +34,7 @@ import {
     getSeatingOrder,
     getTeamId,
     isTeamMode,
+    isSkirmishMode,
 } from './rollContextPolicy';
 import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 
@@ -296,6 +297,7 @@ export {
     getTeamId,
     getTeamIdByPlayerIdMap,
     isTeamMode,
+    isSkirmishMode,
     isPlayerAllowedByRollContextPolicy,
 } from './rollContextPolicy';
 
@@ -310,19 +312,27 @@ export const getTeammateId = (state: DiceThroneCore, playerId: PlayerId): Player
 export const getOpponents = (state: DiceThroneCore, playerId: PlayerId): PlayerId[] => {
     const playerIds = getSeatingOrder(state);
     if (!state.players[playerId]) return [];
+
+    const eligiblePlayerIds = isSkirmishMode(state) && state.hostStarted
+        ? playerIds.filter((pid) => (state.players[pid]?.resources[RESOURCE_IDS.HP] ?? 0) > 0)
+        : playerIds;
     if (!isTeamMode(state)) {
-        return playerIds.filter((pid) => pid !== playerId);
+        return eligiblePlayerIds.filter((pid) => pid !== playerId);
     }
 
     const teamId = getTeamId(state, playerId);
     if (!teamId) return [];
-    return playerIds.filter((pid) => pid !== playerId && getTeamId(state, pid) !== teamId);
+    return eligiblePlayerIds.filter((pid) => pid !== playerId && getTeamId(state, pid) !== teamId);
 };
+
+export const getPlayerHealthCap = (state: DiceThroneCore, _playerId?: PlayerId): number => (
+    isSkirmishMode(state) ? SKIRMISH_MAX_HEALTH : MAX_HEALTH
+);
 
 export const getDefaultOpponentId = (state: DiceThroneCore, playerId: PlayerId): PlayerId | undefined => {
     if (!state.players[playerId]) return undefined;
     if (!isTeamMode(state)) {
-        return (Object.keys(state.players) as PlayerId[]).find((pid) => pid !== playerId);
+        return getOpponents(state, playerId)[0];
     }
 
     return getLeftOpponentId(state, playerId)
@@ -409,7 +419,10 @@ const findOpponentByDirection = (
     for (let step = 1; step < seatingOrder.length; step++) {
         const nextIndex = (seatIndex + direction * step + seatingOrder.length) % seatingOrder.length;
         const candidate = seatingOrder[nextIndex];
-        if (candidate && !areTeammates(state, playerId, candidate)) {
+        const isAliveSkirmishOpponent = !isSkirmishMode(state)
+            || !state.hostStarted
+            || (state.players[candidate]?.resources[RESOURCE_IDS.HP] ?? 0) > 0;
+        if (candidate && isAliveSkirmishOpponent && !areTeammates(state, playerId, candidate)) {
             return candidate;
         }
     }
@@ -508,7 +521,15 @@ const buildTeamTurnOrder = (state: DiceThroneCore): PlayerId[] => {
  * 获取玩家顺序列表
  */
 export const getPlayerOrder = (state: DiceThroneCore): PlayerId[] => {
-    return buildTeamTurnOrder(state);
+    const order = buildTeamTurnOrder(state);
+    if (!isSkirmishMode(state) || !state.hostStarted) {
+        return order;
+    }
+
+    const livingOrder = order.filter((playerId) => (
+        (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) > 0
+    ));
+    return livingOrder.length > 0 ? livingOrder : order;
 };
 
 /**
@@ -647,7 +668,7 @@ export const canAdvancePhase = (state: DiceThroneCore, phase: TurnPhase): boolea
     }
 
     if (phase === 'targetingRoll') {
-        return state.rollCount > 0 && state.rollConfirmed;
+        return isSkirmishMode(state) || (state.rollCount > 0 && state.rollConfirmed);
     }
     
     return true;
@@ -673,7 +694,7 @@ export const getNextPhase = (state: DiceThroneCore, phase: TurnPhase): TurnPhase
     if (phase === 'offensiveRoll') {
         const sourceAbilityId = state.pendingAttack?.sourceAbilityId;
         const needsTargetingRoll = Boolean(
-            isTeamMode(state)
+            (isTeamMode(state) || isSkirmishMode(state))
             && state.pendingAttack
             && sourceAbilityId
             && state.pendingAttack.defenderId === undefined

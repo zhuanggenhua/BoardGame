@@ -3,8 +3,8 @@ import { registerChoiceEffectHandler } from '../choiceEffects';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
-import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
-import { MAX_HEALTH, type DiceThroneCore, type DieFace } from '../types';
+import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getPlayerHealthCap, getTokenStackLimit } from '../rules';
+import { type DiceThroneCore, type DieFace } from '../types';
 import { markPendingAttackChoiceFollowUpResolvedFromStage } from '../utils';
 import type {
     BonusDieRolledEvent,
@@ -1155,11 +1155,12 @@ export function registerArtificerCustomActions(): void {
         if (!die) return { totalDamage: 0, followupEvents: [] };
         const healAmount = die.face === ARTIFICER_DICE_FACE_IDS.WRENCH ? 1 : 2;
         const currentHp = state.players[settlement.attackerId]?.resources[RESOURCE_IDS.HP] ?? 0;
+        const healthCap = getPlayerHealthCap(state, settlement.attackerId);
         const followupEvents: DiceThroneEvent[] = [{
             type: 'HEAL_APPLIED',
             payload: {
                 targetId: settlement.attackerId,
-                amount: Math.max(0, Math.min(healAmount, MAX_HEALTH - currentHp)),
+                amount: Math.max(0, Math.min(healAmount, healthCap - currentHp)),
                 sourceAbilityId: settlement.sourceAbilityId,
             },
             sourceCommandType: 'BONUS_DICE_SETTLED',

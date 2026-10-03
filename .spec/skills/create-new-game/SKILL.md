@@ -69,6 +69,8 @@ Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI �
 - 对应 `src/games/<gameId>` 冒烟测试通过；
 - 大厅可发现该游戏，且没有用错误资源路径、`compressed/` 硬编码或缺失 i18n 冒充接入。
 
+生命周期门禁：只要新游戏仍有 `in_progress`、`partial`、`deferred` 或其它未完成范围，`manifest.ts` 必须设置 `statusTag: 'under_construction'`。`enabled` 只控制是否可发现，不代表已完成；只有完成 closeout 且得到用户明确完成态确认后，才允许移除该标记。
+
 ### S2 机制与数据设计
 
 先把规则动作拆成状态、事件、命令、UI 承接和验证证据，再实现。正式事实、系统状态、派生读模型和纯 UI 状态必须分开。

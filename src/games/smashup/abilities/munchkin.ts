@@ -16,6 +16,7 @@ import {
     minionHasEffectiveName,
     recoverCardsFromDiscard,
     revealHand,
+    createSkipOption,
 } from '../domain/abilityHelpers';
 import { buildValidatedOngoingDetachEvents, findLiveOngoingCardLocation } from '../domain/ongoingDetach';
 import {
@@ -46,6 +47,8 @@ const CROSSBOW = 'munchkin_treasure_crossbow';
 const CROSSBOW_CHOOSE_FACTION_SOURCE_ID = 'munchkin_treasure_crossbow_choose_faction';
 const DUNGEON_RULEBOOK = 'munchkin_treasure_dungeon_rulebook';
 const DUNGEON_RULEBOOK_DESTROY_SOURCE_ID = 'munchkin_treasure_dungeon_rulebook_destroy';
+const TIGER_STEED = 'munchkin_treasure_tiger_steed';
+const TIGER_STEED_DESTROY_SOURCE_ID = 'munchkin_treasure_tiger_steed_destroy';
 const MAGIC_MISSILE = 'munchkin_treasure_magic_missile';
 const MAGIC_MISSILE_DESTROY_SOURCE_ID = 'munchkin_treasure_magic_missile_destroy';
 const POTION_OF_HALITOSIS = 'munchkin_treasure_potion_of_halitosis';
@@ -134,6 +137,16 @@ type MagicMissileMinionChoice = {
 type MagicMissileInteractionData = {
     fromBaseIndex?: unknown;
     sourceCardUid?: unknown;
+};
+type TigerSteedMinionChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    skip?: true;
+};
+type TigerSteedInteractionData = {
+    sourceCardUid?: unknown;
+    sourceBaseIndex?: unknown;
 };
 type CrossbowFactionChoice = {
     factionId?: string;
@@ -1190,6 +1203,58 @@ function dungeonRulebookOnPlay(ctx: AbilityContext): AbilityResult {
                 ...interaction.data,
                 sourceCardUid: ctx.cardUid,
             },
+        }),
+    };
+}
+
+function tigerSteedTargetOptions(state: SmashUpCore, baseIndex: number, sourcePlayerId: string) {
+    const candidates = (state.bases[baseIndex]?.minions ?? [])
+        .filter(minion => getEffectivePower(state, minion, baseIndex) <= 2)
+        .map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: getCardDef(minion.defId)?.name ?? minion.defId,
+        }));
+    return buildActionMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId,
+        sourceDefId: TIGER_STEED,
+        effectType: 'destroy',
+    });
+}
+
+function tigerSteedOnPlay(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.baseIndex ?? ctx.targetBaseIndex;
+    if (baseIndex === undefined) return { events: [] };
+    const options = tigerSteedTargetOptions(ctx.state, baseIndex, ctx.playerId);
+    if (options.length === 0) return { events: [] };
+
+    const interaction = createSimpleChoice<TigerSteedMinionChoice>(
+        `${TIGER_STEED_DESTROY_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '虎骑士：选择要摧毁的力量2或更少的仆从',
+        [...options, createSkipOption('跳过（不摧毁）', 'ui.munchkin_tiger_steed_skip_destroy_option')],
+        {
+            sourceId: TIGER_STEED_DESTROY_SOURCE_ID,
+            targetType: 'minion',
+            titleKey: 'ui.munchkin_tiger_steed_destroy_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'field',
+            autoResolveIfSingle: false,
+            displayCard: { defId: TIGER_STEED, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) => [
+        ...tigerSteedTargetOptions(latestState.core as SmashUpCore, baseIndex, ctx.playerId),
+        createSkipOption('跳过（不摧毁）', 'ui.munchkin_tiger_steed_skip_destroy_option'),
+    ];
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: { ...interaction.data, sourceCardUid: ctx.cardUid, sourceBaseIndex: baseIndex },
         }),
     };
 }
@@ -3137,6 +3202,7 @@ export function registerMunchkinAbilities(): void {
     registerMunchkinOrcsAbilities();
     registerMunchkinWarriorsAbilities();
     registerAbility('munchkin_treasure_halfling_hireling', 'onPlay', halflingHirelingOnPlay);
+    registerAbility(TIGER_STEED, 'onPlay', tigerSteedOnPlay);
     registerAbility(HALFLINGS_SHIRE_MARSHAL, 'talent', {
         execute: shireMarshalTalent,
         validateUse: shireMarshalValidateUse,
@@ -4561,6 +4627,43 @@ export function registerMunchkinInteractionHandlers(): void {
                     sourceKind: 'action',
                 }),
             ],
+        };
+    });
+
+    registerInteractionHandler(TIGER_STEED_DESTROY_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as TigerSteedMinionChoice | undefined;
+        const data = interactionData as TigerSteedInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourceBaseIndex = typeof data?.sourceBaseIndex === 'number' ? data.sourceBaseIndex : undefined;
+        if (!sourceCardUid || sourceBaseIndex === undefined || choice?.skip) return { state, events: [] };
+
+        const source = state.core.bases[sourceBaseIndex]?.minions.find(minion =>
+            minion.uid === sourceCardUid
+            && minion.defId === TIGER_STEED
+            && minion.controller === playerId
+        );
+        const targetUid = typeof choice?.minionUid === 'string' ? choice.minionUid : undefined;
+        const target = targetUid
+            ? state.core.bases[sourceBaseIndex]?.minions.find(minion => minion.uid === targetUid)
+            : undefined;
+        if (!source || !target || getEffectivePower(state.core, target, sourceBaseIndex) > 2) return { state, events: [] };
+
+        return {
+            state,
+            events: buildValidatedDestroyEvents(state.core, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: sourceBaseIndex,
+                destroyerId: playerId,
+                reason: TIGER_STEED,
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid,
+                sourceDefId: TIGER_STEED,
+                sourceControllerId: playerId,
+                sourceBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 

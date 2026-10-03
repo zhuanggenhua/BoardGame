@@ -1427,6 +1427,8 @@
     "munchkin_halitosis_move_title": "Potion of Halitosis: move one of your minions",
     "munchkin_potion_of_duplication_choose_talent_title": "Potion of Duplication: choose another minion's talent",
     "munchkin_magic_missile_destroy_title": "Magic Missile: choose a target minion",
+    "munchkin_tiger_steed_destroy_title": "Tiger Steed: choose a minion to destroy",
+    "munchkin_tiger_steed_skip_destroy_option": "Skip (do not destroy)",
     "munchkin_straight_line_running_away_choose_treasure_title": "Potion of Straight Line Running Away: choose a revealed treasure",
     "munchkin_rocket_boots_move_title": "Rocket Boots: choose a destination base",
     "munchkin_mages_blaster_master_discard_title": "Blaster Master: choose a hand card to discard",
@@ -12315,7 +12317,8 @@
       "abilityText": "After you play this minion, you may play an extra minion this turn. That extra minion may be a Treasure minion."
     },
     "munchkin_treasure_tiger_steed": {
-      "name": "Tiger Steed"
+      "name": "Tiger Steed",
+      "abilityText": "You may destroy a minion of power 2 or less here."
     },
     "munchkin_treasure_bag_of_caltrops": {
       "name": "Bag of Caltrops",

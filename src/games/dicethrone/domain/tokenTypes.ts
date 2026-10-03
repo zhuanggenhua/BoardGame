@@ -288,6 +288,8 @@ export interface PassiveTriggerConfig {
     duration?: number;
     /** 是否可被净化/移除类效果移除 */
     removable: boolean;
+    /** 是否可被转移类效果移动；未声明时默认可转移 */
+    transferable?: boolean;
     /** 移除此效果需要的代价（如 CP） */
     removalCost?: { resource: string; amount: number };
 }

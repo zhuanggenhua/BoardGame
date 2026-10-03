@@ -3096,7 +3096,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(page.getByTestId('mage-wars-fx-attack-die-face').first()).toBeVisible();
         const settlementAudit = await page.evaluate(() => {
             const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]')?.getBoundingClientRect();
-            const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]')?.getBoundingClientRect();
+            const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]')?.getBoundingClientRect();
             return stage && dice ? {
                 diceInsideArena: dice.left >= stage.left && dice.right <= stage.right && dice.top >= stage.top && dice.bottom <= stage.bottom,
                 diceCenterX: dice.left + dice.width / 2,

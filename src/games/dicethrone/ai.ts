@@ -56,7 +56,7 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTarget
 import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
-import { canRemoveStatusFromPlayer } from './domain/statusRemoval';
+import { canRemoveStatusFromPlayer, canTransferStatus } from './domain/statusRemoval';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
 import { getDieFaceByValue } from './domain/diceRegistry';
 import { getCustomActionMeta } from './domain/effects';
@@ -2168,7 +2168,7 @@ const buildInteractionActions = (
         if (data.type === 'selectTargetStatus' && data.transferConfig?.sourcePlayerId && data.transferConfig?.statusId) {
             const sourcePlayerId = data.transferConfig.sourcePlayerId;
             const statusId = data.transferConfig.statusId;
-            if (!isRemovableStatusId(state, statusId)) {
+            if (!canTransferStatus(state.core, playerId, sourcePlayerId, statusId)) {
                 return [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
             }
             const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
@@ -4686,7 +4686,7 @@ const getBestStatusActionUtility = (
     if (customActionId === 'transfer-status') {
         const candidates = playerIds.flatMap((fromPlayerId) => (
             getSelectableStatusIds(state, fromPlayerId)
-                .filter((statusId) => canRemoveStatusFromPlayer(state.core, playerId, fromPlayerId, statusId))
+                .filter((statusId) => canTransferStatus(state.core, playerId, fromPlayerId, statusId))
                 .flatMap((statusId) => playerIds
                     .filter((toPlayerId) => toPlayerId !== fromPlayerId)
                     .map((toPlayerId) => scoreTransferStatusTarget(

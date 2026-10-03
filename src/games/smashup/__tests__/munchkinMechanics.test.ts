@@ -623,6 +623,41 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         expect((result.finalState.core.players['0'] as { treasures?: unknown }).treasures).toBeUndefined();
     });
 
+    it('虎骑士打出后可选择摧毁同基地力量2或更少的仆从', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [makeMinion('target-1', 'alien_invader', '0', 2)],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [makeCard('tiger-1', 'munchkin_treasure_tiger_steed', 'minion', '0')],
+            minionsPlayed: 0,
+            minionLimit: 1,
+        };
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'tiger-1', baseIndex: 0 },
+        } as const, fixedRandom);
+
+        expect(played.success).toBe(true);
+        expect(getSimpleChoicePrompt(played.finalState, 'munchkin_treasure_tiger_steed_destroy')).toBeTruthy();
+
+        const resolved = respondToPromptOption(
+            played.finalState,
+            option => option.value?.minionUid === 'target-1',
+            '虎骑士选择目标',
+            '0',
+            fixedRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['tiger-1']);
+    });
+
     it('宝藏池在玩家每回合第一次于此打出仆从后抽一张宝藏牌', () => {
         const state = makeState({
             bases: [makeBase({ defId: 'base_treasure_bath' })],

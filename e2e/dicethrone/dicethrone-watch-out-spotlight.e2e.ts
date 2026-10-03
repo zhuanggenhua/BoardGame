@@ -3982,9 +3982,16 @@ test('opponent lucky card should only show card spotlight for viewer', async ({ 
         });
 
         expect(overlayState.lastEventTypes).toContain('CARD_PLAYED');
-        expect(overlayState.lastEventTypes.filter((type) => type === 'BONUS_DIE_ROLLED')).toHaveLength(4);
-        expect(overlayState.lastEventTypes).not.toContain('BONUS_DICE_REROLL_REQUESTED');
-        expect(overlayState.pendingBonusDiceSettlement).toBeNull();
+        // 大吉大利原文是投掷 3 颗骰子；此前夹具把事件数量误写成 4，导致
+        // 自动退场断言尚未执行就提前失败。
+        expect(overlayState.lastEventTypes.filter((type) => type === 'BONUS_DIE_ROLLED')).toHaveLength(3);
+        // 大吉大利的 3 颗骰子会保留 displayOnly settlement 作为观战记录；
+        // 观战端只应保持卡牌特写，不应再弹出中央奖励骰 UI。
+        expect(overlayState.pendingBonusDiceSettlement).toMatchObject({
+            attackerId: '1',
+            diceCount: 3,
+            displayOnly: true,
+        });
 
         await hostPage.screenshot({
             path: testInfo.outputPath('05-p0-after-p1-play-lucky-no-duplicate-overlay.png'),

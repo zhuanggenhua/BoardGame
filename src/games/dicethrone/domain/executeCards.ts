@@ -27,6 +27,7 @@ import {
     getResponderQueue,
     getSelectedCombatOpponentId,
     hasOpponentTargetEffect,
+    isSkirmishMode,
     isTeamMode,
 } from './rules';
 import { resourceSystem } from './resourceSystem';
@@ -259,7 +260,7 @@ export function executeCardCommand(
             const opponentId = selectedOpponentId
                 ?? getContextualOpponentId(state, actingPlayerId)
                 ?? actingPlayerId;
-            const needsSelectedOpponent = isTeamMode(state)
+            const needsSelectedOpponent = (isTeamMode(state) || isSkirmishMode(state))
                 && selectedOpponentId === undefined
                 && getOpponents(state, actingPlayerId).length > 1
                 && cardNeedsSelectedDefender(card);

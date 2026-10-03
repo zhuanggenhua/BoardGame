@@ -5919,6 +5919,82 @@ const playCrowsNestUntilBranch = async (
 };
 
 test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
+    test('参考链：真实手牌卡牌选择应显示卡本体且不复制牌名', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const handSelectionCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], HAND_SELECTION_CARD_ID);
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const host = asRecord(players['0']);
+                const hostResources = asRecord(host.resources);
+
+                players['0'] = {
+                    ...host,
+                    hand: [handSelectionCard],
+                    discard: [],
+                    resources: { ...hostResources, [RESOURCE_IDS.CP]: 5 },
+                };
+
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'main1',
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 0,
+                    interaction: {
+                        current: {
+                            id: 'dt-reference-select-hand-card',
+                            kind: 'dt:card-interaction',
+                            playerId: '0',
+                            data: {
+                                id: 'reference-select-hand-card',
+                                playerId: '0',
+                                sourceCardId: 'deep-sea-dive',
+                                sourceId: 'deep-sea-dive',
+                                type: 'selectHandCard',
+                                titleKey: 'interaction.selectHandCardToDiscard',
+                                selectCount: 1,
+                                selected: [],
+                                targetPlayerIds: ['0'],
+                            },
+                        },
+                        queue: [],
+                    },
+                };
+                return state;
+            });
+
+            const choiceModal = match.hostPage.locator('#modal-root');
+            const option = match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`);
+            await expect(choiceModal).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(option).toBeVisible({ timeout: 10000 });
+            await expect(option).toHaveAttribute('aria-label', /作战室/);
+            await expect(option.locator(`[data-testid="dt-card-choice-preview-${HAND_SELECTION_CARD_ID}"]`)).toBeVisible();
+            await expect(option).not.toContainText('作战室');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-reference-dicethrone-hand-card-choice');
+
+            await option.click();
+            await choiceModal.getByRole('button', { name: /确认|Confirm/i }).click();
+            await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
+            await expect(choiceModal).toBeHidden({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-reference-dicethrone-hand-card-resolved');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实在线双玩家应能选择战术家和咒缚海盗并看到面板、提示板、手牌与 HUD', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -6398,7 +6474,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
             await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toBeVisible({ timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toContainText('作战室');
+            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toHaveAttribute('aria-label', /作战室/);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-host-select-hand-card-choice');
             await match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`).click();
             await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
@@ -6424,7 +6500,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             await playCrowsNestUntilBranch(match, crowsNestCard, crowsNestTargetCards, 'loot');
             await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toContainText('作战室', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toHaveAttribute('aria-label', /作战室/, { timeout: 10000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '15-host-crows-nest-loot-discard-choice');
 
             await match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`).click();
@@ -8394,7 +8470,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await advanceButton.click();
 
             await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${DEEP_SEA_DIVE_TARGET_CARD_ID}`)).toContainText('战略防御', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${DEEP_SEA_DIVE_TARGET_CARD_ID}`)).toHaveAttribute('aria-label', /战略防御/, { timeout: 10000 });
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.CP, 4);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.CP, 6);
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
@@ -10154,7 +10230,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await guestModal.getByRole('button', { name: /^令对手选择弃掉 1 张牌$/ }).click();
 
             await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`)).toContainText('战略防御', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`)).toHaveAttribute('aria-label', /战略防御/, { timeout: 10000 });
             await match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`).click();
             await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
 

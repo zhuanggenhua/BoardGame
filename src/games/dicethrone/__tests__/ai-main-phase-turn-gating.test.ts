@@ -458,12 +458,13 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         } as never)).toEqual({ valid: true });
     });
 
-    it('线上反馈：AI 处于 daze 时不得生成太极减伤动作，但仍可跳过 Token 响应', () => {
+    it('规则核对：AI 处于眩晕时仍可在受伤前使用气减伤，眩晕只限制攻击', () => {
         const state = createHeroMatchup('barbarian', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';
         state.sys.flowHalted = true;
         state.core.activePlayerId = '0';
         state.core.players['1'].tokens[TOKEN_IDS.TAIJI] = 3;
+        state.core.players['1'].tokens[TOKEN_IDS.FLIGHT] = 1;
         state.core.players['1'].statusEffects[STATUS_IDS.DAZE] = 1;
         state.core.pendingAttack = {
             attackerId: '0',
@@ -487,7 +488,7 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
 
-        expect(actions).not.toContainEqual(expect.objectContaining({
+        expect(actions).toContainEqual(expect.objectContaining({
             kind: 'token-response',
             commands: [expect.objectContaining({
                 type: 'USE_TOKEN',

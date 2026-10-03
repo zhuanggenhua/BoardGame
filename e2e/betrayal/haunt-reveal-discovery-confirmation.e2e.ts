@@ -1,4 +1,5 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+// e2e-harness-boundary: representative-state
+import { expect, test, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 import {
     clearEvidenceScreenshotsForTest,
     getEvidenceScreenshotPath,
@@ -18,7 +19,6 @@ import {
 } from '../helpers/common';
 import {
     initBetrayalContext,
-    dispatchHarnessCommand,
     injectCore,
     saveScreenshot,
     waitForBetrayalPageReady,
@@ -398,7 +398,23 @@ async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, filename: 
     );
 }
 
-async function acknowledgeRemainingPlayers(page: Page): Promise<void> {
+async function readInjectedCore(page: Page): Promise<BetrayalCore> {
+    const core = await page.evaluate(() => (
+        (window as typeof window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } })
+            .__BG_TEST_HARNESS__?.state?.get?.().core ?? null
+    ));
+    if (!core) throw new Error('山屋预兆矩阵未读取到正式状态');
+    return core;
+}
+
+async function syncCoreFromPage(sourcePage: Page, ...targetPages: Page[]): Promise<void> {
+    const core = await readInjectedCore(sourcePage);
+    for (const targetPage of targetPages) {
+        await injectCore(targetPage, core);
+    }
+}
+
+async function acknowledgeRemainingPlayers(page: Page, context: BrowserContext): Promise<void> {
     for (let attempt = 0; attempt < 8; attempt += 1) {
         const pending = await page.evaluate(() => (
             (window as typeof window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } })
@@ -408,7 +424,32 @@ async function acknowledgeRemainingPlayers(page: Page): Promise<void> {
         const requiredPlayerIds = pending.requiredPlayerIds?.length ? pending.requiredPlayerIds : [pending.playerId];
         const nextPlayerId = requiredPlayerIds.find((playerId) => !(pending.acknowledgedPlayerIds ?? []).includes(playerId));
         if (!nextPlayerId) return;
-        await dispatchHarnessCommand(page, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, nextPlayerId, { resolutionId: pending.id });
+        const viewerPlayerId = new URL(page.url(), 'http://local.test').searchParams.get('playerID') ?? '0';
+        const participantPage = viewerPlayerId === nextPlayerId ? page : await context.newPage();
+        try {
+            if (participantPage !== page) {
+                await participantPage.goto(`/play/betrayal?players=3&playerID=${nextPlayerId}&seat0=human&seat1=human&seat2=human`, { waitUntil: 'domcontentloaded' });
+                await waitForBetrayalPageReady(participantPage);
+                await syncCoreFromPage(page, participantPage);
+            }
+            const continueButton = participantPage.getByTestId('betrayal-discovery-continue');
+            await expect(continueButton).toBeVisible();
+            await expect(continueButton).toBeEnabled();
+            await expect(continueButton).toHaveText(/返回牌桌|确认/);
+            await continueButton.click();
+            await expect.poll(async () => {
+                const nextPending = await participantPage.evaluate(() => (
+                    (window as typeof window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } })
+                        .__BG_TEST_HARNESS__?.state?.get?.().core?.pendingCardResolutionQueue?.[0]
+                ));
+                return nextPending?.acknowledgedPlayerIds?.includes(nextPlayerId) ?? true;
+            }).toBe(true);
+            if (participantPage !== page) {
+                await syncCoreFromPage(participantPage, page);
+            }
+        } finally {
+            if (participantPage !== page) await participantPage.close();
+        }
     }
     throw new Error('山屋预兆矩阵确认队列超过安全上限');
 }
@@ -476,7 +517,7 @@ test('普通预兆触发作祟时先确认预兆和检定，再承接作祟揭�
     await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
     await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('已确认 1/3');
     await saveEvidenceScreenshot(page, testInfo, DISCOVERY_SELF_CONFIRMED_SCREENSHOT);
-    await acknowledgeRemainingPlayers(page);
+    await acknowledgeRemainingPlayers(page, context);
     await expect(discoveryPanel).toHaveCount(0);
     const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
     await expect(scenarioReader, '确认触发来源后才自动打开一次剧本书').toBeVisible({ timeout: 10000 });
@@ -532,7 +573,7 @@ test('旁观视角也先看触发预兆和检定，再本地进入剧本阅读',
 
     await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
     await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('已确认 1/3');
-    await acknowledgeRemainingPlayers(page);
+    await acknowledgeRemainingPlayers(page, context);
     await expect(discoveryPanel).toHaveCount(0);
     const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
     await expect(scenarioReader, '旁观者本地确认看完结果后才进入剧本阅读').toBeVisible({ timeout: 10000 });
@@ -585,7 +626,7 @@ test('普通预兆未触发作祟时同屏显示获得预兆和作祟检定且�
     await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
     await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('已确认 1/3');
     await saveEvidenceScreenshot(page, testInfo, SAFE_OMEN_SELF_CONFIRMED_SCREENSHOT);
-    await acknowledgeRemainingPlayers(page);
+    await acknowledgeRemainingPlayers(page, context);
     await expect(discoveryPanel).toHaveCount(0);
     await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
     await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟前|恶兆前|pre-haunt/i);
@@ -618,11 +659,11 @@ test('普通物品停留三秒后自动飞入持有区，未来可改写骰子�
     const ordinaryPanel = page.getByTestId('betrayal-discovery-panel');
     await expect(ordinaryPanel).toBeVisible({ timeout: 10000 });
     await expect(ordinaryPanel).toContainText(MEDICAL_KIT_ITEM_CARD.name);
-    await expect(ordinaryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认 0/1');
+    await expect(ordinaryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('返回牌桌');
     await saveEvidenceScreenshot(page, testInfo, '物品-普通物品-三秒等待中.jpg');
     await page.waitForTimeout(2500);
     await expect(ordinaryPanel).toBeVisible();
-    await expect(ordinaryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认 0/1');
+    await expect(ordinaryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('返回牌桌');
     await expect.poll(
         () => readHauntDiscoveryConfirmationState(page),
         { timeout: 10000 },
@@ -635,10 +676,10 @@ test('普通物品停留三秒后自动飞入持有区，未来可改写骰子�
     const diceModifierPanel = page.getByTestId('betrayal-discovery-panel');
     await expect(diceModifierPanel).toBeVisible({ timeout: 10000 });
     await expect(diceModifierPanel).toContainText(LUCKY_COIN_ITEM_CARD.name);
-    await expect(diceModifierPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认 0/1');
+    await expect(diceModifierPanel.getByTestId('betrayal-discovery-continue')).toHaveText('返回牌桌');
     await page.waitForTimeout(2500);
     await expect(diceModifierPanel).toBeVisible();
-    await expect(diceModifierPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认 0/1');
+    await expect(diceModifierPanel.getByTestId('betrayal-discovery-continue')).toHaveText('返回牌桌');
     await saveEvidenceScreenshot(page, testInfo, '物品-幸运硬币-三秒等待中.jpg');
     await expect.poll(
         () => readHauntDiscoveryConfirmationState(page),
@@ -758,7 +799,7 @@ test('当前9张预兆未触发作祟时均需所有玩家完成一个确认步�
         }
 
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
-        await acknowledgeRemainingPlayers(page);
+    await acknowledgeRemainingPlayers(page, context);
         await expect(discoveryPanel).toHaveCount(0);
         await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟前|恶兆前|pre-haunt/i);
@@ -835,7 +876,7 @@ test('当前9张预兆触发作祟时均先确认预兆和检定，再进入作�
         }
 
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
-        await acknowledgeRemainingPlayers(page);
+    await acknowledgeRemainingPlayers(page, context);
         await expect(discoveryPanel).toHaveCount(0);
         await expect(page.getByTestId('betrayal-scenario-reader-dialog'), `预兆「${omenCard.name}」确认后才打开剧本书承接`).toBeVisible({
             timeout: 10000,

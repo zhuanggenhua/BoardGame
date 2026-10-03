@@ -16,6 +16,7 @@ interface ModalBaseProps {
     contentWrapperClassName?: string;
     contentWrapperStyle?: CSSProperties;
     visualStyle?: 'default' | 'home-v2';
+    skipEnterAnimation?: boolean;
     children: ReactNode;
 }
 
@@ -67,6 +68,7 @@ export const ModalBase = memo(({
     contentWrapperClassName,
     contentWrapperStyle,
     visualStyle = 'default',
+    skipEnterAnimation = false,
     children,
 }: ModalBaseProps) => {
     const resolvedOverlayStyle: CSSProperties = { zIndex: UI_Z_INDEX.modalOverlay, ...overlayStyle };
@@ -108,7 +110,7 @@ export const ModalBase = memo(({
         <>
             <motion.div
                 variants={overlayVariants}
-                initial="initial"
+                initial={skipEnterAnimation ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 onClick={closeOnBackdrop ? onClose : undefined}
@@ -121,7 +123,7 @@ export const ModalBase = memo(({
 
             <motion.div
                 variants={resolvedContentVariants}
-                initial="initial"
+                initial={skipEnterAnimation ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 className={clsx(

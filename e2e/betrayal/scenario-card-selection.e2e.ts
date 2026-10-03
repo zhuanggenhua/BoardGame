@@ -45,10 +45,10 @@ test.describe('山屋惊魂剧本卡候选选择', () => {
         await expect(page.getByTestId('betrayal-scenario-option-mummy-rampage')).toContainText('当前提议');
         await expect(page.getByTestId('betrayal-scenario-option-mummy-rampage')).toHaveAttribute('data-scenario-card-status', 'implemented');
         await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('赤红杰克归来');
-        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('待接入');
+        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('暂不可选');
         await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toHaveAttribute('data-scenario-card-status', 'contract-pending');
         await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toContainText('永远的朋友');
-        await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toContainText('待接入');
+        await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toContainText('暂不可选');
         await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toHaveAttribute('data-scenario-card-status', 'contract-pending');
         await saveScreenshot(page, CANDIDATES_SCREENSHOT);
 

@@ -845,6 +845,8 @@ export class DiceBoxThreeEngine {
             canvas.dataset.diceAnimationStage = stage;
             canvas.dataset.diceAnimationStageAt = String(Math.round(this.debugAnimationStageAt));
         }
+        this.container.dataset.diceAnimationStage = stage;
+        this.container.dataset.diceAnimationStageAt = String(Math.round(this.debugAnimationStageAt));
         if (typeof window !== 'undefined' && (window as { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__) {
             console.warn(`[DEBUG-DICE-SETTLE] ${stage}`);
         }
@@ -1823,15 +1825,50 @@ export class DiceBoxThreeEngine {
     }
 
     getPhysicsState(index: number, id: number, settled: boolean): DicePhysicsState | null {
-        const layout = this.getProjectedLayout(index, id);
         const motion = this.getMotionSnapshot(index);
-        if (!layout || !motion) return null;
+        if (!motion) return null;
+        const layout = this.getProjectedLayout(index, id) ?? this.getFallbackProjectedLayout(index, id);
+        if (!layout) return null;
         return {
             id,
             layout,
             motion,
             settled,
             value: readDieValue(this.box.diceList[index]),
+        };
+    }
+
+    private getFallbackProjectedLayout(index: number, id: number): DiceBoxProjectedLayout | null {
+        const canvas = this.box.renderer?.domElement;
+        const canvasWidth = canvas?.clientWidth || canvas?.width || this.container.clientWidth || 0;
+        const canvasHeight = canvas?.clientHeight || canvas?.height || this.container.clientHeight || 0;
+        if (canvasWidth <= 0 || canvasHeight <= 0) return null;
+
+        const count = Math.max(1, this.box.diceList.length);
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 64;
+        const size = Math.max(40, Math.min(baseScale * 0.9, Math.min(canvasWidth, canvasHeight) * 0.32));
+        const spacing = Math.min(size * 1.18, Math.max(size * 0.9, canvasWidth / Math.max(2.5, count + 1)));
+        const x = canvasWidth / 2 + (index - (count - 1) / 2) * spacing;
+        const y = canvasHeight / 2;
+        return {
+            id,
+            x,
+            y,
+            width: size,
+            height: size,
+            visualWidth: size,
+            visualHeight: size,
+            outlineX: x,
+            outlineY: y,
+            outlineWidth: size,
+            outlineHeight: size,
+            minX: x - size / 2,
+            maxX: x + size / 2,
+            minY: y - size / 2,
+            maxY: y + size / 2,
+            rotateX: 0,
+            rotateY: 0,
+            rotateZ: 0,
         };
     }
 
@@ -2300,7 +2337,7 @@ export class DiceBoxThreeEngine {
 
     private async rollWithContainedThrow(values: number[]): Promise<boolean> {
         const runtime = this.box as DiceBoxInternalRuntime;
-        if (!runtime.startClickThrow || !runtime.spawnDice || !runtime.simulateThrow) {
+        if (!runtime.startClickThrow || !runtime.spawnDice) {
             this.setDebugAnimationStage('contained-throw-unavailable');
             return false;
         }
@@ -2326,10 +2363,23 @@ export class DiceBoxThreeEngine {
         for (const vector of vectors) {
             runtime.spawnDice(vector);
         }
-        runtime.simulateThrow();
-        this.setDebugAnimationStage('contained-throw-simulate-complete');
-        runtime.steps = 0;
-        runtime.iteration = 0;
+        // Seed the third-party bodies before the deterministic visible tween.
+        // The library's synchronous loop can otherwise spin forever when a die
+        // never reports sleep in WebGL/headless timing, so cap this preparation
+        // pass and keep the visible tween as the authoritative presentation.
+        const previousIterationLimit = runtime.iterationLimit;
+        const boundedIterationLimit = Number.isFinite(previousIterationLimit)
+            ? Math.min(Math.max(previousIterationLimit as number, 1), 240)
+            : 240;
+        runtime.iterationLimit = boundedIterationLimit;
+        try {
+            runtime.simulateThrow?.();
+            this.setDebugAnimationStage('contained-throw-simulate-complete');
+        } finally {
+            runtime.iterationLimit = previousIterationLimit;
+            runtime.steps = 0;
+            runtime.iteration = 0;
+        }
 
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
@@ -2419,11 +2469,16 @@ export class DiceBoxThreeEngine {
             let stepIndex = 0;
             let frameId: number | null = null;
             let timerId: number | null = null;
+            let watchdogId: number | null = null;
             let completed = false;
             const fail = (error: unknown) => {
                 if (completed) return;
                 completed = true;
                 clearScheduledStep();
+                if (watchdogId !== null) {
+                    window.clearTimeout(watchdogId);
+                    watchdogId = null;
+                }
                 reject(error);
             };
             const clearScheduledStep = () => {
@@ -2520,6 +2575,10 @@ export class DiceBoxThreeEngine {
                         this.box.scene?.updateMatrixWorld?.(true);
                         this.syncDiceHighlightShells();
                         this.renderFrame();
+                        if (watchdogId !== null) {
+                            window.clearTimeout(watchdogId);
+                            watchdogId = null;
+                        }
                         resolve();
                         return;
                     }
@@ -2530,6 +2589,9 @@ export class DiceBoxThreeEngine {
                     fail(error);
                 }
             };
+            watchdogId = window.setTimeout(() => {
+                fail(new Error(`contained dice animation timed out after ${duration + 1200}ms`));
+            }, duration + 1200);
             scheduleStep();
         });
     }

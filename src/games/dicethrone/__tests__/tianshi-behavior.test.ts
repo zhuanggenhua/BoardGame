@@ -828,6 +828,21 @@ describe('炽天使领域行为', () => {
         expect(damageEvents.some(event => event.payload.targetId === '0')).toBe(false);
     });
 
+    it('神圣降临可被移除但不可被 TRANSFER_STATUS 转移', () => {
+        const state = createTianshiState();
+        state.core.players['0'].tokens[TOKEN_IDS.DIVINE_ARRIVAL] = 1;
+
+        const events = DiceThroneDomain.execute(state, command('TRANSFER_STATUS', '1', {
+            fromPlayerId: '0',
+            toPlayerId: '1',
+            statusId: TOKEN_IDS.DIVINE_ARRIVAL,
+        }), createQueuedRandom([1]));
+
+        expect(events).toHaveLength(0);
+        expect(state.core.players['0'].tokens[TOKEN_IDS.DIVINE_ARRIVAL]).toBe(1);
+        expect(state.core.players['1'].tokens[TOKEN_IDS.DIVINE_ARRIVAL] ?? 0).toBe(0);
+    });
+
     it('神圣降临的直接伤害会触发对手的神圣祝福致死保护', () => {
         const state = createTianshiThreePlayerState();
         state.core.activePlayerId = '0';

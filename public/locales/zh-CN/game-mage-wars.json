@@ -185,6 +185,8 @@
     "passQuickcast": "让过快速施法",
     "endAction": "结束行动",
     "endTurn": "回合结束",
+    "activateAbility": "发动能力",
+    "rebindSpell": "重新绑定",
     "close": "关闭"
   },
   "interaction": {

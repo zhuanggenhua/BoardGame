@@ -23,8 +23,11 @@ const imageDetail = document.querySelector("#imageDetail");
 const imageDetailTitle = document.querySelector("#imageDetailTitle");
 const imageDetailDescription = document.querySelector("#imageDetailDescription");
 const imageDetailClose = document.querySelector("#imageDetailClose");
+const imageDetailPrevious = document.querySelector("#imageDetailPrevious");
+const imageDetailNext = document.querySelector("#imageDetailNext");
 const imageDetailViewport = document.querySelector("#imageDetailViewport");
 const imageDetailSummary = document.querySelector("#imageDetailSummary");
+const imageDetailPosition = document.querySelector("#imageDetailPosition");
 
 const MIN_SCALE = 0.12;
 const TILE_WIDTH = 360;
@@ -121,12 +124,25 @@ const updateSummary = () => {
 const updateDetailSummary = () => {
   if (!detailItem) {
     imageDetailSummary.textContent = "点击图片后加载原图。";
+    imageDetailPosition.textContent = "";
     return;
   }
   const width = Math.round(detailNaturalSize.width);
   const height = Math.round(detailNaturalSize.height);
   const zoom = Math.round(detailTransform.scale * 100);
   imageDetailSummary.textContent = `${width}×${height} 原图 · 缩放 ${zoom}%`;
+};
+
+const updateDetailNavigation = () => {
+  const index = detailItem ? items.findIndex((item) => item.relativePath === detailItem.relativePath) : -1;
+  const hasCurrentItem = index >= 0;
+  const hasPreviousItem = hasCurrentItem && index > 0;
+  const hasNextItem = hasCurrentItem && index < items.length - 1;
+  imageDetailPrevious.disabled = !hasPreviousItem;
+  imageDetailNext.disabled = !hasNextItem;
+  imageDetailPosition.textContent = hasCurrentItem ? `${index + 1} / ${items.length}` : "";
+  imageDetailPrevious.title = hasPreviousItem ? "上一张图片" : "已经是第一张";
+  imageDetailNext.title = hasNextItem ? "下一张图片" : "已经是最后一张";
 };
 
 const applyTransform = () => {
@@ -171,6 +187,7 @@ const closeDetail = () => {
   detailMediaElement = null;
   imageDetail.classList.remove("open");
   imageDetail.setAttribute("aria-hidden", "true");
+  updateDetailNavigation();
   updateDetailSummary();
 };
 
@@ -179,6 +196,7 @@ const openDetail = (item) => {
   detailDragState = null;
   detailItem = item;
   detailMediaElement?.remove();
+  updateDetailNavigation();
 
   const media = item.kind === "video" ? document.createElement("video") : document.createElement("img");
   media.className = "image-detail-media";
@@ -214,6 +232,15 @@ const openDetail = (item) => {
   if (item.kind !== "video" && media.complete) {
     onReady();
   }
+};
+
+const navigateDetail = (offset) => {
+  if (!detailItem) return;
+  const currentIndex = items.findIndex((item) => item.relativePath === detailItem.relativePath);
+  const nextItem = items[currentIndex + offset];
+  if (!nextItem) return;
+  selectItem(nextItem);
+  openDetail(nextItem);
 };
 
 const zoomDetailAt = (clientX, clientY, nextScale) => {
@@ -443,6 +470,9 @@ const renderIndex = (indexMatchedCount = 0) => {
 
     button.addEventListener("click", () => {
       focusItem(item);
+      if (detailItem) {
+        openDetail(item);
+      }
       copyPath(item).catch(() => {});
     });
 
@@ -618,6 +648,15 @@ const loadDirectory = async ({ preserveView = true } = {}) => {
   items = nextItems;
   listSignature = nextSignature;
   hasLoadedDirectory = true;
+  if (detailItem) {
+    const refreshedDetailItem = nextItems.find((item) => item.relativePath === detailItem.relativePath);
+    if (refreshedDetailItem) {
+      detailItem = refreshedDetailItem;
+      updateDetailNavigation();
+    } else {
+      closeDetail();
+    }
+  }
   renderBoard();
   renderIndex(payload.indexMatchedCount ?? 0);
   if (!preserveView || previousSignature.length === 0) {
@@ -645,6 +684,8 @@ zoomOutButton.addEventListener("click", () => {
 fitViewButton.addEventListener("click", fitView);
 resetViewButton.addEventListener("click", resetView);
 imageDetailClose.addEventListener("click", closeDetail);
+imageDetailPrevious.addEventListener("click", () => navigateDetail(-1));
+imageDetailNext.addEventListener("click", () => navigateDetail(1));
 
 imageDetailViewport.addEventListener("wheel", (event) => {
   event.preventDefault();
@@ -775,6 +816,11 @@ viewport.addEventListener("pointercancel", stopDrag);
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && detailItem) {
     closeDetail();
+    return;
+  }
+  if (detailItem && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    event.preventDefault();
+    navigateDetail(event.key === "ArrowLeft" ? -1 : 1);
     return;
   }
   if (detailItem && (event.key === "+" || event.key === "=" || event.key === "-")) {

@@ -330,6 +330,8 @@ export interface PendingAttack {
     /** 2v2 目标掷骰 5/6 分支等待玩家确认目标时为 true */
     targetingSelectionPending?: boolean;
     targetingSelectionResolved?: boolean;
+    /** 三人混战中，攻击领袖后已发放一次领袖奖励牌。 */
+    skirmishLeaderBonusDrawn?: boolean;
     isDefendable: boolean;
     damage?: number;
     sourceAbilityId?: string;
@@ -1089,6 +1091,8 @@ export interface DiceThroneCore {
 // ============================================================================
 
 export const INITIAL_HEALTH = 50;
+export const SKIRMISH_INITIAL_HEALTH = 35;
+export const SKIRMISH_MAX_HEALTH = SKIRMISH_INITIAL_HEALTH + 10;
 export const MAX_HEALTH = 60; // 规则：玩家可以治疗到超过初始生命值最多 10 点
 export const INITIAL_CP = 2; // 规则：起始 CP 为 2（1v1）
 export const CP_MAX = 15;

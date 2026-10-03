@@ -64,7 +64,7 @@ export function MobileGestureWrapper({ children }: MobileGestureWrapperProps) {
       
       {/* 手势提示（首次显示） */}
       {isMobile && isGamePage && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-[calc(env(safe-area-inset-left)+1rem)] z-[10000] bg-parchment-brown/95 text-parchment-cream px-3 py-2 rounded-lg shadow-lg border-2 border-parchment-gold/30 backdrop-blur-sm font-serif text-xs max-w-[200px]">
+        <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-[calc(env(safe-area-inset-left)+1rem)] z-[10000] bg-parchment-brown/95 text-parchment-cream px-3 py-2 rounded-lg shadow-lg border-2 border-parchment-gold/30 backdrop-blur-sm font-serif text-xs max-w-[200px]">
           <div className="flex items-start gap-2">
             <svg className="w-4 h-4 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />

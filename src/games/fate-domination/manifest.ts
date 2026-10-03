@@ -7,6 +7,7 @@ const entry: GameManifestEntry = {
     id: 'fate-domination',
     type: 'game',
     enabled: true,
+    statusTag: 'under_construction',
     titleKey: 'games.fate-domination.title',
     descriptionKey: 'games.fate-domination.description',
     category: 'card',

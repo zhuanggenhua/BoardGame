@@ -36,6 +36,7 @@ import {
     getResponderQueue,
     getTokenStackLimit,
     getSeatingOrder,
+    isSkirmishMode,
     isTeamMode,
     getAttackSnapshotDieIndex,
     isAttackSnapshotDieId,
@@ -54,7 +55,7 @@ import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
 import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
-import { canRemoveStatusFromPlayer, isRemovableStatusId } from './statusRemoval';
+import { canRemoveStatusFromPlayer, canTransferStatus, isRemovableStatusId } from './statusRemoval';
 import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
@@ -549,7 +550,7 @@ export function execute(
                 events.push(abilityActivatedEvent);
                 
                 // 2. 再发起放击事件
-                const defenderId = isTeamMode(state)
+                const defenderId = isTeamMode(state) || isSkirmishMode(state)
                     ? undefined
                     : (getDefaultOpponentId(state, state.activePlayerId) ?? getNextPlayerId(state));
                 const isDefendable = isDefendableAttack(state, state.activePlayerId, abilityId);
@@ -848,11 +849,8 @@ export function execute(
                 const fromTokens = fromPlayer.tokens[statusId] ?? 0;
                 
                 // 检查是否可被转移（不可移除的 token 也不能被转移）
-                if (!isRemovableStatusId(state, statusId)) {
+                if (!canTransferStatus(state, command.playerId, fromPlayerId, statusId)) {
                     // 不可移除的 token 不能被转移，跳过
-                    break;
-                }
-                if (!canRemoveStatusFromPlayer(state, command.playerId, fromPlayerId, statusId)) {
                     break;
                 }
                 
@@ -1212,6 +1210,16 @@ export function execute(
                 phase,
                 { responseWindowType },
             )) break;
+
+            // 自定义处理器缺失时必须在扣除 CP / Token 前拒绝执行。
+            // 旧路径会先产生成本事件，再因为找不到 handler 静默结束，
+            // 造成“资源已扣、玩家可见效果未发生”的线上反馈。
+            const customActionHandler = action.type === 'custom' && action.customActionId
+                ? getCustomActionHandler(action.customActionId)
+                : undefined;
+            if (action.type === 'custom' && action.customActionId && !customActionHandler) {
+                break;
+            }
             if (action.type === 'rerollDie') {
                 if (!Number.isInteger(targetDieId)) break;
                 const currentRollContext = resolveCurrentRollContext(state, phase);
@@ -1273,10 +1281,9 @@ export function execute(
                     ...buildDrawEvents(state, command.playerId, action.drawCount ?? 1, random, command.type, timestamp + 1, passiveId)
                 );
             } else if (action.type === 'custom' && action.customActionId) {
-                const handler = getCustomActionHandler(action.customActionId);
-                if (handler) {
+                if (customActionHandler) {
                     const opponentId = getDefaultOpponentId(state, command.playerId) ?? command.playerId;
-                    events.push(...handler({
+                    events.push(...customActionHandler({
                         ctx: {
                             attackerId: command.playerId,
                             defenderId: opponentId,

@@ -161,7 +161,7 @@ function treasure(id: string): MunchkinSpecialCardDescriptor {
 export const MUNCHKIN_TREASURE_CARD_DEFS: CardDef[] = [
     treasureMinion(treasure('munchkin_treasure_dwarf_hireling'), 2),
     treasureMinion(treasure('munchkin_treasure_halfling_hireling'), 2, ['onPlay']),
-    treasureMinion(treasure('munchkin_treasure_tiger_steed'), 3),
+    treasureMinion(treasure('munchkin_treasure_tiger_steed'), 3, ['onPlay']),
     treasureAction(treasure('munchkin_treasure_bag_of_caltrops'), { subtype: 'ongoing', ongoingTarget: 'base', playNeedsBase: true }),
     treasureAction(treasure('munchkin_treasure_spiky_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_rocket_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, abilityTags: ['talent'] }),

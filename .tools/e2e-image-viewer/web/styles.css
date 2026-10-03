@@ -311,6 +311,44 @@ input:focus-visible {
   padding: 2px 8px;
 }
 
+.image-detail-nav {
+  align-items: center;
+  display: flex;
+  inset: 58px 12px 32px;
+  justify-content: space-between;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.image-detail-nav-button {
+  align-items: center;
+  background: rgba(27, 32, 41, 0.86);
+  border-color: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 36px;
+  height: 48px;
+  justify-content: center;
+  line-height: 1;
+  min-height: 48px;
+  min-width: 48px;
+  opacity: 0.92;
+  padding: 0 0 4px;
+  pointer-events: auto;
+  transition: background 120ms ease, opacity 120ms ease;
+}
+
+.image-detail-nav-button:hover:not(:disabled) {
+  background: rgba(43, 51, 68, 0.96);
+  opacity: 1;
+}
+
+.image-detail-nav-button:disabled {
+  cursor: default;
+  opacity: 0.28;
+}
+
 .image-detail-viewport {
   background:
     linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),

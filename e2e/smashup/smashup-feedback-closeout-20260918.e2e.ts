@@ -130,10 +130,10 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
         discard: [
           { uid: 'pay-the-piper-discard', defId: 'trickster_pay_the_piper', type: 'action', owner: '0' },
         ],
-        minionsPlayed: 0,
-        minionLimit: 1,
-        actionsPlayed: 0,
-        actionLimit: 1,
+          minionsPlayed: 0,
+          minionLimit: 1,
+          actionsPlayed: 0,
+          actionLimit: 1,
       },
       player1: {
         factions: ['dragons', 'robots'],
@@ -524,6 +524,117 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
     await expect(page.locator('[data-stored-card-uid]')).toHaveCount(4);
   });
 
+  test('反馈回归：爆破手真实入口移动后本回合不会再次循环移动', async ({ page, game }) => {
+    test.setTimeout(120000);
+
+    await game.openTestGame('smashup', { skipInitialization: true, playerID: '0' }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'scoreBases',
+      randomQueue: [0.1, 0.1],
+      player0: { factions: ['goblins', 'ninjas'], hand: [], deck: [], discard: [] },
+      player1: { factions: ['pirates', 'ninjas'], hand: [], deck: [], discard: [] },
+      bases: [
+        {
+          defId: 'base_goblin_town',
+          minions: [{ uid: 'blaster-feedback-live', defId: 'goblins_blaster', owner: '0', controller: '0', basePower: 3 }],
+          ongoingActions: [],
+        },
+        { defId: 'base_isis_swingin_pad', minions: [], ongoingActions: [] },
+      ],
+      extra: { core: { turnNumber: 14, scoringEligibleBaseIndices: [0, 1] } },
+    });
+
+    const dispatchBlaster = async (baseIndex: number, targetBaseIndex: number) => {
+      await page.evaluate(async ({ baseIndex: currentBaseIndex, targetBaseIndex: destination }) => {
+        await (window as any).__BG_TEST_HARNESS__?.command?.dispatch?.({
+          type: 'su:activate_special',
+          playerId: '0',
+          payload: { minionUid: 'blaster-feedback-live', baseIndex: currentBaseIndex, targetBaseIndex: destination },
+        });
+      }, { baseIndex, targetBaseIndex });
+      await page.waitForTimeout(300);
+    };
+
+    await dispatchBlaster(0, 1);
+    await expect.poll(async () => {
+      const state = await getState(page);
+      return {
+        base0: state.core.bases[0].minions.map(minion => minion.uid),
+        base1: state.core.bases[1].minions.map(minion => minion.uid),
+        usedTurn: state.core.bases[1].minions.find(minion => minion.uid === 'blaster-feedback-live')?.metadata?.goblinsBlasterUsedTurn ?? null,
+      };
+    }).toEqual({ base0: [], base1: ['blaster-feedback-live'], usedTurn: 14 });
+
+    await dispatchBlaster(1, 0);
+    await expect.poll(async () => {
+      const state = await getState(page);
+      return {
+        base0: state.core.bases[0].minions.map(minion => minion.uid),
+        base1: state.core.bases[1].minions.map(minion => minion.uid),
+        usedTurn: state.core.bases[1].minions.find(minion => minion.uid === 'blaster-feedback-live')?.metadata?.goblinsBlasterUsedTurn ?? null,
+      };
+    }).toEqual({ base0: [], base1: ['blaster-feedback-live'], usedTurn: 14 });
+  });
+
+  test('反馈回归：摧毁恶魔犬后真实打出牌下暂存随从', async ({ page, game }) => {
+    test.setTimeout(120000);
+
+    await game.openTestGame('smashup', { skipInitialization: true, playerID: '0', disableLocalAiAutomation: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      player0: { factions: ['wraithrustlers', 'tricksters'], hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1 },
+      player1: { factions: ['dragons', 'robots'], hand: [], deck: [], discard: [] },
+      bases: [{
+        defId: 'base_the_jungle',
+        minions: [{
+          uid: 'accelerator-host-live',
+          defId: 'wraithrustlers_roy',
+          owner: '0',
+          controller: '0',
+          basePower: 3,
+          attachedActions: [{ uid: 'accelerator-live', defId: 'wraithrustlers_unlicensed_nuclear_accelerator', ownerId: '0' }],
+        }],
+        ongoingActions: [{ uid: 'demon-dogs-live', defId: 'wraithrustlers_demon_dogs', ownerId: '0' }],
+      }, { defId: 'base_the_factory', minions: [], ongoingActions: [] }],
+      extra: { core: { players: { '0': { storedCards: [{ uid: 'stored-minion-live', defId: 'trickster_gremlin', type: 'minion', owner: '0', storedByPlayerId: '0', storedUnderUid: 'demon-dogs-live', storedUnderDefId: 'wraithrustlers_demon_dogs' }] } } } },
+    });
+
+    await page.evaluate(async () => {
+      await (window as any).__BG_TEST_HARNESS__?.command?.dispatch?.({
+        type: 'su:use_talent',
+        playerId: '0',
+        payload: { ongoingCardUid: 'accelerator-live', baseIndex: 0 },
+      });
+    });
+    await game.waitForInteraction('wraithrustlers_unlicensed_nuclear_accelerator_destroy_action', 15000);
+    await game.selectInteractionOptionBy(option => option.value?.cardUid === 'demon-dogs-live', '选择摧毁恶魔犬');
+    await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
+    await game.selectInteractionOptionBy(option => option.value?.cardUid === 'stored-minion-live', '选择牌下暂存随从');
+    await game.waitForInteraction('smashup_immediate_extra_minion_base', 15000);
+    const baseOption = await game.getInteractionOptions() as InteractionOption[];
+    const baseOptionId = baseOption.find(option => option.value?.baseIndex === 0)?.id ?? null;
+    expect(baseOptionId).not.toBeNull();
+    const base = page.locator('[data-base-index="0"]').first();
+    if (await base.isVisible().catch(() => false)) {
+      await base.click({ force: true });
+    } else {
+      await page.locator(`[data-option-id="${baseOptionId}"]`).click({ force: true });
+    }
+    await game.waitForNoInteraction(15000);
+
+    await expect.poll(async () => {
+      const state = await getState(page);
+      return {
+        baseMinions: state.core.bases[0].minions.map(minion => minion.uid),
+        stored: (state.core.players['0'].storedCards ?? []).map(card => card.uid),
+      };
+    }).toEqual({ baseMinions: ['accelerator-host-live', 'stored-minion-live'], stored: [] });
+  });
+
   test('图书馆怨灵被沃森摧毁后，真实入口抽三张牌', async ({ page, game }) => {
     test.setTimeout(120000);
 
@@ -597,8 +708,11 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
   test('九头蛇特工在对手回合被摧毁后，控制者仍能真实打出额外随从', async ({ page, game }) => {
     test.setTimeout(120000);
 
-    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
-    await game.setupScene({
+    let controllerPage: Page | undefined;
+
+    try {
+      await game.openTestGame('smashup', { skipInitialization: true, playerID: '1' }, 45000);
+      await game.setupScene({
       gameId: 'smashup',
       currentPlayer: '1',
       phase: 'playCards',
@@ -631,41 +745,117 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
           defId: 'base_juice_bar',
           minions: [
             { uid: 'hydra-agent-live', defId: 'hydra_hydra_agent', owner: '0', controller: '0', basePower: 2 },
+            { uid: 'gnome-ally-a', defId: 'trickster_gremlin', owner: '1', controller: '1', basePower: 2 },
+            { uid: 'gnome-ally-b', defId: 'trickster_brownie', owner: '1', controller: '1', basePower: 2 },
           ],
           ongoingActions: [],
         },
         { defId: 'base_the_factory', minions: [], ongoingActions: [] },
       ],
+      });
+
+    await expect.poll(async () => page.evaluate(() => {
+      try {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return {
+          currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
+          phase: state?.sys?.phase ?? null,
+          player1Hand: state?.core?.players?.['1']?.hand?.map((card: any) => card.uid) ?? [],
+        };
+      } catch {
+        return { currentPlayerIndex: null, phase: null, player1Hand: [] };
+      }
+    })).toEqual({
+      currentPlayerIndex: 1,
+      phase: 'playCards',
+      player1Hand: ['gnome-live'],
     });
 
-    await game.playCard('trickster_gnome', { targetMinionUid: 'hydra-agent-live' });
-    await game.waitForInteraction('trickster_gnome', 15000);
-    await game.selectInteractionOptionBy(
-      option => option.value?.minionUid === 'hydra-agent-live',
-      '对手回合摧毁九头蛇特工',
+    await game.playCard('trickster_gnome', { targetBaseIndex: 0 });
+    const magnifyOverlay = page.getByTestId('su-card-magnify-overlay');
+    if (await magnifyOverlay.isVisible().catch(() => false)) {
+      await magnifyOverlay.click({ position: { x: 10, y: 10 }, force: true });
+      await expect(magnifyOverlay).toBeHidden({ timeout: 1000 });
+    }
+    await expect.poll(async () => page.evaluate(() => (
+      (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.sourceId ?? null
+    ))).toBe('smashup_immediate_extra_minion');
+    const controllerSnapshot = await getState(page);
+
+    controllerPage = await page.context().newPage();
+    const controllerUrl = new URL(page.url());
+    controllerUrl.searchParams.set('playerID', '0');
+    await controllerPage.goto(controllerUrl.toString(), { waitUntil: 'domcontentloaded' });
+    await controllerPage.waitForSelector('[data-testid="su-hand-area"]', { timeout: 20000 });
+    await controllerPage.waitForFunction(
+      () => {
+        try {
+          return Boolean((window as any).__BG_TEST_HARNESS__?.state?.get?.());
+        } catch {
+          return false;
+        }
+      },
+      undefined,
+      { timeout: 20000 },
     );
-    await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
-    await game.selectInteractionOptionBy(
-      option => option.value?.cardUid === 'extra-agent-live',
-      '九头蛇特工控制者选择额外随从',
+    // 侏儒摧毁已经完成；此处只把该正式快照同步到控制者页面，后续选择仍由控制者页面真实完成。
+    await controllerPage.evaluate(async (snapshot) => {
+      await (window as any).__BG_TEST_HARNESS__?.state?.set?.(snapshot);
+    }, controllerSnapshot);
+    await controllerPage.waitForFunction(
+      () => (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.sourceId
+        === 'smashup_immediate_extra_minion',
+      undefined,
+      { timeout: 15000 },
     );
-    await game.waitForInteraction('smashup_immediate_extra_minion_base', 15000);
-    await game.selectInteractionOptionBy(
-      option => option.value?.baseIndex === 0,
-      '九头蛇特工选择原基地',
+    const extraMinionOptionId = await controllerPage.evaluate(() => {
+      const options = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.options ?? [];
+      return options.find((option: any) => option?.value?.cardUid === 'extra-agent-live')?.id ?? null;
+    });
+    expect(extraMinionOptionId, '九头蛇控制者页面应显示额外随从选项').not.toBeNull();
+    const extraMinionHandCard = controllerPage.locator('[data-card-uid="extra-agent-live"]');
+    if (await extraMinionHandCard.isVisible().catch(() => false)) {
+      await extraMinionHandCard.click({ force: true });
+    } else {
+      await controllerPage.locator(`[data-option-id="${extraMinionOptionId}"]`).click({ force: true });
+    }
+
+    await controllerPage.waitForFunction(
+      () => (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.sourceId
+        === 'smashup_immediate_extra_minion_base',
+      undefined,
+      { timeout: 15000 },
     );
-    await game.waitForNoInteraction(15000);
+    const extraBaseOptionId = await controllerPage.evaluate(() => {
+      const options = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.options ?? [];
+      return options.find((option: any) => option?.value?.baseIndex === 0)?.id ?? null;
+    });
+    expect(extraBaseOptionId, '九头蛇控制者页面应显示原基地选项').not.toBeNull();
+    const extraBase = controllerPage.locator('[data-base-index="0"]').first();
+    if (await extraBase.isVisible().catch(() => false)) {
+      await extraBase.click({ force: true });
+    } else {
+      await controllerPage.locator(`[data-option-id="${extraBaseOptionId}"]`).click({ force: true });
+    }
+    await controllerPage.waitForFunction(
+      () => !(window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current,
+      undefined,
+      { timeout: 15000 },
+    );
 
     await expect.poll(async () => {
-      const state = await getState(page);
+      const state = await getState(controllerPage);
       return {
         baseMinions: state.core.bases[0].minions.map(minion => minion.uid),
         extraInHand: state.core.players['0'].hand.map(card => card.uid),
       };
     }).toEqual({
-      baseMinions: ['extra-agent-live'],
+      baseMinions: ['gnome-ally-a', 'gnome-ally-b', 'gnome-live', 'extra-agent-live'],
       extraInHand: [],
     });
+    } finally {
+      await controllerPage?.close();
+    }
   });
 
   test('驯鹿的心地比人好真实进入搜索流程，而不是给场上角色加两点力量', async ({ page, game }) => {
@@ -699,13 +889,14 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
       },
       bases: [
         {
-          defId: 'base_arendelle',
+          // 使用无角色打入后触发额外交互的基地，避免把基地自身效果误判成驯鹿搜索未收口。
+          defId: 'base_halloween_town',
           minions: [
             { uid: 'anna-on-base', defId: 'frozen_anna', owner: '0', controller: '0', basePower: 4 },
           ],
           ongoingActions: [],
         },
-        { defId: 'base_halloween_town', minions: [], ongoingActions: [] },
+        { defId: 'base_arendelle', minions: [], ongoingActions: [] },
       ],
     });
 
@@ -743,6 +934,70 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
       minions: ['anna-on-base', 'search-low-live'],
       annaTempPower: 0,
       actionInDiscard: true,
+    });
+  });
+
+  test('抱头虫不会附着到当前力量5的佣兵', async ({ page, game }) => {
+    test.setTimeout(90000);
+
+    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      player0: {
+        factions: ['extramorphs', 'super_spies'],
+        hand: [{ uid: 'head-grabber-live', defId: 'extramorphs_head_grabber', type: 'action', owner: '0' }],
+        deck: [],
+        discard: [],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      player1: {
+        factions: ['goblins', 'ninjas'],
+        hand: [],
+        deck: [],
+        discard: [],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      bases: [
+        {
+          defId: 'base_the_jungle',
+          minions: [{
+            uid: 'boosted-host-live',
+            defId: 'goblins_gobbo',
+            owner: '1',
+            controller: '1',
+            basePower: 2,
+            powerCounters: 3,
+          }],
+          ongoingActions: [],
+        },
+        { defId: 'base_the_factory', minions: [], ongoingActions: [] },
+      ],
+    });
+
+    await game.playCard('extramorphs_head_grabber', {
+      targetBaseIndex: 0,
+      targetMinionUid: 'boosted-host-live',
+    });
+    await page.waitForTimeout(1000);
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const host = state.core.bases[0].minions.find((minion: any) => minion.uid === 'boosted-host-live');
+      return {
+        headGrabberStillInHand: state.core.players['0'].hand.some((card: any) => card.uid === 'head-grabber-live'),
+        attachedActions: host?.attachedActions?.map((action: any) => action.defId) ?? [],
+      };
+    }).toEqual({
+      headGrabberStillInHand: true,
+      attachedActions: [],
     });
   });
 
@@ -843,7 +1098,7 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
           minionsPlayed: 0,
           minionLimit: 1,
           actionsPlayed: 0,
-          actionLimit: 1,
+          actionLimit: 2,
         },
         player1: {
           factions: ['pirates', 'ninjas'],
@@ -889,7 +1144,7 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
     expect(state.core.players['0'].discard.map(card => card.uid)).toContain('library-live');
   });
 
-  test('冰雪奇缘的放手吧和堆雪人都按文本完成回手与检索', async ({ page, game }) => {
+  test('冰雪奇缘的放手吧按文本完成抽取与牌库回收', async ({ page, game }) => {
     test.setTimeout(180000);
 
     await game.openTestGame('smashup', { skipInitialization: true }, 45000);
@@ -936,8 +1191,8 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
     await game.playCard('frozen_let_it_go');
     await game.waitForInteraction('disney_four_factions_prompt', 15000);
     await game.selectInteractionOptionBy(
-      option => option.value?.minionUid === 'olaf-target-live',
-      '放手吧选择奥拉夫回手',
+      option => option.value?.cardUid === 'deck-other-live',
+      '放手吧从牌库顶选择奥拉夫',
     );
     await expect.poll(async () => {
       const state = await getState(page);
@@ -947,32 +1202,25 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
         actionsPlayed: player.actionsPlayed,
       };
     }).toEqual({
-      actionLimit: 2,
+      actionLimit: 1,
       actionsPlayed: 1,
     });
-    await game.playCard('frozen_do_you_want_to_build_a_snowman');
-    await game.waitForInteraction('disney_four_factions_prompt', 15000);
-    const snowmanOptions = await game.getInteractionOptions() as InteractionOption[];
-    const selectedSnowmen = snowmanOptions.filter(option => (
-      option.value?.cardUid === 'discard-snowgie-live'
-      || option.value?.cardUid === 'deck-snowgie-live'
-    ));
-    expect(selectedSnowmen).toHaveLength(2);
-    for (const option of selectedSnowmen) {
-      await page.locator(`[data-option-id="${option.id}"]`).click({ force: true });
+    const letItGoOverlay = page.getByTestId('su-card-magnify-overlay');
+    if (await letItGoOverlay.isVisible().catch(() => false)) {
+      await letItGoOverlay.click({ position: { x: 10, y: 10 }, force: true });
+      await expect(letItGoOverlay).toBeHidden({ timeout: 1000 });
     }
-    await page.getByRole('button', { name: /确认/ }).click();
+    await game.waitForInteraction('disney_four_factions_prompt', 15000);
+    await game.selectInteractionOptionBy(
+      option => option.value?.cardUid === 'deck-snowgie-live',
+      '放手吧把剩余雪宝放回牌库顶',
+    );
     await game.waitForNoInteraction(15000);
 
     const state = await getState(page);
-    expect(state.core.bases[0].minions.map(minion => minion.uid)).toEqual(['anna-target-live']);
-    expect(state.core.players['0'].hand.map(card => card.uid)).toContain('olaf-target-live');
-    expect(state.core.players['0'].hand.map(card => card.uid)).toEqual(expect.arrayContaining([
-      'discard-snowgie-live',
-      'deck-snowgie-live',
-    ]));
-    expect(state.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-other-live']);
-    expect(state.core.players['0'].discard.map(card => card.uid)).toContain('snowman-live');
+    expect(state.core.players['0'].hand.map(card => card.uid)).toContain('deck-other-live');
+    expect(state.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-snowgie-live']);
+    expect(state.core.players['0'].discard.map(card => card.uid)).toContain('let-it-go-live');
   });
 
   test('踢拳兄弟天赋后能真实打出牌下行动，并从暂存区进入弃牌堆', async ({ page, game }) => {

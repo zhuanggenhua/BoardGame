@@ -501,7 +501,8 @@ export function initHeroState(
     playerId: PlayerId,
     characterId: SelectableCharacterId,
     random: RandomFn,
-    initialDeckCardIds?: string[]
+    initialDeckCardIds?: string[],
+    initialHealth?: number,
 ): HeroState {
     const data = CHARACTER_DATA_MAP[characterId];
     if (!data) {
@@ -540,13 +541,16 @@ export function initHeroState(
 
     // 创建初始资源池
     const resources = resourceSystem.createPool([RESOURCE_IDS.CP, RESOURCE_IDS.HP]);
+    const initializedResources = initialHealth === undefined
+        ? resources
+        : { ...resources, [RESOURCE_IDS.HP]: initialHealth };
 
     return {
         id: `player-${playerId}`,
         characterId,
         playerBoardFace: data.initialPlayerBoardFace,
         // initialDeckCardIds 不包含在返回值中（已消费完毕，避免状态膨胀）
-        resources,
+        resources: initializedResources,
         hand: startingHand,
         deck,
         discard: [],

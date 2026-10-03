@@ -15,6 +15,21 @@ function getMageWarsObjectAbilityButtonTestId(abilityId: MageWarsObjectAbilityId
     return `mage-wars-selected-object-ability-${abilityId.replace(/[^a-z0-9]+/gi, '-')}`;
 }
 
+function getObjectAbilityActionLabel(
+    abilityId: MageWarsObjectAbilityId,
+    abilityName: string,
+    labels: { activate: string; rebind: string },
+): { label: string; visual: 'text-action' | 'action-label' } {
+    if (abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND
+        || abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.MAGE_STAFF_BIND) {
+        return { label: labels.rebind, visual: 'action-label' };
+    }
+    if (abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF) {
+        return { label: labels.activate, visual: 'action-label' };
+    }
+    return { label: abilityName, visual: 'text-action' };
+}
+
 export function MageWarsSelectedAbilityActionDock({
     objectId,
     objectAbilities,
@@ -36,6 +51,10 @@ export function MageWarsSelectedAbilityActionDock({
 }) {
     const { t } = useTranslation('game-mage-wars');
     const availableObjectAbilities = objectAbilities ?? [];
+    const objectAbilityLabels = {
+        activate: t('actions.activateAbility'),
+        rebind: t('actions.rebindSpell'),
+    };
 
     const sourceKey = objectId != null
         ? `object:${objectId}`
@@ -128,23 +147,28 @@ export function MageWarsSelectedAbilityActionDock({
                     </button>
                 ) : null}
                 {objectId ? availableObjectAbilities.map((ability) => (
-                    <button
-                        key={ability.id}
-                        type="button"
-                        className="min-h-9 rounded-[0.25rem] border border-amber-100/28 bg-amber-200 px-3 py-1.5 text-xs font-black text-stone-950 shadow-[0_8px_18px_rgba(0,0,0,0.36)] transition hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
-                        aria-label={ability.name}
-                        title={ability.name}
-                        data-testid={getMageWarsObjectAbilityButtonTestId(ability.id)}
-                        data-tutorial-id={ability.id === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT
-                            ? 'mw-ability-healing-light'
-                            : `mw-object-ability-${ability.id.replace(/[^a-z0-9]+/gi, '-')}`}
-                        data-ability-id={ability.id}
-                        data-ability-visual="text-action"
-                        data-ability-action-placement="source-card-below"
-                        onClick={() => onObjectAbilitySelect(objectId, ability.id)}
-                    >
-                        {ability.name}
-                    </button>
+                    (() => {
+                        const action = getObjectAbilityActionLabel(ability.id, ability.name, objectAbilityLabels);
+                        return (
+                            <button
+                                key={ability.id}
+                                type="button"
+                                className="min-h-9 rounded-[0.25rem] border border-amber-100/28 bg-amber-200 px-3 py-1.5 text-xs font-black text-stone-950 shadow-[0_8px_18px_rgba(0,0,0,0.36)] transition hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                                aria-label={ability.name}
+                                title={ability.name}
+                                data-testid={getMageWarsObjectAbilityButtonTestId(ability.id)}
+                                data-tutorial-id={ability.id === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT
+                                    ? 'mw-ability-healing-light'
+                                    : `mw-object-ability-${ability.id.replace(/[^a-z0-9]+/gi, '-')}`}
+                                data-ability-id={ability.id}
+                                data-ability-visual={action.visual}
+                                data-ability-action-placement="source-card-below"
+                                onClick={() => onObjectAbilitySelect(objectId, ability.id)}
+                            >
+                                {action.label}
+                            </button>
+                        );
+                    })()
                 )) : null}
                 {magePlayerId && mageAbility ? (
                     <button

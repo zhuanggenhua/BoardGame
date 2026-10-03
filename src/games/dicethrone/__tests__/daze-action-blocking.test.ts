@@ -113,7 +113,7 @@ describe('Daze / Stun 语义', () => {
         }
     });
 
-    it('反馈回归：daze 状态会阻止受伤响应者使用太极减伤', () => {
+    it('规则回归：daze 状态不阻止受伤响应者使用太极减伤', () => {
         const core = createDazedDefenderTokenResponseCore();
 
         const result = validateCommand(
@@ -130,19 +130,16 @@ describe('Daze / Stun 语义', () => {
             'main2'
         );
 
-        expect(result.valid).toBe(false);
-        if (!result.valid) {
-            expect(result.error).toBe('player_is_dazed');
-        }
+        expect(result.valid).toBe(true);
     });
 
-    it('反馈回归：daze 状态下不应向受伤响应者暴露太极可用动作', () => {
+    it('规则回归：daze 状态下仍应向受伤响应者暴露太极可用动作', () => {
         const core = createDazedDefenderTokenResponseCore();
 
         expect(
             getUsableTokensForTiming(core, '1', 'beforeDamageReceived')
                 .some(token => token.id === TOKEN_IDS.TAIJI)
-        ).toBe(false);
+        ).toBe(true);
     });
 
     it('反馈回归：daze 状态不阻止受伤响应者跳过 Token 响应', () => {

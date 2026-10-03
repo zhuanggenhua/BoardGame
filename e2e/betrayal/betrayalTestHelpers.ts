@@ -251,6 +251,12 @@ export const warmBetrayalFrontend = async (
 
 export const saveScreenshot = async (page: Page, path: string) => {
   mkdirSync(dirname(path), { recursive: true });
+  await page.mouse.move(2, 2).catch(() => undefined);
+  await page.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+  }).catch(() => undefined);
+  await page.waitForTimeout(90);
   const image = await page.screenshot({
     fullPage: false,
     ...( /\.jpe?g$/i.test(path)
@@ -1433,86 +1439,82 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
 };
 
 export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
-  const physicsSource = rollPanel.getByTestId(
-    "betrayal-house-dice-physics-source",
-  );
-  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
-  await expect
-    .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
-      timeout: 15000,
-    })
-    .toBe("true");
-  await expect
-    .poll(async () => physicsSource.getAttribute("data-dice-skins-ready"), {
-      timeout: 15000,
-    })
-    .toBe("true");
-  await expect
-    .poll(
-      async () => {
-        const [groupReady, settled, engineReady, engineFailure] = await Promise.all([
-          diceGroup.getAttribute("data-dice-physics-ready"),
-          physicsSource.getAttribute("data-dice-settled"),
-          physicsSource.getAttribute("data-dice-engine-ready"),
-          physicsSource.getAttribute("data-dice-engine-failure"),
-        ]);
-        if (settled === "true") return "true";
-        return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
-      },
-      { timeout: 45000 },
-    )
-    .toBe("true");
+  // A discovery result and the board review can briefly render the same roll
+  // with one hidden copy. Always bind the wait to the visible physical dice
+  // source so the E2E follows the player's actual roll panel.
+  const activeRollPanel = rollPanel
+    .page()
+    .locator('[data-testid="betrayal-recent-roll-panel"]:visible')
+    .last();
+  const physicsSource = activeRollPanel
+    .locator('[data-testid="betrayal-house-dice-physics-source"]:visible')
+    .first();
+  const diceGroup = activeRollPanel
+    .locator('[data-testid="betrayal-house-dice-3d-group"]:visible')
+    .first();
   try {
     await expect
-      .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
-        timeout: 45000,
+      .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
+        timeout: 15000,
       })
       .toBe("true");
+    await expect
+      .poll(async () => physicsSource.getAttribute("data-dice-skins-ready"), {
+        timeout: 15000,
+      })
+      .toBe("true");
+    await expect
+      .poll(
+        async () => {
+          const [groupReady, settled, engineReady, engineFailure, motionType, motionId, stateCount, animationStage] = await Promise.all([
+            diceGroup.getAttribute("data-dice-physics-ready"),
+            physicsSource.getAttribute("data-dice-settled"),
+            physicsSource.getAttribute("data-dice-engine-ready"),
+            physicsSource.getAttribute("data-dice-engine-failure"),
+            physicsSource.getAttribute("data-dice-motion-type"),
+            physicsSource.getAttribute("data-dice-motion-id"),
+            diceGroup.getAttribute("data-dice-physics-state-count"),
+            physicsSource.getAttribute("data-dice-animation-stage"),
+          ]);
+          if (settled === "true") return "true";
+          return JSON.stringify({ groupReady, settled, engineReady, engineFailure, motionType, motionId, stateCount, animationStage });
+        },
+        { timeout: 45000 },
+      )
+      .toBe("true");
   } catch (error) {
-    const diagnostics = await rollPanel.evaluate((node) => {
-      const panel = node as HTMLElement;
-      const source = panel.querySelector(
-        '[data-testid="betrayal-house-dice-physics-source"]',
-      ) as HTMLElement | null;
-      const group = panel.querySelector(
-        '[data-testid="betrayal-house-dice-3d-group"]',
-      ) as HTMLElement | null;
-      const canvases = Array.from(panel.querySelectorAll("canvas")).filter(
-        (canvas): canvas is HTMLCanvasElement =>
-          canvas instanceof HTMLCanvasElement,
-      );
-      const debugRegistry =
-        (
-          window as typeof window & {
-            __diceBoxThreeDebug?: Record<string, () => unknown>;
-          }
-        ).__diceBoxThreeDebug ?? {};
-      const activeCanvas =
-        canvases.find((canvas) => {
-          const testId = canvas.dataset.testid;
-          return Boolean(testId && typeof debugRegistry[testId] === "function");
-        }) ??
-        canvases[0] ??
-        null;
-      const activeCanvasTestId =
-        activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+    const diagnostics = await activeRollPanel.evaluate((node) => {
+      const panels = Array.from(document.querySelectorAll('[data-testid="betrayal-recent-roll-panel"]')) as HTMLElement[];
+      const visible = panels.filter((panel) => {
+        const rect = panel.getBoundingClientRect();
+        const style = getComputedStyle(panel);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none" && Number(style.opacity || "1") > 0;
+      });
+      const source = node.querySelector('[data-testid="betrayal-house-dice-physics-source"]') as HTMLElement | null;
+      const group = node.querySelector('[data-testid="betrayal-house-dice-3d-group"]') as HTMLElement | null;
+      const canvases = Array.from(node.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      const debugRegistry = (window as typeof window & {
+        __diceBoxThreeDebug?: Record<string, () => unknown>;
+      }).__diceBoxThreeDebug ?? {};
+      const activeCanvas = canvases.find((canvas) => {
+        const testId = canvas.dataset.testid;
+        return Boolean(testId && typeof debugRegistry[testId] === 'function');
+      }) ?? canvases[0] ?? null;
+      const activeCanvasTestId = activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
       return {
+        ownerTestId: (node as HTMLElement).dataset.testid ?? null,
+        ownerRect: (() => { const rect = (node as HTMLElement).getBoundingClientRect(); return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }; })(),
+        totalPanels: panels.length,
+        visiblePanels: visible.length,
         source: source ? { ...source.dataset } : null,
         group: group ? { ...group.dataset } : null,
         canvases: canvases.map((canvas) => ({ ...canvas.dataset })),
-        activeCanvasTestId,
-        engineDebug: activeCanvasTestId
-          ? (debugRegistry[activeCanvasTestId]?.() ?? null)
-          : null,
+        engineDebug: activeCanvasTestId ? (debugRegistry[activeCanvasTestId]?.() ?? null) : null,
       };
-    });
-    throw new Error(
-      `山屋物理骰子停稳失败：${JSON.stringify(diagnostics)}\n${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    }).catch(() => null);
+    throw new Error(`山屋物理骰子停稳失败：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`);
   }
-  await expectPhysicalDiceStableAfterSettled(rollPanel, {
+  await expectPhysicalDiceStableAfterSettled(activeRollPanel, {
     waitMs: 360,
     maxCenterShiftPx: 1,
     maxGroupDriftPx: 1,
@@ -2572,10 +2574,14 @@ export const expectPhysicalDiceStableAfterSettled = async (
   const maxCenterShiftPx = options.maxCenterShiftPx ?? 24;
   const maxGroupDriftPx = options.maxGroupDriftPx ?? 8;
   const maxRotationShiftRad = options.maxRotationShiftRad ?? 0.08;
-  const physicsSource = rollPanel.getByTestId(
+  const activeRollPanel = rollPanel
+    .page()
+    .locator('[data-testid="betrayal-recent-roll-panel"]:visible')
+    .last();
+  const physicsSource = activeRollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
   );
-  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
+  const diceGroup = activeRollPanel.getByTestId("betrayal-house-dice-3d-group");
   await expect
     .poll(
       async () => {
@@ -2598,7 +2604,7 @@ export const expectPhysicalDiceStableAfterSettled = async (
     .toBe("true");
 
   const readSnapshot = async () =>
-    rollPanel.evaluate((node) => {
+    activeRollPanel.evaluate((node) => {
       type Layout = {
         x: number;
         y: number;

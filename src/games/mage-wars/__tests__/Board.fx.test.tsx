@@ -3436,6 +3436,8 @@ describe('MageWarsBoard object ability choices', () => {
             `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF}"]`,
         );
         expect(abilityButton).not.toBeNull();
+        expect(abilityButton?.getAttribute('data-ability-visual')).toBe('action-label');
+        expect(abilityButton?.textContent).not.toContain('群兽法杖');
         fireEvent.click(abilityButton!);
 
         const wolfCard = screen.getByText('Friendly Wolf')

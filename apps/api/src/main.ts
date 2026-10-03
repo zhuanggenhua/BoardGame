@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import '../../../scripts/infra/load-dev-env.mjs';
 import 'reflect-metadata';
 import { existsSync } from 'fs';
 import { join } from 'path';

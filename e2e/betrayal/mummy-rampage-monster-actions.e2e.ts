@@ -1,3 +1,4 @@
+// e2e-harness-boundary: state-injected-composite
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import sharp from 'sharp';
@@ -6,7 +7,6 @@ import {
     resolveExplorableRoomSlots,
     resolveNextRoomDiscoveryDeckKind,
 } from '../../src/games/betrayal/roomDiscoveryModel';
-import { BETRAYAL_COMMANDS } from '../../src/games/betrayal/commands';
 import {
     resolveBetrayalMonsterMoveTargetRooms,
     resolveBetrayalMonsterMovementGroups,
@@ -25,7 +25,6 @@ import {
     createExchangeReadyRuntimeCore,
     createMedicalKitUseReadyRuntimeCore,
     createRuntimeCore,
-    dispatchHarnessCommand,
     expectBetrayalTransitionTargetsLocator,
     expectVisiblePhysicalDiceBox,
     initBetrayalContext,
@@ -89,6 +88,7 @@ const BRIDGED_CANDIDATE_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/46-桥接�
 const GOLDEN_FLOW_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/53-主黄金链-开局牌桌.jpg`;
 const GOLDEN_FLOW_EVENT_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/54-主黄金链-翻出事件房并结算事件牌.jpg`;
 const GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/55-主黄金链-翻出物品房并获得物品牌.jpg`;
+const GOLDEN_FLOW_ITEM_DISMISSED_SCREENSHOT = `${EVIDENCE_DIR}/55b-主黄金链-物品确认返回牌桌.jpg`;
 const GOLDEN_FLOW_ITEM_USE_SCREENSHOT = `${EVIDENCE_DIR}/56-主黄金链-同类物品牌主动使用治疗.jpg`;
 const GOLDEN_FLOW_OMEN_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/57-主黄金链-翻出预兆并触发作祟检定.jpg`;
 const GOLDEN_FLOW_HERO_READER_SCREENSHOT = `${EVIDENCE_DIR}/58-主黄金链-英雄身份与英雄目标读本.jpg`;
@@ -431,23 +431,23 @@ const readPendingRecentRollAcknowledgement = async (
         };
     });
 
-const acknowledgeRecentRollForAllPlayers = async (page: Page): Promise<void> => {
+const acknowledgeRecentRollForAllPlayers = async (page: Page, context: import('@playwright/test').BrowserContext): Promise<void> => {
     const pendingBefore = await readPendingRecentRollAcknowledgement(page);
     if (!pendingBefore) {
         throw new Error('当前没有待全员确认的投骰结果');
     }
 
-    const continueButton = page.getByTestId('betrayal-roll-continue');
-    await expect(continueButton).toBeVisible();
-    if (await continueButton.isEnabled()) {
-        const acknowledgedBefore = new Set(pendingBefore.acknowledgedPlayerIds).size;
+    const currentViewerPlayerId = new URL(page.url(), 'http://local.test').searchParams.get('playerID') ?? '0';
+    if (pendingBefore.requiredPlayerIds.includes(currentViewerPlayerId)
+        && !pendingBefore.acknowledgedPlayerIds.includes(currentViewerPlayerId)) {
+        const continueButton = page.getByTestId('betrayal-roll-continue');
+        await expect(continueButton).toBeVisible();
+        await expect(continueButton).toBeEnabled();
         await continueButton.click();
         await expect.poll(async () => {
             const pending = await readPendingRecentRollAcknowledgement(page);
-            return pending
-                ? new Set(pending.acknowledgedPlayerIds).size
-                : pendingBefore.requiredPlayerIds.length;
-        }).toBeGreaterThan(acknowledgedBefore);
+            return pending?.acknowledgedPlayerIds.includes(currentViewerPlayerId) ?? true;
+        }).toBe(true);
     }
 
     for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -464,18 +464,25 @@ const acknowledgeRecentRollForAllPlayers = async (page: Page): Promise<void> => 
             await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
             return;
         }
-        await dispatchHarnessCommand(
-            page,
-            BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
-            nextPlayerId,
-            {},
-        );
-        await expect.poll(async () => {
-            const nextPending = await readPendingRecentRollAcknowledgement(page);
-            return nextPending
-                ? nextPending.acknowledgedPlayerIds.includes(nextPlayerId)
-                : true;
-        }).toBe(true);
+        const participantPage = await context.newPage();
+        try {
+            await openBetrayalAsPlayer(participantPage, nextPlayerId);
+            await syncCoreFromPage(page, participantPage);
+            const participantContinue = participantPage.getByTestId('betrayal-roll-continue');
+            await expect(participantContinue).toBeVisible();
+            if (await participantContinue.isEnabled()) {
+                await participantContinue.click();
+            } else {
+                await expect(participantContinue).toContainText('已确认');
+            }
+            await expect.poll(async () => {
+                const participantPending = await readPendingRecentRollAcknowledgement(participantPage);
+                return participantPending?.acknowledgedPlayerIds.includes(nextPlayerId) ?? true;
+            }).toBe(true);
+            await syncCoreFromPage(participantPage, page);
+        } finally {
+            await participantPage.close();
+        }
     }
 
     throw new Error('全员确认投骰结果超过安全上限');
@@ -495,7 +502,6 @@ const cloneExplorer = (explorer: BetrayalCore['currentExplorer']) => ({
     ) as BetrayalCore['currentExplorer']['traitTracks'],
     inventory: explorer.inventory.map((card) => ({ ...card })),
 });
-
 const activateExplorer = (core: BetrayalCore, playerId: string): BetrayalCore => {
     const explorers = [core.currentExplorer, ...core.otherExplorers].map(cloneExplorer);
     const active = explorers.find((explorer) => explorer.playerId === playerId);
@@ -1740,6 +1746,97 @@ const readInjectedCore = async (page: Page): Promise<BetrayalCore> => {
     return core as BetrayalCore;
 };
 
+const syncCoreFromPage = async (sourcePage: Page, ...targetPages: Page[]): Promise<void> => {
+    const core = await readInjectedCore(sourcePage);
+    for (const targetPage of targetPages) {
+        await injectCore(targetPage, core);
+    }
+};
+
+const assertReadyForStateInjection = async (page: Page, label: string): Promise<void> => {
+    await expect(page.getByTestId('betrayal-board'), `${label} 注入前牌桌必须可见`).toBeVisible();
+    await expect(page.getByTestId('betrayal-board'), `${label} 注入前视觉忙碌层必须收口`)
+        .toHaveAttribute('data-betrayal-visual-busy', 'false');
+    await expect(page.getByTestId('betrayal-discovery-panel'), `${label} 注入前发现弹层必须关闭`).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-recent-roll-panel'), `${label} 注入前骰盘必须关闭`).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-scenario-reader-dialog'), `${label} 注入前读本必须关闭`).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-haunt-reveal-cue'), `${label} 注入前作祟提示必须关闭`).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-visual-transition-blocker'), `${label} 注入前动画阻塞层必须关闭`).toHaveCount(0);
+    await expect.poll(async () => (await readMummyGoldenDiscoveryState(page)).pendingCardResolutionCount ?? 0, {
+        message: `${label} 注入前卡牌确认队列必须清空`,
+    }).toBe(0);
+};
+
+const settleDiscoveryForStateInjection = async (page: Page, label: string): Promise<void> => {
+    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+    if (await discoveryPanel.isVisible({ timeout: 750 }).catch(() => false)) {
+        const continueButton = page.getByTestId('betrayal-discovery-continue');
+        if (await continueButton.isVisible({ timeout: 750 }).catch(() => false)) {
+            await expect(continueButton, `${label} 发现结算按钮必须可用`).toBeEnabled();
+            await continueButton.click();
+        }
+    }
+    await expect(discoveryPanel, `${label} 结算后发现弹层必须关闭`).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-recent-roll-panel'), `${label} 结算后骰盘必须关闭`).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-board'), `${label} 结算后视觉忙碌层必须收口`)
+        .toHaveAttribute('data-betrayal-visual-busy', 'false');
+    await expect.poll(async () => (await readMummyGoldenDiscoveryState(page)).pendingCardResolutionCount ?? 0, {
+        message: `${label} 结算后确认队列必须清空`,
+    }).toBe(0);
+};
+
+const completeMummyScenarioFromRealEntry = async (page: Page): Promise<void> => {
+    await page.goto('/play/betrayal?playerID=0', { waitUntil: 'domcontentloaded' });
+    await waitForBetrayalPageReady(page);
+    await expect(page.getByTestId('betrayal-character-select-screen')).toBeVisible({ timeout: 30000 });
+
+    const characterConfirm = page.getByTestId('betrayal-character-confirm');
+    await expect(characterConfirm).toHaveText(/确认/);
+    await characterConfirm.click();
+    await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('木乃伊横行');
+    await page.getByTestId('betrayal-character-scenario-button').click();
+    await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeVisible();
+    const mummyOption = page.getByTestId('betrayal-scenario-option-mummy-rampage');
+    await expect(mummyOption).toBeVisible();
+    await mummyOption.click();
+    const currentScenario = page.getByTestId('betrayal-scenario-select-current');
+    await expect(currentScenario).toBeEnabled();
+    await currentScenario.click();
+    const openingStage = page.getByTestId('betrayal-start-scenario-opening-stage');
+    const waitForScenarioStartState = async (): Promise<'opening' | 'confirm-card' | 'start' > => {
+        return expect.poll(async () => {
+            if (await openingStage.isVisible({ timeout: 250 }).catch(() => false)) {
+                return 'opening' as const;
+            }
+            if (!(await characterConfirm.isVisible({ timeout: 250 }).catch(() => false))) {
+                return 'waiting' as const;
+            }
+            const text = (await characterConfirm.textContent()) ?? '';
+            if (!(await characterConfirm.isEnabled().catch(() => false))) {
+                return 'waiting' as const;
+            }
+            if (text.includes('确认此剧本卡')) {
+                return 'confirm-card' as const;
+            }
+            return text.includes('开始剧本') ? 'start' as const : 'waiting' as const;
+        }, { timeout: 30000 }).not.toBe('waiting') as Promise<'opening' | 'confirm-card' | 'start'>;
+    };
+    let scenarioStartState = await waitForScenarioStartState();
+    if (scenarioStartState === 'confirm-card') {
+        await characterConfirm.click();
+        scenarioStartState = await waitForScenarioStartState();
+    }
+    if (scenarioStartState === 'start') {
+        await characterConfirm.click();
+    }
+    await expect(openingStage).toBeVisible({ timeout: 30000 });
+    await expect(openingStage).toContainText(/英雄开场|序章继续/);
+    await page.getByTestId('betrayal-start-scenario-opening-continue').click();
+    await expect(openingStage).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('betrayal-action-explore')).toBeVisible();
+};
+
 const openBetrayalAsTraitor = async (page: Page): Promise<void> => {
     await page.goto(HUMAN_TRAITOR_TEST_URL, { waitUntil: 'domcontentloaded' });
     await waitForBetrayalPageReady(page);
@@ -1836,48 +1933,127 @@ const readMummyGoldenDiscoveryState = async (page: Page): Promise<MummyGoldenDis
         };
     });
 
-const acknowledgeRemainingMummyGoldenCardResolutionPlayers = async (page: Page): Promise<void> => {
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-        const pending = await page.evaluate(() => {
-            const core = (window as typeof window & {
-                __BG_TEST_HARNESS__?: {
-                    state?: {
-                        get?: () => {
-                            core?: {
-                                pendingCardResolutionQueue?: Array<{
-                                    id?: string;
-                                    playerId?: string;
-                                    requiredPlayerIds?: string[];
-                                    acknowledgedPlayerIds?: string[];
-                                }>;
-                            };
+const acknowledgeRemainingMummyGoldenCardResolutionPlayers = async (page: Page, context: import('@playwright/test').BrowserContext): Promise<void> => {
+    const pending = await page.evaluate(() => {
+        const core = (window as typeof window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => {
+                        core?: {
+                            pendingCardResolutionQueue?: Array<{
+                                id?: string;
+                                playerId?: string;
+                                requiredPlayerIds?: string[];
+                                acknowledgedPlayerIds?: string[];
+                            }>;
                         };
                     };
                 };
-            }).__BG_TEST_HARNESS__?.state?.get?.().core;
-            return core?.pendingCardResolutionQueue?.[0] ?? null;
-        });
-        if (!pending?.id) {
-            return;
+            };
+        }).__BG_TEST_HARNESS__?.state?.get?.().core;
+        return core?.pendingCardResolutionQueue?.[0] ?? null;
+    });
+    if (!pending?.id) return;
+    const requiredPlayerIds = pending.requiredPlayerIds?.length
+        ? pending.requiredPlayerIds
+        : pending.playerId
+            ? [pending.playerId]
+            : [];
+    const currentViewerPlayerId = new URL(page.url(), 'http://local.test').searchParams.get('playerID')
+        ?? (await readInjectedCore(page)).currentPlayer
+        ?? '0';
+    const participantPages = new Map<string, Page>();
+    try {
+        for (const playerId of requiredPlayerIds) {
+            if (playerId === currentViewerPlayerId) continue;
+            const participantPage = await context.newPage();
+            await openBetrayalAsPlayer(participantPage, playerId);
+            participantPages.set(playerId, participantPage);
         }
-        const requiredPlayerIds = pending.requiredPlayerIds?.length
-            ? pending.requiredPlayerIds
-            : pending.playerId
-                ? [pending.playerId]
-                : [];
-        const acknowledgedPlayerIds = new Set(pending.acknowledgedPlayerIds ?? []);
-        const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
-        if (!nextPlayerId) {
-            return;
+        await syncCoreFromPage(page, ...participantPages.values());
+
+        let acknowledged = new Set(pending.acknowledgedPlayerIds ?? []);
+        let finalSourcePage: Page | null = null;
+        if (!acknowledged.has(currentViewerPlayerId) && requiredPlayerIds.includes(currentViewerPlayerId)) {
+            const continueButton = page.getByTestId('betrayal-discovery-continue');
+            await expect(continueButton).toBeVisible();
+            await expect(continueButton).toContainText(/确认 0\/3|返回牌桌/);
+            await continueButton.click();
+            acknowledged = new Set((await readInjectedCore(page)).pendingCardResolutionQueue[0]?.acknowledgedPlayerIds ?? []);
+            await syncCoreFromPage(page, ...participantPages.values());
         }
-        await dispatchHarnessCommand(
-            page,
-            BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
-            nextPlayerId,
-            { resolutionId: pending.id },
-        );
+
+        for (const playerId of requiredPlayerIds) {
+            if (acknowledged.has(playerId) || playerId === currentViewerPlayerId) continue;
+            const participantPage = participantPages.get(playerId);
+            if (!participantPage) throw new Error(`缺少真实玩家 ${playerId} 的确认页面`);
+
+            const expectedAcknowledgedPlayerIds = [...acknowledged];
+            await expect.poll(async () => {
+                const nextPending = (await readInjectedCore(participantPage)).pendingCardResolutionQueue?.[0];
+                return nextPending?.acknowledgedPlayerIds ?? [];
+            }, {
+                message: `真实玩家 ${playerId} 点击前必须拿到最新确认快照 ${expectedAcknowledgedPlayerIds.join(',')}`,
+                timeout: 30000,
+            }).toEqual(expectedAcknowledgedPlayerIds);
+
+            const continueButton = participantPage.getByTestId('betrayal-discovery-continue');
+            await expect(continueButton).toBeVisible();
+            await expect(continueButton).toContainText('确认');
+            await expect(continueButton).toBeEnabled();
+            await continueButton.click();
+            finalSourcePage = participantPage;
+
+            await expect.poll(async () => {
+                const nextPending = (await readInjectedCore(participantPage)).pendingCardResolutionQueue?.[0];
+                return nextPending?.acknowledgedPlayerIds?.includes(playerId) ?? true;
+            }, {
+                message: `真实玩家 ${playerId} 点击确认后必须先登记到自己的确认队列`,
+                timeout: 30000,
+            }).toBe(true);
+
+            const expectedAfterAcknowledgedPlayerIds = new Set([...acknowledged, playerId]);
+            await expect.poll(async () => {
+                const nextPending = (await readInjectedCore(participantPage)).pendingCardResolutionQueue?.[0];
+                return nextPending
+                    ? nextPending.acknowledgedPlayerIds ?? []
+                    : [...expectedAfterAcknowledgedPlayerIds];
+            }, {
+                message: `真实玩家 ${playerId} 点击后不得丢失既有确认记录`,
+                timeout: 30000,
+            }).toEqual([...expectedAfterAcknowledgedPlayerIds]);
+
+            const participantPanel = participantPage.getByTestId('betrayal-discovery-panel');
+            const participantTransitionBlocker = participantPage.getByTestId('betrayal-visual-transition-blocker');
+            const participantBoard = participantPage.getByTestId('betrayal-board');
+            const latestPending = (await readInjectedCore(participantPage)).pendingCardResolutionQueue?.[0];
+            const latestAcknowledged = new Set(latestPending?.acknowledgedPlayerIds ?? []);
+            const allPlayersAcknowledged = !latestPending
+                || requiredPlayerIds.every((requiredPlayerId) => latestAcknowledged.has(requiredPlayerId));
+            if (allPlayersAcknowledged) {
+                await expect.poll(async () => (await readInjectedCore(participantPage)).pendingCardResolutionQueue ?? [], {
+                    message: '最后一位真实玩家确认后，卡牌结算队列必须清空',
+                    timeout: 30000,
+                }).toEqual([]);
+                await expect(participantTransitionBlocker).toHaveCount(0, { timeout: 30000 });
+                await expect(participantPanel).toHaveCount(0, { timeout: 30000 });
+                await expect(participantBoard).toHaveAttribute('data-betrayal-visual-busy', 'false');
+            }
+
+            await syncCoreFromPage(participantPage, page, ...[...participantPages.entries()]
+                .filter(([id]) => id !== playerId)
+                .map(([, targetPage]) => targetPage));
+            acknowledged = new Set((await readInjectedCore(participantPage)).pendingCardResolutionQueue[0]?.acknowledgedPlayerIds ?? []);
+        }
+        if (finalSourcePage) {
+            await expect(finalSourcePage.getByTestId('betrayal-visual-transition-blocker')).toHaveCount(0, { timeout: 30000 });
+            await expect(finalSourcePage.getByTestId('betrayal-discovery-panel')).toHaveCount(0, { timeout: 30000 });
+            await syncCoreFromPage(finalSourcePage, page, ...[...participantPages.values()].filter((targetPage) => targetPage !== finalSourcePage));
+        }
+        await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+    } finally {
+        await Promise.all([...participantPages.values()].map((participantPage) => participantPage.close()));
     }
-    throw new Error('木乃伊横行主黄金链发现牌确认队列超过安全上限');
 };
 
 const exploreMummyGoldenDiscoveryRoom = async (
@@ -1961,6 +2137,7 @@ const exerciseMummyGoldenMedicalKitUse = async (
         settled?: string;
     } = {},
 ): Promise<void> => {
+    await assertReadyForStateInjection(page, '急救包消费段');
     await injectCore(page, createMedicalKitUseReadyRuntimeCore());
     await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
     const beforeUseCore = await readInjectedCore(page);
@@ -2034,6 +2211,7 @@ const exerciseMummyGoldenMedicalKitUse = async (
 
 const exerciseMummyGoldenManualTrade = async (
     page: Page,
+    context: import('@playwright/test').BrowserContext,
     screenshots: {
         entryReady?: string;
         targetReady?: string;
@@ -2045,7 +2223,21 @@ const exerciseMummyGoldenManualTrade = async (
 ): Promise<void> => {
     const tradeCore = createExchangeReadyRuntimeCore();
     tradeCore.recommendedAction = 'move';
+    await assertReadyForStateInjection(page, '主动交易段');
+    await openBetrayalHotseat(page);
     await injectCore(page, tradeCore);
+    await expect.poll(async () => {
+        const core = await readInjectedCore(page);
+        return {
+            currentRoomId: core.currentExplorer.roomId,
+            currentInventoryIds: core.currentExplorer.inventory.map((card) => card.id),
+            currentPlayer: core.currentPlayer,
+        };
+    }, { message: '交易段注入后必须切换到交易夹具的正式当前状态' }).toMatchObject({
+        currentRoomId: 'hallway',
+        currentInventoryIds: expect.arrayContaining(['rope']),
+        currentPlayer: '0',
+    });
     await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveCount(0);
     await expect(page.getByTestId('betrayal-room-occupant-target-outline-hallway-1')).toHaveCount(0);
@@ -2086,13 +2278,25 @@ const exerciseMummyGoldenManualTrade = async (
     }
 
     await page.getByTestId('betrayal-action-trade').click();
-    await expect(page.getByTestId('betrayal-trade-agreement-panel')).toBeVisible();
     await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意|交易请求|兔脚|地图/);
+    await expect.poll(async () => (await readInjectedCore(page)).pendingTradeAgreement, {
+        message: '主动交易提交后必须先产生等待接收方同意的正式请求',
+    }).toMatchObject({ targetPlayerId: '1' });
     if (screenshots.requestSent) {
         await saveScreenshot(page, screenshots.requestSent);
     }
 
-    await page.getByTestId('betrayal-trade-agreement-accept').click();
+    const receivingPage = await context.newPage();
+    try {
+        await openBetrayalAsPlayer(receivingPage, '1');
+        await syncCoreFromPage(page, receivingPage);
+        await expect(receivingPage.getByTestId('betrayal-trade-agreement-panel')).toBeVisible();
+        await expect(receivingPage.getByTestId('betrayal-trade-agreement-accept')).toBeEnabled();
+        await receivingPage.getByTestId('betrayal-trade-agreement-accept').click();
+        await syncCoreFromPage(receivingPage, page);
+    } finally {
+        await receivingPage.close();
+    }
     await expect.poll(async () => {
         const core = await readInjectedCore(page);
         return {
@@ -2185,7 +2389,7 @@ const moveMummyThroughRealRoomTarget = async (
 };
 
 test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
-    test('主黄金链：开局、三类发现、作祟、木乃伊行动、叛徒终局', async ({ page, context }) => {
+    test('state-injected composite：真实开局结算后、三类发现、作祟、木乃伊行动、叛徒终局', async ({ page, context }) => {
         test.setTimeout(300000);
         clearGoldenFlowProcessScreenshots();
         await initBetrayalContext(context);
@@ -2193,7 +2397,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
 
         await page.setViewportSize({ width: 1600, height: 900 });
         await warmBetrayalFrontend(context);
-        await openBetrayalHotseat(page);
+        await completeMummyScenarioFromRealEntry(page);
+        await assertReadyForStateInjection(page, '真实开局结算后的事件段');
 
         const eventFixture = createMummyGoldenPreHauntDiscoveryCore('event');
         await injectCore(page, eventFixture.core);
@@ -2230,9 +2435,11 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             latestDiscoveryTitle: eventFixture.expectedCardName,
             recentRollKind: 'eventTraitCheck',
         });
+        await settleDiscoveryForStateInjection(page, '事件牌知识检定');
         await saveScreenshot(page, goldenFlowProcessScreenshot(3, '事件牌结算结果-知识检定后'));
         await saveScreenshot(page, GOLDEN_FLOW_EVENT_DISCOVERY_SCREENSHOT);
 
+        await assertReadyForStateInjection(page, '事件牌结算后的物品段');
         const itemFixture = createMummyGoldenPreHauntDiscoveryCore('item');
         await injectCore(page, itemFixture.core);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
@@ -2255,6 +2462,19 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await saveScreenshot(page, goldenFlowProcessScreenshot(6, '物品牌获得结果-急救包进入持有区'));
         await saveScreenshot(page, GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT);
 
+        const itemDiscoveryContinue = page.getByTestId('betrayal-discovery-continue');
+        await expect(itemDiscoveryContinue).toBeVisible();
+        await expect(itemDiscoveryContinue).toBeEnabled();
+        await expect(itemDiscoveryContinue).toHaveText('返回牌桌');
+        await itemDiscoveryContinue.click();
+        await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+        await expect.poll(() => readMummyGoldenDiscoveryState(page)).toMatchObject({
+            pendingCardResolutionCount: 0,
+        });
+        await expect(page.getByTestId('betrayal-board')).toBeVisible();
+        await saveScreenshot(page, GOLDEN_FLOW_ITEM_DISMISSED_SCREENSHOT);
+
+        await assertReadyForStateInjection(page, '物品确认结算后的急救包段');
         await exerciseMummyGoldenMedicalKitUse(page, {
             ready: goldenFlowProcessScreenshot(7, '急救包使用前-持有区可选'),
             selected: goldenFlowProcessScreenshot(8, '急救包已选中-等待选择治疗目标'),
@@ -2264,7 +2484,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
         await saveScreenshot(page, GOLDEN_FLOW_ITEM_USE_SCREENSHOT);
 
-        await exerciseMummyGoldenManualTrade(page, {
+        await assertReadyForStateInjection(page, '急救包结算后的交易段');
+        await exerciseMummyGoldenManualTrade(page, context, {
             entryReady: goldenFlowProcessScreenshot(12, '主动交易前-交易入口可见但目标未高亮'),
             targetReady: goldenFlowProcessScreenshot(13, '主动点交易后-同房目标绿色高亮'),
             targetSelected: goldenFlowProcessScreenshot(14, '点同房目标后-交易提示和对方持有物'),
@@ -2273,6 +2494,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             settled: goldenFlowProcessScreenshot(17, '同意交易后-双方持有物结算'),
         });
 
+        await assertReadyForStateInjection(page, '交易结算后的预兆段');
         const omenFixture = createMummyGoldenPreHauntDiscoveryCore('omen');
         await injectCore(page, omenFixture.core);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
@@ -2304,9 +2526,10 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await saveScreenshot(page, goldenFlowProcessScreenshot(20, '预兆书本翻出-作祟检定已触发'));
         await saveScreenshot(page, GOLDEN_FLOW_OMEN_DISCOVERY_SCREENSHOT);
 
-        await omenDiscoveryPanel.getByTestId('betrayal-discovery-continue').click();
-        await acknowledgeRemainingMummyGoldenCardResolutionPlayers(page);
+        await acknowledgeRemainingMummyGoldenCardResolutionPlayers(page, context);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+        await closeScenarioReaderIfPresent(page);
+        await assertReadyForStateInjection(page, '预兆作祟结算后的视角读本段');
         const triggeredHauntCore = await readInjectedCore(page);
         const triggeredTraitorPlayerId = triggeredHauntCore.scenarioRuntime.traitorPlayerId;
         if (!triggeredTraitorPlayerId) {
@@ -2319,7 +2542,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             throw new Error('木乃伊横行主黄金链真实触发作祟后缺少英雄读本视角');
         }
 
-        await closeScenarioReaderIfPresent(page);
         await openBetrayalAsPlayer(page, triggeredHeroReaderPlayerId);
         await injectCore(page, triggeredHauntCore);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
@@ -2379,6 +2601,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await closeScenarioReaderIfPresent(page);
         await dismissHauntRevealIfPresent(page);
 
+        await assertReadyForStateInjection(page, '英雄与叛徒读本结算后的木乃伊行动段');
         const fixture = createMummyPostHauntContractFlowCore();
         await openBetrayalHotseat(page);
         await injectCore(page, fixture.core);
@@ -2451,7 +2674,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await waitForPhysicalDiceSettled(movementRollPanel);
         await saveScreenshot(page, goldenFlowProcessScreenshot(32, '木乃伊移动骰结果-三点停稳'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT);
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             moveRemaining: 3,
             mummyRoomId: fixture.mummyStartRoomId,
@@ -2591,7 +2814,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await saveScreenshot(page, goldenFlowProcessScreenshot(41, '木乃伊攻击骰结果-满足偷取条件'));
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
@@ -2709,7 +2932,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectVisiblePhysicalDiceBox(movementRollPanel);
         await waitForPhysicalDiceSettled(movementRollPanel);
         await saveScreenshot(page, BRIDGED_CANDIDATE_MUMMY_MOVE_ROLL_SCREENSHOT);
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 3 });
         await moveMummyThroughRealRoomTarget(
             page,
@@ -2755,7 +2978,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-map')).toContainText('偷走地图');
         await saveScreenshot(page, BRIDGED_CANDIDATE_ATTACK_REWARD_SCREENSHOT);
@@ -2905,7 +3128,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectVisiblePhysicalDiceBox(rollPanel);
         await waitForPhysicalDiceSettled(rollPanel);
         await saveScreenshot(page, CURRENT_SCOPE_CANDIDATE_NORMAL_MOVE_ROLL_SCREENSHOT);
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 3 });
 
         await moveMummyThroughRealRoomTarget(
@@ -2983,7 +3206,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectRollContinueButtonUsable(page);
         await saveScreenshot(page, MOVE_ROLL_SCREENSHOT);
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
         await expect(monsterMoveAction).toBeVisible();
         await expect(monsterMoveAction).toContainText('移动木乃伊');
@@ -3112,7 +3335,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectRollContinueButtonUsable(page);
         await saveScreenshot(page, MOVE_ONE_ROLL_SCREENSHOT);
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 1 });
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
         await expect(monsterMoveAction).toBeVisible();
@@ -3210,7 +3433,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(rollPanel).toBeVisible();
         await expect(rollPanel).toContainText('木乃伊移动');
         await expect(rollPanel).toContainText('可移动 1 间');
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 1 });
 
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
@@ -3313,7 +3536,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['map']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-map')).toContainText('偷走地图');
         await saveScreenshot(page, ATTACK_REWARD_SCREENSHOT);
@@ -3380,7 +3603,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['holy-symbol']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
 
@@ -3443,7 +3666,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['ring']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-ring')).toContainText('偷走指环');
 
@@ -3509,7 +3732,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['mummy-girl-token']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-mummy-girl-token')).toContainText('偷走女孩');
 
@@ -3614,7 +3837,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-steal-map').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('夺走地图');
@@ -3689,7 +3912,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['armor']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3798,7 +4021,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['brooch']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3911,7 +4134,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['skull']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -4029,7 +4252,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['skull']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -4147,7 +4370,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['skull']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -4293,7 +4516,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['map']),
         });
 
-        await acknowledgeRecentRollForAllPlayers(page);
+        await acknowledgeRecentRollForAllPlayers(page, context);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-damage')).toContainText('造成');
 

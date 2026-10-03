@@ -16,7 +16,7 @@ import { playerView } from './view';
 import { discoverDiceThroneTimingOpportunities } from './timingOpportunities';
 import { commitDiceThroneDamagePreventionEvent } from './damagePreventionCommit';
 import { isDiceThroneTokenResponseCommandAllowedByContract } from './tokenResponseChoiceContract';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isTeamMode } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isSkirmishMode, isTeamMode } from './rules';
 import { registerDiceThroneConditions } from '../conditions';
 import { ALL_TOKEN_DEFINITIONS } from './characters';
 import { monkDiceDefinition } from '../heroes/monk/diceConfig';
@@ -336,6 +336,19 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         }
 
         const playerIds = Object.keys(state.players);
+        if (isSkirmishMode(state)) {
+            const livingPlayerIds = playerIds.filter(
+                (playerId) => (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) > 0,
+            );
+            if (livingPlayerIds.length === 1) {
+                return { winner: livingPlayerIds[0] };
+            }
+            if (livingPlayerIds.length === 0) {
+                return { draw: true };
+            }
+            return undefined;
+        }
+
         const defeated = playerIds.filter(id => (state.players[id]?.resources[RESOURCE_IDS.HP] ?? 0) <= 0);
 
         if (defeated.length === 0) return undefined;

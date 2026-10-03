@@ -9,6 +9,7 @@ import type {
     DiceThroneEvent,
     HeroState,
 } from './types';
+import { SKIRMISH_INITIAL_HEALTH } from './types';
 import type { RandomFn } from '../../../engine/types';
 import {
     buildTeamIdByPlayerIdFromSeatingOrder,
@@ -18,6 +19,7 @@ import {
     getPlayerDieFace,
     getTokenStackLimit,
     isAttackSnapshotDieId,
+    isSkirmishMode,
 } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
@@ -1753,7 +1755,13 @@ const handleHeroInitialized: EventHandler<Extract<DiceThroneEvent, { type: 'HERO
         range: (min) => min,
         shuffle: <T>(arr: T[]) => arr,
     };
-    const heroState = initHeroState(playerId, characterId, dummyRandom, initialDeckCardIds);
+    const heroState = initHeroState(
+        playerId,
+        characterId,
+        dummyRandom,
+        initialDeckCardIds,
+        isSkirmishMode(state) ? SKIRMISH_INITIAL_HEALTH : undefined,
+    );
 
     const shouldCreateDice = state.dice.length === 0 || playerId === state.activePlayerId;
     return {
@@ -1973,14 +1981,15 @@ export const reduce = (
 
                 if (to === 'targetingRoll') {
                     const playerDice = createPlayerDice(state, activePlayerId);
+                    const isSkirmish = isSkirmishMode(state);
                     return clearCurrentRollContextUnlessSettledReplay({
                         ...state,
                         activePlayerId,
                         rollCount: 0,
                         rollLimit: 1,
-                        rollDiceCount: 1,
+                        rollDiceCount: isSkirmish ? 0 : 1,
                         rollConfirmed: false,
-                        dice: resetDiceArray(playerDice ?? state.dice, 1),
+                        dice: resetDiceArray(playerDice ?? state.dice, isSkirmish ? 0 : 1),
                     });
                 }
 

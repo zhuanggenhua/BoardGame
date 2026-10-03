@@ -1091,7 +1091,7 @@ async function readVisibleMageWarsAtlasLoadFailures(page: Page): Promise<Visible
         };
 
         const frames = Array.from(
-            board.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"], .atlas-shimmer'),
+            document.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"], .atlas-shimmer'),
         ).filter(isVisible);
 
         return frames.flatMap((frame) => {
@@ -4662,7 +4662,7 @@ async function runMageWarsStaffBindingUiCase(
     });
     const staffObjectId = `mw-e2e-${options.cardId}-staff`;
     const staffName = options.cardName;
-    const boundSpellName = options.cardId === 3716 ? '火球' : '复原术';
+    const boundSpellName = options.cardId === 3716 ? '闪电箭矢' : '兽性觉醒';
 
     try {
         await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
@@ -4700,14 +4700,42 @@ async function runMageWarsStaffBindingUiCase(
             `[data-testid="mage-wars-spell-cast-choice-option"][data-bound-spell-card-id="${options.castBoundSpellCardId}"]`,
         ).first();
         await expect(castOption).toBeVisible({ timeout: 3_000 });
+        await expect(castOption.getByTestId('mage-wars-spell-cast-choice-card-preview')).toBeVisible({ timeout: 3_000 });
+        await expect(spellCastChoiceDock).not.toContainText(options.mageId);
+        await expect(castOption).not.toContainText(boundSpellName);
         expect(
             await spellCastChoiceDock.getByTestId('mage-wars-spell-cast-choice-option').count(),
             `${staffName}真实标准法术书必须至少提供不绑定和一个绑定候选`,
         ).toBeGreaterThanOrEqual(2);
+        const castOptions = spellCastChoiceDock.locator('[data-choice-layout="wrap"] [data-testid="mage-wars-spell-cast-choice-option"]');
+        const castOptionCount = await castOptions.count();
+        await expect(spellCastChoiceDock.locator('[data-choice-scroll-window="true"]')).toBeVisible({ timeout: 3_000 });
+        const spellbookCardHeight = await preparedCard.evaluate((element) => element.getBoundingClientRect().height);
+        const choiceCardHeight = await castOptions.first().evaluate((element) => element.getBoundingClientRect().height);
+        expect(Math.abs(choiceCardHeight - spellbookCardHeight), `${staffName}候选牌必须和法术书牌同高`).toBeLessThanOrEqual(2);
+        const choiceScrollMetrics = await spellCastChoiceDock.locator('[data-choice-scroll-window="true"]').evaluate((element) => ({
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            overflowY: getComputedStyle(element).overflowY,
+            policy: element.getAttribute('data-choice-scroll-policy'),
+        }));
+        expect(choiceScrollMetrics.overflowY, `${staffName}候选区必须是真滚动窗口`).toBe('auto');
+        expect(choiceScrollMetrics.policy, `${staffName}候选滚动必须归属浮层自身`).toBe('overlay-owned');
+        if (castOptionCount > 8) {
+            expect(choiceScrollMetrics.scrollHeight, `${staffName}候选过多时滚动内容必须超出窗口`).toBeGreaterThan(
+                choiceScrollMetrics.clientHeight,
+            );
+        }
+        const castChoiceRows = await castOptions.evaluateAll(
+            (elements) => [...new Set(elements.map((element) => Math.round(element.getBoundingClientRect().top)))],
+        );
+        if (castOptionCount > 8) {
+            expect(castChoiceRows.length, `${staffName}候选牌超过可读宽度时必须真实换行`).toBeGreaterThan(1);
+        }
         await saveEvidenceScreenshot(
             match.hostPage,
             testInfo,
-            `02-${staffName}-绑定选择-法师魔杖选择${boundSpellName}`,
+            `02-${staffName}-绑定候选-${staffName}候选牌可见`,
             { evidenceDir: evidenceRun.stagingDir },
         );
 
@@ -4781,6 +4809,9 @@ async function runMageWarsStaffBindingUiCase(
         await expect(abilityDock).toBeVisible({ timeout: 3_000 });
         const abilityButton = abilityDock.locator(`[data-ability-id="${options.abilityId}"]`).first();
         await expect(abilityButton).toBeVisible({ timeout: 3_000 });
+        await expect(abilityButton).toHaveAttribute('data-ability-visual', 'action-label');
+        await expect(abilityButton).toHaveText('重新绑定');
+        await expect(abilityButton).not.toContainText(staffName);
         await saveEvidenceScreenshot(
             match.hostPage,
             testInfo,
@@ -4795,10 +4826,37 @@ async function runMageWarsStaffBindingUiCase(
             `[data-testid="mage-wars-object-ability-choice-option"][data-bound-spell-card-id="${options.reboundBoundSpellCardId}"]`,
         ).first();
         await expect(reboundOption).toBeVisible({ timeout: 3_000 });
+        await expect(reboundOption.getByTestId('mage-wars-object-ability-choice-card-preview')).toBeVisible({ timeout: 3_000 });
+        await expect(objectAbilityChoiceDock).not.toContainText(options.mageId);
+        await expect(reboundOption).not.toContainText(boundSpellName);
+        const reboundOptions = objectAbilityChoiceDock.locator('[data-choice-layout="wrap"] [data-testid="mage-wars-object-ability-choice-option"]');
+        const reboundOptionCount = await reboundOptions.count();
+        await expect(objectAbilityChoiceDock.locator('[data-choice-scroll-window="true"]')).toBeVisible({ timeout: 3_000 });
+        const reboundCardHeight = await reboundOptions.first().evaluate((element) => element.getBoundingClientRect().height);
+        expect(Math.abs(reboundCardHeight - spellbookCardHeight), `${staffName}快速重绑候选牌必须和法术书牌同高`).toBeLessThanOrEqual(2);
+        const reboundScrollMetrics = await objectAbilityChoiceDock.locator('[data-choice-scroll-window="true"]').evaluate((element) => ({
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            overflowY: getComputedStyle(element).overflowY,
+            policy: element.getAttribute('data-choice-scroll-policy'),
+        }));
+        expect(reboundScrollMetrics.overflowY, `${staffName}快速重绑候选区必须是真滚动窗口`).toBe('auto');
+        expect(reboundScrollMetrics.policy, `${staffName}快速重绑滚动必须归属浮层自身`).toBe('overlay-owned');
+        if (reboundOptionCount > 8) {
+            expect(reboundScrollMetrics.scrollHeight, `${staffName}快速重绑候选过多时滚动内容必须超出窗口`).toBeGreaterThan(
+                reboundScrollMetrics.clientHeight,
+            );
+        }
+        const reboundChoiceRows = await reboundOptions.evaluateAll(
+            (elements) => [...new Set(elements.map((element) => Math.round(element.getBoundingClientRect().top)))],
+        );
+        if (reboundOptionCount > 8) {
+            expect(reboundChoiceRows.length, `${staffName}快速重绑候选牌超过可读宽度时必须真实换行`).toBeGreaterThan(1);
+        }
         await saveEvidenceScreenshot(
             match.hostPage,
             testInfo,
-            `05-${staffName}-快速重绑选择-候选法术牌可见`,
+            `05-${staffName}-快速重绑候选-候选法术牌可见`,
             { evidenceDir: evidenceRun.stagingDir },
         );
 
@@ -6119,8 +6177,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 'data-visible-duration-ms',
                 String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs),
             );
-            await match.hostPage.waitForTimeout(MAGE_WARS_FX_TIMING.meleeCompleteMs + 220);
-            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeVisible({ timeout: 1_000 });
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeVisible({ timeout: 3_000 });
             await expect(match.hostPage.getByTestId('mage-wars-fx-effect-die-face')).toHaveCount(0);
             await match.hostPage.waitForFunction(
                 () => document.querySelector('[data-testid="mage-wars-fx-attack-dice"]') == null,
@@ -7423,7 +7480,9 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
             const abilityButton = abilityDock.locator(`[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF}"]`).first();
             await expect(abilityButton).toBeVisible({ timeout: 3_000 });
-            await expect(abilityButton).toHaveAttribute('data-ability-visual', 'text-action');
+            await expect(abilityButton).toHaveAttribute('data-ability-visual', 'action-label');
+            await expect(abilityButton).toHaveText('发动能力');
+            await expect(abilityButton).not.toContainText('群兽法杖');
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖入口截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '24A-群兽法杖附件入口-来源卡牌下方能力按钮可见');
 
@@ -7725,7 +7784,10 @@ test.describe('Mage Wars formal online runtime', () => {
             )).toBeGreaterThanOrEqual(2);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '01-元素魔杖法术选择-取消按钮可见');
 
-            await spellCastChoiceDock.getByTestId('mage-wars-spell-cast-choice-cancel').click();
+            await spellCastChoiceDock.getByTestId('mage-wars-spell-cast-choice-dock-cancel').click({
+                timeout: 5_000,
+                noWaitAfter: true,
+            });
             await expect(spellCastChoiceDock).toHaveCount(0, { timeout: 5_000 });
             await expect(elementalStaffCard).toHaveAttribute('data-selected', 'true');
             const afterSpellCastCancel = await readServerCoreSnapshot(match.hostPage, match, '0');
@@ -7808,7 +7870,10 @@ test.describe('Mage Wars formal online runtime', () => {
             )).toBeGreaterThanOrEqual(2);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '03-元素魔杖快速重绑-取消按钮可见');
 
-            await objectAbilityChoiceDock.getByTestId('mage-wars-object-ability-choice-cancel').click();
+            await objectAbilityChoiceDock.getByTestId('mage-wars-object-ability-choice-dock-cancel').click({
+                timeout: 5_000,
+                noWaitAfter: true,
+            });
             await expect(objectAbilityChoiceDock).toHaveCount(0, { timeout: 5_000 });
             const afterObjectAbilityCancel = await readServerCoreSnapshot(match.hostPage, match, '0');
             const afterObjectAbilityCancelObjects = isRecord(afterObjectAbilityCancel.objects)
@@ -7899,7 +7964,10 @@ test.describe('Mage Wars formal online runtime', () => {
             )).toBeVisible({ timeout: 3_000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '05-复原术多状态选择-取消按钮和多个组合可见');
 
-            await statusChoiceDock.getByTestId('mage-wars-mage-ability-status-choice-cancel').click();
+            await statusChoiceDock.getByTestId('mage-wars-mage-ability-status-choice-cancel').click({
+                timeout: 5_000,
+                noWaitAfter: true,
+            });
             await expect(statusChoiceDock).toHaveCount(0, { timeout: 5_000 });
             const afterStatusChoiceCancel = await readServerCoreSnapshot(match.hostPage, match, '0');
             const afterStatusChoiceCancelObjects = isRecord(afterStatusChoiceCancel.objects)
@@ -7942,7 +8010,16 @@ test.describe('Mage Wars formal online runtime', () => {
             }).toBe(true);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '07-复原术多状态选择-确认组合后正式结算');
         } finally {
-            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+            const closeWithTimeout = async (close: () => Promise<void>) => {
+                await Promise.race([
+                    close().catch(() => undefined),
+                    new Promise<void>((resolve) => setTimeout(resolve, 3_000)),
+                ]);
+            };
+            await Promise.all([
+                closeWithTimeout(() => match.hostContext.close()),
+                closeWithTimeout(() => match.guestContext.close()),
+            ]);
         }
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);

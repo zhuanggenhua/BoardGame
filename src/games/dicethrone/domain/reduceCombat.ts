@@ -7,7 +7,7 @@ import type { AttackBonusDamageSource, DiceThroneCore, DiceThroneEvent } from '.
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
-import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
+import { getFaceCounts, getActiveDice, getPlayerHealthCap, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import { getPendingAttackSettlementStage, updatePendingAttackSettlementStage } from './utils';
 import { buildArtificerBotStateAfterActivation, isArtificerBotTokenId } from './artificerBots';
@@ -353,7 +353,11 @@ export const handleHealApplied: EventHandler<Extract<DiceThroneEvent, { type: 'H
         newResources = { ...target.resources, [RESOURCE_IDS.HP]: currentHp + amount };
     } else {
         const result = resourceSystem.modify(target.resources, RESOURCE_IDS.HP, amount);
-        newResources = result.pool;
+        const healthCap = getPlayerHealthCap(state, targetId);
+        const healedHp = Math.min(healthCap, result.pool[RESOURCE_IDS.HP] ?? 0);
+        newResources = healedHp === (result.pool[RESOURCE_IDS.HP] ?? 0)
+            ? result.pool
+            : { ...result.pool, [RESOURCE_IDS.HP]: healedHp };
     }
 
     const syncedPlayers = buildPlayersWithSyncedHp(state, targetId, newResources[RESOURCE_IDS.HP] ?? 0);
@@ -558,13 +562,15 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
     // 同时结算收尾：将防御方 HP 钳制回上限
     const currentDefender = defenderId ? players[defenderId] : undefined;
     if (currentDefender) {
+        const healthCap = getPlayerHealthCap(state, defenderId);
+        const currentHp = currentDefender.resources[RESOURCE_IDS.HP] ?? 0;
+        const cappedHp = Math.min(healthCap, Math.max(0, currentHp));
         const result = resourceSystem.setValue(
             currentDefender.resources,
             RESOURCE_IDS.HP,
-            currentDefender.resources[RESOURCE_IDS.HP] ?? 0
+            cappedHp,
         );
-        if (result.capped) {
-            const cappedHp = result.pool[RESOURCE_IDS.HP] ?? 0;
+        if (cappedHp !== currentHp || result.capped) {
             const syncedPlayers = buildPlayersWithSyncedHp({ ...state, players }, defenderId, cappedHp);
             players = {
                 ...syncedPlayers,

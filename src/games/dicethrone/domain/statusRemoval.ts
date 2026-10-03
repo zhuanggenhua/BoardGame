@@ -11,6 +11,11 @@ export const isRemovableStatusId = (state: DiceThroneCore, statusId: string): bo
     return def?.passiveTrigger?.removable ?? true;
 };
 
+export const isTransferableStatusId = (state: DiceThroneCore, statusId: string): boolean => {
+    const def = findTokenDefinition(state, statusId);
+    return def?.passiveTrigger?.transferable ?? true;
+};
+
 export const isPurifiableDebuffId = (state: DiceThroneCore, statusId: string): boolean => {
     const def = findTokenDefinition(state, statusId);
     return def?.category === 'debuff' && isRemovableStatusId(state, statusId);
@@ -31,3 +36,12 @@ export const canRemoveStatusFromPlayer = (
     }
     return areTeammates(state, sourcePlayerId, targetPlayerId);
 };
+
+export const canTransferStatus = (
+    state: DiceThroneCore,
+    sourcePlayerId: string,
+    fromPlayerId: string,
+    statusId: string,
+): boolean => isTransferableStatusId(state, statusId)
+    && isRemovableStatusId(state, statusId)
+    && canRemoveStatusFromPlayer(state, sourcePlayerId, fromPlayerId, statusId);

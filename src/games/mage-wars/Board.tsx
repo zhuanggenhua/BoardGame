@@ -16,7 +16,7 @@ import { ZoomIn } from 'lucide-react';
 import { motion, useAnimate } from 'framer-motion';
 import type { CardPreviewRef } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
-import { ZoomPanViewport } from '../../components/game/framework';
+import { CardChoiceOverlay, ZoomPanViewport } from '../../components/game/framework';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
@@ -164,6 +164,7 @@ const MAGE_WARS_DESKTOP_UI_DESIGN_WIDTH = 1920;
 const MAGE_WARS_DESKTOP_UI_DESIGN_HEIGHT = 1080;
 const MAGE_WARS_DESKTOP_BOTTOM_GAP_PX = 8;
 const MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT = 6;
+const MAGE_WARS_CARD_CHOICE_SCROLL_MAX_HEIGHT = 'max-h-[min(34rem,60dvh)]';
 const MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID = 2819;
 const MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID = 3403;
 const MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID = 25700;
@@ -3498,31 +3499,35 @@ function WallSpellCardOnEdge({
     );
 }
 
-function getObjectAbilityChoiceLabel(
+function getObjectAbilityChoiceAccessibleLabel(
     selection: ChoiceRequestDirectSelectionTarget<MageWarsObjectAbilityActivationChoiceValue>,
 ): string {
     if (selection.value?.mode === 'melee-bonus') return '近战加成';
     if (selection.value?.mode === 'heal') return '治疗';
-    return selection.label ?? String(selection.value?.boundSpellCardId ?? selection.id);
+    const boundSpellCardId = selection.value?.boundSpellCardId;
+    return boundSpellCardId === undefined
+        ? selection.label ?? '选择法术'
+        : getMageWarsSpellCardName(boundSpellCardId) ?? selection.label ?? '选择法术';
 }
 
-function getSpellCastChoiceLabel(
+function getSpellCastChoiceAccessibleLabel(
     selection: ChoiceRequestDirectSelectionTarget<MageWarsSpellCastChoiceValue>,
 ): string {
     if (selection.value?.boundSpellCardId === undefined && selection.metadata?.targetMode === 'player-bound-spell') {
         return '不绑定法术';
     }
-    return selection.label ?? String(selection.value?.boundSpellCardId ?? selection.id);
+    const boundSpellCardId = selection.value?.boundSpellCardId;
+    return boundSpellCardId === undefined
+        ? selection.label ?? '选择法术'
+        : getMageWarsSpellCardName(boundSpellCardId) ?? selection.label ?? '选择法术';
 }
 
 function MageSpellCastChoiceDock({
-    spellName,
     targetPlayer,
     selections,
     onSelect,
     onCancel,
 }: {
-    spellName?: string;
     targetPlayer?: MageWarsPlayerState;
     selections: readonly ChoiceRequestDirectSelectionTarget<MageWarsSpellCastChoiceValue>[];
     onSelect: (selection: ChoiceRequestDirectSelectionTarget<MageWarsSpellCastChoiceValue>) => void;
@@ -3532,57 +3537,44 @@ function MageSpellCastChoiceDock({
     if (selections.length === 0) return null;
 
     return (
-        <aside
-            className="pointer-events-none absolute inset-x-0 top-[9.25rem] z-50 flex justify-center px-4"
-            data-testid="mage-wars-spell-cast-choice-dock"
-        >
-            <section className="pointer-events-auto w-full max-w-[34rem] rounded-[0.35rem] border border-sky-100/18 bg-stone-950/90 px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.55)]">
-                <div className="mb-3 flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                        <div className="text-sm font-bold text-sky-100">
-                            {spellName ?? t('interaction.spellCastChoice.fallbackTitle')}
-                        </div>
-                        {targetPlayer ? (
-                            <div className="mt-0.5 truncate text-xs font-semibold text-stone-300">
-                                {targetPlayer.mageId}
-                            </div>
-                        ) : null}
-                    </div>
-                    <button
-                        type="button"
-                        className="shrink-0 rounded-[0.25rem] border border-stone-500/60 px-2.5 py-1 text-xs font-bold text-stone-200 transition hover:border-stone-300 hover:bg-stone-800"
-                        data-testid="mage-wars-spell-cast-choice-cancel"
-                        onClick={onCancel}
-                    >
-                        {t('interaction.mageAbilityStatusChoice.cancel')}
-                    </button>
-                </div>
-                <div className="grid gap-2">
-                    {selections.map((selection) => {
-                        const manaCost = selection.value?.manaCost ?? 0;
-                        return (
-                            <button
-                                key={selection.id}
-                                type="button"
-                                className="flex min-h-12 items-center justify-between gap-3 rounded-[0.28rem] border border-sky-100/16 bg-sky-950/30 px-3 py-2 text-left transition hover:border-sky-100/48 hover:bg-sky-900/42"
-                                data-testid="mage-wars-spell-cast-choice-option"
-                                data-choice-id={selection.id}
-                                data-bound-spell-card-id={selection.value?.boundSpellCardId}
-                                data-mana-cost={manaCost}
-                                onClick={() => onSelect(selection)}
-                            >
-                                <span className="min-w-0 truncate text-xs font-bold text-stone-100">
-                                    {getSpellCastChoiceLabel(selection)}
-                                </span>
-                                <span className="shrink-0 rounded-full border border-sky-200/30 bg-sky-950/38 px-2.5 py-1 text-xs font-black text-sky-100">
-                                    {t('interaction.mageAbilityStatusChoice.manaCost', { manaCost })}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </section>
-        </aside>
+        <CardChoiceOverlay
+            isOpen={selections.length > 0}
+            title={t('interaction.spellCastChoice.fallbackTitle')}
+            subtitle={targetPlayer ? getMageDisplayLabel(targetPlayer) : undefined}
+            tone="sky"
+            cardHeightClassName="h-[var(--mage-wars-desktop-spellbook-card-height,var(--mage-wars-desktop-card-height,14rem))]"
+            gridMaxHeightClassName={MAGE_WARS_CARD_CHOICE_SCROLL_MAX_HEIGHT}
+            testId="mage-wars-spell-cast-choice-dock"
+            cancelLabel={t('interaction.mageAbilityStatusChoice.cancel')}
+            onCancel={onCancel}
+            onSelect={(selectionId) => {
+                const selection = selections.find((candidate) => candidate.id === selectionId);
+                if (selection) onSelect(selection);
+            }}
+            options={selections.map((selection) => {
+                const boundSpellCardId = selection.value?.boundSpellCardId;
+                const accessibleLabel = getSpellCastChoiceAccessibleLabel(selection);
+                return {
+                    id: selection.id,
+                    previewRef: boundSpellCardId === undefined
+                        ? undefined
+                        : getMageWarsSpellCardPreviewRef(boundSpellCardId),
+                    aspectRatio: boundSpellCardId === undefined
+                        ? undefined
+                        : getMageWarsSpellCardAspectRatio(boundSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO,
+                    ariaLabel: accessibleLabel,
+                    fallbackLabel: accessibleLabel,
+                    testId: 'mage-wars-spell-cast-choice-option',
+                    previewTestId: 'mage-wars-spell-cast-choice-card-preview',
+                    dataAttributes: {
+                        'data-bound-spell-card-id': boundSpellCardId,
+                        'data-choice-card-id': boundSpellCardId,
+                        'data-mana-cost': selection.value?.manaCost ?? 0,
+                        'data-source-card-id': boundSpellCardId,
+                    },
+                };
+            })}
+        />
     );
 }
 
@@ -3603,58 +3595,45 @@ function MageObjectAbilityChoiceDock({
     if (selections.length === 0) return null;
 
     return (
-        <aside
-            className="pointer-events-none absolute inset-x-0 top-[9.25rem] z-50 flex justify-center px-4"
-            data-testid="mage-wars-object-ability-choice-dock"
-        >
-            <section className="pointer-events-auto w-full max-w-[34rem] rounded-[0.35rem] border border-amber-100/18 bg-stone-950/90 px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.55)]">
-                <div className="mb-3 flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                        <div className="text-sm font-bold text-amber-100">
-                            {abilityName ?? t('interaction.objectAbilityChoice.fallbackTitle')}
-                        </div>
-                        {targetObject ? (
-                            <div className="mt-0.5 truncate text-xs font-semibold text-stone-300">
-                                {targetObject.name}
-                            </div>
-                        ) : null}
-                    </div>
-                    <button
-                        type="button"
-                        className="shrink-0 rounded-[0.25rem] border border-stone-500/60 px-2.5 py-1 text-xs font-bold text-stone-200 transition hover:border-stone-300 hover:bg-stone-800"
-                        data-testid="mage-wars-object-ability-choice-cancel"
-                        onClick={onCancel}
-                    >
-                        {t('interaction.mageAbilityStatusChoice.cancel')}
-                    </button>
-                </div>
-                <div className="grid gap-2">
-                    {selections.map((selection) => {
-                        const manaCost = selection.value?.manaCost ?? 0;
-                        return (
-                            <button
-                                key={selection.id}
-                                type="button"
-                                className="flex min-h-12 items-center justify-between gap-3 rounded-[0.28rem] border border-amber-100/16 bg-amber-950/30 px-3 py-2 text-left transition hover:border-amber-100/48 hover:bg-amber-900/42"
-                                data-testid="mage-wars-object-ability-choice-option"
-                                data-choice-id={selection.id}
-                                data-mode={selection.value?.mode}
-                                data-bound-spell-card-id={selection.value?.boundSpellCardId}
-                                data-mana-cost={manaCost}
-                                onClick={() => onSelect(selection)}
-                            >
-                                <span className="min-w-0 truncate text-xs font-bold text-stone-100">
-                                    {getObjectAbilityChoiceLabel(selection)}
-                                </span>
-                                <span className="shrink-0 rounded-full border border-amber-200/30 bg-amber-950/38 px-2.5 py-1 text-xs font-black text-amber-100">
-                                    {t('interaction.mageAbilityStatusChoice.manaCost', { manaCost })}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </section>
-        </aside>
+        <CardChoiceOverlay
+            isOpen={selections.length > 0}
+            title={abilityName ?? t('interaction.objectAbilityChoice.fallbackTitle')}
+            subtitle={targetObject?.name}
+            tone="amber"
+            cardHeightClassName="h-[var(--mage-wars-desktop-spellbook-card-height,var(--mage-wars-desktop-card-height,14rem))]"
+            gridMaxHeightClassName={MAGE_WARS_CARD_CHOICE_SCROLL_MAX_HEIGHT}
+            testId="mage-wars-object-ability-choice-dock"
+            cancelLabel={t('interaction.mageAbilityStatusChoice.cancel')}
+            onCancel={onCancel}
+            onSelect={(selectionId) => {
+                const selection = selections.find((candidate) => candidate.id === selectionId);
+                if (selection) onSelect(selection);
+            }}
+            options={selections.map((selection) => {
+                const boundSpellCardId = selection.value?.boundSpellCardId;
+                const accessibleLabel = getObjectAbilityChoiceAccessibleLabel(selection);
+                return {
+                    id: selection.id,
+                    previewRef: boundSpellCardId === undefined
+                        ? undefined
+                        : getMageWarsSpellCardPreviewRef(boundSpellCardId),
+                    aspectRatio: boundSpellCardId === undefined
+                        ? undefined
+                        : getMageWarsSpellCardAspectRatio(boundSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO,
+                    ariaLabel: accessibleLabel,
+                    fallbackLabel: accessibleLabel,
+                    testId: 'mage-wars-object-ability-choice-option',
+                    previewTestId: 'mage-wars-object-ability-choice-card-preview',
+                    dataAttributes: {
+                        'data-mode': selection.value?.mode,
+                        'data-bound-spell-card-id': boundSpellCardId,
+                        'data-choice-card-id': boundSpellCardId,
+                        'data-mana-cost': selection.value?.manaCost ?? 0,
+                        'data-source-card-id': boundSpellCardId,
+                    },
+                };
+            })}
+        />
     );
 }
 
@@ -3807,6 +3786,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
     const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
     const [publicViewTargetPlayerId, setPublicViewTargetPlayerId] = useState<PlayerId | null>(null);
+    const [arenaBottomFitInset, setArenaBottomFitInset] = useState(0);
+    const bottomViewportGridRef = useRef<HTMLDivElement | null>(null);
     const desktopBottomGap = MAGE_WARS_DESKTOP_BOTTOM_GAP_PX;
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
@@ -4999,6 +4980,39 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         '--mage-wars-prepared-row-padding-right': 'clamp(0rem, calc(1.083vw - 1.3rem), 0.375rem)',
     } as CSSProperties;
     const spellbookVisibleCardCount = MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT;
+
+    useLayoutEffect(() => {
+        const bottomGrid = bottomViewportGridRef.current;
+        if (!bottomGrid) return undefined;
+
+        const measureBottomFitInset = () => {
+            const gridRect = bottomGrid.getBoundingClientRect();
+            const boardRect = bottomGrid
+                .closest<HTMLElement>('[data-testid="mage-wars-board"]')
+                ?.getBoundingClientRect();
+            const boardBottom = boardRect?.bottom ?? window.innerHeight;
+            const nextInset = Math.max(0, boardBottom - gridRect.top);
+            setArenaBottomFitInset((currentInset) => (
+                Math.abs(currentInset - nextInset) < 0.5 ? currentInset : nextInset
+            ));
+        };
+
+        const frameId = window.requestAnimationFrame(measureBottomFitInset);
+        const observer = typeof ResizeObserver === 'function'
+            ? new ResizeObserver(measureBottomFitInset)
+            : null;
+        observer?.observe(bottomGrid);
+        window.addEventListener('resize', measureBottomFitInset);
+        window.addEventListener('orientationchange', measureBottomFitInset);
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            observer?.disconnect();
+            window.removeEventListener('resize', measureBottomFitInset);
+            window.removeEventListener('orientationchange', measureBottomFitInset);
+        };
+    }, []);
+
     return (
         <UndoProvider
             value={{
@@ -5033,7 +5047,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 data-testid="mage-wars-arena-viewport-shell"
                 data-tutorial-id="mw-stage"
                 style={{
-                    bottom: `calc(${desktopBottomGap}px + var(--mage-wars-desktop-spellbook-card-height, var(--mage-wars-desktop-card-height, 14rem)) + var(--mage-wars-desktop-section-gap, 1.125rem))`,
+                    bottom: 0,
                 }}
             >
                 <ZoomPanViewport
@@ -5041,6 +5055,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     minScale={0.6}
                     maxScale={2.6}
                     baseScaleMode="cover"
+                    fitInsets={{ bottom: arenaBottomFitInset }}
                     panBoundsMode="free"
                     panToTarget={tutorialArenaPanTarget}
                     containerTestId="mage-wars-arena-viewport"
@@ -5143,7 +5158,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 dispatch={dispatch}
             />
             <MageSpellCastChoiceDock
-                spellName={selectedSpell?.name}
                 targetPlayer={pendingSpellTargetPlayer}
                 selections={pendingSpellCastPlayerSelections}
                 onSelect={submitSpellCastTargetSelection}
@@ -5252,6 +5266,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             ) : null}
             <div
                 className="pointer-events-none absolute z-30 grid items-end"
+                ref={bottomViewportGridRef}
                 style={{
                     left: 'var(--mage-wars-desktop-bottom-side-inset, var(--mage-wars-desktop-side-inset, 1rem))',
                     right: 'var(--mage-wars-desktop-bottom-side-inset, var(--mage-wars-desktop-side-inset, 1rem))',

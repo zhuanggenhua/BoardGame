@@ -54,7 +54,10 @@ import { isNativeMobileRuntime } from '../lib/mobile/mobileRuntime';
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_WARMUP_DELAY_MS = 120;
-const loadGameDetailsModalModule = () => import('../components/lobby/GameDetailsModal');
+type GameDetailsModalModule = typeof import('../components/lobby/GameDetailsModal');
+type GameDetailsModalComponent = GameDetailsModalModule['GameDetailsModal'];
+
+const loadGameDetailsModalModule = (): Promise<GameDetailsModalModule> => import('../components/lobby/GameDetailsModal');
 const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((module) => ({
     default: requireLazyModuleExport(module, 'GameDetailsModal', '../components/lobby/GameDetailsModal'),
 })));
@@ -326,6 +329,13 @@ export const Home = () => {
     const missingMatchConfirmRetryTimerRef = useRef<number | null>(null);
     const initialUrlModalCheckDoneRef = useRef(false);
     const gameModalNavigateAwayBridgeRef = useRef<() => void>(() => {});
+    const loadedGameDetailsModalRef = useRef<GameDetailsModalComponent | null>(null);
+
+    const ensureGameDetailsModalLoaded = useCallback(async () => {
+        const module = await loadGameDetailsModalModule();
+        loadedGameDetailsModalRef.current = module.GameDetailsModal;
+        return module;
+    }, []);
 
     const gameUrlModal = useUrlModal({
         paramKey: 'game',
@@ -334,12 +344,12 @@ export const Home = () => {
             const game = getGameById(gameId);
             if (!game) return null;
             return {
-                render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => (
-                    <HomeModalErrorBoundary
-                        resetKey={game.id}
-                    >
-                        <Suspense fallback={<HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
-                            <LazyGameDetailsModal
+                render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => {
+                    const GameDetailsModalComponent = loadedGameDetailsModalRef.current ?? LazyGameDetailsModal;
+                    return (
+                        <HomeModalErrorBoundary resetKey={game.id}>
+                            <Suspense fallback={<HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
+                                <GameDetailsModalComponent
                                 isOpen
                                 onClose={close}
                                 gameId={game.id}
@@ -347,11 +357,13 @@ export const Home = () => {
                                 descriptionKey={game.descriptionKey}
                                 thumbnail={game.thumbnail}
                                 closeOnBackdrop={closeOnBackdrop}
+                                disableEnterAnimation
                                 onNavigate={() => gameModalNavigateAwayBridgeRef.current()}
-                            />
-                        </Suspense>
-                    </HomeModalErrorBoundary>
-                ),
+                                />
+                            </Suspense>
+                        </HomeModalErrorBoundary>
+                    );
+                },
             };
         }, []),
     });
@@ -368,8 +380,8 @@ export const Home = () => {
             return undefined;
         }
 
-        return scheduleHomeGameDetailsModalWarmup(loadGameDetailsModalModule);
-    }, []);
+        return scheduleHomeGameDetailsModalWarmup(ensureGameDetailsModalLoaded);
+    }, [ensureGameDetailsModalLoaded]);
 
     useEffect(() => {
         const unsubscribe = subscribeGameRegistry(() => {
@@ -406,7 +418,7 @@ export const Home = () => {
         navigate(toolRoute, { replace: true });
     }, [activeGameModalId, gameUrlModal.navigateAwayRef, navigate]);
 
-    const handleGameClick = (id: string) => {
+    const handleGameClick = async (id: string) => {
         const game = getGameById(id);
         if (game?.type === 'tool') {
             const toolRoute = resolveToolRoute(id);
@@ -416,7 +428,10 @@ export const Home = () => {
             }
             return;
         }
-        void loadGameDetailsModalModule().catch((error) => {
+
+        // 先完成懒加载，再写入 URL；否则 Suspense 会先挂骨架，再卸载骨架换正式弹窗，
+        // 冷点击时就会表现成首页弹窗闪一下。
+        await ensureGameDetailsModalLoaded().catch((error) => {
             console.warn('[Home] 预热 GameDetailsModal 失败，忽略并等待显式打开时重试', error);
         });
         if (activeGameModalId === id) {
@@ -436,10 +451,10 @@ export const Home = () => {
         if (game?.type === 'tool') {
             return;
         }
-        void loadGameDetailsModalModule().catch((error) => {
+        void ensureGameDetailsModalLoaded().catch((error) => {
             console.warn('[Home] 预热 GameDetailsModal 失败，忽略并等待显式打开时重试', error);
         });
-    }, []);
+    }, [ensureGameDetailsModalLoaded]);
 
     const handleLogout = () => {
         logout();

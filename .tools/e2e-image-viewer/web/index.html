@@ -48,10 +48,15 @@
               </div>
               <button id="imageDetailClose" class="image-detail-close" type="button" aria-label="关闭原图详情" title="关闭原图详情">×</button>
             </header>
+            <div class="image-detail-nav" aria-label="原图切换">
+              <button id="imageDetailPrevious" class="image-detail-nav-button" type="button" aria-label="上一张图片" title="上一张图片">‹</button>
+              <button id="imageDetailNext" class="image-detail-nav-button" type="button" aria-label="下一张图片" title="下一张图片">›</button>
+            </div>
             <div id="imageDetailViewport" class="image-detail-viewport" aria-label="原图查看区域"></div>
             <footer class="image-detail-status">
               <span id="imageDetailSummary">点击图片后加载原图。</span>
-              <span>滚轮缩放，拖拽平移，Esc 返回总览</span>
+              <span id="imageDetailPosition" aria-live="polite"></span>
+              <span>左右箭头切换，滚轮缩放，拖拽平移，Esc 返回总览</span>
             </footer>
           </section>
         </section>

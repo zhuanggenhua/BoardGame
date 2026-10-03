@@ -2,9 +2,14 @@ import type { PlayerId } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneRollContext, DtResponseWindowType, TeamId } from './types';
 
 const TEAM_MODE_PLAYER_COUNT = 4;
+const SKIRMISH_MODE_PLAYER_COUNT = 3;
 
 export const isTeamMode = (state: DiceThroneCore): boolean => (
     Object.keys(state.players).length === TEAM_MODE_PLAYER_COUNT
+);
+
+export const isSkirmishMode = (state: DiceThroneCore): boolean => (
+    Object.keys(state.players).length === SKIRMISH_MODE_PLAYER_COUNT
 );
 
 export const getSeatingOrder = (state: DiceThroneCore): PlayerId[] => {

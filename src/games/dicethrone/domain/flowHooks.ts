@@ -42,6 +42,7 @@ import {
     getTargetingRollAutoDefenderId,
     getTargetingRollChoiceOptions,
     getTargetingRollChoiceOwnerId,
+    isSkirmishMode,
     isTeamMode,
     getPendingBonusSettlementDice,
     hasPendingBonusDiceSettlement,
@@ -134,12 +135,22 @@ registerChoiceEffectHandler(TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID, ({ state, playe
 const pendingAttackNeedsTargetingRoll = (core: DiceThroneCore): boolean => {
     const pendingAttack = core.pendingAttack;
     const sourceAbilityId = pendingAttack?.sourceAbilityId;
-    if (!pendingAttack || !sourceAbilityId || pendingAttack.defenderId !== undefined || !isTeamMode(core)) {
+    if (!pendingAttack || !sourceAbilityId || pendingAttack.defenderId !== undefined) {
         return false;
     }
 
+    if (!isTeamMode(core) && !isSkirmishMode(core)) return false;
+
     return playerAbilityHasDamage(core, pendingAttack.attackerId, sourceAbilityId)
         || playerAbilityNeedsSingleOpponentTarget(core, pendingAttack.attackerId, sourceAbilityId);
+};
+
+const isSkirmishLeader = (state: DiceThroneCore, playerId: PlayerId): boolean => {
+    const healthValues = Object.values(state.players).map(
+        (player) => player.resources[RESOURCE_IDS.HP] ?? 0,
+    );
+    const maxHealth = Math.max(...healthValues, 0);
+    return (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) === maxHealth;
 };
 
 const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
@@ -1921,7 +1932,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
             let targetingCore = core;
             const attackerId = core.pendingAttack.attackerId;
-            const targetingValue = getActiveDice(core, from as TurnPhase)[0]?.value ?? 1;
+            const isSkirmish = isSkirmishMode(core);
+            const targetingValue = isSkirmish ? 6 : (getActiveDice(core, from as TurnPhase)[0]?.value ?? 1);
             const autoDefenderId = getTargetingRollAutoDefenderId(core, attackerId, targetingValue);
             const selectedDefenderId = command.type === 'SELECT_DEFENDER_TARGET'
                 ? ((command.payload as { defenderId?: unknown } | undefined)?.defenderId)
@@ -1948,7 +1960,36 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 targetingCore = applyEvents(targetingCore, [localResolvedEvent], reduce);
             }
 
-            if (autoDefenderId && !targetingCore.pendingAttack.defenderId) {
+            if (isSkirmish && !targetingCore.pendingAttack.defenderId) {
+                if (
+                    targetingCore.pendingAttack.targetingSelectionPending
+                    || state.sys.interaction?.current?.kind === 'dt:defender-choice'
+                ) {
+                    return { events, halt: true };
+                }
+                if (targetingCore.pendingAttack.targetingSelectionResolved !== true) {
+                    const choiceEvent: DefenderSelectionRequestedEvent = {
+                        type: 'DEFENDER_SELECTION_REQUESTED',
+                        payload: {
+                            attackerId,
+                            chooserPlayerId: attackerId,
+                            sourceAbilityId: targetingCore.pendingAttack.sourceAbilityId ?? 'skirmish-targeting',
+                            titleKey: 'interaction.targetingRollSelectTarget',
+                            targetRollValue: 6,
+                            options: getTargetingRollChoiceOptions(targetingCore, attackerId)
+                                .map((option) => ({
+                                    playerId: option.customId.slice('select-target:'.length),
+                                    customId: option.customId,
+                                    disabled: option.disabled,
+                                })),
+                        },
+                        sourceCommandType: command.type,
+                        timestamp,
+                    };
+                    events.push(choiceEvent);
+                    return { events, halt: true };
+                }
+            } else if (autoDefenderId && !targetingCore.pendingAttack.defenderId) {
                 const targetResolvedEvent: DiceThroneEvent = {
                     type: 'DEFENDER_SELECTION_RESOLVED',
                     payload: {
@@ -2032,6 +2073,35 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
             if (!targetingCore.pendingAttack.defenderId) {
                 return { events, halt: true };
+            }
+
+            if (
+                isSkirmish
+                && targetingCore.pendingAttack.targetingSelectionResolved === true
+                && targetingCore.pendingAttack.skirmishLeaderBonusDrawn !== true
+                && playerAbilityHasDamage(targetingCore, attackerId, targetingCore.pendingAttack.sourceAbilityId ?? '')
+                && isSkirmishLeader(targetingCore, targetingCore.pendingAttack.defenderId)
+            ) {
+                const markLeaderBonusEvent = {
+                    type: 'PENDING_ATTACK_UPDATED',
+                    payload: {
+                        attackerId,
+                        patch: { skirmishLeaderBonusDrawn: true },
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent;
+                events.push(markLeaderBonusEvent);
+                const leaderBonusCore = applyEvents(targetingCore, [markLeaderBonusEvent], reduce);
+                events.push(...buildDrawEvents(
+                    leaderBonusCore,
+                    attackerId,
+                    1,
+                    random,
+                    command.type,
+                    timestamp + 0.001,
+                    'skirmish-leader-bonus',
+                ));
             }
 
             const deferredAttackModifierCardIds = targetingCore.pendingAttack.deferredAttackModifierCardIds ?? [];
@@ -2613,6 +2683,35 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         const core = state.core;
         const events: GameEvent[] = [];
         const timestamp = typeof command.timestamp === 'number' ? command.timestamp : 0;
+
+        if (to === 'targetingRoll' && isSkirmishMode(
+            exitEvents?.length ? applyEvents(core, exitEvents as DiceThroneEvent[], reduce) : core,
+        )) {
+            const phaseEnterCore = exitEvents?.length
+                ? applyEvents(core, exitEvents as DiceThroneEvent[], reduce)
+                : core;
+            const pendingAttack = phaseEnterCore.pendingAttack;
+            if (pendingAttack && !pendingAttack.defenderId && pendingAttack.targetingSelectionPending !== true) {
+                return [{
+                    type: 'DEFENDER_SELECTION_REQUESTED',
+                    payload: {
+                        attackerId: pendingAttack.attackerId,
+                        chooserPlayerId: pendingAttack.attackerId,
+                        sourceAbilityId: pendingAttack.sourceAbilityId ?? 'skirmish-targeting',
+                        titleKey: 'interaction.targetingRollSelectTarget',
+                        targetRollValue: 6,
+                        options: getTargetingRollChoiceOptions(phaseEnterCore, pendingAttack.attackerId)
+                            .map((option) => ({
+                                playerId: option.customId.slice('select-target:'.length),
+                                customId: option.customId,
+                                disabled: option.disabled,
+                            })),
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DefenderSelectionRequestedEvent];
+            }
+        }
 
         // ========== 进入 upkeep 阶段：结算维持阶段触发的状态效果 ==========
         // 规则 §3.1：结算所有在"维持阶段"触发的状态效果或被动能力。

@@ -1,3 +1,4 @@
+import './load-dev-env.mjs';
 import net from 'node:net';
 import os from 'node:os';
 import { execFileSync, spawn } from 'node:child_process';
@@ -312,6 +313,10 @@ function resolveGameDevEnv(mongoUri) {
     return { USE_PERSISTENT_STORAGE: 'false' };
 }
 
+export function shouldStartApi({ skipApiMode, mongoUri }) {
+    return !skipApiMode && Boolean(mongoUri?.trim());
+}
+
 async function main() {
     disableHotReload = isHotReloadDisabled(process.env);
     removeDevRuntimePorts();
@@ -353,15 +358,20 @@ async function main() {
     if (disableHotReload) {
         console.log('[dev-orchestrator] hot reload disabled: game/api run once, Vite HMR/watch disabled');
     }
-    console.log('[dev-orchestrator] starting api and game in parallel');
-    const apiChild = skipApiMode
-        ? null
-        : startCommand('dev:api', process.execPath, createBundleRunnerArgs({
+    const startApi = shouldStartApi({ skipApiMode, mongoUri: resolvedMongoUri });
+    if (!startApi) {
+        console.warn('[dev-orchestrator] API 因 MONGO_URI/本地 Mongo 不可用而跳过；前端 + game 继续启动');
+    } else {
+        console.log('[dev-orchestrator] starting api and game in parallel');
+    }
+    const apiChild = startApi
+        ? startCommand('dev:api', process.execPath, createBundleRunnerArgs({
             label: 'api',
             entry: 'apps/api/src/main.ts',
             outfile: getBundleOutfile('api', 'main.mjs'),
             tsconfig: 'apps/api/tsconfig.json',
-        }), sharedDevEnv, { optional: true });
+        }), sharedDevEnv, { optional: true })
+        : null;
     const gameExtraEnv = resolveGameDevEnv(resolvedMongoUri);
     const gameArgs = createBundleRunnerArgs({
         label: 'game',
@@ -389,7 +399,7 @@ async function main() {
     await waitForPort(gamePort, 'game');
 
     let apiReady = false;
-    if (!skipApiMode) {
+    if (startApi) {
         try {
             await waitForPort(apiPort, 'api', 15000);
             apiReady = true;
@@ -418,6 +428,11 @@ async function main() {
 
     if (skipApiMode) {
         console.log('[dev-orchestrator] frontend 已启动；API 已按当前模式跳过');
+        return;
+    }
+
+    if (!startApi) {
+        console.log('[dev-orchestrator] frontend 已启动；API 因本地数据库不可用被跳过');
         return;
     }
 

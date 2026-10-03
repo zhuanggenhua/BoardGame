@@ -96,7 +96,10 @@ export function getUsableTokenAmountForTiming(
 ): number {
     const player = state.players[playerId];
     if (!player) return 0;
-    if (getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false })) return 0;
+    // 眩晕 / 晕眩只禁止主动攻击；提示卡明确允许持有者在任何时候花气减伤，
+    // 因此防御方的 beforeDamageReceived 响应不能被状态门禁吞掉。
+    if (timing === 'beforeDamageDealt'
+        && getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false })) return 0;
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
     if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;

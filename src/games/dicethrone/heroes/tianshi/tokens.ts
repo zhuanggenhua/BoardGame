@@ -45,6 +45,7 @@ export const TIANSHI_TOKENS: TokenDef[] = [
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: true,
+            transferable: false,
             actions: [{ type: 'custom', target: 'allOpponents', customActionId: 'tianshi-divine-arrival-upkeep' }],
         },
         frameId: TOKEN_IDS.DIVINE_ARRIVAL,

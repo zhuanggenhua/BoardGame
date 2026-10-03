@@ -185,6 +185,8 @@
     "passQuickcast": "Pass quickcast",
     "endAction": "End action",
     "endTurn": "End Turn",
+    "activateAbility": "Use ability",
+    "rebindSpell": "Rebind spell",
     "close": "Close"
   },
   "interaction": {

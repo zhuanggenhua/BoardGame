@@ -13001,6 +13001,38 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('40-半身人雇佣兵开放第二个随从后状态', testInfo);
     });
 
+    test('虎骑士打出后可在同基地摧毁力量2或更少的仆从', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        const scene = buildMunchkinTreasureMinionScene();
+        scene.extra.core.bases[0].minions = [
+            minion('tiger-target-1', 'munchkin_dwarves_gem_grabber', '1', 2),
+        ];
+        await game.setupScene(scene);
+
+        await expect(page.locator('[data-card-uid="tiger-steed-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="tiger-target-1"]').first()).toBeVisible({ timeout: 15000 });
+
+        await game.playCard('munchkin_treasure_tiger_steed', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_treasure_tiger_steed_destroy', 10000);
+
+        await expect.poll(async () => {
+            const options = await game.getInteractionOptions() as InteractionOption[];
+            return options.map(option => option.value?.minionUid).filter(Boolean);
+        }, { timeout: 10000 }).toEqual(['tiger-target-1']);
+
+        await clickManualMinionChoice(page, 'tiger-target-1', '虎骑士选择力量2仆从');
+        await game.waitForNoInteraction(10000);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].minions.map((entry: any) => entry.uid);
+        }, { timeout: 10000 }).toEqual(['tiger-steed-1']);
+        await game.screenshot('虎骑士摧毁力量2仆从后', testInfo);
+    });
+
     test('半身人可打出后只开放同基地额外随从额度', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 

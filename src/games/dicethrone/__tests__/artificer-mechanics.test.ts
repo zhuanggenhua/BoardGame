@@ -5,6 +5,7 @@ import { diceThroneFlowHooks } from '../domain/flowHooks';
 import { resolveOffensivePreDefenseEffects } from '../domain/attack';
 import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
+import { validateCommand } from '../domain/commandValidation';
 import { initializeCustomActions } from '../domain/customActions';
 import { buildHeroAbilitiesForFace, initHeroState } from '../domain/characters';
 import { resolveEffectsToEvents } from '../domain/effects';
@@ -427,6 +428,34 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
 
         expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
         expect(next.players['1'].statusEffects[STATUS_IDS.NANOBOMB]).toBe(1);
+    });
+
+    it('自定义被动处理器缺失时，不应先扣资源再静默结束', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'main1';
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 4;
+        state.core.players['0'].passiveAbilities = state.core.players['0'].passiveAbilities?.map((passive) => (
+            passive.id !== 'artificer-workshop'
+                ? passive
+                : {
+                    ...passive,
+                    actions: passive.actions.map((action, index) => index === 2
+                        ? { ...action, customActionId: 'missing-artificer-handler' }
+                        : action),
+                }
+        ));
+
+        const useCommand = command('USE_PASSIVE_ABILITY', '0', {
+            passiveId: 'artificer-workshop',
+            actionIndex: 2,
+        });
+
+        expect(validateCommand(state.core, useCommand, 'main1')).toMatchObject({
+            valid: false,
+            error: 'custom_action_handler_missing',
+        });
+        expect(execute(state, useCommand, fixedRandom)).toEqual([]);
+        expect(state.core.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(4);
     });
 
     it('工匠在 4 人组队局花费 4 合成器施加纳米爆弹时，会先创建仅列敌方的选目标交互', () => {

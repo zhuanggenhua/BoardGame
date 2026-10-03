@@ -1384,6 +1384,8 @@
     "munchkin_halitosis_move_title": "口臭药水：移动你的仆从",
     "munchkin_potion_of_duplication_choose_talent_title": "复制药水：选择另一个仆从的天赋",
     "munchkin_magic_missile_destroy_title": "魔法导弹：选择目标仆从",
+    "munchkin_tiger_steed_destroy_title": "虎骑士：选择要摧毁的仆从",
+    "munchkin_tiger_steed_skip_destroy_option": "跳过（不摧毁）",
     "munchkin_straight_line_running_away_choose_treasure_title": "直线跑路药水：选择已展示的宝藏",
     "munchkin_rocket_boots_move_title": "火箭靴：选择目标基地",
     "munchkin_mages_blaster_master_discard_title": "爆破大师：选择一张手牌作为弃牌成本",
@@ -12272,7 +12274,8 @@
       "abilityText": "当打出此仆从后，本回合你可以额外打出一个仆从。该额外仆从可以是一张宝藏仆从。"
     },
     "munchkin_treasure_tiger_steed": {
-      "name": "虎骑士"
+      "name": "虎骑士",
+      "abilityText": "你可以摧毁这里一个力量2或更少的仆从。"
     },
     "munchkin_treasure_bag_of_caltrops": {
       "name": "一袋铁蒺藜",

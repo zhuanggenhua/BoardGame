@@ -66,6 +66,8 @@ interface GameDetailsModalProps {
     closeOnBackdrop?: boolean;
     /** 导航前调用，通知父组件不要清理地址参数 */
     onNavigate?: () => void;
+    /** 首页 lazy 弹窗从骨架接管时跳过首次透明入场，避免交接空帧 */
+    disableEnterAnimation?: boolean;
 }
 
 type PendingRoomAction = {
@@ -111,7 +113,7 @@ const formatInstalledPackageVersionForTitle = (value: string | undefined): strin
     return normalized.length > 8 ? `${normalized.slice(0, 8)}…` : normalized;
 };
 
-export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate }: GameDetailsModalProps) => {
+export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate, disableEnterAnimation }: GameDetailsModalProps) => {
     const navigate = useNavigate();
     const modalRef = useRef<HTMLDivElement>(null);
     const activeMatchCheckRef = useRef<string | null>(null);
@@ -1989,6 +1991,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 onClose={onClose}
                 closeOnBackdrop={closeOnBackdrop}
                 containerClassName="p-4 sm:p-8"
+                skipEnterAnimation={disableEnterAnimation}
             >
                 <div
                     ref={modalRef}

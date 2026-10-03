@@ -69,8 +69,9 @@ import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
+import { getCustomActionHandler } from './effects';
 import { getGameMode, isDiceThroneAiSeat } from './utils';
-import { canRemoveStatusFromPlayer, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
+import { canRemoveStatusFromPlayer, canTransferStatus, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { isPendingDamageResponseBonusSettlement } from './damageSummary';
@@ -1224,10 +1225,6 @@ const validateTransferStatus = (
     const sourceTargetError = validateTargetPlayerInInteraction(state, interaction, cmd.payload.fromPlayerId);
     if (sourceTargetError) return sourceTargetError;
 
-    if (!canRemoveStatusFromPlayer(state, playerId, cmd.payload.fromPlayerId, cmd.payload.statusId)) {
-        return fail('invalid_status');
-    }
-
     const targetError = validateTargetPlayerInInteraction(state, interaction, cmd.payload.toPlayerId);
     if (targetError) return targetError;
 
@@ -1244,6 +1241,10 @@ const validateTransferStatus = (
 
     if (!playerHasStatusOrToken(state, cmd.payload.fromPlayerId, cmd.payload.statusId)) {
         return fail('no_status');
+    }
+
+    if (!canTransferStatus(state, playerId, cmd.payload.fromPlayerId, cmd.payload.statusId)) {
+        return fail('invalid_status');
     }
 
     return ok();
@@ -1450,9 +1451,11 @@ const validateUseToken = (
     if (!isMoveAllowed(playerId, pendingDamage.responderId)) {
         return fail('player_mismatch');
     }
-    const blockedError = getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false });
-    if (blockedError) {
-        return fail(blockedError);
+    if (pendingDamage.responseType === 'beforeDamageDealt') {
+        const blockedError = getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false });
+        if (blockedError) {
+            return fail(blockedError);
+        }
     }
 
     const p = state.players[playerId];
@@ -1729,6 +1732,10 @@ const validateUsePassiveAbility = (
     // custom 动作需要配置 customActionId
     if (action.type === 'custom' && !action.customActionId) {
         return fail('custom_action_missing');
+    }
+    // 处理器缺失时不能放行命令，否则 execute() 会先扣资源再静默结束。
+    if (action.type === 'custom' && action.customActionId && !getCustomActionHandler(action.customActionId)) {
+        return fail('custom_action_handler_missing');
     }
 
     // rerollDie 需要合法且处于当前投掷池内的 targetDieId

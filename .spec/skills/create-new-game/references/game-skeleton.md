@@ -68,6 +68,7 @@ src/games/<gameId>/
 ## Manifest 与资源
 
 - `manifest.id` 与目录名一致。
+- 只要游戏仍处于实施中、存在 partial/deferred 范围或尚未完成 closeout，`manifest.ts` 必须声明 `statusTag: 'under_construction'`；`enabled` 只表示大厅是否可发现，不能代替生命周期状态。
 - 游戏类型为 `game` 时必须有 `game.ts` 和 `Board.tsx`。
 - `src/games/manifest*.generated.ts(x)` 是生成文件，禁止手改；新增 / 修改 manifest 后运行 `npm run generate:manifests`。
 - 图片资源走 `public/assets/i18n/<locale>/<gameId>/` 和对应 manifest；代码里不得硬编码 `compressed/` 或服务器 URL。
