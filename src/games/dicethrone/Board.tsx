@@ -1044,7 +1044,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             ? { onPass: () => engineMoves.responsePass(currentResponderId), kind: 'card' as const }
             : undefined;
     const canPlayHandCards = canPlayHandCardsForCurrentBoard({
-        isSpectator,
         isActivePlayer,
         isResponder,
         isDirectDiceActor,
@@ -1056,7 +1055,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         isSpectator,
         isActivePlayer,
     });
-    const canInteractHand = canInteractHandForCurrentBoard({ isSpectator });
+    const canInteractHand = canInteractHandForCurrentBoard();
 
     // （variant 选择弹窗由 onSelectAbility 回调触发，不需要自动弹出）
 

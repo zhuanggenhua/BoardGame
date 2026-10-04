@@ -2266,8 +2266,14 @@ const exerciseMummyGoldenMedicalKitUse = async (
     await expect(targetFeedback).toBeVisible();
     await expect(targetFeedback).toHaveAttribute('data-feedback-style', 'floating-text');
     await expect(targetFeedback).toHaveAttribute('data-feedback-anchor', 'target-token');
-    await expect(targetFeedback).toContainText(/治疗\s*\+4$/);
-    await expect(targetFeedback).not.toContainText('力量 / 速度 / 知识 / 神志');
+    await expect(targetFeedback).toHaveClass(/flex-col/);
+    await expect(targetFeedback).not.toContainText(' / ');
+    await expect(targetFeedback.locator(':scope > span')).toHaveCount(4);
+    await expect(targetFeedback).toContainText('+1 力量');
+    await expect(targetFeedback).toContainText('+1 速度');
+    await expect(targetFeedback).toContainText('+1 知识');
+    await expect(targetFeedback).toContainText('+1 神志');
+    await expect(targetFeedback).not.toContainText('治疗 +4');
     await expect(page.getByTestId('betrayal-inventory-medical-kit')).toHaveCount(0);
     await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveCount(0);
     const afterUseCore = await readInjectedCore(page);

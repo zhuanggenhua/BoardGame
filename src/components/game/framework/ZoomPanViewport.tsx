@@ -95,6 +95,7 @@ export interface ZoomPanViewportProps {
     panBoundsMode?: 'content' | 'free';
     interactionDisabled?: boolean;
     panToTarget?: string | null;
+    panToTargetKey?: string | number | null;
     panToScale?: number;
     controlledViewport?: ZoomPanViewportState;
     onControlledViewportChange?: (viewport: ZoomPanViewportState) => void;
@@ -131,6 +132,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     panBoundsMode = 'content',
     interactionDisabled = false,
     panToTarget,
+    panToTargetKey,
     panToScale,
     controlledViewport,
     onControlledViewportChange,
@@ -233,7 +235,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const shouldShowScaleBadge = scaleBadgeVisibility === 'interaction'
         ? isScaleBadgeVisible
         : isScaleBadgeVisible || !isAtDefaultZoom || scaleBadgeAddon != null;
-    const panInstructionKey = panToTarget ? `${panToTarget}:${panToScale ?? 'current'}` : null;
+    const panInstructionKey = panToTarget
+        ? `${panToTargetKey ?? panToTarget}:${panToScale ?? 'current'}`
+        : null;
     const panTargetState = panToTarget
         ? settledPanInstructionKey === panInstructionKey && !isAnimating
             ? 'settled'
@@ -681,6 +685,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     useEffect(() => {
         if (!panToTarget) {
             handledPanInstructionRef.current = null;
+            setSettledPanInstructionKey(null);
             return undefined;
         }
         if (!contentRef.current || !containerRef.current) return undefined;
@@ -724,8 +729,18 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 : currentZoomLevel;
             const containerRect = containerEl.getBoundingClientRect();
             const elementRect = targetRect;
-            const viewportCenterX = containerSize.width / 2 + fitCenterOffset.x;
-            const viewportCenterY = containerSize.height / 2 + fitCenterOffset.y;
+            // `containerSize` / `fitCenterOffset` are measured in the viewport's
+            // layout coordinate system. On mobile the whole board shell can be
+            // transformed, so focus math must first convert them to the current
+            // screen coordinate system represented by `getBoundingClientRect()`.
+            const shellScaleX = containerSize.width > 0
+                ? containerRect.width / containerSize.width
+                : 1;
+            const shellScaleY = containerSize.height > 0
+                ? containerRect.height / containerSize.height
+                : shellScaleX;
+            const viewportCenterX = containerRect.width / 2 + fitCenterOffset.x * shellScaleX;
+            const viewportCenterY = containerRect.height / 2 + fitCenterOffset.y * shellScaleY;
 
             let targetPosition;
             if (panToScale == null) {
@@ -736,9 +751,33 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - containerRect.top;
                 const deltaX = viewportCenterX - targetCenterX;
                 const deltaY = viewportCenterY - targetCenterY;
+                const renderedScale = Math.max(
+                    0.01,
+                    baseScale * currentZoomLevel * Math.max(0.01, shellScaleX),
+                );
+                const renderedTranslateMatch = contentEl.style.transform.match(
+                    /translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)/,
+                );
+                const currentRenderPosition = renderedTranslateMatch
+                    ? {
+                        x: Number.parseFloat(renderedTranslateMatch[1] ?? '0'),
+                        y: Number.parseFloat(renderedTranslateMatch[2] ?? '0'),
+                    }
+                    : {
+                        x: activePosition.x + (panBoundsMode === 'free' ? fitCenterOffset.x : 0),
+                        y: activePosition.y + (panBoundsMode === 'free' ? fitCenterOffset.y : 0),
+                    };
+                const currentPosition = panBoundsMode === 'free'
+                    ? {
+                        x: currentRenderPosition.x - fitCenterOffset.x,
+                        y: currentRenderPosition.y - fitCenterOffset.y,
+                    }
+                    : currentRenderPosition;
                 targetPosition = {
-                    x: activePosition.x + deltaX,
-                    y: activePosition.y + deltaY,
+                    // position is applied before scale(); convert the observed
+                    // screen-space correction back into pre-scale coordinates.
+                    x: currentPosition.x + deltaX / renderedScale,
+                    y: currentPosition.y + deltaY / renderedScale,
                 };
             } else {
                 const savedTransform = contentEl.style.transform;
@@ -826,6 +865,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         panInstructionKey,
         panToScale,
         panToTarget,
+        panToTargetKey,
         revealScaleBadge,
     ]);
 

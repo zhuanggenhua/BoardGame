@@ -248,7 +248,7 @@ describe('ZoomPanViewport', () => {
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('translate(0px, 80px)');
+            expect(content.style.transform).toContain('translate(0px, 160px)');
         });
     });
 
@@ -281,7 +281,7 @@ describe('ZoomPanViewport', () => {
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('translate(-20px, -20px)');
+            expect(content.style.transform).toContain('translate(-160px, 40px)');
         });
     });
 });

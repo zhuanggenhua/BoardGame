@@ -2,7 +2,6 @@ import type { PlayerId } from '../../../engine/types';
 import type { TurnPhase } from '../domain/types';
 
 export interface CanPlayHandCardsForCurrentBoardParams {
-    isSpectator: boolean;
     isActivePlayer: boolean;
     isResponder: boolean;
     isDirectDiceActor: boolean;
@@ -11,13 +10,7 @@ export interface CanPlayHandCardsForCurrentBoardParams {
     rollerId?: PlayerId;
 }
 
-export interface CanInteractHandForCurrentBoardParams {
-    isSpectator: boolean;
-}
-
-export const canInteractHandForCurrentBoard = ({
-    isSpectator: _isSpectator,
-}: CanInteractHandForCurrentBoardParams): boolean => true;
+export const canInteractHandForCurrentBoard = (): boolean => true;
 
 export const canPlayHandCardsForCurrentBoard = (_params: CanPlayHandCardsForCurrentBoardParams): boolean => {
     // 所有视角都保留同一套拖拽/点击交互。观战端的 moves 由引擎层统一变成 no-op，

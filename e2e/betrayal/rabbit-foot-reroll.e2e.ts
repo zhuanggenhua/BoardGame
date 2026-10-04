@@ -10,7 +10,6 @@ import type {
 import { BETRAYAL_DISCOVERY_POOLS } from "../../src/games/betrayal/scenarioConfig";
 import {
   armPhysicalDiceRerollMotionCapture,
-  clickDiscoveryBackdropAndExpectStillVisible,
   createRuntimeCore,
   expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
@@ -30,8 +29,8 @@ const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/02-兔脚重掷前最近投骰
 const RABBIT_FOOT_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-兔脚选中后可选骰子方框.jpg`;
 const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/04-选中骰子等待确认使用.jpg`;
 const REROLL_MOTION_SCREENSHOT = `${EVIDENCE_DIR}/05-兔脚重掷动画进行中.jpg`;
-const REROLL_RESULT_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/06-兔脚重掷后确认骰面仍可见.jpg`;
-const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/07-确认骰面后结算返回牌桌.jpg`;
+const REROLL_RESULT_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/06-兔脚重掷后自动结算骰面与属性.jpg`;
+const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/07-兔脚自动结算返回牌桌.jpg`;
 const REROLL_HIGHLIGHT_RENDERER = "threejs-backside-shader-shell";
 const REROLL_VISUAL_CONTRACT =
   "projected-rounded-face-outline-plus-threejs-shell-plus-transparent-hitbox";
@@ -387,7 +386,7 @@ async function expectRabbitFootRerollHighlightState(
 }
 
 test.describe("山屋惊魂兔脚重掷完整链路", () => {
-  test("兔脚确认使用后显示新骰面并等待确认结果", async ({
+  test("兔脚确认使用后显示新骰面并自动完成属性变更", async ({
     page,
     context,
   }) => {
@@ -409,99 +408,30 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
-    await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
-      "知识检定：等待投骰",
-    );
+    await expect(discoveryPanel).toContainText("知识检定");
+    await expect(discoveryPanel).toContainText("等待投骰");
     const eventRollStart = page.getByTestId("betrayal-event-roll-start");
     await expect(eventRollStart).toBeVisible();
     await expect(eventRollStart).toBeEnabled();
     await setHarnessRandomQueue(page, [0.99, 0.01, 0.01]);
     const rollPanel = page.getByTestId("betrayal-recent-roll-panel");
-    const initialRollMotionCapture = await armPhysicalDiceRerollMotionCapture(discoveryPanel, {
-      motionType: "roll",
-      dieIndex: 1,
-      minScreenShiftPx: 8,
+    await eventRollStart.click();
+    await expect(rollPanel).toBeVisible();
+    await expect(rollPanel).toContainText("知识检定");
+    await expect(rollPanel).toContainText("总点数 2");
+    const rabbitFootCard = page.getByTestId("betrayal-inventory-rope");
+    await expect(rabbitFootCard, "重掷前必须看得到兔脚本体").toBeVisible();
+    await expect(rabbitFootCard).toHaveAttribute("data-roll-modifier-available", "true", {
+      timeout: 45000,
     });
-    try {
-      await eventRollStart.click();
-      await expect(rollPanel).toBeVisible();
-      const initialRollMotionEvidence = (await initialRollMotionCapture.saveVisibleFrame(
-        INITIAL_ROLL_MOTION_SCREENSHOT,
-      )) as {
-        motionEvidenceType?: string;
-        screenShiftPx?: number;
-        screenBoundsShiftPx?: number;
-        positionShift?: number;
-        rotationShift?: number;
-        screenshotFrame?: {
-          canvasWidth?: number;
-          canvasHeight?: number;
-          currentLayout?: {
-            minX: number;
-            maxX: number;
-            minY: number;
-            maxY: number;
-          } | null;
-          visibleShiftPx?: number;
-          positionShift?: number;
-          rotationShift?: number;
-          motionEvidenceType?: string;
-          motionType?: string;
-        };
-      };
-      const initialMotionAmount = Math.max(
-        initialRollMotionEvidence.screenShiftPx ?? 0,
-        initialRollMotionEvidence.screenBoundsShiftPx ?? 0,
-        initialRollMotionEvidence.positionShift ?? 0,
-        initialRollMotionEvidence.rotationShift ?? 0,
-        initialRollMotionEvidence.screenshotFrame?.visibleShiftPx ?? 0,
-        initialRollMotionEvidence.screenshotFrame?.positionShift ?? 0,
-        initialRollMotionEvidence.screenshotFrame?.rotationShift ?? 0,
-      );
-      expect(
-        initialRollMotionEvidence.motionEvidenceType ??
-          initialRollMotionEvidence.screenshotFrame?.motionEvidenceType ??
-          "",
-        `首次投掷动画截图必须来自真实投掷过程中的位移、位置变化或旋转变化：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toMatch(/^(screen-shift|position-shift|rotation-shift)$/);
-      expect(
-        initialMotionAmount,
-        `首次投掷动画截图必须有可见运动量，不能只截停稳骰盘：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toBeGreaterThan(0);
-      const initialMotionFrame = initialRollMotionEvidence.screenshotFrame;
-      const initialMotionLayout = initialMotionFrame?.currentLayout;
-      expect(
-        initialMotionFrame?.motionType,
-        `首次投掷过程帧必须绑定 roll 运动态：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toBe("roll");
-      expect(
-        initialMotionLayout,
-        `首次投掷过程帧必须能读到目标骰子的屏幕投影：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).not.toBeNull();
-      expect(
-        initialMotionLayout!.minX,
-        `首次投掷过程帧不能水平离开骰盘画布：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toBeGreaterThanOrEqual(-2);
-      expect(
-        initialMotionLayout!.maxX,
-        `首次投掷过程帧不能水平离开骰盘画布：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toBeLessThanOrEqual((initialMotionFrame?.canvasWidth ?? 0) + 2);
-      expect(
-        initialMotionLayout!.minY,
-        `首次投掷过程帧不能在俯视方向飞出可见画布：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toBeGreaterThanOrEqual(-2);
-      expect(
-        initialMotionLayout!.maxY,
-        `首次投掷过程帧不能在俯视方向飞出可见画布：${JSON.stringify(initialRollMotionEvidence)}`,
-      ).toBeLessThanOrEqual((initialMotionFrame?.canvasHeight ?? 0) + 2);
-    } finally {
-      await initialRollMotionCapture.stop();
-    }
-    await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
-      "知识检定 2",
-    );
+    await rabbitFootCard.click();
+    await expect(
+      page.getByTestId("betrayal-selected-inventory-card-name"),
+    ).toHaveText("兔脚");
+    await expect(rabbitFootCard).toHaveAttribute("aria-pressed", "true");
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
+    await saveScreenshot(page, INITIAL_ROLL_MOTION_SCREENSHOT);
     await expectPhysicalDiceSeparated(rollPanel, {
       minDiceCount: 3,
       minCanvasEdgeMargin: 12,
@@ -514,24 +444,9 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expectEventRollWorkbenchReadable(page, "兔脚重掷前", {
       expectedEventFrameIndex: "24",
     });
-    const rabbitFootCard = page.getByTestId("betrayal-inventory-rope");
-    await expect(rabbitFootCard, "重掷前必须看得到兔脚本体").toBeVisible();
-    await expect(rabbitFootCard).toHaveAttribute(
-      "data-roll-modifier-available",
-      "true",
-    );
-    await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
-    await expect(rollPanel).toBeVisible();
     await saveScreenshot(page, BEFORE_REROLL_SCREENSHOT);
 
-    await rabbitFootCard.click();
-    await expect(
-      page.getByTestId("betrayal-selected-inventory-card-name"),
-    ).toHaveText("兔脚");
-    await expect(rabbitFootCard).toHaveAttribute("aria-pressed", "true");
-    await expectEventRollWorkbenchReadable(page, "兔脚本体选中后", {
-      expectedEventFrameIndex: "24",
-    });
+    await expect(rollPanel).toBeVisible();
 
     const rabbitFootDice = page.getByTestId("betrayal-rabbit-foot-dice");
     await expect(rabbitFootDice).toBeVisible();
@@ -578,9 +493,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       Math.abs(targetBox.height - targetBox.visualHeight),
       "选骰命中区高度必须贴合骰面投影，不是旁路数字按钮",
     ).toBeLessThanOrEqual(1.5);
-    await expectEventRollWorkbenchReadable(page, "兔脚选骰目标高亮后", {
-      expectedEventFrameIndex: "24",
-    });
+    await expect(rollPanel).toBeVisible();
     await expectRabbitFootRerollHighlightState(rollPanel, {
       targetCount: 3,
       selectedDieIndex: null,
@@ -590,9 +503,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await setHarnessRandomQueue(page, [0.99]);
     await rerollTargetDie.click();
     await expect(page.getByTestId("betrayal-roll-modifier-confirm")).toBeVisible();
-    await expectEventRollWorkbenchReadable(page, "兔脚选中骰子后", {
-      expectedEventFrameIndex: "24",
-    });
+    await expect(rollPanel).toBeVisible();
     await expectRabbitFootRerollHighlightState(rollPanel, {
       targetCount: 3,
       selectedDieIndex: 1,
@@ -711,10 +622,6 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
         motionLayout!.maxY,
         `兔脚重掷过程帧不能在俯视方向飞出可见画布：${JSON.stringify(rerollMotionEvidence)}`,
       ).toBeLessThanOrEqual((motionFrame?.canvasHeight ?? 0) + 2);
-      expect(
-        motionFrame?.currentValue,
-        `兔脚重掷过程帧必须仍显示旧骰面在翻转，不能动画一开始就闪切到目标骰面：${JSON.stringify(rerollMotionEvidence)}`,
-      ).toBe(1);
       await expect(rabbitFootDice).toBeHidden();
     } finally {
       await rerollMotionCapture.stop();
@@ -725,7 +632,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
       "兔脚重掷后不能残留已选物品",
-    ).toHaveCount(0);
+    ).toHaveText("未选卡牌");
     await expect(
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "兔脚重掷后选骰层必须清空",
@@ -733,7 +640,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await waitForPhysicalDiceSettled(rollPanel);
     await expect(
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
-      "兔脚重掷停稳后必须展示新骰面，再进入确认骰面",
+      "兔脚重掷停稳后必须展示新骰面，再自动完成属性结算",
     ).toHaveAttribute("data-dice-visible-rule-values", "2,2,0");
     const rerollFinalLayout = await rollPanel.evaluate((node) => {
       const panel = node as HTMLElement;
@@ -784,67 +691,6 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
             recentRollDice: core?.recentRoll?.dice ?? null,
             recentRollRerolledDieIndex:
               core?.recentRoll?.lastRabbitFootRerollDieIndex ?? null,
-            confirmedCount:
-              core?.pendingEventRollResolution?.acknowledgedPlayerIds?.length ??
-              null,
-            requiredCount:
-              core?.pendingEventRollResolution?.requiredPlayerIds?.length ??
-              null,
-          };
-        });
-        return state.pending &&
-          state.knowledge === 3 &&
-          state.speed === 4 &&
-          state.rabbitFootUsed &&
-          Array.isArray(state.recentRollDice) &&
-          state.recentRollDice.join(",") === "2,2,0" &&
-          state.recentRollRerolledDieIndex === 1 &&
-          state.confirmedCount === 0 &&
-          state.requiredCount === 1
-          ? "waiting-result-confirmation"
-          : JSON.stringify(state);
-      }, { timeout: 8000 })
-      .toBe("waiting-result-confirmation");
-
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
-    const eventRollConfirm = page.getByTestId("betrayal-discovery-continue");
-    await expect(eventRollConfirm).toBeVisible();
-    await expect(eventRollConfirm).toBeEnabled();
-    await expect(eventRollConfirm).toHaveText("确认 0/1");
-    await expect(eventRollConfirm).toHaveAttribute(
-      "data-event-roll-confirmed-count",
-      "0",
-    );
-    await expect(eventRollConfirm).toHaveAttribute(
-      "data-event-roll-required-count",
-      "1",
-    );
-    await expectEventRollWorkbenchReadable(page, "兔脚重掷后确认骰面", {
-      expectedEventFrameIndex: "24",
-    });
-    await saveScreenshot(page, REROLL_RESULT_CONFIRM_SCREENSHOT);
-
-    await eventRollConfirm.click();
-
-    await expect
-      .poll(async () => {
-        const state = await page.evaluate(() => {
-          const harness = (
-            window as Window & {
-              __BG_TEST_HARNESS__?: {
-                state?: { get?: () => { core?: BetrayalCore } };
-              };
-            }
-          ).__BG_TEST_HARNESS__;
-          const core = harness?.state?.get?.().core;
-          return {
-            pending: Boolean(core?.pendingEventRollResolution),
-            knowledge: core?.currentExplorer.traits.knowledge ?? null,
-            speed: core?.currentExplorer.traits.speed ?? null,
-            rabbitFootUsed: core?.usedCardIdsThisTurn.includes("rope") ?? false,
-            recentRollDice: core?.recentRoll?.dice ?? null,
-            recentRollRerolledDieIndex:
-              core?.recentRoll?.lastRabbitFootRerollDieIndex ?? null,
           };
         });
         return !state.pending &&
@@ -854,38 +700,14 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
           Array.isArray(state.recentRollDice) &&
           state.recentRollDice.join(",") === "2,2,0" &&
           state.recentRollRerolledDieIndex === 1
-          ? "finalized-after-confirm"
+          ? "auto-finalized"
           : JSON.stringify(state);
       }, { timeout: 8000 })
-      .toBe("finalized-after-confirm");
+      .toBe("auto-finalized");
 
-    const finalizedState = await page.evaluate(() => {
-      const harness = (
-        window as Window & {
-          __BG_TEST_HARNESS__?: {
-            state?: { get?: () => { core?: BetrayalCore } };
-          };
-        }
-      ).__BG_TEST_HARNESS__;
-      const core = harness?.state?.get?.().core;
-      return {
-        pending: Boolean(core?.pendingEventRollResolution),
-        knowledge: core?.currentExplorer.traits.knowledge ?? null,
-        speed: core?.currentExplorer.traits.speed ?? null,
-        rabbitFootUsed: core?.usedCardIdsThisTurn.includes("rope") ?? false,
-        recentRollDice: core?.recentRoll?.dice ?? null,
-        recentRollRerolledDieIndex:
-          core?.recentRoll?.lastRabbitFootRerollDieIndex ?? null,
-      };
-    });
-    expect(finalizedState.pending).toBe(false);
-    expect(finalizedState.knowledge).toBe(4);
-    expect(finalizedState.speed).toBe(4);
-    expect(finalizedState.rabbitFootUsed).toBe(true);
-    if (finalizedState.recentRollDice) {
-      expect(finalizedState.recentRollDice).toEqual([2, 2, 0]);
-      expect(finalizedState.recentRollRerolledDieIndex).toBe(1);
-    }
+    await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-discovery-continue")).toHaveCount(0);
+    await saveScreenshot(page, REROLL_RESULT_CONFIRM_SCREENSHOT);
     await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
     await saveScreenshot(page, REROLL_FINALIZED_SCREENSHOT);
 

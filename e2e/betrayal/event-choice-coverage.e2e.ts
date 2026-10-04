@@ -477,6 +477,14 @@ async function dismissDiscoveryPanel(page: Page) {
   }
   await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
   const continueButton = page.getByTestId("betrayal-discovery-continue");
+  if (!(await continueButton.isVisible().catch(() => false))) {
+    await expect(
+      page.getByText(/最终投骰结果已自动结算/),
+      "自动结算事件结果必须明确显示自动结算语义，并在展示结束后自动收口。",
+    ).toBeVisible();
+    await expect(discoveryPanel).toBeHidden({ timeout: 30000 });
+    return;
+  }
   await expect(
     continueButton,
     "发现牌浮层必须提供明确继续/确认按钮，不能靠点击空白关闭。",
@@ -3644,6 +3652,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [oldMansion];
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
       traits: {

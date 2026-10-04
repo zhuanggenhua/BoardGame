@@ -42,4 +42,22 @@ describe("Betrayal preview state history handling", () => {
       previousState.dismissedRecentRollId,
     );
   });
+
+  it("clears a selected possession after that card is consumed this turn", () => {
+    const core = createBetrayalCharacterSelectCore();
+    core.currentExplorer = {
+      ...core.currentExplorer,
+      inventory: [{ id: "scary-doll", name: "恐怖玩偶", kind: "item" }],
+    };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.usedCardIdsThisTurn = ["scary-doll"];
+    const previousState = {
+      ...createInitialPreviewState(core),
+      selectedInventoryCardId: "scary-doll",
+    };
+
+    const nextState = resolveNextPreviewStateAfterCoreChange(core, previousState);
+
+    expect(nextState.selectedInventoryCardId).toBeNull();
+  });
 });

@@ -171,7 +171,7 @@ export function BetrayalVisualTransitionLayer({
       ? Math.min(transition.sourceRect.height, 320)
       : transition.sourceRect.height;
   const contentBaseSize = transition.explorer
-    ? { width: 50, height: 54 }
+    ? { width: 66, height: 72 }
     : transition.monster
       ? { width: 52, height: 52 }
       : transition.girlToken

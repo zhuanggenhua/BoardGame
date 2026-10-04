@@ -373,8 +373,9 @@
       "steps": {
         "welcome": "Three victory conditions: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige.",
         "wheelFirst": "Check the hand limit. Ming has 3 cards and a 15-card limit, so no discard is required. Continue to the shared wheel.",
-        "wheelMove": "The shared wheel can move 1, 2, or 3 spaces; each option has its own draw result. Choose and execute one option.",
-        "wheelResult": "The wheel has moved from Military Farm to Recruit / Train. Read the new troops on the map, then enter the hand action.",
+        "wheelMove": "The rules allow the shared wheel to move 1, 2, or 3 spaces, with a different draw result for each. This tutorial continues through Recruit / Train, so use the fixed path: choose and execute Free 1. Choosing 2 or 3 enters another wheel result and cannot continue the Recruit / Train chain below.",
+        "wheelPathMismatch": "This tutorial continues through Recruit / Train, but the selected move entered another wheel result. Click Previous to restore the unused wheel, then choose Free 1.",
+        "wheelResult": "This tutorial moved 1 space from Military Farm to Recruit / Train, and the landing effect resolved automatically. Read the new troops on the map, then enter the hand action.",
         "actionOverview": "Hand action (choose 1). Ming actions: Raid, Recruit, Grant Pardon, Drive Tiger. Read Grant Pardon, then click Next.",
         "pickAction": "Grant Pardon: discard 3 hand cards, name 1 opponent, and have that player move 1 adjacent troop into a neighboring Ming-controlled region and convert it to Ming. (The named player chooses the troop.)\nAfter reading, click Grant Pardon.",
         "payCards": "Grant Pardon costs 3 hand cards. Select 3 cards and confirm payment.",

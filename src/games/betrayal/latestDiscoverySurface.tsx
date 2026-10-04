@@ -322,7 +322,7 @@ export function BetrayalLatestDiscoverySurface({
                   recentRoll.kind === "eventDiceRoll"
                 }
                 openTable
-                compactResult
+                compactResult={false}
                 denseResult={false}
                 denseResultPlacement="stacked"
                 actionSlot={rollModifierActionSlot}

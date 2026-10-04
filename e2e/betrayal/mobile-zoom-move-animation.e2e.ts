@@ -11,6 +11,9 @@ import {
 import { createStartedFirstScenarioCore } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 
 test.describe("山屋惊魂移动端缩放后移动动画", () => {
+  // Vivo V2314A 横屏：2388x1080 物理像素 / 3x density = 796x360 CSS px。
+  test.use({ deviceScaleFactor: 3 });
+
   test("缩放并平移地图后，移动动画仍与源 token 同比例并落到目标中心", async ({
     page,
     context,
@@ -21,7 +24,7 @@ test.describe("山屋惊魂移动端缩放后移动动画", () => {
       page,
       "betrayal-mobile-zoom-move-animation",
     );
-
+    // 使用与真机相同的 CSS 视口与 DPR，截图物理尺寸为 2388x1080。
     await page.setViewportSize({ width: 796, height: 360 });
     await page.goto("/play/betrayal", { waitUntil: "domcontentloaded" });
     await waitForBetrayalPageReady(page);
@@ -53,7 +56,9 @@ test.describe("山屋惊魂移动端缩放后移动动画", () => {
     await page.mouse.up();
     await page.waitForTimeout(120);
 
-    const sourceToken = page.getByTestId("betrayal-explorer-figure-token-0");
+    const sourceToken = page
+      .getByTestId("betrayal-room-occupant-entrance-hall-0")
+      .getByTestId("betrayal-explorer-figure-token-0");
     const sourceRect = await sourceToken.boundingBox();
     if (!sourceRect) {
       throw new Error("移动端缩放回归缺少移动源 token");
@@ -106,6 +111,43 @@ test.describe("山屋惊魂移动端缩放后移动动画", () => {
       targetRect.y + targetRect.height / 2,
       0,
     );
+
+    const roomMap = page.getByTestId("betrayal-room-grid");
+    await expect(roomMap).toHaveAttribute(
+      "data-zoom-pan-target-settled",
+      "true",
+      { timeout: 5000 },
+    );
+    const focusGeometry = await page.evaluate(() => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-testid="betrayal-room-grid"]',
+      );
+      const token = document.querySelector<HTMLElement>(
+        '[data-testid="betrayal-room-occupant-hallway-0"] [data-testid="betrayal-explorer-figure-token-0"]',
+      );
+      if (!viewport || !token) return null;
+      const viewportRect = viewport.getBoundingClientRect();
+      const tokenRect = token.getBoundingClientRect();
+      const canvas = viewport.querySelector<HTMLElement>(
+        '[data-testid="betrayal-room-canvas"]',
+      );
+      return {
+        viewportCenterX: (viewportRect.left + viewportRect.right) / 2,
+        viewportCenterY: (viewportRect.top + viewportRect.bottom) / 2,
+        tokenCenterX: (tokenRect.left + tokenRect.right) / 2,
+        tokenCenterY: (tokenRect.top + tokenRect.bottom) / 2,
+        viewportRect,
+        tokenRect,
+        canvasTransform: canvas?.style.transform ?? null,
+        activeTarget: viewport.dataset.zoomPanActiveTarget ?? null,
+        targetState: viewport.dataset.zoomPanTargetState ?? null,
+        focusInstructionKey: viewport.dataset.roomFocusPanInstructionKey ?? null,
+      };
+    });
+    console.log(`FOCUS_DEBUG ${JSON.stringify(focusGeometry)}`);
+    expect(focusGeometry).not.toBeNull();
+    expect(Math.abs(focusGeometry!.tokenCenterX - focusGeometry!.viewportCenterX)).toBeLessThan(36);
+    expect(Math.abs(focusGeometry!.tokenCenterY - focusGeometry!.viewportCenterY)).toBeLessThan(36);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-mobile-zoom-move-animation", diagnostics },

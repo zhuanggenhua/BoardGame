@@ -146,13 +146,12 @@ describe('diceStagePolicy', () => {
 
 describe('handPlayPolicy', () => {
     it('自己的手牌不应因为当前是对方回合或对手视角而禁止拖动打红色即时牌', () => {
-        expect(canInteractHandForCurrentBoard({ isSpectator: false })).toBe(true);
+        expect(canInteractHandForCurrentBoard()).toBe(true);
     });
 
     it('观察者保留完整手牌交互，但操作不会产生引擎效果', () => {
-        expect(canInteractHandForCurrentBoard({ isSpectator: true })).toBe(true);
+        expect(canInteractHandForCurrentBoard()).toBe(true);
         expect(canPlayHandCardsForCurrentBoard({
-            isSpectator: true,
             isActivePlayer: true,
             isResponder: true,
             isDirectDiceActor: true,
@@ -165,7 +164,6 @@ describe('handPlayPolicy', () => {
 
     it('防御方在自己的防御掷骰阶段，即使不是当前回合玩家也应允许打改自己骰子的手牌', () => {
         expect(canPlayHandCardsForCurrentBoard({
-            isSpectator: false,
             isActivePlayer: false,
             isResponder: false,
             isDirectDiceActor: false,
@@ -177,7 +175,6 @@ describe('handPlayPolicy', () => {
 
     it('非当前行动者也能尝试打即时牌，具体合法性由领域规则裁定', () => {
         expect(canPlayHandCardsForCurrentBoard({
-            isSpectator: false,
             isActivePlayer: false,
             isResponder: false,
             isDirectDiceActor: false,

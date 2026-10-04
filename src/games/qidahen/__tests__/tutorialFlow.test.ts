@@ -241,6 +241,7 @@ describe('qidahen tutorial flow', () => {
             'welcome',
             'wheel-first',
             'wheel-move',
+            'wheel-path-mismatch',
             'wheel-result',
             'action-overview',
             'pick-action',
@@ -493,8 +494,12 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelFirst).toContain('15 张');
         expect(basic.wheelFirst).toContain('不需要弃牌');
         expect(basic.wheelMove).toContain('前进 1、2 或 3 格');
-        expect(basic.wheelMove).toContain('每种走法对应规则中的摸牌结果');
-        expect(basic.wheelResult).toContain('轮盘已从军屯进入征兵训练');
+        expect(basic.wheelMove).toContain('固定选择「免费走 1」');
+        expect(basic.wheelMove).toContain('不能继续后面的征兵训练链');
+        expect(basic.wheelPathMismatch).toContain('上一步');
+        expect(basic.wheelPathMismatch).toContain('免费走 1');
+        expect(basic.wheelResult).toContain('前进 1 格');
+        expect(basic.wheelResult).toContain('进入征兵训练');
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
         expect(basic.actionOverview).toContain('手牌行动（选 1 种执行）');
@@ -665,7 +670,7 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
-    it('基础教程轮盘步骤不再用教程白名单拦截正式合法的走3分支', () => {
+    it('基础教程保留正式合法的走3分支，但会停在回退卡，不把错误落点接入征兵训练主线', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
 
@@ -695,10 +700,19 @@ describe('qidahen tutorial flow', () => {
             payload: { moveId: 'move-3-all-opponents' },
         });
 
-        expect(state.sys.tutorial.step?.id).toBe('wheel-result');
+        expect(state.sys.tutorial.step?.id).toBe('wheel-path-mismatch');
         expect((state.core as any).wheelActionUsed).toBe(true);
         expect((state.core as any).wheelMoveSummary).toBeTruthy();
         expect((state.core as any).turnPhase).toBe('dispatch-targeting');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.PREVIOUS,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('wheel-move');
+        expect((state.core as any).wheelActionUsed).toBe(false);
+        expect((state.core as any).actionWheelPosition).toBe('wheel-military-farm');
     });
 
     it('轮盘代价教程在走 3 格后会让两家对手各抽 2，并进入进攻调度', () => {

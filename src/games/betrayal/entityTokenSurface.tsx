@@ -70,6 +70,9 @@ export function ExplorerFigureToken({
     <span
       className={`pointer-events-none relative inline-flex ${sizeClass.root} items-center justify-center`}
       data-testid={`${testIdPrefix}-${explorer.playerId}`}
+      data-zoom-pan-target={
+        size === "board" ? `${testIdPrefix}-${explorer.playerId}` : undefined
+      }
       data-player-id={explorer.playerId}
       data-explorer-id={explorer.explorerId}
       data-explorer-name={explorer.displayName}

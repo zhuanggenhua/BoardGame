@@ -50,13 +50,20 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
             return core.turnPhase === 'action-window'
                 && core.handLimitDiscardSelection == null
                 && core.wheelActionUsed === false;
+        case 'wheel-move':
+            return core.wheelActionUsed === false;
+        case 'wheel-path-mismatch':
+            return core.wheelActionUsed === true
+                && core.lastSeasonSummary?.title !== '轮盘征兵/训练';
         case 'wheel-result':
-            return core.wheelActionUsed === true;
+            return core.wheelActionUsed === true
+                && core.lastSeasonSummary?.title === '轮盘征兵/训练';
         case 'action-overview':
             return core.turnPhase === 'action-window'
                 && core.wheelActionUsed === true
                 && core.factionActionUsed === false
-                && core.actionChoices.length >= 2;
+                && core.actionChoices.length >= 2
+                && core.lastSeasonSummary?.title === '轮盘征兵/训练';
         case 'pick-action':
             return core.turnPhase === 'action-window'
                 && core.wheelActionUsed === true
@@ -458,7 +465,15 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             position: 'right',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
-            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED' }],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
+        },
+        {
+            id: 'wheel-path-mismatch',
+            content: 'game-qidahen:tutorial.basic.steps.wheelPathMismatch',
+            highlightTarget: 'qidahen-action-wheel',
+            position: 'right',
+            requireAction: true,
+            infoStep: true,
         },
         {
             id: 'wheel-result',

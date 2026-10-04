@@ -998,7 +998,8 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     discovery?.kind === "event" &&
       !pendingEventChoice &&
       !core.pendingEventRollResolution?.nextPendingEventChoice &&
-      effectIsTraitOnly(presentedEventEffect),
+      effectIsTraitOnly(presentedEventEffect) &&
+      !hasRecentRollModifier,
   );
   const shouldShowCardFace = Boolean(
     discovery &&

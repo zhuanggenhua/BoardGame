@@ -932,10 +932,9 @@ export const TutorialOverlay: React.FC = () => {
   const hasPendingAiActions = Boolean(
     currentStep.aiActions?.length || tutorial.aiActions?.length,
   );
-  const navigationButtonSizeClass = isBottomConfirmStep
-    ? "rounded-sm py-2.5 text-xs tracking-[0.12em]"
-    : isCompactTutorialLayout
-      ? "rounded-lg py-2 text-[12px] tracking-[0.14em]"
+  const navigationButtonSizeClass =
+    isBottomConfirmStep || isCompactTutorialLayout
+      ? "min-h-[56px] min-w-[176px] rounded-lg px-6 py-3 text-[16px] tracking-[0.08em]"
       : "py-2 text-sm tracking-widest";
   const navigationDisabledClass = hasPendingAiActions
     ? "cursor-not-allowed opacity-55"

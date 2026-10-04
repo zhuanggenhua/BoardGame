@@ -255,6 +255,7 @@ import {
 } from "./visualTransitionSurface";
 import {
   BETRAYAL_DISCOVERY_ITEM_AUTO_ADVANCE_DELAY_MS,
+  BETRAYAL_VISUAL_TRANSITION_DURATION_MS,
 } from "./visualTiming";
 import { BetrayalReferenceOverlaySurface } from "./referenceOverlaySurface";
 import { BetrayalReferenceQuickActionsSurface } from "./referenceQuickActionsSurface";
@@ -615,6 +616,8 @@ export default function BetrayalBoard({
   const [roomFocusPanTarget, setRoomFocusPanTarget] = React.useState<
     string | null
   >(null);
+  const [roomFocusPanInstructionKey, setRoomFocusPanInstructionKey] =
+    React.useState(0);
   const roomGridRef = React.useRef<HTMLDivElement | null>(null);
   React.useLayoutEffect(() => {
     const pendingTransition = visualTransition;
@@ -875,6 +878,7 @@ export default function BetrayalBoard({
       if (options.pan === false) {
         return;
       }
+      setRoomFocusPanInstructionKey((current) => current + 1);
       window.requestAnimationFrame(() => {
         setRoomFocusPanTarget(nextTarget);
       });
@@ -893,7 +897,9 @@ export default function BetrayalBoard({
       if (!targetRoom) {
         return;
       }
-      focusRoomOnMap(targetRoom.id);
+      focusRoomOnMap(targetRoom.id, {
+        panTarget: `betrayal-explorer-figure-token-${targetExplorer.playerId}`,
+      });
     },
     [allExplorers, core.rooms, focusRoomOnMap, viewerExplorer],
   );
@@ -956,8 +962,10 @@ export default function BetrayalBoard({
     }
     observationReturnPlayerIdRef.current = null;
     setObservedExplorerPlayerId(null);
-    focusRoomOnMap(selfRoom.id);
-  }, [core.currentExplorer.roomId, core.rooms, focusRoomOnMap]);
+    focusRoomOnMap(selfRoom.id, {
+      panTarget: `betrayal-explorer-figure-token-${core.currentExplorer.playerId}`,
+    });
+  }, [core.currentExplorer.playerId, core.currentExplorer.roomId, core.rooms, focusRoomOnMap]);
   const referencePages = React.useMemo(
     () => resolveReferencePages(core, ASSETS.playerReference),
     [core],
@@ -1257,10 +1265,15 @@ export default function BetrayalBoard({
   const startExplorerMoveVisual = React.useCallback(
     (roomId: string, onComplete: () => void) => {
       const explorer = core.currentExplorer;
-      const sourceRect = readBetrayalViewportRect(
+      const sourceElement =
+        findBetrayalTestElement(
+          `betrayal-room-occupant-${explorer.roomId}-${explorer.playerId}`,
+        ) ??
         findBetrayalTestElement(
           `betrayal-explorer-figure-token-${explorer.playerId}`,
-        ),
+        );
+      const sourceRect = readBetrayalViewportRect(
+        sourceElement,
       );
       if (!sourceRect) {
         return false;
@@ -3216,6 +3229,7 @@ export default function BetrayalBoard({
     ) {
       return undefined;
     }
+    const autoFinalizeDelayMs = hasRecentRollModifier ? 8000 : 2400;
     const timer = window.setTimeout(() => {
       if (
         pendingEventRollRequiresAcknowledgement === false &&
@@ -3227,7 +3241,7 @@ export default function BetrayalBoard({
           { allowDuringVisualBusy: true },
         );
       }
-    }, 2400);
+    }, autoFinalizeDelayMs);
     return () => window.clearTimeout(timer);
   }, [
     coreRecentRollDisplayKey,
@@ -3239,6 +3253,7 @@ export default function BetrayalBoard({
     pendingEventRollRollId,
     pendingEventRollDisplayKey,
     settledRecentRollId,
+    hasRecentRollModifier,
     tutorialStep?.id,
     viewerPlayerId,
   ]);
@@ -4220,7 +4235,7 @@ export default function BetrayalBoard({
           controlledMoveMonsterId
             ? {}
             : {
-                panTarget: `betrayal-room-occupant-${roomId}-${core.currentExplorer.playerId}`,
+                panTarget: `betrayal-explorer-figure-token-${core.currentExplorer.playerId}`,
               },
         );
       const visualStarted = controlledMoveMonsterId
@@ -4233,6 +4248,10 @@ export default function BetrayalBoard({
       move();
       if (visualStarted) {
         focusRoomOnMap(roomId, { pan: false });
+        window.setTimeout(
+          focusTargetRoom,
+          BETRAYAL_VISUAL_TRANSITION_DURATION_MS + 40,
+        );
       } else {
         focusTargetRoom();
       }
@@ -6757,6 +6776,7 @@ export default function BetrayalBoard({
                   roomMapFitInsets={roomMapFitInsets}
                   isHauntTargetingMode={isHauntTargetingMode}
                   roomFocusPanTarget={roomFocusPanTarget}
+                  roomFocusPanInstructionKey={roomFocusPanInstructionKey}
                   attackLineOfSightSegments={attackLineOfSightSegments}
                   roomOccupants={roomOccupants}
                   roomMonsters={roomMonsters}

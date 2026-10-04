@@ -876,8 +876,9 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 @media (max-width: 1023px) and (orientation: landscape) {
     html[data-game-id="betrayal"] .betrayal-hud-portal-region > header,
     body[data-game-id="betrayal"] .betrayal-hud-portal-region > header {
+        /* Keep the top turn/status HUD scaled from its right rail anchor. */
         transform: scale(var(--betrayal-hud-scale));
-        transform-origin: top center;
+        transform-origin: top right;
     }
 
     html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"],
@@ -914,6 +915,39 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-action-rail"] {
         transform: scale(var(--betrayal-hud-scale));
         transform-origin: bottom center;
+    }
+
+    /* Buttons rendered inside Betrayal's scaled board shell must retain their
+       physical mobile size after the shell transform is applied. */
+    html[data-game-id="betrayal"] [data-testid="betrayal-start-scenario-opening-continue"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-start-scenario-opening-continue"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-start-scenario-opening-continue"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-start-scenario-opening-continue"],
+    html[data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-next-zone"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-next-zone"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-next-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-next-zone"] {
+        min-height: calc(56px / var(--mobile-board-shell-scale, 1)) !important;
+        min-width: calc(176px / var(--mobile-board-shell-scale, 1)) !important;
+        padding-top: calc(12px / var(--mobile-board-shell-scale, 1)) !important;
+        padding-right: calc(24px / var(--mobile-board-shell-scale, 1)) !important;
+        padding-bottom: calc(12px / var(--mobile-board-shell-scale, 1)) !important;
+        padding-left: calc(24px / var(--mobile-board-shell-scale, 1)) !important;
+        font-size: calc(16px / var(--mobile-board-shell-scale, 1)) !important;
+    }
+
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-prev-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-prev-zone"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-close"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-detail-toggle"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-detail-toggle"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-select-current"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-select-current"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-dialog-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-dialog-close"] {
+        min-height: calc(45px / var(--mobile-board-shell-scale, 1)) !important;
+        min-width: calc(45px / var(--mobile-board-shell-scale, 1)) !important;
     }
 }
 

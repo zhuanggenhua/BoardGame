@@ -87,6 +87,7 @@ export interface BetrayalRoomMapSurfaceProps {
   roomMapFitInsets?: ZoomPanViewportFitInsets;
   isHauntTargetingMode: boolean;
   roomFocusPanTarget: string | null;
+  roomFocusPanInstructionKey?: number;
   attackLineOfSightSegments: readonly BetrayalAttackLineOfSightSegment[];
   roomOccupants: Readonly<Record<string, readonly BetrayalExplorerSummary[]>>;
   roomMonsters: Readonly<Record<string, readonly BetrayalMonsterSummary[]>>;
@@ -229,6 +230,7 @@ export function BetrayalRoomMapSurface({
   roomMapFitInsets,
   isHauntTargetingMode,
   roomFocusPanTarget,
+  roomFocusPanInstructionKey,
   attackLineOfSightSegments,
   roomOccupants,
   roomMonsters,
@@ -362,15 +364,17 @@ export function BetrayalRoomMapSurface({
         initialScale={1}
         minScale={0.55}
         maxScale={2.4}
-        panToTarget={
-          roomFocusPanTarget ?? null
-        }
+          panToTarget={
+            roomFocusPanTarget ?? null
+          }
+          panToTargetKey={roomFocusPanInstructionKey}
         panBoundsMode="free"
         fitInsets={roomMapFitInsets}
         dragBoundsPaddingRatioY={0.18}
         containerProps={{
           "data-haunt-targeting-mode": isHauntTargetingMode ? "true" : "false",
           "data-room-focus-pan-target": roomFocusPanTarget ?? "",
+          "data-room-focus-pan-instruction-key": roomFocusPanInstructionKey ?? 0,
         }}
         interactionDisabled={isHauntTargetingMode}
         contentStyle={roomCanvasTransformStyle}

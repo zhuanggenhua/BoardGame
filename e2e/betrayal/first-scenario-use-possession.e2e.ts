@@ -69,7 +69,8 @@ async function readUseChainState(page: Page) {
             };
         };
         const useButton = document.querySelector<HTMLButtonElement>('[data-testid="betrayal-action-use"]');
-        const selectedName = document.querySelector('[data-testid="betrayal-selected-inventory-card-name"]')?.textContent?.trim() ?? '';
+        const rawSelectedName = document.querySelector('[data-testid="betrayal-selected-inventory-card-name"]')?.textContent?.trim() ?? '';
+        const selectedName = rawSelectedName === '未选卡牌' ? '' : rawSelectedName;
         const feedback = document.querySelector('[data-testid="betrayal-room-latest-feedback"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const useStatus = document.querySelector('[data-testid="betrayal-use-status"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const targetSelector = document.querySelector('[data-testid="betrayal-inventory-target-player-selector"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
@@ -209,7 +210,8 @@ async function readMaskChainState(page: Page) {
             };
         };
         const useButton = document.querySelector<HTMLButtonElement>('[data-testid="betrayal-action-use"]');
-        const selectedName = document.querySelector('[data-testid="betrayal-selected-inventory-card-name"]')?.textContent?.trim() ?? '';
+        const rawSelectedName = document.querySelector('[data-testid="betrayal-selected-inventory-card-name"]')?.textContent?.trim() ?? '';
+        const selectedName = rawSelectedName === '未选卡牌' ? '' : rawSelectedName;
         const maskSelector = document.querySelector('[data-testid="betrayal-mask-target-selector"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const activeTarget = document.querySelector('[data-testid="betrayal-mask-active-target-1"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const firstRoomHighlight = document.querySelector<HTMLElement>('[data-testid^="betrayal-room-mask-target-card-highlight-"]');

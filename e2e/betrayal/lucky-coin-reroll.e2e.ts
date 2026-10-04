@@ -141,10 +141,13 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
       timeout: 30000,
     });
     await expect(page.getByTestId("betrayal-discovery-panel")).toBeVisible();
-    await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
-      "知识检定 1",
+    await expect(page.getByTestId("betrayal-discovery-panel")).toContainText(
+      "知识检定失败",
     );
-    await expectUnifiedEventRollConfirmButton(page, "确认 0/1");
+    await expect(page.getByTestId("betrayal-discovery-panel")).toContainText(
+      "等待确认最终结果",
+    );
+    await expectUnifiedEventRollConfirmButton(page, "确认 0/3");
     const rollPanel = page.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
     await expectEventRollWorkbenchReadable(page, "幸运硬币重掷前", {
@@ -292,43 +295,40 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
       return harness?.state?.get?.().core ?? null;
     });
     expect(finalState?.pendingDamageAllocation).toBeNull();
-    expect(finalState?.pendingEventRollResolution).toMatchObject({
-      sourceTitle: "外星几何",
-      effect: { mode: "trait", trait: "speed", amount: -1 },
-    });
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
       "幸运硬币重掷后不能残留已选物品",
-    ).toHaveCount(0);
+    ).toHaveText("未选卡牌");
     await expect(
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "幸运硬币重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-event-roll-waiting")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-discovery-continue")).toHaveText(
-      "返回牌桌",
-    );
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await saveScreenshot(page, DAMAGE_RESOLVED_SCREENSHOT);
 
-    await page.getByTestId("betrayal-discovery-continue").click();
-    const finalizedState = await page.evaluate(() => {
-      const harness = (
-        window as Window & {
-          __BG_TEST_HARNESS__?: {
-            state?: {
-              get?: () => { core?: BetrayalCore };
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const harness = (
+              window as Window & {
+                __BG_TEST_HARNESS__?: {
+                  state?: { get?: () => { core?: BetrayalCore } };
+                };
+              }
+            ).__BG_TEST_HARNESS__;
+            const core = harness?.state?.get?.().core;
+            return {
+              pendingEventRollResolution: Boolean(core?.pendingEventRollResolution),
+              speed: core?.currentExplorer.traits.speed ?? null,
             };
-          };
-        }
-      ).__BG_TEST_HARNESS__;
-      return harness?.state?.get?.().core ?? null;
-    });
-    expect(finalizedState?.pendingEventRollResolution).toBeNull();
-    expect(finalizedState?.currentExplorer.traits.speed).toBe(
-      (finalState?.currentExplorer.traits.speed ?? 0) - 1,
-    );
+          }),
+        { timeout: 12000 },
+      )
+      .toEqual({
+        pendingEventRollResolution: false,
+        speed: (finalState?.currentExplorer.traits.speed ?? 0) - 1,
+      });
     await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-discovery-continue")).toHaveCount(0);
     await saveScreenshot(page, EVENT_ROLL_FINALIZED_SCREENSHOT);

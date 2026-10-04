@@ -58,12 +58,15 @@ async function readHolyWaterUseState(page: import("@playwright/test").Page) {
       cardRect: rectOf("betrayal-inventory-holy-water"),
       useButtonRect: rectOf("betrayal-action-use"),
       useButtonDisabled: Boolean(useButton?.disabled),
-      selectedName:
-        document
-          .querySelector(
-            '[data-testid="betrayal-selected-inventory-card-name"]',
-          )
-          ?.textContent?.trim() ?? "",
+      selectedName: (() => {
+        const raw =
+          document
+            .querySelector(
+              '[data-testid="betrayal-selected-inventory-card-name"]',
+            )
+            ?.textContent?.trim() ?? "";
+        return raw === "未选卡牌" ? "" : raw;
+      })(),
       useStatus:
         document
           .querySelector('[data-testid="betrayal-use-status"]')

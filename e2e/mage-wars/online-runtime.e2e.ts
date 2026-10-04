@@ -3813,7 +3813,12 @@ async function selectMageWarsCurrentScopeSetupDataViaLocalGate(
 }
 
 async function advanceUntilEnabled(page: Page, locator: ReturnType<Page['getByRole']>) {
-    const locatorCount = await locator.count().catch(() => 0);
+    let locatorCount = 0;
+    for (let index = 0; index < 50; index += 1) {
+        locatorCount = await locator.count().catch(() => 0);
+        if (locatorCount > 0) break;
+        await page.waitForTimeout(100);
+    }
     if (locatorCount === 0) {
         const snapshot = await readOnlineBoardSnapshot(page).catch((error: unknown) => ({
             error: error instanceof Error ? error.message : String(error),

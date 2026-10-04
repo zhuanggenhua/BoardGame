@@ -36,6 +36,7 @@ const MOBILE_SCENARIO_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/09b-山屋惊魂-移�
 const MOBILE_SCENARIO_DETAIL_TURNING_SCREENSHOT = `${EVIDENCE_DIR}/09c-山屋惊魂-移动端横屏-书本式剧本翻页中.png`;
 const MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/09d-山屋惊魂-移动端横屏-书本式剧本阅读末页.png`;
 const MOBILE_SCENARIO_CLOSED_SCREENSHOT = `${EVIDENCE_DIR}/09e-山屋惊魂-移动端横屏-关闭剧本回选择页.png`;
+const MOBILE_START_SCENARIO_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/09f-山屋惊魂-移动端横屏-过程文案继续按钮.png`;
 const TOKEN_DETAIL_PANEL_SCREENSHOT = `${EVIDENCE_DIR}/10-山屋惊魂-队友面板详情不切视角.png`;
 const TOKEN_DETAIL_MAP_SCREENSHOT = `${EVIDENCE_DIR}/11-山屋惊魂-地图token详情图像一致.png`;
 const TURN_HANDOFF_NO_FOLLOW_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-换行动者不自动跟踪视角.png`;
@@ -543,7 +544,10 @@ test.describe("山屋惊魂基本流程", () => {
     ]);
   });
 
-  test("移动端横屏角色选择保持 PC 同构画布、选中态和能力提示", async ({
+  test.describe("Vivo V2314A 横屏物理比例", () => {
+    test.use({ deviceScaleFactor: 3 });
+
+    test("移动端横屏角色选择保持 PC 同构画布、选中态和能力提示", async ({
     page,
     context,
   }) => {
@@ -824,9 +828,53 @@ test.describe("山屋惊魂基本流程", () => {
     ).toContainText("阅读完整剧本");
     await saveScreenshot(page, MOBILE_SCENARIO_CLOSED_SCREENSHOT);
 
+    const mobileScenarioSelectDialog = page.getByTestId(
+      "betrayal-scenario-select-dialog",
+    );
+    await mobileScenarioSelectDialog
+      .getByTestId("betrayal-scenario-dialog-close")
+      .click();
+    await expect(mobileScenarioSelectDialog).toBeHidden({ timeout: 5000 });
+    const mobileCharacterConfirm = page.getByTestId(
+      "betrayal-character-confirm",
+    );
+    await expect(mobileCharacterConfirm).toHaveText(/确认此剧本卡/);
+    await mobileCharacterConfirm.click();
+    const mobileStartOpeningStage = page.getByTestId(
+      "betrayal-start-scenario-opening-stage",
+    );
+    const startedAfterMobileScenarioConfirmation = await mobileStartOpeningStage
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
+    if (!startedAfterMobileScenarioConfirmation) {
+      await expect(mobileCharacterConfirm).toHaveText(/开始剧本/);
+      await mobileCharacterConfirm.click();
+    }
+    await expect(mobileStartOpeningStage).toBeVisible({ timeout: 30000 });
+    const mobileContinue = page.getByTestId(
+      "betrayal-start-scenario-opening-continue",
+    );
+    const mobileContinueBox = await mobileContinue.boundingBox();
+    expect(mobileContinueBox, "移动端过程文案继续按钮必须有真实热区").not.toBeNull();
+    expect(mobileContinueBox!.width).toBeGreaterThanOrEqual(176);
+    expect(mobileContinueBox!.height).toBeGreaterThanOrEqual(56);
+    const mobileContinueTypography = await mobileContinue.evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      return {
+        fontSize: Number.parseFloat(style.fontSize),
+        minHeight: Number.parseFloat(style.minHeight),
+      };
+    });
+    expect(mobileContinueTypography.fontSize).toBeGreaterThanOrEqual(16);
+    expect(mobileContinueTypography.minHeight).toBeGreaterThanOrEqual(56);
+    await saveScreenshot(page, MOBILE_START_SCENARIO_OPENING_SCREENSHOT);
+    await mobileContinue.click();
+    await expect(mobileStartOpeningStage).toHaveCount(0);
+
     assertNoFatalFrontendErrors([
       { label: "betrayal-basic-flow-mobile-character-select", diagnostics },
     ]);
+    });
   });
 
   test("真实页面队友详情与地图token图像一致，换行动者不自动跟踪视角", async ({

@@ -315,6 +315,19 @@ export function BetrayalRoomEntityLayerSurface({
             const traitChangeFeedback = traitChangeFeedbackByPlayerId.get(
               occupant.playerId,
             );
+            const resolvedTraitDeltaText = traitChangeFeedback?.deltas
+              .map(
+                ({ trait, amount }) =>
+                  `${amount > 0 ? "+" : ""}${amount} ${resolveTraitLabel(trait)}`,
+              )
+              .join(" / ");
+            const resolvedFeedbackText =
+              resolvedTraitDeltaText ||
+              (visibleFeedback?.kind === "traitChange"
+                ? visibleFeedback.deltaText ?? visibleFeedback.traitSummary
+                : visibleFeedback?.traitSummary
+                  ? `恢复 ${visibleFeedback.traitSummary}`
+                  : "属性恢复");
             const hasAttackImpact = attackImpactByPlayerId.has(occupant.playerId);
             const occupantCarriesGirl =
               girlHeldByExplorer &&
@@ -395,16 +408,22 @@ export function BetrayalRoomEntityLayerSurface({
                     data-testid={`betrayal-room-occupant-feedback-${roomId}-${occupant.playerId}`}
                     data-feedback-style="floating-text"
                     data-feedback-anchor="target-token"
-                    aria-label={`${t("board.feedback.healTraitCount", {
-                      count: visibleFeedback.traitCount || 1,
-                    })}：${visibleFeedback.deltaText ?? visibleFeedback.traitSummary}`}
-                    className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 -translate-x-1/2 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
+                    aria-label={resolvedFeedbackText}
+                    className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-0.5 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
                   >
-                    {visibleFeedback.kind === "traitChange"
-                      ? visibleFeedback.deltaText
-                      : t("board.feedback.healFloatingText", {
-                          count: visibleFeedback.traitCount || 1,
-                        })}
+                    {traitChangeFeedback
+                      ? traitChangeFeedback.deltas.map(({ trait, amount }) => (
+                          <span
+                            key={`${trait}-${amount}`}
+                            className={
+                              amount > 0 ? "text-emerald-300" : "text-rose-300"
+                            }
+                          >
+                            {amount > 0 ? "+" : ""}
+                            {amount} {resolveTraitLabel(trait)}
+                          </span>
+                        ))
+                      : resolvedFeedbackText}
                   </span>
                 ) : null}
               </span>

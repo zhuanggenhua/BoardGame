@@ -417,6 +417,21 @@ export const expectEventRollWorkbenchReadable = async (
   const card = page.getByTestId("betrayal-discovery-card-front-atlas");
   const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
   await expect(discoveryPanel, `${label}必须显示事件/投骰同屏工作台`).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const image = document.querySelector<HTMLImageElement>(
+            '[data-testid="betrayal-discovery-card-front-atlas"] img',
+          );
+          return {
+            exists: Boolean(image),
+            loaded: Boolean(image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+          };
+        }),
+      { timeout: 15000 },
+    )
+    .toEqual({ exists: true, loaded: true });
   await expect(card, `${label}必须显示正式事件牌正面，不得退回文字占位`).toBeVisible();
   await expect(
     page.getByTestId("betrayal-discovery-card-front-missing"),

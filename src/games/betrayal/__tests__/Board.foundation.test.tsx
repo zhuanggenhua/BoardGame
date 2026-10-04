@@ -2393,7 +2393,7 @@ describe('Betrayal Board foundation', () => {
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-room-grid')).toHaveAttribute(
                 'data-room-focus-pan-target',
-                'betrayal-room-basement-landing',
+                'betrayal-explorer-figure-token-2',
             );
         });
 
@@ -2403,7 +2403,7 @@ describe('Betrayal Board foundation', () => {
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-room-grid')).toHaveAttribute(
                 'data-room-focus-pan-target',
-                `betrayal-room-${core.currentExplorer.roomId}`,
+                'betrayal-explorer-figure-token-1',
             );
         });
 
@@ -4353,10 +4353,15 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('埋葬急救包');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent(`治疗${medicalKitTargetName}的力量和速度和知识和神志`);
         expect(screen.queryByTestId('betrayal-visible-feedback')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveTextContent(/治疗\s*\+4$/);
-        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).not.toHaveTextContent('力量 / 速度 / 知识 / 神志');
-        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveAttribute('data-feedback-style', 'floating-text');
-        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveAttribute('data-feedback-anchor', 'target-token');
+        const targetFeedback = screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1');
+        expect(targetFeedback).toHaveTextContent('+1 力量');
+        expect(targetFeedback).toHaveTextContent('+1 速度');
+        expect(targetFeedback).not.toHaveTextContent('治疗 +4');
+        expect(targetFeedback).not.toHaveTextContent(' / ');
+        expect(targetFeedback).toHaveClass('flex-col');
+        expect(targetFeedback.querySelectorAll(':scope > span')).toHaveLength(2);
+        expect(targetFeedback).toHaveAttribute('data-feedback-style', 'floating-text');
+        expect(targetFeedback).toHaveAttribute('data-feedback-anchor', 'target-token');
         expect(screen.queryByTestId('betrayal-inventory-medical-kit')).not.toBeInTheDocument();
     });
 

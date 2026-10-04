@@ -159,6 +159,15 @@ describe('Samurai abilities', () => {
             defaultTestRandom,
         );
 
+        const counterEvents = resolved.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED);
+        expect(counterEvents).toHaveLength(1);
+        expect(counterEvents[0]).toMatchObject({
+            payload: {
+                minionUid: 'ronin-1',
+                amount: 1,
+                reason: 'samurai_ronin',
+            },
+        });
         expect(resolved.finalState.core.bases[0].minions.find(m => m.uid === 'ronin-1')?.powerCounters).toBe(1);
     });
 

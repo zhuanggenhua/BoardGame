@@ -70,7 +70,7 @@ description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token�
    - 旧错误描述未清干净时，不得说规则 bug 已收口。
 8. **补回归验证**
    - 引擎/规则问题至少补单测或 GameTestRunner 断言。
-   - UI 入口问题按 `.spec/knowledge/standards/e2e-verification.md` 决定是否需要 E2E 与截图。
+   - UI 入口问题必须按 `.spec/knowledge/standards/e2e-verification.md` 和 `.spec/knowledge/standards/ui-change-gates.md` 走真实入口 E2E 与截图验收；只有明确证明没有任何玩家可见表现变化的纯行为修复才可使用截图例外。
 9. **同类扩审与漏审复盘**
    - 查同名基础版/升级版、同族对象、共享 helper、同一状态字段、旧测试和旧 evidence。
    - 写清为什么这次旧审计或旧测试没挡住；必要时更新通用规范或单游戏文档。

@@ -292,7 +292,8 @@ export function resolveNextPreviewStateAfterCoreChange(
   if (
     core.currentExplorerInventory.some(
       (card) => card.id === previousState.selectedInventoryCardId,
-    )
+    ) &&
+    !core.usedCardIdsThisTurn.includes(previousState.selectedInventoryCardId ?? "")
   ) {
     return {
       ...nextInitialState,

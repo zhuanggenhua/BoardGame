@@ -122,8 +122,11 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
       timeout: 30000,
     });
     await expect(page.getByTestId("betrayal-discovery-panel")).toBeVisible();
-    await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
-      "知识检定 0",
+    await expect(page.getByTestId("betrayal-discovery-panel")).toContainText(
+      "知识检定失败",
+    );
+    await expect(page.getByTestId("betrayal-discovery-panel")).toContainText(
+      "等待确认最终结果",
     );
     const rollPanel = page.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
@@ -194,13 +197,12 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
     await expect(
       page.getByText("使用恐怖玩偶重掷3 颗骰子", { exact: false }).first(),
     ).toBeVisible();
-    await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
-      "知识检定 6",
-    );
+    await expect(rollPanel).toContainText("总点数 6");
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
-    await expectUnifiedEventRollConfirmButton(page, "返回牌桌");
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -227,12 +229,11 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
       "恐怖玩偶重掷后不能残留已选物品",
-    ).toHaveCount(0);
+    ).toHaveText("未选卡牌");
     await expect(
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "恐怖玩偶重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await page.getByTestId("betrayal-discovery-continue").click();
     const finalizedState = await page.evaluate(() => {
       const harness = (window as Window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } }).__BG_TEST_HARNESS__;
       return harness?.state?.get?.().core ?? null;
