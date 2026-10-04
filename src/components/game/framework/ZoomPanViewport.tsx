@@ -685,8 +685,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     useEffect(() => {
         if (!panToTarget) {
             handledPanInstructionRef.current = null;
-            setSettledPanInstructionKey(null);
-            return undefined;
+            const clearFrameId = window.requestAnimationFrame(() => {
+                setSettledPanInstructionKey(null);
+            });
+            return () => window.cancelAnimationFrame(clearFrameId);
         }
         if (!contentRef.current || !containerRef.current) return undefined;
         if (!containerSize.width || !containerSize.height || !contentSize.width || !contentSize.height) return undefined;
