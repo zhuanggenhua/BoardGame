@@ -1621,7 +1621,6 @@ export class DiceBoxThreeEngine {
                 }
             };
             const scheduleStep = () => {
-                frameId = window.requestAnimationFrame(step);
                 timerId = window.setTimeout(() => step(), 33);
             };
             const step = (frameTime?: number) => {
@@ -2467,7 +2466,6 @@ export class DiceBoxThreeEngine {
 
         await new Promise<void>((resolve, reject) => {
             let stepIndex = 0;
-            let frameId: number | null = null;
             let timerId: number | null = null;
             let watchdogId: number | null = null;
             let completed = false;
@@ -2482,10 +2480,6 @@ export class DiceBoxThreeEngine {
                 reject(error);
             };
             const clearScheduledStep = () => {
-                if (frameId !== null) {
-                    window.cancelAnimationFrame(frameId);
-                    frameId = null;
-                }
                 if (timerId !== null) {
                     window.clearTimeout(timerId);
                     timerId = null;
@@ -2592,7 +2586,7 @@ export class DiceBoxThreeEngine {
             watchdogId = window.setTimeout(() => {
                 fail(new Error(`contained dice animation timed out after ${duration + 1200}ms`));
             }, duration + 1200);
-            scheduleStep();
+            step();
         });
     }
 

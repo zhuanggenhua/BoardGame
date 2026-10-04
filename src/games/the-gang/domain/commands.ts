@@ -7,7 +7,7 @@ import {
     getUnoccupiedChipValues,
     resolveChipOwnerKey,
 } from './chips';
-import { normalizeRulesConfig } from './expansions';
+import { hasCompleteCommunityCards, normalizeRulesConfig } from './expansions';
 import { getChipValues } from './setup';
 import { THE_GANG_COMMANDS, type ReturnChipCommand, type TakeChipCommand, type TakeExitChipCommand, type TheGangCommand, type TheGangCore } from './types';
 
@@ -210,7 +210,7 @@ function validateRevealShowdown(core: TheGangCore, playerId: string): Validation
     if (!allRequiredFinalTokensAreTaken(core)) {
         return failure('missingChips');
     }
-    if (core.communityCards.length < 5) return failure('missingCommunityCards');
+    if (!hasCompleteCommunityCards(core)) return failure('missingCommunityCards');
     return success();
 }
 

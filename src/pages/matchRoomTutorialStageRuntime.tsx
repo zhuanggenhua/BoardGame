@@ -152,8 +152,8 @@ const TutorialLocalGameRuntime = ({
                     panelClassName="rounded-[22px] border border-[#6c5736] bg-[linear-gradient(180deg,rgba(35,28,20,0.98),rgba(14,17,25,0.98))] p-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
                     titleClassName="text-sm font-bold tracking-[0.22em] text-[#f2d49b]"
                     descriptionClassName="text-sm leading-6 text-[#f4ead4]"
-                    confirmClassName="rounded-full bg-[#d9b36d] px-5 py-2 text-xs font-bold tracking-[0.14em] text-[#1e160d] hover:bg-[#f0ce88]"
-                    cancelClassName="rounded-full border border-[#6f7f9a] bg-slate-900/40 px-5 py-2 text-xs font-bold tracking-[0.14em] text-[#dbe7ff] hover:bg-slate-800/70"
+                    confirmClassName="min-h-[56px] min-w-[176px] rounded-full bg-[#d9b36d] px-6 py-3 text-[16px] font-bold tracking-[0.10em] text-[#1e160d] hover:bg-[#f0ce88]"
+                    cancelClassName="min-h-[56px] min-w-[176px] rounded-full border border-[#6f7f9a] bg-slate-900/40 px-6 py-3 text-[16px] font-bold tracking-[0.10em] text-[#dbe7ff] hover:bg-slate-800/70"
                 />
             ),
         });

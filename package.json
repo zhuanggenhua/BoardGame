@@ -110,6 +110,7 @@
     "check:arch": "node scripts/infra/check-architecture.cjs",
     "verify:dicethrone:style-contract": "node scripts/games/dicethrone/verify/dicethrone-style-contract.mjs",
     "audit:evidence": "node scripts/verify/audit-evidence-completeness.mjs",
+    "check:e2e:harness": "node scripts/verify/e2e-harness-boundary-audit.mjs",
     "audit:evidence:all": "node scripts/verify/audit-evidence-completeness.mjs --all",
     "audit:evidence:selfcheck": "node scripts/verify/audit-evidence-completeness.mjs",
     "audit:interactions": "node scripts/verify/interaction-empty-options-audit.mjs",

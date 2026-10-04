@@ -118,9 +118,8 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
             onClose={() => onClose(currentItem.id)}
             autoCloseDelay={autoCloseDelay}
             zIndex={UI_Z_INDEX.overlayRaised}
-            disableBackdropClose={true}
             closeOnContentClick={false}
-            allowContentPointerEvents={false}
+            allowContentPointerEvents={true}
             contentMotion={{
                 initial: { x: startPos.x, y: startPos.y, scale: 0.2, opacity: 0 },
                 animate: { x: 0, y: '-10vh', scale: 1, opacity: 1 },

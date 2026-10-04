@@ -7,6 +7,7 @@ import type {
     TheGangRulesConfig,
     TheGangSpecialistId,
     TheGangToolId,
+    TheGangCore,
 } from './types';
 
 export interface TheGangGameModeRule {
@@ -631,6 +632,29 @@ export function buildDealPlan(config: TheGangRulesConfig): TheGangDealPlan {
         perPlayerCommunity: mode.perPlayer === true,
         perGap: mode.perGap === true,
     };
+}
+
+export function isPerPlayerCommunityMode(config: TheGangRulesConfig): boolean {
+    return buildDealPlan(config).perPlayerCommunity;
+}
+
+export function getPerPlayerCommunityCardCount(config: TheGangRulesConfig): number {
+    const dealPlan = buildDealPlan(config);
+    if (!dealPlan.perPlayerCommunity) return 0;
+
+    return dealPlan.pocketCards + ([1, 2, 3] as const)
+        .filter((round) => !dealPlan.skippedRounds.includes(round))
+        .reduce((total, round) => total + (dealPlan.roundDraws[round] ?? 0), 0);
+}
+
+export function hasCompleteCommunityCards(core: TheGangCore): boolean {
+    const dealPlan = buildDealPlan(core.rules.config);
+    if (!dealPlan.perPlayerCommunity) return core.communityCards.length >= 5;
+
+    const requiredCount = getPerPlayerCommunityCardCount(core.rules.config);
+    return requiredCount > 0 && core.playerIds.every((playerId) => (
+        (core.players[playerId]?.communityCards?.length ?? 0) >= requiredCount
+    ));
 }
 
 export function getRulesDealSignature(config: TheGangRulesConfig): string {

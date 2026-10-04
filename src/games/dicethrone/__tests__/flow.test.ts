@@ -916,6 +916,18 @@ describe('王权骰铸流程测试', () => {
             expect(responderQueue).toEqual(['1', '3']);
         });
 
+        it('观战视图公开所有玩家手牌，供只读查看而不继承玩家座位权限', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const state = createInitializedState(playerIds, fixedRandom);
+            state.core.players['0'].hand = [getCardById('card-inner-peace')];
+            state.core.players['1'].hand = [getCardById('card-surprise')];
+
+            const filtered = playerView(state.core, '__spectator__').players!;
+            expect(filtered['0'].hand[0]?.name).toBe(state.core.players['0'].hand[0]?.name);
+            expect(filtered['1'].hand[0]?.name).toBe(state.core.players['1'].hand[0]?.name);
+            expect(filtered['1'].hand[0]?.previewRef).toEqual(state.core.players['1'].hand[0]?.previewRef);
+        });
+
         it('4 人模式下卡牌对手效果优先命中当前战斗对手', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
             const pipelineConfig = {

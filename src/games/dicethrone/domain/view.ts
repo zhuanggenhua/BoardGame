@@ -57,10 +57,12 @@ export const playerView = (
     state: DiceThroneCore,
     viewingPlayerId: PlayerId
 ): Partial<DiceThroneCore> => {
+    const isSpectator = viewingPlayerId === '__spectator__';
     const filteredPlayers: Record<PlayerId, HeroState> = {};
 
     for (const [playerId, player] of Object.entries(state.players)) {
-        const isVisibleToViewer = playerId === viewingPlayerId
+        const isVisibleToViewer = isSpectator
+            || playerId === viewingPlayerId
             || areTeammates(state, playerId, viewingPlayerId);
         filteredPlayers[playerId] = filterPlayerView(player, isVisibleToViewer);
     }

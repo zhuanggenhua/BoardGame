@@ -246,6 +246,16 @@ export const TutorialDispatchBridge = ({
             tutorial.step?.aiActions?.length ?? 0,
             tutorial.aiActions?.length ?? 0,
             tutorial.pendingAnimationAdvance ?? false,
+            // 教程 AI 批次可能连续执行多条命令，但教程步骤在批次结束前不变。
+            // 等待条件必须覆盖领域状态，否则会在响应窗口仍打开时提前消费 AI。
+            (state as MatchState).sys?.phase ?? '',
+            (state as MatchState).sys?.flowHalted ?? false,
+            (state as MatchState).sys?.interaction?.current?.id ?? '',
+            (state as MatchState).sys?.responseWindow?.current?.id ?? '',
+            (state as MatchState).core && typeof (state as MatchState).core === 'object'
+                ? ((state as MatchState).core as { activePlayerId?: unknown }).activePlayerId ?? ''
+                : '',
+            (state as MatchState).sys?.eventStream?.nextId ?? 0,
         ].join('-');
         if (lastSyncRef.current === sig) return;
         lastSyncRef.current = sig;

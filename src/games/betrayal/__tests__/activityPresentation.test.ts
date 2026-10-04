@@ -1,8 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { BetrayalCore } from '../game';
-import { resolveBetrayalActivityPresentation } from '../activityPresentation';
+import {
+  resolveBetrayalActivityPresentation,
+  resolveBetrayalTraitDeltas,
+} from '../activityPresentation';
 
 describe('betrayal activity presentation', () => {
+  it('统一提取属性增减，覆盖加属性和扣属性', () => {
+    expect(resolveBetrayalTraitDeltas(
+      { might: 4, speed: 3, knowledge: 2, sanity: 5 },
+      { might: 3, speed: 4, knowledge: 2, sanity: 4 },
+    )).toEqual([
+      { trait: 'might', amount: -1 },
+      { trait: 'speed', amount: 1 },
+      { trait: 'sanity', amount: -1 },
+    ]);
+  });
+
   it('纯属性事件结算显示实体浮字数据，不要求卡牌特写', () => {
     const core = {
       currentExplorer: {

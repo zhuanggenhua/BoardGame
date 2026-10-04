@@ -115,6 +115,9 @@ export function useGameProviderRuntime(args: {
         engineConfig,
         latencyConfig,
     } = args;
+    // 在线旁观者没有玩家身份：保留 Board 的点击/拖拽等交互，
+    // 但所有会改变对局的命令必须在公共入口变成 no-op。
+    const isSpectator = playerId === null;
     const [state, setState] = useState<MatchState<unknown> | null>(null);
     const [matchPlayers, setMatchPlayers] = useState<MatchPlayerInfo[]>([]);
     const [isConnected, setIsConnected] = useState(false);
@@ -461,6 +464,9 @@ export function useGameProviderRuntime(args: {
     }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
     const dispatch = useCallback((type: string, payload: unknown): boolean => {
+        if (isSpectator) {
+            return false;
+        }
         if (commandDispatchBlockedUntilSyncRef.current) {
             notifyCommandWaitingForPreviousStep();
             return false;
@@ -560,7 +566,7 @@ export function useGameProviderRuntime(args: {
             lastSerializedCommandRef.current = { type, payload };
         }
         return sent;
-    }, [deferCommandWaitingForPreviousStep, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+    }, [deferCommandWaitingForPreviousStep, isSpectator, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
 
     useEffect(() => {
         dispatchRef.current = dispatch;
@@ -569,15 +575,17 @@ export function useGameProviderRuntime(args: {
     const requestManualSetupSelection = useCallback((
         request: ManualSetupSelectionRequest,
         onResult?: (result: ManualSetupSelectionResult) => void,
-    ): boolean => (
-        clientRef.current?.requestManualSetupSelection(request, onResult) ?? false
-    ), []);
+    ): boolean => {
+        if (isSpectator) return false;
+        return clientRef.current?.requestManualSetupSelection(request, onResult) ?? false;
+    }, [isSpectator]);
 
     const requestForceEndAiPhase = useCallback((
         onResult?: (result: ManualForceEndAiPhaseResult) => void,
-    ): boolean => (
-        clientRef.current?.requestForceEndAiPhase(onResult) ?? false
-    ), []);
+    ): boolean => {
+        if (isSpectator) return false;
+        return clientRef.current?.requestForceEndAiPhase(onResult) ?? false;
+    }, [isSpectator]);
 
     const sendUiEvent = useCallback((type: string, payload: unknown) => {
         clientRef.current?.sendUiEvent(type, payload);

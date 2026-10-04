@@ -45,6 +45,7 @@ import {
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from '../../src/games/mage-wars/domain';
 import { MAGE_WARS_EVENTS } from '../../src/games/mage-wars/domain/events';
 import { MAGE_WARS_FX_TIMING } from '../../src/games/mage-wars/ui/fxTuning';
+// e2e-harness-boundary: representative-state
 import {
     getStandardStartingSpellbook,
     getStandardStartingSpellbookCount,
@@ -5426,6 +5427,73 @@ async function advanceUntilBothPlayersReachPlanningPhase(
 }
 
 test.describe('Mage Wars formal online runtime', () => {
+    test('正式联机独立视角切换复用同一弃牌槽并居中返回', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage);
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage);
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                playerPatches: {
+                    '0': { discardSpellCardIds: [3417, 2819] },
+                    '1': { discardSpellCardIds: [1706, 2811] },
+                },
+            });
+
+            const board = match.hostPage.getByTestId('mage-wars-board');
+            const mainDiscardPile = match.hostPage.getByTestId('mage-wars-discard-pile');
+            const duplicateOpponentDiscard = match.hostPage.getByTestId('mage-wars-opponent-discard-pile');
+
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-role', 'self');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-id', '0');
+            await expect(mainDiscardPile).toContainText('弃牌 2');
+            await expect(duplicateOpponentDiscard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-公开视角-切换前己方弃牌槽');
+
+            await match.hostPage.getByTestId('mage-wars-observe-player-button').click();
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-player-id', '1');
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-role', 'opponent');
+
+            const publicViewBanner = match.hostPage.getByTestId('mage-wars-public-view-banner');
+            await expect(publicViewBanner).toBeVisible({ timeout: 5_000 });
+            const viewport = match.hostPage.viewportSize();
+            expect(viewport).not.toBeNull();
+            const bannerMetrics = await publicViewBanner.evaluate((node) => {
+                const shell = node.getBoundingClientRect();
+                const panel = node.firstElementChild?.getBoundingClientRect();
+                return {
+                    shellCenterX: shell.left + shell.width / 2,
+                    panelCenterX: panel ? panel.left + panel.width / 2 : null,
+                };
+            });
+            expect(Math.abs(bannerMetrics.shellCenterX - viewport!.width / 2)).toBeLessThanOrEqual(4);
+            expect(bannerMetrics.panelCenterX).not.toBeNull();
+            expect(Math.abs((bannerMetrics.panelCenterX ?? 0) - viewport!.width / 2)).toBeLessThanOrEqual(32);
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-role', 'opponent');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-id', '1');
+            await expect(mainDiscardPile).toContainText('弃牌 2');
+            await expect(duplicateOpponentDiscard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-公开视角-同一弃牌槽切换到对手');
+
+            await match.hostPage.getByTestId('mage-wars-back-to-self-view').click();
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-player-id', '0');
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-role', 'self');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-role', 'self');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-id', '0');
+            await expect(mainDiscardPile).toContainText('弃牌 2');
+            await expect(duplicateOpponentDiscard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-公开视角-返回己方并恢复同一弃牌槽');
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    });
+
     test('正式联机入口从双方计划到部署并保持对手计划隐藏', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
         await clearEvidenceScreenshotsForTest(testInfo);
@@ -6494,7 +6562,7 @@ test.describe('Mage Wars formal online runtime', () => {
             actionLabel: '有效果骰近战攻击代表态',
             required: true,
             sourceVerification: {
-                status: 'functional-only',
+                status: 'source-verified',
                 sourceType: 'model-plus-texture',
                 sourceObject: 'TTS 原生 Die_12（效果骰）',
                 sourceLocator: 'D:/gongzuo/webgame/gameasset/法师战争/Mods/Workshop/2607721556.json#GUID=f9cb19',
@@ -7360,6 +7428,10 @@ test.describe('Mage Wars formal online runtime', () => {
             const responseDock = match.guestPage.getByTestId('mage-wars-interaction-dock');
             await expect(responseDock).toBeVisible({ timeout: 5_000 });
             await expect(responseDock).toContainText('必须展示响应结界');
+            await expect(responseDock).toContainText('法力失效');
+            await expect(responseDock).not.toContainText(responseObjectId);
+            const visibleGuestText = await match.guestPage.locator('body').innerText();
+            expect(visibleGuestText).not.toContain('mw-e2e-');
             const revealOption = responseDock.locator('[data-testid="mage-wars-interaction-option"][data-option-id="reveal"]').first();
             await expect(revealOption).toBeVisible({ timeout: 3_000 });
             await expect(responseDock.getByTestId('mage-wars-interaction-option')).toHaveCount(1);
@@ -8233,6 +8305,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 timeout: 5_000,
             }).toBe(true);
             await expect(targetEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 3_000 });
+            await expect(targetEdge.getByTestId('mage-wars-wall-object')).toBeVisible({ timeout: 3_000 });
             const wallCardPreview = targetEdge.getByTestId('mage-wars-wall-card-preview');
             await expect(wallCardPreview).toBeVisible({ timeout: 3_000 });
             await expect(wallCardPreview).toHaveAttribute('data-source-card-id', String(wallSpellCardId));

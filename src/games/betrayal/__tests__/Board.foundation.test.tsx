@@ -142,6 +142,8 @@ function readVisibleNonSrText(container: HTMLElement) {
 function expectEventRollConfirmButtonStyle(button: HTMLElement) {
     expect(button).toHaveClass('bg-[#d6b56d]');
     expect(button).toHaveClass('border-[#d6b56d]');
+    expect(button).toHaveClass('text-[16px]');
+    expect(button).toHaveClass('min-h-[56px]');
     expect(button.className).not.toContain('rounded');
 }
 
@@ -2837,7 +2839,7 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId(girlTokenId)).toHaveAttribute('data-token-placement', 'mummy');
             expect(screen.getByTestId(`betrayal-girl-svg-token-${traitorRoomId}`)).toHaveAttribute(
                 'data-token-visual-size',
-                '28',
+                '38',
             );
             expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('交出圣符');
         });
@@ -3276,6 +3278,7 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('木乃伊移动');
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('可移动 0 间');
         });
+        expectEventRollConfirmButtonStyle(screen.getByTestId('betrayal-roll-continue'));
         fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
 
         await waitFor(() => {
@@ -3293,7 +3296,7 @@ describe('Betrayal Board foundation', () => {
         );
         expect(screen.getByTestId(`betrayal-monster-board-token-surface-${mummyMonsterId}`)).toHaveAttribute(
             'data-token-surface-size',
-            '42',
+            '62',
         );
         expect(screen.getByTestId(`betrayal-room-monster-move-target-${girlRoomId}`)).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('只限已发现房间');

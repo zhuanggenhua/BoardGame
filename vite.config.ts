@@ -179,16 +179,26 @@ const createAndroidBuildMetaPlugin = (
   generateBundle() {
     if (mode !== 'android') return
 
-    const appId = process.env.VITE_CAPACITOR_APP_ID?.trim() || process.env.CAPACITOR_APP_ID?.trim() || ''
+    const appId = env.VITE_CAPACITOR_APP_ID?.trim()
+      || env.CAPACITOR_APP_ID?.trim()
+      || process.env.VITE_CAPACITOR_APP_ID?.trim()
+      || process.env.CAPACITOR_APP_ID?.trim()
+      || ''
     const appName = process.env.CAPACITOR_APP_NAME?.trim() || ''
     const forceBuiltinBundle = /^(1|true|yes|on)$/i.test(
       process.env.VITE_ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || process.env.ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || '',
     )
-    const otaEnabled = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ENABLED?.trim() || '')
+    const otaConfigured = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ENABLED?.trim() || '')
+    const otaAllowDebugApp = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP?.trim() || '')
     const otaManifestUrl = env.VITE_ANDROID_OTA_MANIFEST_URL?.trim() || ''
     const otaChannel = env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable'
+    const isDebugApp = Boolean(appId) && isNonReleaseAndroidAppId(appId)
+    if (isDebugApp && otaConfigured && otaAllowDebugApp && (otaChannel.toLowerCase() === 'stable' || /\/stable(?:\/|\.json(?:$|\?))/i.test(otaManifestUrl))) {
+      throw new Error(`debug Android 包禁止连接 stable OTA：appId=${appId}, channel=${otaChannel}, manifest=${otaManifestUrl}`)
+    }
+    const otaEnabled = otaConfigured && (!isDebugApp || otaAllowDebugApp)
     // Android shell root already treats Home V2 as the default homepage.
     // Keep the packaged build metadata aligned with the web/router contract.
     const homeV2EnabledForAndroidBuild = mode === 'android' || homeV2DraftEnabled

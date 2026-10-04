@@ -253,7 +253,7 @@
       }
     },
     "enchantmentResponse": {
-      "title": "Reveal response enchantment {{responseObjectId}}",
+      "title": "Reveal response enchantment: {{responseCardName}}",
       "options": {
         "reveal": "Reveal and resolve",
         "redirect": "Reveal and redirect the spell",

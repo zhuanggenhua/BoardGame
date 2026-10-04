@@ -21,6 +21,26 @@ export type BetrayalBoardResultFeedback = {
   deltaText?: string;
 };
 
+export type BetrayalTraitDelta = {
+  trait: BetrayalTraitKey;
+  amount: number;
+};
+
+export function resolveBetrayalTraitDeltas(
+  before: Record<BetrayalTraitKey, number> | undefined,
+  after: Record<BetrayalTraitKey, number> | undefined,
+): BetrayalTraitDelta[] {
+  if (!before || !after) {
+    return [];
+  }
+  return (Object.keys(BETRAYAL_TRAIT_LABEL) as BetrayalTraitKey[])
+    .map((trait) => ({
+      trait,
+      amount: (after[trait] ?? 0) - (before[trait] ?? 0),
+    }))
+    .filter((entry) => entry.amount !== 0);
+}
+
 export type BetrayalActivityPresentation = {
   visibleActivityEntries: BetrayalActivityEntry[];
   latestLogEntry: BetrayalActivityEntry | null;
@@ -72,12 +92,10 @@ function resolveTraitChangeFeedback(
   if (!effectIsTraitOnly(effect)) {
     return null;
   }
-  const traitDeltas = (Object.keys(BETRAYAL_TRAIT_LABEL) as BetrayalTraitKey[])
-    .map((trait) => ({
-      trait,
-      amount: core.currentExplorer.traits[trait] - snapshot.traitsBeforeEffect[trait],
-    }))
-    .filter((entry) => entry.amount !== 0);
+  const traitDeltas = resolveBetrayalTraitDeltas(
+    snapshot.traitsBeforeEffect,
+    core.currentExplorer.traits,
+  );
   if (traitDeltas.length === 0) {
     return null;
   }

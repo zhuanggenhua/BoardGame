@@ -14,9 +14,10 @@ description: "游戏 UI 设计流程与验收入口。用于游戏 HUD、棋盘/
 3. 若 UI 依赖规则、卡牌、棋盘、token、骰子、TTS/Workshop、旧平台或物理配件，先读 `references/rule-to-ui-design.md`。
 4. 进入布局和交互前，读 `references/layout-interaction-patterns.md`。
 5. 用户点名已有游戏、旧实现或成熟产品作为参考时，先读取该参考的真实实现与当前截图，提炼可迁移不变量；参考截图必须处在同类任务的实际操作态，例如组牌要进入真实编辑页、地图要进入真实对局页，入口页、导入页、选角色页、营销页或空态不能冒充参考依据；不得只凭印象复制视觉，也不得跳过参考直接改目标游戏。若参考已具备卡牌放大、分类筛选、地图拖拽缩放、详情层、视角切换等基础交互，目标游戏必须复用、抽共享或写出不采用理由。
-6. 送设计稿、截图或实现验收前，读 `references/quality-gates.md`，并回到上位 [`ui-ux`](../../knowledge/standards/ui-ux.md) 与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 对照通用门禁。
-7. 若用户明确指定 Open Design，走 Open Design artifact 设计稿；不得改走图片模型生图。若用户要求位图视觉稿，则按项目位图设计交付规则执行。
-8. 教程与 UI 同时变更，或用户连续指出同类教程 / UI 问题时，先回到 [`tutorial-design`](../../knowledge/standards/tutorial-design.md) 的教程-UI 联合过账与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 的整族审查，再继续实现；本 skill 不复制这两处正文。
+6. 开局配置（剧本 / 场景 + 阵营 / 角色）先读 [`ui-ux`](../../knowledge/standards/ui-ux.md)「开局配置默认同页」与 `references/layout-interaction-patterns.md`「开局配置」；小基数且存在依赖过滤时默认同页，送稿前必须有成熟参考对照表，禁止凭空拆成整页 Wizard。
+7. 送设计稿、截图或实现验收前，读 `references/quality-gates.md`，并回到上位 [`ui-ux`](../../knowledge/standards/ui-ux.md) 与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 对照通用门禁。
+8. 若用户明确指定 Open Design，走 Open Design artifact 设计稿；不得改走图片模型生图。若用户要求位图视觉稿，则按项目位图设计交付规则执行。
+9. 教程与 UI 同时变更，或用户连续指出同类教程 / UI 问题时，先回到 [`tutorial-design`](../../knowledge/standards/tutorial-design.md) 的教程-UI 联合过账与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 的整族审查，再继续实现；本 skill 不复制这两处正文。
 
 ## 核心流程
 

@@ -1372,7 +1372,7 @@ describe('MageWarsBoard FX wiring', () => {
             expect(effectDie).toHaveAttribute('aria-label', `效果骰 ${rawEffectDieResult}`);
             expect(effectDie).toHaveAttribute('data-visual-role', 'effect-die-result');
             expect(effectDie).toHaveAttribute('data-die-kind', 'd12');
-            expect(effectDie).toHaveAttribute('data-asset-status', 'functional-only');
+            expect(effectDie).toHaveAttribute('data-asset-status', 'source-verified');
             expect(effectDie).toHaveAttribute('data-model-source', 'tts-native:Die_12:f9cb19');
             expect(effectDie).toHaveAttribute('data-rendering-mode', 'css-native-mesh-faces');
             expect(effectDie).toHaveClass('h-[clamp(3rem,4vw,5rem)]', 'w-[clamp(3rem,4vw,5rem)]');

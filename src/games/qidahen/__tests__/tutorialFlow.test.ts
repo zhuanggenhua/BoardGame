@@ -20,7 +20,10 @@ import {
 } from '../../../engine/testing/interactionTestFacade';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import QIDAHEN_TUTORIALS from '../tutorial';
-import { buildQidahenTutorialSetupData } from '../tutorialSetup';
+import {
+    buildQidahenTutorialSetupData,
+    QIDAHEN_TUTORIAL_SETUP_CONTRACTS,
+} from '../tutorialSetup';
 import { QidahenDomain } from '../domain';
 import { createQidahenInteractionSystem } from '../domain/interactionSystem';
 import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from '../domain/ordinaryHandCardIdentities';
@@ -96,6 +99,20 @@ const advanceAttackAndBattleTutorialToPendingBattle = (
         playerId: '0',
         payload: { reason: 'manual' },
     });
+    expect(state.sys.tutorial.step?.id).toBe('action-overview');
+    expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-actions-zone');
+    expect((state.core as any).actionChoices.map((choice: any) => choice.id)).toEqual([
+        'raid',
+        'recruit',
+        'grant-pardon',
+        'drive-tiger',
+    ]);
+
+    state = dispatch(state, {
+        type: TUTORIAL_COMMANDS.NEXT,
+        playerId: '0',
+        payload: { reason: 'manual' },
+    });
     expect(state.sys.tutorial.step?.id).toBe('choose-action');
     expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-action-raid');
     expect((state.core as any).turnPhase).toBe('action-window');
@@ -139,6 +156,39 @@ const advanceAttackAndBattleTutorialToPendingBattle = (
 };
 
 describe('qidahen tutorial flow', () => {
+    it('教程设置按入口类型声明正式前因，不允许把代表态伪装成自然开局', () => {
+        expect(QIDAHEN_TUTORIAL_SETUP_CONTRACTS['basic-opening']).toMatchObject({
+            entryKind: 'natural-opening',
+            startingPoint: 'formal-opening',
+            formalEntryPhase: 'action-window',
+            currentActorFaction: 'ming',
+            precedingAtoms: ['setup-complete'],
+            firstRealDecision: 'choose-wheel-move',
+            scope: 'mainline',
+        });
+        expect(QIDAHEN_TUTORIAL_SETUP_CONTRACTS['event-action']).toMatchObject({
+            firstRealDecision: 'choose-hand-action',
+            precedingAtoms: ['setup-complete', 'hand-limit'],
+        });
+        expect(QIDAHEN_TUTORIAL_SETUP_CONTRACTS['year-and-characters']).toMatchObject({
+            firstRealDecision: 'choose-wheel-move',
+            precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        });
+        expect(QIDAHEN_TUTORIAL_SETUP_CONTRACTS['wheel-shared-cost']).toMatchObject({
+            firstRealDecision: 'choose-wheel-move',
+            precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        });
+
+        for (const [tutorialId, contract] of Object.entries(QIDAHEN_TUTORIAL_SETUP_CONTRACTS)) {
+            const setup = buildQidahenTutorialSetupData(tutorialId);
+            expect(setup?.setupData.qidahenTutorialContract, tutorialId).toEqual(contract);
+            if (contract.entryKind !== 'natural-opening') {
+                expect(contract.startingPoint, tutorialId).toBe('representative-state');
+                expect(contract.injectedDifferences.length, tutorialId).toBeGreaterThan(0);
+            }
+        }
+    });
+
     it('教程目录保留 6 个玩家主章节，隐藏专题独立入口且保留关键步骤合同', () => {
         const tutorials = QIDAHEN_TUTORIALS.tutorials;
         const visibleTutorialIds = Object.entries(tutorials)
@@ -192,7 +242,7 @@ describe('qidahen tutorial flow', () => {
             'wheel-first',
             'wheel-move',
             'wheel-result',
-            'wheel-branch-finish',
+            'action-overview',
             'pick-action',
             'pay-cards',
             'choose-grant-pardon-target',
@@ -200,6 +250,7 @@ describe('qidahen tutorial flow', () => {
             'finish',
         ]);
         expect(stepIdsOf('attack-and-battle')).toEqual(expect.arrayContaining([
+            'action-overview',
             'choose-action',
             'pay-raid',
             'tactic-window',
@@ -360,6 +411,20 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
+        expect(state.sys.tutorial.step?.id).toBe('action-overview');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-actions-zone');
+        expect((state.core as any).actionChoices.map((choice: any) => choice.id)).toEqual([
+            'raid',
+            'recruit',
+            'grant-pardon',
+            'drive-tiger',
+        ]);
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
         expect(state.sys.tutorial.step?.id).toBe('pick-action');
 
         state = dispatch(state, {
@@ -427,14 +492,26 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelFirst).toContain('3 张手牌');
         expect(basic.wheelFirst).toContain('15 张');
         expect(basic.wheelFirst).toContain('不需要弃牌');
-        expect(basic.wheelMove).toContain('前进 1 格');
-        expect(basic.wheelMove).toContain('指定一名对手摸 2 张');
-        expect(basic.wheelMove).toContain('所有对手各摸 2 张');
-        expect(basic.wheelResult).toContain('公共轮盘从军屯推进到征兵训练');
+        expect(basic.wheelMove).toContain('前进 1、2 或 3 格');
+        expect(basic.wheelMove).toContain('每种走法对应规则中的摸牌结果');
+        expect(basic.wheelResult).toContain('轮盘已从军屯进入征兵训练');
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
-        expect(basic.pickAction).toContain('弃 3 张手牌');
-        expect(basic.actionResult).toContain('不是直接把山海关的控制权改成大明');
+        expect(basic.actionOverview).toContain('手牌行动（选 1 种执行）');
+        expect(basic.actionOverview).toContain('大明势力行动');
+        expect(basic.actionOverview).toContain('突袭作战');
+        expect(basic.actionOverview).toContain('征召军队');
+        expect(basic.actionOverview).toContain('赐印招安');
+        expect(basic.actionOverview).toContain('驱虎吞狼');
+        expect(basic.actionOverview).toContain('赐印招安');
+        expect(basic.actionOverview).toContain('读完后点下一步');
+        expect(basic.actionOverview.length).toBeLessThan(120);
+        expect(basic.actionOverview).not.toContain('四项之间没有规则规定的固定先后');
+        expect(basic.actionOverview).not.toContain('示例顺序');
+        expect(basic.pickAction).toContain('赐印招安：弃 3 张手牌');
+        expect(basic.pickAction).toContain('必须由被指定的玩家选择部队');
+        expect(basic.pickAction).toContain('读完后点击「赐印招安」');
+        expect(basic.actionResult).toContain('转换为大明部队');
 
         for (const text of [zhTutorialText, enTutorialText]) {
             expect(text).not.toContain('正式效果已经结算');
@@ -795,6 +872,19 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
+        expect(state.sys.tutorial.step?.id).toBe('action-overview');
+        expect((state.core as any).actionChoices.map((choice: any) => choice.id)).toEqual([
+            'raid',
+            'recruit',
+            'grant-pardon',
+            'drive-tiger',
+        ]);
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
         expect(state.sys.tutorial.step?.id).toBe('choose-action');
         expect((state.core as any).factions.ming.armaments.find((armament: any) => armament.id === 'artillery-tech')?.level).toBe(1);
         const mingArmamentCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1626-artillery-tech');
@@ -853,6 +943,20 @@ describe('qidahen tutorial flow', () => {
             payload: { manifest },
         });
         expect(state.sys.tutorial.step?.id).toBe('overview');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '1',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('action-overview');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-actions-zone');
+        expect((state.core as any).actionChoices.map((action: any) => action.id)).toEqual([
+            'upgrade-armament',
+            'raid',
+            'ma-shi-trade',
+            'khan-edict',
+        ]);
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,

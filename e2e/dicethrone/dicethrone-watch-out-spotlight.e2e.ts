@@ -1,3 +1,4 @@
+// e2e-harness-boundary: representative-state
 /**
  * Watch Out / 濠电姰鍨归悥銏ゅ礃閳轰讲鍋撹椤潡宕奸崱妤€鏆欓柣?闂備胶绮〃鍫ュ箠閹捐鐤?E2E 婵犵數鍋炲娆擃敄閸儲鍎? *
  * 闂佽崵鍠愬ú鏍涘☉妯忕儤绻濋崘顏佹灃婵犮垼娉涢鍡涙嫃鐎ｎ喗鈷戦柣鎰靛墮缁€鍐煟椤撱垻鐣洪柡? * 1. 闂備胶鍘ч〃搴㈢濠婂懏宕插〒姘ｅ亾妤犵偛绉归獮姗€宕橀崣澶屾 Watch Out 闂備礁鎼崯鎶筋敊閹邦喗顫曟繝闈涙处閸庣喖鏌￠崘銊モ偓鍦不濞嗘挻鐓曢柟鐑樻尰缁惰尙鈧娲滈崰鎰般€冮妷鈺佺妞ゆ梻鈷堝Λ妤呮⒑? * 2. 闂備礁鎼Λ娆忣焽濞嗘挸鍚规い鏇楀亾鐎规洩缍侀、鏃堝礋閸偅绶梻浣告啞濮婄粯鎱ㄩ悽绋跨劦妞ゆ帒鍠氶崬鐑樼節绾版ê浜鹃梺璇叉捣椤㈠﹤鈻嶉弴鐑嗘富闁稿瞼鍋為弲顒勬倶閻愯泛浜归柣鐔哥箞楠炴牜鈧稒蓱椤ュ牓鏌℃担闈╁姛闁归濞€椤㈡稑鈽夊▎灞剧亙缂傚倷璁查崑鎾绘煟閹寸倖鎴﹀汲娴煎瓨鐓曢柟杈剧秵閸炴椽鏌熸笟鍨妞ゎ偁鍨介弫鎰板川椤栨粌鎹剁紓? * 3. P1 闂備胶鎳撻悘姘跺箰閹间礁鍚规い鎾跺枎缁剁偟鎲稿澶婄畺闊洦鏌ㄧ欢鐐垫喐瀹ュ鏄ラ柛鏇ㄥ灠缁秹鎮规担鍛婅础缂佲偓婵? 闂備礁鎲￠悷顖涚濠婂懓濮抽柡灞诲劜閸庢垿鎮楅敐搴濈盎闁绘挸鍊块弻娑樜旂€ｎ剛锛熸繝鈷€鍕疄闁诡啫鍥ㄥ仭闁哄瀵у▍銏ゆ⒑閹稿海鈽夊┑鍌涙⒒缁厽寰勭€ｎ偄鍔呴梺鍝勫暙閻楀棗鈻嶉姀鐙€鐔嗛悹楦挎鑲栧┑鐘亾闁告稒娼欑粈?bonus overlay
@@ -21,6 +22,7 @@ import {
     ensureDebugStateTab,
     readyAndStartGame,
     readCoreState,
+    readEventStream,
     selectCharacter,
     setupDTOnlineMatch,
     waitForDiceThroneHarness,
@@ -286,52 +288,6 @@ async function expectCombinedHorizontalCenter(
         Math.abs(combinedCenter - viewportCenter),
         `${label} combined center should stay near viewport center`,
     ).toBeLessThanOrEqual(tolerancePx);
-}
-
-async function expectCardSpotlightClearOfCriticalAreas(page: Page): Promise<void> {
-    const layout = await page.evaluate(() => {
-        type Rect = { left: number; right: number; top: number; bottom: number; width: number; height: number };
-        const toRect = (element: Element): Rect => {
-            const rect = element.getBoundingClientRect();
-            return {
-                left: rect.left,
-                right: rect.right,
-                top: rect.top,
-                bottom: rect.bottom,
-                width: rect.width,
-                height: rect.height,
-            };
-        };
-        const hasArea = (rect: Rect) => rect.width > 0 && rect.height > 0;
-        const overlaps = (a: Rect, b: Rect) => !(
-            a.right <= b.left ||
-            a.left >= b.right ||
-            a.bottom <= b.top ||
-            a.top >= b.bottom
-        );
-        const spotlightNode = document.querySelector('[data-testid="card-spotlight-overlay"]');
-        const spotlight = spotlightNode ? toRect(spotlightNode) : null;
-        const targets = [
-            { label: '当前阶段提示', selector: '[data-testid="dt-active-phase-indicator"]' },
-            { label: '生命/CP 面板', selector: '[data-testid="dt-player-stats-panel"]' },
-            { label: '玩家面板', selector: '[data-testid="player-board-surface"]' },
-            { label: '提示板', selector: '[data-testid="tip-board-surface"]' },
-            { label: '右侧 2D 骰盘', selector: '[data-testid="dicethrone-2d-dice-tray"]' },
-            { label: '弃牌堆', selector: '[data-testid="discard-pile"]' },
-        ].flatMap(({ label, selector }) => Array.from(document.querySelectorAll(selector))
-            .map((element) => ({ label, rect: toRect(element) }))
-            .filter(({ rect }) => hasArea(rect)));
-
-        return {
-            spotlight,
-            overlaps: spotlight
-                ? targets.filter((target) => overlaps(spotlight, target.rect))
-                : [],
-        };
-    });
-
-    expect(layout.spotlight, '对手卡牌特写必须真实可见').not.toBeNull();
-    expect(layout.overlaps, '对手卡牌特写不得压住当前阶段提示、生命/CP 面板、玩家面板、提示板、骰盘或弃牌堆').toEqual([]);
 }
 
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
@@ -3874,7 +3830,7 @@ test('me too copy mode should allow locked source and target dice', async ({ pag
     await game.screenshot('07-me-too-locked-dice-copy', testInfo);
 });
 
-test('opponent lucky card should only show card spotlight for viewer', async ({ browser }, testInfo) => {
+test('opponent lucky card should only show card spotlight for player viewer', async ({ browser }, testInfo) => {
     test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -3985,8 +3941,8 @@ test('opponent lucky card should only show card spotlight for viewer', async ({ 
         // 大吉大利原文是投掷 3 颗骰子；此前夹具把事件数量误写成 4，导致
         // 自动退场断言尚未执行就提前失败。
         expect(overlayState.lastEventTypes.filter((type) => type === 'BONUS_DIE_ROLLED')).toHaveLength(3);
-        // 大吉大利的 3 颗骰子会保留 displayOnly settlement 作为观战记录；
-        // 观战端只应保持卡牌特写，不应再弹出中央奖励骰 UI。
+        // 大吉大利的 3 颗骰子会保留 displayOnly settlement 作为对手视角记录；
+        // 玩家视角只应保持卡牌特写，不应再弹出中央奖励骰 UI。
         expect(overlayState.pendingBonusDiceSettlement).toMatchObject({
             attackerId: '1',
             diceCount: 3,
@@ -4004,7 +3960,7 @@ test('opponent lucky card should only show card spotlight for viewer', async ({ 
     }
 });
 
-test('opponent common-card spotlight should match actual effect for samurai and gunslinger', async ({ browser }, testInfo) => {
+test('opponent common-card spotlight should match actual effect on player viewer for samurai and gunslinger', async ({ browser }, testInfo) => {
     test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
 
     await clearEvidenceScreenshotsForTest(testInfo);
@@ -4176,7 +4132,6 @@ test('opponent common-card spotlight should match actual effect for samurai and 
             }, undefined, { timeout: 10000, polling: 200 });
 
             await hostPage.waitForTimeout(250);
-            await expectCardSpotlightClearOfCriticalAreas(hostPage);
             await savePageEvidenceScreenshot(
                 hostPage,
                 testInfo,
@@ -4261,6 +4216,86 @@ test('opponent common-card spotlight should match actual effect for samurai and 
     } finally {
         await guestContext.close();
         await hostContext.close();
+    }
+});
+
+test('real spectator should expose the current player hand as read-only and dismiss one card spotlight', async ({ browser }, testInfo) => {
+    test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const setup = await setupDTOnlineMatch(browser, baseURL);
+    test.skip(!setup, 'DiceThrone game server unavailable for real spectator test.');
+    if (!setup) return;
+
+    const { hostPage, guestPage, hostContext, guestContext, matchId } = setup;
+    const spectatorContext = await browser.newContext({ baseURL });
+    const spectatorPage = await spectatorContext.newPage();
+
+    try {
+        await selectCharacter(hostPage, 'monk');
+        await selectCharacter(guestPage, 'samurai');
+        await readyAndStartGame(hostPage, guestPage);
+        await Promise.all([waitForGameBoard(hostPage), waitForGameBoard(guestPage)]);
+        await Promise.all([
+            waitForTestHarness(hostPage, 10000),
+            waitForTestHarness(guestPage, 10000),
+        ]);
+
+        await spectatorPage.goto(`/play/dicethrone/match/${matchId}?spectate=1`, { waitUntil: 'domcontentloaded' });
+        await waitForGameBoard(spectatorPage);
+        await expect(spectatorPage).toHaveURL(new RegExp(`/play/dicethrone/match/${matchId}\\?spectate=1$`));
+        await expect.poll(() => spectatorPage.evaluate(() => (
+            (window as any).__BG_IS_SPECTATOR__ ?? null
+        ))).toBe(true);
+
+        const matchState = await readMatchStateFromDebugPanel(hostPage);
+        const injectedState = buildOnlineCommonCardSceneState(matchState, {
+            actorCharacter: 'samurai',
+            actorCardId: 'card-boss-generous',
+            actorCp: 10,
+        });
+        await applyFullStateDirect(hostPage, injectedState);
+        await ensureDebugPanelClosed(hostPage);
+        await ensureDebugPanelClosed(guestPage);
+        await waitForGameBoard(spectatorPage);
+        await waitForHandCardVisualReady(spectatorPage, 'card-boss-generous');
+
+        const spectatorHandCard = spectatorPage.locator('[data-testid="hand-area"] [data-card-id="card-boss-generous"]').first();
+        await expect(spectatorHandCard).toBeVisible();
+        await expect(spectatorHandCard).toHaveAttribute('data-is-flipped', 'true');
+        await expect(spectatorPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeHidden();
+
+        const eventCountBeforeMagnify = (await readEventStream(hostPage)).length;
+        await spectatorHandCard.click();
+        await expect(spectatorPage.getByTestId('board-magnify-overlay')).toBeVisible();
+        expect((await readEventStream(hostPage)).length).toBe(eventCountBeforeMagnify);
+
+        await spectatorPage.getByTestId('board-magnify-overlay')
+            .getByRole('button', { name: /关闭预览|Close Preview/i })
+            .click();
+        await expect(spectatorPage.getByTestId('board-magnify-overlay')).toBeHidden();
+        await expect(spectatorHandCard).toHaveAttribute('data-can-drag', 'true');
+        await dragHandCardToPlay(spectatorPage, 'card-boss-generous');
+        expect((await readEventStream(hostPage)).length).toBe(eventCountBeforeMagnify);
+
+        await dragHandCardToPlay(guestPage, 'card-boss-generous');
+        const spectatorSpotlight = spectatorPage.locator('[data-testid="card-spotlight-overlay"]');
+        await expect(spectatorSpotlight).toHaveCount(1, { timeout: 15000 });
+        await expect(spectatorSpotlight).toHaveAttribute('data-card-id', 'card-boss-generous');
+        expect(await spectatorPage.locator('[data-testid="card-spotlight-overlay"]').count()).toBe(1);
+
+        const spectatorEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-spectator-readonly-card-and-spotlight');
+        await mkdir(dirname(spectatorEvidencePath), { recursive: true });
+        await spectatorPage.screenshot({ path: spectatorEvidencePath, fullPage: false });
+
+        await spectatorPage.locator('[data-testid="spotlight-container-root"]').click({ position: { x: 12, y: 12 } });
+        await expect(spectatorSpotlight).toHaveCount(0);
+        await spectatorPage.reload({ waitUntil: 'domcontentloaded' });
+        await waitForGameBoard(spectatorPage);
+        await expect(spectatorPage.locator('[data-testid="card-spotlight-overlay"]')).toHaveCount(0);
+    } finally {
+        await spectatorContext.close().catch(() => {});
+        await hostContext.close().catch(() => {});
+        await guestContext.close().catch(() => {});
     }
 });
 

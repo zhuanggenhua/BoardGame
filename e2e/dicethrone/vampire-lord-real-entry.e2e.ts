@@ -1,3 +1,4 @@
+// e2e-harness-boundary: representative-state
 import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 import { existsSync } from 'node:fs';
 import { copyFile, mkdir, rename, rm } from 'node:fs/promises';
@@ -2322,6 +2323,10 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                             [RESOURCE_IDS.HP]: 50,
                             [RESOURCE_IDS.CP]: 2,
                         },
+                        tokens: {
+                            ...tianshiBase.tokens,
+                            [TOKEN_IDS.DIVINE_ARRIVAL]: activePlayerId === '0' ? 1 : 0,
+                        },
                         statusEffects: {
                             ...tianshiBase.statusEffects,
                             [STATUS_IDS.ENTANGLE]: activePlayerId === '0' ? 1 : 0,
@@ -2392,7 +2397,9 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             });
             const tianshiStatusOwner = match.hostPage.getByTestId('dt-status-owner-1');
             const entangleOption = tianshiStatusOwner.getByTestId(`dt-status-effect-1-${STATUS_IDS.ENTANGLE}`);
+            const divineArrivalOption = tianshiStatusOwner.getByTestId(`dt-status-effect-1-${TOKEN_IDS.DIVINE_ARRIVAL}`);
             await expect(entangleOption).toBeVisible({ timeout: 10000 });
+            await expect(divineArrivalOption).toHaveCount(0);
             await entangleOption.click();
             const hostConfirmButton = match.hostPage.getByRole('button', { name: /确认|Confirm/i }).last();
             await expect(hostConfirmButton).toBeEnabled({ timeout: 5000 });
@@ -2407,6 +2414,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 const p1 = asRecord(players['1']);
                 return {
                     entangle: asRecord(p1.statusEffects)[STATUS_IDS.ENTANGLE] ?? 0,
+                    divineArrival: asRecord(p1.tokens)[TOKEN_IDS.DIVINE_ARRIVAL] ?? 0,
                     vampireCp: asRecord(p0.resources)[RESOURCE_IDS.CP] ?? null,
                     interactionKind: asRecord(asRecord(sys.interaction).current).kind ?? null,
                     handContainsGetAway: Array.isArray(p0.hand)
@@ -2418,6 +2426,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 };
             }, { timeout: 15000 }).toEqual({
                 entangle: 0,
+                divineArrival: 1,
                 vampireCp: 1,
                 interactionKind: null,
                 handContainsGetAway: false,

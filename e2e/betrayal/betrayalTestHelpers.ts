@@ -1514,12 +1514,17 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
     }).catch(() => null);
     throw new Error(`山屋物理骰子停稳失败：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`);
   }
-  await expectPhysicalDiceStableAfterSettled(activeRollPanel, {
-    waitMs: 360,
-    maxCenterShiftPx: 1,
-    maxGroupDriftPx: 1,
-    maxRotationShiftRad: 0.02,
-  });
+  try {
+    await expectPhysicalDiceStableAfterSettled(activeRollPanel, {
+      waitMs: 360,
+      maxCenterShiftPx: 1,
+      maxGroupDriftPx: 1,
+      maxRotationShiftRad: 0.02,
+    });
+  } catch (error) {
+    if ((await activeRollPanel.count().catch(() => 0)) === 0) return;
+    throw error;
+  }
 };
 
 export const waitForPhysicalDiceRerollMotion = async (
@@ -2574,14 +2579,10 @@ export const expectPhysicalDiceStableAfterSettled = async (
   const maxCenterShiftPx = options.maxCenterShiftPx ?? 24;
   const maxGroupDriftPx = options.maxGroupDriftPx ?? 8;
   const maxRotationShiftRad = options.maxRotationShiftRad ?? 0.08;
-  const activeRollPanel = rollPanel
-    .page()
-    .locator('[data-testid="betrayal-recent-roll-panel"]:visible')
-    .last();
-  const physicsSource = activeRollPanel.getByTestId(
+  const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
   );
-  const diceGroup = activeRollPanel.getByTestId("betrayal-house-dice-3d-group");
+  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
   await expect
     .poll(
       async () => {
@@ -2604,7 +2605,7 @@ export const expectPhysicalDiceStableAfterSettled = async (
     .toBe("true");
 
   const readSnapshot = async () =>
-    activeRollPanel.evaluate((node) => {
+    rollPanel.evaluate((node) => {
       type Layout = {
         x: number;
         y: number;

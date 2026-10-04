@@ -1,3 +1,4 @@
+// e2e-harness-boundary: representative-state
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
@@ -737,6 +738,8 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     await expect(builder.getByTestId('mage-wars-spellbook-builder-current-list')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-visible-range')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-rows')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-card-pool')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-card-pool-grid')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-type')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-school')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-level')).toBeVisible();

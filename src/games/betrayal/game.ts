@@ -4538,6 +4538,36 @@ const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
     };
 };
 
+const resolveBetrayalPendingTurnEndRollRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => {
+    const core = args.state.core as Partial<Pick<BetrayalCore, 'currentPlayer' | 'recentRoll'>> | undefined;
+    if (!core?.currentPlayer || !core.recentRoll) {
+        return null;
+    }
+
+    const pendingRoll = resolvePendingTurnEndRoll(core as Pick<BetrayalCore, 'currentPlayer' | 'recentRoll'>);
+    if (!pendingRoll) {
+        return null;
+    }
+
+    const nextPlayerId = pendingRoll.roomEndTurn?.nextPlayerId
+        ?? pendingRoll.deathPrevention?.nextPlayerId
+        ?? 'unknown-next-player';
+    const fingerprintHint = `turn-end-roll:${pendingRoll.playerId}:${args.phase}:${pendingRoll.id}:${nextPlayerId}`;
+
+    return {
+        playerId: pendingRoll.playerId,
+        fingerprintHint,
+        attemptSuffix: fingerprintHint,
+        command: {
+            type: BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
+            payload: {},
+        },
+    };
+};
+
 const resolveBetrayalPendingEventRollStartRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
@@ -4563,7 +4593,8 @@ const resolveBetrayalSeatLegalOnlyRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
 }) => (
-    resolveBetrayalPendingEventRollStartRecovery(args)
+    resolveBetrayalPendingTurnEndRollRecovery(args)
+    ?? resolveBetrayalPendingEventRollStartRecovery(args)
     ?? resolveBetrayalPendingEventRollResolutionRecovery(args)
     ?? resolveBetrayalPendingCardResolutionRecovery(args)
 );

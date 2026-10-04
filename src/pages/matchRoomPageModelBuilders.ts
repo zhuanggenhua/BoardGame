@@ -192,7 +192,9 @@ export function buildMatchRoomPageShellModel(args: {
         seoTitle: pageIdentity.isTutorialRoute
             ? tLobby('matchRoom.tutorialTitle', { game: pageIdentity.gameDisplayName })
             : tLobby('matchRoom.matchTitle', { game: pageIdentity.gameDisplayName }),
-        showSpectatorShield: pageRuntime.shell.isSpectatorRoute && !pageIdentity.isTutorialRoute,
+        // spectator 的只读边界由 transport + game board 的命令权限控制。
+        // 不能用全屏透明层拦截页面，否则放大手牌、查看卡图等读操作也会被挡住。
+        showSpectatorShield: false,
         battlefieldZoomMode: pageIdentity.gameConfig?.mobileBattlefieldZoom,
         boardShellStyle: {
             '--font-game-display': pageIdentity.gameConfig?.fontFamily?.display

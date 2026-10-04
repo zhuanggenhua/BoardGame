@@ -22,7 +22,7 @@ const testDomain: DomainCore<TestCore, TestCommand, TestEvent> = {
   setup: () => ({ counter: 0, turnPhase: 'main' }),
   validate: (): ValidationResult => ({ valid: true }),
   execute: (_state, command): TestEvent[] => {
-    if (command.type === 'INCREMENT') {
+    if (command.type === 'INCREMENT' || command.type === 'RAW_INCREMENT') {
       return [{ type: 'INCREMENTED', payload: { delta: 1 }, timestamp: Date.now() }];
     }
     return [];
@@ -117,6 +117,53 @@ describe('撤回后 EventStream 行为', () => {
     expect(state.core.counter).toBe(0);
     expect(state.sys.tutorial.step?.id).toBe('before-increment');
     expect(state.sys.undo.rollbackRevision).toBe(1);
+  });
+
+  it('教程节点不依赖普通撤回白名单，并支持连续回退后重走', () => {
+    const tutorialSystems = [
+      createUndoSystem<TestCore>({
+        requireApproval: false,
+        snapshotCommandAllowlist: ['INCREMENT'],
+      }),
+      createTutorialSystem<TestCore>(),
+    ];
+    const manifest = {
+      id: 'tutorial-checkpoint-chain',
+      allowManualSkip: true,
+      steps: [
+        { id: 'p0', content: 'p0', advanceOnEvents: [{ type: 'INCREMENTED' }] },
+        { id: 'p1', content: 'p1', advanceOnEvents: [{ type: 'INCREMENTED' }] },
+        { id: 'p2', content: 'p2', advanceOnEvents: [{ type: 'INCREMENTED' }] },
+      ],
+    };
+    let state: MatchState<TestCore> = {
+      core: testDomain.setup(),
+      sys: createInitialSystemState(['0'], tutorialSystems, 'local:tutorial-checkpoint-chain'),
+    };
+    const run = (command: TestCommand) => executePipeline({
+      domain: testDomain,
+      systems: tutorialSystems,
+    }, state, command, random, ['0']);
+
+    state = run({ type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } }).state;
+    state = run({ type: 'RAW_INCREMENT', playerId: '0', payload: {} }).state;
+    expect(state.core.counter).toBe(1);
+    expect(state.sys.tutorial.step?.id).toBe('p1');
+    state = run({ type: 'INCREMENT', playerId: '0', payload: {} }).state;
+    expect(state.core.counter).toBe(2);
+    expect(state.sys.tutorial.step?.id).toBe('p2');
+
+    state = run({ type: TUTORIAL_COMMANDS.PREVIOUS, playerId: '0', payload: {} }).state;
+    expect(state.core.counter).toBe(1);
+    expect(state.sys.tutorial.step?.id).toBe('p1');
+    state = run({ type: TUTORIAL_COMMANDS.PREVIOUS, playerId: '0', payload: {} }).state;
+    expect(state.core.counter).toBe(0);
+    expect(state.sys.tutorial.step?.id).toBe('p0');
+
+    state = run({ type: 'RAW_INCREMENT', playerId: '0', payload: {} }).state;
+    expect(state.core.counter).toBe(1);
+    expect(state.sys.tutorial.step?.id).toBe('p1');
+    expect(state.sys.tutorial.checkpoints?.map((checkpoint) => checkpoint.stepId)).toEqual(['p0', 'p1']);
   });
 
   it('撤回恢复后重新执行命令，EventStream 应包含新事件', () => {

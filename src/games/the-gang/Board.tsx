@@ -28,6 +28,7 @@ import {
     THE_GANG_SPECIALISTS,
     THE_GANG_TOOLS,
     getActiveChallengeLabels,
+    isPerPlayerCommunityMode,
     isChallengeActive,
     normalizeRulesConfig,
 } from './domain/expansions';
@@ -442,21 +443,6 @@ const isChipDragSourceActive = (drag: ChipDragState | null, source: ChipDragSour
     if ((drag.handSlot ?? 'top') !== (source.handSlot ?? 'top')) return false;
     if (source.origin === 'local-hand') return true;
     return drag.playerId === source.playerId;
-};
-
-const isRemoteChipDragSourceActive = (drag: RemoteChipDragState, source: ChipDragSource) => {
-    if (drag.chip !== source.chip) return false;
-    if (source.origin === 'pool') {
-        return drag.origin === 'pool';
-    }
-    if (source.origin !== 'player-chip') {
-        return false;
-    }
-    const dragSourcePlayerId = drag.sourcePlayerId ?? drag.playerId;
-    const dragHandSlot = drag.handSlot ?? 'top';
-    return (drag.origin === 'local-hand' || drag.origin === 'player-chip')
-        && dragSourcePlayerId === source.playerId
-        && dragHandSlot === (source.handSlot ?? 'top');
 };
 
 const isCardDragSourceActive = (drag: CardDragState | null, source: CardDragSource) => (
@@ -1959,6 +1945,46 @@ function ExitChipToken({
     );
 }
 
+function PublicCommunityCards({
+    cards,
+    t,
+    testId,
+    compact = false,
+}: {
+    cards: PlayingCard[];
+    t: TFunction;
+    testId: string;
+    compact?: boolean;
+}) {
+    if (cards.length === 0) return null;
+
+    return (
+        <div
+            className={[
+                'flex flex-col items-center gap-1 overflow-visible',
+                compact ? 'mt-0.5' : 'mt-1.5',
+            ].join(' ')}
+            data-bgg-zone="player-community-cards"
+            data-testid={testId}
+            aria-label={t('board.communityCards')}
+        >
+            <span className="text-[0.52rem] font-black tracking-[0.08em] text-amber-100/72 lg:text-[0.62rem]">
+                {t('board.communityCards')}
+            </span>
+            <div className="flex items-center justify-center gap-1 overflow-visible lg:gap-1.5">
+                {cards.map((card, index) => (
+                    <CardFace
+                        key={`${card.rank}-${card.suit}-${index}`}
+                        card={card}
+                        emphasis={compact ? 'riverCompact' : 'table'}
+                        t={t}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function ExitChipBadge({
     compact = false,
     size,
@@ -2647,6 +2673,10 @@ export default function TheGangBoard({
     const lastChipDragBroadcastAtRef = useRef(0);
     const chipDragGlobalCleanupRef = useRef<(() => void) | null>(null);
     const heistStarted = core.heistStarted === true;
+    const perPlayerCommunity = isPerPlayerCommunityMode(core.rules.config);
+    const visibleCommunityCards = perPlayerCommunity
+        ? (localPlayer?.communityCards ?? [])
+        : core.communityCards;
     const setupOpen = core.phase === 'chip-selection' && !heistStarted;
     const allPlayersHaveChip = allRequiredChipOwnersHaveChips(core);
     const allFinalTokensTaken = allRequiredFinalTokensAreTaken(core);
@@ -2734,15 +2764,15 @@ export default function TheGangBoard({
         : undefined;
     const singleHandStackedMiddleLayout = !twoHandChipSelectionLayout
         && core.phase === 'chip-selection'
-        && core.communityCards.length > 0
+        && visibleCommunityCards.length > 0
         && availableChipValues.length > 0;
-    const twoHandChipSelectionOffsetVar = core.communityCards.length > 0
+    const twoHandChipSelectionOffsetVar = visibleCommunityCards.length > 0
         ? '--the-gang-twohand-chip-selection-river-offset'
         : '--the-gang-twohand-chip-selection-token-offset';
     const middleCenterStyle = twoHandChipSelectionLayout
         ? {
             transform: `translateY(var(${twoHandChipSelectionOffsetVar}, clamp(4.5rem, 17vh, 5.25rem)))`,
-            gap: core.communityCards.length > 0 ? 'clamp(1.25rem, 5vh, 2rem)' : '2rem',
+            gap: visibleCommunityCards.length > 0 ? 'clamp(1.25rem, 5vh, 2rem)' : '2rem',
         }
         : singleHandStackedMiddleLayout
             ? {
@@ -3521,17 +3551,25 @@ export default function TheGangBoard({
                                     <span className="truncate text-xs font-black tracking-[0.08em] text-stone-100/72 lg:text-sm">
                                         {playerName(id)}
                                     </span>
-                                    <PlayerChipStrip
-                                        roundHistory={core.roundHistory}
-                                        currentRound={core.round}
+                                     <PlayerChipStrip
+                                         roundHistory={core.roundHistory}
+                                         currentRound={core.round}
                                         currentChips={buildCurrentChipDisplays(core, id)}
                                         playerId={id}
                                         localPlayerId={localPlayerId}
                                         onTakeCurrentChip={heistStarted && core.phase === 'chip-selection' ? takeChip : undefined}
-                                        getChipDragHandlers={getChipDragHandlers}
-                                        chipDrag={chipDrag}
-                                    />
-                                </div>
+                                         getChipDragHandlers={getChipDragHandlers}
+                                         chipDrag={chipDrag}
+                                     />
+                                    {perPlayerCommunity && (
+                                        <PublicCommunityCards
+                                            cards={core.players[id]?.communityCards ?? []}
+                                            t={t}
+                                            testId={`the-gang-player-community-cards-${id}`}
+                                            compact
+                                        />
+                                    )}
+                                 </div>
                             );
                         })}
                     </section>
@@ -3611,7 +3649,7 @@ export default function TheGangBoard({
                                 data-bgg-zone="card-river"
                                 aria-label={t('board.communityCardsSlot')}
                             >
-                                {core.communityCards.map((card, index) => (
+                                {visibleCommunityCards.map((card, index) => (
                                     <div
                                         key={index}
                                         className={[
@@ -3759,7 +3797,7 @@ export default function TheGangBoard({
                         {core.lastShowdown && (
                             <ShowdownResultPanel
                                 lastShowdown={core.lastShowdown}
-                                communityCards={core.communityCards}
+                                communityCards={visibleCommunityCards}
                                 playerName={playerName}
                                 onNextHeist={startNextHeist}
                                 nextHeistProgress={nextHeistProgress}

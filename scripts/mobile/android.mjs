@@ -487,6 +487,51 @@ const isAndroidOtaAllowedForApp = () => {
     return parseBooleanEnv(process.env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP);
 };
 
+const isStableUpdateManifest = (manifestUrl, channel) => {
+    const normalizedUrl = String(manifestUrl || '').trim().toLowerCase();
+    const normalizedChannel = String(channel || '').trim().toLowerCase();
+    return normalizedChannel === 'stable' || /\/stable(?:\/|\.json(?:$|\?))/i.test(normalizedUrl);
+};
+
+const applyNonReleaseUpdateIsolation = () => {
+    const { appId } = getAppConfig();
+    if (!appId || !isNonReleaseAndroidAppId(appId)) {
+        return;
+    }
+
+    const otaEnabled = parseBooleanEnv(process.env.VITE_ANDROID_OTA_ENABLED);
+    const otaAllowed = parseBooleanEnv(process.env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP);
+    const otaManifestUrl = process.env.VITE_ANDROID_OTA_MANIFEST_URL?.trim() || '';
+    const otaChannel = process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable';
+    if (otaEnabled && otaAllowed && isStableUpdateManifest(otaManifestUrl, otaChannel)) {
+        throw new Error(
+            `debug Android 包禁止连接 stable OTA：appId=${appId}, channel=${otaChannel}, manifest=${otaManifestUrl}`,
+        );
+    }
+    if (!otaAllowed) {
+        process.env.VITE_ANDROID_OTA_ENABLED = 'false';
+        process.env.VITE_ANDROID_OTA_MANIFEST_URL = '';
+        process.env.VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS = '';
+        process.env.VITE_ANDROID_OTA_CHANNEL = 'debug';
+    }
+
+    const nativeEnabled = parseBooleanEnv(process.env.VITE_ANDROID_NATIVE_UPDATE_ENABLED);
+    const nativeAllowed = parseBooleanEnv(process.env.VITE_ANDROID_NATIVE_UPDATE_ALLOW_DEBUG_APP);
+    const nativeManifestUrl = process.env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL?.trim() || '';
+    const nativeChannel = process.env.VITE_ANDROID_NATIVE_UPDATE_CHANNEL?.trim() || 'stable';
+    if (nativeEnabled && nativeAllowed && isStableUpdateManifest(nativeManifestUrl, nativeChannel)) {
+        throw new Error(
+            `debug Android 包禁止连接 stable 原生更新：appId=${appId}, channel=${nativeChannel}, manifest=${nativeManifestUrl}`,
+        );
+    }
+    if (!nativeAllowed) {
+        process.env.VITE_ANDROID_NATIVE_UPDATE_ENABLED = 'false';
+        process.env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL = '';
+        process.env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS = '';
+        process.env.VITE_ANDROID_NATIVE_UPDATE_CHANNEL = 'debug';
+    }
+};
+
 const isHttpUrl = (value) => /^http:\/\//i.test(value);
 const isHttpsUrl = (value) => /^https:\/\//i.test(value);
 const writeCapacitorShellConfig = () => {
@@ -1031,6 +1076,7 @@ const run = async () => {
     if (new Set(['prepare-release', 'build-release', 'build-bundle']).has(command)) {
         applyReleaseShellDefaults();
     }
+    applyNonReleaseUpdateIsolation();
 
     switch (command) {
         case 'doctor':

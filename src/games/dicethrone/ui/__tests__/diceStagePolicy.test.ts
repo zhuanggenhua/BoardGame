@@ -149,8 +149,18 @@ describe('handPlayPolicy', () => {
         expect(canInteractHandForCurrentBoard({ isSpectator: false })).toBe(true);
     });
 
-    it('观察者不能操作手牌', () => {
-        expect(canInteractHandForCurrentBoard({ isSpectator: true })).toBe(false);
+    it('观察者保留完整手牌交互，但操作不会产生引擎效果', () => {
+        expect(canInteractHandForCurrentBoard({ isSpectator: true })).toBe(true);
+        expect(canPlayHandCardsForCurrentBoard({
+            isSpectator: true,
+            isActivePlayer: true,
+            isResponder: true,
+            isDirectDiceActor: true,
+            currentPhase: 'main1',
+            rootPid: '0',
+            rollerId: '0',
+        })).toBe(true);
+        expect(canSellHandCardsForCurrentBoard({ isSpectator: true, isActivePlayer: true })).toBe(true);
     });
 
     it('防御方在自己的防御掷骰阶段，即使不是当前回合玩家也应允许打改自己骰子的手牌', () => {
@@ -178,8 +188,8 @@ describe('handPlayPolicy', () => {
         expect(canSellHandCardsForCurrentBoard({ isSpectator: false, isActivePlayer: false })).toBe(false);
     });
 
-    it('仅当前行动者能卖牌，观察者不能卖牌', () => {
+    it('玩家只允许当前行动者卖牌，观战保留拖拽交互', () => {
         expect(canSellHandCardsForCurrentBoard({ isSpectator: false, isActivePlayer: true })).toBe(true);
-        expect(canSellHandCardsForCurrentBoard({ isSpectator: true, isActivePlayer: true })).toBe(false);
+        expect(canSellHandCardsForCurrentBoard({ isSpectator: true, isActivePlayer: true })).toBe(true);
     });
 });

@@ -356,6 +356,49 @@ describe('GameProvider transport baseline', () => {
         }));
     });
 
+    it('旁观者保留公共交互入口，但 dispatch 不产生预测、不发命令', () => {
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => false),
+            reconcile: vi.fn((state: unknown) => ({
+                stateToRender: state,
+                didRollback: false,
+                optimisticEventWatermark: null,
+            })),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(),
+            processCommand: vi.fn(() => ({
+                stateToRender: null,
+                shouldSend: true,
+                animationMode: 'wait-confirm',
+            })),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-spectator-command-noop"
+                playerId={null}
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{ optimistic: { enabled: true }, batching: { enabled: true } } as any}
+            >
+                <DispatchProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            screen.getByTestId('dispatch-advance-then-interaction').click();
+        });
+
+        expect(mockEngine.processCommand).not.toHaveBeenCalled();
+        expect(client.sendCommand).not.toHaveBeenCalled();
+        expect(client.sendBatch).not.toHaveBeenCalled();
+    });
+
     it('normalizes authoritative runtime-guard dirty state before patch baseline and render state', () => {
         render(
             <GameProvider

@@ -506,6 +506,17 @@ export interface TutorialManifest {
     stepValidator?: (state: MatchState<unknown>, step: TutorialStepSnapshot) => boolean;
 }
 
+/**
+ * 教程可见步骤节点：由 TutorialSystem 自动记录，用于教程“上一步”恢复完整对局。
+ * state 是去掉教程节点历史后的完整 MatchState 快照，避免递归膨胀。
+ */
+export interface TutorialCheckpoint {
+    stepIndex: number;
+    stepId: string | null;
+    state: unknown;
+    randomCursor?: number;
+}
+
 export interface TutorialCollectionEntry {
     title?: string;
     titleKey?: string;
@@ -556,6 +567,8 @@ export interface TutorialState {
     pendingAnimationAdvance?: boolean;
     /** 本次推进中因当前局面不适用而跳过的步骤，供教程界面给出可见提示 */
     skippedStepIds?: string[];
+    /** 每个可见教程步骤的完整状态节点，按步骤顺序排列。 */
+    checkpoints?: TutorialCheckpoint[];
 }
 
 export const DEFAULT_TUTORIAL_STATE: TutorialState = {

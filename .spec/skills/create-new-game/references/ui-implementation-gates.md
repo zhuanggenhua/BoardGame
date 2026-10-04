@@ -115,6 +115,8 @@ DOM、HTML、TTS/Workshop JSON、XmlUI、对象 Transform、截图、PureRef、�
 
 如果玩家第一眼看不出“我现在能点什么、点了选谁、怎么确认、结果是什么”，不得进入设计稿或实现。
 
+实现时，凡玩家可见规则结果导致生命、属性、资源、状态层级 / 计数、位置归属或其它读数变化，必须同时接入可感知反馈；具体反馈类型、例外和验收口径以 [`animation-effects`](../../../knowledge/standards/animation-effects.md) 为唯一主源。只更新数字、日志、toast 或最终静态值而没有目标本体变化、跳字 / 数字变化、状态 token、资源飞行、短闪等同等反馈时，UI 实施不能标记完成。
+
 ## Board 实现边界
 
 Board 只负责展示、玩家输入和调用正式命令；不得直接改规则状态。

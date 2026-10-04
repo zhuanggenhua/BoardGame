@@ -229,6 +229,42 @@ const expectBggTableAnchors = () => {
     ).toBeInTheDocument();
 };
 
+test('个人公共牌模式把本地和其它座位的明牌都放回牌桌', () => {
+    let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+    core = reduceCommand(core, {
+        type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+        playerId: '0',
+        payload: {
+            config: {
+                ...core.rules.config,
+                gameMode: 'banana-split',
+            },
+        },
+        timestamp: 1,
+    } as Parameters<typeof TheGangDomain.execute>[1]);
+    core = startHeistCore(core, '0', 2);
+    core = {
+        ...core,
+        round: 4,
+        players: Object.fromEntries(core.playerIds.map((playerId, index) => [playerId, {
+            ...core.players[playerId],
+            communityCards: [
+                standardCard(String(index + 2) as PlayingCard['rank'], 'clubs'),
+                standardCard(String(index + 3) as PlayingCard['rank'], 'diamonds'),
+                standardCard(String(index + 4) as PlayingCard['rank'], 'hearts'),
+            ],
+        }])),
+    };
+
+    renderBoardForCore(core);
+
+    expect(screen.getByTestId('the-gang-player-community-cards-1')).toBeInTheDocument();
+    expect(screen.getByTestId('the-gang-player-community-cards-2')).toBeInTheDocument();
+    expect(screen.getByTestId('the-gang-player-community-cards-1').querySelectorAll('img')).toHaveLength(3);
+    expect(screen.getByTestId('the-gang-player-community-cards-2').querySelectorAll('img')).toHaveLength(3);
+    expect(document.querySelector('[data-bgg-zone="card-river"]')?.querySelectorAll('img')).toHaveLength(3);
+});
+
 const buildFourPlayerTwoHandFinalRoundCore = () => {
     let core = TheGangDomain.setup(['0', '1', '2', '3'], fixedRandom);
     core = reduceCommand(core, {

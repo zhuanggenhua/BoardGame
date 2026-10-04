@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import type { DiceBoxStyleProfile } from "../../lib/dice-box-threejs/engine";
 import type { BetrayalRecentRollState } from "./game";
+import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import {
   BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
 } from "./houseDicePresentation";
@@ -639,6 +640,7 @@ export function StandardRecentRollOverlay({
   rerollSelection,
   actionSlot = null,
   actorLabel = null,
+  onDiceSettledChange,
 }: {
   roll: BetrayalRecentRollState;
   canDismissByBackdrop: boolean;
@@ -647,17 +649,18 @@ export function StandardRecentRollOverlay({
   rerollSelection?: RecentRollRerollSelection | null;
   actionSlot?: React.ReactNode;
   actorLabel?: string | null;
+  onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
   const { t } = useTranslation("game-betrayal");
   const continueButton = (
-    <button
+    <BetrayalConfirmButton
       type="button"
       data-testid="betrayal-roll-continue"
-      className="pointer-events-auto inline-flex min-h-[42px] min-w-[168px] max-w-full shrink-0 items-center justify-center whitespace-nowrap border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+      className="pointer-events-auto min-w-[168px] max-w-full shrink-0 shadow-[0_10px_22px_rgba(0,0,0,0.34)]"
       onClick={onDismiss}
     >
       {t("board.roll.backToBoard")}
-    </button>
+    </BetrayalConfirmButton>
   );
   const dockedActionSlot = actionSlot ?? continueButton;
   const overlay = (
@@ -685,6 +688,7 @@ export function StandardRecentRollOverlay({
           diceStyleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
           effectiveLocale={effectiveLocale}
           actorLabel={actorLabel}
+          onDiceSettledChange={onDiceSettledChange}
         />
         <div
           data-testid="betrayal-roll-continue-dock"

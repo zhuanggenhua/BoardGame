@@ -63,8 +63,6 @@ import { useCurrentChoice, useCurrentDefenderChoice, useDiceThroneState } from '
 import { INTERACTION_COMMANDS, asCompareRollChoice } from '../../engine/systems/InteractionSystem';
 import { useMultistepInteraction } from '../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from './domain/systems';
-// 引擎层 Hooks
-import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks
 import { useInteractionState } from './hooks/useInteractionState';
 import { useAnimationEffects } from './hooks/useAnimationEffects';
@@ -184,13 +182,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const isSpectator = !!gameMode?.isSpectator;
     const isTutorialMode = gameMode?.mode === 'tutorial';
 
-    // 使用引擎层 useSpectatorMoves Hook 自动拦截观察者操作
-    const engineMoves = useSpectatorMoves(
-        resolveMoves(dispatch),
-        isSpectator,
-        playerID || undefined,
-        { logPrefix: 'Spectate[DiceThrone]' }
-    ) as DiceThroneMoveMap;
+    // 所有视角使用同一套交互；在线旁观者的命令由公共 Provider 入口统一 no-op。
+    const engineMoves = resolveMoves(dispatch) as DiceThroneMoveMap;
     const { t, i18n } = useTranslation('game-dicethrone');
     const tutorialRuntimeSyncKey = [
         rawG.sys.phase,
@@ -230,8 +223,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         getFallbackName: resolveMatchFallbackName,
         resolvePreferredOrder: resolveMatchPreferredOrder,
         resolveTurnPlayerId: resolveMatchTurnPlayerId,
+        resolveSelfPlayerId: ({ core: dtCore }: { core?: typeof G | null }) => (
+            isSpectator ? dtCore?.activePlayerId : playerID
+        ),
     }), [
         G,
+        isSpectator,
         matchData,
         playerID,
         rawG,
@@ -1064,7 +1061,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // （variant 选择弹窗由 onSelectAbility 回调触发，不需要自动弹出）
 
     // 自己的手牌永远显示
-    const handOwner = player;
+    const handOwner = isSpectator ? viewPlayer : player;
 
     // 计算响应窗口中可响应的卡牌 ID 集合（用于高亮）
     const respondableCardIds = React.useMemo(() => {

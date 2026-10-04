@@ -335,7 +335,7 @@ export function BetrayalLatestDiscoverySurface({
         {shouldHideExternalActionDock ? null : (
           <div
             data-testid="betrayal-discovery-card-external-action-dock"
-            className="pointer-events-none relative mt-2 flex min-h-[62px] w-full justify-center"
+            className="pointer-events-none relative mt-3 flex min-h-[72px] w-full justify-center pb-[env(safe-area-inset-bottom)]"
           >
             {hasPendingEventRollStart ? (
               <button
@@ -385,7 +385,7 @@ export function BetrayalLatestDiscoverySurface({
                     : undefined
                 }
                 disabled={continueButton.disabled}
-                className={`pointer-events-auto min-w-[132px] shrink-0 ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
+                className={`pointer-events-auto min-w-[176px] shrink-0 ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
                 onClick={onContinue}
               >
                 {continueButton.label}

@@ -164,18 +164,28 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const interactionType = interaction.type;
     const selectedItems = interaction.selected ?? [];
     const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(players);
+    const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
+    const isTransferStatusSelection = (
+        (interactionType === 'selectStatus' || interactionType === 'selectTargetStatus')
+        && interaction.transferConfig !== undefined
+        && !interaction.transferConfig.statusId
+    );
     const isRemovableEffect = React.useCallback((effectId: string) => {
         const definition = tokenDefinitions?.find(def => def.id === effectId);
         return definition?.passiveTrigger?.removable ?? true;
     }, [tokenDefinitions]);
     const getRemovableEntries = React.useCallback((entries: Record<string, number> | undefined) => {
         return Object.fromEntries(
-            Object.entries(entries ?? {}).filter(([effectId, stacks]) => stacks > 0 && isRemovableEffect(effectId)),
+            Object.entries(entries ?? {}).filter(([effectId, stacks]) => (
+                stacks > 0
+                && isRemovableEffect(effectId)
+                && (!isTransferStatusSelection
+                    || tokenDefinitions?.find(definition => definition.id === effectId)?.passiveTrigger?.transferable !== false)
+            )),
         );
-    }, [isRemovableEffect]);
+    }, [isRemovableEffect, isTransferStatusSelection, tokenDefinitions]);
 
     // 状态效果选择模式
-    const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
     // 玩家选择模式（选择目标玩家：授予 token / 移除所有状态等）
     const isPlayerSelection = interactionType === 'selectPlayer';
     // 卡牌选择模式（由持有者从手牌或抽牌堆自行选择）

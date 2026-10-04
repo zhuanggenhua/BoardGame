@@ -253,7 +253,7 @@
       }
     },
     "enchantmentResponse": {
-      "title": "必须展示响应结界 {{responseObjectId}}",
+      "title": "必须展示响应结界：{{responseCardName}}",
       "options": {
         "reveal": "展示并结算",
         "redirect": "展示并将法术重定向给施法者",

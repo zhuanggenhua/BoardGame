@@ -24,6 +24,7 @@ description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token�
 - 用户要求“全面审计 / 为什么没审出来”：进入 .spec/skills/game-audit-workflow/SKILL.md，由其 reading-map 选择描述到实现、证据模板和回归收口主源。
 - 规则合同缺失、图片/卡图/规则书冲突或对象归属未锁：进入 .spec/skills/data-entry-workflow/SKILL.md，并读取 .spec/knowledge/standards/data-entry.md。
 - 反馈涉及真实 UI 入口、按钮、提示、截图或 E2E：读取 .spec/knowledge/standards/e2e-verification.md，必要时读取 .spec/knowledge/standards/ui-change-gates.md。
+- 反馈涉及生命、属性、资源、状态层级 / 计数、位置归属等玩家可见结果变化，或指出结果“静默 / 没有跳字或等价反馈”：读取 .spec/knowledge/standards/animation-effects.md；需要核对数值冻结、实体保留或 EventStream 时，再读取 .spec/knowledge/standards/engine-visual-events.md。
 - 只需要命令、状态注入、骰子/随机数或 TestHarness API：读取 docs/testing-tools-quick-reference.md；项目脚本目录查 docs/tools.md。
 - 入口不明确：回 .spec/knowledge/README.md，不要自行拼接一套阅读清单。
 

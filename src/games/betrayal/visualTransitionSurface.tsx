@@ -44,12 +44,38 @@ export type BetrayalVisualTransition = {
   onComplete?: () => void;
 };
 
-export function findBetrayalTestElement(testId: string): HTMLElement | null {
+export function findBetrayalTestElement(
+  testId: string,
+  options: { visibleOnly?: boolean } = {},
+): HTMLElement | null {
   if (typeof document === "undefined") {
     return null;
   }
-  return Array.from(document.querySelectorAll<HTMLElement>("[data-testid]"))
-    .find((element) => element.dataset.testid === testId) ?? null;
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-testid]"),
+  ).filter((element) => element.dataset.testid === testId);
+  const sizedCandidates = candidates.filter((element) => {
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  });
+  const visibleCandidates = sizedCandidates.filter((element) => {
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      Number.parseFloat(style.opacity || "1") > 0 &&
+      rect.right > 0 &&
+      rect.bottom > 0 &&
+      rect.left < window.innerWidth &&
+      rect.top < window.innerHeight &&
+      element.dataset.visualTransitionAnchorHidden !== "true"
+    );
+  });
+  if (options.visibleOnly) {
+    return visibleCandidates[0] ?? null;
+  }
+  return visibleCandidates[0] ?? sizedCandidates[0] ?? candidates[0] ?? null;
 }
 
 export function readBetrayalViewportRect(

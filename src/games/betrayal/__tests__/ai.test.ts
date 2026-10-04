@@ -305,6 +305,51 @@ describe('小黑屋本地 AI', () => {
         }]);
     });
 
+    test('回合结束投骰待确认时，watchdog 应先确认结果而不是裸推进阶段', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.currentPlayer = '0';
+        core.recentRoll = {
+            id: 'room-end-roll-recovery',
+            kind: 'roomEndTurnTraitCheck',
+            playerId: '0',
+            sourceTitle: '回合结束检定',
+            dice: [2, 3],
+            passiveBonus: 0,
+            latestLabel: '知识检定 5',
+            consumedRabbitFootCardIds: [],
+            roomEndTurn: {
+                kind: 'physicalDamage1',
+                roomName: '图书馆',
+                roomId: 'library',
+                originalRoomId: 'library',
+                traitsBeforeEffect: { ...core.currentExplorer.traits },
+                previousPhysicalDamage: 0,
+                nextPlayerId: '1',
+            },
+        };
+        const state = stateOf(core, 'betrayal-ai-turn-end-roll-recovery');
+        state.sys.phase = 'preHaunt';
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'local-ai' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig,
+            gameId: 'betrayal',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('0');
+        expect(candidate?.resolution.action.commands).toEqual([{
+            type: BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
+            payload: {},
+        }]);
+    });
+
     test('事件待投骰缺少非当前 AI 座位时，watchdog 应代触发者投骰而不是推进当前 AI 阶段', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         activateTestExplorer(core, '1');

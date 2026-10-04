@@ -688,26 +688,44 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
         if (handledPanInstructionRef.current === panInstructionKey) return undefined;
 
-        const rafId = requestAnimationFrame(() => {
+        let cancelled = false;
+        let retryFrameId: number | null = null;
+        let retryCount = 0;
+
+        const resolveTargetAndPan = () => {
+            if (cancelled) return;
             const contentEl = contentRef.current;
             const containerEl = containerRef.current;
             const targetEl = contentEl?.querySelector(
                 `[data-zoom-pan-target="${panToTarget}"], [data-tutorial-id="${panToTarget}"]`,
             ) as HTMLElement | null;
-            if (!contentEl || !containerEl || !targetEl) return;
+            if (!contentEl || !containerEl || !targetEl) {
+                if (retryCount < 60) {
+                    retryCount += 1;
+                    retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+                }
+                return;
+            }
 
             const contentWidth = contentEl.offsetWidth;
             const contentHeight = contentEl.offsetHeight;
-            if (!contentWidth || !contentHeight) return;
+            const targetRect = targetEl.getBoundingClientRect();
+            if (!contentWidth || !contentHeight || targetRect.width <= 0 || targetRect.height <= 0) {
+                if (retryCount < 60) {
+                    retryCount += 1;
+                    retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+                }
+                return;
+            }
 
             const currentZoomLevel = activeZoomLevel;
             const targetZoomLevel = panToScale != null
                 ? clampZoomLevel(panToScale)
                 : currentZoomLevel;
             const containerRect = containerEl.getBoundingClientRect();
-            const elementRect = targetEl.getBoundingClientRect();
-            const viewportCenterX = containerSize.width / 2;
-            const viewportCenterY = containerSize.height / 2;
+            const elementRect = targetRect;
+            const viewportCenterX = containerSize.width / 2 + fitCenterOffset.x;
+            const viewportCenterY = containerSize.height / 2 + fitCenterOffset.y;
 
             let targetPosition;
             if (panToScale == null) {
@@ -779,9 +797,16 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 setSettledPanInstructionKey(panInstructionKey);
                 animationTimerRef.current = null;
             }, 400);
-        });
+        };
 
-        return () => cancelAnimationFrame(rafId);
+        retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+
+        return () => {
+            cancelled = true;
+            if (retryFrameId !== null) {
+                cancelAnimationFrame(retryFrameId);
+            }
+        };
     }, [
         activeZoomLevel,
         activePosition.x,

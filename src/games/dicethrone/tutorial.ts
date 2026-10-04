@@ -390,8 +390,10 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'ADVANCE_PHASE', playerId: '0', payload: {}, waitForBoardSyncAfter: true },
                 { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '0', payload: { __tutorialChoiceCandidateId: 'skip' } },
                 // 结束 AI 回合 (main2 → discard → auto-chain → P0 main1)
-                { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-                { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
+                { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {}, waitForBoardSyncAfter: true },
+                { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {}, waitForBoardSyncAfter: true },
+                // 本地浏览器批次中，弃牌阶段可能在上一条命令后才提交；再次推进确保回到 P0 main1。
+                { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {}, waitForBoardSyncAfter: true },
             ],
             hiddenAutomation: compressedRepeat(
                 ['advance', 'dice-roll', 'dice-confirm', 'abilities', 'resolve-attack', 'inner-peace-response'],

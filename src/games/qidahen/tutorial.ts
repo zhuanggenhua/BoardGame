@@ -52,12 +52,11 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
                 && core.wheelActionUsed === false;
         case 'wheel-result':
             return core.wheelActionUsed === true;
-        case 'wheel-branch-finish':
+        case 'action-overview':
             return core.turnPhase === 'action-window'
                 && core.wheelActionUsed === true
                 && core.factionActionUsed === false
-                && core.lastSeasonSummary != null
-                && core.lastSeasonSummary.title !== '轮盘征兵/训练';
+                && core.actionChoices.length >= 2;
         case 'pick-action':
             return core.turnPhase === 'action-window'
                 && core.wheelActionUsed === true
@@ -83,6 +82,10 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
 const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
+        case 'action-overview':
+            return core.turnPhase === 'action-window'
+                && core.factionActionUsed === false
+                && core.actionChoices.length >= 2;
         case 'choose-action':
             return core.turnPhase === 'action-window'
                 && core.factionActionUsed === false;
@@ -284,6 +287,7 @@ const armamentUpgradeStepValidator = (state: MatchState<unknown>, step: { id: st
     const core = asCore(state);
     const artilleryTech = core.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech');
     switch (step.id) {
+        case 'action-overview':
         case 'choose-action':
             return core.turnPhase === 'action-window'
                 && core.factionActionUsed === false
@@ -307,6 +311,11 @@ const eventActionStepValidator = (state: MatchState<unknown>, step: { id: string
     const core = asCore(state);
     const recruitTargetRegion = core.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-25');
     switch (step.id) {
+        case 'action-overview':
+            return core.turnPhase === 'action-window'
+                && core.factionActionUsed === false
+                && core.payment.required === 0
+                && core.actionChoices.length >= 2;
         case 'choose-action':
             return core.turnPhase === 'action-window'
                 && core.selectedActionId === 'khan-edict'
@@ -461,11 +470,12 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'wheel-branch-finish',
-            content: 'game-qidahen:tutorial.basic.steps.wheelBranchFinish',
-            position: 'center',
+            id: 'action-overview',
+            content: 'game-qidahen:tutorial.basic.steps.actionOverview',
+            highlightTarget: 'qidahen-actions-zone',
+            position: 'left',
             infoStep: true,
-            showMask: true,
+            showMask: false,
         },
         {
             id: 'pick-action',
@@ -522,6 +532,14 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             position: 'center',
             requireAction: false,
             showMask: true,
+        },
+        {
+            id: 'action-overview',
+            content: 'game-qidahen:tutorial.attackAndBattle.steps.actionOverview',
+            highlightTarget: 'qidahen-actions-zone',
+            position: 'left',
+            infoStep: true,
+            showMask: false,
         },
         {
             id: 'choose-action',
@@ -1014,6 +1032,14 @@ const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
             showMask: true,
         },
         {
+            id: 'action-overview',
+            content: 'game-qidahen:tutorial.armamentUpgrade.steps.actionOverview',
+            highlightTarget: 'qidahen-actions-zone',
+            position: 'left',
+            infoStep: true,
+            showMask: false,
+        },
+        {
             id: 'choose-action',
             content: 'game-qidahen:tutorial.armamentUpgrade.steps.chooseAction',
             highlightTarget: 'qidahen-atlas05-1626-artillery-tech',
@@ -1059,6 +1085,15 @@ const QIDAHEN_EVENT_ACTION_TUTORIAL: TutorialManifest = {
             position: 'center',
             requireAction: false,
             showMask: true,
+            viewAs: '1',
+        },
+        {
+            id: 'action-overview',
+            content: 'game-qidahen:tutorial.eventAction.steps.actionOverview',
+            highlightTarget: 'qidahen-actions-zone',
+            position: 'left',
+            infoStep: true,
+            showMask: false,
             viewAs: '1',
         },
         {

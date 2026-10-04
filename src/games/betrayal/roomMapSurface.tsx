@@ -21,6 +21,7 @@ import {
   resolveAttackImpactByPlayerId,
   type BetrayalAttackImpactState,
 } from "./attackImpactPresentation";
+import type { BetrayalTraitDelta } from "./activityPresentation";
 import { getAllExplorers } from "./explorerReadModel";
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import type { BetrayalRoomTileVisual } from "./roomAtlas";
@@ -150,6 +151,10 @@ export interface BetrayalRoomMapSurfaceProps {
   selectedPreviewTradeTargetPlayerId: string | null;
   selectedDustTargetPlayerId: string | null;
   visibleFeedback: BetrayalRoomMapHealFeedback | null;
+  traitChangeFeedbackByPlayerId: ReadonlyMap<
+    string,
+    { presentationKey: string; deltas: readonly BetrayalTraitDelta[] }
+  >;
   helpingHandsMovableTrollHandIds: ReadonlySet<string>;
   monsterMovableIds: ReadonlySet<string>;
   isMonsterAttackMode: boolean;
@@ -194,7 +199,10 @@ export interface BetrayalRoomMapSurfaceProps {
   onOpenExplorerDetails: (playerId: string) => void;
   onSelectMonsterTarget: (monsterId: string) => void;
   onSelectHelpingHandsTrollHandMoveMonster: (monsterId: string) => void;
-  onSelectMonsterMoveMonster: (monsterId: string) => void;
+  onSelectMonsterMoveMonster: (
+    monsterId: string,
+    sourceElement?: HTMLElement,
+  ) => void;
   onSelectMonsterAttackMonster: (monsterId: string) => void;
   onOpenMonsterDetails: (monsterId: string) => void;
   onPickUpMummyGirl: () => void;
@@ -280,6 +288,7 @@ export function BetrayalRoomMapSurface({
   selectedPreviewTradeTargetPlayerId,
   selectedDustTargetPlayerId,
   visibleFeedback,
+  traitChangeFeedbackByPlayerId,
   helpingHandsMovableTrollHandIds,
   monsterMovableIds,
   isMonsterAttackMode,
@@ -851,6 +860,7 @@ export function BetrayalRoomMapSurface({
                 }
                 selectedDustTargetPlayerId={selectedDustTargetPlayerId}
                 visibleFeedback={visibleFeedback}
+                traitChangeFeedbackByPlayerId={traitChangeFeedbackByPlayerId}
                 movingExplorerPlayerId={movingExplorerPlayerId}
                 isHauntTargetRoom={isHauntTargetRoom}
                 isHelpingHandsTrollHandMoveMode={

@@ -132,7 +132,11 @@ import {
   type BetrayalEventChoiceSelection,
 } from "./eventChoicePreview";
 import { isBetrayalCore } from "./coreSnapshotGuard";
-import { resolveBetrayalActivityPresentation } from "./activityPresentation";
+import {
+  resolveBetrayalActivityPresentation,
+  resolveBetrayalTraitDeltas,
+  type BetrayalTraitDelta,
+} from "./activityPresentation";
 import {
   buildLatestDiscoveryDisplayEntry,
   buildLatestDiscoveryKey,
@@ -246,6 +250,7 @@ import {
   centerBetrayalRect,
   findBetrayalTestElement,
   readBetrayalViewportRect,
+  type BetrayalViewportRect,
   type BetrayalVisualTransition,
 } from "./visualTransitionSurface";
 import {
@@ -539,6 +544,10 @@ export default function BetrayalBoard({
   const [previewState, setPreviewState] = React.useState<PreviewState>(() =>
     createInitialPreviewState(baseCore),
   );
+  const monsterMoveSourceRectRef = React.useRef<{
+    monsterId: string;
+    rect: BetrayalViewportRect;
+  } | null>(null);
   const [referenceOpen, setReferenceOpen] = React.useState(false);
   const [scenarioReaderOpen, setScenarioReaderOpen] = React.useState(false);
   const [referenceSide, setReferenceSide] =
@@ -727,6 +736,63 @@ export default function BetrayalBoard({
     () => [core.currentExplorer, ...core.otherExplorers],
     [core.currentExplorer, core.otherExplorers],
   );
+  const previousExplorerTraitsRef = React.useRef<
+    Map<string, Record<BetrayalTraitKey, number>> | null
+  >(null);
+  const traitChangeFeedbackSequenceRef = React.useRef(0);
+  const [traitChangeFeedbackByPlayerId, setTraitChangeFeedbackByPlayerId] =
+    React.useState<
+      Map<
+        string,
+        { presentationKey: string; deltas: readonly BetrayalTraitDelta[] }
+      >
+    >(() => new Map());
+  React.useEffect(() => {
+    const nextTraits = new Map(
+      allExplorers.map((explorer) => [explorer.playerId, { ...explorer.traits }]),
+    );
+    const previousTraits = previousExplorerTraitsRef.current;
+    previousExplorerTraitsRef.current = nextTraits;
+    if (!previousTraits) {
+      return undefined;
+    }
+
+    const changes = new Map<
+      string,
+      { presentationKey: string; deltas: readonly BetrayalTraitDelta[] }
+    >();
+    for (const explorer of allExplorers) {
+      const deltas = resolveBetrayalTraitDeltas(
+        previousTraits.get(explorer.playerId),
+        explorer.traits,
+      );
+      if (deltas.length === 0) {
+        continue;
+      }
+      traitChangeFeedbackSequenceRef.current += 1;
+      changes.set(explorer.playerId, {
+        presentationKey: `trait-change-${traitChangeFeedbackSequenceRef.current}-${explorer.playerId}`,
+        deltas,
+      });
+    }
+    if (changes.size === 0) {
+      return undefined;
+    }
+
+    setTraitChangeFeedbackByPlayerId(changes);
+    const timer = window.setTimeout(() => {
+      setTraitChangeFeedbackByPlayerId((current) => {
+        const next = new Map(current);
+        for (const [playerId, change] of changes) {
+          if (next.get(playerId)?.presentationKey === change.presentationKey) {
+            next.delete(playerId);
+          }
+        }
+        return next;
+      });
+    }, 2400);
+    return () => window.clearTimeout(timer);
+  }, [allExplorers]);
   const viewerExplorer =
     allExplorers.find((explorer) => explorer.playerId === viewerPlayerId) ??
     core.currentExplorer;
@@ -794,13 +860,17 @@ export default function BetrayalBoard({
     }
   }, [core.monsters, inspectedMonsterId]);
   const focusRoomOnMap = React.useCallback(
-    (roomId: string, options: { pan?: boolean } = {}) => {
+    (
+      roomId: string,
+      options: { pan?: boolean; panTarget?: string } = {},
+    ) => {
       const targetRoom = core.rooms.find((room) => room.id === roomId);
       if (!targetRoom) {
         return;
       }
       setSelectedRoomMapFloor(targetRoom.floor);
-      const nextTarget = `betrayal-room-${targetRoom.id}`;
+      const nextTarget =
+        options.panTarget ?? `betrayal-room-${targetRoom.id}`;
       setRoomFocusPanTarget(null);
       if (options.pan === false) {
         return;
@@ -1228,9 +1298,16 @@ export default function BetrayalBoard({
       if (!monster) {
         return false;
       }
-      const sourceRect = readBetrayalViewportRect(
-        findBetrayalTestElement(`betrayal-monster-board-token-${monsterId}`),
-      );
+      const cachedSource = monsterMoveSourceRectRef.current;
+      const sourceRect =
+        cachedSource?.monsterId === monsterId
+          ? cachedSource.rect
+      : readBetrayalViewportRect(
+              findBetrayalTestElement(
+                `betrayal-monster-board-token-surface-${monsterId}`,
+                { visibleOnly: true },
+              ),
+            );
       if (!sourceRect) {
         return false;
       }
@@ -3119,6 +3196,7 @@ export default function BetrayalBoard({
     core.pendingEventRollResolution?.requiresAcknowledgement ?? null;
   const pendingEventRollRollId =
     core.pendingEventRollResolution?.rollId ?? null;
+  const pendingEventRollDisplayKey = coreRecentRollDisplayKey;
   React.useEffect(() => {
     const rollId = core.recentRoll?.id ?? null;
     const tutorialIsTeachingEventRollModifier =
@@ -3132,7 +3210,9 @@ export default function BetrayalBoard({
       tutorialIsTeachingEventRollModifier ||
       !rollId ||
       !pendingEventRollRollId ||
-      rollId !== pendingEventRollRollId
+      rollId !== pendingEventRollRollId ||
+      !pendingEventRollDisplayKey ||
+      settledRecentRollId !== pendingEventRollDisplayKey
     ) {
       return undefined;
     }
@@ -3150,12 +3230,15 @@ export default function BetrayalBoard({
     }, 2400);
     return () => window.clearTimeout(timer);
   }, [
+    coreRecentRollDisplayKey,
     core.recentRoll?.id,
     dispatchCommand,
     isTutorialActive,
     pendingEventRollPlayerId,
     pendingEventRollRequiresAcknowledgement,
     pendingEventRollRollId,
+    pendingEventRollDisplayKey,
+    settledRecentRollId,
     tutorialStep?.id,
     viewerPlayerId,
   ]);
@@ -3554,6 +3637,7 @@ export default function BetrayalBoard({
     completedTutorialUseBookRollKeyRef.current = null;
     completedTutorialUseRabbitFootRollKeyRef.current = null;
     pendingDiscoveryGainVisualRef.current = null;
+    monsterMoveSourceRectRef.current = null;
     lastAnimatedPendingDiscoveryResolutionIdRef.current = null;
     latestDiscoveryPendingResolutionSeenRef.current = null;
     latestDiscoveryPendingEventRollSeenRef.current = null;
@@ -3904,7 +3988,7 @@ export default function BetrayalBoard({
       data-testid="betrayal-roll-continue"
       data-recent-roll-confirmed-count={String(recentRollConfirmedCount)}
       data-recent-roll-required-count={String(recentRollTotalCount)}
-      className={`pointer-events-auto min-w-[168px] shrink-0 px-5 text-[14px] shadow-[0_10px_22px_rgba(0,0,0,0.34)] ${betrayalConfirmButtonClass}`}
+      className={`pointer-events-auto min-w-[168px] shrink-0 px-5 shadow-[0_10px_22px_rgba(0,0,0,0.34)] ${betrayalConfirmButtonClass}`}
       disabled={!canCurrentViewerAcknowledgeRecentRoll}
       onClick={handleDismissRecentRoll}
     >
@@ -4130,7 +4214,15 @@ export default function BetrayalBoard({
           roomId,
           ...(useSkeletonKey ? { useSkeletonKey: true } : {}),
         });
-      const focusTargetRoom = () => focusRoomOnMap(roomId);
+      const focusTargetRoom = () =>
+        focusRoomOnMap(
+          roomId,
+          controlledMoveMonsterId
+            ? {}
+            : {
+                panTarget: `betrayal-room-occupant-${roomId}-${core.currentExplorer.playerId}`,
+              },
+        );
       const visualStarted = controlledMoveMonsterId
         ? startMonsterMoveVisual(
             controlledMoveMonsterId,
@@ -4153,6 +4245,7 @@ export default function BetrayalBoard({
       controlledMoveMonsterId,
       dispatch,
       focusRoomOnMap,
+      core.currentExplorer.playerId,
       isVisualBusy,
       skeletonKeyMoveTargetRoomIds,
       startExplorerMoveVisual,
@@ -5219,6 +5312,21 @@ export default function BetrayalBoard({
     }));
   }, [dispatchCommand, monsterMovementRollActionSlot?.groupId]);
 
+  const captureMonsterMoveSourceRect = React.useCallback(
+    (monsterId: string, sourceElement?: HTMLElement) => {
+      const source = sourceElement?.querySelector<HTMLElement>(
+        `[data-testid="betrayal-monster-board-token-surface-${monsterId}"]`,
+      ) ?? findBetrayalTestElement(
+        `betrayal-monster-board-token-surface-${monsterId}`,
+        { visibleOnly: true },
+      );
+      const sourceRect = readBetrayalViewportRect(source);
+      if (sourceRect) {
+        monsterMoveSourceRectRef.current = { monsterId, rect: sourceRect };
+      }
+    },
+  );
+
   const handleMonsterMoveAction = React.useCallback(() => {
     setInventoryPreviewCardId(null);
     const selectedMonsterId = monsterMoveSlots.some(
@@ -5226,6 +5334,9 @@ export default function BetrayalBoard({
     )
       ? previewState.selectedMonsterMoveMonsterId
       : (monsterMoveSlots[0]?.monsterId ?? null);
+    if (previewState.interactionMode !== "monsterMove" && selectedMonsterId) {
+      captureMonsterMoveSourceRect(selectedMonsterId);
+    }
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "monsterMove") {
         return {
@@ -5255,6 +5366,7 @@ export default function BetrayalBoard({
       focusMonsterRoom(selectedMonsterId);
     }
   }, [
+    captureMonsterMoveSourceRect,
     focusMonsterRoom,
     monsterMoveSlots,
     previewState.interactionMode,
@@ -5262,7 +5374,8 @@ export default function BetrayalBoard({
   ]);
 
   const handleSelectMonsterMoveMonster = React.useCallback(
-    (monsterId: string) => {
+    (monsterId: string, sourceElement?: HTMLElement) => {
+      captureMonsterMoveSourceRect(monsterId, sourceElement);
       setInventoryPreviewCardId(null);
       setPreviewState((previousState) => ({
         ...previousState,
@@ -5273,7 +5386,7 @@ export default function BetrayalBoard({
       }));
       focusMonsterRoom(monsterId);
     },
-    [focusMonsterRoom],
+    [captureMonsterMoveSourceRect, focusMonsterRoom],
   );
 
   function handleMoveMonsterToRoom(roomId: string) {
@@ -5292,6 +5405,7 @@ export default function BetrayalBoard({
       roomId,
       focusTargetRoom,
     );
+    monsterMoveSourceRectRef.current = null;
     move();
     if (visualStarted) {
       focusRoomOnMap(roomId, { pan: false });
@@ -6743,6 +6857,7 @@ export default function BetrayalBoard({
                   }
                   selectedDustTargetPlayerId={selectedDustTargetPlayerId}
                   visibleFeedback={visibleBoardResultFeedback}
+                  traitChangeFeedbackByPlayerId={traitChangeFeedbackByPlayerId}
                   helpingHandsMovableTrollHandIds={
                     helpingHandsMovableTrollHandIds
                   }

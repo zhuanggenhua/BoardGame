@@ -1743,6 +1743,13 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     animation: betrayal-attack-impact-float 720ms cubic-bezier(0.18, 0.88, 0.28, 1.05) 80ms both;
 }
 
+.betrayal-trait-change-floating {
+    min-width: max-content;
+    gap: 2px;
+    transform: translate3d(-50%, 8px, 0);
+    animation: betrayal-attack-impact-float 720ms cubic-bezier(0.18, 0.88, 0.28, 1.05) 80ms both;
+}
+
 .betrayal-attack-impact-surface[data-density="panel"] .betrayal-attack-impact-floating {
     top: -14px;
     font-size: 10px;
@@ -1877,6 +1884,7 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     .betrayal-attack-impact-flash,
     .betrayal-attack-impact-slash,
     .betrayal-attack-impact-floating,
+    .betrayal-trait-change-floating,
     .betrayal-haunt-reveal-cue,
     .betrayal-haunt-reveal-cue__slash,
     .betrayal-cinematic-narration__line {

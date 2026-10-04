@@ -110,8 +110,6 @@ export const UNDO_COMMANDS = {
     CANCEL_UNDO: 'SYS_CANCEL_UNDO',
 } as const;
 
-const TUTORIAL_PREVIOUS_COMMAND = 'SYS_TUTORIAL_PREVIOUS';
-
 export function setUndoAiSeatIds<TCore>(
     state: MatchState<TCore>,
     aiSeatIds: readonly PlayerId[] | undefined,
@@ -237,44 +235,6 @@ export function createUndoSystem<TCore>(
                 return handleCancelUndo(state, command.playerId);
             }
 
-            // 教程“上一步”需要同时回退对局状态。
-            // 仅在最新快照正好来自当前步骤的前一个教程步骤时消费该快照，
-            // 避免从纯说明步骤回退时误撤销更早的领域动作。
-            if (command.type === TUTORIAL_PREVIOUS_COMMAND) {
-                const tutorial = state.sys.tutorial;
-                const undo = state.sys.undo;
-                const latestSnapshot = undo.snapshots[undo.snapshots.length - 1] as MatchState<TCore> | undefined;
-                const snapshotTutorial = latestSnapshot?.sys?.tutorial;
-                const expectedPreviousStepIndex = tutorial.stepIndex - 1;
-                if (
-                    tutorial.active
-                    && latestSnapshot
-                    && snapshotTutorial?.active
-                    && snapshotTutorial.stepIndex === expectedPreviousStepIndex
-                ) {
-                    const cursors = undo.snapshotCursors ?? [];
-                    const restoredCursor = cursors[cursors.length - 1] ?? -1;
-                    const restored = restoreSnapshotAfterUndo(
-                        state,
-                        latestSnapshot,
-                        undo.snapshots.slice(0, -1),
-                        cursors.slice(0, -1),
-                        restoredCursor,
-                    );
-                    // 保留当前教程索引，交给 TutorialSystem 统一计算可见上一步。
-                    return {
-                        state: {
-                            ...restored,
-                            sys: {
-                                ...restored.sys,
-                                tutorial,
-                            },
-                        },
-                    };
-                }
-                return;
-            }
-
             // 普通命令：准备快照/清理请求（成功后再落地）
             // 目标：只让“会改变对局领域状态”的命令进入撤回历史。
             // 约定：
@@ -365,12 +325,12 @@ export function createUndoSystem<TCore>(
  * 手写递归实现，能正确处理包含函数的对象（跳过函数值）
  * structuredClone 遇到函数会抛 DataCloneError，不适用于此场景
  */
-function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
+export function cloneSnapshotState<T>(value: T, seen = new Map<object, unknown>()): T {
     if (value === null || typeof value !== 'object') return value;
     if (seen.has(value as object)) return seen.get(value as object) as T;
 
     if (Array.isArray(value)) {
-        const cloned = value.map((item) => deepCloneSnapshot(item, seen));
+        const cloned = value.map((item) => cloneSnapshotState(item, seen));
         seen.set(value as object, cloned);
         return cloned as T;
     }
@@ -383,7 +343,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
         const cloned = new Map();
         seen.set(value as object, cloned);
         value.forEach((entryValue, entryKey) => {
-            cloned.set(deepCloneSnapshot(entryKey, seen), deepCloneSnapshot(entryValue, seen));
+            cloned.set(cloneSnapshotState(entryKey, seen), cloneSnapshotState(entryValue, seen));
         });
         return cloned as T;
     }
@@ -392,7 +352,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
         const cloned = new Set();
         seen.set(value as object, cloned);
         value.forEach((entryValue) => {
-            cloned.add(deepCloneSnapshot(entryValue, seen));
+            cloned.add(cloneSnapshotState(entryValue, seen));
         });
         return cloned as T;
     }
@@ -400,7 +360,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
     const cloned: Record<string, unknown> = {};
     seen.set(value as object, cloned);
     Object.entries(value as Record<string, unknown>).forEach(([key, entryValue]) => {
-        cloned[key] = deepCloneSnapshot(entryValue, seen);
+        cloned[key] = cloneSnapshotState(entryValue, seen);
     });
     return cloned as T;
 }
@@ -435,10 +395,14 @@ function createSnapshot<TCore>(
                     ? actionLog.entries.slice(-actionLogMaxEntries)
                     : [],
             },
+            tutorial: {
+                ...state.sys.tutorial,
+                checkpoints: undefined,
+            },
         },
     };
 
-    return deepCloneSnapshot(stateToSave) as MatchState<TCore>;
+    return cloneSnapshotState(stateToSave) as MatchState<TCore>;
 }
 
 function appendSnapshot<TCore>(

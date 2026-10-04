@@ -16,20 +16,18 @@ export interface CanInteractHandForCurrentBoardParams {
 }
 
 export const canInteractHandForCurrentBoard = ({
-    isSpectator,
-}: CanInteractHandForCurrentBoardParams): boolean => !isSpectator;
+    isSpectator: _isSpectator,
+}: CanInteractHandForCurrentBoardParams): boolean => true;
 
-export const canPlayHandCardsForCurrentBoard = ({
-    isSpectator,
-}: CanPlayHandCardsForCurrentBoardParams): boolean => {
-    // 即时牌可以在任意时机尝试打出；实际时机、目标和响应者资格统一由领域层
-    // checkPlayCard 裁定。这里不能因“不是当前回合”把整只手牌提前封死。
-    return !isSpectator;
+export const canPlayHandCardsForCurrentBoard = (_params: CanPlayHandCardsForCurrentBoardParams): boolean => {
+    // 所有视角都保留同一套拖拽/点击交互。观战端的 moves 由引擎层统一变成 no-op，
+    // 因而不会产生实际命令或效果，不在每个游戏的 UI policy 里重复实现 spectator 规则。
+    return true;
 };
 
 export const canSellHandCardsForCurrentBoard = ({
     isSpectator,
     isActivePlayer,
 }: Pick<CanPlayHandCardsForCurrentBoardParams, 'isSpectator' | 'isActivePlayer'>): boolean => (
-    !isSpectator && isActivePlayer
+    isSpectator || isActivePlayer
 );

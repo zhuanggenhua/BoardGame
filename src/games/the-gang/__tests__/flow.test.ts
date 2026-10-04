@@ -93,6 +93,50 @@ describe('The Gang domain flow', () => {
         expect(state.core.successes + state.core.failures).toBe(1);
     });
 
+    test.each([
+        ['seven-card-stud', 4],
+        ['banana-split', 3],
+    ] as const)('%s 的个人公共牌可以随轮次推进并完成摊牌', (gameMode, expectedCommunityCount) => {
+        const adapter = createReplayAdapter(TheGangDomain, `the-gang-${gameMode}-flow-test`);
+        let state = adapter.setup(['0', '1', '2']);
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: { config: { ...state.core.rules.config, gameMode } },
+            timestamp: 1,
+            skipValidation: true,
+        }).state;
+        state = startHeist(adapter, state, 2);
+
+        for (const round of [1, 2, 3, 4]) {
+            for (const [index, playerId] of state.core.playerIds.entries()) {
+                state = adapter.execute(state, {
+                    type: THE_GANG_COMMANDS.TAKE_CHIP,
+                    playerId,
+                    payload: { chip: index + 1 },
+                    timestamp: round * 10 + index,
+                    skipValidation: true,
+                }).state;
+            }
+            if (round < 4) {
+                state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, round * 100);
+            }
+        }
+
+        expect(state.core.communityCards).toHaveLength(0);
+        expect(state.core.players['0'].communityCards).toHaveLength(expectedCommunityCount);
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+            playerId: '0',
+            payload: {},
+            timestamp: 500,
+        })).toMatchObject({ valid: true });
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 500);
+        expect(state.core.phase).toBe('showdown');
+        expect(state.core.lastShowdown?.results).toHaveLength(3);
+    });
+
     test('房主开始抢劫前不能拿筹码，开始后才进入正式选筹码', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-start-heist-gate-test');
         let state = adapter.setup(['0', '1', '2']);

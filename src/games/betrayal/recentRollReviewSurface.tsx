@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import type { BetrayalRecentRollState } from "./game";
 import type { RecentRollRerollSelection } from "./houseDiceSurface";
+import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import { RecentRollPanel, StandardRecentRollOverlay } from "./recentRollSurface";
 
 type BetrayalRecentRollReviewSurfaceProps = {
@@ -50,6 +51,7 @@ export function BetrayalRecentRollReviewSurface({
         rerollSelection={rerollSelection}
         actionSlot={actionSlot}
         actorLabel={actorLabel}
+        onDiceSettledChange={onDiceSettledChange}
       />
     );
   }
@@ -93,14 +95,14 @@ export function BetrayalRecentRollReviewSurface({
           compactRowsClassName="grid-rows-[minmax(150px,1fr)_auto]"
           actionSlot={
             isEndgameExorciseRollReview ? (
-              <button
+              <BetrayalConfirmButton
                 type="button"
                 data-testid="betrayal-exorcise-roll-continue"
-                className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                className="min-w-[168px] shadow-[0_10px_22px_rgba(0,0,0,0.34)]"
                 onClick={onConfirmExorciseRollReview}
               >
                 {t("board.endgame.enterEndgame")}
-              </button>
+              </BetrayalConfirmButton>
             ) : (
               actionSlot ?? (
                 <button

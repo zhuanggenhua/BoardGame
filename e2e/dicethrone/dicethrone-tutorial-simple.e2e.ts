@@ -595,6 +595,32 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
 
         await waitForTutorialStep(page, 'meditation-2', 15000);
         await captureAlignedStep(25, 'meditation-2', 'hand-area');
+
+        const beforePrevious = await readTutorialState(page);
+        expect(beforePrevious?.sys?.phase).toBe('main1');
+        expect(beforePrevious?.core?.activePlayerId).toBe('0');
+        expect(beforePrevious?.core?.players?.['0']?.hand?.map((card: { id: string }) => card.id)).toContain('card-meditation-2');
+        expect(beforePrevious?.core?.players?.['0']?.statusEffects?.knockdown ?? 0).toBe(0);
+        expect(beforePrevious?.core?.players?.['0']?.tokens?.purify ?? 0).toBe(0);
+
+        await page.getByRole('button', { name: /^上一步$|^Previous$/i }).first().click();
+        await waitForTutorialStep(page, 'purify-use', 10000);
+
+        const afterPrevious = await readTutorialState(page);
+        expect(afterPrevious?.sys?.phase).toBe('main1');
+        expect(afterPrevious?.core?.activePlayerId).toBe('0');
+        expect(afterPrevious?.core?.players?.['0']?.hand?.map((card: { id: string }) => card.id)).toContain('card-meditation-2');
+        expect(afterPrevious?.core?.players?.['0']?.statusEffects?.knockdown).toBe(1);
+        expect(afterPrevious?.core?.players?.['0']?.tokens?.purify).toBe(1);
+
+        // 回到净化步骤后重新完成一次净化，继续验证后续教程仍可走通。
+        const purifyTokenAfterPrevious = page.getByTestId('dt-player-0-token-purify-hit-target');
+        await expect(purifyTokenAfterPrevious).toBeVisible({ timeout: 10000 });
+        await purifyTokenAfterPrevious.click();
+        await expect(page.getByRole('heading', { name: /使用净化|Purify/i }).first()).toBeVisible({ timeout: 10000 });
+        await page.getByRole('button', { name: /^确认$|^Confirm$/i }).last().click();
+        await waitForTutorialStep(page, 'meditation-2', 15000);
+
         await clickHandCardVisibleArea(page, 'card-meditation-2');
 
         await waitForTutorialStep(page, 'finish', 30000);

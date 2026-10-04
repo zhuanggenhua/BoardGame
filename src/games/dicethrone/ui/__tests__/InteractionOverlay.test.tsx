@@ -212,6 +212,38 @@ describe('InteractionOverlay', () => {
             expect(screen.queryByTestId('dt-status-effect-0-blessing_of_divinity')).not.toBeInTheDocument();
         });
 
+        it('should hide non-transferable tokens from transfer status selection', () => {
+            const players: Record<PlayerId, HeroState> = {
+                ...mockPlayers,
+                '1': {
+                    ...mockPlayers['1'],
+                    statusEffects: {},
+                    tokens: { divine_arrival: 1, bounty: 1 },
+                } as HeroState,
+            };
+            render(
+                <InteractionOverlay
+                    interaction={{
+                        ...selectStatusInteraction,
+                        type: 'selectTargetStatus',
+                        titleKey: 'interaction.selectStatusToTransfer',
+                        targetPlayerIds: ['1'],
+                        transferConfig: {},
+                    }}
+                    players={players}
+                    currentPlayerId="0"
+                    tokenDefinitions={[
+                        { id: 'divine_arrival', category: 'buff', passiveTrigger: { timing: 'onPhaseEnter', removable: true, transferable: false } },
+                        { id: 'bounty', category: 'debuff', passiveTrigger: { timing: 'onDamageReceived', removable: true, transferable: true } },
+                    ] as any}
+                    {...mockHandlers}
+                />
+            );
+
+            expect(screen.getByTestId('dt-status-effect-1-bounty')).toBeInTheDocument();
+            expect(screen.queryByTestId('dt-status-effect-1-divine_arrival')).not.toBeInTheDocument();
+        });
+
         it('4人模式下 self-only 状态交互仍只展示自己', () => {
             const fourPlayerMockPlayers: Record<PlayerId, HeroState> = {
                 ...mockPlayers,

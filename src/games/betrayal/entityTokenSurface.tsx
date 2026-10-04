@@ -58,10 +58,10 @@ export function ExplorerFigureToken({
             fallbackImage: "h-full w-full scale-[1.08] object-cover",
           }
         : {
-            root: "h-[54px] w-[50px]",
-            outline: "h-[54px] w-[50px]",
-            frame: "h-[44px] w-[42px]",
-            targetOutline: "h-[44px] w-[42px]",
+            root: "h-[72px] w-[66px]",
+            outline: "h-[72px] w-[66px]",
+            frame: "h-[62px] w-[62px]",
+            targetOutline: "h-[62px] w-[62px]",
             officialImage: "h-full w-full scale-[1.16] object-cover",
             fallbackImage: "h-full w-full scale-[1.08] object-cover",
           };
@@ -101,7 +101,7 @@ export function ExplorerFigureToken({
             points="50,0 100,30 82,108 18,108 0,30"
             fill="none"
             stroke={outlineColor}
-            strokeWidth="6"
+            strokeWidth="8"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
@@ -173,9 +173,9 @@ export function MonsterBoardToken({
   const hasOfficialToken = Boolean(monster.tokenAsset);
   const isMummyToken = inferMonsterDefinitionId(monster) === "mummy";
   const isStunned = status === "stunned";
-  const tokenFrameSize = isMummyToken ? 50 : 52;
-  const tokenSurfaceSize = 42;
-  const tokenBackingSize = 46;
+  const tokenFrameSize = isMummyToken ? 70 : 52;
+  const tokenSurfaceSize = isMummyToken ? 62 : 42;
+  const tokenBackingSize = isMummyToken ? 66 : 46;
   const tokenRadius = isMummyToken ? tokenSurfaceSize / 2 : 6;
   const tokenBackingRadius = isMummyToken ? tokenBackingSize / 2 : 7;
   const highlightTone = getEntityRelationHighlightTone(targetHighlightRelation);
@@ -323,7 +323,7 @@ export function GirlBoardToken({
       : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`;
   const isMummyAttachment = attachedTo === "mummy";
   const isMummyCarryDisplay = displaySize === "mummy-carry";
-  const tokenSizePx = isMummyCarryDisplay ? 28 : 54;
+  const tokenSizePx = isMummyCarryDisplay ? 38 : 54;
   const unit = (
     <span
       className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyCarryDisplay ? "p-[2px]" : "p-[4px]"} ${isMummyAttachment ? "shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}

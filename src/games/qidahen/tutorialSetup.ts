@@ -14,6 +14,7 @@ import type {
     QidahenScenarioId,
     QidahenSpecialTroopStack,
 } from './domain/types';
+import { getFactionIdByPlayerId } from './domain/factionTurnAccessors';
 
 type QidahenTutorialSetupData = {
     numPlayers: number;
@@ -23,10 +24,211 @@ type QidahenTutorialSetupData = {
 
 type QidahenTutorialCoreTransform = (core: QidahenCore) => QidahenCore;
 
+export type QidahenTutorialEntryKind =
+    | 'natural-opening'
+    | 'action-window-exercise'
+    | 'dispatch-exercise'
+    | 'resolution-exercise'
+    | 'season-resolution-exercise';
+
+export type QidahenTutorialFirstDecision =
+    | 'check-hand-limit'
+    | 'choose-wheel-move'
+    | 'choose-hand-action'
+    | 'choose-dispatch-target'
+    | 'resolve-pending-battle'
+    | 'resolve-season';
+
+export type QidahenTutorialRuleAtom =
+    | 'setup-complete'
+    | 'hand-limit'
+    | 'wheel-action'
+    | 'hand-action'
+    | 'action-order-choice'
+    | 'payment'
+    | 'target-choice'
+    | 'battle-resolution'
+    | 'post-battle-resolution'
+    | 'season-resolution'
+    | 'special-map-rule';
+
+export type QidahenTutorialSetupContract = {
+    entryKind: QidahenTutorialEntryKind;
+    startingPoint: 'formal-opening' | 'representative-state';
+    formalEntryPhase: QidahenCore['turnPhase'];
+    currentActorFaction: QidahenFactionId;
+    precedingAtoms: readonly QidahenTutorialRuleAtom[];
+    firstRealDecision: QidahenTutorialFirstDecision;
+    injectedDifferences: readonly string[];
+    scope: 'mainline' | 'supplement';
+    continuationOf?: string;
+};
+
 type QidahenTutorialPreset = {
     numPlayers: number;
     setupSelections: GameSetupSelections;
+    contract?: QidahenTutorialSetupContract;
     coreTransform?: QidahenTutorialCoreTransform;
+};
+
+const NATURAL_OPENING_CONTRACT: QidahenTutorialSetupContract = {
+    entryKind: 'natural-opening',
+    startingPoint: 'formal-opening',
+    formalEntryPhase: 'action-window',
+    currentActorFaction: 'ming',
+    precedingAtoms: ['setup-complete'],
+    firstRealDecision: 'choose-wheel-move',
+    injectedDifferences: ['固定免费前进 1 格作为可重复的教学示例，不改变正式规则顺序。'],
+    scope: 'mainline',
+};
+
+const actionWindowContract = ({
+    currentActorFaction,
+    firstRealDecision = 'choose-hand-action',
+    precedingAtoms,
+    injectedDifferences = [],
+}: {
+    currentActorFaction: QidahenFactionId;
+    firstRealDecision?: QidahenTutorialFirstDecision;
+    precedingAtoms: readonly QidahenTutorialRuleAtom[];
+    injectedDifferences?: readonly string[];
+}): QidahenTutorialSetupContract => ({
+    entryKind: 'action-window-exercise',
+    startingPoint: 'representative-state',
+    formalEntryPhase: 'action-window',
+    currentActorFaction,
+    precedingAtoms,
+    firstRealDecision,
+    injectedDifferences,
+    scope: 'supplement',
+});
+
+const dispatchContract = (
+    injectedDifferences: readonly string[] = [],
+): QidahenTutorialSetupContract => ({
+    entryKind: 'dispatch-exercise',
+    startingPoint: 'representative-state',
+    formalEntryPhase: 'dispatch-targeting',
+    currentActorFaction: 'ming',
+    precedingAtoms: ['setup-complete', 'hand-limit', 'wheel-action', 'hand-action', 'payment'],
+    firstRealDecision: 'choose-dispatch-target',
+    injectedDifferences,
+    scope: 'supplement',
+});
+
+const resolutionContract = (
+    injectedDifferences: readonly string[] = [],
+    continuationOf?: string,
+): QidahenTutorialSetupContract => ({
+    entryKind: 'resolution-exercise',
+    startingPoint: 'representative-state',
+    formalEntryPhase: 'resolve-pending',
+    currentActorFaction: 'ming',
+    precedingAtoms: ['setup-complete', 'hand-limit', 'wheel-action', 'hand-action', 'payment', 'target-choice'],
+    firstRealDecision: 'resolve-pending-battle',
+    injectedDifferences,
+    scope: continuationOf ? 'mainline' : 'supplement',
+    continuationOf,
+});
+
+const seasonResolutionContract = (
+    injectedDifferences: readonly string[] = [],
+): QidahenTutorialSetupContract => ({
+    entryKind: 'season-resolution-exercise',
+    startingPoint: 'representative-state',
+    formalEntryPhase: 'season-resolution',
+    currentActorFaction: 'ming',
+    precedingAtoms: ['setup-complete', 'hand-limit', 'wheel-action', 'hand-action', 'season-resolution'],
+    firstRealDecision: 'resolve-season',
+    injectedDifferences,
+    scope: 'supplement',
+});
+
+const withContract = (
+    preset: QidahenTutorialPreset,
+    contract: QidahenTutorialSetupContract,
+): QidahenTutorialPreset => ({ ...preset, contract });
+
+const resetTutorialTransientState = (core: QidahenCore): QidahenCore => ({
+    ...core,
+    selectedActionId: '',
+    confirmedActionId: null,
+    selectedPaymentCardIds: [],
+    lastSeasonSummary: null,
+    pendingTargetAction: null,
+    postBattleSelection: null,
+    wheelDispatchProgress: null,
+    recruitSelection: null,
+    maShiTradeSelection: null,
+    khanEdictSelection: null,
+    diplomacyProgress: null,
+    handLimitDiscardSelection: null,
+    sunYuanhuaTechSelection: null,
+    gaoDiDispatchSelection: null,
+});
+
+const createFormalOpeningCore = (initialCore: QidahenCore): QidahenCore => {
+    const core = resetTutorialTransientState(cloneCore(initialCore));
+    core.currentPlayer = '0';
+    core.turnLabel = '第 1 轮 · 大明 · 行动窗口';
+    core.turnPhase = 'action-window';
+    core.wheelActionUsed = false;
+    core.factionActionUsed = false;
+    core.selectedWheelMoveId = 'move-1-free';
+    core.selectedRegionId = 'city-region-24';
+    return core;
+};
+
+const validateTutorialSetupContract = (
+    contract: QidahenTutorialSetupContract,
+    core: QidahenCore,
+): void => {
+    const errors: string[] = [];
+    if (core.turnPhase !== contract.formalEntryPhase) {
+        errors.push(`阶段 ${core.turnPhase} != ${contract.formalEntryPhase}`);
+    }
+    const currentActorFaction = getFactionIdByPlayerId(core, core.currentPlayer);
+    if (currentActorFaction !== contract.currentActorFaction) {
+        errors.push(`当前行动人 ${currentActorFaction} != ${contract.currentActorFaction}`);
+    }
+    switch (contract.firstRealDecision) {
+        case 'choose-wheel-move':
+            if (core.wheelActionUsed) errors.push('首个真实决策是轮盘时，轮盘不得已用');
+            break;
+        case 'choose-hand-action':
+            if (core.factionActionUsed) errors.push('首个真实决策是手牌行动时，势力行动不得已用');
+            break;
+        case 'choose-dispatch-target':
+            if (core.turnPhase !== 'dispatch-targeting') errors.push('首个真实决策是调度目标时，阶段必须是 dispatch-targeting');
+            break;
+        case 'resolve-pending-battle':
+            if (core.pendingTargetAction == null) errors.push('首个真实决策是待结算战斗时，必须存在待结算动作');
+            break;
+        case 'resolve-season':
+            if (core.turnPhase !== 'season-resolution') errors.push('首个真实决策是季节结算时，阶段必须是 season-resolution');
+            break;
+        case 'check-hand-limit':
+            if (core.handLimitDiscardSelection == null && core.factions[contract.currentActorFaction].handCount > core.factions[contract.currentActorFaction].handLimit) {
+                errors.push('首个真实决策是手牌上限检查时，超过上限却没有弃牌选择');
+            }
+            break;
+        default:
+            break;
+    }
+    if (contract.entryKind === 'natural-opening') {
+        if (core.wheelActionUsed || core.factionActionUsed) errors.push('自然开局不得预消耗行动');
+        if (core.pendingTargetAction != null) errors.push('自然开局不得预置待结算战斗');
+        if (core.handLimitDiscardSelection != null) errors.push('自然开局不得预置手牌上限弃牌');
+    }
+    if (contract.entryKind === 'resolution-exercise' && core.pendingTargetAction == null) {
+        errors.push('结算专题必须存在待结算动作');
+    }
+    if (contract.entryKind === 'season-resolution-exercise' && core.turnPhase !== 'season-resolution') {
+        errors.push('新年/年中专题必须从季节结算阶段进入');
+    }
+    if (errors.length > 0) {
+        throw new Error(`Invalid Qidahen tutorial setup contract: ${errors.join('；')}`);
+    }
 };
 
 const cloneCore = (core: QidahenCore): QidahenCore => {
@@ -141,29 +343,7 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
     numPlayers: 3,
     setupSelections: createDefaultSelections('post-sarhu-1619'),
     coreTransform: (initialCore) => {
-        const core = cloneCore(initialCore);
-        core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 行动窗口';
-        core.turnPhase = 'action-window';
-        core.wheelActionUsed = false;
-        core.factionActionUsed = false;
-        core.selectedWheelMoveId = 'move-1-free';
-        core.selectedRegionId = 'city-region-24';
-        core.selectedActionId = '';
-        core.confirmedActionId = null;
-        core.selectedPaymentCardIds = [];
-        core.lastSeasonSummary = null;
-        core.pendingTargetAction = null;
-        core.postBattleSelection = null;
-        core.wheelDispatchProgress = null;
-        core.recruitSelection = null;
-        core.maShiTradeSelection = null;
-        core.khanEdictSelection = null;
-        core.diplomacyProgress = null;
-        core.handLimitDiscardSelection = null;
-        core.sunYuanhuaTechSelection = null;
-        core.gaoDiDispatchSelection = null;
-        return core;
+        return createFormalOpeningCore(initialCore);
     },
 });
 
@@ -1209,26 +1389,95 @@ const createKoreaSpecialMapTutorialSetup = (): QidahenTutorialPreset => ({
 });
 
 const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
-    'qidahen-basic': createBasicTutorialSetup(),
-    'basic-opening': createBasicTutorialSetup(),
-    'attack-and-battle': createAttackAndBattleTutorialSetup(),
-    'retreat-and-rout': createRetreatAndRoutTutorialSetup(),
-    'cavalry-evasion': createCavalryEvasionTutorialSetup(),
-    'cavalry-plunder': createCavalryPlunderTutorialSetup(),
-    'neutral-invasion': createNeutralInvasionTutorialSetup(),
-    'water-dispatch': createWaterDispatchTutorialSetup(),
-    'wheel-shared-cost': createWheelSharedCostTutorialSetup(),
-    'wheel-reclaim': createWheelReclaimTutorialSetup(),
-    'wheel-military-farm': createWheelMilitaryFarmTutorialSetup(),
-    'wheel-recruit-train': createWheelRecruitTrainTutorialSetup(),
-    'armament-upgrade': createArmamentUpgradeTutorialSetup(),
-    'event-action': createEventActionTutorialSetup(),
-    'diplomacy-and-hire': createDiplomacyTutorialSetup(),
-    'siege-and-occupation': createSiegeTutorialSetup(),
-    'year-and-characters': createYearAndCharactersTutorialSetup(),
-    'korea-and-special-map-rules': createKoreaSpecialMapTutorialSetup(),
-    'field-battle': createAttackAndBattleTutorialSetup(),
-    'season-flow': createYearAndCharactersTutorialSetup(),
+    'qidahen-basic': withContract(createBasicTutorialSetup(), NATURAL_OPENING_CONTRACT),
+    'basic-opening': withContract(createBasicTutorialSetup(), NATURAL_OPENING_CONTRACT),
+    'attack-and-battle': withContract(createAttackAndBattleTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-hand-action',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'wheel-action'],
+        injectedDifferences: ['预置轮盘已完成、部队与战术牌已就位，只演示突袭进入野战。'],
+    })),
+    'retreat-and-rout': withContract(createRetreatAndRoutTutorialSetup(), resolutionContract([
+        '预置野战失败后的待结算窗口，只演示撤退代价。',
+    ], 'attack-and-battle')),
+    'cavalry-evasion': withContract(createCavalryEvasionTutorialSetup(), resolutionContract([
+        '预置守方骑兵已进入野战待结算窗口，只演示避战分支。',
+    ])),
+    'cavalry-plunder': withContract(createCavalryPlunderTutorialSetup(), resolutionContract([
+        '预置骑兵劫掠可用的战斗窗口，只演示劫掠分支。',
+    ])),
+    'neutral-invasion': withContract(createNeutralInvasionTutorialSetup(), resolutionContract([
+        '预置进入中立区后的临时守军待结算窗口。',
+    ])),
+    'water-dispatch': withContract(createWaterDispatchTutorialSetup(), dispatchContract([
+        '预置海路调度已支付并进入目标选择，只演示水路边界。',
+    ])),
+    'wheel-shared-cost': withContract(createWheelSharedCostTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['预置势力行动已完成，只演示轮盘移动造成的共同抽牌与调度入口。'],
+    })),
+    'wheel-reclaim': withContract(createWheelReclaimTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['预置轮盘位于新年入口，只演示开垦结果。'],
+    })),
+    'wheel-military-farm': withContract(createWheelMilitaryFarmTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['预置轮盘位于开垦入口，只演示军屯结果。'],
+    })),
+    'wheel-recruit-train': withContract(createWheelRecruitTrainTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['预置轮盘位于军屯入口，只演示征兵与训练的真实地图结果。'],
+    })),
+    'armament-upgrade': withContract(createArmamentUpgradeTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-hand-action',
+        precedingAtoms: ['setup-complete', 'hand-limit'],
+        injectedDifferences: ['预置军备牌已进入手牌，只演示升级军备的费用与结果。'],
+    })),
+    'event-action': withContract(createEventActionTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'mongol',
+        firstRealDecision: 'choose-hand-action',
+        precedingAtoms: ['setup-complete', 'hand-limit'],
+        injectedDifferences: ['预置蒙古手牌行动窗口和事件牌，只演示事件行动。'],
+    })),
+    'diplomacy-and-hire': withContract(createDiplomacyTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['预置可外交的邻接区域，只演示外交标记和雇佣军入口。'],
+    })),
+    'siege-and-occupation': withContract(createSiegeTutorialSetup(), resolutionContract([
+        '预置山海关守城宣告后的城战待结算窗口。',
+    ])),
+    'year-and-characters': withContract(createYearAndCharactersTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'mongol',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['预置蒙古行动窗口、战败标记和人物刷新数据，只演示跨年收口。'],
+    })),
+    'korea-and-special-map-rules': withContract(createKoreaSpecialMapTutorialSetup(), seasonResolutionContract([
+        '预置朝鲜牌堆、归化城威望和山海关前线，只演示新年结算特例。',
+    ])),
+    'field-battle': withContract(createAttackAndBattleTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'ming',
+        firstRealDecision: 'choose-hand-action',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'wheel-action'],
+        injectedDifferences: ['与进攻与野战章节共享同一代表态入口。'],
+    })),
+    'season-flow': withContract(createYearAndCharactersTutorialSetup(), actionWindowContract({
+        currentActorFaction: 'mongol',
+        firstRealDecision: 'choose-wheel-move',
+        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
+        injectedDifferences: ['与跨年与人物章节共享同一代表态入口。'],
+    })),
 };
 
 export function buildQidahenTutorialSetupData(tutorialId?: string): QidahenTutorialSetupData | null {
@@ -1239,15 +1488,20 @@ export function buildQidahenTutorialSetupData(tutorialId?: string): QidahenTutor
     if (!preset) {
         return null;
     }
+    if (!preset.contract) {
+        throw new Error(`Missing Qidahen tutorial setup contract: ${tutorialId}`);
+    }
 
     const setupData: Record<string, unknown> = {
         setupSelections: preset.setupSelections,
+        qidahenTutorialContract: preset.contract,
         ...preset.setupSelections,
     };
 
     if (preset.coreTransform) {
         setupData.qidahenTutorialCoreTransform = ((core: QidahenCore) => {
             const transformedCore = preset.coreTransform?.(core) ?? core;
+            validateTutorialSetupContract(preset.contract!, transformedCore);
             return {
                 ...transformedCore,
                 explicitRegionId: null,
@@ -1261,3 +1515,9 @@ export function buildQidahenTutorialSetupData(tutorialId?: string): QidahenTutor
         setupData,
     };
 }
+
+export const QIDAHEN_TUTORIAL_SETUP_CONTRACTS: Readonly<Record<string, QidahenTutorialSetupContract>> = Object.freeze(
+    Object.fromEntries(
+        Object.entries(TUTORIAL_PRESETS).map(([tutorialId, preset]) => [tutorialId, preset.contract!]),
+    ),
+);

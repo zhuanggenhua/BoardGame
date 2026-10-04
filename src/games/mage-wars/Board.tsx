@@ -3030,6 +3030,7 @@ function ArenaStage({
                             className="relative flex shrink-0 items-center justify-center"
                             style={{
                                 ...laneStyle,
+                                ...(isBottomArenaRowZone(zone.id) ? { top: '-44%' } : {}),
                                 ...(visualZIndex == null ? {} : { zIndex: visualZIndex }),
                             }}
                             data-testid="mage-wars-zone-lane-item"
@@ -3143,7 +3144,11 @@ function ArenaStage({
                         <div
                             key={occupant.id}
                             className="relative flex shrink-0 items-center justify-center"
-                            style={{ ...laneStyle, zIndex: visualZIndex }}
+                            style={{
+                                ...laneStyle,
+                                ...(isBottomArenaRowZone(zone.id) ? { top: '-44%' } : {}),
+                                zIndex: visualZIndex,
+                            }}
                             data-testid="mage-wars-zone-lane-item"
                             data-lane-item-kind="mage"
                             data-lane-item-index={laneIndex}
@@ -3786,8 +3791,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
     const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
     const [publicViewTargetPlayerId, setPublicViewTargetPlayerId] = useState<PlayerId | null>(null);
-    const [arenaBottomFitInset, setArenaBottomFitInset] = useState(0);
-    const bottomViewportGridRef = useRef<HTMLDivElement | null>(null);
     const desktopBottomGap = MAGE_WARS_DESKTOP_BOTTOM_GAP_PX;
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
@@ -4981,38 +4984,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     } as CSSProperties;
     const spellbookVisibleCardCount = MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT;
 
-    useLayoutEffect(() => {
-        const bottomGrid = bottomViewportGridRef.current;
-        if (!bottomGrid) return undefined;
-
-        const measureBottomFitInset = () => {
-            const gridRect = bottomGrid.getBoundingClientRect();
-            const boardRect = bottomGrid
-                .closest<HTMLElement>('[data-testid="mage-wars-board"]')
-                ?.getBoundingClientRect();
-            const boardBottom = boardRect?.bottom ?? window.innerHeight;
-            const nextInset = Math.max(0, boardBottom - gridRect.top);
-            setArenaBottomFitInset((currentInset) => (
-                Math.abs(currentInset - nextInset) < 0.5 ? currentInset : nextInset
-            ));
-        };
-
-        const frameId = window.requestAnimationFrame(measureBottomFitInset);
-        const observer = typeof ResizeObserver === 'function'
-            ? new ResizeObserver(measureBottomFitInset)
-            : null;
-        observer?.observe(bottomGrid);
-        window.addEventListener('resize', measureBottomFitInset);
-        window.addEventListener('orientationchange', measureBottomFitInset);
-
-        return () => {
-            window.cancelAnimationFrame(frameId);
-            observer?.disconnect();
-            window.removeEventListener('resize', measureBottomFitInset);
-            window.removeEventListener('orientationchange', measureBottomFitInset);
-        };
-    }, []);
-
     return (
         <UndoProvider
             value={{
@@ -5055,7 +5026,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     minScale={0.6}
                     maxScale={2.6}
                     baseScaleMode="cover"
-                    fitInsets={{ bottom: arenaBottomFitInset }}
                     panBoundsMode="free"
                     panToTarget={tutorialArenaPanTarget}
                     containerTestId="mage-wars-arena-viewport"
@@ -5266,7 +5236,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             ) : null}
             <div
                 className="pointer-events-none absolute z-30 grid items-end"
-                ref={bottomViewportGridRef}
                 style={{
                     left: 'var(--mage-wars-desktop-bottom-side-inset, var(--mage-wars-desktop-side-inset, 1rem))',
                     right: 'var(--mage-wars-desktop-bottom-side-inset, var(--mage-wars-desktop-side-inset, 1rem))',

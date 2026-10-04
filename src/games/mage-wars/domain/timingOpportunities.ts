@@ -2974,6 +2974,7 @@ function createEnchantmentResponseOpportunity(
 ): Opportunity<MageWarsEnchantmentResponseChoiceValue> {
     const context = event.payload.context;
     const sourceAbilityId = `mw.spell.${context.responseCardId}.response`;
+    const responseCardName = args.state.core.objects[context.responseObjectId]?.name?.trim() || '响应结界';
     const candidates: ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue>[] =
         isMageWarsTargetSpellTeleportResponseCardId(context.responseCardId)
             ? args.state.core.arena.map((zone) => ({
@@ -3028,6 +3029,7 @@ function createEnchantmentResponseOpportunity(
                 responseId: context.responseId,
                 responseObjectId: context.responseObjectId,
                 responseCardId: context.responseCardId,
+                responseCardName,
             },
         },
         controllerId: context.responseOwnerId,
@@ -3064,6 +3066,7 @@ function createEnchantmentResponseOpportunity(
             responseObjectId: context.responseObjectId,
             responseCardId: context.responseCardId,
             responseOwnerId: context.responseOwnerId,
+            responseCardName,
             windowType: event.payload.windowType,
             mageWarsResponseContext: context,
         },
@@ -3588,8 +3591,9 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                     title: 'interaction.enchantmentResponse.title',
                     titleKey: 'interaction.enchantmentResponse.title',
                     titleParams: {
-                        responseCardId: context.responseCardId,
-                        responseObjectId: context.responseObjectId,
+                        responseCardName: typeof opportunity.metadata?.responseCardName === 'string'
+                            ? opportunity.metadata.responseCardName
+                            : '响应结界',
                     },
                     targetType: 'button',
                     autoResolveIfSingle: false,
