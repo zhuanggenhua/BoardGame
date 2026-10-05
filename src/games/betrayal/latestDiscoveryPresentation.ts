@@ -881,7 +881,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       core.latestDiscovery?.kind === "event" &&
       core.turnEndedByDiscovery &&
       !hasPendingLatestDiscoveryResolution(core) &&
-      !hasActionableRollModifier,
+      !hasEventResultContext,
   );
   const shouldAutoReturnAfterLatestDiscovery = Boolean(
     !pendingEventChoice &&
@@ -1156,6 +1156,10 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       total: cardResolutionTotalCount,
     });
   })();
+  const eventRollRequiresAcknowledgement = Boolean(
+    core.pendingEventRollResolution &&
+      core.pendingEventRollResolution.requiresAcknowledgement !== false,
+  );
   const displayedKindLabel = pendingPossessionCard
     ? pendingPossessionCard.kind === "item"
       ? t("board.discovery.itemCard")
@@ -1213,7 +1217,8 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       label: continueLabel,
       disabled: Boolean(
         (core.pendingEventRollResolution &&
-          (!eventRollConfirmation.canViewerAcknowledge ||
+          ((eventRollRequiresAcknowledgement &&
+            !eventRollConfirmation.canViewerAcknowledge) ||
             !isRecentRollReadable)) ||
           (pendingCardResolution &&
             !canAdvanceSearch &&

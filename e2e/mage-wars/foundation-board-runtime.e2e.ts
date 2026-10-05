@@ -647,6 +647,7 @@ async function expectMageWarsDesktopInspectHoverContract(page: Page, card: Locat
             backgroundColor: style.backgroundColor,
             color: style.color,
             borderTopColor: style.borderTopColor,
+            borderTopWidth: style.borderTopWidth,
             opacity: Number.parseFloat(style.opacity || '1'),
             pointerEvents: style.pointerEvents,
             width: rect.width,
@@ -654,11 +655,15 @@ async function expectMageWarsDesktopInspectHoverContract(page: Page, card: Locat
             hitButton: hit?.closest('[data-testid="mage-wars-card-inspect-button"]') === button,
         };
     });
-    const inspectButtonPixelTolerance = 0.05;
-    expect(initialInspectStyle.width).toBeGreaterThanOrEqual(24 - inspectButtonPixelTolerance);
-    expect(initialInspectStyle.height).toBeGreaterThanOrEqual(24 - inspectButtonPixelTolerance);
-    expect(initialInspectStyle.width).toBeLessThanOrEqual(34 + inspectButtonPixelTolerance);
-    expect(initialInspectStyle.height).toBeLessThanOrEqual(34 + inspectButtonPixelTolerance);
+    const cardBox = await card.boundingBox();
+    expect(cardBox, '卡牌必须有可量测尺寸才能验收放大镜比例').not.toBeNull();
+    const inspectRatio = initialInspectStyle.width / cardBox!.width;
+    expect(inspectRatio, '放大镜视觉宽度应接近卡牌宽度四分之一').toBeGreaterThanOrEqual(0.2);
+    expect(inspectRatio, '放大镜视觉宽度应接近卡牌宽度四分之一').toBeLessThanOrEqual(0.3);
+    expect(initialInspectStyle.width / initialInspectStyle.height, '放大镜必须保持正方形').toBeCloseTo(1, 2);
+    expect(initialInspectStyle.backgroundColor, '默认放大镜不能使用实心底').toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+    expect(initialInspectStyle.borderTopWidth, '默认放大镜必须有清晰线框').toBe('2px');
+    await expect(inspectButton).toHaveAttribute('data-card-inspect-variant', 'outline');
     expect(initialInspectStyle.opacity, '桌面放大镜默认应隐藏，不能常驻显示').toBeLessThanOrEqual(0.05);
     expect(initialInspectStyle.pointerEvents, '桌面隐藏放大镜默认不能抢卡牌点击').toBe('none');
     expect(initialInspectStyle.hitButton, '桌面隐藏放大镜默认不能成为前景命中目标').toBe(false);
@@ -3134,12 +3139,18 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(duplicateSpellbookCard).toHaveAttribute('data-secondary-inspect', 'true');
         await expect(duplicateSpellbookCard).toHaveAttribute('data-copy-count', duplicateSpellbookCardInfo.copyCount);
 
-        const duplicateInspectButton = duplicateSpellbookCard.locator('xpath=..').getByTestId('mage-wars-card-inspect-button');
-        const initialInspectStyle = await expectMageWarsDesktopInspectHoverContract(page, duplicateSpellbookCard, duplicateInspectButton);
-        await duplicateInspectButton.hover();
-        await expect.poll(async () => duplicateInspectButton.evaluate((button) => getComputedStyle(button).backgroundColor))
+        await clickFormalSpellbookCardBody(page, duplicateSpellbookCard, duplicateSpellbookCardInfo.cardId);
+        await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '1');
+        const preparedDraftCard = page.locator(
+            `[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="${duplicateSpellbookCardInfo.cardId}"]`,
+        ).first();
+        await expect(preparedDraftCard).toBeVisible({ timeout: 5_000 });
+        const preparedInspectButton = preparedDraftCard.locator('xpath=..').getByTestId('mage-wars-card-inspect-button');
+        const initialInspectStyle = await expectMageWarsDesktopInspectHoverContract(page, preparedDraftCard, preparedInspectButton);
+        await preparedInspectButton.hover();
+        await expect.poll(async () => preparedInspectButton.evaluate((button) => getComputedStyle(button).backgroundColor))
             .not.toBe(initialInspectStyle.backgroundColor);
-        const hoveredInspectStyle = await duplicateInspectButton.evaluate((button) => {
+        const hoveredInspectStyle = await preparedInspectButton.evaluate((button) => {
             const style = getComputedStyle(button);
             return {
                 backgroundColor: style.backgroundColor,
@@ -3147,21 +3158,19 @@ test.describe('Mage Wars foundation runtime board', () => {
                 borderTopColor: style.borderTopColor,
             };
         });
-        expect(hoveredInspectStyle.color).not.toBe(initialInspectStyle.color);
+        expect(hoveredInspectStyle.backgroundColor).not.toBe(initialInspectStyle.backgroundColor);
         expect(hoveredInspectStyle.borderTopColor).not.toBe(initialInspectStyle.borderTopColor);
 
         await mkdir(dirname(DESKTOP_2560_PLANNING_HOVER_SCREENSHOT_PATH), { recursive: true });
         await page.screenshot({ path: DESKTOP_2560_PLANNING_HOVER_SCREENSHOT_PATH, fullPage: false });
-        await duplicateInspectButton.click();
+        await preparedInspectButton.click();
         await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeVisible({ timeout: 5_000 });
         await expect(page.getByTestId('mage-wars-card-magnify-content')).toHaveAttribute('data-source-card-id', duplicateSpellbookCardInfo.cardId);
-        expect(await duplicateSpellbookCard.getAttribute('data-selected-count')).toBeNull();
+        expect(await duplicateSpellbookCard.getAttribute('data-selected-count')).toBe('1');
+        expect(await preparedDraftCard.getAttribute('data-planning-draft')).toBe('true');
         await page.getByTestId('mage-wars-card-magnify-overlay-close').click();
         await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeHidden({ timeout: 5_000 });
 
-        await clickFormalSpellbookCardBody(page, duplicateSpellbookCard, duplicateSpellbookCardInfo.cardId);
-        await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '1');
-        await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
         await clickFormalSpellbookCardBody(page, duplicateSpellbookCard, duplicateSpellbookCardInfo.cardId);
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '2');
         await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);

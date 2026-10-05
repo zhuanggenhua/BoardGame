@@ -628,7 +628,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 cardDefId: 'test-jin-tactic',
             },
             {
-                ...mingCards[3]!,
+                ...mingCards[0]!,
                 id: mingJirinaiInfantryCardId,
                 label: '大明机里耐步兵',
                 status: 'payable',

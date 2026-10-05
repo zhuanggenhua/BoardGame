@@ -40,7 +40,7 @@ it('确认执行征召军队后会先进入建军方式选择', () => {
         expect(next.factions.ming.handCount).toBe(2);
         expect(next.factions.ming.troops).toBe(18);
         expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(2);
-        expect(factionHandCards(next, 'ming')).toHaveLength(3);
+        expect(factionHandCards(next, 'ming')).toHaveLength(2);
         expect(next.turnPhase).toBe('recruit-choice');
         expect(next.selectedRegionId).toBe('song-jin');
         expect(getRecruitSelection(next)?.targetRegionId).toBe('song-jin');
@@ -105,7 +105,7 @@ it('征召军队选择等级 2 部队后会给目标区增加 6 兵', () => {
             && piece.troopKind === 'infantry'
             && piece.level === 2
         ))).toBe(true);
-        expect(factionHandCards(next, 'ming')).toHaveLength(3);
+        expect(factionHandCards(next, 'ming')).toHaveLength(2);
         expect(next.lastSeasonSummary?.title).toBe('征召军队');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('建立 6 个等级 2 部队');
         expect(next.actionLog[0]?.text).toContain('建立 6 个等级 2 部队');

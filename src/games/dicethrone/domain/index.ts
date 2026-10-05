@@ -455,6 +455,19 @@ function normalizeLegacyDiceThroneCoreState(
         };
     }
 
+    // 旧持久化状态可能把“尚未选防守方”写成 null；运行时合同使用 undefined。
+    // 若不在统一入口归一，三人局会误判为已有目标，ADVANCE_PHASE 无法打开选人交互。
+    const pendingAttack = normalizedCore.pendingAttack;
+    if (pendingAttack && (pendingAttack as { defenderId?: string | null }).defenderId === null) {
+        normalizedCore = {
+            ...normalizedCore,
+            pendingAttack: {
+                ...pendingAttack,
+                defenderId: undefined,
+            },
+        };
+    }
+
     const settlement = normalizedCore.pendingBonusDiceSettlement;
     if (!settlement || Array.isArray(settlement.dice)) {
         return normalizedCore;

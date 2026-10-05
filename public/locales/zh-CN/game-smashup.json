@@ -1046,6 +1046,8 @@
     "vikings_huscarl_skip_option": "跳过（不放牌）",
     "vikings_shield_maiden_title": "盾女：选择另一位玩家，展示其牌库顶的一张牌",
     "vikings_shield_maiden_skip_option": "跳过（不揭示）",
+    "vikings_reveal_eligible_draw_option": "加入手牌",
+    "vikings_reveal_eligible_skip_option": "放回牌库顶",
     "vikings_valkyrie_title": "女武神：选择另一位玩家弃牌堆中的一个随从",
     "vikings_valkyrie_skip_option": "跳过（不取回）",
     "vikings_ransack_title": "洗劫：选择一个打出的行动牌或一张埋葬牌，将其加入你的手牌",

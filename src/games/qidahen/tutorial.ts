@@ -46,17 +46,34 @@ const QIDAHEN_MAP_INFO_STEP_FOCUS = {
 const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
+        case 'turn-flow':
+            return core.turnPhase === 'action-window'
+                && core.handLimitDiscardSelection == null
+                && core.wheelActionUsed === false
+                && core.factionActionUsed === false;
         case 'wheel-first':
             return core.turnPhase === 'action-window'
                 && core.handLimitDiscardSelection == null
                 && core.wheelActionUsed === false;
         case 'wheel-move':
             return core.wheelActionUsed === false;
-        case 'wheel-path-mismatch':
+        case 'wheel-rule':
+            return core.wheelActionUsed === false;
+        case 'wheel-branch-stop':
             return core.wheelActionUsed === true
                 && core.lastSeasonSummary?.title !== '轮盘征兵/训练';
         case 'wheel-result':
             return core.wheelActionUsed === true
+                && core.lastSeasonSummary?.title === '轮盘征兵/训练';
+        case 'hand-action-order':
+            return core.turnPhase === 'action-window'
+                && core.wheelActionUsed === true
+                && core.factionActionUsed === false
+                && core.lastSeasonSummary?.title === '轮盘征兵/训练';
+        case 'grant-pardon-rule':
+            return core.turnPhase === 'action-window'
+                && core.wheelActionUsed === true
+                && core.factionActionUsed === false
                 && core.lastSeasonSummary?.title === '轮盘征兵/训练';
         case 'action-overview':
             return core.turnPhase === 'action-window'
@@ -452,8 +469,22 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             highlightFrame: 'none',
         },
         {
+            id: 'turn-flow',
+            content: 'game-qidahen:tutorial.basic.steps.turnFlow',
+            highlightTarget: 'qidahen-action-wheel',
+            position: 'right',
+            infoStep: true,
+        },
+        {
             id: 'wheel-first',
             content: 'game-qidahen:tutorial.basic.steps.wheelFirst',
+            highlightTarget: 'qidahen-action-wheel',
+            position: 'right',
+            infoStep: true,
+        },
+        {
+            id: 'wheel-rule',
+            content: 'game-qidahen:tutorial.basic.steps.wheelRule',
             highlightTarget: 'qidahen-action-wheel',
             position: 'right',
             infoStep: true,
@@ -468,8 +499,8 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
         },
         {
-            id: 'wheel-path-mismatch',
-            content: 'game-qidahen:tutorial.basic.steps.wheelPathMismatch',
+            id: 'wheel-branch-stop',
+            content: 'game-qidahen:tutorial.basic.steps.wheelBranchStop',
             highlightTarget: 'qidahen-action-wheel',
             position: 'right',
             requireAction: true,
@@ -485,9 +516,17 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'action-overview',
-            content: 'game-qidahen:tutorial.basic.steps.actionOverview',
+            id: 'hand-action-order',
+            content: 'game-qidahen:tutorial.basic.steps.handActionOrder',
             highlightTarget: 'qidahen-actions-zone',
+            position: 'left',
+            infoStep: true,
+            showMask: false,
+        },
+        {
+            id: 'grant-pardon-rule',
+            content: 'game-qidahen:tutorial.basic.steps.grantPardonRule',
+            highlightTarget: 'qidahen-action-grant-pardon',
             position: 'left',
             infoStep: true,
             showMask: false,

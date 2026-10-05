@@ -372,33 +372,36 @@
       "description": "Start at the first real decision: push the shared wheel, read its result, then complete one hand action.",
       "steps": {
         "welcome": "Three victory conditions: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige.",
-        "wheelFirst": "Check the hand limit. Ming has 3 cards and a 15-card limit, so no discard is required. Continue to the shared wheel.",
-        "wheelMove": "The rules allow the shared wheel to move 1, 2, or 3 spaces, with a different draw result for each. This tutorial continues through Recruit / Train, so use the fixed path: choose and execute Free 1. Choosing 2 or 3 enters another wheel result and cannot continue the Recruit / Train chain below.",
-        "wheelPathMismatch": "This tutorial continues through Recruit / Train, but the selected move entered another wheel result. Click Previous to restore the unused wheel, then choose Free 1.",
-        "wheelResult": "This tutorial moved 1 space from Military Farm to Recruit / Train, and the landing effect resolved automatically. Read the new troops on the map, then enter the hand action.",
-        "actionOverview": "Hand action (choose 1). Ming actions: Raid, Recruit, Grant Pardon, Drive Tiger. Read Grant Pardon, then click Next.",
-        "pickAction": "Grant Pardon: discard 3 hand cards, name 1 opponent, and have that player move 1 adjacent troop into a neighboring Ming-controlled region and convert it to Ming. (The named player chooses the troop.)\nAfter reading, click Grant Pardon.",
-        "payCards": "Grant Pardon costs 3 hand cards. Select 3 cards and confirm payment.",
-        "chooseGrantPardonTarget": "The cost is paid. Move 1 Later Jin troop from Jinzhou into Shanhaiguan and convert it to Ming. Click Shanhaiguan.",
-        "actionResult": "Grant Pardon is complete: 1 Later Jin troop moved from Jinzhou into Shanhaiguan and became a Ming troop.",
-        "finish": "The first turn is complete: hand check → wheel action → hand action."
+        "turnFlow": "The player action flow is: 1. Check the hand limit; 2. Move the wheel; 3. Perform one wheel action and one hand action in either order.",
+        "wheelFirst": "The opening hand-limit check has resolved automatically. Ming has 3 cards and a 15-card limit, so no discard is required. Enter the wheel action.",
+        "wheelRule": "The shared wheel can move 1, 2, or 3 spaces, with a different draw result for each.",
+        "wheelMove": "Now choose Recruit / Train.",
+        "wheelBranchStop": "This wheel landing is not Recruit / Train, so the Recruit / Train chain cannot continue.",
+        "wheelResult": "Recruit / Train has resolved. Read the new troops on the map.",
+        "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. They have no fixed order with one another or with the wheel action.",
+        "grantPardonRule": "Grant Pardon: discard 3 hand cards and name 1 opponent. That player chooses a troop adjacent to a Ming-controlled region, moves it into the neighboring Ming-controlled region, and converts it to Ming.",
+        "pickAction": "Now choose Grant Pardon.",
+        "payCards": "Now select 3 hand cards and confirm payment.",
+        "chooseGrantPardonTarget": "Now choose Shanhaiguan to move the Jinzhou troop into the adjacent Ming-controlled region.",
+        "actionResult": "Grant Pardon is complete: the Jinzhou troop is now Ming.",
+        "finish": "This part of the first turn is complete."
       }
     },
     "attackAndBattle": {
       "title": "Attack And Field Battle",
       "description": "Raid starts from a hand action, then flows into field battle, tactics, damage assignment, and retreat handling.",
       "steps": {
-        "overview": "Enter Ming's faction action and demonstrate Raid.",
-        "actionOverview": "Hand action (choose 1). Ming faction actions: Raid, Recruit, Grant Pardon, and Drive Tiger. Read the Raid rule, then click Next.",
-        "chooseAction": "Raid: discard 1 hand card and make an attack action (it cannot use dispatch). After reading, click Raid to begin payment.",
-        "payRaid": "Raid costs 1 hand card. Select 1 card and confirm.",
+        "overview": "Now enter Ming's hand action.",
+        "actionOverview": "The right side shows four same-level Ming faction actions.",
+        "chooseAction": "Now choose Raid. Rule: discard 1 hand card to make an attack; dispatch is not allowed.",
+        "payRaid": "Now select 1 hand card and confirm payment.",
         "borderWidth": "The attack moves from Keshiketeng into Chahar. Read battle width 3.",
         "battleOpen": "Entering an enemy region starts a field battle. Reveal both sides, then open the tactic window.",
         "tacticWindow": "Click Cavalry Charge, then click Play Tactic Card to confirm.",
-        "battleDamage": "Click Rear Guard to resolve the field battle. Resolve artillery, cavalry, then infantry; each 3 points deals 1 damage.",
+        "battleDamage": "Now click Rear Guard to resolve the field battle. Resolve artillery, cavalry, then infantry; each 3 points deals 1 damage.",
         "battleResult": "The field battle is resolved. Read the surviving troops and the next post-battle action.",
-        "retreatAndDefeat": "The losing side chooses Rear Guard or Rout.",
-        "postBattleChoice": "Use the post-battle panel to choose this battle's closing action.",
+        "retreatAndDefeat": "The losing side chooses either Rear Guard or Rout.",
+        "postBattleChoice": "Now use the post-battle panel to choose the closing action.",
         "finish": "Field battle, retreat, and post-battle handling are complete. Return to the map result."
       }
     },
@@ -421,8 +424,8 @@
       "steps": {
         "overview": "Enter the losing side's retreat choice: Rear Guard or Rout.",
         "chooseRout": "Choose Rout and confirm.",
-        "routResult": "After routing, the player strip gains 1 defeat marker, and the source region no longer keeps the routed force.",
-        "finish": "The map shows troop results; the player strip shows defeat markers."
+        "routResult": "After routing, the top player information gains 1 defeat marker, and the source region no longer keeps the routed force.",
+        "finish": "The map shows troop results; the top player information shows defeat markers."
       }
     },
     "cavalryPlunder": {
@@ -431,7 +434,7 @@
       "steps": {
         "overview": "Enter the cavalry plunder choice. Resolve counterfire, then population, cards, and retreat.",
         "choosePlunder": "Choose Cavalry Plunder.",
-        "plunderResult": "Plunder is complete: target population is lower, cavalry retreats, and card changes appear in the formal card areas.",
+        "plunderResult": "Plunder is complete: target population is lower, cavalry retreats, and the deck changes are synced.",
         "finish": "Cavalry plunder is complete."
       }
     },
@@ -450,8 +453,8 @@
       "description": "When you attack an unoccupied neutral region with population, neutral defenders are generated for the battle.",
       "steps": {
         "overview": "Enter neutral-region battle resolution. An unoccupied neutral region with population generates neutral defenders.",
-        "resolveNeutral": "Click battle resolution. The rule creates neutral defenders from Tumed's population.",
-        "neutralResult": "Neutral defenders now occupy Tumed; the attacker did not break through, so control stays neutral.",
+        "resolveNeutral": "Now click battle resolution. Neutral defenders are created from Tumed's population.",
+        "neutralResult": "Neutral defenders now occupy Tumed; the attacker did not defeat them, so control stays neutral.",
         "finish": "Neutral control changes only if the attack breaks through."
       }
     },
@@ -471,7 +474,7 @@
       "steps": {
         "overview": "Enter the 3-space wheel branch. Both opponents draw 2, and the turn lands on attack / dispatch.",
         "chooseMove": "Choose All Opponents Draw 2, Move 3.",
-        "drawResult": "After the wheel moves 3 spaces, look at the player strip: both the Mongols and Later Jin gain 2 hand cards.",
+        "drawResult": "After the wheel moves 3 spaces, read the Mongol and Later Jin hands: each gains 2 cards.",
         "dispatchReady": "The wheel lands on attack / dispatch. Discard 1 card, move up to 6 troops, and battle only in an enemy or non-friendly region.",
         "finish": "Wheel resolution is complete; the next entry is attack / dispatch."
       }
@@ -492,7 +495,7 @@
       "steps": {
         "overview": "Enter Wheel Military Farm resolution.",
         "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel from Reclaim into Military Farm.",
-        "result": "Military Farm is complete: 1 level-2 regular troop appears in Xuanfu, and the hand gain appears in the player strip.",
+        "result": "Military Farm is complete: 1 level-2 regular troop appears in Xuanfu, and the hand is replenished.",
         "finish": "Military Farm is complete."
       }
     },
@@ -510,9 +513,9 @@
       "title": "Armament Upgrade",
       "description": "Armament upgrade spends hand cards and updates the armament level on the live board.",
       "steps": {
-        "overview": "Enter Ming's hand action and demonstrate Armament Upgrade.",
-        "actionOverview": "Hand action (choose 1). Demonstrate Armament Upgrade. Read the rule, then click Next.",
-        "chooseAction": "Armament Upgrade: play an armament card, discard 1 hand card, and upgrade it. Click Artillery Technology.",
+        "overview": "Now enter Ming's hand action.",
+        "actionOverview": "Armament Upgrade: play an armament card, discard 1 hand card, and upgrade that armament.",
+        "chooseAction": "Now click Artillery Technology in hand.",
         "payCards": "Play Artillery Technology, discard 1 hand card, and confirm.",
         "result": "Artillery Technology rises from level 1 to level 2.",
         "finish": "Armament Upgrade is complete; later battles use level-2 Artillery Technology."
@@ -522,9 +525,9 @@
       "title": "Khan's Edict",
       "description": "Khan's Edict is the Mongol faction action. It resolves through payment, effect choice, and result, with the discard and map change landing together.",
       "steps": {
-        "overview": "Enter the Mongol hand action and demonstrate Khan's Edict.",
-        "actionOverview": "Hand action (choose 1). Mongol faction actions: Raid, Horse Market, and Khan's Edict. Read the Khan's Edict rule, then click Next.",
-        "chooseAction": "Khan's Edict: discard 1 hand card to perform Recruit & Train or Diplomatic Hiring without another cost. Click Khan's Edict.",
+        "overview": "Now enter the Mongol hand action.",
+        "actionOverview": "The right side shows three Mongol faction actions: Raid, Horse Market, and Khan's Edict.",
+        "chooseAction": "Now click Khan's Edict. Discard 1 hand card, then perform Recruit / Train or Diplomatic Hiring without another payment.",
         "payCards": "Discard 1 hand card and confirm.",
         "chooseEffect": "Choose the target region, then choose Recruit / Train to resolve the effect.",
         "result": "Khan's Edict is complete: Mongol troops in Shanhaiguan rise from 2 to 4.",
@@ -550,12 +553,12 @@
       "steps": {
         "overview": "Enter Midyear and New Year resolution: taxes, characters, fortifications, attrition, chronology, and turn order.",
         "advanceMidyear": "Click the wheel's \"one opponent draws 2, move 2\" option to advance the action marker into Midyear.",
-        "midyearTax": "Midyear taxes are complete: read resources in the player strip; besieged regions do not collect tax.",
-        "midyearCharacters": "Character checks are complete: read characters and defeat markers in the player strip.",
+        "midyearTax": "Midyear taxes are complete: read resources in the top player information; besieged regions do not collect tax.",
+        "midyearCharacters": "Character checks are complete: read characters and defeat markers in the top player information.",
         "advanceNewYear": "After Midyear resolves, click the wheel's \"Move 1 for free\" option to advance the action marker into New Year.",
         "newYearTribute": "New Year tribute: the controller of each Korea region draws its marked Korea cards.",
-        "newYearMaintenance": "Then click \"Auto pay\" to handle fortification maintenance. If the Great Wall, Shanhaiguan, Ningyuan, or Jinzhou cannot be maintained, they fall into ruin and their border and city effects fail with them.",
-        "newYearAttrition": "Maintenance is complete: read attrition results on the map and player strip.",
+        "newYearMaintenance": "Then click \"Auto pay\" to handle fortification maintenance. If the Great Wall, Shanhaiguan, Ningyuan, or Jinzhou cannot be maintained, they fall into ruin and their border and city effects fail.",
+        "newYearAttrition": "Maintenance is complete: read attrition results on the map and in the top player information.",
         "chronologyScore": "Chronology resolves: the highest score pays half the hand for the year's prestige, or passes.",
         "turnOrderRefresh": "Chronology is complete: the year card, current actor, and character states refresh.",
         "finish": "Year resolution is complete."
@@ -567,12 +570,12 @@
       "steps": {
         "overview": "Enter the Korea, Hanseong, waterway, and Shanhaiguan special rules.",
         "koreaRegion": "Tribute icons set the New Year draw; control decides who receives it.",
-        "hanseongVp": "Hanseong control is worth 1 prestige; read it in the player strip.",
+        "hanseongVp": "Hanseong control is worth 1 prestige; read it in the top player information.",
         "waterLimit": "Anchor water routes move at most 2 troops; cavalry cannot evade through water.",
         "newYearMaintenance": "Click Auto Pay to enter New Year maintenance.",
         "koreaAttrition": "Korea provides no population support; read Korean troop attrition after maintenance.",
         "shanhaiguan": "Shanhaiguan is a city and a special border; intact is narrow, ruined is wider.",
-        "finish": "Korea, Hanseong, waterways, and Shanhaiguan have resolved through the map and player strip."
+        "finish": "The Korea, Hanseong, waterway, and Shanhaiguan special rules are complete."
       }
     }
   },

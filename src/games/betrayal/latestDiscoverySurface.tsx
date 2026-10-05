@@ -49,7 +49,7 @@ type BetrayalLatestDiscoverySurfaceProps = {
   canModifyRoll: boolean;
   rollActorLabel: string;
   rollModifierActionSlot: React.ReactNode;
-  pendingEventRollRequiresNoAcknowledgement: boolean;
+  modifierEffectLabel?: string | null;
   hasPendingEventRollStart: boolean;
   canStartPendingEventRoll: boolean;
   continueButton: BetrayalLatestDiscoveryContinueButtonState;
@@ -126,7 +126,7 @@ export function BetrayalLatestDiscoverySurface({
   canModifyRoll,
   rollActorLabel,
   rollModifierActionSlot,
-  pendingEventRollRequiresNoAcknowledgement,
+  modifierEffectLabel = null,
   hasPendingEventRollStart,
   canStartPendingEventRoll,
   continueButton,
@@ -145,10 +145,9 @@ export function BetrayalLatestDiscoverySurface({
   }
 
   const hasRollModifierActionSlot = Boolean(rollModifierActionSlot);
-  const shouldHideExternalActionDock = Boolean(
-    pendingEventRollRequiresNoAcknowledgement ||
-      hasRollModifierActionSlot,
-  );
+  // Automatic event rolls skip shared confirmation, but still need a visible
+  // player-controlled way to return to the board after the dice settle.
+  const shouldHideExternalActionDock = hasRollModifierActionSlot;
   const displayedDiscoveryDetail = resolveDisplayedDiscoveryDetail(
     discovery,
     resolutionSteps,
@@ -321,6 +320,8 @@ export function BetrayalLatestDiscoverySurface({
                   recentRoll.kind === "eventTraitCheck" ||
                   recentRoll.kind === "eventDiceRoll"
                 }
+                resultReadable={continueButton.eventRollReadable !== false}
+                modifierEffectLabel={modifierEffectLabel}
                 openTable
                 compactResult={false}
                 denseResult={false}

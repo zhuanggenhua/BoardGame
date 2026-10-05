@@ -25,6 +25,29 @@ const findFactionPlayerId = (core: QidahenCore, factionId?: string): string | un
     return core.factions[factionId as keyof QidahenCore['factions']]?.playerId;
 };
 
+const resolveQidahenOnlineAiCurrentPlayerId = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    fallbackPlayerId: string | null;
+}): string | null => {
+    const core = args.state.core as QidahenCore | undefined;
+    if (!core) {
+        return args.fallbackPlayerId;
+    }
+
+    // 剧本前置选择是按势力归属的隐式决策窗口。历史线上房间可能已经把
+    // currentPlayer 推进到下一势力，但前一势力仍有待选人物/军备；watchdog
+    // 必须把恢复归属还原到真正拥有待选项的 seat，避免给下一位 AI 生成
+    // 通用 ADVANCE_PHASE（七大恨没有该命令）。
+    const pendingFactionId = core.pendingScenarioCharacterChoices[0]?.factionId
+        ?? core.pendingScenarioArmamentChoices[0]?.factionId;
+    const pendingPlayerId = pendingFactionId
+        ? core.factions[pendingFactionId]?.playerId
+        : undefined;
+
+    return pendingPlayerId ?? args.fallbackPlayerId;
+};
+
 const getPayloadValue = (command: Command, key: string): unknown => (
     command.payload && typeof command.payload === 'object'
         ? (command.payload as Record<string, unknown>)[key]
@@ -150,13 +173,21 @@ const systems = [
     createRematchSystem(),
 ];
 
-export const engineConfig = createGameEngine({
+export const engineConfig = {
+    ...createGameEngine({
     domain: QidahenDomain,
     systems,
     minPlayers: QIDAHEN_MIN_PLAYERS,
     maxPlayers: QIDAHEN_MAX_PLAYERS,
     commandTypes: Object.values(QIDAHEN_COMMANDS),
-});
+    }),
+    onlineAiRecovery: {
+        // 七大恨没有通用 ADVANCE_PHASE；预置选择/行动窗口必须由本游戏
+        // 的合法命令恢复，禁止 watchdog 发送未知命令污染线上房间。
+        disableFallbackAdvancePhase: true,
+        resolveCurrentPlayerId: resolveQidahenOnlineAiCurrentPlayerId,
+    },
+};
 
 registerGameAiRuntime(qidahenAiRuntime);
 

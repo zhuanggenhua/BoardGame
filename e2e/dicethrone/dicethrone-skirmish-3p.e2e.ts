@@ -26,7 +26,7 @@ const saveEvidence = async (page: Parameters<typeof waitForGameBoard>[0], fileNa
     return path;
 };
 
-const clearTransientState = (state: any) => {
+const clearTransientState = (state: any, defenderId: string | null | undefined = undefined) => {
     const next = structuredClone(state);
     const turnOrder = Array.isArray(next.sys?.turnOrder)
         ? [...next.sys.turnOrder]
@@ -65,7 +65,7 @@ const clearTransientState = (state: any) => {
         pendingBonusDiceSettlement: undefined,
         pendingAttack: {
             attackerId: '0',
-            defenderId: undefined,
+            defenderId,
             targetingSelectionPending: false,
             targetingSelectionResolved: false,
             isDefendable: true,
@@ -151,6 +151,40 @@ test.describe('DiceThrone 三人混战真实浏览器验收', () => {
             await expect(hostPage.getByTestId('dt-defender-choice-panel')).toBeHidden({ timeout: 10000 });
             await expect(players[1].page.getByTestId('dicethrone-board-root')).toBeVisible({ timeout: 10000 });
             await saveEvidence(players[1].page, '03-三人混战-确认目标后进入防御.png');
+        } finally {
+            await cleanupDTMatch(setup);
+        }
+    });
+
+    test('1v1v1 旧状态 defenderId=null 时点击结算攻击仍出现目标选择', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 3,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或三人房间创建失败');
+            return;
+        }
+
+        try {
+            const { hostPage, matchId, players } = setup;
+            await selectCharacter(players[0].page, 'tianshi');
+            await selectCharacter(players[1].page, 'monk');
+            await selectCharacter(players[2].page, 'barbarian');
+            await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+            await waitForGameBoard(hostPage);
+            await waitForTestHarness(hostPage, 15000);
+
+            const current = await getMatchState(matchId, hostPage);
+            await injectMatchState(matchId, clearTransientState(current, null), hostPage);
+            await hostPage.waitForTimeout(800);
+            await dispatchHarnessCommand(hostPage, 'ADVANCE_PHASE', '0');
+
+            await expect(hostPage.getByTestId('dt-defender-choice-panel')).toBeVisible({ timeout: 15000 });
+            await expect(hostPage.locator('[data-testid^="dt-defender-choice-option-"][data-player-id]')).toHaveCount(2, { timeout: 10000 });
+            await saveEvidence(hostPage, '04-三人混战-旧null目标状态仍可结算.png');
         } finally {
             await cleanupDTMatch(setup);
         }

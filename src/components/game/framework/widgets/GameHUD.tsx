@@ -203,16 +203,16 @@ export const GameHUD = ({
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
     const isBetrayalGame = _gameId === 'betrayal';
-    // Betrayal 的底部确认/行动区固定占用右下角；悬浮球统一放到右上角。
+    // Betrayal 的底部确认/行动区固定占用右下角；悬浮球按回归基线保留在右下角。
     const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_POSITION
         : isBetrayalGame
-            ? 'top-right'
+            ? 'bottom-right'
             : 'bottom-right';
     const fabMenuStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
         : isBetrayalGame
-            ? 'game_hud_fab_position:betrayal:v1'
+            ? 'game_hud_fab_position:betrayal:v2'
             : undefined;
     const fabMenuLegacyOffsetStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY

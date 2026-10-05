@@ -14,7 +14,7 @@ const discovery = (detail: string): BetrayalDiscoverySummary => ({
 });
 
 describe("latest discovery visible detail", () => {
-  it("保留作祟检定和投骰数量，但不重复展示具体掷骰结果", () => {
+  it("避免在已展示骰盘时重复渲染作祟检定和投骰数量", () => {
     const visibleDetail = resolveDisplayedDiscoveryDetail(
       discovery(
         "抽到预兆后进行作祟检定：总点数 4（3 颗骰子，未触发）；判定要求（总点数）：达到 5 点：作祟开始 · 达到 0 点：未触发作祟",
@@ -22,10 +22,10 @@ describe("latest discovery visible detail", () => {
       [] as readonly BetrayalDiscoveryResolutionStep[],
     );
 
-    expect(visibleDetail).toContain("作祟检定");
-    expect(visibleDetail).toContain("投 3 颗骰子");
     expect(visibleDetail).toContain("判定要求");
     expect(visibleDetail).toContain("达到 5 点");
+    expect(visibleDetail).not.toContain("作祟检定");
+    expect(visibleDetail).not.toContain("投 3 颗骰子");
     expect(visibleDetail).not.toContain("总点数 4");
     expect(visibleDetail).not.toContain("未触发）");
   });

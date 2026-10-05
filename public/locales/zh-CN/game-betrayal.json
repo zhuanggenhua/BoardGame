@@ -987,6 +987,7 @@
     },
     "roll": {
       "fallbackLabel": "投骰",
+      "rolling": "骰子滚动中，等待停稳",
       "bonus": "加值 {{value}}",
       "noBonus": "无加值",
       "diceSubtotal": "骰面合计 {{value}}",
@@ -1014,6 +1015,10 @@
       "diceFaces": "骰面 {{value}}",
       "cancelModifier": "取消",
       "confirmModifier": "确认使用{{card}}"
+      ,"modifierAppliedFlashlight": "手电筒已生效：本次事件属性检定额外投 2 骰"
+      ,"modifierAppliedLantern": "灯笼已生效：本次事件属性检定额外投 2 骰"
+      ,"modifierAppliedCamera": "魔法相机已生效：本次知识检定改用神志"
+      ,"modifierAppliedBook": "书本已使用：本次非战斗检定改用知识"
     },
     "useEffects": {
       "move": "移动 {{value}}",

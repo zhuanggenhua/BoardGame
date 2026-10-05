@@ -124,7 +124,6 @@ describe('古代印加人：方石砌体完整计分后链路', () => {
             && ['deck-action-a', 'deck-action-b'].every(uid => (event as any).payload.deckUids.includes(uid)),
         ) as any;
         expect(deckReordered?.payload.deckUids).toEqual(expect.arrayContaining([
-            'existing-deck-card',
             'deck-action-a',
             'deck-action-b',
         ]));

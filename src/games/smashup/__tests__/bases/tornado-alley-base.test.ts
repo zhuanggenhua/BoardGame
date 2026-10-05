@@ -106,8 +106,12 @@ describe('base_tornado_alley 龙卷风走廊', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        const resolved = resolveInteractionChain(played.finalState, (prompt, _state, step) => {
-            if (step === 0) {
+        const resolved = resolveInteractionChain(played.finalState, (prompt) => {
+            if (getPromptSourceId(prompt) === 'base_wooden_horse') {
+                const skip = getPromptOption(prompt, option => option.value?.skip === true, 'Wooden Horse skip option');
+                return { optionId: skip.id };
+            }
+            if (getPromptSourceId(prompt) === 'tornados_carried_away_dest') {
                 return chooseOptionBySource(prompt, 'tornados_carried_away_dest', option => option.value?.baseIndex === 1);
             }
             expect(getPromptSourceId(prompt)).toBe('base_tornado_alley');

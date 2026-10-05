@@ -317,6 +317,17 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-cinematic"),
     ).toContainText("木乃伊醒来");
+    const openingNarrationLine = page
+      .getByTestId("betrayal-start-scenario-opening-cinematic")
+      .locator(".betrayal-cinematic-narration__line")
+      .first();
+    await expect(openingNarrationLine).toBeVisible();
+    expect(
+      await openingNarrationLine.evaluate((element) =>
+        Number.parseFloat(window.getComputedStyle(element).fontSize),
+      ),
+      "过场字幕在移动端不得低于16px",
+    ).toBeGreaterThanOrEqual(16);
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-source-status"),
     ).toHaveCount(0);
@@ -336,6 +347,20 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(page.getByTestId("betrayal-current-ability")).toContainText(
       "特性",
     );
+    expect(
+      await page.getByTestId("betrayal-current-ability").evaluate((element) =>
+        Number.parseFloat(window.getComputedStyle(element).fontSize),
+      ),
+      "能力描述在移动端不得低于16px",
+    ).toBeGreaterThanOrEqual(16);
+    await expect(page.getByTestId("fab-menu")).toHaveAttribute(
+      "data-fab-position",
+      "bottom-right",
+    );
+    const fabBox = await page.getByTestId("fab-menu").boundingBox();
+    expect(fabBox, "Betrayal 悬浮球必须回到右下角回归锚点").not.toBeNull();
+    expect(fabBox!.x + fabBox!.width).toBeGreaterThan(796 - 96);
+    expect(fabBox!.y + fabBox!.height).toBeGreaterThan(360 - 96);
     const startingInventory = await page.evaluate(() => {
       const harness = (
         window as Window & {
@@ -650,6 +675,10 @@ test.describe("山屋惊魂基本流程", () => {
         box?.height ?? 0,
         `${label}触控高度不能小于44px`,
       ).toBeGreaterThanOrEqual(44);
+      if (label === "下一页") {
+        expect(box?.width ?? 0, "书内下一页不能复用过程文案的大按钮热区").toBeLessThanOrEqual(96);
+        expect(box?.height ?? 0, "书内下一页不能复用过程文案的大按钮热区").toBeLessThanOrEqual(96);
+      }
     }
     await saveScreenshot(page, MOBILE_SCENARIO_ENTRY_SCREENSHOT);
     await page.getByTestId("betrayal-scenario-detail-toggle").click();

@@ -6,6 +6,7 @@ import {
 import {
   initBetrayalContext,
   injectCore,
+  saveScreenshot,
   waitForBetrayalPageReady,
 } from "./betrayalTestHelpers";
 import { createStartedFirstScenarioCore } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
@@ -30,6 +31,10 @@ test.describe("山屋惊魂移动端缩放后移动动画", () => {
     await waitForBetrayalPageReady(page);
     await injectCore(page, createStartedFirstScenarioCore(["0", "1", "2"]));
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
+    await saveScreenshot(
+      page,
+      "evidence/betrayal-focus-2388x1080/01-before-zoom-pan.png",
+    );
 
     const roomGrid = page.getByTestId("betrayal-room-grid");
     const gridBox = await roomGrid.boundingBox();
@@ -55,6 +60,10 @@ test.describe("山屋惊魂移动端缩放后移动动画", () => {
     );
     await page.mouse.up();
     await page.waitForTimeout(120);
+    await saveScreenshot(
+      page,
+      "evidence/betrayal-focus-2388x1080/02-after-zoom-pan.png",
+    );
 
     const sourceToken = page
       .getByTestId("betrayal-room-occupant-entrance-hall-0")
@@ -131,23 +140,42 @@ test.describe("山屋惊魂移动端缩放后移动动画", () => {
       const canvas = viewport.querySelector<HTMLElement>(
         '[data-testid="betrayal-room-canvas"]',
       );
+      const leftRail = document.querySelector<HTMLElement>('[data-testid="betrayal-left-status-rail"]')?.getBoundingClientRect() ?? null;
+      const statusRail = document.querySelector<HTMLElement>('[data-testid="betrayal-status-rail"]')?.getBoundingClientRect() ?? null;
+      const leftInset = leftRail ? Math.max(0, leftRail.right - viewportRect.left) : 0;
+      const rightInset = statusRail ? Math.max(0, viewportRect.right - statusRail.left) : 0;
+      const visibleMapCenterX = viewportRect.left + leftInset + (viewportRect.width - leftInset - rightInset) / 2;
       return {
         viewportCenterX: (viewportRect.left + viewportRect.right) / 2,
         viewportCenterY: (viewportRect.top + viewportRect.bottom) / 2,
         tokenCenterX: (tokenRect.left + tokenRect.right) / 2,
         tokenCenterY: (tokenRect.top + tokenRect.bottom) / 2,
+        visibleMapCenterX,
+        visibleMapResidualX: (tokenRect.left + tokenRect.right) / 2 - visibleMapCenterX,
         viewportRect,
         tokenRect,
         canvasTransform: canvas?.style.transform ?? null,
         activeTarget: viewport.dataset.zoomPanActiveTarget ?? null,
         targetState: viewport.dataset.zoomPanTargetState ?? null,
         focusInstructionKey: viewport.dataset.roomFocusPanInstructionKey ?? null,
+        leftRail: document.querySelector<HTMLElement>('[data-testid="betrayal-left-status-rail"]')?.getBoundingClientRect().toJSON() ?? null,
+        statusRail: document.querySelector<HTMLElement>('[data-testid="betrayal-status-rail"]')?.getBoundingClientRect().toJSON() ?? null,
+        actionRail: document.querySelector<HTMLElement>('[data-testid="betrayal-action-rail"]')?.getBoundingClientRect().toJSON() ?? null,
+        hudPortal: document.querySelector<HTMLElement>('.betrayal-hud-portal-region')?.getBoundingClientRect().toJSON() ?? null,
+        runtimeLogs: (window as Window & {
+          __BOARDGAME_MOBILE_RUNTIME_LOGS__?: unknown[];
+        }).__BOARDGAME_MOBILE_RUNTIME_LOGS__ ?? [],
       };
     });
     console.log(`FOCUS_DEBUG ${JSON.stringify(focusGeometry)}`);
+    await saveScreenshot(
+      page,
+      "evidence/betrayal-focus-2388x1080/03-after-move-focus.png",
+    );
     expect(focusGeometry).not.toBeNull();
     expect(Math.abs(focusGeometry!.tokenCenterX - focusGeometry!.viewportCenterX)).toBeLessThan(36);
     expect(Math.abs(focusGeometry!.tokenCenterY - focusGeometry!.viewportCenterY)).toBeLessThan(36);
+    expect(Math.abs(focusGeometry!.visibleMapResidualX)).toBeLessThanOrEqual(8);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-mobile-zoom-move-animation", diagnostics },

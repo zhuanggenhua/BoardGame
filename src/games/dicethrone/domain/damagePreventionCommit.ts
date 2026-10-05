@@ -1,7 +1,8 @@
 import type { PlayerId } from '../../../engine/types';
-import type { DamageDealtEvent, DamageShield, DiceThroneCore } from './types';
+import type { DamageDealtEvent, DamageShield, DiceThroneCore, PendingDamage } from './types';
 import { STATUS_IDS } from './ids';
 import {
+    buildDiceThroneTokenResponseFrameIdFromPendingDamageId,
     buildDiceThroneDamageShieldPreventionOpportunityId,
     resolveDiceThroneTokenResponseFramePendingDamageId,
 } from './timingOpportunityIdentities';
@@ -28,6 +29,11 @@ export interface DiceThroneDamagePreventionCommit {
 export interface DiceThroneDamagePreventionEventCommitArgs {
     state: DiceThroneCore;
     event: DamageDealtEvent;
+}
+
+export interface DiceThroneGrantedShieldPendingDamageResult {
+    pendingDamage: PendingDamage;
+    shieldsConsumed: DiceThroneDamageShieldConsumption[];
 }
 
 function buildShieldConsumption(args: {
@@ -141,6 +147,75 @@ export function commitDiceThroneDamagePrevention(
         remainingDamage,
         nextDamageShields: updatedShields,
         shieldsConsumed,
+    };
+}
+
+/**
+ * 将响应窗口打开后新授予的护盾，追加到当前待处理伤害的同一笔防止提交。
+ *
+ * 进入 beforeDamageReceived 响应窗时，既有护盾已经预提交；后续卡牌（如“下次一定”）
+ * 仍可在同一窗口授予新护盾。此处只消费这一个新护盾，避免把已提交的旧护盾再次计算。
+ */
+export function applyDiceThroneGrantedShieldToPendingDamage(args: {
+    pendingDamage: PendingDamage;
+    targetId: PlayerId;
+    shield: DamageShield;
+    shieldIndex: number;
+    bypassShields?: boolean;
+    isUltimateDamage?: boolean;
+}): DiceThroneGrantedShieldPendingDamageResult {
+    const { pendingDamage, shield } = args;
+    if (
+        pendingDamage.responseType !== 'beforeDamageReceived'
+        || pendingDamage.currentDamage <= 0
+        || pendingDamage.isFullyEvaded
+        || shield.preventStatus
+        || args.bypassShields
+        || args.isUltimateDamage
+    ) {
+        return { pendingDamage, shieldsConsumed: [] };
+    }
+
+    const absorbed = shield.reductionPercent !== undefined
+        ? Math.ceil(pendingDamage.currentDamage * ((shield.reductionPercent ?? 0) / 100))
+        : Math.min(shield.value, pendingDamage.currentDamage);
+    if (absorbed <= 0) {
+        return { pendingDamage, shieldsConsumed: [] };
+    }
+
+    const resolutionFrameId = buildDiceThroneTokenResponseFrameIdFromPendingDamageId(pendingDamage.id);
+    const consumption = buildShieldConsumption({
+        shield,
+        shieldIndex: args.shieldIndex,
+        absorbed,
+        details: shield.reductionPercent !== undefined
+            ? { reductionPercent: shield.reductionPercent }
+            : { value: shield.value },
+        targetId: args.targetId,
+        pendingDamageId: pendingDamage.id,
+        resolutionFrameId,
+    });
+    const nextPendingDamage: PendingDamage = {
+        ...pendingDamage,
+        currentDamage: Math.max(0, pendingDamage.currentDamage - absorbed),
+        preventionCommitted: true,
+        shieldsConsumed: [
+            ...(pendingDamage.shieldsConsumed ?? []),
+            consumption,
+        ],
+        modifiers: [
+            ...(pendingDamage.modifiers ?? []),
+            {
+                type: 'shield',
+                value: -absorbed,
+                sourceId: consumption.sourceId,
+            },
+        ],
+    };
+
+    return {
+        pendingDamage: nextPendingDamage,
+        shieldsConsumed: [consumption],
     };
 }
 

@@ -1096,6 +1096,8 @@
     "vikings_huscarl_skip_option": "Skip (do not place a card)",
     "vikings_shield_maiden_title": "Shield Maiden: choose another player and reveal the top card of their deck",
     "vikings_shield_maiden_skip_option": "Skip (do not reveal)",
+    "vikings_reveal_eligible_draw_option": "Add to hand",
+    "vikings_reveal_eligible_skip_option": "Return to deck top",
     "vikings_valkyrie_title": "Valkyrie: choose a minion in another player's discard pile",
     "vikings_valkyrie_skip_option": "Skip (do not return one)",
     "vikings_ransack_title": "Ransack: choose a played action or a buried card to put into your hand",

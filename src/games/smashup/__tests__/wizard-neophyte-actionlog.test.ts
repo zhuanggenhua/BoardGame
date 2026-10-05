@@ -65,6 +65,7 @@ describe('学徒 ActionLog 完整链路', () => {
         expect(getActionLogKinds(r1.finalState)).toEqual([
             'su:minion_played',
             'su:reveal_deck_top',
+            'su:limit_modified',
         ]);
 
         const revealEntry = log1.find(e => e.kind === 'su:reveal_deck_top');
@@ -81,8 +82,8 @@ describe('学徒 ActionLog 完整链路', () => {
         expect(getActionLogKinds(r2.finalState)).toEqual([
             'su:minion_played',
             'su:reveal_deck_top',
-            'su:cards_drawn',
             'su:limit_modified',
+            'su:cards_drawn',
         ]);
         const drawEntry = log2.find(e => e.kind === 'su:cards_drawn');
         expect(drawEntry).toBeDefined();
@@ -119,6 +120,7 @@ describe('学徒 ActionLog 完整链路', () => {
         expect(getActionLogKinds(r1.finalState)).toEqual([
             'su:minion_played',
             'su:reveal_deck_top',
+            'su:limit_modified',
         ]);
 
         expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
@@ -128,9 +130,9 @@ describe('学徒 ActionLog 完整链路', () => {
         expect(getActionLogKinds(r2.finalState)).toEqual([
             'su:minion_played',
             'su:reveal_deck_top',
+            'su:limit_modified',
             'su:cards_drawn',
             'su:action_played',
-            'su:limit_modified',
             'su:limit_modified',
         ]);
         expect(r2.finalState.core.players['0'].hand).toEqual([]);
@@ -171,9 +173,9 @@ describe('学徒 ActionLog 完整链路', () => {
         expect(getActionLogKinds(r2.finalState)).toEqual([
             'su:minion_played',
             'su:reveal_deck_top',
+            'su:limit_modified',
             'su:cards_drawn',
             'su:action_played',
-            'su:limit_modified',
             'su:cards_drawn',
         ]);
         const drawEntries = log2.filter(e => e.kind === 'su:cards_drawn');

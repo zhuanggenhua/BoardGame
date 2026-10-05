@@ -175,6 +175,121 @@ test("focus and selected files keep the listing on the requested directory", asy
   }
 });
 
+test("behavior-only evidence descriptions become the viewer title", async () => {
+  const hadState = existsSync(STATE_PATH);
+  const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;
+  const tempRoot = join(EVIDENCE_ROOT, `viewer-behavior-title-${process.pid}-${Date.now()}`);
+  let child = null;
+
+  try {
+    await mkdir(tempRoot, { recursive: true });
+    await writeFile(join(tempRoot, "029-tooltip.png"), "image");
+    await writeFile(join(tempRoot, "image-index.json"), JSON.stringify({
+      title: "法师战争 · 独立端到端",
+      items: [
+        {
+          path: "029-tooltip.png",
+          description: "图片表达：玩家悬停生命图标后，属性解释浮层完整出现且没有遮住主操作区。",
+        },
+      ],
+    }, null, 2));
+
+    const targetDir = await realpath(tempRoot);
+    const port = await getFreePort();
+    const logs = [];
+    child = spawn(process.execPath, [SERVER_ENTRY, "--serve", "--port", String(port)], {
+      cwd: PROJECT_ROOT,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    child.stdout.on("data", (chunk) => logs.push(String(chunk)));
+    child.stderr.on("data", (chunk) => logs.push(String(chunk)));
+
+    await waitForHealth(port, () => logs.join(""));
+    const listed = await requestJson(
+      port,
+      `/api/list?dir=${encodeURIComponent(targetDir)}`,
+    );
+    assert.equal(listed.items.length, 1);
+    assert.equal(
+      listed.items[0].displayTitle,
+      "玩家悬停生命图标后，属性解释浮层完整出现且没有遮住主操作区。",
+    );
+    assert.equal(listed.items[0].description, "");
+  } finally {
+    await waitForExit(child);
+    await rm(tempRoot, { recursive: true, force: true });
+    if (hadState && stateSnapshot !== null) {
+      await writeFile(STATE_PATH, stateSnapshot, "utf8");
+    } else {
+      await rm(STATE_PATH, { force: true });
+    }
+  }
+});
+
+test("sibling evidence indexes cannot relabel the current directory", async () => {
+  const hadState = existsSync(STATE_PATH);
+  const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;
+  const tempRoot = join(EVIDENCE_ROOT, `viewer-sibling-index-${process.pid}-${Date.now()}`);
+  const staleDir = join(tempRoot, "r4");
+  const currentDir = join(tempRoot, "r6");
+  let child = null;
+
+  try {
+    await mkdir(staleDir, { recursive: true });
+    await mkdir(currentDir, { recursive: true });
+    await writeFile(join(currentDir, "029-tooltip.png"), "image");
+    await writeFile(join(staleDir, "image-index.json"), JSON.stringify({
+      items: [
+        {
+          path: "029-tooltip.png",
+          label: "旧 r4 标题",
+          description: "旧流程摘要",
+        },
+      ],
+    }, null, 2));
+    await writeFile(join(currentDir, "image-index.json"), JSON.stringify({
+      items: [
+        {
+          path: "029-tooltip.png",
+          description: "图片表达：玩家悬停生命图标后，属性解释浮层完整出现且没有遮住主操作区。",
+        },
+      ],
+    }, null, 2));
+
+    const targetDir = await realpath(currentDir);
+    const port = await getFreePort();
+    const logs = [];
+    child = spawn(process.execPath, [SERVER_ENTRY, "--serve", "--port", String(port)], {
+      cwd: PROJECT_ROOT,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    child.stdout.on("data", (chunk) => logs.push(String(chunk)));
+    child.stderr.on("data", (chunk) => logs.push(String(chunk)));
+
+    await waitForHealth(port, () => logs.join(""));
+    const listed = await requestJson(
+      port,
+      `/api/list?dir=${encodeURIComponent(targetDir)}`,
+    );
+    assert.equal(listed.items.length, 1);
+    assert.equal(
+      listed.items[0].displayTitle,
+      "玩家悬停生命图标后，属性解释浮层完整出现且没有遮住主操作区。",
+    );
+    assert.equal(listed.items[0].description, "");
+  } finally {
+    await waitForExit(child);
+    await rm(tempRoot, { recursive: true, force: true });
+    if (hadState && stateSnapshot !== null) {
+      await writeFile(STATE_PATH, stateSnapshot, "utf8");
+    } else {
+      await rm(STATE_PATH, { force: true });
+    }
+  }
+});
+
 test("media supports byte-range playback for videos", async () => {
   const hadState = existsSync(STATE_PATH);
   const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;

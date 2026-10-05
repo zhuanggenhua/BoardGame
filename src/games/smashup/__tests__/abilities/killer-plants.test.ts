@@ -1271,6 +1271,33 @@ describe('killer_plant_choking_vines 回合开始触发', () => {
             } as Partial<MinionDestroyedEvent>),
         );
     });
+
+    it('一目了然应阻止对手食人藤蔓消灭力量≤2的己方随从', () => {
+        const target = makeMinion('protected-local', 'innsmouth_the_locals_pod', '1', 2, {
+            attachedActions: [{ uid: 'cv-pod-1', defId: 'killer_plant_choking_vines_pod', ownerId: '0' }],
+        });
+        const state = makeState({
+            bases: [makeBase({
+                minions: [target],
+                ongoingActions: [{ uid: 'ips-pod-1', defId: 'innsmouth_in_plain_sight_pod', ownerId: '1' }],
+            })],
+        });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events).not.toContainEqual(
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: expect.objectContaining({ minionUid: 'protected-local' }),
+            } as Partial<MinionDestroyedEvent>),
+        );
+    });
 });
 
 describe('killer_plants POD 数据与特殊回归', () => {

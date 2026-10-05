@@ -12,13 +12,13 @@ import {
     type SVGProps,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ZoomIn } from 'lucide-react';
 import { motion, useAnimate } from 'framer-motion';
 import type { CardPreviewRef } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { CardChoiceOverlay, ZoomPanViewport } from '../../components/game/framework';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
+import { CardInspectButton as SharedCardInspectButton } from '../../components/common/overlays/CardInspectButton';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import { BoardDamageStateOverlay } from '../../components/common/animations/BoardDamageStateOverlay';
 import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
@@ -168,9 +168,6 @@ const MAGE_WARS_CARD_CHOICE_SCROLL_MAX_HEIGHT = 'max-h-[min(34rem,60dvh)]';
 const MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID = 2819;
 const MAGE_WARS_TUTORIAL_ROUSE_THE_BEAST_CARD_ID = 3403;
 const MAGE_WARS_TUTORIAL_THORNS_WALL_CARD_ID = 25700;
-// 与召唤师战争卡牌/单位检视入口同量级；用卡牌容器宽度自适应，避免宽屏放大后图标相对变小。
-const MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE = 'clamp(28px, 18.5cqw, 34px)';
-const MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE = 'clamp(15px, 10cqw, 19px)';
 const MAGE_WARS_HUD_HINT_CARD_HEIGHT_CSS_VAR = 'var(--mage-wars-desktop-hud-hint-card-height, calc(var(--mage-wars-hud-icon-size, 3.75rem) + var(--mage-wars-hud-icon-size, 3.75rem) + var(--mage-wars-hud-icon-size, 3.75rem) + var(--mage-wars-hud-icon-gap, 0.28rem) + var(--mage-wars-hud-icon-gap, 0.28rem)))';
 const MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM = 4.5;
 const MAGE_WARS_TUTORIAL_ARENA_TARGET_PREFIXES = [
@@ -290,70 +287,46 @@ function escapeCssAttributeValue(value: string): string {
     return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-function CardInspectButton({
+function MageWarsCardInspectButton({
     title,
     sourceCardId,
-    compact = false,
-    readableCompact = false,
+    sizeRatio = 0.25,
+    minSize = 20,
+    maxSize = 96,
+    iconRatio = 0.48,
     alwaysVisible = false,
     revealOnGroupHover = true,
     placement = 'inside',
     onInspect,
-}: {
-    title: string;
-    sourceCardId?: number;
-    compact?: boolean;
-    readableCompact?: boolean;
-    alwaysVisible?: boolean;
+    }: {
+        title: string;
+        sourceCardId?: number;
+        sizeRatio?: number;
+        minSize?: number;
+        maxSize?: number;
+        iconRatio?: number;
+        alwaysVisible?: boolean;
     revealOnGroupHover?: boolean;
     placement?: 'inside' | 'outside';
     onInspect: () => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    const shouldShowInspectButton = alwaysVisible;
-    const referenceButtonStyle: CSSProperties | undefined = compact
-        ? undefined
-        : {
-            width: MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE,
-            height: MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE,
-        };
-    const referenceIconStyle: CSSProperties | undefined = compact
-        ? undefined
-        : {
-            width: MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE,
-            height: MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE,
-        };
     return (
-        <button
-            type="button"
-            className={cx(
-                'absolute z-40 grid place-items-center rounded-full border border-amber-100/55 bg-black/74 text-amber-50 shadow-[0_6px_14px_rgba(0,0,0,0.5)] transition-[opacity,border-color,background-color,color] duration-150 hover:border-amber-100 hover:bg-amber-300 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
-                placement === 'outside' ? '-right-6 top-0' : 'right-1 top-1',
-                compact && (readableCompact ? 'h-10 w-10' : 'h-5 w-5'),
-                shouldShowInspectButton
-                    ? 'pointer-events-auto opacity-100'
-                    : cx(
-                        'pointer-events-none opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100',
-                        revealOnGroupHover && 'group-hover:pointer-events-auto group-hover:opacity-100',
-                    ),
-            )}
-            style={referenceButtonStyle}
-            data-testid="mage-wars-card-inspect-button"
-            data-source-card-id={sourceCardId}
-            data-browse-inspectable="true"
-            data-secondary-inspect="true"
-            aria-label={t('ui.inspectCardAria', { name: title })}
+        <SharedCardInspectButton
+            ariaLabel={t('ui.inspectCardAria', { name: title })}
             title={t('ui.inspectCardTitle')}
-            onPointerDown={(event) => event.stopPropagation()}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onInspect();
-            }}
-        >
-            <ZoomIn aria-hidden="true" className={compact ? (readableCompact ? 'h-5 w-5' : 'h-3 w-3') : undefined} style={referenceIconStyle} strokeWidth={2.3} />
-        </button>
+            sourceCardId={sourceCardId}
+            onInspect={onInspect}
+            testId="mage-wars-card-inspect-button"
+            sizeRatio={sizeRatio}
+            minSize={minSize}
+            maxSize={maxSize}
+            iconRatio={iconRatio}
+            variant="outline"
+            placement={placement}
+            alwaysVisible={alwaysVisible}
+            revealOnGroupHover={revealOnGroupHover}
+        />
     );
 }
 
@@ -1074,7 +1047,7 @@ function MageHud({
                     </div>
                 ) : null}
                 {onInspect ? (
-                    <CardInspectButton title={mageLabel} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
+                    <MageWarsCardInspectButton title={mageLabel} sizeRatio={0.25} minSize={24} maxSize={44} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1165,7 +1138,7 @@ function MageHud({
                     </div>
                 ) : null}
                 {onInspect ? (
-                    <CardInspectButton title={mageLabel} compact alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
+                    <MageWarsCardInspectButton title={mageLabel} sizeRatio={0.25} minSize={20} maxSize={32} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1386,10 +1359,12 @@ function PreparedSpellCard({
                     {content}
                 </button>
                 {hasSecondaryInspect ? (
-                    <CardInspectButton
+                    <MageWarsCardInspectButton
                         title={title}
                         sourceCardId={cardId}
-                        compact={compact}
+                        sizeRatio={0.25}
+                        minSize={20}
+                        maxSize={96}
                         onInspect={onInspect!}
                     />
                 ) : null}
@@ -1692,11 +1667,12 @@ function ZoneFieldCard({
         >
             {primaryButton}
             {hasSecondaryInspect ? (
-                <CardInspectButton
+                <MageWarsCardInspectButton
                     title={title}
                     sourceCardId={cardId}
-                    compact={compact}
-                    readableCompact={compact}
+                    sizeRatio={0.25}
+                    minSize={20}
+                    maxSize={96}
                     onInspect={onInspect!}
                 />
             ) : null}
@@ -1835,10 +1811,12 @@ function ArenaAttachmentCard({
             <div className={cx('group relative shrink-0 overflow-visible', heightClass)} style={cardSizeStyle}>
                 {primaryButton}
                 {hasSecondaryInspect ? (
-                    <CardInspectButton
+                    <MageWarsCardInspectButton
                         title={title}
                         sourceCardId={object.sourceSpellCardId}
-                        compact
+                        sizeRatio={0.25}
+                        minSize={20}
+                        maxSize={96}
                         placement="outside"
                         onInspect={onInspect!}
                     />

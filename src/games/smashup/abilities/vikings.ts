@@ -84,6 +84,14 @@ type VikingBaseLonghouseMinionPromptContext = VikingPromptContext & {
     ownerId: PlayerId;
 };
 type VikingBerserkMinionPromptContext = VikingPromptContext & HandChoice;
+type VikingRevealEligiblePromptContext = VikingPromptContext & {
+    actingPlayerId: PlayerId;
+    targetPlayerId: PlayerId;
+    cardUid: string;
+    defId: string;
+    ownerId: PlayerId;
+    reason: 'vikings_shield_maiden' | 'base_drakkar';
+};
 
 function createVikingPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: MatchState<SmashUpCore>,
@@ -444,20 +452,57 @@ function resolveRevealAndStealTopCard(params: {
         ),
     ];
     if (eligible) {
-        events.push(
-            transferCard(
-                deckInfo.card.uid,
-                deckInfo.card.defId,
-                params.targetPlayerId,
-                params.actingPlayerId,
-                params.reason,
-                params.timestamp,
-                deckInfo.card.owner,
-            ),
-        );
+        return {
+            events,
+            context: createVikingPromptContext(params.state, params.actingPlayerId, params.timestamp, {
+                actingPlayerId: params.actingPlayerId,
+                targetPlayerId: params.targetPlayerId,
+                cardUid: deckInfo.card.uid,
+                defId: deckInfo.card.defId,
+                ownerId: deckInfo.card.owner,
+                reason: params.reason,
+            }),
+            nextProgram: vikingsRevealEligiblePromptProgram,
+        };
     }
     return { events };
 }
+
+const vikingsRevealEligiblePromptProgram = createPromptProgram<VikingRevealEligiblePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vikings_reveal_eligible',
+    buildInteraction: (context) => createSimpleChoice(
+        `vikings_reveal_eligible_${context.reason}_${context.now}`,
+        context.playerId,
+        context.reason === 'base_drakkar'
+            ? '德拉卡尔号：是否将这张合格牌加入你的手牌？'
+            : '盾女：是否将这张合格牌加入你的手牌？',
+        [
+            {
+                id: 'draw',
+                label: '加入手牌',
+                labelKey: 'ui.vikings_reveal_eligible_draw_option',
+                value: { draw: true },
+                displayMode: 'button' as const,
+            },
+            createSkipOption('放回牌库顶', 'ui.vikings_reveal_eligible_skip_option'),
+        ],
+        { sourceId: 'vikings_reveal_eligible', targetType: 'generic' },
+    ),
+    onResolve: ({ context, value, timestamp }) => {
+        if (!(value as { draw?: boolean } | undefined)?.draw) return { events: [] };
+        return {
+            events: [transferCard(
+                context.cardUid,
+                context.defId,
+                context.targetPlayerId,
+                context.actingPlayerId,
+                context.reason,
+                timestamp,
+                context.ownerId,
+            )],
+        };
+    },
+});
 
 const vikingsHuscarlPromptProgram = createPromptProgram<VikingBuffPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'vikings_huscarl',

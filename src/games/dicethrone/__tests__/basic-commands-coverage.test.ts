@@ -2188,6 +2188,59 @@ describe('AI legal actions', () => {
         expect(rerollAction).toBeDefined();
     });
 
+    it('线上反馈：奖励骰上下文缺失时仍应从 pending settlement 枚举可重掷骰子', () => {
+        const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);
+        state.sys.phase = 'main1';
+        state.core.activePlayerId = '0';
+        state.core.dice = [];
+        state.core.rollDiceCount = 0;
+        state.core.rollCount = 0;
+        state.core.rollConfirmed = false;
+        const settlement = {
+            id: 'online-card-give-hand-pending-only',
+            sourceAbilityId: 'card-give-hand',
+            attackerId: '0',
+            targetId: '3',
+            dice: [{ index: 0, value: 6, face: 'fist' }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            readyToSettle: false,
+            allowDiceModification: true,
+        } satisfies PendingBonusDiceSettlement;
+        state.core.pendingBonusDiceSettlement = settlement;
+        delete state.core.currentRollContext;
+        injectRawBlockingInteraction(state, {
+            id: 'dt-dice-select-card-give-hand-pending-only',
+            kind: 'multistep-choice',
+            playerId: '3',
+            data: {
+                title: 'interaction.selectDiceToReroll',
+                sourceId: 'card-give-hand',
+                minSteps: 1,
+                initialResult: { selectedDiceIds: [] },
+                allowedDieIds: [0],
+                meta: {
+                    dtType: 'selectDie',
+                    selectCount: 1,
+                    diceOwnerId: '0',
+                    targetOpponentDice: true,
+                },
+            },
+        });
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '3', state });
+        expect(actions).not.toContainEqual(expect.objectContaining({
+            kind: 'interaction-cancel',
+            metadata: expect.objectContaining({ reason: 'empty-options' }),
+        }));
+        expect(actions.some((action) => action.kind === 'interaction-multistep'
+            && action.commands.some((command) => (
+                command.type === 'REROLL_DIE'
+                && (command.payload as { dieId?: number }).dieId === 0
+            )))).toBe(true);
+    });
+
     it('线上反馈：main1 中抬一手应从已确认普通骰区生成可执行重掷，而不是空选项取消', () => {
         const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);
         state.sys.phase = 'main1';

@@ -440,14 +440,17 @@ async function expectReferenceSizedInspectButton(card: Locator, inspectButton: L
     ]);
     expect(cardBox, `${label} 所属卡牌必须有可量测尺寸`).not.toBeNull();
     expect(buttonBox, `${label} 放大镜必须有可量测尺寸`).not.toBeNull();
-    expect(buttonBox!.width, `${label} 放大镜命中区不应小于 24px`).toBeGreaterThanOrEqual(24);
-    expect(buttonBox!.height, `${label} 放大镜命中区不应小于 24px`).toBeGreaterThanOrEqual(24);
-    expect(buttonBox!.width, `${label} 放大镜可见面不能大到抢卡牌本体点击区`).toBeLessThanOrEqual(34);
-    expect(buttonBox!.height, `${label} 放大镜可见面不能大到抢卡牌本体点击区`).toBeLessThanOrEqual(34);
+    const inspectRatio = buttonBox!.width / cardBox!.width;
+    expect(inspectRatio, `${label} 放大镜视觉宽度应接近卡牌宽度四分之一`).toBeGreaterThanOrEqual(0.2);
+    expect(inspectRatio, `${label} 放大镜视觉宽度应接近卡牌宽度四分之一`).toBeLessThanOrEqual(0.3);
+    expect(buttonBox!.width / buttonBox!.height, `${label} 放大镜必须保持正方形`).toBeCloseTo(1, 2);
+    await expect(inspectButton).toHaveAttribute('data-card-inspect-variant', 'outline');
+    const backgroundColor = await inspectButton.evaluate((element) => getComputedStyle(element).backgroundColor);
+    expect(backgroundColor, `${label} 默认放大镜不能使用实心底`).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
     expect(
-        buttonBox!.width / cardBox!.width,
+        inspectRatio,
         `${label} 放大镜视觉权重必须小于卡面主体，不能让右上常点区域变成放大`,
-    ).toBeLessThanOrEqual(0.19);
+    ).toBeLessThanOrEqual(0.3);
 }
 
 async function clickLocatorCenterAsPlayer(page: Page, locator: Locator, label: string) {

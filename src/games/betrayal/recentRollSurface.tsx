@@ -36,6 +36,8 @@ export function RecentRollPanel({
   resultStageClassName = "",
   compactRowsClassName = "",
   actorLabel = null,
+  modifierEffectLabel = null,
+  resultReadable = true,
   actionSlot = null,
   onDiceSettledChange,
 }: {
@@ -62,6 +64,8 @@ export function RecentRollPanel({
   resultStageClassName?: string;
   compactRowsClassName?: string;
   actorLabel?: string | null;
+  modifierEffectLabel?: string | null;
+  resultReadable?: boolean;
   actionSlot?: React.ReactNode;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
@@ -240,10 +244,30 @@ export function RecentRollPanel({
       className={`h-full w-full min-w-0 ${diceClassName ?? ""}`}
     />
   );
+  const isEventRoll = roll.kind === "eventTraitCheck" || roll.kind === "eventDiceRoll";
+  const isEventRollStillRolling = isEventRoll && !resultReadable;
   const diceStagePromptLabel = rerollSelection?.promptLabel ?? "";
   const shouldShowDiceStagePrompt = Boolean(diceStagePromptLabel);
   const diceStageWithPrompt = (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-visible">
+      {isEventRollStillRolling ? (
+        <div className="pointer-events-none mb-1 grid justify-items-center gap-0.5 px-2 py-0.5 drop-shadow-[0_2px_7px_rgba(0,0,0,0.72)]">
+          <div
+            data-testid="betrayal-recent-roll-rolling-status"
+            data-result-role="rolling-status"
+            className="text-[12px] font-semibold tracking-[0.12em] text-[#f7e6ab]"
+          >
+            {t("board.roll.rolling")}
+          </div>
+          <div
+            data-testid="betrayal-recent-roll-rolling-label"
+            data-result-role="rolling-label"
+            className="text-[11px] font-semibold tracking-[0.08em] text-[#d8c38b]"
+          >
+            {roll.rollLabel ?? t("board.roll.fallbackLabel")}
+          </div>
+        </div>
+      ) : null}
       <div
         data-testid="betrayal-reroll-prompt-outside-dice"
         aria-hidden={shouldShowDiceStagePrompt ? undefined : "true"}
@@ -330,7 +354,7 @@ export function RecentRollPanel({
       </span>
     </div>
   ) : null;
-  const resultStage = (
+  const resultStage = isEventRollStillRolling ? null : (
     <div
       data-testid="betrayal-recent-roll-result-stage"
       data-result-layout="split-primary-total"
@@ -462,6 +486,15 @@ export function RecentRollPanel({
             {primaryOutcomeLabel}
           </div>
         ) : null}
+        {modifierEffectLabel ? (
+          <div
+            data-testid="betrayal-recent-roll-modifier-effect"
+            data-result-role="modifier-effect"
+            className="mt-1 max-w-full whitespace-normal break-words text-[12px] font-semibold tracking-[0.03em] text-[#8fe7c3]"
+          >
+            {modifierEffectLabel}
+          </div>
+        ) : null}
         {showBreakdown && attackComparisonText ? (
           <div
             data-testid="betrayal-recent-roll-attack-comparison"
@@ -525,7 +558,9 @@ export function RecentRollPanel({
       ) : null}
     </div>
   );
-  const srSummary = (
+  const srSummary = isEventRollStillRolling ? (
+    <div className="sr-only">{t("board.roll.rolling")}</div>
+  ) : (
     <div className="sr-only">
       {actorLabel ? <span>{actorLabel}</span> : null}
       {showSource ? <span>{roll.sourceTitle}</span> : null}

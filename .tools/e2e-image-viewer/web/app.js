@@ -165,16 +165,18 @@ const detailMediaDimensions = (media) => {
   return { width: media.naturalWidth || 1, height: media.naturalHeight || 1 };
 };
 
+const detailFitScale = (naturalSize, availableWidth, availableHeight) => Math.min(
+  1,
+  availableWidth / Math.max(1, naturalSize.width),
+  availableHeight / Math.max(1, naturalSize.height),
+);
+
 const fitDetailMedia = () => {
   if (!detailMediaElement) return;
   detailNaturalSize = detailMediaDimensions(detailMediaElement);
   const availableWidth = Math.max(1, imageDetailViewport.clientWidth - 64);
   const availableHeight = Math.max(1, imageDetailViewport.clientHeight - 64);
-  detailTransform.scale = Math.min(
-    1,
-    detailNaturalSize.width <= availableWidth ? availableWidth / detailNaturalSize.width : 1,
-    detailNaturalSize.height <= availableHeight ? availableHeight / detailNaturalSize.height : 1,
-  );
+  detailTransform.scale = detailFitScale(detailNaturalSize, availableWidth, availableHeight);
   detailTransform.x = (imageDetailViewport.clientWidth - detailNaturalSize.width * detailTransform.scale) / 2;
   detailTransform.y = (imageDetailViewport.clientHeight - detailNaturalSize.height * detailTransform.scale) / 2;
   applyDetailTransform();

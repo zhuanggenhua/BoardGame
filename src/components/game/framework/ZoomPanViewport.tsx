@@ -6,6 +6,7 @@ import React, {
     useState,
     type ReactNode,
 } from 'react';
+import { logMobileRuntimeCritical } from '../../../lib/mobile/mobileRuntimeDebug';
 
 const DRAG_THRESHOLD = 5;
 const SCALE_EPSILON = 0.02;
@@ -72,6 +73,15 @@ const measureElementSize = (element: HTMLElement | null): ElementSize => {
 
     return { width, height };
 };
+
+const summarizeRect = (rect: DOMRect) => ({
+    left: Number(rect.left.toFixed(2)),
+    top: Number(rect.top.toFixed(2)),
+    width: Number(rect.width.toFixed(2)),
+    height: Number(rect.height.toFixed(2)),
+    right: Number(rect.right.toFixed(2)),
+    bottom: Number(rect.bottom.toFixed(2)),
+});
 
 const updateSizeState = (
     setSize: React.Dispatch<React.SetStateAction<ElementSize>>,
@@ -743,6 +753,18 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 : shellScaleX;
             const viewportCenterX = containerRect.width / 2 + fitCenterOffset.x * shellScaleX;
             const viewportCenterY = containerRect.height / 2 + fitCenterOffset.y * shellScaleY;
+            const targetCenterScreen = {
+                x: (elementRect.left + elementRect.right) / 2,
+                y: (elementRect.top + elementRect.bottom) / 2,
+            };
+            const viewportCenterScreen = {
+                x: containerRect.left + viewportCenterX,
+                y: containerRect.top + viewportCenterY,
+            };
+            const screenDelta = {
+                x: viewportCenterScreen.x - targetCenterScreen.x,
+                y: viewportCenterScreen.y - targetCenterScreen.y,
+            };
 
             let targetPosition;
             if (panToScale == null) {
@@ -826,6 +848,43 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 position: targetPosition,
             });
 
+            logMobileRuntimeCritical('ZoomPanViewport', 'focus-apply', {
+                panToTarget,
+                panInstructionKey,
+                panToScale: panToScale ?? null,
+                panBoundsMode,
+                targetTestId: targetEl.dataset.testid ?? null,
+                activeZoomLevel,
+                targetZoomLevel,
+                baseScale,
+                shellScaleX,
+                shellScaleY,
+                containerSize: {
+                    width: containerSize.width,
+                    height: containerSize.height,
+                },
+                contentSize: {
+                    width: contentSize.width,
+                    height: contentSize.height,
+                },
+                containerRect: summarizeRect(containerRect),
+                targetRect: summarizeRect(elementRect),
+                contentTransformBefore: contentEl.style.transform,
+                activePosition: {
+                    x: activePosition.x,
+                    y: activePosition.y,
+                },
+                fitCenterOffset: {
+                    x: fitCenterOffset.x,
+                    y: fitCenterOffset.y,
+                },
+                viewportCenterScreen,
+                targetCenterScreen,
+                screenDelta,
+                targetPosition,
+                nextViewport,
+            });
+
             clearAnimationTimer();
             setIsAnimating(true);
             if (targetZoomLevel !== currentZoomLevel) {
@@ -837,6 +896,38 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 setIsAnimating(false);
                 setSettledPanInstructionKey(panInstructionKey);
                 animationTimerRef.current = null;
+                if (!cancelled) {
+                    const settledContainerRect = containerEl.getBoundingClientRect();
+                    const settledTargetRect = targetEl.getBoundingClientRect();
+                    const settledViewportCenter = {
+                        x: settledContainerRect.left
+                            + settledContainerRect.width / 2
+                            + fitCenterOffset.x * shellScaleX,
+                        y: settledContainerRect.top
+                            + settledContainerRect.height / 2
+                            + fitCenterOffset.y * shellScaleY,
+                    };
+                    const settledTargetCenter = {
+                        x: (settledTargetRect.left + settledTargetRect.right) / 2,
+                        y: (settledTargetRect.top + settledTargetRect.bottom) / 2,
+                    };
+                    logMobileRuntimeCritical('ZoomPanViewport', 'focus-settled', {
+                        panToTarget,
+                        panInstructionKey,
+                        targetTestId: targetEl.dataset.testid ?? null,
+                        settledContainerRect: summarizeRect(settledContainerRect),
+                        settledTargetRect: summarizeRect(settledTargetRect),
+                        settledViewportCenter,
+                        settledTargetCenter,
+                        settledResidual: {
+                            x: settledTargetCenter.x - settledViewportCenter.x,
+                            y: settledTargetCenter.y - settledViewportCenter.y,
+                        },
+                        contentTransformAfter: contentEl.style.transform,
+                        activePositionAfter: nextViewport.position,
+                        activeZoomLevelAfter: nextViewport.zoomLevel,
+                    });
+                }
             }, 400);
         };
 

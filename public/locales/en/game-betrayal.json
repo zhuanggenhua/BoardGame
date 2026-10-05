@@ -986,6 +986,7 @@
     },
     "roll": {
       "fallbackLabel": "Dice Roll",
+      "rolling": "Dice rolling; waiting to settle",
       "bonus": "Bonus {{value}}",
       "noBonus": "No bonus",
       "diceSubtotal": "Dice faces {{value}}",
@@ -1013,6 +1014,10 @@
       "diceFaces": "Dice faces {{value}}",
       "cancelModifier": "Cancel",
       "confirmModifier": "Use {{card}}"
+      ,"modifierAppliedFlashlight": "Flashlight applied: +2 dice to this event trait check"
+      ,"modifierAppliedLantern": "Lantern applied: +2 dice to this event trait check"
+      ,"modifierAppliedCamera": "Magic Camera applied: this Knowledge check uses Sanity"
+      ,"modifierAppliedBook": "Book used: this non-combat check uses Knowledge"
     },
     "useEffects": {
       "move": "Move {{value}}",

@@ -574,8 +574,8 @@ describe('latest discovery presentation', () => {
       t: (key) => key,
     });
 
-    expect(panel.shouldShow).toBe(false);
-    expect(panel.shouldShowRecentRollReview).toBe(true);
+    expect(panel.shouldShow).toBe(true);
+    expect(panel.shouldShowRecentRollReview).toBe(false);
     expect(panel.shouldHideTableChromeForBlockingOverlay).toBe(false);
   });
 

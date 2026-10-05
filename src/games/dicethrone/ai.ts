@@ -90,7 +90,7 @@ const getDiceThronePhaseFromState = (state: DiceThroneState): TurnPhase => (
 const getAiActiveDice = (
     state: DiceThroneState,
     phase: TurnPhase = getDiceThronePhaseFromState(state),
-): DiceThroneCore['dice'] => getActiveDice(state.core, phase);
+): DiceThroneCore['dice'] => resolveCurrentRollContext(state.core, phase)?.dice ?? getActiveDice(state.core, phase);
 
 type DiceThroneStrategyTag =
     | 'damage-race'

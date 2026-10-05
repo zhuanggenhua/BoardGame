@@ -1014,6 +1014,15 @@ function expectSingleEventEffectResolutionStep(...expectedTexts: string[]) {
     ) {
         fireEvent.click(discoveryContinue);
     }
+    const returnToBoard = screen.queryByTestId('betrayal-discovery-continue');
+    if (
+        returnToBoard
+        && returnToBoard.textContent?.includes('返回牌桌')
+        && !screen.queryByTestId('betrayal-damage-allocation-panel')
+        && !returnToBoard.hasAttribute('disabled')
+    ) {
+        fireEvent.click(returnToBoard);
+    }
 }
 
 async function expectEventDamageAllocation(
@@ -1039,6 +1048,22 @@ async function expectEventDamageAllocation(
     for (const trait of expectedTraits) {
         expect(damageTraits).toHaveTextContent(trait);
     }
+}
+
+async function completeEventDamageAllocation(traitIncreaseTestId: string) {
+    fireEvent.click(screen.getByTestId(traitIncreaseTestId));
+    expect(screen.getByTestId('betrayal-damage-allocation-confirm')).not.toBeDisabled();
+    fireEvent.click(screen.getByTestId('betrayal-damage-allocation-confirm'));
+    await waitFor(() => {
+        expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
+    });
+    const returnToBoard = screen.queryByTestId('betrayal-discovery-continue');
+    if (returnToBoard && returnToBoard.textContent?.includes('返回牌桌')) {
+        fireEvent.click(returnToBoard);
+    }
+    await waitFor(() => {
+        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+    });
 }
 
 function expectDiscoveryResolutionLedgerTraceOnly(expectedCount: number) {
@@ -5929,10 +5954,12 @@ describe('Betrayal Board foundation', () => {
         await confirmPendingRoomPlacement({ confirmEventRoll: false });
 
         expect(screen.queryByTestId('betrayal-discovery-visible-detail')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('返回牌桌');
+        expect(screen.getByTestId('betrayal-discovery-continue')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await waitFor(() => {
             expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
-        }, { timeout: 5000 });
+        });
     });
 
     it('事件骰造成伤害并分配完成后不再复活发现牌返回按钮', async () => {
@@ -5972,20 +5999,11 @@ describe('Betrayal Board foundation', () => {
             expect.stringContaining('事件牌 标本剥制'),
         );
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到 1 点物理伤害');
-        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('返回牌桌');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
+        await expectEventDamageAllocation('标本剥制', '分配 1 点物理伤害', ['力量', '速度'], 'discovery-card');
 
-        await waitFor(() => {
-            expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();
-        }, { timeout: 5000 });
-        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
-
-        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-might-increase'));
-        expect(screen.getByTestId('betrayal-damage-allocation-confirm')).not.toBeDisabled();
-        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-confirm'));
-
-        await waitFor(() => {
-            expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
-        });
+        await completeEventDamageAllocation('betrayal-damage-allocation-trait-might-increase');
         expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-endTurn')).toBeInTheDocument();
     });
@@ -6469,6 +6487,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-rabbit-foot-dice')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
         expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('返回牌桌');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await waitFor(() => {
             expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
         }, { timeout: 5000 });
@@ -9926,8 +9946,8 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
         await confirmPendingRoomPlacement();
 
-        await expectEventDamageAllocation('一声呼救', '分配 1 点精神伤害', ['知识', '神志']);
-        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        await expectEventDamageAllocation('一声呼救', '分配 1 点精神伤害', ['知识', '神志'], 'discovery-card');
+        await completeEventDamageAllocation('betrayal-damage-allocation-trait-knowledge-increase');
     });
 
     it('花团锦簇待选事件在真实页面展示地面/地下室候选并强制温室', () => {
@@ -10418,8 +10438,8 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        await expectEventDamageAllocation('地狱蝙蝠', '分配 1 点物理伤害', ['力量', '速度']);
-        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        await expectEventDamageAllocation('地狱蝙蝠', '分配 1 点物理伤害', ['力量', '速度'], 'discovery-card');
+        await completeEventDamageAllocation('betrayal-damage-allocation-trait-might-increase');
     });
 
     it('轮到约拿了待选事件会在真实页面只展示可弃置的非武器物品并承接拒绝精神伤害', async () => {
@@ -11104,7 +11124,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 -1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
         expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('返回牌桌');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await waitFor(() => {
             expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
         }, { timeout: 5000 });

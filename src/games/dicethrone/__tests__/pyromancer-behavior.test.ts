@@ -535,6 +535,24 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             const dmgEvents = eventsOfType(events, 'DAMAGE_DEALT');
             expect((dmgEvents[0] as any).payload.amount).toBe(10);
         });
+
+        it('4点火焰精通现场：点燃原始伤害为12，6点护盾后净掉血为6', () => {
+            const state = createState({ attackerFM: 2, defenderHP: 50 });
+            state.players['1'].damageShields = [{
+                value: 6,
+                sourceId: 'card-next-time',
+                preventStatus: false,
+            }];
+            const handler = getCustomActionHandler('ignite-resolve')!;
+            const events = handler(buildCtx(state, 'ignite-resolve'));
+
+            const damageEvent = eventsOfType<any>(events, 'DAMAGE_DEALT')[0];
+            expect(damageEvent.payload.amount).toBe(12);
+
+            const resolved = reduceAll(state, events);
+            expect(resolved.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
+            expect(resolved.players['1'].damageShields).toEqual([]);
+        });
     });
 
     // ========================================================================

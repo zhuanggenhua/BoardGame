@@ -1271,8 +1271,8 @@ describe('smashup', () => {
             },
         };
 
-        expect(getPlayerEffectivePowerOnBase(withSixCards, withSixCards.bases[0], 0, '0')).toBe(3);
-        expect(getPlayerEffectivePowerOnBase(withSevenCards, withSevenCards.bases[0], 0, '0')).toBe(3);
+        expect(getPlayerEffectivePowerOnBase(withSixCards, withSixCards.bases[0], 0, '0')).toBe(2);
+        expect(getPlayerEffectivePowerOnBase(withSevenCards, withSevenCards.bases[0], 0, '0')).toBe(2);
     });
 
     it('奥术守护者使用天赋后抽 1 张牌并标记已使用', () => {
@@ -2060,7 +2060,7 @@ describe('smashup', () => {
         );
     });
 
-    it('远古诅咒允许打到受保护随从，但效果会被拦截并给出友好提示', () => {
+    it('远古诅咒不能把受保护随从作为目标', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -2086,24 +2086,14 @@ describe('smashup', () => {
             payload: { cardUid: 'curse-protected', targetBaseIndex: 0, targetMinionUid: 'protected-minion' },
         } as const;
 
-        expect(SmashUpDomain.validate(makeMatchState(core), command)).toMatchObject({ valid: true });
+        expect(SmashUpDomain.validate(makeMatchState(core), command)).toMatchObject({
+            valid: false,
+            error: '该随从受到保护，不能成为此行动卡的目标',
+        });
 
         const result = runCommand(makeMatchState(core), command, FIXED_RANDOM);
-
-        expect(result.events).toContainEqual(expect.objectContaining({
-            type: SU_EVENTS.ABILITY_FEEDBACK,
-            payload: expect.objectContaining({
-                playerId: '0',
-                messageKey: 'feedback.target_protected',
-                tone: 'warning',
-            }),
-        }));
-        expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'protected-minion')?.attachedActions).not.toContainEqual(
-            expect.objectContaining({ uid: 'curse-protected' }),
-        );
-        expect(result.finalState.core.players['0'].discard).toContainEqual(
-            expect.objectContaining({ uid: 'curse-protected', defId: 'ancient_egyptians_ancient_curse_pod' }),
-        );
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('该随从受到保护，不能成为此行动卡的目标');
     });
 
     it('翻开埋葬的远古诅咒在仅有一个跨基地合法目标时也等待玩家确认，并继续进入远古诅咒确认交互', () => {

@@ -18,6 +18,7 @@ import {
     replaceCurrentRollContext,
 } from './rollContext';
 import {
+    applyDiceThroneGrantedShieldToPendingDamage,
     applyDiceThroneCommittedDamageShieldConsumption,
     commitDiceThroneDamagePrevention,
 } from './damagePreventionCommit';
@@ -678,8 +679,20 @@ export const handleDamageShieldGranted: EventHandler<Extract<DiceThroneEvent, { 
         ? { value: 0, sourceId, preventStatus, reductionPercent }
         : { value, sourceId, preventStatus };
 
+    const shieldIndex = target.damageShields?.length ?? 0;
+    const pendingDamageResult = state.pendingDamage?.targetPlayerId === targetId
+        ? applyDiceThroneGrantedShieldToPendingDamage({
+            pendingDamage: state.pendingDamage,
+            targetId,
+            shield,
+            shieldIndex,
+            isUltimateDamage: state.pendingAttack?.isUltimate === true,
+        })
+        : undefined;
+
     return {
         ...state,
+        pendingDamage: pendingDamageResult?.pendingDamage ?? state.pendingDamage,
         players: {
             ...state.players,
             [targetId]: {

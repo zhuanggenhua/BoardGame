@@ -3152,17 +3152,21 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(destroyed.success).toBe(true);
-        expect(destroyed.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_immediate_extra_minion');
+        expect(
+            getPromptSourceId(getSimpleChoicePrompt(destroyed.finalState, 'shapeshifters_doppelganger_search')),
+        ).toBe('shapeshifters_doppelganger_search');
         expect(destroyed.finalState.core.players['0'].discard.map(card => card.uid)).toContain('dopp-a');
 
         const resolved = resolveInteractionChain(destroyed.finalState, prompt => {
+            if (getPromptSourceId(prompt) === 'shapeshifters_doppelganger_search') {
+                expect(findInteractionOption(prompt, candidate => candidate.value?.skip === true)).toBeTruthy();
+                return chooseCardOptionRejectingUnexpectedImmediateExtraMinion(prompt, 'candidate-b');
+            }
             if (prompt?.data?.sourceId === 'smashup_immediate_extra_minion') {
                 const skip = findInteractionOption(prompt, candidate => candidate.value?.skip === true);
                 return { optionId: skip.id };
             }
-            expect(prompt?.data?.sourceId).toBe('shapeshifters_doppelganger_search');
-            expect(findInteractionOption(prompt, candidate => candidate.value?.skip === true)).toBeTruthy();
-            return chooseCardOptionRejectingUnexpectedImmediateExtraMinion(prompt, 'candidate-b');
+            throw new Error(`unexpected prompt source: ${getPromptSourceId(prompt)}`);
         });
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('candidate-b');

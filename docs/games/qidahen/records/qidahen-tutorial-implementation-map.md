@@ -20,10 +20,14 @@
 
 ```text
 welcome
+  -> turn-flow
   -> wheel-first
+  -> wheel-rule
   -> wheel-move
+  -> wheel-branch-stop (only for non-mainline wheel branches)
   -> wheel-result
-  -> wheel-branch-finish
+  -> hand-action-order
+  -> grant-pardon-rule
   -> pick-action
   -> pay-cards
   -> choose-grant-pardon-target
@@ -35,8 +39,8 @@ welcome
 
 - 起手 3 张手牌、上限 15 张；没有超限时 `handLimitDiscardSelection` 必须为空。
 - `wheel-first` 是正式开局检查与轮盘入口说明；第一个真实点击仍是 `wheel-move`，不是弃牌、检视、士气或重复轮盘说明。
-- `wheel-move` 使用正式公共轮盘点击；`wheel-result` 读取自动落点结算。
-- `wheel-branch-finish` 只解释轮盘落点如何把流程带回下一项一级行动，不新增状态条或代操作按钮。
+- `wheel-move` 使用正式公共轮盘点击；主线固定承接 `move-1-free` 对应的征兵训练落点，`wheel-branch-stop` 只承接其它合法轮盘分支，不能进入主线后续步骤。
+- `hand-action-order` 只解释大明四个同层势力行动；`grant-pardon-rule` 只承接规则原文，不把教程导航写进玩家文案。
 - `pick-action` 和 `pay-cards` 使用正式手牌行动入口与支付面板。
 - 目标选择必须落到真实地图目标；`action-result` 必须读取实际控制权变化。
 - `finish` 只结束基础教程，不跳到其它专题。

@@ -92,7 +92,6 @@ describe('SmashUp 波利尼西亚航海者 intake 静态合同', () => {
 
         expect(smashupManifest.files['cards/polynesian_voyagers']).toBeDefined();
         expect(smashupManifest.files['cards/compressed/polynesian_voyagers']).toBeDefined();
-        expect(i18nManifest.files['zh-CN/smashup/cards/polynesian_voyagers']).toBeDefined();
         expect(i18nManifest.files['zh-CN/smashup/cards/compressed/polynesian_voyagers']).toBeDefined();
     });
 

@@ -15,6 +15,12 @@ import {
     buildDiceThroneTokenResponseFrameIdFromPendingDamageId,
 } from '../domain/timingOpportunityIdentities';
 import type { DamageDealtEvent } from '../domain/types';
+import {
+    applyExistingDamagePreventionToPendingDamage,
+    createPendingDamage,
+    createTokenResponseRequestedEvent,
+    finalizeTokenResponse,
+} from '../domain/tokenResponse';
 import { fixedRandom } from './test-utils';
 
 describe('DiceThrone damage prevention commit', () => {
@@ -134,6 +140,52 @@ describe('DiceThrone damage prevention commit', () => {
         expect(afterDamage.players['0'].resources[RESOURCE_IDS.HP]).toBe(42);
         expect(afterDamage.players['0'].damageShields).toEqual([]);
         expect(committedEvent.payload.actualDamage).toBe(8);
+    });
+
+    it('回归：神圣防御预提交后再打出下次一定，收口必须继续消耗新护盾', () => {
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
+        core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        core.players['1'].damageShields = [
+            { value: 3, sourceId: 'holy-defense', preventStatus: false },
+        ];
+
+        const initialPendingDamage = createPendingDamage(
+            '0',
+            '1',
+            10,
+            'beforeDamageReceived',
+            'test-attack',
+            1,
+            undefined,
+            'attack',
+        );
+        const committedPendingDamage = applyExistingDamagePreventionToPendingDamage(
+            core,
+            initialPendingDamage,
+        );
+        expect(committedPendingDamage.currentDamage).toBe(7);
+        expect(committedPendingDamage.preventionCommitted).toBe(true);
+
+        let state = reduce(core, createTokenResponseRequestedEvent(committedPendingDamage));
+        state = reduce(state, {
+            type: 'DAMAGE_SHIELD_GRANTED',
+            payload: {
+                targetId: '1',
+                value: 6,
+                sourceId: 'card-next-time',
+                preventStatus: false,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: 2,
+        });
+
+        const closeEvents = finalizeTokenResponse(state.pendingDamage!, state, 3);
+        for (const event of closeEvents) {
+            state = reduce(state, event);
+        }
+
+        expect(state.players['1'].resources[RESOURCE_IDS.HP]).toBe(49);
+        expect(state.players['1'].damageShields).toEqual([]);
     });
 
     it('DiceThroneDomain.commitEvent 通过通用 Opportunity composer 返回护盾提交事件', () => {

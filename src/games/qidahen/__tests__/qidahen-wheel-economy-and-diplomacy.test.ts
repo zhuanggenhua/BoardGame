@@ -42,7 +42,7 @@ it('轮盘进入军屯时会给己方区域加兵并摸牌', () => {
         expect(next.actionWheelPosition).toBe('wheel-military-farm');
         expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(3);
         expect(next.factions.ming.handCount).toBe(5);
-        expect(factionHandCards(next, 'ming')).toHaveLength(6);
+        expect(factionHandCards(next, 'ming')).toHaveLength(5);
         expect(next.drawPileCount).toBe(18);
         expect(next.lastSeasonSummary?.title).toBe('轮盘军屯');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('获得 2 张手牌');

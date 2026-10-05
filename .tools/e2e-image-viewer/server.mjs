@@ -618,18 +618,17 @@ const normalizeIndexItems = (rawIndex) => {
   };
 };
 
-const indexSourceCandidates = (sourcePath, indexPath, dirPath) => {
+const indexSourceCandidates = (sourcePath, indexPath) => {
   if (path.isAbsolute(sourcePath)) return [sourcePath];
   const candidates = [
     path.resolve(path.dirname(indexPath), sourcePath),
     path.resolve(PROJECT_ROOT, sourcePath),
-    path.resolve(dirPath, sourcePath),
   ];
   return [...new Set(candidates.map((candidate) => path.normalize(candidate)))];
 };
 
 const findIndexSourceForDirectory = (sourcePath, indexPath, dirPath, dirKeys) => {
-  for (const candidate of indexSourceCandidates(sourcePath, indexPath, dirPath)) {
+  for (const candidate of indexSourceCandidates(sourcePath, indexPath)) {
     const parentDir = path.dirname(candidate);
     const parentKeys = comparableDirectoryKeys(parentDir);
     if (sharesAnyKey(parentKeys, dirKeys)) {
@@ -669,12 +668,19 @@ const readMediaIndex = (dirPath) => {
 
       const fileName = path.basename(matchedPath);
       const label = rawItem.label ?? rawItem.title ?? rawItem.name ?? "";
-      const description = rawItem.transition ?? rawItem.description ?? rawItem.note ?? "";
-      if (!label && !description) continue;
+      const rawDescription = rawItem.transition ?? rawItem.description ?? rawItem.note ?? "";
+      if (!label && !rawDescription) continue;
+
+      // Canonical evidence indexes may intentionally provide one player-facing
+      // behavior sentence without a second technical label. Use that sentence
+      // as the viewer title so the index and detail views say the same thing.
+      const description = String(rawDescription || "");
+      const behaviorSentence = description.replace(/^图片表达：\s*/u, "").trim();
+      const hasBehaviorSentence = !label && description.startsWith("图片表达：") && behaviorSentence.length > 0;
 
       const entry = {
-        displayTitle: String(label || displayTitleForFile(fileName)),
-        description: String(description || ""),
+        displayTitle: String(label || (hasBehaviorSentence ? behaviorSentence : displayTitleForFile(fileName))),
+        description: String(label ? description : (hasBehaviorSentence ? "" : description)),
       };
       exact.set(fileName, entry);
       matchedCount += 1;

@@ -96,4 +96,39 @@ describe('DiceThrone 三人混战', () => {
         expect(state.core.pendingAttack?.skirmishLeaderBonusDrawn).toBe(true);
     });
 
+    it('三人局旧状态 defenderId=null 时，结算攻击仍会打开目标选择', () => {
+        const playerIds = ['0', '1', '2'] as const;
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        let state = createNoResponseSetup()(Array.from(playerIds), fixedRandom);
+
+        const run = (input: ReturnType<typeof cmd>) => {
+            const command = {
+                type: input.type,
+                playerId: input.playerId,
+                payload: input.payload,
+                timestamp: Date.now(),
+            } as DiceThroneCommand;
+            const result = executePipeline(pipelineConfig, state, command, fixedRandom, Array.from(playerIds));
+            expect(result.success, `${input.type}: ${result.error ?? 'unknown error'}`).toBe(true);
+            state = result.state as typeof state;
+        };
+
+        run(cmd('ADVANCE_PHASE', '0'));
+        run(cmd('ROLL_DICE', '0'));
+        run(cmd('CONFIRM_ROLL', '0'));
+        run(cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }));
+
+        expect(state.sys.phase).toBe('offensiveRoll');
+        expect(state.core.pendingAttack).not.toBeNull();
+        state.core.pendingAttack = {
+            ...state.core.pendingAttack!,
+            defenderId: null as any,
+        };
+
+        run(cmd('ADVANCE_PHASE', '0'));
+
+        expect(state.sys.phase).toBe('targetingRoll');
+        expect(getCurrentInteractionSummary(state).kind).toBe('dt:defender-choice');
+    });
+
 });

@@ -352,8 +352,8 @@ describe('GameHUD', () => {
         );
 
         const fabMenu = screen.getByTestId('fab-menu-stub');
-        expect(fabMenu).toHaveAttribute('data-fab-position', 'top-right');
-        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:betrayal:v1');
+        expect(fabMenu).toHaveAttribute('data-fab-position', 'bottom-right');
+        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:betrayal:v2');
     });
 
     it('Mage Wars 游戏内悬浮菜单默认避开底部准备牌区', () => {

@@ -5,7 +5,7 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { uncoverBuriedCard } from '../../domain/bury';
 import { clearOngoingEffectRegistry, collectTriggers } from '../../domain/ongoingEffects';
-import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
+import { clearPowerModifierRegistry, getEffectivePower } from '../../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { defaultTestRandom, runCommand } from '../testRunner';
@@ -61,6 +61,27 @@ describe('ancient_egyptians_plague_of_locusts onPlay', () => {
         const current = getSimpleChoicePrompt(result.finalState, 'ancient_egyptians_plague_of_locusts');
         expect(getPromptSourceId(current)).toBe('ancient_egyptians_plague_of_locusts');
         expect(getPromptTargetType(current)).toBe('base');
+    });
+});
+
+describe('ancient_egyptians_priest_of_anubis ongoing power', () => {
+    it('对手埋葬牌不应给己方阿努比斯祭司 +2', () => {
+        const priest = makeMinion('priest-1', 'ancient_egyptians_priest_of_anubis', '0', 4);
+        const core = makeState({
+            bases: [makeBase({
+                defId: 'base_pyramids',
+                minions: [priest],
+                buriedCards: [{
+                    uid: 'enemy-buried',
+                    defId: 'buried_unknown',
+                    trueOwnerId: '1',
+                    controllerId: '1',
+                    buriedFrom: 'hand',
+                } as any],
+            })],
+        });
+
+        expect(getEffectivePower(core, priest, 0)).toBe(4);
     });
 });
 

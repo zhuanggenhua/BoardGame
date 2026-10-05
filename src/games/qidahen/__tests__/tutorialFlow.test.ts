@@ -239,11 +239,14 @@ describe('qidahen tutorial flow', () => {
         expect(collectNextTutorialChain('korea-and-special-map-rules')).toEqual([]);
         expect(stepIdsOf('basic-opening')).toEqual([
             'welcome',
+            'turn-flow',
             'wheel-first',
+            'wheel-rule',
             'wheel-move',
-            'wheel-path-mismatch',
+            'wheel-branch-stop',
             'wheel-result',
-            'action-overview',
+            'hand-action-order',
+            'grant-pardon-rule',
             'pick-action',
             'pay-cards',
             'choose-grant-pardon-target',
@@ -378,11 +381,28 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
+        expect(state.sys.tutorial.step?.id).toBe('turn-flow');
+        expect((state.core as any).turnPhase).toBe('action-window');
+        expect((state.core as any).wheelActionUsed).toBe(false);
+        expect((state.core as any).factionActionUsed).toBe(false);
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
         expect(state.sys.tutorial.step?.id).toBe('wheel-first');
         expect((state.core as any).turnPhase).toBe('action-window');
         expect((state.core as any).handLimitDiscardSelection).toBeNull();
         expect((state.core as any).factions.ming.handCount)
             .toBeLessThanOrEqual((state.core as any).factions.ming.handLimit);
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('wheel-rule');
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -412,8 +432,15 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('action-overview');
+        expect(state.sys.tutorial.step?.id).toBe('hand-action-order');
         expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-actions-zone');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('grant-pardon-rule');
         expect((state.core as any).actionChoices.map((choice: any) => choice.id)).toEqual([
             'raid',
             'recruit',
@@ -493,30 +520,26 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelFirst).toContain('3 张手牌');
         expect(basic.wheelFirst).toContain('15 张');
         expect(basic.wheelFirst).toContain('不需要弃牌');
-        expect(basic.wheelMove).toContain('前进 1、2 或 3 格');
-        expect(basic.wheelMove).toContain('固定选择「免费走 1」');
-        expect(basic.wheelMove).toContain('不能继续后面的征兵训练链');
-        expect(basic.wheelPathMismatch).toContain('上一步');
-        expect(basic.wheelPathMismatch).toContain('免费走 1');
-        expect(basic.wheelResult).toContain('前进 1 格');
-        expect(basic.wheelResult).toContain('进入征兵训练');
+        expect(basic.wheelRule).toContain('前进 1、2 或 3 格');
+        expect(basic.wheelRule).not.toContain('进入征兵训练');
+        expect(basic.wheelMove).toBe('现在选择征兵训练。');
+        expect(basic.wheelBranchStop).toBe('这个轮盘落点不是征兵训练，后续征兵训练链无法继续。');
+        expect(basic.wheelResult).toBe('征兵训练已结算。先看地图上的新增部队。');
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
-        expect(basic.actionOverview).toContain('手牌行动（选 1 种执行）');
-        expect(basic.actionOverview).toContain('大明势力行动');
-        expect(basic.actionOverview).toContain('突袭作战');
-        expect(basic.actionOverview).toContain('征召军队');
-        expect(basic.actionOverview).toContain('赐印招安');
-        expect(basic.actionOverview).toContain('驱虎吞狼');
-        expect(basic.actionOverview).toContain('赐印招安');
-        expect(basic.actionOverview).toContain('读完后点下一步');
-        expect(basic.actionOverview.length).toBeLessThan(120);
-        expect(basic.actionOverview).not.toContain('四项之间没有规则规定的固定先后');
-        expect(basic.actionOverview).not.toContain('示例顺序');
-        expect(basic.pickAction).toContain('赐印招安：弃 3 张手牌');
-        expect(basic.pickAction).toContain('必须由被指定的玩家选择部队');
-        expect(basic.pickAction).toContain('读完后点击「赐印招安」');
-        expect(basic.actionResult).toContain('转换为大明部队');
+        expect(basic.turnFlow).toContain('顺序由玩家决定');
+        expect(basic.turnFlow).not.toContain('示范路径');
+        expect(basic.handActionOrder).toContain('手牌行动每回合选 1 项');
+        expect(basic.handActionOrder).toContain('没有固定先后');
+        expect(basic.handActionOrder).not.toContain('示例顺序不代表规则顺序');
+        expect(basic.handActionOrder).toContain('突袭作战');
+        expect(basic.handActionOrder).toContain('征召军队');
+        expect(basic.handActionOrder).toContain('赐印招安');
+        expect(basic.handActionOrder).toContain('驱虎吞狼');
+        expect(basic.grantPardonRule).toContain('赐印招安：弃 3 张手牌');
+        expect(basic.grantPardonRule).toContain('由被指定的玩家选择一支与大明控制区相邻的部队');
+        expect(basic.pickAction).toBe('现在选择赐印招安。');
+        expect(basic.actionResult).toContain('转为大明部队');
 
         for (const text of [zhTutorialText, enTutorialText]) {
             expect(text).not.toContain('正式效果已经结算');
@@ -526,6 +549,12 @@ describe('qidahen tutorial flow', () => {
             expect(text).not.toContain('formal result has resolved');
             expect(text).not.toContain('pending-resolution button');
             expect(text).not.toContain('another system gate');
+            expect(text).not.toContain('点击“上一步”');
+            expect(text).not.toContain('Click Previous');
+            expect(text).not.toContain('本教程');
+            expect(text).not.toContain('This tutorial');
+            expect(text).not.toContain('本章示范');
+            expect(text).not.toContain('This chapter demonstrates');
         }
         expect(zhTutorialText).not.toContain('结算摘要');
         expect(enTutorialText).not.toContain('resolution summary');
@@ -690,6 +719,16 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
 
         expect(state.sys.tutorial.step?.id).toBe('wheel-move');
         expect(state.sys.tutorial.step?.allowedTargets).toBeUndefined();
@@ -700,7 +739,7 @@ describe('qidahen tutorial flow', () => {
             payload: { moveId: 'move-3-all-opponents' },
         });
 
-        expect(state.sys.tutorial.step?.id).toBe('wheel-path-mismatch');
+        expect(state.sys.tutorial.step?.id).toBe('wheel-branch-stop');
         expect((state.core as any).wheelActionUsed).toBe(true);
         expect((state.core as any).wheelMoveSummary).toBeTruthy();
         expect((state.core as any).turnPhase).toBe('dispatch-targeting');
