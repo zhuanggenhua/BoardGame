@@ -1821,6 +1821,65 @@ describe('AI legal actions', () => {
         expect(result.state.sys.interaction?.current).toBeUndefined();
     });
 
+    it('transfer-status 不应把已达堆叠上限的目标列为 AI 合法动作', () => {
+        const state = createInitializedState(['0', '1', '2'], fixedRandom);
+        state.core.players['1'].statusEffects[STATUS_IDS.TARGETED] = 1;
+        state.core.players['0'].statusEffects[STATUS_IDS.TARGETED] = 1;
+
+        const interaction: InteractionDescriptor = {
+            id: 'ai-transfer-status-full-target',
+            playerId: '1',
+            sourceCardId: 'card-transfer-status',
+            type: 'selectStatus',
+            titleKey: 'interaction.selectStatusToTransfer',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['0', '1', '2'],
+            transferConfig: {},
+        };
+        injectPendingInteraction(state, interaction);
+
+        const fullTargetCommand = {
+            type: 'TRANSFER_STATUS',
+            playerId: '1',
+            payload: {
+                fromPlayerId: '1',
+                toPlayerId: '0',
+                statusId: STATUS_IDS.TARGETED,
+                interactionId: 'dt-interaction-ai-transfer-status-full-target',
+            },
+            timestamp: Date.now(),
+        } as const;
+        expect(DiceThroneDomain.validate(state, fullTargetCommand).valid).toBe(false);
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+        const isTransferTo = (action: typeof actions[number], targetPlayerId: string): boolean => {
+            const command = action.commands[0];
+            const payload = command?.payload as {
+                fromPlayerId?: string;
+                toPlayerId?: string;
+                statusId?: string;
+            } | undefined;
+            return command?.type === 'TRANSFER_STATUS'
+                && payload?.fromPlayerId === '1'
+                && payload?.toPlayerId === targetPlayerId
+                && payload?.statusId === STATUS_IDS.TARGETED;
+        };
+
+        expect(actions.some((action) => isTransferTo(action, '0'))).toBe(false);
+        const executableAction = actions.find((action) => isTransferTo(action, '2'));
+        expect(executableAction).toBeDefined();
+
+        const result = tryCmd(state, cmd('TRANSFER_STATUS', '1', executableAction!.commands[0].payload));
+        expect(result.success).toBe(true);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.TARGETED]).toBe(0);
+        expect(result.state.core.players['2'].statusEffects[STATUS_IDS.TARGETED]).toBe(1);
+        expect(result.state.sys.interaction?.current).toBeUndefined();
+    });
+
 
     it('本地 AI 在 selectTargetStatus 交互里会把已选中的己方减益转给更脆弱的敌人', async () => {
         const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);

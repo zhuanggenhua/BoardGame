@@ -56,7 +56,7 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTarget
 import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
-import { canRemoveStatusFromPlayer, canTransferStatus } from './domain/statusRemoval';
+import { canReceiveTransferredStatus, canRemoveStatusFromPlayer, canTransferStatus } from './domain/statusRemoval';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
 import { getDieFaceByValue } from './domain/diceRegistry';
 import { getCustomActionMeta } from './domain/effects';
@@ -2102,10 +2102,18 @@ const buildInteractionActions = (
 
             if (data.transferConfig) {
                 const transferableActions = targetPlayerIds.flatMap((sourcePlayerId) => {
-                    return getSelectableStatusIds(state, sourcePlayerId).flatMap((statusId) => {
-                        return targetPlayerIds
-                            .filter((targetPlayerId) => targetPlayerId !== sourcePlayerId)
-                            .map((targetPlayerId, index) => ({
+                    return getSelectableStatusIds(state, sourcePlayerId)
+                        .filter((statusId) => canTransferStatus(state.core, playerId, sourcePlayerId, statusId))
+                        .flatMap((statusId) => {
+                            return targetPlayerIds
+                                .filter((targetPlayerId) => targetPlayerId !== sourcePlayerId)
+                                .filter((targetPlayerId) => canReceiveTransferredStatus(
+                                    state.core,
+                                    sourcePlayerId,
+                                    targetPlayerId,
+                                    statusId,
+                                ))
+                                .map((targetPlayerId, index) => ({
                                 actionId: createAiLegalActionId(
                                     'interaction',
                                     current.id,
@@ -2134,7 +2142,7 @@ const buildInteractionActions = (
                                     toPlayerId: targetPlayerId,
                                     statusId,
                                 }, buildStatusInteractionStrategyTags(state, statusId)),
-                            }));
+                                }));
                     });
                 });
 
@@ -2175,30 +2183,37 @@ const buildInteractionActions = (
                 .filter((targetId) => !!state.core.players[targetId])
                 .filter((targetId) => targetId !== sourcePlayerId);
 
-            const actions = targetPlayerIds.map((targetPlayerId, index) => ({
-                actionId: createAiLegalActionId(
-                    'interaction',
-                    current.id,
-                    'transfer-target-status',
+            const actions = targetPlayerIds
+                .filter((targetPlayerId) => canReceiveTransferredStatus(
+                    state.core,
                     sourcePlayerId,
-                    statusId,
                     targetPlayerId,
-                    index,
-                ),
-                kind: 'interaction-transfer-status',
-                label: `转移 ${statusId} 到 ${targetPlayerId}`,
-                commands: [{
-                    type: 'TRANSFER_STATUS',
-                    payload: { fromPlayerId: sourcePlayerId, toPlayerId: targetPlayerId, statusId, interactionId: current.id },
-                }],
-                aiHints: buildTransferStatusAiHints(state, playerId, sourcePlayerId, targetPlayerId, statusId),
-                metadata: withAiActionStrategyTags({
-                    interactionId: current.id,
-                    fromPlayerId: sourcePlayerId,
-                    toPlayerId: targetPlayerId,
                     statusId,
-                }, buildStatusInteractionStrategyTags(state, statusId)),
-            }));
+                ))
+                .map((targetPlayerId, index) => ({
+                    actionId: createAiLegalActionId(
+                        'interaction',
+                        current.id,
+                        'transfer-target-status',
+                        sourcePlayerId,
+                        statusId,
+                        targetPlayerId,
+                        index,
+                    ),
+                    kind: 'interaction-transfer-status',
+                    label: `转移 ${statusId} 到 ${targetPlayerId}`,
+                    commands: [{
+                        type: 'TRANSFER_STATUS',
+                        payload: { fromPlayerId: sourcePlayerId, toPlayerId: targetPlayerId, statusId, interactionId: current.id },
+                    }],
+                    aiHints: buildTransferStatusAiHints(state, playerId, sourcePlayerId, targetPlayerId, statusId),
+                    metadata: withAiActionStrategyTags({
+                        interactionId: current.id,
+                        fromPlayerId: sourcePlayerId,
+                        toPlayerId: targetPlayerId,
+                        statusId,
+                    }, buildStatusInteractionStrategyTags(state, statusId)),
+                }));
             return actions.length > 0
                 ? actions
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];

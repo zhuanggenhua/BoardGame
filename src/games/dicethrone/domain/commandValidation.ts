@@ -71,7 +71,7 @@ import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler } from './effects';
 import { getGameMode, isDiceThroneAiSeat } from './utils';
-import { canRemoveStatusFromPlayer, canTransferStatus, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
+import { canReceiveTransferredStatus, canRemoveStatusFromPlayer, canTransferStatus, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { isPendingDamageResponseBonusSettlement } from './damageSummary';
@@ -1244,6 +1244,15 @@ const validateTransferStatus = (
     }
 
     if (!canTransferStatus(state, playerId, cmd.payload.fromPlayerId, cmd.payload.statusId)) {
+        return fail('invalid_status');
+    }
+
+    if (!canReceiveTransferredStatus(
+        state,
+        cmd.payload.fromPlayerId,
+        cmd.payload.toPlayerId,
+        cmd.payload.statusId,
+    )) {
         return fail('invalid_status');
     }
 

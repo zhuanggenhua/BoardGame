@@ -101,6 +101,7 @@ export interface AiInteractionSnapshot {
     sourceId?: string;
     playerId?: string;
     options: AiInteractionOptionSnapshot[];
+    optionsSource?: 'explicit' | 'missing';
     multi?: unknown;
     ai?: AiInteractionSupportDeclaration;
     aiDecisions?: AiDecisionDescriptor[];

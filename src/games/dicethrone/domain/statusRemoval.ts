@@ -1,7 +1,7 @@
 import type { DiceThroneCore } from './types';
 import type { TokenDef } from './tokenTypes';
 import { STATUS_IDS } from './ids';
-import { areTeammates } from './rules';
+import { areTeammates, getTokenStackLimit } from './rules';
 
 const findTokenDefinition = (state: DiceThroneCore, statusId: string): TokenDef | undefined =>
     (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
@@ -45,3 +45,26 @@ export const canTransferStatus = (
 ): boolean => isTransferableStatusId(state, statusId)
     && isRemovableStatusId(state, statusId)
     && canRemoveStatusFromPlayer(state, sourcePlayerId, fromPlayerId, statusId);
+
+/**
+ * 转移命令必须能在目标玩家身上产生至少一层实际变化。
+ * execute 层对 statusEffects 优先于 tokens，容量判断保持同一顺序。
+ */
+export const canReceiveTransferredStatus = (
+    state: DiceThroneCore,
+    fromPlayerId: string,
+    toPlayerId: string,
+    statusId: string,
+): boolean => {
+    const fromPlayer = state.players[fromPlayerId];
+    const toPlayer = state.players[toPlayerId];
+    if (!fromPlayer || !toPlayer) return false;
+
+    const fromStatusStacks = fromPlayer.statusEffects[statusId] ?? 0;
+    const fromTokenStacks = fromPlayer.tokens[statusId] ?? 0;
+    if (fromStatusStacks <= 0 && fromTokenStacks <= 0) return false;
+
+    const sourceKind = fromStatusStacks > 0 ? 'statusEffects' : 'tokens';
+    const targetStacks = toPlayer[sourceKind][statusId] ?? 0;
+    return targetStacks < getTokenStackLimit(state, toPlayerId, statusId);
+};

@@ -28,6 +28,7 @@ export type InteractionSelectabilityDiagnostic = {
     recoverableOptionIds: string[];
     selectionState:
         | 'no-options'
+        | 'options-not-projected'
         | 'all-options-disabled'
         | 'recoverable-option-available'
         | 'manual-selection-required';
@@ -165,6 +166,19 @@ export function buildInteractionSelectabilityDiagnostic(
         return null;
     }
 
+    if (snapshot.optionsSource === 'missing') {
+        return {
+            totalOptions: 0,
+            enabledOptions: 0,
+            disabledOptions: 0,
+            minSelectionCount: 1,
+            enabledOptionIds: [],
+            disabledOptionIds: [],
+            recoverableOptionIds: [],
+            selectionState: 'options-not-projected',
+        };
+    }
+
     const options = Array.isArray(snapshot.options) ? snapshot.options : [];
     const enabledOptions = options.filter((option) => option.disabled !== true);
     const disabledOptions = options.filter((option) => option.disabled === true);
@@ -211,6 +225,9 @@ export function resolveUnsatisfiableReasonFromSelectability(
 ): string | null {
     const diagnostic = buildInteractionSelectabilityDiagnostic(snapshot);
     if (!diagnostic) {
+        return null;
+    }
+    if (diagnostic.selectionState === 'options-not-projected') {
         return null;
     }
     if (diagnostic.totalOptions === 0) {
@@ -493,17 +510,21 @@ export function buildOnlineAiFeedbackDiagnosticsContext(args: {
     const seatSelectability = buildInteractionSelectabilityDiagnostic(seatInteraction);
     const sharedInteractionState = (args.sharedState.sys?.interaction as { current?: unknown } | undefined)?.current;
     const seatInteractionState = (args.seatState.sys?.interaction as { current?: unknown } | undefined)?.current;
-    const sharedUnsatisfiableReason = resolveUnsatisfiableReasonFromSelectability(sharedInteraction)
-        ?? resolveUnsatisfiableReasonFromInteraction(
-            args.sharedState,
-            sharedInteractionState as HiddenInteractionDescriptor | undefined,
-        );
+    const sharedUnsatisfiableReason = sharedInteraction?.optionsSource === 'missing'
+        ? null
+        : resolveUnsatisfiableReasonFromSelectability(sharedInteraction)
+            ?? resolveUnsatisfiableReasonFromInteraction(
+                args.sharedState,
+                sharedInteractionState as HiddenInteractionDescriptor | undefined,
+            );
     const seatUnsatisfiableReason = args.seatUnsatisfiableReasonOverride
-        ?? resolveUnsatisfiableReasonFromSelectability(seatInteraction)
-        ?? resolveUnsatisfiableReasonFromInteraction(
-            args.seatState,
-            seatInteractionState as HiddenInteractionDescriptor | undefined,
-        );
+        ?? (seatInteraction?.optionsSource === 'missing'
+            ? null
+            : resolveUnsatisfiableReasonFromSelectability(seatInteraction)
+                ?? resolveUnsatisfiableReasonFromInteraction(
+                    args.seatState,
+                    seatInteractionState as HiddenInteractionDescriptor | undefined,
+                ));
 
     return {
         sharedInteraction,

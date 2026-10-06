@@ -49,7 +49,8 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         ? toJsonSafe(current.data.choiceRequest as Record<string, unknown>)
         : undefined;
 
-    const options = Array.isArray(current.data?.options)
+    const optionsSource = Array.isArray(current.data?.options) ? 'explicit' : 'missing';
+    const options = optionsSource === 'explicit'
         ? current.data.options
             .filter((option): option is NonNullable<typeof option> => !!option && typeof option.id === 'string')
             .map((option) => ({
@@ -77,6 +78,7 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         } : {}),
         ...(typeof current.playerId === 'string' ? { playerId: current.playerId } : {}),
         options,
+        optionsSource,
         ...(current.data?.multi !== undefined ? { multi: toJsonSafe(current.data.multi) } : {}),
         ...(ai ? { ai } : {}),
         ...(aiDecisions ? { aiDecisions } : {}),

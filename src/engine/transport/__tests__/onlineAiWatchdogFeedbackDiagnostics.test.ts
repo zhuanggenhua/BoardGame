@@ -237,6 +237,54 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
         });
     });
 
+    it('自定义交互未投影 options 时不应误报 empty-options', () => {
+        const snapshot = buildOnlineAiRecoveryStateSnapshot({
+            matchId: 'match-custom-interaction',
+            gameId: 'dicethrone',
+            state: createState(),
+            seatState: createState({
+                sys: {
+                    phase: 'main1',
+                    turnNumber: 1,
+                    interaction: {
+                        current: {
+                            id: 'dt-interaction-transfer',
+                            kind: 'dt:card-interaction',
+                            playerId: '1',
+                            data: {
+                                sourceId: 'card-transfer-status',
+                                type: 'selectStatus',
+                                targetPlayerIds: ['0', '1'],
+                                transferConfig: {},
+                            },
+                        },
+                    },
+                    eventStream: { entries: [] },
+                },
+            } as unknown as MatchState<unknown>),
+            candidate: createCandidate({ reason: 'visible-interaction' }),
+            trackerKey: 'tracker-custom-interaction',
+            progressMarker: 'marker-custom-interaction',
+            blockerFingerprint: 'blocker-custom-interaction',
+            aiSummary: {
+                seatControllerType: 'local-ai',
+                legalActions: { total: 1, truncated: false, items: [] },
+                decisionPreview: null,
+            },
+        });
+
+        const parsed = JSON.parse(snapshot) as {
+            interaction?: {
+                seat?: { optionsSource?: string };
+                seatSelectability?: { selectionState?: string };
+                seatUnsatisfiableReason?: string | null;
+            };
+        };
+        expect(parsed.interaction?.seat?.optionsSource).toBe('missing');
+        expect(parsed.interaction?.seatSelectability?.selectionState).toBe('options-not-projected');
+        expect(parsed.interaction?.seatUnsatisfiableReason).toBeNull();
+    });
+
     it('unsatisfiable interaction snapshot 保留无解交互现场和 AI 摘要', () => {
         const snapshot = buildOnlineAiUnsatisfiableInteractionStateSnapshot({
             matchId: 'match-unsat',
