@@ -678,6 +678,7 @@ test.describe('七大恨新游戏收口', () => {
             'wheel-military-farm',
         );
         await expect(page.locator('[data-testid="qidahen-wheel-sector"][data-wheel-candidate="true"]')).toHaveCount(3);
+        await expectWheelPrimaryMove(page, 'move-3-all-opponents');
         await expect(page.locator('[data-wheel-sector-id="wheel-hire"]')).toHaveAttribute('data-wheel-candidate', 'true');
         await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('6/10');
         await expect(page.locator('[data-testid="qidahen-player-jin"]')).toContainText('10/10');
@@ -744,6 +745,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击轮盘上高亮的“开垦”区域');
+        await expectWheelPrimaryMove(page, 'move-1-free');
         await saveScreenshot(page, WHEEL_RECLAIM_STEP_01);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
@@ -782,6 +784,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击轮盘上高亮的“军屯”区域');
+        await expectWheelPrimaryMove(page, 'move-1-free');
         await saveScreenshot(page, WHEEL_MILITARY_FARM_STEP_01);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
@@ -825,6 +828,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击轮盘上高亮的“征兵训练”区域');
+        await expectWheelPrimaryMove(page, 'move-1-free');
         await saveScreenshot(page, WHEEL_RECRUIT_TRAIN_STEP_01);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
@@ -1455,6 +1459,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="wheel-entry"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
+        await expectWheelPrimaryMove(page, 'move-1-free');
         await saveScreenshot(page, DIPLOMACY_STEP_01);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
@@ -1518,6 +1523,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="advance-midyear"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]')).toBeVisible();
+        await expectWheelPrimaryMove(page, 'move-2-one-opponent');
         await clickWheelMoveUntilTutorialStep(page, 'move-2-one-opponent', 'midyear-tax');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('税赋');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toHaveCount(0);
