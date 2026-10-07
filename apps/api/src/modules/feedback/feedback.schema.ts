@@ -62,6 +62,46 @@ export interface FeedbackErrorContext {
     componentStack?: string;
 }
 
+export type FeedbackReplayability = 'full' | 'partial' | 'unreplayable';
+export type FeedbackCollectionStatus = 'complete' | 'partial' | 'failed';
+
+export interface FeedbackDiagnosticPacket {
+    schemaVersion: number;
+    captureId: string;
+    chainId?: string;
+    capturedAt: string;
+    source: 'user' | 'client-auto' | 'server';
+    collectionStatus: FeedbackCollectionStatus;
+    replayability: FeedbackReplayability;
+    missingFields: string[];
+    correlation?: {
+        matchId?: string;
+        roomId?: string;
+        requestId?: string;
+        stateId?: number;
+        stateRevision?: number;
+        decisionEpoch?: number;
+    };
+    build?: Record<string, unknown>;
+    phase?: string;
+    turnNumber?: number;
+    currentPlayerId?: string;
+    interaction?: unknown;
+    responseWindow?: unknown;
+    legalActions?: unknown;
+    aiDecisionPreview?: unknown;
+    snapshots?: {
+        before?: unknown;
+        at?: unknown;
+        after?: unknown;
+    };
+    actionLogTail?: unknown[];
+    eventStreamTail?: unknown[];
+    undo?: unknown;
+    randomCursor?: number;
+    collectionErrors?: string[];
+}
+
 export interface FeedbackElementSummary {
     tagName?: string;
     testId?: string;
@@ -201,6 +241,9 @@ export class Feedback {
     errorContext?: FeedbackErrorContext;
 
     @Prop({ type: Object })
+    diagnosticPacket?: FeedbackDiagnosticPacket;
+
+    @Prop({ type: Object })
     configProposal?: FeedbackConfigProposalContext;
 
     @Prop({ type: [Object] })
@@ -212,6 +255,7 @@ export const FeedbackSchema = SchemaFactory.createForClass(Feedback);
 FeedbackSchema.index({ reporterType: 1, source: 1, createdAt: -1 });
 FeedbackSchema.index({ gameId: 1, createdAt: -1 });
 FeedbackSchema.index({ status: 1, createdAt: -1 });
+FeedbackSchema.index({ 'diagnosticPacket.replayability': 1, createdAt: -1 });
 FeedbackSchema.index({ incidentKey: 1 }, { sparse: true });
 FeedbackSchema.index({ aggregationKey: 1 }, { sparse: true });
 FeedbackSchema.index(

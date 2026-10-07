@@ -249,14 +249,28 @@ export const warmBetrayalFrontend = async (
   }
 };
 
-export const saveScreenshot = async (page: Page, path: string) => {
+export type SaveScreenshotOptions = {
+  waitMs?: number;
+  prepare?: boolean;
+};
+
+export const saveScreenshot = async (
+  page: Page,
+  path: string,
+  options: SaveScreenshotOptions = {},
+): Promise<Buffer> => {
   mkdirSync(dirname(path), { recursive: true });
-  await page.mouse.move(2, 2).catch(() => undefined);
-  await page.evaluate(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement) active.blur();
-  }).catch(() => undefined);
-  await page.waitForTimeout(90);
+  if (options.prepare !== false) {
+    await page.mouse.move(2, 2).catch(() => undefined);
+    await page.evaluate(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    }).catch(() => undefined);
+  }
+  const waitMs = options.waitMs ?? 90;
+  if (waitMs > 0) {
+    await page.waitForTimeout(waitMs);
+  }
   const image = await page.screenshot({
     fullPage: false,
     ...( /\.jpe?g$/i.test(path)
@@ -265,12 +279,12 @@ export const saveScreenshot = async (page: Page, path: string) => {
   });
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const tempPath = `${path}.${process.pid}.${Date.now()}.${attempt}.tmp`;
-    try {
-      writeFileSync(tempPath, image);
-      renameSync(tempPath, path);
-      return;
-    } catch (error) {
+      const tempPath = `${path}.${process.pid}.${Date.now()}.${attempt}.tmp`;
+      try {
+        writeFileSync(tempPath, image);
+        renameSync(tempPath, path);
+        return image;
+      } catch (error) {
       lastError = error;
       if (existsSync(tempPath)) {
         unlinkSync(tempPath);

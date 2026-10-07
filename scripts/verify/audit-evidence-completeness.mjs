@@ -88,6 +88,33 @@ const HIGH_RISK_TERMS = [
   /之后/,
 ];
 
+const RESPONSE_TRANSACTION_TERMS = [
+  /响应窗口.*(替代|防止|减免|延迟|追加|累计|收口)/s,
+  /(替代|防止|减免|延迟|追加|累计|收口).*响应窗口/s,
+  /reaction session.*(append|precommit|closeout|pending|resolution)/is,
+  /pending.*(响应|防止|减免|追加|收口)/is,
+  /ResolutionFrame.*(响应|追加|累计|收口)/is,
+];
+
+const RESPONSE_TRANSACTION_LIFECYCLE_EVIDENCE = [
+  {
+    name: '窗口打开前的已提交结果',
+    patterns: [/窗口打开前.*(已提交|precommit)/s, /precommit/i],
+  },
+  {
+    name: '窗口内新增效果',
+    patterns: [/窗口内.*(新增|追加)/s, /append/i],
+  },
+  {
+    name: '同一事务累计投影',
+    patterns: [/(同一事务|累计投影|pending.*(累计|修正)|ResolutionFrame.*(累计|修正))/is],
+  },
+  {
+    name: '窗口关闭后的最终状态与清理',
+    patterns: [/(窗口关闭后|closeout).*最终权威状态/s, /最终权威状态.*(清理|消费)/s, /closeout/i],
+  },
+];
+
 const IMAGE_CONTRACT_TERMS = [
   /卡图/,
   /图集/,
@@ -615,6 +642,14 @@ function checkCompletionClaimDoc(file, content) {
     const hasQueueOrLifecycleEvidence = /触发队列|triggerQueue|reaction session|deferred|finalize|阶段可继续|流程收口|无残留/i.test(content);
     if (!hasQueueOrLifecycleEvidence) {
       errors.push(`${file}: 命中阶段/死亡/额外攻击等高风险语义，但缺少触发队列、阶段收口、无残留或等价生命周期证据。`);
+    }
+  }
+
+  if (hasAny(content, RESPONSE_TRANSACTION_TERMS)) {
+    for (const item of RESPONSE_TRANSACTION_LIFECYCLE_EVIDENCE) {
+      if (!hasAny(content, item.patterns)) {
+        errors.push(`${file}: 命中响应/未收口事务语义，但缺少“${item.name}”证据；不能停在中间态。`);
+      }
     }
   }
 

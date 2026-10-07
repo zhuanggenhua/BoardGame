@@ -530,6 +530,13 @@ const applyNonReleaseUpdateIsolation = () => {
         process.env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS = '';
         process.env.VITE_ANDROID_NATIVE_UPDATE_CHANNEL = 'debug';
     }
+
+    // Debug / test APKs must always boot the bundle packaged in the APK unless
+    // a developer explicitly opts into an update channel. This prevents a
+    // stale Capgo bundle or production manifest from masking local changes.
+    if (!otaAllowed && !nativeAllowed) {
+        process.env.VITE_ANDROID_FORCE_BUILTIN_BUNDLE = 'true';
+    }
 };
 
 const isHttpUrl = (value) => /^http:\/\//i.test(value);

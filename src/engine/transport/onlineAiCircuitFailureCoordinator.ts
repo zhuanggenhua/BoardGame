@@ -15,7 +15,10 @@ import {
     type OnlineAiRecoveryEngineConfig,
 } from './onlineAiRecovery';
 import type { OnlineAiClientTransportDiagnostics } from './protocol';
-import type { OnlineAiRecoveryFeedbackPayload } from './transportFeedbackReporter';
+import {
+    resolveTransportFeedbackCorrelation,
+    type OnlineAiRecoveryFeedbackPayload,
+} from './transportFeedbackReporter';
 
 export type OnlineAiCircuitFailureMatch = {
     matchID: string;
@@ -116,6 +119,11 @@ export class OnlineAiCircuitFailureCoordinator<TMatch extends OnlineAiCircuitFai
             progressMarker: args.progressMarker ?? buildAiProgressMarker(args.match.state, {
                 engineConfig: args.match.engineConfig,
                 gameId: args.match.gameId,
+            }),
+            ...resolveTransportFeedbackCorrelation({
+                matchId: args.match.matchID,
+                state: args.match.state,
+                stateId: args.match.stateID,
             }),
             stateSnapshot: buildOnlineAiCircuitStateSnapshot({
                 matchId: args.match.matchID,

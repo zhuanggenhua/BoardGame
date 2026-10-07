@@ -15,6 +15,10 @@ import {
     buildGameFeedbackActionLog,
     buildGameFeedbackStateSnapshot,
 } from '../../lib/feedback/gameFeedbackDiagnostics';
+import {
+    buildFeedbackDiagnosticPacket,
+    serializeFeedbackDiagnosticPacket,
+} from '../../lib/feedback/diagnosticPacket';
 import { getCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackContext';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
@@ -469,6 +473,13 @@ export const FeedbackModal = ({
                     componentStack: lastErrorContext.componentStack,
                 }
                 : undefined;
+            const diagnosticPacket = currentGameFeedbackContext?.state
+                ? serializeFeedbackDiagnosticPacket(buildFeedbackDiagnosticPacket({
+                    state: attachState ? currentGameFeedbackContext.state : undefined,
+                    clientContext,
+                    source: 'user',
+                }))
+                : undefined;
 
             const normalizedConfigProposals = configProposalList.length > 0
                 ? configProposalList.map((proposal) => ({
@@ -491,6 +502,7 @@ export const FeedbackModal = ({
                 contactInfo: contactInfo || undefined,
                 actionLog: (attachLog && resolvedActionLogText) ? resolvedActionLogText : undefined,
                 stateSnapshot: (attachState && resolvedStateSnapshot) ? resolvedStateSnapshot : undefined,
+                diagnosticPacket,
                 clientContext,
                 errorContext,
                 configProposal: normalizedConfigProposal,

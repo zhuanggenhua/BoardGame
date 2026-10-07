@@ -158,7 +158,6 @@
       "scenarioDossierDetail": "剧本正文",
       "closeScenarioDialog": "关闭",
       "scenarioOnly": "局内确认",
-      "scenarioStepSubtitle": "翻阅候选剧本卡，确认当前提议后再进入探索。",
       "scenarioCardsTitle": "候选剧本卡",
       "scenarioCardsCount": "7 张候选",
       "scenarioCardMeta": "剧本卡 {{card}} / 触发 {{omen}}",

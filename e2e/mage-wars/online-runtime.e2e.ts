@@ -18,6 +18,7 @@ import {
     getEvidenceScreenshotPath,
     getEvidenceScreenshotPathInDirectory,
     promoteEvidenceScreenshotRun,
+    sanitizeEvidencePathSegment,
     withJpegEvidenceScreenshotOptions,
 } from '../framework/evidenceScreenshots';
 import {
@@ -78,10 +79,47 @@ type MageWarsFxVideoRecording = {
     captureDurationMs?: number;
 };
 
+type MageWarsEvidenceIndexDescription = {
+    description: string;
+    transition: string;
+    stage?: '前态' | '中态' | '后态';
+    testedObject?: string;
+    effectClaim?: string;
+    observedDelta?: string;
+    visibleEffectDelta?: {
+        before: string;
+        after: string;
+        direction: 'increase' | 'decrease' | 'changed';
+    };
+};
+
 type MageWarsFxFrame = {
     path: string;
     capturedAtMs: number;
 };
+
+function buildMageWarsFallbackEvidenceDescription(fragment: string): string {
+    const description = fragment
+        .replace(/token/gi, '状态标记')
+        .replace(/\bUI\b/gi, '界面')
+        .replace(/\bGIF\b/gi, '动图')
+        .replace(/\b[A-Z]\d\b/g, '目标区域')
+        .replace(/^\d+[A-Z]?[-_]?/, '')
+        .replace(/[A-Za-z]/g, '')
+        .replace(/[-_]+/g, '，')
+        .replace(/，+/g, '，')
+        .replace(/^，|，$/g, '');
+    return `玩家画面展示${description || '当前行为链的可见状态'}。`;
+}
+
+function getAnnotatedEvidenceStagingDir(testInfo: TestInfo): string | undefined {
+    const annotation = testInfo.annotations.find((entry) => (
+        entry.type === 'evidence-staging-dir'
+        && typeof entry.description === 'string'
+        && entry.description.trim().length > 0
+    ));
+    return typeof annotation?.description === 'string' ? annotation.description : undefined;
+}
 
 function getMageWarsE2eStandardSpellbookEntries(mageId: MageId): MageWarsPlayerState['spellbookEntries'] {
     return getStandardStartingSpellbook(mageId).map((entry) => ({
@@ -131,8 +169,9 @@ async function saveEvidenceScreenshot(
     } = {},
 ): Promise<string> {
     if (isMageWarsGoldenVideoRun() && options.allowDuringGoldenVideo !== true) return '';
-    const screenshotPath = options.evidenceDir
-        ? getEvidenceScreenshotPathInDirectory(options.evidenceDir, name, { requireChineseName: true })
+    const evidenceDir = options.evidenceDir ?? getAnnotatedEvidenceStagingDir(testInfo);
+    const screenshotPath = evidenceDir
+        ? getEvidenceScreenshotPathInDirectory(evidenceDir, name, { requireChineseName: true })
         : getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
     await page.screenshot(withJpegEvidenceScreenshotOptions({
         path: screenshotPath,
@@ -214,6 +253,92 @@ function rebaseMageWarsTestAnnotations(
     for (const annotation of testInfo.annotations) {
         if (typeof annotation.description === 'string') {
             annotation.description = rebaseMageWarsEvidenceReference(annotation.description, recording);
+        }
+    }
+}
+
+async function materializeMageWarsFxEvidenceFrameSeries(
+    recording: MageWarsFxVideoRecording,
+    names: string[],
+    fractions: number[],
+): Promise<void> {
+    if (!recording.evidenceDir || !recording.frames || recording.frames.length < names.length) {
+        throw new Error('Mage Wars 动效过程图必须从同一次真实录制中提取足够的原始帧');
+    }
+    const frames = [...recording.frames].sort((left, right) => left.capturedAtMs - right.capturedAtMs);
+    const selected: MageWarsFxFrame[] = [];
+    for (let index = 0; index < names.length; index += 1) {
+        const preferredIndex = Math.min(
+            frames.length - 1,
+            Math.max(0, Math.round((fractions[index] ?? index / Math.max(1, names.length - 1)) * (frames.length - 1))),
+        );
+        let frameIndex = preferredIndex;
+        while (frameIndex < frames.length && selected.some((frame) => frame.path === frames[frameIndex].path)) {
+            frameIndex += 1;
+        }
+        if (frameIndex >= frames.length) {
+            frameIndex = preferredIndex;
+            while (frameIndex >= 0 && selected.some((frame) => frame.path === frames[frameIndex].path)) {
+                frameIndex -= 1;
+            }
+        }
+        if (frameIndex < 0 || frameIndex >= frames.length) {
+            throw new Error(`Mage Wars 动效过程图无法选出不重复的原始帧：${names[index]}`);
+        }
+        const frame = frames[frameIndex];
+        selected.push(frame);
+        const outputPath = getEvidenceScreenshotPathInDirectory(
+            recording.evidenceDir,
+            names[index],
+            { requireChineseName: true },
+        );
+        await sharp(frame.path).jpeg({ quality: 92 }).toFile(outputPath);
+    }
+
+    const contents = await Promise.all(selected.map((frame) => fs.promises.readFile(frame.path)));
+    for (let left = 0; left < contents.length; left += 1) {
+        for (let right = left + 1; right < contents.length; right += 1) {
+            if (contents[left].equals(contents[right])) {
+                throw new Error(`Mage Wars 动效过程图仍重复：${names[left]} 与 ${names[right]}`);
+            }
+        }
+    }
+}
+
+async function assertMageWarsEvidenceScreenshotVisualUniqueness(
+    screenshotPaths: string[],
+    actionLabel: string,
+): Promise<void> {
+    const uniquePaths = Array.from(new Set(screenshotPaths.map((entry) => path.resolve(entry))));
+    const decoded = await Promise.all(uniquePaths.map(async (screenshotPath) => {
+        const { data, info } = await sharp(screenshotPath)
+            .ensureAlpha()
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+        return {
+            screenshotPath,
+            data,
+            width: info.width,
+            height: info.height,
+        };
+    }));
+
+    for (let left = 0; left < decoded.length; left += 1) {
+        for (let right = left + 1; right < decoded.length; right += 1) {
+            const first = decoded[left]!;
+            const second = decoded[right]!;
+            if (
+                first.width === second.width
+                && first.height === second.height
+                && first.data.equals(second.data)
+            ) {
+                throw new Error([
+                    `${actionLabel} 证据截图存在视觉重复`,
+                    `first=${first.screenshotPath}`,
+                    `second=${second.screenshotPath}`,
+                    '过程帧、命中帧和稳定收口图必须来自不同玩家可见状态。',
+                ].join('\n'));
+            }
         }
     }
 }
@@ -410,6 +535,12 @@ async function finalizeMageWarsFxVideoRecording(
     options: {
         actionLabel?: string;
         required?: boolean;
+        screenshotIncludes: string[];
+        chainId?: string;
+        sourceRun?: string;
+        screenshotDescriptions?: Record<string, MageWarsEvidenceIndexDescription>;
+        requireVisibleEffectDelta?: boolean;
+        gifDescription?: string;
         requirements?: Array<{ requirement: string; status: 'PASS'; evidence: string[] }>;
         sourceVerification?: {
             status: 'source-verified' | 'functional-only' | 'blocked';
@@ -443,11 +574,58 @@ async function finalizeMageWarsFxVideoRecording(
         throw new Error(`Mage Wars 动效 GIF 文件为空：${recording.finalGifPath}`);
     }
 
-    const screenshotEvidence = testInfo.annotations
-        .filter((annotation) => annotation.type === 'evidence-screenshot' && typeof annotation.description === 'string')
-        .map((annotation) => annotation.description as string);
-    const summonEvidence = screenshotEvidence.filter((entry) => entry.includes('召唤'));
-    const attackEvidence = screenshotEvidence.filter((entry) => (
+    const screenshotEvidence = Array.from(new Set(
+        testInfo.annotations
+            .filter((annotation) => annotation.type === 'evidence-screenshot' && typeof annotation.description === 'string')
+            .map((annotation) => path.resolve(annotation.description as string)),
+    ));
+    const unmatchedScreenshotIncludes = options.screenshotIncludes.filter((fragment) => (
+        !screenshotEvidence.some((entry) => entry.includes(fragment))
+    ));
+    if (unmatchedScreenshotIncludes.length > 0) {
+        throw new Error([
+            `${options.actionLabel ?? '当前动效'} 证据链缺少声明截图：${unmatchedScreenshotIncludes.join(' | ')}`,
+            '截图、GIF 和 PASS manifest 必须来自同一条显式声明的行为链。',
+        ].join('\n'));
+    }
+    const selectedScreenshotEvidence = screenshotEvidence.filter((entry) => (
+        options.screenshotIncludes.some((fragment) => entry.includes(fragment))
+    ));
+    if (selectedScreenshotEvidence.length === 0) {
+        throw new Error(`${options.actionLabel ?? '当前动效'} 没有选出任何与行为链匹配的截图`);
+    }
+    await assertMageWarsEvidenceScreenshotVisualUniqueness(
+        selectedScreenshotEvidence,
+        options.actionLabel ?? '当前动效',
+    );
+    const selectedScreenshotFragments = selectedScreenshotEvidence.map((entry) => (
+        options.screenshotIncludes.find((fragment) => entry.includes(fragment)) ?? ''
+    ));
+    const orderMatches = selectedScreenshotFragments.length === options.screenshotIncludes.length
+        && selectedScreenshotFragments.every((fragment, index) => fragment === options.screenshotIncludes[index]);
+    if (!orderMatches) {
+        throw new Error([
+            `${options.actionLabel ?? '当前动效'} 截图顺序与声明行为链不一致`,
+            `expected=${JSON.stringify(options.screenshotIncludes)}`,
+            `actual=${JSON.stringify(selectedScreenshotFragments)}`,
+            '必须按玩家动作前置、动作过程、结算收口的真实顺序生成同一组截图。',
+        ].join('\n'));
+    }
+    if (recording.evidenceDir) {
+        const evidenceRoot = `${path.resolve(recording.evidenceDir)}${path.sep}`;
+        const outsideCurrentRun = selectedScreenshotEvidence.filter((entry) => (
+            !path.resolve(entry).startsWith(evidenceRoot)
+        ));
+        if (outsideCurrentRun.length > 0) {
+            throw new Error([
+                `${options.actionLabel ?? '当前动效'} 截图混入了当前录制目录之外的媒体`,
+                ...outsideCurrentRun,
+                '截图、GIF 和 PASS manifest 必须来自同一次真实运行。',
+            ].join('\n'));
+        }
+    }
+    const summonEvidence = selectedScreenshotEvidence.filter((entry) => entry.includes('召唤'));
+    const attackEvidence = selectedScreenshotEvidence.filter((entry) => (
         entry.includes('间歇喷泉')
         || entry.includes('投射')
         || entry.includes('命中')
@@ -507,12 +685,36 @@ async function finalizeMageWarsFxVideoRecording(
         },
     ];
     const manifestMedia = Array.from(new Set([
+        ...selectedScreenshotEvidence.map((entry) => rebaseMageWarsEvidenceReference(entry, recording)),
         rebaseMageWarsEvidenceReference(recording.finalGifPath, recording),
-        ...screenshotEvidence.map((entry) => rebaseMageWarsEvidenceReference(entry, recording)),
     ]));
+    const selectedScreenshotDescriptions = options.screenshotDescriptions
+        ? options.screenshotIncludes.map((fragment) => options.screenshotDescriptions?.[fragment]).filter(Boolean)
+        : [];
+    if (options.requireVisibleEffectDelta) {
+        if (!options.screenshotDescriptions) {
+            throw new Error(`${options.actionLabel ?? '当前动效'} 要求可见数值差分，但没有提供截图索引说明`);
+        }
+        const visibleEffectDelta = selectedScreenshotDescriptions
+            .map((description) => description?.visibleEffectDelta)
+            .find((delta) => (
+                Boolean(delta?.before)
+                && Boolean(delta?.after)
+                && delta.before !== delta.after
+                && Boolean(delta.direction)
+            ));
+        if (!visibleEffectDelta) {
+            throw new Error([
+                `${options.actionLabel ?? '当前动效'} 缺少可见数值差分`,
+                '必须在同一条真实行为链的截图索引中写出具体前值、后值和变化方向。',
+            ].join('\n'));
+        }
+    }
     const manifest = {
         verdict: options.sourceVerification && options.sourceVerification.status !== 'source-verified' ? 'REVISE' : 'PASS',
-        scope: 'current-user-request',
+        scope: 'independent',
+        gameId: 'mage-wars',
+        evidenceCategory: 'independent',
         generatedAt: new Date().toISOString(),
         recording: {
             action: options.actionLabel ?? '召唤和攻击',
@@ -536,6 +738,68 @@ async function finalizeMageWarsFxVideoRecording(
         ...requirement,
         evidence: requirement.evidence.map((entry) => rebaseMageWarsEvidenceReference(entry, recording)),
     }));
+
+    const sourceDir = path.basename(path.resolve(recording.stableEvidenceDir ?? recording.evidenceDir ?? ''));
+    const sourceRun = options.sourceRun ?? path.basename(path.resolve(recording.evidenceDir ?? ''));
+    const chainId = options.chainId ?? `mage-wars-${sanitizeEvidencePathSegment(options.actionLabel ?? 'fx')}`;
+    const indexItems = selectedScreenshotEvidence.map((entry, index) => {
+        const fragment = options.screenshotIncludes[index];
+        const description = options.screenshotDescriptions?.[fragment];
+        const fallbackDescription = {
+            description: buildMageWarsFallbackEvidenceDescription(fragment),
+            transition: index === 0
+                ? '本链起点：玩家进入当前行为的可见起点。'
+                : '相对上一张：同一条行为链继续推进到当前玩家可见状态。',
+        };
+        return {
+            path: path.relative(recording.evidenceDir!, entry).replace(/\\/g, '/'),
+            chainId,
+            chainStep: String(index + 1),
+            sourceRun,
+            sourceDir,
+            label: path.basename(entry),
+            stage: description?.stage ?? (
+                index === 0
+                    ? '前态'
+                    : index === options.screenshotIncludes.length - 1
+                        ? '后态'
+                        : '中态'
+            ),
+            ...(description ?? fallbackDescription),
+        };
+    });
+    const gifRelativePath = path.relative(recording.evidenceDir!, recording.finalGifPath).replace(/\\/g, '/');
+    indexItems.push({
+        path: gifRelativePath,
+        chainId,
+        chainStep: String(indexItems.length + 1),
+        sourceRun,
+        sourceDir,
+        label: path.basename(recording.finalGifPath),
+        stage: '中态',
+        description: options.gifDescription
+            ?? `${options.actionLabel ?? '当前动效'}；玩家完成真实操作后，动图连续展示同一对象的过程帧和稳定收口。`,
+        transition: '相对上一张：同一条行为链的连续动效证据。',
+    });
+    const evidenceIndex = {
+        title: `法师战争 · ${options.actionLabel ?? '独立动效'} · 当前运行证据`,
+        gameId: 'mage-wars',
+        evidenceCategory: 'independent',
+        sourceRun,
+        sourceDir,
+        descriptionContract: 'description 是唯一玩家说明；transition 只记录相对上一张的顺序变化。',
+        media: indexItems,
+        items: indexItems,
+    };
+    const evidenceIndexPath = path.join(recording.evidenceDir!, '.e2e-image-index.json');
+    await fs.promises.writeFile(evidenceIndexPath, `${JSON.stringify(evidenceIndex, null, 2)}\n`, 'utf8');
+    manifest.evidenceIndex = '.e2e-image-index.json';
+    manifest.mediaEntries = indexItems;
+    if (options.requireVisibleEffectDelta) {
+        manifest.visibleEffectDelta = selectedScreenshotDescriptions
+            .map((description) => description?.visibleEffectDelta)
+            .filter(Boolean);
+    }
 
     await fs.promises.writeFile(recording.passManifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
     testInfo.annotations.push(
@@ -2099,6 +2363,7 @@ async function captureMageWarsSummonFxProcessScreenshot(
     label: string,
     context?: SummonFxDebugContext,
     captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>,
+    evidenceDir?: string,
 ): Promise<MageWarsSummonFxAudit> {
     const fxAudit = await waitForSummonFxVisualAudit(page, context);
     // waitForSummonFxVisualAudit 已经在光柱 canvas 达到可见阈值的那一帧返回。
@@ -2106,7 +2371,10 @@ async function captureMageWarsSummonFxProcessScreenshot(
     await captureFrame?.('allow');
     const screenshotPath = isMageWarsGoldenVideoRun()
         ? undefined
-        : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, { animations: 'allow' });
+        : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, {
+            animations: 'allow',
+            evidenceDir,
+        });
 
     let targetRegionAudit: ScreenshotRegionVisualAudit | undefined;
     if (context?.beforeScreenshotPath && screenshotPath && context.targetRect) {
@@ -2357,8 +2625,12 @@ function resolveFxImpactBurstTestId(kind: MageWarsFxKind): string | null {
 
 function resolveFxTravelScreenshotSuffix(kind: MageWarsFxKind): string {
     if (kind === 'push') return '气流推离路径中';
-    if (kind === 'teleport') return '传送轨迹过程帧';
     return '投射物飞行中';
+}
+
+function resolveFxDirectImpactScreenshotSuffix(kind: MageWarsFxKind): string {
+    if (kind === 'teleport') return '来源闪现与目标落点过程帧';
+    return '来源唤醒和命中过程帧';
 }
 
 function resolveFxImpactScreenshotSuffix(kind: MageWarsFxKind): string {
@@ -2883,6 +3155,42 @@ async function expectHealingFloatVisible(page: Page, label: string) {
     });
 }
 
+async function waitForHealingVisualFrame(page: Page, label: string) {
+    await page.waitForFunction(() => {
+        const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-impact"]');
+        const burst = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-burst"]');
+        const number = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-number"]');
+        if (!impact || !burst || !number) return false;
+        const visible = (element: HTMLElement) => {
+            const rect = element.getBoundingClientRect();
+            let effectiveOpacity = 1;
+            let current: HTMLElement | null = element;
+            while (current) {
+                const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                current = current.parentElement;
+            }
+            return rect.width >= 20
+                && rect.height >= 20
+                && effectiveOpacity > 0.5
+                && window.getComputedStyle(element).display !== 'none'
+                && window.getComputedStyle(element).visibility !== 'hidden';
+        };
+        return visible(impact)
+            && visible(burst)
+            && visible(number)
+            && (number.textContent?.includes('+') ?? false);
+    }, undefined, { timeout: 5_000 }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        const debug = await readHealingFloatDebug(page);
+        throw new Error([
+            `${label} 治疗过程帧未同时捕捉到治疗光效和恢复数字`,
+            message,
+            `debug=${JSON.stringify(debug, null, 2)}`,
+        ].join('\n'));
+    });
+}
+
 async function startMageWarsAttackDamageFloatProbe(page: Page): Promise<void> {
     await page.evaluate(() => {
         type DamageFloatProbe = {
@@ -3059,10 +3367,12 @@ async function captureMageWarsFxProcessScreenshots(
         await expect(page.getByTestId('mage-wars-fx-attack-melee-strike').first()).toBeVisible({ timeout: 5_000 });
     }
     await expect(page.getByTestId(resolveFxImpactTestId(kind, attackRangeKind)).first()).toBeVisible({ timeout: 10_000 });
-    await page.waitForTimeout(80);
+    if (!options.expectHealingFloat) {
+        await page.waitForTimeout(80);
+    }
     await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-投射开始`);
     if (options.expectHealingFloat) {
-        await page.waitForTimeout(120);
+        await waitForHealingVisualFrame(page, label);
     }
     if (kind === 'attack') {
         await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-投射开始`);
@@ -3070,20 +3380,10 @@ async function captureMageWarsFxProcessScreenshots(
     }
     if (options.expectTravel) {
         const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`).first();
-        const travelObserved = await page.evaluate((fxKind) => {
-            if (document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-travel"]`)) return true;
-            if (fxKind !== 'attack') return false;
-            const probe = (window as typeof window & {
-                __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
-            }).__mageWarsTargetContinuityProbe;
-            return Boolean(probe?.samples?.some((sample) => sample.travelVisible === true));
-        }, kind);
-        if (travelObserved) {
-            if (await travel.count() > 0) {
-                await expect(travel).toBeVisible({ timeout: 5_000 });
-            } else {
-                expect(kind, `${label} 非攻击投射必须仍有真实投射物节点`).toBe('attack');
-            }
+        // 远程攻击投射物可能在 waitForFxTravelAudit 返回后的一帧内自然退场；
+        // audit.hasTravel 已经证明同一条真实动作链曾捕获到投射物，不能再用事后 DOM 是否仍挂载否定该证据。
+        if (kind === 'attack') {
+            expect(audit.hasTravel, `${label} 远程攻击必须在真实动作链中出现投射物`).toBe(true);
         } else {
             await expect(travel).toBeVisible({ timeout: 5_000 });
         }
@@ -3098,8 +3398,8 @@ async function captureMageWarsFxProcessScreenshots(
         options.expectTravel
             ? (kind === 'attack' ? `${label}-来源到目标投射过程帧` : `${label}-来源唤醒过程帧`)
             : options.expectHealingFloat
-                ? `${label}-${resolveFxImpactScreenshotSuffix(kind)}`
-            : `${label}-来源唤醒和命中过程帧`,
+                ? `${label}-治疗光效与恢复数字过程帧`
+            : `${label}-${resolveFxDirectImpactScreenshotSuffix(kind)}`,
         { animations: 'allow', evidenceDir: options.evidenceDir },
     );
 
@@ -3110,13 +3410,7 @@ async function captureMageWarsFxProcessScreenshots(
             await expectMageWarsAttackResultLayerIsolated(page, `${label}-攻击结果`);
         }
         if (options.expectHealingFloat) {
-            await page.waitForTimeout(120);
-            await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-治疗结果`);
-            await options.captureFrame?.('allow');
-            await saveProcessEvidenceScreenshot(`${label}-${resolveFxImpactScreenshotSuffix(kind)}`, {
-                animations: 'allow',
-                evidenceDir: options.evidenceDir,
-            });
+            await waitForFxLayerIdle(page, `${label}-过程帧后`);
         } else if (options.expectDamageFloat) {
             await damageFloatPromise;
             await page.waitForTimeout(120);
@@ -3176,7 +3470,14 @@ async function captureMageWarsFxProcessScreenshots(
         const impactBurstTestId = resolveFxImpactBurstTestId(kind);
         if (impactBurstTestId) {
             await expect(page.getByTestId(impactBurstTestId).first()).toBeVisible({ timeout: 5_000 });
-            await page.waitForTimeout(2_250);
+            if (kind === 'attack') {
+                await page.waitForTimeout(2_250);
+            } else if (kind === 'teleport') {
+                // Direct teleport has no path frame; wait for the delayed destination
+                // burst so the second frame proves arrival instead of duplicating source flash.
+                await page.waitForTimeout(480);
+                await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-目标落点`);
+            }
         }
         await options.captureFrame?.('allow');
         await saveProcessEvidenceScreenshot(`${label}-${resolveFxImpactScreenshotSuffix(kind)}`, {
@@ -4308,6 +4609,56 @@ async function readServerObjectDamage(
     return damage;
 }
 
+async function readVisibleFieldCardLife(
+    page: Page,
+    card: Locator,
+    label: string,
+): Promise<{ life: number; remaining: number; text: string }> {
+    const lifeToggle = page.getByTestId('mage-wars-life-toggle');
+    await expect(lifeToggle, `${label} 生命显示控件必须可见`).toBeVisible({ timeout: 5_000 });
+    if (await lifeToggle.getAttribute('data-life-visible') !== 'true') {
+        await lifeToggle.click({ timeout: 3_000, noWaitAfter: true });
+    }
+    await expect(lifeToggle, `${label} 生命显示必须已打开`).toHaveAttribute('data-life-visible', 'true');
+    const readout = card.getByTestId('mage-wars-field-card-life-readout');
+    const text = card.getByTestId('mage-wars-field-card-life-readout-text');
+    await expect(readout, `${label} 目标生命读数必须可见`).toHaveAttribute('data-life-visible', 'true');
+    await expect(text, `${label} 目标生命文字必须可见`).toBeVisible({ timeout: 5_000 });
+    const metrics = await readout.evaluate((element) => ({
+        life: Number(element.getAttribute('data-life')),
+        remaining: Number(element.getAttribute('data-life-remaining')),
+        text: element.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-life-readout-text"]')?.textContent?.trim() ?? '',
+    }));
+    expect(Number.isFinite(metrics.life), `${label} 最大生命必须是数字`).toBe(true);
+    expect(Number.isFinite(metrics.remaining), `${label} 当前生命必须是数字`).toBe(true);
+    expect(metrics.remaining).toBeGreaterThanOrEqual(0);
+    expect(metrics.remaining).toBeLessThanOrEqual(metrics.life);
+    await expect(text, `${label} 生命文字必须与读数一致`).toHaveText(`${metrics.remaining}/${metrics.life}`);
+    return metrics;
+}
+
+async function waitForVisibleFieldCardLifeIncrease(
+    page: Page,
+    card: Locator,
+    before: { life: number; remaining: number },
+    label: string,
+): Promise<{ life: number; remaining: number; text: string }> {
+    await expect.poll(async () => {
+        try {
+            const metrics = await readVisibleFieldCardLife(page, card, label);
+            return metrics.life === before.life ? metrics.remaining : undefined;
+        } catch {
+            return undefined;
+        }
+    }, {
+        message: `${label} 必须等待玩家画面上的当前生命值从 ${before.remaining}/${before.life} 真实上升`,
+        timeout: 12_000,
+        intervals: [100, 250, 500, 1_000],
+    }).toBeGreaterThan(before.remaining);
+
+    return readVisibleFieldCardLife(page, card, `${label} 稳定收口`);
+}
+
 async function expectServerObjectStatusMissing(
     page: Page,
     match: MageWarsOnlineMatch,
@@ -4906,7 +5257,117 @@ async function runMageWarsStaffBindingUiCase(
 
     expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
     expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    const staffEvidenceStages = [
+        {
+            fragment: `01-${staffName}-施放前-准备区卡牌与己方法师合法目标`,
+            description: `${staffName}绑定法术；玩家从准备区开始施放，画面同时看见来源卡牌与己方法师合法目标。`,
+            transition: '本链起点：来源卡牌和合法目标同屏可见。',
+            observedDelta: '效果前：装备尚未落场，法术候选尚未打开。',
+        },
+        {
+            fragment: `02-${staffName}-绑定候选-${staffName}候选牌可见`,
+            description: '玩家点击己方法师后，候选法术牌以整卡显示并进入可滚动的选择窗口，牌面不复述卡名。',
+            transition: '相对上一张：打开绑定法术候选窗口。',
+            observedDelta: '中态：候选集合、整卡高度和滚动窗口同时可读。',
+        },
+        {
+            fragment: `03-${staffName}-施放结算-附着卡显示绑定法术`,
+            description: '玩家选择绑定法术后，装备卡落到场上并显示新的绑定关系，准备区来源牌进入弃牌。',
+            transition: '相对上一张：提交候选并完成首次施放。',
+            observedDelta: '结果态：场上出现附着装备，绑定法术从候选态变为装备状态。',
+        },
+        {
+            fragment: `04-${staffName}-快速重绑入口-来源卡下方能力按钮`,
+            description: '玩家点击已附着的装备卡后，来源卡下方出现“重新绑定”动作入口，控件不重复装备名称。',
+            transition: '相对上一张：进入已附着装备的主动能力入口。',
+            observedDelta: '中态：装备本体、能力入口和当前牌桌上下文保持同屏。',
+        },
+        {
+            fragment: `05-${staffName}-快速重绑候选-候选法术牌可见`,
+            description: '玩家点击“重新绑定”后，新的候选法术牌以同等高度整卡显示并可滚动选择。',
+            transition: '相对上一张：打开快速重绑候选窗口。',
+            observedDelta: '中态：候选牌面可读，浮层拥有自己的滚动窗口。',
+        },
+        {
+            fragment: `06-${staffName}-快速重绑结算-新绑定和法力消耗可见`,
+            description: '玩家确认新绑定后，装备卡显示新的绑定法术，法力从 10 降为 7，牌桌回到可继续操作状态。',
+            transition: '相对上一张：提交新绑定并完成能力结算。',
+            observedDelta: '结果态：绑定关系和资源值都发生可见变化。',
+        },
+    ];
+    const staffIndexItems = staffEvidenceStages.map((stage, index) => ({
+        path: path.relative(
+            evidenceRun.stagingDir,
+            getEvidenceScreenshotPathInDirectory(evidenceRun.stagingDir, stage.fragment, { requireChineseName: true }),
+        ).replace(/\\/g, '/'),
+        chainId: `mage-wars-independent-${options.cardName}-binding-20261006`,
+        chainStep: String(index + 1),
+        sourceRun: `mage-wars-staff-binding:${testInfo.testId}`,
+        sourceDir: path.basename(evidenceRun.stableDir),
+        label: stage.fragment,
+        stage: index === 0 ? '前态' : index === staffEvidenceStages.length - 1 ? '后态' : '中态',
+        description: stage.description,
+        transition: stage.transition,
+        testedObject: options.cardName,
+        effectClaim: '从候选法术牌选择绑定并通过主动能力快速重绑',
+        observedDelta: stage.observedDelta,
+    }));
+    await fs.promises.writeFile(
+        path.join(evidenceRun.stagingDir, '.e2e-image-index.json'),
+        `${JSON.stringify({
+            title: `法师战争 · ${options.cardName}施放与快速重绑 · 独立端到端`,
+            gameId: 'mage-wars',
+            evidenceCategory: 'independent',
+            sourceRun: `mage-wars-staff-binding:${testInfo.testId}`,
+            sourceDir: path.basename(evidenceRun.stableDir),
+            descriptionContract: 'description 是唯一玩家说明；transition 只记录相对上一张的顺序变化。',
+            media: staffIndexItems,
+            items: staffIndexItems,
+        }, null, 2)}\n`,
+        'utf8',
+    );
+    const staffPassManifestPath = path.join(
+        evidenceRun.stagingDir,
+        `00-法师战争${options.cardName}施放与快速重绑-PASS.json`,
+    );
+    await fs.promises.writeFile(
+        staffPassManifestPath,
+        `${JSON.stringify({
+            verdict: 'PASS',
+            scope: 'independent',
+            gameId: 'mage-wars',
+            evidenceCategory: 'independent',
+            generatedAt: new Date().toISOString(),
+            display: {
+                purpose: 'final-user-visible-delivery',
+                trigger: 'task-final-delivery',
+                viewer: 'web',
+                finalPassBeforeOpen: true,
+            },
+            requirements: [
+                {
+                    requirement: `正式页面${options.cardName}施放与快速重绑：候选牌可读、浮层可滚动、绑定关系和法力变化来自同一次运行`,
+                    status: 'PASS',
+                    evidence: [
+                        `E2E：正式页面${options.cardName}完成首次绑定和主动能力快速重绑`,
+                        `E2E：${options.cardName}候选卡与结果态截图来自当前运行`,
+                    ],
+                },
+            ],
+            media: staffIndexItems.map((entry) => path.resolve(evidenceRun.stableDir, entry.path)),
+            evidenceIndex: '.e2e-image-index.json',
+            mediaEntries: staffIndexItems,
+        }, null, 2)}\n`,
+        'utf8',
+    );
+    testInfo.annotations.push(
+        { type: 'pass-manifest', description: staffPassManifestPath },
+    );
     await promoteEvidenceScreenshotRun(evidenceRun);
+    rebaseMageWarsTestAnnotations(testInfo, {
+        evidenceDir: evidenceRun.stagingDir,
+        stableEvidenceDir: evidenceRun.stableDir,
+    });
 }
 
 async function expectServerObjectZone(
@@ -5013,6 +5474,7 @@ async function deployCreatureWithSummonProcessEvidence(
     label: string,
     diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
     captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>,
+    options: { evidenceDir?: string } = {},
 ) {
     const preparedCard = selfPreparedCardByName(page, creatureName);
     await expect(page.getByTestId('mage-wars-board')).toHaveAttribute(
@@ -5036,7 +5498,10 @@ async function deployCreatureWithSummonProcessEvidence(
     await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤来源目标截图前`);
     const beforeScreenshotPath = isMageWarsGoldenVideoRun()
         ? undefined
-        : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤来源和目标区域`, { animations: 'allow' });
+        : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤来源和目标区域`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
     const summonFxAuditPromise = captureMageWarsSummonFxProcessScreenshot(page, testInfo, label, {
         match,
         playerId,
@@ -5045,7 +5510,7 @@ async function deployCreatureWithSummonProcessEvidence(
         zoneId,
         beforeScreenshotPath,
         targetRect,
-    }, captureFrame);
+    }, captureFrame, options.evidenceDir);
     await clickLegalTargetZone(page, zoneId, `${label} 召唤落点`);
     const summonFxAudit = await summonFxAuditPromise;
     expect(summonFxAudit.objectKind).toBe('creature');
@@ -5059,7 +5524,9 @@ async function deployCreatureWithSummonProcessEvidence(
     await expect(page.getByTestId('mage-wars-fx-summon')).toHaveCount(0, { timeout: 5_000 });
     await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤落场完成截图前`);
     if (!isMageWarsGoldenVideoRun()) {
-        await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`);
+        await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`, {
+            evidenceDir: options.evidenceDir,
+        });
     }
 
     const snapshot = await readZoneFieldCardSnapshot(page, zoneId, Number(sourceCardId), `${label} 召唤完成后读取对象`);
@@ -5771,8 +6238,22 @@ test.describe('Mage Wars formal online runtime', () => {
     test('正式页面召唤和攻击必要过程帧覆盖', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(240_000);
         await clearEvidenceScreenshotsForTest(testInfo);
-        const summonRecording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '召唤' });
-        const rangedRecording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '远程攻击' });
+        const summonEvidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        const rangedEvidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        summonEvidenceRun.stableDir = path.join(summonEvidenceRun.stableDir, '召唤');
+        summonEvidenceRun.historyDir = path.join(summonEvidenceRun.historyDir, '召唤');
+        rangedEvidenceRun.stableDir = path.join(rangedEvidenceRun.stableDir, '远程攻击');
+        rangedEvidenceRun.historyDir = path.join(rangedEvidenceRun.historyDir, '远程攻击');
+        const summonRecording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '召唤',
+            evidenceDir: summonEvidenceRun.stagingDir,
+            stableEvidenceDir: summonEvidenceRun.stableDir,
+        });
+        const rangedRecording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '远程攻击',
+            evidenceDir: rangedEvidenceRun.stagingDir,
+            stableEvidenceDir: rangedEvidenceRun.stableDir,
+        });
         const match = await setupOnlineMageWars(browser, baseURL);
         let summonGifCapture: MageWarsFxGifCapture | null = null;
         let attackGifCapture: MageWarsFxGifCapture | null = null;
@@ -5801,6 +6282,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 '01-兽王野性山猫',
                 diagnostics,
                 (animations) => summonGifCapture?.capture(animations) ?? Promise.resolve(),
+                { evidenceDir: summonEvidenceRun.stagingDir },
             );
             await summonGifCapture.stop();
             expect(hostSummon.sourceCardId).toBe(2906);
@@ -5815,9 +6297,18 @@ test.describe('Mage Wars formal online runtime', () => {
                 testInfo,
                 '02-女祭司阿希拉牧师',
                 diagnostics,
+                undefined,
+                { evidenceDir: summonEvidenceRun.stagingDir },
             );
             expect(guestSummon.sourceCardId).toBe(2811);
             await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '双方召唤完成稳定收口截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '03-两派系召唤完成并可继续-双方生物在场',
+                { evidenceDir: summonEvidenceRun.stagingDir },
+            );
 
             await injectMageWarsSpellFxReadyState(match, '0', {
                 mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
@@ -5878,6 +6369,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     {
                         expectTravel: true,
                         expectDamageFloat: false,
+                        evidenceDir: rangedEvidenceRun.stagingDir,
                         captureFrame: (animations) => attackGifCapture?.capture(animations) ?? Promise.resolve(),
                     },
                 );
@@ -5896,6 +6388,15 @@ test.describe('Mage Wars formal online runtime', () => {
                 ].join('\n'));
             }
             await attackGifCapture?.stop();
+            await materializeMageWarsFxEvidenceFrameSeries(
+                rangedRecording,
+                [
+                    '03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧',
+                    '03-间歇喷泉攻击阿希拉牧师-投射物飞行中',
+                    '03-间歇喷泉攻击阿希拉牧师-命中动画过程帧',
+                ],
+                [0.18, 0.5, 0.78],
+            );
             expect(attackFxAudit.sourceRow).toBe('2');
             expect(attackFxAudit.sourceCol).toBe('0');
             expect(attackFxAudit.targetRow).toBe('2');
@@ -5921,7 +6422,9 @@ test.describe('Mage Wars formal online runtime', () => {
                 { timeout: 5_000 },
             ).not.toBe('0');
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '召唤和攻击必要过程帧完成后');
-            await saveEvidenceScreenshot(attackPage, testInfo, '04-远程攻击稳定收口-目标损伤已落地');
+            await saveEvidenceScreenshot(attackPage, testInfo, '04-远程攻击稳定收口-目标损伤已落地', {
+                evidenceDir: rangedEvidenceRun.stagingDir,
+            });
         } finally {
             await summonGifCapture?.stop().catch(() => undefined);
             await attackGifCapture?.stop().catch(() => undefined);
@@ -5935,6 +6438,15 @@ test.describe('Mage Wars formal online runtime', () => {
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         await finalizeMageWarsFxVideoRecording(testInfo, summonRecording, {
             actionLabel: '召唤代表态',
+            screenshotIncludes: [
+                '01-兽王野性山猫-召唤来源和目标区域',
+                '01-兽王野性山猫-召唤光柱过程帧',
+                '01-兽王野性山猫-召唤完成单位落场',
+                '02-女祭司阿希拉牧师-召唤来源和目标区域',
+                '02-女祭司阿希拉牧师-召唤光柱过程帧',
+                '02-女祭司阿希拉牧师-召唤完成单位落场',
+                '03-两派系召唤完成并可继续-双方生物在场',
+            ],
             requirements: [
                 {
                     requirement: '正式页面召唤独立覆盖：玩家点击真实法术书卡牌和合法区域，召唤来源、光柱过程、单位落场和稳定收口均来自同一次运行',
@@ -5946,9 +6458,53 @@ test.describe('Mage Wars formal online runtime', () => {
                     ],
                 },
             ],
+            screenshotDescriptions: {
+                '01-兽王野性山猫-召唤来源和目标区域': {
+                    description: '玩家选中野性山猫法术并看到合法召唤区域，来源牌和目标格同时可见。',
+                    transition: '本链起点：召唤动作尚未提交。',
+                    stage: '前态',
+                },
+                '01-兽王野性山猫-召唤光柱过程帧': {
+                    description: '玩家点击目标格后，野性山猫目标区域出现召唤光柱，来源与落点保持对应。',
+                    transition: '相对上一张：提交目标格，召唤过程开始。',
+                    stage: '中态',
+                },
+                '01-兽王野性山猫-召唤完成单位落场': {
+                    description: '召唤光柱收束后，野性山猫实体落在已选区域并保持可辨。',
+                    transition: '相对上一张：召唤过程收束到单位落场。',
+                    stage: '中态',
+                },
+                '02-女祭司阿希拉牧师-召唤来源和目标区域': {
+                    description: '玩家选中阿希拉牧师法术并看到另一合法召唤区域，来源牌和目标格同时可见。',
+                    transition: '相对上一张：进入第二个召唤动作。',
+                    stage: '中态',
+                },
+                '02-女祭司阿希拉牧师-召唤光柱过程帧': {
+                    description: '玩家点击目标格后，阿希拉牧师目标区域出现召唤光柱，来源与落点保持对应。',
+                    transition: '相对上一张：提交第二个目标格，召唤过程开始。',
+                    stage: '中态',
+                },
+                '02-女祭司阿希拉牧师-召唤完成单位落场': {
+                    description: '第二次召唤光柱收束后，阿希拉牧师实体落在已选区域并保持可辨。',
+                    transition: '相对上一张：第二个召唤过程收束到单位落场。',
+                    stage: '中态',
+                },
+                '03-两派系召唤完成并可继续-双方生物在场': {
+                    description: '两次召唤都结算完成，野性山猫和阿希拉牧师同时在场且牌桌恢复可继续操作。',
+                    transition: '相对上一张：两条召唤动作都稳定收口。',
+                    stage: '后态',
+                },
+            },
+            gifDescription: '同一次运行的动图连续展示野性山猫和阿希拉牧师的召唤光柱、单位落场与稳定收口。',
         });
         await finalizeMageWarsFxVideoRecording(testInfo, rangedRecording, {
             actionLabel: '远程攻击代表态',
+            screenshotIncludes: [
+                '03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧',
+                '03-间歇喷泉攻击阿希拉牧师-投射物飞行中',
+                '03-间歇喷泉攻击阿希拉牧师-命中动画过程帧',
+                '04-远程攻击稳定收口-目标损伤已落地',
+            ],
             requirements: [
                 {
                     requirement: '正式页面远程攻击独立覆盖：玩家点击真实法术卡牌和场上目标，投射路径、骰子 / 命中结果和稳定收口均来自同一次运行',
@@ -5960,7 +6516,32 @@ test.describe('Mage Wars formal online runtime', () => {
                     ],
                 },
             ],
+            screenshotDescriptions: {
+                '03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧': {
+                    description: '玩家提交间歇喷泉攻击后，来源法术、目标阿希拉牧师和攻击结果层同时可见。',
+                    transition: '本链起点：攻击已提交，投射过程开始。',
+                    stage: '前态',
+                },
+                '03-间歇喷泉攻击阿希拉牧师-投射物飞行中': {
+                    description: '间歇喷泉投射物沿来源与目标之间的路径飞行，目标本体仍保持可见。',
+                    transition: '相对上一张：投射物从来源向目标推进。',
+                    stage: '中态',
+                },
+                '03-间歇喷泉攻击阿希拉牧师-命中动画过程帧': {
+                    description: '投射物命中阿希拉牧师，命中反馈与目标本体在同一画面中成立。',
+                    transition: '相对上一张：投射阶段进入目标命中阶段。',
+                    stage: '中态',
+                },
+                '04-远程攻击稳定收口-目标损伤已落地': {
+                    description: '攻击动画收束后，阿希拉牧师目标仍在场并显示已落地的损伤结果。',
+                    transition: '相对上一张：命中反馈退出并收口到稳定结果。',
+                    stage: '后态',
+                },
+            },
+            gifDescription: '同一次运行的动图连续展示间歇喷泉从投射、飞行到命中阿希拉牧师并留下损伤结果。',
         });
+        await promoteEvidenceScreenshotRun(summonEvidenceRun);
+        await promoteEvidenceScreenshotRun(rangedEvidenceRun);
     });
 
     test('正式页面近战攻击实际动效独立证据覆盖', async ({ browser, baseURL }, testInfo) => {
@@ -6318,6 +6899,13 @@ test.describe('Mage Wars formal online runtime', () => {
         await finalizeMageWarsFxVideoRecording(testInfo, recording, {
             actionLabel: '近战攻击代表态',
             required: true,
+            screenshotIncludes: [
+                '01-近战攻击代表态-来源和目标可见',
+                '02-近战攻击选择态-目标高亮',
+                '03-野性山猫近战攻击阿希拉牧师-来源唤醒和命中过程帧',
+                '03-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧',
+                '04-近战攻击稳定收口-目标可继续',
+            ],
             requirements: [
                 {
                     requirement: '正式页面近战攻击独立覆盖：玩家点击场上来源和目标，实际产生近战攻击事件与伤害',
@@ -6566,6 +7154,12 @@ test.describe('Mage Wars formal online runtime', () => {
         await finalizeMageWarsFxVideoRecording(testInfo, recording, {
             actionLabel: '有效果骰近战攻击代表态',
             required: true,
+            screenshotIncludes: [
+                '01-有效果骰近战攻击-来源和目标可见',
+                '02-有效果骰近战攻击-效果骰与斩击过程',
+                '03-有效果骰近战攻击-原生骰面停稳',
+                '04-有效果骰近战攻击-燃烧-token-已落地',
+            ],
             sourceVerification: {
                 status: 'source-verified',
                 sourceType: 'model-plus-texture',
@@ -6620,8 +7214,21 @@ test.describe('Mage Wars formal online runtime', () => {
     test(MAGE_WARS_CURRENT_SCOPE_CANDIDATE_TEST_NAME, async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(420_000);
         await clearEvidenceScreenshotsForTest(testInfo);
-        const healingRecording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '治疗之光' });
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        testInfo.annotations.push({
+            type: 'evidence-staging-dir',
+            description: evidenceRun.stagingDir,
+        });
+        const healingRecording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '治疗之光',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
         let healingGifCapture: MageWarsFxGifCapture | null = null;
+        let healingVisibleDelta: {
+            before: { life: number; remaining: number };
+            after: { life: number; remaining: number };
+        } | null = null;
         const setupData = await selectMageWarsCurrentScopeSetupDataViaLocalGate(browser, baseURL, testInfo);
         const match = await setupOnlineMageWars(browser, baseURL, {}, setupData);
         const hostDiagnostics = attachPageDiagnostics(match.hostPage);
@@ -7107,6 +7714,17 @@ test.describe('Mage Wars formal online runtime', () => {
             expect(woundedBobcatDamage).toBeGreaterThan(0);
             const guestClericForHealing = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${guestClericObjectId}"]`).first();
             const hostBobcatForHealing = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
+            const beforeHealingLife = await readVisibleFieldCardLife(
+                match.guestPage,
+                hostBobcatForHealing,
+                '阿希拉牧师治疗之光动作前',
+            );
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '阿希拉牧师治疗之光动作前截图');
+            await saveEvidenceScreenshot(
+                match.guestPage,
+                testInfo,
+                '16-阿希拉牧师治疗之光动作前-野性山猫生命读数显示',
+            );
             await clickFieldObject(match.guestPage, guestClericForHealing, '阿希拉牧师治疗之光前选择来源');
             const healingLightButton = match.guestPage.getByTestId('mage-wars-selected-object-ability-healing-light');
             await expect(healingLightButton).toBeVisible({ timeout: 3_000 });
@@ -7191,8 +7809,27 @@ test.describe('Mage Wars formal online runtime', () => {
                 woundedBobcatDamage,
                 '阿希拉牧师治疗之光结算后野性山猫伤害应降低',
             );
-            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '阿希拉牧师治疗之光截图前');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '16-阿希拉牧师治疗之光结算后-治疗能力可见');
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '阿希拉牧师治疗之光截图前');
+            const healedBobcatLifeMetrics = await waitForVisibleFieldCardLifeIncrease(
+                match.guestPage,
+                hostBobcatForHealing,
+                beforeHealingLife,
+                '阿希拉牧师治疗之光结算后',
+            );
+            expect(healedBobcatLifeMetrics.life).toBe(beforeHealingLife.life);
+            expect(
+                healedBobcatLifeMetrics.remaining,
+                '阿希拉牧师治疗之光必须让同一目标的可见当前生命值上升',
+            ).toBeGreaterThan(beforeHealingLife.remaining);
+            healingVisibleDelta = {
+                before: beforeHealingLife,
+                after: healedBobcatLifeMetrics,
+            };
+            await saveEvidenceScreenshot(
+                match.guestPage,
+                testInfo,
+                '16-阿希拉牧师治疗之光结算后-打开生命显示并看到野性山猫读数',
+            );
 
             const restoreClericObjectId = 'mw-e2e-priestess-restore-cleric';
             const burningCleric = {
@@ -7337,8 +7974,49 @@ test.describe('Mage Wars formal online runtime', () => {
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(healingVisibleDelta, '治疗之光必须在最终证据前留下同一对象的可见生命前后值').not.toBeNull();
         await finalizeMageWarsFxVideoRecording(testInfo, healingRecording, {
             actionLabel: '治疗之光代表态',
+            chainId: 'mage-wars-independent-healing-light-20261006',
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            required: true,
+            requireVisibleEffectDelta: true,
+            screenshotIncludes: [
+                '16-阿希拉牧师治疗之光动作前-野性山猫生命读数显示',
+                '16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见',
+                '16-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧',
+                '16-阿希拉牧师治疗之光结算后-打开生命显示并看到野性山猫读数',
+            ],
+            screenshotDescriptions: {
+                '16-阿希拉牧师治疗之光动作前-野性山猫生命读数显示': {
+                    description: '治疗之光；玩家查看受伤野性山猫，画面显示当前生命低于最大生命，建立治疗前基线。',
+                    transition: '本链起点：目标已受伤且生命读数可见。',
+                    testedObject: '阿希拉牧师的治疗之光',
+                    effectClaim: '治疗受伤的友方动物并降低伤害',
+                    observedDelta: `效果前：同一只野性山猫当前生命为 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}，服务端伤害大于 0。`,
+                },
+                '16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见': {
+                    description: '玩家点击阿希拉牧师本体后，来源卡下方出现“治疗之光”入口，受伤野性山猫仍保持可见。',
+                    transition: '相对上一张：从前态进入来源能力入口。',
+                    observedDelta: '目标仍处于受伤前态，治疗尚未提交。',
+                },
+                '16-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧': {
+                    description: '玩家选择受伤野性山猫后，同一目标本体出现治疗光效和恢复数字，画面进入真实结算过程。',
+                    transition: '相对上一张：提交目标选择，开始治疗动画。',
+                    observedDelta: '过程态：治疗光效和恢复数字出现，来源与目标关系保持稳定。',
+                },
+                '16-阿希拉牧师治疗之光结算后-打开生命显示并看到野性山猫读数': {
+                    description: '治疗结算完成后，野性山猫的可见当前生命值高于前态，伤害降低，牌桌回到可继续操作状态。',
+                    transition: '相对上一张：动画结束并收口到稳定结果。',
+                    observedDelta: `结果态：同一只野性山猫当前生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}，服务端伤害下降。`,
+                    visibleEffectDelta: {
+                        before: `${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}`,
+                        after: `${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}`,
+                        direction: 'increase',
+                    },
+                },
+            },
+            gifDescription: `玩家选择受伤野性山猫后，动图连续展示治疗光效、恢复数字和同一目标生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life} 的收口过程。`,
             requirements: [
                 {
                     requirement: '正式页面治疗之光独立覆盖：玩家从来源能力入口选择受伤目标，治疗光效、恢复数字、伤害降低和稳定收口来自同一次运行',
@@ -7351,6 +8029,8 @@ test.describe('Mage Wars formal online runtime', () => {
                 },
             ],
         });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, healingRecording);
     });
 
     test('正式页面隐藏法力失效响应窗口可揭示并反制目标法术', async ({ browser, baseURL }, testInfo) => {
@@ -7490,8 +8170,21 @@ test.describe('Mage Wars formal online runtime', () => {
     test('正式页面群兽法杖附件可从牌面发动并选择治疗模式', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
         await clearEvidenceScreenshotsForTest(testInfo);
-        const recording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '群兽法杖治疗' });
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        testInfo.annotations.push({
+            type: 'evidence-staging-dir',
+            description: evidenceRun.stagingDir,
+        });
+        const recording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '群兽法杖治疗',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
         let gifCapture: MageWarsFxGifCapture | null = null;
+        let beastStaffVisibleDelta: {
+            before: { life: number; remaining: number };
+            after: { life: number; remaining: number };
+        } | null = null;
         const match = await setupOnlineMageWars(browser, baseURL);
         const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
         const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
@@ -7550,6 +8243,29 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(staffCard).toBeVisible({ timeout: 3_000 });
             await expect(staffCard).toHaveAttribute('data-attachment-kind', 'equipment');
             await expect(animalCard).toBeVisible({ timeout: 3_000 });
+            const woundedAnimalDamageBefore = await readServerObjectDamage(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                '群兽法杖治疗前应能读取野性山猫真实伤害',
+            );
+            expect(woundedAnimalDamageBefore).toBeGreaterThan(0);
+            const beforeHealingLife = await readVisibleFieldCardLife(
+                match.hostPage,
+                animalCard,
+                '群兽法杖治疗动作前',
+            );
+            expect(
+                beforeHealingLife.remaining,
+                '群兽法杖治疗前玩家画面必须显示目标当前生命低于最大生命',
+            ).toBeLessThan(beforeHealingLife.life);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖治疗动作前截图');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '24-群兽法杖治疗动作前-野性山猫生命读数显示',
+            );
 
             await staffCard.click({ timeout: 3_000, noWaitAfter: true });
             const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
@@ -7616,6 +8332,17 @@ test.describe('Mage Wars formal online runtime', () => {
                 },
             );
             await healOption.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(choiceDock, '群兽法杖选择治疗模式后候选层必须收口，证明玩家动作已提交').toHaveCount(0, { timeout: 5_000 });
+            await expect.poll(async () => (
+                hasArenaObjectAbilityResolvedEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+                    animalObjectId,
+                )
+            ), {
+                message: '群兽法杖选择治疗模式后必须产生同一对象主动能力结算事件',
+                timeout: 5_000,
+            }).toBe(true);
             const beastStaffHealingFxAudit = await beastStaffHealingFxAuditPromise;
             await gifCapture.stop();
             expect(beastStaffHealingFxAudit.targetAnchorId).toBe(animalObjectId);
@@ -7627,6 +8354,21 @@ test.describe('Mage Wars formal online runtime', () => {
                 woundedAnimalDamage,
                 '群兽法杖治疗模式结算后野性山猫伤害应降低',
             );
+            const afterHealingLife = await waitForVisibleFieldCardLifeIncrease(
+                match.hostPage,
+                animalCard,
+                beforeHealingLife,
+                '群兽法杖治疗模式结算后',
+            );
+            expect(afterHealingLife.life).toBe(beforeHealingLife.life);
+            expect(
+                afterHealingLife.remaining,
+                '群兽法杖治疗模式必须让同一目标的可见当前生命值上升',
+            ).toBeGreaterThan(beforeHealingLife.remaining);
+            beastStaffVisibleDelta = {
+                before: beforeHealingLife,
+                after: afterHealingLife,
+            };
             await expect.poll(async () => {
                 const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
                 return hasArenaObjectAbilityResolvedEvent(
@@ -7653,8 +8395,61 @@ test.describe('Mage Wars formal online runtime', () => {
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(beastStaffVisibleDelta, '群兽法杖治疗必须在最终证据前留下同一对象的可见生命前后值').not.toBeNull();
         await finalizeMageWarsFxVideoRecording(testInfo, recording, {
             actionLabel: '群兽法杖治疗代表态',
+            chainId: 'mage-wars-independent-beast-staff-healing-20261006',
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            required: true,
+            requireVisibleEffectDelta: true,
+            screenshotIncludes: [
+                '24-群兽法杖治疗动作前-野性山猫生命读数显示',
+                '24A-群兽法杖附件入口-来源卡牌下方能力按钮可见',
+                '24B-群兽法杖目标选择-友方动物整卡高亮',
+                '24C-群兽法杖模式选择-治疗和近战加成需玩家选择',
+                '24D-群兽法杖治疗模式-治疗光效与恢复数字过程帧',
+                '24E-群兽法杖治疗模式结算后-动物伤害降低',
+            ],
+            screenshotDescriptions: {
+                '24-群兽法杖治疗动作前-野性山猫生命读数显示': {
+                    description: `群兽法杖；玩家查看受伤野性山猫，画面显示当前生命为 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life}，建立治疗前基线。`,
+                    transition: '本链起点：目标已受伤且生命读数可见。',
+                    testedObject: '群兽法杖',
+                    effectClaim: '发动附件能力治疗受伤的友方动物',
+                    observedDelta: `效果前：同一只野性山猫当前生命为 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life}，服务端伤害大于 0。`,
+                },
+                '24A-群兽法杖附件入口-来源卡牌下方能力按钮可见': {
+                    description: '玩家点击群兽法杖附件本体后，来源卡下方出现“发动能力”入口，受伤野性山猫仍保持可见。',
+                    transition: '相对上一张：从前态进入附件能力入口。',
+                    observedDelta: '目标仍处于受伤前态，治疗尚未提交。',
+                },
+                '24B-群兽法杖目标选择-友方动物整卡高亮': {
+                    description: '玩家提交群兽法杖能力后，友方野性山猫整张牌面进入可识别的目标高亮状态。',
+                    transition: '相对上一张：进入目标选择，目标本体被提权。',
+                    observedDelta: '来源、目标和受伤生命读数仍保持可见。',
+                },
+                '24C-群兽法杖模式选择-治疗和近战加成需玩家选择': {
+                    description: '玩家选择野性山猫后，治疗和近战加成两个模式同时出现，等待玩家提交模式。',
+                    transition: '相对上一张：目标选择完成，进入能力模式选择。',
+                    observedDelta: '候选模式承接同一目标，尚未产生治疗结果。',
+                },
+                '24D-群兽法杖治疗模式-治疗光效与恢复数字过程帧': {
+                    description: '玩家选择治疗模式后，同一只野性山猫出现治疗光效和恢复数字，进入真实结算过程。',
+                    transition: '相对上一张：提交治疗模式，开始治疗动画。',
+                    observedDelta: '过程态：治疗反馈贴在同一目标本体，来源与目标关系保持稳定。',
+                },
+                '24E-群兽法杖治疗模式结算后-动物伤害降低': {
+                    description: `治疗结算完成后，同一只野性山猫当前生命由 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life} 上升到 ${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life}，牌桌回到可继续操作状态。`,
+                    transition: '相对上一张：动画结束并收口到稳定结果。',
+                    observedDelta: `结果态：同一目标当前生命由 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life} 上升到 ${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life}，服务端伤害下降。`,
+                    visibleEffectDelta: {
+                        before: `${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life}`,
+                        after: `${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life}`,
+                        direction: 'increase',
+                    },
+                },
+            },
+            gifDescription: `玩家选择受伤野性山猫后，动图连续展示治疗光效、恢复数字和同一目标生命由 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life} 上升到 ${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life} 的收口过程。`,
             requirements: [
                 {
                     requirement: '正式页面群兽法杖治疗独立覆盖：玩家完成附件入口、目标选择和治疗模式选择后，治疗光效、恢复数字、伤害降低和稳定收口来自同一次运行',
@@ -7667,6 +8462,8 @@ test.describe('Mage Wars formal online runtime', () => {
                 },
             ],
         });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, recording);
     });
 
     test('正式页面元素魔杖施放和快速重绑覆盖法术选择 UI', async ({ browser, baseURL }, testInfo) => {
@@ -8483,6 +9280,8 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '原力推斥必须通过真实页面产生推斥结算事件',
                 timeout: 5_000,
             }).toBe(true);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '原力推斥稳定收口截图前');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '12A-原力推斥结算后-目标落到 C3');
         } finally {
             await gifCapture?.stop().catch(() => undefined);
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
@@ -8492,6 +9291,12 @@ test.describe('Mage Wars formal online runtime', () => {
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         await finalizeMageWarsFxVideoRecording(testInfo, recording, {
             actionLabel: '推斥代表态',
+            screenshotIncludes: [
+                '12A-原力推斥-来源唤醒过程帧',
+                '12A-原力推斥-气流推离路径中',
+                '12A-原力推斥-命中推离过程帧',
+                '12A-原力推斥结算后-目标落到',
+            ],
             requirements: [
                 {
                     requirement: '正式页面推斥独立覆盖：玩家选择推离落点，来源唤醒、气流路径、目标落点和稳定收口来自同一次运行',
@@ -8506,7 +9311,7 @@ test.describe('Mage Wars formal online runtime', () => {
         });
     });
 
-    test('正式页面传送法术过程帧覆盖来源轨迹落点', async ({ browser, baseURL }, testInfo) => {
+test('正式页面传送法术过程帧覆盖来源闪现落点', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
         console.log('[MageWars GIF debug] teleport-test-enter');
         await clearEvidenceScreenshotsForTest(testInfo);
@@ -8552,17 +9357,23 @@ test.describe('Mage Wars formal online runtime', () => {
                 'teleport',
                 '12B-传送',
                 {
-                    expectTravel: true,
+                    expectTravel: false,
                     captureFrame: (animations) => gifCapture?.capture(animations) ?? Promise.resolve(),
                 },
             );
             await clickLegalTargetZone(match.hostPage, 'b3', '传送选择目标区域');
             const teleportFxAudit = await teleportFxAuditPromise;
             await gifCapture.stop();
-            expect(teleportFxAudit.sourceRow).toBe('1');
-            expect(teleportFxAudit.sourceCol).toBe('0');
-            expect(teleportFxAudit.targetRow).toBe('2');
-            expect(teleportFxAudit.targetCol).toBe('1');
+            await materializeMageWarsFxEvidenceFrameSeries(
+                recording,
+                [
+                    '12B-传送-来源闪现与目标落点过程帧',
+                    '12B-传送-目标区域落点过程帧',
+                ],
+                [0.24, 0.56],
+            );
+            expect(teleportFxAudit.hasTravel).toBe(false);
+            expect(teleportFxAudit.hasSourceWake).toBe(true);
 
             await expectServerObjectZone(
                 match.hostPage,
@@ -8584,6 +9395,8 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '传送必须通过真实页面产生传送结算事件',
                 timeout: 5_000,
             }).toBe(true);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '传送稳定收口截图前');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '12B-传送结算后-蓝色精怪到达 B3');
         } finally {
             await gifCapture?.stop().catch(() => undefined);
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
@@ -8592,14 +9405,19 @@ test.describe('Mage Wars formal online runtime', () => {
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         await finalizeMageWarsFxVideoRecording(testInfo, recording, {
-            actionLabel: '传送代表态',
+            actionLabel: '传送直接瞬移代表态',
+            screenshotIncludes: [
+                '12B-传送-来源闪现与目标落点过程帧',
+                '12B-传送-目标区域落点过程帧',
+                '12B-传送结算后-蓝色精怪到达',
+            ],
             requirements: [
                 {
-                    requirement: '正式页面传送独立覆盖：玩家选择目标区域，来源唤醒、传送轨迹、目标落点和稳定收口来自同一次运行',
+                    requirement: '正式页面传送独立覆盖：玩家选择目标区域后，来源闪现、目标落点和稳定收口来自同一次运行，且全程没有飞行路径',
                     status: 'PASS',
                     evidence: [
                         'E2E：正式页面选择传送目标生物和合法目标区域后产生真实传送结算事件',
-                        'E2E：传送来源、轨迹、落点和稳定收口过程帧来自当前运行',
+                        'E2E：传送来源闪现、目标落点和稳定收口过程帧来自当前运行，并反向断言没有 travel 节点',
                         recording.finalGifPath!,
                     ],
                 },

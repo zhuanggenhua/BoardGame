@@ -387,7 +387,7 @@
     "back": "Back",
     "confirm": "Confirm Spellbook",
     "mageDetailAria": "Mage rules card",
-    "mageDetailDescription": "This build calculates training from the mage ability card. To change mage, return to spellbook selection and choose another spellbook bound to that mage.",
+    "builderConstraints": "Build constraints",
     "trainedDirection": "Trained schools",
     "opposedDirection": "Opposed schools",
     "currentListLabel": "Spellbook list",

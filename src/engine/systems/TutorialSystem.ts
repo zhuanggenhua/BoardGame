@@ -656,7 +656,10 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 if (!state.sys.tutorial.active) {
                     return { halt: true, state };
                 }
-                if (hasPendingAiActions(state.sys.tutorial)) {
+                if (
+                    hasPendingAiActions(state.sys.tutorial)
+                    && !isAuthoredTutorialAiAction(state.sys.tutorial, command)
+                ) {
                     return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
                 }
                 const timestamp = resolveTimestamp(command);

@@ -66,6 +66,51 @@ export interface FeedbackErrorContext {
     componentStack?: string;
 }
 
+export type FeedbackReplayability = 'full' | 'partial' | 'unreplayable';
+export type FeedbackCollectionStatus = 'complete' | 'partial' | 'failed';
+
+export interface FeedbackDiagnosticPacket {
+    schemaVersion: 1;
+    captureId: string;
+    chainId?: string;
+    capturedAt: string;
+    source: 'user' | 'client-auto' | 'server';
+    collectionStatus: FeedbackCollectionStatus;
+    replayability: FeedbackReplayability;
+    missingFields: string[];
+    correlation: {
+        matchId?: string;
+        roomId?: string;
+        requestId?: string;
+        stateId?: number;
+        stateRevision?: number;
+        decisionEpoch?: number;
+    };
+    build?: {
+        appVersion?: string;
+        appCommitSha?: string;
+        appBuildTime?: string;
+        appReleaseChannel?: string;
+    };
+    phase?: string;
+    turnNumber?: number;
+    currentPlayerId?: string;
+    interaction?: unknown;
+    responseWindow?: unknown;
+    legalActions?: unknown;
+    aiDecisionPreview?: unknown;
+    snapshots: {
+        before?: unknown;
+        at?: unknown;
+        after?: unknown;
+    };
+    actionLogTail?: unknown[];
+    eventStreamTail?: unknown[];
+    undo?: unknown;
+    randomCursor?: number;
+    collectionErrors?: string[];
+}
+
 export interface FeedbackConfigProposalSourceContext {
     route?: string;
     tableId?: string;

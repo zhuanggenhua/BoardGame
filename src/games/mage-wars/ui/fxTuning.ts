@@ -2,7 +2,7 @@ import type { BoardBurstPresetName } from '../../../components/common/animations
 import type { ImpactEffects } from '../../../components/common/animations/ImpactContainer';
 import type { SummonColorTheme } from '../../../components/common/animations/SummonEffect';
 
-type MageWarsTravelFxKind = 'attack' | 'push' | 'teleport' | 'move';
+type MageWarsTravelFxKind = 'attack' | 'push' | 'move';
 type MageWarsTravelFxTuning = {
     pathPaddingCells: number;
     pathMinSizeCells: number;
@@ -31,10 +31,8 @@ export const MAGE_WARS_FX_TIMING = {
     meleeCompleteMs: 900,
     diceResultRollMs: 900,
     meleeResultVisibleMs: 3_000,
-    teleportTravelImpactMs: 2_600,
-    teleportSameCellImpactMs: 180,
-    teleportTravelCompleteMs: 3_600,
-    teleportSameCellCompleteMs: 950,
+    teleportArrivalImpactMs: 420,
+    teleportCompleteMs: 1_250,
     pushTravelImpactMs: 2_600,
     pushSameCellImpactMs: 80,
     pushTravelCompleteMs: 3_300,
@@ -95,20 +93,6 @@ export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTr
         targetBurstOverflow: 2.35,
         targetBurstSizeClassName: 'relative h-28 w-28',
     },
-    teleport: {
-        pathPaddingCells: 1.45,
-        pathMinSizeCells: 2.45,
-        sourceWakeSizeClassName: 'relative h-20 w-20',
-        sourceWakeOverflow: 2.2,
-        midBurstOverflow: 2.45,
-        sourceWakePreset: 'magicDust',
-        midBurstPreset: 'summonGlow',
-        midBurstStrongPreset: 'summonGlowStrong',
-        targetBurstPreset: 'summonGlow',
-        targetBurstStrongPreset: 'summonGlowStrong',
-        targetBurstOverflow: 2.2,
-        targetBurstSizeClassName: 'relative h-28 w-28',
-    },
     move: {
         pathPaddingCells: 0.8,
         pathMinSizeCells: 1.25,
@@ -118,6 +102,16 @@ export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTr
         sourceWakePreset: 'sparks',
         midBurstPreset: 'sparks',
     },
+} as const;
+
+export const MAGE_WARS_TELEPORT_FX_TUNING = {
+    sourcePreset: 'magicDust' as BoardBurstPresetName,
+    arrivalPreset: 'summonGlow' as BoardBurstPresetName,
+    arrivalStrongPreset: 'summonGlowStrong' as BoardBurstPresetName,
+    sourceOverflow: 2.2,
+    arrivalOverflow: 2.2,
+    sourceSizeClassName: 'relative h-20 w-20',
+    arrivalSizeClassName: 'relative h-28 w-28',
 } as const;
 
 export const MAGE_WARS_DIRECT_DAMAGE_FX_TUNING = {

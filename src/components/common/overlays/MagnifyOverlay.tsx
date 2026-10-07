@@ -55,24 +55,23 @@ export const MagnifyOverlay = ({
       data-backdrop-dismiss={closeOnBackdrop ? "enabled" : "disabled"}
       data-testid={overlayTestId}
     >
-      {/* 外层 wrapper 不裁剪，让关闭按钮可见 */}
-      <div className="relative" onClick={(e) => e.stopPropagation()}>
-        {isOpen && (
-          <button
-            type="button"
-            data-testid={overlayTestId ? `${overlayTestId}-close` : undefined}
-            className={`absolute right-2 top-2 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/65 text-white/80 shadow-lg transition-colors hover:bg-black/85 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${closeButtonClassName}`}
-            onClick={onClose}
-            aria-label={closeLabel ?? t("close")}
-            title={closeLabel ?? t("close")}
-          >
-            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.5} />
-          </button>
-        )}
+      <div className="relative inline-flex max-h-full max-w-full" onClick={(e) => e.stopPropagation()}>
         <div
-          className={`rounded-[1vw] overflow-hidden group/modal ${containerClassName}`}
+          className={`relative rounded-[1vw] overflow-hidden group/modal ${containerClassName}`}
         >
           {children}
+          {isOpen && (
+            <button
+              type="button"
+              data-testid={overlayTestId ? `${overlayTestId}-close` : undefined}
+              className={`absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-black/55 text-white/90 shadow-lg backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${closeButtonClassName}`}
+              onClick={onClose}
+              aria-label={closeLabel ?? t("close")}
+              title={closeLabel ?? t("close")}
+            >
+              <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
       </div>
     </div>

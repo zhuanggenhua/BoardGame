@@ -68,6 +68,8 @@ export function BetrayalEventChoiceSurface({
   hasResultPanel,
   latestDiscoveryVisual,
   roll,
+  resultReadable,
+  onDiceSettledChange,
   rollActorLabel,
   allTraitCheck,
   traitChoices,
@@ -97,6 +99,8 @@ export function BetrayalEventChoiceSurface({
   hasResultPanel: boolean;
   latestDiscoveryVisual: BetrayalDiscoveryAtlasVisual | BetrayalPossessionAtlasVisual | null;
   roll: BetrayalRecentRollState | null;
+  resultReadable: boolean;
+  onDiceSettledChange?: (rollId: string, settled: boolean) => void;
   rollActorLabel: string | null;
   allTraitCheck: BetrayalRecentAllTraitCheck | null;
   traitChoices: BetrayalTraitKey[];
@@ -120,6 +124,7 @@ export function BetrayalEventChoiceSurface({
   onResolve: (accept: boolean) => void;
 }) {
   const { t } = useTranslation(["game-betrayal", "common"]);
+  const usesWideDamageChoiceLayout = showDamageChoice && !isEventSymbolSkip && !hasResultPanel;
 
   return (
     <div
@@ -146,7 +151,9 @@ export function BetrayalEventChoiceSurface({
               ? "max-h-[440px] w-[620px] grid-cols-1 gap-4"
               : hasResultPanel
                 ? "max-h-full w-full max-w-[1100px] grid-cols-[minmax(230px,260px)_minmax(330px,1fr)_minmax(352px,360px)] items-start gap-5"
-                : "max-h-full w-full max-w-[820px] grid-cols-[minmax(240px,280px)_minmax(380px,1fr)] items-start gap-6"
+                : usesWideDamageChoiceLayout
+                  ? "max-h-full w-full max-w-[1000px] grid-cols-[minmax(240px,280px)_minmax(420px,1fr)] items-start gap-6"
+                  : "max-h-full w-full max-w-[820px] grid-cols-[minmax(240px,280px)_minmax(380px,1fr)] items-start gap-6"
           }`}
         >
           {isEventSymbolSkip ? null : (
@@ -182,9 +189,11 @@ export function BetrayalEventChoiceSurface({
               compactResult={false}
               denseResult
               denseResultPlacement="stacked"
-              openTableResultDocked={false}
-              diceVisualScale={1}
-            />
+                openTableResultDocked={false}
+                diceVisualScale={1}
+                resultReadable={resultReadable}
+                onDiceSettledChange={onDiceSettledChange}
+              />
           ) : allTraitCheck ? (
             <div
               data-testid="betrayal-event-choice-all-trait-check"
@@ -341,9 +350,7 @@ export function BetrayalEventChoiceSurface({
                     {t("board.status.damage")}
                   </span>
                   <div
-                    className={
-                      "grid grid-cols-2 gap-2.5"
-                    }
+                    className="grid grid-cols-1 gap-2.5"
                   >
                     {damageChoice.allowedTraits.map((trait) => {
                       const selectedDamageTraitCount = countSelectedDamageTrait(

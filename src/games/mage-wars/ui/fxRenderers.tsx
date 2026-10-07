@@ -8,6 +8,7 @@ import {
     BoardProjectileAttackPreset,
     BoardProjectilePathPreset,
     BoardSummonEffectPreset,
+    BoardTeleportImpactPreset,
 } from '../../../components/common/animations/BoardFxPresets';
 import { EffectDie } from './EffectDie';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
@@ -26,6 +27,7 @@ import {
     MAGE_WARS_DIRECT_DAMAGE_FX_TUNING,
     MAGE_WARS_FX_TIMING,
     MAGE_WARS_SUMMON_FX_TUNING,
+    MAGE_WARS_TELEPORT_FX_TUNING,
     MAGE_WARS_TRAVEL_FX_TUNING,
     mageWarsFxColors,
     resolveMageWarsSummonColor,
@@ -291,7 +293,7 @@ function MageWarsTravelPath({
     sourceAnchorId?: string;
     targetAnchorId?: string;
     getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push' | 'teleport' | 'move';
+    kind: 'push' | 'move';
     strong?: boolean;
     quality: FxQuality;
     showSourceWake?: boolean;
@@ -354,7 +356,7 @@ function MageWarsTargetBurst({
     targetBox?: FxBox | null;
     targetAnchorId?: string;
     getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push' | 'teleport';
+    kind: 'push';
     strong?: boolean;
     delayMs: number;
     quality: FxQuality;
@@ -467,13 +469,12 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId);
     const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
-    const hasTravel = Boolean(source && cell && !sameCell(source, cell));
     useTimedImpactAndComplete(
         cell,
         onImpact,
         onComplete,
-        hasTravel ? MAGE_WARS_FX_TIMING.teleportTravelImpactMs : MAGE_WARS_FX_TIMING.teleportSameCellImpactMs,
-        hasTravel ? MAGE_WARS_FX_TIMING.teleportTravelCompleteMs : MAGE_WARS_FX_TIMING.teleportSameCellCompleteMs,
+        MAGE_WARS_FX_TIMING.teleportArrivalImpactMs,
+        MAGE_WARS_FX_TIMING.teleportCompleteMs,
     );
 
     if (!cell) return null;
@@ -481,29 +482,31 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     const quality = resolveEventQuality(event);
 
     return (
-        <>
-            <MageWarsTravelPath
-                source={source}
-                target={cell}
-                sourceSnapshot={sourceSnapshot}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="teleport"
-                strong={strong}
-                quality={quality}
-            />
-            <MageWarsTargetBurst
-                cell={cell}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="teleport"
-                strong={strong}
-                delayMs={hasTravel ? MAGE_WARS_FX_TIMING.teleportTravelImpactMs : 0}
-                quality={quality}
-            />
-        </>
+        <BoardTeleportImpactPreset
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            sourceAnchorId={stringifyAnchorId(event.params?.sourceObjectId ?? event.params?.targetObjectId)}
+            targetAnchorId={targetAnchorId}
+            getCellPosition={getCellPosition}
+            quality={quality}
+            arrivalDelayMs={MAGE_WARS_FX_TIMING.teleportArrivalImpactMs}
+            sourceHostTestId="mage-wars-fx-teleport-source-wake"
+            sourceBurstTestId="mage-wars-fx-teleport-source-burst"
+            arrivalHostTestId="mage-wars-fx-spell-teleport"
+            arrivalBurstTestId="mage-wars-fx-spell-teleport-burst"
+            sourcePreset={MAGE_WARS_TELEPORT_FX_TUNING.sourcePreset}
+            arrivalPreset={strong
+                ? MAGE_WARS_TELEPORT_FX_TUNING.arrivalStrongPreset
+                : MAGE_WARS_TELEPORT_FX_TUNING.arrivalPreset}
+            sourceColor={mageWarsFxColors('teleport', strong)}
+            arrivalColor={mageWarsFxColors('teleport', strong)}
+            sourceOverflow={MAGE_WARS_TELEPORT_FX_TUNING.sourceOverflow}
+            arrivalOverflow={MAGE_WARS_TELEPORT_FX_TUNING.arrivalOverflow}
+            sourceSizeClassName={MAGE_WARS_TELEPORT_FX_TUNING.sourceSizeClassName}
+            arrivalSizeClassName={MAGE_WARS_TELEPORT_FX_TUNING.arrivalSizeClassName}
+        />
     );
 };
 

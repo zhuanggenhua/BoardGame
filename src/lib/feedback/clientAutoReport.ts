@@ -4,6 +4,10 @@ import { buildFeedbackClientContext, getCurrentRouteContext } from './clientFeed
 import { buildGameFeedbackActionLog, buildGameFeedbackStateSnapshot } from './gameFeedbackDiagnostics';
 import { getCurrentGameFeedbackContext } from './gameFeedbackContext';
 import { setLastErrorContext } from './errorContext';
+import {
+    buildFeedbackDiagnosticPacket,
+    serializeFeedbackDiagnosticPacket,
+} from './diagnosticPacket';
 
 const DEFAULT_CLIENT_AUTO_REPORT_SOURCE = 'client-auto-report';
 const DEDUPE_STORAGE_PREFIX = 'bg:auto-feedback:v1:';
@@ -367,6 +371,17 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     const stateSnapshot = gameFeedbackContext?.state
         ? buildGameFeedbackStateSnapshot(gameFeedbackContext.state)
         : undefined;
+    const diagnosticPacket = serializeFeedbackDiagnosticPacket(buildFeedbackDiagnosticPacket({
+        state: gameFeedbackContext?.state,
+        clientContext: buildFeedbackClientContext({
+            mode,
+            matchId,
+            playerId: payload.playerId ?? undefined,
+            gameId,
+        }),
+        source: 'client-auto',
+        chainId: 'auto-' + signature,
+    }));
 
     markRecentReport(signature);
 
@@ -386,6 +401,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 contactInfo: `auto:${source}`,
                 actionLog,
                 stateSnapshot,
+                diagnosticPacket,
                 clientContext: buildFeedbackClientContext({
                     mode,
                     matchId,

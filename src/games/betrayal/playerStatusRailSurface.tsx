@@ -409,13 +409,13 @@ export function BetrayalTeammateListSurface(props: BetrayalTeammateListSurfacePr
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <div className="truncate text-sm font-medium text-[#f1e8d4]">
+                  <div className="betrayal-hud-readable-name truncate text-sm font-medium text-[#f1e8d4]">
                     {playerName}
                   </div>
                   {statusVisible ? (
                     <span
                       data-player-status-tone={statusTone}
-                      className={`shrink-0 rounded-[4px] border px-2 py-0.5 text-[10px] font-medium ${
+                      className={`betrayal-hud-readable-status shrink-0 rounded-[4px] border px-2 py-0.5 text-[10px] font-medium ${
                         state.isSelectedTradeTarget
                           ? "border-[#eecc7e] bg-[rgba(238,204,126,0.18)] text-[#ffe4a0]"
                           : state.isPassiveSameRoomCue
@@ -427,8 +427,8 @@ export function BetrayalTeammateListSurface(props: BetrayalTeammateListSurfacePr
                     </span>
                   ) : null}
                 </div>
-                <div className="text-xs text-[#b7aa92]">{roomName}</div>
-                <div className="text-[11px] text-[#b7aa92]">
+                <div className="betrayal-hud-readable-room text-xs text-[#b7aa92]">{roomName}</div>
+                <div className="betrayal-hud-readable-status text-[11px] text-[#b7aa92]">
                   {t("board.players.inventoryCount", {
                     count: explorer.inventory.length,
                   })}
@@ -514,13 +514,13 @@ export function BetrayalTeammateListSurface(props: BetrayalTeammateListSurfacePr
             </div>
             <div className="min-w-0">
               <div className="flex items-center justify-between gap-2">
-                <div className="truncate text-[11px] font-medium tracking-[0.04em] text-[#efe5cf]">
+                <div className="betrayal-hud-readable-name truncate text-[11px] font-medium tracking-[0.04em] text-[#efe5cf]">
                   {playerName}
                 </div>
                 {statusVisible ? (
                   <span
                     data-player-status-tone={statusTone}
-                    className={`shrink-0 rounded-[4px] border px-1.5 py-0.5 text-[9px] ${
+                    className={`betrayal-hud-readable-status shrink-0 rounded-[4px] border px-1.5 py-0.5 text-[9px] ${
                       state.isSelectedTradeTarget
                         ? "border-[#eecc7e] bg-[rgba(238,204,126,0.18)] text-[#ffe4a0]"
                         : state.isPassiveSameRoomCue
@@ -532,12 +532,12 @@ export function BetrayalTeammateListSurface(props: BetrayalTeammateListSurfacePr
                   </span>
                 ) : null}
               </div>
-              <div className="mt-0.5 truncate text-[10px] text-[#b7aa92]">
+              <div className="betrayal-hud-readable-room mt-0.5 truncate text-[10px] text-[#b7aa92]">
                 {roomName}
               </div>
               {props.knowledgeOfJackPlayerIds.includes(explorer.playerId) ? (
                 <div
-                  className="mt-1 truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c5df6b]"
+                  className="betrayal-hud-readable-knowledge mt-1 truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c5df6b]"
                   data-testid={`betrayal-bottom-teammate-knowledge-${explorer.playerId}`}
                 >
                   {t("board.players.knowledgeOfJack")}

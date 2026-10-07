@@ -387,7 +387,7 @@
     "back": "返回",
     "confirm": "确认法术书",
     "mageDetailAria": "法师规则卡",
-    "mageDetailDescription": "这份构筑按这张法师能力牌的训练方向计算。需要更换法师时，返回选书页选择另一本绑定对应法师的法术书。",
+    "builderConstraints": "构筑限制",
     "trainedDirection": "受训方向",
       "opposedDirection": "相斥方向",
       "currentListLabel": "法术书清单",

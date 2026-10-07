@@ -822,6 +822,12 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   } = options;
   const { entry, visibleCurrentEntry, discovery, recentRoll, ownerPlayerId, key } =
     selection;
+  const eventDiscovery =
+    core.latestDiscovery?.kind === "event"
+      ? core.latestDiscovery
+      : discovery?.kind === "event"
+        ? discovery
+        : null;
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
   const activePendingEventRollResolution =
@@ -847,12 +853,12 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     recentRollDismissalKey && dismissedRecentRollId === recentRollDismissalKey,
   );
   const hasEventResultContext = Boolean(
-    core.latestDiscovery?.kind === "event" &&
+    eventDiscovery &&
       core.recentRoll &&
       (core.recentRoll.kind === "eventTraitCheck" ||
         core.recentRoll.kind === "eventDiceRoll" ||
         core.recentRoll.kind === "eventRolledDamage") &&
-      core.recentRoll.sourceTitle === core.latestDiscovery.title &&
+      core.recentRoll.sourceTitle === eventDiscovery.title &&
       !isRecentRollDismissed &&
       !shouldShowHauntRevealCue &&
       !isConfirmedExorciseRoll,
@@ -914,6 +920,19 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       !shouldShowHauntRevealCue &&
       !shouldDisplayEventRolledDamageAsIndependentRoll,
   );
+  // Event trait/dice rolls are owned by the visible discovery panel. During
+  // the state transition into pending acknowledgement, the generic review
+  // surface can otherwise mount for one render and settle the same roll first,
+  // making the discovery panel reveal its result while its own dice are still
+  // moving.
+  const isEventRollOwnedByDiscoveryPanel = Boolean(
+    eventDiscovery &&
+      core.recentRoll &&
+      (core.recentRoll.kind === "eventTraitCheck" ||
+        core.recentRoll.kind === "eventDiceRoll") &&
+      core.recentRoll.sourceTitle === eventDiscovery.title &&
+      !isRecentRollDismissed,
+  );
   const shouldShowRecentRollReview = Boolean(
     core.recentRoll &&
       core.phase !== "endgame" &&
@@ -930,6 +949,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
         core.recentRoll.kind !== "eventDiceRoll" &&
         core.recentRoll.kind !== "eventRolledDamage") ||
         Boolean(selection.recentRollDisplayKey)) &&
+      !isEventRollOwnedByDiscoveryPanel &&
       !shouldShow,
   );
   const shouldShowBlockingRecentRollOverlay = shouldShowRecentRollReview;
@@ -1224,9 +1244,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
             !canAdvanceSearch &&
             !canCurrentViewerAcknowledgeCardResolution),
       ),
-      eventRollReadable: core.pendingEventRollResolution
-        ? isRecentRollReadable
-        : undefined,
+      eventRollReadable: hasEventResultContext ? isRecentRollReadable : undefined,
       pendingCardResolutionId: pendingCardResolution?.id ?? undefined,
       pendingCardResolutionStep:
         pendingCardResolution && !isSearchFinalAcknowledgement

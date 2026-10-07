@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { createRequestI18n } from '../../shared/i18n';
 import { generateCode, sendPasswordResetEmailWithCode, sendVerificationEmailWithCode } from '../../../../../src/server/email';
 import { AuthService } from './auth.service';
+import { GuestIdentityClaimService } from './guest-identity-claim.service';
 import { serializeDeveloperGameIds } from './schemas/developer-game-access';
 import { ChangePasswordDto, LoginDto, RegisterDto, SendEmailCodeDto, SendRegisterCodeDto, SendResetCodeDto, ResetPasswordDto, VerifyEmailDto, UpdateAvatarDto, UpdateUsernameDto } from './dtos/auth.dto';
 
@@ -25,7 +26,11 @@ const serializeBackofficeRole = (user: {
 
 @Controller('auth')
 export class AuthController {
-    constructor(@Inject(AuthService) private readonly authService: AuthService) { }
+    constructor(
+        @Inject(AuthService) private readonly authService: AuthService,
+        @Inject(GuestIdentityClaimService)
+        private readonly guestIdentityClaimService: GuestIdentityClaimService,
+    ) { }
 
     @Post('send-register-code')
     async sendRegisterCode(@Body() body: SendRegisterCodeDto, @Req() req: Request, @Res() res: Response) {
@@ -113,7 +118,7 @@ export class AuthController {
     @Post('register')
     async register(@Body() body: RegisterDto, @Req() req: Request, @Res() res: Response) {
         const { t } = createRequestI18n(req);
-        const { username, email, code, password } = body;
+        const { username, email, code, password, guestId } = body;
 
         if (!username || !email || !code || !password) {
             return this.sendError(res, 400, t('auth.error.missingRegisterFields'));
@@ -151,6 +156,11 @@ export class AuthController {
         }
 
         const user = await this.authService.createUser(username, password, email);
+        await this.guestIdentityClaimService.claimGuestHistory({
+            guestId,
+            userId: user._id.toString(),
+            username: user.username,
+        });
         const token = this.authService.createToken(user);
         const refreshToken = await this.authService.issueRefreshToken(user._id.toString());
         this.setRefreshCookie(res, refreshToken.token, refreshToken.expiresAt);
@@ -222,7 +232,7 @@ export class AuthController {
     @Post('login')
     async login(@Body() body: LoginDto, @Req() req: Request, @Res() res: Response) {
         const { t } = createRequestI18n(req);
-        const { account, password } = body;
+        const { account, password, guestId } = body;
 
         if (!account || !password) {
             return this.sendAuthFailure(res, 'AUTH_MISSING_CREDENTIALS', t('auth.error.missingCredentials'));
@@ -264,6 +274,11 @@ export class AuthController {
         }
 
         await this.authService.clearLoginFailures(trimmedAccount, clientIp);
+        await this.guestIdentityClaimService.claimGuestHistory({
+            guestId,
+            userId: user._id.toString(),
+            username: user.username,
+        });
         const token = this.authService.createToken(user);
         const refreshToken = await this.authService.issueRefreshToken(user._id.toString());
         this.setRefreshCookie(res, refreshToken.token, refreshToken.expiresAt);

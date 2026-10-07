@@ -6,7 +6,7 @@ WATCH_USER="${WATCH_USER:-root}"
 UNIT_PATH="/etc/systemd/system/boardgame-game-server-cpu-watch.service"
 TIMER_PATH="/etc/systemd/system/boardgame-game-server-cpu-watch.timer"
 ENV_PATH="/etc/boardgame-game-server-cpu-watch.env"
-PROJECT_ENV_PATH="${ROOT_DIR}/.env"
+PROJECT_ENV_PATH="${PROJECT_ENV_PATH:-${ROOT_DIR}/.env}"
 
 if [ ! -d "$ROOT_DIR" ]; then
   echo "boardgame game-server CPU watch install failed: ROOT_DIR not found: $ROOT_DIR" >&2
@@ -49,6 +49,8 @@ BG_GAME_SERVER_CPU_EVIDENCE_DIR=${BG_GAME_SERVER_CPU_EVIDENCE_DIR:-${ROOT_DIR}/l
 BG_GAME_SERVER_CPU_HISTORY_LOG=${BG_GAME_SERVER_CPU_HISTORY_LOG:-${ROOT_DIR}/logs/game-server-cpu-watch/restart-history.log}
 BG_GAME_SERVER_CPU_FEEDBACK_URL=${BG_GAME_SERVER_CPU_FEEDBACK_URL:-http://127.0.0.1/internal/feedback/system}
 BG_GAME_SERVER_CPU_FEEDBACK=${BG_GAME_SERVER_CPU_FEEDBACK:-1}
+BG_GAME_SERVER_CPU_HOST_ID=${BG_GAME_SERVER_CPU_HOST_ID:-$(hostname 2>/dev/null || echo unknown-host)}
+BG_GAME_SERVER_CPU_ENVIRONMENT=${BG_GAME_SERVER_CPU_ENVIRONMENT:-production}
 # 默认只报警和留档；确认要自动重启时，安装命令里显式传 BG_GAME_SERVER_CPU_WATCH_RESTART=1。
 BG_GAME_SERVER_CPU_WATCH_RESTART=${BG_GAME_SERVER_CPU_WATCH_RESTART:-0}
 EOF

@@ -20,3 +20,16 @@ metadata:
 
 - 处理线上反馈、回写状态、关闭理由、解决方式等流程仍以 `.spec/skills/feedback-closeout/SKILL.md` 为唯一规范真相源。
 - 本文只约束玩家提交反馈的公共入口，不替代反馈收口 workflow。
+
+## 结构化现场包
+
+- 玩家反馈、客户端自动反馈和服务端自动反馈必须尽量同时提交 diagnosticPacket；旧 stateSnapshot、actionLog 和 clientContext 只保留兼容读取职责。
+- diagnosticPacket 的唯一合同包含 schemaVersion、captureId、可选 chainId、capturedAt、source、collectionStatus、replayability、missingFields、correlation、构建信息、阶段 / 回合 / 交互 / 响应窗口、有限长度行动日志与事件流尾部，以及 snapshots.before / at / after。
+- captureId 只标识一次采集；同一故障链的前态、中态、后态必须共用 chainId。matchId、roomId、requestId、stateId、stateRevision 或 decisionEpoch 缺失时必须进入 missingFields，禁止从反馈正文、相邻记录或 incidentKey 推测。
+- replayability 只有三档：full（可进入原始时点回放）、partial（可消费状态或重建语义场景，但缺关键关联 / 时序）、unreplayable（缺少可用状态或真实入口）。
+- 状态注入成功不等于反馈复现；接入现场包的测试必须直接读取运行时阶段、交互 / 响应窗口、目标对象、行动日志和事件流，并把“注入成功、运行时消费成功、原始故障复现成功”分开记录。
+- actionLogTail / eventStreamTail 只能作为语义线索，不能单独证明原始时点可回放；涉及随机结果、连续结算或撤回链时，必须同时保留状态时点快照、前后快照、stateId / stateRevision、decisionEpoch、请求关联和 randomCursor，缺一只能降级为 partial 或 unreplayable。
+- 状态注入入口必须支持显式 randomCursor，并返回权威 stateID / randomCursor；E2E helper 必须等待页面运行时消费到目标阶段 / 交互 / 响应窗口，禁止用固定 sleep 代替消费证明。
+- 服务端自动反馈的关联键必须从权威 `match.state`、`match.stateID` 和当前交互 / 响应窗口读取；不存在独立房间号时保留 `roomId` 缺失，不得把 `matchId`、`incidentKey` 或日志文本伪装成房间号。
+- 历史反馈只允许生成只读缺口报告；回填工具不得补写 diagnosticPacket、猜测关联键或改动反馈状态。现场包导入必须经过运行时消费断言入口，直接比较运行时阶段、请求、状态版本和决策纪元。
+- 现场包采集失败不得吞掉反馈提交；应记录 collectionStatus: partial 或 failed 与 collectionErrors，让后台明确知道当前只能定位到哪一层。

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { validateE2EImageIndex } from './e2e-image-index-contract.mjs';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
@@ -433,8 +434,12 @@ const validatePassManifest = (manifestPath, imagePaths, viewer) => {
     if (manifest?.verdict !== 'PASS') {
         throw new Error('拒绝打开：PASS 清单 verdict 必须是 "PASS"');
     }
-    if (manifest?.scope !== 'current-user-request') {
-        throw new Error('拒绝打开：PASS 清单 scope 必须是 "current-user-request"，不能用整页 UI 或其它范围替代本轮要求');
+    const isIndependentScope = manifest?.scope === 'independent'
+        && manifest?.evidenceCategory === 'independent'
+        && typeof manifest?.gameId === 'string'
+        && manifest.gameId.trim().length > 0;
+    if (manifest?.scope !== 'current-user-request' && !isIndependentScope) {
+        throw new Error('拒绝打开：PASS 清单 scope 必须是 "current-user-request"，或显式声明 gameId + evidenceCategory=independent 的独立证据');
     }
     if (manifest?.display?.purpose !== FINAL_DISPLAY_PURPOSE) {
         throw new Error(`拒绝打开：PASS 清单 display.purpose 必须是 "${FINAL_DISPLAY_PURPOSE}"，用于声明这不是过程核图，而是最终用户展示`);
@@ -474,6 +479,12 @@ const validatePassManifest = (manifestPath, imagePaths, viewer) => {
     if (missingImages.length > 0) {
             throw new Error(`拒绝打开：本次交付涉及的图片/视频不在 PASS 清单 media/images 中: ${missingImages.join(', ')}`);
     }
+    validateE2EImageIndex({
+        manifest,
+        manifestPath: resolvedManifestPath,
+        imagePaths,
+        projectRoot: PROJECT_ROOT,
+    });
     validateLabeledImagesPreserveSourcePixels(manifest, imagePaths, viewer);
 
     return resolvedManifestPath;

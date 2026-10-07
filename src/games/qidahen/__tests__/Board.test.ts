@@ -285,11 +285,16 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('!actionPaymentPreviewVisible');
         expect(boardSource).toContain("const wheelStageEmphasized = wheelStageAvailable && tutorialStep?.id !== 'welcome';");
         expect(boardSource).toContain('emphasized={wheelStageEmphasized}');
+        expect(boardSource).toContain('const tutorialPrimaryWheelMoveId = tutorialStep?.highlightTarget?.startsWith(\'qidahen-wheel-move-\')');
+        expect(boardSource).toContain("tutorialStep?.id === 'wheel-move'");
+        expect(boardSource).toContain('primaryMoveId={tutorialPrimaryWheelMoveId}');
         expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
         expect(boardSource).toContain('const wheelMoveChoiceSurfaceActive = !pendingScenarioChoices');
         expect(boardSource).toContain('data-testid="qidahen-action-wheel"');
         expect(boardSource).toContain('data-testid={`qidahen-wheel-move-target-${choice.id}`}');
         expect(boardSource).toContain('data-tutorial-id={`qidahen-wheel-move-${choice.id}`}');
+        expect(boardSource).toContain('data-wheel-primary={primaryTarget ? \'true\' : undefined}');
+        expect(boardSource).toContain('data-wheel-candidate-level={secondaryCandidate ? \'secondary\' : primaryTarget ? \'primary\' : undefined}');
         expect(boardSource).toContain('directExecuteOnClick');
         expect(boardSource).not.toContain("const mediaQuery = safeMatchMedia('(hover: none), (pointer: coarse), (any-pointer: coarse)');");
         expect(boardSource).not.toContain('return subscribeMediaQueryChange(mediaQuery, update);');
@@ -505,7 +510,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('grantPardonHasMapTargets ? null : (');
         expect(boardSource).toContain('() => grantPardonSelection?.choices ?? []');
         expect(boardSource).toContain('for (const choice of grantPardonMapChoices)');
-        expect(boardSource).toContain("if (tutorialStepId !== 'choose-grant-pardon-target') {");
+        expect(boardSource).toContain("const tutorialGrantPardonFocusChoice = tutorialStepId === 'choose-grant-pardon-target'");
         expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'source');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'dispatch');");
         expect(boardSource).not.toContain('const wheelDispatchCandidateRegionIds = new Set(');
@@ -513,7 +518,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain("applyTone(\\n                    candidate.targetRuntimeRegionId,");
         expect(boardSource).toContain('const mapSelectionGuideUsesRegionHighlight = grantPardonSelection != null');
         expect(boardSource).toContain("|| tutorialStepId === 'choose-grant-pardon-target';");
-        expect(boardSource).toContain('const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;');
+        expect(boardSource).toContain("const mapSelectionGuideDrawsRoute = mapSelectionGuide != null");
         expect(boardSource).toContain('{mapSelectionGuideDrawsRoute ? (');
         expect(boardSource).toContain("topLevelMapSelectionGuide && tutorialStep?.id === 'choose-grant-pardon-target'");
         expect(boardSource).toContain('data-tutorial-id={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}');
@@ -570,6 +575,23 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid={`qidahen-ma-shi-trade-choice-${choice.troopCount}`}');
         expect(boardSource).toContain('data-testid={`qidahen-khan-edict-choice-${choice.id}`}');
         expect(boardSource).toContain('data-testid={`qidahen-diplomacy-choice-${choice.id}`}');
+    });
+
+    it('教程招安目标必须把推荐目标、来源与其它候选分出图面层级', () => {
+        expect(boardSource).toContain("const tutorialGrantPardonFocusChoice = tutorialStepId === 'choose-grant-pardon-target'");
+        expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'tutorialSource');");
+        expect(boardSource).toContain("applyTone(choice.targetRegionId, 'tutorialPrimary');");
+        expect(boardSource).toContain("applyTone(choice.targetRegionId, 'tutorialCandidate');");
+        expect(boardSource).toContain('const sourcePoint = getGuideArmyTokenPoint(choice.sourceRegionId, sourceFactionId);');
+        expect(boardSource).toContain('sourceTokenBounds: getGuideArmyTokenBounds(choice.sourceRegionId, sourceFactionId) ?? undefined');
+        expect(boardSource).toContain('sourceLabel: `${choice.sourceRegionName}部队`');
+        expect(boardSource).toContain('targetLabel: `${choice.targetRegionName}接收区`');
+        expect(boardSource).toContain('data-testid={`qidahen-map-guide-source-focus-${candidate.targetRegionId}`}');
+        expect(boardSource).toContain('data-testid="qidahen-grant-pardon-source-label"');
+        expect(boardSource).toContain('data-testid="qidahen-grant-pardon-target-label"');
+        expect(boardSource).toContain("tutorialStepId === 'choose-grant-pardon-target' || !mapSelectionGuideUsesRegionHighlight");
+        expect(boardSource).toContain("data-qidahen-tutorial-primary-target={tutorialGrantPardonFocusChoice?.targetRegionId ?? undefined}");
+        expect(boardSource).toContain("data-qidahen-tutorial-source-region={tutorialGrantPardonFocusChoice?.sourceRegionId ?? undefined}");
     });
 
     it('右侧动作按钮在 hover 或 focus 时必须显示可见功能提示，而不是只依赖原生 title', () => {
@@ -1070,10 +1092,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('const wheelDispatchCandidateRegionIds = new Set(');
         expect(boardSource).toContain('const routeColor = activeCandidate ?');
         expect(boardSource).toContain('strokeWidth={activeCandidate ? 4 : 2.6}');
-        expect(boardSource).toContain('opacity={activeCandidate ? 0.88 : 0.34}');
+        expect(boardSource).toContain('opacity={activeCandidate ? 1 : 0.34}');
         expect(boardSource).toContain("mapSelectionGuide ? 'rgba(43,101,145,0.06)'");
         expect(boardSource).toContain('opacity={mapSelectionGuide ? 0.06 : 0.9}');
-        expect(boardSource).toContain('fill={routeColor}');
+        expect(boardSource).toContain("fill={activeCandidate ? '#d8ffbe' : routeColor}");
         expect(boardSource).toContain('fill="none"');
         expect(boardSource).not.toContain('const targetFocusPadding = targetsArmyTokens ? activeCandidate ? 7 : 5 : 0;');
         expect(boardSource).toContain('const targetFocusLeft = targetPoint.x - targetFocusRadius;');

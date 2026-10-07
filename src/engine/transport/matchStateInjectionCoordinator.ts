@@ -17,6 +17,7 @@ export type MatchStateInjectionCoordinatorHooks<TMatch extends MatchStateInjecti
     persistState: (matchID: string, state: StoredMatchState) => Promise<void>;
     clearAllBaselines: (match: TMatch) => void;
     broadcast: (match: TMatch) => void;
+    restoreRandomCursor?: (match: TMatch, randomCursor: number) => void;
     getNodeEnv: () => string | undefined;
     logInjected: (matchID: string) => void;
 };
@@ -47,7 +48,11 @@ export class MatchStateInjectionCoordinator<TMatch extends MatchStateInjectionCo
         this.hooks = config.hooks;
     }
 
-    async injectState(matchID: string, state: MatchState<unknown>): Promise<void> {
+    async injectState(
+        matchID: string,
+        state: MatchState<unknown>,
+        randomCursor?: number,
+    ): Promise<{ stateID: number; randomCursor: number }> {
         if (!canInjectStateInCurrentEnv(this.hooks.getNodeEnv())) {
             throw new Error('injectState is only available in test/development environment');
         }
@@ -59,20 +64,29 @@ export class MatchStateInjectionCoordinator<TMatch extends MatchStateInjectionCo
             throw new Error(`Match ${matchID} not found`);
         }
 
+        if (randomCursor !== undefined && (!Number.isInteger(randomCursor) || randomCursor < 0)) {
+            throw new Error('Invalid randomCursor: must be a non-negative integer');
+        }
+
         const nextStateID = match.stateID + 1;
+        const resolvedRandomCursor = randomCursor ?? match.getRandomCursor();
         const storedState: StoredMatchState = {
             G: state,
             _stateID: nextStateID,
             randomSeed: match.randomSeed,
-            randomCursor: match.getRandomCursor(),
+            randomCursor: resolvedRandomCursor,
         };
 
         await this.hooks.persistState(matchID, storedState);
 
+        if (randomCursor !== undefined) {
+            this.hooks.restoreRandomCursor?.(match, randomCursor);
+        }
         match.state = state;
         match.stateID = nextStateID;
         this.hooks.clearAllBaselines(match);
         this.hooks.broadcast(match);
         this.hooks.logInjected(matchID);
+        return { stateID: nextStateID, randomCursor: resolvedRandomCursor };
     }
 }

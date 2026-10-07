@@ -20,6 +20,8 @@ FEEDBACK_TOKEN="${BG_GAME_SERVER_CPU_FEEDBACK_TOKEN:-${INTERNAL_FEEDBACK_TOKEN:-
 ENABLE_CPU_PROFILE="${BG_GAME_SERVER_CPU_PROFILE:-1}"
 CPU_PROFILE_DURATION_SECONDS="${BG_GAME_SERVER_CPU_PROFILE_DURATION_SECONDS:-8}"
 CPU_PROFILE_TIMEOUT_SECONDS="${BG_GAME_SERVER_CPU_PROFILE_TIMEOUT_SECONDS:-20}"
+HOST_ID="${BG_GAME_SERVER_CPU_HOST_ID:-$(hostname 2>/dev/null || echo unknown-host)}"
+ENVIRONMENT="${BG_GAME_SERVER_CPU_ENVIRONMENT:-production}"
 CPU_PROFILE_INSPECTOR_PORT=9229
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CPU_PROFILE_HELPER="$SCRIPT_DIR/capture-node-cpu-profile.mjs"
@@ -46,6 +48,8 @@ Environment:
   BG_GAME_SERVER_CPU_PROFILE               set to 0 to skip V8 CPU profile capture; default 1
   BG_GAME_SERVER_CPU_PROFILE_DURATION_SECONDS V8 CPU profile duration before restart, default 8
   BG_GAME_SERVER_CPU_PROFILE_TIMEOUT_SECONDS hard capture timeout, default 20
+  BG_GAME_SERVER_CPU_HOST_ID               stable machine identifier; default hostname
+  BG_GAME_SERVER_CPU_ENVIRONMENT            deployment environment label; default production
   Inspector 由 Node 外部调试信号在容器 loopback 的默认端口 9229 打开
 EOF
 }
@@ -287,15 +291,15 @@ report_high_cpu_feedback() {
 
   local host_name
   host_name="$(hostname 2>/dev/null || echo unknown-host)"
-  local content="[system][infra-cpu-watch] game-server CPU sustained high: average=${average_cpu}% highSamples=${high_samples}/${SAMPLE_COUNT} threshold=${THRESHOLD_PERCENT}% decision=${decision} restarted=${restarted}"
-  local incident_key="infra-cpu-watch:${host_name}:${CONTAINER_NAME}:${THRESHOLD_PERCENT}"
+  local content="[system][infra-cpu-watch] environment=${ENVIRONMENT} host=${HOST_ID} game-server CPU sustained high: average=${average_cpu}% highSamples=${high_samples}/${SAMPLE_COUNT} threshold=${THRESHOLD_PERCENT}% decision=${decision} restarted=${restarted}"
+  local incident_key="infra-cpu-watch:${ENVIRONMENT}:${HOST_ID}:${CONTAINER_NAME}:${THRESHOLD_PERCENT}"
   local profile_evidence="process_thread_snapshot_in_evidence_file"
   if [[ "$cpu_profile_status" == "captured" ]]; then
     profile_evidence="process_thread_snapshot_and_v8_cpu_profile"
   fi
   local state_snapshot
-  state_snapshot="{\"timestamp\":\"$(json_escape "$timestamp")\",\"host\":\"$(json_escape "$host_name")\",\"container\":\"$(json_escape "$CONTAINER_NAME")\",\"thresholdPercent\":${THRESHOLD_PERCENT},\"averageCpu\":${average_cpu},\"highSamples\":${high_samples},\"sampleCount\":${SAMPLE_COUNT},\"sampleIntervalSeconds\":${SAMPLE_INTERVAL_SECONDS},\"decision\":\"$(json_escape "$decision")\",\"reason\":\"$(json_escape "$reason")\",\"restarted\":\"$(json_escape "$restarted")\",\"rootCauseStatus\":\"not_determined_by_cpu_watch\",\"rootCauseEvidence\":\"$(json_escape "$profile_evidence")\",\"cpuProfileStatus\":\"$(json_escape "$cpu_profile_status")\",\"cpuProfileFile\":\"$(json_escape "$cpu_profile_file")\",\"evidenceFile\":\"$(json_escape "$evidence_file")\"}"
-  local action_log="evidence=${evidence_file}; history=${HISTORY_LOG}; logsSince=${LOG_SINCE}; restartCooldownSeconds=${COOLDOWN_SECONDS}; feedbackCooldownSeconds=${FEEDBACK_COOLDOWN_SECONDS}; rootCauseStatus=not_determined_by_cpu_watch; rootCauseEvidence=${profile_evidence}; cpuProfileStatus=${cpu_profile_status}; cpuProfileFile=${cpu_profile_file}"
+  state_snapshot="{\"timestamp\":\"$(json_escape "$timestamp")\",\"host\":\"$(json_escape "$host_name")\",\"hostId\":\"$(json_escape "$HOST_ID")\",\"environment\":\"$(json_escape "$ENVIRONMENT")\",\"container\":\"$(json_escape "$CONTAINER_NAME")\",\"thresholdPercent\":${THRESHOLD_PERCENT},\"averageCpu\":${average_cpu},\"highSamples\":${high_samples},\"sampleCount\":${SAMPLE_COUNT},\"sampleIntervalSeconds\":${SAMPLE_INTERVAL_SECONDS},\"decision\":\"$(json_escape "$decision")\",\"reason\":\"$(json_escape "$reason")\",\"restarted\":\"$(json_escape "$restarted")\",\"rootCauseStatus\":\"not_determined_by_cpu_watch\",\"rootCauseEvidence\":\"$(json_escape "$profile_evidence")\",\"cpuProfileStatus\":\"$(json_escape "$cpu_profile_status")\",\"cpuProfileFile\":\"$(json_escape "$cpu_profile_file")\",\"evidenceFile\":\"$(json_escape "$evidence_file")\"}"
+  local action_log="environment=${ENVIRONMENT}; hostId=${HOST_ID}; evidence=${evidence_file}; history=${HISTORY_LOG}; logsSince=${LOG_SINCE}; restartCooldownSeconds=${COOLDOWN_SECONDS}; feedbackCooldownSeconds=${FEEDBACK_COOLDOWN_SECONDS}; rootCauseStatus=not_determined_by_cpu_watch; rootCauseEvidence=${profile_evidence}; cpuProfileStatus=${cpu_profile_status}; cpuProfileFile=${cpu_profile_file}"
   local payload_file="$EVIDENCE_DIR/$timestamp-$CONTAINER_NAME-feedback.json"
 
   cat >"$payload_file" <<EOF
@@ -313,8 +317,10 @@ report_high_cpu_feedback() {
   "stateSnapshot": "$(json_escape "$state_snapshot")",
   "clientContext": {
     "route": "host-cpu-watch",
-    "mode": "production",
-    "gameId": "infra"
+    "mode": "$(json_escape "${ENVIRONMENT}")",
+    "gameId": "infra",
+    "environment": "$(json_escape "${ENVIRONMENT}")",
+    "hostId": "$(json_escape "${HOST_ID}")"
   },
   "errorContext": {
     "source": "infra-cpu-watch",

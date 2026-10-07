@@ -199,6 +199,10 @@ type QidahenGuideCandidate = {
     targetRegionName: string;
     resolutionHint?: string;
     pathPoints: QidahenGuidePoint[];
+    sourcePoint?: QidahenGuidePoint;
+    sourceTokenBounds?: QidahenGuideBounds;
+    sourceLabel?: string;
+    targetLabel?: string;
     targetPoint?: QidahenGuidePoint;
     arrowTargetPoint?: QidahenGuidePoint;
     arrowHeadAnchorRatio?: number;
@@ -1395,7 +1399,7 @@ const QidahenCardMagnifyOverlay: React.FC<{
         overlayTestId="qidahen-card-magnify-overlay"
         closeLabel="关闭查看"
         zIndex={UI_Z_INDEX.cardPreviewTooltip}
-        closeButtonClassName="!-top-11 min-h-11 !border !border-white/60 !bg-black/80 px-5 !text-white !shadow-lg hover:!bg-black/95"
+        closeButtonClassName="!top-3 !right-3 min-h-11 !border !border-white/60 !bg-black/80 px-5 !text-white !shadow-lg hover:!bg-black/95"
     >
         {target ? (
             <div
@@ -1921,6 +1925,11 @@ const MapSceneLayer: React.FC<{
         return () => window.clearTimeout(timeoutId);
     }, [resultFeedback?.resultId]);
 
+    const tutorialGrantPardonFocusChoice = tutorialStepId === 'choose-grant-pardon-target'
+        && tutorialGuideTargetRegionId
+        ? grantPardonMapChoices.find((choice) => choice.targetRegionId === tutorialGuideTargetRegionId) ?? null
+        : null;
+
     React.useEffect(() => {
         const canvas = overlayCanvasRef.current;
         const runtimeRegionIdByPixel = runtimeRegionIdByPixelRef.current;
@@ -1988,10 +1997,17 @@ const MapSceneLayer: React.FC<{
             applyTone(candidate.targetRegionId, 'dispatch');
         }
         for (const choice of grantPardonMapChoices) {
-            if (tutorialStepId !== 'choose-grant-pardon-target') {
+            if (tutorialGrantPardonFocusChoice) {
+                if (choice.id === tutorialGrantPardonFocusChoice.id) {
+                    applyTone(choice.sourceRegionId, 'tutorialSource');
+                    applyTone(choice.targetRegionId, 'tutorialPrimary');
+                } else {
+                    applyTone(choice.targetRegionId, 'tutorialCandidate');
+                }
+            } else {
                 applyTone(choice.sourceRegionId, 'source');
+                applyTone(choice.targetRegionId, 'dispatch');
             }
-            applyTone(choice.targetRegionId, 'dispatch');
         }
         if (pendingTargetAction?.targetRuntimeRegionId || pendingTargetAction?.targetRegionId) {
             applyTone(pendingTargetAction.targetRuntimeRegionId ?? pendingTargetAction.targetRegionId, 'pending');
@@ -2471,13 +2487,31 @@ const MapSceneLayer: React.FC<{
             };
         }
         if (grantPardonSelection) {
-            const candidates = grantPardonMapChoices.map((choice) => ({
-                id: choice.id,
-                targetRegionId: choice.targetRegionId,
-                targetRegionName: choice.targetRegionName,
-                resolutionHint: choice.detail,
-                pathPoints: buildGuidePathPoints([], choice.sourceRegionId, choice.targetRegionId),
-            }));
+            const candidates = grantPardonMapChoices.map((choice) => {
+                const sourceFactionId = choice.targetFactionId === 'neutral' ? null : choice.targetFactionId;
+                const sourcePoint = getGuideArmyTokenPoint(choice.sourceRegionId, sourceFactionId);
+                const targetPoint = getRegionPoint(choice.targetRegionId);
+                const arrowTargetPoint = getGuideArrowTargetPoint(choice.targetRegionId, sourcePoint, targetPoint);
+                return {
+                    id: choice.id,
+                    targetRegionId: choice.targetRegionId,
+                    targetRegionName: choice.targetRegionName,
+                    resolutionHint: choice.detail,
+                    sourcePoint: sourcePoint ?? undefined,
+                    sourceTokenBounds: getGuideArmyTokenBounds(choice.sourceRegionId, sourceFactionId) ?? undefined,
+                    sourceLabel: `${choice.sourceRegionName}部队`,
+                    targetLabel: `${choice.targetRegionName}接收区`,
+                    targetPoint: targetPoint ?? undefined,
+                    arrowTargetPoint: arrowTargetPoint ?? undefined,
+                    pathPoints: buildGuidePathPoints(
+                        [],
+                        choice.sourceRegionId,
+                        choice.targetRegionId,
+                        sourcePoint,
+                        arrowTargetPoint,
+                    ),
+                };
+            });
             return {
                 sourceRegionId: grantPardonSelection.sourceRegionId,
                 title: '招安目标',
@@ -2592,7 +2626,8 @@ const MapSceneLayer: React.FC<{
     const mapSelectionGuideUsesRegionHighlight = grantPardonSelection != null
         || defeatInDetailSelectableSourceRegionIds.length > 0
         || tutorialStepId === 'choose-grant-pardon-target';
-    const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;
+    const mapSelectionGuideDrawsRoute = mapSelectionGuide != null
+        && (tutorialStepId === 'choose-grant-pardon-target' || !mapSelectionGuideUsesRegionHighlight);
     const revealedBattleRegionIds = React.useMemo(
         () => buildRevealedBattleRegionIds(pendingTargetAction, core.postBattleSelection),
         [pendingTargetAction, core.postBattleSelection],
@@ -2787,6 +2822,8 @@ const MapSceneLayer: React.FC<{
                                     <g
                                         key={candidate.id}
                                         data-testid={`qidahen-map-guide-route-${candidate.targetRegionId}`}
+                                        data-guide-source-x={candidate.sourcePoint?.x}
+                                        data-guide-source-y={candidate.sourcePoint?.y}
                                         data-guide-target-x={targetPoint.x}
                                         data-guide-target-y={targetPoint.y}
                                     >
@@ -2820,6 +2857,9 @@ const MapSceneLayer: React.FC<{
                     height={QIDAHEN_MAP_HEIGHT}
                     className="pointer-events-none absolute inset-0 h-full w-full"
                     data-testid="qidahen-map-region-mask-overlay"
+                    data-qidahen-tutorial-primary-target={tutorialGrantPardonFocusChoice?.targetRegionId ?? undefined}
+                    data-qidahen-tutorial-source-region={tutorialGrantPardonFocusChoice?.sourceRegionId ?? undefined}
+                    data-qidahen-tutorial-candidate-count={tutorialGrantPardonFocusChoice ? String(grantPardonMapChoices.length) : undefined}
                     aria-hidden="true"
                 />
                 {resultFeedback ? (
@@ -2959,26 +2999,53 @@ const MapSceneLayer: React.FC<{
                                     activeCandidate ? 4.8 : 4.2,
                                     candidate.arrowHeadAnchorRatio,
                                 );
-                                const routeColor = activeCandidate ? 'rgba(218,255,190,0.96)' : 'rgba(109, 216, 141, 0.68)';
+                                const routeColor = activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.68)';
+                                const sourceBounds = candidate.sourceTokenBounds;
                                 return (
                                     <g key={candidate.id} data-testid={`qidahen-map-guide-route-foreground-${candidate.targetRegionId}`}>
-                                        {linePath ? (
-                                            <path
-                                                d={linePath}
-                                                fill="none"
-                                                stroke={routeColor}
-                                                strokeWidth={activeCandidate ? 4 : 2.6}
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
+                                        {sourceBounds ? (
+                                            <rect
+                                                data-testid={`qidahen-map-guide-source-focus-${candidate.targetRegionId}`}
+                                                x={sourceBounds.left - 8}
+                                                y={sourceBounds.top - 8}
+                                                width={Math.max(1, sourceBounds.right - sourceBounds.left + 16)}
+                                                height={Math.max(1, sourceBounds.bottom - sourceBounds.top + 16)}
+                                                rx={10}
+                                                fill="rgba(255, 206, 108, 0.14)"
+                                                stroke="#ffe2a1"
+                                                strokeWidth={3.6}
                                                 vectorEffect="non-scaling-stroke"
-                                                opacity={activeCandidate ? 0.88 : 0.34}
-                                                data-testid={`qidahen-map-guide-line-${candidate.targetRegionId}`}
                                             />
                                         ) : null}
+                                        {linePath ? (
+                                            <>
+                                                <path
+                                                    d={linePath}
+                                                    fill="none"
+                                                    stroke="rgba(37, 22, 9, 0.82)"
+                                                    strokeWidth={activeCandidate ? 8 : 5}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    vectorEffect="non-scaling-stroke"
+                                                    opacity={activeCandidate ? 0.9 : 0.3}
+                                                />
+                                                <path
+                                                    d={linePath}
+                                                    fill="none"
+                                                    stroke={routeColor}
+                                                    strokeWidth={activeCandidate ? 4 : 2.6}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    vectorEffect="non-scaling-stroke"
+                                                    opacity={activeCandidate ? 1 : 0.34}
+                                                    data-testid={`qidahen-map-guide-line-${candidate.targetRegionId}`}
+                                                />
+                                            </>
+                                        ) : null}
                                         {arrowHeadPath ? (
-                                            <path
-                                                d={arrowHeadPath}
-                                                fill={routeColor}
+                                                <path
+                                                    d={arrowHeadPath}
+                                                    fill={activeCandidate ? '#d8ffbe' : routeColor}
                                                 vectorEffect="non-scaling-stroke"
                                                 opacity={activeCandidate ? 1 : 0.42}
                                                 data-testid={`qidahen-map-guide-arrow-head-${candidate.targetRegionId}`}
@@ -2989,6 +3056,41 @@ const MapSceneLayer: React.FC<{
                             })}
                         </g>
                     </svg>
+                ) : null}
+                {tutorialStepId === 'choose-grant-pardon-target' && mapSelectionGuide ? (
+                    <div
+                        className="pointer-events-none absolute inset-0 z-[54]"
+                        data-testid="qidahen-grant-pardon-visual-relation"
+                        aria-hidden="true"
+                    >
+                                        {mapSelectionGuide.candidates.map((candidate) => {
+                            const isPrimary = candidate.targetRegionId === tutorialGuideTargetRegionId;
+                            if (!isPrimary || !candidate.sourcePoint || !candidate.targetPoint) {
+                                return null;
+                            }
+                            return (
+                                <React.Fragment key={`grant-pardon-relation-${candidate.id}`}>
+                                    <div
+                                        className="absolute rounded border-2 border-[#ffe2a1] bg-[rgba(61,35,13,0.94)] px-2 py-1 text-[12px] font-black tracking-wide text-[#fff4c9] shadow-[0_3px_10px_rgba(32,18,7,0.68)]"
+                                        data-testid="qidahen-grant-pardon-source-label"
+                                        style={{
+                                            left: (candidate.sourceTokenBounds?.right ?? candidate.sourcePoint.x) + 14,
+                                            top: (candidate.sourceTokenBounds?.top ?? candidate.sourcePoint.y) - 12,
+                                        }}
+                                    >
+                                        {candidate.sourceLabel}
+                                    </div>
+                                    <div
+                                        className="absolute rounded border-2 border-[#d8ffbe] bg-[rgba(23,83,43,0.94)] px-2 py-1 text-[12px] font-black tracking-wide text-[#f0ffd9] shadow-[0_3px_12px_rgba(36,93,46,0.72)]"
+                                        data-testid="qidahen-grant-pardon-target-label"
+                                        style={{ left: candidate.targetPoint.x + 26, top: candidate.targetPoint.y - 10 }}
+                                    >
+                                        {candidate.targetLabel}
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
                 ) : null}
                 <canvas
                     ref={canvasRef}
@@ -3233,10 +3335,11 @@ const WheelPanel: React.FC<{
     moveSummary: string;
     disabled: boolean;
     emphasized?: boolean;
+    primaryMoveId?: string | null;
     directExecuteOnClick?: boolean;
     onSelectMove: (moveId: string) => void;
     onExecuteMove: (moveId: string) => void;
-}> = ({ selectedId, selectedMoveId, moveChoices, moveSummary, disabled, emphasized = false, directExecuteOnClick = false, onSelectMove, onExecuteMove }) => {
+}> = ({ selectedId, selectedMoveId, moveChoices, moveSummary, disabled, emphasized = false, primaryMoveId = null, directExecuteOnClick = false, onSelectMove, onExecuteMove }) => {
     const { t } = useTranslation('game-qidahen');
     const [activeMoveId, setActiveMoveId] = React.useState(selectedMoveId);
     const selectedIndex = Math.max(0, WHEEL_SECTORS.findIndex((sector) => sector.id === selectedId));
@@ -3253,6 +3356,12 @@ const WheelPanel: React.FC<{
     const moveTargetIndices = new Set(
         activatableMoveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length),
     );
+    const primaryMove = primaryMoveId
+        ? activatableMoveChoices.find((choice) => choice.id === primaryMoveId) ?? null
+        : null;
+    const primaryMoveTargetIndex = primaryMove
+        ? (selectedIndex + primaryMove.steps) % WHEEL_SECTORS.length
+        : null;
     const currentMarkerPoint = polarToPoint(WHEEL_CENTER, WHEEL_OUTER_RADIUS - 18, selectedAngle);
 
     React.useEffect(() => {
@@ -3341,18 +3450,28 @@ const WheelPanel: React.FC<{
                     {sectorRenderOrder.map(({ sector, index }) => {
                         const current = index === selectedIndex;
                         const candidateTarget = moveTargetIndices.has(index);
+                        const primaryTarget = primaryMoveTargetIndex === index;
+                        const secondaryCandidate = candidateTarget && emphasized && primaryMove != null && !primaryTarget;
                         const selectedTarget = showCommittedMoveSelection ? index === selectedMoveTargetIndex : false;
                         const activeTarget = index === activeMoveTargetIndex;
                         const labelPoint = polarToPoint(WHEEL_CENTER, WHEEL_LABEL_RADIUS, sector.angle);
-                        const labelClassName = candidateTarget && emphasized ? 'fill-[#f5f2df]' : 'fill-[#241b14]';
-                        const labelFontSize = selectedTarget || activeTarget ? 13 : 12;
-                        const labelFontWeight = candidateTarget && emphasized ? 900 : 650;
+                        const labelClassName = primaryTarget
+                            ? 'fill-[#f5f2df]'
+                            : secondaryCandidate
+                                ? 'fill-[rgba(225,242,218,0.72)]'
+                                : candidateTarget && emphasized
+                                    ? 'fill-[#f5f2df]'
+                                    : 'fill-[#241b14]';
+                        const labelFontSize = primaryTarget || selectedTarget || activeTarget ? 13 : 12;
+                        const labelFontWeight = primaryTarget || (candidateTarget && emphasized && primaryMove == null) ? 900 : 650;
                         return (
                             <g
                                 key={sector.id}
                                 data-testid="qidahen-wheel-sector"
                                 data-wheel-sector-id={sector.id}
                                 data-wheel-candidate={candidateTarget ? 'true' : undefined}
+                                data-wheel-primary={primaryTarget ? 'true' : undefined}
+                                data-wheel-candidate-level={secondaryCandidate ? 'secondary' : primaryTarget ? 'primary' : undefined}
                                 data-wheel-selected={selectedTarget ? 'true' : undefined}
                                 filter={selectedTarget ? 'url(#qidahen-wheel-selected)' : current ? 'url(#qidahen-wheel-current)' : undefined}
                             >
@@ -3360,7 +3479,15 @@ const WheelPanel: React.FC<{
                                     d={describeAnnularSlice(WHEEL_CENTER, WHEEL_INNER_RADIUS, WHEEL_OUTER_RADIUS - 16, sector.angle - 22.5, sector.angle + 22.5)}
                                     fill={selectedTarget
                                         ? 'rgba(168,41,31,0.72)'
-                                        : candidateTarget && emphasized
+                                        : primaryTarget
+                                            ? activeTarget
+                                                ? 'rgba(78, 156, 83, 0.72)'
+                                                : 'rgba(53, 124, 65, 0.58)'
+                                            : secondaryCandidate
+                                                ? activeTarget
+                                                    ? 'rgba(78, 156, 83, 0.24)'
+                                                    : 'rgba(53, 124, 65, 0.14)'
+                                                : candidateTarget && emphasized
                                             ? activeTarget
                                                 ? 'rgba(78, 156, 83, 0.52)'
                                                 : 'rgba(53, 124, 65, 0.42)'
@@ -3371,12 +3498,28 @@ const WheelPanel: React.FC<{
                                                     : 'rgba(105,93,68,0.14)'}
                                     stroke={selectedTarget
                                         ? 'rgba(246,214,149,0.98)'
-                                        : candidateTarget && emphasized
+                                        : primaryTarget
+                                            ? activeTarget
+                                                ? 'rgba(241, 255, 208, 1)'
+                                                : 'rgba(216, 255, 190, 0.98)'
+                                            : secondaryCandidate
+                                                ? activeTarget
+                                                    ? 'rgba(181, 236, 180, 0.62)'
+                                                    : 'rgba(140, 230, 153, 0.34)'
+                                                : candidateTarget && emphasized
                                             ? activeTarget
                                                 ? 'rgba(241, 255, 208, 0.98)'
                                                 : 'rgba(140, 230, 153, 0.94)'
                                             : 'rgba(32,23,15,0.56)'}
-                                    strokeWidth={selectedTarget ? 4 : candidateTarget && emphasized ? (activeTarget ? 4 : 3) : 0.9}
+                                    strokeWidth={selectedTarget
+                                        ? 4
+                                        : primaryTarget
+                                            ? activeTarget ? 4.5 : 4
+                                            : secondaryCandidate
+                                                ? activeTarget ? 2 : 1.2
+                                                : candidateTarget && emphasized
+                                                    ? (activeTarget ? 4 : 3)
+                                                    : 0.9}
                                     strokeLinejoin="round"
                                 />
                                 {renderQidahenWheelVerticalText(sector.label[0], labelPoint.x - 9, labelPoint.y, {
@@ -3480,6 +3623,8 @@ const WheelPanel: React.FC<{
                                     aria-label={choice.label}
                                     data-testid={`qidahen-wheel-move-target-${choice.id}`}
                                     data-tutorial-id={`qidahen-wheel-move-${choice.id}`}
+                                    data-wheel-primary={choice.id === primaryMoveId ? 'true' : undefined}
+                                    data-wheel-candidate-level={primaryMove != null ? (choice.id === primaryMoveId ? 'primary' : 'secondary') : undefined}
                                     d={describeAnnularSlice(WHEEL_CENTER, WHEEL_INNER_RADIUS - 8, WHEEL_OUTER_RADIUS - 8, targetAngle - 23.5, targetAngle + 23.5)}
                                     fill="rgba(255,248,233,0.001)"
                                     stroke="transparent"
@@ -6498,6 +6643,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         && !wheelStageSelectionActive
         && core.wheelMoveChoices.length > 0;
     const wheelStageEmphasized = wheelStageAvailable && tutorialStep?.id !== 'welcome';
+    const tutorialPrimaryWheelMoveId = tutorialStep?.highlightTarget?.startsWith('qidahen-wheel-move-')
+        ? tutorialStep.highlightTarget.slice('qidahen-wheel-move-'.length)
+        : tutorialStep?.id === 'wheel-move'
+            ? 'move-1-free'
+            : null;
     const tutorialInfoStepActive = tutorialStep?.infoStep === true;
     const tutorialShowsSeasonSummary = tutorialStep?.highlightTarget === 'qidahen-season-summary';
     const tutorialPrefersWheelStage = tutorialStep?.id === 'wheel-first'
@@ -7374,6 +7524,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 moveSummary={core.wheelMoveSummary}
                 disabled={setupStagePending || core.wheelActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null}
                 emphasized={wheelStageEmphasized}
+                primaryMoveId={tutorialPrimaryWheelMoveId}
                 directExecuteOnClick
                 onSelectMove={selectWheelMove}
                 onExecuteMove={executeWheelMove}

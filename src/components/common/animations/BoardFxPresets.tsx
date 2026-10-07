@@ -538,6 +538,100 @@ export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
   );
 };
 
+export interface BoardTeleportImpactPresetProps {
+  source?: FxCellCoord;
+  target: FxCellCoord;
+  getCellPosition: CellPositionResolver;
+  sourceSnapshot?: FxAnchorSnapshot | null;
+  targetSnapshot?: FxAnchorSnapshot | null;
+  sourceBox?: FxBox | null;
+  targetBox?: FxBox | null;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
+  quality?: FxQuality;
+  arrivalDelayMs?: number;
+  sourceHostTestId?: string;
+  sourceBurstTestId?: string;
+  arrivalHostTestId?: string;
+  arrivalBurstTestId?: string;
+  sourcePreset?: BoardBurstPresetName;
+  arrivalPreset?: BoardBurstPresetName;
+  sourceColor?: string[];
+  arrivalColor?: string[];
+  sourceOverflow?: number;
+  arrivalOverflow?: number;
+  sourceSizeClassName?: string;
+  arrivalSizeClassName?: string;
+}
+
+/**
+ * Direct relocation feedback: source flash and destination arrival only.
+ * No projectile path or travel intermediate state is rendered.
+ */
+export const BoardTeleportImpactPreset: React.FC<BoardTeleportImpactPresetProps> = ({
+  source,
+  target,
+  getCellPosition,
+  sourceSnapshot,
+  targetSnapshot,
+  sourceBox,
+  targetBox,
+  sourceAnchorId,
+  targetAnchorId,
+  quality = 'full',
+  arrivalDelayMs = 0,
+  sourceHostTestId = 'board-fx-teleport-source',
+  sourceBurstTestId,
+  arrivalHostTestId = 'board-fx-teleport-arrival',
+  arrivalBurstTestId,
+  sourcePreset = 'magicDust',
+  arrivalPreset = 'summonGlow',
+  sourceColor,
+  arrivalColor,
+  sourceOverflow = 2.4,
+  arrivalOverflow = 2.6,
+  sourceSizeClassName = 'relative h-24 w-24',
+  arrivalSizeClassName = 'relative h-28 w-28',
+}) => {
+  const hasDistinctSource = Boolean(source && !sameCell(source, target));
+
+  return (
+    <>
+      {hasDistinctSource ? (
+        <BoardBurstImpactPreset
+          cell={source!}
+          getCellPosition={getCellPosition}
+          targetSnapshot={sourceSnapshot}
+          box={sourceBox}
+          targetAnchorId={sourceAnchorId}
+          quality={quality}
+          hostTestId={sourceHostTestId}
+          burstTestId={sourceBurstTestId}
+          preset={sourcePreset}
+          color={sourceColor}
+          overflow={sourceOverflow}
+          sizeClassName={sourceSizeClassName}
+        />
+      ) : null}
+      <BoardBurstImpactPreset
+        cell={target}
+        getCellPosition={getCellPosition}
+        targetSnapshot={targetSnapshot}
+        box={targetBox}
+        targetAnchorId={targetAnchorId}
+        quality={quality}
+        delayMs={arrivalDelayMs}
+        hostTestId={arrivalHostTestId}
+        burstTestId={arrivalBurstTestId}
+        preset={arrivalPreset}
+        color={arrivalColor}
+        overflow={arrivalOverflow}
+        sizeClassName={arrivalSizeClassName}
+      />
+    </>
+  );
+};
+
 export interface BoardHealingImpactPresetProps {
   cell: FxCellCoord;
   getCellPosition: CellPositionResolver;

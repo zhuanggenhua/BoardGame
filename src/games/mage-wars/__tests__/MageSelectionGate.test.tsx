@@ -84,7 +84,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.back': '返回',
                 'spellbookBuilder.confirm': '确认法术书',
                 'spellbookBuilder.mageDetailAria': '法师规则卡',
-                'spellbookBuilder.mageDetailDescription': '这份构筑按这张法师能力牌的训练方向计算。需要更换法师时，返回选书页选择另一本绑定对应法师的法术书。',
+                'spellbookBuilder.builderConstraints': '构筑限制',
                 'spellbookBuilder.trainedDirection': '受训方向',
                 'spellbookBuilder.opposedDirection': '相斥方向',
                 'spellbookBuilder.currentListLabel': '法术书清单',
@@ -305,9 +305,18 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
 
         const detail = within(builder).getByTestId('mage-wars-spellbook-builder-mage-detail');
         expect(detail).toBeVisible();
+        const detailPanel = within(detail).getByTestId('mage-wars-spellbook-builder-mage-detail-panel');
+        const closeButton = within(detailPanel).getByTestId('mage-wars-spellbook-builder-mage-detail-close');
         expect(within(detail).getByTestId('mock-card-preview')).toHaveAttribute('data-card-title', '兽王');
         expect(detail).toHaveTextContent('受训方向');
         expect(detail).toHaveTextContent('相斥方向');
+        expect(detail).toHaveTextContent('构筑限制');
+        expect(detail).not.toHaveTextContent('这份构筑按这张法师能力牌的训练方向计算');
+        expect(closeButton).toHaveClass('absolute');
+        expect(closeButton).toHaveClass('right-3');
+        expect(closeButton).toHaveClass('top-3');
+        expect(closeButton).toHaveClass('h-11');
+        expect(closeButton).toHaveClass('w-11');
     });
 
     it('opens a new named spellbook draft from the selection-page plus entry', () => {

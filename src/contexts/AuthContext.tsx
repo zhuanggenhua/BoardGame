@@ -3,6 +3,7 @@ import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import i18n from '../lib/i18n';
 import { normalizeDeveloperGameIds } from '../lib/developerGameAccess';
 import { getLocalStorage, readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
+import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 
 export type UserRole = 'user' | 'developer' | 'admin';
 const BACKOFFICE_ROLES: ReadonlySet<UserRole> = new Set(['developer', 'admin']);
@@ -261,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'Accept-Language': i18n.language },
-            body: JSON.stringify({ account: email, password }),
+            body: JSON.stringify({ account: email, password, guestId: getOrCreateGuestId() }),
         });
 
         const payload = await response.json().catch(() => null) as null | {
@@ -333,7 +334,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'Accept-Language': i18n.language },
-            body: JSON.stringify({ username, email, code, password }),
+            body: JSON.stringify({ username, email, code, password, guestId: getOrCreateGuestId() }),
         });
 
         if (!response.ok) {

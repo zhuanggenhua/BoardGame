@@ -6,6 +6,9 @@ param(
   [string]$DeployMode = "ci-stream",
   [string]$OtaChannel = "stable",
   [string]$OtaExtra = "",
+  [switch]$DeployPreview,
+  [string]$PreviewHostName = "zhanggenhua@direct-home.easyboardgame.top",
+  [string]$PreviewProjectDir = "/home/zhanggenhua/BoardGame",
   [switch]$SkipOta,
   [switch]$DryRun
 )
@@ -29,6 +32,14 @@ if ($OtaExtra) {
   $nodeArgs += @("--ota-extra", $OtaExtra)
 }
 
+if ($DeployPreview) {
+  $nodeArgs += @(
+    "--deploy-preview",
+    "--preview-host", $PreviewHostName,
+    "--preview-remote-dir", $PreviewProjectDir
+  )
+}
+
 if ($SkipOta) {
   $nodeArgs += @("--skip-ota")
 }
@@ -41,6 +52,9 @@ Write-Host "Remote: $HostName"
 Write-Host "ProjectDir: $ProjectDir"
 Write-Host "DeployMode: $DeployMode"
 Write-Host "OTA Channel: $OtaChannel"
+Write-Host "Deploy Preview: $DeployPreview"
+Write-Host "Preview Remote: $PreviewHostName"
+Write-Host "Preview ProjectDir: $PreviewProjectDir"
 Write-Host "Skip OTA: $SkipOta"
 Write-Host "Command: node $($nodeArgs -join ' ')"
 

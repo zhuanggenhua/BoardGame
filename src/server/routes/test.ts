@@ -133,9 +133,10 @@ export function createTestRoutes(
      * 完整状态注入
      */
     router.post('/inject-state', async (ctx) => {
-        const { matchId, state } = ctx.request.body as {
+        const { matchId, state, randomCursor } = ctx.request.body as {
             matchId: string;
             state: MatchState<unknown>;
+            randomCursor?: number;
         };
 
         if (!matchId || !state) {
@@ -158,12 +159,17 @@ export function createTestRoutes(
             }
 
             // 注入状态
-            await transportServer.injectState(matchId, state);
+            const injection = await transportServer.injectState(matchId, state, randomCursor);
 
             // 返回更新后的状态
             const result = await storage.fetch(matchId, { state: true });
             ctx.status = 200;
-            ctx.body = { success: true, state: result.state?.G };
+            ctx.body = {
+                success: true,
+                state: result.state?.G,
+                _stateID: injection.stateID,
+                randomCursor: injection.randomCursor,
+            };
         } catch (error) {
             ctx.status = 500;
             ctx.body = { error: 'Internal server error', message: (error as Error).message };
@@ -175,9 +181,10 @@ export function createTestRoutes(
      * 部分状态注入
      */
     router.patch('/patch-state', async (ctx) => {
-        const { matchId, patch } = ctx.request.body as {
+        const { matchId, patch, randomCursor } = ctx.request.body as {
             matchId: string;
             patch: Partial<MatchState<unknown>>;
+            randomCursor?: number;
         };
 
         if (!matchId || !patch) {
@@ -211,12 +218,17 @@ export function createTestRoutes(
             }
 
             // 注入状态
-            await transportServer.injectState(matchId, merged);
+            const injection = await transportServer.injectState(matchId, merged, randomCursor);
 
             // 返回更新后的状态
             const result = await storage.fetch(matchId, { state: true });
             ctx.status = 200;
-            ctx.body = { success: true, state: result.state?.G };
+            ctx.body = {
+                success: true,
+                state: result.state?.G,
+                _stateID: injection.stateID,
+                randomCursor: injection.randomCursor,
+            };
         } catch (error) {
             ctx.status = 500;
             ctx.body = { error: 'Internal server error', message: (error as Error).message };
@@ -329,10 +341,18 @@ export function createTestRoutes(
             }
 
             // 注入快照状态
-            await transportServer.injectState(matchId, snapshot.G as MatchState<unknown>);
+            const injection = await transportServer.injectState(
+                matchId,
+                snapshot.G as MatchState<unknown>,
+                snapshot.randomCursor,
+            );
 
             ctx.status = 200;
-            ctx.body = { success: true };
+            ctx.body = {
+                success: true,
+                _stateID: injection.stateID,
+                randomCursor: injection.randomCursor,
+            };
         } catch (error) {
             ctx.status = 500;
             ctx.body = { error: 'Internal server error', message: (error as Error).message };

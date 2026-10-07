@@ -52,6 +52,26 @@ export const getTutorialHiddenAutomationContractErrors = (
             return;
         }
 
+        if (contract.kind === 'branch-recovery') {
+            if (Array.isArray(contract.equivalentStepIds) && contract.equivalentStepIds.length > 0) {
+                errors.push(`${label} branch-recovery must not cite equivalent tutorial steps`);
+            }
+            if (!hasText(contract.recoveryStepId)) {
+                errors.push(`${label} branch-recovery requires recoveryStepId`);
+                return;
+            }
+            const recoveryIndex = firstVisibleStepIndexById.get(contract.recoveryStepId);
+            if (recoveryIndex === undefined) {
+                errors.push(`${label} cites missing or hidden recovery step ${contract.recoveryStepId}`);
+            } else if (recoveryIndex >= index) {
+                errors.push(`${label} cites non-prior recovery step ${contract.recoveryStepId}`);
+            }
+            if (step.aiActions?.length !== 1 || step.aiActions[0]?.commandType !== 'SYS_TUTORIAL_PREVIOUS') {
+                errors.push(`${label} branch-recovery must issue exactly one SYS_TUTORIAL_PREVIOUS action`);
+            }
+            return;
+        }
+
         if (contract.kind !== 'compressed-repeat') {
             errors.push(`${label} hiddenAutomation has unknown kind`);
             return;

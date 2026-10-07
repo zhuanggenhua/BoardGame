@@ -5,7 +5,13 @@ import type { PipelineStage } from 'mongoose';
 import { normalizeDeveloperGameIds } from '../auth/schemas/developer-game-access';
 import { User, type UserDocument } from '../auth/schemas/user.schema';
 import type { UserRole } from '../auth/schemas/user-role';
-import { Feedback, FeedbackDocument, FeedbackReporterType, FeedbackStatus } from './feedback.schema';
+import {
+    Feedback,
+    FeedbackDiagnosticPacket,
+    FeedbackDocument,
+    FeedbackReporterType,
+    FeedbackStatus,
+} from './feedback.schema';
 import { CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, QueryFeedbackDto, UpdateFeedbackStatusDto } from './dto';
 
 type FeedbackManagerScope = {
@@ -46,6 +52,42 @@ export const FEEDBACK_REWARD_POINTS = 1;
 const FEEDBACK_SUMMARY_PREVIEW_SOURCE_LENGTH = 360;
 const FEEDBACK_SUMMARY_PREVIEW_LENGTH = 180;
 
+const normalizeDiagnosticPacket = (
+    value: unknown,
+    fallbackSource: FeedbackDiagnosticPacket['source'],
+): FeedbackDiagnosticPacket | undefined => {
+    if (!value || typeof value !== 'object') return undefined;
+    const raw = value as Partial<FeedbackDiagnosticPacket>;
+    const missingFields = Array.isArray(raw.missingFields)
+        ? raw.missingFields.filter((item): item is string => typeof item === 'string' && item.length > 0)
+        : [];
+    const replayability = raw.replayability === 'full'
+        || raw.replayability === 'partial'
+        || raw.replayability === 'unreplayable'
+        ? raw.replayability
+        : missingFields.length === 0 ? 'full' : 'partial';
+    const collectionStatus = raw.collectionStatus === 'complete'
+        || raw.collectionStatus === 'partial'
+        || raw.collectionStatus === 'failed'
+        ? raw.collectionStatus
+        : 'partial';
+    if (typeof raw.captureId !== 'string' || !raw.captureId.trim()) {
+        return undefined;
+    }
+    return {
+        ...raw,
+        schemaVersion: typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 1,
+        captureId: raw.captureId,
+        capturedAt: typeof raw.capturedAt === 'string' ? raw.capturedAt : new Date().toISOString(),
+        source: raw.source === 'user' || raw.source === 'client-auto' || raw.source === 'server'
+            ? raw.source
+            : fallbackSource,
+        collectionStatus,
+        replayability,
+        missingFields,
+    } as FeedbackDiagnosticPacket;
+};
+
 const FEEDBACK_SEVERITY_RANK: Record<string, number> = {
     low: 1,
     medium: 2,
@@ -67,6 +109,8 @@ type FeedbackListRecord = Feedback & {
     hasEmbeddedImage?: boolean;
     hasActionLog?: boolean;
     hasStateSnapshot?: boolean;
+    hasDiagnosticPacket?: boolean;
+    diagnosticReplayability?: FeedbackDiagnosticPacket['replayability'];
     hasClientContext?: boolean;
     hasErrorContext?: boolean;
 };
@@ -83,6 +127,7 @@ export class FeedbackService {
     async create(userId: string | null, dto: CreateFeedbackDto): Promise<Feedback> {
         const source = this.normalizeUserSource(dto.source);
         const rewardPoints = userId ? FEEDBACK_REWARD_POINTS : 0;
+        const diagnosticPacket = normalizeDiagnosticPacket(dto.diagnosticPacket, 'user');
         const created = await this.feedbackModel.create({
             ...dto,
             gameId: this.normalizeFeedbackGameIdCandidates(
@@ -94,6 +139,7 @@ export class FeedbackService {
             reporterType: this.resolvePublicReporterType(source),
             source,
             rewardPoints,
+            ...(diagnosticPacket ? { diagnosticPacket } : {}),
             ...(userId && { userId }),
         });
         if (userId && rewardPoints > 0) {
@@ -109,14 +155,20 @@ export class FeedbackService {
         const source = this.normalizeSource(dto.source, 'unknown');
         const gameId = this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName);
         const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
+        const diagnosticPacket = normalizeDiagnosticPacket(dto.diagnosticPacket, 'server');
         if (this.shouldAggregateSystemFeedback(dto, source, gameId)) {
-            return this.createOrUpdateAggregatedSystemFeedback(dto, source, gameId);
+            return this.createOrUpdateAggregatedSystemFeedback(
+                diagnosticPacket ? { ...dto, diagnosticPacket } : dto,
+                source,
+                gameId,
+            );
         }
         return this.feedbackModel.create({
             ...dto,
             source,
             reporterType: FeedbackReporterType.SYSTEM,
             gameId,
+            ...(diagnosticPacket ? { diagnosticPacket } : {}),
             ...(resolvedMethod ? { resolvedMethod } : {}),
         });
     }
@@ -125,7 +177,18 @@ export class FeedbackService {
         const manager = actorUserId ? await this.assertActorCanManage(actorUserId) : null;
         const page = Math.max(1, Number(query.page) || 1);
         const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-        const { status, type, severity, sort, reporterType, source, preferMine, mineOnly, summaryOnly } = query;
+        const {
+            status,
+            type,
+            severity,
+            sort,
+            reporterType,
+            source,
+            replayability,
+            preferMine,
+            mineOnly,
+            summaryOnly,
+        } = query;
         if (mineOnly && !manager) {
             return {
                 items: [],
@@ -138,6 +201,7 @@ export class FeedbackService {
         if (status) filter.status = status;
         if (type) filter.type = type;
         if (severity) filter.severity = severity;
+        if (replayability) filter['diagnosticPacket.replayability'] = replayability;
         if (mineOnly && manager) {
             Object.assign(filter, this.buildOwnFeedbackFilter(manager));
         }
@@ -922,6 +986,7 @@ export class FeedbackService {
                     contactInfo: dto.contactInfo ?? existing.contactInfo,
                     actionLog: dto.actionLog ?? existing.actionLog,
                     stateSnapshot: dto.stateSnapshot ?? existing.stateSnapshot,
+                    diagnosticPacket: dto.diagnosticPacket ?? existing.diagnosticPacket,
                     clientContext: dto.clientContext ?? existing.clientContext,
                     errorContext: dto.errorContext ?? existing.errorContext,
                     incidentKey: aggregationKey,
@@ -1141,6 +1206,10 @@ export class FeedbackService {
             hasStateSnapshot: {
                 $gt: [{ $strLenCP: { $ifNull: ['$stateSnapshot', ''] } }, 0],
             },
+            hasDiagnosticPacket: {
+                $gt: [{ $strLenCP: { $ifNull: ['$diagnosticPacket.captureId', ''] } }, 0],
+            },
+            diagnosticReplayability: '$diagnosticPacket.replayability',
             hasClientContext: {
                 $gt: [{ $size: { $objectToArray: { $ifNull: ['$clientContext', {}] } } }, 0],
             },

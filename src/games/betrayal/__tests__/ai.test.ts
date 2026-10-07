@@ -384,6 +384,44 @@ describe('小黑屋本地 AI', () => {
         }]);
     });
 
+    test('事件待投骰时真人探索命令由共享校验链拦截，不进入探索执行器', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        activateTestExplorer(core, '1');
+        core.currentPlayer = '1';
+        core.pendingEventRollStart = {
+            playerId: '0',
+            roomId: 'frontier-ground-east-south',
+            sourceTitle: '着火的人',
+        };
+        const state = stateOf(core, 'betrayal-human-event-roll-guard');
+        state.sys.phase = 'preHaunt';
+
+        const blocked = executePipeline(
+            {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems,
+            },
+            state,
+            {
+                type: BETRAYAL_COMMANDS.EXPLORE_ROOM,
+                playerId: '1',
+                payload: {},
+                timestamp: 200,
+            } as BetrayalCommand,
+            BETRAYAL_FIXED_RANDOM,
+            core.playerIds,
+        );
+
+        expect(blocked.success).toBe(false);
+        expect(blocked.error).toBe('请等待触发事件的玩家投掷。');
+        expect(BetrayalDomain.validate(state, {
+            type: BETRAYAL_COMMANDS.ROLL_EVENT,
+            playerId: '0',
+            payload: { sourceTitle: '着火的人' },
+            timestamp: 201,
+        } as BetrayalCommand)).toEqual({ valid: true });
+    });
+
     test('AI 代投带房间效果的无线电广播时不会在同轮裸结算伤害骰', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2', '3']);
         const radioEvent = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '无线电广播');

@@ -6,14 +6,15 @@ import {
 import {
   createFirstScenarioHauntRuntimeCore,
   createFirstScenarioReadyToExorciseRuntimeCore,
-  createFirstScenarioSurvivorEndgameCore,
-  createFirstScenarioTraitorEndgameCore,
   initBetrayalContext,
   injectCore,
   saveScreenshot,
+  setHarnessRandomQueue,
+  waitForPhysicalDiceSettled,
   waitForBetrayalPageReady,
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
+import { createMummyTraitorVictoryReadyTutorialCore } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 
 const EVIDENCE_DIR = "evidence/betrayal-scenario-flow-new-rules";
 const HAUNT_TABLE_SCREENSHOT = `${EVIDENCE_DIR}/01-作祟开始-剧本关闭后牌桌承接.jpg`;
@@ -59,13 +60,19 @@ async function dismissHauntRevealIfPresent(page: Page) {
 }
 
 async function continueToEndgameIfPresent(page: Page) {
-  const continueButton = page.getByTestId("betrayal-exorcise-roll-continue");
-  if (
-    (await continueButton.count()) > 0 &&
-    (await continueButton.first().isVisible())
-  ) {
-    await continueButton.first().click();
-  }
+  const continueButton = page.locator(
+    '[data-testid="betrayal-exorcise-roll-continue"]:visible',
+  ).last();
+  const endgameScreen = page.getByTestId("betrayal-endgame-screen");
+  await expect(continueButton).toBeVisible({
+    timeout: 30000,
+    message: "终局前必须先出现真实驱逐结果确认入口",
+  });
+  await continueButton.click();
+  await expect(endgameScreen).toBeVisible({
+    timeout: 30000,
+    message: "确认真实驱逐结果后必须进入终局页",
+  });
 }
 
 async function captureScenarioReaderTurn(
@@ -603,8 +610,20 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await openInjectedCoreAsPlayer(
       page,
       "0",
-      createFirstScenarioSurvivorEndgameCore(),
+      createFirstScenarioReadyToExorciseRuntimeCore(),
     );
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "驱逐木乃伊",
+    );
+    // 驱逐检定先投英雄 4 颗骰子，再投木乃伊 5 颗骰子；用高英雄结果、低木乃伊结果确保真实成功分支。
+    await setHarnessRandomQueue(page, [
+      0.99, 0.99, 0.99, 0.99,
+      0.01, 0.01, 0.01, 0.01, 0.01,
+    ]);
+    await page.getByTestId("betrayal-action-use").click();
+    const exorciseRoll = page.getByTestId("betrayal-recent-roll-panel");
+    await expect(exorciseRoll).toBeVisible();
+    await waitForPhysicalDiceSettled(exorciseRoll);
     await continueToEndgameIfPresent(page);
     const survivorEndgame = page.getByTestId("betrayal-endgame-screen");
     await expect(survivorEndgame).toBeVisible({ timeout: 30000 });
@@ -648,8 +667,20 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await openInjectedCoreAsPlayer(
       page,
       "2",
-      createFirstScenarioTraitorEndgameCore(),
+      createMummyTraitorVictoryReadyTutorialCore(),
     );
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "拾起女孩",
+    );
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "交出女孩",
+    );
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "交出圣符",
+    );
+    await page.getByTestId("betrayal-action-use").click();
     const traitorEndgame = page.getByTestId("betrayal-endgame-screen");
     await expect(traitorEndgame).toBeVisible({ timeout: 30000 });
     await expect(

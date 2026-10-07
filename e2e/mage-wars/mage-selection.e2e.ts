@@ -856,14 +856,59 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     expect(wallCardBox.width / wallCardBox.height, '墙体牌在组书页必须按普通手牌竖向比例显示').toBeLessThan(1);
 
     await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('all');
+    const mageDetailBeforeScreenshot = await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        '05-点击已选法师本体前-详情层关闭且组书界面可操作',
+    );
     await builder.getByTestId('mage-wars-spellbook-builder-mage-context').click();
     const mageDetail = builder.getByTestId('mage-wars-spellbook-builder-mage-detail');
     await expect(mageDetail).toBeVisible();
+    const mageDetailPanel = builder.getByTestId('mage-wars-spellbook-builder-mage-detail-panel');
+    const mageDetailClose = builder.getByTestId('mage-wars-spellbook-builder-mage-detail-close');
     await expect(mageDetail.locator('[data-card-atlas-frame="true"]')).toBeVisible();
     await expect(mageDetail).toContainText('受训方向');
     await expect(mageDetail).toContainText('相斥方向');
-    const mageDetailScreenshot = await saveEvidenceScreenshot(page, testInfo, '05-法师详情-点击已选法师主控打开');
+    await expect(mageDetail).toContainText('构筑限制');
+    await expect(mageDetail).not.toContainText('这份构筑按这张法师能力牌的训练方向计算');
+    const detailGeometry = await mageDetailPanel.evaluate((panel) => {
+        const panelRect = panel.getBoundingClientRect();
+        const closeRect = panel.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-spellbook-builder-mage-detail-close"]',
+        )?.getBoundingClientRect();
+        return closeRect
+            ? {
+                panel: { left: panelRect.left, top: panelRect.top, right: panelRect.right, bottom: panelRect.bottom },
+                close: {
+                    left: closeRect.left,
+                    top: closeRect.top,
+                    right: closeRect.right,
+                    bottom: closeRect.bottom,
+                    width: closeRect.width,
+                    height: closeRect.height,
+                },
+            }
+            : null;
+    });
+    expect(detailGeometry).not.toBeNull();
+    expect(detailGeometry!.close.width).toBeGreaterThanOrEqual(44);
+    expect(detailGeometry!.close.height).toBeGreaterThanOrEqual(44);
+    expect(detailGeometry!.close.left).toBeGreaterThanOrEqual(detailGeometry!.panel.left);
+    expect(detailGeometry!.close.top).toBeGreaterThanOrEqual(detailGeometry!.panel.top);
+    expect(detailGeometry!.close.right).toBeLessThanOrEqual(detailGeometry!.panel.right);
+    expect(detailGeometry!.close.bottom).toBeLessThanOrEqual(detailGeometry!.panel.bottom);
+    const mageDetailScreenshot = await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        '05-点击已选法师本体-详情层只补充构筑限制且关闭按钮贴合右上角',
+    );
     await builder.getByTestId('mage-wars-spellbook-builder-mage-detail-close').click();
+    await expect(mageDetail).toBeHidden();
+    const mageDetailAfterScreenshot = await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        '05-关闭法师详情后-回到原组书界面继续编辑',
+    );
 
     await builder.getByTestId('mage-wars-spellbook-builder-save-name').fill('兽王标准命名书');
     await builder.getByTestId('mage-wars-spellbook-builder-save-new').click();
@@ -1097,8 +1142,10 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
             newSpellbookMagePickerScreenshot,
             builderDefaultScreenshot,
             wallFilterScreenshot,
+            mageDetailBeforeScreenshot,
             importScreenshot,
             mageDetailScreenshot,
+            mageDetailAfterScreenshot,
             savedSpellbookScreenshot,
             selectionLibraryScreenshot,
             directUseScreenshot,

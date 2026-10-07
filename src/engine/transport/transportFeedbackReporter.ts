@@ -1,6 +1,8 @@
 import { execSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import logger from '../../../server/logger.js';
 import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
+import type { MatchState } from '../types';
 import type { CommandFailureFeedbackPayload } from './commandFailureFeedbackPayload';
 
 export const DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS = 60_000;
@@ -27,6 +29,11 @@ export type OnlineAiRecoveryFeedbackPayload = {
     progressMarker: string;
     stateSnapshot: string;
     actionLog?: string;
+    requestId?: string;
+    roomId?: string;
+    stateId?: number;
+    stateRevision?: number;
+    decisionEpoch?: number;
 };
 
 export type OnlineAiFeedbackConfig = {
@@ -38,6 +45,45 @@ export type OnlineAiFeedbackConfig = {
 export type InternalSystemFeedbackPost = (body: Record<string, unknown>) => Promise<void>;
 export type OnlineAiFeedbackReporter = (payload: OnlineAiRecoveryFeedbackPayload) => Promise<void>;
 export type CommandFailureFeedbackReporter = (payload: CommandFailureFeedbackPayload) => Promise<void>;
+
+export type TransportFeedbackCorrelation = Pick<
+    OnlineAiRecoveryFeedbackPayload,
+    'roomId' | 'requestId' | 'stateId' | 'stateRevision' | 'decisionEpoch'
+>;
+
+/**
+ * 从服务端权威状态提取反馈现场关联键。
+ * 这里只读取运行时已有字段；没有独立 roomId 时不复制或猜测其它标识。
+ */
+export const resolveTransportFeedbackCorrelation = (args: {
+    matchId: string;
+    state?: MatchState<unknown>;
+    roomId?: string;
+    stateId?: number;
+    stateRevision?: number;
+}): TransportFeedbackCorrelation => {
+    const sys = args.state?.sys;
+    const interactionId = sys?.interaction?.current?.id;
+    const responseWindowId = sys?.responseWindow?.current?.id;
+    const roomId = typeof args.roomId === 'string' && args.roomId.trim().length > 0
+        ? args.roomId.trim()
+        : undefined;
+    const requestId = typeof interactionId === 'string' && interactionId.trim().length > 0
+        ? interactionId
+        : typeof responseWindowId === 'string' && responseWindowId.trim().length > 0
+            ? responseWindowId
+            : undefined;
+    const decisionEpoch = typeof sys?.decisionEpoch === 'number' ? sys.decisionEpoch : undefined;
+    const stateRevision = args.stateRevision ?? args.stateId;
+
+    return {
+        ...(roomId ? { roomId } : {}),
+        ...(requestId ? { requestId } : {}),
+        ...(args.stateId !== undefined ? { stateId: args.stateId } : {}),
+        ...(stateRevision !== undefined ? { stateRevision } : {}),
+        ...(decisionEpoch !== undefined ? { decisionEpoch } : {}),
+    };
+};
 
 const INTERNAL_FEEDBACK_PATH = '/internal/feedback/system';
 let cachedServerGitCommitSha: string | null | undefined;
@@ -70,6 +116,73 @@ function resolveServerFeedbackBuildInfo() {
         ...buildInfo,
         appCommitSha: resolveServerGitCommitSha(),
     };
+}
+
+function parseDiagnosticJson(value?: string): unknown {
+    if (!value?.trim()) return undefined;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return undefined;
+    }
+}
+
+function buildServerDiagnosticPacket(args: {
+    source: 'server';
+    matchId: string;
+    gameId: string;
+    playerId: string;
+    stateSnapshot?: string;
+    actionLog?: string;
+    requestId?: string;
+    roomId?: string;
+    stateId?: number;
+    stateRevision?: number;
+    decisionEpoch?: number;
+}): string {
+    const snapshot = parseDiagnosticJson(args.stateSnapshot);
+    const actionLog = parseDiagnosticJson(args.actionLog);
+    const missingFields = [
+        ...(args.matchId ? [] : ['correlation.matchId']),
+        ...(args.roomId ? [] : ['correlation.roomId']),
+        ...(args.requestId ? [] : ['correlation.requestId']),
+        ...(args.stateId === undefined ? ['correlation.stateId'] : []),
+        ...(args.stateRevision === undefined ? ['correlation.stateRevision'] : []),
+        ...(args.decisionEpoch === undefined ? ['correlation.decisionEpoch'] : []),
+        ...(snapshot === undefined ? ['snapshots.at'] : []),
+        'snapshots.before',
+        'snapshots.after',
+    ];
+    const replayability = snapshot === undefined
+        ? 'unreplayable'
+        : 'partial';
+    return JSON.stringify({
+        schemaVersion: 1,
+        captureId: 'feedback-server-' + randomUUID(),
+        capturedAt: new Date().toISOString(),
+        source: args.source,
+        collectionStatus: 'complete',
+        replayability,
+        missingFields,
+        correlation: {
+            matchId: args.matchId,
+            ...(args.roomId ? { roomId: args.roomId } : {}),
+            ...(args.requestId ? { requestId: args.requestId } : {}),
+            ...(args.stateId !== undefined ? { stateId: args.stateId } : {}),
+            ...(args.stateRevision !== undefined ? { stateRevision: args.stateRevision } : {}),
+            ...(args.decisionEpoch !== undefined ? { decisionEpoch: args.decisionEpoch } : {}),
+        },
+        phase: snapshot && typeof snapshot === 'object' && typeof (snapshot as { phase?: unknown }).phase === 'string'
+            ? (snapshot as { phase: string }).phase
+            : undefined,
+        snapshots: {
+            at: snapshot,
+        },
+        actionLogTail: actionLog,
+        collectionErrors: [],
+        gameId: args.gameId,
+        playerId: args.playerId,
+    });
 }
 
 export const buildOnlineAiRecoveryResolvedMethod = (
@@ -177,6 +290,19 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
         contactInfo: 'system:online-ai-watchdog',
         actionLog: payload.actionLog,
         stateSnapshot: payload.stateSnapshot,
+        diagnosticPacket: buildServerDiagnosticPacket({
+            source: 'server',
+            matchId: payload.matchId,
+            gameId: payload.gameId,
+            playerId: payload.playerId,
+            stateSnapshot: payload.stateSnapshot,
+            actionLog: payload.actionLog,
+            requestId: payload.requestId,
+            roomId: payload.roomId,
+            stateId: payload.stateId,
+            stateRevision: payload.stateRevision,
+            decisionEpoch: payload.decisionEpoch,
+        }),
         clientContext: {
             route: 'server-watchdog',
             mode: 'online',
@@ -210,6 +336,19 @@ export const buildCommandFailureFeedbackRequestBody = (
         contactInfo: `system:${payload.feedbackSource}`,
         actionLog: payload.actionLog,
         stateSnapshot: payload.stateSnapshot,
+        diagnosticPacket: buildServerDiagnosticPacket({
+            source: 'server',
+            matchId: payload.matchId,
+            gameId: payload.gameId,
+            playerId: payload.playerId,
+            stateSnapshot: payload.stateSnapshot,
+            actionLog: payload.actionLog,
+            stateId: payload.stateId,
+            stateRevision: payload.stateRevision,
+            requestId: payload.requestId,
+            roomId: payload.roomId,
+            decisionEpoch: payload.decisionEpoch,
+        }),
         clientContext: {
             route: isOnlineAiRecovery ? 'server-watchdog-command' : 'server-command',
             mode: 'online',

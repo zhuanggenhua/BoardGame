@@ -1940,6 +1940,14 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         return { valid: true };
     }
+    if (core.pendingEventRollStart) {
+        return {
+            valid: false,
+            error: core.pendingEventRollStart.playerId === command.playerId
+                ? '请先投掷当前事件。'
+                : '请等待触发事件的玩家投掷。',
+        };
+    }
     const recentRollAcknowledgement = validateRecentRollAcknowledgement(core, command);
     if (recentRollAcknowledgement?.valid) {
         return recentRollAcknowledgement;

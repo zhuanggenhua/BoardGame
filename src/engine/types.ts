@@ -376,12 +376,16 @@ export interface TutorialHiddenAutomationContract {
      *
      * `compressed-repeat` 只能用于压缩已经通过可见步骤教学过的同类正式动作；
      * 不同阶段、不同权限、不同结果或首次出现的机制不得标成重复。
+     * `branch-recovery` 只能用于合法但不属于当前示范主线的分支恢复，
+     * 必须通过教程系统恢复到分支前的完整检查点，不得要求玩家阅读或操作导航。
      */
-    kind: 'setup-precondition' | 'compressed-repeat';
+    kind: 'setup-precondition' | 'compressed-repeat' | 'branch-recovery';
     /** 人能读懂的压缩依据，写明为什么这不是新的玩家教学动作。 */
     reason: string;
     /** `compressed-repeat` 对应的已教学步骤 ID，用于审计和测试。 */
     equivalentStepIds?: string[];
+    /** `branch-recovery` 要恢复到的分支前可见步骤 ID。 */
+    recoveryStepId?: string;
 }
 
 export interface TutorialStepVisual {

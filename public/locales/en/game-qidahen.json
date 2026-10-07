@@ -374,15 +374,14 @@
         "welcome": "Three victory conditions: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige.",
         "turnFlow": "The player action flow is: 1. Check the hand limit; 2. Move the wheel; 3. Perform one wheel action and one hand action in either order.",
         "wheelFirst": "The opening hand-limit check has resolved automatically. Ming has 3 cards and a 15-card limit, so no discard is required. Enter the wheel action.",
-        "wheelRule": "The shared wheel can move 1, 2, or 3 spaces, with a different draw result for each.",
-        "wheelMove": "Now choose Recruit / Train.",
-        "wheelBranchStop": "This wheel landing is not Recruit / Train, so the Recruit / Train chain cannot continue.",
+        "wheelRule": "The shared wheel can move 1, 2, or 3 spaces. All three moves are legal, and each produces a different wheel resolution.",
+        "wheelMove": "Click the highlighted Recruit / Train sector on the wheel.",
         "wheelResult": "Recruit / Train has resolved. Read the new troops on the map.",
-        "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. They have no fixed order with one another or with the wheel action.",
+        "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. The rules set no fixed order among these four actions; the hand action and wheel action also have no fixed order.",
         "grantPardonRule": "Grant Pardon: discard 3 hand cards and name 1 opponent. That player chooses a troop adjacent to a Ming-controlled region, moves it into the neighboring Ming-controlled region, and converts it to Ming.",
         "pickAction": "Now choose Grant Pardon.",
         "payCards": "Now select 3 hand cards and confirm payment.",
-        "chooseGrantPardonTarget": "Now choose Shanhaiguan to move the Jinzhou troop into the adjacent Ming-controlled region.",
+        "chooseGrantPardonTarget": "Click the highlighted Shanhaiguan receiving region to move the Jinzhou troop into the adjacent Ming-controlled region.",
         "actionResult": "Grant Pardon is complete: the Jinzhou troop is now Ming.",
         "finish": "This part of the first turn is complete."
       }
@@ -392,7 +391,7 @@
       "description": "Raid starts from a hand action, then flows into field battle, tactics, damage assignment, and retreat handling.",
       "steps": {
         "overview": "Now enter Ming's hand action.",
-        "actionOverview": "The right side shows four same-level Ming faction actions.",
+        "actionOverview": "The right side lists Ming's four same-level faction actions: Raid, Recruit, Grant Pardon, and Drive Tiger. Choose 1 each turn.",
         "chooseAction": "Now choose Raid. Rule: discard 1 hand card to make an attack; dispatch is not allowed.",
         "payRaid": "Now select 1 hand card and confirm payment.",
         "borderWidth": "The attack moves from Keshiketeng into Chahar. Read battle width 3.",
@@ -473,7 +472,7 @@
       "description": "Longer shared-wheel movement refills opponents and lands the turn in attack, dispatch, diplomacy, or hiring systems.",
       "steps": {
         "overview": "Enter the 3-space wheel branch. Both opponents draw 2, and the turn lands on attack / dispatch.",
-        "chooseMove": "Choose All Opponents Draw 2, Move 3.",
+        "chooseMove": "Click the highlighted Attack / Dispatch sector on the wheel.",
         "drawResult": "After the wheel moves 3 spaces, read the Mongol and Later Jin hands: each gains 2 cards.",
         "dispatchReady": "The wheel lands on attack / dispatch. Discard 1 card, move up to 6 troops, and battle only in an enemy or non-friendly region.",
         "finish": "Wheel resolution is complete; the next entry is attack / dispatch."
@@ -484,7 +483,7 @@
       "description": "Wheel Reclaim directly adds population to a controlled region.",
       "steps": {
         "overview": "Enter Wheel Reclaim resolution.",
-        "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel into Reclaim.",
+        "chooseMove": "Click the highlighted Reclaim sector on the wheel.",
         "result": "Reclaim is complete: Xuanfu population increases by 1.",
         "finish": "Reclaim is complete."
       }
@@ -494,7 +493,7 @@
       "description": "Wheel Military Farm adds both cards and troops.",
       "steps": {
         "overview": "Enter Wheel Military Farm resolution.",
-        "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel from Reclaim into Military Farm.",
+        "chooseMove": "Click the highlighted Military Farm sector on the wheel.",
         "result": "Military Farm is complete: 1 level-2 regular troop appears in Xuanfu, and the hand is replenished.",
         "finish": "Military Farm is complete."
       }
@@ -504,7 +503,7 @@
       "description": "Wheel Recruit / Train adds troops and trains artillery by armament level.",
       "steps": {
         "overview": "Enter Wheel Recruit / Train resolution.",
-        "chooseMove": "Click the wheel's \"Move 1 for free\" option to advance the public wheel from Military Farm into Recruit / Train.",
+        "chooseMove": "Click the highlighted Recruit / Train sector on the wheel.",
         "result": "Recruit / Train is complete: 2 new level-2 regular troops appear, and existing artillery trains to the current armament level.",
         "finish": "Recruit / Train is complete."
       }
@@ -526,7 +525,7 @@
       "description": "Khan's Edict is the Mongol faction action. It resolves through payment, effect choice, and result, with the discard and map change landing together.",
       "steps": {
         "overview": "Now enter the Mongol hand action.",
-        "actionOverview": "The right side shows three Mongol faction actions: Raid, Horse Market, and Khan's Edict.",
+        "actionOverview": "The right side lists three same-level Mongol faction actions: Raid, Horse Market, and Khan's Edict. Choose 1 each turn.",
         "chooseAction": "Now click Khan's Edict. Discard 1 hand card, then perform Recruit / Train or Diplomatic Hiring without another payment.",
         "payCards": "Discard 1 hand card and confirm.",
         "chooseEffect": "Choose the target region, then choose Recruit / Train to resolve the effect.",
@@ -539,7 +538,7 @@
       "description": "Enter a real wheel diplomacy step and see control markers and hired troops resolve together.",
       "steps": {
         "overview": "Enter wheel Diplomacy and Hire.",
-        "wheelEntry": "Choose Move 1 for Free to enter Diplomacy and Hire.",
+        "wheelEntry": "Click the highlighted Diplomacy / Hire sector on the wheel.",
         "chooseTarget": "The target must border a controlled region; homeland, Korea, and regions with regular troops are excluded.",
         "friendlyMark": "Click Ningyuan to place a friendly marker. Troops may pass and station there, but it is not a controlled region.",
         "tributeMark": "Flip the friendly marker to a vassal marker. A face-up marker counts as your controlled region.",
@@ -552,10 +551,10 @@
       "description": "Midyear taxes, character checks, New Year maintenance, attrition, chronology scoring, and turn-order refresh form the yearly resolution.",
       "steps": {
         "overview": "Enter Midyear and New Year resolution: taxes, characters, fortifications, attrition, chronology, and turn order.",
-        "advanceMidyear": "Click the wheel's \"one opponent draws 2, move 2\" option to advance the action marker into Midyear.",
+        "advanceMidyear": "Click the highlighted Midyear position at the bottom of the wheel.",
         "midyearTax": "Midyear taxes are complete: read resources in the top player information; besieged regions do not collect tax.",
         "midyearCharacters": "Character checks are complete: read characters and defeat markers in the top player information.",
-        "advanceNewYear": "After Midyear resolves, click the wheel's \"Move 1 for free\" option to advance the action marker into New Year.",
+        "advanceNewYear": "After Midyear resolves, click the highlighted New Year position at the top of the wheel.",
         "newYearTribute": "New Year tribute: the controller of each Korea region draws its marked Korea cards.",
         "newYearMaintenance": "Then click \"Auto pay\" to handle fortification maintenance. If the Great Wall, Shanhaiguan, Ningyuan, or Jinzhou cannot be maintained, they fall into ruin and their border and city effects fail.",
         "newYearAttrition": "Maintenance is complete: read attrition results on the map and in the top player information.",

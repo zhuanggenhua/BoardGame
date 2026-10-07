@@ -175,6 +175,60 @@ test("focus and selected files keep the listing on the requested directory", asy
   }
 });
 
+test("canonical E2E media indexes populate player-facing descriptions", async () => {
+  const hadState = existsSync(STATE_PATH);
+  const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;
+  const tempRoot = join(EVIDENCE_ROOT, `viewer-canonical-media-${process.pid}-${Date.now()}`);
+  let child = null;
+
+  try {
+    await mkdir(tempRoot, { recursive: true });
+    await writeFile(join(tempRoot, "01-before.jpg"), "image");
+    await writeFile(join(tempRoot, ".e2e-image-index.json"), JSON.stringify({
+      title: "中文证据目录",
+      media: [
+        {
+          path: "01-before.jpg",
+          chainId: "中文链路",
+          chainStep: "01",
+          sourceRun: "中文运行",
+          sourceDir: "中文入口",
+          stage: "前态",
+          description: "目标对象在前态清楚可见。",
+        },
+      ],
+    }, null, 2));
+
+    const targetDir = await realpath(tempRoot);
+    const port = await getFreePort();
+    const logs = [];
+    child = spawn(process.execPath, [SERVER_ENTRY, "--serve", "--port", String(port)], {
+      cwd: PROJECT_ROOT,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    child.stdout.on("data", (chunk) => logs.push(String(chunk)));
+    child.stderr.on("data", (chunk) => logs.push(String(chunk)));
+
+    await waitForHealth(port, () => logs.join(""));
+    const listed = await requestJson(
+      port,
+      `/api/list?dir=${encodeURIComponent(targetDir)}`,
+    );
+    assert.equal(listed.items.length, 1);
+    assert.equal(listed.items[0].displayTitle, "01 · before");
+    assert.equal(listed.items[0].description, "目标对象在前态清楚可见。");
+  } finally {
+    await waitForExit(child);
+    await rm(tempRoot, { recursive: true, force: true });
+    if (hadState && stateSnapshot !== null) {
+      await writeFile(STATE_PATH, stateSnapshot, "utf8");
+    } else {
+      await rm(STATE_PATH, { force: true });
+    }
+  }
+});
+
 test("behavior-only evidence descriptions become the viewer title", async () => {
   const hadState = existsSync(STATE_PATH);
   const stateSnapshot = hadState ? await readFile(STATE_PATH, "utf8") : null;

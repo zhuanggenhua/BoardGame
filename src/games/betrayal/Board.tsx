@@ -327,6 +327,9 @@ function BetrayalHudRegion({
         style={
           {
             "--betrayal-hud-scale": String(scale),
+            "--betrayal-hud-inverse-scale": String(
+              1 / Math.max(scale, 0.01),
+            ),
             "--betrayal-hud-expanded-rail-height": `${Math.max(
               0,
               viewportHeight - 24,
@@ -3098,6 +3101,10 @@ export default function BetrayalBoard({
     latestDiscoverySelection.coreRecentRollDisplayKey;
   const latestDiscoveryRecentRollDisplayKey =
     latestDiscoverySelection.recentRollDisplayKey;
+  const isCoreRecentRollReadable = Boolean(
+    coreRecentRollDisplayKey &&
+      settledRecentRollId === coreRecentRollDisplayKey,
+  );
   const currentHauntOpeningDisplayEntry = currentHauntOpeningDiscovery
     ? currentLatestDiscoveryEntry
     : null;
@@ -6577,6 +6584,7 @@ export default function BetrayalBoard({
                   onDismiss={handleDismissRecentRoll}
                   onConfirmExorciseRollReview={handleConfirmExorciseRollReview}
                   onDiceSettledChange={handleRecentRollDiceSettledChange}
+                  resultReadable={isCoreRecentRollReadable}
                 />
 
                 {pendingDamageAllocation &&
@@ -6621,6 +6629,8 @@ export default function BetrayalBoard({
                     hasResultPanel={pendingEventChoiceHasResultPanel}
                     latestDiscoveryVisual={latestDiscoveryVisual}
                     roll={pendingEventChoiceRoll}
+                    resultReadable={isCoreRecentRollReadable}
+                    onDiceSettledChange={handleRecentRollDiceSettledChange}
                     rollActorLabel={
                       pendingEventChoiceRoll
                         ? resolveRecentRollActorLabel(pendingEventChoiceRoll)

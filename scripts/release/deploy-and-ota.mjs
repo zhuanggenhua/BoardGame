@@ -34,6 +34,9 @@ const helpText = `
   --dry-run                  只打印将执行的命令，不真正执行
   --host <user@host>         覆盖 SSH 目标，默认 admin@8.148.71.102
   --remote-dir <path>        覆盖远端项目目录，默认 /home/admin/BoardGame
+  --deploy-preview            同一次 CI 镜像构建后同步 Acer 预览机
+  --preview-host <user@host>  Acer 预览机 SSH 目标
+  --preview-remote-dir <path> Acer 预览机项目目录
   --deploy-tag <tag>         部署镜像 tag；不传则部署 latest
   --deploy-mode <mode>       部署模式：ci-stream|stream|remote，默认 ci-stream
                              ci-stream: CI 构建后直接传镜像 tar 到服务器，再执行 update-local
@@ -80,6 +83,9 @@ const dryRun = hasFlag('dry-run');
 const skipWait = hasFlag('skip-wait');
 const sshTarget = readArgValue('host', 'admin@8.148.71.102');
 const remoteDir = readArgValue('remote-dir', '/home/admin/BoardGame');
+const deployPreview = hasFlag('deploy-preview');
+const previewSshTarget = readArgValue('preview-host', 'zhanggenhua@direct-home.easyboardgame.top');
+const previewRemoteDir = readArgValue('preview-remote-dir', '/home/zhanggenhua/BoardGame');
 const deployTag = readArgValue('deploy-tag', '');
 const deployMode = readArgValue('deploy-mode', 'ci-stream');
 const defaultCiRef = deployTag && deployTag !== 'latest' ? deployTag : 'main';
@@ -327,6 +333,19 @@ const triggerCiStreamDeploy = async () => {
         `remote_dir=${remoteDir}`,
     ];
 
+    if (deployPreview) {
+        args.push(
+            '-f',
+            'stream_to_preview=true',
+            '-f',
+            'deploy_preview_after_stream=true',
+            '-f',
+            'preview_deploy_host=' + previewSshTarget,
+            '-f',
+            'preview_remote_dir=' + previewRemoteDir,
+        );
+    }
+
     if (dryRun) {
         console.log(`[deploy-and-ota] dry-run 将触发 CI 镜像直传部署: gh ${args.join(' ')}`);
         return;
@@ -444,7 +463,10 @@ const main = async () => {
 
     if (deployMode === 'ci-stream') {
         console.log('[deploy-and-ota] 部署模式: ci-stream（CI 构建后直接输送镜像到服务器并 update-local）');
-        console.log(`[deploy-and-ota] CI workflow: gh workflow run ${ciWorkflow} --ref ${ciRef} -f stream_to_server=true -f deploy_after_stream=true -f deploy_tag=${deployTag || 'latest'}`);
+        const previewSummary = deployPreview
+            ? ` -f stream_to_preview=true -f deploy_preview_after_stream=true -f preview_deploy_host=${previewSshTarget} -f preview_remote_dir=${previewRemoteDir}`
+            : '';
+        console.log(`[deploy-and-ota] CI workflow: gh workflow run ${ciWorkflow} --ref ${ciRef} -f stream_to_server=true -f deploy_after_stream=true -f deploy_tag=${deployTag || 'latest'}${previewSummary}`);
     } else if (deployMode === 'stream') {
         console.log('[deploy-and-ota] 部署模式: stream（本机输送镜像到服务器后 update-local）');
         console.log(`[deploy-and-ota] 镜像输送命令: ${process.execPath} ${streamDeployArgs.join(' ')}`);

@@ -16,6 +16,7 @@ type CinematicNarrationPanelProps = {
   variant: CinematicNarrationVariant;
   compact?: boolean;
   presentation?: "panel" | "stage";
+  coordinateSpace?: "in-shell" | "portal";
   actionSlot?: React.ReactNode;
   testId?: string;
   className?: string;
@@ -28,6 +29,7 @@ export function CinematicNarrationPanel({
   variant,
   compact = false,
   presentation = "panel",
+  coordinateSpace = "in-shell",
   actionSlot,
   testId,
   className = "",
@@ -42,6 +44,7 @@ export function CinematicNarrationPanel({
       data-testid={testId}
       data-cinematic-narration={variant}
       data-cinematic-stage={isStage ? "standalone" : undefined}
+      data-cinematic-coordinate={isStage ? coordinateSpace : undefined}
       className={`betrayal-cinematic-narration relative flex min-h-full overflow-hidden text-[#f5e6c7] ${
         isStage
           ? "border-y border-[rgba(242,207,130,0.30)] bg-[rgba(0,0,0,0.42)] shadow-[0_24px_90px_rgba(0,0,0,0.44)]"
@@ -68,7 +71,7 @@ export function CinematicNarrationPanel({
       <div className="relative z-10 flex min-h-full w-full flex-col justify-between text-center">
         <div>
           <div
-            className={`font-black uppercase text-[#d8b15b] drop-shadow-[0_0_12px_rgba(228,173,76,0.32)] ${
+            className={`betrayal-cinematic-narration__label font-black uppercase text-[#d8b15b] drop-shadow-[0_0_12px_rgba(228,173,76,0.32)] ${
               labelIsMainTitle
                 ? compact
                   ? "text-[18px] tracking-[0.12em]"

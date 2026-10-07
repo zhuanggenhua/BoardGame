@@ -4930,9 +4930,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             mageId: player.mageId,
         });
     };
-    const magnifiedSpellCard = magnifiedPreview?.sourceCardId !== undefined
-        ? getMageWarsSpellCardFromConfig(magnifiedPreview.sourceCardId)
-        : undefined;
     const desktopUiScale = 1;
     const desktopUiPlaneStyle: CSSProperties = {
         inset: 0,
@@ -5286,58 +5283,40 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onClose={() => setMagnifiedPreview(null)}
                 overlayTestId="mage-wars-card-magnify-overlay"
                 closeLabel={t('actions.close')}
-                containerClassName="max-h-[88vh] max-w-[90vw]"
+                containerClassName="max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] overflow-visible rounded-none"
             >
                 {magnifiedPreview ? (
                     <div
-                        className="flex max-h-[82vh] max-w-[88vw] items-start gap-5 overflow-auto rounded-xl bg-stone-950/72 p-4"
+                        className="flex max-h-[calc(100vh-3rem)] max-w-[calc(100vw-3rem)] items-start overflow-visible"
                         data-testid="mage-wars-card-magnify-content"
                         data-source-card-id={magnifiedPreview.sourceCardId}
                         data-mage-id={magnifiedPreview.mageId}
                     >
                         <div
-                            className="shrink-0"
-                            style={{
-                                width: magnifiedPreview.aspectRatio >= 1
-                                    ? 'min(64vw, 56rem)'
-                                    : 'min(42vw, 30rem)',
-                                aspectRatio: magnifiedPreview.aspectRatio,
-                            }}
+                            className="flex max-h-[calc(100vh-3rem)] min-w-0 shrink-0 items-start justify-center"
                         >
-                            <CardPreview
-                                previewRef={magnifiedPreview.previewRef}
-                                className="h-full w-full rounded-xl shadow-2xl"
-                                title={magnifiedPreview.title}
-                                alt={magnifiedPreview.title}
-                            />
-                        </div>
-                        {magnifiedSpellCard ? (
                             <div
-                                className="w-[min(24rem,30vw)] min-w-[16rem] shrink-0 space-y-3 self-stretch overflow-y-auto rounded-lg border border-amber-100/18 bg-black/36 p-4 text-left text-stone-100"
-                                data-testid="mage-wars-card-magnify-rules"
+                                className="relative max-h-[calc(100vh-3rem)] max-w-[calc(100vw-3rem)]"
+                                style={{
+                                    aspectRatio: magnifiedPreview.aspectRatio,
+                                    width: magnifiedPreview.aspectRatio >= 1
+                                        ? 'min(78vw, 72rem)'
+                                        : 'auto',
+                                    height: magnifiedPreview.aspectRatio >= 1
+                                        ? 'auto'
+                                        : 'min(88vh, calc(100vh - 3rem))',
+                                    maxWidth: '100%',
+                                    maxHeight: 'calc(100vh - 3rem)',
+                                }}
                             >
-                                <div className="text-sm font-black tracking-wide text-amber-100">
-                                    {t('ui.cardOriginalText')}
-                                </div>
-                                <div className="space-y-2 text-sm leading-6">
-                                    {[
-                                        ['类型', magnifiedSpellCard.typeLine],
-                                        ['派系', magnifiedSpellCard.schoolLine],
-                                        ['攻击 / 特性', magnifiedSpellCard.attackOrTraitLine],
-                                        ['规则', magnifiedSpellCard.rulesText],
-                                        ['生命', magnifiedSpellCard.life],
-                                        ['护甲', magnifiedSpellCard.armor],
-                                    ].map(([label, value]) => value !== undefined && value !== '' ? (
-                                        <div key={label} className="border-b border-white/8 pb-2 last:border-b-0">
-                                            <div className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-stone-400">
-                                                {label}
-                                            </div>
-                                            <div className="whitespace-pre-wrap text-stone-50">{String(value)}</div>
-                                        </div>
-                                    ) : null)}
-                                </div>
+                                <CardPreview
+                                    previewRef={magnifiedPreview.previewRef}
+                                    className="h-full w-full object-contain shadow-2xl"
+                                    title={magnifiedPreview.title}
+                                    alt={magnifiedPreview.title}
+                                />
                             </div>
-                        ) : null}
+                        </div>
                     </div>
                 ) : null}
             </MagnifyOverlay>

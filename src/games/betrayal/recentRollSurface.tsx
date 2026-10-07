@@ -244,13 +244,12 @@ export function RecentRollPanel({
       className={`h-full w-full min-w-0 ${diceClassName ?? ""}`}
     />
   );
-  const isEventRoll = roll.kind === "eventTraitCheck" || roll.kind === "eventDiceRoll";
-  const isEventRollStillRolling = isEventRoll && !resultReadable;
+  const isRollStillRolling = !resultReadable;
   const diceStagePromptLabel = rerollSelection?.promptLabel ?? "";
   const shouldShowDiceStagePrompt = Boolean(diceStagePromptLabel);
   const diceStageWithPrompt = (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-visible">
-      {isEventRollStillRolling ? (
+      {isRollStillRolling ? (
         <div className="pointer-events-none mb-1 grid justify-items-center gap-0.5 px-2 py-0.5 drop-shadow-[0_2px_7px_rgba(0,0,0,0.72)]">
           <div
             data-testid="betrayal-recent-roll-rolling-status"
@@ -354,7 +353,7 @@ export function RecentRollPanel({
       </span>
     </div>
   ) : null;
-  const resultStage = isEventRollStillRolling ? null : (
+  const resultStage = isRollStillRolling ? null : (
     <div
       data-testid="betrayal-recent-roll-result-stage"
       data-result-layout="split-primary-total"
@@ -558,7 +557,7 @@ export function RecentRollPanel({
       ) : null}
     </div>
   );
-  const srSummary = isEventRollStillRolling ? (
+  const srSummary = isRollStillRolling ? (
     <div className="sr-only">{t("board.roll.rolling")}</div>
   ) : (
     <div className="sr-only">
@@ -676,6 +675,7 @@ export function StandardRecentRollOverlay({
   actionSlot = null,
   actorLabel = null,
   onDiceSettledChange,
+  resultReadable = true,
 }: {
   roll: BetrayalRecentRollState;
   canDismissByBackdrop: boolean;
@@ -685,6 +685,7 @@ export function StandardRecentRollOverlay({
   actionSlot?: React.ReactNode;
   actorLabel?: string | null;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
+  resultReadable?: boolean;
 }) {
   const { t } = useTranslation("game-betrayal");
   const continueButton = (
@@ -723,14 +724,17 @@ export function StandardRecentRollOverlay({
           diceStyleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
           effectiveLocale={effectiveLocale}
           actorLabel={actorLabel}
+          resultReadable={resultReadable}
           onDiceSettledChange={onDiceSettledChange}
         />
-        <div
-          data-testid="betrayal-roll-continue-dock"
-          className="pointer-events-auto mt-2 flex w-[min(700px,100%)] justify-center"
-        >
-          {dockedActionSlot}
-        </div>
+        {resultReadable ? (
+          <div
+            data-testid="betrayal-roll-continue-dock"
+            className="pointer-events-auto mt-2 flex w-[min(700px,100%)] justify-center"
+          >
+            {dockedActionSlot}
+          </div>
+        ) : null}
       </div>
     </div>
   );

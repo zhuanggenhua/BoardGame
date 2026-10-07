@@ -8,7 +8,10 @@ import {
     type OnlineAiRepeatedRecoveryUnblockMatch,
     type OnlineAiRepeatedRecoveryUnblockResult,
 } from './onlineAiRepeatedRecoveryUnblockExecutor';
-import type { OnlineAiRecoveryFeedbackPayload } from './transportFeedbackReporter';
+import {
+    resolveTransportFeedbackCorrelation,
+    type OnlineAiRecoveryFeedbackPayload,
+} from './transportFeedbackReporter';
 
 export type OnlineAiRepeatedRecoveryCoordinatorHooks<TMatch extends OnlineAiRepeatedRecoveryUnblockMatch> = {
     getCircuitSnapshot: (matchId: string, playerId: string) => OnlineAiCircuitSnapshot;
@@ -142,6 +145,11 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
                         reason: payload.reason,
                         trackerKey: args.trackerKey,
                         progressMarker: args.progressMarker,
+                        ...resolveTransportFeedbackCorrelation({
+                            matchId: args.match.matchID,
+                            state: args.match.state,
+                            stateId: args.match.stateID,
+                        }),
                         stateSnapshot: await this.hooks.buildRecoveryStateSnapshot({
                             match: args.match,
                             candidate: args.candidate,
@@ -213,6 +221,11 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
             reason,
             trackerKey: args.trackerKey,
             progressMarker: args.progressMarker,
+            ...resolveTransportFeedbackCorrelation({
+                matchId: args.match.matchID,
+                state: args.match.state,
+                stateId: args.match.stateID,
+            }),
             stateSnapshot: await this.hooks.buildRecoveryStateSnapshot({
                 match: args.match,
                 candidate: args.candidate,

@@ -394,6 +394,23 @@ describe('Feedback Module (e2e)', () => {
                 gameName: 'smashup',
                 actionLog: '[12:00] click feedback entry',
                 stateSnapshot: JSON.stringify({ gameId: 'smashup', phase: 'feedback' }),
+                diagnosticPacket: {
+                    schemaVersion: 1,
+                    captureId: 'capture-feedback-1',
+                    chainId: 'chain-feedback-1',
+                    capturedAt: '2026-10-06T10:00:00.000Z',
+                    source: 'user',
+                    collectionStatus: 'complete',
+                    replayability: 'partial',
+                    missingFields: ['correlation.roomId', 'snapshots.before'],
+                    correlation: {
+                        matchId: 'match-lazy-load',
+                        requestId: 'feedback-request-1',
+                    },
+                    snapshots: {
+                        at: { gameId: 'smashup', phase: 'feedback' },
+                    },
+                },
                 clientContext: {
                     route: '/play/smashup/match/lazy-load',
                     gameId: 'smashup',
@@ -427,6 +444,8 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.hasEmbeddedImage).toBe(true);
         expect(summaryItem.hasActionLog).toBe(true);
         expect(summaryItem.hasStateSnapshot).toBe(true);
+        expect(summaryItem.hasDiagnosticPacket).toBe(true);
+        expect(summaryItem.diagnosticReplayability).toBe('partial');
         expect(summaryItem.hasClientContext).toBe(true);
         expect(summaryItem.hasErrorContext).toBe(true);
         expect(summaryItem.clientContext?.route).toBe('/play/smashup/match/lazy-load');
@@ -441,9 +460,17 @@ describe('Feedback Module (e2e)', () => {
         expect(detailRes.body.content).toContain('data:image/png;base64,AAAA');
         expect(detailRes.body.actionLog).toContain('click feedback entry');
         expect(detailRes.body.stateSnapshot).toContain('"phase":"feedback"');
+        expect(detailRes.body.diagnosticPacket.captureId).toBe('capture-feedback-1');
+        expect(detailRes.body.diagnosticPacket.missingFields).toContain('snapshots.before');
         expect(detailRes.body.clientContext?.lastUserAction?.target?.testId).toBe('feedback-entry');
         expect(detailRes.body.errorContext?.jsStack).toContain('Feedback.tsx');
         expect(detailRes.body.canManage).toBe(true);
+
+        const replayabilityRes = await request(app.getHttpServer())
+            .get('/admin-api/feedback?summaryOnly=true&replayability=partial')
+            .set('Authorization', 'Bearer ' + adminToken)
+            .expect(200);
+        expect(replayabilityRes.body.items).toHaveLength(1);
     });
 
     it('普通用户反馈关闭时不填写关闭理由会返回 400', async () => {

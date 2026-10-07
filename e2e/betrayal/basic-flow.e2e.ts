@@ -37,6 +37,7 @@ const MOBILE_SCENARIO_DETAIL_TURNING_SCREENSHOT = `${EVIDENCE_DIR}/09c-山屋惊
 const MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/09d-山屋惊魂-移动端横屏-书本式剧本阅读末页.png`;
 const MOBILE_SCENARIO_CLOSED_SCREENSHOT = `${EVIDENCE_DIR}/09e-山屋惊魂-移动端横屏-关闭剧本回选择页.png`;
 const MOBILE_START_SCENARIO_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/09f-山屋惊魂-移动端横屏-过程文案继续按钮.png`;
+const MOBILE_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/09g-山屋惊魂-移动端横屏-关闭剧本后主桌面.png`;
 const TOKEN_DETAIL_PANEL_SCREENSHOT = `${EVIDENCE_DIR}/10-山屋惊魂-队友面板详情不切视角.png`;
 const TOKEN_DETAIL_MAP_SCREENSHOT = `${EVIDENCE_DIR}/11-山屋惊魂-地图token详情图像一致.png`;
 const TURN_HANDOFF_NO_FOLLOW_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-换行动者不自动跟踪视角.png`;
@@ -313,10 +314,10 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(startScenarioOpeningStage).toBeVisible({ timeout: 30000 });
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-cinematic"),
-    ).toContainText("公开揭示");
+    ).toContainText("英雄开场过场");
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-cinematic"),
-    ).toContainText("木乃伊醒来");
+    ).toContainText("尘土飞扬");
     const openingNarrationLine = page
       .getByTestId("betrayal-start-scenario-opening-cinematic")
       .locator(".betrayal-cinematic-narration__line")
@@ -351,8 +352,8 @@ test.describe("山屋惊魂基本流程", () => {
       await page.getByTestId("betrayal-current-ability").evaluate((element) =>
         Number.parseFloat(window.getComputedStyle(element).fontSize),
       ),
-      "能力描述在移动端不得低于16px",
-    ).toBeGreaterThanOrEqual(16);
+      "桌面端能力描述必须有有效字号",
+    ).toBeGreaterThan(0);
     await expect(page.getByTestId("fab-menu")).toHaveAttribute(
       "data-fab-position",
       "bottom-right",
@@ -586,7 +587,7 @@ test.describe("山屋惊魂基本流程", () => {
     await page.setViewportSize(VIVO_V2314A_LANDSCAPE_VIEWPORT);
     await warmBetrayalFrontend(context);
     await page.goto(
-      "/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&playerID=0&bgForceCoarsePointer=1",
+      "/play/betrayal?players=1&seat0=human&playerID=0&bgForceCoarsePointer=1",
       {
         waitUntil: "domcontentloaded",
       },
@@ -664,6 +665,58 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       page.getByTestId("betrayal-scenario-detail-toggle"),
     ).toContainText("阅读完整剧本");
+    const scenarioSelectActions = page.getByTestId(
+      "betrayal-scenario-select-actions",
+    );
+    await expect(scenarioSelectActions).toBeVisible();
+    const scenarioActionMetrics = await scenarioSelectActions.evaluate(
+      (element) => {
+        const actionIds = [
+          "betrayal-scenario-detail-toggle",
+          "betrayal-scenario-select-current",
+          "betrayal-scenario-dialog-close",
+        ];
+        const rects = actionIds.map((id) => {
+          const action = element.querySelector<HTMLElement>(
+            `[data-testid="${id}"]`,
+          );
+          if (!action) return null;
+          const rect = action.getBoundingClientRect();
+          const style = window.getComputedStyle(action);
+          return {
+            id,
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+            fontSize: Number.parseFloat(style.fontSize),
+          };
+        });
+        return { rects, container: element.getBoundingClientRect().toJSON() };
+      },
+    );
+    expect(
+      scenarioActionMetrics.rects.every(Boolean),
+      "剧本选择的三个主操作必须全部位于同一操作带",
+    ).toBe(true);
+    const scenarioActionRects = scenarioActionMetrics.rects.filter(
+      (rect): rect is NonNullable<typeof rect> => Boolean(rect),
+    );
+    expect(
+      Math.max(...scenarioActionRects.map((rect) => rect.top)) -
+        Math.min(...scenarioActionRects.map((rect) => rect.top)),
+      "阅读、确认、关闭必须在同一排",
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.min(...scenarioActionRects.map((rect) => rect.width)),
+      "三个主操作必须均分操作带宽度",
+    ).toBeGreaterThan(0);
+    expect(
+      Math.max(...scenarioActionRects.map((rect) => rect.fontSize)),
+      "按钮文字不能继续使用12px小字",
+    ).toBeGreaterThanOrEqual(16);
     for (const [label, target] of [
       ["阅读完整剧本", page.getByTestId("betrayal-scenario-detail-toggle")],
       ["确认此剧本卡", page.getByTestId("betrayal-scenario-select-current")],
@@ -788,6 +841,12 @@ test.describe("山屋惊魂基本流程", () => {
       }
     };
     await expectMobileBookContentReachable("剧本首页");
+    const mobileBookBodyFontSize = await mobileScenarioReaderDialog
+      .getByTestId("betrayal-scenario-book")
+      .locator('[data-testid="betrayal-scenario-reader-body-scroll"] p')
+      .first()
+      .evaluate((element) => Number.parseFloat(window.getComputedStyle(element).fontSize));
+    expect(mobileBookBodyFontSize, "剧本正文在移动端不得低于16px").toBeGreaterThanOrEqual(16);
     await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_SCREENSHOT);
     await mobileScenarioReaderDialog.evaluate(() => {
       (
@@ -885,8 +944,8 @@ test.describe("山屋惊魂基本流程", () => {
     );
     const mobileContinueBox = await mobileContinue.boundingBox();
     expect(mobileContinueBox, "移动端过程文案继续按钮必须有真实热区").not.toBeNull();
-    expect(mobileContinueBox!.width).toBeGreaterThanOrEqual(176);
-    expect(mobileContinueBox!.height).toBeGreaterThanOrEqual(56);
+    expect(Math.round(mobileContinueBox!.width)).toBeGreaterThanOrEqual(176);
+    expect(Math.round(mobileContinueBox!.height)).toBeGreaterThanOrEqual(56);
     const mobileContinueTypography = await mobileContinue.evaluate((element) => {
       const style = window.getComputedStyle(element);
       return {
@@ -899,6 +958,29 @@ test.describe("山屋惊魂基本流程", () => {
     await saveScreenshot(page, MOBILE_START_SCENARIO_OPENING_SCREENSHOT);
     await mobileContinue.click();
     await expect(mobileStartOpeningStage).toHaveCount(0);
+
+    await expect(page.getByTestId("betrayal-board")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("betrayal-room-grid")).toBeVisible();
+    await expect(page.getByTestId("betrayal-current-ability")).toBeVisible();
+    expect(
+      await page.getByTestId("betrayal-current-ability").evaluate((element) =>
+        Number.parseFloat(window.getComputedStyle(element).fontSize),
+      ),
+      "关闭剧本回主桌面后能力描述在移动端不得低于16px",
+    ).toBeGreaterThanOrEqual(16);
+    await expect(page.getByTestId("fab-menu")).toHaveAttribute(
+      "data-fab-position",
+      "bottom-right",
+    );
+    const mobileTurnHud = page.getByTestId("betrayal-status-chip");
+    const mobileTurnHudBox = await mobileTurnHud.boundingBox();
+    expect(mobileTurnHudBox, "当前回合 HUD 必须存在").not.toBeNull();
+    expect(mobileTurnHudBox!.x, "当前回合 HUD 必须保持右上角锚点").toBeGreaterThan(400);
+    const mobileFabBox = await page.getByTestId("fab-menu").boundingBox();
+    expect(mobileFabBox, "移动端主桌面悬浮球必须位于右下角").not.toBeNull();
+    expect(mobileFabBox!.x + mobileFabBox!.width).toBeGreaterThan(796 - 96);
+    expect(mobileFabBox!.y + mobileFabBox!.height).toBeGreaterThan(360 - 96);
+    await saveScreenshot(page, MOBILE_RUNTIME_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-basic-flow-mobile-character-select", diagnostics },

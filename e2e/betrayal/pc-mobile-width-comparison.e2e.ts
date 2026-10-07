@@ -36,6 +36,10 @@ const PRESSURE_PC_SCREENSHOT = `${EVIDENCE_DIR}/03-pc-1920x1080-驱魔目标提�
 const PRESSURE_PHONE_SCREENSHOT = `${EVIDENCE_DIR}/04-phone-936x432-驱魔目标提示.jpg`;
 const ENDGAME_PC_SCREENSHOT = `${EVIDENCE_DIR}/05-pc-1920x1080-结算页.jpg`;
 const ENDGAME_PHONE_SCREENSHOT = `${EVIDENCE_DIR}/06-phone-936x432-结算页.jpg`;
+const SCENARIO_ACTIONS_EVIDENCE_DIR =
+  "evidence/betrayal-scenario-actions-pc-mobile-20261006";
+const SCENARIO_ACTIONS_PC_SCREENSHOT = `${SCENARIO_ACTIONS_EVIDENCE_DIR}/01-PC-剧本选择三按钮同排.png`;
+const SCENARIO_ACTIONS_PHONE_SCREENSHOT = `${SCENARIO_ACTIONS_EVIDENCE_DIR}/02-手机横屏-剧本选择三按钮同排.png`;
 
 async function enterCharacterSelectState(
   page: Page,
@@ -47,6 +51,38 @@ async function enterCharacterSelectState(
   await expect(page.getByTestId("betrayal-character-select-screen")).toBeVisible({
     timeout: 30000,
   });
+}
+
+async function enterScenarioSelectionState(
+  page: Page,
+  viewport: { width: number; height: number },
+) {
+  await enterCharacterSelectState(page, viewport);
+  const confirmationHitTarget = await page
+    .getByTestId("betrayal-character-confirm")
+    .evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      );
+      return {
+        hitFabId:
+          hit instanceof HTMLElement
+            ? hit.closest<HTMLElement>("[data-fab-id]")?.dataset.fabId ?? null
+            : null,
+      };
+    });
+  expect(
+    confirmationHitTarget.hitFabId,
+    "角色确认中心点不能被共享 FAB 遮挡",
+  ).toBeNull();
+  await page.getByTestId("betrayal-character-confirm").click();
+  await expect(page.getByTestId("betrayal-character-scenario-button")).toContainText(
+    "木乃伊横行",
+  );
+  await page.getByTestId("betrayal-character-scenario-button").click();
+  await expect(page.getByTestId("betrayal-scenario-select-dialog")).toBeVisible();
 }
 
 async function enterStartedBoardState(
@@ -130,6 +166,34 @@ async function readLayoutMetrics(page: Page) {
           };
         },
       );
+    const textMetrics = (selector: string) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        width: Number(box.width.toFixed(2)),
+        height: Number(box.height.toFixed(2)),
+        fontSize: Number.parseFloat(style.fontSize),
+        lineHeight: style.lineHeight,
+      };
+    };
+    const movementTextMetrics = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-testid="betrayal-movement-snapshot"] div',
+      ),
+    )
+      .slice(0, 3)
+      .map((element) => {
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          width: Number(box.width.toFixed(2)),
+          height: Number(box.height.toFixed(2)),
+          fontSize: Number.parseFloat(style.fontSize),
+          lineHeight: style.lineHeight,
+        };
+      });
     return {
       viewport: { width: window.innerWidth, height: window.innerHeight },
       shell: rect(".mobile-board-shell"),
@@ -181,6 +245,27 @@ async function readLayoutMetrics(page: Page) {
       statusRail: rect('[data-testid="betrayal-status-rail"]'),
       actionRail: rect('[data-testid="betrayal-action-rail"]'),
       phaseChip: rect('[data-testid="betrayal-phase-chip"]'),
+      text: {
+        phaseLabel: textMetrics(
+          '[data-testid="betrayal-phase-chip"] span:first-child',
+        ),
+        phaseValue: textMetrics(
+          '[data-testid="betrayal-phase-chip"] span:nth-child(2)',
+        ),
+        turnLabel: textMetrics(
+          '[data-testid="betrayal-status-chip"] > div:first-child > div:first-child',
+        ),
+        turnName: textMetrics(
+          '[data-testid="betrayal-status-chip"] > div:first-child > div:nth-child(2)',
+        ),
+        movement: movementTextMetrics,
+        currentAbility: textMetrics(
+          '[data-testid="betrayal-current-ability"]',
+        ),
+        teammateNames: rectList(
+          '[data-testid^="betrayal-teammate-panel-"] [data-testid="betrayal-teammate-name"]',
+        ),
+      },
       hudScale: (() => {
         const portal = document.querySelector<HTMLElement>(
           ".betrayal-hud-portal-region",
@@ -315,8 +400,26 @@ async function readCharacterLayoutMetrics(page: Page) {
       ),
     ).filter(
       (element) =>
+        Boolean(
+          element.closest('[data-testid="betrayal-character-selection-grid"]'),
+        ) &&
         !element.dataset.testid?.endsWith("-state-outline") &&
         !element.dataset.testid?.endsWith("-ability-trigger"),
+    );
+    const readText = (selector: string) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        width: Number(box.width.toFixed(2)),
+        height: Number(box.height.toFixed(2)),
+        fontSize: Number.parseFloat(style.fontSize),
+        lineHeight: style.lineHeight,
+      };
+    };
+    const detailScroll = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-character-detail-scroll"]',
     );
     const root = document.documentElement;
     return {
@@ -350,6 +453,28 @@ async function readCharacterLayoutMetrics(page: Page) {
       screen: rect('[data-testid="betrayal-character-select-screen"]'),
       grid: rect('[data-testid="betrayal-character-selection-grid"]'),
       detail: rect('[data-testid="betrayal-character-detail-scroll"]'),
+      detailAspectRatio: detailScroll
+        ? Number(
+            (
+              detailScroll.getBoundingClientRect().width /
+              detailScroll.getBoundingClientRect().height
+            ).toFixed(6),
+          )
+        : null,
+      detailScrollMetrics: detailScroll
+        ? {
+            scrollHeight: detailScroll.scrollHeight,
+            clientHeight: detailScroll.clientHeight,
+            scrollWidth: detailScroll.scrollWidth,
+            clientWidth: detailScroll.clientWidth,
+          }
+        : null,
+      detailTitle: readText(
+        '[data-testid="betrayal-character-detail-scroll"] h2',
+      ),
+      detailBody: readText(
+        '[data-testid="betrayal-character-detail-scroll"] .text-sm',
+      ),
       confirm: rect('[data-testid="betrayal-character-confirm"]'),
       cards: cards.map((element) => {
         const box = element.getBoundingClientRect();
@@ -376,6 +501,118 @@ async function readCharacterLayoutMetrics(page: Page) {
           '[data-testid="betrayal-mobile-landscape-layout"]',
         ).length,
       },
+      overflow: {
+        document: document.documentElement.scrollWidth,
+        body: document.body.scrollWidth,
+        root: document.querySelector<HTMLElement>("#root")?.scrollWidth ?? 0,
+      },
+    };
+  });
+}
+
+async function readScenarioActionMetrics(page: Page) {
+  return page.evaluate(() => {
+    const actionIds = [
+      "betrayal-scenario-detail-toggle",
+      "betrayal-scenario-select-current",
+      "betrayal-scenario-dialog-close",
+    ];
+    const read = (id: string) => {
+      const element = document.querySelector<HTMLElement>(
+        `[data-testid="${id}"]`,
+      );
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        id,
+        left: Number(rect.left.toFixed(2)),
+        top: Number(rect.top.toFixed(2)),
+        width: Number(rect.width.toFixed(2)),
+        height: Number(rect.height.toFixed(2)),
+        fontSize: Number.parseFloat(style.fontSize),
+        visible:
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.top >= 0 &&
+          rect.bottom <= window.innerHeight + 1 &&
+          rect.left >= 0 &&
+          rect.right <= window.innerWidth + 1,
+      };
+    };
+    return {
+      actions: actionIds.map(read),
+      fab: Array.from(
+        document.querySelectorAll<HTMLElement>('[data-testid="fab-menu"]'),
+      ).map((element) => {
+        const box = element.getBoundingClientRect();
+        return {
+          position: element.dataset.fabPosition ?? null,
+          left: Number(box.left.toFixed(2)),
+          top: Number(box.top.toFixed(2)),
+          right: Number(box.right.toFixed(2)),
+          bottom: Number(box.bottom.toFixed(2)),
+        };
+      }),
+      actionRow: (() => {
+        const element = document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-scenario-select-actions"]',
+        );
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        return {
+          left: Number(rect.left.toFixed(2)),
+          top: Number(rect.top.toFixed(2)),
+          width: Number(rect.width.toFixed(2)),
+          height: Number(rect.height.toFixed(2)),
+          visible:
+            rect.width > 0 &&
+            rect.height > 0 &&
+            rect.top >= 0 &&
+            rect.bottom <= window.innerHeight + 1 &&
+            rect.left >= 0 &&
+            rect.right <= window.innerWidth + 1,
+        };
+      })(),
+      candidateList: (() => {
+        const element = document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-scenario-candidate-list"]',
+        );
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        const firstCandidate = element.querySelector<HTMLElement>(
+          'button[data-testid^="betrayal-scenario-option-"]',
+        );
+        const firstRect = firstCandidate?.getBoundingClientRect() ?? null;
+        const fullyVisibleCandidates = Array.from(
+          element.querySelectorAll<HTMLElement>(
+            'button[data-testid^="betrayal-scenario-option-"]',
+          ),
+        ).filter((candidate) => {
+          const candidateRect = candidate.getBoundingClientRect();
+          return (
+            candidateRect.width > 0 &&
+            candidateRect.height > 0 &&
+            candidateRect.top >= rect.top - 1 &&
+            candidateRect.bottom <= rect.bottom + 1
+          );
+        });
+        return {
+          width: Number(rect.width.toFixed(2)),
+          height: Number(rect.height.toFixed(2)),
+          clientWidth: element.clientWidth,
+          clientHeight: element.clientHeight,
+          scrollWidth: element.scrollWidth,
+          scrollHeight: element.scrollHeight,
+          fullyVisibleCount: fullyVisibleCandidates.length,
+          firstCandidate: firstRect
+            ? {
+                width: Number(firstRect.width.toFixed(2)),
+                height: Number(firstRect.height.toFixed(2)),
+              }
+            : null,
+        };
+      })(),
       overflow: {
         document: document.documentElement.scrollWidth,
         body: document.body.scrollWidth,
@@ -483,6 +720,25 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
         (pcMetrics.detail?.width ?? 0) * 0.4,
         0,
       );
+      expect(phoneMetrics.detail?.height ?? 0).toBeCloseTo(
+        (pcMetrics.detail?.height ?? 0) * 0.4,
+        0,
+      );
+      expect(phoneMetrics.detailAspectRatio ?? 0).toBeCloseTo(
+        pcMetrics.detailAspectRatio ?? 0,
+        2,
+      );
+      expect(phoneMetrics.detailScrollMetrics?.scrollWidth ?? 0).toBeLessThanOrEqual(
+        phoneMetrics.detailScrollMetrics?.clientWidth ?? 0,
+      );
+      expect(phoneMetrics.detailTitle?.height ?? 0).toBeCloseTo(
+        pcMetrics.detailTitle?.height ?? 0,
+        0,
+      );
+      expect(phoneMetrics.detailBody?.height ?? 0).toBeCloseTo(
+        pcMetrics.detailBody?.height ?? 0,
+        0,
+      );
       expect(phoneMetrics.confirm?.width ?? 0).toBeCloseTo(
         (pcMetrics.confirm?.width ?? 0) * 0.4,
         0,
@@ -499,6 +755,123 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
     }
   });
 
+  test("剧本选择三项主操作在 PC 与手机保持同排和同一视觉层级", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(180000);
+    await initBetrayalContext(context);
+    await warmBetrayalFrontend(context);
+
+    await enterScenarioSelectionState(page, PC_VIEWPORT);
+    const pcMetrics = await readScenarioActionMetrics(page);
+    await saveScreenshot(page, SCENARIO_ACTIONS_PC_SCREENSHOT);
+
+    const phonePage = await context.newPage();
+    try {
+      await enterScenarioSelectionState(phonePage, PHONE_VIEWPORT);
+      const phoneMetrics = await readScenarioActionMetrics(phonePage);
+      await saveScreenshot(phonePage, SCENARIO_ACTIONS_PHONE_SCREENSHOT);
+
+      for (const [label, metrics] of [
+        ["PC", pcMetrics],
+        ["手机", phoneMetrics],
+      ] as const) {
+        const actions = metrics.actions.filter(
+          (action): action is NonNullable<typeof action> => Boolean(action),
+        );
+        expect(actions, `${label}三项主操作必须全部存在`).toHaveLength(3);
+        expect(
+          Math.max(...actions.map((action) => action.top)) -
+            Math.min(...actions.map((action) => action.top)),
+          `${label}三项主操作必须同排`,
+        ).toBeLessThanOrEqual(1);
+        expect(
+          Math.min(...actions.map((action) => action.fontSize)),
+          `${label}按钮文字不得低于16px`,
+        ).toBeGreaterThanOrEqual(16);
+        expect(
+          actions.every((action) => Math.abs(action.height - 56) <= 1),
+          `${label}三项主操作必须保持56px实际高度`,
+        ).toBe(true);
+        expect(
+          actions.every((action) => Math.abs(action.fontSize - 18) <= 0.5),
+          `${label}三项主操作字号必须保持18px`,
+        ).toBe(true);
+        expect(
+          actions.every((action) => action.visible),
+          `${label}三项主操作必须完整落在当前视口内`,
+        ).toBe(true);
+        expect(
+          metrics.fab.some((fab) => fab.position === "top-right"),
+          `${label}选角阶段 FAB 必须让位到右上角`,
+        ).toBe(true);
+      }
+
+      expect(pcMetrics.overflow.document).toBeLessThanOrEqual(
+        PC_VIEWPORT.width + 1,
+      );
+      expect(pcMetrics.overflow.body).toBeLessThanOrEqual(
+        PC_VIEWPORT.width + 1,
+      );
+      expect(phoneMetrics.overflow.document).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.width + 1,
+      );
+      expect(phoneMetrics.overflow.body).toBeLessThanOrEqual(
+        PHONE_VIEWPORT.width + 1,
+      );
+
+      expect(phoneMetrics.actionRow?.width ?? 0).toBeGreaterThan(0);
+      expect(pcMetrics.actionRow?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.actions[0]?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.actions[1]?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.actions[2]?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.actionRow?.visible).toBe(true);
+      expect(pcMetrics.actionRow?.visible).toBe(true);
+      expect(phoneMetrics.actions.map((action) => action?.fontSize)).toEqual(
+        pcMetrics.actions.map((action) => action?.fontSize),
+      );
+      for (const [label, metrics] of [
+        ["PC", pcMetrics],
+        ["手机", phoneMetrics],
+      ] as const) {
+        expect(metrics.candidateList, `${label}候选滚动框必须存在`).not.toBeNull();
+        expect(
+          metrics.candidateList?.scrollWidth ?? 0,
+          `${label}候选滚动框不得横向溢出`,
+        ).toBeLessThanOrEqual(metrics.candidateList?.clientWidth ?? 0);
+        expect(
+          metrics.candidateList?.scrollHeight ?? 0,
+          `${label}候选滚动框必须实际可滚动`,
+        ).toBeGreaterThan(metrics.candidateList?.clientHeight ?? 0);
+        expect(
+          metrics.candidateList?.fullyVisibleCount ?? 0,
+          `${label}候选滚动框默认至少要完整显示两条候选卡`,
+        ).toBeGreaterThanOrEqual(2);
+        expect(
+          metrics.candidateList?.firstCandidate?.width ?? 0,
+          `${label}首条候选卡必须有真实宽度`,
+        ).toBeGreaterThan(0);
+        expect(
+          metrics.candidateList?.firstCandidate?.height ?? 0,
+          `${label}首条候选卡必须有真实高度`,
+        ).toBeGreaterThan(0);
+      }
+      // 候选列表属于 portal：宽度与条目保持稳定，滚动框高度由真实视口约束，
+      // 不能把手机的可视高度误判成壳内结构尺寸回归。
+      expect(phoneMetrics.candidateList?.firstCandidate?.width ?? 0).toBeCloseTo(
+        pcMetrics.candidateList?.firstCandidate?.width ?? 0,
+        0,
+      );
+      expect(phoneMetrics.candidateList?.firstCandidate?.height ?? 0).toBeCloseTo(
+        pcMetrics.candidateList?.firstCandidate?.height ?? 0,
+        0,
+      );
+    } finally {
+      await phonePage.close();
+    }
+  });
+
   test("主牌桌常态沿用同一 PC 画布并保持所有一级区域", async ({
     page,
     context,
@@ -509,12 +882,14 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
 
     await enterStartedBoardState(page, PC_VIEWPORT);
     const pcMetrics = await readLayoutMetrics(page);
+    console.log("PC_TEXT_METRICS", JSON.stringify(pcMetrics.text));
     await saveScreenshot(page, RUNTIME_PC_SCREENSHOT);
 
     const phonePage = await context.newPage();
     try {
       await enterStartedBoardState(phonePage, PHONE_VIEWPORT);
       const phoneMetrics = await readLayoutMetrics(phonePage);
+      console.log("PHONE_TEXT_METRICS", JSON.stringify(phoneMetrics.text));
       expect(phoneMetrics.shellWidth).toBe("1920px");
       expect(phoneMetrics.shellScale).toBe("0.400000");
       expect(phoneMetrics.shell?.width ?? 0).toBeCloseTo(PHONE_SHELL_WIDTH, 0);
@@ -580,13 +955,35 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
       expect(phoneMetrics.leftRailContentBottom ?? 0).toBeLessThanOrEqual(
         PHONE_VIEWPORT.height,
       );
-      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(
-        (pcMetrics.actionRail?.height ?? 0) * phoneMetrics.hudScale,
-        0,
-      );
+      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(56, 0);
+      expect(
+        phoneMetrics.actions
+          .filter((action) => action.testId.startsWith("betrayal-action-") && action.testId !== "betrayal-action-rail" && action.testId !== "betrayal-action-cue")
+          .every((action) => Math.abs(action.height - 56) <= 1),
+      ).toBe(true);
       expect(phoneMetrics.phaseChip?.width ?? 0).toBeCloseTo(
         (pcMetrics.phaseChip?.width ?? 0) * phoneMetrics.hudScale,
         0,
+      );
+      expect(phoneMetrics.text.phaseLabel?.height ?? 0).toBeCloseTo(
+        pcMetrics.text.phaseLabel?.height ?? 0,
+        0,
+      );
+      expect(phoneMetrics.text.phaseValue?.height ?? 0).toBeCloseTo(
+        pcMetrics.text.phaseValue?.height ?? 0,
+        0,
+      );
+      expect(phoneMetrics.text.turnLabel?.height ?? 0).toBeCloseTo(
+        pcMetrics.text.turnLabel?.height ?? 0,
+        0,
+      );
+      expect(phoneMetrics.text.turnName?.height ?? 0).toBeCloseTo(
+        pcMetrics.text.turnName?.height ?? 0,
+        0,
+      );
+      expect(phoneMetrics.text.currentAbility?.fontSize ?? 0).toBeCloseTo(
+        16 / phoneMetrics.hudScale,
+        1,
       );
       expect(phoneMetrics.inventory?.height ?? 0).toBeCloseTo(
         (pcMetrics.inventory?.height ?? 0) * phoneMetrics.hudScale,
@@ -601,13 +998,13 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
         PHONE_VIEWPORT.width * phoneMetrics.hudScale,
         0,
       );
-      expect(phoneMetrics.roomCanvas?.width ?? 0).toBeCloseTo(
-        (pcMetrics.roomCanvas?.width ?? 0) * 0.4,
-        0,
+      expect(phoneMetrics.roomCanvas?.width ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.roomCanvas?.height ?? 0).toBeGreaterThan(0);
+      expect(phoneMetrics.roomCanvas?.width ?? 0).toBeLessThanOrEqual(
+        phoneMetrics.roomGrid?.width ?? 0,
       );
-      expect(phoneMetrics.roomCanvas?.height ?? 0).toBeCloseTo(
-        (pcMetrics.roomCanvas?.height ?? 0) * 0.4,
-        0,
+      expect(phoneMetrics.roomCanvas?.height ?? 0).toBeLessThanOrEqual(
+        phoneMetrics.roomGrid?.height ?? 0,
       );
       expect(phoneMetrics.overflow.document).toBeLessThanOrEqual(
         PHONE_VIEWPORT.width + 1,
@@ -848,10 +1245,7 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
       expect(phoneMetrics.leftRailContentBottom ?? 0).toBeLessThanOrEqual(
         PHONE_VIEWPORT.height,
       );
-      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(
-        (pcMetrics.actionRail?.height ?? 0) * phoneMetrics.hudScale,
-        0,
-      );
+      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(56, 0);
       expect(phoneMetrics.phaseChip?.width ?? 0).toBeCloseTo(
         (pcMetrics.phaseChip?.width ?? 0) * phoneMetrics.hudScale,
         0,

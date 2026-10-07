@@ -12,6 +12,7 @@ import { AdminInitService } from '../src/modules/auth/admin-init.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { AdminAuditLog, type AdminAuditLogDocument } from '../src/modules/auth/schemas/admin-audit-log.schema';
 import { User, type UserDocument } from '../src/modules/auth/schemas/user.schema';
+import { MatchRecord, type MatchRecordDocument } from '../src/modules/admin/schemas/match-record.schema';
 import { GlobalHttpExceptionFilter } from '../src/shared/filters/http-exception.filter';
 
 describe('AuthModule (e2e)', () => {
@@ -22,6 +23,7 @@ describe('AuthModule (e2e)', () => {
     let authService: AuthService;
     let adminInitService: AdminInitService;
     let adminAuditModel: Model<AdminAuditLogDocument>;
+    let matchRecordModel: Model<MatchRecordDocument>;
     const ADMIN_EMAIL = 'admin@example.com';
     const ADMIN_PASSWORD = 'admin-pass-1234';
     const ADMIN_USERNAME = '管理员';
@@ -46,6 +48,7 @@ describe('AuthModule (e2e)', () => {
         authService = moduleRef.get<AuthService>(AuthService);
         adminInitService = moduleRef.get<AdminInitService>(AdminInitService);
         adminAuditModel = moduleRef.get<Model<AdminAuditLogDocument>>(getModelToken(AdminAuditLog.name));
+        matchRecordModel = moduleRef.get<Model<MatchRecordDocument>>(getModelToken(MatchRecord.name));
         app.useGlobalPipes(
             new ValidationPipe({
                 whitelist: true,
@@ -60,6 +63,7 @@ describe('AuthModule (e2e)', () => {
         await Promise.all([
             userModel.deleteMany({}),
             adminAuditModel.deleteMany({}),
+            matchRecordModel.deleteMany({}),
         ]);
     });
 
@@ -147,6 +151,72 @@ describe('AuthModule (e2e)', () => {
             .get('/auth/me')
             .set('Authorization', `Bearer ${token}`)
             .expect(401);
+    });
+
+    it('登录后把同一浏览器的游客对局归并到用户排行榜身份', async () => {
+        const guestId = 'guest-claim-e2e';
+        const email = 'claim-user@example.com';
+        const code = '123456';
+
+        await matchRecordModel.create({
+            matchID: 'guest-history-1',
+            gameName: 'tictactoe',
+            players: [
+                { id: `guest:${guestId}`, ownerKey: `guest:${guestId}`, name: '游客 1234', result: 'win' },
+                { id: 'AI-1', name: 'AI-1', isAi: true, result: 'loss' },
+            ],
+            winnerID: `guest:${guestId}`,
+        });
+        await matchRecordModel.create({
+            matchID: 'other-history-1',
+            gameName: 'tictactoe',
+            players: [
+                { id: 'guest:someone-else', ownerKey: 'guest:someone-else', name: '其他游客', result: 'win' },
+                { id: 'AI-2', name: 'AI-2', isAi: true, result: 'loss' },
+            ],
+            winnerID: 'guest:someone-else',
+        });
+        await matchRecordModel.create({
+            matchID: 'guest-loss-history-1',
+            gameName: 'tictactoe',
+            players: [
+                { id: `guest:${guestId}`, ownerKey: `guest:${guestId}`, name: '游客 1234', result: 'loss' },
+                { id: 'guest:other-player', ownerKey: 'guest:other-player', name: '其他玩家', result: 'win' },
+            ],
+            winnerID: 'guest:other-player',
+        });
+
+        await authService.storeEmailCode(email, code);
+        const registerRes = await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ username: '登录后用户', email, code, password: 'pass1234' })
+            .expect(201);
+
+        const userId = registerRes.body.user.id as string;
+        const loginRes = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ account: email, password: 'pass1234', guestId })
+            .expect(200);
+
+        expect(loginRes.body.success).toBe(true);
+        const claimed = await matchRecordModel.findOne({ matchID: 'guest-history-1' }).lean();
+        expect(claimed?.players[0]).toMatchObject({
+            id: `user:${userId}`,
+            ownerKey: `user:${userId}`,
+            name: '登录后用户',
+        });
+        expect(claimed?.winnerID).toBe(`user:${userId}`);
+
+        const claimedLoss = await matchRecordModel.findOne({ matchID: 'guest-loss-history-1' }).lean();
+        expect(claimedLoss?.players[0]).toMatchObject({
+            id: `user:${userId}`,
+            ownerKey: `user:${userId}`,
+            name: '登录后用户',
+        });
+        expect(claimedLoss?.winnerID).toBe('guest:other-player');
+
+        const untouched = await matchRecordModel.findOne({ matchID: 'other-history-1' }).lean();
+        expect(untouched?.players[0]?.ownerKey).toBe('guest:someone-else');
     });
 
     it('登录后应下发长期 refresh cookie，并可在 access token 失效后续签', async () => {

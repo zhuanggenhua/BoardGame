@@ -196,6 +196,58 @@ describe('TutorialSystem', () => {
         expect(previous?.state?.sys.tutorial.step?.id ?? atAiStep?.state?.sys.tutorial.step?.id).toBe('watch-ai');
     });
 
+    it('PREVIOUS: branch-recovery 的教程自动命令可以在隐藏步骤中恢复检查点', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = {
+            id: 'branch-recovery-previous',
+            steps: [
+                { id: 'choose', content: 'choose', requireAction: true, allowManualSkip: true },
+                {
+                    id: 'recover',
+                    content: 'hidden recovery',
+                    aiActions: [{ commandType: TUTORIAL_COMMANDS.PREVIOUS }],
+                    hiddenAutomation: {
+                        kind: 'branch-recovery',
+                        reason: 'Restore the full pre-branch checkpoint.',
+                        recoveryStepId: 'choose',
+                    },
+                },
+                { id: 'after', content: 'after' },
+            ],
+        };
+        const state = createTestState();
+        const started = sys.beforeCommand?.({
+            state,
+            command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+        const atRecover = sys.beforeCommand?.({
+            state: started!.state!,
+            command: { type: TUTORIAL_COMMANDS.NEXT, playerId: '0', payload: {} },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+        const recovered = sys.beforeCommand?.({
+            state: atRecover!.state!,
+            command: {
+                type: TUTORIAL_COMMANDS.PREVIOUS,
+                playerId: '0',
+                payload: { __tutorialAiCommand: true },
+                skipValidation: true,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(recovered?.halt).toBe(true);
+        expect(recovered?.error).toBeUndefined();
+        expect(recovered?.state?.sys.tutorial.step?.id).toBe('choose');
+    });
+
     it('PREVIOUS: 不受手动跳过限制，直接回到上一个玩家可见步骤', () => {
         const sys = createTutorialSystem<TestCore>();
         const manifest: TutorialManifest = {

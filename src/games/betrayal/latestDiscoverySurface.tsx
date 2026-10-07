@@ -147,7 +147,9 @@ export function BetrayalLatestDiscoverySurface({
   const hasRollModifierActionSlot = Boolean(rollModifierActionSlot);
   // Automatic event rolls skip shared confirmation, but still need a visible
   // player-controlled way to return to the board after the dice settle.
-  const shouldHideExternalActionDock = hasRollModifierActionSlot;
+  const shouldHideExternalActionDock =
+    hasRollModifierActionSlot ||
+    Boolean(shouldShowRoll && recentRoll && continueButton.eventRollReadable === false);
   const displayedDiscoveryDetail = resolveDisplayedDiscoveryDetail(
     discovery,
     resolutionSteps,

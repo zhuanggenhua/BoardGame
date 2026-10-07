@@ -35,6 +35,26 @@ on:
         required: false
         type: string
         default: /home/admin/BoardGame
+      stream_to_preview:
+        description: '构建后把同一镜像输送到 Acer 预览机'
+        required: false
+        type: boolean
+        default: false
+      deploy_preview_after_stream:
+        description: '输送完成后在 Acer 预览机执行预览部署'
+        required: false
+        type: boolean
+        default: false
+      preview_deploy_host:
+        description: 'Acer 预览机 SSH 目标'
+        required: false
+        type: string
+        default: zhanggenhua@direct-home.easyboardgame.top
+      preview_remote_dir:
+        description: 'Acer 预览机项目目录'
+        required: false
+        type: string
+        default: /home/zhanggenhua/BoardGame
 
 env:
   REGISTRY: ghcr.io
@@ -74,7 +94,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push game-server
-        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.stream_to_server }}
+        if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.stream_to_server && !inputs.stream_to_preview) }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -100,7 +120,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push web (monolith)
-        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.stream_to_server }}
+        if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.stream_to_server && !inputs.stream_to_preview) }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -118,7 +138,7 @@ jobs:
           sbom: false
 
       - name: Build and load game-server for production stream
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.stream_to_server || inputs.stream_to_preview) }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -133,7 +153,7 @@ jobs:
           sbom: false
 
       - name: Build and load web for production stream
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.stream_to_server || inputs.stream_to_preview) }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -151,7 +171,7 @@ jobs:
           sbom: false
 
       - name: Push loaded web tags
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.stream_to_server || inputs.stream_to_preview) }}
         env:
           IMAGE_TAGS: ${{ steps.meta-web.outputs.tags }}
         run: |
@@ -162,7 +182,7 @@ jobs:
           done
 
       - name: Push loaded game-server tags
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.stream_to_server || inputs.stream_to_preview) }}
         env:
           IMAGE_TAGS: ${{ steps.meta-game.outputs.tags }}
         run: |
@@ -208,6 +228,63 @@ jobs:
             args+=(--deploy)
           fi
           node "${args[@]}"
+
+      - name: Prepare Acer preview SSH
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_preview }}
+        env:
+          BOARDGAME_PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.BOARDGAME_PREVIEW_SSH_PRIVATE_KEY }}
+          BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "${BOARDGAME_PREVIEW_SSH_PRIVATE_KEY}" ]] || missing+=("BOARDGAME_PREVIEW_SSH_PRIVATE_KEY")
+          [[ -n "${BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS}" ]] || missing+=("BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS")
+          if (( ${#missing[@]} > 0 )); then
+            echo "Missing Acer preview secret(s): ${missing[*]}" >&2
+            exit 1
+          fi
+          mkdir -p "${HOME}/.ssh"
+          echo "${BOARDGAME_PREVIEW_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/boardgame-preview"
+          chmod 600 "${HOME}/.ssh/boardgame-preview"
+          echo "${BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts-preview"
+
+      - name: Install Acer preview deploy helper
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_preview }}
+        env:
+          PREVIEW_HOST: ${{ inputs.preview_deploy_host }}
+          PREVIEW_REMOTE_DIR: ${{ inputs.preview_remote_dir }}
+        run: |
+          set -euo pipefail
+          ssh_args=(
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+            -o StrictHostKeyChecking=yes
+            -o IdentitiesOnly=yes
+            -i "${HOME}/.ssh/boardgame-preview"
+            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts-preview"
+          )
+          ssh "${ssh_args[@]}" "${PREVIEW_HOST}" "mkdir -p '${PREVIEW_REMOTE_DIR}/scripts/deploy'"
+          scp "${ssh_args[@]}" scripts/deploy/deploy-preview-image.sh "${PREVIEW_HOST}:${PREVIEW_REMOTE_DIR}/scripts/deploy/deploy-preview-image.sh"
+          ssh "${ssh_args[@]}" "${PREVIEW_HOST}" "chmod 755 '${PREVIEW_REMOTE_DIR}/scripts/deploy/deploy-preview-image.sh'"
+
+      - name: Stream images to Acer preview
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_preview && inputs.deploy_preview_after_stream }}
+        env:
+          PREVIEW_HOST: ${{ inputs.preview_deploy_host }}
+          PREVIEW_REMOTE_DIR: ${{ inputs.preview_remote_dir }}
+          PREVIEW_TAG: ${{ inputs.deploy_tag }}
+        run: |
+          set -euo pipefail
+          node scripts/deploy/stream-images-to-server.mjs \
+            --tag "${PREVIEW_TAG}" \
+            --host "${PREVIEW_HOST}" \
+            --remote-dir "${PREVIEW_REMOTE_DIR}" \
+            --ssh-key-path "${HOME}/.ssh/boardgame-preview" \
+            --known-hosts-path "${HOME}/.ssh/known_hosts-preview" \
+            --skip-local-pull \
+            --deploy \
+            --skip-watchdog-sync \
+            --deploy-command "cd '${PREVIEW_REMOTE_DIR}' && bash scripts/deploy/deploy-preview-image.sh '${PREVIEW_TAG}'"
 
       - name: Summary
         run: |

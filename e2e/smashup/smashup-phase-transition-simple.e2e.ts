@@ -1507,6 +1507,15 @@ function buildOnlineAiComplexMultiBaseScoringState(baseState: any) {
         phase: 'scoreBases',
         turnNumber: 8,
         turnOrder: ['0', '1'],
+        seatControllers: {
+            ...(nextState.core?.seatControllers ?? {}),
+            '0': { type: 'human' },
+            '1': {
+                type: 'local-ai',
+                difficulty: 'expert',
+                minimumActionDelayMs: 5000,
+            },
+        },
         factionSelection: undefined,
         scoringEligibleBaseIndices: [0, 1, 2],
         baseDeck: ['base_the_factory', 'base_cave_of_shinies', 'base_rhodes_plaza'],
@@ -1619,7 +1628,7 @@ function buildOnlineAiComplexMultiBaseScoringState(baseState: any) {
                         owner: '1',
                         basePower: 9,
                         powerCounters: 0,
-                        powerModifier: 14,
+                        powerModifier: 11,
                         tempPowerModifier: 0,
                         talentUsed: false,
                         playedThisTurn: false,
@@ -1632,7 +1641,7 @@ function buildOnlineAiComplexMultiBaseScoringState(baseState: any) {
                         owner: '0',
                         basePower: 8,
                         powerCounters: 0,
-                        powerModifier: 12,
+                        powerModifier: 13,
                         tempPowerModifier: 0,
                         talentUsed: false,
                         playedThisTurn: false,
@@ -2451,7 +2460,7 @@ test('回归：在线 AI 在 factionSelect 阶段 seat state 延迟就绪时，�
             '1': {
                 type: 'local-ai',
                 difficulty: 'expert',
-                minimumActionDelayMs: 150,
+                minimumActionDelayMs: 5000,
             },
         },
         beforeEnterMatch: async ({ hostPage, matchId }) => {
@@ -2661,8 +2670,6 @@ test('在线 AI 在三基地并发达标场景下应完成 multi_base_scoring �
     try {
         const { hostPage, matchId } = setup;
         await waitForAiSeatCredential(hostPage, matchId, '1');
-        await applyOnlineMatchState(matchId, hostPage, buildOnlineAiComplexMultiBaseScoringState);
-        await waitForSmashUpUI(hostPage);
         await hostPage.evaluate(() => {
             const win = window as Window & {
                 __SU_AI_MULTI_BASE_TRACK__?: Array<{
@@ -2697,10 +2704,55 @@ test('在线 AI 在三基地并发达标场景下应完成 multi_base_scoring �
             win.__SU_AI_MULTI_BASE_TRACK_TIMER__ = window.setInterval(sample, 80);
         });
 
-        const injectedState = await getMatchState(matchId, hostPage);
-        expect(['scoreBases', 'playCards']).toContain(injectedState.sys?.phase);
+        await hostPage.waitForFunction(
+            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+            { timeout: 30000, polling: 200 },
+        );
+        await applyOnlineMatchState(matchId, hostPage, buildOnlineAiComplexMultiBaseScoringState);
+        await waitForSmashUpUI(hostPage);
+        await hostPage.waitForTimeout(250);
 
+        const beforeState = await getMatchState(matchId, hostPage);
+        expect(beforeState.sys?.phase).toBe('scoreBases');
+        expect(beforeState.core?.currentPlayerIndex).toBe(1);
+        expect(beforeState.core?.seatControllers?.['1']?.type).toBe('local-ai');
         await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-multi-base-before');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                phase: state.sys?.phase ?? null,
+                currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
+                aiSeatType: state.core?.seatControllers?.['1']?.type ?? null,
+            };
+        }, {
+            timeout: 10000,
+            message: '等待同一次真实联机运行进入 AI 三基地计分中态',
+        }).toEqual({
+            phase: 'scoreBases',
+            currentPlayerIndex: 1,
+            aiSeatType: 'local-ai',
+        });
+
+        const duringState = await getMatchState(matchId, hostPage);
+        const duringInteraction = duringState.sys?.interaction?.current ?? null;
+        const duringResponseWindow = duringState.sys?.responseWindow?.current ?? null;
+        const duringObserved = duringState.sys?.phase === 'scoreBases'
+            && duringState.core?.currentPlayerIndex === 1
+            && duringState.core?.seatControllers?.['1']?.type === 'local-ai';
+        console.log(JSON.stringify({
+            feedbackId: '69c903',
+            chainId: 'feedback-69c903-ai-scoring-20261006',
+            stage: 'during',
+            duringObserved,
+            interaction: duringInteraction,
+            responseWindow: duringResponseWindow,
+            seatControllers: duringState.core?.seatControllers ?? null,
+            actionLogTail: duringState.sys?.actionLog?.entries?.slice(-10) ?? [],
+            eventStreamTail: duringState.sys?.eventStream?.entries?.slice(-10) ?? [],
+        }, null, 2));
+        expect(duringObserved).toBe(true);
+        await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-multi-base-during-response');
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);

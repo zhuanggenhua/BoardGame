@@ -40,13 +40,17 @@ import {
     type OnlineAiRecoveryAiSummary,
     type OnlineAiRecoveryLegalActionSummary,
 } from './onlineAiWatchdogFeedbackDiagnostics';
-import type { OnlineAiRecoveryFeedbackPayload } from './transportFeedbackReporter';
+import {
+    resolveTransportFeedbackCorrelation,
+    type OnlineAiRecoveryFeedbackPayload,
+} from './transportFeedbackReporter';
 
 export type OnlineAiFeedbackDiagnosticsMatch = {
     matchID: string;
     gameId: string;
     engineConfig: GameEngineConfig;
     state: MatchState<unknown>;
+    stateID?: number;
     metadata: {
         setupData?: unknown;
     };
@@ -244,6 +248,11 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
             reason: inferredReason,
             trackerKey,
             progressMarker: args.progressMarkerBefore,
+            ...resolveTransportFeedbackCorrelation({
+                matchId: args.match.matchID,
+                state: args.match.state,
+                stateId: args.match.stateID,
+            }),
             stateSnapshot: await this.buildUnsatisfiableInteractionStateSnapshot({
                 match: args.match,
                 playerId: args.playerId,

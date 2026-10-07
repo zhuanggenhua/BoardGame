@@ -1,7 +1,7 @@
 import React from "react";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { UI_Z_INDEX } from "../../core";
+import { HudPortal, UI_Z_INDEX } from "../../core";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import { playSound } from "../../lib/audio/useGameAudio";
@@ -489,16 +489,20 @@ export function CharacterSelectScreen({
                 data-testid="betrayal-character-detail-scroll"
                 className="custom-scrollbar relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain px-5 pb-4 pt-4"
               >
-                <div className="flex justify-center px-2 pt-1">
-                  <ExplorerPentagonCard
-                    explorer={selectedExplorer}
-                    selected
-                    ready={isReady}
-                    taken={false}
-                    effectiveLocale={effectiveLocale}
-                  />
-                </div>
-                <section className="relative mt-2 flex-1 overflow-visible px-1 pb-2 pt-2">
+                <div
+                  data-testid="betrayal-character-detail-content"
+                  className="flex min-h-full w-full flex-col"
+                >
+                  <div className="flex justify-center px-2 pt-1">
+                    <ExplorerPentagonCard
+                      explorer={selectedExplorer}
+                      selected
+                      ready={isReady}
+                      taken={false}
+                      effectiveLocale={effectiveLocale}
+                    />
+                  </div>
+                  <section className="relative mt-2 flex-1 overflow-visible px-1 pb-2 pt-2">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
                   <div className="grid gap-2">
@@ -588,7 +592,8 @@ export function CharacterSelectScreen({
                       </div>
                     </div>
                   </div>
-                </section>
+                  </section>
+                </div>
               </section>
             </aside>
 
@@ -786,37 +791,28 @@ export function CharacterSelectScreen({
         </div>
       </div>
       {scenarioSelectionOpen ? (
-        <>
+        <HudPortal>
           <div
             role="dialog"
             aria-modal="true"
             data-testid="betrayal-scenario-select-dialog"
-            className="pointer-events-auto absolute inset-0 grid place-items-center bg-[rgba(2,6,5,0.72)] px-4 py-3"
+            className="pointer-events-auto fixed inset-0 grid place-items-center bg-[rgba(2,6,5,0.72)] px-3 py-3"
             style={{ zIndex: SCENARIO_READER_MODAL_Z_INDEX }}
             onClick={handleScenarioDialogClose}
           >
             <div
-              className="pointer-events-auto relative max-h-[1056px] w-full max-w-[640px] overflow-y-auto border border-[#7b633d] bg-[linear-gradient(135deg,rgba(48,37,22,0.98),rgba(20,17,12,0.98)_46%,rgba(7,10,8,0.98))] p-5 text-[#f3e0b4] shadow-[0_26px_70px_rgba(0,0,0,0.58)]"
+              className="pointer-events-auto relative flex h-[calc(100vh-24px)] max-h-[calc(100vh-24px)] w-[min(640px,calc(100vw-24px))] max-w-none min-h-0 flex-col overflow-hidden border border-[#7b633d] bg-[linear-gradient(135deg,rgba(48,37,22,0.98),rgba(20,17,12,0.98)_46%,rgba(7,10,8,0.98))] p-5 text-[#f3e0b4] shadow-[0_26px_70px_rgba(0,0,0,0.58)]"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.16)]" />
               <div className="pointer-events-none absolute left-0 top-0 h-full w-2 bg-[linear-gradient(180deg,rgba(198,152,71,0.5),rgba(58,31,18,0.34))]" />
-              <div className="relative">
+              <div className="relative flex min-h-0 flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-[12px] font-bold uppercase tracking-[0.26em] text-[#c9a35e]">
                       {t("board.characterSelect.scenarioDossier")}
                     </div>
-                    <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#8f8065]">
-                      {t("board.characterSelect.scenarioCaseNo")}
-                    </div>
                   </div>
-                  <div className="border border-[rgba(214,191,129,0.3)] bg-[rgba(10,12,9,0.48)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d6b56d]">
-                    {t("board.characterSelect.scenarioOnly")}
-                  </div>
-                </div>
-                <div className="mt-3 border-l-2 border-[rgba(214,191,129,0.34)] pl-3 text-[14px] leading-5 text-[#e8dfc8]">
-                  {t("board.characterSelect.scenarioStepSubtitle")}
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-[rgba(214,191,129,0.16)] pt-3">
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c9a35e]">
@@ -837,7 +833,7 @@ export function CharacterSelectScreen({
                 </div>
                 <div
                   data-testid="betrayal-scenario-candidate-list"
-                  className="mt-3 grid gap-2"
+                  className="mt-3 min-h-0 flex-none max-h-[min(420px,calc(100vh-212px))] overflow-y-auto pr-1 grid grid-cols-2 content-start gap-2"
                 >
                   {scenarioCardCandidates.map((candidate) => {
                     const isProposed =
@@ -861,7 +857,7 @@ export function CharacterSelectScreen({
                         }
                         aria-pressed={isProposed}
                         onClick={() => handleScenarioCardPropose(candidate.id)}
-                        className={`group relative w-full border p-4 text-left shadow-[inset_0_0_0_1px_rgba(255,240,184,0.08)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e] ${
+                        className={`group relative w-full border p-3 text-left shadow-[inset_0_0_0_1px_rgba(255,240,184,0.08)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e] ${
                           isProposed
                             ? "border-[#b5ef42] bg-[linear-gradient(180deg,rgba(54,63,25,0.94),rgba(21,27,16,0.96))]"
                             : "border-[#8b7044] bg-[linear-gradient(180deg,rgba(54,43,25,0.92),rgba(21,23,16,0.94))] hover:border-[#d6bf81]"
@@ -869,10 +865,10 @@ export function CharacterSelectScreen({
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="truncate text-[22px] font-bold tracking-[0.06em] text-[#fff0b8]">
+                            <div className="truncate text-[18px] font-bold tracking-[0.04em] text-[#fff0b8]">
                               {candidateTitle}
                             </div>
-                            <div className="mt-1 text-[12px] uppercase tracking-[0.1em] text-[#9fb98b]">
+                            <div className="mt-1 truncate text-[11px] uppercase tracking-[0.08em] text-[#9fb98b]">
                               {t("board.characterSelect.scenarioCardMeta", {
                                 card: candidate.scenarioCardLabel,
                                 omen: candidate.triggerOmenLabel,
@@ -880,13 +876,13 @@ export function CharacterSelectScreen({
                             </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-1">
-                            <span className="border border-[rgba(214,191,129,0.28)] bg-[rgba(10,12,9,0.44)] px-2 py-1 text-[12px] font-bold uppercase tracking-[0.1em] text-[#d6b56d]">
+                            <span className="border border-[rgba(214,191,129,0.28)] bg-[rgba(10,12,9,0.44)] px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#d6b56d]">
                               {t("board.characterSelect.scenarioHauntNumber", {
                                 number: candidate.hauntNumber,
                               })}
                             </span>
                             <span
-                              className={`border px-2 py-1 text-[12px] font-bold uppercase tracking-[0.1em] ${
+                                className={`border px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] ${
                                 isPlayable
                                   ? "border-[rgba(181,239,66,0.36)] bg-[rgba(34,48,20,0.54)] text-[#dfff8f]"
                                   : "border-[rgba(214,191,129,0.28)] bg-[rgba(54,43,25,0.42)] text-[#cbb889]"
@@ -900,7 +896,7 @@ export function CharacterSelectScreen({
                             </span>
                           </div>
                         </div>
-                        <div className="mt-2 text-[13px] leading-5 text-[#e8dfc8]">
+                        <div className="mt-2 line-clamp-2 text-[12px] leading-4 text-[#e8dfc8]">
                           {formatScenarioCardSummary(
                             candidate,
                             effectiveLocale,
@@ -909,12 +905,12 @@ export function CharacterSelectScreen({
                         {isProposed || isConfirmed ? (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {isProposed ? (
-                              <span className="border border-[rgba(181,239,66,0.32)] bg-[rgba(39,57,28,0.42)] px-2 py-1 text-[12px] font-bold uppercase tracking-[0.1em] text-[#dfff8f]">
+                              <span className="border border-[rgba(181,239,66,0.32)] bg-[rgba(39,57,28,0.42)] px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#dfff8f]">
                                 {t("board.characterSelect.scenarioProposed")}
                               </span>
                             ) : null}
                             {isConfirmed ? (
-                              <span className="border border-[rgba(132,171,82,0.42)] bg-[rgba(39,57,28,0.42)] px-2 py-1 text-[12px] font-bold uppercase tracking-[0.1em] text-[#b5ef42]">
+                              <span className="border border-[rgba(132,171,82,0.42)] bg-[rgba(39,57,28,0.42)] px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#b5ef42]">
                                 {t("board.characterSelect.scenarioConfirmed")}
                               </span>
                             ) : null}
@@ -924,7 +920,10 @@ export function CharacterSelectScreen({
                     );
                   })}
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[rgba(214,191,129,0.16)] pt-3">
+                <div
+                  data-testid="betrayal-scenario-select-actions"
+                  className="mt-3 shrink-0 grid grid-cols-3 items-stretch gap-2 border-t border-[rgba(214,191,129,0.16)] pt-3"
+                >
                   <button
                     type="button"
                     data-testid="betrayal-scenario-detail-toggle"
@@ -933,7 +932,7 @@ export function CharacterSelectScreen({
                     disabled={!proposedScenarioIsPlayable}
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={handleScenarioDetailsOpen}
-                    className={`inline-flex min-h-11 items-center justify-center border px-3 text-[12px] font-semibold uppercase tracking-[0.1em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e] ${
+                    className={`inline-flex min-h-[56px] w-full items-center justify-center whitespace-nowrap border px-3 py-2 text-[18px] font-semibold leading-tight tracking-[0.04em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e] ${
                       proposedScenarioIsPlayable
                         ? "cursor-pointer border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.78)] text-[#e2c57e] hover:border-[#e2c57e]"
                         : "cursor-not-allowed border-[rgba(114,101,78,0.28)] bg-[rgba(18,18,16,0.58)] text-[#8f8065]"
@@ -950,7 +949,7 @@ export function CharacterSelectScreen({
                       onConfirmScenarioCard();
                       handleScenarioDialogClose(event);
                     }}
-                    className={`inline-flex min-h-11 items-center justify-center border px-3 text-[12px] font-semibold uppercase tracking-[0.1em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5ef42] ${
+                    className={`inline-flex min-h-[56px] w-full items-center justify-center whitespace-nowrap border px-3 py-2 text-[18px] font-semibold leading-tight tracking-[0.04em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5ef42] ${
                       isReady
                         ? "cursor-pointer border-[rgba(181,239,66,0.44)] bg-[rgba(32,52,18,0.68)] text-[#dfff8f] hover:border-[#b5ef42]"
                         : "cursor-not-allowed border-[rgba(114,101,78,0.28)] bg-[rgba(18,18,16,0.58)] text-[#8f8065]"
@@ -960,14 +959,12 @@ export function CharacterSelectScreen({
                       ? t("board.characterSelect.scenarioConfirmed")
                       : t("board.characterSelect.confirmScenarioCard")}
                   </button>
-                </div>
-                <div className="mt-4 flex justify-end">
                   <button
                     type="button"
                     data-testid="betrayal-scenario-dialog-close"
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={handleScenarioDialogClose}
-                    className="inline-flex min-h-11 cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] transition hover:border-[#e2c57e]"
+                    className="inline-flex min-h-[56px] w-full cursor-pointer items-center justify-center whitespace-nowrap border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-3 py-2 text-[18px] font-semibold leading-tight tracking-[0.04em] text-[#e2c57e] transition hover:border-[#e2c57e]"
                   >
                     {t("board.characterSelect.closeScenarioDialog")}
                   </button>
@@ -1278,7 +1275,7 @@ export function CharacterSelectScreen({
                             })}
                           </div>
                           <div
-                            className="pointer-events-none absolute inset-x-0 top-1/2 z-40 flex -translate-y-1/2 items-center justify-between px-1"
+                            className="pointer-events-none absolute inset-x-2 bottom-4 z-40 flex items-center justify-between px-1"
                           >
                             <button
                               type="button"
@@ -1358,7 +1355,7 @@ export function CharacterSelectScreen({
               />
             ) : null}
           </div>
-        </>
+        </HudPortal>
       ) : null}
     </div>
   );

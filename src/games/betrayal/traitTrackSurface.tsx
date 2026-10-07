@@ -392,14 +392,14 @@ export function ExplorerTraitOutcomePreview({
                 event.stopPropagation();
                 onDecrement?.();
               }}
-              className="grid h-7 w-7 place-items-center text-[#f1d58d] transition hover:bg-[rgba(214,181,109,0.14)] disabled:cursor-not-allowed disabled:text-[rgba(214,181,109,0.28)]"
+              className="grid h-[76px] w-[168px] min-h-[76px] min-w-[168px] place-items-center text-[24px] text-[#f1d58d] transition hover:bg-[rgba(214,181,109,0.14)] disabled:cursor-not-allowed disabled:text-[rgba(214,181,109,0.28)]"
             >
               <Minus size={14} strokeWidth={2.4} aria-hidden="true" />
             </button>
             <span
               data-testid={`${testIdPrefix}-${trait}-selected-count`}
               data-damage-selected-count={safeSelectedCount}
-              className="grid h-7 min-w-[1.75rem] place-items-center border-x border-[rgba(214,181,109,0.22)] px-1 text-[12px] font-black tabular-nums text-[#fff4c7]"
+              className="grid h-[76px] min-h-[76px] min-w-[2.75rem] place-items-center border-x border-[rgba(214,181,109,0.22)] px-1 text-[18px] font-black tabular-nums text-[#fff4c7]"
               aria-label={`${TRAIT_LABEL_LOCAL[trait]}已分配${safeSelectedCount}`}
             >
               {safeSelectedCount}
@@ -413,7 +413,7 @@ export function ExplorerTraitOutcomePreview({
                 event.stopPropagation();
                 onIncrement?.();
               }}
-              className="grid h-7 w-7 place-items-center text-[#f1d58d] transition hover:bg-[rgba(214,181,109,0.14)] disabled:cursor-not-allowed disabled:text-[rgba(214,181,109,0.28)]"
+              className="grid h-[76px] w-[168px] min-h-[76px] min-w-[168px] place-items-center text-[24px] text-[#f1d58d] transition hover:bg-[rgba(214,181,109,0.14)] disabled:cursor-not-allowed disabled:text-[rgba(214,181,109,0.28)]"
             >
               <Plus size={14} strokeWidth={2.4} aria-hidden="true" />
             </button>

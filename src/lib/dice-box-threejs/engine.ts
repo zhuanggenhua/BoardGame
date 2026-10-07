@@ -1537,7 +1537,7 @@ export class DiceBoxThreeEngine {
         }
     }
 
-    private async playContainedRerollSpin(indices: number[], durationMs = 900): Promise<void> {
+    private async playContainedRerollSpin(indices: number[], durationMs = 3000): Promise<void> {
         if (indices.length === 0) return;
 
         type RerollSpinSnapshot = {
@@ -1582,7 +1582,9 @@ export class DiceBoxThreeEngine {
         const forwardTravel = Math.max(2.8, Math.min(5.8, baseScale * 0.08));
         const screenSideTravel = Math.max(42, Math.min(68, baseScale * 0.9));
         const screenForwardTravel = Math.max(18, Math.min(30, baseScale * 0.38));
-        const duration = Math.max(1100, durationMs);
+        // Rerolls must stay visibly in motion long enough for the real browser
+        // evidence sampler to capture the rolling state before values settle.
+        const duration = Math.max(3000, durationMs);
         const minimumVisibleFrames = Math.max(24, Math.min(32, Math.ceil(duration / 46)));
         const canvas = this.box.renderer?.domElement;
         const canvasWidth = canvas?.clientWidth || canvas?.width || 0;
@@ -2466,6 +2468,7 @@ export class DiceBoxThreeEngine {
 
         await new Promise<void>((resolve, reject) => {
             let stepIndex = 0;
+            let frameId: number | null = null;
             let timerId: number | null = null;
             let watchdogId: number | null = null;
             let completed = false;
@@ -2480,6 +2483,10 @@ export class DiceBoxThreeEngine {
                 reject(error);
             };
             const clearScheduledStep = () => {
+                if (frameId !== null) {
+                    window.cancelAnimationFrame(frameId);
+                    frameId = null;
+                }
                 if (timerId !== null) {
                     window.clearTimeout(timerId);
                     timerId = null;

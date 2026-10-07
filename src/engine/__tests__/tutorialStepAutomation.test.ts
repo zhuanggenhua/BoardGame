@@ -56,6 +56,28 @@ describe('tutorial hidden automation contracts', () => {
         );
     });
 
+    it('accepts branch-recovery only when it restores a prior visible step', () => {
+        const manifest: TutorialManifest = {
+            id: 'branch-recovery',
+            steps: [
+                { id: 'choose', content: 'choose', requireAction: true },
+                {
+                    id: 'recover',
+                    content: 'hidden recovery',
+                    aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS' }],
+                    hiddenAutomation: {
+                        kind: 'branch-recovery',
+                        reason: 'Restore the complete checkpoint before an uncovered legal branch.',
+                        recoveryStepId: 'choose',
+                    },
+                },
+                { id: 'after', content: 'after' },
+            ],
+        };
+
+        expect(getTutorialHiddenAutomationContractErrors(manifest)).toEqual([]);
+    });
+
     it('keeps all authored game tutorial manifests within the hidden automation contract', () => {
         const entries = [
             ...collectManifests('betrayal', betrayalTutorials),

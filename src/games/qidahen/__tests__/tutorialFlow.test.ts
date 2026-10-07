@@ -243,7 +243,7 @@ describe('qidahen tutorial flow', () => {
             'wheel-first',
             'wheel-rule',
             'wheel-move',
-            'wheel-branch-stop',
+            'wheel-branch-recovery',
             'wheel-result',
             'hand-action-order',
             'grant-pardon-rule',
@@ -521,12 +521,33 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelFirst).toContain('15 张');
         expect(basic.wheelFirst).toContain('不需要弃牌');
         expect(basic.wheelRule).toContain('前进 1、2 或 3 格');
+        expect(basic.wheelRule).toContain('三种走法都是合法选择');
         expect(basic.wheelRule).not.toContain('进入征兵训练');
-        expect(basic.wheelMove).toBe('现在选择征兵训练。');
-        expect(basic.wheelBranchStop).toBe('这个轮盘落点不是征兵训练，后续征兵训练链无法继续。');
+        expect(basic.wheelMove).toBe('点击轮盘上高亮的“征兵训练”区域。');
+        expect(zhTutorialText).not.toMatch(/免费走\s*1/);
+        expect(enTutorialText).not.toContain('Move 1 for free');
+        expect(enTutorialText).not.toContain('Move 1 for Free');
+        const wheelActionPrompts = [
+            (zh.tutorial as any).wheelSharedCost.steps.chooseMove,
+            (zh.tutorial as any).wheelReclaim.steps.chooseMove,
+            (zh.tutorial as any).wheelMilitaryFarm.steps.chooseMove,
+            (zh.tutorial as any).wheelRecruitTrain.steps.chooseMove,
+            (zh.tutorial as any).diplomacy.steps.wheelEntry,
+            (zh.tutorial as any).yearAndCharacters.steps.advanceMidyear,
+            (zh.tutorial as any).yearAndCharacters.steps.advanceNewYear,
+        ] as string[];
+        expect(wheelActionPrompts.every((text) => text.includes('点击轮盘') && text.includes('高亮'))).toBe(true);
+        expect(wheelActionPrompts.every((text) => !/免费走\s*1/.test(text))).toBe(true);
+        expect(enTutorialText).not.toMatch(/Move 1\s+for\s+free/i);
         expect(basic.wheelResult).toBe('征兵训练已结算。先看地图上的新增部队。');
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'wheel-branch-recovery')).toEqual(expect.objectContaining({
+            hiddenAutomation: expect.objectContaining({
+                kind: 'branch-recovery',
+                recoveryStepId: 'wheel-move',
+            }),
+        }));
         expect(basic.turnFlow).toContain('顺序由玩家决定');
         expect(basic.turnFlow).not.toContain('示范路径');
         expect(basic.handActionOrder).toContain('手牌行动每回合选 1 项');
@@ -536,6 +557,8 @@ describe('qidahen tutorial flow', () => {
         expect(basic.handActionOrder).toContain('征召军队');
         expect(basic.handActionOrder).toContain('赐印招安');
         expect(basic.handActionOrder).toContain('驱虎吞狼');
+        expect(basic.handActionOrder).not.toContain('弃 1');
+        expect(basic.handActionOrder).not.toContain('弃 3');
         expect(basic.grantPardonRule).toContain('赐印招安：弃 3 张手牌');
         expect(basic.grantPardonRule).toContain('由被指定的玩家选择一支与大明控制区相邻的部队');
         expect(basic.pickAction).toBe('现在选择赐印招安。');
@@ -555,6 +578,14 @@ describe('qidahen tutorial flow', () => {
             expect(text).not.toContain('This tutorial');
             expect(text).not.toContain('本章示范');
             expect(text).not.toContain('This chapter demonstrates');
+            expect(text).not.toContain('本示范');
+            expect(text).not.toContain('This example');
+            expect(text).not.toContain('当前路径');
+            expect(text).not.toContain('current path');
+            expect(text).not.toContain('示例固定');
+            expect(text).not.toContain('example fixes');
+            expect(text).not.toContain('路径结束');
+            expect(text).not.toContain('path ends');
         }
         expect(zhTutorialText).not.toContain('结算摘要');
         expect(enTutorialText).not.toContain('resolution summary');
@@ -699,7 +730,7 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
-    it('基础教程保留正式合法的走3分支，但会停在回退卡，不把错误落点接入征兵训练主线', () => {
+    it('基础教程允许正式合法的走3分支，并由隐藏恢复机制回到轮盘选择', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
 
@@ -739,7 +770,7 @@ describe('qidahen tutorial flow', () => {
             payload: { moveId: 'move-3-all-opponents' },
         });
 
-        expect(state.sys.tutorial.step?.id).toBe('wheel-branch-stop');
+        expect(state.sys.tutorial.step?.id).toBe('wheel-branch-recovery');
         expect((state.core as any).wheelActionUsed).toBe(true);
         expect((state.core as any).wheelMoveSummary).toBeTruthy();
         expect((state.core as any).turnPhase).toBe('dispatch-targeting');
@@ -747,7 +778,8 @@ describe('qidahen tutorial flow', () => {
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.PREVIOUS,
             playerId: '0',
-            payload: {},
+            payload: { __tutorialAiCommand: true },
+            skipValidation: true,
         });
         expect(state.sys.tutorial.step?.id).toBe('wheel-move');
         expect((state.core as any).wheelActionUsed).toBe(false);

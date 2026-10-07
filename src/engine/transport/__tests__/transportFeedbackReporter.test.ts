@@ -1,11 +1,47 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     defaultOnlineAiFeedbackReporter,
+    resolveTransportFeedbackCorrelation,
     TransportFeedbackReporter,
     type OnlineAiRecoveryFeedbackPayload,
 } from '../transportFeedbackReporter';
 
+const correlationState = {
+    sys: {
+        matchId: 'room-1',
+        decisionEpoch: 7,
+        interaction: { current: { id: 'request-1' } },
+        responseWindow: { current: { id: 'response-1' } },
+    },
+    core: {},
+} as any;
+
 describe('TransportFeedbackReporter', () => {
+    it('服务端现场关联键必须来自权威状态和状态版本', () => {
+        expect(resolveTransportFeedbackCorrelation({
+            matchId: 'match-1',
+            state: correlationState,
+            stateId: 42,
+        })).toEqual({
+            requestId: 'request-1',
+            stateId: 42,
+            stateRevision: 42,
+            decisionEpoch: 7,
+        });
+    });
+
+    it('只有显式提供独立 roomId 时才记录 roomId，不把 matchId 当作 roomId', () => {
+        expect(resolveTransportFeedbackCorrelation({
+            matchId: 'match-1',
+            roomId: 'room-1',
+            state: correlationState,
+        })).toEqual({
+            roomId: 'room-1',
+            requestId: 'request-1',
+            decisionEpoch: 7,
+        });
+    });
+
     it('online AI watchdog 默认上报链路应把成功恢复类事件写入反馈库', async () => {
         const postFeedback = vi.fn(async () => undefined);
         const reporter = new TransportFeedbackReporter({
@@ -97,6 +133,7 @@ describe('TransportFeedbackReporter', () => {
                 appBuildTime: '2026-06-19T11:00:00.000Z',
                 appReleaseChannel: 'production',
             }),
+            diagnosticPacket: expect.stringContaining('"source":"server"'),
         }));
     });
 });

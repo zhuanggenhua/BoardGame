@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, ZoomIn } from 'lucide-react';
+import { Plus, X, ZoomIn } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { MageWarsConfigSpellCard } from '../data/configPackage';
@@ -1083,7 +1083,20 @@ export function MageWarsSpellbookBuilderPanel({
                     data-testid="mage-wars-spellbook-builder-mage-detail"
                     aria-label={t('spellbookBuilder.mageDetailAria')}
                 >
-                    <div className="grid max-h-[calc(100vh-5rem)] w-[min(63rem,calc(100vw-5rem))] grid-cols-[22.5rem_minmax(0,1fr)] gap-5 overflow-auto border border-amber-200/45 bg-[#18110c] p-4 shadow-[0_38px_90px_rgba(0,0,0,0.64)]">
+                    <div
+                        className="relative grid max-h-[calc(100vh-5rem)] w-fit max-w-[calc(100vw-5rem)] grid-cols-[22.5rem_minmax(15rem,18rem)] gap-5 overflow-auto border border-amber-200/45 bg-[#18110c] p-4 pr-16 shadow-[0_38px_90px_rgba(0,0,0,0.64)]"
+                        data-testid="mage-wars-spellbook-builder-mage-detail-panel"
+                    >
+                        <button
+                            type="button"
+                            className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-amber-100/55 bg-black/65 text-amber-50 shadow-lg transition hover:border-amber-50 hover:bg-black/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                            data-testid="mage-wars-spellbook-builder-mage-detail-close"
+                            aria-label={t('spellbookBuilder.close')}
+                            title={t('spellbookBuilder.close')}
+                            onClick={() => setDetailOpen(false)}
+                        >
+                            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.5} />
+                        </button>
                         <div className="overflow-hidden border border-white/20 bg-black/40" style={{ aspectRatio: 744 / 1040 }}>
                             <CardPreview
                                 previewRef={getMageWarsMagePreviewRef(mageId, 'card')}
@@ -1093,10 +1106,9 @@ export function MageWarsSpellbookBuilderPanel({
                             />
                         </div>
                         <div className="grid content-start gap-3">
-                            <h2 className="m-0 text-2xl font-black leading-tight">{currentSetup.displayName}</h2>
-                            <p className="m-0 text-sm font-semibold leading-relaxed text-stone-200/72">
-                                {t('spellbookBuilder.mageDetailDescription')}
-                            </p>
+                            <div className="text-xs font-black uppercase tracking-[0.14em] text-amber-200/72">
+                                {t('spellbookBuilder.builderConstraints')}
+                            </div>
                             <div className="grid gap-2">
                                 <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] border border-white/12 bg-white/[0.045] p-2 text-sm">
                                     <span className="font-black text-stone-100/70">
@@ -1111,14 +1123,6 @@ export function MageWarsSpellbookBuilderPanel({
                                     <strong>{trainingProfile.opposedSchools.join(' / ') || t('spellbookBuilder.none')}</strong>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                className="mt-2 w-max border border-amber-200/60 bg-amber-300 px-5 py-2 text-sm font-black text-stone-950"
-                                data-testid="mage-wars-spellbook-builder-mage-detail-close"
-                                onClick={() => setDetailOpen(false)}
-                            >
-                                {t('spellbookBuilder.close')}
-                            </button>
                         </div>
                     </div>
                 </section>

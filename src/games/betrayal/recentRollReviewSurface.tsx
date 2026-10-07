@@ -19,6 +19,7 @@ type BetrayalRecentRollReviewSurfaceProps = {
   onDismiss: () => void;
   onConfirmExorciseRollReview: () => void;
   onDiceSettledChange: (rollId: string, settled: boolean) => void;
+  resultReadable?: boolean;
 };
 
 export function BetrayalRecentRollReviewSurface({
@@ -34,6 +35,7 @@ export function BetrayalRecentRollReviewSurface({
   onDismiss,
   onConfirmExorciseRollReview,
   onDiceSettledChange,
+  resultReadable = true,
 }: BetrayalRecentRollReviewSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
 
@@ -52,6 +54,7 @@ export function BetrayalRecentRollReviewSurface({
         actionSlot={actionSlot}
         actorLabel={actorLabel}
         onDiceSettledChange={onDiceSettledChange}
+        resultReadable={resultReadable}
       />
     );
   }
@@ -117,6 +120,7 @@ export function BetrayalRecentRollReviewSurface({
             )
           }
           onDiceSettledChange={onDiceSettledChange}
+          resultReadable={resultReadable}
         />
       </div>
     </div>

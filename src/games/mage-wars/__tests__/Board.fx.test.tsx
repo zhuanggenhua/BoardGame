@@ -1558,7 +1558,7 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
-    it('renders teleport with source-to-target travel before arrival burst', () => {
+    it('renders teleport as a direct source flash and destination arrival without travel', () => {
         vi.useFakeTimers();
         const onImpact = vi.fn();
         const onComplete = vi.fn();
@@ -1586,23 +1586,18 @@ describe('MageWarsBoard FX wiring', () => {
                 />,
             );
 
-            const travel = screen.getByTestId('mage-wars-fx-teleport-travel');
+            expect(screen.queryByTestId('mage-wars-fx-teleport-travel')).toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-teleport-travel-mid-burst')).toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-teleport-source-wake')).not.toBeNull();
-            expect(screen.queryByTestId('mage-wars-fx-teleport-travel-mid-burst')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-spell-teleport')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-spell-teleport-burst')).not.toBeNull();
             expect(screen
                 .getByTestId('mage-wars-fx-spell-teleport-burst')
                 .querySelector('[data-testid="mock-burst-particles"]')
                 ?.getAttribute('data-overflow')).toBe('2.2');
-            expect(travel.getAttribute('data-source-row')).toBe('0');
-            expect(travel.getAttribute('data-target-row')).toBe('2');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#f59e0b');
 
             act(() => {
-                advanceSharedFxClockDelay(2600);
+                advanceSharedFxClockDelay(420);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
         } finally {
@@ -1685,7 +1680,12 @@ describe('MageWarsBoard browse interactions', () => {
 
         fireEvent.click(inspectButton!);
         expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
+        const magnifyContent = screen.getByTestId('mage-wars-card-magnify-content');
+        expect(magnifyContent).toHaveClass('overflow-visible');
+        expect(magnifyContent.firstElementChild).not.toBeNull();
         expect(screen.getByTestId('mage-wars-card-magnify-content').getAttribute('data-mage-id')).not.toBeNull();
+        expect(screen.queryByTestId('mage-wars-card-magnify-rules')).toBeNull();
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay-close')).toBeVisible();
 
         fireEvent.click(screen.getByTestId('mage-wars-card-magnify-overlay-close'));
         expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('true');
@@ -2740,6 +2740,8 @@ describe('MageWarsBoard spell cast choices', () => {
 
         expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
         expect(screen.getByTestId('mage-wars-card-magnify-content').getAttribute('data-source-card-id')).toBe('2209');
+        expect(screen.queryByTestId('mage-wars-card-magnify-rules')).toBeNull();
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay-close')).toBeVisible();
     });
 
     it('casts Leather Gloves on own mage from the spell ChoiceRequest player target command', async () => {

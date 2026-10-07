@@ -158,7 +158,6 @@
       "scenarioDossierDetail": "Scenario Text",
       "closeScenarioDialog": "Close",
       "scenarioOnly": "In-Match Confirmation",
-      "scenarioStepSubtitle": "Browse candidate scenario cards, then confirm the current proposal before exploring.",
       "scenarioCardsTitle": "Candidate Scenario Cards",
       "scenarioCardsCount": "7 Candidates",
       "scenarioCardMeta": "Scenario {{card}} / trigger {{omen}}",

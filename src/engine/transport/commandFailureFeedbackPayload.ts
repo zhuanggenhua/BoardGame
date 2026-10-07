@@ -5,6 +5,7 @@ import {
     type CommandFailureFeedbackSeverity,
 } from './commandFailureReason';
 import { buildOnlineAiDiagnosticActionLog, type OnlineAiRecoveryLegalActionSummary } from './onlineAiWatchdogFeedbackDiagnostics';
+import { resolveTransportFeedbackCorrelation } from './transportFeedbackReporter';
 
 export type CommandFailureAiDiagnostic = {
     seatControllerType: 'human' | 'local-ai' | 'remote-ai';
@@ -24,6 +25,11 @@ export type CommandFailureFeedbackPayload = {
     progressMarker: string;
     stateSnapshot: string;
     actionLog?: string;
+    stateId?: number;
+    roomId?: string;
+    requestId?: string;
+    stateRevision?: number;
+    decisionEpoch?: number;
 };
 
 const cloneCommandFailureDiagnosticValue = (value: unknown): unknown => {
@@ -59,6 +65,11 @@ export function buildCommandFailureFeedbackPayload(args: {
     ].join(':');
     const phase = typeof args.state.sys?.phase === 'string' ? args.state.sys.phase : null;
     const turnNumber = typeof args.state.sys?.turnNumber === 'number' ? args.state.sys.turnNumber : null;
+    const correlation = resolveTransportFeedbackCorrelation({
+        matchId: args.matchId,
+        state: args.state,
+        stateId: args.stateIdBefore,
+    });
 
     return {
         matchId: args.matchId,
@@ -71,6 +82,8 @@ export function buildCommandFailureFeedbackPayload(args: {
         reason: args.reason,
         incidentKey,
         progressMarker: args.progressMarker,
+        stateId: args.stateIdBefore,
+        ...correlation,
         stateSnapshot: JSON.stringify({
             kind: 'command-failure-feedback',
             commandType: args.commandType,

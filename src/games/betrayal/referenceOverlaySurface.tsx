@@ -202,6 +202,7 @@ export function BetrayalReferenceOverlaySurface({
                     text={t(referenceScenarioOpeningSection.bodyKey)}
                     variant="opening"
                     presentation="stage"
+                    coordinateSpace="portal"
                     compact={false}
                     actionSlot={
                       <>
@@ -316,7 +317,9 @@ export function BetrayalReferenceOverlaySurface({
                             >
                               <div
                                 className={`grid min-h-full content-center ${
-                                  "gap-6 px-3 py-10 pb-16"
+                                  sideIndex === 0
+                                    ? "gap-6 pl-12 pr-8 py-10 pb-16"
+                                    : "gap-6 pl-8 pr-12 py-10 pb-16"
                                 }`}
                               >
                                 {(page.sections ?? []).map((section) => {
@@ -380,8 +383,8 @@ export function BetrayalReferenceOverlaySurface({
                             disabled={!canTurnReferenceScenarioBack}
                             aria-label={t("board.scenario.readerPrev")}
                             title={t("board.scenario.readerPrev")}
-                            className={`pointer-events-auto absolute z-50 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] border border-[rgba(211,179,109,0.42)] bg-[rgba(9,13,12,0.88)] text-[#f3e0b4] shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.94)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.88)] ${
-                              "bottom-3 left-3"
+                            className={`pointer-events-auto absolute bottom-4 top-auto z-50 inline-flex min-h-11 min-w-11 translate-y-0 items-center justify-center rounded-[5px] border border-[rgba(211,179,109,0.42)] bg-[rgba(9,13,12,0.62)] text-[#f3e0b4] shadow-[0_4px_12px_rgba(0,0,0,0.22)] transition hover:bg-[rgba(22,31,27,0.78)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.62)] ${
+                              "left-2"
                             }`}
                           >
                             <ChevronLeft size={16} aria-hidden="true" />
@@ -395,8 +398,8 @@ export function BetrayalReferenceOverlaySurface({
                             disabled={!canTurnReferenceScenarioForward}
                             aria-label={t("board.scenario.readerNext")}
                             title={t("board.scenario.readerNext")}
-                            className={`pointer-events-auto absolute z-50 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] border border-[rgba(211,179,109,0.42)] bg-[rgba(9,13,12,0.88)] text-[#f3e0b4] shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.94)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.88)] ${
-                              "bottom-3 right-3"
+                            className={`pointer-events-auto absolute bottom-4 top-auto z-50 inline-flex min-h-11 min-w-11 translate-y-0 items-center justify-center rounded-[5px] border border-[rgba(211,179,109,0.42)] bg-[rgba(9,13,12,0.62)] text-[#f3e0b4] shadow-[0_4px_12px_rgba(0,0,0,0.22)] transition hover:bg-[rgba(22,31,27,0.78)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.62)] ${
+                              "right-2"
                             }`}
                           >
                             <ChevronRight size={16} aria-hidden="true" />

@@ -352,7 +352,7 @@ describe('GameHUD', () => {
         );
 
         const fabMenu = screen.getByTestId('fab-menu-stub');
-        expect(fabMenu).toHaveAttribute('data-fab-position', 'bottom-right');
+        expect(fabMenu).toHaveAttribute('data-fab-position', 'top-right');
         expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:betrayal:v2');
     });
 

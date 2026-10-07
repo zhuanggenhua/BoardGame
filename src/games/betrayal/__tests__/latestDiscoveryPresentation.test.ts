@@ -744,4 +744,155 @@ describe('latest discovery presentation', () => {
     expect(panel.shouldShow).toBe(true);
     expect(panel.shouldShowRoll).toBe(true);
   });
+
+  it('does not mount the generic review surface while an event roll belongs to discovery', () => {
+    const recentRoll = {
+      id: 'event-trait-roll',
+      kind: 'eventTraitCheck',
+      playerId: '0',
+      sourceTitle: '外星几何',
+      trait: 'knowledge',
+      rollLabel: '知识检定',
+      dice: [2, 2, 2],
+      passiveBonus: 0,
+      latestLabel: '结果待结算',
+      consumedRabbitFootCardIds: [],
+    } as unknown as BetrayalCore['recentRoll'];
+    const core = {
+      phase: 'explorer',
+      latestDiscovery: discovery('event', '外星几何'),
+      latestDiscoveryOwnerPlayerId: '0',
+      recentRoll,
+      pendingEventRollResolution: {
+        rollId: recentRoll.id,
+        playerId: '0',
+        sourceTitle: '外星几何',
+        effect: { mode: 'none' },
+        requiredPlayerIds: ['0'],
+        acknowledgedPlayerIds: [],
+        requiresAcknowledgement: true,
+      },
+      pendingEventChoice: null,
+      pendingEventRollStart: null,
+      pendingCardResolutionQueue: [],
+      turnEndedByDiscovery: true,
+    } as unknown as BetrayalCore;
+
+    const panel = resolveBetrayalLatestDiscoveryPanelPresentation({
+      core,
+      selection: {
+        queuedEntry: null,
+        visibleCurrentEntry: null,
+        entry: null,
+        discovery: null,
+        recentRoll,
+        ownerPlayerId: '0',
+        key: null,
+        coreRecentRollDisplayKey: 'event-trait-roll',
+        recentRollDisplayKey: 'event-trait-roll',
+      },
+      dismissedLatestDiscoveryKey: null,
+      dismissedRecentRollId: null,
+      viewerPlayerId: '0',
+      inventoryActionPlayerId: '0',
+      hasRecentRollModifier: false,
+      isConfirmedExorciseRoll: false,
+      pendingEventChoice: null,
+      shouldShowHauntRevealCue: false,
+      shouldPauseHauntBoardActions: false,
+      scenarioReaderOpen: false,
+      shouldShowScenarioStartOpening: false,
+      latestDiscoverySearchRevealIndex: 0,
+      eventRollConfirmation: {
+        requiredPlayerIds: ['0'],
+        acknowledgedPlayerIds: [],
+        confirmedCount: 0,
+        totalCount: 1,
+        viewerHasAcknowledged: false,
+        canViewerAcknowledge: true,
+      },
+      isRecentRollReadable: false,
+      t: (key) => key,
+    });
+
+    expect(panel.shouldShow).toBe(false);
+    expect(panel.shouldShowRecentRollReview).toBe(false);
+  });
+
+  it('keeps the discovery-owned roll visible through the latest discovery transition', () => {
+    const currentDiscovery = discovery('event', '外星几何');
+    const recentRoll = {
+      id: 'event-trait-roll-transition',
+      kind: 'eventTraitCheck',
+      playerId: '0',
+      sourceTitle: '外星几何',
+      trait: 'knowledge',
+      rollLabel: '知识检定',
+      dice: [2, 2, 2],
+      passiveBonus: 0,
+      latestLabel: '结果待结算',
+      consumedRabbitFootCardIds: [],
+    } as unknown as BetrayalCore['recentRoll'];
+    const core = {
+      phase: 'explorer',
+      latestDiscovery: null,
+      latestDiscoveryOwnerPlayerId: '0',
+      recentRoll,
+      pendingEventRollResolution: {
+        rollId: recentRoll.id,
+        playerId: '0',
+        sourceTitle: '外星几何',
+        effect: { mode: 'none' },
+        requiredPlayerIds: ['0'],
+        acknowledgedPlayerIds: [],
+        requiresAcknowledgement: true,
+      },
+      pendingEventChoice: null,
+      pendingEventRollStart: null,
+      pendingCardResolutionQueue: [],
+      turnEndedByDiscovery: true,
+    } as unknown as BetrayalCore;
+
+    const panel = resolveBetrayalLatestDiscoveryPanelPresentation({
+      core,
+      selection: {
+        queuedEntry: null,
+        visibleCurrentEntry: null,
+        entry: null,
+        discovery: currentDiscovery,
+        recentRoll,
+        ownerPlayerId: '0',
+        key: 'transition-event-key',
+        coreRecentRollDisplayKey: 'event-trait-roll-transition',
+        recentRollDisplayKey: 'event-trait-roll-transition',
+      },
+      dismissedLatestDiscoveryKey: null,
+      dismissedRecentRollId: null,
+      viewerPlayerId: '0',
+      inventoryActionPlayerId: '0',
+      hasRecentRollModifier: false,
+      isConfirmedExorciseRoll: false,
+      pendingEventChoice: null,
+      shouldShowHauntRevealCue: false,
+      shouldPauseHauntBoardActions: false,
+      scenarioReaderOpen: false,
+      shouldShowScenarioStartOpening: false,
+      latestDiscoverySearchRevealIndex: 0,
+      eventRollConfirmation: {
+        requiredPlayerIds: ['0'],
+        acknowledgedPlayerIds: [],
+        confirmedCount: 0,
+        totalCount: 1,
+        viewerHasAcknowledged: false,
+        canViewerAcknowledge: true,
+      },
+      isRecentRollReadable: false,
+      t: (key) => key,
+    });
+
+    expect(panel.shouldShow).toBe(true);
+    expect(panel.shouldShowRoll).toBe(true);
+    expect(panel.shouldShowRecentRollReview).toBe(false);
+    expect(panel.continueButton.eventRollReadable).toBe(false);
+  });
 });

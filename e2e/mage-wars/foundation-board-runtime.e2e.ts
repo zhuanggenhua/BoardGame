@@ -1765,7 +1765,31 @@ test.describe('Mage Wars foundation runtime board', () => {
         await spentCreatureInspectButton.click();
         await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeVisible({ timeout: 5_000 });
         await expect(page.getByTestId('mage-wars-card-magnify-content')).toHaveAttribute('data-source-card-id', '2802');
-        await expect(page.getByTestId('mage-wars-card-magnify-rules')).toBeVisible();
+        await expect(page.getByTestId('mage-wars-card-magnify-rules')).toHaveCount(0);
+        const inspectGeometry = await page.getByTestId('mage-wars-card-magnify-content').evaluate((content) => {
+            const contentRect = content.getBoundingClientRect();
+            const closeRect = content.parentElement?.parentElement?.querySelector<HTMLElement>(
+                '[data-testid="mage-wars-card-magnify-overlay-close"]',
+            )?.getBoundingClientRect();
+            const cardRect = content.querySelector<HTMLElement>('[data-card-atlas-frame="true"]')?.getBoundingClientRect();
+            return closeRect && cardRect
+                ? {
+                    content: { left: contentRect.left, top: contentRect.top, right: contentRect.right, bottom: contentRect.bottom },
+                    close: { left: closeRect.left, top: closeRect.top, right: closeRect.right, bottom: closeRect.bottom },
+                    card: { left: cardRect.left, top: cardRect.top, right: cardRect.right, bottom: cardRect.bottom },
+                    viewport: { width: window.innerWidth, height: window.innerHeight },
+                }
+                : null;
+        });
+        expect(inspectGeometry).not.toBeNull();
+        expect(inspectGeometry!.close.left).toBeGreaterThanOrEqual(inspectGeometry!.content.left);
+        expect(inspectGeometry!.close.top).toBeGreaterThanOrEqual(inspectGeometry!.content.top);
+        expect(inspectGeometry!.close.right).toBeLessThanOrEqual(inspectGeometry!.content.right);
+        expect(inspectGeometry!.close.bottom).toBeLessThanOrEqual(inspectGeometry!.content.bottom);
+        expect(inspectGeometry!.card.left).toBeGreaterThanOrEqual(0);
+        expect(inspectGeometry!.card.top).toBeGreaterThanOrEqual(0);
+        expect(inspectGeometry!.card.right).toBeLessThanOrEqual(inspectGeometry!.viewport.width);
+        expect(inspectGeometry!.card.bottom).toBeLessThanOrEqual(inspectGeometry!.viewport.height);
         await page.getByTestId('mage-wars-card-magnify-overlay-close').click();
         await expectMagnifyOverlayHidden(page);
 
@@ -3261,6 +3285,40 @@ test.describe('Mage Wars foundation runtime board', () => {
                 'data-source-card-id',
                 duplicateSpellbookCardInfo.cardId,
             );
+            const touchInspectContent = touchPage.getByTestId('mage-wars-card-magnify-content');
+            const touchInspectGeometry = await touchInspectContent.evaluate((content) => {
+                const contentRect = content.getBoundingClientRect();
+                const cardRect = content.querySelector<HTMLElement>('[data-card-atlas-frame="true"]')?.getBoundingClientRect();
+                const closeRect = content.parentElement?.querySelector<HTMLElement>(
+                    '[data-testid="mage-wars-card-magnify-overlay-close"]',
+                )?.getBoundingClientRect();
+                return cardRect && closeRect
+                    ? {
+                        content: { left: contentRect.left, top: contentRect.top, right: contentRect.right, bottom: contentRect.bottom },
+                        card: { left: cardRect.left, top: cardRect.top, right: cardRect.right, bottom: cardRect.bottom },
+                        close: {
+                            left: closeRect.left,
+                            top: closeRect.top,
+                            right: closeRect.right,
+                            bottom: closeRect.bottom,
+                            width: closeRect.width,
+                            height: closeRect.height,
+                        },
+                        viewport: { width: window.innerWidth, height: window.innerHeight },
+                    }
+                    : null;
+            });
+            expect(touchInspectGeometry).not.toBeNull();
+            expect(touchInspectGeometry!.close.width).toBeGreaterThanOrEqual(44);
+            expect(touchInspectGeometry!.close.height).toBeGreaterThanOrEqual(44);
+            expect(touchInspectGeometry!.close.left).toBeGreaterThanOrEqual(touchInspectGeometry!.content.left);
+            expect(touchInspectGeometry!.close.top).toBeGreaterThanOrEqual(touchInspectGeometry!.content.top);
+            expect(touchInspectGeometry!.close.right).toBeLessThanOrEqual(touchInspectGeometry!.content.right);
+            expect(touchInspectGeometry!.close.bottom).toBeLessThanOrEqual(touchInspectGeometry!.content.bottom);
+            expect(touchInspectGeometry!.card.left).toBeGreaterThanOrEqual(0);
+            expect(touchInspectGeometry!.card.top).toBeGreaterThanOrEqual(0);
+            expect(touchInspectGeometry!.card.right).toBeLessThanOrEqual(touchInspectGeometry!.viewport.width);
+            expect(touchInspectGeometry!.card.bottom).toBeLessThanOrEqual(touchInspectGeometry!.viewport.height);
             await duplicateSpellbookCard.dispatchEvent('click', {
                 clientX: touchPointAudit.point.x,
                 clientY: touchPointAudit.point.y,

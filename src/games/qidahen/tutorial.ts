@@ -59,7 +59,7 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
             return core.wheelActionUsed === false;
         case 'wheel-rule':
             return core.wheelActionUsed === false;
-        case 'wheel-branch-stop':
+        case 'wheel-branch-recovery':
             return core.wheelActionUsed === true
                 && core.lastSeasonSummary?.title !== '轮盘征兵/训练';
         case 'wheel-result':
@@ -499,12 +499,14 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
         },
         {
-            id: 'wheel-branch-stop',
-            content: 'game-qidahen:tutorial.basic.steps.wheelBranchStop',
-            highlightTarget: 'qidahen-action-wheel',
-            position: 'right',
-            requireAction: true,
-            infoStep: true,
+            id: 'wheel-branch-recovery',
+            content: '',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS' }],
+            hiddenAutomation: {
+                kind: 'branch-recovery',
+                reason: 'A legal wheel branch is outside this fixed demonstration; restore the complete wheel-choice checkpoint without showing a recovery card.',
+                recoveryStepId: 'wheel-move',
+            },
         },
         {
             id: 'wheel-result',

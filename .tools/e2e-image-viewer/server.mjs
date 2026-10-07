@@ -614,7 +614,11 @@ const normalizeIndexItems = (rawIndex) => {
   if (!rawIndex || typeof rawIndex !== "object") return { title: "", items: [] };
   return {
     title: typeof rawIndex.title === "string" ? rawIndex.title : "",
-    items: Array.isArray(rawIndex.items) ? rawIndex.items : [],
+    // The canonical E2E evidence contract uses `media`; keep `items` as a
+    // compatibility adapter for older viewer indexes.
+    items: Array.isArray(rawIndex.media)
+      ? rawIndex.media
+      : (Array.isArray(rawIndex.items) ? rawIndex.items : []),
   };
 };
 
@@ -668,7 +672,7 @@ const readMediaIndex = (dirPath) => {
 
       const fileName = path.basename(matchedPath);
       const label = rawItem.label ?? rawItem.title ?? rawItem.name ?? "";
-      const rawDescription = rawItem.transition ?? rawItem.description ?? rawItem.note ?? "";
+      const rawDescription = rawItem.description ?? rawItem.transition ?? rawItem.note ?? "";
       if (!label && !rawDescription) continue;
 
       // Canonical evidence indexes may intentionally provide one player-facing

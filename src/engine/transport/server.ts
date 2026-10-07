@@ -51,6 +51,7 @@ import { shouldAutoReportCommandFailure } from './commandFailureReason';
 import type { CommandFailureFeedbackPayload } from './commandFailureFeedbackPayload';
 import {
     TransportFeedbackReporter,
+    resolveTransportFeedbackCorrelation,
     type CommandFailureFeedbackReporter,
     type OnlineAiFeedbackReporter,
     type OnlineAiRecoveryFeedbackPayload,
@@ -336,6 +337,11 @@ export class GameTransportServer {
                 persistState: (matchID, state) => this.storage.setState(matchID, state),
                 clearAllBaselines: (match) => {
                     this.stateSynchronizer.clearAllBaselines(match);
+                },
+                restoreRandomCursor: (match, randomCursor) => {
+                    const rebuilt = createTrackedRandom(match.randomSeed, randomCursor);
+                    match.random = rebuilt.random;
+                    match.getRandomCursor = rebuilt.getCursor;
                 },
                 broadcast: (match) => {
                     this.stateSynchronizer.broadcast(match);
@@ -905,6 +911,11 @@ export class GameTransportServer {
                 reportRecoverySuccessFeedback: async (payload) => {
                     await this.transportFeedbackReporter.reportOnlineAiRecoveryFeedback({
                         ...payload.metadata,
+                        ...resolveTransportFeedbackCorrelation({
+                            matchId: payload.match.matchID,
+                            state: payload.match.state,
+                            stateId: payload.match.stateID,
+                        }),
                         stateSnapshot: await this.onlineAiFeedbackDiagnostics.buildRecoveryStateSnapshot(
                             payload.match,
                             payload.candidate,
@@ -1198,8 +1209,12 @@ export class GameTransportServer {
         return true;
     }
 
-    async injectState(matchID: string, state: MatchState<unknown>): Promise<void> {
-        return this.matchStateInjectionCoordinator.injectState(matchID, state);
+    async injectState(
+        matchID: string,
+        state: MatchState<unknown>,
+        randomCursor?: number,
+    ): Promise<{ stateID: number; randomCursor: number }> {
+        return this.matchStateInjectionCoordinator.injectState(matchID, state, randomCursor);
     }
 
     /**
@@ -1473,6 +1488,11 @@ export class GameTransportServer {
                 reason: `${candidate.reason}:${phaseLabel}:${reason}`,
                 trackerKey: tracker.key,
                 progressMarker: progressMarkerBeforeRecovery,
+                ...resolveTransportFeedbackCorrelation({
+                    matchId: match.matchID,
+                    state: match.state,
+                    stateId: match.stateID,
+                }),
                 stateSnapshot: await this.onlineAiFeedbackDiagnostics.buildRecoveryStateSnapshot(
                     match,
                     candidate,

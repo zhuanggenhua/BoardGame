@@ -22,6 +22,8 @@ const helpText = `
   --ssh-key-path <path>      SSH 私钥路径；默认读取 BOARDGAME_DEPLOY_SSH_KEY_PATH
   --known-hosts-path <path>  known_hosts 路径；默认读取 BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH
   --deploy                   输送完成后，远端执行 update-local
+  --deploy-command <command> 输送完成后执行指定远端部署命令
+  --skip-watchdog-sync       不同步宿主 CPU watchdog 脚本
   --skip-local-pull          跳过本地 docker pull，要求本地已存在目标镜像
   --dry-run                  只打印命令，不真正执行
   --help                     显示帮助
@@ -59,6 +61,8 @@ const remoteDir = readArgValue('remote-dir', '/home/admin/BoardGame').trim();
 const sshKeyPath = readArgValue('ssh-key-path', process.env.BOARDGAME_DEPLOY_SSH_KEY_PATH || '').trim();
 const knownHostsPath = readArgValue('known-hosts-path', process.env.BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH || '').trim();
 const shouldDeploy = hasFlag('deploy');
+const deployCommandOverride = readArgValue('deploy-command', '').trim();
+const skipWatchdogSync = hasFlag('skip-watchdog-sync');
 const skipLocalPull = hasFlag('skip-local-pull');
 const dryRun = hasFlag('dry-run');
 
@@ -77,7 +81,8 @@ if (!remoteDir) {
 const gameRef = `ghcr.io/zhuanggenhua/boardgame-game:${tag}`;
 const webRef = `ghcr.io/zhuanggenhua/boardgame-web:${tag}`;
 const imageRefs = [gameRef, webRef];
-const remoteDeployCommand = `cd ${shellQuote(remoteDir)} && bash scripts/deploy/deploy-image.sh update-local ${shellQuote(tag)}`;
+const remoteDeployCommand = deployCommandOverride
+  || `cd ${shellQuote(remoteDir)} && bash scripts/deploy/deploy-image.sh update-local ${shellQuote(tag)}`;
 const localArchivePath = path.join(os.tmpdir(), `boardgame-images-${tag}-${process.pid}.tar`);
 const remoteArchivePath = `/tmp/boardgame-images-${tag}-${process.pid}.tar`;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -262,14 +267,16 @@ const main = async () => {
     await loadArchiveOnRemote();
 
     if (shouldDeploy) {
-      await uploadWatchdogToRemote();
-      await installWatchdogOnRemote();
-      await uploadCpuProfileHelperToRemote();
-      await installCpuProfileHelperOnRemote();
+      if (!skipWatchdogSync) {
+        await uploadWatchdogToRemote();
+        await installWatchdogOnRemote();
+        await uploadCpuProfileHelperToRemote();
+        await installCpuProfileHelperOnRemote();
+      }
       await runCommand('ssh', [...sshClientArgs, host, remoteDeployCommand], '远端 update-local 部署');
     }
   } finally {
-    if (shouldDeploy) {
+    if (shouldDeploy && !skipWatchdogSync) {
       await cleanupRemoteWatchdog();
       await cleanupRemoteCpuProfileHelper();
     }

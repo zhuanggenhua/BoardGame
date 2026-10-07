@@ -203,11 +203,13 @@ export const GameHUD = ({
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
     const isBetrayalGame = _gameId === 'betrayal';
-    // Betrayal 的底部确认/行动区固定占用右下角；悬浮球按回归基线保留在右下角。
+    const isBetrayalCharacterSelect = isBetrayalGame &&
+        ((undoState?.G as { core?: { phase?: unknown } } | null | undefined)?.core?.phase === 'characterSelect');
+    // Betrayal 选角阶段的确认区占用右下角，悬浮菜单必须让位；进入牌桌后恢复右下角基线。
     const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_POSITION
         : isBetrayalGame
-            ? 'bottom-right'
+            ? (isSetupPhase || isBetrayalCharacterSelect ? 'top-right' : 'bottom-right')
             : 'bottom-right';
     const fabMenuStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY

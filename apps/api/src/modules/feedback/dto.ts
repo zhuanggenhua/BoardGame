@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { Allow, ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
+import type { FeedbackReplayability } from './feedback.schema';
 
 export const FEEDBACK_SORT_OPTIONS = ['newest', 'oldest'] as const;
 export type FeedbackSortOption = typeof FEEDBACK_SORT_OPTIONS[number];
@@ -417,6 +418,10 @@ export class CreateFeedbackDto {
     @MaxLength(500000)
     stateSnapshot?: string;
 
+    @Allow()
+    @IsOptional()
+    diagnosticPacket?: Record<string, unknown>;
+
     @ValidateNested()
     @Type(() => FeedbackClientContextDto)
     @IsOptional()
@@ -495,6 +500,10 @@ export class CreateSystemFeedbackDto {
     @MaxLength(500000)
     stateSnapshot?: string;
 
+    @Allow()
+    @IsOptional()
+    diagnosticPacket?: Record<string, unknown>;
+
     @ValidateNested()
     @Type(() => FeedbackClientContextDto)
     @IsOptional()
@@ -548,6 +557,10 @@ export class QueryFeedbackDto {
     @IsString()
     @MaxLength(64)
     source?: string;
+
+    @IsOptional()
+    @IsIn(['full', 'partial', 'unreplayable'])
+    replayability?: FeedbackReplayability;
 
     @IsOptional()
     @IsIn(FEEDBACK_SORT_OPTIONS)

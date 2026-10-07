@@ -35,6 +35,7 @@ import {
 import { ADMIN_API_URL } from '../../config/server';
 import type {
     FeedbackClientContext,
+    FeedbackDiagnosticPacket,
     FeedbackElementSummary,
     FeedbackErrorContext,
 } from '../../lib/feedback/feedbackPayload';
@@ -67,9 +68,12 @@ interface FeedbackItem {
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
+    diagnosticPacket?: FeedbackDiagnosticPacket;
+    diagnosticReplayability?: FeedbackDiagnosticPacket['replayability'];
     hasEmbeddedImage?: boolean;
     hasActionLog?: boolean;
     hasStateSnapshot?: boolean;
+    hasDiagnosticPacket?: boolean;
     hasClientContext?: boolean;
     hasErrorContext?: boolean;
     clientContext?: FeedbackClientContext;
@@ -380,6 +384,7 @@ export default function AdminFeedbackPage() {
     const [severityFilter, setSeverityFilter] = useState<string>('all');
     const [reporterTypeFilter, setReporterTypeFilter] = useState<string>('user');
     const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const [replayabilityFilter, setReplayabilityFilter] = useState<string>('all');
     const [sortFilter, setSortFilter] = useState<string>('newest');
     const [preferMineFilter, setPreferMineFilter] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -419,6 +424,7 @@ export default function AdminFeedbackPage() {
             if (severityFilter !== 'all') params.set('severity', severityFilter);
             if (reporterTypeFilter !== 'all') params.set('reporterType', reporterTypeFilter);
             if (sourceFilter !== 'all') params.set('source', sourceFilter);
+            if (replayabilityFilter !== 'all') params.set('replayability', replayabilityFilter);
             if (sortFilter) params.set('sort', sortFilter);
             if (preferMineFilter) params.set('preferMine', 'true');
             params.set('summaryOnly', 'true');
@@ -444,7 +450,7 @@ export default function AdminFeedbackPage() {
                 setIsPolling(false);
             }
         }
-    }, [error, page, preferMineFilter, reporterTypeFilter, severityFilter, sortFilter, sourceFilter, statusFilter, t, token, typeFilter]);
+    }, [error, page, preferMineFilter, replayabilityFilter, reporterTypeFilter, severityFilter, sortFilter, sourceFilter, statusFilter, t, token, typeFilter]);
 
     useEffect(() => {
         fetchFeedbacks();
@@ -452,7 +458,7 @@ export default function AdminFeedbackPage() {
 
     useEffect(() => {
         setPage(1);
-    }, [statusFilter, typeFilter, severityFilter, reporterTypeFilter, sourceFilter, sortFilter, preferMineFilter]);
+    }, [statusFilter, typeFilter, severityFilter, reporterTypeFilter, sourceFilter, replayabilityFilter, sortFilter, preferMineFilter]);
 
     useEffect(() => {
         if (reporterTypeFilter !== 'system' && sourceFilter !== 'all') {
@@ -856,6 +862,26 @@ export default function AdminFeedbackPage() {
 
                     <div className="flex flex-wrap items-center gap-1">
                         <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                            现场回放
+                        </span>
+                        {[
+                            { value: 'all', label: '全部' },
+                            { value: 'full', label: '完整' },
+                            { value: 'partial', label: '部分' },
+                            { value: 'unreplayable', label: '不可回放' },
+                        ].map((option) => (
+                            <FilterTab
+                                key={option.value}
+                                active={replayabilityFilter === option.value}
+                                onClick={() => changeFilter(setReplayabilityFilter, option.value)}
+                            >
+                                {option.label}
+                            </FilterTab>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1">
+                        <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
                             {t('feedback.filters.sort')}
                         </span>
                         {sortOptions.map((option) => (
@@ -1091,6 +1117,22 @@ function FeedbackRow({
                             {hasImage && <span title={t('feedback.content.screenshotAlt')}><ImageIcon size={10} /></span>}
                             {hasActionLog && <span title={t('feedback.actionLog.title')}><ScrollText size={10} /></span>}
                             {hasSnapshot && <span title={t('feedback.stateSnapshot.title')}>JSON</span>}
+                            {item.diagnosticReplayability && (
+                                <span className={cn(
+                                    'rounded px-1',
+                                    item.diagnosticReplayability === 'full'
+                                        ? 'bg-emerald-50 text-emerald-700'
+                                        : item.diagnosticReplayability === 'partial'
+                                            ? 'bg-amber-50 text-amber-700'
+                                            : 'bg-red-50 text-red-700',
+                                )}>
+                                    现场{item.diagnosticReplayability === 'full'
+                                        ? '完整'
+                                        : item.diagnosticReplayability === 'partial'
+                                            ? '部分'
+                                            : '不可回放'}
+                                </span>
+                            )}
                         </div>
                         {active && item.clientContext?.route && (
                             <div className="mt-1 text-[10px] leading-4 text-zinc-500">
@@ -1549,6 +1591,28 @@ function FeedbackDetailPanel({
                             {item.clientContext?.activeElement && (
                                 <p>{t('feedback.detail.activeElement')}: {summarizeFeedbackElement(item.clientContext.activeElement)}</p>
                             )}
+                        </div>
+                    </section>
+                )}
+
+                {item.diagnosticPacket && (
+                    <section className="rounded-lg border border-indigo-100 bg-indigo-50 p-2.5">
+                        <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-indigo-500">
+                            反馈现场包
+                        </p>
+                        <div className="space-y-1 text-xs text-indigo-800">
+                            <p>回放等级：{item.diagnosticPacket.replayability}</p>
+                            <p>采集编号：{item.diagnosticPacket.captureId}</p>
+                            <p>故障链：{item.diagnosticPacket.chainId || '未提供'}</p>
+                            <p>对局：{item.diagnosticPacket.correlation?.matchId || '未提供'}</p>
+                            <p>房间：{item.diagnosticPacket.correlation?.roomId || '未提供'}</p>
+                            <p>请求：{item.diagnosticPacket.correlation?.requestId || '未提供'}</p>
+                            <p>
+                                缺失字段：
+                                {item.diagnosticPacket.missingFields?.length
+                                    ? item.diagnosticPacket.missingFields.join('、')
+                                    : '无'}
+                            </p>
                         </div>
                     </section>
                 )}

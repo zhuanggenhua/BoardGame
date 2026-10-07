@@ -96,6 +96,19 @@ Evidence 只记录证据和结论，不创建新的规则来源。若记录过�
 - `最终权威结果` 必须落到规则状态，例如 HP、资源、Token、区域、阶段、队列、pending / deferred 清理或等价权威状态。
 - `真实入口 / 验证证据` 必须说明证据直接证明了哪一项；截图只能证明玩家入口和可见结果，不能反推规则真相。
 
+## 5.1 未收口事务生命周期（命中时必填）
+
+当本轮对象涉及响应窗口、替代、防止、减免、延迟或其它会修改已创建但尚未收口事务的路径时，必须把下面这条生命周期作为同一条证据链记录；若本轮不存在这种事务，填写 `not-applicable` 并说明为什么没有“已有结果 + 窗内追加 + 收口”组合。
+
+| 生命周期节点 | 必须记录的事实 | 直接证据 / 当前结论 |
+| --- | --- | --- |
+| 窗口打开前（precommit） | 已提交结果、当前剩余值、消费记录、收口标记 |  |
+| 窗口内追加（append） | 每个新增效果的玩家动作 / 事件身份、写入的事务字段，以及玩家状态投影 |  |
+| 同一事务累计投影 | `pending` / `ResolutionFrame` 中的累计结果、修正列表和后续收口依据 |  |
+| 窗口关闭后（closeout） | 最终权威状态、消费 / 清理、日志 / 事件链和下一可操作态 |  |
+
+本节只规定 evidence 的记录字段；生命周期的审计判定回到 [`description-to-implementation-audit.md`](description-to-implementation-audit.md)，事务模型回到 [`timing-opportunity-resolution.md`](timing-opportunity-resolution.md)。
+
 ## 6. 缺口分类与范围裁定
 
 所有 finding、待补项、残余范围和“还差什么”必须先落到下表，禁止直接写成笼统的“未完成”：
@@ -128,6 +141,7 @@ npm run audit:evidence:selfcheck -- <本 evidence 文件>
 | 原子语义断言 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 实现消费链 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 最终权威结果 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 未收口事务生命周期（命中时） | `passed` / `representative_only` / `blocked` / `scoped_debt` / `not-applicable` |  |
 | 交互真实入口 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 验证证据 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 新交互覆盖矩阵 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
