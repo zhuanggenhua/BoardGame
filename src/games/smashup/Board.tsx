@@ -1350,32 +1350,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         multiSelectedHandCardUids,
         myPlayer?.hand,
     ]);
-    let handAreaDiscardSelection: Set<string> | undefined;
-    if (isMultiDirectHandSelect) {
-        handAreaDiscardSelection = multiSelectedHandCardUids;
-    } else {
-        handAreaDiscardSelection = discardSelection;
-    }
-    if (isSpectator) {
-        handAreaDiscardSelection = undefined;
-    }
-    let handAreaHighlightCardUids: Set<string> | undefined;
-    if (!isSpectator && isDirectHandSelectPrompt) {
-        handAreaHighlightCardUids = handPromptSelectableUids;
-    } else if (!isSpectator && isReactionChoicePrompt && isCurrentPromptForPlayer) {
-        handAreaHighlightCardUids = reactionChoicePlayableCardUids;
-    }
-    let handAreaDisabledCardUids: Set<string> | undefined;
-    if (!isSpectator) {
-        if (isDirectHandSelectPrompt) {
-            handAreaDisabledCardUids = handPromptDisabledUids;
-        } else {
-            handAreaDisabledCardUids = reactionChoiceDisabledCardUids
-                ?? meFirstDisabledUids
-                ?? tutorialDisabledUids;
-        }
-    }
-
     const multiSelectedBuriedCardUids = useMemo<Set<string>>(() => {
         if (!isMultiBuriedSelect) return new Set();
         const uids = new Set<string>();
@@ -2429,6 +2403,32 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             myPlayer?.hand.filter(c => !allowed.includes(c.uid)).map(c => c.uid) ?? []
         );
     }, [isTutorialActive, tutorialStep, myPlayer?.hand]);
+
+    let handAreaDiscardSelection: Set<string> | undefined;
+    if (isMultiDirectHandSelect) {
+        handAreaDiscardSelection = multiSelectedHandCardUids;
+    } else {
+        handAreaDiscardSelection = discardSelection;
+    }
+    if (isSpectator) {
+        handAreaDiscardSelection = undefined;
+    }
+    let handAreaHighlightCardUids: Set<string> | undefined;
+    if (!isSpectator && isDirectHandSelectPrompt) {
+        handAreaHighlightCardUids = handPromptSelectableUids;
+    } else if (!isSpectator && isReactionChoicePrompt && isCurrentPromptForPlayer) {
+        handAreaHighlightCardUids = reactionChoicePlayableCardUids;
+    }
+    let handAreaDisabledCardUids: Set<string> | undefined;
+    if (!isSpectator) {
+        if (isDirectHandSelectPrompt) {
+            handAreaDisabledCardUids = handPromptDisabledUids;
+        } else {
+            handAreaDisabledCardUids = reactionChoiceDisabledCardUids
+                ?? meFirstDisabledUids
+                ?? tutorialDisabledUids;
+        }
+    }
 
     // 回合切换提示
     const [showTurnNotice, setShowTurnNotice] = useState(false);
