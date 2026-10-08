@@ -11,8 +11,8 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../../../components/common/media/CardPreview', () => ({
-    CardPreview: ({ className, title }: { className?: string; title?: string }) => (
-        <div className={className} data-testid="mock-card-preview">{title ?? 'card'}</div>
+    CardPreview: ({ className, title, previewRef }: { className?: string; title?: string; previewRef?: unknown }) => (
+        <div className={className} data-testid="mock-card-preview" data-preview-ref={previewRef ? JSON.stringify(previewRef) : ''}>{title ?? 'card'}</div>
     ),
 }));
 
@@ -99,5 +99,22 @@ describe('SmashUp HandArea discard layout', () => {
         expect(inspectButton).toBeTruthy();
         expect(cardWrapper?.contains(inspectButton ?? null)).toBe(true);
         expect(cardFrame?.contains(inspectButton ?? null)).toBe(false);
+    });
+
+    it('真实玩家的对手视角必须显示脱敏牌背而不是空白卡面', async () => {
+        const view = renderHandArea({
+            hand: [{ uid: 'hidden-hand-card', defId: 'hidden_private_card', type: 'action', owner: '0' }],
+            isOpponentView: true,
+        });
+
+        await waitFor(() => {
+            expect(view.container.querySelectorAll('[data-card-uid]')).toHaveLength(1);
+        });
+
+        const preview = view.container.querySelector<HTMLElement>('[data-testid="mock-card-preview"]');
+        expect(preview?.textContent).toBe('ui.opponent_card');
+        expect(preview?.getAttribute('data-preview-ref')).toContain('"atlasId":"smashup:cards2"');
+        expect(preview?.getAttribute('data-preview-ref')).toContain('"index":55');
+        expect(view.container.querySelector('[data-testid="su-hand-card-inspect-hidden-hand-card"]')).toBeNull();
     });
 });

@@ -301,6 +301,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const coreTurnOrder = core?.turnOrder ?? EMPTY_TURN_ORDER;
     const coreTitans = core?.titans ?? EMPTY_TITANS;
     const playerID = rawPlayerID;
+    const isSpectator = isMultiplayer && playerID === null;
     const playerView = useMatchPlayerViewModel({
         core,
         playerID,
@@ -312,8 +313,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     });
     const currentPid = playerView.turnPlayerId ?? '0';
     const isMyTurn = playerID === currentPid;
+    let turnPlayerLabel = t('ui.opp');
+    if (isSpectator) {
+        turnPlayerLabel = t('ui.current_player');
+    } else if (isMyTurn) {
+        turnPlayerLabel = t('ui.you');
+    }
     const rootPid = playerView.selfPlayerId ?? '0';
-    // 观战模式下默认显示玩家 0 的视角
+    // 观战默认跟随当前行动玩家；真实玩家仍以自己的座位为默认视角。
     const myPlayer = corePlayers[rootPid];
     const isGameOver = G?.sys?.gameover;
     const winningPlayerIds = useMemo(
@@ -498,7 +505,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 多人局/观战时允许直接切到任意玩家的公开牌区，而不是只在“自己/首个对手”之间二选一。
     const [viewTargetPlayerId, setViewTargetPlayerId] = useState<string | null>(null);
     const opponentScoreTouchHandledAtRef = useRef(0);
-    const defaultViewedPlayerId = playerID ?? rootPid;
+    const defaultViewedPlayerId = isSpectator ? currentPid : (playerID ?? rootPid);
     const displayedDeckPlayerId = viewTargetPlayerId && corePlayers[viewTargetPlayerId]
         ? viewTargetPlayerId
         : defaultViewedPlayerId;
@@ -532,6 +539,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     });
 
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
+    const [spectatorSelectedHandCardUid, setSpectatorSelectedHandCardUid] = useState<string | null>(null);
     const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'minion-replacement' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
     const [selectedDeckExtraCardUid, setSelectedDeckExtraCardUid] = useState<string | null>(null);
     const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
@@ -1327,23 +1335,46 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [isMultiDirectHandSelect, multiSelectedOptionIds, currentPrompt]);
 
     const handAreaCards = useMemo(() => {
-        const cards = isDirectHandSelectPrompt
+        const cards = isDirectHandSelectPrompt && !isSpectator
             ? (myPlayer?.hand ?? [])
-            : isAlternateView
-                ? (displayedDeckPlayer?.hand ?? [])
-                : (myPlayer?.hand ?? []);
-        if (!isDirectHandSelectPrompt) return cards;
+            : (displayedDeckPlayer?.hand ?? []);
+        if (!isDirectHandSelectPrompt || isSpectator) return cards;
         return cards.filter(card =>
             handPromptSelectableUids.has(card.uid) || multiSelectedHandCardUids.has(card.uid)
         );
     }, [
         displayedDeckPlayer?.hand,
         handPromptSelectableUids,
-        isAlternateView,
         isDirectHandSelectPrompt,
+        isSpectator,
         multiSelectedHandCardUids,
         myPlayer?.hand,
     ]);
+    let handAreaDiscardSelection: Set<string> | undefined;
+    if (isMultiDirectHandSelect) {
+        handAreaDiscardSelection = multiSelectedHandCardUids;
+    } else {
+        handAreaDiscardSelection = discardSelection;
+    }
+    if (isSpectator) {
+        handAreaDiscardSelection = undefined;
+    }
+    let handAreaHighlightCardUids: Set<string> | undefined;
+    if (!isSpectator && isDirectHandSelectPrompt) {
+        handAreaHighlightCardUids = handPromptSelectableUids;
+    } else if (!isSpectator && isReactionChoicePrompt && isCurrentPromptForPlayer) {
+        handAreaHighlightCardUids = reactionChoicePlayableCardUids;
+    }
+    let handAreaDisabledCardUids: Set<string> | undefined;
+    if (!isSpectator) {
+        if (isDirectHandSelectPrompt) {
+            handAreaDisabledCardUids = handPromptDisabledUids;
+        } else {
+            handAreaDisabledCardUids = reactionChoiceDisabledCardUids
+                ?? meFirstDisabledUids
+                ?? tutorialDisabledUids;
+        }
+    }
 
     const multiSelectedBuriedCardUids = useMemo<Set<string>>(() => {
         if (!isMultiBuriedSelect) return new Set();
@@ -3773,6 +3804,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         setViewingCard(nextTarget);
     }, [setViewingCard]);
+    const handleSpectatorHandCardSelect = useCallback((card: CardInstance) => {
+        setSpectatorSelectedHandCardUid((current) => current === card.uid ? null : card.uid);
+    }, []);
     const isEndTurnCoolingDown = endTurnCooldownUntil > Date.now();
 
     const resolveHandDropTarget = useCallback((card: CardInstance, clientX: number, clientY: number): HandAreaDropTarget | null => {
@@ -4176,7 +4210,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     {t('ui.turn')} {core.turnNumber}
                                 </motion.div>
                                 <div className="flex justify-between items-center text-sm font-bold font-mono">
-                                    <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
+                                    <span>{turnPlayerLabel}</span>
                                     <motion.span
                                         key={phase}
                                         initial={{ scale: 0.7, opacity: 0 }}
@@ -5270,31 +5304,28 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             >
                                 <HandArea
                                     hand={handAreaCards}
-                                    selectedCardUid={selectedCardUid}
-                                    onCardSelect={handleCardClick}
+                                    selectedCardUid={isSpectator ? spectatorSelectedHandCardUid : selectedCardUid}
+                                    onCardSelect={isSpectator ? handleSpectatorHandCardSelect : handleCardClick}
                                     compactLayout={isMobileViewport}
-                                    isDiscardMode={needDiscard}
-                                    discardSelection={isMultiDirectHandSelect ? multiSelectedHandCardUids : discardSelection}
-                                    highlightCardUids={isDirectHandSelectPrompt
-                                        ? handPromptSelectableUids
-                                        : isReactionChoicePrompt && isCurrentPromptForPlayer
-                                            ? reactionChoicePlayableCardUids
-                                            : undefined}
+                                    isDiscardMode={!isSpectator && needDiscard}
+                                    discardSelection={handAreaDiscardSelection}
+                                    highlightCardUids={handAreaHighlightCardUids}
                                     // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
-                                    disableInteraction={
+                                    disableInteraction={!isSpectator && (
                                         shouldLockNormalHandInteraction ||
                                         isTutorialActive &&
                                         !isDirectHandSelectPrompt &&
                                         !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
                                         !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
-                                    }
-                                    disabledCardUids={isDirectHandSelectPrompt ? handPromptDisabledUids : (reactionChoiceDisabledCardUids ?? meFirstDisabledUids ?? tutorialDisabledUids)}
+                                    )}
+                                    disabledCardUids={handAreaDisabledCardUids}
                                     onCardView={handleViewCardDetail}
-                                    isOpponentView={isAlternateView && !isDirectHandSelectPrompt}
-                                    interactionMode={handInteractionMode}
-                                    onResolveDropTarget={resolveHandDropTarget}
-                                    onCardDragPlay={handleCardDragPlay}
-                                    onDragStateChange={setHandDragPreview}
+                                    // 观战可以切换并查看任意玩家的完整手牌；只有真实玩家切换到对手视角时才显示牌背。
+                                    isOpponentView={isAlternateView && !isDirectHandSelectPrompt && !isSpectator}
+                                    interactionMode={isSpectator ? 'click' : handInteractionMode}
+                                    onResolveDropTarget={!isSpectator ? resolveHandDropTarget : undefined}
+                                    onCardDragPlay={!isSpectator ? handleCardDragPlay : undefined}
+                                    onDragStateChange={!isSpectator ? setHandDragPreview : undefined}
                                 />
                             </div>
                         )}
@@ -5351,20 +5382,20 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                         {/* NEW: Deck & Discard Zone */}
                         <DeckDiscardZone
-                            deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
+                            deckCount={displayedDeckPlayer?.deck.length ?? 0}
                             deckQueryEnabled={core.deckQueryEnabled === true}
-                            deckCards={isAlternateView ? (displayedDeckPlayer?.deck ?? []) : (myPlayer?.deck ?? [])}
-                            deckFactions={isAlternateView ? (displayedDeckPlayer?.factions ?? []) : (myPlayer?.factions ?? [])}
+                            deckCards={displayedDeckPlayer?.deck ?? []}
+                            deckFactions={displayedDeckPlayer?.factions ?? []}
                             madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
                             monsterDeckCount={core.monsterDeck !== undefined ? core.monsterDeck.length : undefined}
                             treasureDeckCount={core.treasureDeck !== undefined ? core.treasureDeck.length : undefined}
-                            discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
+                            discard={displayedDeckPlayer?.discard ?? []}
                             compactLayout={isMobileViewport}
                             isMyTurn={isMyTurn}
-                            hasPlayableFromDeck={!isAlternateView && deckExtraMinionOptions.length > 0}
-                            playableDeckCards={!isAlternateView ? deckExtraMinionOptions.map(card => ({ uid: card.uid, defId: card.defId, label: card.label })) : undefined}
-                            selectedDeckUid={!isAlternateView ? selectedDeckExtraCardUid : null}
-                            onSelectDeckCard={!isAlternateView ? handleDeckExtraCardSelect : undefined}
+                            hasPlayableFromDeck={!isSpectator && !isAlternateView && deckExtraMinionOptions.length > 0}
+                            playableDeckCards={!isSpectator && !isAlternateView ? deckExtraMinionOptions.map(card => ({ uid: card.uid, defId: card.defId, label: card.label })) : undefined}
+                            selectedDeckUid={!isSpectator && !isAlternateView ? selectedDeckExtraCardUid : null}
+                            onSelectDeckCard={!isSpectator && !isAlternateView ? handleDeckExtraCardSelect : undefined}
                             deckSelectHint={selectedDeckExtraCardUid ? t('ui.click_base_to_deploy') : undefined}
                             hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt || isDiscardCardPrompt}
                             autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}
@@ -5489,7 +5520,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆交互时隐藏，由对应区域直接处理） */}
                 {(() => {
-                    const shouldRender = !isDirectHandSelectPrompt
+                    const shouldRender = isSpectator
+                        ? Boolean(currentInteraction)
+                        : !isDirectHandSelectPrompt
                         && !isReactionChoicePrompt
                         && !isBaseSelectPrompt
                         && !isBuriedSelectPrompt
@@ -5508,6 +5541,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             interaction={G.sys.interaction?.current}
                             dispatch={dispatch}
                             playerID={playerID}
+                            isSpectator={isSpectator}
                             playerNames={playerNames}
                             core={core}
                         />
@@ -5519,6 +5553,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     G={(matchState ?? G) as MatchState<SmashUpCore>}
                     dispatch={dispatch}
                     playerID={playerID}
+                    isSpectator={isSpectator}
                     pendingCard={meFirstPendingCard}
                     onSelectCard={setMeFirstPendingCard}
                     playerNames={playerNames}

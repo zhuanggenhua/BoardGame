@@ -1,0 +1,92 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "title": "Smash Up 观战当前行动玩家完整手牌与只读交互",
+  "generatedAt": "2026-10-08T20:11:10+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": "../../test-results/evidence-screenshots/smashup/smashup-spectator-current-player-hand.e2e/预置代表态观战查看当前回合玩家完整手牌与只读检视/.e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "真实观战入口保持 spectator 身份，并默认显示当前行动玩家的五张完整卡面，不退回固定座位或显示空白牌背。",
+      "status": "PASS",
+      "evidence": [
+        "默认态截图显示当前玩家标记与五张完整卡面；E2E 以 playerID=null 进入 ?spectate=1，活动玩家为 1，断言卡图均加载且没有混入玩家 0 手牌。"
+      ]
+    },
+    {
+      "requirement": "旁观者可以点选当前玩家手牌获得本地点选反馈，但点选不能提交命令或改变权威对局状态。",
+      "status": "PASS",
+      "evidence": [
+        "点选态截图显示仅被选卡牌出现绿色选中框；E2E 点选前后读取服务端权威 core 完全一致，共享 Provider 测试证明旁观 dispatch 不预测、不发送命令。"
+      ]
+    },
+    {
+      "requirement": "旁观者可以打开完整卡牌检视并关闭返回同一手牌，检视过程保持只读。",
+      "status": "PASS",
+      "evidence": [
+        "检视态截图显示完整卡面与关闭入口，关闭后截图返回原五张手牌；E2E 验证检视层可开关且权威 core 不变。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/smashup/smashup-spectator-current-player-hand.e2e/预置代表态观战查看当前回合玩家完整手牌与只读检视/01-预置代表态观战显示当前回合玩家完整手牌.png",
+    "test-results/evidence-screenshots/smashup/smashup-spectator-current-player-hand.e2e/预置代表态观战查看当前回合玩家完整手牌与只读检视/02-预置代表态观战点选手牌仅显示本地状态.png",
+    "test-results/evidence-screenshots/smashup/smashup-spectator-current-player-hand.e2e/预置代表态观战查看当前回合玩家完整手牌与只读检视/03-预置代表态观战打开卡牌检视.png",
+    "test-results/evidence-screenshots/smashup/smashup-spectator-current-player-hand.e2e/预置代表态观战查看当前回合玩家完整手牌与只读检视/04-预置代表态观战关闭检视返回手牌.png"
+  ],
+  "visualAudit": {
+    "mediaCount": 4,
+    "passCount": 4,
+    "reviseCount": 0,
+    "verdict": "PASS",
+    "items": [
+      {
+        "media": "01-预置代表态观战显示当前回合玩家完整手牌.png",
+        "target": "当前行动玩家的完整手牌与回合视角",
+        "action": "进入真实观战入口",
+        "visibleResult": "当前玩家标记与五张不同的完整卡面同时可见。",
+        "layoutAndPrivacy": "牌面位于底部独立手牌区；对手私有手牌未混入。",
+        "cropOcclusionLeakReadability": "未见空白牌面、裁切或遮挡；卡名及卡图可辨，细则可进入检视阅读。",
+        "verdict": "PASS"
+      },
+      {
+        "media": "02-预置代表态观战点选手牌仅显示本地状态.png",
+        "target": "可点选且只读的手牌",
+        "action": "点选第一张当前玩家卡牌",
+        "visibleResult": "仅该卡出现清晰绿色选中框，其余手牌未被选中。",
+        "layoutAndPrivacy": "手牌仍完整可见；点选反馈没有覆盖其它卡牌。",
+        "cropOcclusionLeakReadability": "未见空白、裁切、遮挡或内部标识泄漏。",
+        "verdict": "PASS"
+      },
+      {
+        "media": "03-预置代表态观战打开卡牌检视.png",
+        "target": "卡牌完整内容与只读检视",
+        "action": "点击已选卡牌的检视入口",
+        "visibleResult": "激光三角龙放大卡面、名称、效果文字和关闭按钮清楚可见。",
+        "layoutAndPrivacy": "检视浮层居中；底层牌桌仍可辨且不影响关闭入口。",
+        "cropOcclusionLeakReadability": "卡面未裁切或留白；无空白牌面与调试标记。",
+        "verdict": "PASS"
+      },
+      {
+        "media": "04-预置代表态观战关闭检视返回手牌.png",
+        "target": "检视关闭后的可继续浏览状态",
+        "action": "关闭卡牌检视",
+        "visibleResult": "检视层退场，原五张手牌与已选卡牌状态恢复可见。",
+        "layoutAndPrivacy": "关闭后回到原牌桌布局，没有丢失手牌或错误视角。",
+        "cropOcclusionLeakReadability": "未见裁切、遮挡或空白牌面。",
+        "verdict": "PASS"
+      }
+    ],
+    "notes": [
+      "四张截图来自同一次真实双人对局的 1920×1080 桌面 Chromium E2E；先正式开局，再由玩家视角进入 ?spectate=1 并构造当前行动者代表态。",
+      "此 PASS 只覆盖 Smash Up 桌面观战出牌阶段；不外推至其他 11 款游戏、移动端或其它阶段。"
+    ]
+  }
+}

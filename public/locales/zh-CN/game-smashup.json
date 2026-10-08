@@ -151,6 +151,8 @@
       "skip": "跳过"
     },
     "turn": "回合",
+    "current_player": "当前玩家",
+    "spectator_read_only": "旁观只读 · 仅供查看",
     "you": "你自己",
     "opp": "对手",
     "score_sheet": "记分板",

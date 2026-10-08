@@ -339,7 +339,7 @@ const HandCard: React.FC<HandCardProps> = ({
                 {/* Card Asset Preview */}
                 <div className="smashup-card-inner w-full h-full rounded-md overflow-hidden border shadow-inner relative">
                     <CardPreview
-                        previewRef={isOpponentView 
+                        previewRef={isOpponentView
                             ? SMASHUP_CARD_BACK
                             : (def?.previewRef
                                 ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }

@@ -27,11 +27,12 @@ export const MeFirstOverlay: React.FC<{
     G: MatchState<SmashUpCore>;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: string | null;
+    isSpectator?: boolean;
     playerNames?: Record<string, string>;
     /** 当前待选基地的 Special 卡（需要基地目标时） */
     pendingCard: MeFirstPendingCard | null;
     onSelectCard: (card: MeFirstPendingCard | null) => void;
-}> = ({ G, dispatch, playerID, playerNames, pendingCard, onSelectCard }) => {
+}> = ({ G, dispatch, playerID, isSpectator = false, playerNames, pendingCard, onSelectCard }) => {
     const { t } = useTranslation('game-smashup');
     const reactionWindow = getSmashUpReactionWindowPresentation(G);
 
@@ -51,7 +52,7 @@ export const MeFirstOverlay: React.FC<{
     const currentResponderName = playerNames?.[currentResponderId] ?? `P${Number(currentResponderId) + 1}`;
 
     // 只要当前玩家已经有真实交互承接层，中央 Me First 壳层就必须退场，避免出现两个并列主入口。
-    if (isMyResponse && currentInteraction) return null;
+    if ((isMyResponse || isSpectator) && currentInteraction) return null;
 
     const hasRespondableCards = reactionWindow.showsPassWindow;
     

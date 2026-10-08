@@ -72,6 +72,7 @@ interface Props {
     interaction: InteractionDescriptor | undefined;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: PlayerId | null;
+    isSpectator?: boolean;
     playerNames?: Record<string, string>;
     core?: SmashUpCore;
     /** 通用卡牌展示模式（弃牌堆查看等）：展示卡牌列表 + 关闭按钮 */
@@ -499,7 +500,7 @@ function extractDeckReorderCards(prompt: unknown): DeckReorderCardItem[] {
 
 /** 鼠标滚轮转水平滚动 */
 
-export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, playerNames, core, displayCards }) => {
+export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, isSpectator = false, playerNames, core, displayCards }) => {
     const prompt = asSimpleChoice(interaction);
     const { t, i18n } = useTranslation('game-smashup');
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
@@ -996,7 +997,52 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
 
     if (!prompt) return null;
-    
+
+    if (isSpectator) {
+        return (
+            <motion.div
+                key={`spectator-prompt-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('ui.spectator_read_only')}
+                data-testid="smashup-spectator-prompt-readonly"
+                className="fixed inset-0 flex items-center justify-center bg-black/78 p-4"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-sky-400/35 bg-slate-950/96 shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+                    <div className="border-b border-white/10 px-6 py-4 text-center">
+                        <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/80">
+                            {t('ui.spectator_read_only')}
+                            {promptOwnerName ? ` · ${promptOwnerName}` : ''}
+                        </div>
+                        <h2 className="mt-2 text-lg font-black text-amber-100">{title}</h2>
+                    </div>
+                    <div className="max-h-[55vh] overflow-y-auto p-4" data-testid="smashup-spectator-prompt-options">
+                        {resolvedOptions.length > 0 ? (
+                            <ul className="flex flex-col gap-2">
+                                {resolvedOptions.map((option) => (
+                                    <li
+                                        key={option.id}
+                                        data-testid={`smashup-spectator-prompt-option-${option.id}`}
+                                        className="rounded-xl border border-white/10 bg-slate-800/80 px-4 py-3 text-center text-sm font-bold text-slate-100"
+                                    >
+                                        {option.label}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="py-5 text-center text-sm text-slate-400">
+                                {t('ui.prompt_no_options')}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
     // 【错误处理】如果是我的交互但选项为空，不显示 UI，只 toast 提示（已在 useEffect 中处理）
     if (isMyPrompt && !hasOptions) {
         return null;

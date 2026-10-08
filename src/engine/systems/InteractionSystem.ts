@@ -21,6 +21,7 @@ import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 import { clearActiveResolutionBlock, getActiveResolutionFrame, syncActiveResolutionWithInteraction } from './resolutionStack';
+import { isSpectatorPlayerId } from '../playerView';
 
 function isSamePlayerId(a: unknown, b: unknown): boolean {
     if (a === undefined || a === null || b === undefined || b === null) return false;
@@ -1424,10 +1425,11 @@ export function createInteractionSystem<TCore>(
 
         playerView: (state, playerId): Partial<{ interaction: InteractionState }> => {
             const { current, queue } = state.sys.interaction;
+            const isSpectator = isSpectatorPlayerId(playerId);
 
             // 如果交互有 optionsGenerator，先调用它生成选项，再序列化
             let processedCurrent = current;
-            if (current && isSamePlayerId(current.playerId, playerId) && current.kind === 'simple-choice') {
+            if (current && (isSpectator || isSamePlayerId(current.playerId, playerId)) && current.kind === 'simple-choice') {
                 const data = current.data as SimpleChoiceData;
                 if (data.optionsGenerator) {
                     const freshOptions = normalizeFreshSimpleChoiceOptions(data.optionsGenerator(state, data), data);
@@ -1438,13 +1440,14 @@ export function createInteractionSystem<TCore>(
                 }
             }
 
-            const canViewCurrent = isSamePlayerId(processedCurrent?.playerId, playerId)
+            const canViewCurrent = isSpectator
+                || isSamePlayerId(processedCurrent?.playerId, playerId)
                 || canPlayerViewCompareRollInteraction(processedCurrent, playerId);
             const filteredCurrent = canViewCurrent ? stripNonSerializable(processedCurrent) : undefined;
 
             // 同样处理 queue 中的交互
             const processedQueue = queue
-                .filter((i) => isSamePlayerId(i?.playerId, playerId))
+                .filter((i) => isSpectator || isSamePlayerId(i?.playerId, playerId))
                 .map((i) => {
                     if (i.kind === 'simple-choice') {
                         const data = i.data as SimpleChoiceData;
@@ -1460,7 +1463,7 @@ export function createInteractionSystem<TCore>(
                 });
             const filteredQueue = processedQueue.map(i => stripNonSerializable(i)!);
             // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
-            const isBlocked = !!current && !isSamePlayerId(current.playerId, playerId);
+            const isBlocked = !isSpectator && !!current && !isSamePlayerId(current.playerId, playerId);
 
             return {
                 interaction: { current: filteredCurrent, queue: filteredQueue, isBlocked },

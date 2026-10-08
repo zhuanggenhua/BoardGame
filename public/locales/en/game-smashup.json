@@ -194,6 +194,8 @@
       "skip": "Skip"
     },
     "turn": "Turn",
+    "current_player": "CURRENT PLAYER",
+    "spectator_read_only": "SPECTATOR · VIEW ONLY",
     "you": "YOU",
     "opp": "OPP",
     "score_sheet": "Score Sheet",

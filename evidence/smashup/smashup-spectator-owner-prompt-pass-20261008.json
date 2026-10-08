@@ -1,0 +1,47 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "title": "Smash Up 旁观私人提示只读",
+  "generatedAt": "2026-10-08T20:22:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": "../../test-results/evidence-screenshots/smashup/smashup-spectator-owner-prompt.e2e/真实在线旁观入口查看预置私人提示与选项但不能响应/.e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "旁观者可读取 owner-only 提示标题与全部选项，界面不提供响应控件。",
+      "status": "PASS",
+      "evidence": [
+        "截图 02 显示只读标识、私人提示标题和全部候选；真实在线 E2E 断言选项节点没有任何按钮。"
+      ]
+    },
+    {
+      "requirement": "旁观者点击候选后，对局权威状态和交互保持不变。",
+      "status": "PASS",
+      "evidence": [
+        "截图 03 显示点击后提示与候选保持不变；真实在线 E2E 对比 core 和当前 interaction 均未变化。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/smashup/smashup-spectator-owner-prompt.e2e/真实在线旁观入口查看预置私人提示与选项但不能响应/01-预置提示出现前旁观者看到牌桌.png",
+    "test-results/evidence-screenshots/smashup/smashup-spectator-owner-prompt.e2e/真实在线旁观入口查看预置私人提示与选项但不能响应/02-预置私人提示与全部选项只读显示.png",
+    "test-results/evidence-screenshots/smashup/smashup-spectator-owner-prompt.e2e/真实在线旁观入口查看预置私人提示与选项但不能响应/03-预置提示下旁观点击候选后交互不变.png"
+  ],
+  "visualAudit": {
+    "mediaCount": 3,
+    "passCount": 3,
+    "reviseCount": 0,
+    "score": 94,
+    "verdict": "PASS",
+    "notes": [
+      "三张整屏图显示私人提示前态、提示标题与候选中态、点击后不变后态；只读标记可见且没有响应按钮、空白牌面或目标遮挡。",
+      "范围为桌面 1920x1080 的 Smash Up 在线预置 owner-only simple-choice；未覆盖其他交互种类和移动端。"
+    ]
+  }
+}

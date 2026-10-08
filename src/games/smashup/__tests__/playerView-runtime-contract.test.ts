@@ -145,6 +145,7 @@ describe('SmashUp player view runtime contract', () => {
         } as MatchState<unknown>;
 
         const playerView = applyPlayerViewToState(smashUpPrivacyEngineConfig, authoritativeState, '0') as any;
+        const spectatorView = applyPlayerViewToState(smashUpPrivacyEngineConfig, authoritativeState, null) as any;
 
         expect(playerView.core.players['0'].hand[0]).toEqual(expect.objectContaining({
             uid: 'p0-hand-a',
@@ -160,5 +161,70 @@ describe('SmashUp player view runtime contract', () => {
             uid: 'p1-public-discard',
             defId: 'alien_scout',
         }));
+
+        expect(spectatorView.core.players['0'].hand[0]).toEqual(expect.objectContaining({
+            uid: 'p0-hand-a',
+            defId: 'pirate_first_mate',
+        }));
+        expect(spectatorView.core.players['1'].hand[0]).toEqual(expect.objectContaining({
+            uid: 'p1-secret-hand',
+            defId: 'alien_probe',
+        }));
+        expect(spectatorView.core.players['1'].deck[0]).toEqual(expect.objectContaining({
+            uid: 'p1-secret-topdeck',
+            defId: 'alien_invader',
+        }));
+    });
+
+    it('观战切换任意玩家时保留完整手牌对象，不走玩家对手牌背逻辑', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1'],
+                turnNumber: 1,
+                nextUid: 4,
+                players: {
+                    '0': {
+                        id: '0',
+                        hand: [{ uid: 'p0-hand-a', defId: 'pirate_first_mate', type: 'minion', owner: '0' }],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                    '1': {
+                        id: '1',
+                        hand: [{ uid: 'p1-hand-a', defId: 'alien_probe', type: 'action', owner: '1' }],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                },
+                bases: [],
+                baseDeck: [],
+                baseDiscard: [],
+            },
+            sys: {
+                phase: 'playCards',
+                turnNumber: 1,
+                eventStream: { entries: [], nextId: 1 },
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                responseWindow: { current: undefined },
+            },
+        } as MatchState<unknown>;
+
+        const spectatorView = applyPlayerViewToState(smashUpPrivacyEngineConfig, authoritativeState, null) as any;
+
+        expect(spectatorView.core.players['0'].hand[0].defId).toBe('pirate_first_mate');
+        expect(spectatorView.core.players['1'].hand[0].defId).toBe('alien_probe');
+        expect(spectatorView.core.players['1'].hand[0].defId).not.toBe('hidden_private_card');
     });
 });

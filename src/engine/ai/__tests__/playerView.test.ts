@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createInteractionSystem, createSimpleChoice } from '../../systems/InteractionSystem';
 import { applyPlayerViewToState } from '../playerView';
 import type { GameEngineConfig } from '../../transport/engineConfig';
@@ -60,7 +60,13 @@ describe('applyPlayerViewToState', () => {
         expect(otherView.sys.interaction.queue).toEqual([]);
     });
 
-    it('spectator 视角不应直接看到 owner-only current 与 queue 交互', () => {
+    it('spectator 视角读取完整权威状态，包含 owner-only current 与 queue 交互', () => {
+        const currentOptionsGenerator = vi.fn(() => [
+            { id: 'fresh-hand-a', label: '新生成的当前选项', value: { cardUid: 'fresh-hand-a' } },
+        ]);
+        const queueOptionsGenerator = vi.fn(() => [
+            { id: 'fresh-hand-b', label: '新生成的队列选项', value: { cardUid: 'fresh-hand-b' } },
+        ]);
         const authoritativeState: MatchState<{ hp: number }> = {
             core: { hp: 10 },
             sys: {
@@ -69,16 +75,24 @@ describe('applyPlayerViewToState', () => {
                         'owner-current',
                         '0',
                         '选择要弃掉的手牌',
-                        [{ id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } }],
-                        { sourceId: 'super_spies_secret_agent_discard', targetType: 'hand' },
+                        [{ id: 'stale-hand-a', label: '旧当前选项', value: { cardUid: 'stale-hand-a' } }],
+                        {
+                            sourceId: 'super_spies_secret_agent_discard',
+                            targetType: 'hand',
+                            optionsGenerator: currentOptionsGenerator,
+                        },
                     ),
                     queue: [
                         createSimpleChoice(
                             'owner-queued',
                             '0',
                             '继续选择要弃掉的手牌',
-                            [{ id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } }],
-                            { sourceId: 'super_spies_secret_agent_discard_queue', targetType: 'hand' },
+                            [{ id: 'stale-hand-b', label: '旧队列选项', value: { cardUid: 'stale-hand-b' } }],
+                            {
+                                sourceId: 'super_spies_secret_agent_discard_queue',
+                                targetType: 'hand',
+                                optionsGenerator: queueOptionsGenerator,
+                            },
                         ),
                     ],
                     isBlocked: false,
@@ -86,11 +100,33 @@ describe('applyPlayerViewToState', () => {
             },
         } as MatchState<{ hp: number }>;
 
-        const spectatorView = applyPlayerViewToState(engineConfig, authoritativeState, null) as any;
+        const domainPlayerView = vi.fn(() => ({ hp: 0 }));
+        const spectatorEngineConfig: GameEngineConfig = {
+            ...engineConfig,
+            domain: {
+                ...engineConfig.domain,
+                playerView: domainPlayerView as never,
+            },
+        };
+        const spectatorView = applyPlayerViewToState(spectatorEngineConfig, authoritativeState, null) as any;
 
-        expect(spectatorView.sys.interaction.current).toBeUndefined();
-        expect(spectatorView.sys.interaction.queue).toEqual([]);
-        expect(spectatorView.sys.interaction.isBlocked).toBe(true);
+        expect(domainPlayerView).not.toHaveBeenCalled();
+        expect(spectatorView.core).toBe(authoritativeState.core);
+        expect(spectatorView.sys.interaction.current.id).toBe('owner-current');
+        expect(spectatorView.sys.interaction.current.data.options).toEqual([
+            { id: 'fresh-hand-a', label: '新生成的当前选项', value: { cardUid: 'fresh-hand-a' } },
+        ]);
+        expect(spectatorView.sys.interaction.current.data).not.toHaveProperty('optionsGenerator');
+        expect(spectatorView.sys.interaction.queue[0].id).toBe('owner-queued');
+        expect(spectatorView.sys.interaction.queue[0].data.options).toEqual([
+            { id: 'fresh-hand-b', label: '新生成的队列选项', value: { cardUid: 'fresh-hand-b' } },
+        ]);
+        expect(spectatorView.sys.interaction.queue[0].data).not.toHaveProperty('optionsGenerator');
+        expect(spectatorView.sys.interaction.isBlocked).toBe(false);
+        expect(currentOptionsGenerator).toHaveBeenCalledTimes(1);
+        expect(queueOptionsGenerator).toHaveBeenCalledTimes(1);
+        expect(authoritativeState.sys.interaction.current.data.options[0].id).toBe('stale-hand-a');
+        expect(authoritativeState.sys.interaction.queue[0].data.options[0].id).toBe('stale-hand-b');
     });
 
     it('deep-clones nested data for custom owner-only interaction kinds', () => {
