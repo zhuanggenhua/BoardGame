@@ -37,7 +37,7 @@ export const MAGE_WARS_FX_TIMING = {
     teleportArrivalImpactMs: 420,
     teleportCompleteMs: 1_250,
     // 实体滑移必须长到过程帧能看见真实棋子；线性位移，落点再停一拍给截图和 registry 超时对齐。
-    pushTravelImpactMs: 1_400,
+    pushTravelImpactMs: 2_200,
     pushSameCellImpactMs: 80,
     pushTravelCompleteMs: 3_200,
     pushSameCellCompleteMs: 180,

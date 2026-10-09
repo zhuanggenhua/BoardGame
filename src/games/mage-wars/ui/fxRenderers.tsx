@@ -245,15 +245,28 @@ function MageWarsEntitySlide({
     const sizeRef = sourceSnapshot ?? targetSnapshot;
     const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition);
     const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition);
-    if (!fromBox || !toBox) return null;
-    // 首帧同步读棋盘表面。等 layout 再 portal 会空出若干帧，活棋子已隐藏、克隆还没挂上。
-    const surface = readFxSurfaceRect();
-    const viewportSlide = surface
-        ? {
-            from: percentBoxToViewport(fromBox, surface),
-            to: percentBoxToViewport(toBox, surface),
-        }
-        : null;
+    const frozenPathRef = useRef<{
+        fromBox: FxBox;
+        toBox: FxBox;
+        viewportSlide: { from: ViewportSlideBox; to: ViewportSlideBox } | null;
+    } | null>(null);
+    if (fromBox && toBox && frozenPathRef.current == null) {
+        // 首帧冻结起终点。表面矩形每帧变会让 portal 重算，克隆会闪没。
+        const surface = readFxSurfaceRect();
+        frozenPathRef.current = {
+            fromBox,
+            toBox,
+            viewportSlide: surface
+                ? {
+                    from: percentBoxToViewport(fromBox, surface),
+                    to: percentBoxToViewport(toBox, surface),
+                }
+                : null,
+        };
+    }
+    const frozenPath = frozenPathRef.current;
+    if (!frozenPath) return null;
+    const { fromBox: frozenFromBox, toBox: frozenToBox, viewportSlide } = frozenPath;
     const previewRef = sourceSpellCardId != null
         ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
         : isMageId(mageId)
@@ -290,26 +303,30 @@ function MageWarsEntitySlide({
             data-source-col={source?.col}
             data-target-row={target.row}
             data-target-col={target.col}
-            data-from-left={String(fromBox.left)}
-            data-from-top={String(fromBox.top)}
-            data-to-left={String(toBox.left)}
-            data-to-top={String(toBox.top)}
+            data-from-left={String(frozenFromBox.left)}
+            data-from-top={String(frozenFromBox.top)}
+            data-to-left={String(frozenToBox.left)}
+            data-to-top={String(frozenToBox.top)}
+            data-from-px-left={viewportSlide ? String(viewportSlide.from.left) : undefined}
+            data-from-px-top={viewportSlide ? String(viewportSlide.from.top) : undefined}
+            data-to-px-left={viewportSlide ? String(viewportSlide.to.left) : undefined}
+            data-to-px-top={viewportSlide ? String(viewportSlide.to.top) : undefined}
             initial={viewportSlide
                 ? { ...viewportSlide.from, opacity: 1 }
                 : {
-                    left: `${fromBox.left}%`,
-                    top: `${fromBox.top}%`,
-                    width: `${fromBox.width}%`,
-                    height: `${fromBox.height}%`,
+                    left: `${frozenFromBox.left}%`,
+                    top: `${frozenFromBox.top}%`,
+                    width: `${frozenFromBox.width}%`,
+                    height: `${frozenFromBox.height}%`,
                     opacity: 1,
                 }}
             animate={viewportSlide
                 ? { ...viewportSlide.to, opacity: 1 }
                 : {
-                    left: `${toBox.left}%`,
-                    top: `${toBox.top}%`,
-                    width: `${toBox.width}%`,
-                    height: `${toBox.height}%`,
+                    left: `${frozenToBox.left}%`,
+                    top: `${frozenToBox.top}%`,
+                    width: `${frozenToBox.width}%`,
+                    height: `${frozenToBox.height}%`,
                     opacity: 1,
                 }}
             transition={{ duration: durationMs / 1000, ease: 'linear' }}

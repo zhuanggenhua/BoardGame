@@ -3466,6 +3466,12 @@ async function captureMageWarsFxProcessScreenshots(
         await expect(slide).toBeVisible({ timeout: 5_000 });
         const recordingOriginMs = options.recording?.startedAtMs ?? Date.now();
         const evidenceWindowElapsedStartMs = Date.now() - recordingOriginMs;
+        // 开始帧必须在克隆刚出现时拍。先跑 evaluate 会把 C2 起点窗口错过，三张静帧都会落在 C3。
+        await options.captureFrame?.('allow');
+        await saveProcessEvidenceScreenshot(`${label}-实体滑移开始过程帧`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
         await expect(page.getByTestId('mage-wars-fx-push-travel')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-fx-push-source-wake')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-fx-push-travel-mid-burst')).toHaveCount(0);
@@ -3497,6 +3503,10 @@ async function captureMageWarsFxProcessScreenshots(
                 fromTop: Number(dataset.fromTop),
                 toLeft: Number(dataset.toLeft),
                 toTop: Number(dataset.toTop),
+                fromPxLeft: Number(dataset.fromPxLeft),
+                fromPxTop: Number(dataset.fromPxTop),
+                toPxLeft: Number(dataset.toPxLeft),
+                toPxTop: Number(dataset.toPxTop),
             };
         });
         expect(
@@ -3510,26 +3520,41 @@ async function captureMageWarsFxProcessScreenshots(
             slidePath.fromLeft !== slidePath.toLeft || slidePath.fromTop !== slidePath.toTop,
             `推斥滑移起终点不能重合: ${JSON.stringify(slidePath)}`,
         ).toBe(true);
-        const slideVisibleAtMs = Date.now();
-        const waitUntilSlideFraction = async (fraction: number) => {
-            const remainingMs = (slideVisibleAtMs + Math.round(MAGE_WARS_FX_TIMING.pushTravelImpactMs * fraction)) - Date.now();
-            if (remainingMs > 0) await page.waitForTimeout(remainingMs);
+        const hasViewportPath = Number.isFinite(slidePath.fromPxLeft)
+            && Number.isFinite(slidePath.fromPxTop)
+            && Number.isFinite(slidePath.toPxLeft)
+            && Number.isFinite(slidePath.toPxTop)
+            && (slidePath.fromPxLeft !== slidePath.toPxLeft || slidePath.fromPxTop !== slidePath.toPxTop);
+        expect(hasViewportPath, `推斥滑移必须写出视口起终点: ${JSON.stringify(slidePath)}`).toBe(true);
+        const readSlideProgress = () => slide.evaluate((element) => {
+            const el = element as HTMLElement;
+            const fromLeft = Number(el.dataset.fromPxLeft);
+            const fromTop = Number(el.dataset.fromPxTop);
+            const toLeft = Number(el.dataset.toPxLeft);
+            const toTop = Number(el.dataset.toPxTop);
+            const rect = el.getBoundingClientRect();
+            const dist = Math.hypot(toLeft - fromLeft, toTop - fromTop);
+            if (!(dist > 1)) return 1;
+            return Math.hypot(rect.left - fromLeft, rect.top - fromTop) / dist;
+        });
+        const waitUntilSlideProgress = async (minFraction: number) => {
+            await expect.poll(async () => {
+                const progress = await readSlideProgress();
+                return Number.isFinite(progress) && progress >= minFraction;
+            }, {
+                timeout: Math.max(2_400, MAGE_WARS_FX_TIMING.pushTravelImpactMs + 400),
+                message: `推斥滑移未到达进度 ${minFraction}`,
+            }).toBe(true);
             await expect(slide).toBeVisible({ timeout: 800 });
         };
         let evidenceWindowElapsedEndMs = Date.now() - recordingOriginMs;
-        await waitUntilSlideFraction(0.08);
-        await options.captureFrame?.('allow');
-        await saveProcessEvidenceScreenshot(`${label}-实体滑移开始过程帧`, {
-            animations: 'allow',
-            evidenceDir: options.evidenceDir,
-        });
-        await waitUntilSlideFraction(0.45);
+        await waitUntilSlideProgress(0.4);
         await options.captureFrame?.('allow');
         await saveProcessEvidenceScreenshot(`${label}-${resolveFxTravelScreenshotSuffix(kind)}`, {
             animations: 'allow',
             evidenceDir: options.evidenceDir,
         });
-        await waitUntilSlideFraction(0.78);
+        await waitUntilSlideProgress(0.78);
         await options.captureFrame?.('allow');
         await saveProcessEvidenceScreenshot(`${label}-${resolveFxImpactScreenshotSuffix(kind)}`, {
             animations: 'allow',
