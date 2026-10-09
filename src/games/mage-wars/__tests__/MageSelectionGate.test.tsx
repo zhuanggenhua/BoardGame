@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CSSProperties } from 'react';
-import { MageWarsMageSelectionGate, resolveMageSelectionStageScale } from '../ui/MageSelectionGate';
+import { MageWarsMageSelectionGate } from '../ui/MageSelectionGate';
+import { resolveMageSelectionStageScale } from '../ui/selectionStageScale';
 import { resolveMageWarsLocalSetup } from '../runtimeAdapter';
 import {
     MAGE_WARS_SAVED_SPELLBOOK_LIMIT,

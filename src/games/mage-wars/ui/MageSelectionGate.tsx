@@ -28,28 +28,15 @@ import {
     getMageWarsMagePreviewRef,
 } from './cardAtlas';
 import { MageWarsSpellbookBuilderPanel } from './SpellbookBuilderPanel';
+import {
+    MAGE_SELECTION_STAGE_HEIGHT,
+    MAGE_SELECTION_STAGE_WIDTH,
+    resolveMageSelectionStageScale,
+} from './selectionStageScale';
 
 type SeatId = '0' | '1';
 
 const SEAT_IDS = ['0', '1'] as const satisfies readonly SeatId[];
-const SELECTION_STAGE_WIDTH = 1920;
-const SELECTION_STAGE_HEIGHT = 1080;
-
-export const resolveMageSelectionStageScale = (
-    viewportWidth: number,
-    viewportHeight: number,
-    isBoardShellMobileViewport: boolean,
-) => {
-    if (isBoardShellMobileViewport) {
-        return 1;
-    }
-
-    const nextScale = Math.min(
-        viewportWidth / SELECTION_STAGE_WIDTH,
-        viewportHeight / SELECTION_STAGE_HEIGHT,
-    );
-    return Number.isFinite(nextScale) && nextScale > 0 ? nextScale : 1;
-};
 
 function isBoardShellMobileViewport(viewportWidth: number, viewportHeight: number): boolean {
     if (viewportWidth > 1023 || viewportWidth <= viewportHeight || typeof document === 'undefined') {
@@ -303,14 +290,14 @@ function MageWarsMageSelectionGateContent({
                 className="absolute left-1/2 top-1/2 z-10 flex min-h-0 flex-col px-12 py-8"
                 data-testid="mage-wars-mage-selection-stage"
                 data-layout-mode="contain-scale"
-                data-layout-width={SELECTION_STAGE_WIDTH}
-                data-layout-height={SELECTION_STAGE_HEIGHT}
+                data-layout-width={MAGE_SELECTION_STAGE_WIDTH}
+                data-layout-height={MAGE_SELECTION_STAGE_HEIGHT}
                 data-layout-scale={stageScale.toFixed(4)}
                 style={{
-                    height: SELECTION_STAGE_HEIGHT,
+                    height: MAGE_SELECTION_STAGE_HEIGHT,
                     transform: `translate(-50%, -50%) scale(${stageScale})`,
                     transformOrigin: 'center center',
-                    width: SELECTION_STAGE_WIDTH,
+                    width: MAGE_SELECTION_STAGE_WIDTH,
                 }}
             >
                 <header className="shrink-0">
