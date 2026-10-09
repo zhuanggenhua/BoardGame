@@ -117,6 +117,36 @@ describe('七大恨房间 setup 解析', () => {
         }
     });
 
+    it('赐印招安的本地教程席位跟随正式交互授权玩家', () => {
+        const state = {
+            sys: {
+                interaction: {
+                    current: {
+                        playerId: '1',
+                        data: { sourceId: 'qidahen:grant-pardon' },
+                    },
+                },
+            },
+        } as never;
+        expect(engineConfig.resolveLocalRuntimeControlledPlayerId?.({
+            state,
+            fallbackPlayerId: '0',
+        })).toBe('1');
+        expect(engineConfig.resolveLocalRuntimeControlledPlayerId?.({
+            state: {
+                sys: {
+                    interaction: {
+                        current: {
+                            playerId: '1',
+                            data: { sourceId: 'qidahen:other' },
+                        },
+                    },
+                },
+            } as never,
+            fallbackPlayerId: '0',
+        })).toBe('0');
+    });
+
     it('公开房间摘要只带出当前剧本，不泄露无关私有字段', () => {
         expect(buildQidahenPublicRoomSummary({
             roomName: '不应泄露',

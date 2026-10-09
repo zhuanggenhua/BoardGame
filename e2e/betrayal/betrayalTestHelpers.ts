@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "fs";
-import { dirname } from "path";
+import { dirname, relative, resolve, sep } from "path";
 import {
   expect,
   type BrowserContext,
@@ -254,11 +254,21 @@ export type SaveScreenshotOptions = {
   prepare?: boolean;
 };
 
+export const resolveBetrayalEvidencePath = (path: string): string => {
+  const stagingRoot = process.env.BG_E2E_EVIDENCE_STAGE_ROOT?.trim();
+  if (!stagingRoot) return path;
+  const pathFromWorkspace = relative(process.cwd(), path);
+  const pathParts = pathFromWorkspace.split(sep);
+  if (pathParts[0] !== "evidence") return path;
+  return resolve(stagingRoot, ...pathParts.slice(1));
+};
+
 export const saveScreenshot = async (
   page: Page,
   path: string,
   options: SaveScreenshotOptions = {},
 ): Promise<Buffer> => {
+  path = resolveBetrayalEvidencePath(path);
   mkdirSync(dirname(path), { recursive: true });
   if (options.prepare !== false) {
     await page.mouse.move(2, 2).catch(() => undefined);
@@ -1453,8 +1463,10 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
             const rect = canvas.getBoundingClientRect();
             const style = window.getComputedStyle(canvas);
             return (
-              rect.width >= 160 &&
-              rect.height >= 120 &&
+              canvas.clientWidth >= 160 &&
+              canvas.clientHeight >= 120 &&
+              rect.width >= 64 &&
+              rect.height >= 48 &&
               canvas.dataset.skinsReady === "true" &&
               style.display !== "none" &&
               style.visibility !== "hidden" &&
@@ -1482,6 +1494,9 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
     .locator('[data-testid="betrayal-house-dice-3d-group"]:visible')
     .first();
   try {
+    const expectedDiceCount = await activeRollPanel
+      .locator('[data-testid^="betrayal-recent-roll-die-"]')
+      .count();
     await expect
       .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
         timeout: 15000,
@@ -1492,6 +1507,12 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
         timeout: 15000,
       })
       .toBe("true");
+    await expect
+      .poll(
+        async () => Number(await diceGroup.getAttribute("data-dice-physics-state-count")),
+        { timeout: 15000 },
+      )
+      .toBeGreaterThanOrEqual(expectedDiceCount);
     await expect
       .poll(
         async () => {

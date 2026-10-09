@@ -43,7 +43,7 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.aiThinkingTime') return 'AI 思考时长';
             if (key === 'createRoom.aiThinkingTimeHint') return '按游戏单独记住';
             if (key === 'createRoom.aiThinkingTimeSeconds') return `${options?.count} 秒`;
-            if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
+            if (key === 'createRoom.aiManualFactionSelection') return '手动选择 AI 派系';
             if (key === 'setup.scenario.label') return '开局剧本';
             if (key === 'setup.scenario.postSarhu1619') return '剧本一：萨尔浒战后（1619）';
             if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
@@ -201,7 +201,7 @@ describe('CreateRoomModal AI default state', () => {
         }));
 
         fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
-        fireEvent.click(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i }));
+        fireEvent.click(screen.getByRole('checkbox', { name: /手动选择 AI 派系/i }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
@@ -235,7 +235,7 @@ describe('CreateRoomModal AI default state', () => {
             },
         }));
 
-        expect(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: /手动选择 AI 派系/i })).toBeChecked();
     });
 
     it('切换难度后会同步到本地 AI 座位', () => {

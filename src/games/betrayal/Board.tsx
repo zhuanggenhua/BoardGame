@@ -14,6 +14,7 @@ import {
 } from "../../lib/audio/useGameAudio";
 import { TutorialSelectionGate, useVisualSequenceGate } from "../../components/game/framework";
 import { useGameMode } from "../../contexts/GameModeContext";
+import { SPECTATOR_PLAYER_ID } from "../../engine/playerView";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import type { GameBoardProps } from "../../engine/transport/protocol";
@@ -503,6 +504,18 @@ export default function BetrayalBoard({
     [endVisualSequence, visualTransition],
   );
   const displayBaseCore = React.useMemo<BetrayalCore>(() => {
+    if (playerID === null) {
+      const spectatorViewCore = BetrayalDomain.playerView?.(
+        baseCore,
+        SPECTATOR_PLAYER_ID,
+      ) as Partial<BetrayalCore> | undefined;
+      if (!spectatorViewCore) {
+        return baseCore;
+      }
+      return isBetrayalCore(spectatorViewCore)
+        ? spectatorViewCore
+        : { ...baseCore, ...spectatorViewCore };
+    }
     const playerViewCore = BetrayalDomain.playerView?.(
       baseCore,
       viewerPlayerId,
@@ -513,7 +526,7 @@ export default function BetrayalBoard({
     return isBetrayalCore(playerViewCore)
       ? playerViewCore
       : { ...baseCore, ...playerViewCore };
-  }, [baseCore, viewerPlayerId]);
+  }, [baseCore, playerID, viewerPlayerId]);
   const isGameOver = Boolean(G?.sys?.gameover) || baseCore.phase === "endgame";
   const undoProviderValue = React.useMemo(
     () => ({
@@ -1249,7 +1262,7 @@ export default function BetrayalBoard({
       baseCore.selectedExplorerByPlayerId[viewerPlayerId] ??
         EXPLORER_CATALOG[0]!.explorerId,
     );
-  }, [baseCore, viewerPlayerId]);
+  }, [baseCore, playerID, viewerPlayerId]);
 
   const dispatchCommand = React.useCallback(
     <Type extends keyof BetrayalCommandMap>(
@@ -3408,11 +3421,8 @@ export default function BetrayalBoard({
     [core, viewerPlayerId],
   );
   const isLatestDiscoveryRecentRollReadable = Boolean(
-    latestDiscoverySelection.coreRecentRollDisplayKey &&
-      latestDiscoverySelection.recentRollDisplayKey &&
-      latestDiscoverySelection.coreRecentRollDisplayKey ===
-        latestDiscoverySelection.recentRollDisplayKey &&
-      settledRecentRollId === latestDiscoverySelection.coreRecentRollDisplayKey,
+    latestDiscoverySelection.recentRollDisplayKey &&
+      settledRecentRollId === latestDiscoverySelection.recentRollDisplayKey,
   );
   const shouldAnimateLatestDiscoveryRerollMotion = !(
     isTutorialActive &&
@@ -6348,6 +6358,7 @@ export default function BetrayalBoard({
                 locale={effectiveLocale}
                 matchData={matchData}
                 isObservingOtherExplorer={isObservingOtherExplorer}
+                isMobileViewport={useViewportAnchoredHud}
               />
 
               <article className="hidden px-1 py-1">
@@ -6623,6 +6634,7 @@ export default function BetrayalBoard({
                 {pendingEventChoice && !pendingEventFocusesMapTarget ? (
                   <BetrayalEventChoiceSurface
                     choice={pendingEventChoice}
+                    isMobileViewport={useViewportAnchoredHud}
                     isEventSymbolSkip={pendingEventChoiceIsEventSymbolSkip}
                     awaitsMapTargetClick={pendingEventAwaitsMapTargetClick}
                     hasMapTargetRooms={pendingEventTargetRooms.length > 0}
@@ -7376,7 +7388,6 @@ export default function BetrayalBoard({
             referenceScenarioTurnSnapshot={referenceScenarioTurnSnapshot}
             referenceScenarioLeftPage={referenceScenarioLeftPage}
             referenceScenarioRightPage={referenceScenarioRightPage}
-            showScenarioReaderTitle={false}
             canTurnReferenceScenarioBack={canTurnReferenceScenarioBack}
             canTurnReferenceScenarioForward={canTurnReferenceScenarioForward}
             onClose={closeReferenceOverlay}

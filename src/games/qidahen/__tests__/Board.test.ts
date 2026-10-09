@@ -262,6 +262,10 @@ describe('Qidahen Board 结构门禁', () => {
 
         expect(boardSource).toContain('rounded-[9px]');
         expect(boardSource).toContain('data-qidahen-hand-card-selected');
+        expect(handCardSource).toContain('const selectedLift = multiSelectMode && selected ? 30 : HAND_CARD_SELECTED_LIFT;');
+        expect(handCardSource).toContain('translateY(-${selectedLift}px) scale(${HAND_CARD_SELECTED_SCALE})');
+        expect(handCardSource).toContain('data-testid={`qidahen-hand-card-selected-wash-${card.id}`}');
+        expect(boardSource).toContain('const handCardSelectedLift = isMobileLandscapeViewport ? 36 : HAND_CARD_SELECTED_LIFT;');
         expect(boardSource).toContain('selected={selected}');
         expect(boardSource).toContain('available={Boolean(onClick)}');
         expect(boardSource).not.toContain('before:inset-[-7px]');
@@ -499,18 +503,21 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('.filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId))');
         expect(boardSource).toContain("action: 'select-region' as const");
         expect(boardSource).toContain("title: '赐印招安'");
-        expect(boardSource).toContain("action: 'grant-pardon' as const");
-        expect(boardSource).toContain('board.actions.grantPardon.mapFirstHint');
+        expect(boardSource).toContain("action: 'select-region' as const");
+        expect(boardSource).toContain('board.actions.grantPardon.targetRegionHint');
+        expect(boardSource).toContain('board.actions.grantPardon.opponentHint');
+        expect(boardSource).toContain('board.actions.grantPardon.troopHint');
+        expect(boardSource).toContain('factionName: grantPardonExecutorFactionName');
+        expect(boardSource).toContain("const grantPardonExecutorFactionId = grantPardonSelection?.executorFactionId ?? 'ming';");
         expect(boardSource).toContain('board.actions.grantPardon.fallbackListLabel');
-        expect(boardSource).toContain('主路径：点击地图上的目标地区完成招安；列表只作备用');
         expect(boardSource).toContain("candidate.action === 'grant-pardon'");
-        expect(boardSource).toContain('const choice = grantPardonMapChoices.find((item) => item.targetRegionId === regionId);');
-        expect(boardSource).toContain('resolveGrantPardonChoice(choice.id);');
-        expect(boardSource).toContain('const grantPardonHasMapTargets = Boolean(grantPardonSelection?.choices.length);');
+        expect(boardSource).toContain('const choice = grantPardonMapChoices.find((item) => (');
+        expect(boardSource).toContain('dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId, tokenId });');
+        expect(boardSource).toContain('&& !grantPardonNeedsOpponent;');
         expect(boardSource).toContain('grantPardonHasMapTargets ? null : (');
         expect(boardSource).toContain('() => grantPardonSelection?.choices ?? []');
         expect(boardSource).toContain('for (const choice of grantPardonMapChoices)');
-        expect(boardSource).toContain("const tutorialGrantPardonFocusChoice = tutorialStepId === 'choose-grant-pardon-target'");
+        expect(boardSource).toContain("const tutorialGrantPardonTargetRegionId = tutorialStepId === 'choose-grant-pardon-source'");
         expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'source');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'dispatch');");
         expect(boardSource).not.toContain('const wheelDispatchCandidateRegionIds = new Set(');
@@ -577,19 +584,41 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid={`qidahen-diplomacy-choice-${choice.id}`}');
     });
 
+    it('赐印招安交互提示必须按执行势力动态翻译并明确剩余对手决策', () => {
+        const zh = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/locales/zh-CN/game-qidahen.json'), 'utf-8'));
+        const en = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/locales/en/game-qidahen.json'), 'utf-8'));
+
+        expect(zh.board.actions.grantPardon.targetRegionHint).toContain('{{factionName}}');
+        expect(en.board.actions.grantPardon.targetRegionHint).toContain('{{factionName}}');
+        expect(en.board.actions.grantPardon.targetRegionHint).not.toContain('Ming-controlled');
+        expect(zh.board.actions.grantPardon.opponentHint).toContain('亲自选择部队');
+        expect(en.board.actions.grantPardon.opponentHint).toContain('that player then chooses a troop');
+        expect(zh.board.actions.grantPardon.mapTargetHint).toContain('{{factionName}}');
+        expect(en.board.actions.grantPardon.mapTargetHint).toContain('{{factionName}}');
+        expect(zh.board.actions.grantPardon.mapOpponentHint).toContain('亲自选择部队');
+        expect(en.board.actions.grantPardon.mapOpponentHint).toContain('that player then chooses a troop');
+        expect(zh.board.actions.grantPardon.mapTroopHint).toContain('{{regionName}}');
+        expect(en.board.actions.grantPardon.mapTroopHint).toContain('{{regionName}}');
+        expect(boardSource).toContain("grantPardon.mapTargetHint");
+        expect(boardSource).toContain("grantPardon.mapOpponentHint");
+        expect(boardSource).toContain("grantPardon.mapTroopHint");
+        expect(boardSource).toContain("grantPardonSelection.executorFactionId ?? 'ming'");
+    });
+
     it('教程招安目标必须把推荐目标、来源与其它候选分出图面层级', () => {
-        expect(boardSource).toContain("const tutorialGrantPardonFocusChoice = tutorialStepId === 'choose-grant-pardon-target'");
+        expect(boardSource).toContain("const tutorialGrantPardonTargetRegionId = tutorialStepId === 'choose-grant-pardon-source'");
         expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'tutorialSource');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'tutorialPrimary');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'tutorialCandidate');");
-        expect(boardSource).toContain('const sourcePoint = getGuideArmyTokenPoint(choice.sourceRegionId, sourceFactionId);');
-        expect(boardSource).toContain('sourceTokenBounds: getGuideArmyTokenBounds(choice.sourceRegionId, sourceFactionId) ?? undefined');
-        expect(boardSource).toContain('sourceLabel: `${choice.sourceRegionName}部队`');
+        expect(boardSource).toContain('const sourcePoint = getGuideArmyTokenPoint(choice.sourceRegionId, choice.sourceFactionId, null, choice.sourceTokenId);');
+        expect(boardSource).toContain('sourceTokenBounds: getGuideArmyTokenBounds(choice.sourceRegionId, choice.sourceFactionId, null, choice.sourceTokenId) ?? undefined');
+        expect(boardSource).toContain('sourceLabel: `${choice.sourceRegionName}·${choice.sourceFactionName}部队`');
         expect(boardSource).toContain('targetLabel: `${choice.targetRegionName}接收区`');
         expect(boardSource).toContain('data-testid={`qidahen-map-guide-source-focus-${candidate.targetRegionId}`}');
         expect(boardSource).toContain('data-testid="qidahen-grant-pardon-source-label"');
         expect(boardSource).toContain('data-testid="qidahen-grant-pardon-target-label"');
-        expect(boardSource).toContain("tutorialStepId === 'choose-grant-pardon-target' || !mapSelectionGuideUsesRegionHighlight");
+        expect(boardSource).not.toContain('qidahen-map-guide-primary-relation-');
+        expect(boardSource).toContain("tutorialStepId === 'choose-grant-pardon-source' || !mapSelectionGuideUsesRegionHighlight");
         expect(boardSource).toContain("data-qidahen-tutorial-primary-target={tutorialGrantPardonFocusChoice?.targetRegionId ?? undefined}");
         expect(boardSource).toContain("data-qidahen-tutorial-source-region={tutorialGrantPardonFocusChoice?.sourceRegionId ?? undefined}");
     });
@@ -852,6 +881,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('hover:-translate-y-[18px]');
         expect(boardSource).toContain('data-qidahen-hand-card-selected');
         expect(boardSource).toContain('selected={selected}');
+        expect(boardSource).toContain('multiSelectMode?: boolean;');
+        expect(boardSource).toContain('zIndex: selected && !multiSelectMode ? totalCards + 12 : stackIndex + 1');
+        expect(boardSource).toContain('const multiSelectMode = actionPaymentPreviewVisible || handLimitDiscardSelection != null;');
+        expect(boardSource).toContain('const handCardOverlapPx = multiSelectMode');
+        expect(boardSource).toContain('multiSelectMode={multiSelectMode}');
         expect(boardSource).not.toContain('before:inset-[-7px]');
         expect(boardSource).toContain('width={handCardWidth}');
         expect(boardSource).toContain('height={handCardHeight}');
@@ -955,8 +989,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("className={`pointer-events-none absolute inset-[-2px] ${tokenShapeClass}`}");
         expect(boardSource).toContain("border: pendingCommittedSelected ? '1.5px solid #8cf694' : '1.5px solid #69d873'");
         expect(boardSource).toContain("background: pendingCommittedSelected ? 'rgba(101, 255, 128, 0.045)' : 'rgba(87, 240, 103, 0.028)'");
-        expect(boardSource).toContain('const tokenSelectable = pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;');
-        expect(boardSource).toContain('const resolvedSelectionTone = wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
+        expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;');
+        expect(boardSource).toContain('const resolvedSelectionTone = grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
         expect(boardSource).toContain('zIndex: tokenSelectable ? 64 : undefined');
         expect(boardSource).toContain('className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
@@ -965,7 +999,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-pending-committed-selectable={pendingCommittedSelectable ?');
         expect(boardSource).toContain('data-pending-committed-selected={pendingCommittedSelectable ? String(pendingCommittedSelected) : undefined}');
         expect(boardSource).toContain("role={tokenSelectable ? 'button' : undefined}");
-        expect(boardSource).toContain('aria-pressed={tokenSelectable && !instigateDefectionSelectable && !wuzhenChaohaSelectable ? (pincerAdvanceSelectable ? pincerAdvanceSelected : pendingCommittedSelected) : undefined}');
+        expect(boardSource).toContain('aria-pressed={tokenSelectable && !instigateDefectionSelectable && !wuzhenChaohaSelectable');
         expect(boardSource).toContain(': pendingCommittedSelectable && token.troopIndex');
         expect(boardSource).toContain('onSelectPendingCommittedTroops?.(token.troopIndex!)');
         expect(boardSource).not.toContain('opacity: 0.46');
@@ -985,7 +1019,7 @@ describe('Qidahen Board 结构门禁', () => {
     it('乌真超哈必须复用实际参战步兵牌直选，并在确认前允许选择销毁火炮技术数量', () => {
         expect(boardSource).toContain('const wuzhenChaohaTone = wuzhenChaohaSelectable');
         expect(boardSource).toContain("data-wuzhen-chaoha-selectable={wuzhenChaohaSelectable ? 'true' : undefined}");
-        expect(boardSource).toContain('onClick={wuzhenChaohaSelectable');
+        expect(boardSource).toContain(': wuzhenChaohaSelectable');
         expect(boardSource).toContain('onResolveWuzhenChaoha?.(token.id)');
         expect(boardSource).toContain('data-testid="qidahen-wuzhen-chaoha-selection"');
         expect(boardSource).toContain('点击绿色步兵牌，指定其提前在炮兵阶段攻击。');
@@ -1125,6 +1159,21 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('currentViewport.panY === viewport.panY');
         expect(boardSource).not.toContain('[topLevelMapSelectionGuide],');
         expect(boardSource).not.toContain('setMapViewport(viewport);');
+    });
+
+    it('教程聚焦地图结算时必须保持结果反馈直到离开结果步骤', () => {
+        expect(boardSource).toContain('const lastSeasonSummaryRegionSnapshotRef = React.useRef<Map<string, string> | null>(null);');
+        expect(boardSource).toContain("tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'");
+        expect(boardSource).toContain('if (!resultFeedback || tutorialHighlightsResultFeedback)');
+        expect(boardSource).toContain('[resultFeedback?.resultId, tutorialHighlightsResultFeedback]');
+        expect(boardSource).toContain('const activeResultFeedback = resultFeedback ?? (');
+        expect(boardSource).toContain('tutorialStepId === \'result\' && core.lastSeasonSummary?.mapResult');
+        expect(boardSource).toContain("tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'");
+        expect(boardSource).toContain('lastSeasonSummaryRegionSnapshotRef.current');
+        expect(boardSource).toContain('resultId !== previousResultId');
+        expect(boardSource).toContain('if (previousRegionSnapshot == null || resultId !== previousResultId) {');
+        expect(boardSource).not.toContain('QIDAHEN_RESULT_FEEDBACK_TRACE');
+        expect(boardSource).not.toContain('QIDAHEN_PARENT_RESULT_TRACE');
     });
 
     for (const testId of REQUIRED_TEST_IDS) {

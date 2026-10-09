@@ -86,9 +86,16 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
                 && core.wheelActionUsed === true
                 && core.factionActionUsed === false
                 && core.lastSeasonSummary?.title === '轮盘征兵/训练';
+        case 'choose-grant-pardon-source':
+            return core.turnPhase === 'grant-pardon-choice'
+                && core.selectedActionId === 'grant-pardon'
+                && core.grantPardonSelection?.targetRegionId === 'city-region-25'
+                && core.grantPardonSelection?.opponentFactionId === 'jin'
+                && Boolean(core.grantPardonSelection?.choices.length);
         case 'choose-grant-pardon-target':
             return core.turnPhase === 'grant-pardon-choice'
                 && core.selectedActionId === 'grant-pardon'
+                && core.grantPardonSelection?.targetRegionId == null
                 && Boolean(core.grantPardonSelection?.choices.length);
         case 'pay-cards':
             return core.turnPhase === 'action-window'
@@ -559,7 +566,16 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             highlightTarget: 'qidahen-map-guide-hit-target-city-region-25',
             position: 'left',
             requireAction: true,
-            allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-25' } }],
+        },
+        {
+            id: 'choose-grant-pardon-source',
+            content: 'game-qidahen:tutorial.basic.steps.chooseGrantPardonSource',
+            highlightTarget: 'qidahen-grant-pardon-source-token-jinzhou',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
             advanceOnEvents: [{ type: 'GRANT_PARDON_CHOICE_RESOLVED', match: { choiceId: 'jinzhou->city-region-25' } }],
         },
         {

@@ -34,7 +34,7 @@ metadata:
 
 ## 旁观者命令边界
 
-在线 `GameProvider` 的 `playerId === null` 表示旁观者。旁观者应保留玩家可见的只读交互，例如点击、拖拽、放大、选择和显式关闭；这些交互不得在各游戏 Board 内分别改成“禁用观战”。
+在线 `GameProvider` 的 `playerId === null` 表示旁观者。传输层向旁观者保留完整权威 `G.core`，并按传输规则裁剪 `G.sys`；这描述网络状态，不代表 Board 可以把全部状态直接显示给旁观者。游戏定义了私有或仅特定玩家可见的信息时，Board 必须在渲染前应用该游戏的旁观者视图投影（例如以 `SPECTATOR_PLAYER_ID` 调用游戏 `playerView`），不得把某个座位的私有值、隐藏身份或秘密结果展示出来；该投影只影响显示，不得改写权威状态或赋予旁观者玩家身份。传输层 `playerView` 仍只裁剪有座位的玩家视图。旁观者保留点击、拖拽、放大、选择和显式关闭等只读观察交互，但所有会改变对局的请求由在线 Provider 公共入口统一 no-op。
 
 - 所有会改变对局的 `dispatch`、传输批次、乐观预测、手动 setup 选择和 AI 强制结束请求，必须在在线 Provider 的公共命令入口统一判定旁观者并直接 no-op。
 - 旁观者命令 no-op 必须返回未发送结果，且不得调用 `processCommand()`、`sendCommand()`、`sendBatch()`、socket 或任何本地预测 / 排队 / 重试路径。

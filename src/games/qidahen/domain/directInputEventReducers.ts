@@ -67,6 +67,7 @@ const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
             event.payload.qidahenDiplomacySelection ?? null,
             event.payload.qidahenInternalDispatchSelection ?? null,
             event.payload.qidahenWheelDispatchSelection ?? null,
+            event.payload.tokenId ?? null,
         ),
     ),
     defineDirectInputEventReducer(

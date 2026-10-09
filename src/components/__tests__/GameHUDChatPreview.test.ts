@@ -14,6 +14,7 @@ import {
 import {
     areFabAnchorRectsEqual,
     MOBILE_FAB_VISIBLE_ITEM_LIMIT,
+    resolveFabIconScale,
     resolveFabLayerZIndex,
     resolveFabSatellitesToRender,
     resolveMobileFabOverflowWarning,
@@ -218,6 +219,13 @@ describe('GameHUD chat preview helpers', () => {
 });
 
 describe('FabMenu helpers', () => {
+    it('board-shell 手机端会补偿 SVG 图标的整体缩放，PC 保持原尺寸', () => {
+        expect(resolveFabIconScale(false, 0.5)).toBe(1);
+        expect(resolveFabIconScale(true, 1)).toBe(0.92);
+        expect(resolveFabIconScale(true, 0.5)).toBe(1.84);
+        expect(resolveFabIconScale(true, 0)).toBe(0.92);
+    });
+
     it('大厅全局悬浮球层级必须高于看板娘且低于反馈弹窗', () => {
         expect(GLOBAL_HUD_FAB_Z_INDEX).toBe(UI_Z_INDEX.globalHudFab);
         expect(GLOBAL_HUD_FAB_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.tooltip - 1);

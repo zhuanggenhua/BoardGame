@@ -104,9 +104,71 @@ export function getMaShiTradeSelection(core: QidahenCore) {
     return getQidahenMaShiTradeSelectionForCore(core);
 }
 
-export function payGrantPardonAndChooseTarget(
+export function chooseGrantPardonDestinationAndTroop(
     core: QidahenCore,
-    choiceId: string,
+    targetRegionId: string,
+    preferredSourceRegionId?: string,
+): QidahenCore {
+    const executorPlayerId = core.currentPlayer;
+    const choosingDestination = core;
+    expect(choosingDestination.turnPhase).toBe('grant-pardon-choice');
+    expect(getGrantPardonSelection(choosingDestination)?.choices.some((choice) => (
+        choice.targetRegionId === targetRegionId
+    ))).toBe(true);
+    const destinationSelected = apply(choosingDestination, {
+        type: QIDAHEN_COMMANDS.SELECT_REGION,
+        playerId: executorPlayerId,
+        payload: { regionId: targetRegionId },
+    });
+    expect(getGrantPardonSelection(destinationSelected)?.targetRegionId).toBe(targetRegionId);
+
+    let troopSelection = getGrantPardonSelection(destinationSelected);
+    if (troopSelection?.opponentFactionId == null) {
+        const intendedChoice = troopSelection?.choices.find((choice) => (
+            preferredSourceRegionId == null || choice.sourceRegionId === preferredSourceRegionId
+        ));
+        expect(intendedChoice).toBeDefined();
+        const opponentFactionId = intendedChoice!.sourceFactionId;
+        const opponentSelected = apply(destinationSelected, {
+            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
+            playerId: executorPlayerId,
+            payload: { choiceId: `opponent:${opponentFactionId}` },
+        });
+        troopSelection = getGrantPardonSelection(opponentSelected);
+        expect(troopSelection?.opponentFactionId).toBe(opponentFactionId);
+        return selectGrantPardonTroop(opponentSelected, troopSelection, preferredSourceRegionId);
+    }
+
+    return selectGrantPardonTroop(destinationSelected, troopSelection, preferredSourceRegionId);
+}
+
+const selectGrantPardonTroop = (
+    core: QidahenCore,
+    selection: ReturnType<typeof getGrantPardonSelection>,
+    preferredSourceRegionId?: string,
+): QidahenCore => {
+    expect(selection?.opponentFactionId).toBeDefined();
+    const choice = selection!.choices.find((candidate) => (
+        candidate.targetRegionId === selection!.targetRegionId
+        && (preferredSourceRegionId == null || candidate.sourceRegionId === preferredSourceRegionId)
+    ));
+    expect(choice).toBeDefined();
+    expect(choice!.sourceTokenId).toBeDefined();
+    const sourcePlayerId = core.factions[choice!.sourceFactionId].playerId;
+    return apply(core, {
+        type: QIDAHEN_COMMANDS.SELECT_REGION,
+        playerId: sourcePlayerId,
+        payload: {
+            regionId: choice!.sourceRegionId,
+            tokenId: choice!.sourceTokenId,
+        },
+    });
+};
+
+export function payGrantPardonAndResolveTroop(
+    core: QidahenCore,
+    targetRegionId: string,
+    preferredSourceRegionId?: string,
 ): QidahenCore {
     expect(core.turnPhase).toBe('action-window');
     expect(core.grantPardonSelection).toBeNull();
@@ -135,12 +197,7 @@ export function payGrantPardonAndChooseTarget(
         payload: {},
     });
     expect(choosingTarget.turnPhase).toBe('grant-pardon-choice');
-    expect(getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id)).toContain(choiceId);
-    return apply(choosingTarget, {
-        type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-        playerId: '0',
-        payload: { choiceId },
-    });
+    return chooseGrantPardonDestinationAndTroop(choosingTarget, targetRegionId, preferredSourceRegionId);
 }
 
 export function getKhanEdictSelection(core: QidahenCore) {

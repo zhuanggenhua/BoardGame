@@ -231,6 +231,22 @@ const resolveSourceLabel = (t: TFunction<'admin'>, source: string): string => {
     return option ? t(option.labelKey) : t('feedback.source.unknown');
 };
 
+const resolveReplayabilityLabel = (
+    t: TFunction<'admin'>,
+    replayability?: FeedbackDiagnosticPacket['replayability'] | null,
+): string => {
+    switch (replayability) {
+        case 'full':
+            return t('feedback.replayability.full');
+        case 'partial':
+            return t('feedback.replayability.partial');
+        case 'unreplayable':
+            return t('feedback.replayability.unreplayable');
+        default:
+            return t('feedback.replayability.unknown');
+    }
+};
+
 const resolveFeedbackPreviewText = (item: FeedbackItem, t: TFunction<'admin'>): string => {
     const preview = item.contentPreview?.trim();
     if (preview) return preview;
@@ -862,13 +878,13 @@ export default function AdminFeedbackPage() {
 
                     <div className="flex flex-wrap items-center gap-1">
                         <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
-                            现场回放
+                            {t('feedback.filters.replayability')}
                         </span>
                         {[
-                            { value: 'all', label: '全部' },
-                            { value: 'full', label: '完整' },
-                            { value: 'partial', label: '部分' },
-                            { value: 'unreplayable', label: '不可回放' },
+                            { value: 'all', label: t('feedback.replayability.all') },
+                            { value: 'full', label: t('feedback.replayability.full') },
+                            { value: 'partial', label: t('feedback.replayability.partial') },
+                            { value: 'unreplayable', label: t('feedback.replayability.unreplayable') },
                         ].map((option) => (
                             <FilterTab
                                 key={option.value}
@@ -1124,13 +1140,11 @@ function FeedbackRow({
                                         ? 'bg-emerald-50 text-emerald-700'
                                         : item.diagnosticReplayability === 'partial'
                                             ? 'bg-amber-50 text-amber-700'
-                                            : 'bg-red-50 text-red-700',
+                                        : 'bg-red-50 text-red-700',
                                 )}>
-                                    现场{item.diagnosticReplayability === 'full'
-                                        ? '完整'
-                                        : item.diagnosticReplayability === 'partial'
-                                            ? '部分'
-                                            : '不可回放'}
+                                    {t('feedback.replayability.current', {
+                                        value: resolveReplayabilityLabel(t, item.diagnosticReplayability),
+                                    })}
                                 </span>
                             )}
                         </div>
@@ -1598,20 +1612,20 @@ function FeedbackDetailPanel({
                 {item.diagnosticPacket && (
                     <section className="rounded-lg border border-indigo-100 bg-indigo-50 p-2.5">
                         <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-indigo-500">
-                            反馈现场包
+                            {t('feedback.diagnosticPacket.title')}
                         </p>
                         <div className="space-y-1 text-xs text-indigo-800">
-                            <p>回放等级：{item.diagnosticPacket.replayability}</p>
-                            <p>采集编号：{item.diagnosticPacket.captureId}</p>
-                            <p>故障链：{item.diagnosticPacket.chainId || '未提供'}</p>
-                            <p>对局：{item.diagnosticPacket.correlation?.matchId || '未提供'}</p>
-                            <p>房间：{item.diagnosticPacket.correlation?.roomId || '未提供'}</p>
-                            <p>请求：{item.diagnosticPacket.correlation?.requestId || '未提供'}</p>
+                            <p>{t('feedback.diagnosticPacket.replayability')}: {resolveReplayabilityLabel(t, item.diagnosticPacket.replayability)}</p>
+                            <p>{t('feedback.diagnosticPacket.captureId')}: {item.diagnosticPacket.captureId}</p>
+                            <p>{t('feedback.diagnosticPacket.chainId')}: {item.diagnosticPacket.chainId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>{t('feedback.diagnosticPacket.matchId')}: {item.diagnosticPacket.correlation?.matchId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>{t('feedback.diagnosticPacket.roomId')}: {item.diagnosticPacket.correlation?.roomId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>{t('feedback.diagnosticPacket.requestId')}: {item.diagnosticPacket.correlation?.requestId || t('feedback.diagnosticPacket.notProvided')}</p>
                             <p>
-                                缺失字段：
+                                {t('feedback.diagnosticPacket.missingFields')}:
                                 {item.diagnosticPacket.missingFields?.length
                                     ? item.diagnosticPacket.missingFields.join('、')
-                                    : '无'}
+                                    : t('feedback.diagnosticPacket.none')}
                             </p>
                         </div>
                     </section>

@@ -140,22 +140,40 @@ function buildQidahenGrantPardonInteraction(
         return null;
     }
 
-    const options = selection.choices.map((choice) => ({
-        id: choice.id,
-        label: choice.label,
-        value: { choiceId: choice.id },
-        displayMode: 'button' as const,
-        description: choice.detail,
-    }));
+    const options = selection.targetRegionId == null
+        ? Array.from(new Map(selection.choices.map((choice) => [choice.targetRegionId, choice])).values()).map((choice) => ({
+            id: `region:${choice.targetRegionId}`,
+            label: choice.targetRegionName,
+            value: { choiceId: `region:${choice.targetRegionId}` },
+            displayMode: 'button' as const,
+            description: `选择${choice.targetRegionName}作为接收区。`,
+        }))
+        : selection.opponentFactionId == null
+            ? Array.from(new Map(selection.choices.map((choice) => [choice.sourceFactionId, choice])).values()).map((choice) => ({
+                id: `opponent:${choice.sourceFactionId}`,
+                label: choice.sourceFactionName,
+                value: { choiceId: `opponent:${choice.sourceFactionId}` },
+                displayMode: 'button' as const,
+                description: `指定${choice.sourceFactionName}玩家选择部队。`,
+            }))
+            : selection.choices.map((choice) => ({
+                id: choice.id,
+                label: choice.label,
+                value: { choiceId: choice.id },
+                displayMode: 'button' as const,
+                description: choice.detail,
+            }));
 
     const interaction = createQidahenChoiceRequestInteraction({
-        requestId: `qidahen-grant-pardon-${selection.sourceRegionId ?? state.core.currentPlayer}`,
-        playerId: state.core.currentPlayer,
+        requestId: `qidahen-grant-pardon-${selection.targetRegionId ?? 'region'}-${selection.opponentFactionId ?? state.core.currentPlayer}`,
+        playerId: selection.opponentFactionId == null
+            ? state.core.currentPlayer
+            : state.core.factions[selection.opponentFactionId]?.playerId ?? state.core.currentPlayer,
         title: selection.title,
         sourceId: QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
         candidates: options,
         subtitle: selection.summary,
-        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
     }) as QidahenGrantPardonInteraction;
 
     interaction.data.qidahenGrantPardonSelection = {

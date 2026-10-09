@@ -11,6 +11,7 @@
       "severity": "Severity",
       "reporterType": "Reporter",
       "source": "System source",
+      "replayability": "Replayability",
       "sort": "Sort",
       "priority": "Priority",
       "newest": "Newest first",
@@ -51,6 +52,14 @@
       "unsatAutoSkip": "System auto-skip (unsatisfiable interaction)",
       "unknown": "Unknown",
       "configReview": "Config review table"
+    },
+    "replayability": {
+      "all": "All",
+      "full": "Full",
+      "partial": "Partial",
+      "unreplayable": "Unreplayable",
+      "unknown": "Unknown",
+      "current": "Field: {{value}}"
     },
     "severity": {
       "critical": "Critical",
@@ -140,6 +149,18 @@
       "title": "State Snapshot (JSON)",
       "copy": "Copy JSON",
       "copied": "Copied"
+    },
+    "diagnosticPacket": {
+      "title": "Diagnostic Packet",
+      "replayability": "Replayability",
+      "captureId": "Capture ID",
+      "chainId": "Failure chain",
+      "matchId": "Match",
+      "roomId": "Room",
+      "requestId": "Request",
+      "missingFields": "Missing fields",
+      "notProvided": "Not provided",
+      "none": "None"
     },
     "time": {
       "justNow": "Just now",

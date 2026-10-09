@@ -83,6 +83,13 @@ export interface FabAction {
 
 export const resolveFabSatellitesToRender = <T,>(items: T[]) => [...items].reverse();
 
+/** board-shell 缩放时，固定尺寸 SVG 也需要按 inverse scale 补偿。 */
+export const resolveFabIconScale = (isMobileViewport: boolean, layoutScale: number) => {
+    if (!isMobileViewport) return 1;
+    const resolvedLayoutScale = Number.isFinite(layoutScale) && layoutScale > 0 ? layoutScale : 1;
+    return 0.92 / resolvedLayoutScale;
+};
+
 export const resolveMobileFabOverflowWarning = (
     items: Array<Pick<FabAction, 'id' | 'label'>>,
     isMobileViewport: boolean,
@@ -139,6 +146,7 @@ export const FabMenu = ({
     const safeAreaInsets: SafeAreaInsets = viewport.safeArea;
     const isMobileViewport = viewportWidth > 0 && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH;
     const layoutScale = hudPlacement === 'in-shell' ? readBoardShellScaleValue() : 1;
+    const iconScale = resolveFabIconScale(isMobileViewport, layoutScale);
     const layoutViewportWidth = viewportWidth / layoutScale;
     const layoutViewportHeight = viewportHeight / layoutScale;
     const layoutSafeAreaInsets: SafeAreaInsets = {
@@ -554,6 +562,7 @@ export const FabMenu = ({
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 viewportHeight={viewportHeight}
+                iconScale={iconScale}
                 panelAnchorPosition={liveRenderPosition}
                 layerZIndex={layerZIndex}
                 onRequestClose={() => {
@@ -585,6 +594,7 @@ export const FabMenu = ({
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 viewportHeight={viewportHeight}
+                iconScale={iconScale}
                 layerZIndex={layerZIndex}
             />
         </motion.div>
@@ -613,6 +623,7 @@ const SatelliteList = ({
     isMobileViewport,
     viewportWidth,
     viewportHeight,
+    iconScale,
     layerZIndex,
 }: any) => {
     const isButtonBottom = alignment.v === 'bottom';
@@ -701,6 +712,7 @@ const SatelliteList = ({
                                         isMobileViewport={isMobileViewport}
                                         viewportWidth={viewportWidth}
                                         viewportHeight={viewportHeight}
+                                        iconScale={iconScale}
                                         panelAnchorPosition={anchorPosition}
                                         panelReferenceRect={panelReferenceRect}
                                         layerZIndex={layerZIndex}
@@ -734,6 +746,7 @@ const FabButtonSlot = ({
     isMobileViewport,
     viewportWidth,
     viewportHeight,
+    iconScale,
     panelAnchorPosition,
     panelReferenceRect,
     layerZIndex,
@@ -778,6 +791,7 @@ const FabButtonSlot = ({
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 anchorPosition={panelAnchorPosition}
+                iconScale={iconScale}
                 onRectChange={setAnchorRect}
             />
         </div>
@@ -1011,6 +1025,7 @@ const MenuButton = ({
     isMobileViewport,
     viewportWidth,
     anchorPosition,
+    iconScale,
     onRectChange,
 }: any) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -1205,7 +1220,9 @@ const MenuButton = ({
                 >
                     <div
                         className="flex h-full w-full items-center justify-center"
-                        style={{ transform: isMobileViewport ? 'scale(0.92)' : undefined }}
+                        style={{
+                            transform: iconScale === 1 ? undefined : `scale(${iconScale})`,
+                        }}
                     >
                         {item.icon}
                     </div>

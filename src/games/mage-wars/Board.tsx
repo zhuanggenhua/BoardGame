@@ -179,12 +179,30 @@ const MAGE_WARS_TUTORIAL_ARENA_TARGET_PREFIXES = [
     'mw-wall-card-',
 ] as const;
 
+type MageWarsInspectAttachment = {
+    objectId: string;
+    sourceCardId: number;
+    title: string;
+    previewRef: CardPreviewRef;
+    aspectRatio: number;
+    boundSpellCardId?: number;
+    boundSpellName?: string;
+};
+
 type MageWarsMagnifiedPreview = {
     previewRef: CardPreviewRef;
     title: string;
     aspectRatio: number;
     sourceCardId?: number;
     mageId?: string;
+    hostObjectId?: string;
+    hostPlayerId?: PlayerId;
+    attachments?: MageWarsInspectAttachment[];
+};
+
+type MageWarsInspectContext = {
+    hostObjectId?: string;
+    hostPlayerId?: PlayerId;
 };
 
 const TOKEN_IMAGES = {
@@ -354,12 +372,14 @@ function EntityStatusTokenRail({
     actionReady,
     quickcastReady,
     statusTokens,
+    meleeDiceModifier,
     compact = false,
 }: {
     guarding?: boolean;
     actionReady?: boolean;
     quickcastReady?: boolean;
     statusTokens: MageWarsArenaObjectState['statusTokens'] | MageWarsPlayerState['statusTokens'];
+    meleeDiceModifier?: number;
     compact?: boolean;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -373,14 +393,16 @@ function EntityStatusTokenRail({
 
     const hasActionToken = actionReady !== undefined;
     const hasQuickcastToken = quickcastReady !== undefined;
-    const hasTokenRail = Boolean(hasActionToken || hasQuickcastToken || guarding || visibleStatusTokens.length > 0);
+    const meleeBonusAmount = meleeDiceModifier ?? 0;
+    const hasTokenRail = Boolean(hasActionToken || hasQuickcastToken || guarding || visibleStatusTokens.length > 0 || meleeBonusAmount > 0);
     if (!hasTokenRail) return null;
 
     const tokenSizeClass = compact ? 'h-6 w-6' : 'h-7 w-7';
     const tokenRailItemCount = Number(hasActionToken)
         + Number(hasQuickcastToken)
         + Number(guarding)
-        + (visibleStatusTokens.length > 0 ? 1 : 0);
+        + (visibleStatusTokens.length > 0 ? 1 : 0)
+        + Number(meleeBonusAmount > 0);
     const splitAroundLifeReadout = tokenRailItemCount === 2;
     const tokenRailStyle: CSSProperties = splitAroundLifeReadout
         ? {
@@ -477,6 +499,16 @@ function EntityStatusTokenRail({
             {renderQuickcastToken('entity-left-inside-midline')}
             {renderGuardToken('entity-left-inside-midline')}
             {statusTokenRow}
+            {meleeBonusAmount > 0 ? (
+                <span
+                    className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-amber-950/82 px-1 py-0.5 text-[0.58rem] font-black text-amber-50 shadow-[0_4px_12px_rgba(0,0,0,0.38)]"
+                    data-testid="mage-wars-melee-bonus-marker"
+                    data-melee-dice-modifier={meleeBonusAmount}
+                    title={t('actions.meleeBonusMarker', { amount: meleeBonusAmount })}
+                >
+                    +{meleeBonusAmount}
+                </span>
+            ) : null}
         </div>
     );
 }
@@ -1576,6 +1608,7 @@ function ZoneFieldCard({
                     guarding={object.guarding}
                     actionReady={object.kind === 'creature' ? object.actionReady : undefined}
                     statusTokens={object.statusTokens}
+                    meleeDiceModifier={object.temporaryTraits?.meleeDiceModifier}
                     compact={compact}
                 />
             ) : null}
@@ -1726,6 +1759,13 @@ function ArenaAttachmentCard({
     const primaryActionEnabled = Boolean(onClick);
     const hasBrowseInspectAction = !hasPrimaryActionIntent && Boolean(onInspect);
     const hasSecondaryInspect = Boolean(hasPrimaryActionIntent && onInspect);
+    const boundSpellCardId = object.boundSpellCardId;
+    const boundSpellPreviewRef = boundSpellCardId == null
+        ? undefined
+        : getMageWarsSpellCardPreviewRef(boundSpellCardId);
+    const boundSpellName = boundSpellCardId == null
+        ? undefined
+        : getMageWarsSpellCardName(boundSpellCardId) ?? t('privateZones.spell');
 
     const content = (
         <>
@@ -1733,10 +1773,27 @@ function ArenaAttachmentCard({
                 previewRef={previewRef}
                 className={cx(
                     'h-full w-full rounded-[0.12rem]',
+                    boundSpellPreviewRef ? 'opacity-90' : null,
                     object.kind === 'equipment' ? 'ring-1 ring-sky-200/75' : 'ring-1 ring-violet-200/75',
                 )}
                 title={title}
             />
+            {boundSpellPreviewRef && boundSpellName ? (
+                <span
+                    className="pointer-events-none absolute inset-x-[8%] bottom-0 top-[18%] z-10 overflow-hidden rounded-[0.1rem] shadow-[0_8px_16px_rgba(0,0,0,0.42)]"
+                    data-testid="mage-wars-bound-spell-overlay"
+                    data-bound-spell-card-id={boundSpellCardId}
+                >
+                    <CardPreview
+                        previewRef={boundSpellPreviewRef}
+                        className="h-full w-full rounded-[0.1rem] object-cover object-top"
+                        title={boundSpellName}
+                    />
+                    <span className="absolute inset-x-0 bottom-0 bg-black/72 px-0.5 py-0.5 text-center text-[0.42rem] font-black leading-tight text-amber-50">
+                        {boundSpellName}
+                    </span>
+                </span>
+            ) : null}
             {role === 'target' ? (
                 <span
                     className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] border border-emerald-200/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.34),0_0_12px_rgba(16,185,129,0.42)]"
@@ -1769,6 +1826,7 @@ function ArenaAttachmentCard({
         'data-testid': 'mage-wars-attached-card',
         'data-object-id': object.id,
         'data-source-card-id': object.sourceSpellCardId,
+        'data-bound-spell-card-id': boundSpellCardId,
         'data-owner-side': ownerSide,
         'data-attachment-kind': object.kind,
         'data-attachment-role': role,
@@ -1798,8 +1856,8 @@ function ArenaAttachmentCard({
                         onInspect?.();
                     }
                 }}
-                aria-label={title}
-                title={title}
+                aria-label={boundSpellName ? `${title} · ${boundSpellName}` : title}
+                title={boundSpellName ? `${title} · ${boundSpellName}` : title}
                 style={cardSizeStyle}
                 {...dataProps}
             >
@@ -2567,6 +2625,8 @@ function ArenaStage({
     onObjectAbilitySelect,
     onMageAbilitySelect,
     onInspectCard,
+    boundSpellCast,
+    objectAbilityModeChoices,
     fxBus,
     onFxImpact,
     onFxComplete,
@@ -2617,7 +2677,9 @@ function ArenaStage({
     onGuard?: () => void;
     onObjectAbilitySelect?: (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => void;
     onMageAbilitySelect?: (playerId: PlayerId, abilityId: MageWarsMageAbilityId) => void;
-    onInspectCard?: (cardId: number, label?: string) => void;
+    onInspectCard?: (cardId: number, label?: string, inspectContext?: MageWarsInspectContext) => void;
+    boundSpellCast?: { spellCardId: number; name: string; onSelect: () => void };
+    objectAbilityModeChoices?: readonly { id: string; label: string; mode?: string; onSelect: () => void }[];
     fxBus: FxBus;
     onFxImpact?: (id: string, cue: string) => void;
     onFxComplete?: (id: string, cue: string) => void;
@@ -2803,6 +2865,10 @@ function ArenaStage({
                 placeholder={false}
             />
             <div className="absolute inset-0 bg-black/12" />
+            <div
+                className="pointer-events-none absolute inset-0 z-[8]"
+                data-testid="mage-wars-fx-behind-layer"
+            />
             {core.arena.map((zone) => {
                 const rect = ZONE_RECTS[zone.id];
                 const fieldCardIds = zone.fieldCardIds ?? [];
@@ -2905,17 +2971,27 @@ function ArenaStage({
                     }
                     return undefined;
                 };
-                const resolveCardInspect = (cardId: number, label?: string): (() => void) | undefined => {
+                const resolveCardInspect = (
+                    cardId: number,
+                    label?: string,
+                    inspectContext?: MageWarsInspectContext,
+                ): (() => void) | undefined => {
                     if (!onInspectCard) return undefined;
                     return () => onInspectCard(
                         cardId,
                         label ?? getMageWarsSpellCardName(cardId) ?? t('privateZones.spell'),
+                        inspectContext,
                     );
                 };
                 const resolveAttachmentInspect = (object: MageWarsArenaObjectState): (() => void) | undefined => (
                     resolveCardInspect(
                         object.sourceSpellCardId,
                         object.name ?? getMageWarsSpellCardName(object.sourceSpellCardId) ?? t('privateZones.spell'),
+                        object.anchoredToPlayerId
+                            ? { hostPlayerId: object.anchoredToPlayerId }
+                            : object.anchoredToObjectId
+                                ? { hostObjectId: object.anchoredToObjectId }
+                                : undefined,
                     )
                 );
                 const renderFieldObject = (
@@ -3008,7 +3084,6 @@ function ArenaStage({
                             className="relative flex shrink-0 items-center justify-center"
                             style={{
                                 ...laneStyle,
-                                ...(isBottomArenaRowZone(zone.id) ? { top: '-44%' } : {}),
                                 ...(visualZIndex == null ? {} : { zIndex: visualZIndex }),
                             }}
                             data-testid="mage-wars-zone-lane-item"
@@ -3051,6 +3126,7 @@ function ArenaStage({
                                     onInspect={resolveCardInspect(
                                         object.sourceSpellCardId,
                                         object.name ?? getMageWarsSpellCardName(object.sourceSpellCardId) ?? t('privateZones.spell'),
+                                        { hostObjectId: object.id },
                                     )}
                                     fxAnchorRef={(element) => {
                                         fxAnchors.registerAnchor({
@@ -3124,7 +3200,6 @@ function ArenaStage({
                             className="relative flex shrink-0 items-center justify-center"
                             style={{
                                 ...laneStyle,
-                                ...(isBottomArenaRowZone(zone.id) ? { top: '-44%' } : {}),
                                 zIndex: visualZIndex,
                             }}
                             data-testid="mage-wars-zone-lane-item"
@@ -3255,13 +3330,13 @@ function ArenaStage({
                                 data-owner-lane-axis="horizontal"
                             >
                                 <div className={cx(
-                                    'relative h-full min-w-0 rounded-[0.22rem] bg-rose-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.16)]',
+                                    'relative h-full min-w-0 px-1.5',
                                     ownerLaneLayoutClassName,
                                 )} data-lane-owner-side="seat-left" data-lane-player-id={leftSeatPlayerId} data-lane-stack-axis="vertical" data-lane-overflow-mode={ownerLaneOverflowMode} data-lane-max-rows={entityDensity === 'packed' ? 3 : undefined}>
                                     {renderLeftSeatLaneItems()}
                                 </div>
                                 <div className={cx(
-                                    'relative h-full min-w-0 rounded-[0.22rem] bg-sky-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.16)]',
+                                    'relative h-full min-w-0 px-1.5',
                                     ownerLaneLayoutClassName,
                                 )} data-lane-owner-side="seat-right" data-lane-player-id={rightSeatPlayerId} data-lane-stack-axis="vertical" data-lane-overflow-mode={ownerLaneOverflowMode} data-lane-max-rows={entityDensity === 'packed' ? 3 : undefined}>
                                     {rightSeatZoneOccupants.map((occupant, index) => renderZoneOccupant(
@@ -3396,6 +3471,8 @@ function ArenaStage({
                     objectId={selectedObjectId}
                     objectAbilities={selectedObjectAvailableAbilities ?? []}
                     canGuard={canGuardSelectedActor === true}
+                    boundSpellCast={boundSpellCast}
+                    modeChoices={objectAbilityModeChoices}
                     onGuard={onGuard ?? (() => undefined)}
                     onObjectAbilitySelect={onObjectAbilitySelect ?? (() => undefined)}
                     onMageAbilitySelect={onMageAbilitySelect ?? (() => undefined)}
@@ -3405,6 +3482,16 @@ function ArenaStage({
                     magePlayerId={selectedMageId}
                     mageAbility={selectedMageRestoreAbility}
                     canGuard={canGuardSelectedActor === true}
+                    modeChoices={objectAbilityModeChoices}
+                    onGuard={onGuard ?? (() => undefined)}
+                    onObjectAbilitySelect={onObjectAbilitySelect ?? (() => undefined)}
+                    onMageAbilitySelect={onMageAbilitySelect ?? (() => undefined)}
+                />
+            ) : objectAbilityModeChoices && objectAbilityModeChoices.length > 0 ? (
+                <MageWarsSelectedAbilityActionDock
+                    objectId={selectedObjectId ?? pendingObjectAbility?.objectId}
+                    canGuard={false}
+                    modeChoices={objectAbilityModeChoices}
                     onGuard={onGuard ?? (() => undefined)}
                     onObjectAbilitySelect={onObjectAbilitySelect ?? (() => undefined)}
                     onMageAbilitySelect={onMageAbilitySelect ?? (() => undefined)}
@@ -3995,6 +4082,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         : pendingObjectAbilityRequest?.kind === 'select-card'
             ? pendingObjectAbilityCardSelections
             : [];
+    const pendingObjectAbilityModeSelections = pendingObjectAbilityTargetSelections.filter((selection) => (
+        selection.value?.mode === 'heal' || selection.value?.mode === 'melee-bonus'
+    ));
+    const pendingObjectAbilityCardOverlaySelections = pendingObjectAbilityModeSelections.length > 1
+        ? []
+        : pendingObjectAbilityChoiceSelections;
     const pendingMageAbilityOpportunity = pendingMageAbility
         ? buildMageWarsMageAbilityActivationOpportunity({
             state: G,
@@ -4322,6 +4415,31 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         setPendingMageAbilityStatusTargetObjectId(null);
         return true;
     };
+    const objectAbilityModeChoices = pendingObjectAbilityModeSelections.length > 1
+        ? pendingObjectAbilityModeSelections.map((selection) => ({
+            id: selection.id,
+            label: selection.value?.mode === 'heal' ? t('actions.healMode') : t('actions.meleeBonus'),
+            mode: selection.value?.mode,
+            onSelect: () => {
+                submitObjectAbilityTargetSelection(selection);
+            },
+        }))
+        : undefined;
+    const selectedBoundSpellCast = selectedObject?.boundSpellCardId != null
+        && CAST_PHASES.has(phase as MageWarsPhase)
+        && canAct
+        && activePlayer?.id === selectedObject.ownerId
+        ? {
+            spellCardId: selectedObject.boundSpellCardId,
+            name: getMageWarsSpellCardName(selectedObject.boundSpellCardId) ?? t('privateZones.spell'),
+            onSelect: () => {
+                setSelectedSpellCardId(selectedObject.boundSpellCardId ?? null);
+                setSelectedObjectId(null);
+                setPendingObjectAbility(null);
+                setPendingObjectAbilityTargetObjectId(null);
+            },
+        }
+        : undefined;
     const submitMageAbilityTargetSelection = (
         targetSelection: ChoiceRequestDirectSelectionTarget<MageWarsMageAbilityActivationChoiceValue>,
     ): boolean => {
@@ -4910,24 +5028,59 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const getVisualObjectDamage = (object: MageWarsArenaObjectState) => (
         mageWarsEvents.damageBuffer.get(mageWarsObjectDamageKey(object.id), object.damage)
     );
-    const handleInspectSpellCard = (cardId: number, label?: string) => {
+    const mapInspectAttachments = (attachments: MageWarsArenaObjectState[]): MageWarsInspectAttachment[] => (
+        attachments.flatMap((attachment) => {
+            const previewRef = getMageWarsSpellCardPreviewRef(attachment.sourceSpellCardId);
+            if (!previewRef) return [];
+            const boundSpellName = attachment.boundSpellCardId == null
+                ? undefined
+                : getMageWarsSpellCardName(attachment.boundSpellCardId) ?? undefined;
+            return [{
+                objectId: attachment.id,
+                sourceCardId: attachment.sourceSpellCardId,
+                title: attachment.name ?? getMageWarsSpellCardName(attachment.sourceSpellCardId) ?? t('privateZones.spell'),
+                previewRef,
+                aspectRatio: getMageWarsSpellCardAspectRatio(attachment.sourceSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO,
+                boundSpellCardId: attachment.boundSpellCardId,
+                boundSpellName,
+            }];
+        })
+    );
+    const handleInspectSpellCard = (cardId: number, label?: string, inspectContext?: MageWarsInspectContext) => {
         const previewRef = getMageWarsSpellCardPreviewRef(cardId);
         if (!previewRef) return;
+        const hostAttachments = inspectContext?.hostObjectId
+            ? Object.values(core.objects).filter((attachment) => (
+                isMageWarsObjectAttachmentObject(attachment, inspectContext.hostObjectId!)
+            ))
+            : inspectContext?.hostPlayerId
+                ? Object.values(core.objects).filter((attachment) => (
+                    isMageWarsMageAttachmentObject(attachment, inspectContext.hostPlayerId!)
+                ))
+                : [];
         setMagnifiedPreview({
             previewRef,
             title: label ?? getMageWarsSpellCardName(cardId) ?? t('privateZones.spell'),
             aspectRatio: getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO,
             sourceCardId: cardId,
+            hostObjectId: inspectContext?.hostObjectId,
+            hostPlayerId: inspectContext?.hostPlayerId,
+            attachments: mapInspectAttachments(hostAttachments),
         });
     };
     const handleInspectMage = (player: MageWarsPlayerState) => {
         const previewRef = getMageWarsMagePreviewRef(player.mageId, 'card');
         if (!previewRef) return;
+        const hostAttachments = Object.values(core.objects).filter((attachment) => (
+            isMageWarsMageAttachmentObject(attachment, player.id)
+        ));
         setMagnifiedPreview({
             previewRef,
             title: getMageDisplayLabel(player),
             aspectRatio: getMageWarsMagePreviewAspectRatio(),
             mageId: player.mageId,
+            hostPlayerId: player.id,
+            attachments: mapInspectAttachments(hostAttachments),
         });
     };
     const desktopUiScale = 1;
@@ -5060,6 +5213,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         onObjectAbilitySelect={handleObjectAbilitySelect}
                         onMageAbilitySelect={handleMageAbilitySelect}
                         onInspectCard={handleInspectSpellCard}
+                        boundSpellCast={selectedBoundSpellCast}
+                        objectAbilityModeChoices={objectAbilityModeChoices}
                         fxBus={fxBus}
                         onFxImpact={mageWarsEvents.onEffectImpact}
                         onFxComplete={mageWarsEvents.onEffectComplete}
@@ -5111,7 +5266,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             <MageObjectAbilityChoiceDock
                 abilityName={pendingObjectAbilityDef?.name}
                 targetObject={pendingObjectAbilityTargetObject}
-                selections={pendingObjectAbilityChoiceSelections}
+                selections={pendingObjectAbilityCardOverlaySelections}
                 onSelect={submitObjectAbilityTargetSelection}
                 onCancel={() => {
                     setPendingObjectAbilityTargetObjectId(null);
@@ -5293,7 +5448,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         data-mage-id={magnifiedPreview.mageId}
                     >
                         <div
-                            className="flex max-h-[calc(100vh-3rem)] min-w-0 shrink-0 items-start justify-center"
+                            className="flex max-h-[calc(100vh-3rem)] min-w-0 shrink-0 items-start justify-center gap-4"
                         >
                             <div
                                 className="relative max-h-[calc(100vh-3rem)] max-w-[calc(100vw-3rem)]"
@@ -5316,6 +5471,47 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                                     alt={magnifiedPreview.title}
                                 />
                             </div>
+                            {magnifiedPreview.attachments && magnifiedPreview.attachments.length > 0 ? (
+                                <div
+                                    className="flex max-h-[calc(100vh-3rem)] flex-col gap-3 overflow-y-auto pr-1"
+                                    data-testid="mage-wars-card-magnify-attachments"
+                                >
+                                    {magnifiedPreview.attachments.map((attachment) => (
+                                        <button
+                                            key={attachment.objectId}
+                                            type="button"
+                                            className="relative w-[min(14rem,28vw)] shrink-0 overflow-hidden rounded-[0.2rem] text-left shadow-2xl"
+                                            style={{ aspectRatio: attachment.aspectRatio }}
+                                            data-testid="mage-wars-card-magnify-attachment"
+                                            data-object-id={attachment.objectId}
+                                            data-source-card-id={attachment.sourceCardId}
+                                            data-bound-spell-card-id={attachment.boundSpellCardId}
+                                            onClick={() => {
+                                                setSelectedObjectId(attachment.objectId);
+                                                setSelectedMageId(null);
+                                                setPendingObjectAbility(null);
+                                                setPendingObjectAbilityTargetObjectId(null);
+                                            }}
+                                        >
+                                            <CardPreview
+                                                previewRef={attachment.previewRef}
+                                                className="h-full w-full object-contain"
+                                                title={attachment.title}
+                                                alt={attachment.title}
+                                            />
+                                            {attachment.boundSpellName ? (
+                                                <span className="absolute inset-x-0 bottom-0 bg-black/72 px-1 py-1 text-center text-xs font-black text-amber-50">
+                                                    {attachment.boundSpellName}
+                                                </span>
+                                            ) : (
+                                                <span className="absolute inset-x-0 bottom-0 bg-black/72 px-1 py-1 text-center text-xs font-black text-amber-50">
+                                                    {attachment.title}
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 ) : null}

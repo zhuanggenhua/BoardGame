@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';import { getQidahenDriveTigerConsentSelectionForCore, QidahenDomain } from '../domain';
 
 import { QIDAHEN_COMMANDS } from '../domain/commands';
+import { syncQidahenCorePieceCollections } from '../domain/coreDerivedState';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';import type { QidahenCore } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 
-import { engineConfig } from '../game';import { random, apply, getDriveTigerConsentSelection, getRecruitSelection, getGrantPardonSelection, getMaShiTradeSelection, payGrantPardonAndChooseTarget, getWheelDispatchSelection, applyPipeline, getPromptData, factionHandCards, keepOnlyMingHomelandFallback, setRegionCavalry } from './helpers/paymentSelectionHarness';
+import { engineConfig } from '../game';import { random, stateOf, apply, getDriveTigerConsentSelection, getRecruitSelection, getGrantPardonSelection, getMaShiTradeSelection, payGrantPardonAndResolveTroop, chooseGrantPardonDestinationAndTroop, getWheelDispatchSelection, applyPipeline, getPromptData, factionHandCards, keepOnlyMingHomelandFallback, setRegionCavalry } from './helpers/paymentSelectionHarness';
 
 describe('七大恨势力行动结算', () => {
 it('确认执行征召军队后会先进入建军方式选择', () => {
@@ -1011,7 +1012,7 @@ it('赐印招安执行后会把 1 个相邻敌军转入大明控制区域', () =
         expect(previewed.turnPhase).toBe('action-window');
         expect(previewed.payment.required).toBe(3);
         expect(getGrantPardonSelection(previewed)).toBeNull();
-        const next = payGrantPardonAndChooseTarget(previewed, 'jinzhou->city-region-25');
+        const next = payGrantPardonAndResolveTroop(previewed, 'city-region-25', 'jinzhou');
 
         const sourceRegion = next.regions.find((region) => region.id === 'jinzhou');
         const destinationRegion = next.regions.find((region) => region.id === 'city-region-25');
@@ -1031,6 +1032,189 @@ it('赐印招安执行后会把 1 个相邻敌军转入大明控制区域', () =
         expect(next.selectedRegionId).toBe('city-region-25');
         expect(next.grantPardonSelection).toBeNull();
         expect(next.lastSeasonSummary?.title).toBe('赐印招安');
+    });
+
+it('赐印招安先选大明接收区，再交给该地区关联的对手选择并转移真实部队', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const selectedRegion = apply(core, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: core.factions.ming.playerId,
+            payload: { regionId: 'city-region-25' },
+        });
+        const previewed = apply(selectedRegion, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: core.factions.ming.playerId,
+            payload: { actionId: 'grant-pardon' },
+        });
+        const firstPaid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: core.factions.ming.playerId,
+            payload: { cardId: 'hand-1' },
+        });
+        const secondPaid = apply(firstPaid, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: core.factions.ming.playerId,
+            payload: { cardId: 'hand-2' },
+        });
+        const thirdPaid = apply(secondPaid, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: core.factions.ming.playerId,
+            payload: { cardId: 'hand-3' },
+        });
+        const choosingDestination = apply(thirdPaid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: core.factions.ming.playerId,
+            payload: {},
+        });
+
+        expect(getGrantPardonSelection(choosingDestination)?.choices.some((choice) => (
+            choice.targetRegionId === 'city-region-25'
+        ))).toBe(true);
+
+        const destinationSelected = apply(choosingDestination, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: core.factions.ming.playerId,
+            payload: { regionId: 'city-region-25' },
+        });
+        expect(destinationSelected.currentPlayer).toBe(core.factions.ming.playerId);
+        expect(stateOf(destinationSelected).sys.interaction?.current?.playerId).toBe(core.factions.jin.playerId);
+        expect(getGrantPardonSelection(destinationSelected)).toMatchObject({
+            targetRegionId: 'city-region-25',
+            sourceRegionId: null,
+        });
+        expect(QidahenDomain.validate(stateOf(destinationSelected), {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: core.factions.ming.playerId,
+            payload: { regionId: 'jinzhou' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+
+        const sourceToken = destinationSelected.mapTokens.find((token) => (
+            token.type === 'army'
+            && token.faction === 'jin'
+            && token.regionId === 'jinzhou'
+        ));
+        expect(sourceToken).toBeDefined();
+        expect(QidahenDomain.validate(stateOf(destinationSelected), {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: core.factions.ming.playerId,
+            payload: { regionId: 'jinzhou', tokenId: sourceToken!.id },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+        const resolved = apply(destinationSelected, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: core.factions.jin.playerId,
+            payload: { regionId: 'jinzhou', tokenId: sourceToken!.id },
+        });
+
+        expect(resolved.regions.find((region) => region.id === 'jinzhou')?.troops)
+            .toBe(core.regions.find((region) => region.id === 'jinzhou')?.troops - 1);
+        expect(resolved.regions.find((region) => region.id === 'city-region-25')?.troops)
+            .toBe(core.regions.find((region) => region.id === 'city-region-25')?.troops + 1);
+        expect(resolved.currentPlayer).toBe(core.factions.ming.playerId);
+        expect(resolved.grantPardonSelection).toBeNull();
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('锦州部队 2→1；山海关部队 2→3；后金步兵归大明');
+    });
+
+it('赐印招安接收区相邻多名对手时只补选所属方，再由该玩家亲自选兵', () => {
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], random);
+        const sourceRegionId = 'city-region-24';
+        const sourceRegion = baseCore.regions.find((region) => region.id === sourceRegionId);
+        expect(sourceRegion?.specialTroops).toHaveLength(1);
+        const mongolControlledCore = syncQidahenCorePieceCollections({
+            ...baseCore,
+            factions: {
+                ...baseCore.factions,
+                ming: { ...baseCore.factions.ming, troops: baseCore.factions.ming.troops - 1 },
+                mongol: { ...baseCore.factions.mongol, troops: baseCore.factions.mongol.troops + 1 },
+            },
+            regions: baseCore.regions.map((region) => region.id !== sourceRegionId
+                ? region
+                : {
+                    ...region,
+                    controller: 'mongol' as const,
+                    controlLabel: '蒙古',
+                    specialTroops: region.specialTroops.map((troop) => ({
+                        ...troop,
+                        faction: 'mongol' as const,
+                        originalFaction: 'mongol' as const,
+                    })),
+                }),
+        });
+        const selectedRegion = apply(mongolControlledCore, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: { regionId: 'city-region-25' },
+        });
+        const previewed = apply(selectedRegion, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: { actionId: 'grant-pardon' },
+        });
+        const paid = ['hand-1', 'hand-2', 'hand-3'].reduce((state, cardId) => apply(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: { cardId },
+        }), previewed);
+        const choosingDestination = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: {},
+        });
+        const afterDestination = apply(choosingDestination, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: { regionId: 'city-region-25' },
+        });
+
+        expect(getGrantPardonSelection(afterDestination)).toMatchObject({
+            targetRegionId: 'city-region-25',
+            opponentFactionId: null,
+        });
+        expect(new Set(getGrantPardonSelection(afterDestination)?.choices.map((choice) => choice.sourceFactionId)))
+            .toEqual(new Set(['jin', 'mongol']));
+        const ambiguousOpponentInteraction = stateOf(afterDestination).sys.interaction?.current;
+        expect(ambiguousOpponentInteraction?.playerId).toBe(mongolControlledCore.factions.ming.playerId);
+        const ambiguousOpponentOptionIds = (
+            ambiguousOpponentInteraction?.data as { options?: Array<{ id: string }> } | undefined
+        )?.options?.map((option) => option.id) ?? [];
+        expect(ambiguousOpponentOptionIds).toEqual(expect.arrayContaining(['opponent:jin', 'opponent:mongol']));
+
+        const mongolChosen = apply(afterDestination, {
+            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: { choiceId: 'opponent:mongol' },
+        });
+        expect(getGrantPardonSelection(mongolChosen)).toMatchObject({
+            targetRegionId: 'city-region-25',
+            opponentFactionId: 'mongol',
+        });
+        expect(getGrantPardonSelection(mongolChosen)?.choices.every((choice) => choice.sourceFactionId === 'mongol'))
+            .toBe(true);
+        expect(stateOf(mongolChosen).sys.interaction?.current?.playerId)
+            .toBe(mongolControlledCore.factions.mongol.playerId);
+        const mongolSourceToken = mongolChosen.mapTokens.find((token) => (
+            token.type === 'army' && token.faction === 'mongol' && token.regionId === sourceRegionId
+        ));
+        expect(mongolSourceToken).toBeDefined();
+        expect(QidahenDomain.validate(stateOf(mongolChosen), {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: mongolControlledCore.factions.ming.playerId,
+            payload: { regionId: sourceRegionId, tokenId: mongolSourceToken!.id },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+
+        const resolved = apply(mongolChosen, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: mongolControlledCore.factions.mongol.playerId,
+            payload: { regionId: sourceRegionId, tokenId: mongolSourceToken!.id },
+        });
+        expect(resolved.regions.find((region) => region.id === sourceRegionId)?.troops)
+            .toBe(mongolControlledCore.regions.find((region) => region.id === sourceRegionId)?.troops - 1);
+        expect(resolved.regions.find((region) => region.id === 'city-region-25')?.troops)
+            .toBe(mongolControlledCore.regions.find((region) => region.id === 'city-region-25')?.troops + 1);
+        expect(resolved.mapTokens.find((token) => token.pieceId === mongolSourceToken!.pieceId)).toMatchObject({
+            faction: 'ming',
+            regionId: 'city-region-25',
+        });
+        expect(resolved.grantPardonSelection).toBeNull();
     });
 
 it('赐印招安可对非围城 cityState 敌城生效，并只从城内守军扣 1', () => {
@@ -1076,7 +1260,7 @@ it('赐印招安可对非围城 cityState 敌城生效，并只从城内守军�
         expect(previewed.turnPhase).toBe('action-window');
         expect(previewed.payment.required).toBe(3);
         expect(getGrantPardonSelection(previewed)).toBeNull();
-        const next = payGrantPardonAndChooseTarget(previewed, 'jinzhou->city-region-25');
+        const next = payGrantPardonAndResolveTroop(previewed, 'city-region-25', 'jinzhou');
 
         expect(next.regions.find((region) => region.id === 'jinzhou')).toMatchObject({
             controller: 'jin',
@@ -1115,7 +1299,16 @@ it('赐印招安以逻辑区宁远作为当前选区时，会按真实敌区结�
                     controlLabel: '后金',
                     troops: 2,
                     population: 0,
-                    specialTroops: [],
+                    specialTroops: [
+                        {
+                            id: 'jin-ningyuan-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
                     cityState: null,
                     diplomacyMarkerFaction: null,
                     diplomacyMarkerSide: null,
@@ -1136,8 +1329,9 @@ it('赐印招安以逻辑区宁远作为当前选区时，会按真实敌区结�
             }
             return region;
         });
+        const pieceSyncedCore = syncQidahenCorePieceCollections(core);
 
-        const previewed = apply(core, {
+        const previewed = apply(pieceSyncedCore, {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
@@ -1145,7 +1339,7 @@ it('赐印招安以逻辑区宁远作为当前选区时，会按真实敌区结�
         expect(previewed.turnPhase).toBe('action-window');
         expect(previewed.payment.required).toBe(3);
         expect(getGrantPardonSelection(previewed)).toBeNull();
-        const next = payGrantPardonAndChooseTarget(previewed, 'city-region-24->city-region-25');
+        const next = payGrantPardonAndResolveTroop(previewed, 'city-region-25', 'city-region-24');
 
         expect(next.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
             controller: 'jin',
@@ -1254,16 +1448,10 @@ it('赐印招安会按玩家选择的接收区结算，不再自动猜目标', (
             playerId: '0',
             payload: {},
         });
-        const choiceIds = getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id) ?? [];
-        expect(choiceIds).toEqual(expect.arrayContaining([
-            'jinzhou->city-region-24',
-            'jinzhou->city-region-25',
-        ]));
-        const next = apply(choosingTarget, {
-            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-            playerId: '0',
-            payload: { choiceId: 'jinzhou->city-region-24' },
-        });
+        const choices = getGrantPardonSelection(choosingTarget)?.choices ?? [];
+        expect(choices.some((choice) => choice.sourceRegionId === 'jinzhou' && choice.targetRegionId === 'city-region-24')).toBe(true);
+        expect(choices.some((choice) => choice.sourceRegionId === 'jinzhou' && choice.targetRegionId === 'city-region-25')).toBe(true);
+        const next = chooseGrantPardonDestinationAndTroop(choosingTarget, 'city-region-24', 'jinzhou');
 
         expect(next.selectedRegionId).toBe('city-region-24');
         expect(next.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
@@ -1355,7 +1543,7 @@ it('赐印招安把部队转入己方被围城市时，会并入 cityState 而�
         expect(previewed.turnPhase).toBe('action-window');
         expect(previewed.payment.required).toBe(3);
         expect(getGrantPardonSelection(previewed)).toBeNull();
-        const next = payGrantPardonAndChooseTarget(previewed, 'jinzhou->city-region-25');
+        const next = payGrantPardonAndResolveTroop(previewed, 'city-region-25', 'jinzhou');
 
         expect(next.selectedRegionId).toBe('city-region-25');
         expect(next.regions.find((region) => region.id === 'jinzhou')).toMatchObject({
@@ -1374,7 +1562,15 @@ it('赐印招安把部队转入己方被围城市时，会并入 cityState 而�
             cityState: {
                 troops: 5,
                 population: 2,
-                specialTroops: [],
+                specialTroops: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: 'jin-jinzhou-infantry-lv2',
+                        label: '后金步兵',
+                        faction: 'ming',
+                        originalFaction: 'jin',
+                        count: 1,
+                    }),
+                ]),
             },
         });
         expect(next.factions.ming.troops).toBe(core.factions.ming.troops + 1);
@@ -1483,16 +1679,10 @@ it('赐印招安可由玩家显式选择被围城市作为接收区并并入城�
             playerId: '0',
             payload: {},
         });
-        const choiceIds = getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id) ?? [];
-        expect(choiceIds).toEqual(expect.arrayContaining([
-            'jinzhou->city-region-24',
-            'jinzhou->city-region-25',
-        ]));
-        const next = apply(choosingTarget, {
-            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-            playerId: '0',
-            payload: { choiceId: 'jinzhou->city-region-25' },
-        });
+        const choices = getGrantPardonSelection(choosingTarget)?.choices ?? [];
+        expect(choices.some((choice) => choice.sourceRegionId === 'jinzhou' && choice.targetRegionId === 'city-region-24')).toBe(true);
+        expect(choices.some((choice) => choice.sourceRegionId === 'jinzhou' && choice.targetRegionId === 'city-region-25')).toBe(true);
+        const next = chooseGrantPardonDestinationAndTroop(choosingTarget, 'city-region-25', 'jinzhou');
 
         expect(next.selectedRegionId).toBe('city-region-25');
         expect(next.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
@@ -1511,7 +1701,15 @@ it('赐印招安可由玩家显式选择被围城市作为接收区并并入城�
             cityState: {
                 troops: 5,
                 population: 2,
-                specialTroops: [],
+                specialTroops: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: 'jin-jinzhou-infantry-lv2',
+                        label: '后金步兵',
+                        faction: 'ming',
+                        originalFaction: 'jin',
+                        count: 1,
+                    }),
+                ]),
             },
         });
     });

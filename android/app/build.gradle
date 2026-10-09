@@ -11,6 +11,8 @@ archivesBaseName = archiveBaseNameOverride ?: 'easyboardgame'
 
 def packageJsonFile = rootProject.file('../package.json')
 def packageJson = packageJsonFile.exists() ? new JsonSlurper().parse(packageJsonFile) : [:]
+def productionApplicationId = "top.easyboardgame.app"
+def debugApplicationId = "${productionApplicationId}.debug"
 def packageVersionName = (packageJson.version ?: '1.0.0').toString()
 def explicitAndroidVersionCode = packageJson.androidVersionCode instanceof Number
     ? packageJson.androidVersionCode.intValue()
@@ -57,7 +59,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId "top.easyboardgame.app.debug"
+        applicationId productionApplicationId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode packageVersionCode
@@ -71,6 +73,9 @@ android {
     }
     buildTypes {
         debug {
+            applicationIdSuffix ".debug"
+            resValue "string", "package_name", debugApplicationId
+            resValue "string", "custom_url_scheme", debugApplicationId
         }
         release {
             if (hasReleaseSigning) {

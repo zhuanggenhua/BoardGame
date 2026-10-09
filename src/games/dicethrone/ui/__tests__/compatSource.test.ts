@@ -37,12 +37,18 @@ describe('DiceThrone compatibility source guards', () => {
         expect(board).not.toContain('handleCardSpotlightClose(item.id)');
     });
 
-    it('进入交互弹窗时应清理已有放大预览，避免背景关闭按钮被遮罩截获', () => {
+    it('交互提示期间应保留放大预览，并把阅读层级抬到提示之上', () => {
         const board = readUiSource('../Board.tsx');
+        const boardOverlays = readUiSource('BoardOverlays.tsx');
+        const interactionOverlay = readUiSource('InteractionOverlay.tsx');
 
         expect(board).toContain('const activeInteractionOverlayId = sysInteraction?.id ?? null');
-        expect(board).toContain('if (!activeInteractionOverlayId) return;');
-        expect(board).toContain('closeMagnify();');
+        expect(board).toContain('magnifyZIndex={activeInteractionOverlayId ? UI_Z_INDEX.modalTooltip + 1 : undefined}');
+        expect(board).toContain('allowPointerThrough: true');
+        expect(board).toContain('allowBackgroundInteraction');
+        expect(boardOverlays).toContain('zIndex={props.magnifyZIndex}');
+        expect(interactionOverlay).toContain('allowBackgroundInteraction?: boolean');
+        expect(interactionOverlay).toContain('allowBackgroundInteraction={allowBackgroundInteraction}');
     });
 
     it('CenterBoard tip 图应提供显式宽度，避免旧 WebView 丢失 aspect 类后横条化', () => {

@@ -974,9 +974,9 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 
     /* 剧本阅读器由 portal 挂到视口，不在 board-shell 的缩放树内；这里不能再用
        shell 逆缩放补偿，否则 45px 会在 Vivo 等效视口中膨胀成 135px。 */
-    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-dialog"] [data-testid="betrayal-scenario-reader-close"],
-    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-dialog"] [data-testid="betrayal-scenario-reader-prev-zone"],
-    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-dialog"] [data-testid="betrayal-scenario-reader-next-zone"] {
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-book"] [data-testid="betrayal-scenario-reader-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-book"] [data-testid="betrayal-scenario-reader-prev-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-book"] [data-testid="betrayal-scenario-reader-next-zone"] {
         box-sizing: border-box !important;
         width: 44px !important;
         height: 44px !important;
@@ -985,6 +985,23 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         max-width: 44px !important;
         max-height: 44px !important;
         padding: 0 !important;
+        font-size: 16px !important;
+    }
+
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-opening-cinematic"] [data-testid="betrayal-scenario-reader-next-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-start-scenario-opening-continue"] {
+        box-sizing: border-box !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 56px !important;
+        min-height: 56px !important;
+        min-width: 176px !important;
+        max-height: 56px !important;
+        padding: 12px 24px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.04em !important;
+        text-transform: none !important;
     }
 
     /* 剧本候选弹窗同样属于 portal；三项底部操作保持真实视口按钮尺寸，不能套 board-shell 逆缩放。 */
@@ -1001,12 +1018,13 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-dialog-close"],
     body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-dialog-close"] {
         box-sizing: border-box !important;
-        height: 56px !important;
-        min-height: 56px !important;
-        max-height: 56px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
         min-width: 0 !important;
         padding-top: 8px !important;
         padding-bottom: 8px !important;
+        font-size: 16px !important;
     }
 
     /* 移动端可读正文统一使用 16px；不要只放大某一段文字。 */
@@ -1019,6 +1037,30 @@ html[data-keyboard-visible="true"] .auth-modal-container {
            a 9-10px label after the parent transform. */
         font-size: calc(16px * var(--betrayal-hud-inverse-scale, 1)) !important;
         line-height: 1.55 !important;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"],
+    [data-game-page][data-game-id="betrayal"] .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"],
+    body:has([data-game-page][data-game-id="betrayal"]) .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"] {
+        /* 手机横屏物品栏顶约 y=259；能力入口顶约 y=198。两行 16px 锁 56px 高；加宽到约 200px 才能完整放下「特性：无特殊能力」。 */
+        height: auto !important;
+        width: calc(200px * var(--betrayal-hud-inverse-scale, 1)) !important;
+        min-width: calc(200px * var(--betrayal-hud-inverse-scale, 1)) !important;
+        max-width: calc((100vw - 40px) / var(--betrayal-hud-scale, 1)) !important;
+        min-height: calc(56px * var(--betrayal-hud-inverse-scale, 1)) !important;
+        max-height: calc(56px * var(--betrayal-hud-inverse-scale, 1)) !important;
+        line-height: 1.3 !important;
+        padding-top: calc(3px * var(--betrayal-hud-inverse-scale, 1)) !important;
+        padding-bottom: calc(3px * var(--betrayal-hud-inverse-scale, 1)) !important;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"] svg,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"] svg,
+    [data-game-page][data-game-id="betrayal"] .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"] svg,
+    body:has([data-game-page][data-game-id="betrayal"]) .betrayal-hud-portal-region [data-testid="betrayal-current-ability"][data-ability-display="compact"] svg {
+        width: calc(16px * var(--betrayal-hud-inverse-scale, 1)) !important;
+        height: calc(16px * var(--betrayal-hud-inverse-scale, 1)) !important;
     }
 
     /* HUD 结构可以缩放，玩家需要持续读取的文字保持最终视口字号。 */
@@ -1120,8 +1162,34 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     body[data-game-id="betrayal"] [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"],
     [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"],
     body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"] {
-        zoom: var(--mobile-board-shell-inverse-scale, 1);
         width: 100%;
+        min-width: 0;
+    }
+
+    /* 详情滚动框本身只随 board-shell 等比缩放；可读文字单独反向补偿，
+       避免整块内容使用 zoom 后滚动坐标失真、滚到底变成空白。 */
+    html[data-game-id="betrayal"] [data-testid="betrayal-character-detail-content"] h2,
+    body[data-game-id="betrayal"] [data-testid="betrayal-character-detail-content"] h2,
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-character-detail-content"] h2,
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-character-detail-content"] h2 {
+        font-size: calc(24px / var(--mobile-board-shell-scale, 1)) !important;
+        line-height: 1.5 !important;
+    }
+
+    html[data-game-id="betrayal"] [data-testid="betrayal-character-detail-content"] .text-sm,
+    body[data-game-id="betrayal"] [data-testid="betrayal-character-detail-content"] .text-sm,
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-character-detail-content"] .text-sm,
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-character-detail-content"] .text-sm {
+        font-size: calc(14px / var(--mobile-board-shell-scale, 1)) !important;
+        line-height: calc(24px / var(--mobile-board-shell-scale, 1)) !important;
+    }
+
+    html[data-game-id="betrayal"] [data-testid="betrayal-character-ability-summary"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-character-ability-summary"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-character-ability-summary"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-character-ability-summary"] {
+        font-size: calc(16px / var(--mobile-board-shell-scale, 1)) !important;
+        line-height: 1.45 !important;
     }
 
     html[data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-body-scroll"] p,

@@ -26,6 +26,7 @@ import { trainArtilleryStacksToLevel } from './troopTraining';
 import type {
     QidahenCore,
     QidahenFactionId,
+    QidahenSeasonSummary,
 } from './types';
 import { getQidahenWheelImmediateEffectConfig } from './wheelRules';
 
@@ -61,6 +62,7 @@ export const applyQidahenWheelImmediateEffect = (
     const targetRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === targetRegionId);
     const drawCards = Math.max(0, Math.min(config.drawCards, getFactionDrawPileCount(state, factionId)));
     const summaryLines: string[] = [];
+    let mapResult: QidahenSeasonSummary['mapResult'];
 
     const nextRegions = targetRegion
         ? refreshRuntimeRegionRules(
@@ -73,11 +75,21 @@ export const applyQidahenWheelImmediateEffect = (
                     const actionTargetRegion = materializeNonSiegedCityActionSourceRegion(region);
                     const troopDelta = Math.max(0, config.troopDelta);
                     const populationDelta = Math.max(0, config.populationDelta);
+                    const troopsBefore = actionTargetRegion.troops;
+                    const populationBefore = actionTargetRegion.population;
+                    const troopsAfter = troopsBefore + troopDelta;
+                    const populationAfter = populationBefore + populationDelta;
                     if (populationDelta > 0) {
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，人口 +${populationDelta}。`);
+                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，人口 +${populationDelta}（由 ${populationBefore} 增至 ${populationAfter}）。`);
                     }
                     if (troopDelta > 0) {
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，部队 +${troopDelta}。`);
+                        mapResult = {
+                            regionId: actionTargetRegion.id,
+                            troopDelta,
+                            beforeTroops: troopsBefore,
+                            afterTroops: troopsAfter,
+                        };
+                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，部队 +${troopDelta}（由 ${troopsBefore} 增至 ${troopsAfter}）。`);
                     }
                     const nextRegion = {
                         ...actionTargetRegion,
@@ -127,7 +139,10 @@ export const applyQidahenWheelImmediateEffect = (
         regions: nextRegions,
         drawPileCount: state.drawPileCount - drawnResult.drawnCards,
         handCards: buildDrawnHandCards(state, factionId, drawnResult.drawnCards),
-        lastSeasonSummary: buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),
+        lastSeasonSummary: {
+            ...buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),
+            ...(mapResult ? { mapResult } : {}),
+        },
         factions: {
             ...nextFactions,
             [factionId]: {

@@ -250,6 +250,7 @@ describe('qidahen tutorial flow', () => {
             'pick-action',
             'pay-cards',
             'choose-grant-pardon-target',
+            'choose-grant-pardon-source',
             'action-result',
             'finish',
         ]);
@@ -470,7 +471,14 @@ describe('qidahen tutorial flow', () => {
             .slice(0, 3)
             .map((card: any) => card.id);
         expect(paymentCardIds).toHaveLength(3);
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCardIds[0] },
+        });
+        expect((state.core as any).selectedPaymentCardIds).toEqual([paymentCardIds[0]]);
         for (const cardId of paymentCardIds) {
+            if (cardId === paymentCardIds[0]) continue;
             state = dispatch(state, {
                 type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
                 playerId: '0',
@@ -484,11 +492,46 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-target');
         expect((state.core as any).turnPhase).toBe('grant-pardon-choice');
-        expect((state.core as any).grantPardonSelection?.choices.map((choice: any) => choice.id)).toContain('jinzhou->city-region-25');
+        expect((state.core as any).grantPardonSelection?.targetRegionId).toBeNull();
+        expect((state.core as any).grantPardonSelection?.choices).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceRegionId: 'jinzhou',
+                sourceFactionId: 'jin',
+                targetRegionId: 'city-region-25',
+                sourceTokenId: expect.any(String),
+                sourcePieceId: expect.any(String),
+            }),
+        ]));
         expect(getPromptSummary(state).kind).toBe('simple-choice');
-        expect(getPromptOptionIds(state)).toContain('jinzhou->city-region-25');
+        expect(getPromptOptionIds(state)).toContain('region:city-region-25');
 
-        state = respondToPrompt(state, '0', { optionId: 'jinzhou->city-region-25' });
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '0',
+            payload: { regionId: 'city-region-25' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-source');
+        expect((state.core as any).grantPardonSelection?.targetRegionId).toBe('city-region-25');
+        expect((state.core as any).grantPardonSelection?.opponentFactionId).toBe('jin');
+        const jinPlayerId = (state.core as any).factions.jin.playerId as string;
+        expect(state.sys.interaction?.current?.playerId).toBe(jinPlayerId);
+        const sourceChoice = (state.core as any).grantPardonSelection?.choices.find((choice: any) => (
+            choice.sourceRegionId === 'jinzhou'
+            && choice.sourceFactionId === 'jin'
+            && choice.targetRegionId === 'city-region-25'
+        ));
+        expect(sourceChoice).toBeDefined();
+        expect(getPromptOptionIds(state)).toContain(sourceChoice.id);
+
+        const selectedSourceToken = (state.core as any).mapTokens.find((token: any) => (
+            token.type === 'army' && token.faction === 'jin' && token.regionId === 'jinzhou'
+        ));
+        expect(selectedSourceToken).toBeDefined();
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: jinPlayerId,
+            payload: { regionId: 'jinzhou', tokenId: selectedSourceToken.id },
+        });
         expect(state.sys.tutorial.step?.id).toBe('action-result');
         expect(((state.core as any).actionLog ?? []).map((entry: any) => entry.text).join(' | ')).toContain('赐印招安');
 
@@ -539,7 +582,19 @@ describe('qidahen tutorial flow', () => {
         expect(wheelActionPrompts.every((text) => text.includes('点击轮盘') && text.includes('高亮'))).toBe(true);
         expect(wheelActionPrompts.every((text) => !/免费走\s*1/.test(text))).toBe(true);
         expect(enTutorialText).not.toMatch(/Move 1\s+for\s+free/i);
-        expect(basic.wheelResult).toBe('征兵训练已结算。先看地图上的新增部队。');
+        expect(basic.wheelResult).toContain('正规军 2→4');
+        expect(basic.wheelResult).not.toContain('查看地图');
+        expect(basic.wheelResult).not.toContain('先看');
+        const wheelRecruitTrainResult = (zh.tutorial as any).wheelRecruitTrain.steps.result as string;
+        const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
+        expect(wheelRecruitTrainResult).toContain('宣府正规军 2→4');
+        expect(wheelRecruitTrainResult).toContain('炮兵 1→2 级');
+        expect(wheelRecruitTrainResult).not.toContain('地图新增');
+        expect(englishWheelRecruitTrainResult).toContain('Xuanfu regular troops increase from 2 to 4');
+        expect(englishWheelRecruitTrainResult).toContain('artillery increases from level 1 to 2');
+        expect(englishWheelRecruitTrainResult).not.toContain('look at the map');
+        expect(basic.chooseGrantPardonTarget).toContain('点击地图上高亮的山海关');
+        expect(basic.chooseGrantPardonSource).toContain('后金玩家亲自点击锦州');
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
         expect(manifest?.steps.find((step) => step.id === 'wheel-branch-recovery')).toEqual(expect.objectContaining({
@@ -561,8 +616,10 @@ describe('qidahen tutorial flow', () => {
         expect(basic.handActionOrder).not.toContain('弃 3');
         expect(basic.grantPardonRule).toContain('赐印招安：弃 3 张手牌');
         expect(basic.grantPardonRule).toContain('由被指定的玩家选择一支与大明控制区相邻的部队');
-        expect(basic.pickAction).toBe('现在选择赐印招安。');
-        expect(basic.actionResult).toContain('转为大明部队');
+        expect(basic.pickAction).toBe('点击右侧的“赐印招安”行动。');
+        expect(basic.actionResult).toContain('锦州部队 2→1');
+        expect(basic.actionResult).toContain('山海关部队 2→3');
+        expect(basic.actionResult).toContain('被选部队归大明');
 
         for (const text of [zhTutorialText, enTutorialText]) {
             expect(text).not.toContain('正式效果已经结算');

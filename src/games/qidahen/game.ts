@@ -16,6 +16,10 @@ import { QidahenDomain } from './domain';
 import type { QidahenCore } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
 import { createQidahenInteractionSystem } from './domain/interactionSystem';
+import {
+    getInteractionSourceId,
+    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
+} from './domain/interactionSources';
 import { QIDAHEN_MAX_PLAYERS, QIDAHEN_MIN_PLAYERS } from './roomSetup';
 
 const ACTION_ALLOWLIST = Object.values(QIDAHEN_COMMANDS);
@@ -23,6 +27,16 @@ const ACTION_ALLOWLIST = Object.values(QIDAHEN_COMMANDS);
 const findFactionPlayerId = (core: QidahenCore, factionId?: string): string | undefined => {
     if (!factionId || !(factionId in core.factions)) return undefined;
     return core.factions[factionId as keyof QidahenCore['factions']]?.playerId;
+};
+
+const resolveQidahenLocalRuntimeControlledPlayerId = (args: {
+    state: MatchState<unknown>;
+    fallbackPlayerId: string | null;
+}): string | null => {
+    const interaction = args.state.sys?.interaction?.current;
+    return getInteractionSourceId(interaction) === QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID
+        ? interaction.playerId
+        : args.fallbackPlayerId;
 };
 
 const resolveQidahenOnlineAiCurrentPlayerId = (args: {
@@ -187,6 +201,7 @@ export const engineConfig = {
         disableFallbackAdvancePhase: true,
         resolveCurrentPlayerId: resolveQidahenOnlineAiCurrentPlayerId,
     },
+    resolveLocalRuntimeControlledPlayerId: resolveQidahenLocalRuntimeControlledPlayerId,
 };
 
 registerGameAiRuntime(qidahenAiRuntime);

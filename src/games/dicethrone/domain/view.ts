@@ -4,6 +4,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
+import { isSpectatorPlayerId } from '../../../engine/playerView';
 import type { DiceThroneCore, HeroState, AbilityCard } from './types';
 import { areTeammates } from './rules';
 
@@ -57,7 +58,7 @@ export const playerView = (
     state: DiceThroneCore,
     viewingPlayerId: PlayerId
 ): Partial<DiceThroneCore> => {
-    const isSpectator = viewingPlayerId === '__spectator__';
+    const isSpectator = isSpectatorPlayerId(viewingPlayerId);
     const filteredPlayers: Record<PlayerId, HeroState> = {};
 
     for (const [playerId, player] of Object.entries(state.players)) {

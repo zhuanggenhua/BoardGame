@@ -40,7 +40,6 @@ type BetrayalReferenceOverlaySurfaceProps = {
   referenceScenarioTurnSnapshot: ScenarioBookTurnSnapshot | null;
   referenceScenarioLeftPage: ScenarioReaderPage | null;
   referenceScenarioRightPage: ScenarioReaderPage | null;
-  showScenarioReaderTitle?: boolean;
   canTurnReferenceScenarioBack: boolean;
   canTurnReferenceScenarioForward: boolean;
   onClose: () => void;
@@ -67,7 +66,6 @@ export function BetrayalReferenceOverlaySurface({
   referenceScenarioTurnSnapshot,
   referenceScenarioLeftPage,
   referenceScenarioRightPage,
-  showScenarioReaderTitle = false,
   canTurnReferenceScenarioBack,
   canTurnReferenceScenarioForward,
   onClose,
@@ -217,7 +215,7 @@ export function BetrayalReferenceOverlaySurface({
                           data-testid="betrayal-scenario-reader-next-zone"
                           onClick={() => onReferenceScenarioTurn("forward")}
                           disabled={!canTurnReferenceScenarioForward}
-                          className="inline-flex min-h-[56px] min-w-[176px] items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 py-3 text-[16px] font-black uppercase tracking-[0.08em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)] disabled:opacity-35"
+                          className="inline-flex min-h-[56px] min-w-[176px] items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 py-3 text-[16px] font-semibold tracking-[0.04em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)] disabled:opacity-35"
                         >
                           {t("board.scenario.readerEnterBook")}
                           <ChevronRight size={16} aria-hidden="true" />
@@ -260,20 +258,8 @@ export function BetrayalReferenceOverlaySurface({
                   </span>
                   </div>
                   <div
-                    className={`absolute inset-2 grid grid-cols-2 ${
-                      "gap-3"
-                    }`}
+                    className="absolute inset-2 grid grid-cols-2 gap-3"
                   >
-                    {showScenarioReaderTitle ? (
-                      <div className="pointer-events-none absolute inset-x-3 top-2 z-30 flex items-center justify-center">
-                        <span
-                          data-testid="betrayal-scenario-reader-title"
-                          className="rounded-[4px] border border-[rgba(123,99,61,0.46)] bg-[rgba(245,226,173,0.9)] px-3 py-1 text-center text-[14px] font-black tracking-[0.08em] text-[#3b2211] shadow-[0_4px_12px_rgba(54,31,12,0.18)] sm:text-[18px]"
-                        >
-                          {activeHauntTitle}
-                        </span>
-                      </div>
-                    ) : null}
                     <ScenarioBookTurnSheet
                       direction={referenceScenarioTurnDirection}
                       fromPages={
@@ -362,7 +348,7 @@ export function BetrayalReferenceOverlaySurface({
                                             {t(section.labelKey)}
                                           </h2>
                                           <p
-                                            className="mt-3 text-[14px] leading-[1.6] whitespace-pre-line font-medium text-[#4e321c]"
+                                            className="mt-3 text-[16px] leading-[1.6] whitespace-pre-line font-medium text-[#4e321c]"
                                           >
                                             {t(section.bodyKey)}
                                           </p>

@@ -139,8 +139,8 @@ describe('OnlineManualSetupSelectionBridge', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
-        expect(screen.getByTestId('player-id').textContent).toBe('0');
-        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+        expect(screen.getByTestId('player-id').textContent).toBe('1');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('hidden');
         expect(screen.getByTestId('ai-faction').textContent).toBe('unselected');
 
         fireEvent.click(screen.getByTestId('select-faction'));
@@ -162,8 +162,8 @@ describe('OnlineManualSetupSelectionBridge', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
-        expect(screen.getByTestId('player-id').textContent).toBe('0');
-        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+        expect(screen.getByTestId('player-id').textContent).toBe('1');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('hidden');
 
         fireEvent.click(screen.getByTestId('select-character'));
 
@@ -223,6 +223,16 @@ describe('OnlineManualSetupSelectionBridge', () => {
         confirmedCore.readyPlayers['1'] = true;
         confirmedCore.readyPlayers['2'] = false;
 
+        const confirmedAllAiState = buildSetupState();
+        const confirmedAllCore = confirmedAllAiState.core as {
+            selectedFactions: Record<string, string>;
+            readyPlayers: Record<string, boolean>;
+        };
+        confirmedAllCore.selectedFactions['1'] = 'trickster';
+        confirmedAllCore.selectedFactions['2'] = 'necromancer';
+        confirmedAllCore.readyPlayers['1'] = true;
+        confirmedAllCore.readyPlayers['2'] = true;
+
         const requestManualSetupSelection = vi.fn(() => true);
         const { rerenderWithState } = renderBridge({
             state: initialState,
@@ -246,8 +256,8 @@ describe('OnlineManualSetupSelectionBridge', () => {
         }, expect.any(Function));
 
         rerenderWithState(confirmedFirstAiState);
-        expect(screen.getByTestId('player-id').textContent).toBe('0');
-        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+        expect(screen.getByTestId('player-id').textContent).toBe('2');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('hidden');
 
         fireEvent.click(screen.getByTestId('select-second-faction'));
         expect(screen.getByTestId('ai2-faction').textContent).toBe('necromancer');
@@ -261,6 +271,10 @@ describe('OnlineManualSetupSelectionBridge', () => {
             selectionId: 'necromancer',
         }, expect.any(Function));
         expect(requestManualSetupSelection).toHaveBeenCalledTimes(2);
+
+        rerenderWithState(confirmedAllAiState);
+        expect(screen.getByTestId('player-id').textContent).toBe('0');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
     });
 
     it('SmashUp 已有确认按钮的 select-faction 仍由确认动作立即提交', () => {

@@ -142,6 +142,8 @@ export interface InteractionOverlayProps {
     statusIconAtlas?: StatusAtlases | null;
     /** 语言 */
     locale?: string;
+    /** 保留提示确认能力，同时允许查看/操作背景棋盘。 */
+    allowBackgroundInteraction?: boolean;
 }
 
 export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
@@ -159,6 +161,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     onCancel,
     statusIconAtlas,
     locale,
+    allowBackgroundInteraction = false,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     const interactionType = interaction.type;
@@ -520,6 +523,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             }
             width="xl"
             closeOnBackdrop={false} // Force interaction
+            allowBackgroundInteraction={allowBackgroundInteraction}
             footer={
                 <>
                     <GameButton

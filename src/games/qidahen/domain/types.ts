@@ -561,12 +561,16 @@ export interface QidahenMaShiTradeSelection {
 
 export interface QidahenGrantPardonChoice {
     id: string;
+    sourceFactionId: QidahenFactionId;
+    sourceFactionName: string;
+    sourceTokenId?: string;
+    sourcePieceId?: string;
+    sourceTroopIndex?: number;
+    sourceLocation?: 'field' | 'city';
     sourceRegionId: string;
     sourceRegionName: string;
     targetRegionId: string;
     targetRegionName: string;
-    targetFactionId: QidahenFactionId | 'neutral';
-    targetFactionName: string;
     label: string;
     detail: string;
 }
@@ -577,7 +581,11 @@ export interface QidahenGrantPardonSelection {
     executionSource?: 'tribute-edict';
     executorFactionId?: QidahenFactionId;
     preferredSourceRegionId: string | null;
+    targetRegionId: string | null;
+    opponentFactionId: QidahenFactionId | null;
     sourceRegionId: string | null;
+    sourceTokenId?: string | null;
+    sourceLocation?: 'field' | 'city' | null;
     sourceRegionName: string | null;
     displayAnchorRegionId: string | null;
     displayAnchorRegionName: string | null;
@@ -737,6 +745,12 @@ export interface QidahenSeasonSummary {
     id: string;
     title: string;
     lines: string[];
+    mapResult?: {
+        regionId: string;
+        troopDelta: number;
+        beforeTroops: number;
+        afterTroops: number;
+    };
 }
 
 export interface QidahenActiveEventCard {
@@ -850,6 +864,7 @@ export interface QidahenMapToken {
     type: 'army' | 'control' | 'marker';
     faction: QidahenFactionId | 'neutral';
     regionId?: string;
+    location?: 'field' | 'city' | 'siege-attacker';
     troopIndex?: number;
     troopKind?: QidahenTroopKind;
     pieceId?: string;
@@ -997,6 +1012,7 @@ export interface QidahenCore {
 export interface SelectRegionCommand extends Command<'SELECT_REGION'> {
     payload: {
         regionId: string;
+        tokenId?: string;
     };
 }
 
@@ -1285,6 +1301,7 @@ export type QidahenCommand =
 export interface RegionSelectedEvent extends GameEvent<'REGION_SELECTED'> {
     payload: {
         regionId: string;
+        tokenId?: string;
         playerId: PlayerId;
         qidahenDiplomacySelection?: QidahenDiplomacySelection | null;
         qidahenInternalDispatchSelection?: QidahenInternalDispatchSelection | null;

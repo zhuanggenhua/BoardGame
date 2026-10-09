@@ -93,6 +93,10 @@ function validateActionMinionTargetProtection(
     baseIndex: number,
     targetMinion: SmashUpCore['bases'][number]['minions'][number],
 ): ValidationResult {
+    // 入侵的直点只用于进入交互；具体随从由后续选项过滤并验证。
+    if (defId === 'alien_invasion') {
+        return { valid: true };
+    }
     const blockInfo = getMinionTargetBlockInfo(core, targetMinion, baseIndex, {
         sourcePlayerId: playerId,
         actionProtectionSourcePlayerId: playerId,

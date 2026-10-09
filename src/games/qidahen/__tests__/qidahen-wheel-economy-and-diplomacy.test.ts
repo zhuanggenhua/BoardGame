@@ -73,6 +73,12 @@ it('轮盘进入征兵训练时会给己方区域增加 2 部队', () => {
         expect(next.factions.ming.troops).toBe(20);
         expect(next.lastSeasonSummary?.title).toBe('轮盘征兵/训练');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('部队 +2');
+        expect(next.lastSeasonSummary?.mapResult).toEqual({
+            regionId: 'song-jin',
+            troopDelta: 2,
+            beforeTroops: 2,
+            afterTroops: 4,
+        });
     });
 
 it('轮盘征兵训练以逻辑区宁远为当前选区时，会按真实运行时区域结算并同步 selectedRegionId', () => {

@@ -77,7 +77,9 @@
     "magnifyButton": "View",
     "magnifyCardAria": "View {{card}}",
     "handInteraction": {
-      "actionPaymentStatus": "Discard {{cost}} card(s) · Selected {{selected}}",
+      "actionPaymentStatus": "Payment: {{selected}} / {{cost}} card(s)",
+      "actionPaymentSelectedCards": "Selected cards: {{cards}}",
+      "selectedSeal": "Selected",
       "actionPaymentHint": "Click a hand card at the bottom to discard it. Click a selected card again to remove it.",
       "confirmExecute": "Confirm action",
       "cancelAction": "Cancel this action",
@@ -119,7 +121,9 @@
       "sharedPrintedRegion": "Shared print",
       "selectionGuideSource": "Start",
       "selectionContinueHint": "Choose target",
-      "clickableRegionSummary": "Targets: {{summary}}"
+      "clickableRegionSummary": "Targets: {{summary}}",
+      "regionTroopChange": "{{regionName}} troops: {{before}} → {{after}}",
+      "grantPardonSourceSelected": "Source selected"
     },
     "wheel": {
       "aria": "Qidahen action wheel",
@@ -161,7 +165,18 @@
       "mapDirectClickHint": "Click a target to continue.",
       "currentClickableRegions": "Target regions",
       "grantPardon": {
-        "mapFirstHint": "Click the receiving region on the map to complete Grant Pardon; the list below is only a fallback. {{summary}}",
+        "targetRegionHint": "Click a highlighted region controlled by {{factionName}} as the receiving region.",
+        "opponentHint": "Troops adjacent to this region belong to different opponents. Choose one faction; that player then chooses a troop.",
+        "troopHint": "{{factionName}} player: click one highlighted troop on the map; it moves directly to {{regionName}}.",
+        "mapTargetTitle": "Choose receiving region",
+        "mapTargetHint": "Click a highlighted region controlled by {{factionName}}",
+        "mapTargetBadge": "Receiving region",
+        "mapOpponentTitle": "Choose an opponent",
+        "mapOpponentHint": "Troops adjacent to this region belong to different opponents. Choose one faction; that player then chooses a troop.",
+        "mapOpponentBadge": "Choose opponent",
+        "mapTroopTitle": "Choose a troop",
+        "mapTroopHint": "{{factionName}} player: click a highlighted troop; it moves directly to {{regionName}}",
+        "mapTroopBadge": "Choose troop",
         "fallbackListLabel": "Fallback choices"
       },
       "wheelExecutePrompt": "Choose a wheel segment",
@@ -376,13 +391,14 @@
         "wheelFirst": "The opening hand-limit check has resolved automatically. Ming has 3 cards and a 15-card limit, so no discard is required. Enter the wheel action.",
         "wheelRule": "The shared wheel can move 1, 2, or 3 spaces. All three moves are legal, and each produces a different wheel resolution.",
         "wheelMove": "Click the highlighted Recruit / Train sector on the wheel.",
-        "wheelResult": "Recruit / Train has resolved. Read the new troops on the map.",
+        "wheelResult": "Recruit / Train is complete: regular troops in the selected region increase from 2 to 4.",
         "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. The rules set no fixed order among these four actions; the hand action and wheel action also have no fixed order.",
         "grantPardonRule": "Grant Pardon: discard 3 hand cards and name 1 opponent. That player chooses a troop adjacent to a Ming-controlled region, moves it into the neighboring Ming-controlled region, and converts it to Ming.",
-        "pickAction": "Now choose Grant Pardon.",
-        "payCards": "Now select 3 hand cards and confirm payment.",
-        "chooseGrantPardonTarget": "Click the highlighted Shanhaiguan receiving region to move the Jinzhou troop into the adjacent Ming-controlled region.",
-        "actionResult": "Grant Pardon is complete: the Jinzhou troop is now Ming.",
+        "pickAction": "Click the Grant Pardon action on the right.",
+        "payCards": "Click 3 hand cards in turn. Each selected card lifts and shows a Selected mark; confirm when the payment panel reaches 3 / 3.",
+        "chooseGrantPardonTarget": "Click the highlighted Shanhaiguan region on the map as the receiving region.",
+        "chooseGrantPardonSource": "Later Jin player: click one highlighted Jinzhou troop. It immediately moves into Shanhaiguan and becomes a Ming troop.",
+        "actionResult": "Grant Pardon is complete: Jinzhou troops 2→1, Shanhaiguan troops 2→3; the selected troop now belongs to Ming.",
         "finish": "This part of the first turn is complete."
       }
     },
@@ -504,7 +520,7 @@
       "steps": {
         "overview": "Enter Wheel Recruit / Train resolution.",
         "chooseMove": "Click the highlighted Recruit / Train sector on the wheel.",
-        "result": "Recruit / Train is complete: 2 new level-2 regular troops appear, and existing artillery trains to the current armament level.",
+        "result": "Recruit / Train is complete: Xuanfu regular troops increase from 2 to 4, and artillery increases from level 1 to 2.",
         "finish": "Recruit / Train is complete."
       }
     },

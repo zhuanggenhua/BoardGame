@@ -11,6 +11,7 @@
       "severity": "严重度",
       "reporterType": "提交来源",
       "source": "系统来源",
+      "replayability": "现场回放",
       "sort": "时间排序",
       "priority": "排序优先级",
       "newest": "最新优先",
@@ -51,6 +52,14 @@
       "unsatAutoSkip": "系统自动跳过（无解交互）",
       "unknown": "未知",
       "configReview": "配置审查表"
+    },
+    "replayability": {
+      "all": "全部",
+      "full": "完整",
+      "partial": "部分",
+      "unreplayable": "不可回放",
+      "unknown": "未知",
+      "current": "现场{{value}}"
     },
     "severity": {
       "critical": "严重",
@@ -140,6 +149,18 @@
       "title": "状态快照（结构化数据）",
       "copy": "复制结构化数据",
       "copied": "已复制"
+    },
+    "diagnosticPacket": {
+      "title": "反馈现场包",
+      "replayability": "回放等级",
+      "captureId": "采集编号",
+      "chainId": "故障链",
+      "matchId": "对局",
+      "roomId": "房间",
+      "requestId": "请求",
+      "missingFields": "缺失字段",
+      "notProvided": "未提供",
+      "none": "无"
     },
     "time": {
       "justNow": "刚刚",

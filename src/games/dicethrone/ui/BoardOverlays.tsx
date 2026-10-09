@@ -31,6 +31,8 @@ const boardOverlaysLogger = createScopedLogger('DT_BOARD_OVERLAYS');
 export interface BoardOverlaysProps {
     // 放大预览
     isMagnifyOpen: boolean;
+    /** 交互提示期间的阅读层级；未传时使用通用放大层级。 */
+    magnifyZIndex?: number;
     magnifiedImage: string | null;
     magnifiedCard: AbilityCard | null;
     magnifiedCards: AbilityCard[];
@@ -113,6 +115,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         key="magnify"
                         isOpen={props.isMagnifyOpen}
                         onClose={props.onCloseMagnify}
+                        zIndex={props.magnifyZIndex}
                         containerClassName={magnifyContainerClassName}
                         closeLabel={t('actions.closePreview')}
                         overlayTestId="board-magnify-overlay"

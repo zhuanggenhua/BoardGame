@@ -15,6 +15,9 @@ import {
 import { createStartedFirstScenarioCore } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 
 const EVIDENCE_DIR = "evidence/betrayal-basic-flow";
+const FINAL_REVIEW_EVIDENCE_DIR = "evidence/betrayal-mobile-acceptance-20261008";
+const MOBILE_RUNTIME_SCREENSHOT_FINAL = `${FINAL_REVIEW_EVIDENCE_DIR}/01-手机-主牌桌能力摘要与物品栏.png`;
+const MOBILE_RUNTIME_ABILITY_DETAILS_SCREENSHOT = `${FINAL_REVIEW_EVIDENCE_DIR}/02-手机-点击放大查看完整能力说明.png`;
 const CHARACTER_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-基本流程-角色确认前.png`;
 const CHARACTER_DETAIL_SCROLLED_SCREENSHOT = `${EVIDENCE_DIR}/01b-山屋惊魂-角色详情滚动后看到特性.png`;
 const SCENARIO_SELECT_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/02a-山屋惊魂-基本流程-剧本弹窗入口.png`;
@@ -31,6 +34,7 @@ const DIRECT_MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/07c-山屋惊魂-运行时-
 const DIRECT_MOVE_AFTER_FIRST_ROOM_SCREENSHOT = `${EVIDENCE_DIR}/07d-山屋惊魂-运行时-移动后仍可继续选择大阶梯.png`;
 const DIRECT_MOVE_CHAIN_SCREENSHOT = `${EVIDENCE_DIR}/07e-山屋惊魂-运行时-不取消连续移动完成.png`;
 const MOBILE_CHARACTER_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-移动端横屏-角色竖向滚动选中与能力提示.jpg`;
+const MOBILE_CHARACTER_DETAIL_SCROLLED_SCREENSHOT = `${EVIDENCE_DIR}/08b-山屋惊魂-移动端横屏-角色详情滚动后能力说明.jpg`;
 const MOBILE_SCENARIO_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/09a-山屋惊魂-移动端横屏-剧本弹窗入口.png`;
 const MOBILE_SCENARIO_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/09b-山屋惊魂-移动端横屏-书本式剧本阅读首页.png`;
 const MOBILE_SCENARIO_DETAIL_TURNING_SCREENSHOT = `${EVIDENCE_DIR}/09c-山屋惊魂-移动端横屏-书本式剧本翻页中.png`;
@@ -631,6 +635,40 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       page.getByTestId("betrayal-character-ability-summary"),
     ).toContainText("无特殊能力");
+    const mobileAbilitySummaryTypography = await page
+      .getByTestId("betrayal-character-ability-summary")
+      .evaluate((element) => {
+        let visualScale = 1;
+        let current: HTMLElement | null = element as HTMLElement;
+        while (current) {
+          const style = window.getComputedStyle(current);
+          const zoom = Number.parseFloat(style.zoom);
+          if (Number.isFinite(zoom) && zoom > 0) {
+            visualScale *= zoom;
+          }
+          const matrix = style.transform.match(/^matrix\(([^)]+)\)$/);
+          if (matrix) {
+            const values = matrix[1].split(",").map(Number);
+            const scaleX = Math.hypot(values[0] ?? 1, values[1] ?? 0);
+            if (Number.isFinite(scaleX) && scaleX > 0) {
+              visualScale *= scaleX;
+            }
+          }
+          current = current.parentElement;
+        }
+        const fontSize = Number.parseFloat(
+          window.getComputedStyle(element).fontSize,
+        );
+        return {
+          fontSize,
+          visualScale,
+          effectiveFontSize: fontSize * visualScale,
+        };
+      });
+    expect(
+      Math.round(mobileAbilitySummaryTypography.effectiveFontSize * 100) / 100,
+      "移动端角色能力摘要最终屏幕字号不得低于16px",
+    ).toBeGreaterThanOrEqual(16);
     await expect(
       page.getByTestId("betrayal-character-ability-summary"),
     ).not.toContainText(/Bold|Attack/i);
@@ -641,6 +679,19 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-character-ability-tooltip"),
     ).toHaveCount(0);
     await saveScreenshot(page, MOBILE_CHARACTER_SCREENSHOT);
+    const mobileCharacterDetailScroll = page.getByTestId(
+      "betrayal-character-detail-scroll",
+    );
+    await mobileCharacterDetailScroll.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await expect
+      .poll(async () => mobileCharacterDetailScroll.evaluate((node) => node.scrollTop))
+      .toBeGreaterThan(0);
+    await expect(
+      page.getByTestId("betrayal-character-ability-summary"),
+    ).toBeInViewport();
+    await saveScreenshot(page, MOBILE_CHARACTER_DETAIL_SCROLLED_SCREENSHOT);
 
     await page.getByTestId("betrayal-character-confirm").click();
     await expect(page.getByTestId("betrayal-character-confirm")).toHaveText(
@@ -769,6 +820,9 @@ test.describe("山屋惊魂基本流程", () => {
       mobileScenarioReaderDialog.getByTestId(
         "betrayal-scenario-book-section-setup",
       ),
+      ).toHaveCount(0);
+    await expect(
+      mobileScenarioReaderDialog.getByTestId("betrayal-scenario-reader-title"),
     ).toHaveCount(0);
     await expect(
       mobileScenarioReaderDialog.getByTestId(
@@ -961,13 +1015,48 @@ test.describe("山屋惊魂基本流程", () => {
 
     await expect(page.getByTestId("betrayal-board")).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId("betrayal-room-grid")).toBeVisible();
-    await expect(page.getByTestId("betrayal-current-ability")).toBeVisible();
+    const mobileAbilitySummary = page.getByTestId("betrayal-current-ability");
+    await expect(mobileAbilitySummary).toBeVisible();
+    await expect(mobileAbilitySummary).toHaveAttribute(
+      "data-ability-display",
+      "compact",
+    );
     expect(
-      await page.getByTestId("betrayal-current-ability").evaluate((element) =>
+      await mobileAbilitySummary.evaluate((element) =>
         Number.parseFloat(window.getComputedStyle(element).fontSize),
       ),
-      "关闭剧本回主桌面后能力描述在移动端不得低于16px",
+      "移动端能力摘要必须保持16px可读",
     ).toBeGreaterThanOrEqual(16);
+    const abilityBox = await mobileAbilitySummary.boundingBox();
+    const inventoryBox = await page
+      .getByTestId("betrayal-inventory-section")
+      .boundingBox();
+    expect(abilityBox, "移动端能力摘要必须有真实布局盒").not.toBeNull();
+    expect(inventoryBox, "移动端物品栏必须有真实布局盒").not.toBeNull();
+    expect(
+      abilityBox!.y + abilityBox!.height,
+      "移动端能力摘要不得遮挡物品栏",
+    ).toBeLessThanOrEqual(inventoryBox!.y + 1);
+    await mobileAbilitySummary.click();
+    const mobileAbilityDialog = page.getByTestId(
+      "betrayal-current-ability-dialog",
+    );
+    await expect(mobileAbilityDialog).toBeVisible();
+    await expect(
+      mobileAbilityDialog.getByTestId("betrayal-current-ability-dialog-body"),
+    ).toContainText("基础版角色背景不改变规则");
+    expect(
+      await mobileAbilityDialog
+        .getByTestId("betrayal-current-ability-dialog-body")
+        .evaluate((element) =>
+          Number.parseFloat(window.getComputedStyle(element).fontSize),
+        ),
+      "移动端能力放大层正文必须保持16px可读",
+    ).toBeGreaterThanOrEqual(16);
+    await mobileAbilityDialog
+      .getByTestId("betrayal-current-ability-dialog-close")
+      .click();
+    await expect(mobileAbilityDialog).toBeHidden();
     await expect(page.getByTestId("fab-menu")).toHaveAttribute(
       "data-fab-position",
       "bottom-right",
@@ -981,6 +1070,14 @@ test.describe("山屋惊魂基本流程", () => {
     expect(mobileFabBox!.x + mobileFabBox!.width).toBeGreaterThan(796 - 96);
     expect(mobileFabBox!.y + mobileFabBox!.height).toBeGreaterThan(360 - 96);
     await saveScreenshot(page, MOBILE_RUNTIME_SCREENSHOT);
+    await saveScreenshot(page, MOBILE_RUNTIME_SCREENSHOT_FINAL);
+    await mobileAbilitySummary.click();
+    await expect(mobileAbilityDialog).toBeVisible();
+    await saveScreenshot(page, MOBILE_RUNTIME_ABILITY_DETAILS_SCREENSHOT);
+    await mobileAbilityDialog
+      .getByTestId("betrayal-current-ability-dialog-close")
+      .click();
+    await expect(mobileAbilityDialog).toBeHidden();
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-basic-flow-mobile-character-select", diagnostics },

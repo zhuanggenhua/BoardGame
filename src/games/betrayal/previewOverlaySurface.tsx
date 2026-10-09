@@ -118,7 +118,7 @@ export function BetrayalPreviewOverlaySurface({
       <MagnifyOverlay
         isOpen={Boolean(previewInventoryCard)}
         onClose={onCloseInventoryPreview}
-        closeOnBackdrop={false}
+        closeOnBackdrop
         overlayTestId="betrayal-inventory-preview-overlay"
         overlayClassName="bg-[rgba(3,6,5,0.74)] p-4 md:p-6"
         containerClassName="rounded-none overflow-visible bg-transparent"
@@ -126,14 +126,19 @@ export function BetrayalPreviewOverlaySurface({
       >
         {previewInventoryCard ? (
           <div
-            className="pointer-events-auto relative cursor-zoom-out"
+            className="pointer-events-auto relative max-h-[min(92vh,calc(100dvh-2rem))] cursor-zoom-out overflow-y-auto overscroll-contain"
+            data-testid="betrayal-inventory-preview-scroll"
             onClick={onCloseInventoryPreview}
             style={{
               width: inventoryPreviewFrameWidth,
-              aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
             }}
           >
-            <div className="pointer-events-none">
+            <div
+              className="pointer-events-none"
+              style={{
+                aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
+              }}
+            >
               <BetrayalInventoryCardSurface
                 item={previewInventoryCard}
                 layout="preview"

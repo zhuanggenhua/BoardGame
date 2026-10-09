@@ -5,7 +5,7 @@ import { getQidahenDirectedPassageRule } from '../domain/movement';import { QIDA
 import { isQidahenHanRuntimeRegionId, isQidahenJurchenRuntimeRegionId, isQidahenMongolRuntimeRegionId } from '../domain/regionEthnicity';
 
 import { getEffectiveHomelandController } from '../domain/regionRuleSemantics';import type { QidahenCore } from '../domain/types';
-import { random, stateOf, apply, getDriveTigerConsentSelection, getGrantPardonSelection, setFactionCharactersInPlay, factionHandCards, setRegionCavalry } from './helpers/paymentSelectionHarness';
+import { random, stateOf, apply, getDriveTigerConsentSelection, getGrantPardonSelection, chooseGrantPardonDestinationAndTroop, setFactionCharactersInPlay, factionHandCards, setRegionCavalry } from './helpers/paymentSelectionHarness';
 
 describe('七大恨事件牌结算合同', () => {
 it('反间计会进入人物目标选择，并排除努尔哈赤、林丹汗和阿巴凯', () => {
@@ -847,13 +847,15 @@ it('封贡敕书指定大明执行赐印招安时，会先进入目标选择并�
             executionSource: 'tribute-edict',
             selectedChoiceId: null,
         });
-        expect(getGrantPardonSelection(choosingGrantPardonTarget)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
+        expect(getGrantPardonSelection(choosingGrantPardonTarget)?.choices.some((choice) => (
+            choice.sourceRegionId === 'jinzhou' && choice.targetRegionId === 'city-region-25'
+        ))).toBe(true);
 
-        const resolved = apply(choosingGrantPardonTarget, {
-            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-            playerId: '0',
-            payload: { choiceId: 'jinzhou->city-region-25' },
-        });
+        const resolved = chooseGrantPardonDestinationAndTroop(
+            choosingGrantPardonTarget,
+            'city-region-25',
+            'jinzhou',
+        );
 
         expect(resolved.turnPhase).toBe('action-window');
         expect(resolved.grantPardonSelection).toBeNull();
@@ -874,7 +876,8 @@ it('封贡敕书指定大明执行赐印招安时，会先进入目标选择并�
         expect(resolved.selectedRegionId).toBe('city-region-25');
         expect(resolved.lastSeasonSummary?.title).toBe('封贡敕书');
         expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('大明选择执行赐印招安');
-        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('赐印招安：锦州 有 1 个部队被招安，转入 山海关 并成为大明部队');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('锦州部队 2→1');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('山海关部队 2→3');
     });
 
 it('封贡敕书指定蒙古执行赐印招安时，会进入目标选择并把部队转为蒙古部队', () => {
@@ -956,13 +959,15 @@ it('封贡敕书指定蒙古执行赐印招安时，会进入目标选择并把�
             executorFactionId: 'mongol',
             selectedChoiceId: null,
         });
-        expect(getGrantPardonSelection(resolved)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
+        expect(getGrantPardonSelection(resolved)?.choices.some((choice) => (
+            choice.sourceRegionId === 'jinzhou' && choice.targetRegionId === 'city-region-25'
+        ))).toBe(true);
 
-        const granted = apply(resolved, {
-            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-            playerId: '1',
-            payload: { choiceId: 'jinzhou->city-region-25' },
-        });
+        const granted = chooseGrantPardonDestinationAndTroop(
+            resolved,
+            'city-region-25',
+            'jinzhou',
+        );
 
         expect(granted.turnPhase).toBe('action-window');
         expect(granted.grantPardonSelection).toBeNull();
@@ -984,7 +989,7 @@ it('封贡敕书指定蒙古执行赐印招安时，会进入目标选择并把�
         });
         expect(granted.lastSeasonSummary?.title).toBe('封贡敕书');
         expect(granted.lastSeasonSummary?.lines.join(' ')).toContain('蒙古选择执行赐印招安');
-        expect(granted.lastSeasonSummary?.lines.join(' ')).toContain('成为蒙古部队');
+        expect(granted.lastSeasonSummary?.lines.join(' ')).toContain('后金步兵归蒙古');
     });
 
 it('封贡敕书指定蒙古执行驱虎吞狼时，会由蒙古指挥并进入既有同意链', () => {

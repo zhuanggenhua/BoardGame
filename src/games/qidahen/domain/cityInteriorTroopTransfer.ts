@@ -1,5 +1,10 @@
 import { isQidahenCityRuntimeRegion } from './regionConfig';
-import { addSpecialTroopStacksToRegion, mergeSpecialTroopStackGroupsAsPieces } from './troopCompat';
+import {
+    addSpecialTroopStacksToRegion,
+    expandSpecialTroopStacksToCompatPieces,
+    filterCompatPiecesToSpecialTroopStacks,
+    mergeSpecialTroopStackGroupsAsPieces,
+} from './troopCompat';
 import { applyCommittedTroopRemovalToRegion } from './pendingBattleCombatSupport';
 import type { QidahenCore, QidahenSpecialTroopStack } from './types';
 
@@ -58,5 +63,44 @@ export const removeTroopsFromNonSiegedCityStateRegion = (
             population: region.cityState.population,
             specialTroops: cityForce.specialTroops,
         },
+    };
+};
+
+export const removeSelectedTroopFromRegion = (
+    region: QidahenCore['regions'][number],
+    pieceId: string,
+    location: 'field' | 'city',
+    note: string,
+): QidahenCore['regions'][number] | null => {
+    const sourceStacks = location === 'city'
+        ? region.cityState?.specialTroops ?? []
+        : region.specialTroops;
+    const selectedPieceExists = expandSpecialTroopStacksToCompatPieces(sourceStacks)
+        .some((piece) => piece.id === pieceId);
+    if (!selectedPieceExists || (location === 'city' && (!region.cityState || region.siegeState))) {
+        return null;
+    }
+
+    const remainingStacks = filterCompatPiecesToSpecialTroopStacks(
+        sourceStacks,
+        (piece) => piece.id !== pieceId,
+    );
+    if (location === 'city') {
+        return {
+            ...region,
+            note,
+            cityState: {
+                ...region.cityState!,
+                troops: Math.max(0, region.cityState!.troops - 1),
+                specialTroops: remainingStacks,
+            },
+        };
+    }
+
+    return {
+        ...region,
+        note,
+        troops: Math.max(0, region.troops - 1),
+        specialTroops: remainingStacks,
     };
 };

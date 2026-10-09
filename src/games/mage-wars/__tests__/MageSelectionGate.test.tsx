@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CSSProperties } from 'react';
-import { MageWarsMageSelectionGate } from '../ui/MageSelectionGate';
+import { MageWarsMageSelectionGate, resolveMageSelectionStageScale } from '../ui/MageSelectionGate';
 import { resolveMageWarsLocalSetup } from '../runtimeAdapter';
 import {
     MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
@@ -587,5 +587,12 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(savedList).not.toHaveTextContent('暂无命名副本');
         expect(within(savedList).getByTestId('mage-wars-mage-selection-new-spellbook-entry')).toHaveTextContent('新建法术书');
         expect(JSON.parse(window.localStorage.getItem(MAGE_WARS_SAVED_SPELLBOOKS_STORAGE_KEY) ?? '[]')).toEqual([]);
+    });
+});
+
+describe('MageWarsMageSelectionGate mobile scaling', () => {
+    it('board-shell 手机横屏不再对 1920x1080 设计舞台重复 contain-scale', () => {
+        expect(resolveMageSelectionStageScale(936, 432, true)).toBe(1);
+        expect(resolveMageSelectionStageScale(936, 432, false)).toBeCloseTo(0.4, 6);
     });
 });

@@ -577,18 +577,22 @@ export function CharacterSelectScreen({
                     <div className="relative px-0.5 py-0.5">
                       <div
                         data-testid="betrayal-character-ability-summary"
-                        className="relative flex min-h-[44px] w-full items-start gap-1.5 rounded-[6px] bg-[rgba(23,33,19,0.62)] px-2.5 py-1.5 text-left text-[10px] font-medium leading-relaxed tracking-[0.06em] text-[#e4f3d4]"
+                        className="relative flex min-h-[52px] w-full min-w-0 items-start gap-2 overflow-hidden rounded-[6px] bg-[rgba(23,33,19,0.62)] px-2.5 py-2 text-left text-[16px] font-medium leading-[1.45] tracking-[0.02em] text-[#e4f3d4]"
                       >
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-[2px] bg-[#b5ef42]" />
-                        <span className="shrink-0 font-semibold text-[#d8bf81]">
-                          {t("board.characterSelect.abilityTitle")}：
-                        </span>
-                        <span className="font-semibold text-[#b5ef42]">
-                          {selectedExplorer.abilityName}：
-                        </span>
-                        <span className="min-w-0 flex-1 text-[#e4f3d4]">
-                          {selectedExplorer.abilityText}
-                        </span>
+                        <span className="mt-[0.45em] h-2 w-2 shrink-0 rounded-[2px] bg-[#b5ef42]" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                            <span className="font-semibold text-[#d8bf81]">
+                              {t("board.characterSelect.abilityTitle")}：
+                            </span>
+                            <span className="font-semibold text-[#b5ef42]">
+                              {selectedExplorer.abilityName}：
+                            </span>
+                          </div>
+                          <div className="mt-1 min-w-0 break-words text-[#e4f3d4]">
+                            {selectedExplorer.abilityText}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -932,7 +936,7 @@ export function CharacterSelectScreen({
                     disabled={!proposedScenarioIsPlayable}
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={handleScenarioDetailsOpen}
-                    className={`inline-flex min-h-[56px] w-full items-center justify-center whitespace-nowrap border px-3 py-2 text-[18px] font-semibold leading-tight tracking-[0.04em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e] ${
+                    className={`inline-flex min-h-[44px] w-full items-center justify-center whitespace-nowrap border px-3 py-2 text-[16px] font-semibold leading-tight tracking-[0.04em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e] ${
                       proposedScenarioIsPlayable
                         ? "cursor-pointer border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.78)] text-[#e2c57e] hover:border-[#e2c57e]"
                         : "cursor-not-allowed border-[rgba(114,101,78,0.28)] bg-[rgba(18,18,16,0.58)] text-[#8f8065]"
@@ -949,7 +953,7 @@ export function CharacterSelectScreen({
                       onConfirmScenarioCard();
                       handleScenarioDialogClose(event);
                     }}
-                    className={`inline-flex min-h-[56px] w-full items-center justify-center whitespace-nowrap border px-3 py-2 text-[18px] font-semibold leading-tight tracking-[0.04em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5ef42] ${
+                    className={`inline-flex min-h-[44px] w-full items-center justify-center whitespace-nowrap border px-3 py-2 text-[16px] font-semibold leading-tight tracking-[0.04em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5ef42] ${
                       isReady
                         ? "cursor-pointer border-[rgba(181,239,66,0.44)] bg-[rgba(32,52,18,0.68)] text-[#dfff8f] hover:border-[#b5ef42]"
                         : "cursor-not-allowed border-[rgba(114,101,78,0.28)] bg-[rgba(18,18,16,0.58)] text-[#8f8065]"
@@ -964,7 +968,7 @@ export function CharacterSelectScreen({
                     data-testid="betrayal-scenario-dialog-close"
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={handleScenarioDialogClose}
-                    className="inline-flex min-h-[56px] w-full cursor-pointer items-center justify-center whitespace-nowrap border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-3 py-2 text-[18px] font-semibold leading-tight tracking-[0.04em] text-[#e2c57e] transition hover:border-[#e2c57e]"
+                    className="inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center whitespace-nowrap border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-3 py-2 text-[16px] font-semibold leading-tight tracking-[0.04em] text-[#e2c57e] transition hover:border-[#e2c57e]"
                   >
                     {t("board.characterSelect.closeScenarioDialog")}
                   </button>
@@ -1347,7 +1351,6 @@ export function CharacterSelectScreen({
                 referenceScenarioTurnSnapshot={scenarioReaderTurnSnapshot}
                 referenceScenarioLeftPage={scenarioReaderLeftPage}
                 referenceScenarioRightPage={scenarioReaderRightPage}
-                showScenarioReaderTitle
                 canTurnReferenceScenarioBack={canTurnScenarioReaderBack}
                 canTurnReferenceScenarioForward={canTurnScenarioReaderForward}
                 onClose={handleScenarioReaderClose}

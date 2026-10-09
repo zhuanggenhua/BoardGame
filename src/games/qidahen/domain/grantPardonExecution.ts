@@ -4,7 +4,7 @@ import {
 } from './actionSourceRegionState';
 import {
     addTroopsToFriendlyBesiegedCityInterior,
-    removeTroopsFromNonSiegedCityStateRegion,
+    removeSelectedTroopFromRegion,
 } from './cityInteriorTroopTransfer';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
@@ -30,11 +30,12 @@ interface QidahenGrantPardonExecutionDependencies {
         specialTroops: QidahenCore['regions'][number]['specialTroops'],
         note: string,
     ) => QidahenCore['regions'][number];
-    removeTroopsFromNonSiegedCityStateRegion: (
+    removeSelectedTroopFromRegion: (
         region: QidahenCore['regions'][number],
-        troopLoss: number,
+        pieceId: string,
+        location: 'field' | 'city',
         note: string,
-    ) => QidahenCore['regions'][number];
+    ) => QidahenCore['regions'][number] | null;
     refreshRuntimeRegionRules: (
         regions: QidahenCore['regions'],
         fortifications: QidahenCore['fortifications'],
@@ -58,15 +59,23 @@ export const resolveQidahenGrantPardonExecution = (
         buildSeasonSummary,
         materializeNonSiegedCityActionSourceRegion,
         addTroopsToFriendlyBesiegedCityInterior,
-        removeTroopsFromNonSiegedCityStateRegion,
+        removeSelectedTroopFromRegion,
         refreshRuntimeRegionRules,
     },
 ): QidahenGrantPardonExecutionResult => {
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
+    const sourceToken = state.mapTokens.find((token) => token.id === choice?.sourceTokenId);
+    const selectedPiece = state.pieces.find((piece) => piece.id === choice?.sourcePieceId);
     const grantPardonSourceRegion = runtimeRegions.find((region) => (
         region.id === choice?.sourceRegionId
-        && region.controller !== executorFactionId
-        && getNonSiegedCityActionSourceSnapshot(region).troops > 0
+        && choice?.sourceFactionId !== executorFactionId
+        && sourceToken?.type === 'army'
+        && sourceToken.regionId === region.id
+        && sourceToken.pieceId === selectedPiece?.id
+        && selectedPiece?.regionId === region.id
+        && selectedPiece.faction === choice?.sourceFactionId
+        && selectedPiece.location === choice?.sourceLocation
+        && (selectedPiece.location === 'field' || selectedPiece.location === 'city')
     ));
     const grantPardonDestinationRegion = grantPardonSourceRegion
         ? runtimeRegions.find((region) => (
@@ -85,20 +94,46 @@ export const resolveQidahenGrantPardonExecution = (
         };
     }
 
+    const sourcePiece = selectedPiece!;
+    const sourceFactionId = choice!.sourceFactionId;
+    const sourceBefore = getNonSiegedCityActionSourceSnapshot(grantPardonSourceRegion).troops;
+    const destinationBefore = getNonSiegedCityActionSourceSnapshot(grantPardonDestinationRegion).troops;
+    const movedTroopStack = {
+        id: sourcePiece.sourceStackId,
+        label: sourcePiece.label,
+        faction: executorFactionId,
+        originalFaction: sourcePiece.originalFaction ?? sourcePiece.faction,
+        troopClass: sourcePiece.troopClass ?? 'regular' as const,
+        troopKind: sourcePiece.troopKind,
+        count: 1,
+        level: sourcePiece.level,
+        pieceIds: [sourcePiece.id],
+    };
+    const removedSourceRegion = dependencies.removeSelectedTroopFromRegion(
+        grantPardonSourceRegion,
+        sourcePiece.id,
+        sourcePiece.location,
+        `${grantPardonSourceRegion.name}有 1 个部队经赐印招安转出。`,
+    );
+    if (!removedSourceRegion) {
+        return {
+            factions,
+            lastSeasonSummary: null,
+            regions: state.regions,
+            selectedRegionId: state.selectedRegionId,
+        };
+    }
+
     const nextRuntimeRegions = runtimeRegions.map((region) => {
         if (region.id === grantPardonSourceRegion.id) {
-            return dependencies.removeTroopsFromNonSiegedCityStateRegion(
-                region,
-                1,
-                `${region.name} 有 1 个部队经赐印招安后转入 ${grantPardonDestinationRegion.name}。`,
-            );
+            return removedSourceRegion;
         }
         if (region.id === grantPardonDestinationRegion.id) {
             const actionTargetRegion = dependencies.materializeNonSiegedCityActionSourceRegion(region);
             return dependencies.addTroopsToFriendlyBesiegedCityInterior(
                 actionTargetRegion,
                 1,
-                [],
+                [movedTroopStack],
                 `${actionTargetRegion.name} 接收 1 个经赐印招安归化的${state.factions[executorFactionId].name}部队。`,
             );
         }
@@ -113,18 +148,21 @@ export const resolveQidahenGrantPardonExecution = (
             troops: factions[executorFactionId].troops + 1,
         },
     };
-    const sourceFactionId = grantPardonSourceRegion.controller;
-    if (sourceFactionId !== 'neutral') {
-        nextFactions[sourceFactionId] = {
-            ...factions[sourceFactionId],
-            troops: Math.max(0, factions[sourceFactionId].troops - 1),
-        };
-    }
+    nextFactions[sourceFactionId] = {
+        ...factions[sourceFactionId],
+        troops: Math.max(0, factions[sourceFactionId].troops - 1),
+    };
+    const sourceAfter = getNonSiegedCityActionSourceSnapshot(
+        nextRegions.find((region) => region.id === grantPardonSourceRegion.id) ?? removedSourceRegion,
+    ).troops;
+    const destinationAfter = getNonSiegedCityActionSourceSnapshot(
+        nextRegions.find((region) => region.id === grantPardonDestinationRegion.id) ?? grantPardonDestinationRegion,
+    ).troops;
 
     return {
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('赐印招安', timestamp, [
-            `${grantPardonSourceRegion.name} 有 1 个部队被招安，转入 ${grantPardonDestinationRegion.name} 并成为${state.factions[executorFactionId].name}部队。`,
+            `${grantPardonSourceRegion.name}部队 ${sourceBefore}→${sourceAfter}；${grantPardonDestinationRegion.name}部队 ${destinationBefore}→${destinationAfter}；${sourcePiece.label}归${state.factions[executorFactionId].name}。`,
         ]),
         regions: nextRegions,
         selectedRegionId: grantPardonDestinationRegion.id,

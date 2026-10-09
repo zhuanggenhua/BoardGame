@@ -950,7 +950,9 @@
       "ability": "Ability",
       "inventory": "Inventory",
       "emptyInventory": "No possessions",
-      "detailSeparator": ": "
+      "detailSeparator": ": ",
+      "viewAbilityDetails": "View",
+      "closeAbilityDetails": "Close ability details"
     },
     "summary": {
       "objective": "Current Objective",

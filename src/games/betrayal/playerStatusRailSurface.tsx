@@ -1,8 +1,10 @@
 import React from "react";
-import { Eye } from "lucide-react";
+import { useState } from "react";
+import { Eye, Maximize2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
+import { MagnifyOverlay } from "../../components/common/overlays/MagnifyOverlay";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import type {
   BetrayalExplorerSummary,
@@ -37,6 +39,7 @@ type BetrayalObservedExplorerPanelSurfaceProps = {
   locale: string;
   matchData?: MatchPlayerInfo[];
   isObservingOtherExplorer: boolean;
+  isMobileViewport: boolean;
 };
 
 type BetrayalTeammateListSurfaceProps = {
@@ -156,6 +159,17 @@ function resolveTeammatePresentationState({
   };
 }
 
+function resolveAbilityCompactSummary(abilityText: string): string {
+  const compact = abilityText.replace(/\s+/g, " ").trim();
+  if (!compact) return "";
+  const sentence = compact.match(/^.+?[。！？.!?]/);
+  if (sentence && sentence[0].length >= 6 && sentence[0].length <= 48) {
+    return sentence[0];
+  }
+  if (compact.length <= 42) return compact;
+  return compact.slice(0, 42);
+}
+
 function resolveTeammateStatusLabel({
   isAttackTarget,
   isCorpseLootCandidate,
@@ -189,8 +203,21 @@ export function BetrayalObservedExplorerPanelSurface({
   locale,
   matchData,
   isObservingOtherExplorer,
+  isMobileViewport,
 }: BetrayalObservedExplorerPanelSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
+  const [isAbilityDetailsOpen, setIsAbilityDetailsOpen] = useState(false);
+
+  const abilityCompactSummary = resolveAbilityCompactSummary(abilityText);
+  const abilityContent = (
+    <>
+      <span className="font-semibold text-[#d8bf81]">
+        {t("board.characterSelect.abilityTitle")}：
+      </span>
+      <span className="font-semibold">{abilityName}：</span>
+      <span className="text-[#c8d8a2]">{abilityText}</span>
+    </>
+  );
 
   return (
     <article className="pointer-events-none relative overflow-visible bg-transparent px-1 py-1">
@@ -201,6 +228,7 @@ export function BetrayalObservedExplorerPanelSurface({
           data-panel-asset={explorer.portraitAsset}
           data-player-id={explorer.playerId}
           data-explorer-id={explorer.explorerId}
+          data-room-name={roomName}
         >
           <div className="pointer-events-none absolute inset-[12%] rounded-full bg-[rgba(77,138,92,0.18)] blur-3xl" />
           <OptimizedImage
@@ -246,27 +274,6 @@ export function BetrayalObservedExplorerPanelSurface({
             );
           })}
         </div>
-        <div className="-mt-4 flex justify-center px-2">
-          <div className="relative inline-flex min-w-[174px] max-w-[194px] items-center justify-between gap-2 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-2.5 py-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.14)]">
-            <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-            <div className="min-w-0">
-              <div className="text-[8px] uppercase tracking-[0.18em] text-[#95876d]">
-                {t("board.hud.locationLabel")}
-              </div>
-              <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.12em] text-[#efe2c4]">
-                {roomName}
-              </div>
-            </div>
-            <div className="shrink-0 self-center rounded-[6px] border border-[rgba(105,83,47,0.58)] bg-[radial-gradient(circle_at_35%_25%,rgba(227,211,168,0.12),rgba(18,15,12,0.95))] px-2 py-0.5 text-center shadow-[0_4px_10px_rgba(0,0,0,0.14)]">
-              <div className="text-[7px] uppercase tracking-[0.16em] text-[#98886a]">
-                {t("board.hud.holdingLabel")}
-              </div>
-              <div className="text-[15px] font-semibold leading-none text-[#f0e2c0]">
-                {explorer.inventory.length}
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div className="px-1.5">
           <div
@@ -308,17 +315,68 @@ export function BetrayalObservedExplorerPanelSurface({
                 </div>
               ))}
             </div>
-            <div
-              data-testid="betrayal-current-ability"
-              className="mt-1.5 border-t border-[rgba(96,80,54,0.34)] pt-1 text-[10px] leading-4 text-[#d9ff97]"
-            >
-              <span className="font-semibold text-[#d8bf81]">
-                {t("board.characterSelect.abilityTitle")}：
-              </span>
-              <span className="font-semibold">{abilityName}：</span>
-              <span className="text-[#c8d8a2]">{abilityText}</span>
-            </div>
+            {isMobileViewport ? null : (
+              <div
+                data-testid="betrayal-current-ability"
+                data-ability-display="expanded"
+                className="mt-1.5 border-t border-[rgba(96,80,54,0.34)] pt-2 text-[16px] leading-[1.45] tracking-[0.02em] text-[#d9ff97]"
+              >
+                {abilityContent}
+              </div>
+            )}
           </div>
+          {isMobileViewport ? (
+            <>
+              <button
+                type="button"
+                data-testid="betrayal-current-ability"
+                data-ability-display="compact"
+                aria-expanded={isAbilityDetailsOpen}
+                aria-label={`${t("board.players.viewAbilityDetails")}：${abilityName}`}
+                onClick={() => setIsAbilityDetailsOpen(true)}
+                className="pointer-events-auto relative z-10 mt-1 flex min-h-11 items-center gap-1.5 overflow-hidden rounded-[8px] border border-[rgba(96,80,54,0.34)] bg-[rgba(13,17,15,0.72)] px-2 py-1 text-left text-[16px] leading-[1.3] tracking-[0.02em] text-[#d9ff97]"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block whitespace-nowrap font-semibold">
+                    <span className="text-[#d8bf81]">
+                      {t("board.characterSelect.abilityTitle")}：
+                    </span>
+                    <span>{abilityName}</span>
+                  </span>
+                  {abilityCompactSummary ? (
+                    <span className="mt-0.5 block truncate text-[#c8d8a2]">
+                      {abilityCompactSummary}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] border border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.72)] text-[#f3e0b4]">
+                  <Maximize2 size={12} aria-hidden="true" />
+                </span>
+              </button>
+              <MagnifyOverlay
+                isOpen={isAbilityDetailsOpen}
+                onClose={() => setIsAbilityDetailsOpen(false)}
+                overlayTestId="betrayal-current-ability-dialog"
+                closeLabel={t("board.players.closeAbilityDetails")}
+                overlayClassName="bg-[rgba(3,6,5,0.82)] p-4"
+                containerClassName="w-[min(36rem,calc(100vw-2rem))] rounded-[12px] border border-[rgba(214,191,129,0.44)] bg-[linear-gradient(180deg,rgba(22,28,22,0.98),rgba(8,11,9,0.98))] shadow-[0_24px_56px_rgba(0,0,0,0.58)]"
+              >
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  data-testid="betrayal-current-ability-dialog-content"
+                  className="max-h-[calc(100vh-6rem)] overflow-y-auto px-5 py-6 text-[16px] leading-7 tracking-[0.02em] text-[#d9ff97]"
+                >
+                  <div className="mb-3 border-b border-[rgba(96,80,54,0.42)] pb-2 text-[18px] font-semibold text-[#d8bf81]">
+                    {t("board.characterSelect.abilityTitle")}：{abilityName}
+                  </div>
+                  <p data-testid="betrayal-current-ability-dialog-body">
+                    {abilityText}
+                  </p>
+                </div>
+              </MagnifyOverlay>
+            </>
+          ) : null}
         </div>
       </div>
     </article>

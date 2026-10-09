@@ -210,6 +210,7 @@ const buildMapArmyTokensForRegion = (
             type: 'army' as const,
             faction: unit.faction,
             regionId: region.id,
+            location: 'field' as const,
             troopIndex: index + 1,
             troopKind: fieldPieces[index]?.troopKind
                 ?? (region.controller === 'neutral' ? 'infantry' : getRegularTroopKindForFaction(region.controller)),
@@ -277,6 +278,7 @@ const buildMapSiegeAttackerTokensForRegion = (
             type: 'army' as const,
             faction: unit.faction,
             regionId: region.id,
+            location: 'siege-attacker' as const,
             troopIndex: index + 1,
             troopKind: siegePieces[index]?.troopKind
                 ?? getRegularTroopKindForFaction(region.siegeState!.attackerFactionId),
@@ -300,6 +302,40 @@ export const syncQidahenMapTokensFromRegions = (
 
             nextTokens.push(...buildMapArmyTokensForRegion(region, baseId, pieces));
             nextTokens.push(...buildMapSiegeAttackerTokensForRegion(region, baseId, pieces));
+
+            if (region.cityState && !region.siegeState && region.cityState.troops > 0) {
+                const cityPieces = pieces
+                    .filter((piece) => piece.regionId === region.id && piece.location === 'city')
+                    .sort((left, right) => right.level - left.level || left.id.localeCompare(right.id, 'en'));
+                const point = getMapTokenPoint(region, 'siegeArmy');
+                const representedTroops = Math.max(region.cityState.troops, cityPieces.length);
+                for (let index = 0; index < representedTroops; index += 1) {
+                    const piece = cityPieces[index];
+                    const { x: xOffset, y: yOffset } = getMapArmyTokenOffsets(region, representedTroops, index);
+                    nextTokens.push({
+                        id: `${baseId}-city-army-${piece?.id ?? `fallback-${index + 1}`}`,
+                        x: clampMapTokenCoordinate(point.x + xOffset / QIDAHEN_MAP_WIDTH),
+                        y: clampMapTokenCoordinate(point.y + yOffset / QIDAHEN_MAP_HEIGHT),
+                        type: 'army',
+                        faction: piece?.faction ?? region.controller,
+                        regionId: region.id,
+                        location: 'city',
+                        troopIndex: index + 1,
+                        troopKind: piece?.troopKind ?? getRegularTroopKindForFaction(region.controller),
+                        pieceId: piece?.id,
+                        imageSrc: getMapArmyImageSrc(region.controller, piece ? {
+                            id: piece.sourceStackId,
+                            label: piece.label,
+                            faction: piece.faction,
+                            troopKind: piece.troopKind,
+                            count: 1,
+                            level: piece.level,
+                        } : null),
+                        size: 26,
+                        rotationDeg: piece?.rotationDeg ?? 0,
+                    });
+                }
+            }
 
             if (region.controller !== 'neutral') {
                 const point = getMapControlTokenPoint(region);

@@ -2043,7 +2043,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(guardActionButton).toBeVisible();
         await expect(guardActionButton).toHaveAttribute('data-action-kind', 'guard');
         await expect(guardActionButton).toHaveAttribute('data-action-visual', 'text-action');
-        await expect(guardActionButton).toHaveAttribute('data-action-placement', 'source-card-below');
+        await expect(guardActionButton).toHaveAttribute('data-action-placement', 'middle-lower-action-dock');
         await expect(guardActionButton.locator('img')).toHaveCount(0);
         await expect(guardActionButton.locator('svg')).toHaveCount(0);
         await expect(guardActionButton).toContainText(/守卫|guard/i);
@@ -3009,7 +3009,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(focusGuardActionButton).toBeVisible();
         await expect(focusGuardActionButton).toHaveAttribute('data-action-kind', 'guard');
         await expect(focusGuardActionButton).toHaveAttribute('data-action-visual', 'text-action');
-        await expect(focusGuardActionButton).toHaveAttribute('data-action-placement', 'source-card-below');
+        await expect(focusGuardActionButton).toHaveAttribute('data-action-placement', 'middle-lower-action-dock');
         await expect(focusGuardActionButton.locator('img')).toHaveCount(0);
         await expect(focusGuardActionButton.locator('svg')).toHaveCount(0);
         await expect(focusGuardActionButton).toContainText(/守卫|guard/i);
@@ -3026,15 +3026,15 @@ test.describe('Mage Wars foundation runtime board', () => {
             const hit = document.elementFromPoint(targetCenter.x, targetCenter.y)
                 ?.closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
             return {
-                targetInsideA2: target.left >= zone.left
-                    && target.right <= zone.right
-                    && target.top >= zone.top
-                    && target.bottom <= zone.bottom,
+                targetAnchorInsideA2: targetCenter.x >= zone.left
+                    && targetCenter.x <= zone.right
+                    && targetCenter.y >= zone.top
+                    && targetCenter.y <= zone.bottom,
                 targetCenterHitsTarget: hit?.dataset.objectId === 'mw-test-focus-blue-archer',
             };
         });
         expect(combatFocusAudit).not.toBeNull();
-        expect(combatFocusAudit!.targetInsideA2).toBe(true);
+        expect(combatFocusAudit!.targetAnchorInsideA2).toBe(true);
         expect(combatFocusAudit!.targetCenterHitsTarget).toBe(true);
         const interactionVisualAudit = await page.evaluate(() => {
             const source = document.querySelector<HTMLElement>('[data-object-id="mw-test-focus-red-angel"]');

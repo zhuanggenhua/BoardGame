@@ -276,8 +276,70 @@ export const resolveQidahenGrantPardonInteractionChoice = (
         state,
         getQidahenGrantPardonSelectionForCore,
     );
+    if (!selection) {
+        return state;
+    }
+    if (choiceId.startsWith('region:') && selection.targetRegionId == null) {
+        const targetRegionId = choiceId.slice('region:'.length);
+        const targetChoices = selection.choices.filter((choice) => choice.targetRegionId === targetRegionId);
+        if (targetChoices.length === 0) {
+            return state;
+        }
+        const sourceFactionIds = Array.from(new Set(targetChoices.map((choice) => choice.sourceFactionId)));
+        const opponentFactionId = sourceFactionIds.length === 1 ? sourceFactionIds[0] : null;
+        const choices = opponentFactionId == null
+            ? targetChoices
+            : targetChoices.filter((choice) => choice.sourceFactionId === opponentFactionId);
+        const targetRegionName = targetChoices[0].targetRegionName;
+        return dependencies.updateTurnLabel({
+            ...state,
+            selectedRegionId: targetRegionId,
+            explicitRegionId: targetRegionId,
+            regionFocusState: buildQidahenRegionFocusState(targetRegionId, {
+                currentTargetRegionId: targetRegionId,
+                displayAnchorRegionId: targetRegionId,
+            }),
+            grantPardonSelection: {
+                ...selection,
+                title: opponentFactionId == null
+                    ? `${targetRegionName}：指定部队所属对手`
+                    : `${targetRegionName}：由${choices[0].sourceFactionName}玩家选择部队`,
+                summary: opponentFactionId == null
+                    ? `${targetRegionName}相邻部队属于多名对手，请指定其中一名；之后由该玩家亲自选择部队。`
+                    : `已选${targetRegionName}。请${choices[0].sourceFactionName}玩家点击要转移的部队。`,
+                targetRegionId,
+                opponentFactionId,
+                sourceRegionId: null,
+                sourceTokenId: null,
+                sourceLocation: null,
+                sourceRegionName: null,
+                displayAnchorRegionId: targetRegionId,
+                displayAnchorRegionName: targetRegionName,
+                selectedChoiceId: null,
+                choices,
+            },
+            turnPhase: 'grant-pardon-choice',
+        });
+    }
+    if (choiceId.startsWith('opponent:') && selection.targetRegionId != null && selection.opponentFactionId == null) {
+        const opponentFactionId = choiceId.slice('opponent:'.length) as QidahenFactionId;
+        const choices = selection.choices.filter((choice) => choice.sourceFactionId === opponentFactionId);
+        if (choices.length === 0) {
+            return state;
+        }
+        return dependencies.updateTurnLabel({
+            ...state,
+            grantPardonSelection: {
+                ...selection,
+                title: `${selection.displayAnchorRegionName ?? selection.targetRegionId}：由${choices[0].sourceFactionName}玩家选择部队`,
+                summary: `已选${selection.displayAnchorRegionName ?? selection.targetRegionId}。请${choices[0].sourceFactionName}玩家点击要转移的部队。`,
+                opponentFactionId,
+                choices,
+            },
+        });
+    }
     const choice = selection?.choices.find((item) => item.id === choiceId) ?? null;
-    if (!selection || !choice) {
+    if (selection.opponentFactionId == null || !choice || choice.sourceFactionId !== selection.opponentFactionId) {
         return state;
     }
     const executorFactionId = selection.executorFactionId ?? 'ming';

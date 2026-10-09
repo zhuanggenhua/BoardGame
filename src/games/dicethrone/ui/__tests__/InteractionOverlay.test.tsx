@@ -1012,6 +1012,22 @@ describe('InteractionOverlay', () => {
             expect(screen.getByText('选择要移除的状态效果')).toBeInTheDocument();
             expect(screen.getByText('取消')).toBeInTheDocument();
         });
+
+        it('允许背景查看时，提示遮罩不应吞掉棋盘点击', () => {
+            render(
+                <InteractionOverlay
+                    interaction={interaction}
+                    players={mockPlayers}
+                    currentPlayerId="0"
+                    allowBackgroundInteraction
+                    {...mockHandlers}
+                />
+            );
+
+            const overlay = Array.from(document.querySelectorAll<HTMLElement>('div'))
+                .find((element) => element.style.zIndex === '2100');
+            expect(overlay?.className).toContain('pointer-events-none');
+        });
     });
 
     describe('edge cases', () => {

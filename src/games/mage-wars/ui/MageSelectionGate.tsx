@@ -35,6 +35,33 @@ const SEAT_IDS = ['0', '1'] as const satisfies readonly SeatId[];
 const SELECTION_STAGE_WIDTH = 1920;
 const SELECTION_STAGE_HEIGHT = 1080;
 
+export const resolveMageSelectionStageScale = (
+    viewportWidth: number,
+    viewportHeight: number,
+    isBoardShellMobileViewport: boolean,
+) => {
+    if (isBoardShellMobileViewport) {
+        return 1;
+    }
+
+    const nextScale = Math.min(
+        viewportWidth / SELECTION_STAGE_WIDTH,
+        viewportHeight / SELECTION_STAGE_HEIGHT,
+    );
+    return Number.isFinite(nextScale) && nextScale > 0 ? nextScale : 1;
+};
+
+function isBoardShellMobileViewport(viewportWidth: number, viewportHeight: number): boolean {
+    if (viewportWidth > 1023 || viewportWidth <= viewportHeight || typeof document === 'undefined') {
+        return false;
+    }
+
+    const gamePage = document.querySelector<HTMLElement>('[data-game-page="true"]');
+    return [document.documentElement, document.body, gamePage]
+        .filter((target): target is HTMLElement => Boolean(target))
+        .some((target) => target.dataset.mobileLayoutPreset === 'board-shell');
+}
+
 function useSelectionStageScale() {
     const [scale, setScale] = useState(1);
 
@@ -42,11 +69,11 @@ function useSelectionStageScale() {
         const updateScale = () => {
             const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
             const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-            const nextScale = Math.min(
-                viewportWidth / SELECTION_STAGE_WIDTH,
-                viewportHeight / SELECTION_STAGE_HEIGHT,
-            );
-            setScale(Number.isFinite(nextScale) && nextScale > 0 ? nextScale : 1);
+            setScale(resolveMageSelectionStageScale(
+                viewportWidth,
+                viewportHeight,
+                isBoardShellMobileViewport(viewportWidth, viewportHeight),
+            ));
         };
 
         updateScale();

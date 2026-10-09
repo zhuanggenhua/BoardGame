@@ -531,10 +531,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 使用 useInteractionState Hook 管理交互状态（从 sys.interaction 读取）
     const sysInteraction = rawSysInteraction;
     const activeInteractionOverlayId = sysInteraction?.id ?? null;
-    React.useEffect(() => {
-        if (!activeInteractionOverlayId) return;
-        closeMagnify();
-    }, [activeInteractionOverlayId, closeMagnify]);
     const activeResolutionFrameId = rawG.sys.resolution?.activeFrameId;
     const compareRollInteraction = asCompareRollChoice(sysInteraction);
     const pendingInteraction: InteractionDescriptor | undefined = React.useMemo(() => {
@@ -1662,7 +1658,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         } : undefined,
         closeOnBackdrop: false,
         closeOnEsc: false,
-        allowPointerThrough: statusInteraction?.type === 'selectHandCard' || statusInteraction?.type === 'selectDeckCard',
+        allowPointerThrough: true,
         onClose: () => undefined,
         render: () => (
             <InteractionOverlay
@@ -1680,6 +1676,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 onCancel={handleCancelInteraction}
                 statusIconAtlas={statusIconAtlas}
                 locale={locale}
+                allowBackgroundInteraction
             />
         ),
     }), [
@@ -2522,6 +2519,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 <BoardOverlays
                     // 放大预览
                     isMagnifyOpen={isMagnifyOpen}
+                    magnifyZIndex={activeInteractionOverlayId ? UI_Z_INDEX.modalTooltip + 1 : undefined}
                     magnifiedImage={magnify.image}
                     magnifiedCard={magnify.card}
                     magnifiedCards={magnify.cards}

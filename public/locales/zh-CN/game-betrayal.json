@@ -951,7 +951,9 @@
       "ability": "特性",
       "inventory": "持有物",
       "emptyInventory": "暂无持有物",
-      "detailSeparator": "："
+      "detailSeparator": "：",
+      "viewAbilityDetails": "查看",
+      "closeAbilityDetails": "关闭能力说明"
     },
     "summary": {
       "objective": "当前目标",

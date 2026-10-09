@@ -403,7 +403,7 @@ export function validate(
                 ? { valid: false, error: 'unknownAction' }
                 : { valid: true };
         }
-        case QIDAHEN_COMMANDS.SELECT_REGION:
+        case QIDAHEN_COMMANDS.SELECT_REGION: {
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
@@ -427,12 +427,50 @@ export function validate(
                         : { valid: false, error: 'unknownRegion' };
                 }
             }
+            const grantPardonSelection = getQidahenGrantPardonSelectionForCore(
+                state.core,
+                state.sys.interaction?.current,
+            );
+            if (grantPardonSelection) {
+                const requiredPlayerId = grantPardonSelection.targetRegionId != null
+                    && grantPardonSelection.opponentFactionId != null
+                    ? state.core.factions[grantPardonSelection.opponentFactionId]?.playerId
+                    : state.core.currentPlayer;
+                if (command.playerId !== requiredPlayerId) {
+                    return { valid: false, error: 'notCurrentPlayer' };
+                }
+                if (grantPardonSelection.targetRegionId == null) {
+                    return grantPardonSelection.choices.some((choice) => (
+                        choice.targetRegionId === command.payload.regionId
+                    ))
+                        ? { valid: true }
+                        : { valid: false, error: 'unknownRegion' };
+                }
+                if (grantPardonSelection.opponentFactionId == null || command.payload.tokenId == null) {
+                    return { valid: false, error: 'unknownRegion' };
+                }
+                const selectedToken = state.core.mapTokens.find((token) => (
+                    token.id === command.payload.tokenId
+                    && token.type === 'army'
+                    && token.regionId === command.payload.regionId
+                ));
+                return selectedToken != null && grantPardonSelection.choices.some((choice) => (
+                    choice.sourceRegionId === command.payload.regionId
+                    && choice.sourceTokenId === selectedToken.id
+                    && choice.sourcePieceId === selectedToken.pieceId
+                    && choice.sourceFactionId === grantPardonSelection.opponentFactionId
+                    && choice.targetRegionId === grantPardonSelection.targetRegionId
+                ))
+                    ? { valid: true }
+                    : { valid: false, error: 'unknownRegion' };
+            }
             if (!isCurrentSeatCommand(state, command) && !isCurrentInteractionSeatCommand(state, command)) {
                 return { valid: false, error: 'notCurrentPlayer' };
             }
             return state.core.regions.some((region) => region.id === command.payload.regionId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownRegion' };
+        }
         case QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
@@ -947,10 +985,31 @@ export function validate(
             if (!isCurrentInteractionSeatCommand(state, command)) {
                 return { valid: false, error: 'notCurrentPlayer' };
             }
-            return getQidahenGrantPardonSelectionForCore(state.core, currentInteraction)
-                ?.choices.some((choice) => choice.id === command.payload.choiceId)
-                ? { valid: true }
-                : { valid: false, error: 'unknownAction' };
+            {
+                const selection = getQidahenGrantPardonSelectionForCore(state.core, currentInteraction);
+                if (!selection) {
+                    return { valid: false, error: 'unknownAction' };
+                }
+                if (selection.targetRegionId == null) {
+                    const targetRegionId = command.payload.choiceId.startsWith('region:')
+                        ? command.payload.choiceId.slice('region:'.length)
+                        : null;
+                    return targetRegionId != null && selection.choices.some((choice) => choice.targetRegionId === targetRegionId)
+                        ? { valid: true }
+                        : { valid: false, error: 'unknownAction' };
+                }
+                if (selection.opponentFactionId == null) {
+                    const factionId = command.payload.choiceId.startsWith('opponent:')
+                        ? command.payload.choiceId.slice('opponent:'.length)
+                        : null;
+                    return factionId != null && selection.choices.some((choice) => choice.sourceFactionId === factionId)
+                        ? { valid: true }
+                        : { valid: false, error: 'unknownAction' };
+                }
+                return selection.choices.some((choice) => choice.id === command.payload.choiceId)
+                    ? { valid: true }
+                    : { valid: false, error: 'unknownAction' };
+            }
         case QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };

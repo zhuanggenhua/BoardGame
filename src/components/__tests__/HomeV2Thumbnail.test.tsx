@@ -2,6 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { setAssetsBaseUrl } from '../../core/AssetLoader';
+import { ModalStackProvider } from '../../contexts/ModalStackContext';
 import type { GameConfig } from '../../config/games.config';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import { ManifestGameThumbnail } from '../lobby/thumbnails';
@@ -74,12 +75,14 @@ describe('Home V2 thumbnails', () => {
     it('目录页卡片继续复用 manifest 缩略图链路', () => {
         const game = buildGame();
         const html = renderToStaticMarkup(
-            <OverviewSpread
-                games={[game]}
-                activeCategory="all"
-                onCategoryChange={() => undefined}
-                onGameClick={() => undefined}
-            />,
+            <ModalStackProvider>
+                <OverviewSpread
+                    games={[game]}
+                    activeCategory="all"
+                    onCategoryChange={() => undefined}
+                    onGameClick={() => undefined}
+                />
+            </ModalStackProvider>,
         );
 
         expect(html).toContain('src="/assets/i18n/zh-CN/demo/thumbnails/compressed/cover.webp"');

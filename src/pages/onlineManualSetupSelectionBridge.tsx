@@ -121,9 +121,6 @@ export const OnlineManualSetupSelectionBridge = ({
     const activeDraftManualSetupSelection = isDraftManualSetupSelectionReleased
         ? null
         : draftManualSetupSelection;
-    const shouldOverrideManualSetupPlayerId = shouldInterceptManualSetupSelection
-        && sharedState?.sys?.phase === 'factionSelect';
-
     useEffect(() => {
         latestSharedStateRef.current = sharedState;
     }, [sharedState]);
@@ -269,7 +266,7 @@ export const OnlineManualSetupSelectionBridge = ({
     return (
         <GameClientOverrideProvider
             state={manualSetupDraftState}
-            playerId={shouldOverrideManualSetupPlayerId ? manualSetupPlayerId : undefined}
+            playerId={shouldInterceptManualSetupSelection ? manualSetupPlayerId : undefined}
             dispatch={shouldInterceptManualSetupSelection ? manualDispatch : undefined}
         >
             {children}

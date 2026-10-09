@@ -244,6 +244,7 @@ export function getQidahenGrantPardonSelectionForCore(
         ),
         readInteraction: getQidahenGrantPardonSelectionFromInteraction,
         readCore: (currentCore) => currentCore.grantPardonSelection ?? getCoreQidahenGrantPardonSelectionForCore(currentCore),
+        preferInteraction: false,
     });
 }
 

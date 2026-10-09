@@ -111,6 +111,7 @@ const buildQidahenRegionSelectedEvent = (
         type: 'REGION_SELECTED',
         payload: {
             regionId: command.payload.regionId,
+            tokenId: command.payload.tokenId,
             playerId: command.playerId,
             qidahenDiplomacySelection: getQidahenDiplomacySelectionFromInteraction(currentInteraction),
             qidahenInternalDispatchSelection: getQidahenInternalDispatchSelectionFromInteraction(currentInteraction),

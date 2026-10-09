@@ -2,6 +2,7 @@
 import React from 'react';
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -808,7 +809,7 @@ function MultiViewerCardResolutionHarness({ initialCore }: BoardHarnessProps) {
 function renderBoardTree(
     core: MatchState<Record<string, unknown>>['core'],
     options?: {
-        playerID?: string;
+        playerID?: string | null;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
         mode?: GameMode;
     },
@@ -823,7 +824,7 @@ function renderBoardTree(
                             sys: {} as MatchState<unknown>['sys'],
                         } as MatchState<Record<string, unknown>>}
                         dispatch={() => {}}
-                        playerID={options?.playerID ?? '0'}
+                        playerID={options && 'playerID' in options ? options.playerID! : '0'}
                         matchData={options?.matchData}
                         isConnected
                     />
@@ -837,7 +838,7 @@ function renderBoardWithDispatch(
     core: MatchState<Record<string, unknown>>['core'],
     dispatch: (type: string, payload: unknown) => void,
     options?: {
-        playerID?: string;
+        playerID?: string | null;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
         mode?: GameMode;
     },
@@ -852,7 +853,7 @@ function renderBoardWithDispatch(
                             sys: {} as MatchState<unknown>['sys'],
                         } as MatchState<Record<string, unknown>>}
                         dispatch={dispatch as never}
-                        playerID={options?.playerID ?? '0'}
+                        playerID={options && 'playerID' in options ? options.playerID! : '0'}
                         matchData={options?.matchData}
                         isConnected
                     />
@@ -865,7 +866,7 @@ function renderBoardWithDispatch(
 function renderBoard(
     core: MatchState<Record<string, unknown>>['core'],
     options?: {
-        playerID?: string;
+        playerID?: string | null;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
         mode?: GameMode;
     },
@@ -2098,7 +2099,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-scenario-opening-cinematic')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-scenario-reader-dialog')).not.toHaveTextContent('赤红杰克');
         const bloodFromStoneBook = screen.getByTestId('betrayal-scenario-book');
-        expect(bloodFromStoneBook).toHaveTextContent('顽石之血');
+        expect(bloodFromStoneBook).not.toHaveTextContent('顽石之血');
         expect(bloodFromStoneBook).toHaveTextContent('石像小天使');
         expect(bloodFromStoneBook).not.toHaveTextContent(/运行时|合同|补齐清单|赤红杰克/);
         expect(screen.queryByTestId('betrayal-scenario-book-section-setup')).not.toBeInTheDocument();
@@ -3922,6 +3923,15 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-dust-progress-item-permanent-infection')).toHaveTextContent('永久感染');
         expect(screen.getByTestId('betrayal-dust-progress-item-permanent-infection')).toHaveTextContent('否');
         expect(screen.getByTestId('betrayal-board')).not.toHaveTextContent('1 / 4 / 8');
+        cleanup();
+
+        renderBoard(core, {
+            playerID: null,
+            matchData: defaultMatchData.slice(0, 3),
+        });
+        expect(screen.getByTestId('betrayal-dust-progress-item-permanent-infection')).toHaveTextContent('否');
+        expect(screen.getByTestId('betrayal-board')).not.toHaveTextContent('1 / 4 / 8');
+        expect(screen.getByTestId('betrayal-board')).not.toHaveTextContent('2 / 3 / 5');
     });
 
     it('第一剧本真实图书馆不在 upper-west 时也能显示调查杰克入口', async () => {
@@ -4125,9 +4135,11 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-inventory-rope-magnify'));
         expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
-        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toHaveAttribute('data-backdrop-dismiss', 'enabled');
         expect(screen.getByTestId('betrayal-inventory-preview-card')).toHaveTextContent('兔脚');
         fireEvent.click(screen.getByTestId('betrayal-inventory-preview-overlay'));
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
+        fireEvent.click(screen.getByTestId('betrayal-inventory-rope-magnify'));
         expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
         fireEvent.click(screen.getByTestId('betrayal-inventory-preview-overlay-close'));
         expect(screen.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
