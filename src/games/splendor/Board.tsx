@@ -43,8 +43,9 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
     const selfId = playerView.selfPlayerId ?? G.core.currentPlayer;
     const self = G.core.players[selfId];
     const pending = G.core.pendingResolution;
-    const isMyTurn = G.core.currentPlayer === selfId;
     const isOnlineMatch = isMultiplayer === true;
+    const isSpectator = isOnlineMatch && playerID == null;
+    const isMyTurn = !isSpectator && G.core.currentPlayer === selfId;
     const seatedPlayerCount = matchData?.filter((player) => player.name).length ?? G.core.setupPlayerCount;
     const areAllSeatsOccupied = !isOnlineMatch || seatedPlayerCount >= G.core.setupPlayerCount;
     const isHostPlayer = String(playerID ?? '') === String(G.core.hostPlayerId);

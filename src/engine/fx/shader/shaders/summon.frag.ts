@@ -29,6 +29,7 @@
  * - uIntensity       (float) — 整体强度系数
  * - uDimStrength     (float) — 暗角遮罩强度（0=无 1=全黑）
  * - uPillarWidth     (float) — 光柱底部半宽（UV 空间）
+ * - uPillarHostRatio (float) — >0 时按宿主宽度比例取半宽（1=贴卡等宽），覆盖 uPillarWidth
  */
 
 import { NOISE_GLSL } from '../glsl/noise.glsl';
@@ -53,6 +54,7 @@ uniform float uOriginY;
 uniform float uIntensity;
 uniform float uDimStrength;
 uniform float uPillarWidth;
+uniform float uPillarHostRatio;
 
 void main() {
   vec2 uv = vUv;
@@ -84,7 +86,9 @@ void main() {
   // 宽度呼吸（仅持续阶段）
   float breathePhase = smoothstep(0.35, 0.40, t) * (1.0 - smoothstep(0.60, 0.70, t));
   float breathe = 1.0 + 0.08 * sin(uTime * 12.0) * breathePhase;
-  float baseW = uPillarWidth * breathe;
+  float hostMode = step(0.001, uPillarHostRatio);
+  float hostHalfWidth = 0.5 * aspect * uPillarHostRatio;
+  float baseW = mix(uPillarWidth, hostHalfWidth, hostMode) * breathe;
 
   // ================================================================
   //  ① 全屏暗角遮罩（radial vignette）
@@ -104,12 +108,14 @@ void main() {
     ? clamp(heightAbove / pillarH, 0.0, 1.0)
     : 0.0;
 
-  // 梯形宽度：底部 baseW → 顶部 55%
-  float widthAtH = mix(baseW, baseW * 0.55, heightT);
+  // 默认细柱顶部收到 55%；贴卡等宽时几乎保持卡宽，只留一点上收。
+  float topTaper = mix(0.55, 0.94, hostMode);
+  float widthAtH = mix(baseW, baseW * topTaper, heightT);
   float distFromAxis = abs(delta.x);
 
-  // 柔和边缘遮罩
-  float pillarMask = 1.0 - smoothstep(widthAtH * 0.6, widthAtH, distFromAxis);
+  // 柔和边缘遮罩。等宽模式把实心区推到卡缘，避免看起来仍是细光柱。
+  float edgeInner = mix(0.6, 0.9, hostMode);
+  float pillarMask = 1.0 - smoothstep(widthAtH * edgeInner, widthAtH, distFromAxis);
   pillarMask *= step(0.0, heightAbove);                     // 仅原点上方
   pillarMask *= 1.0 - smoothstep(pillarH * 0.82, pillarH, heightAbove); // 顶部渐隐
   pillarMask *= step(0.001, pillarH);                       // 高度=0 时无光柱
@@ -127,7 +133,7 @@ void main() {
   // ================================================================
   //  ③ 光柱边缘辉光（更宽更柔的外层，无额外 snoise）
   // ================================================================
-  float edgeW = widthAtH * 1.6;
+  float edgeW = widthAtH * mix(1.6, 1.08, hostMode);
   float edgeMask = 1.0 - smoothstep(widthAtH * 0.7, edgeW, distFromAxis);
   edgeMask *= step(0.0, heightAbove);
   edgeMask *= 1.0 - smoothstep(pillarH * 0.65, pillarH * 1.05, heightAbove);

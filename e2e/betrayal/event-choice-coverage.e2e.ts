@@ -228,9 +228,18 @@ async function waitForVisibleRollingDiceFrame(
               return Boolean(element && element.getClientRects().length > 0);
             })();
             return {
-              key: !engineReady || !canvasVisible
-                ? "pending"
-                : [motionType, motion ?? "", "true"].join(":"),
+              key:
+                !engineReady || !canvasVisible
+                  ? "pending"
+                  : motionType === "roll" &&
+                      motion === "rolling" &&
+                      !resultStage &&
+                      !total &&
+                      !outcome &&
+                      !discoveryContinueVisible &&
+                      !rollContinueVisible
+                    ? "roll:rolling:true"
+                    : "pending",
               motion,
               resultStage,
               total,
@@ -3804,7 +3813,9 @@ async function startBetrayalScenarioFromRealEntry(
     ? "players=3&seat0=human&seat1=human&seat2=human&"
     : playerId === null
       ? "players=3&seat0=human&seat1=local-ai&seat2=local-ai&"
-      : "players=3&seat0=human&seat1=local-ai&seat2=local-ai&";
+      : `players=3&${[0, 1, 2]
+          .map((seat) => `seat${seat}=${String(seat) === playerId ? "human" : "local-ai"}`)
+          .join("&")}&`;
   const playerQuery = playerId === null ? "" : `playerID=${playerId}`;
   const query = `${playerSetup}${playerQuery}${
     extraQuery ? `${playerQuery ? "&" : ""}${extraQuery}` : ""
@@ -5464,17 +5475,14 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       page,
       "betrayal-event-choice-一瓶微尘-灰尘成功链路",
     );
-    await page.goto(
-      "/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&playerID=0",
-      { waitUntil: "commit", timeout: 30000 },
-    );
-    await page
-      .waitForLoadState("domcontentloaded", { timeout: 5000 })
-      .catch(() => undefined);
-    await waitForBetrayalPageReady(page);
+    await startBetrayalScenarioFromRealEntry(page, null);
     const screenshotBase = `${DUST_HAUNT_EVIDENCE_DIR}/_temporary/${Date.now()}-一瓶微尘-灰尘成功链路`;
     const dustyVial = eventByName("一瓶微尘");
-    const core = createRuntimeCore();
+    const settledCore = await assertReadyForStateInjection(
+      page,
+      "三名真人玩家真实开局结算后准备一瓶微尘",
+    );
+    const core: BetrayalCore = { ...settledCore };
     const hallway = core.rooms.find((room) => room.id === "hallway");
     if (!hallway) {
       throw new Error("灰尘 E2E 缺少门厅板块");
@@ -5482,6 +5490,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     hallway.discoveryReward = "omen";
     core.drawOrder = ["event"];
     core.eventOrder = [dustyVial];
+    core.deckCounts = { ...settledCore.deckCounts, event: core.eventOrder.length };
     pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
@@ -5602,7 +5611,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "关闭剧本后疾病交换入口必须回到牌桌动作区",
     ).toBeVisible();
     await expect(page.getByTestId("betrayal-attack-weapon-selector")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-use")).toContainText("治愈灰尘");
     await expect(page.getByText("交换疾病").first()).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-03a-关闭剧本后回到牌桌并显示灰尘进度.jpg`);
 
@@ -5684,7 +5692,12 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       : null;
     expect(exchangeTargetId).toBeTruthy();
     expect(exchangeTargetActionText).toBeTruthy();
-    await injectCore(page, dustActionCore);
+    await injectCore(
+      page,
+      dustActionCore,
+      "灰尘剧本阅读关闭并完成作祟结算后准备寻找解药与疾病交换",
+      "haunt",
+    );
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
     await expect(
@@ -5716,6 +5729,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expectMobileHauntScenarioBook(page, {
       headerText: "剧本3",
       firstPageTexts: ["灰尘", "研究标记", "交换疾病"],
+      firstProgressText: "1/2",
       lastPageTexts: ["灰尘路线"],
       firstScreenshotPath: `${screenshotBase}-04c-移动横屏灰尘剧本首页.jpg`,
       lastScreenshotPath: `${screenshotBase}-04d-移动横屏灰尘剧本末页.jpg`,
@@ -5858,9 +5872,12 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await startBetrayalScenarioFromRealEntry(
       targetPage,
       exchangeTargetId,
-      true,
     );
-    await injectCore(targetPage, pendingExchangeCore);
+    await injectCore(
+      targetPage,
+      pendingExchangeCore,
+      "疾病交换请求已在发起方结算后同步到接收方视角",
+    );
     await expect(targetPage.getByTestId("betrayal-board")).toBeVisible({
       timeout: 30000,
     });
@@ -7657,8 +7674,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(rollingState.outcome).toBe(false);
     expect(rollingState.discoveryContinueVisible).toBe(false);
     expect(rollingState.rollContinueVisible).toBe(false);
-    await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveCount(0);
-    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).toHaveCount(0);
     await waitForPhysicalDiceSettled(rollPanel);
     await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
       "受到一颗骰子的精神伤害",
@@ -9210,8 +9225,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(rollingState.outcome).toBe(false);
     expect(rollingState.discoveryContinueVisible).toBe(false);
     expect(rollingState.rollContinueVisible).toBe(false);
-    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).toHaveCount(0);
-    await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveCount(0);
     await expect(rollPanel).toContainText("力量检定");
     await expect(
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),

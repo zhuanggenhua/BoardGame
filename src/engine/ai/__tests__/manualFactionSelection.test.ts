@@ -109,6 +109,44 @@ describe('AI 手动选派系', () => {
         expect(resolution).toBeNull();
     });
 
+    it('勾选 manualFactionSelection 后，AI 也不自动提交自定义 faction-selection 动作', async () => {
+        const gameId = '__test_manual_custom_faction_selection__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [{
+                    actionId: 'faction-selection-ming',
+                    kind: 'faction-selection',
+                    label: '确认阵营 ming',
+                    commands: [{ type: 'SELECT_FACTION', payload: { factionId: 'ming' } }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'faction-selection-ming' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildFactionSelectState(),
+            matchId: 'local:manual-custom-faction-selection',
+            seatControllers: {
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
+
     it('未勾选 manualFactionSelection 时，AI 仍按原逻辑自动选择派系', async () => {
         const gameId = '__test_auto_faction_selection_default__';
         registerGameAiRuntime({

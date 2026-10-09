@@ -31,6 +31,7 @@ welcome
   -> pick-action
   -> pay-cards
   -> choose-grant-pardon-target
+  -> choose-grant-pardon-source
   -> action-result
   -> finish
 ```
@@ -42,7 +43,8 @@ welcome
 - `wheel-move` 使用正式公共轮盘点击；规则参考卡说明 1 / 2 / 3 格都是合法走法，当前动作卡只承接 `move-1-free` 对应的征兵训练落点。其它合法轮盘分支进入隐藏 `branch-recovery`，由教程系统恢复到 `wheel-move` 的完整检查点，不生成可见错误卡。
 - `hand-action-order` 只解释大明四个同层势力行动；`grant-pardon-rule` 只承接规则原文，不把教程导航写进玩家文案。
 - `pick-action` 和 `pay-cards` 使用正式手牌行动入口与支付面板。
-- 目标选择必须落到真实地图目标；`action-result` 必须读取实际控制权变化。
+- 目标选择必须落到真实地图接收区；若接收区唯一对应一个对手，正式状态自动锁定该对手，不渲染冗余对手按钮；若仍有多个对手，才显示剩余选择。
+- `choose-grant-pardon-source` 是被指定玩家的真实选兵窗口，必须由该玩家点击正式地图部队本体；`action-result` 必须读取实际部队位置、数量和控制权变化。
 - `finish` 只结束基础教程，不跳到其它专题。
 
 ## 3. 专题映射

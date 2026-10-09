@@ -195,6 +195,7 @@ type MageWarsMagnifiedPreview = {
     aspectRatio: number;
     sourceCardId?: number;
     mageId?: string;
+    previewKind?: 'portrait' | 'card';
     hostObjectId?: string;
     hostPlayerId?: PlayerId;
     attachments?: MageWarsInspectAttachment[];
@@ -305,13 +306,21 @@ function escapeCssAttributeValue(value: string): string {
     return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+const MAGE_WARS_INSPECT_BUTTON = {
+    buttonSize: 'clamp(22px, 2vw, 38px)',
+    iconSize: 'clamp(12px, 1.1vw, 21px)',
+} as const;
+
+function getZoneEntityHeightClass(density: ZoneEntityDensity, crowded = false): string {
+    if (density === 'packed') return ZONE_PACKED_ENTITY_HEIGHT_CLASS;
+    if (density === 'dense') return ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
+    if (density === 'duel') return 'h-[8rem]';
+    return crowded ? 'h-[10.35rem]' : ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
+}
+
 function MageWarsCardInspectButton({
     title,
     sourceCardId,
-    sizeRatio = 0.25,
-    minSize = 20,
-    maxSize = 96,
-    iconRatio = 0.48,
     alwaysVisible = false,
     revealOnGroupHover = true,
     placement = 'inside',
@@ -319,10 +328,6 @@ function MageWarsCardInspectButton({
     }: {
         title: string;
         sourceCardId?: number;
-        sizeRatio?: number;
-        minSize?: number;
-        maxSize?: number;
-        iconRatio?: number;
         alwaysVisible?: boolean;
     revealOnGroupHover?: boolean;
     placement?: 'inside' | 'outside';
@@ -336,11 +341,9 @@ function MageWarsCardInspectButton({
             sourceCardId={sourceCardId}
             onInspect={onInspect}
             testId="mage-wars-card-inspect-button"
-            sizeRatio={sizeRatio}
-            minSize={minSize}
-            maxSize={maxSize}
-            iconRatio={iconRatio}
-            variant="outline"
+            buttonSize={MAGE_WARS_INSPECT_BUTTON.buttonSize}
+            iconSize={MAGE_WARS_INSPECT_BUTTON.iconSize}
+            variant="filled"
             placement={placement}
             alwaysVisible={alwaysVisible}
             revealOnGroupHover={revealOnGroupHover}
@@ -501,7 +504,7 @@ function EntityStatusTokenRail({
             {statusTokenRow}
             {meleeBonusAmount > 0 ? (
                 <span
-                    className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-amber-950/82 px-1 py-0.5 text-[0.58rem] font-black text-amber-50 shadow-[0_4px_12px_rgba(0,0,0,0.38)]"
+                    className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full border-2 border-amber-200 bg-amber-700 px-1 py-0.5 text-[0.72rem] font-black leading-none text-amber-50 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
                     data-testid="mage-wars-melee-bonus-marker"
                     data-melee-dice-modifier={meleeBonusAmount}
                     title={t('actions.meleeBonusMarker', { amount: meleeBonusAmount })}
@@ -1079,7 +1082,7 @@ function MageHud({
                     </div>
                 ) : null}
                 {onInspect ? (
-                    <MageWarsCardInspectButton title={mageLabel} sizeRatio={0.25} minSize={24} maxSize={44} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
+                    <MageWarsCardInspectButton title={mageLabel} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1170,7 +1173,7 @@ function MageHud({
                     </div>
                 ) : null}
                 {onInspect ? (
-                    <MageWarsCardInspectButton title={mageLabel} sizeRatio={0.25} minSize={20} maxSize={32} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
+                    <MageWarsCardInspectButton title={mageLabel} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1394,9 +1397,6 @@ function PreparedSpellCard({
                     <MageWarsCardInspectButton
                         title={title}
                         sourceCardId={cardId}
-                        sizeRatio={0.25}
-                        minSize={20}
-                        maxSize={96}
                         onInspect={onInspect!}
                     />
                 ) : null}
@@ -1461,6 +1461,9 @@ function PreparedSpellCard({
     );
 }
 
+const SCENE_OBJECT_LEGAL_STROKE_CLASS = 'pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-2 border-emerald-300/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.36),0_0_12px_rgba(16,185,129,0.42)]';
+const SCENE_OBJECT_LEGAL_GLOW_CLASS = 'shadow-[0_0_30px_rgba(16,185,129,0.48)]';
+
 function ZoneFieldCard({
     cardId,
     object,
@@ -1474,6 +1477,7 @@ function ZoneFieldCard({
     visualDamage = object?.damage,
     visualLife,
     visualHeld = false,
+    visualRelocating = false,
     showLifeTotals = false,
     fxAnchorRef,
     meleeAttack,
@@ -1490,6 +1494,7 @@ function ZoneFieldCard({
     visualDamage?: number;
     visualLife?: number;
     visualHeld?: boolean;
+    visualRelocating?: boolean;
     showLifeTotals?: boolean;
     fxAnchorRef?: (element: HTMLElement | null) => void;
     meleeAttack?: MageWarsMeleeAttackVisual | null;
@@ -1498,13 +1503,7 @@ function ZoneFieldCard({
     const previewRef = getMageWarsSpellCardPreviewRef(cardId);
     const title = object?.name ?? getMageWarsSpellCardName(cardId) ?? t('privateZones.spell');
     const compact = density === 'dense' || density === 'packed';
-    const cardHeightClass = density === 'packed'
-        ? ZONE_PACKED_ENTITY_HEIGHT_CLASS
-        : density === 'dense'
-            ? ZONE_LOOSE_ENTITY_HEIGHT_CLASS
-            : density === 'duel'
-                ? 'h-[8rem]'
-                : ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
+    const cardHeightClass = getZoneEntityHeightClass(density);
     const cardAspectRatio = getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
     const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
     const life = visualLife ?? object?.life ?? 0;
@@ -1612,17 +1611,15 @@ function ZoneFieldCard({
                     compact={compact}
                 />
             ) : null}
-            {role === 'target' ? (
-                <>
-                    <span
-                        className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-2 border-emerald-300/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.36),0_0_12px_rgba(16,185,129,0.42)]"
-                        data-testid="mage-wars-field-card-target-frame"
-                    />
-                </>
+            {role === 'target' || (!role && primaryActionEnabled) ? (
+                <span
+                    className={SCENE_OBJECT_LEGAL_STROKE_CLASS}
+                    data-testid={role === 'target' ? 'mage-wars-field-card-target-frame' : 'mage-wars-field-card-legal-frame'}
+                />
             ) : null}
             {role === 'source' ? (
                 <span
-                    className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-2 border-cyan-100 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.34),0_0_18px_rgba(34,211,238,0.56)]"
+                    className={SCENE_OBJECT_LEGAL_STROKE_CLASS}
                     data-testid="mage-wars-field-card-source-frame"
                 />
             ) : null}
@@ -1636,8 +1633,9 @@ function ZoneFieldCard({
             className={cx(
                 'group relative block h-full w-full rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow,opacity] duration-150',
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
-                role === 'target' && 'shadow-[0_0_32px_rgba(16,185,129,0.46)]',
-                role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
+                role === 'target' && SCENE_OBJECT_LEGAL_GLOW_CLASS,
+                role === 'source' && `-translate-y-2 ${SCENE_OBJECT_LEGAL_GLOW_CLASS}`,
+                primaryActionEnabled && !role && SCENE_OBJECT_LEGAL_GLOW_CLASS,
                 primaryActionEnabled
                     ? 'cursor-pointer'
                     : hasPrimaryActionIntent
@@ -1695,17 +1693,19 @@ function ZoneFieldCard({
     return (
         <div
             ref={fxAnchorRef}
-            className={cx('group relative z-20 shrink-0 overflow-visible', cardHeightClass)}
+            className={cx(
+                'group relative z-20 shrink-0 overflow-visible',
+                cardHeightClass,
+                visualRelocating && 'invisible',
+            )}
             style={cardSizeStyle}
+            data-visual-relocating={visualRelocating ? 'true' : undefined}
         >
             {primaryButton}
             {hasSecondaryInspect ? (
                 <MageWarsCardInspectButton
                     title={title}
                     sourceCardId={cardId}
-                    sizeRatio={0.25}
-                    minSize={20}
-                    maxSize={96}
                     onInspect={onInspect!}
                 />
             ) : null}
@@ -1718,6 +1718,7 @@ function ArenaAttachmentCard({
     role,
     density = 'solo',
     ownerSide,
+    sizeFromHost = false,
     primaryActionIntent = false,
     onClick,
     onInspect,
@@ -1727,6 +1728,7 @@ function ArenaAttachmentCard({
     role?: FieldCardRole;
     density?: ZoneEntityDensity;
     ownerSide?: SeatOwnerSide;
+    sizeFromHost?: boolean;
     primaryActionIntent?: boolean;
     onClick?: () => void;
     onInspect?: () => void;
@@ -1735,15 +1737,19 @@ function ArenaAttachmentCard({
     const { t } = useTranslation('game-mage-wars');
     const previewRef = getMageWarsSpellCardPreviewRef(object.sourceSpellCardId);
     const title = object.name ?? getMageWarsSpellCardName(object.sourceSpellCardId) ?? t('privateZones.spell');
-    const heightClass = density === 'packed'
-        ? 'h-8'
-        : density === 'dense'
-            ? 'h-10'
-            : density === 'duel'
-                ? 'h-12'
-                : 'h-14';
+    const heightClass = sizeFromHost
+        ? undefined
+        : density === 'packed'
+            ? 'h-8'
+            : density === 'dense'
+                ? 'h-10'
+                : density === 'duel'
+                    ? 'h-12'
+                    : 'h-14';
     const cardAspectRatio = getMageWarsSpellCardAspectRatio(object.sourceSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
-    const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
+    const cardSizeStyle: CSSProperties = sizeFromHost
+        ? { width: '100%', aspectRatio: cardAspectRatio }
+        : { aspectRatio: cardAspectRatio };
     const touchInspectKey = `attachment:${object.id}`;
     const {
         getTouchInspectProps,
@@ -1794,15 +1800,15 @@ function ArenaAttachmentCard({
                     </span>
                 </span>
             ) : null}
-            {role === 'target' ? (
+            {role === 'target' || (!role && primaryActionEnabled) ? (
                 <span
-                    className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] border border-emerald-200/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.34),0_0_12px_rgba(16,185,129,0.42)]"
-                    data-testid="mage-wars-attachment-target-frame"
+                    className={SCENE_OBJECT_LEGAL_STROKE_CLASS}
+                    data-testid={role === 'target' ? 'mage-wars-attachment-target-frame' : 'mage-wars-attachment-legal-frame'}
                 />
             ) : null}
             {role === 'source' ? (
                 <span
-                    className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] border border-cyan-100/90 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.32),0_0_12px_rgba(34,211,238,0.44)]"
+                    className={SCENE_OBJECT_LEGAL_STROKE_CLASS}
                     data-testid="mage-wars-attachment-source-frame"
                 />
             ) : null}
@@ -1811,8 +1817,9 @@ function ArenaAttachmentCard({
 
     const className = cx(
         'relative block h-full w-full rounded-[0.16rem] text-left shadow-[0_7px_14px_rgba(0,0,0,0.48)]',
-        role === 'target' && 'shadow-[0_0_18px_rgba(16,185,129,0.45)]',
-        role === 'source' && 'shadow-[0_0_18px_rgba(34,211,238,0.52)]',
+        role === 'target' && SCENE_OBJECT_LEGAL_GLOW_CLASS,
+        role === 'source' && SCENE_OBJECT_LEGAL_GLOW_CLASS,
+        primaryActionEnabled && !role && SCENE_OBJECT_LEGAL_GLOW_CLASS,
         primaryActionEnabled
             ? 'cursor-pointer'
             : hasPrimaryActionIntent
@@ -1866,15 +1873,12 @@ function ArenaAttachmentCard({
         );
 
         return (
-            <div className={cx('group relative shrink-0 overflow-visible', heightClass)} style={cardSizeStyle}>
+            <div className={cx('group relative shrink-0 overflow-visible', heightClass ?? 'w-full')} style={cardSizeStyle}>
                 {primaryButton}
                 {hasSecondaryInspect ? (
                     <MageWarsCardInspectButton
                         title={title}
                         sourceCardId={object.sourceSpellCardId}
-                        sizeRatio={0.25}
-                        minSize={20}
-                        maxSize={96}
                         placement="outside"
                         onInspect={onInspect!}
                     />
@@ -1885,7 +1889,7 @@ function ArenaAttachmentCard({
 
     return (
         <div
-            className={cx('group relative shrink-0 overflow-visible', heightClass)}
+            className={cx('group relative shrink-0 overflow-visible', heightClass ?? 'w-full')}
             ref={fxAnchorRef as (element: HTMLDivElement | null) => void}
             style={cardSizeStyle}
         >
@@ -1925,16 +1929,20 @@ function ArenaAttachmentStrip({
     getFxAnchorRef?: (object: MageWarsArenaObjectState) => (element: HTMLElement | null) => void;
 }) {
     if (objects.length === 0) return null;
+    const sizeFromHost = hostKind === 'mage' || hostKind === 'object';
 
     return (
         <div
             className={cx(
-                'pointer-events-auto absolute z-30 flex gap-1',
-                hostKind === 'mage' && '-right-3 top-1 flex-col items-end',
-                hostKind === 'object' && '-right-3 -top-2 flex-col items-end',
+                'pointer-events-auto absolute z-30 flex gap-1 overflow-visible',
+                sizeFromHost && 'left-full w-[33.333%]',
+                hostKind === 'mage' && 'top-1 flex-col items-stretch',
+                hostKind === 'object' && 'top-0 flex-col items-stretch',
                 hostKind === 'zone' && 'right-1 top-1 flex-row items-start',
             )}
+            style={sizeFromHost ? { width: '33.333%' } : undefined}
             data-testid={`mage-wars-${hostKind}-attachment-strip`}
+            data-attachment-width-ratio={sizeFromHost ? '0.333' : undefined}
         >
             {objects.map((object) => {
                 const role = getRole(object);
@@ -1943,7 +1951,8 @@ function ArenaAttachmentStrip({
                     <div
                         key={object.id}
                         className={cx(
-                            'relative shrink-0',
+                            'relative',
+                            sizeFromHost ? 'w-full' : 'shrink-0',
                             selectedObjectId === object.id && shouldShowSelectedAbilityActionDock && 'pointer-events-auto z-50',
                         )}
                         data-mage-wars-ability-source={selectedObjectId === object.id && shouldShowSelectedAbilityActionDock
@@ -1955,6 +1964,7 @@ function ArenaAttachmentStrip({
                             density={density}
                             role={role}
                             ownerSide={ownerSide}
+                            sizeFromHost={sizeFromHost}
                             primaryActionIntent={role != null || onAttachmentClick != null}
                             onClick={onAttachmentClick}
                             onInspect={getOnInspect?.(object)}
@@ -2475,7 +2485,9 @@ function ZoneOccupant({
     crowded,
     density = 'solo',
     onClick,
+    onInspect,
     visualDamage = player.damage,
+    visualRelocating = false,
     showLifeTotals = false,
     fxAnchorRef,
 }: {
@@ -2485,21 +2497,18 @@ function ZoneOccupant({
     crowded?: boolean;
     density?: ZoneEntityDensity;
     onClick?: () => void;
+    onInspect?: () => void;
     visualDamage?: number;
+    visualRelocating?: boolean;
     showLifeTotals?: boolean;
     fxAnchorRef?: (element: HTMLDivElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const mageLabel = getMageDisplayLabel(player);
-    const portraitHeightClass = density === 'packed'
-        ? ZONE_PACKED_ENTITY_HEIGHT_CLASS
-        : density === 'dense'
-            ? ZONE_LOOSE_ENTITY_HEIGHT_CLASS
-            : density === 'duel'
-                ? 'h-[8rem]'
-                : crowded
-                    ? 'h-[10.35rem]'
-                    : ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
+    const hasPrimaryAction = Boolean(onClick);
+    const hasSecondaryInspect = Boolean(hasPrimaryAction && onInspect);
+    const hasBrowseInspectAction = Boolean(!hasPrimaryAction && onInspect);
+    const portraitHeightClass = getZoneEntityHeightClass(density, crowded);
     const portraitStyle: CSSProperties = { aspectRatio: getMageWarsMagePreviewAspectRatio() };
 
     return (
@@ -2507,27 +2516,39 @@ function ZoneOccupant({
             className={cx(
                 'group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150',
                 portraitHeightClass,
-                role === 'source' && '-translate-y-2 shadow-[0_0_30px_rgba(34,211,238,0.58)]',
-                role === 'target' && 'shadow-[0_0_30px_rgba(16,185,129,0.48)]',
+                role === 'source' && `-translate-y-2 ${SCENE_OBJECT_LEGAL_GLOW_CLASS}`,
+                role === 'target' && SCENE_OBJECT_LEGAL_GLOW_CLASS,
+                onClick && !role && SCENE_OBJECT_LEGAL_GLOW_CLASS,
                 'pointer-events-auto',
+                visualRelocating && 'invisible',
                 onClick && 'cursor-pointer',
-                onClick && 'hover:brightness-110 hover:shadow-[0_0_24px_rgba(251,191,36,0.32)]',
+                hasBrowseInspectAction && 'cursor-zoom-in',
+                (onClick || hasBrowseInspectAction) && 'hover:brightness-110 hover:shadow-[0_0_24px_rgba(251,191,36,0.32)]',
             )}
             style={portraitStyle}
             ref={fxAnchorRef}
-            role={onClick ? 'button' : undefined}
-            tabIndex={onClick ? 0 : undefined}
+            role={onClick || hasBrowseInspectAction ? 'button' : undefined}
+            tabIndex={onClick || hasBrowseInspectAction ? 0 : undefined}
             onClick={(event) => {
-                if (!onClick) return;
                 event.stopPropagation();
-                onClick();
+                if (onClick) {
+                    onClick();
+                    return;
+                }
+                if (hasBrowseInspectAction) {
+                    onInspect?.();
+                }
             }}
             onKeyDown={(event) => {
-                if (!onClick) return;
+                if (!onClick && !hasBrowseInspectAction) return;
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     event.stopPropagation();
-                    onClick();
+                    if (onClick) {
+                        onClick();
+                        return;
+                    }
+                    onInspect?.();
                 }
             }}
             aria-label={t(`mages.${player.mageId}`)}
@@ -2544,6 +2565,9 @@ function ZoneOccupant({
             data-quickcast-ready={String(player.quickcastReady)}
             data-quickcast-token-state={player.quickcastReady ? 'ready' : 'spent'}
             data-primary-action={onClick ? 'true' : undefined}
+            data-browse-inspectable={hasBrowseInspectAction ? 'true' : undefined}
+            data-secondary-inspect={hasSecondaryInspect ? 'true' : undefined}
+            data-visual-relocating={visualRelocating ? 'true' : undefined}
         >
             <CardPreview
                 previewRef={getMageWarsMagePreviewRef(player.mageId, 'portrait')}
@@ -2551,15 +2575,10 @@ function ZoneOccupant({
                 title={mageLabel}
                 alt={mageLabel}
             />
-            {role ? (
+            {role || onClick ? (
                 <span
-                    className={cx(
-                        'pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-2',
-                        role === 'target'
-                            ? 'border-emerald-200/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.34),0_0_16px_rgba(16,185,129,0.44)]'
-                            : 'border-cyan-100/90 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.32),0_0_16px_rgba(34,211,238,0.44)]',
-                    )}
-                    data-testid={`mage-wars-mage-entity-${role}-frame`}
+                    className={SCENE_OBJECT_LEGAL_STROKE_CLASS}
+                    data-testid={role ? `mage-wars-mage-entity-${role}-frame` : 'mage-wars-mage-entity-legal-frame'}
                 />
             ) : null}
             <BoardDamageStateOverlay
@@ -2580,6 +2599,12 @@ function ZoneOccupant({
                 quickcastReady={player.quickcastReady}
                 statusTokens={player.statusTokens}
             />
+            {hasSecondaryInspect ? (
+                <MageWarsCardInspectButton
+                    title={mageLabel}
+                    onInspect={onInspect!}
+                />
+            ) : null}
         </div>
     );
 }
@@ -2625,6 +2650,7 @@ function ArenaStage({
     onObjectAbilitySelect,
     onMageAbilitySelect,
     onInspectCard,
+    onInspectMage,
     boundSpellCast,
     objectAbilityModeChoices,
     fxBus,
@@ -2636,6 +2662,7 @@ function ArenaStage({
     getVisualPlayerDamage,
     showLifeTotals = false,
     visualHeldObjects = [],
+    relocatingAnchorIds = [],
     tutorialHighlightTarget,
 }: {
     core: MageWarsCore;
@@ -2678,6 +2705,7 @@ function ArenaStage({
     onObjectAbilitySelect?: (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => void;
     onMageAbilitySelect?: (playerId: PlayerId, abilityId: MageWarsMageAbilityId) => void;
     onInspectCard?: (cardId: number, label?: string, inspectContext?: MageWarsInspectContext) => void;
+    onInspectMage?: (player: MageWarsPlayerState) => void;
     boundSpellCast?: { spellCardId: number; name: string; onSelect: () => void };
     objectAbilityModeChoices?: readonly { id: string; label: string; mode?: string; onSelect: () => void }[];
     fxBus: FxBus;
@@ -2689,6 +2717,7 @@ function ArenaStage({
     getVisualPlayerDamage: (player: MageWarsPlayerState) => number;
     showLifeTotals?: boolean;
     visualHeldObjects?: MageWarsArenaObjectState[];
+    relocatingAnchorIds?: readonly string[];
     tutorialHighlightTarget?: string;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -3091,10 +3120,12 @@ function ArenaStage({
                             data-lane-item-index={laneIndex}
                         >
                             <div className={cx(
-                                'relative shrink-0',
+                                'relative shrink-0 overflow-visible',
+                                getZoneEntityHeightClass(density),
                                 'pointer-events-auto',
                                 selectedObjectId === object.id && shouldShowSelectedAbilityActionDock && 'z-50',
                             )}
+                                style={{ aspectRatio: getMageWarsSpellCardAspectRatio(object.sourceSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO }}
                                 data-mage-wars-ability-source={selectedObjectId === object.id && shouldShowSelectedAbilityActionDock
                                     ? `object:${object.id}`
                                     : undefined}
@@ -3108,6 +3139,7 @@ function ArenaStage({
                                     visualDamage={getVisualObjectDamage(object)}
                                     visualLife={resolveMageWarsObjectEffectiveLife(core, object)}
                                     visualHeld={visualHeld}
+                                    visualRelocating={relocatingAnchorIds.includes(object.id)}
                                     showLifeTotals={showLifeTotals}
                                     meleeAttack={meleeAttack}
                                     role={fieldRole}
@@ -3136,25 +3168,25 @@ function ArenaStage({
                                         })(element);
                                     }}
                                 />
+                                <ArenaAttachmentStrip
+                                    objects={objectAttachments}
+                                    density={density}
+                                    hostKind="object"
+                                    ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
+                                    selectedObjectId={selectedObjectId}
+                                    shouldShowSelectedAbilityActionDock={shouldShowSelectedAbilityActionDock}
+                                    getRole={resolveAttachmentRole}
+                                    getOnClick={resolveAttachmentClick}
+                                    getOnInspect={resolveAttachmentInspect}
+                                    getFxAnchorRef={(attachment) => (element) => {
+                                        fxAnchors.registerAnchor({
+                                            anchorId: attachment.id,
+                                            anchorKind: 'attachment-slot',
+                                            entityRef: attachment.id,
+                                        })(element);
+                                    }}
+                                />
                             </div>
-                            <ArenaAttachmentStrip
-                                objects={objectAttachments}
-                                density={density}
-                                hostKind="object"
-                                ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
-                                selectedObjectId={selectedObjectId}
-                                shouldShowSelectedAbilityActionDock={shouldShowSelectedAbilityActionDock}
-                                getRole={resolveAttachmentRole}
-                                getOnClick={resolveAttachmentClick}
-                                getOnInspect={resolveAttachmentInspect}
-                                getFxAnchorRef={(attachment) => (element) => {
-                                    fxAnchors.registerAnchor({
-                                        anchorId: attachment.id,
-                                        anchorKind: 'attachment-slot',
-                                        entityRef: attachment.id,
-                                    })(element);
-                                }}
-                            />
                         </div>
                     );
                 };
@@ -3207,9 +3239,11 @@ function ArenaStage({
                             data-lane-item-index={laneIndex}
                         >
                             <div className={cx(
-                                'relative shrink-0 pointer-events-auto',
+                                'relative shrink-0 overflow-visible pointer-events-auto',
+                                getZoneEntityHeightClass(density, hasFieldCards || mageAttachments.length > 0),
                                 selectedMageId === occupant.id && shouldShowSelectedAbilityActionDock && 'z-50',
                             )}
+                                style={{ aspectRatio: getMageWarsMagePreviewAspectRatio() }}
                                 data-mage-wars-ability-source={selectedMageId === occupant.id && shouldShowSelectedAbilityActionDock
                                     ? `mage:${occupant.id}`
                                     : undefined}
@@ -3221,6 +3255,7 @@ function ArenaStage({
                                     crowded={hasFieldCards || mageAttachments.length > 0}
                                     density={density}
                                     visualDamage={getVisualPlayerDamage(occupant)}
+                                    visualRelocating={relocatingAnchorIds.includes(occupant.id)}
                                     showLifeTotals={showLifeTotals}
                                     fxAnchorRef={(element) => {
                                         fxAnchors.registerAnchor({
@@ -3234,26 +3269,29 @@ function ArenaStage({
                                         : canSelectMageActor
                                             ? () => onActorPlayerSelect?.(occupant.id)
                                             : undefined}
+                                    onInspect={onInspectMage
+                                        ? () => onInspectMage(occupant)
+                                        : undefined}
+                                />
+                                <ArenaAttachmentStrip
+                                    objects={mageAttachments}
+                                    density={density}
+                                    hostKind="mage"
+                                    ownerSide={resolveSeatOwnerSide(core, occupant.id)}
+                                    selectedObjectId={selectedObjectId}
+                                    shouldShowSelectedAbilityActionDock={shouldShowSelectedAbilityActionDock}
+                                    getRole={resolveAttachmentRole}
+                                    getOnClick={resolveAttachmentClick}
+                                    getOnInspect={resolveAttachmentInspect}
+                                    getFxAnchorRef={(attachment) => (element) => {
+                                        fxAnchors.registerAnchor({
+                                            anchorId: attachment.id,
+                                            anchorKind: 'attachment-slot',
+                                            entityRef: attachment.id,
+                                        })(element);
+                                    }}
                                 />
                             </div>
-                            <ArenaAttachmentStrip
-                                objects={mageAttachments}
-                                density={density}
-                                hostKind="mage"
-                                ownerSide={resolveSeatOwnerSide(core, occupant.id)}
-                                selectedObjectId={selectedObjectId}
-                                shouldShowSelectedAbilityActionDock={shouldShowSelectedAbilityActionDock}
-                                getRole={resolveAttachmentRole}
-                                getOnClick={resolveAttachmentClick}
-                                getOnInspect={resolveAttachmentInspect}
-                                getFxAnchorRef={(attachment) => (element) => {
-                                    fxAnchors.registerAnchor({
-                                        anchorId: attachment.id,
-                                        anchorKind: 'attachment-slot',
-                                        entityRef: attachment.id,
-                                    })(element);
-                                }}
-                            />
                         </div>
                     );
                 };
@@ -5079,6 +5117,23 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             title: getMageDisplayLabel(player),
             aspectRatio: getMageWarsMagePreviewAspectRatio(),
             mageId: player.mageId,
+            previewKind: 'card',
+            hostPlayerId: player.id,
+            attachments: mapInspectAttachments(hostAttachments),
+        });
+    };
+    const handleInspectMageEntity = (player: MageWarsPlayerState) => {
+        const previewRef = getMageWarsMagePreviewRef(player.mageId, 'portrait');
+        if (!previewRef) return;
+        const hostAttachments = Object.values(core.objects).filter((attachment) => (
+            isMageWarsMageAttachmentObject(attachment, player.id)
+        ));
+        setMagnifiedPreview({
+            previewRef,
+            title: getMageDisplayLabel(player),
+            aspectRatio: getMageWarsMagePreviewAspectRatio(),
+            mageId: player.mageId,
+            previewKind: 'portrait',
             hostPlayerId: player.id,
             attachments: mapInspectAttachments(hostAttachments),
         });
@@ -5213,6 +5268,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         onObjectAbilitySelect={handleObjectAbilitySelect}
                         onMageAbilitySelect={handleMageAbilitySelect}
                         onInspectCard={handleInspectSpellCard}
+                        onInspectMage={handleInspectMageEntity}
                         boundSpellCast={selectedBoundSpellCast}
                         objectAbilityModeChoices={objectAbilityModeChoices}
                         fxBus={fxBus}
@@ -5224,6 +5280,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         getVisualPlayerDamage={getVisualPlayerDamage}
                         showLifeTotals={showBoardLifeTotals}
                         visualHeldObjects={mageWarsEvents.heldObjects}
+                        relocatingAnchorIds={mageWarsEvents.relocatingAnchorIds}
                         tutorialHighlightTarget={boardTutorialHighlightTarget}
                     />
                 </ZoomPanViewport>
@@ -5446,41 +5503,44 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         data-testid="mage-wars-card-magnify-content"
                         data-source-card-id={magnifiedPreview.sourceCardId}
                         data-mage-id={magnifiedPreview.mageId}
+                        data-mage-preview-kind={magnifiedPreview.previewKind}
                     >
                         <div
-                            className="flex max-h-[calc(100vh-3rem)] min-w-0 shrink-0 items-start justify-center gap-4"
+                            className="relative max-h-[calc(100vh-3rem)] max-w-[calc(100vw-3rem)] overflow-visible"
+                            style={{
+                                aspectRatio: magnifiedPreview.aspectRatio,
+                                width: magnifiedPreview.aspectRatio >= 1
+                                    ? 'min(78vw, 72rem)'
+                                    : 'auto',
+                                height: magnifiedPreview.aspectRatio >= 1
+                                    ? 'auto'
+                                    : 'min(88vh, calc(100vh - 3rem))',
+                                maxWidth: '100%',
+                                maxHeight: 'calc(100vh - 3rem)',
+                            }}
                         >
-                            <div
-                                className="relative max-h-[calc(100vh-3rem)] max-w-[calc(100vw-3rem)]"
-                                style={{
-                                    aspectRatio: magnifiedPreview.aspectRatio,
-                                    width: magnifiedPreview.aspectRatio >= 1
-                                        ? 'min(78vw, 72rem)'
-                                        : 'auto',
-                                    height: magnifiedPreview.aspectRatio >= 1
-                                        ? 'auto'
-                                        : 'min(88vh, calc(100vh - 3rem))',
-                                    maxWidth: '100%',
-                                    maxHeight: 'calc(100vh - 3rem)',
-                                }}
-                            >
-                                <CardPreview
-                                    previewRef={magnifiedPreview.previewRef}
-                                    className="h-full w-full object-contain shadow-2xl"
-                                    title={magnifiedPreview.title}
-                                    alt={magnifiedPreview.title}
-                                />
-                            </div>
+                            <CardPreview
+                                previewRef={magnifiedPreview.previewRef}
+                                className="h-full w-full object-contain shadow-2xl"
+                                title={magnifiedPreview.title}
+                                alt={magnifiedPreview.title}
+                            />
                             {magnifiedPreview.attachments && magnifiedPreview.attachments.length > 0 ? (
                                 <div
-                                    className="flex max-h-[calc(100vh-3rem)] flex-col gap-3 overflow-y-auto pr-1"
+                                    className="absolute left-full top-0 ml-3 flex max-h-[calc(100vh-3rem)] flex-col gap-3 overflow-y-auto pr-1"
+                                    style={{
+                                        width: magnifiedPreview.aspectRatio >= 1
+                                            ? 'calc(min(78vw, 72rem) / 3)'
+                                            : `calc(min(88vh, calc(100vh - 3rem)) * ${magnifiedPreview.aspectRatio} / 3)`,
+                                    }}
                                     data-testid="mage-wars-card-magnify-attachments"
+                                    data-attachment-width-ratio="0.333"
                                 >
                                     {magnifiedPreview.attachments.map((attachment) => (
                                         <button
                                             key={attachment.objectId}
                                             type="button"
-                                            className="relative w-[min(14rem,28vw)] shrink-0 overflow-hidden rounded-[0.2rem] text-left shadow-2xl"
+                                            className="relative w-full shrink-0 overflow-hidden rounded-[0.2rem] text-left shadow-2xl"
                                             style={{ aspectRatio: attachment.aspectRatio }}
                                             data-testid="mage-wars-card-magnify-attachment"
                                             data-object-id={attachment.objectId}

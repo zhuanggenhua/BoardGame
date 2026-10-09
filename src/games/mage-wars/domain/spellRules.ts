@@ -534,6 +534,19 @@ export function isMageWarsSpellBindingStaffSpell(spell: MageWarsConfigSpellCard)
     return spell.spellCardId === 3716 || spell.spellCardId === 3725;
 }
 
+export function resolveMageWarsBoundSpellSource(
+    core: MageWarsCore,
+    playerId: PlayerId,
+    spellCardId: number,
+): MageWarsArenaObjectState | undefined {
+    return Object.values(core.objects).find((object) => (
+        object.kind === 'equipment'
+        && object.ownerId === playerId
+        && object.anchoredToPlayerId === playerId
+        && object.boundSpellCardId === spellCardId
+    ));
+}
+
 export function isMageWarsEpicSpell(spell: Pick<MageWarsConfigSpellCard, 'tags'>): boolean {
     return (spell.tags ?? []).some((tag) => tag === '史诗' || tag.toLowerCase() === 'epic');
 }

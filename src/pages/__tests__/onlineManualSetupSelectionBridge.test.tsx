@@ -8,6 +8,7 @@ import { GameClientContext } from '../../engine/transport/reactContext';
 import { useGameClient } from '../../engine/transport/react';
 import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { OnlineManualSetupSelectionBridge } from '../onlineManualSetupSelectionBridge';
+import qidahenEngineConfig from '../../games/qidahen/game';
 
 const buildSetupState = (): MatchState<unknown> => ({
     core: {
@@ -40,6 +41,7 @@ const Probe = () => {
     const core = (state?.core ?? {}) as {
         selectedFactions?: Record<string, string>;
         selectedCharacters?: Record<string, string>;
+        factionSelection?: { selections?: Record<string, string> } | null;
     };
 
     return (
@@ -49,6 +51,7 @@ const Probe = () => {
             <div data-testid="ai-faction">{core.selectedFactions?.['1'] ?? 'missing'}</div>
             <div data-testid="ai2-faction">{core.selectedFactions?.['2'] ?? 'missing'}</div>
             <div data-testid="ai-character">{core.selectedCharacters?.['1'] ?? 'missing'}</div>
+            <div data-testid="qidahen-faction">{core.factionSelection?.selections?.['1'] ?? 'unselected'}</div>
             <button
                 type="button"
                 data-testid="select-faction"
@@ -83,6 +86,13 @@ const Probe = () => {
                 onClick={() => dispatch('PLAYER_READY', {})}
             >
                 ready dt
+            </button>
+            <button
+                type="button"
+                data-testid="select-qidahen-faction"
+                onClick={() => dispatch('SELECT_FACTION', { factionId: 'mongol' })}
+            >
+                select qidahen faction
             </button>
         </div>
     );
@@ -301,5 +311,34 @@ describe('OnlineManualSetupSelectionBridge', () => {
             actionKind: 'select-faction',
             selectionId: 'trickster',
         });
+    });
+
+    it('七大恨自定义 faction-selection 由真人代 AI 时应直接提交，不等待 PLAYER_READY', () => {
+        const requestManualSetupSelection = vi.fn(() => true);
+        renderBridge({
+            state: {
+                core: {
+                    factionSelection: {
+                        availableFactionIds: ['ming', 'mongol', 'jin'],
+                        selections: { '0': 'ming' },
+                    },
+                    pendingScenarioCharacterChoices: [],
+                    pendingScenarioArmamentChoices: [],
+                },
+                sys: { phase: 'factionSelect' },
+            } as MatchState<unknown>,
+            requestManualSetupSelection,
+            engineConfig: qidahenEngineConfig,
+        });
+
+        fireEvent.click(screen.getByTestId('select-qidahen-faction'));
+
+        expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
+        expect(requestManualSetupSelection.mock.calls[0]?.[0]).toEqual({
+            targetPlayerId: '1',
+            actionKind: 'faction-selection',
+            selectionId: 'mongol',
+        });
+        expect(screen.getByTestId('qidahen-faction').textContent).toBe('mongol');
     });
 });

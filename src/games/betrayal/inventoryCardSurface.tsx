@@ -20,7 +20,7 @@ import {
 } from "./inventoryPresentation";
 import type { BetrayalTradeCardStatus } from "./trade";
 
-export const BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH = 62;
+export const BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH = 84;
 
 export type BetrayalInventoryCardSurfaceLayout =
   | "focus"
@@ -131,7 +131,7 @@ export function BetrayalInventoryCardSurface({
     ? `min-h-[52px] text-[18px] font-semibold leading-[22px] ${frontVisual ? "text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]" : "text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]"}`
     : isFocus
       ? `min-h-[34px] text-[13px] font-semibold leading-[16px] ${frontVisual ? "text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]" : "text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]"}`
-      : `min-h-[16px] text-[8px] font-semibold leading-[9px] ${frontVisual ? "text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]" : "text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]"}`;
+      : `min-h-[20px] text-[10px] font-semibold leading-[12px] ${frontVisual ? "text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]" : "text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]"}`;
 
   const compactStackStyle = isCompact
     ? {

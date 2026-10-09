@@ -14,6 +14,7 @@ import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
 import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { DiscoveryAtlasFrame } from "./atlasFrameSurface";
 import { RecentRollPanel } from "./recentRollSurface";
+import { BETRAYAL_HOUSE_DICE_STYLE_PROFILE } from "./houseDicePresentation";
 import {
   ExplorerTraitOutcomePreview,
   TRAIT_CHOICE_TONE_CLASS,
@@ -62,6 +63,7 @@ function BetrayalSelectionChip({
 
 export function BetrayalEventChoiceSurface({
   choice,
+  isMobileViewport,
   isEventSymbolSkip,
   awaitsMapTargetClick,
   hasMapTargetRooms,
@@ -93,6 +95,7 @@ export function BetrayalEventChoiceSurface({
   onResolve,
 }: {
   choice: BetrayalPendingEventChoice;
+  isMobileViewport: boolean;
   isEventSymbolSkip: boolean;
   awaitsMapTargetClick: boolean;
   hasMapTargetRooms: boolean;
@@ -134,8 +137,8 @@ export function BetrayalEventChoiceSurface({
           awaitsMapTargetClick ? "pointer-events-none" : "pointer-events-auto"
         } flex items-center ${
           isEventSymbolSkip
-            ? "absolute bottom-[96px] left-[248px] right-[232px] top-[92px] items-end justify-center px-2 pb-6 pt-0"
-            : "absolute bottom-[96px] left-[248px] right-[232px] top-[92px] items-start justify-center px-2 py-0"
+            ? "absolute bottom-[96px] left-[264px] right-[232px] top-[180px] items-end justify-center px-2 pb-6 pt-0"
+            : "absolute bottom-[96px] left-[264px] right-[232px] top-[180px] items-start justify-center px-2 py-0"
         }`}
         style={{ zIndex: UI_Z_INDEX.overlayRaised + 160 }}
       >
@@ -150,7 +153,9 @@ export function BetrayalEventChoiceSurface({
             isEventSymbolSkip
               ? "max-h-[440px] w-[620px] grid-cols-1 gap-4"
               : hasResultPanel
-                ? "max-h-full w-full max-w-[1100px] grid-cols-[minmax(230px,260px)_minmax(330px,1fr)_minmax(352px,360px)] items-start gap-5"
+                ? isMobileViewport
+                  ? "max-h-full w-full max-w-[1420px] grid-cols-[minmax(230px,260px)_minmax(620px,1fr)_minmax(352px,360px)] items-start gap-[90px]"
+                  : "max-h-full w-full max-w-[1100px] grid-cols-[minmax(230px,260px)_minmax(330px,1fr)_minmax(352px,360px)] items-start gap-5"
                 : usesWideDamageChoiceLayout
                   ? "max-h-full w-full max-w-[1000px] grid-cols-[minmax(240px,280px)_minmax(420px,1fr)] items-start gap-6"
                   : "max-h-full w-full max-w-[820px] grid-cols-[minmax(240px,280px)_minmax(380px,1fr)] items-start gap-6"
@@ -190,7 +195,7 @@ export function BetrayalEventChoiceSurface({
               denseResult
               denseResultPlacement="stacked"
                 openTableResultDocked={false}
-                diceVisualScale={1}
+                diceVisualScale={isMobileViewport ? 2.85 : 1}
                 resultReadable={resultReadable}
                 onDiceSettledChange={onDiceSettledChange}
               />

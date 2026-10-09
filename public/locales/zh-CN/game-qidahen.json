@@ -165,17 +165,18 @@
       "mapDirectClickHint": "点击目标继续。",
       "currentClickableRegions": "目标地区",
       "grantPardon": {
-        "targetRegionHint": "点击地图上高亮的{{factionName}}控制区作为接收区。",
-        "opponentHint": "该接收区相邻部队属于不同对手，请选择一方；随后由该玩家亲自选择部队。",
-        "troopHint": "请{{factionName}}玩家点击地图上高亮的一支部队；点击后直接移入{{regionName}}。",
+        "targetRegionHint": "点击地图上高亮的{{factionName}}控制区作为接收区；若接收区唯一对应一名对手，系统会自动锁定该对手。",
+        "opponentHint": "同一接收区对应多个对手；执行方先选择其中一方，随后由该玩家选择部队。",
+        "troopHint": "请{{factionName}}玩家点击地图上高亮的一支部队；接收区已自动锁定该对手，点击后直接移入{{regionName}}。",
+        "derivedOpponentLabel": "接收区已自动锁定对手：{{factionName}}",
         "mapTargetTitle": "选择接收区",
-        "mapTargetHint": "点击地图上高亮的{{factionName}}控制区",
+        "mapTargetHint": "点击地图上高亮的{{factionName}}控制区作为接收区；唯一对应的对手会自动锁定",
         "mapTargetBadge": "接收区",
         "mapOpponentTitle": "指定部队所属对手",
-        "mapOpponentHint": "该接收区相邻部队属于不同对手，请选择一方；随后由该玩家亲自选择部队。",
+        "mapOpponentHint": "同一接收区对应多个对手；执行方先选择其中一方，随后由该玩家选择部队。",
         "mapOpponentBadge": "指定对手",
         "mapTroopTitle": "选择部队",
-        "mapTroopHint": "{{factionName}}玩家点击高亮部队；该部队将直接转入{{regionName}}",
+        "mapTroopHint": "{{factionName}}玩家点击高亮部队；对手已由接收区自动锁定，该部队将直接转入{{regionName}}",
         "mapTroopBadge": "选择部队",
         "fallbackListLabel": "备用选择"
       },
@@ -326,10 +327,13 @@
     "scenarioVote": {
       "eyebrow": "局内剧本选择",
       "title": "房主选择本局剧本",
+      "overlayTitle": "起始剧本设置卡",
       "selectCard": "选择一张剧本卡",
       "description": "创建房间只决定人数与 AI。进入棋盘后，房主在这里阅读剧本并直接选择；其他席位只等待结果。",
       "playerCount": "{{count}} 人房间",
+      "playerCountShort": "{{count}} 人",
       "unavailableForPlayerCount": "当前 {{count}} 人房不可投，适用 {{supported}} 人",
+      "unavailableForPlayerCountShort": "当前 {{count}} 人房不可投",
       "voteCount": "{{count}} 项",
       "supportedPlayers": "适用 {{count}} 人",
       "orderBadge": "战局 {{orderNo}}",
@@ -353,11 +357,16 @@
       "hostMayPick": "点选采用",
       "waitingHost": "等待房主选择",
       "waitingHostShort": "等待房主",
-      "waitingHint": "等待房主点选剧本。"
+      "waitingHint": "等待房主点选剧本。",
+      "close": "关闭"
     },
     "factionSelection": {
       "eyebrow": "局内开局设置",
       "title": "选择你的阵营",
+      "scenarioMenu": "剧本",
+      "confirmedFaction": "已确认 {{factionName}}",
+      "unavailableInScenario": "本剧本无此势力",
+      "factionActions": "势力行动",
       "youConfirmed": "你已确认",
       "pendingConfirm": "待确认",
       "occupiedBy": "{{playerName}} 已确认",
@@ -367,6 +376,7 @@
       "confirmedStatus": "已确认",
       "pendingStatus": "待确认",
       "chooseAvailable": "请选择一个未被占用的阵营",
+      "confirmScenarioFirst": "请先确认起始剧本设置卡",
       "confirmedCount": "已确认 {{confirmed}} / {{total}}",
       "confirmFaction": "确认阵营"
     }
@@ -391,14 +401,14 @@
         "wheelFirst": "开局的手牌上限检查已自动完成。当前大明有 3 张手牌，上限 15 张，不需要弃牌。现在进入轮盘行动。",
         "wheelRule": "公共轮盘每次可前进 1、2 或 3 格，三种走法都是合法选择，分别对应不同轮盘结算。",
         "wheelMove": "点击轮盘上高亮的“征兵训练”区域。",
-        "wheelResult": "征兵训练完成：当前区域正规军 2→4。",
+        "wheelResult": "征兵训练已结算：宣府正规军从 2 支变为 4 支，炮兵从 1 级升至 2 级。",
         "handActionOrder": "手牌行动每回合选 1 项。大明右侧列出四个同层势力行动：突袭作战、征召军队、赐印招安、驱虎吞狼。这四项之间没有规则规定的固定先后；轮盘行动与手牌行动也没有固定先后。",
-        "grantPardonRule": "赐印招安：弃 3 张手牌，指定 1 名对手；由被指定的玩家选择一支与大明控制区相邻的部队，将其移入相邻的大明控制区并转换为大明部队。",
+        "grantPardonRule": "赐印招安：弃 3 张手牌，指定 1 名对手；由被指定的玩家选择一支与大明控制区相邻的部队，将其移入相邻的大明控制区并转换为大明部队。实际操作先点击接收区；若接收区唯一对应一名对手，系统自动锁定该对手；只有对应多名对手时，才由执行方补选对手。",
         "pickAction": "点击右侧的“赐印招安”行动。",
-        "payCards": "依次点击 3 张手牌；选中的牌会抬起并显示“已选”，支付面板显示 3 / 3 后确认支付。",
-        "chooseGrantPardonTarget": "点击地图上高亮的山海关作为接收区。",
-        "chooseGrantPardonSource": "现在由后金玩家亲自点击锦州一支高亮部队；点击后，它会立即移入山海关并转为大明部队。",
-        "actionResult": "赐印招安完成：锦州部队 2→1，山海关部队 2→3；被选部队归大明。",
+        "payCards": "依次点击 3 张手牌；点击后的牌会抬起、放大并显示金色“已选”标记，支付面板显示 3 / 3 后确认支付。",
+        "chooseGrantPardonTarget": "点击地图上高亮的山海关作为接收区；该接收区若唯一对应一名对手，系统会自动锁定该对手。",
+        "chooseGrantPardonSource": "后金玩家点击高亮的锦州部队；该部队会立即移入山海关并转为大明部队。",
+        "actionResult": "赐印招安完成：锦州部队从 2 支变为 1 支，山海关部队从 2 支变为 3 支；被选部队归大明。",
         "finish": "首回合这段行动已完成。"
       }
     },
@@ -520,7 +530,7 @@
       "steps": {
         "overview": "进入轮盘征兵训练结算。",
         "chooseMove": "点击轮盘上高亮的“征兵训练”区域。",
-        "result": "征兵训练完成：宣府正规军 2→4，炮兵 1→2 级。",
+        "result": "征兵训练完成：宣府正规军从 2 支变为 4 支，炮兵从 1 级升至 2 级。",
         "finish": "征兵训练已完成。"
       }
     },

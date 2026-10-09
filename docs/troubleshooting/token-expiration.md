@@ -7,8 +7,8 @@
 | 对象 | 现实含义 | 主源 |
 | --- | --- | --- |
 | Access Token | 前端保存在 `localStorage.auth_token` 的登录凭证，当前有效期 30 天 | [`apps/api/src/modules/auth/auth.service.ts`](../../apps/api/src/modules/auth/auth.service.ts) |
-| Refresh Token | API 通过 cookie 维持的长期续签凭证，当前有效期 180 天 | [`apps/api/src/modules/auth/auth.service.ts`](../../apps/api/src/modules/auth/auth.service.ts) |
-| 自动刷新 | 页面启动、恢复可见或 token 将过期时尝试 `/auth/refresh` | [`src/hooks/useTokenRefresh.ts`](../../src/hooks/useTokenRefresh.ts) |
+| Refresh Token | API 通过 httpOnly cookie 维持的设备级续签凭证；Cookie 与 Mongo 会话均按活动滚动延长 400 天，服务端无固定绝对期限 | [`apps/api/src/modules/auth/auth.service.ts`](../../apps/api/src/modules/auth/auth.service.ts) |
+| 自动刷新 | 页面启动 `/me` 遇 401、恢复可见或 Access Token 将过期时，通过 `/auth/refresh` 恢复 | [`src/hooks/useTokenRefresh.ts`](../../src/hooks/useTokenRefresh.ts) 与 [`src/contexts/AuthContext.tsx`](../../src/contexts/AuthContext.tsx) |
 | 请求头 | 需要认证的请求必须携带 `Authorization: Bearer <token>` | 调用端源码和浏览器 Network |
 
 ## 快速判断
@@ -53,6 +53,14 @@ node scripts/diagnose-auth.mjs <token>
 | refresh 失败 | 查 `/auth/refresh`、cookie、API 是否启用，以及 [`useTokenRefresh`](../../src/hooks/useTokenRefresh.ts) |
 | 前端没带请求头 | 查具体调用端，例如 [`src/services/matchApi.ts`](../../src/services/matchApi.ts) 或对应页面组件 |
 | 服务端拒绝 token | 查 [`server.ts`](../../server.ts) 和 API 鉴权 guard 的验证逻辑 |
+
+## 长期登录边界
+
+- MongoDB 是活跃 Refresh 会话的持久真相源；API 进程重启和缓存清理不应清除已迁入 MongoDB 的会话。会话 400 天不活跃后会过期清理。
+- 同账号不同设备各自独立；当前设备退出只撤销当前会话，修改或重置密码撤销该用户全部 Refresh 会话。
+- 改密/重置密码撤销所有 Refresh 会话，但已签发的 Access JWT 目前没有集中即时吊销机制，仍可能有效至 30 天到期；不要把 Refresh 撤销描述为所有旧 Access Token 立即失效。
+- 浏览器持久 Cookie 的期限不是无限期，浏览器/系统可清理站点数据；“永久登录”无法作此保证。
+- 当前公网 HTTP 入口不提供传输加密。`HttpOnly` 不能防止网络链路窃听，不应在不可信网络使用长期登录凭证；达到商业生产的传输安全仍需 HTTPS。
 
 ## 不要把这些当成根因
 

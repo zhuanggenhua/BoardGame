@@ -48,6 +48,7 @@ import {
     isMageWarsElusiveArenaObject,
     isMageWarsGuardingArenaObjectCanProtect,
     isMageWarsLegendarySpellObjectInPlay,
+    resolveMageWarsBoundSpellSource,
     canMageWarsObjectUsePostMoveQuickAction,
     isMageWarsImplementedForceGripSpell,
     isMageWarsEquipmentArenaObject,
@@ -1394,7 +1395,10 @@ export function validateCommand(
                         return invalid('wallEdgeOccupied');
                     }
                 }
-                if (!isSpellPrepared(player, command.payload.spellCardId)) {
+                if (
+                    !isSpellPrepared(player, command.payload.spellCardId)
+                    && !resolveMageWarsBoundSpellSource(state.core, player.id, command.payload.spellCardId)
+                ) {
                     return invalid('spellNotPrepared');
                 }
             }

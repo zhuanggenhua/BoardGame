@@ -41,7 +41,7 @@ metadata:
 | [`data-entry.md`](standards/data-entry.md) | 数据录入标准：规则、图片、OCR、配置字段和核对口径——录入规则或资源数据时查 |
 | [`description-to-implementation-audit.md`](standards/description-to-implementation-audit.md) | 描述到实现审计主源：从规则文字追到代码消费点——查玩法实现是否吃对规则时查 |
 | [`documentation-style.md`](standards/documentation-style.md) | 项目文档写作标准：职责落点、相对链接和历史记录边界——写或整理文档时查 |
-| [`e2e-verification.md`](standards/e2e-verification.md) | E2E 与截图证据：真实入口、状态注入、截图资格和证据组——跑端到端验收时查 |
+| [`e2e-verification.md`](standards/e2e-verification.md) | E2E 与截图证据：正式 V1 网页入口、状态注入、截图资格和证据组——跑端到端验收时查 |
 | [`engine-ability-framework.md`](standards/engine-ability-framework.md) | 能力框架标准：能力定义、消费点和跨游戏抽象边界——改能力系统时查 |
 | [`engine-action-log.md`](standards/engine-action-log.md) | 行动日志标准：事件、可见记录和反馈追踪——改 action log 或事件展示时查 |
 | [`engine-damage-pipeline.md`](standards/engine-damage-pipeline.md) | 伤害管线标准：伤害计算、结算时机和跨层消费——改伤害或生命值流程时查 |
@@ -55,7 +55,6 @@ metadata:
 | [`generated-design-implementation.md`](standards/generated-design-implementation.md) | 生成设计落地标准：设计稿到前端实现的可复刻边界——按视觉稿实现 UI 时查 |
 | [`global-systems.md`](standards/global-systems.md) | 全局系统标准：跨游戏公共能力和入口边界——改全局能力时查 |
 | [`golden-rules.md`](standards/golden-rules.md) | 项目黄金规则：高频硬边界和不可降级口径——开工前或复盘时查 |
-| [`home-v2-design.md`](standards/home-v2-design.md) | 首页设计标准：Home V2 信息架构和 UI 边界——改首页时查 |
 | [`regression-closeout.md`](standards/regression-closeout.md) | 回归收口标准：症状保真、红测、同类扩审和证据口径——修回归问题时查 |
 | [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：Choice Request、权限、响应窗口和 AI 合法动作——新游戏、卡牌效果和特殊响应设计时查 |
 | [`rule-contract-audit.md`](standards/rule-contract-audit.md) | 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查 |

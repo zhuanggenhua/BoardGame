@@ -229,6 +229,32 @@ const expectBggTableAnchors = () => {
     ).toBeInTheDocument();
 };
 
+test('观战者可查看同时行动游戏的全部玩家手牌且没有回合提交入口', () => {
+    const core = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+    const dispatch = vi.fn();
+
+    renderWithToast(
+        <Board
+            G={stateOf(core)}
+            dispatch={dispatch as never}
+            playerID={null}
+            matchData={matchDataForPlayerCount(3)}
+            isMultiplayer
+            isConnected
+        />,
+    );
+
+    for (const playerId of core.playerIds) {
+        const hand = screen.getByTestId(playerId === core.playerIds[0]
+            ? 'the-gang-local-hand-rows'
+            : `the-gang-spectator-hand-${playerId}-rows`);
+        expect(within(hand).getAllByRole('img')).toHaveLength(core.players[playerId].pocketCards.length);
+    }
+    expect(screen.queryByTestId('the-gang-start-heist')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('the-gang-next-round')).not.toBeInTheDocument();
+    expect(dispatch).not.toHaveBeenCalled();
+});
+
 test('个人公共牌模式把本地和其它座位的明牌都放回牌桌', () => {
     let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
     core = reduceCommand(core, {

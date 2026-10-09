@@ -78,6 +78,36 @@ describe('buildLocalDispatchCommand', () => {
         });
     });
 
+    it('交互系统命令无内部覆盖时，应按当前交互 owner 解析执行者', () => {
+        const state = createState();
+        state.sys.interaction.current = {
+            id: 'interaction-0',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: 'test',
+                options: [],
+            },
+        };
+
+        const result = buildLocalDispatchCommand({
+            commandType: 'SYS_INTERACTION_RESPOND',
+            payload: {
+                interactionId: 'interaction-0',
+                optionId: 'confirm',
+            },
+            state,
+            localPregameControlledPlayerId: '1',
+        });
+
+        expect(result.resolvedPlayerId).toBe('0');
+        expect(result.command.playerId).toBe('0');
+        expect(result.command.payload).toEqual({
+            interactionId: 'interaction-0',
+            optionId: 'confirm',
+        });
+    });
+
     it('教程 AI 命令应自动附带 _noSnapshot，避免占用撤回次数', () => {
         const result = buildLocalDispatchCommand({
             commandType: 'ROLL_DICE',

@@ -41,6 +41,22 @@ export function resolveBetrayalTraitDeltas(
     .filter((entry) => entry.amount !== 0);
 }
 
+export function shouldPresentExplorerTraitChangeFeedback({
+  explorerCount,
+  changedCount,
+}: {
+  explorerCount: number;
+  changedCount: number;
+}): boolean {
+  if (changedCount <= 0) {
+    return false;
+  }
+  if (explorerCount >= 2 && changedCount >= explorerCount) {
+    return false;
+  }
+  return true;
+}
+
 export type BetrayalActivityPresentation = {
   visibleActivityEntries: BetrayalActivityEntry[];
   latestLogEntry: BetrayalActivityEntry | null;

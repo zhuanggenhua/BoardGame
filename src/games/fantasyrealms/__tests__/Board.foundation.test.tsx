@@ -2353,7 +2353,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('旁观视角不会借用当前玩家身份，不会泄露任何手牌或实时总分', () => {
+    it('旁观视角默认跟随当前行动玩家，完整展示其手牌并保留只读检视', () => {
         const hiddenOpponentCard = HAND_CARDS[5]!;
         const publicDiscardCard = PUBLIC_CARDS[0]!;
         withViewport(1024, 768, () => {
@@ -2408,10 +2408,13 @@ describe('FantasyRealms Board foundation', () => {
             });
 
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
-            expect(screen.queryByRole('button', { name: /查看手牌/ })).not.toBeInTheDocument();
             expect(screen.queryByRole('button', { name: /弃置手牌/ })).not.toBeInTheDocument();
             expect(screen.queryByText(hiddenOpponentCard.displayNameZh)).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
+
+            const activeHandCard = screen.getByRole('button', { name: `查看手牌 ${HAND_CARDS[4]!.displayNameZh}` });
+            fireEvent.click(activeHandCard);
+            expect(screen.getByTestId('fantasyrealms-magnify-overlay')).toBeVisible();
 
             const scoreTable = screen.getByLabelText('玩家分数总览');
             expect(within(scoreTable).queryByText('终局揭示')).toBeNull();

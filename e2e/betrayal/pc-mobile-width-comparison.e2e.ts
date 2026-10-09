@@ -26,6 +26,9 @@ const PHONE_HUD_MAX_SCALE = 0.6;
 const PHONE_SHELL_WIDTH = PC_VIEWPORT.width * PHONE_SHELL_SCALE;
 const PHONE_SHELL_OFFSET_X = (PHONE_VIEWPORT.width - PHONE_SHELL_WIDTH) / 2;
 const EVIDENCE_DIR = "evidence/betrayal-width-comparison-20260920-board-shell";
+const FINAL_REVIEW_EVIDENCE_DIR = "evidence/betrayal-mobile-acceptance-20261008";
+const SCENARIO_BOOK_PC_SCREENSHOT = `${FINAL_REVIEW_EVIDENCE_DIR}/03-PC-剧本书正文无额外标题.png`;
+const SCENARIO_BOOK_PHONE_SCREENSHOT = `${FINAL_REVIEW_EVIDENCE_DIR}/04-手机-剧本书正文无额外标题.png`;
 const CHARACTER_PC_SCREENSHOT = `${EVIDENCE_DIR}/00-pc-1920x1080-角色选择.jpg`;
 const CHARACTER_PHONE_SCREENSHOT = `${EVIDENCE_DIR}/00-phone-936x432-角色选择.jpg`;
 const RUNTIME_PC_SCREENSHOT = `${EVIDENCE_DIR}/01-pc-1920x1080-主牌桌常态.jpg`;
@@ -732,11 +735,11 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
         phoneMetrics.detailScrollMetrics?.clientWidth ?? 0,
       );
       expect(phoneMetrics.detailTitle?.height ?? 0).toBeCloseTo(
-        pcMetrics.detailTitle?.height ?? 0,
+        (pcMetrics.detailTitle?.height ?? 0) * PHONE_SHELL_SCALE,
         0,
       );
       expect(phoneMetrics.detailBody?.height ?? 0).toBeCloseTo(
-        pcMetrics.detailBody?.height ?? 0,
+        (pcMetrics.detailBody?.height ?? 0) * PHONE_SHELL_SCALE,
         0,
       );
       expect(phoneMetrics.confirm?.width ?? 0).toBeCloseTo(
@@ -791,12 +794,12 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
           `${label}按钮文字不得低于16px`,
         ).toBeGreaterThanOrEqual(16);
         expect(
-          actions.every((action) => Math.abs(action.height - 56) <= 1),
-          `${label}三项主操作必须保持56px实际高度`,
+          actions.every((action) => Math.abs(action.height - 44) <= 1),
+          `${label}三项主操作必须保持与正文匹配的44px高度`,
         ).toBe(true);
         expect(
-          actions.every((action) => Math.abs(action.fontSize - 18) <= 0.5),
-          `${label}三项主操作字号必须保持18px`,
+          actions.every((action) => Math.abs(action.fontSize - 16) <= 0.5),
+          `${label}三项主操作字号必须与正文16px一致`,
         ).toBe(true);
         expect(
           actions.every((action) => action.visible),
@@ -867,6 +870,29 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
         pcMetrics.candidateList?.firstCandidate?.height ?? 0,
         0,
       );
+
+      for (const [label, targetPage, screenshotPath] of [
+        ["PC", page, SCENARIO_BOOK_PC_SCREENSHOT],
+        ["手机", phonePage, SCENARIO_BOOK_PHONE_SCREENSHOT],
+      ] as const) {
+        await targetPage.getByTestId("betrayal-scenario-detail-toggle").click();
+        const scenarioReader = targetPage.getByTestId(
+          "betrayal-scenario-reader-dialog",
+        );
+        await expect(scenarioReader, `${label}剧本书必须打开`).toBeVisible();
+        await expect(
+          scenarioReader.getByTestId("betrayal-scenario-reader-title"),
+          `${label}剧本书不显示额外标题`,
+        ).toHaveCount(0);
+        await expect(
+          scenarioReader.getByTestId("betrayal-scenario-book"),
+        ).toBeVisible();
+        await saveScreenshot(targetPage, screenshotPath);
+        await scenarioReader
+          .getByTestId("betrayal-scenario-reader-close")
+          .click();
+        await expect(scenarioReader).toBeHidden();
+      }
     } finally {
       await phonePage.close();
     }
@@ -955,34 +981,44 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
       expect(phoneMetrics.leftRailContentBottom ?? 0).toBeLessThanOrEqual(
         PHONE_VIEWPORT.height,
       );
-      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(56, 0);
+      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(
+        (pcMetrics.actionRail?.height ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
       expect(
         phoneMetrics.actions
           .filter((action) => action.testId.startsWith("betrayal-action-") && action.testId !== "betrayal-action-rail" && action.testId !== "betrayal-action-cue")
-          .every((action) => Math.abs(action.height - 56) <= 1),
+          .every((action) => {
+            const pcAction = pcMetrics.actions.find(
+              (candidate) => candidate.testId === action.testId,
+            );
+            return Math.abs(
+              action.height - (pcAction?.height ?? 0) * phoneMetrics.hudScale,
+            ) <= 1;
+          }),
       ).toBe(true);
       expect(phoneMetrics.phaseChip?.width ?? 0).toBeCloseTo(
         (pcMetrics.phaseChip?.width ?? 0) * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.text.phaseLabel?.height ?? 0).toBeCloseTo(
-        pcMetrics.text.phaseLabel?.height ?? 0,
+        (pcMetrics.text.phaseLabel?.height ?? 0) * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.text.phaseValue?.height ?? 0).toBeCloseTo(
-        pcMetrics.text.phaseValue?.height ?? 0,
+        (pcMetrics.text.phaseValue?.height ?? 0) * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.text.turnLabel?.height ?? 0).toBeCloseTo(
-        pcMetrics.text.turnLabel?.height ?? 0,
+        (pcMetrics.text.turnLabel?.height ?? 0) * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.text.turnName?.height ?? 0).toBeCloseTo(
-        pcMetrics.text.turnName?.height ?? 0,
+        (pcMetrics.text.turnName?.height ?? 0) * phoneMetrics.hudScale,
         0,
       );
       expect(phoneMetrics.text.currentAbility?.fontSize ?? 0).toBeCloseTo(
-        16 / phoneMetrics.hudScale,
+        pcMetrics.text.currentAbility?.fontSize ?? 16,
         1,
       );
       expect(phoneMetrics.inventory?.height ?? 0).toBeCloseTo(
@@ -1245,7 +1281,10 @@ test.describe("山屋惊魂 PC/手机同状态宽度对照", () => {
       expect(phoneMetrics.leftRailContentBottom ?? 0).toBeLessThanOrEqual(
         PHONE_VIEWPORT.height,
       );
-      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(56, 0);
+      expect(phoneMetrics.actionRail?.height ?? 0).toBeCloseTo(
+        (pcMetrics.actionRail?.height ?? 0) * phoneMetrics.hudScale,
+        0,
+      );
       expect(phoneMetrics.phaseChip?.width ?? 0).toBeCloseTo(
         (pcMetrics.phaseChip?.width ?? 0) * phoneMetrics.hudScale,
         0,

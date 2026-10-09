@@ -40,7 +40,6 @@ import {
   BetrayalRoomPlacementFailureBanner,
   BetrayalRoomPlacementSurface,
 } from "./roomPlacementSurface";
-import { BetrayalRoomFloorSwitcherSurface } from "./roomFloorSwitcherSurface";
 
 export type BetrayalRoomMapHauntTargetGuide = {
   kind: "room" | "explorer" | "monster";
@@ -178,13 +177,6 @@ export interface BetrayalRoomMapSurfaceProps {
   pendingRoomPlacementAdjustmentText: string | null;
   pendingRoomTileAdjustmentOptions: readonly BetrayalRoomTileAdjustmentOption[];
   selectedRoomTileAdjustmentOption: BetrayalRoomTileAdjustmentOption | null;
-  upperFloor: BetrayalRoomNode["floor"] | null;
-  lowerFloor: BetrayalRoomNode["floor"] | null;
-  upperFloorHasSelectionTarget: boolean;
-  lowerFloorHasSelectionTarget: boolean;
-  hasCrossFloorMoveTargets: boolean;
-  hasCrossFloorRoomSelectionTargets: boolean;
-  hiddenTableChrome: boolean;
   onSelectEventTargetRoom: (roomId: string) => void;
   onSelectBloodFromStoneSetupPlacementRoom: (roomId: string) => void;
   onSelectInventoryTargetRoom: (roomId: string) => void;
@@ -213,7 +205,6 @@ export interface BetrayalRoomMapSurfaceProps {
   onSelectRoomTileAdjustment: (
     option: BetrayalRoomTileAdjustmentOption,
   ) => void;
-  onSelectFloor: (floor: BetrayalRoomNode["floor"]) => void;
 }
 
 export function BetrayalRoomMapSurface({
@@ -310,13 +301,6 @@ export function BetrayalRoomMapSurface({
   pendingRoomPlacementAdjustmentText,
   pendingRoomTileAdjustmentOptions,
   selectedRoomTileAdjustmentOption,
-  upperFloor,
-  lowerFloor,
-  upperFloorHasSelectionTarget,
-  lowerFloorHasSelectionTarget,
-  hasCrossFloorMoveTargets,
-  hasCrossFloorRoomSelectionTargets,
-  hiddenTableChrome,
   onSelectEventTargetRoom,
   onSelectBloodFromStoneSetupPlacementRoom,
   onSelectInventoryTargetRoom,
@@ -340,7 +324,6 @@ export function BetrayalRoomMapSurface({
   onCancelRoomPlacement,
   onConfirmRoomPlacement,
   onSelectRoomTileAdjustment,
-  onSelectFloor,
 }: BetrayalRoomMapSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
   const attackImpactByPlayerId = React.useMemo(
@@ -1038,17 +1021,6 @@ export function BetrayalRoomMapSurface({
           onSelectTileAdjustment={onSelectRoomTileAdjustment}
         />
       ) : null}
-      <BetrayalRoomFloorSwitcherSurface
-        selectedFloor={selectedFloor}
-        upperFloor={upperFloor}
-        lowerFloor={lowerFloor}
-        upperFloorHasSelectionTarget={upperFloorHasSelectionTarget}
-        lowerFloorHasSelectionTarget={lowerFloorHasSelectionTarget}
-        hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
-        hasCrossFloorRoomSelectionTargets={hasCrossFloorRoomSelectionTargets}
-        hidden={hiddenTableChrome}
-        onSelectFloor={onSelectFloor}
-      />
     </div>
   );
 }

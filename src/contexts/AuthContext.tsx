@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback, u
 import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import i18n from '../lib/i18n';
 import { normalizeDeveloperGameIds } from '../lib/developerGameAccess';
+import { refreshAccessToken } from '../lib/authRefresh';
 import { getLocalStorage, readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
 import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 
@@ -151,46 +152,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
         }
 
-        try {
-            const response = await fetch(`${AUTH_API_URL}/me`, {
+        const fetchCurrentUser = async (accessToken: string) => fetch(`${AUTH_API_URL}/me`, {
                 method: 'GET',
                 headers: {
                     'Accept-Language': i18n.language,
-                    'Authorization': `Bearer ${tokenToSync}`,
+                    'Authorization': `Bearer ${accessToken}`,
                 },
             });
 
-            if (currentTokenRef.current !== tokenToSync) {
-                return;
-            }
-
+        const applyUserResponse = async (response: Response, accessToken: string) => {
+            if (currentTokenRef.current !== accessToken) return;
             if (response.status === 401 || response.status === 403 || response.status === 404) {
                 setToken(null);
                 setUser(null);
                 clearLocalAuth();
                 return;
             }
-
-            if (!response.ok) {
-                return;
-            }
+            if (!response.ok) return;
 
             const data = await response.json().catch(() => null) as null | { user?: unknown };
             const normalized = normalizeAuthUser(data?.user);
-            if (!normalized) {
-                return;
-            }
-
-            if (currentTokenRef.current !== tokenToSync) {
-                return;
-            }
+            if (!normalized || currentTokenRef.current !== accessToken) return;
 
             setUser(normalized);
             writeLocalStorageItem('auth_user', JSON.stringify(normalized));
+        };
+
+        try {
+            let accessToken = tokenToSync;
+            let response = await fetchCurrentUser(accessToken);
+            if (response.status === 401) {
+                if (currentTokenRef.current !== tokenToSync) return;
+
+                const tokenFromAnotherTab = readLocalStorageItem('auth_token');
+                const refreshedToken = tokenFromAnotherTab && tokenFromAnotherTab !== tokenToSync
+                    ? tokenFromAnotherTab
+                    : await refreshAccessToken();
+
+                if (!refreshedToken) {
+                    if (currentTokenRef.current === tokenToSync) {
+                        setToken(null);
+                        setUser(null);
+                        clearLocalAuth();
+                    }
+                    return;
+                }
+
+                accessToken = refreshedToken;
+                if (currentTokenRef.current !== tokenToSync && currentTokenRef.current !== refreshedToken) return;
+                currentTokenRef.current = refreshedToken;
+                syncedTokenRef.current = refreshedToken;
+                setToken(refreshedToken);
+                writeLocalStorageItem('auth_token', refreshedToken);
+                response = await fetchCurrentUser(refreshedToken);
+            }
+            await applyUserResponse(response, accessToken);
         } catch {
             // 网络异常时保留本地会话，避免误登出
         }
     }, [clearLocalAuth]);
+
+    useEffect(() => {
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key !== 'auth_token') return;
+            const nextToken = event.newValue;
+            currentTokenRef.current = nextToken;
+            setToken(nextToken);
+            if (!nextToken) setUser(null);
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
 
     // 从 localStorage 加载 token
     useEffect(() => {
@@ -360,6 +392,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
         const response = await fetch(`${AUTH_API_URL}/reset-password`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'Accept-Language': i18n.language },
             body: JSON.stringify({ email, code, newPassword }),
         });
@@ -374,6 +407,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (token) {
             fetch(`${AUTH_API_URL}/logout`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Accept-Language': i18n.language,
                     'Authorization': `Bearer ${token}`,
@@ -392,6 +426,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 直接更新 token state（供 useTokenRefresh 刷新后同步 React 状态）
     const setTokenDirect = useCallback((newToken: string) => {
+        currentTokenRef.current = newToken;
         setToken(newToken);
     }, []);
 

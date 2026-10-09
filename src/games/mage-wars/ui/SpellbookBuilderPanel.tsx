@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, X, ZoomIn } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { MageWarsConfigSpellCard } from '../data/configPackage';
@@ -533,7 +533,13 @@ export function MageWarsSpellbookBuilderPanel({
                                 data-testid="mage-wars-spellbook-builder-mage-detail-cue"
                                 aria-hidden="true"
                             >
-                                <ZoomIn size={14} strokeWidth={2.2} />
+                                <svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
                             </span>
                         </button>
                     </section>

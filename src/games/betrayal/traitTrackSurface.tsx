@@ -112,17 +112,17 @@ export function ExplorerTraitTrackRail({
     ? "h-[30px]"
     : isDetail
       ? "h-[44px]"
-      : "h-[38px]";
+      : "h-[40px]";
   const trackBodyClass = isCompact
     ? "h-[22px]"
     : isDetail
       ? "h-[32px]"
-      : "h-[28px]";
+      : "h-[30px]";
   const slotLabelClass = isCompact
     ? "relative z-10 flex h-full w-full items-center justify-center text-[9px] leading-none tabular-nums"
     : isDetail
       ? "relative z-10 flex h-full w-full items-center justify-center text-[13px] leading-none tabular-nums"
-      : "relative z-10 flex h-full w-full items-center justify-center text-[12px] leading-none tabular-nums";
+      : "relative z-10 flex h-full w-full items-center justify-center text-[13px] leading-none tabular-nums";
 
   return (
     <div
@@ -141,22 +141,22 @@ export function ExplorerTraitTrackRail({
           ? "grid-cols-[42px_minmax(0,1fr)] text-[9px]"
           : isDetail
             ? "grid-cols-[74px_minmax(0,1fr)] text-[12px]"
-            : "grid-cols-[66px_minmax(0,1fr)] text-[12px]"
+            : "grid-cols-[4.5rem_minmax(0,1fr)] text-[12px]"
       }`}
     >
       <span
-        className={`inline-flex min-w-0 items-center gap-1.5 font-semibold ${TRAIT_TONE_CLASS[trait].text}`}
+        className={`inline-flex h-full min-w-0 items-center gap-1.5 font-semibold leading-none ${TRAIT_TONE_CLASS[trait].text}`}
       >
         {!isCompact ? (
           <OptimizedImage
             src={BETRAYAL_TRAIT_MARKER_ASSETS[trait]}
             locale={locale}
             alt=""
-            className={`${isDetail ? "h-[18px] w-[18px]" : "h-4 w-4"} object-contain opacity-86`}
+            className={`${isDetail ? "h-[18px] w-[18px]" : "h-4 w-4"} shrink-0 object-contain opacity-86`}
             draggable={false}
           />
         ) : null}
-        <span className="truncate">{TRAIT_LABEL_LOCAL[trait]}</span>
+        <span className="whitespace-nowrap">{TRAIT_LABEL_LOCAL[trait]}</span>
       </span>
       <div
         data-trait-track-rail="true"
@@ -169,8 +169,8 @@ export function ExplorerTraitTrackRail({
       >
         <div
           data-trait-track-segmented-rail="true"
-          data-trait-track-visual-separation="continuous-rail-internal-dividers"
-          className={`absolute inset-x-0 top-1/2 grid ${trackBodyClass} -translate-y-1/2 gap-0 overflow-hidden rounded-[7px] border border-[rgba(181,128,70,0.62)] bg-[linear-gradient(180deg,rgba(47,31,20,0.96)_0%,rgba(25,21,15,0.94)_50%,rgba(18,15,12,0.96)_100%)] p-[2px] shadow-[inset_0_0_0_1px_rgba(255,224,159,0.16),inset_0_0_12px_rgba(0,0,0,0.44),0_3px_10px_rgba(0,0,0,0.24)]`}
+          data-trait-track-visual-separation="equal-cell-gaps"
+          className={`absolute inset-x-0 top-1/2 grid ${trackBodyClass} -translate-y-1/2 gap-px overflow-hidden rounded-[3px] border border-[#120e0a] bg-[#120e0a]`}
           style={{ gridTemplateColumns: `repeat(${slots.length}, minmax(0, 1fr))` }}
         >
           {slots.map((position, slotIndex) => {
@@ -208,31 +208,23 @@ export function ExplorerTraitTrackRail({
                 }
                 title={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格（不是数值）" : slotValue}${isStart ? "，初始格" : ""}${isCurrent ? "，当前位置" : ""}`}
                 aria-label={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格，不是数值" : slotValue}${isStart ? "，初始格" : ""}${isCurrent ? "，当前位置" : ""}`}
-                className={`relative grid min-w-0 place-items-center border-0 text-center font-semibold leading-none ${
+                className={`relative grid min-w-0 place-items-center text-center font-semibold leading-none ${
                   isCurrent
-                    ? "bg-[linear-gradient(180deg,rgba(111,169,72,0.82)_0%,rgba(70,129,57,0.78)_52%,rgba(47,97,42,0.78)_100%)] text-[#f7ffd8] shadow-[inset_0_0_0_1px_rgba(231,255,172,0.30),inset_0_0_11px_rgba(236,255,177,0.18),0_0_13px_rgba(155,214,103,0.34)]"
-                    : isSkull
-                      ? "bg-[linear-gradient(180deg,rgba(86,26,21,0.58)_0%,rgba(53,18,15,0.46)_100%)] text-[#ffd0c6]"
-                      : isCritical
-                        ? "bg-[linear-gradient(180deg,rgba(97,41,33,0.34)_0%,rgba(55,22,18,0.26)_100%)] text-[#ffd7cd]"
-                        : isStart
-                          ? "bg-transparent text-[#e8ffd2]"
-                          : "bg-transparent text-[rgba(238,220,176,0.84)]"
-                } ${
-                  hasInternalDivider
-                    ? "before:pointer-events-none before:absolute before:bottom-[2px] before:left-0 before:top-[2px] before:z-20 before:w-px before:bg-[rgba(255,230,178,0.46)] before:shadow-[1px_0_0_rgba(0,0,0,0.30)] before:content-['']"
-                    : ""
-                } ${
-                  isStart
-                    ? "after:pointer-events-none after:absolute after:inset-x-[5px] after:bottom-[3px] after:z-10 after:h-[3px] after:rounded-full after:bg-[rgba(199,255,150,0.74)] after:shadow-[0_0_8px_rgba(199,255,150,0.48)] after:content-['']"
-                    : ""
+                    ? "bg-[#d4b45a] text-[#1a1408]"
+                    : isStart
+                      ? "bg-[#1c3d22] text-[#e7f3d4]"
+                      : isSkull
+                        ? "bg-[#2a1814] text-[#f0d0c4]"
+                        : isCritical
+                          ? "bg-[#3a2018] text-[#f0d0c4]"
+                          : "bg-transparent text-[rgba(238,220,176,0.88)]"
                 }`}
               >
                 {isSkull ? (
                   <>
                     <Skull
                       className={`${isCompact ? "h-3 w-3" : "h-4 w-4"} ${
-                        isCurrent ? "text-[#fff0bf]" : "text-[#ffd0c6]"
+                        isCurrent ? "text-[#1a1408]" : "text-[#f0d0c4]"
                       }`}
                       aria-hidden="true"
                     />

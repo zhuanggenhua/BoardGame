@@ -46,6 +46,7 @@ export interface DiceBoxStyleProfile {
     iterationLimit?: number;
     projectedLayoutMargin?: number;
     projectedLayoutMinGap?: number;
+    optimizeSettledFaceReadability?: boolean;
 }
 
 export interface DiceBoxDieSkin {
@@ -55,6 +56,7 @@ export interface DiceBoxDieSkin {
     edgeCanvas?: HTMLCanvasElement;
     faceImages?: Record<number, HTMLImageElement | HTMLCanvasElement>;
     faceLabels?: Record<number, string>;
+    readableFaceValue?: number;
     preferPresetMaterials?: boolean;
 }
 
@@ -897,11 +899,93 @@ export class DiceBoxThreeEngine {
 
     private stabilizeProjectedDiceLayout(): void {
         this.renderFrame();
+        this.optimizeSettledDieOrientations();
+        this.renderFrame();
         this.nudgeDiceIntoProjectedMargins();
         this.separateProjectedDice();
         this.nudgeDiceIntoProjectedMargins();
         this.separateProjectedDice();
         this.nudgeDiceIntoProjectedMargins();
+    }
+
+    private optimizeSettledDieOrientations(): void {
+        if (!this.styleProfile.optimizeSettledFaceReadability) return;
+
+        const camera = this.box.camera as {
+            position?: Vector3;
+            getWorldPosition?: (target: Vector3) => Vector3;
+        } | undefined;
+        if (!camera) return;
+
+        const cameraPosition = new Vector3();
+        if (camera.getWorldPosition) {
+            camera.getWorldPosition(cameraPosition);
+        } else if (camera.position) {
+            cameraPosition.copy(camera.position);
+        } else {
+            return;
+        }
+
+        for (let index = 0; index < this.box.diceList.length; index += 1) {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            const skin = this.dieSkins[index] ?? this.dieSkins.find(Boolean);
+            const readableFaceValue = skin?.readableFaceValue;
+            if (!die || typeof readableFaceValue !== 'number') continue;
+
+            const localFaceNormal = this.getFaceNormalForValue(die, readableFaceValue);
+            if (!localFaceNormal) continue;
+
+            die.updateMatrixWorld?.(true);
+            const currentQuaternion = new Quaternion(
+                die.quaternion?.x ?? 0,
+                die.quaternion?.y ?? 0,
+                die.quaternion?.z ?? 0,
+                die.quaternion?.w ?? 1,
+            );
+            const worldFaceNormal = localFaceNormal
+                .clone()
+                .transformDirection(die.matrixWorld)
+                .normalize();
+            const diePosition = new Vector3(die.position.x, die.position.y, die.position.z);
+            const towardCamera = cameraPosition.clone().sub(diePosition);
+            if (towardCamera.lengthSq() <= 0.000001) continue;
+            towardCamera.normalize();
+
+            const alignment = new Quaternion().setFromUnitVectors(
+                worldFaceNormal,
+                towardCamera,
+            );
+            const aligned = alignment.clone().multiply(currentQuaternion).normalize();
+            let bestQuaternion = aligned.clone();
+            let bestScore = Number.NEGATIVE_INFINITY;
+
+            for (const roll of [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2]) {
+                const rollQuaternion = new Quaternion().setFromAxisAngle(towardCamera, roll);
+                const candidate = rollQuaternion.clone().multiply(aligned).normalize();
+                this.setQuaternion(die.quaternion as DiceBoxQuaternionLike | undefined, candidate);
+                this.setQuaternion(die.body?.quaternion, candidate);
+                die.updateMatrixWorld?.(true);
+                const layout = this.getProjectedLayout(index, index);
+                if (!layout) continue;
+                const visualWidth = layout.visualWidth ?? layout.width;
+                const visualHeight = layout.visualHeight ?? layout.height;
+                const readableSize = Math.min(visualWidth, visualHeight);
+                const rotationPenalty = Math.abs(layout.outlineRotateZ ?? layout.rotateZ) * 0.05;
+                const score = readableSize - rotationPenalty;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestQuaternion = candidate.clone();
+                }
+            }
+
+            this.setQuaternion(die.quaternion as DiceBoxQuaternionLike | undefined, bestQuaternion);
+            this.setQuaternion(die.body?.quaternion, bestQuaternion);
+            this.setVector(die.body?.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(die.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            die.body?.sleep?.();
+            if (die.body) die.body.aabbNeedsUpdate = true;
+            die.updateMatrixWorld?.(true);
+        }
     }
 
     private separateProjectedDice(): void {

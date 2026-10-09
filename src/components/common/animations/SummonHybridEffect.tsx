@@ -53,6 +53,8 @@ export interface SummonHybridEffectProps {
   visualScale?: number;
   /** 全屏暗角强度。普通棋盘单位召唤应显式降低，避免小单位特效变成全场遮挡。 */
   dimStrength?: number;
+  /** 相对宿主宽度的光柱底宽比。1 = 贴卡等宽；默认不传，保持原 50% 窄条。 */
+  pillarWidthRatio?: number;
   className?: string;
 }
 
@@ -167,6 +169,7 @@ interface ParticleLayerProps {
   quality: FxQuality;
   totalDuration: number;
   visualScale: number;
+  pillarWidthRatio?: number;
   onImpact: () => void;
   onAllParticlesDone: () => void;
 }
@@ -174,7 +177,7 @@ interface ParticleLayerProps {
 /**
  * 粒子层组件 — 使用 function 声明确保 Vite HMR 正确识别组件边界
  */
-function ParticleLayer({ active, intensity, colors, originY, quality, totalDuration, visualScale, onImpact, onAllParticlesDone }: ParticleLayerProps) {
+function ParticleLayer({ active, intensity, colors, originY, quality, totalDuration, visualScale, pillarWidthRatio, onImpact, onAllParticlesDone }: ParticleLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onDoneRef = useRef(onAllParticlesDone);
   const onImpactRef = useRef(onImpact);
@@ -213,10 +216,16 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
     const burstParticles: Particle[] = [];
     const emberParticles: Particle[] = [];
 
-    // 光柱参数（与 shader 同步）
+    // 光柱参数（与 shader 同步）。pillarWidthRatio>0 时 2D 柱等宽贴卡，从近底部升到卡顶。
     const resolvedVisualScale = Math.max(0.75, Math.min(2.25, visualScale));
-    const pillarBaseWidth = (isStrong ? cw * 0.08 : cw * 0.06) * resolvedVisualScale;
-    const pillarMaxHeight = (1 - originY) * ch * 0.88;
+    const useHostWidthPillar = Number.isFinite(pillarWidthRatio) && (pillarWidthRatio ?? 0) > 0;
+    const hostRatio = useHostWidthPillar ? Math.max(0.01, Math.min(1.2, pillarWidthRatio ?? 1)) : 0;
+    const pillarBaseWidth = useHostWidthPillar
+      ? (cw * hostRatio) / 3.6
+      : (isStrong ? cw * 0.08 : cw * 0.06) * resolvedVisualScale;
+    const pillarMaxHeight = useHostWidthPillar
+      ? Math.max(ch * originY, ch * 0.08) * 0.98
+      : (1 - originY) * ch * 0.88;
 
     let startTime = 0;
     let lastTime = 0;
@@ -258,16 +267,18 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
       if (visibility > 0.01) {
         const [mainR, mainG, mainB] = colors.main;
         const [brightR, brightG, brightB] = colors.bright;
-        const coreRadius = pillarBaseWidth * (isStrong ? 4.8 : 4.0) * (0.9 + 0.16 * Math.sin(elapsed * 11));
-        const coreGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius);
-        coreGradient.addColorStop(0, `rgba(255,255,255,${0.88 * visibility})`);
-        coreGradient.addColorStop(0.2, `rgba(${brightR},${brightG},${brightB},${0.72 * visibility})`);
-        coreGradient.addColorStop(0.58, `rgba(${mainR},${mainG},${mainB},${0.34 * visibility})`);
-        coreGradient.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = coreGradient;
-        ctx.beginPath();
-        ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
-        ctx.fill();
+        if (!useHostWidthPillar) {
+          const coreRadius = pillarBaseWidth * (isStrong ? 4.8 : 4.0) * (0.9 + 0.16 * Math.sin(elapsed * 11));
+          const coreGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius);
+          coreGradient.addColorStop(0, `rgba(255,255,255,${0.88 * visibility})`);
+          coreGradient.addColorStop(0.2, `rgba(${brightR},${brightG},${brightB},${0.72 * visibility})`);
+          coreGradient.addColorStop(0.58, `rgba(${mainR},${mainG},${mainB},${0.34 * visibility})`);
+          coreGradient.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = coreGradient;
+          ctx.beginPath();
+          ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         if (pillarH > 6) {
           const pillarGradient = ctx.createLinearGradient(cx, cy, cx, cy - pillarH);
@@ -276,7 +287,8 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
           pillarGradient.addColorStop(0.76, `rgba(${mainR},${mainG},${mainB},${0.28 * visibility})`);
           pillarGradient.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = pillarGradient;
-          ctx.fillRect(cx - pillarW * 1.8, cy - pillarH, pillarW * 3.6, pillarH);
+          const pillarDrawWidth = useHostWidthPillar ? cw * hostRatio : pillarW * 3.6;
+          ctx.fillRect(cx - pillarDrawWidth / 2, cy - pillarH, pillarDrawWidth, pillarH);
         }
       }
 
@@ -413,7 +425,7 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
 
     unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
     return () => unsubscribeFrame?.();
-  }, [colors, isStrong, originY, quality, totalDuration, visualScale]);
+  }, [colors, isStrong, originY, quality, totalDuration, visualScale, pillarWidthRatio]);
 
   useEffect(() => {
     if (!active) return;
@@ -517,6 +529,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
   durationScale = 1,
   visualScale = 1,
   dimStrength,
+  pillarWidthRatio,
   className = '',
 }) => {
   const onCompleteRef = useRef(onComplete);
@@ -568,9 +581,9 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
 
   if (!active) return null;
 
-  // Shader 光柱窄条宽度：光柱本身约 8% 容器宽 + 边缘辉光 1.6x + 冲击波环 ~22% 半径
-  // 取 50% 容器宽度足以覆盖所有光柱视觉元素，减少 ~50% 像素计算
-  const pillarStripWidth = '50%';
+  // 默认窄条覆盖原光柱+辉光；等宽贴卡时铺满宿主，让 shader 按卡宽画柱。
+  const useHostWidthPillar = Number.isFinite(pillarWidthRatio) && (pillarWidthRatio ?? 0) > 0;
+  const pillarStripWidth = useHostWidthPillar ? '100%' : '50%';
 
   return (
     <div className={`absolute inset-0 pointer-events-none ${className}`}>
@@ -600,6 +613,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
           quality={quality}
           durationScale={resolvedDurationScale}
           visualScale={resolvedVisualScale}
+          pillarWidthRatio={pillarWidthRatio}
           onComplete={handleShaderComplete}
         />
       </div>
@@ -612,6 +626,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
         quality={quality}
         totalDuration={totalDuration}
         visualScale={resolvedVisualScale}
+        pillarWidthRatio={pillarWidthRatio}
         onImpact={handleImpact}
         onAllParticlesDone={handleParticlesDone}
       />

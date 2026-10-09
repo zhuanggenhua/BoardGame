@@ -48,7 +48,8 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     const core = G.core;
     const actorId = playerID ?? core.currentPlayerId;
     const actor = core.players[actorId] ?? core.players[core.currentPlayerId];
-    const isCurrentPlayer = !isMultiplayer || actorId === core.currentPlayerId;
+    const isSpectator = isMultiplayer === true && playerID == null;
+    const isCurrentPlayer = !isMultiplayer || (playerID != null && actorId === core.currentPlayerId);
     const [inspectedCardId, setInspectedCardId] = useState<string | null>(null);
     const runtimeDispatch = dispatch as unknown as (type: string, payload: unknown) => void;
     const activeCards = useMemo(() => actor?.activeAttackIds.map((id) => actor.hand.find((card) => card.id === id)).filter(Boolean) ?? [], [actor]);
@@ -59,7 +60,9 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     const nextBattleLocation = LOCATION_ORDER.find((locationId) => !core.resolvedLocations.includes(locationId));
 
     const inspect = (cardId: string) => {
-        runtimeDispatch(FATE_DOMINATION_COMMANDS.INSPECT_CARD, { cardId });
+        if (!isSpectator) {
+            runtimeDispatch(FATE_DOMINATION_COMMANDS.INSPECT_CARD, { cardId });
+        }
         setInspectedCardId(cardId);
     };
 
@@ -187,10 +190,10 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
                 <section className="fd-identity-strip" aria-label={t('identity.sectionLabel')}>
                     <div className="fd-strip-title"><span>{t('identity.title')}</span><small>{t('identity.subtitle')}</small></div>
                     <div className="fd-identity-options">
-                        {FATE_MASTERS.map((master) => <button key={master.id} type="button" className={`fd-identity-card ${actor?.masterId === master.id ? 'is-selected' : ''}`} onClick={() => selectMaster(master.id)} aria-label={master.name}>
+                        {FATE_MASTERS.map((master) => <button key={master.id} type="button" className={`fd-identity-card ${actor?.masterId === master.id ? 'is-selected' : ''}`} onClick={() => isSpectator ? setInspectedCardId(master.id) : selectMaster(master.id)} aria-label={master.name}>
                             <OptimizedImage src={master.assetPath} alt={master.name} /><span>{master.name}</span>
                         </button>)}
-                        {FATE_SERVANTS.map((servant) => <button key={servant.id} type="button" className={`fd-identity-card fd-servant-card ${actor?.servantId === servant.id ? 'is-selected' : ''}`} onClick={() => selectServant(servant.id)} aria-label={servant.name}>
+                        {FATE_SERVANTS.map((servant) => <button key={servant.id} type="button" className={`fd-identity-card fd-servant-card ${actor?.servantId === servant.id ? 'is-selected' : ''}`} onClick={() => isSpectator ? setInspectedCardId(servant.id) : selectServant(servant.id)} aria-label={servant.name}>
                             <OptimizedImage src={servant.assetPath} alt={servant.name} /><span>{servant.name}</span>
                         </button>)}
                     </div>

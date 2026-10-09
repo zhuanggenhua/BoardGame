@@ -1,6 +1,6 @@
 import { FxRegistry } from '../../../engine/fx';
 import { MW_FX } from './fxCues';
-import { AttackImpactRenderer, DamageImpactRenderer, HealingImpactRenderer, SpellPushRenderer, SpellTeleportRenderer, SummonRenderer } from './fxRenderers';
+import { AttackImpactRenderer, DamageImpactRenderer, HealingImpactRenderer, MovementRenderer, SpellPushRenderer, SpellTeleportRenderer, SummonRenderer } from './fxRenderers';
 
 function createRegistry(): FxRegistry {
     const registry = new FxRegistry();
@@ -30,7 +30,18 @@ function createRegistry(): FxRegistry {
     });
 
     registry.register(MW_FX.SPELL_PUSH, SpellPushRenderer, {
-        timeoutMs: 5000,
+        timeoutMs: 4_000,
+        maxConcurrent: 3,
+        debounceMs: 40,
+        budget: {
+            areaPolicy: 'cell',
+            estimatedCost: 'low',
+            maxDpr: 1.25,
+            reducedMaxDpr: 1,
+        },
+    });
+    registry.register(MW_FX.MOVE, MovementRenderer, {
+        timeoutMs: 1400,
         maxConcurrent: 3,
         debounceMs: 40,
         budget: {

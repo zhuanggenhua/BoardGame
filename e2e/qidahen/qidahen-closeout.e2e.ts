@@ -30,7 +30,7 @@ const TUTORIAL_STEP_07 = `${TUTORIAL_DIR}/07-赐印招安-支付3张手牌.png`;
 const TUTORIAL_STEP_07A = `${TUTORIAL_DIR}/07a-赐印招安-首张手牌抬升并标记已选.png`;
 const TUTORIAL_STEP_07B = `${TUTORIAL_DIR}/07b-赐印招安-3张手牌已选待确认.png`;
 const TUTORIAL_STEP_08 = `${TUTORIAL_DIR}/08-赐印招安-选择山海关接收区.png`;
-const TUTORIAL_STEP_09 = `${TUTORIAL_DIR}/09-赐印招安-后金席位选择锦州部队.png`;
+const TUTORIAL_STEP_09 = `${TUTORIAL_DIR}/09-赐印招安-接收区自动锁定后金并选择锦州部队.png`;
 const TUTORIAL_STEP_10 = `${TUTORIAL_DIR}/10-赐印招安-部队位置与阵营变化.png`;
 const TUTORIAL_STEP_11 = `${TUTORIAL_DIR}/11-首回合-规则链完成.png`;
 const WHEEL_COST_STEP_01 = `${TUTORIAL_DIR}/13-轮盘第1步-先看走3会让两家对手摸牌.png`;
@@ -405,7 +405,8 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军 2→4');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军从 2 支变为 4 支');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵从 1 级升至 2 级');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toHaveAttribute('data-qidahen-map-result-troop-delta', '2');
@@ -431,6 +432,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="grant-pardon-rule"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('赐印招安：弃 3 张手牌');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('由被指定的玩家选择一支与大明控制区相邻的部队');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('接收区唯一对应一名对手');
         await saveScreenshot(page, TUTORIAL_STEP_05);
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
@@ -494,7 +496,9 @@ test.describe('七大恨新游戏收口', () => {
             grantPardonTargetBox.y + grantPardonTargetBox.height / 2,
         );
         await expect(page.locator('[data-tutorial-step="choose-grant-pardon-source"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('后金玩家亲自点击锦州');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('后金玩家点击高亮的锦州部队');
+        await expect(page.locator('[data-testid="qidahen-grant-pardon-derived-opponent"]')).toContainText('接收区已自动锁定对手：后金');
+        await expect(page.locator('[data-testid="qidahen-grant-pardon-opponent-options"]')).toHaveCount(0);
         const grantPardonStateAfterTarget = await readQidahenCore(page);
         expect((grantPardonStateAfterTarget.grantPardonSelection as Record<string, unknown>)?.targetRegionId).toBe('city-region-25');
         expect((grantPardonStateAfterTarget.grantPardonSelection as Record<string, unknown>)?.opponentFactionId).toBe('jin');
@@ -574,8 +578,8 @@ test.describe('七大恨新游戏收口', () => {
         expect(shanhaiguanBefore).toBe(2);
         await grantPardonSource.click();
         await expect(page.locator('[data-tutorial-step="action-result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('锦州部队 2→1');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('山海关部队 2→3');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('锦州部队从 2 支变为 1 支');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('山海关部队从 2 支变为 3 支');
         const grantPardonAfterTransfer = await readQidahenCore(page);
         const jinzhouAfter = (grantPardonAfterTransfer.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'jinzhou')?.troops;
         const shanhaiguanAfter = (grantPardonAfterTransfer.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-25')?.troops;
@@ -661,7 +665,8 @@ test.describe('七大恨新游戏收口', () => {
             await expect(touchPage.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
             await touchPage.getByTestId('qidahen-wheel-move-target-move-1-free').click();
             await expect(touchPage.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军 2→4');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军从 2 支变为 4 支');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵从 1 级升至 2 级');
             await expect(touchPage.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
             await touchPage.locator('[data-testid="tutorial-next-button"]').click();
             await expect(touchPage.locator('[data-tutorial-step="hand-action-order"]')).toBeVisible({ timeout: 10000 });
@@ -913,8 +918,8 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-tutorial-step="result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('宣府正规军 2→4');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵 1→2 级');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('宣府正规军从 2 支变为 4 支');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵从 1 级升至 2 级');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('轮盘征兵/训练');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('+2');
         await page.waitForTimeout(2800);
@@ -1395,13 +1400,13 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击右侧战斗面板里的「断后」');
         await expect(page.locator('[data-tutorial-id="qidahen-resolve-pending-action"]')).toContainText('断后');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action-rout"]')).toContainText('溃退');
+        await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toHaveCount(0);
         await saveScreenshot(page, SIEGE_STEP_01A);
         await page.locator('[data-testid="qidahen-resolve-pending-action"]').click();
 
         await expect(page.locator('[data-tutorial-step="city-result"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-map-result-feedback-text"]'))
-            .toContainText('山海关部队：2 → 0');
+        await expect(page.locator('[data-testid="qidahen-map-result-feedback-text"]')).toContainText('山海关部队：2 → 0');
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('已被突破');
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('幸存 1');
         await page.locator('[data-testid="tutorial-next-button"]').click();
@@ -1437,6 +1442,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toHaveCount(0);
         const afterBesiegeCore = await readQidahenCore(page);
         const afterBesiegeRegions = afterBesiegeCore.regions as Array<{
             id: string;
@@ -1493,7 +1499,6 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('城战完成；围城或占领决定山海关的控制权和城市状态');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
         await saveScreenshot(page, SIEGE_STEP_03);
         const afterOccupyCore = await readQidahenCore(page);
         const afterOccupyRegions = afterOccupyCore.regions as Array<{
@@ -1584,7 +1589,43 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-diplomacy-choice-remove-marker"]').click();
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
+        const diplomacyCore = await readQidahenCore(page) as {
+            regions: Array<{
+                id: string;
+                controller?: string;
+                diplomacyMarkerFaction?: string | null;
+                diplomacyMarkerSide?: string | null;
+                specialTroops?: Array<{
+                    label?: string;
+                    faction?: string;
+                    count?: number;
+                    level?: number;
+                }>;
+            }>;
+            lastSeasonSummary?: { title?: string; lines?: string[] } | null;
+        };
+        const ningyuan = diplomacyCore.regions.find((region) => region.id === 'city-region-24');
+        expect(ningyuan?.controller).toBe('ming');
+        expect(ningyuan?.diplomacyMarkerFaction).toBe('ming');
+        expect(ningyuan?.diplomacyMarkerSide).toBe('vassal');
+        const dongjiang = diplomacyCore.regions.find((region) => region.id === 'city-region-22');
+        expect(dongjiang?.diplomacyMarkerFaction).toBeNull();
+        expect(dongjiang?.diplomacyMarkerSide).toBeNull();
+        const hireRegion = diplomacyCore.regions.find((region) => region.id === 'city-region-25');
+        expect(
+            hireRegion?.specialTroops?.some((troop) => (
+                troop.label?.includes('雇佣军')
+                && troop.faction === 'ming'
+                && troop.count === 2
+                && troop.level === 2
+            )),
+        ).toBe(true);
+        expect(diplomacyCore.lastSeasonSummary?.title).toBe('轮盘外交/雇佣');
+        const diplomacySummaryText = diplomacyCore.lastSeasonSummary?.lines?.join(' ') ?? '';
+        expect(diplomacySummaryText).toContain('建立 2 个等级 2 雇佣军');
+        expect(diplomacySummaryText).toContain('宁远');
+        expect(diplomacySummaryText).toContain('东江');
+        expect(diplomacySummaryText).toContain('控制标记已移除');
         await saveScreenshot(page, DIPLOMACY_STEP_03);
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('外交标记和雇佣部队已结算');
         await saveScreenshot(page, DIPLOMACY_STEP_04);

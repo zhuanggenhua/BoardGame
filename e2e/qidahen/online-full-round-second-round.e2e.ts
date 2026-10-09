@@ -130,8 +130,13 @@ async function claimSeat(
 
 async function waitForScenarioVoteScreen(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
+    const overlay = page.getByTestId('qidahen-scenario-vote-screen');
+    if (!(await overlay.isVisible().catch(() => false))) {
+        await page.getByTestId('qidahen-scenario-menu-open').click();
+    }
+    await expect(overlay).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-scenario-vote-option-dingmao-rebellion-1627')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-scenario-vote-option-dingmao-rebellion-1627')).toBeDisabled({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-scenario-vote-locked-dingmao-rebellion-1627')).toContainText('当前 3 人房不可投', { timeout: 15000 });

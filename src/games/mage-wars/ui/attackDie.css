@@ -1,0 +1,53 @@
+.mage-wars-attack-die {
+    --attack-die-size: clamp(3rem, 4vw, 5rem);
+    perspective: 900px;
+}
+
+.mage-wars-attack-die-shadow {
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    bottom: 0;
+    height: 14%;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 28%);
+    filter: blur(5px);
+}
+
+.mage-wars-attack-die-pose {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+}
+
+/* Filters, clipping and opacity here flatten the solid before it rotates. */
+.mage-wars-attack-die-cube {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+}
+
+.mage-wars-attack-die-face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    backface-visibility: hidden;
+    border-radius: 0.28rem;
+    background-color: #c41e1e;
+    box-shadow: inset 0 0 0.55rem rgb(0 0 0 / 45%);
+}
+
+.mage-wars-attack-die-face-art {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+@keyframes mage-wars-d6-tumble {
+    0% { transform: rotateX(0deg) rotateY(0deg); }
+    100% { transform: rotateX(1440deg) rotateY(1440deg); }
+}
+
+.mage-wars-attack-die-rolling {
+    animation: mage-wars-d6-tumble 500ms linear infinite;
+}

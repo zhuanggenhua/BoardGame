@@ -415,6 +415,7 @@ export interface MageWarsSpellCastResolvedEvent extends GameEvent<typeof MAGE_WA
         objectManaCost?: number;
         playerManaCost?: number;
         paymentAlreadyApplied?: boolean;
+        boundSourceObjectId?: string;
         targetPlayerId?: PlayerId;
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;

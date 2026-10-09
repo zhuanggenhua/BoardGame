@@ -1,36 +1,50 @@
 ## Context
-当前认证为单一 JWT，登录/注册签发后长期复用，导致过期或密钥轮换时必须重新登录，且无法细粒度撤销。目标是引入商业级的 Access/Refresh 体系以提升体验与安全性。
+已有 Access/Refresh 续签代码，但 Refresh Token 哈希和记录通过 `CACHE_MANAGER` 存储，并用 `refresh:user:{userId}` 指向该账号唯一的令牌。缓存未接 Redis 时会退回进程内存；登录新设备会撤销旧令牌，刷新复用路径会调用按账号撤销。注册/登录刷新有效期目前为固定 180 天。密码重置会撤销 Refresh Token，密码修改不会。
 
 ## Goals / Non-Goals
 - Goals:
-  - Access Token 短期有效（建议 15–30 分钟）
-  - Refresh Token 长期有效（当前项目采用 180 天，降低低频玩家反复登录）
-  - Refresh 轮换与复用检测
-  - 401 自动刷新一次并重试请求
+  - 会话记录由持久数据库保存，API 重启和缓存淘汰不丢失活跃登录。
+  - 同账号多设备相互独立；可在会话范围内轮换和撤销。
+- 活跃服务端会话不设固定绝对到期时间，Cookie 与 Mongo 会话均按最近活动滚动设置 400 天闲置期限。
+  - 并发刷新不会误撤销同账号其它设备，也不因正常竞态把本设备会话判为盗用。
+  - 登录、注册、刷新、登出、密码修改和重置密码保持一致且可测试的会话生命周期。
 - Non-Goals:
   - 不引入第三方 OAuth
   - 不改动游戏服务的鉴权入口语义（仍校验 Access Token）
+  - 不承诺抵抗用户清理站点数据、浏览器淘汰 Cookie、账号安全撤销或公网 HTTP 窃听。
 
 ## Decisions
 - Access Token 由登录/注册与 refresh 接口返回；Refresh Token 通过 httpOnly Cookie 下发。
-- Refresh Token 在服务端持久化（Redis/DB），仅存哈希与元信息（userId、过期时间、轮换链）。
-- Refresh 复用检测：旧 Refresh 被使用即判定异常，撤销该用户全部 Refresh。
-- 登出时撤销当前 Refresh，并保留 Access 黑名单逻辑。
+- MongoDB 是活跃 Refresh 会话的唯一持久真相源；会话按随机会话 ID 隔离，服务端只存 Refresh Token 哈希、用户归属、创建/最近使用时间、撤销状态及必要的轮换版本，不存明文 Refresh Token。
+- 活跃会话不使用固定绝对 `expiresAt`。刷新 Cookie 与 Mongo 会话均按最近使用时间设置 400 天滚动闲置期限，并在成功续签时延长；浏览器仍可能清理 Cookie。刷新令牌轮换仍保留。
+- Refresh Cookie 格式为随机/派生会话 ID 加 256-bit 随机或 HMAC 派生 secret；MongoDB 只保存整体凭证的 SHA-256 哈希。条件更新同时匹配会话 ID、当前哈希和轮换版本，实现原子轮换。
+- 相同旧凭证在并发窗口内确定性地产生同一下一代凭证；并发输家可重建赢家的 Cookie，交错响应不会回滚到旧值。浏览器支持时用 Web Locks 跨标签串行化。
+- 轮换和撤销必须是原子、会话级操作。前端协调同一浏览器多标签页的刷新；服务端对竞态重放只拒绝/处理对应会话，不撤销整个 userId 下其它会话。未经证实的并发请求不得被认定为账号级攻击。
+- 登出撤销当前会话并保留 Access 黑名单逻辑；改密和重置密码撤销该用户所有 Refresh 会话。注册、登录创建独立的新会话。
+- 改密/重置密码不会即时撤销已签发的 Access JWT；现有 Access Token 可继续有效至其 30 天过期，本 change 不扩展全站 JWT 撤销架构。
+- 旧缓存格式只作为发布迁移输入：有效旧 Cookie 首次成功续签时，以旧 token 哈希作唯一迁移键，生成确定性的会话凭证并写入 MongoDB；并发迁移收敛到同一会话。保留 30 秒迁移重试窗口，覆盖迁移写入成功但 HTTP 响应丢失的客户端重试。迁移结束后不再将通用缓存作为会话真相源。
+- HTTP 部署保持现有 Cookie 兼容性，但必须明确其不具备机密性；安全属性不能把 HTTP 变成安全传输，后续启用 HTTPS 时必须使用 `Secure` Cookie。
 
 ## Alternatives considered
 - 延长 Access Token TTL（简单但安全性差）
 - Session Cookie（与现有 JWT 模型冲突，改动过大）
+- 继续使用通用 Redis 缓存：不满足 Redis 可选、缓存可淘汰且需要跨重启持久的会话合同。
+- 每账号单 Refresh Token：会让跨设备登录互踢，且把单会话竞态扩大为整账号登出。
 
 ## Risks / Trade-offs
-- Cookie 策略（SameSite/secure）需要按环境配置，否则本地开发可能无法携带。
-- 引入 refresh 需要并发控制，避免并行请求触发多次刷新。
+- 无固定服务端到期会提高被盗凭证的持续有效风险，必须保留主动退出、改密/重置撤销、会话级安全撤销及仅存哈希。
+- 公网 HTTP 可被中间人窃听长期 Cookie 与 Authorization 请求；当前无 HTTPS 时，不能宣称该登录机制达到商业安全标准。
+- 浏览器会清理站点数据，且 Cookie 持久期限并非无限；滚动续期只能保证用户持续使用且浏览器保留 Cookie 时不因服务端固定期限登出。
+- MongoDB 会话索引、并发原子更新和旧缓存渐进迁移需要覆盖多实例部署及竞态测试。
+- 当前旧代码刷新竞态跨标签页并非前端单飞可完全覆盖；需要浏览器级协调加服务端原子语义，且不得将普通竞态误判成盗用。
 
 ## Migration Plan
-1) 灰度开启：先允许 Access Token 仍从登录/注册返回。
-2) 新增 refresh 接口并在前端切换自动刷新。
-3) 验证通过后，将 Access Token TTL 缩短并强制 refresh 续签。
+1) 增加 MongoDB 会话模型、TTL 索引和原子会话操作，先保持现有登录响应、Access Token 和 Cookie 名称兼容。
+2) 双读迁移窗口：Refresh 首先查询 MongoDB；命中有效旧缓存记录时，以旧 token 哈希作为唯一迁移键生成确定性迁移凭证并保存 Mongo 会话，然后撤销旧缓存记录；保留 30 秒同凭证重试窗口。该过程不迁移或记录明文凭证。
+3) 前端加入同浏览器标签页刷新协调和安全重试；部署多实例并发回归验证通过后切换为 MongoDB 单一真相源。
+4) 将登出、改密、重置密码的撤销行为按目标范围接入；保留现有 Access Token 期限，不在本 change 顺带改为更短期限。
+5) 通过提案定义的 API、跨设备、重启、并发、迁移和撤销验收后，才移除旧缓存读取。
 
 ## Open Questions
-- Refresh Token 存储使用 Redis 还是 MongoDB？
-- Cookie SameSite 策略是否统一为 Lax（生产环境是否需要 None + Secure）？
-- Refresh TTL 最终标准：当前采用 180 天；后续若引入“记住我”开关，可再拆分普通会话与长期会话。
+- “永久”不能覆盖浏览器清理 Cookie、站点数据被淘汰或用户安全撤销；提案采用活跃服务端会话无固定绝对期限、浏览器持久 Cookie 滚动续期作为可实现合同。
+- 公网 HTTP 的传输窃听风险需要在批准时确认接受；该风险无法由持久化或 httpOnly 属性解决。

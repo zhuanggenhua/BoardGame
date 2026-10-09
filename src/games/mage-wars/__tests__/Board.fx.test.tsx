@@ -140,6 +140,7 @@ vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
         durationScale,
         visualScale,
         dimStrength,
+        pillarWidthRatio,
         onImpact,
     }: {
         active?: boolean;
@@ -150,6 +151,7 @@ vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
         durationScale?: number;
         visualScale?: number;
         dimStrength?: number;
+        pillarWidthRatio?: number;
         onImpact?: () => void;
     }) => (
         <button
@@ -163,6 +165,7 @@ vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
             data-duration-scale={String(durationScale ?? '')}
             data-visual-scale={String(visualScale ?? '')}
             data-dim-strength={String(dimStrength ?? '')}
+            data-pillar-width-ratio={String(pillarWidthRatio ?? '')}
             data-has-impact={String(Boolean(onImpact))}
             onClick={onImpact}
         />
@@ -1232,10 +1235,13 @@ describe('MageWarsBoard FX wiring', () => {
         expect(summonEffect.getAttribute('data-active')).toBe('true');
         expect(summonEffect.getAttribute('data-intensity')).toBe('strong');
         expect(summonEffect.getAttribute('data-color')).toBe('blue');
-        expect(summonEffect.getAttribute('data-origin-y')).toBe('0.66');
+        expect(summonEffect.getAttribute('data-origin-y')).toBe('0.9');
         expect(summonEffect.getAttribute('data-quality')).toBe('reduced');
         expect(summonEffect.getAttribute('data-duration-scale')).toBe('2.4');
-        expect(summonEffect.getAttribute('data-visual-scale')).toBe('1.55');
+        expect(summonEffect.getAttribute('data-visual-scale')).toBe('1');
+        expect(host.style.overflow).toBe('visible');
+        expect(screen.queryByTestId('mage-wars-fx-summon-halo')).toBeNull();
+        expect(summonEffect.getAttribute('data-pillar-width-ratio')).toBe('1');
         expect(summonEffect.getAttribute('data-dim-strength')).toBe('0');
         expect(summonEffect.getAttribute('data-has-impact')).toBe('true');
         expect(onImpact).not.toHaveBeenCalled();
@@ -1384,9 +1390,37 @@ describe('MageWarsBoard FX wiring', () => {
                 Array.from({ length: 12 }, (_, index) => String(index + 1)),
             );
             expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-face-value', String(rawEffectDieResult));
-            expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-tilt', 'none');
+            expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-tilt', 'result-3d');
             expect(effectDieBody).toHaveAttribute('data-roll-duration-ms', String(MAGE_WARS_FX_TIMING.diceResultRollMs));
-            expect(attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"][data-roll-duration-ms]').length).toBe(2);
+            const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
+            expect(attackDieFaces).toHaveLength(2);
+            attackDieFaces.forEach((die) => {
+                expect(die).toHaveAttribute('data-die-kind', 'd6');
+                expect(die).toHaveAttribute('data-rendering-mode', 'css-native-cube-faces');
+                expect(die).toHaveAttribute('data-model-source', 'cube-net:attack-die-texture');
+                expect(die).toHaveAttribute('data-settle-duration-ms', String(MAGE_WARS_FX_TIMING.diceResultSettleMs));
+                const body = die.querySelector('[data-die-renderer="css-d6"]');
+                expect(body).toBeTruthy();
+                expect(body?.querySelectorAll('img')).toHaveLength(6);
+                expect(body?.querySelectorAll('[data-d6-face-id]')).toHaveLength(6);
+                expect(Array.from(body?.querySelectorAll('[data-d6-face-id]') ?? []).map((face) => face.getAttribute('data-d6-face-id')).sort()).toEqual([
+                    'back-hit1',
+                    'bottom-two',
+                    'front-hit2',
+                    'left-burst',
+                    'right-blank',
+                    'top-blank',
+                ]);
+            });
+            expect(attackDieFaces[0]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'hit2');
+            expect(attackDieFaces[1]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'burst');
+            attackDieFaces.forEach((die) => {
+                const pose = die.querySelector('.mage-wars-attack-die-pose');
+                const cube = die.querySelector('[data-die-renderer="css-d6"]');
+                expect(pose).toHaveAttribute('data-settled-tilt', 'result-3d');
+                expect(cube).toHaveAttribute('data-settled-tilt', 'result-3d');
+                expect(pose?.contains(cube)).toBe(true);
+            });
             expect(attackDice).toHaveAttribute('data-visible-duration-ms', '3000');
             expect(attackDice.querySelector('[data-token-kind]')).toBeNull();
             // jsdom exposes WebkitAnimation but no AnimationEvent, so React listens to the prefixed event.
@@ -1533,25 +1567,61 @@ describe('MageWarsBoard FX wiring', () => {
                 />,
             );
 
-            const travel = screen.getByTestId('mage-wars-fx-push-travel');
-            expect(screen.queryByTestId('mage-wars-fx-push-source-wake')).not.toBeNull();
-            expect(screen.queryByTestId('mage-wars-fx-push-travel-mid-burst')).not.toBeNull();
-            expect(screen.queryByTestId('mage-wars-fx-spell-push')).not.toBeNull();
-            expect(screen.queryByTestId('mage-wars-fx-spell-push-burst')).not.toBeNull();
-            expect(screen
-                .getByTestId('mage-wars-fx-spell-push-burst')
-                .querySelector('[data-testid="mock-burst-particles"]')
-                ?.getAttribute('data-overflow')).toBe('2.35');
-            expect(travel.getAttribute('data-source-col')).toBe('1');
-            expect(travel.getAttribute('data-target-col')).toBe('2');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#38bdf8');
+            const slide = screen.getByTestId('mage-wars-fx-push-slide');
+            expect(screen.queryByTestId('mage-wars-fx-push-travel')).toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-push-source-wake')).toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-push-travel-mid-burst')).toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-spell-push-burst')).toBeNull();
+            expect(slide.getAttribute('data-source-col')).toBe('1');
+            expect(slide.getAttribute('data-target-col')).toBe('2');
+            expect(slide.getAttribute('data-visual-role')).toBe('entity-slide');
+            expect(slide.getAttribute('data-from-left')).toBe('25');
+            expect(slide.getAttribute('data-to-left')).toBe('50');
 
             act(() => {
-                advanceSharedFxClockDelay(2600);
+                advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.pushTravelImpactMs);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
+        } finally {
+            resetFxFrameClockForTests();
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps force-push travel on source and target cells when snapshots already sit on the destination', () => {
+        vi.useFakeTimers();
+        const destBox = { left: 50, top: 33.3333, width: 12, height: 16 };
+        const snapshot = anchorSnapshot('mwobj-push-target', 'entity', destBox);
+        const event: FxEvent = {
+            id: 'fx-push-snapshot-dest',
+            cue: 'mage-wars.spell.push',
+            ctx: { cell: { row: 1, col: 2 }, intensity: 'normal', targetSnapshot: snapshot },
+            params: {
+                source: { row: 1, col: 1 },
+                spellCardId: 3523,
+                targetObjectId: 'mwobj-push-target',
+                fromZoneId: ARENA_ZONE_IDS.B2,
+                toZoneId: ARENA_ZONE_IDS.C2,
+                sourceSnapshot: snapshot,
+                targetSnapshot: snapshot,
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <SpellPushRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={vi.fn()}
+                    onComplete={vi.fn()}
+                />,
+            );
+
+            const slide = screen.getByTestId('mage-wars-fx-push-slide');
+            const fromLeft = Number(slide.getAttribute('data-from-left'));
+            const toLeft = Number(slide.getAttribute('data-to-left'));
+            expect(fromLeft).toBeLessThan(toLeft);
+            expect(slide.getAttribute('data-from-left')).not.toBe(String(destBox.left));
         } finally {
             resetFxFrameClockForTests();
             vi.useRealTimers();
@@ -1606,8 +1676,8 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
-    it('does not register ordinary movement as a visible runtime FX cue', () => {
-        expect(mageWarsFxRegistry.resolve(MW_FX.MOVE)).toBeNull();
+    it('registers ordinary movement as a slide FX cue', () => {
+        expect(mageWarsFxRegistry.resolve(MW_FX.MOVE)).not.toBeNull();
     });
 });
 
@@ -2727,8 +2797,9 @@ describe('MageWarsBoard spell cast choices', () => {
         expect(screen.getByTestId('mage-wars-toast-probe')).toHaveTextContent('error.actionUnavailable');
         expect(blockedPreparedCard?.getAttribute('data-selected')).toBeNull();
         expect(container.querySelector('[data-testid="mage-wars-selected-card-frame"]')).toBeNull();
-        expect(container.querySelector('[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]')?.getAttribute('role'))
-            .toBeNull();
+        const blockedCastMage = container.querySelector('[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]');
+        expect(blockedCastMage?.getAttribute('data-mage-role')).toBeNull();
+        expect(blockedCastMage?.getAttribute('data-primary-action')).toBeNull();
         expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('true');
 
         const inspectButton = blockedPreparedCard?.parentElement?.querySelector<HTMLButtonElement>(
@@ -2945,6 +3016,8 @@ describe('MageWarsBoard spell cast choices', () => {
         const attachmentTargetFrame = visibleEnchantmentCard?.querySelector<HTMLElement>('[data-testid="mage-wars-attachment-target-frame"]');
         expect(attachmentTargetFrame?.className).toContain('inset-0');
         expect(attachmentTargetFrame?.className).not.toContain('-inset');
+        expect(attachmentTargetFrame?.className).toContain('border-emerald-300/95');
+        expect(attachmentTargetFrame?.className).toContain('border-2');
         fireEvent.click(visibleEnchantmentCard!);
 
         await waitFor(() => {
@@ -2957,6 +3030,8 @@ describe('MageWarsBoard spell cast choices', () => {
         );
         expect(attachmentSourceFrame?.className).toContain('inset-0');
         expect(attachmentSourceFrame?.className).not.toContain('-inset');
+        expect(attachmentSourceFrame?.className).toContain('border-emerald-300/95');
+        expect(attachmentSourceFrame?.className).toContain('border-2');
         const friendlyTargetCard = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-zone-field-card"][data-object-id="steal-friendly-cat-0"]',
         );
@@ -3382,14 +3457,14 @@ describe('MageWarsBoard object ability choices', () => {
         );
         expect(abilityButton).not.toBeNull();
         const abilityDock = screen.getByTestId('mage-wars-selected-ability-action-dock');
-        expect(abilityDock.getAttribute('data-ability-action-placement')).toBe('source-card-below');
+        expect(abilityDock.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
         expect(abilityDock.className).toContain('fixed');
         expect(abilityDock.getAttribute('data-ability-source-key')).toBe('object:asyran-cleric-0');
         expect(abilityDock.className).not.toContain('bottom-[15.75rem]');
         expect(abilityDock).toContainElement(abilityButton);
         expect(abilityDock.parentElement).toBe(document.body);
         expect(abilityButton?.getAttribute('data-ability-visual')).toBe('text-action');
-        expect(abilityButton?.getAttribute('data-ability-action-placement')).toBe('source-card-below');
+        expect(abilityButton?.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
         expect(abilityButton?.textContent).toContain('治疗之光');
         expect(abilityButton?.querySelector('img')).toBeNull();
         expect(abilityButton?.querySelector('svg')).toBeNull();
@@ -3451,7 +3526,9 @@ describe('MageWarsBoard object ability choices', () => {
         fireEvent.click(wolfCard!);
 
         expect(dispatch).not.toHaveBeenCalled();
-        expect(screen.queryByTestId('mage-wars-object-ability-choice-dock')).not.toBeNull();
+        expect(screen.queryByTestId('mage-wars-object-ability-choice-dock')).toBeNull();
+        const abilityDock = screen.getByTestId('mage-wars-selected-ability-action-dock');
+        expect(abilityDock.querySelectorAll('[data-testid="mage-wars-object-ability-choice-option"]')).toHaveLength(2);
 
         const healOption = screen.getAllByTestId('mage-wars-object-ability-choice-option')
             .find((option) => option.getAttribute('data-mode') === 'heal');
@@ -3503,6 +3580,130 @@ describe('MageWarsBoard object ability choices', () => {
             manaCost: 3,
             boundSpellCardId: 1705,
         });
+    });
+
+    function createMageStaffBoundCastCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+        const opponent = baseCore.players['1'];
+        const mageStaff: MageWarsArenaObjectState = {
+            ...creatureObject('mage-staff-bound-0', '0', 3725, '法师魔杖', ARENA_ZONE_IDS.A3),
+            kind: 'equipment',
+            sourceObjectId: 'spell-card-3725',
+            typeLine: '装备 / 法杖',
+            attackOrTraitLine: '法术绑定',
+            rulesText: '法术绑定。你可以从你的法术书中绑定一个非史诗咒语类法术到法师魔杖上。',
+            anchoredToPlayerId: '0',
+            boundSpellCardId: 3500,
+            actionReady: false,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [mageStaff.id]: mageStaff,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 0,
+                    preparedSpellCardIds: [],
+                    discardSpellCardIds: [],
+                },
+                '1': {
+                    ...opponent,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0', '1']
+                    : zone.occupantIds.filter((id) => id !== '0' && id !== '1'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [mageStaff.id]
+                    : zone.objectIds.filter((id) => id !== mageStaff.id),
+            })),
+        };
+    }
+
+    it('stacks the bound spell on Mage Staff and casts it from the middle-lower action dock', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createMageStaffBoundCastCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const staffCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-attached-card"][data-object-id="mage-staff-bound-0"]',
+        );
+        expect(staffCard).not.toBeNull();
+        expect(staffCard?.querySelector('[data-testid="mage-wars-bound-spell-overlay"]')?.getAttribute('data-bound-spell-card-id'))
+            .toBe('3500');
+        fireEvent.click(staffCard!);
+
+        const boundCastButton = screen.getByTestId('mage-wars-selected-bound-spell-cast');
+        const abilityDock = screen.getByTestId('mage-wars-selected-ability-action-dock');
+        expect(abilityDock.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
+        expect(abilityDock.parentElement).toBe(document.body);
+        expect(boundCastButton.getAttribute('data-bound-spell-card-id')).toBe('3500');
+        expect(boundCastButton.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
+        expect(boundCastButton.className).not.toContain('border');
+        expect(boundCastButton.textContent).toContain('actions.castBoundSpell');
+        fireEvent.click(boundCastButton);
+
+        const opponentMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+        );
+        expect(opponentMage).not.toBeNull();
+        await waitFor(() => {
+            expect(opponentMage?.getAttribute('role')).toBe('button');
+            expect(opponentMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+        fireEvent.click(opponentMage!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3500,
+            manaCost: 16,
+            targetPlayerId: '1',
+        });
+    });
+
+    it('lets inspect preview show attached staff cards and select them for the action dock', () => {
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createMageStaffBoundCastCore(), '0', { phase: 'initiativeQuickcast' })}
+            />,
+        );
+
+        const inspectButton = container.querySelector<HTMLButtonElement>(
+            '[data-testid="mage-wars-mage-hud-self"] [data-testid="mage-wars-card-inspect-button"]',
+        );
+        expect(inspectButton).not.toBeNull();
+        fireEvent.click(inspectButton!);
+
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
+        const attachment = screen.getByTestId('mage-wars-card-magnify-attachment');
+        expect(attachment.getAttribute('data-object-id')).toBe('mage-staff-bound-0');
+        expect(attachment.getAttribute('data-source-card-id')).toBe('3725');
+        expect(attachment.getAttribute('data-bound-spell-card-id')).toBe('3500');
+        fireEvent.click(attachment);
+
+        const boundCastButton = screen.getByTestId('mage-wars-selected-bound-spell-cast');
+        expect(boundCastButton.getAttribute('data-bound-spell-card-id')).toBe('3500');
+        expect(screen.getByTestId('mage-wars-selected-ability-action-dock').getAttribute('data-ability-action-placement'))
+            .toBe('middle-lower-action-dock');
     });
 });
 
@@ -3564,13 +3765,13 @@ describe('MageWarsBoard mage ability status choices', () => {
 
         const restoreButton = screen.getByTestId('mage-wars-selected-mage-ability-restore');
         const restoreDock = screen.getByTestId('mage-wars-selected-ability-action-dock');
-        expect(restoreDock.getAttribute('data-ability-action-placement')).toBe('source-card-below');
+        expect(restoreDock.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
         expect(restoreDock.className).toContain('fixed');
         expect(restoreDock.getAttribute('data-ability-source-key')).toBe('mage:0');
         expect(restoreDock.className).not.toContain('bottom-[15.75rem]');
         expect(restoreDock).toContainElement(restoreButton);
         expect(restoreButton.getAttribute('data-ability-visual')).toBe('text-action');
-        expect(restoreButton.getAttribute('data-ability-action-placement')).toBe('source-card-below');
+        expect(restoreButton.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
         expect(restoreButton.textContent).toContain('复原术');
         expect(restoreButton.querySelector('img')).toBeNull();
         expect(restoreButton.querySelector('svg')).toBeNull();
@@ -3954,6 +4155,41 @@ describe('MageWarsBoard token placement', () => {
         };
     }
 
+    function createMeleeBonusMarkerCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const boostedCat: MageWarsArenaObjectState = {
+            ...creatureObject('melee-bonus-cat-0', '0', 2906, 'Melee Bonus Cat', ARENA_ZONE_IDS.A3),
+            temporaryTraits: {
+                meleeDiceModifier: 2,
+                meleeDiceModifierUntilRoundNumber: 1,
+            },
+        };
+
+        return {
+            ...baseCore,
+            objects: {
+                ...baseCore.objects,
+                [boostedCat.id]: boostedCat,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...baseCore.players['0'],
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [boostedCat.id]
+                    : zone.objectIds.filter((id) => id !== boostedCat.id),
+            })),
+        };
+    }
+
     function createWoundedTokenPlacementCore(): MageWarsCore {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const woundedCat: MageWarsArenaObjectState = {
@@ -4035,13 +4271,28 @@ describe('MageWarsBoard token placement', () => {
         const guardAction = screen.getByTestId('mage-wars-selected-unit-guard');
         expect(guardAction.getAttribute('data-action-kind')).toBe('guard');
         expect(guardAction.getAttribute('data-action-visual')).toBe('text-action');
-        expect(guardAction.getAttribute('data-action-placement')).toBe('source-card-below');
+        expect(guardAction.getAttribute('data-action-placement')).toBe('middle-lower-action-dock');
         expect(guardAction.className).toContain('bg-emerald-200');
         expect(guardAction.textContent).toContain('actions.guardCreature');
         expect(guardAction.className).not.toContain('rounded-[0.22rem]');
         expect(guardAction.className).not.toContain('bg-emerald-950');
         expect(guardAction.querySelector('img[alt="tokens.guard"]')).toBeNull();
         expect(guardAction.querySelector('svg')).toBeNull();
+    });
+
+    it('shows a visible melee bonus marker on the host after Beast Staff melee bonus', () => {
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(createMeleeBonusMarkerCore())} />);
+
+        const boostedCat = screen.getByText('Melee Bonus Cat')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(boostedCat).not.toBeNull();
+        const meleeBonusMarker = boostedCat?.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-melee-bonus-marker"]',
+        );
+        expect(meleeBonusMarker).not.toBeNull();
+        expect(meleeBonusMarker?.getAttribute('data-melee-dice-modifier')).toBe('2');
+        expect(meleeBonusMarker?.textContent).toBe('+2');
+        expect(meleeBonusMarker?.getAttribute('title')).toContain('actions.meleeBonusMarker');
     });
 
     it('renders wounded state as a Summoner Wars style life readout instead of generic badges or damage token images', () => {

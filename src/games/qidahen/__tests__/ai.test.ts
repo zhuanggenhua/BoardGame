@@ -123,6 +123,79 @@ describe('七大恨 AI', () => {
         ]);
     });
 
+    it('手动代选七大恨阵营时，adapter 应接管未选 AI、识别直接命令并在权威状态确认后释放', () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', false);
+        const pendingState = createAiState({
+            ...baseCore,
+            factionSelection: {
+                availableFactionIds: ['ming', 'mongol', 'jin'],
+                selections: { '0': 'ming' },
+            },
+        });
+
+        expect(engineConfig.onlineAiRecovery?.resolveManualSetupSelectionTakeoverPlayerId?.({
+            sharedState: pendingState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe('1');
+
+        expect(engineConfig.onlineAiRecovery?.resolveManualSetupSelectionActionKindFromCommand?.({
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            payload: { factionId: 'mongol' },
+        })).toBe('faction-selection');
+
+        expect(engineConfig.onlineAiRecovery?.shouldReleaseManualSetupAttemptFromSharedState?.({
+            sharedState: createAiState({
+                ...pendingState.core,
+                factionSelection: {
+                    ...pendingState.core.factionSelection!,
+                    selections: { '0': 'ming', '1': 'mongol' },
+                },
+            }),
+            playerId: '1',
+            actionKind: 'faction-selection',
+            selectionId: 'mongol',
+        })).toBe(true);
+
+        expect(engineConfig.onlineAiRecovery?.shouldReleaseManualSetupAttemptFromSharedState?.({
+            sharedState: createAiState({
+                ...pendingState.core,
+                factionSelection: null,
+            }),
+            playerId: '1',
+            actionKind: 'faction-selection',
+            selectionId: 'mongol',
+        })).toBe(true);
+    });
+
+    it('手动代选七大恨阵营时，本地 AI 不应自动提交 faction-selection', async () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', false);
+        const state = createAiState({
+            ...baseCore,
+            factionSelection: {
+                availableFactionIds: ['ming', 'mongol', 'jin'],
+                selections: { '0': 'ming' },
+            },
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'qidahen-manual-faction-selection',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
+
     it('会为对应势力生成剧本前置选择动作', () => {
         const core = createInitialCore(['0', '1', '2'], 'shanhaiguan-1622', false);
         const state = createAiState(core);

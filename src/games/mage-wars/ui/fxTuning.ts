@@ -30,27 +30,40 @@ export const MAGE_WARS_FX_TIMING = {
     meleeStrikeMs: 260,
     meleeCompleteMs: 900,
     diceResultRollMs: 900,
+    // Attack d6 follows DiceThrone / Summoner Wars: linear tumble, then ease onto the result face.
+    diceResultTumbleMs: 500,
+    diceResultSettleMs: 800,
     meleeResultVisibleMs: 3_000,
     teleportArrivalImpactMs: 420,
     teleportCompleteMs: 1_250,
-    pushTravelImpactMs: 2_600,
+    // 实体滑移必须长到过程帧能看见真实棋子；线性位移，落点再停一拍给截图和 registry 超时对齐。
+    pushTravelImpactMs: 1_400,
     pushSameCellImpactMs: 80,
-    pushTravelCompleteMs: 3_300,
-    pushSameCellCompleteMs: 780,
-    moveTravelImpactMs: 900,
+    pushTravelCompleteMs: 3_200,
+    pushSameCellCompleteMs: 180,
+    moveTravelImpactMs: 560,
     moveSameCellImpactMs: 80,
-    moveTravelCompleteMs: 1_150,
-    moveSameCellCompleteMs: 420,
+    moveTravelCompleteMs: 620,
+    moveSameCellCompleteMs: 180,
     directDamageCompleteMs: 850,
 } as const;
 
 export const MAGE_WARS_SUMMON_FX_TUNING = {
-    scale: 1.08,
-    originY: 0.66,
+    // 宿主贴卡；沿用现有 summon 光柱，按卡宽比拉成等宽，不再叠 CSS 光圈。
+    scale: 1,
+    originY: 0.9,
     durationScale: 2.4,
-    visualScale: 1.55,
+    visualScale: 1,
     dimStrength: 0,
+    pillarWidthRatio: 1,
 } as const;
+
+/** E2E 审计上限：宿主与卡同框，只留亚像素/描边余量。 */
+export const MAGE_WARS_SUMMON_FX_MAX_OBJECT_RATIO = 1.2;
+
+export const MAGE_WARS_SUMMON_HOST_STYLE = {
+    overflow: 'visible' as const,
+};
 
 export const MAGE_WARS_ATTACK_FX_TUNING = {
     pathPaddingCells: 1.35,

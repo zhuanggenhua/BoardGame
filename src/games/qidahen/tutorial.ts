@@ -1,6 +1,7 @@
 import type { MatchState, TutorialCollection, TutorialManifest } from '../../engine/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { QIDAHEN_COMMANDS } from './domain/commands';
+import { QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID } from './domain/interactionSources';
 import type { QidahenCore } from './domain/types';
 
 export const QIDAHEN_DEFAULT_TUTORIAL_ID = 'basic-opening';
@@ -414,6 +415,9 @@ const diplomacyHireStepValidator = (state: MatchState<unknown>, step: { id: stri
 
 const yearAndCharactersStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
+    const activeInteractionSourceId = (
+        state.sys.interaction?.current?.data as { sourceId?: unknown } | undefined
+    )?.sourceId;
     switch (step.id) {
         case 'advance-midyear':
             return core.turnPhase === 'action-window'
@@ -425,8 +429,10 @@ const yearAndCharactersStepValidator = (state: MatchState<unknown>, step: { id: 
             return core.turnPhase !== 'season-resolution'
                 && core.lastSeasonSummary?.title === '年中结算';
         case 'new-year-tribute':
-        case 'new-year-maintenance':
             return core.turnPhase === 'season-resolution';
+        case 'new-year-maintenance':
+            return core.turnPhase === 'season-resolution'
+                && activeInteractionSourceId === QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID;
         case 'new-year-attrition':
         case 'chronology-score':
         case 'turn-order-refresh':
@@ -1345,6 +1351,10 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             requireAction: true,
             allowManualSkip: true,
             allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
+            advanceOnEvents: [
+                { type: 'SYS_INTERACTION_RESOLVED', match: { sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID } },
+                { type: 'FORTIFICATION_MAINTENANCE_RESOLVED' },
+            ],
         },
         {
             id: 'new-year-attrition',

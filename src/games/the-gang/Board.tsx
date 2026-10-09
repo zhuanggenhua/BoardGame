@@ -2629,6 +2629,7 @@ export default function TheGangBoard({
     const core = G.core;
     const { t } = useTranslation('game-the-gang');
     const toast = useToast();
+    const isSpectator = isMultiplayer === true && playerID == null;
     const runtimeDispatch = dispatch as unknown as (type: string, payload?: unknown) => void;
     useTutorialBridge(G.sys.tutorial, runtimeDispatch);
     useGameAudio({
@@ -2691,11 +2692,12 @@ export default function TheGangBoard({
         && requiredExitChipCount > 0
         && core.currentRoundChips[localActiveChipOwnerKey] !== undefined
         && !currentExitChipOwners.includes(localActiveChipOwnerKey)
-        && takenExitChipCount < requiredExitChipCount;
+        && takenExitChipCount < requiredExitChipCount
+        && !isSpectator;
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
     const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
     const nextHeistProgress = getProgressButtonState(core, 'start-next-heist', localPlayerId, t('board.nextHeist'), t);
-    const canDragSwapCards = core.phase === 'chip-selection' && core.rules.config.twoHand && hasSecondaryHand;
+    const canDragSwapCards = !isSpectator && core.phase === 'chip-selection' && core.rules.config.twoHand && hasSecondaryHand;
     const chipValues = getChipValues(core.playerIds.length, core.rules.config, core.round);
     const availableChipValues = getUnoccupiedChipValues(chipValues, core.currentRoundChips);
     const localCurrentChips = buildCurrentChipDisplays(core, localPlayerId);
@@ -2940,6 +2942,7 @@ export default function TheGangBoard({
         payload: TheGangCommandMap[K],
         commandPlayerId = localPlayerId,
     ) => {
+        if (isSpectator) return;
         if (isMultiplayer) {
             dispatch(type, payload);
             return;
@@ -3569,6 +3572,16 @@ export default function TheGangBoard({
                                             compact
                                         />
                                     )}
+                                    {isSpectator && (
+                                        <HandCardRows
+                                            primaryCards={core.players[id]?.pocketCards ?? []}
+                                            secondaryCards={core.players[id]?.secondaryPocketCards}
+                                            emphasis="handCompact"
+                                            t={t}
+                                            testIdPrefix={`the-gang-spectator-hand-${id}`}
+                                            showLabels={(core.players[id]?.secondaryPocketCards?.length ?? 0) > 0}
+                                        />
+                                    )}
                                  </div>
                             );
                         })}
@@ -3618,7 +3631,7 @@ export default function TheGangBoard({
                                         getChipDragHandlers={getChipDragHandlers}
                                         chipDrag={chipDrag}
                                         remotePoolDragChipValues={remotePoolDragChipValues}
-                                        active={core.phase === 'chip-selection' && core.round === round}
+                                        active={!isSpectator && core.phase === 'chip-selection' && core.round === round}
                                     />
                                 ))}
                                 {core.phase === 'chip-selection' && core.round === 4 && remainingExitChipCount > 0 && (
@@ -3727,7 +3740,7 @@ export default function TheGangBoard({
                         </div>
 
                         <div className="pointer-events-auto absolute bottom-0 right-24 flex min-w-[7rem] flex-col items-center gap-1 lg:right-28" data-bgg-zone="action-dock">
-                            {setupOpen && (
+                            {setupOpen && !isSpectator && (
                                 <>
                                     <button
                                         type="button"
@@ -3760,7 +3773,7 @@ export default function TheGangBoard({
                                     </button>
                                 </>
                             )}
-                            {heistStarted && core.phase === 'chip-selection' && core.round < 4 && (
+                            {!isSpectator && heistStarted && core.phase === 'chip-selection' && core.round < 4 && (
                                 <button
                                     type="button"
                                     disabled={!allPlayersHaveChip || nextRoundProgress.hasApproved}
@@ -3771,7 +3784,7 @@ export default function TheGangBoard({
                                     {nextRoundProgress.label}
                                 </button>
                             )}
-                            {heistStarted && core.phase === 'chip-selection' && core.round === 4 && (
+                            {!isSpectator && heistStarted && core.phase === 'chip-selection' && core.round === 4 && (
                                 <button
                                     type="button"
                                     disabled={!allFinalTokensTaken || revealShowdownProgress.hasApproved}
@@ -3782,7 +3795,7 @@ export default function TheGangBoard({
                                     {revealShowdownProgress.label}
                                 </button>
                             )}
-                            {heistStarted && (core.round < 4 ? allPlayersHaveChip : allFinalTokensTaken) && core.phase === 'chip-selection' && (
+                            {!isSpectator && heistStarted && (core.round < 4 ? allPlayersHaveChip : allFinalTokensTaken) && core.phase === 'chip-selection' && (
                                 <ProgressVoteDots
                                     approvals={core.round < 4 ? nextRoundProgress.approvals : revealShowdownProgress.approvals}
                                     label={core.round < 4 ? nextRoundProgress.status : revealShowdownProgress.status}

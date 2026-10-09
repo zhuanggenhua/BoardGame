@@ -341,7 +341,7 @@ export function resolveManualSetupSelectionIdFromAction(
     if (action.kind === 'setup-select-character') {
         return typeof payload.characterId === 'string' ? payload.characterId : null;
     }
-    if (action.kind === 'select-faction' || action.kind === 'setup-select-faction') {
+    if (action.kind === 'select-faction' || action.kind === 'setup-select-faction' || action.kind === 'faction-selection') {
         return typeof payload.factionId === 'string' ? payload.factionId : null;
     }
     return null;

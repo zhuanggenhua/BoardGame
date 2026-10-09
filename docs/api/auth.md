@@ -7,7 +7,10 @@
 - Access Token 通过 `Authorization: Bearer <token>` 传入。
 - Refresh Token 使用 httpOnly Cookie：`refresh_token`，path 为 `/auth`。
 - `login`、`refresh`、`logout` 使用 `{ success, code, message, data }` 包装响应；其它接口多为普通 JSON 或 `{ error }`。
-- Access Token 当前有效期 30 天；Refresh Token 当前有效期 180 天。
+- Access Token 当前有效期 30 天；Refresh Cookie 每次签发/成功续签后延长 400 天。MongoDB 会话同样按最近使用时间滚动设置 400 天闲置期限，不设固定绝对寿命；仍可被退出、改密/重置密码或安全处置撤销。
+- 撤销 Refresh 会话不等同于即时吊销已经签发的 Access Token；它仍可用到 30 天 JWT 到期（当前登出请求携带的 Access Token 会另加入黑名单）。
+- Refresh 会话按设备隔离；MongoDB 只持久保存 Refresh Token 哈希。旧缓存中仍可读取且未过期的 Refresh Cookie 会在首次续签时迁入 MongoDB。
+- “长期登录”不等于永不重新登录：浏览器清理/淘汰站点数据、Cookie 丢失、账号安全撤销或长期不再访问仍可能要求重新登录。HTTP 不加密，长期 Cookie 可能被链路窃听；`HttpOnly` 只限制脚本读取，不提供传输加密。
 
 ## 路由
 
@@ -16,17 +19,17 @@
 | POST | `/auth/send-register-code` | 公开 | `email` | 发送注册验证码；60 秒冷却，10 分钟内最多 5 次；邮箱已注册返回 `409` 和 `suggestLogin` |
 | POST | `/auth/register` | 公开 | `username`、`email`、`code`、`password` | 注册并签发 Access Token + Refresh Cookie；用户名 2-20，密码至少 4 |
 | POST | `/auth/send-reset-code` | 公开 | `email` | 发送重置密码验证码；邮箱不存在返回 `404` |
-| POST | `/auth/reset-password` | 公开 | `email`、`code`、`newPassword` | 校验验证码后更新密码，并撤销该用户 Refresh Token |
+| POST | `/auth/reset-password` | 公开 | `email`、`code`、`newPassword` | 校验验证码后更新密码，并撤销该用户所有 Refresh 会话 |
 | POST | `/auth/login` | 公开 | `account`、`password` | 仅邮箱登录；失败也返回 200，但 `success=false` |
 | POST | `/auth/refresh` | Refresh Cookie | 无 | 轮换 Refresh Token，并返回新的 Access Token |
-| POST | `/auth/logout` | 登录用户 | 无 | 当前 Access Token 进黑名单；Refresh Token 同步撤销 |
+| POST | `/auth/logout` | Refresh Cookie（Access Token 可选） | 无 | 当前设备 Refresh 会话同步撤销，不影响其它设备；若提供有效 Access Token，也将其加入黑名单 |
 | GET | `/auth/me` | 登录用户 | 无 | 当前用户、头像、后台角色、封禁状态和反馈积分 |
 | POST | `/auth/send-email-code` | 登录用户 | `email` | 给当前登录用户发送绑定 / 换绑邮箱验证码 |
 | POST | `/auth/verify-email` | 登录用户 | `email`、`code` | 绑定 / 更新邮箱 |
 | POST | `/auth/update-username` | 登录用户 | `username` | 更新昵称并返回新 JWT |
 | POST | `/auth/update-avatar` | 登录用户 | `avatar` | 更新头像 URL / 标识 |
 | POST | `/auth/upload-avatar` | 登录用户 | multipart `file`，可选裁剪参数 | 上传头像；允许 jpeg / png / webp / gif，最大 5MB |
-| POST | `/auth/change-password` | 登录用户 | `currentPassword`、`newPassword` | 校验旧密码后更新 |
+| POST | `/auth/change-password` | 登录用户 | `currentPassword`、`newPassword` | 校验旧密码后更新，并撤销该用户所有 Refresh 会话 |
 
 ## 主要错误
 

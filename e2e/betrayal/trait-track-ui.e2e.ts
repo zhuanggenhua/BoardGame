@@ -4,10 +4,12 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR,
     createRuntimeCore,
     initBetrayalContext,
     injectCore,
     saveScreenshot,
+    waitForBetrayalFloatingTextGone,
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
 } from './betrayalTestHelpers';
@@ -107,6 +109,7 @@ test.describe('山屋惊魂属性轨 UI', () => {
 
         await injectCore(page, core);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await waitForBetrayalFloatingTextGone(page);
         await expect(page.getByTestId('betrayal-focus-self-room')).toBeVisible();
         await expect(page.getByTestId('betrayal-focus-self-room')).toHaveAttribute('data-room-focus-action', 'self-room');
         await expect(page.getByTestId('betrayal-focus-self-room')).toHaveAttribute('data-room-focus-icon', 'locate-fixed');
@@ -126,7 +129,7 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
         await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
         await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toBeVisible();
-        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
+        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'equal-cell-gaps');
         await expect(speedTrack.locator('[data-trait-track-tick="true"]')).toHaveCount(0);
         await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(1);
         await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
@@ -161,23 +164,38 @@ test.describe('山屋惊魂属性轨 UI', () => {
         });
         expect(currentSlotVerticalCenterDelta).toBeLessThanOrEqual(1);
 
-        const boardMarker = page.getByTestId('betrayal-explorer-board-marker-speed');
-        await expect(boardMarker).toHaveAttribute('data-trait-track-position', '2');
-        await expect(boardMarker).toHaveAttribute('data-trait-track-value', '3');
-        await expect(boardMarker).toHaveAttribute('data-trait-board-marker-shape', 'blank-material-marker');
-        await expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
-        await expect(boardMarker).toHaveAttribute('data-trait-board-marker-visible-value', 'false');
-        expect((await boardMarker.textContent())?.trim()).toBe('');
+        const currentSlotEdgeAlignment = await speedTrack.locator('[data-trait-track-segmented-rail="true"]').evaluate((rail) => {
+            const slots = [...rail.querySelectorAll('[data-trait-track-slot="true"]')];
+            const railBox = rail.getBoundingClientRect();
+            const firstBox = slots[0]?.getBoundingClientRect();
+            const currentBox = rail.querySelector('[data-trait-track-current="true"]')?.getBoundingClientRect();
+            const currentIndex = slots.findIndex((slot) => slot.getAttribute('data-trait-track-current') === 'true');
+            const nextBox = currentIndex >= 0 ? slots[currentIndex + 1]?.getBoundingClientRect() : undefined;
+            return {
+                firstLeftInset: firstBox ? firstBox.left - railBox.left : Number.POSITIVE_INFINITY,
+                firstTopInset: firstBox ? firstBox.top - railBox.top : Number.POSITIVE_INFINITY,
+                currentRight: currentBox?.right ?? Number.NaN,
+                nextLeft: nextBox?.left ?? Number.NaN,
+            };
+        });
+        expect(currentSlotEdgeAlignment.firstLeftInset).toBeLessThanOrEqual(2);
+        expect(currentSlotEdgeAlignment.firstTopInset).toBeLessThanOrEqual(2);
+        expect(Math.abs(currentSlotEdgeAlignment.nextLeft - currentSlotEdgeAlignment.currentRight)).toBeLessThanOrEqual(1);
 
         const currentExplorerPanel = page.getByTestId('betrayal-observed-explorer-panel');
         await expect(currentExplorerPanel).toBeVisible();
         await expect(currentExplorerPanel).toHaveAttribute('data-player-id', '0');
         await expect(currentExplorerPanel).toHaveAttribute('data-panel-asset', core.currentExplorer.portraitAsset);
         await expect(currentExplorerPanel).not.toHaveAttribute('data-panel-crop', /.*/);
-        await expect(currentExplorerPanel).not.toHaveAttribute('data-token-asset', /.*/);
+        await expect(currentExplorerPanel).toHaveAttribute('data-token-asset', core.currentExplorer.tokenAsset ?? '');
+        await expect(page.getByTestId('betrayal-hud-identity-token-0')).toBeVisible();
+        await expect(page.getByTestId('betrayal-explorer-board-marker-speed')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-current-traits')).not.toContainText('当前属性');
         await expect(page.locator('[data-testid^="betrayal-bottom-teammate-"] [data-player-status-tone="neutral"]').filter({ hasText: '同房间' }).first()).toBeVisible();
         await expect(page.locator('[data-player-status-tone="target"]').filter({ hasText: '同房间' })).toHaveCount(0);
         await saveScreenshot(page, CURRENT_TRACK_SCREENSHOT);
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await expect(speedTrack).toBeVisible();
 
         await page.getByTestId('betrayal-bottom-teammate-1').click();
         await expect(page.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveCount(0);
@@ -196,7 +214,7 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
         await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
         await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toBeVisible();
-        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
+        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'equal-cell-gaps');
         await expect(observedSpeedTrack.locator('[data-trait-track-tick="true"]')).toHaveCount(0);
         await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(1);
         await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
@@ -234,8 +252,72 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(observedExplorerPanel).toHaveAttribute('data-player-id', '1');
         await expect(observedExplorerPanel).toHaveAttribute('data-panel-asset', requireExplorerTemplate('stephanie-richter').portraitAsset);
         await expect(observedExplorerPanel).not.toHaveAttribute('data-panel-crop', /.*/);
-        await expect(observedExplorerPanel).not.toHaveAttribute('data-token-asset', /.*/);
+        await expect(observedExplorerPanel).toHaveAttribute('data-token-asset', requireExplorerTemplate('stephanie-richter').tokenAsset ?? '');
+        await expect(page.getByTestId('betrayal-hud-identity-token-1')).toBeVisible();
         await saveScreenshot(page, OBSERVED_TRACK_SCREENSHOT);
+
+        await page.getByTestId('betrayal-focus-self-room').click();
+        await expect(page.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '0');
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'hallway',
+        };
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            String(explorer.playerId) === '1'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        core.activeRoomId = 'hallway';
+        await injectCore(page, core);
+        await waitForBetrayalFloatingTextGone(page);
+        await page.getByTestId('betrayal-focus-self-room').click();
+        await expect(page.getByTestId('betrayal-room-occupant-hallway-0')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-occupant-hallway-1')).toBeVisible();
+        await saveScreenshot(
+            page,
+            `${BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR}/04-PC-1920x1080-属性飘字出现前.jpg`,
+        );
+
+        const previousMight = core.currentExplorer.traits.might;
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            traits: {
+                ...core.currentExplorer.traits,
+                might: Math.max(1, previousMight - 1),
+            },
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        await injectCore(page, core);
+        const traitChangeFloating = page.getByTestId('betrayal-room-occupant-trait-change-hallway-0');
+        await expect(traitChangeFloating).toBeVisible();
+        await expect(traitChangeFloating).toContainText('力量');
+        await expect(page.getByTestId('betrayal-room-occupant-trait-change-hallway-1')).toHaveCount(0);
+        const floatingAlignment = await page.evaluate(() => {
+            const floating = document.querySelector('[data-testid="betrayal-room-occupant-trait-change-hallway-0"]');
+            const token = document.querySelector('[data-testid="betrayal-explorer-figure-token-0"]');
+            if (!(floating instanceof HTMLElement) || !(token instanceof HTMLElement)) {
+                throw new Error('缺少属性飘字或当前玩家棋子');
+            }
+            const floatingBox = floating.getBoundingClientRect();
+            const tokenBox = token.getBoundingClientRect();
+            return {
+                floatingCenterX: floatingBox.left + floatingBox.width / 2,
+                tokenCenterX: tokenBox.left + tokenBox.width / 2,
+            };
+        });
+        expect(
+            Math.abs(floatingAlignment.floatingCenterX - floatingAlignment.tokenCenterX),
+            '属性飘字必须相对当前棋子水平居中',
+        ).toBeLessThanOrEqual(8);
+        await saveScreenshot(
+            page,
+            `${BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR}/05-PC-1920x1080-属性飘字贴棋子居中.jpg`,
+        );
+        await waitForBetrayalFloatingTextGone(page, 5000);
+        await saveScreenshot(
+            page,
+            `${BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR}/06-PC-1920x1080-属性飘字消退后.jpg`,
+        );
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-trait-track-ui', diagnostics }]);
     });

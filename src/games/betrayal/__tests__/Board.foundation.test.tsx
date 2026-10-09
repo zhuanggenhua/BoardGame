@@ -2278,10 +2278,16 @@ describe('Betrayal Board foundation', () => {
         expect(within(currentTraits).getByText('知识').parentElement).toHaveClass('text-[#cbe4ea]');
         expect(within(currentTraits).getByText('神志').parentElement).toHaveClass('text-[#d9c4ef]');
         const currentBoardToken = screen.getByTestId('betrayal-explorer-figure-token-0');
+        const hudIdentityToken = screen.getByTestId('betrayal-hud-identity-token-0');
         expect(screen.queryByTestId('betrayal-current-panel-token-0')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-explorer-board-marker-speed')).not.toBeInTheDocument();
+        expect(screen.queryByText('当前属性')).not.toBeInTheDocument();
         expect(currentTraits).toHaveAttribute('data-player-id', currentBoardToken.getAttribute('data-player-id')!);
         expect(currentTraits).toHaveAttribute('data-explorer-id', currentBoardToken.getAttribute('data-explorer-id')!);
         expect(currentTraits).not.toHaveAttribute('data-token-asset');
+        expect(hudIdentityToken).toHaveAttribute('data-token-asset', currentBoardToken.getAttribute('data-token-asset')!);
+        expect(screen.getByTestId('betrayal-hud-identity-name')).toHaveTextContent('测试玩家');
+        expect(currentTraits).not.toHaveTextContent('测试玩家');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('等待第一步');
         expect(screen.queryByRole('region', { name: '阶段提示' })).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-selected-inventory-card-name')).toHaveTextContent('未选卡牌');
@@ -2326,7 +2332,7 @@ describe('Betrayal Board foundation', () => {
         expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
         expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-repeat-value-policy', 'separate-physical-slots');
         expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toBeInTheDocument();
-        expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
+        expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'equal-cell-gaps');
         expect(speedTrack.querySelectorAll('[data-trait-track-slot="true"]')).toHaveLength(9);
         expect(speedTrack.querySelectorAll('[data-trait-track-slot-boundary="rail-start"]')).toHaveLength(1);
         expect(speedTrack.querySelectorAll('[data-trait-track-slot-boundary="internal-divider"]')).toHaveLength(8);
@@ -2343,13 +2349,8 @@ describe('Betrayal Board foundation', () => {
         expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveTextContent('3');
         expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-current', 'false');
 
-        const boardMarker = screen.getByTestId('betrayal-explorer-board-marker-speed');
-        expect(boardMarker).toHaveAttribute('data-trait-track-position', '2');
-        expect(boardMarker).toHaveAttribute('data-trait-track-value', '3');
-        expect(boardMarker).toHaveAttribute('data-trait-board-marker-shape', 'blank-material-marker');
-        expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
-        expect(boardMarker).toHaveAttribute('data-trait-board-marker-visible-value', 'false');
-        expect(boardMarker).not.toHaveTextContent('3');
+        expect(screen.queryByTestId('betrayal-explorer-board-marker-speed')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-hud-identity-token-0')).toBeInTheDocument();
     });
 
     it('探索者玩家面板恢复人物板，地图 token 保持正式资源状态', async () => {
@@ -2378,8 +2379,12 @@ describe('Betrayal Board foundation', () => {
         expect(anita.tokenAsset).toBe('betrayal/tokens/explorers/anita-hernandez');
         expect(fatherWarren.tokenAsset).toBe('betrayal/tokens/explorers/father-warren-leung');
         const currentPlayerPanel = screen.getByTestId('betrayal-observed-explorer-panel');
-        expect(currentPlayerPanel).not.toHaveAttribute('data-token-asset');
+        expect(currentPlayerPanel).toHaveAttribute('data-token-asset', core.currentExplorer.tokenAsset ?? '');
         expect(currentPlayerPanel).toHaveAttribute('data-panel-asset', core.currentExplorer.portraitAsset);
+        expect(screen.getByTestId('betrayal-hud-identity-token-0')).toHaveAttribute(
+            'data-token-asset',
+            core.currentExplorer.tokenAsset ?? '',
+        );
         expect(currentPlayerPanel).not.toHaveTextContent('缺少正式标记');
         expect(screen.getByTestId('betrayal-bottom-teammate-1')).not.toHaveAttribute('data-token-asset');
         expect(screen.getByTestId('betrayal-bottom-teammate-2')).not.toHaveAttribute('data-token-asset');
@@ -2397,8 +2402,12 @@ describe('Betrayal Board foundation', () => {
        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '1');
        const observedPlayerPanel = screen.getByTestId('betrayal-observed-explorer-panel');
        expect(observedPlayerPanel).toHaveAttribute('data-player-id', '1');
-       expect(observedPlayerPanel).not.toHaveAttribute('data-token-asset');
+       expect(observedPlayerPanel).toHaveAttribute('data-token-asset', anita.tokenAsset ?? '');
        expect(observedPlayerPanel).toHaveAttribute('data-panel-asset', anita.portraitAsset);
+       expect(screen.getByTestId('betrayal-hud-identity-token-1')).toHaveAttribute(
+           'data-token-asset',
+           anita.tokenAsset ?? '',
+       );
        expect(observedPlayerPanel).not.toHaveTextContent('缺少正式标记');
         expect(screen.queryByTestId('betrayal-observed-inventory-zone')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-observed-player', 'true');
@@ -6203,6 +6212,88 @@ describe('Betrayal Board foundation', () => {
             fireEvent.click(discoveryContinue);
         }
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+    });
+
+    it('六人房间中 AI 已确认五席时，真人仍可确认剩余预兆结算', () => {
+        const playerIds = ['0', '1', '2', '3', '4', '5'];
+        const core = createBetrayalFoundationCore(playerIds);
+        const omen = BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((card) => card.id === 'skull');
+        if (!omen) {
+            throw new Error('山屋单测缺少头骨预兆卡');
+        }
+
+        const resolutionId = '0-ground-east-omen-skull';
+        core.phase = 'preHaunt';
+        core.currentPlayer = '0';
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            playerId: '0',
+            roomId: 'ground-east',
+            inventory: [omen],
+        };
+        core.currentExplorerInventory = [omen];
+        core.latestDiscovery = {
+            kind: 'omen',
+            title: omen.name,
+            summary: '已加入持有区',
+            detail: '抽到预兆后进行作祟检定：总点数 2（1 颗骰子，未触发）',
+            tone: 'accent',
+            resolutionSteps: [
+                { id: 'drawn-card-skull', kind: 'drawn-card', text: `已加入持有区：${omen.name}`, deckKind: 'omen', cardId: omen.id },
+                { id: 'haunt-roll-skull', kind: 'haunt-roll', text: '抽到预兆后进行作祟检定：总点数 2（1 颗骰子，未触发）', deckKind: 'omen', cardId: omen.id },
+            ],
+        };
+        core.latestDiscoveryOwnerPlayerId = '0';
+        core.recentRoll = {
+            id: '0-ground-east-haunt-omen-skull',
+            kind: 'hauntRoll',
+            playerId: '0',
+            sourceTitle: omen.name,
+            rollLabel: '作祟检定',
+            dice: [2],
+            passiveBonus: 0,
+            branchThresholds: [
+                { min: 5, label: '作祟开始', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+                { min: 0, label: '未触发作祟', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+            ],
+            latestLabel: '未触发作祟',
+            consumedRabbitFootCardIds: [],
+        } as BetrayalCore['recentRoll'];
+        core.pendingCardResolutionQueue = [{
+            id: resolutionId,
+            playerId: '0',
+            requiredPlayerIds: playerIds,
+            acknowledgedPlayerIds: ['1', '2', '3', '4', '5'],
+            deckKind: 'omen',
+            cardId: omen.id,
+            cardName: omen.name,
+            discoveryTitle: omen.name,
+            stepKind: 'drawn-card',
+            text: `已加入持有区：${omen.name}；抽到预兆后进行作祟检定：总点数 2（1 颗骰子，未触发）`,
+            index: 1,
+            total: 1,
+        }];
+        core.turnEndedByDiscovery = true;
+
+        const dispatch = vi.fn();
+        renderBoardWithDispatch(core, dispatch, {
+            playerID: '0',
+            matchData: [
+                ...defaultMatchData,
+                { id: 4, name: '队友四', isConnected: true },
+                { id: 5, name: '队友五', isConnected: true },
+            ],
+        });
+
+        const continueButton = screen.getByTestId('betrayal-discovery-continue');
+        expect(continueButton).not.toBeDisabled();
+        expect(continueButton).toHaveTextContent('确认 5/6');
+
+        fireEvent.click(continueButton);
+
+        expect(dispatch).toHaveBeenCalledWith(BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, {
+            resolutionId,
+        });
     });
 
     it('普通预兆触发作祟时先同屏显示获得预兆和作祟检定，确认后打开剧本书并直接回牌桌', async () => {

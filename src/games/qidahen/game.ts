@@ -8,7 +8,7 @@ import {
     createUndoSystem,
 } from '../../engine';
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
-import { registerGameAiRuntime } from '../../engine/ai';
+import { isManualSetupSelectionEnabledForSeat, registerGameAiRuntime } from '../../engine/ai';
 import { createGameEngine } from '../../engine/adapter';
 import { qidahenAiRuntime } from './ai';
 import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
@@ -60,6 +60,52 @@ const resolveQidahenOnlineAiCurrentPlayerId = (args: {
         : undefined;
 
     return pendingPlayerId ?? args.fallbackPlayerId;
+};
+
+const resolveQidahenManualSetupSelectionTakeoverPlayerId = (args: {
+    sharedState: MatchState<unknown>;
+    seatControllers: Record<string, unknown>;
+    hasManualDispatch: boolean;
+}): string | null => {
+    if (!args.hasManualDispatch) {
+        return null;
+    }
+    const core = args.sharedState.core as {
+        factionSelection?: {
+            selections?: Record<string, unknown>;
+        } | null;
+    } | undefined;
+    const selections = core?.factionSelection?.selections;
+    if (!selections || typeof selections !== 'object') {
+        return null;
+    }
+    return Object.entries(args.seatControllers)
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(
+            controller as { type?: unknown; manualSetupSelection?: unknown; manualFactionSelection?: unknown },
+        ))
+        .map(([playerId]) => playerId)
+        .find((playerId) => typeof selections[playerId] !== 'string' || selections[playerId] === 'unselected')
+        ?? null;
+};
+
+const shouldReleaseQidahenManualSetupSelection = (args: {
+    sharedState: MatchState<unknown>;
+    playerId: string;
+    actionKind: string;
+    selectionId: string;
+}): boolean | undefined => {
+    if (args.actionKind !== 'faction-selection') {
+        return undefined;
+    }
+    const core = args.sharedState.core as {
+        factionSelection?: {
+            selections?: Record<string, unknown>;
+        } | null;
+    } | undefined;
+    if (core && core.factionSelection === null) {
+        return true;
+    }
+    return core?.factionSelection?.selections?.[args.playerId] === args.selectionId;
 };
 
 const getPayloadValue = (command: Command, key: string): unknown => (
@@ -200,6 +246,17 @@ export const engineConfig = {
         // 的合法命令恢复，禁止 watchdog 发送未知命令污染线上房间。
         disableFallbackAdvancePhase: true,
         resolveCurrentPlayerId: resolveQidahenOnlineAiCurrentPlayerId,
+        resolveManualSetupSelectionTakeoverPlayerId: resolveQidahenManualSetupSelectionTakeoverPlayerId,
+        shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseQidahenManualSetupSelection,
+        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
+            type === QIDAHEN_COMMANDS.SELECT_FACTION
+            && Boolean(payload)
+            && typeof payload === 'object'
+            && !Array.isArray(payload)
+            && typeof (payload as { factionId?: unknown }).factionId === 'string'
+                ? 'faction-selection'
+                : undefined
+        ),
     },
     resolveLocalRuntimeControlledPlayerId: resolveQidahenLocalRuntimeControlledPlayerId,
 };

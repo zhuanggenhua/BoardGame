@@ -20,6 +20,7 @@ interface UseMageWarsGameEventsParams {
 interface UseMageWarsGameEventsResult {
     damageBuffer: UseVisualStateBufferReturn;
     heldObjects: MageWarsArenaObjectState[];
+    relocatingAnchorIds: string[];
     meleeAttack: MageWarsMeleeAttackVisual | null;
     onEffectImpact: (id: string) => void;
     onEffectComplete: (id: string) => void;
@@ -225,6 +226,9 @@ function getHeldObjectIdsForEvent(
             ? [event.payload.targetObjectId]
             : [];
     }
+    if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED && event.payload.movementMode !== 'teleport') {
+        return heldObjectCandidates.has(event.payload.objectId) ? [event.payload.objectId] : [];
+    }
     return [];
 }
 
@@ -367,6 +371,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
     const fxBusRef = useRef(fxBus);
     const fxImpactMapRef = useRef(new Map<string, string[]>());
     const meleeFxSourceMapRef = useRef(new Map<string, string>());
+    const relocatingFxMapRef = useRef(new Map<string, string>());
     const scheduledHeldFxRef = useRef(new Set<FxFrameSubscription>());
     const scheduledMeleeCleanupRef = useRef(new Set<FxFrameSubscription>());
     const previousCoreRef = useRef(G.core);
@@ -374,6 +379,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
     const damageBuffer = useVisualStateBuffer();
     const visualEntityBuffer = useVisualEntityBuffer<MageWarsArenaObjectState>();
     const [meleeAttack, setMeleeAttack] = useState<MageWarsMeleeAttackVisual | null>(null);
+    const [relocatingAnchorIds, setRelocatingAnchorIds] = useState<string[]>([]);
     const [debug, setDebug] = useState<UseMageWarsGameEventsResult['debug']>(() => ({
         eventCount: 0,
         latestEntryId: 0,
@@ -424,7 +430,11 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             scheduledMeleeCleanupRef.current.clear();
             fxImpactMapRef.current.clear();
             meleeFxSourceMapRef.current.clear();
-            queueMicrotask(() => setMeleeAttack(null));
+            relocatingFxMapRef.current.clear();
+            queueMicrotask(() => {
+                setMeleeAttack(null);
+                setRelocatingAnchorIds([]);
+            });
             damageBuffer.clear();
             visualEntityBuffer.clear();
         }
@@ -547,6 +557,22 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             if (holdOwnerId) {
                 visualEntityBuffer.transferOwner(holdOwnerId, fxId);
             }
+            if (
+                resolvedInstruction.cue === MW_FX.MOVE
+                || resolvedInstruction.cue === MW_FX.SPELL_PUSH
+            ) {
+                const relocatingAnchorId = typeof params.objectId === 'string'
+                    ? params.objectId
+                    : typeof params.targetObjectId === 'string'
+                        ? params.targetObjectId
+                        : typeof params.targetPlayerId === 'string'
+                            ? params.targetPlayerId
+                            : null;
+                if (relocatingAnchorId) {
+                    relocatingFxMapRef.current.set(fxId, relocatingAnchorId);
+                    setRelocatingAnchorIds([...new Set(relocatingFxMapRef.current.values())]);
+                }
+            }
             return fxId;
         };
 
@@ -631,11 +657,15 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
                 current?.sourceObjectId === sourceObjectId ? null : current
             ));
         }
+        if (relocatingFxMapRef.current.delete(id)) {
+            setRelocatingAnchorIds([...new Set(relocatingFxMapRef.current.values())]);
+        }
     }, [visualEntityBuffer]);
 
     return {
         damageBuffer,
         heldObjects: visualEntityBuffer.heldSnapshots,
+        relocatingAnchorIds,
         meleeAttack,
         onEffectImpact,
         onEffectComplete,

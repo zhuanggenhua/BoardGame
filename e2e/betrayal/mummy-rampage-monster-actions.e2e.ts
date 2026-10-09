@@ -1,6 +1,5 @@
 // e2e-harness-boundary: state-injected-composite
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import sharp from 'sharp';
 import type { BetrayalCore } from '../../src/games/betrayal/game';
 import {
@@ -85,39 +84,30 @@ const BRIDGED_CANDIDATE_MUMMY_MOVE_STEP_SCREENSHOT = `${EVIDENCE_DIR}/43-桥接�
 const BRIDGED_CANDIDATE_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/44-桥接式综合候选链-木乃伊攻击胜出奖励.jpg`;
 const BRIDGED_CANDIDATE_GIRL_GIVEN_SCREENSHOT = `${EVIDENCE_DIR}/45-桥接式综合候选链-叛徒交出女孩.jpg`;
 const BRIDGED_CANDIDATE_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/46-桥接式综合候选链-叛徒终局.jpg`;
-const GOLDEN_FLOW_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/53-主黄金链-开局牌桌.jpg`;
-const GOLDEN_FLOW_EVENT_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/54-主黄金链-翻出事件房并结算事件牌.jpg`;
-const GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/55-主黄金链-翻出物品房并获得物品牌.jpg`;
-const GOLDEN_FLOW_ITEM_DISMISSED_SCREENSHOT = `${EVIDENCE_DIR}/55b-主黄金链-物品确认返回牌桌.jpg`;
-const GOLDEN_FLOW_ITEM_USE_SCREENSHOT = `${EVIDENCE_DIR}/56-主黄金链-同类物品牌主动使用治疗.jpg`;
-const GOLDEN_FLOW_OMEN_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/57-主黄金链-翻出预兆并触发作祟检定.jpg`;
-const GOLDEN_FLOW_HERO_READER_SCREENSHOT = `${EVIDENCE_DIR}/58-主黄金链-英雄身份与英雄目标读本.jpg`;
-const GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/59-主黄金链-叛徒身份与敌方情报读本.jpg`;
-const GOLDEN_FLOW_SKIP_EVENT_SCREENSHOT = `${EVIDENCE_DIR}/60-主黄金链-作祟后叛徒跳过事件.jpg`;
-const GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/61-主黄金链-木乃伊移动骰3点.jpg`;
-const GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT = `${EVIDENCE_DIR}/62-主黄金链-木乃伊普通连续移动进石棺.jpg`;
-const GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/63-主黄金链-木乃伊攻击胜出奖励偷圣符.jpg`;
-const GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/64-主黄金链-叛徒终局.jpg`;
-const GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/66-主黄金链-点击木乃伊详情属性与驱逐方式.jpg`;
+const GOLDEN_FLOW_RUN_ID = `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
+const GOLDEN_FLOW_EVIDENCE_DIR = `${EVIDENCE_DIR}/_temporary/${GOLDEN_FLOW_RUN_ID}`;
+const GOLDEN_FLOW_OPENING_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/53-主黄金链-开局牌桌.jpg`;
+const GOLDEN_FLOW_EVENT_DISCOVERY_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/54-主黄金链-翻出事件房并结算事件牌.jpg`;
+const GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/55-主黄金链-翻出物品房并获得物品牌.jpg`;
+const GOLDEN_FLOW_ITEM_DISMISSED_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/55b-主黄金链-物品确认返回牌桌.jpg`;
+const GOLDEN_FLOW_ITEM_USE_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/56-主黄金链-同类物品牌主动使用治疗.jpg`;
+const GOLDEN_FLOW_OMEN_DISCOVERY_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/57-主黄金链-翻出预兆并触发作祟检定.jpg`;
+const GOLDEN_FLOW_HERO_READER_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/58-主黄金链-英雄身份与英雄目标读本.jpg`;
+const GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/59-主黄金链-叛徒身份与敌方情报读本.jpg`;
+const GOLDEN_FLOW_SKIP_EVENT_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/60-主黄金链-作祟后叛徒跳过事件.jpg`;
+const GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/61-主黄金链-木乃伊移动骰3点.jpg`;
+const GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/62-主黄金链-木乃伊普通连续移动进石棺.jpg`;
+const GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/63-主黄金链-木乃伊攻击胜出奖励偷圣符.jpg`;
+const GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/64-主黄金链-叛徒终局.jpg`;
+const GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT = `${GOLDEN_FLOW_EVIDENCE_DIR}/66-主黄金链-点击木乃伊详情属性与驱逐方式.jpg`;
 const GOLDEN_FLOW_PROCESS_PREFIX = '65-主黄金链过程-';
 const goldenFlowProcessScreenshot = (step: number, label: string) =>
-    `${EVIDENCE_DIR}/${GOLDEN_FLOW_PROCESS_PREFIX}${String(step).padStart(2, '0')}-${label}.jpg`;
+    `${GOLDEN_FLOW_EVIDENCE_DIR}/${GOLDEN_FLOW_PROCESS_PREFIX}${String(step).padStart(2, '0')}-${label}.jpg`;
 const humanTestUrlForPlayer = (playerId: string) =>
     `/play/betrayal?players=3&playerID=${playerId}&seat0=human&seat1=human&seat2=human`;
 const HUMAN_HOTSEAT_TEST_URL = '/play/betrayal?players=3&seat0=human&seat1=human&seat2=human';
 const HUMAN_TRAITOR_TEST_URL = humanTestUrlForPlayer('2');
 const MUMMY_MONSTER_ID = 'mummy';
-
-const clearGoldenFlowProcessScreenshots = (): void => {
-    if (!existsSync(EVIDENCE_DIR)) {
-        return;
-    }
-    for (const entry of readdirSync(EVIDENCE_DIR)) {
-        if (entry.startsWith(GOLDEN_FLOW_PROCESS_PREFIX) && entry.endsWith('.jpg')) {
-            unlinkSync(`${EVIDENCE_DIR}/${entry}`);
-        }
-    }
-};
 
 const expectBetrayalGreenDominantHighlightPixels = async (locator: Locator, label: string): Promise<void> => {
     const screenshot = await locator.screenshot({ animations: 'disabled' });
@@ -2472,7 +2462,6 @@ const moveMummyThroughRealRoomTarget = async (
 test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
     test('state-injected composite：真实开局结算后、三类发现、作祟、木乃伊行动、叛徒终局', async ({ page, context }) => {
         test.setTimeout(300000);
-        clearGoldenFlowProcessScreenshots();
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-mummy-rampage-full-golden-flow');
 
@@ -2508,8 +2497,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await openingEventRollStart.click();
         const openingEventRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(openingEventRollPanel).toBeVisible();
-        await expect(openingEventRollPanel).toContainText('总点数');
         await waitForPhysicalDiceSettled(openingEventRollPanel);
+        await expect(openingEventRollPanel).toContainText('总点数');
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('获得 1 点知识');
         await expect.poll(() => readMummyGoldenDiscoveryState(page)).toMatchObject({
             latestDiscoveryKind: 'event',
@@ -2591,12 +2580,13 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             /预兆牌 书本/,
         );
         await expect(page.getByTestId('betrayal-discovery-panel')).toContainText('已加入持有区');
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('作祟检定');
         const omenHauntRollPanel = omenDiscoveryPanel.getByTestId('betrayal-recent-roll-panel');
-        await expect(omenHauntRollPanel).toContainText('作祟开始', { timeout: 30000 });
-        await expect(omenHauntRollPanel).toContainText('总点数');
+        await expect(omenHauntRollPanel).toBeVisible();
+        await expect(omenHauntRollPanel).toContainText('作祟检定');
         await expectVisiblePhysicalDiceBox(omenHauntRollPanel);
         await waitForPhysicalDiceSettled(omenHauntRollPanel);
+        await expect(omenHauntRollPanel).toContainText('作祟开始');
+        await expect(omenHauntRollPanel).toContainText('总点数');
         await expect.poll(() => readMummyGoldenDiscoveryState(page)).toMatchObject({
             phase: 'haunt',
             latestDiscoveryKind: 'omen',

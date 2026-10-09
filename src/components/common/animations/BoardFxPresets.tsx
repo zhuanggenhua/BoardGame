@@ -181,6 +181,10 @@ export interface BoardSummonEffectPresetProps {
   objectKind?: string;
   objectId?: string;
   className?: string;
+  hostStyle?: React.CSSProperties;
+  overlayStyle?: React.CSSProperties;
+  overlayTestId?: string;
+  pillarWidthRatio?: number;
   onImpact?: () => void;
   onComplete?: () => void;
 }
@@ -200,6 +204,10 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
   objectKind,
   objectId,
   className = '',
+  hostStyle,
+  overlayStyle,
+  overlayTestId,
+  pillarWidthRatio,
   onImpact,
   onComplete,
 }) => {
@@ -214,7 +222,8 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
       data-object-id={objectId ?? anchorSnapshot?.anchorId ?? ''}
       data-anchor-id={anchorSnapshot?.anchorId ?? objectId ?? ''}
       data-surface-id={anchorSnapshot?.surfaceId ?? ''}
-      style={box}
+      data-pillar-width-ratio={pillarWidthRatio ?? ''}
+      style={{ ...box, ...hostStyle }}
     >
       <SummonHybridEffect
         active
@@ -225,9 +234,18 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
         durationScale={durationScale}
         visualScale={visualScale}
         dimStrength={dimStrength}
+        pillarWidthRatio={pillarWidthRatio}
         onImpact={onImpact}
         onComplete={onComplete}
       />
+      {overlayStyle ? (
+        <div
+          data-testid={overlayTestId || `${hostTestId}-halo`}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={overlayStyle}
+        />
+      ) : null}
     </div>
   );
 };

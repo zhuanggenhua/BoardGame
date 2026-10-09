@@ -666,9 +666,9 @@ test.describe("山屋惊魂基本流程", () => {
         };
       });
     expect(
-      Math.round(mobileAbilitySummaryTypography.effectiveFontSize * 100) / 100,
-      "移动端角色能力摘要最终屏幕字号不得低于16px",
-    ).toBeGreaterThanOrEqual(16);
+      mobileAbilitySummaryTypography.fontSize,
+      "选角能力摘要保持 PC 设计字号，由 board-shell 等比缩放",
+    ).toBeCloseTo(16, 0);
     await expect(
       page.getByTestId("betrayal-character-ability-summary"),
     ).not.toContainText(/Bold|Attack/i);
@@ -685,9 +685,6 @@ test.describe("山屋惊魂基本流程", () => {
     await mobileCharacterDetailScroll.evaluate((node) => {
       node.scrollTop = node.scrollHeight;
     });
-    await expect
-      .poll(async () => mobileCharacterDetailScroll.evaluate((node) => node.scrollTop))
-      .toBeGreaterThan(0);
     await expect(
       page.getByTestId("betrayal-character-ability-summary"),
     ).toBeInViewport();
@@ -1025,8 +1022,8 @@ test.describe("山屋惊魂基本流程", () => {
       await mobileAbilitySummary.evaluate((element) =>
         Number.parseFloat(window.getComputedStyle(element).fontSize),
       ),
-      "移动端能力摘要必须保持16px可读",
-    ).toBeGreaterThanOrEqual(16);
+      "移动端能力摘要保持 PC 设计 16px，由 HUD 等比缩放",
+    ).toBeCloseTo(16, 0);
     const abilityBox = await mobileAbilitySummary.boundingBox();
     const inventoryBox = await page
       .getByTestId("betrayal-inventory-section")

@@ -170,7 +170,8 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
 
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
 const boardShellSource = readFileSync(resolve(__dirname, '..', 'QidahenBoardShell.tsx'), 'utf-8');
-const combinedBoardSource = `${boardSource}\n${boardShellSource}`;
+const factionSelectionScreenSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenFactionSelectionScreen.tsx'), 'utf-8');
+const combinedBoardSource = `${boardSource}\n${boardShellSource}\n${factionSelectionScreenSource}`;
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
 const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
 const typesSource = readFileSync(resolve(__dirname, '..', 'domain', 'types.ts'), 'utf-8');
@@ -202,19 +203,21 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('Board 会把剧本待决项收口到局内 setup 页，而不是继续塞回建房页或动作区摘要', () => {
-        expect(boardSource).toContain('qidahen-scenario-vote-screen');
-        expect(boardSource).toContain('qidahen-scenario-vote-title');
-        expect(boardSource).toContain('qidahen-scenario-host-selected');
+        expect(factionSelectionScreenSource).toContain('qidahen-scenario-vote-screen');
+        expect(factionSelectionScreenSource).toContain('qidahen-scenario-vote-title');
+        expect(factionSelectionScreenSource).toContain('qidahen-scenario-host-selected');
+        expect(factionSelectionScreenSource).toContain('qidahen-scenario-menu-open');
+        expect(factionSelectionScreenSource).toContain('起始剧本设置卡');
+        expect(factionSelectionScreenSource).not.toContain('待确认');
+        expect(factionSelectionScreenSource).not.toContain('资源紧张');
         expect(boardSource).toContain('data-qidahen-inline-choice="character"');
         expect(boardSource).toContain('data-qidahen-inline-choice="armament"');
         expect(boardSource).toContain('data-ui-family="qidahen-book-setup"');
         expect(boardSource).toContain('UI_SURFACE.bookPaper');
         expect(boardSource).toContain('UI_SURFACE.bookPage');
-        expect(boardSource).toContain('qidahen-scenario-vote-book-page-intro');
-        expect(boardSource).toContain('qidahen-scenario-vote-card-rail');
-        expect(boardSource).toContain('qidahen-scenario-vote-feature-card');
-        expect(boardSource).toContain('data-ui-page="qidahen-scenario-vote-book-page-focus"');
-        expect(boardSource).toContain('data-ui-page="qidahen-scenario-vote-book-page-status"');
+        expect(boardSource).not.toContain('qidahen-scenario-vote-book-page-intro');
+        expect(boardSource).not.toContain('qidahen-scenario-vote-card-rail');
+        expect(boardSource).not.toContain('qidahen-scenario-vote-feature-card');
         expect(boardSource).toContain('CAST_SCENARIO_VOTE');
         expect(boardSource).toContain('core.pendingScenarioCharacterChoices');
         expect(boardSource).toContain('core.pendingScenarioArmamentChoices');
@@ -225,8 +228,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('qidahen-inmatch-setup-book-page-player');
         expect(boardSource).toContain('qidahen-inmatch-setup-book-page-status');
         expect(boardSource).toContain('applyInlineChoice');
-        expect(boardSource).toContain('qidahen-scenario-vote-confirm');
-        expect(boardSource).toContain('qidahen-faction-selection-confirm');
+        expect(factionSelectionScreenSource).toContain('qidahen-scenario-vote-confirm');
+        expect(factionSelectionScreenSource).toContain('qidahen-faction-selection-confirm');
         expect(boardSource).toContain('qidahen-inmatch-setup-character-confirm-${group.id}');
         expect(boardSource).toContain('qidahen-inmatch-setup-armament-confirm-${group.id}');
         expect(boardSource).toContain('disabled={completed || selectedIds.length !== group.count}');
@@ -234,11 +237,12 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("t('board.setup.confirmCharacter', { defaultValue: '确认人物' })");
         expect(boardSource).toContain("t('board.setup.armamentButtonConfirmed', { defaultValue: '军备已确认' })");
         expect(boardSource).toContain("t('board.setup.confirmArmament', { defaultValue: '确认军备' })");
-        expect(boardSource).toContain('getQidahenScenarioCardPreview(option.scenarioId)');
+        expect(factionSelectionScreenSource).toContain('getQidahenScenarioCardPreview(option.scenarioId)');
         expect(boardSource).toContain('getQidahenSetupCharacterPreview(group.factionId, characterId)');
         expect(boardSource).toContain('getQidahenSetupArmamentPreview(armamentId)');
         expect(boardSource).toContain('<SelectableGameObject');
         expect(boardSource).not.toContain('qidahen-actions-blocked-by-scenario');
+        expect(boardSource).not.toContain('QIDAHEN_FACTION_SELECTION_SUMMARY');
         expect(boardSource).toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
         expect(boardSource).toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
     });
@@ -246,9 +250,10 @@ describe('Qidahen Board 结构门禁', () => {
     it('剧本待决项出现时，由专用 setup 覆层承载，不在动作区重复做状态摘要', () => {
         expect(boardSource).toContain('const pendingScenarioChoices = core.scenarioVote != null');
         expect(boardSource).toContain('const showActionRail = !pendingScenarioChoices');
-        expect(boardSource).toContain('if (scenarioVotePending) {');
+        expect(boardSource).toContain('if (scenarioVotePending || factionSelectionPending)');
         expect(boardSource).toContain('{!scenarioVotePending && scenarioChoicesPending ? (');
         expect(boardSource).toContain('<QidahenInMatchSetupOverlay');
+        expect(boardSource).toContain('<QidahenFactionSelectionScreen');
         expect(boardSource).not.toContain('qidahen-actions-blocked-by-scenario');
         expect(boardSource).not.toContain('局内剧本选择尚未完成');
         expect(boardSource).not.toContain('剧本待决项尚未确认');
@@ -507,6 +512,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('board.actions.grantPardon.targetRegionHint');
         expect(boardSource).toContain('board.actions.grantPardon.opponentHint');
         expect(boardSource).toContain('board.actions.grantPardon.troopHint');
+        expect(boardSource).toContain('board.actions.grantPardon.derivedOpponentLabel');
+        expect(boardSource).toContain('data-testid="qidahen-grant-pardon-derived-opponent"');
         expect(boardSource).toContain('factionName: grantPardonExecutorFactionName');
         expect(boardSource).toContain("const grantPardonExecutorFactionId = grantPardonSelection?.executorFactionId ?? 'ming';");
         expect(boardSource).toContain('board.actions.grantPardon.fallbackListLabel');
@@ -584,6 +591,15 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid={`qidahen-diplomacy-choice-${choice.id}`}');
     });
 
+    it('新年维护按钮必须优先通过正式交互所有者响应并保留领域命令兜底', () => {
+        expect(boardSource).toContain('const resolveFortificationMaintenance = React.useCallback');
+        expect(boardSource).toContain('const fortificationMaintenanceSelectionFromInteraction = getQidahenFortificationMaintenanceSelectionFromInteraction(activeInteraction);');
+        expect(boardSource).toContain('const activeFortificationMaintenanceInteractionId = fortificationMaintenanceSelectionFromInteraction ? activeInteraction?.id ?? null : null;');
+        expect(boardSource).toContain('runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {');
+        expect(boardSource).toContain('mergedValue: { attritionPriority }');
+        expect(boardSource).toContain('dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE, {');
+    });
+
     it('赐印招安交互提示必须按执行势力动态翻译并明确剩余对手决策', () => {
         const zh = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/locales/zh-CN/game-qidahen.json'), 'utf-8'));
         const en = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/locales/en/game-qidahen.json'), 'utf-8'));
@@ -591,12 +607,12 @@ describe('Qidahen Board 结构门禁', () => {
         expect(zh.board.actions.grantPardon.targetRegionHint).toContain('{{factionName}}');
         expect(en.board.actions.grantPardon.targetRegionHint).toContain('{{factionName}}');
         expect(en.board.actions.grantPardon.targetRegionHint).not.toContain('Ming-controlled');
-        expect(zh.board.actions.grantPardon.opponentHint).toContain('亲自选择部队');
-        expect(en.board.actions.grantPardon.opponentHint).toContain('that player then chooses a troop');
+        expect(zh.board.actions.grantPardon.opponentHint).toContain('执行方先选择其中一方');
+        expect(en.board.actions.grantPardon.opponentHint).toContain('The acting player chooses one remaining opponent');
         expect(zh.board.actions.grantPardon.mapTargetHint).toContain('{{factionName}}');
         expect(en.board.actions.grantPardon.mapTargetHint).toContain('{{factionName}}');
-        expect(zh.board.actions.grantPardon.mapOpponentHint).toContain('亲自选择部队');
-        expect(en.board.actions.grantPardon.mapOpponentHint).toContain('that player then chooses a troop');
+        expect(zh.board.actions.grantPardon.mapOpponentHint).toContain('执行方先选择其中一方');
+        expect(en.board.actions.grantPardon.mapOpponentHint).toContain('The acting player chooses one remaining opponent');
         expect(zh.board.actions.grantPardon.mapTroopHint).toContain('{{regionName}}');
         expect(en.board.actions.grantPardon.mapTroopHint).toContain('{{regionName}}');
         expect(boardSource).toContain("grantPardon.mapTargetHint");
@@ -1162,16 +1178,20 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('教程聚焦地图结算时必须保持结果反馈直到离开结果步骤', () => {
-        expect(boardSource).toContain('const lastSeasonSummaryRegionSnapshotRef = React.useRef<Map<string, string> | null>(null);');
+        expect(boardSource).toContain('const lastSeasonSummaryRegionSnapshotRef = React.useRef<Map<string, number> | null>(null);');
+        expect(boardSource).toContain('const currentRegionSnapshot = buildQidahenMapTroopSnapshot(core.regions);');
+        expect(boardSource).toContain('findQidahenMapTroopResult(previousRegionSnapshot, core.regions)');
         expect(boardSource).toContain("tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'");
         expect(boardSource).toContain('if (!resultFeedback || tutorialHighlightsResultFeedback)');
-        expect(boardSource).toContain('[resultFeedback?.resultId, tutorialHighlightsResultFeedback]');
+        expect(boardSource).toContain('[resultFeedback, tutorialHighlightsResultFeedback]');
         expect(boardSource).toContain('const activeResultFeedback = resultFeedback ?? (');
         expect(boardSource).toContain('tutorialStepId === \'result\' && core.lastSeasonSummary?.mapResult');
         expect(boardSource).toContain("tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'");
         expect(boardSource).toContain('lastSeasonSummaryRegionSnapshotRef.current');
         expect(boardSource).toContain('resultId !== previousResultId');
-        expect(boardSource).toContain('if (previousRegionSnapshot == null || resultId !== previousResultId) {');
+        expect(boardSource).toContain('lastSeasonSummaryRegionSnapshotRef.current = currentRegionSnapshot;');
+        expect(boardSource).toContain('lastSeasonSummaryIdRef.current = resultId;');
+        expect(boardSource.replace(/\r\n/g, '\n')).toContain('} else if (!resultId) {\n            setResultFeedback(null);');
         expect(boardSource).not.toContain('QIDAHEN_RESULT_FEEDBACK_TRACE');
         expect(boardSource).not.toContain('QIDAHEN_PARENT_RESULT_TRACE');
     });

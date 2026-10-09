@@ -47,6 +47,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: false,
+        manualSetupSelection: true,
     },
     criticalImages: [
         'qidahen/board/qidahen-main-map',

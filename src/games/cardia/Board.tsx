@@ -34,6 +34,7 @@ import './ui/compactLayout.css';
 import { logger } from '../../lib/logger';
 import { safeMatchMedia, subscribeMediaQueryChange } from '../../lib/mediaQuery';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
+import { buildBoardShellScreenPixelValue } from '../../shared/runtimeLayoutUnits';
 import { isNodeContainedBy } from './ui/domGuards';
 import { resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
 import { useCardiaEventAnimations } from './hooks/useCardiaEventAnimations';
@@ -79,6 +80,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     const gameMode = useGameMode();
     const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
     const isOnline = !isLocalMatch;
+    const isSpectator = isOnline && playerID == null;
     const { t, i18n } = useTranslation('game-cardia');
     const toast = useToast();
     const effectiveLocale = i18n.resolvedLanguage ?? i18n.language ?? 'zh-CN';
@@ -112,6 +114,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     const [focusedHandCardUid, setFocusedHandCardUid] = useState<string | null>(null);
 
     const viewportSize = useRuntimeViewport();
+    const isBoardShellMobileLandscape = viewportSize.width <= 1023 && viewportSize.width > viewportSize.height;
     const isTouchLikeDevice = React.useMemo(() => detectTouchLikeInput(), [viewportSize.width, viewportSize.height]);
 
     const openMagnify = React.useCallback((card: any) => {
@@ -243,6 +246,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         const desktopCardWidth = 106;
         const desktopSmallCardWidth = 80;
         const { width, height } = viewportSize;
+        const toCssSize = (pixels: number) => isBoardShellMobileLandscape
+            ? buildBoardShellScreenPixelValue(pixels)
+            : `${pixels}px`;
         
         let cardWidth = desktopCardWidth;
         let smallCardWidth = desktopSmallCardWidth;
@@ -259,7 +265,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             case 'tight-landscape':
             case 'phone-landscape':
                 // 手机横屏：可视高度非常紧张，必须让卡牌“更扁平”才能完整展示两排（战场+手牌）。
-                // 这里进一步降低卡牌宽度（等比缩放），避免出现上下被裁切。
+                // 目标尺寸是最终屏幕像素；board-shell 内通过共享 scale 变量逆算设计坐标。
                 cardWidth = Math.max(50, Math.min(66, Math.round(height * 0.125)));
                 smallCardWidth = Math.max(34, Math.min(46, Math.round(height * 0.086)));
                 break;
@@ -287,12 +293,12 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         const smallCardHeight = Math.round((smallCardWidth * 160) / 106);
 
         return {
-            '--cardia-card-width': `${cardWidth}px`,
-            '--cardia-card-height': `${cardHeight}px`,
-            '--cardia-small-card-width': `${smallCardWidth}px`,
-            '--cardia-small-card-height': `${smallCardHeight}px`,
+            '--cardia-card-width': toCssSize(cardWidth),
+            '--cardia-card-height': toCssSize(cardHeight),
+            '--cardia-small-card-width': toCssSize(smallCardWidth),
+            '--cardia-small-card-height': toCssSize(smallCardHeight),
         } as React.CSSProperties;
-    }, [deviceType, viewportSize]);
+    }, [deviceType, isBoardShellMobileLandscape, viewportSize]);
 
     const layoutStyle = React.useMemo(() => {
         // 说明：
@@ -383,7 +389,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         exposeDebugTools();
     }, []);
     
-    const myPlayerId = playerID || '0';
+    const myPlayerId = isSpectator ? core.currentPlayerId : (playerID ?? '0');
     const opponentId = core.playerOrder.find(id => id !== myPlayerId) || core.playerOrder[1];
     const myPlayer = core.players[myPlayerId];
     const opponent = core.players[opponentId];
@@ -444,7 +450,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         ? myPlayer.playedCards.find(card => card.encounterIndex === core.turnNumber)
         : myPlayer.currentCard;
     
-    const canActivateAbility = isAbilityPhase 
+    const canActivateAbility = !isSpectator && isAbilityPhase
         && core.currentEncounter?.loserId === myPlayerId
         && !G.sys.interaction.current  // 没有我的交互
         && !G.sys.interaction.isBlocked;  // ✅ 修复：对手有交互时也不显示能力按钮
@@ -671,9 +677,12 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                   ? 'relative flex h-full min-h-0 w-full flex-col gap-2 p-2 pb-[var(--cardia-reserved-bottom)] lg:gap-3 lg:p-3 lg:pb-3'
                                 : 'relative flex h-full min-h-0 w-full flex-col gap-4 p-4'
                     }`}
-                    style={deviceType === 'tight-landscape'
-                        ? ({ '--cardia-tight-sidebar-width': tightLandscapeSidebarWidth } as React.CSSProperties)
-                        : undefined}
+                    style={{
+                        ...(isBoardShellMobileLandscape ? cardSizeStyle : {}),
+                        ...(deviceType === 'tight-landscape'
+                            ? { '--cardia-tight-sidebar-width': tightLandscapeSidebarWidth }
+                            : {}),
+                    }}
                 >
                     {/* 对手区域（顶部 / 横屏左栏） */}
                     <div className={`cardia-top-row ${
@@ -798,7 +807,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                     player={myPlayer}
                                     core={core}
                                     onPlayCard={handlePlayCard}
-                                    canPlay={phase === 'play' && !myPlayer.hasPlayed}
+                                    canPlay={!isSpectator && phase === 'play' && !myPlayer.hasPlayed}
                                     totalSignets={mySignets}
                                     setCardRef={setCardRef}
                                     onHandCardPress={openMagnify}
@@ -914,7 +923,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                     player={myPlayer}
                     core={core}
                     onPlayCard={handlePlayCard}
-                    canPlay={phase === 'play' && !myPlayer.hasPlayed}
+                    canPlay={!isSpectator && phase === 'play' && !myPlayer.hasPlayed}
                     totalSignets={mySignets}
                     setCardRef={setCardRef}
                     onHandCardPress={openMagnify}
@@ -954,7 +963,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                     )}
                     
                     {/* 结束回合按钮（结束阶段显示） */}
-                    {phase === 'end' && core.currentPlayerId === myPlayerId && (
+                    {!isSpectator && phase === 'end' && core.currentPlayerId === myPlayerId && (
                         <div className="absolute inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex justify-center md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
                             <button
                                 data-testid="cardia-end-turn-btn"

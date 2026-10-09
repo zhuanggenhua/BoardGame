@@ -294,10 +294,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const currentPhase = core.phase;
   const activePlayerId = (playerView.turnPlayerId ?? core.currentPlayer) as PlayerId;
   const isMyTurn = isLocalMatch || (playerID !== null && playerID !== undefined && activePlayerId === playerID);
-  const myPlayerId = isLocalMatch ? '0' : (playerID === '1' ? '1' : '0');
+  const myPlayerId = isLocalMatch ? '0' : (isSpectator ? rootPid : (playerID === '1' ? '1' : '0'));
   const opponentPlayerId = (playerView.orderedPlayerIds.find((pid) => pid !== myPlayerId) ?? (myPlayerId === '0' ? '1' : '0')) as PlayerId;
   const isWinner = !!isGameOver && isGameOver?.winner === rootPid;
-  const shouldFlipView = !isLocalMatch && !isSpectator && myPlayerId === '1';
+  const shouldFlipView = !isLocalMatch && myPlayerId === '1';
   const toViewCoord = useCallback((coord: CellCoord): CellCoord => (
     shouldFlipView ? { row: BOARD_ROWS - 1 - coord.row, col: BOARD_COLS - 1 - coord.col } : coord
   ), [shouldFlipView]);

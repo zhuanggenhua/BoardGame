@@ -42,7 +42,11 @@ export function EffectDie({ result, resolvedResult = result }: { result: number;
             <div className="mage-wars-effect-die-shadow" aria-hidden="true" />
             <div
                 className={`mage-wars-effect-die-body ${isRolling ? 'mage-wars-effect-die-rolling' : ''}`}
-                style={{ animationDuration: `${MAGE_WARS_FX_TIMING.diceResultRollMs}ms` }}
+                style={{
+                    animationDuration: `${MAGE_WARS_FX_TIMING.diceResultRollMs}ms`,
+                    transform: isRolling ? undefined : 'rotateX(-16deg) rotateY(18deg)',
+                    transition: isRolling ? 'none' : 'transform 400ms ease-out',
+                }}
                 onAnimationEnd={(event) => { if (event.target === event.currentTarget) setIsRolling(false); }}
                 data-testid="mage-wars-fx-effect-die-css-body"
                 data-die-renderer="css-d12"
@@ -51,7 +55,7 @@ export function EffectDie({ result, resolvedResult = result }: { result: number;
                 data-d12-face-count={EFFECT_DIE_FACES.length}
                 aria-hidden="true"
             >
-                <div className="mage-wars-effect-die-solid" style={{ transform: resultOrientation(resultFace) }} data-settled-face-value={result} data-settled-tilt="none">
+                <div className="mage-wars-effect-die-solid" style={{ transform: resultOrientation(resultFace) }} data-settled-face-value={result} data-settled-tilt="result-3d">
                     {EFFECT_DIE_FACES.map((face) => (
                         <div
                             key={face.value}

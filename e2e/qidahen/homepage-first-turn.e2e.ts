@@ -90,8 +90,10 @@ async function enterQidahenBoard(page: Page): Promise<void> {
 
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-scenario-pregame-screen')).toHaveCount(0);
-    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
+    await page.getByTestId('qidahen-scenario-menu-open').click();
+    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('qidahen-scenario-vote-option-post-sarhu-1619').click();
     await page.getByTestId('qidahen-scenario-vote-confirm').click();
     await expect(page.getByTestId('qidahen-scenario-vote-screen')).toHaveCount(0, { timeout: 30000 });

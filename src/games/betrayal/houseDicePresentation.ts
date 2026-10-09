@@ -18,6 +18,7 @@ export const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
   iterationLimit: 900,
   projectedLayoutMargin: 18,
   projectedLayoutMinGap: 12,
+  optimizeSettledFaceReadability: true,
   customColorset: {
     name: "betrayal-house-aged-bone",
     foreground: "#2b2418",
@@ -470,5 +471,6 @@ export function createBetrayalHouseDiceSkin(
     edgeCanvas,
     faceCanvases,
     topFaceCanvas: ruleFaceCanvases[value],
+    readableFaceValue: resolveBetrayalHouseD6Face(value),
   };
 }

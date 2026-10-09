@@ -1,6 +1,6 @@
-import { mkdir, readdir, rename, rm, unlink } from 'node:fs/promises';
+import { mkdir, readdir, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { dirname, join, parse } from 'node:path';
+import { dirname, join, parse, relative, sep } from 'node:path';
 import type { TestInfo } from '@playwright/test';
 
 const EVIDENCE_GAME_IDS = new Set(['betrayal', 'smashup', 'dicethrone', 'summonerwars', 'tictactoe', 'cardia', 'the-gang', 'mage-wars', '_shared']);
@@ -23,6 +23,20 @@ export interface EvidenceScreenshotRun {
     stableDir: string;
     stagingDir: string;
     historyDir: string;
+}
+
+export interface EvidenceScreenshotIndexEntry {
+    path: string;
+    chainId: string;
+    chainStep: number | string;
+    stage: '前态' | '中态' | '后态';
+    description: string;
+}
+
+export interface EvidenceScreenshotIndexOptions {
+    gameId: string;
+    evidenceCategory: 'golden' | 'tutorial' | 'independent';
+    media: EvidenceScreenshotIndexEntry[];
 }
 
 const CJK_CHARACTER_REGEX = /[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/;
@@ -189,7 +203,37 @@ export async function createEvidenceScreenshotRun(
     return { runId, stableDir, stagingDir, historyDir };
 }
 
-export async function promoteEvidenceScreenshotRun(run: EvidenceScreenshotRun): Promise<string> {
+export async function promoteEvidenceScreenshotRun(
+    run: EvidenceScreenshotRun,
+    indexOptions?: EvidenceScreenshotIndexOptions,
+): Promise<string> {
+    if (indexOptions) {
+        if (!EVIDENCE_GAME_IDS.has(indexOptions.gameId)) {
+            throw new Error(`证据索引 gameId 不受支持：${indexOptions.gameId}`);
+        }
+        if (indexOptions.media.length === 0) {
+            throw new Error('证据索引 media 不能为空。');
+        }
+
+        const sourceDir = relative(process.cwd(), run.stableDir).split(sep).join('/');
+        const index = {
+            version: 1,
+            gameId: indexOptions.gameId,
+            evidenceCategory: indexOptions.evidenceCategory,
+            media: indexOptions.media.map((entry) => ({
+                ...entry,
+                chainStep: String(entry.chainStep).padStart(2, '0'),
+                sourceRun: run.runId,
+                sourceDir,
+            })),
+        };
+        await writeFile(
+            join(run.stagingDir, '.e2e-image-index.json'),
+            `${JSON.stringify(index, null, 2)}\n`,
+            'utf8',
+        );
+    }
+
     let movedPrevious = false;
     try {
         await mkdir(dirname(run.historyDir), { recursive: true });

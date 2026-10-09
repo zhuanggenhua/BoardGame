@@ -582,19 +582,21 @@ describe('qidahen tutorial flow', () => {
         expect(wheelActionPrompts.every((text) => text.includes('点击轮盘') && text.includes('高亮'))).toBe(true);
         expect(wheelActionPrompts.every((text) => !/免费走\s*1/.test(text))).toBe(true);
         expect(enTutorialText).not.toMatch(/Move 1\s+for\s+free/i);
-        expect(basic.wheelResult).toContain('正规军 2→4');
+        expect(basic.wheelResult).toContain('正规军从 2 支变为 4 支');
+        expect(basic.wheelResult).toContain('炮兵从 1 级升至 2 级');
         expect(basic.wheelResult).not.toContain('查看地图');
         expect(basic.wheelResult).not.toContain('先看');
         const wheelRecruitTrainResult = (zh.tutorial as any).wheelRecruitTrain.steps.result as string;
         const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
-        expect(wheelRecruitTrainResult).toContain('宣府正规军 2→4');
-        expect(wheelRecruitTrainResult).toContain('炮兵 1→2 级');
+        expect(wheelRecruitTrainResult).toContain('宣府正规军从 2 支变为 4 支');
+        expect(wheelRecruitTrainResult).toContain('炮兵从 1 级升至 2 级');
         expect(wheelRecruitTrainResult).not.toContain('地图新增');
         expect(englishWheelRecruitTrainResult).toContain('Xuanfu regular troops increase from 2 to 4');
         expect(englishWheelRecruitTrainResult).toContain('artillery increases from level 1 to 2');
         expect(englishWheelRecruitTrainResult).not.toContain('look at the map');
         expect(basic.chooseGrantPardonTarget).toContain('点击地图上高亮的山海关');
-        expect(basic.chooseGrantPardonSource).toContain('后金玩家亲自点击锦州');
+        expect(basic.chooseGrantPardonTarget).toContain('自动锁定该对手');
+        expect(basic.chooseGrantPardonSource).toContain('后金玩家点击高亮的锦州部队');
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
         expect(manifest?.steps.find((step) => step.id === 'wheel-branch-recovery')).toEqual(expect.objectContaining({
@@ -616,9 +618,11 @@ describe('qidahen tutorial flow', () => {
         expect(basic.handActionOrder).not.toContain('弃 3');
         expect(basic.grantPardonRule).toContain('赐印招安：弃 3 张手牌');
         expect(basic.grantPardonRule).toContain('由被指定的玩家选择一支与大明控制区相邻的部队');
+        expect(basic.grantPardonRule).toContain('接收区唯一对应一名对手');
+        expect(basic.grantPardonRule).toContain('系统自动锁定该对手');
         expect(basic.pickAction).toBe('点击右侧的“赐印招安”行动。');
-        expect(basic.actionResult).toContain('锦州部队 2→1');
-        expect(basic.actionResult).toContain('山海关部队 2→3');
+        expect(basic.actionResult).toContain('锦州部队从 2 支变为 1 支');
+        expect(basic.actionResult).toContain('山海关部队从 2 支变为 3 支');
         expect(basic.actionResult).toContain('被选部队归大明');
 
         for (const text of [zhTutorialText, enTutorialText]) {
@@ -1513,7 +1517,7 @@ describe('qidahen tutorial flow', () => {
         });
     });
 
-    it('年中新年教程在推进到新年后，会先进入朝鲜朝贡，再进入防线维护', () => {
+    it('年中新年教程在推进到新年后，会先进入朝鲜朝贡，再进入维护并自动进入耗损结果', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['year-and-characters']?.manifest;
         expect(manifest).toBeTruthy();
 
@@ -1573,6 +1577,21 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('new-year-maintenance');
+
+        const maintenanceInteraction = state.sys.interaction?.current;
+        expect((maintenanceInteraction?.data as { sourceId?: string } | undefined)?.sourceId)
+            .toBe('qidahen:fortification-maintenance');
+        state = dispatch(state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: maintenanceInteraction?.playerId ?? newYearPlayerId,
+            payload: {
+                interactionId: maintenanceInteraction?.id,
+                optionId: 'auto-pay',
+                mergedValue: { attritionPriority: 'lowest-level' },
+            },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('new-year-attrition');
+        expect((state.core as any).lastSeasonSummary?.title).toBe('新年结算');
     });
 
     it('朝鲜与地图特例教程会从真实新年入口开始，并在维护后看到朝鲜耗损结果', () => {

@@ -84,9 +84,10 @@ import {
     resolveMageWarsAttackReversalResponseCardId,
     resolveMageWarsSpellCounterResponseCardId,
     resolveMageWarsSpellRedirectResponseCardId,
+    resolveMageWarsBoundSpellSource,
 } from './spellRules';
 import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId } from './ids';
-import { getArenaObject, getMageWarsWallBetweenZones, getOpponentId } from './utils';
+import { getArenaObject, getMageWarsWallBetweenZones, getOpponentId, isSpellPrepared } from './utils';
 import { resolveMageWarsSpellCasterRef, resolveMageWarsSpellCastMode } from './spellCasting';
 import { getStatusTokenAmount } from './statusTokens';
 import {
@@ -1859,6 +1860,10 @@ export function executeCommand(
                 }];
             }
 
+            const boundSourceObjectId = caster.kind === 'mage'
+                && !isSpellPrepared(player, command.payload.spellCardId)
+                ? resolveMageWarsBoundSpellSource(state.core, command.playerId, command.payload.spellCardId)?.id
+                : undefined;
             const castEvent: MageWarsEvent = {
                 type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
                 payload: {
@@ -1869,6 +1874,7 @@ export function executeCommand(
                     castMode,
                     ...(objectManaCost === undefined ? {} : { objectManaCost }),
                     playerManaCost,
+                    ...(boundSourceObjectId ? { boundSourceObjectId } : {}),
                     targetPlayerId: command.payload.targetPlayerId,
                     targetObjectId: command.payload.targetObjectId,
                     targetZoneId: command.payload.targetZoneId,

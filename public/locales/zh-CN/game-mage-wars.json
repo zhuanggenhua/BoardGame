@@ -187,6 +187,10 @@
     "endTurn": "回合结束",
     "activateAbility": "发动能力",
     "rebindSpell": "重新绑定",
+    "castBoundSpell": "施放{{name}}",
+    "meleeBonus": "近战加成",
+    "healMode": "治疗",
+    "meleeBonusMarker": "近战+{{amount}}",
     "close": "关闭"
   },
   "interaction": {

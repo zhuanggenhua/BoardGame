@@ -379,6 +379,15 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                         : [event.payload.spellCardId, ...(player.discardSpellCardIds ?? [])],
                 }));
             }
+            if (event.payload.boundSourceObjectId) {
+                return updatePlayer(core, event.payload.playerId, (player) => ({
+                    ...player,
+                    mana: Math.max(0, player.mana - (event.payload.playerManaCost ?? event.payload.manaCost)),
+                    quickcastReady: event.payload.castMode === 'quickcast' ? false : player.quickcastReady,
+                    actionReady: event.payload.castMode === 'action' ? false : player.actionReady,
+                    guarding: event.payload.castMode === 'action' ? false : player.guarding,
+                }));
+            }
             if (event.payload.caster.kind === 'arena-object') {
                 const objectManaCost = event.payload.objectManaCost ?? 0;
                 const playerManaCost = event.payload.playerManaCost ?? Math.max(0, event.payload.manaCost - objectManaCost);

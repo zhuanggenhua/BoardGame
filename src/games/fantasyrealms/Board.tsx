@@ -696,7 +696,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     }, [core.players, defaultReviewPlayerId, isGameOver]);
     const displayedPlayerId = isGameOver
         ? (reviewPlayerId && core.players[reviewPlayerId] ? reviewPlayerId : defaultReviewPlayerId)
-        : viewerPlayerId;
+        : (viewerPlayerId ?? core.currentPlayer);
     const displayedPlayer = displayedPlayerId ? core.players[displayedPlayerId] : undefined;
     const rawDisplayedHandCards = React.useMemo(() => displayedPlayer?.hand ?? [], [displayedPlayer?.hand]);
     const displayedHandCards = React.useMemo(() => {

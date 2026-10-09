@@ -137,6 +137,7 @@ import { isBetrayalCore } from "./coreSnapshotGuard";
 import {
   resolveBetrayalActivityPresentation,
   resolveBetrayalTraitDeltas,
+  shouldPresentExplorerTraitChangeFeedback,
   type BetrayalTraitDelta,
 } from "./activityPresentation";
 import {
@@ -245,6 +246,7 @@ import {
   ExplorerDetailsDialog,
   MonsterDetailsDialog,
 } from "./entityDetailsSurface";
+import { BetrayalRoomFloorSwitcherSurface } from "./roomFloorSwitcherSurface";
 import { BetrayalRoomMapSurface } from "./roomMapSurface";
 import { BetrayalRecentRollReviewSurface } from "./recentRollReviewSurface";
 import {
@@ -796,7 +798,12 @@ export default function BetrayalBoard({
         deltas,
       });
     }
-    if (changes.size === 0) {
+    if (
+      !shouldPresentExplorerTraitChangeFeedback({
+        explorerCount: allExplorers.length,
+        changedCount: changes.size,
+      })
+    ) {
       return undefined;
     }
 
@@ -6354,7 +6361,6 @@ export default function BetrayalBoard({
                 roomName={observedExplorerRoomName}
                 abilityName={observedExplorerAbilityName}
                 abilityText={observedExplorerAbilityText}
-                markerAsset={ASSETS.marker.numberBlank}
                 locale={effectiveLocale}
                 matchData={matchData}
                 isObservingOtherExplorer={isObservingOtherExplorer}
@@ -6931,19 +6937,6 @@ export default function BetrayalBoard({
                   selectedRoomTileAdjustmentOption={
                     selectedRoomTileAdjustmentOption
                   }
-                  upperFloor={upperRoomMapFloor ?? null}
-                  lowerFloor={lowerRoomMapFloor ?? null}
-                  upperFloorHasSelectionTarget={
-                    upperRoomMapFloorHasSelectionTarget
-                  }
-                  lowerFloorHasSelectionTarget={
-                    lowerRoomMapFloorHasSelectionTarget
-                  }
-                  hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
-                  hasCrossFloorRoomSelectionTargets={
-                    hasCrossFloorRoomSelectionTargets
-                  }
-                  hiddenTableChrome={shouldHideTableChromeForBlockingOverlay}
                   onSelectEventTargetRoom={handleSelectEventTargetRoom}
                   onSelectBloodFromStoneSetupPlacementRoom={
                     handleSelectBloodFromStoneSetupPlacementRoom
@@ -6975,7 +6968,6 @@ export default function BetrayalBoard({
                   onCancelRoomPlacement={handleCancelRoomPlacement}
                   onConfirmRoomPlacement={handleConfirmRoomPlacement}
                   onSelectRoomTileAdjustment={handleSelectRoomTileAdjustment}
-                  onSelectFloor={handleSelectRoomMapFloor}
                 />
                 <BetrayalTopPromptStackSurface
                   enabled={
@@ -7254,6 +7246,29 @@ export default function BetrayalBoard({
                     </div>
                   </BetrayalHudRegion>
                 ) : null}
+                <BetrayalHudRegion
+                  portal={useViewportAnchoredHud}
+                  scale={viewportHudScale}
+                  viewportHeight={runtimeViewport.height}
+                >
+                  <BetrayalRoomFloorSwitcherSurface
+                    selectedFloor={selectedRoomMapFloor}
+                    upperFloor={upperRoomMapFloor ?? null}
+                    lowerFloor={lowerRoomMapFloor ?? null}
+                    upperFloorHasSelectionTarget={
+                      upperRoomMapFloorHasSelectionTarget
+                    }
+                    lowerFloorHasSelectionTarget={
+                      lowerRoomMapFloorHasSelectionTarget
+                    }
+                    hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
+                    hasCrossFloorRoomSelectionTargets={
+                      hasCrossFloorRoomSelectionTargets
+                    }
+                    hidden={shouldHideTableChromeForBlockingOverlay}
+                    onSelectFloor={handleSelectRoomMapFloor}
+                  />
+                </BetrayalHudRegion>
               </article>
             </section>
 

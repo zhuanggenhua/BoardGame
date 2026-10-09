@@ -658,6 +658,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     handleOpenFactionGroup(group.groupId, selectedVariantId ?? group.defaultVariant.id);
                 }}
                 data-testid={`faction-option-${group.groupId}`}
+                aria-pressed={isSelectedByMe}
                 className={`
                     group relative flex w-full flex-col items-center cursor-pointer
                     ${isTakenByOther ? 'opacity-40 grayscale pointer-events-none' : 'z-10'}
@@ -703,13 +704,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             )}
 
                             {isSelectedByMe && (
-                                <div className="absolute inset-0 bg-emerald-950/55 backdrop-blur-[1px] flex flex-col items-center justify-center p-2 text-center z-30">
-                                    <div className="rounded-sm border border-emerald-200/80 bg-emerald-600/90 px-3 py-2 shadow-[0_6px_16px_rgba(6,78,59,0.35)]">
-                                        <span className="font-black text-white text-xs uppercase tracking-tight">
-                                            {selectedOverlayText}
-                                        </span>
-                                    </div>
-                                </div>
+                                <span className="sr-only">{selectedOverlayText}</span>
                             )}
 
                             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />

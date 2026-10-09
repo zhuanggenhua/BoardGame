@@ -1,5 +1,4 @@
 import type { CSSProperties, MouseEvent, PointerEvent } from 'react';
-import { ZoomIn } from 'lucide-react';
 
 export type CardInspectButtonVariant = 'outline' | 'filled';
 export type CardInspectButtonPlacement = 'inside' | 'outside';
@@ -14,6 +13,8 @@ export interface CardInspectButtonProps {
     minSize?: number;
     maxSize?: number;
     iconRatio?: number;
+    buttonSize?: string;
+    iconSize?: string;
     variant?: CardInspectButtonVariant;
     placement?: CardInspectButtonPlacement;
     alwaysVisible?: boolean;
@@ -39,6 +40,8 @@ export function CardInspectButton({
     minSize = 20,
     maxSize = 96,
     iconRatio = 0.48,
+    buttonSize,
+    iconSize,
     variant = 'outline',
     placement = 'inside',
     alwaysVisible = false,
@@ -49,15 +52,19 @@ export function CardInspectButton({
     const resolvedIconRatio = clampRatio(iconRatio, 0.48);
     const resolvedMinSize = clampPixels(minSize, 20);
     const resolvedMaxSize = Math.max(clampPixels(maxSize, 96), resolvedMinSize);
-    const style: CSSProperties = {
-        width: `clamp(${resolvedMinSize}px, calc(100% * ${resolvedSizeRatio}), ${resolvedMaxSize}px)`,
-        height: 'auto',
-        aspectRatio: '1 / 1',
-    };
-    const iconStyle: CSSProperties = {
-        width: `${resolvedIconRatio * 100}%`,
-        height: `${resolvedIconRatio * 100}%`,
-    };
+    const style: CSSProperties = buttonSize
+        ? { width: buttonSize, height: buttonSize }
+        : {
+            width: `clamp(${resolvedMinSize}px, calc(100% * ${resolvedSizeRatio}), ${resolvedMaxSize}px)`,
+            height: 'auto',
+            aspectRatio: '1 / 1',
+        };
+    const iconStyle: CSSProperties = iconSize
+        ? { width: iconSize, height: iconSize }
+        : {
+            width: `${resolvedIconRatio * 100}%`,
+            height: `${resolvedIconRatio * 100}%`,
+        };
 
     const stopPropagation = (event: PointerEvent<HTMLButtonElement> | MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
@@ -88,7 +95,8 @@ export function CardInspectButton({
             data-browse-inspectable="true"
             data-secondary-inspect="true"
             data-card-inspect-variant={variant}
-            data-card-inspect-size-ratio={resolvedSizeRatio}
+            data-card-inspect-size-ratio={buttonSize ? undefined : resolvedSizeRatio}
+            data-card-inspect-button-size={buttonSize ?? undefined}
             aria-label={ariaLabel}
             title={title}
             onPointerDown={stopPropagation}
@@ -99,7 +107,18 @@ export function CardInspectButton({
                 onInspect();
             }}
         >
-            <ZoomIn aria-hidden="true" style={iconStyle} strokeWidth={2.4} />
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                className="fill-current"
+                style={iconStyle}
+            >
+                <path
+                    fillRule="evenodd"
+                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                    clipRule="evenodd"
+                />
+            </svg>
         </button>
     );
 }

@@ -68,6 +68,7 @@ const gameManifest: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: true,
+        manualSetupSelection: true,
     },
 };
 
@@ -101,6 +102,35 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(screen.getByText('Disabled')).toBeInTheDocument();
         expect(screen.queryByText('AI 占位')).toBeNull();
+    });
+
+    it('没有开局派系 / 角色选择能力的游戏，不显示手动代选入口且不保留旧标记', () => {
+        const onConfirm = vi.fn();
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: THE_GANG_MANIFEST,
+            initialPreferences: {
+                numPlayers: 4,
+                minimumActionDelayMs: 1000,
+                setupSelections: {},
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', manualFactionSelection: true },
+                    '2': { type: 'human' },
+                    '3': { type: 'human' },
+                },
+            },
+        }));
+
+        expect(screen.queryByTestId('create-room-ai-manual-faction-checkbox')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm.mock.calls[0]?.[0]?.seatControllers?.['1'])
+            .not.toHaveProperty('manualFactionSelection');
+        expect(onConfirm.mock.calls[0]?.[0]?.seatControllers?.['1'])
+            .not.toHaveProperty('manualSetupSelection');
     });
 
     it('有已保存 AI 偏好时，打开弹窗会恢复为开启', () => {

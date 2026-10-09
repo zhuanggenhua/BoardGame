@@ -45,9 +45,10 @@
 | 8 | `grant-pardon-rule` | 读取赐印招安规则原文 | 进入行动选择 |
 | 9 | `pick-action` | 选择手牌行动「赐印招安」 | 进入真实支付窗口 |
 | 10 | `pay-cards` | 按当前费用弃 3 张手牌 | 支付完成，等待地图目标 |
-| 11 | `choose-grant-pardon-target` | 点击地图上的招安目标 | 地图关系发生变化 |
-| 12 | `action-result` | 读取控制权变化和结算摘要 | 手牌行动完成 |
-| 13 | `finish` | 看到首回合基础链完成 | 关闭教程，不跳转其它专题 |
+| 11 | `choose-grant-pardon-target` | 点击地图上的山海关接收区；若唯一对应一名对手，系统自动锁定该对手 | 进入被指定玩家的选兵窗口 |
+| 12 | `choose-grant-pardon-source` | 由被指定玩家点击一支高亮的锦州合法部队 | 部队移动到山海关并转换为大明 |
+| 13 | `action-result` | 读取锦州与山海关部队数量、位置和阵营的前后变化 | 手牌行动完成 |
+| 14 | `finish` | 看到首回合基础链完成 | 关闭教程，不跳转其它专题 |
 
 每一步必须符合 `上一画面 -> 玩家输入或自动结算 -> 下一画面`。没有发生的条件分支（例如未超上限时的弃牌）只能作为状态断言，不能变成当前动作。
 
@@ -58,7 +59,8 @@
 | 正式开局、起手牌、手牌上限 | `basic-opening` 的 `welcome` / `wheel-first` | 已覆盖 | `tutorialFlow.test.ts`、基础 E2E 起手状态断言 |
 | 公共轮盘 1 / 2 / 3 格 | `basic-opening`、`wheel-shared-cost` | 已覆盖 | 真实轮盘目标、当前位置和落点结果断言 |
 | 轮盘落点即时结算 | `basic-opening` 的 `wheel-result` | 已覆盖 | 征兵 / 训练摘要和状态变化 |
-| 手牌行动与支付 | `basic-opening`、`armament-upgrade`、`event-action` | 已覆盖代表链 | 真实手牌入口、支付面板、支付后结果 |
+| 手牌行动与支付 | `basic-opening`、`armament-upgrade`、`event-action` | 已覆盖代表链 | 真实手牌入口、候选→已选→确认支付、支付后结果 |
+| 赐印招安的目标映射与权限交接 | `basic-opening` 的 `choose-grant-pardon-target`、`choose-grant-pardon-source` | 已覆盖 | 先点地图接收区；唯一对应时自动锁定对手；再由被指定玩家直选来源部队 |
 | 轮盘代价与进攻调度 | `wheel-shared-cost` | 已覆盖代表链 | 对手摸牌、部队选择、调度目标 |
 | 开垦 / 军屯 / 征兵训练 | 3 个隐藏独立专题 | 已覆盖代表链 | 对应落点与摘要截图 |
 | 进攻 / 野战 / 战术时机 | `attack-and-battle` | 已覆盖代表链 | 突袭作战、支付、战斗、战术牌和战后处理 |

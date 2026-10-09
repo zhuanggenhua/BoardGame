@@ -3,6 +3,7 @@ import type { BetrayalCore } from '../game';
 import {
   resolveBetrayalActivityPresentation,
   resolveBetrayalTraitDeltas,
+  shouldPresentExplorerTraitChangeFeedback,
 } from '../activityPresentation';
 
 describe('betrayal activity presentation', () => {
@@ -15,6 +16,25 @@ describe('betrayal activity presentation', () => {
       { trait: 'speed', amount: 1 },
       { trait: 'sanity', amount: -1 },
     ]);
+  });
+
+  it('整仓属性替换不展示飘字，单人变化才展示', () => {
+    expect(shouldPresentExplorerTraitChangeFeedback({
+      explorerCount: 3,
+      changedCount: 0,
+    })).toBe(false);
+    expect(shouldPresentExplorerTraitChangeFeedback({
+      explorerCount: 3,
+      changedCount: 3,
+    })).toBe(false);
+    expect(shouldPresentExplorerTraitChangeFeedback({
+      explorerCount: 3,
+      changedCount: 1,
+    })).toBe(true);
+    expect(shouldPresentExplorerTraitChangeFeedback({
+      explorerCount: 1,
+      changedCount: 1,
+    })).toBe(true);
   });
 
   it('纯属性事件结算显示实体浮字数据，不要求卡牌特写', () => {

@@ -225,6 +225,7 @@ export class AuthController {
         await this.authService.updatePassword(user._id.toString(), newPassword);
         await this.authService.clearResetAttempts(email);
         await this.authService.revokeRefreshTokensForUser(user._id.toString());
+        this.clearRefreshCookie(res);
 
         return res.json({ message: t('auth.success.passwordReset') });
     }
@@ -558,9 +559,13 @@ export class AuthController {
         }
 
         const rotation = await this.authService.rotateRefreshToken(refreshToken);
-        if (rotation.status === 'invalid' || rotation.status === 'reuse') {
+        if (rotation.status === 'invalid') {
             this.clearRefreshCookie(res);
             return this.sendAuthFailure(res, 'AUTH_INVALID_TOKEN', t('auth.error.invalidToken'));
+        }
+        if (rotation.status === 'stale') {
+            // 迟到的旧凭证响应不能清除另一个并发请求已写入的当前 Cookie。
+            return this.sendAuthFailure(res, 'AUTH_REFRESH_STALE', t('auth.error.invalidToken'));
         }
 
         const user = await this.authService.findById(rotation.userId);
@@ -571,23 +576,18 @@ export class AuthController {
         }
 
         const token = this.authService.createToken(user);
+        // 并发输家只会重发确定性重建的同一个当前 Cookie。
         this.setRefreshCookie(res, rotation.token, rotation.expiresAt);
 
         return this.sendAuthSuccess(res, 'AUTH_REFRESH_OK', t('auth.success.refreshToken'), { token });
     }
 
-    @UseGuards(JwtAuthGuard)
     @Post('logout')
     async logout(@Req() req: Request, @Res() res: Response) {
         const { t } = createRequestI18n(req);
         const token = this.extractToken(req);
-
-        if (!token) {
-            return this.sendAuthFailure(res, 'AUTH_MISSING_TOKEN', t('auth.error.missingToken'));
-        }
-
-        await this.authService.blacklistToken(token);
         const refreshToken = this.extractRefreshToken(req);
+        if (token) await this.authService.blacklistToken(token);
         if (refreshToken) {
             await this.authService.revokeRefreshToken(refreshToken);
         }
@@ -625,6 +625,8 @@ export class AuthController {
         }
 
         await this.authService.updatePassword(currentUser.userId, newPassword);
+        await this.authService.revokeRefreshTokensForUser(currentUser.userId);
+        this.clearRefreshCookie(res);
         return res.json({ message: t('auth.success.passwordUpdated') });
     }
 

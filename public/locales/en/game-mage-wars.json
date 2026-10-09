@@ -187,6 +187,10 @@
     "endTurn": "End Turn",
     "activateAbility": "Use ability",
     "rebindSpell": "Rebind spell",
+    "castBoundSpell": "Cast {{name}}",
+    "meleeBonus": "Melee bonus",
+    "healMode": "Heal",
+    "meleeBonusMarker": "Melee +{{amount}}",
     "close": "Close"
   },
   "interaction": {

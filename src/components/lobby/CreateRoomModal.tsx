@@ -401,6 +401,7 @@ export const CreateRoomModal = ({
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
+    const supportsManualSetupSelection = gameManifest.ai?.manualSetupSelection === true;
     const fieldLabelClassName = isCompactHomeV2Layout ? 'mb-[3px] block text-[7.2px] font-semibold tracking-[0.04em] text-[#3f2616]' : homeV2PaperLabelClassName;
     const fieldHintClassName = isCompactHomeV2Layout ? homeV2PaperCompactHintClassName : homeV2PaperHintClassName;
     const inputClassName = isCompactHomeV2Layout ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
@@ -450,7 +451,7 @@ export const CreateRoomModal = ({
                 controller.type === 'local-ai' && typeof controller.difficulty === 'string'
             ),
         )?.difficulty ?? DEFAULT_LOCAL_AI_DIFFICULTY;
-        const shouldManualFactionSelection = Object.values(nextSeatControllers).some(
+        const shouldManualFactionSelection = supportsManualSetupSelection && Object.values(nextSeatControllers).some(
             (controller) => isManualSetupSelectionEnabledForSeat(controller),
         );
         const nextMinimumActionDelayMs = normalizeAiMinimumActionDelayMs(nextPreferences.minimumActionDelayMs)
@@ -458,7 +459,7 @@ export const CreateRoomModal = ({
         const shouldEnableAi = initialPreferences
             ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0
             : false;
-        const resolvedSeatControllers = shouldEnableAi
+        const aiFilledSeatControllers = shouldEnableAi
             ? fillNonOwnerSeatsWithAi({
                 seatControllers: nextSeatControllers,
                 numPlayers: nextPreferences.numPlayers,
@@ -468,6 +469,9 @@ export const CreateRoomModal = ({
                 minimumActionDelayMs: nextMinimumActionDelayMs,
             })
             : nextSeatControllers;
+        const resolvedSeatControllers = supportsManualSetupSelection
+            ? aiFilledSeatControllers
+            : applyManualFactionSelection(aiFilledSeatControllers, nextPreferences.numPlayers, false);
 
         setRoomName('');
         setNumPlayers(nextPreferences.numPlayers);
@@ -489,7 +493,7 @@ export const CreateRoomModal = ({
             setupSelections: nextPreferences.setupSelections,
             createRoomSetup,
         }));
-    }, [createRoomSetup, defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, setupFields]);
+    }, [createRoomSetup, defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, setupFields, supportsManualSetupSelection]);
 
     useEffect(() => {
         const fallbackPlayerCount = currentPlayerOptions[0];
@@ -621,6 +625,9 @@ export const CreateRoomModal = ({
     };
 
     const handleManualFactionSelectionChange = (checked: boolean) => {
+        if (!supportsManualSetupSelection) {
+            return;
+        }
         setManualFactionSelection(checked);
         setSeatControllers((current) => applyManualFactionSelection(current, numPlayers, checked));
     };
@@ -976,7 +983,7 @@ export const CreateRoomModal = ({
                                                         })}
                                                     </div>
 
-                                                    <label className={`${isCompactHomeV2Layout ? 'gap-[6px] rounded-[5px] px-[8px] py-[5px]' : 'gap-3 rounded-[8px] px-3 py-2'} flex cursor-pointer items-center border border-[#b6905e]/34 bg-[rgba(247,227,191,0.44)] text-left transition-colors hover:bg-[rgba(240,212,164,0.64)]`}>
+                                                    {supportsManualSetupSelection && <label className={`${isCompactHomeV2Layout ? 'gap-[6px] rounded-[5px] px-[8px] py-[5px]' : 'gap-3 rounded-[8px] px-3 py-2'} flex cursor-pointer items-center border border-[#b6905e]/34 bg-[rgba(247,227,191,0.44)] text-left transition-colors hover:bg-[rgba(240,212,164,0.64)]`}>
                                                         <input
                                                             type="checkbox"
                                                             checked={manualFactionSelection}
@@ -987,7 +994,7 @@ export const CreateRoomModal = ({
                                                         <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
                                                             {t('createRoom.aiManualFactionSelection')}
                                                         </span>
-                                                    </label>
+                                                    </label>}
                                                 </>
                                             )}
                                         </div>
@@ -1258,7 +1265,7 @@ export const CreateRoomModal = ({
                                                     })}
                                                 </div>
 
-                                                <label className="flex cursor-pointer items-center gap-3 rounded-[6px] border border-parchment-card-border/25 bg-parchment-card-bg/70 px-3 py-2 text-left transition-colors hover:bg-parchment-base-bg/45">
+                                                {supportsManualSetupSelection && <label className="flex cursor-pointer items-center gap-3 rounded-[6px] border border-parchment-card-border/25 bg-parchment-card-bg/70 px-3 py-2 text-left transition-colors hover:bg-parchment-base-bg/45">
                                                     <input
                                                         type="checkbox"
                                                         checked={manualFactionSelection}
@@ -1269,7 +1276,7 @@ export const CreateRoomModal = ({
                                                     <span className="text-xs font-bold text-parchment-base-text">
                                                         {t('createRoom.aiManualFactionSelection')}
                                                     </span>
-                                                </label>
+                                                </label>}
                                             </>
                                         )}
                                     </div>

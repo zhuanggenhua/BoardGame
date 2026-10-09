@@ -1,17 +1,16 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import {
-    BoardBurstImpactPreset,
     BoardDamageImpactPreset,
     BoardHealingImpactPreset,
     BoardProjectileAttackPreset,
-    BoardProjectilePathPreset,
     BoardSummonEffectPreset,
     BoardTeleportImpactPreset,
 } from '../../../components/common/animations/BoardFxPresets';
+import { CardPreview } from '../../../components/common/media/CardPreview';
+import { AttackDie } from './AttackDie';
 import { EffectDie } from './EffectDie';
-import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import {
     resolveFxQuality,
     scheduleFxFrameCallback,
@@ -20,81 +19,25 @@ import {
     type FxBox,
     type FxQuality,
     type FxRendererProps,
-    createFxPathBox,
 } from '../../../engine/fx';
+import type { MageId } from '../domain/ids';
+import { MAGE_IDS } from '../domain/ids';
+import { getMageWarsMagePreviewRef, getMageWarsSpellCardPreviewRef } from './cardAtlas';
 import {
     MAGE_WARS_ATTACK_FX_TUNING,
     MAGE_WARS_DIRECT_DAMAGE_FX_TUNING,
     MAGE_WARS_FX_TIMING,
     MAGE_WARS_SUMMON_FX_TUNING,
+    MAGE_WARS_SUMMON_HOST_STYLE,
     MAGE_WARS_TELEPORT_FX_TUNING,
-    MAGE_WARS_TRAVEL_FX_TUNING,
     mageWarsFxColors,
     resolveMageWarsSummonColor,
 } from './fxTuning';
 
-type AttackDieFaceId = 'burst' | 'hit2' | 'hit1' | 'blank';
+const MAGE_ID_VALUES = new Set<string>(Object.values(MAGE_IDS));
 
-const ATTACK_DIE_TEXTURE_SIZE = 1280;
-const ATTACK_DIE_FACES: Record<AttackDieFaceId, { x: number; y: number; rotate: string }> = {
-    burst: { x: 164, y: 318, rotate: '-7deg' },
-    hit2: { x: 480, y: 318, rotate: '5deg' },
-    hit1: { x: 480, y: 948, rotate: '-4deg' },
-    blank: { x: 794, y: 318, rotate: '4deg' },
-};
-
-function getAttackDieFace(result: number): AttackDieFaceId {
-    if (result >= 3) return 'burst';
-    if (result === 2) return 'hit2';
-    if (result === 1) return 'hit1';
-    return 'blank';
-}
-
-function AttackDieResult({ result, index }: { result: number; index: number }) {
-    const crop = ATTACK_DIE_FACES[getAttackDieFace(result)];
-    const scale = ATTACK_DIE_TEXTURE_SIZE / 320;
-    const baseRotation = Number.parseFloat(crop.rotate);
-    const prefersReducedMotion = useReducedMotion();
-    const shouldAnimate = prefersReducedMotion !== true;
-
-    return (
-        <motion.span
-            className="relative block h-[clamp(3rem,4vw,5rem)] w-[clamp(3rem,4vw,5rem)] shrink-0 overflow-hidden rounded-[0.18rem] bg-black/35 shadow-[0_8px_18px_rgba(0,0,0,0.52)]"
-            initial={shouldAnimate ? { rotate: baseRotation - 180, scale: 0.82 } : false}
-            animate={shouldAnimate
-                ? {
-                    rotate: [baseRotation - 180, baseRotation + 540, baseRotation],
-                    scale: [0.82, 1.08, 1],
-                }
-                : { rotate: baseRotation, scale: 1 }}
-            transition={shouldAnimate
-                ? {
-                    duration: MAGE_WARS_FX_TIMING.diceResultRollMs / 1000,
-                    delay: index * 0.06,
-                    ease: 'linear',
-                    times: [0, 0.78, 1],
-                }
-                : { duration: 0 }}
-            style={{ transformOrigin: '50% 50%' }}
-            data-testid="mage-wars-fx-attack-die-face"
-            data-roll-animation={shouldAnimate ? 'css-sprite-die-tumble' : 'reduced'}
-            data-roll-duration-ms={MAGE_WARS_FX_TIMING.diceResultRollMs}
-            aria-label={`攻击骰 ${result}`}
-        >
-            <OptimizedImage
-                src="mage-wars/dice/attack-die-texture"
-                alt={`攻击骰 ${result}`}
-                className="absolute max-w-none select-none"
-                style={{
-                    width: `${scale * 100}%`,
-                    height: `${scale * 100}%`,
-                    left: `${-(crop.x / 320) * 100}%`,
-                    top: `${-(crop.y / 320) * 100}%`,
-                }}
-                placeholder={false}
-            />
-        </motion.span>
-    );
+function isMageId(value: unknown): value is MageId {
+    return typeof value === 'string' && MAGE_ID_VALUES.has(value);
 }
 
 function AttackDiceFeedback({
@@ -119,14 +62,18 @@ function AttackDiceFeedback({
             data-visible-duration-ms={visibleDurationMs}
             initial={{ opacity: 0, scale: 0.68, y: 10 }}
             animate={{ opacity: [0, 1, 1, 1, 0], scale: [0.68, 1, 1, 1, 1.04], y: [10, 0, 0, 0, -6] }}
-            transition={{ duration: visibleDurationMs / 1000, ease: 'easeOut' }}
+            transition={{
+                duration: visibleDurationMs / 1000,
+                ease: 'easeOut',
+                times: [0, 0.05, 0.82, 0.94, 1],
+            }}
         >
             <div
                 className="flex max-w-[34rem] items-center justify-center gap-[clamp(0.45rem,1vw,1rem)]"
                 data-testid="mage-wars-fx-attack-dice-content"
             >
                 {diceResults.slice(0, 6).map((result, index) => (
-                    <AttackDieResult key={`${index}-${result}`} result={result} index={index} />
+                    <AttackDie key={`${index}-${result}`} result={result} index={index} />
                 ))}
                 {effectDieResult !== undefined ? (
                     <EffectDie result={rawEffectDieResult ?? effectDieResult} resolvedResult={effectDieResult} />
@@ -226,6 +173,160 @@ function readFxAnchorSnapshot(value: unknown): FxAnchorSnapshot | null {
     return candidate as FxAnchorSnapshot;
 }
 
+function centerEntityBoxInCell(cellBox: FxBox, sizeBox: FxBox): FxBox {
+    return {
+        left: cellBox.left + (cellBox.width - sizeBox.width) / 2,
+        top: cellBox.top + (cellBox.height - sizeBox.height) / 2,
+        width: sizeBox.width,
+        height: sizeBox.height,
+    };
+}
+
+function resolveEntitySlideBox(
+    cell: FxCellCoord | undefined,
+    sizeRef: FxAnchorSnapshot | null | undefined,
+    getCellPosition: FxRendererProps['getCellPosition'],
+): FxBox | null {
+    // 起终点必须跟格子走。快照盒会在棋子已经落到目标格后被采到，再用它当 from 就会瞬移。
+    if (!cell) return null;
+    const cellBox = getCellPosition(cell.row, cell.col);
+    if (sizeRef?.box) return centerEntityBoxInCell(cellBox, sizeRef.box);
+    return cellBox;
+}
+
+type ViewportSlideBox = {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+};
+
+function readFxSurfaceRect(): DOMRect | null {
+    if (typeof document === 'undefined') return null;
+    const surface = document.querySelector('[data-testid="mage-wars-fx-layer"]')
+        ?? document.querySelector('[data-testid="mage-wars-arena-stage"]');
+    if (!(surface instanceof HTMLElement)) return null;
+    const rect = surface.getBoundingClientRect();
+    return rect.width >= 8 && rect.height >= 8 ? rect : null;
+}
+
+function percentBoxToViewport(box: FxBox, surface: DOMRect): ViewportSlideBox {
+    return {
+        left: surface.left + (box.left / 100) * surface.width,
+        top: surface.top + (box.top / 100) * surface.height,
+        width: Math.max(72, (box.width / 100) * surface.width),
+        height: Math.max(100, (box.height / 100) * surface.height),
+    };
+}
+
+function MageWarsEntitySlide({
+    source,
+    target,
+    sourceSnapshot,
+    targetSnapshot,
+    getCellPosition,
+    durationMs,
+    kind,
+    objectId,
+    sourceSpellCardId,
+    mageId,
+}: {
+    source?: FxCellCoord;
+    target: FxCellCoord;
+    sourceSnapshot?: FxAnchorSnapshot | null;
+    targetSnapshot?: FxAnchorSnapshot | null;
+    getCellPosition: FxRendererProps['getCellPosition'];
+    durationMs: number;
+    kind: 'push' | 'move';
+    objectId?: string;
+    sourceSpellCardId?: number;
+    mageId?: string;
+}) {
+    const sizeRef = sourceSnapshot ?? targetSnapshot;
+    const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition);
+    const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition);
+    if (!fromBox || !toBox) return null;
+    // 首帧同步读棋盘表面。等 layout 再 portal 会空出若干帧，活棋子已隐藏、克隆还没挂上。
+    const surface = readFxSurfaceRect();
+    const viewportSlide = surface
+        ? {
+            from: percentBoxToViewport(fromBox, surface),
+            to: percentBoxToViewport(toBox, surface),
+        }
+        : null;
+    const previewRef = sourceSpellCardId != null
+        ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
+        : isMageId(mageId)
+            ? getMageWarsMagePreviewRef(mageId, 'portrait')
+            : null;
+    const slideBody = (
+        <div
+            className="h-full w-full overflow-hidden rounded-[0.16rem] shadow-[0_10px_18px_rgba(0,0,0,0.42)]"
+            data-testid={`mage-wars-fx-${kind}-slide-body`}
+        >
+            {previewRef ? (
+                <CardPreview
+                    previewRef={previewRef}
+                    className="h-full w-full rounded-[0.16rem]"
+                />
+            ) : (
+                <div className="h-full w-full rounded-[0.16rem] bg-stone-900/85 ring-1 ring-amber-100/40" />
+            )}
+        </div>
+    );
+    const slide = (
+        <motion.div
+            className={viewportSlide
+                ? 'pointer-events-none fixed overflow-visible rounded-[0.18rem]'
+                : 'pointer-events-none absolute z-30 overflow-visible rounded-[0.18rem]'}
+            data-testid={`mage-wars-fx-${kind}-slide`}
+            data-visual-role="entity-slide"
+            data-slide-ease="linear"
+            data-slide-layer={viewportSlide ? 'viewport-portal' : 'arena'}
+            data-object-id={objectId ?? ''}
+            data-source-spell-card-id={sourceSpellCardId ?? ''}
+            data-mage-id={mageId ?? ''}
+            data-source-row={source?.row}
+            data-source-col={source?.col}
+            data-target-row={target.row}
+            data-target-col={target.col}
+            data-from-left={String(fromBox.left)}
+            data-from-top={String(fromBox.top)}
+            data-to-left={String(toBox.left)}
+            data-to-top={String(toBox.top)}
+            initial={viewportSlide
+                ? { ...viewportSlide.from, opacity: 1 }
+                : {
+                    left: `${fromBox.left}%`,
+                    top: `${fromBox.top}%`,
+                    width: `${fromBox.width}%`,
+                    height: `${fromBox.height}%`,
+                    opacity: 1,
+                }}
+            animate={viewportSlide
+                ? { ...viewportSlide.to, opacity: 1 }
+                : {
+                    left: `${toBox.left}%`,
+                    top: `${toBox.top}%`,
+                    width: `${toBox.width}%`,
+                    height: `${toBox.height}%`,
+                    opacity: 1,
+                }}
+            transition={{ duration: durationMs / 1000, ease: 'linear' }}
+            style={viewportSlide
+                ? { position: 'fixed', zIndex: 1100, margin: 0 }
+                : undefined}
+        >
+            {slideBody}
+        </motion.div>
+    );
+
+    if (viewportSlide && typeof document !== 'undefined') {
+        return createPortal(slide, document.body);
+    }
+    return slide;
+}
+
 export const SummonRenderer: React.FC<FxRendererProps> = ({
     event,
     getCellPosition,
@@ -259,204 +360,17 @@ export const SummonRenderer: React.FC<FxRendererProps> = ({
             durationScale={MAGE_WARS_SUMMON_FX_TUNING.durationScale}
             visualScale={MAGE_WARS_SUMMON_FX_TUNING.visualScale}
             dimStrength={MAGE_WARS_SUMMON_FX_TUNING.dimStrength}
+            pillarWidthRatio={MAGE_WARS_SUMMON_FX_TUNING.pillarWidthRatio}
             hostTestId="mage-wars-fx-summon"
             objectKind={String(event.params?.objectKind ?? '')}
             objectId={objectId ?? ''}
+            className="z-0"
+            hostStyle={MAGE_WARS_SUMMON_HOST_STYLE}
             onImpact={onImpact}
             onComplete={stableComplete}
         />
     );
 };
-
-function MageWarsTravelPath({
-    source,
-    target,
-    sourceSnapshot,
-    targetSnapshot,
-    sourceBox,
-    targetBox,
-    sourceAnchorId,
-    targetAnchorId,
-    getCellPosition,
-    kind,
-    strong = false,
-    quality,
-    showSourceWake,
-    showMidBurst,
-}: {
-    source?: FxCellCoord;
-    target: FxCellCoord;
-    sourceSnapshot?: FxAnchorSnapshot | null;
-    targetSnapshot?: FxAnchorSnapshot | null;
-    sourceBox?: FxBox | null;
-    targetBox?: FxBox | null;
-    sourceAnchorId?: string;
-    targetAnchorId?: string;
-    getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push' | 'move';
-    strong?: boolean;
-    quality: FxQuality;
-    showSourceWake?: boolean;
-    showMidBurst?: boolean;
-}) {
-    if (!source || sameCell(source, target)) return null;
-    const tuning = MAGE_WARS_TRAVEL_FX_TUNING[kind];
-    const color = mageWarsFxColors(kind, strong);
-    const midBurstPreset = strong && tuning.midBurstStrongPreset
-        ? tuning.midBurstStrongPreset
-        : tuning.midBurstPreset;
-
-    return (
-        <BoardProjectilePathPreset
-            source={source}
-            target={target}
-            getCellPosition={getCellPosition}
-            sourceSnapshot={sourceSnapshot}
-            targetSnapshot={targetSnapshot}
-            sourceBox={sourceBox}
-            targetBox={targetBox}
-            sourceAnchorId={sourceAnchorId}
-            targetAnchorId={targetAnchorId}
-            intensity={strong ? 'strong' : 'normal'}
-            quality={quality}
-            color={color}
-            travelDurationMs={kind === 'move' ? MAGE_WARS_FX_TIMING.moveTravelImpactMs : MAGE_WARS_FX_TIMING.projectileTravelMs}
-            showSourceWake={showSourceWake ?? true}
-            showMidBurst={showMidBurst ?? true}
-            sourceWakeTestId={`mage-wars-fx-${kind}-source-wake`}
-            sourceBurstTestId={`mage-wars-fx-${kind}-source-burst`}
-            travelTestId={`mage-wars-fx-${kind}-travel`}
-            travelMidBurstTestId={`mage-wars-fx-${kind}-travel-mid-burst`}
-            sourceWakePreset={tuning.sourceWakePreset}
-            midBurstPreset={midBurstPreset}
-            sourceWakeColors={color}
-            midBurstColors={color}
-            sourceWakeOverflow={tuning.sourceWakeOverflow}
-            midBurstOverflow={tuning.midBurstOverflow}
-            sourceWakeSizeClassName={tuning.sourceWakeSizeClassName}
-            pathPaddingCells={tuning.pathPaddingCells}
-            pathMinSizeCells={tuning.pathMinSizeCells}
-        />
-    );
-}
-
-function MageWarsTargetBurst({
-    cell,
-    targetSnapshot,
-    targetBox,
-    targetAnchorId,
-    getCellPosition,
-    kind,
-    strong = false,
-    delayMs,
-    quality,
-}: {
-    cell: FxCellCoord;
-    targetSnapshot?: FxAnchorSnapshot | null;
-    targetBox?: FxBox | null;
-    targetAnchorId?: string;
-    getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push';
-    strong?: boolean;
-    delayMs: number;
-    quality: FxQuality;
-}) {
-    const tuning = MAGE_WARS_TRAVEL_FX_TUNING[kind];
-    const preset = strong && tuning.targetBurstStrongPreset
-        ? tuning.targetBurstStrongPreset
-        : tuning.targetBurstPreset;
-    if (!preset) return null;
-
-    return (
-        <BoardBurstImpactPreset
-            cell={cell}
-            getCellPosition={getCellPosition}
-            targetSnapshot={targetSnapshot}
-            box={targetBox}
-            targetAnchorId={targetAnchorId}
-            quality={quality}
-            delayMs={delayMs}
-            hostTestId={`mage-wars-fx-spell-${kind}`}
-            burstTestId={`mage-wars-fx-spell-${kind}-burst`}
-            preset={preset}
-            color={mageWarsFxColors(kind, strong)}
-            overflow={tuning.targetBurstOverflow}
-            sizeClassName={tuning.targetBurstSizeClassName}
-        />
-    );
-}
-
-function MovementTrail({
-    source,
-    target,
-    sourceSnapshot,
-    targetSnapshot,
-    sourceAnchorId,
-    targetAnchorId,
-    getCellPosition,
-}: {
-    source?: FxCellCoord;
-    target: FxCellCoord;
-    sourceSnapshot?: FxAnchorSnapshot | null;
-    targetSnapshot?: FxAnchorSnapshot | null;
-    sourceAnchorId?: string;
-    targetAnchorId?: string;
-    getCellPosition: FxRendererProps['getCellPosition'];
-}) {
-    if (!source || sameCell(source, target)) return null;
-    const sourceBox = sourceSnapshot?.box ?? getCellPosition(source.row, source.col);
-    const targetBox = targetSnapshot?.box ?? getCellPosition(target.row, target.col);
-    const path = createFxPathBox(sourceBox, targetBox, {
-        paddingCells: 0.35,
-        minSizeCells: 1.05,
-        overflow: 'visible',
-    });
-    const dx = path.end.xPct - path.start.xPct;
-    const dy = path.end.yPct - path.start.yPct;
-    const distance = Math.hypot(dx, dy);
-    if (distance < 0.01) return null;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    const steps = [18, 34, 50, 66, 82];
-
-    return (
-        <div
-            className="absolute pointer-events-none z-30"
-            data-testid="mage-wars-fx-move-trail"
-            data-source-row={source.row}
-            data-source-col={source.col}
-            data-target-row={target.row}
-            data-target-col={target.col}
-            data-source-snapshot-anchor-id={sourceAnchorId ?? sourceSnapshot?.anchorId ?? ''}
-            data-target-snapshot-anchor-id={targetAnchorId ?? targetSnapshot?.anchorId ?? ''}
-            style={path.style}
-        >
-            <div
-                className="absolute left-0 top-0 h-0"
-                style={{
-                    left: `${path.start.xPct}%`,
-                    top: `${path.start.yPct}%`,
-                    width: `${distance}%`,
-                    transform: `rotate(${angle}deg)`,
-                    transformOrigin: '0 50%',
-                }}
-            >
-                {steps.map((left, index) => (
-                    <span
-                        key={left}
-                        className="absolute block h-2.5 w-1.5 rounded-full border border-cyan-50/70 bg-cyan-200/80 shadow-[0_0_10px_rgba(103,232,249,0.55)]"
-                        data-testid="mage-wars-fx-move-step"
-                        style={{
-                            left: `${left}%`,
-                            top: 0,
-                            opacity: 0.52 + index * 0.08,
-                            transform: `translate(-50%, -50%) rotate(${index % 2 === 0 ? '-14deg' : '14deg'})`,
-                        }}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
 
 export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     event,
@@ -531,33 +445,24 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
     );
 
     if (!cell) return null;
-    const strong = true;
-    const quality = resolveEventQuality(event);
+
+    if (!hasTravel) return null;
 
     return (
-        <>
-            <MageWarsTravelPath
-                source={source}
-                target={cell}
-                sourceSnapshot={sourceSnapshot}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="push"
-                strong
-                quality={quality}
-            />
-            <MageWarsTargetBurst
-                cell={cell}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="push"
-                strong={strong}
-                delayMs={hasTravel ? MAGE_WARS_FX_TIMING.pushTravelImpactMs : 0}
-                quality={quality}
-            />
-        </>
+        <MageWarsEntitySlide
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            getCellPosition={getCellPosition}
+            durationMs={MAGE_WARS_FX_TIMING.pushTravelImpactMs}
+            kind="push"
+            objectId={targetAnchorId}
+            sourceSpellCardId={typeof event.params?.sourceSpellCardId === 'number'
+                ? event.params.sourceSpellCardId
+                : undefined}
+            mageId={stringifyAnchorId(event.params?.mageId)}
+        />
     );
 };
 
@@ -574,7 +479,6 @@ export const MovementRenderer: React.FC<FxRendererProps> = ({
         ?? event.params?.targetPlayerId
         ?? event.params?.objectId,
     );
-    const sourceAnchorId = targetAnchorId;
     const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
@@ -587,34 +491,24 @@ export const MovementRenderer: React.FC<FxRendererProps> = ({
     );
 
     if (!cell) return null;
-    const quality = resolveEventQuality(event);
+
+    if (!hasTravel) return null;
 
     return (
-        <>
-            <MovementTrail
-                source={source}
-                target={cell}
-                sourceSnapshot={sourceSnapshot}
-                targetSnapshot={targetSnapshot}
-                sourceAnchorId={sourceAnchorId}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-            />
-            <BoardBurstImpactPreset
-                cell={cell}
-                getCellPosition={getCellPosition}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                delayMs={hasTravel ? MAGE_WARS_FX_TIMING.moveTravelImpactMs : 0}
-                hostTestId="mage-wars-fx-move-arrival"
-                burstTestId="mage-wars-fx-move-arrival-burst"
-                preset={MAGE_WARS_TRAVEL_FX_TUNING.move.midBurstPreset}
-                color={mageWarsFxColors('move')}
-                overflow={MAGE_WARS_TRAVEL_FX_TUNING.move.midBurstOverflow}
-                sizeClassName={MAGE_WARS_TRAVEL_FX_TUNING.move.sourceWakeSizeClassName}
-                quality={quality}
-            />
-        </>
+        <MageWarsEntitySlide
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            getCellPosition={getCellPosition}
+            durationMs={MAGE_WARS_FX_TIMING.moveTravelImpactMs}
+            kind="move"
+            objectId={targetAnchorId}
+            sourceSpellCardId={typeof event.params?.sourceSpellCardId === 'number'
+                ? event.params.sourceSpellCardId
+                : undefined}
+            mageId={stringifyAnchorId(event.params?.mageId)}
+        />
     );
 };
 

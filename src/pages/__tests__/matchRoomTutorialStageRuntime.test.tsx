@@ -312,6 +312,24 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         expect(latestLocalProviderProps?.shouldRestorePersistedSession?.(JSON.parse(rawSnapshot ?? '') as LocalMatchSnapshot)).toBe(true);
     });
 
+    it('游戏声明了本地运行操作者解析时，教程视角跟随正式交互玩家', async () => {
+        const actorFollowingRuntime: MatchRoomTutorialBoardRuntimeModel = {
+            ...runtime,
+            engineConfig: {
+                ...engineConfig,
+                resolveLocalRuntimeControlledPlayerId: () => '1',
+            },
+        };
+
+        render(
+            <MemoryRouter>
+                <MatchRoomTutorialBoardRuntime runtime={actorFollowingRuntime} />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(true));
+    });
+
     it('非激活的同章节旧快照不会作为教程进度恢复，避免教程入口落到普通牌桌', async () => {
         const seed = persistProgressSnapshot({ active: false });
 

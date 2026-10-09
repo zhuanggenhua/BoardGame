@@ -11,12 +11,8 @@ import type {
   BetrayalRoomNode,
   BetrayalTraitKey,
 } from "./game";
+import { ExplorerFigureToken } from "./entityTokenSurface";
 import { resolvePlayerName } from "./playerPresentation";
-import {
-  resolveExplorerBoardMarkerPosition,
-  resolveExplorerTraitTrack,
-  resolveTraitTrackValueAtPosition,
-} from "./traitPresentation";
 import {
   ExplorerTraitTrackRail,
   TRAIT_LABEL_LOCAL,
@@ -35,7 +31,6 @@ type BetrayalObservedExplorerPanelSurfaceProps = {
   roomName: string;
   abilityName: string;
   abilityText: string;
-  markerAsset: string;
   locale: string;
   matchData?: MatchPlayerInfo[];
   isObservingOtherExplorer: boolean;
@@ -159,17 +154,6 @@ function resolveTeammatePresentationState({
   };
 }
 
-function resolveAbilityCompactSummary(abilityText: string): string {
-  const compact = abilityText.replace(/\s+/g, " ").trim();
-  if (!compact) return "";
-  const sentence = compact.match(/^.+?[。！？.!?]/);
-  if (sentence && sentence[0].length >= 6 && sentence[0].length <= 48) {
-    return sentence[0];
-  }
-  if (compact.length <= 42) return compact;
-  return compact.slice(0, 42);
-}
-
 function resolveTeammateStatusLabel({
   isAttackTarget,
   isCorpseLootCandidate,
@@ -199,7 +183,6 @@ export function BetrayalObservedExplorerPanelSurface({
   roomName,
   abilityName,
   abilityText,
-  markerAsset,
   locale,
   matchData,
   isObservingOtherExplorer,
@@ -207,77 +190,63 @@ export function BetrayalObservedExplorerPanelSurface({
 }: BetrayalObservedExplorerPanelSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
   const [isAbilityDetailsOpen, setIsAbilityDetailsOpen] = useState(false);
-
-  const abilityCompactSummary = resolveAbilityCompactSummary(abilityText);
+  const playerName = resolvePlayerName(
+    explorer.playerId,
+    explorer.displayName,
+    matchData,
+  );
   const abilityContent = (
     <>
       <span className="font-semibold text-[#d8bf81]">
         {t("board.characterSelect.abilityTitle")}：
       </span>
       <span className="font-semibold">{abilityName}：</span>
-      <span className="text-[#c8d8a2]">{abilityText}</span>
+      <span className="whitespace-normal break-words text-[#c8d8a2]">{abilityText}</span>
     </>
   );
 
   return (
     <article className="pointer-events-none relative overflow-visible bg-transparent px-1 py-1">
-      <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1">
+      <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1.5 pb-1 pt-1">
         <div
-          className="relative mx-auto w-full max-w-[188px]"
+          className="flex items-center gap-2 px-1"
           data-testid="betrayal-observed-explorer-panel"
           data-panel-asset={explorer.portraitAsset}
+          data-token-asset={explorer.tokenAsset ?? ""}
           data-player-id={explorer.playerId}
           data-explorer-id={explorer.explorerId}
           data-room-name={roomName}
         >
-          <div className="pointer-events-none absolute inset-[12%] rounded-full bg-[rgba(77,138,92,0.18)] blur-3xl" />
-          <OptimizedImage
-            src={explorer.portraitAsset}
+          <ExplorerFigureToken
+            explorer={explorer}
             locale={locale}
-            alt={explorer.displayName}
-            className="relative z-10 aspect-[1/1.05] h-auto w-full object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.38)]"
-            draggable={false}
+            label={playerName}
+            tone={isObservingOtherExplorer ? "ally" : "self"}
+            size="panel"
+            missingTokenLabel={t("board.hauntTokens.officialTokenMissing")}
+            testIdPrefix="betrayal-hud-identity-token"
           />
-          {BETRAYAL_TRAIT_KEYS.map((key) => {
-            const track = resolveExplorerTraitTrack(explorer, key);
-            const value = resolveTraitTrackValueAtPosition(
-              track,
-              track.position,
-            );
-            const markerPosition = resolveExplorerBoardMarkerPosition(
-              key,
-              track.position,
-              track.maxPosition,
-            );
-            return (
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              {isObservingOtherExplorer ? (
+                <Eye size={12} className="shrink-0 text-[#d9ff97]" aria-hidden="true" />
+              ) : null}
               <div
-                key={`explorer-board-marker-${key}`}
-                data-testid={`betrayal-explorer-board-marker-${key}`}
-                data-trait-track-position={track.position}
-                data-trait-track-value={value}
-                data-trait-board-marker-shape="blank-material-marker"
-                data-trait-board-marker-asset={markerAsset}
-                data-trait-board-marker-visible-value="false"
-                aria-label={`${TRAIT_LABEL_LOCAL[key]}当前位置，第 ${track.position} 位，数值 ${value}`}
-                title={`${TRAIT_LABEL_LOCAL[key]}当前位置：第 ${track.position} 位，数值 ${value}`}
-                className="pointer-events-none absolute z-20 h-[20px] w-[20px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_3px_7px_rgba(0,0,0,0.44)]"
-                style={markerPosition}
+                data-testid="betrayal-hud-identity-name"
+                className="min-w-0 break-words text-[13px] font-semibold leading-[1.25] tracking-[0.02em] text-[#f1e8d4]"
               >
-                <OptimizedImage
-                  src={markerAsset}
-                  locale={locale}
-                  alt=""
-                  className="h-full w-full object-contain"
-                  draggable={false}
-                />
+                {playerName}
               </div>
-            );
-          })}
+            </div>
+            <div className="mt-0.5 break-words text-[11px] leading-[1.3] text-[#b7aa92]">
+              {roomName}
+            </div>
+          </div>
         </div>
 
-        <div className="px-1.5">
+        <div className="px-0.5">
           <div
-            className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-3 py-2 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
+            className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-2 py-1.5 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
             data-testid="betrayal-current-traits"
             data-tutorial-id="betrayal-current-traits"
             data-player-id={explorer.playerId}
@@ -286,20 +255,6 @@ export function BetrayalObservedExplorerPanelSurface({
             data-observed-player={isObservingOtherExplorer ? "true" : "false"}
             data-observed-player-id={explorer.playerId}
           >
-            <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-            <div className="mb-1 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
-                {t("board.hud.currentTraitsLabel")}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-[4px] border border-[rgba(181,239,66,0.28)] bg-[rgba(40,58,21,0.52)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#d9ff97]">
-                {isObservingOtherExplorer ? <Eye size={11} aria-hidden="true" /> : null}
-                {resolvePlayerName(
-                  explorer.playerId,
-                  explorer.displayName,
-                  matchData,
-                )}
-              </span>
-            </div>
             <div className="grid gap-0.5">
               {BETRAYAL_TRAIT_KEYS.map((trait) => (
                 <div
@@ -334,18 +289,21 @@ export function BetrayalObservedExplorerPanelSurface({
                 aria-expanded={isAbilityDetailsOpen}
                 aria-label={`${t("board.players.viewAbilityDetails")}：${abilityName}`}
                 onClick={() => setIsAbilityDetailsOpen(true)}
-                className="pointer-events-auto relative z-10 mt-1 flex min-h-11 items-center gap-1.5 overflow-hidden rounded-[8px] border border-[rgba(96,80,54,0.34)] bg-[rgba(13,17,15,0.72)] px-2 py-1 text-left text-[16px] leading-[1.3] tracking-[0.02em] text-[#d9ff97]"
+                className="pointer-events-auto relative z-10 mt-1 flex items-start gap-1.5 overflow-hidden rounded-[8px] border border-[rgba(96,80,54,0.34)] bg-[rgba(13,17,15,0.72)] px-2 py-1 text-left text-[16px] leading-[1.35] tracking-[0.02em] text-[#d9ff97]"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="block whitespace-nowrap font-semibold">
+                <span className="min-w-0 flex-1 whitespace-normal break-words">
+                  <span className="font-semibold">
                     <span className="text-[#d8bf81]">
                       {t("board.characterSelect.abilityTitle")}：
                     </span>
                     <span>{abilityName}</span>
                   </span>
-                  {abilityCompactSummary ? (
-                    <span className="mt-0.5 block truncate text-[#c8d8a2]">
-                      {abilityCompactSummary}
+                  {abilityText ? (
+                    <span
+                      data-ability-description="true"
+                      className="mt-0.5 block whitespace-normal break-words text-[#c8d8a2]"
+                    >
+                      {abilityText}
                     </span>
                   ) : null}
                 </span>

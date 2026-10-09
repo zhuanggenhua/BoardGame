@@ -389,7 +389,7 @@ export function BetrayalRoomEntityLayerSurface({
                           `${amount > 0 ? "+" : ""}${amount} ${resolveTraitLabel(trait)}`,
                       )
                       .join(" / ")}
-                    className="betrayal-trait-change-floating pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center whitespace-nowrap text-[16px] font-black leading-none [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(96,165,250,0.76),0_0_18px_rgba(96,165,250,0.48)]"
+                    className="betrayal-trait-change-floating pointer-events-none z-40 text-[16px] font-black leading-none [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(96,165,250,0.76),0_0_18px_rgba(96,165,250,0.48)]"
                   >
                     {traitChangeFeedback.deltas.map(({ trait, amount }) => (
                       <span

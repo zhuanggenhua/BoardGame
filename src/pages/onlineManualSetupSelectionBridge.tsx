@@ -65,6 +65,29 @@ function buildManualSetupDraftState(
         };
     }
 
+    if (draft.actionKind === 'faction-selection') {
+        const factionSelection = isPlainRecord(core.factionSelection) ? core.factionSelection : null;
+        const selections = factionSelection && isPlainRecord(factionSelection.selections)
+            ? factionSelection.selections
+            : null;
+        if (!factionSelection || !selections) {
+            return undefined;
+        }
+        return {
+            ...sharedState,
+            core: {
+                ...core,
+                factionSelection: {
+                    ...factionSelection,
+                    selections: {
+                        ...selections,
+                        [draft.playerId]: draft.selectionId,
+                    },
+                },
+            },
+        };
+    }
+
     return undefined;
 }
 

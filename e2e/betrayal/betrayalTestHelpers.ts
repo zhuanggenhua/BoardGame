@@ -307,6 +307,22 @@ export const saveScreenshot = async (
   throw lastError;
 };
 
+export const BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR =
+  "evidence/betrayal-floor-float-center-20261009";
+
+export const BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR =
+  "evidence/betrayal-floor-action-align-20261009";
+
+export const waitForBetrayalFloatingTextGone = async (
+  page: Page,
+  timeout = 5000,
+) => {
+  await expect(page.locator('[data-feedback-style="floating-text"]')).toHaveCount(
+    0,
+    { timeout },
+  );
+};
+
 export type BetrayalClientRectSnapshot = {
   left: number;
   top: number;

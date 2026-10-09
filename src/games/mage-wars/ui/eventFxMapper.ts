@@ -189,6 +189,12 @@ export function mapMageWarsEventToFx(
                 sourceAbilityId: payload.sourceAbilityId,
                 targetPlayerId: payload.targetPlayerId,
                 targetObjectId: payload.targetObjectId,
+                sourceSpellCardId: payload.targetObjectId
+                    ? core.objects[payload.targetObjectId]?.sourceSpellCardId
+                    : undefined,
+                mageId: payload.targetPlayerId
+                    ? core.players[payload.targetPlayerId]?.mageId
+                    : undefined,
                 fromZoneId: payload.fromZoneId,
                 toZoneId: payload.toZoneId,
             },
@@ -196,7 +202,25 @@ export function mapMageWarsEventToFx(
     }
 
     if (event.type === MAGE_WARS_EVENTS.MAGE_MOVED) {
-        return null;
+        const payload = event.payload;
+        const source = resolveZoneCell(core, payload.fromZoneId);
+        const target = resolveZoneCell(core, payload.toZoneId);
+        if (!source || !target || measureCellDistance(source, target) === 0) return null;
+
+        return {
+            sourceEventId: entry.id,
+            cue: MW_FX.MOVE,
+            ctx: { cell: target, intensity: 'normal' },
+            params: {
+                source,
+                playerId: payload.playerId,
+                targetPlayerId: payload.playerId,
+                objectId: payload.playerId,
+                mageId: core.players[payload.playerId]?.mageId,
+                fromZoneId: payload.fromZoneId,
+                toZoneId: payload.toZoneId,
+            },
+        };
     }
 
     if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED) {
@@ -206,26 +230,43 @@ export function mapMageWarsEventToFx(
         if (!source || !target) return null;
         const usesTeleportMovement = payload.movementMode === 'teleport';
         const distance = measureCellDistance(source, target);
-        if (!usesTeleportMovement) return null;
+        if (usesTeleportMovement) {
+            return {
+                sourceEventId: entry.id,
+                cue: MW_FX.SPELL_TELEPORT,
+                ctx: {
+                    cell: target,
+                    intensity: distance > 1 ? 'strong' : 'normal',
+                },
+                params: {
+                    source,
+                    ownerId: payload.ownerId,
+                    objectId: payload.objectId,
+                    targetObjectId: payload.objectId,
+                    fromZoneId: payload.fromZoneId,
+                    toZoneId: payload.toZoneId,
+                    movementMode: payload.movementMode ?? 'normal',
+                    actionCost: payload.actionCost,
+                    sourceAbilityId: payload.sourceAbilityId,
+                    distance,
+                },
+            };
+        }
+        if (distance === 0) return null;
 
         return {
             sourceEventId: entry.id,
-            cue: MW_FX.SPELL_TELEPORT,
-            ctx: {
-                cell: target,
-                intensity: distance > 1 ? 'strong' : 'normal',
-            },
+            cue: MW_FX.MOVE,
+            ctx: { cell: target, intensity: 'normal' },
             params: {
                 source,
                 ownerId: payload.ownerId,
                 objectId: payload.objectId,
                 targetObjectId: payload.objectId,
+                sourceSpellCardId: core.objects[payload.objectId]?.sourceSpellCardId,
                 fromZoneId: payload.fromZoneId,
                 toZoneId: payload.toZoneId,
                 movementMode: payload.movementMode ?? 'normal',
-                actionCost: payload.actionCost,
-                sourceAbilityId: payload.sourceAbilityId,
-                ...(usesTeleportMovement ? { distance } : {}),
             },
         };
     }

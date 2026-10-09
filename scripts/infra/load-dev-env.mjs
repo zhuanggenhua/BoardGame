@@ -20,6 +20,9 @@ for (const envFile of envFiles) {
 
     const parsed = parse(fs.readFileSync(envFile));
     for (const [key, value] of Object.entries(parsed)) {
+        if (process.env.NODE_ENV === 'test' && envFile.endsWith('.env.example') && key === 'MONGO_URI') {
+            continue;
+        }
         if (!fallbackValues.has(key)) {
             fallbackValues.set(key, value);
         }

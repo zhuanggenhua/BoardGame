@@ -8,6 +8,7 @@ import { User, UserSchema } from './schemas/user.schema';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { MatchRecord, MatchRecordSchema } from '../admin/schemas/match-record.schema';
 import { GuestIdentityClaimService } from './guest-identity-claim.service';
+import { RefreshSession, RefreshSessionSchema } from './schemas/refresh-session.schema';
 
 @Module({
     imports: [
@@ -15,6 +16,7 @@ import { GuestIdentityClaimService } from './guest-identity-claim.service';
             { name: User.name, schema: UserSchema },
             { name: AdminAuditLog.name, schema: AdminAuditLogSchema },
             { name: MatchRecord.name, schema: MatchRecordSchema },
+            { name: RefreshSession.name, schema: RefreshSessionSchema },
         ]),
     ],
     controllers: [AuthController],

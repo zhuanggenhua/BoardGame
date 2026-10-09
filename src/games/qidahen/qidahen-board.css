@@ -100,74 +100,44 @@
     background: rgba(159, 52, 38, 0.28) !important;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-screen'] {
-    padding: 6px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-screen'] {
+    padding: 8px !important;
     overflow-y: auto !important;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-layout'] {
-    min-height: 390px;
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important;
-    gap: 4px !important;
-    padding: 6px !important;
+[data-qidahen-layout-mode='mobile-landscape'] .qidahen-faction-select__sheet {
+    padding: 10px 12px 8px !important;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-book-page-intro'],
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-feature-page'] {
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-screen'] {
     padding: 8px !important;
+    overflow-y: auto !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] .qidahen-faction-select__menu {
+    width: min(1680px, 100%) !important;
+    padding: 10px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] .qidahen-faction-select__scen-frame {
+    width: 180px !important;
+    height: 250px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] .qidahen-faction-select__scen-frame > div {
+    width: 420px !important;
+    height: 582px !important;
+    transform: scale(0.429);
+    transform-origin: top left;
 }
 
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-title'] {
-    font-size: 20px !important;
-    margin-top: 2px !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-seat-status'] {
-    display: none !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-card-rail'] {
-    gap: 6px !important;
-    padding-top: 0 !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-scenario-vote-option-'] {
-    height: 158px !important;
-    min-width: 0 !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-scenario-vote-option-'] > span:first-child {
-    width: 252px !important;
-    height: 350px !important;
-    transform: scale(0.45);
-    transform-origin: top left;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-feature-card'],
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-empty-preview'] {
-    width: 174px !important;
-    height: 240px !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-feature-card'] > div:first-child {
-    width: 520px !important;
-    height: 720px !important;
-    transform: scale(0.3346);
-    transform-origin: top left;
+    font-size: 18px !important;
+    margin-bottom: 8px !important;
 }
 
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-actions'] {
-    padding: 6px 8px !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-screen'] {
-    align-items: stretch !important;
-    padding: 8px !important;
-    overflow-y: auto !important;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-screen'] > div {
-    padding: 12px !important;
+    margin-top: 8px !important;
 }
 
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-title'] {
@@ -285,4 +255,328 @@
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
     }
+}
+
+.qidahen-faction-select {
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    color: #2a1f15;
+    background:
+        radial-gradient(circle at 18% 16%, rgba(159, 52, 38, 0.2), transparent 28%),
+        linear-gradient(135deg, #2e1f12 0%, #9f8048 48%, #231810 100%);
+}
+
+.qidahen-faction-select__sheet {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    border: 4px solid #20150d;
+    border-radius: 8px;
+    padding: 18px 22px 16px;
+    background: linear-gradient(180deg, rgba(255, 248, 224, 0.98), rgba(232, 210, 160, 0.96));
+}
+
+.qidahen-faction-select__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.qidahen-faction-select__top h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+.qidahen-faction-select__top-right {
+    display: flex;
+    gap: 8px;
+}
+
+.qidahen-faction-select__chip,
+.qidahen-faction-select__scenario-btn {
+    border: 2px solid #20150d;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.qidahen-faction-select__chip {
+    background: #e6d3a8;
+}
+
+.qidahen-faction-select__scenario-btn {
+    background: #5f472d;
+    color: #ead7a7;
+    cursor: pointer;
+}
+
+.qidahen-faction-select__factions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    min-height: 0;
+    padding: 18px 8px 8px;
+}
+
+.qidahen-faction-select__faction {
+    border: 3px solid #20150d;
+    border-radius: 8px;
+    padding: 22px 22px 16px;
+    background: rgba(255, 249, 225, 0.78);
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 16px rgba(44, 27, 13, 0.16);
+}
+
+.qidahen-faction-select__faction.is-selected {
+    border-color: #9f3426;
+    box-shadow: 0 0 0 3px rgba(159, 52, 38, 0.4), 0 12px 22px rgba(44, 27, 13, 0.2);
+    background: rgba(245, 201, 142, 0.52);
+}
+
+.qidahen-faction-select__faction.is-blocked,
+.qidahen-faction-select__faction:disabled {
+    cursor: not-allowed;
+}
+
+.qidahen-faction-select__faction.is-blocked {
+    opacity: 0.42;
+    filter: grayscale(0.25);
+}
+
+.qidahen-faction-select__who {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.qidahen-faction-select__token {
+    width: 92px;
+    height: 92px;
+    object-fit: contain;
+    /* JPEG 圆形标记没有透明通道；50% 仍会留下约 5% 白圈，47% 贴合绘制圆 */
+    clip-path: circle(47% at 50% 50%);
+    filter: drop-shadow(0 8px 10px rgba(20, 12, 6, 0.35));
+}
+
+.qidahen-faction-select__who h2 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 900;
+}
+
+.qidahen-faction-select__intro {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.55;
+    font-weight: 700;
+    color: #2a1f15;
+}
+
+.qidahen-faction-select__facts {
+    font-size: 14px;
+    font-weight: 800;
+    color: #66503a;
+}
+
+.qidahen-faction-select__acts-label {
+    font-size: 13px;
+    font-weight: 900;
+    color: #9f3426;
+    letter-spacing: 0.12em;
+}
+
+.qidahen-faction-select__acts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: visible;
+}
+
+.qidahen-faction-select__act {
+    position: relative;
+    z-index: 1;
+    border: 0;
+    padding: 6px 10px;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 900;
+    color: #2a1f15;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    cursor: help;
+}
+
+.qidahen-faction-select__act:hover,
+.qidahen-faction-select__act:focus {
+    z-index: 9;
+}
+
+.qidahen-faction-select__tip {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+    z-index: 8;
+    width: 360px;
+    padding: 12px 14px;
+    text-align: left;
+    background: #2a1f15;
+    color: #ead7a7;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.5;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+.qidahen-faction-select__act:hover .qidahen-faction-select__tip,
+.qidahen-faction-select__act:focus .qidahen-faction-select__tip {
+    display: block;
+}
+
+.qidahen-faction-select__occ {
+    margin-top: auto;
+    font-size: 15px;
+    font-weight: 900;
+    color: #66503a;
+}
+
+.qidahen-faction-select__faction.is-selected .qidahen-faction-select__occ {
+    color: #9f3426;
+}
+
+.qidahen-faction-select__dock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid rgba(95, 71, 45, 0.34);
+    padding-top: 12px;
+}
+
+.qidahen-faction-select__status {
+    font-size: 15px;
+    font-weight: 900;
+    color: #66503a;
+}
+
+.qidahen-faction-select__confirm {
+    min-height: 48px;
+    min-width: 168px;
+    border: 2px solid #20150d;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    background: #9f3426;
+    color: #ead7a7;
+}
+
+.qidahen-faction-select__confirm:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.qidahen-faction-select__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 36px;
+    background: rgba(18, 12, 8, 0.72);
+}
+
+.qidahen-faction-select__menu {
+    width: min(1680px, 100%);
+    background: linear-gradient(180deg, #fff8e0, #e8d2a0);
+    padding: 18px 20px 16px;
+}
+
+.qidahen-faction-select__menu h3 {
+    margin: 0 0 12px;
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.qidahen-faction-select__cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    justify-items: center;
+}
+
+.qidahen-faction-select__scen {
+    position: relative;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.qidahen-faction-select__scen-frame {
+    display: block;
+    width: 420px;
+    height: 582px;
+    overflow: hidden;
+    background: transparent;
+    filter: drop-shadow(0 14px 18px rgba(20, 12, 6, 0.32));
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.qidahen-faction-select__scen.is-picked .qidahen-faction-select__scen-frame {
+    transform: translateY(-8px);
+    filter: drop-shadow(0 0 10px rgba(159, 52, 38, 0.55)) drop-shadow(0 16px 22px rgba(20, 12, 6, 0.36));
+}
+
+.qidahen-faction-select__scen.is-bad {
+    cursor: not-allowed;
+}
+
+.qidahen-faction-select__scen.is-bad .qidahen-faction-select__scen-frame {
+    filter: grayscale(0.4) brightness(0.72);
+}
+
+.qidahen-faction-select__locked {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #ead7a7;
+    background: rgba(32, 21, 13, 0.88);
+}
+
+.qidahen-faction-select__menu-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.qidahen-faction-select__ghost {
+    min-height: 44px;
+    border: 2px solid #20150d;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 900;
+    background: #e6d3a8;
+    cursor: pointer;
+}
+
+.qidahen-faction-select__waiting {
+    font-size: 15px;
+    font-weight: 900;
+    color: #66503a;
 }

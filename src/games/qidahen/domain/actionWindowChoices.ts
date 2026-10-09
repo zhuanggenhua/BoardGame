@@ -305,7 +305,7 @@ export const resolveQidahenGrantPardonInteractionChoice = (
                     ? `${targetRegionName}：指定部队所属对手`
                     : `${targetRegionName}：由${choices[0].sourceFactionName}玩家选择部队`,
                 summary: opponentFactionId == null
-                    ? `${targetRegionName}相邻部队属于多名对手，请指定其中一名；之后由该玩家亲自选择部队。`
+                    ? `${targetRegionName}相邻部队属于多名对手，请指定其中一名；之后由该玩家选择部队。`
                     : `已选${targetRegionName}。请${choices[0].sourceFactionName}玩家点击要转移的部队。`,
                 targetRegionId,
                 opponentFactionId,

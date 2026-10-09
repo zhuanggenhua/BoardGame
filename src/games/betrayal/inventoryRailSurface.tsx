@@ -5,11 +5,15 @@ import type {
   BetrayalExplorerSummary,
   BetrayalInventoryCard,
 } from "./game";
-import { BetrayalInventoryCardSurface } from "./inventoryCardSurface";
+import {
+  BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH,
+  BetrayalInventoryCardSurface,
+} from "./inventoryCardSurface";
 import type {
   BetrayalTraitAssetMap,
   InventoryCardBackAssetMap,
 } from "./inventoryPresentation";
+import { BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO } from "./possessionAtlas";
 import type { BetrayalTradeCardStatus } from "./trade";
 
 type BetrayalInventoryRailSurfaceProps = {
@@ -70,8 +74,16 @@ export function BetrayalInventoryRailSurface({
   const { t } = useTranslation("game-betrayal");
   const itemCards = cards.filter((item) => item.kind === "item");
   const omenCards = cards.filter((item) => item.kind === "omen");
+  const compactRailMaxWidth = `calc(${BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH}px * 5.35 + 0.5rem * 4)`;
+  const compactSectionWidth = `calc(${BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH}px * 5.35 + 0.5rem * 4 + 0.75rem)`;
+  const occupiedRowMinHeightPx = Math.round(
+    BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH /
+      BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
+  );
   const rowClassName = (count: number) =>
-    `${count === 0 ? "pointer-events-none flex" : "flex"} max-w-[calc(62px*5.35+0.5rem*4)] min-h-[92px] items-end gap-2 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1 min-w-0 smashup-h-scrollbar`;
+    `${count === 0 ? "pointer-events-none flex" : "flex"} items-end gap-2 overflow-x-auto overflow-y-hidden px-1 min-w-0 smashup-h-scrollbar ${
+      count === 0 ? "min-h-0 py-0" : "pb-2 pt-1"
+    }`;
   const renderCards = (
     groupCards: BetrayalInventoryCard[],
     kind: "item" | "omen",
@@ -112,9 +124,13 @@ export function BetrayalInventoryRailSurface({
       data-observed-player={isObservedOther ? "true" : "false"}
       className={`pointer-events-none absolute ${
         elevatedForRollModifier ? "z-[150]" : "z-40"
-      } bottom-2 left-1 mt-0 w-[calc(62px*5.35+0.5rem*4+0.75rem)] max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] px-0 ${
+      } bottom-2 left-1 mt-0 px-0 ${
         isDimmed ? "opacity-[0.72]" : ""
       }`}
+      style={{
+        width: compactSectionWidth,
+        maxWidth: compactSectionWidth,
+      }}
     >
       <div
         className="mb-1 flex items-center justify-between gap-3 px-1 pr-4"
@@ -148,6 +164,11 @@ export function BetrayalInventoryRailSurface({
           <div
             className={rowClassName(itemCards.length)}
             data-testid="betrayal-inventory-row-item"
+            style={{
+              maxWidth: compactRailMaxWidth,
+              minHeight:
+                itemCards.length === 0 ? 0 : occupiedRowMinHeightPx,
+            }}
           >
             {renderCards(itemCards, "item")}
           </div>
@@ -156,6 +177,11 @@ export function BetrayalInventoryRailSurface({
           <div
             className={rowClassName(omenCards.length)}
             data-testid="betrayal-inventory-row-omen"
+            style={{
+              maxWidth: compactRailMaxWidth,
+              minHeight:
+                omenCards.length === 0 ? 0 : occupiedRowMinHeightPx,
+            }}
           >
             {renderCards(omenCards, "omen")}
           </div>

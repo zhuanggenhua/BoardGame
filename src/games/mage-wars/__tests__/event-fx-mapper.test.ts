@@ -448,7 +448,7 @@ describe('mage-wars event FX mapper', () => {
         });
     });
 
-    it('does not map single-zone ordinary mage movement to a visible FX cue', () => {
+    it('maps ordinary mage movement to a slide FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -461,10 +461,12 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 9,
         }), core);
 
-        expect(instruction).toBeNull();
+        expect(instruction?.cue).toBe(MW_FX.MOVE);
+        expect(instruction?.params?.fromZoneId).toBe(ARENA_ZONE_IDS.C2);
+        expect(instruction?.params?.toZoneId).toBe(ARENA_ZONE_IDS.B2);
     });
 
-    it('does not map single-zone ordinary arena object movement to a visible FX cue', () => {
+    it('maps ordinary arena object movement to a slide FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -479,10 +481,11 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 10,
         }), core);
 
-        expect(instruction).toBeNull();
+        expect(instruction?.cue).toBe(MW_FX.MOVE);
+        expect(instruction?.params?.objectId).toBe('mwobj-left-moving-cat');
     });
 
-    it('does not map multi-zone ordinary arena object movement to a visible FX cue', () => {
+    it('maps multi-zone ordinary arena object movement to a slide FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -497,7 +500,8 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 10,
         }), core);
 
-        expect(instruction).toBeNull();
+        expect(instruction?.cue).toBe(MW_FX.MOVE);
+        expect(instruction?.params?.objectId).toBe('mwobj-long-moving-cat');
     });
 
     it('maps teleport-mode arena object movement to teleport FX instead of ordinary move trail', () => {
