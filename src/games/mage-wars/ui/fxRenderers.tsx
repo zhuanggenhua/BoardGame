@@ -245,26 +245,59 @@ function MageWarsEntitySlide({
     const sizeRef = sourceSnapshot ?? targetSnapshot;
     const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition);
     const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition);
-    const frozenPathRef = useRef<{
-        fromBox: FxBox;
-        toBox: FxBox;
-        viewportSlide: { from: ViewportSlideBox; to: ViewportSlideBox } | null;
-    } | null>(null);
-    if (fromBox && toBox && frozenPathRef.current == null) {
-        // 首帧冻结起终点。表面矩形每帧变会让 portal 重算，克隆会闪没。
+    const fromLeft = fromBox?.left;
+    const fromTop = fromBox?.top;
+    const fromWidth = fromBox?.width;
+    const fromHeight = fromBox?.height;
+    const toLeft = toBox?.left;
+    const toTop = toBox?.top;
+    const toWidth = toBox?.width;
+    const toHeight = toBox?.height;
+    const frozenPath = useMemo(() => {
+        if (
+            fromLeft == null
+            || fromTop == null
+            || fromWidth == null
+            || fromHeight == null
+            || toLeft == null
+            || toTop == null
+            || toWidth == null
+            || toHeight == null
+        ) return null;
+        // 首帧同步读棋盘表面并冻结起终点。表面矩形每帧变会让 portal 重算，克隆会闪没。
+        const resolvedFromBox: FxBox = {
+            left: fromLeft,
+            top: fromTop,
+            width: fromWidth,
+            height: fromHeight,
+        };
+        const resolvedToBox: FxBox = {
+            left: toLeft,
+            top: toTop,
+            width: toWidth,
+            height: toHeight,
+        };
         const surface = readFxSurfaceRect();
-        frozenPathRef.current = {
-            fromBox,
-            toBox,
+        return {
+            fromBox: resolvedFromBox,
+            toBox: resolvedToBox,
             viewportSlide: surface
                 ? {
-                    from: percentBoxToViewport(fromBox, surface),
-                    to: percentBoxToViewport(toBox, surface),
+                    from: percentBoxToViewport(resolvedFromBox, surface),
+                    to: percentBoxToViewport(resolvedToBox, surface),
                 }
                 : null,
         };
-    }
-    const frozenPath = frozenPathRef.current;
+    }, [
+        fromLeft,
+        fromTop,
+        fromWidth,
+        fromHeight,
+        toLeft,
+        toTop,
+        toWidth,
+        toHeight,
+    ]);
     if (!frozenPath) return null;
     const { fromBox: frozenFromBox, toBox: frozenToBox, viewportSlide } = frozenPath;
     const previewRef = sourceSpellCardId != null
