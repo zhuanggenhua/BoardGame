@@ -1,0 +1,160 @@
+name: Sync Acer Asset Origin
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_manifest_url:
+        description: '已发布直连源 latest.json URL'
+        required: false
+        type: string
+        default: http://8.148.71.102/official/app-updates/android/stable/latest.json
+      target_host:
+        description: 'Acer 资产源 SSH 目标'
+        required: false
+        type: string
+        default: zhanggenhua@direct-home.easyboardgame.top
+
+concurrency:
+  group: sync-acer-asset-origin
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      TARGET_HOST: ${{ inputs.target_host }}
+      SOURCE_MANIFEST_URL: ${{ inputs.source_manifest_url }}
+      TARGET_SSH_PRIVATE_KEY: ${{ secrets.BOARDGAME_PREVIEW_SSH_PRIVATE_KEY }}
+      TARGET_SSH_KNOWN_HOSTS: ${{ secrets.BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS }}
+
+    steps:
+      - name: Prepare SSH material
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "${TARGET_SSH_PRIVATE_KEY}" ]] || { echo 'Missing BOARDGAME_PREVIEW_SSH_PRIVATE_KEY' >&2; exit 1; }
+          [[ -n "${TARGET_SSH_KNOWN_HOSTS}" ]] || { echo 'Missing BOARDGAME_PREVIEW_SSH_KNOWN_HOSTS' >&2; exit 1; }
+          install -m 700 -d "${HOME}/.ssh"
+          printf '%s\n' "${TARGET_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/acer-asset-origin"
+          printf '%s\n' "${TARGET_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/acer-asset-origin" "${HOME}/.ssh/known_hosts"
+
+      - name: Download published manifest and bundle
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          work_dir="${RUNNER_TEMP}/acer-asset-sync"
+          mkdir -p "${work_dir}"
+          manifest_path="${work_dir}/latest.json"
+          curl --fail --silent --show-error --location --max-time 60 "${SOURCE_MANIFEST_URL}" -o "${manifest_path}"
+          jq -e '.version and .url and .checksum' "${manifest_path}" >/dev/null
+          bundle_url="$(jq -r '.url' "${manifest_path}")"
+          bundle_name="$(basename "${bundle_url}")"
+          bundle_path="${work_dir}/${bundle_name}"
+          curl --fail --silent --show-error --location --max-time 600 "${bundle_url}" -o "${bundle_path}"
+          manifest_sha="$(sha256sum "${manifest_path}" | awk '{print $1}')"
+          bundle_sha="$(sha256sum "${bundle_path}" | awk '{print $1}')"
+          expected_bundle_sha="$(jq -r '.checksum' "${manifest_path}")"
+          [[ "${bundle_sha}" == "${expected_bundle_sha}" ]] || {
+            echo "Bundle checksum mismatch: actual=${bundle_sha} expected=${expected_bundle_sha}" >&2
+            exit 1
+          }
+          {
+            echo "manifest_path=${manifest_path}"
+            echo "bundle_path=${bundle_path}"
+            echo "bundle_name=${bundle_name}"
+            echo "manifest_sha=${manifest_sha}"
+            echo "bundle_sha=${bundle_sha}"
+            echo "version=$(jq -r '.version' "${manifest_path}")"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Locate Acer asset root
+        id: target
+        shell: bash
+        env:
+          SSH_KEY_PATH: ${{ runner.temp }}/acer-asset-origin
+          KNOWN_HOSTS_PATH: ${{ runner.temp }}/known_hosts
+        run: |
+          set -euo pipefail
+          ssh_args=(
+            -o BatchMode=yes
+            -o ConnectTimeout=30
+            -o ServerAliveInterval=20
+            -o ServerAliveCountMax=3
+            -o StrictHostKeyChecking=yes
+            -o IdentitiesOnly=yes
+            -i "${HOME}/.ssh/acer-asset-origin"
+            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts"
+          )
+          target_manifest="$(ssh "${ssh_args[@]}" "${TARGET_HOST}" "find /home/zhanggenhua /var/www /srv /opt -type f -path '*/official/app-updates/android/stable/latest.json' -print -quit 2>/dev/null")"
+          [[ -n "${target_manifest}" ]] || { echo 'Acer asset latest.json not found' >&2; exit 1; }
+          target_root="${target_manifest%/official/app-updates/android/stable/latest.json}"
+          [[ "${target_root}" == /home/zhanggenhua/* || "${target_root}" == /var/www/* || "${target_root}" == /srv/* || "${target_root}" == /opt/* ]] || {
+            echo "Unexpected Acer asset root: ${target_root}" >&2
+            exit 1
+          }
+          [[ "${target_root}" != *"'"* ]] || { echo 'Unsafe Acer asset root' >&2; exit 1; }
+          echo "target_root=${target_root}" >> "${GITHUB_OUTPUT}"
+          echo "Found Acer asset root: ${target_root}"
+
+      - name: Upload and activate Acer assets
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ steps.target.outputs.target_root }}
+          MANIFEST_PATH: ${{ steps.source.outputs.manifest_path }}
+          BUNDLE_PATH: ${{ steps.source.outputs.bundle_path }}
+          BUNDLE_NAME: ${{ steps.source.outputs.bundle_name }}
+        run: |
+          set -euo pipefail
+          ssh_args=(
+            -o BatchMode=yes
+            -o ConnectTimeout=30
+            -o ServerAliveInterval=20
+            -o ServerAliveCountMax=3
+            -o StrictHostKeyChecking=yes
+            -o IdentitiesOnly=yes
+            -i "${HOME}/.ssh/acer-asset-origin"
+            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts"
+          )
+          remote_tmp="${TARGET_ROOT}/.incoming-ota-${GITHUB_RUN_ID}"
+          remote_manifest="${TARGET_ROOT}/official/app-updates/android/stable/latest.json"
+          remote_bundle="${TARGET_ROOT}/official/app-updates/android/stable/bundles/${BUNDLE_NAME}"
+          ssh "${ssh_args[@]}" "${TARGET_HOST}" "mkdir -p '${remote_tmp}' '$(dirname "${remote_bundle}")'"
+          scp "${ssh_args[@]}" "${MANIFEST_PATH}" "${TARGET_HOST}:${remote_tmp}/latest.json"
+          scp "${ssh_args[@]}" "${BUNDLE_PATH}" "${TARGET_HOST}:${remote_tmp}/${BUNDLE_NAME}"
+          ssh "${ssh_args[@]}" "${TARGET_HOST}" "set -e; install -m 0644 '${remote_tmp}/latest.json' '${remote_manifest}'; install -m 0644 '${remote_tmp}/${BUNDLE_NAME}' '${remote_bundle}'; rm -rf '${remote_tmp}'; sha256sum '${remote_manifest}' '${remote_bundle}'"
+
+      - name: Verify public Acer asset origin
+        shell: bash
+        env:
+          EXPECTED_MANIFEST_SHA: ${{ steps.source.outputs.manifest_sha }}
+          EXPECTED_VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          set -euo pipefail
+          url='https://assets-origin.easyboardgame.top/official/app-updates/android/stable/latest.json'
+          for attempt in $(seq 1 18); do
+            tmp="${RUNNER_TEMP}/acer-public-${attempt}.json"
+            if curl --fail --silent --show-error --location --max-time 30 "${url}" -o "${tmp}"; then
+              actual_sha="$(sha256sum "${tmp}" | awk '{print $1}')"
+              actual_version="$(jq -r '.version' "${tmp}")"
+              echo "attempt=${attempt} version=${actual_version} sha256=${actual_sha}"
+              if [[ "${actual_sha}" == "${EXPECTED_MANIFEST_SHA}" && "${actual_version}" == "${EXPECTED_VERSION}" ]]; then
+                curl --fail --silent --show-error --max-time 30 -X OPTIONS "${url}" \
+                  -H 'Origin: https://easyboardgame.top' \
+                  -H 'Access-Control-Request-Method: GET' \
+                  -H 'Access-Control-Request-Headers: cache-control' \
+                  -D "${RUNNER_TEMP}/acer-cors.headers" -o /dev/null
+                grep -qi '^access-control-allow-origin: \*' "${RUNNER_TEMP}/acer-cors.headers"
+                grep -qi '^access-control-allow-headers:.*cache-control' "${RUNNER_TEMP}/acer-cors.headers"
+                echo 'Acer public asset origin verified.'
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo "Acer public asset origin did not converge to ${EXPECTED_VERSION}" >&2
+          exit 1
