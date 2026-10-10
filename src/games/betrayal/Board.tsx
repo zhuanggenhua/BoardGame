@@ -128,7 +128,6 @@ import {
   resolveBetrayalUsePossessionCommandPayload,
 } from "./inventoryPresentation";
 import {
-  resolveBetrayalEventChoiceAcceptPreview,
   resolveBetrayalEventChoiceCommandPayload,
   resolveBetrayalPendingEventChoiceReadModel,
   type BetrayalEventChoiceSelection,
@@ -4776,12 +4775,20 @@ export default function BetrayalBoard({
   }
 
   function handleSelectEventTrait(trait: BetrayalTraitKey) {
-    const nextSelection = {
-      trait,
-      cardId: selectedEventCardId,
-      targetRoomId: null,
-      damageTraits: [],
-    };
+    const isUnresolvedAllTraitCheck =
+      pendingEventChoice?.effect.mode === "allTraitChecks" &&
+      (!pendingEventChoice.effect.results ||
+        pendingEventChoice.effect.results.length <
+          pendingEventChoice.effect.traits.length);
+    if (isUnresolvedAllTraitCheck) {
+      dispatchResolveEventChoice(true, {
+        trait,
+        cardId: selectedEventCardId,
+        targetRoomId: null,
+        damageTraits: [],
+      });
+      return;
+    }
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventTrait: trait,
@@ -4792,12 +4799,6 @@ export default function BetrayalBoard({
 
   function handleSelectEventCard(cardId: string) {
     const nextSelectedCardId = selectedEventCardId === cardId ? null : cardId;
-    const nextSelection = {
-      trait: selectedEventTrait,
-      cardId: nextSelectedCardId,
-      targetRoomId: selectedEventTargetRoomId,
-      damageTraits: selectedEventDamageTraits,
-    };
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventCardId: nextSelectedCardId,
@@ -4805,12 +4806,6 @@ export default function BetrayalBoard({
   }
 
   function handleSelectEventTargetRoom(roomId: string) {
-    const nextSelection = {
-      trait: selectedEventTrait,
-      cardId: selectedEventCardId,
-      targetRoomId: roomId,
-      damageTraits: selectedEventDamageTraits,
-    };
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventTargetRoomId: roomId,
@@ -4820,12 +4815,6 @@ export default function BetrayalBoard({
   function applyEventDamageTraitSelection(
     nextSelectedDamageTraits: BetrayalTraitKey[],
   ) {
-    const nextSelection = {
-      trait: selectedEventTrait,
-      cardId: selectedEventCardId,
-      targetRoomId: selectedEventTargetRoomId,
-      damageTraits: nextSelectedDamageTraits,
-    };
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventDamageTraits: nextSelectedDamageTraits,

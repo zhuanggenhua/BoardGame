@@ -22,6 +22,7 @@ import {
 } from '../../../engine/fx';
 import type { MageId } from '../domain/ids';
 import { MAGE_IDS } from '../domain/ids';
+import { UI_Z_INDEX } from '../../../core';
 import { getMageWarsMagePreviewRef, getMageWarsSpellCardPreviewRef } from './cardAtlas';
 import {
     MAGE_WARS_ATTACK_FX_TUNING,
@@ -55,21 +56,19 @@ function AttackDiceFeedback({
 
     const resultLayer = (
         <motion.div
-            className="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center"
+            className="pointer-events-none fixed inset-0 flex items-center justify-center"
+            style={{ zIndex: UI_Z_INDEX.overlayRaised }}
             data-testid="mage-wars-fx-attack-dice"
             data-placement="board-center"
             data-visual-role="attack-dice-result"
             data-visible-duration-ms={visibleDurationMs}
-            initial={{ opacity: 0, scale: 0.68, y: 10 }}
-            animate={{ opacity: [0, 1, 1, 1, 0], scale: [0.68, 1, 1, 1, 1.04], y: [10, 0, 0, 0, -6] }}
-            transition={{
-                duration: visibleDurationMs / 1000,
-                ease: 'easeOut',
-                times: [0, 0.05, 0.82, 0.94, 1],
-            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
         >
             <div
-                className="flex max-w-[34rem] items-center justify-center gap-[clamp(0.45rem,1vw,1rem)]"
+                className="flex max-w-[34rem] items-center justify-center gap-[1.2vw]"
                 data-testid="mage-wars-fx-attack-dice-content"
             >
                 {diceResults.slice(0, 6).map((result, index) => (
@@ -220,11 +219,39 @@ function MageWarsEntitySlide({
     const sizeRef = sourceSnapshot ?? targetSnapshot;
     const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition);
     const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition);
-    const frozenPathRef = useRef<{ fromBox: FxBox; toBox: FxBox } | null>(null);
-    if (fromBox && toBox && frozenPathRef.current == null) {
-        frozenPathRef.current = { fromBox, toBox };
-    }
-    const frozenPath = frozenPathRef.current;
+    const fromLeft = fromBox?.left;
+    const fromTop = fromBox?.top;
+    const fromWidth = fromBox?.width;
+    const fromHeight = fromBox?.height;
+    const toLeft = toBox?.left;
+    const toTop = toBox?.top;
+    const toWidth = toBox?.width;
+    const toHeight = toBox?.height;
+    const frozenPath = useMemo(() => {
+        if (
+            fromLeft == null
+            || fromTop == null
+            || fromWidth == null
+            || fromHeight == null
+            || toLeft == null
+            || toTop == null
+            || toWidth == null
+            || toHeight == null
+        ) return null;
+        return {
+            fromBox: { left: fromLeft, top: fromTop, width: fromWidth, height: fromHeight },
+            toBox: { left: toLeft, top: toTop, width: toWidth, height: toHeight },
+        };
+    }, [
+        fromLeft,
+        fromTop,
+        fromWidth,
+        fromHeight,
+        toLeft,
+        toTop,
+        toWidth,
+        toHeight,
+    ]);
     if (!frozenPath) return null;
     const { fromBox: frozenFromBox, toBox: frozenToBox } = frozenPath;
     const previewRef = sourceSpellCardId != null
