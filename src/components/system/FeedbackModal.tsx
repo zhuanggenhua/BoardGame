@@ -106,10 +106,14 @@ interface FeedbackDraft {
     severity: FeedbackSeverity;
     contactInfo: string;
     pastedImage: string | null;
+    imageSource?: 'auto' | 'pasted' | null;
     attachLog: boolean;
     attachState: boolean;
     gameName: string;
 }
+
+type FeedbackImageSource = 'auto' | 'pasted' | null;
+type FeedbackAutoScreenshotStatus = 'idle' | 'capturing' | 'ready' | 'failed';
 
 const FEEDBACK_TYPE_LABEL_KEYS: Record<FeedbackType, string> = {
     [FeedbackType.BUG]: 'hud.feedback.type.bug',
@@ -202,6 +206,9 @@ const readFeedbackDraft = (storageKey: string): FeedbackDraft | null => {
             severity: isFeedbackSeverity(parsed.severity) ? parsed.severity : FeedbackSeverity.LOW,
             contactInfo: typeof parsed.contactInfo === 'string' ? parsed.contactInfo : '',
             pastedImage: typeof parsed.pastedImage === 'string' ? parsed.pastedImage : null,
+            imageSource: parsed.imageSource === 'auto' || parsed.imageSource === 'pasted'
+                ? parsed.imageSource
+                : (typeof parsed.pastedImage === 'string' ? 'pasted' : null),
             attachLog: typeof parsed.attachLog === 'boolean' ? parsed.attachLog : false,
             attachState: typeof parsed.attachState === 'boolean' ? parsed.attachState : false,
             gameName: typeof parsed.gameName === 'string' ? parsed.gameName : '',
@@ -249,6 +256,10 @@ export const FeedbackModal = ({
     const backdropRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+    const autoScreenshotPromiseRef = useRef<Promise<string | null> | null>(null);
+    const autoScreenshotStartedRef = useRef(false);
+    const pastedImageRef = useRef<string | null>(null);
+    const draftPersistenceDisabledRef = useRef(false);
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
         return document.getElementById('modal-root') ?? document.body;
@@ -307,6 +318,13 @@ export const FeedbackModal = ({
     const [contactInfo, setContactInfo] = useState(() => initialDraft?.contactInfo ?? '');
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(() => initialDraft?.pastedImage ?? null);
+    const [imageSource, setImageSource] = useState<FeedbackImageSource>(() => (
+        initialDraft?.imageSource
+        ?? (initialDraft?.pastedImage ? 'pasted' : null)
+    ));
+    const [autoScreenshotStatus, setAutoScreenshotStatus] = useState<FeedbackAutoScreenshotStatus>(
+        initialDraft?.pastedImage ? 'ready' : 'idle',
+    );
     const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!resolvedActionLogText);
     const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!resolvedStateSnapshot);
     const [isCompactLandscape, setIsCompactLandscape] = useState(false);
@@ -315,7 +333,9 @@ export const FeedbackModal = ({
     const requiresTextContent = hasConfigProposal;
     const canSubmit = !submitting
         && !IS_DEV_API_DISABLED
-        && (requiresTextContent ? Boolean(content.trim()) : Boolean(content.trim() || pastedImage));
+        && (requiresTextContent
+            ? Boolean(content.trim())
+            : Boolean(content.trim() || pastedImage || autoScreenshotStatus === 'capturing'));
     const fieldLabelClassName = cn(
         'font-bold text-parchment-light-text uppercase tracking-wider',
         isCompactLandscape ? 'text-[11px]' : 'text-xs',
@@ -325,6 +345,10 @@ export const FeedbackModal = ({
         'w-full bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-base sm:text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block transition-colors outline-none placeholder:text-parchment-light-text/50',
         isCompactLandscape ? 'p-2' : 'p-2.5',
     );
+
+    useEffect(() => {
+        pastedImageRef.current = pastedImage;
+    }, [pastedImage]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -398,17 +422,64 @@ export const FeedbackModal = ({
     }, [isCompactLandscape]);
 
     useEffect(() => {
+        if (draftPersistenceDisabledRef.current) {
+            return;
+        }
         writeFeedbackDraft(draftStorageKey, {
             content,
             type,
             severity,
             contactInfo,
             pastedImage,
+            imageSource,
             attachLog,
             attachState,
             gameName,
         });
-    }, [attachLog, attachState, contactInfo, content, draftStorageKey, gameName, pastedImage, severity, type]);
+    }, [attachLog, attachState, contactInfo, content, draftStorageKey, gameName, imageSource, pastedImage, severity, type]);
+
+    useEffect(() => {
+        if (autoScreenshotStartedRef.current) {
+            return undefined;
+        }
+        if (typeof window === 'undefined' || typeof document === 'undefined' || pastedImage) {
+            autoScreenshotStartedRef.current = true;
+            if (pastedImage) {
+                setAutoScreenshotStatus('ready');
+            }
+            return undefined;
+        }
+
+        autoScreenshotStartedRef.current = true;
+        setAutoScreenshotStatus('capturing');
+        const capturePromise = captureFeedbackScreenshot(
+            document.querySelector<HTMLElement>('[data-testid="feedback-modal"]'),
+        )
+            .then((dataUrl) => {
+                if (!dataUrl) {
+                    setAutoScreenshotStatus('failed');
+                    return null;
+                }
+
+                if (!pastedImageRef.current) {
+                    pastedImageRef.current = dataUrl;
+                    setPastedImage(dataUrl);
+                    setImageSource('auto');
+                }
+                setAutoScreenshotStatus('ready');
+                return dataUrl;
+            })
+            .catch((captureError) => {
+                debugFeedbackModalEvent('auto-screenshot-failed', {
+                    message: captureError instanceof Error ? captureError.message : String(captureError),
+                });
+                setAutoScreenshotStatus('failed');
+                return null;
+            });
+
+        autoScreenshotPromiseRef.current = capturePromise;
+        return undefined;
+    }, [pastedImage]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) {
@@ -424,7 +495,9 @@ export const FeedbackModal = ({
                 const blob = item.getAsFile();
                 if (blob) {
                     compressImage(blob).then((dataUrl) => {
+                        pastedImageRef.current = dataUrl;
                         setPastedImage(dataUrl);
+                        setImageSource('pasted');
                     });
                 }
                 return;
@@ -432,11 +505,18 @@ export const FeedbackModal = ({
         }
     };
 
-    const clearImage = () => setPastedImage(null);
+    const clearImage = () => {
+        pastedImageRef.current = null;
+        setPastedImage(null);
+        setImageSource(null);
+        setAutoScreenshotStatus('failed');
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (requiresTextContent ? !content.trim() : (!content.trim() && !pastedImage)) return;
+        if (requiresTextContent
+            ? !content.trim()
+            : (!content.trim() && !pastedImage && autoScreenshotStatus !== 'capturing')) return;
 
         if (IS_DEV_API_DISABLED) {
             return;
@@ -444,10 +524,19 @@ export const FeedbackModal = ({
 
         setSubmitting(true);
         try {
+            let attachedImage = pastedImageRef.current ?? pastedImage;
+            if (!attachedImage && autoScreenshotPromiseRef.current) {
+                attachedImage = await autoScreenshotPromiseRef.current;
+            }
+            if (!requiresTextContent && !content.trim() && !attachedImage) {
+                error(t('hud.feedback.autoScreenshot.failed'));
+                return;
+            }
+
             // Append image to content as Markdown if present
             let finalContent = content;
-            if (pastedImage) {
-                finalContent += `\n\n![Screenshot](${pastedImage})`;
+            if (attachedImage) {
+                finalContent += `\n\n![Screenshot](${attachedImage})`;
             }
 
             const lastErrorContext = getLastErrorContext();
@@ -541,6 +630,7 @@ export const FeedbackModal = ({
 
             const payload = await res.json().catch(() => null) as { rewardPoints?: number } | null;
             const rewardPoints = typeof payload?.rewardPoints === 'number' ? payload.rewardPoints : 0;
+            draftPersistenceDisabledRef.current = true;
             clearFeedbackDraft(draftStorageKey);
             if (rewardPoints > 0) {
                 addFeedbackPoints(rewardPoints);
@@ -777,9 +867,18 @@ export const FeedbackModal = ({
                             ></textarea>
                             {/* Paste Hint */}
                             {!pastedImage && !content && (
-                                <div className="absolute bottom-3 right-3 text-[10px] text-parchment-light-text/60 pointer-events-none flex items-center gap-1">
+                                <div
+                                    className="absolute bottom-3 right-3 text-[10px] text-parchment-light-text/60 pointer-events-none flex items-center gap-1"
+                                    data-testid="feedback-auto-screenshot-status"
+                                >
                                     <ImageIcon size={12} />
-                                    <span>{t('hud.feedback.pasteHint')}</span>
+                                    <span>
+                                        {autoScreenshotStatus === 'capturing'
+                                            ? t('hud.feedback.autoScreenshot.pending')
+                                            : autoScreenshotStatus === 'failed'
+                                                ? t('hud.feedback.autoScreenshot.failed')
+                                                : t('hud.feedback.pasteHint')}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -793,6 +892,7 @@ export const FeedbackModal = ({
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                                 className="relative group rounded-lg overflow-hidden border border-parchment-brown/20 bg-parchment-card-bg"
+                                data-testid="feedback-image-preview"
                             >
                                 <img src={pastedImage} alt={t('hud.feedback.imageAlt')} className="w-full h-auto max-h-48 object-contain bg-black/5" />
                                 <button
@@ -804,7 +904,9 @@ export const FeedbackModal = ({
                                     <Trash2 size={14} />
                                 </button>
                                 <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-[10px] rounded backdrop-blur-sm">
-                                    {t('hud.feedback.imageAdded')}
+                                    {imageSource === 'auto'
+                                        ? t('hud.feedback.autoScreenshot.added')
+                                        : t('hud.feedback.imageAdded')}
                                 </div>
                             </motion.div>
                         )}
@@ -893,6 +995,65 @@ const MAX_WIDTH = 1280;
 const MAX_HEIGHT = 960;
 const JPEG_QUALITY = 0.7;
 
+type Html2CanvasFn = typeof import('html2canvas').default;
+
+let html2CanvasLoader: Promise<Html2CanvasFn> | null = null;
+
+const loadHtml2Canvas = async (): Promise<Html2CanvasFn> => {
+    if (!html2CanvasLoader) {
+        html2CanvasLoader = import('html2canvas')
+            .then((module) => module.default)
+            .catch((error) => {
+                html2CanvasLoader = null;
+                throw error;
+            });
+    }
+
+    return html2CanvasLoader;
+};
+
+const captureFeedbackScreenshot = async (modalElement: HTMLElement | null): Promise<string | null> => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return null;
+    }
+
+    const html2canvas = await loadHtml2Canvas();
+    const target = document.querySelector<HTMLElement>('[data-game-page="true"]') ?? document.body;
+    if (!target) {
+        return null;
+    }
+
+    const previousVisibility = modalElement?.style.visibility;
+    if (modalElement) {
+        modalElement.style.visibility = 'hidden';
+    }
+
+    try {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+        const viewportWidth = Math.max(1, Math.round(window.innerWidth || target.clientWidth || 1));
+        const viewportHeight = Math.max(1, Math.round(window.innerHeight || target.clientHeight || 1));
+        const canvas = await html2canvas(target, {
+            backgroundColor: null,
+            useCORS: true,
+            logging: false,
+            width: viewportWidth,
+            height: viewportHeight,
+            windowWidth: viewportWidth,
+            windowHeight: viewportHeight,
+            x: window.scrollX,
+            y: window.scrollY,
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+        });
+
+        return compressCanvas(canvas);
+    } finally {
+        if (modalElement) {
+            modalElement.style.visibility = previousVisibility ?? '';
+        }
+    }
+};
+
 function compressImage(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -918,9 +1079,7 @@ function compressImage(file: File): Promise<string> {
             }
             ctx.drawImage(img, 0, 0, width, height);
 
-            // 输出 JPEG（体积远小于 PNG base64）
-            const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-            resolve(dataUrl);
+            resolve(compressCanvas(canvas));
         };
         img.onerror = () => {
             URL.revokeObjectURL(url);
@@ -928,4 +1087,28 @@ function compressImage(file: File): Promise<string> {
         };
         img.src = url;
     });
+}
+
+function compressCanvas(sourceCanvas: HTMLCanvasElement): string {
+    let { width, height } = sourceCanvas;
+    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+        width = Math.max(1, Math.round(width * ratio));
+        height = Math.max(1, Math.round(height * ratio));
+    }
+
+    if (width === sourceCanvas.width && height === sourceCanvas.height) {
+        return sourceCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+    }
+
+    const compressedCanvas = document.createElement('canvas');
+    compressedCanvas.width = width;
+    compressedCanvas.height = height;
+    const context = compressedCanvas.getContext('2d');
+    if (!context) {
+        return sourceCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+    }
+
+    context.drawImage(sourceCanvas, 0, 0, width, height);
+    return compressedCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
 }

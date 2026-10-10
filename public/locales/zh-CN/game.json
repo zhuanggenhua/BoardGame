@@ -170,11 +170,16 @@
       "typeLabel": "类型",
       "severityLabel": "优先级",
       "contentLabel": "描述",
-      "contentPlaceholder": "请描述问题或建议…\n支持粘贴截图 (Ctrl+V)",
-      "pasteHint": "支持截图粘贴",
+      "contentPlaceholder": "请描述问题或建议…\n提交时会自动截图，也可粘贴补充截图 (Ctrl+V)",
+      "pasteHint": "提交反馈时会自动截图，也支持粘贴补充截图",
       "imageAlt": "反馈截图",
       "deleteImage": "删除图片",
       "imageAdded": "已添加截图",
+      "autoScreenshot": {
+        "pending": "正在自动截图…",
+        "added": "已自动附加当前页面截图",
+        "failed": "自动截图失败，可粘贴截图补充"
+      },
       "contactLabel": "联系方式（可选）",
       "contactPlaceholder": "邮箱或 QQ（便于跟进）",
       "attachLog": "附带操作日志",

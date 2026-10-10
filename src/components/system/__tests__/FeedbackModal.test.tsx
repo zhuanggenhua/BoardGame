@@ -7,6 +7,12 @@ import * as AuthContextModule from '../../../contexts/AuthContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import { setCurrentGameFeedbackContext } from '../../../lib/feedback/gameFeedbackContext';
 
+vi.mock('html2canvas', () => ({
+    default: vi.fn(async () => ({
+        toDataURL: vi.fn(() => 'data:image/jpeg;base64,auto-capture'),
+    })),
+}));
+
 // Mock fetch
 global.fetch = vi.fn();
 
@@ -28,6 +34,7 @@ describe('FeedbackModal', () => {
         setCurrentGameFeedbackContext(null);
         window.history.pushState({}, '', '/');
         window.localStorage.clear();
+        document.documentElement.removeAttribute('data-game-page');
         (global.fetch as any).mockResolvedValue({
             ok: true,
             json: async () => ({ success: true })
@@ -43,6 +50,30 @@ describe('FeedbackModal', () => {
 
         // 使用更具体的选择器，避免匹配多个元素
         expect(screen.getByRole('heading', { name: /反馈/ })).toBeInTheDocument();
+    });
+
+    it('打开反馈后会自动附加当前页面截图', async () => {
+        document.documentElement.setAttribute('data-game-page', 'true');
+
+        render(
+            <TestWrapper>
+                <FeedbackModal onClose={mockOnClose} />
+            </TestWrapper>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('feedback-image-preview')).toBeInTheDocument();
+            expect(screen.getByText('已自动附加当前页面截图')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /提交反馈/ }));
+
+        await waitFor(() => {
+            const callArgs = (global.fetch as any).mock.calls.find((call: any[]) => call[1]?.body) as any;
+            expect(callArgs).toBeDefined();
+            const body = JSON.parse(callArgs[1].body);
+            expect(body.content).toContain('![Screenshot](data:image/jpeg;base64,auto-capture)');
+        });
     });
 
     it('应该在有 actionLogText 时显示"附带操作日志"选项', () => {
@@ -404,6 +435,9 @@ describe('FeedbackModal', () => {
 
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+        await waitFor(() => {
+            expect(window.localStorage.getItem('feedback-modal:draft:v1:outside')).toBeNull();
         });
 
         firstRender.unmount();

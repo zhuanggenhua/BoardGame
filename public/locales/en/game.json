@@ -170,11 +170,16 @@
       "typeLabel": "Type",
       "severityLabel": "Priority",
       "contentLabel": "Description",
-      "contentPlaceholder": "Describe the issue or suggestion...\nPaste screenshots (Ctrl+V)",
-      "pasteHint": "Screenshot paste supported",
+      "contentPlaceholder": "Describe the issue or suggestion...\nA screenshot is captured automatically; you can also paste one (Ctrl+V)",
+      "pasteHint": "A screenshot will be captured automatically; you can also paste one",
       "imageAlt": "Feedback screenshot",
       "deleteImage": "Delete image",
       "imageAdded": "Screenshot added",
+      "autoScreenshot": {
+        "pending": "Capturing a screenshot automatically…",
+        "added": "Current page screenshot attached automatically",
+        "failed": "Automatic screenshot failed; you can paste one"
+      },
       "contactLabel": "Contact (optional)",
       "contactPlaceholder": "Email or QQ (for follow-up)",
       "attachLog": "Attach action log",
