@@ -313,6 +313,9 @@ export const BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR =
 export const BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR =
   "evidence/betrayal-floor-action-align-20261009";
 
+export const BETRAYAL_FLOOR_OVERLAY_RESTORE_EVIDENCE_DIR =
+  "evidence/betrayal-floor-overlay-restore-20261010";
+
 export const waitForBetrayalFloatingTextGone = async (
   page: Page,
   timeout = 5000,

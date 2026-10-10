@@ -332,8 +332,14 @@ export function eventEffectNeedsPendingEventChoice(effect: UseEffectProfile | un
         || effectNeedsRoomTargetChoice(effect)
         || (
             effect.mode === 'allTraitChecks'
-            && Boolean(effect.results?.every((result) => result.passed))
-            && effectHasUnresolvedTraitChoice(effect.allPassEffect)
+            && (
+                !effect.results
+                || effect.results.length < effect.traits.length
+                || (
+                    effect.results.every((result) => result.passed)
+                    && effectHasUnresolvedTraitChoice(effect.allPassEffect)
+                )
+            )
         );
 }
 
@@ -397,6 +403,9 @@ export function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffe
     }
     if (effect.targetRoomScope === 'anyDiscovered') {
         return true;
+    }
+    if (effect.targetRoomScope === 'upperDiscovered') {
+        return targetRoom.floor === 'upper';
     }
     if (effect.targetRoomScope === 'anyOtherDiscovered') {
         return targetRoom.id !== core.currentExplorer.roomId;
@@ -661,6 +670,7 @@ export function formatEffectLabel(effect: PossessionUseEffectProfile): string {
         }
         const scopeLabelByTarget = {
             anyDiscovered: '任意已发现板块',
+            upperDiscovered: '任意上层板块',
             groundDiscovered: '任意地面层板块',
             basementDiscovered: '任意地下室板块',
             groundOrBasementDiscovered: '任意地面层或地下室板块',

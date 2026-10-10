@@ -246,7 +246,6 @@ import {
   ExplorerDetailsDialog,
   MonsterDetailsDialog,
 } from "./entityDetailsSurface";
-import { BetrayalRoomFloorSwitcherSurface } from "./roomFloorSwitcherSurface";
 import { BetrayalRoomMapSurface } from "./roomMapSurface";
 import { BetrayalRecentRollReviewSurface } from "./recentRollReviewSurface";
 import {
@@ -3097,6 +3096,9 @@ export default function BetrayalBoard({
     const effectIds = new Set(
       (actor?.inventory ?? []).map((card) => resolveInventoryEffectId(card.id)),
     );
+    if (roll.passiveBonus > 0) {
+      return `加值 +${roll.passiveBonus}`;
+    }
     const usedCardIds = new Set(core.usedCardIdsThisTurn);
     if (effectIds.has("flashlight")) {
       return t("board.roll.modifierAppliedFlashlight");
@@ -3115,6 +3117,27 @@ export default function BetrayalBoard({
     }
     return null;
   }, [core.currentExplorer, core.otherExplorers, core.usedCardIdsThisTurn, latestDiscoveryRecentRoll, t]);
+  const latestDiscoveryModifierEffectSources = React.useMemo(() => {
+    const roll = latestDiscoveryRecentRoll;
+    if (!roll) return null;
+    const actor = [core.currentExplorer, ...core.otherExplorers].find(
+      (explorer) => explorer.playerId === roll.playerId,
+    );
+    const effectIds = new Set(
+      (actor?.inventory ?? []).map((card) => resolveInventoryEffectId(card.id)),
+    );
+    const sources: string[] = [];
+    if (effectIds.has("flashlight")) sources.push("手电筒");
+    if (effectIds.has("lantern")) sources.push("灯笼");
+    if (effectIds.has("camera") && roll.trait === "knowledge") sources.push("魔法相机");
+    if (
+      core.usedCardIdsThisTurn.includes("omen-book") &&
+      (roll.trait === "knowledge" || roll.trait === "sanity")
+    ) {
+      sources.push("书本");
+    }
+    return sources.length ? `来源：${sources.join("、")}` : null;
+  }, [core.currentExplorer, core.otherExplorers, core.usedCardIdsThisTurn, latestDiscoveryRecentRoll]);
   const latestDiscoveryOwnerPlayerId = latestDiscoverySelection.ownerPlayerId;
   const latestDiscoveryKey = latestDiscoverySelection.key;
   const coreRecentRollDisplayKey =
@@ -4759,15 +4782,6 @@ export default function BetrayalBoard({
       targetRoomId: null,
       damageTraits: [],
     };
-    const preview = resolveBetrayalEventChoiceAcceptPreview({
-      core,
-      readModel: pendingEventChoiceReadModel,
-      selection: nextSelection,
-    });
-    if (!pendingEventChoice?.declineLabel && preview?.ready) {
-      dispatchResolveEventChoice(true, nextSelection);
-      return;
-    }
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventTrait: trait,
@@ -4784,15 +4798,6 @@ export default function BetrayalBoard({
       targetRoomId: selectedEventTargetRoomId,
       damageTraits: selectedEventDamageTraits,
     };
-    const preview = resolveBetrayalEventChoiceAcceptPreview({
-      core,
-      readModel: pendingEventChoiceReadModel,
-      selection: nextSelection,
-    });
-    if (!pendingEventChoice?.declineLabel && preview?.ready) {
-      dispatchResolveEventChoice(true, nextSelection);
-      return;
-    }
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventCardId: nextSelectedCardId,
@@ -4806,15 +4811,6 @@ export default function BetrayalBoard({
       targetRoomId: roomId,
       damageTraits: selectedEventDamageTraits,
     };
-    const preview = resolveBetrayalEventChoiceAcceptPreview({
-      core,
-      readModel: pendingEventChoiceReadModel,
-      selection: nextSelection,
-    });
-    if (!pendingEventChoice?.declineLabel && preview?.ready) {
-      dispatchResolveEventChoice(true, nextSelection);
-      return;
-    }
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventTargetRoomId: roomId,
@@ -4830,15 +4826,6 @@ export default function BetrayalBoard({
       targetRoomId: selectedEventTargetRoomId,
       damageTraits: nextSelectedDamageTraits,
     };
-    const preview = resolveBetrayalEventChoiceAcceptPreview({
-      core,
-      readModel: pendingEventChoiceReadModel,
-      selection: nextSelection,
-    });
-    if (!pendingEventChoice?.declineLabel && preview?.ready) {
-      dispatchResolveEventChoice(true, nextSelection);
-      return;
-    }
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventDamageTraits: nextSelectedDamageTraits,
@@ -6564,12 +6551,17 @@ export default function BetrayalBoard({
                   }
                   rollModifierActionSlot={rollModifierActionSlot}
                   modifierEffectLabel={latestDiscoveryModifierEffectLabel}
+                  modifierEffectSources={latestDiscoveryModifierEffectSources}
                   hasPendingEventRollStart={Boolean(
                     pendingLatestDiscoveryEventRollStart,
                   )}
                   canStartPendingEventRoll={
                     canCurrentViewerStartLatestDiscoveryEventRoll
                   }
+                  suppressExternalActionDock={Boolean(
+                    pendingDamageAllocation &&
+                      shouldShowEventDamageAllocationToViewer,
+                  )}
                   continueButton={latestDiscoveryContinueButton}
                   effectiveLocale={effectiveLocale}
                   canDismissByBackdrop={canDismissLatestDiscoveryByBackdrop}
@@ -6637,7 +6629,7 @@ export default function BetrayalBoard({
                   />
                 ) : null}
 
-                {pendingEventChoice && !pendingEventFocusesMapTarget ? (
+                {pendingEventChoice ? (
                   <BetrayalEventChoiceSurface
                     choice={pendingEventChoice}
                     isMobileViewport={useViewportAnchoredHud}
@@ -6783,6 +6775,19 @@ export default function BetrayalBoard({
                   matchData={matchData}
                   roomGridRef={roomGridRef}
                   selectedFloor={selectedRoomMapFloor}
+                  upperFloor={upperRoomMapFloor ?? null}
+                  lowerFloor={lowerRoomMapFloor ?? null}
+                  upperFloorHasSelectionTarget={
+                    upperRoomMapFloorHasSelectionTarget
+                  }
+                  lowerFloorHasSelectionTarget={
+                    lowerRoomMapFloorHasSelectionTarget
+                  }
+                  hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
+                  hasCrossFloorRoomSelectionTargets={
+                    hasCrossFloorRoomSelectionTargets
+                  }
+                  hiddenTableChrome={shouldHideTableChromeForBlockingOverlay}
                   visibleRooms={visibleMapRooms}
                   roomCanvasLayout={roomCanvasLayout}
                   roomCanvasTransformStyle={roomCanvasTransformStyle}
@@ -6968,6 +6973,7 @@ export default function BetrayalBoard({
                   onCancelRoomPlacement={handleCancelRoomPlacement}
                   onConfirmRoomPlacement={handleConfirmRoomPlacement}
                   onSelectRoomTileAdjustment={handleSelectRoomTileAdjustment}
+                  onSelectFloor={handleSelectRoomMapFloor}
                 />
                 <BetrayalTopPromptStackSurface
                   enabled={
@@ -7246,29 +7252,6 @@ export default function BetrayalBoard({
                     </div>
                   </BetrayalHudRegion>
                 ) : null}
-                <BetrayalHudRegion
-                  portal={useViewportAnchoredHud}
-                  scale={viewportHudScale}
-                  viewportHeight={runtimeViewport.height}
-                >
-                  <BetrayalRoomFloorSwitcherSurface
-                    selectedFloor={selectedRoomMapFloor}
-                    upperFloor={upperRoomMapFloor ?? null}
-                    lowerFloor={lowerRoomMapFloor ?? null}
-                    upperFloorHasSelectionTarget={
-                      upperRoomMapFloorHasSelectionTarget
-                    }
-                    lowerFloorHasSelectionTarget={
-                      lowerRoomMapFloorHasSelectionTarget
-                    }
-                    hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
-                    hasCrossFloorRoomSelectionTargets={
-                      hasCrossFloorRoomSelectionTargets
-                    }
-                    hidden={shouldHideTableChromeForBlockingOverlay}
-                    onSelectFloor={handleSelectRoomMapFloor}
-                  />
-                </BetrayalHudRegion>
               </article>
             </section>
 

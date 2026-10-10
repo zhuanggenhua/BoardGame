@@ -194,31 +194,6 @@ function resolveEntitySlideBox(
     return cellBox;
 }
 
-type ViewportSlideBox = {
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-};
-
-function readFxSurfaceRect(): DOMRect | null {
-    if (typeof document === 'undefined') return null;
-    const surface = document.querySelector('[data-testid="mage-wars-fx-layer"]')
-        ?? document.querySelector('[data-testid="mage-wars-arena-stage"]');
-    if (!(surface instanceof HTMLElement)) return null;
-    const rect = surface.getBoundingClientRect();
-    return rect.width >= 8 && rect.height >= 8 ? rect : null;
-}
-
-function percentBoxToViewport(box: FxBox, surface: DOMRect): ViewportSlideBox {
-    return {
-        left: surface.left + (box.left / 100) * surface.width,
-        top: surface.top + (box.top / 100) * surface.height,
-        width: Math.max(72, (box.width / 100) * surface.width),
-        height: Math.max(100, (box.height / 100) * surface.height),
-    };
-}
-
 function MageWarsEntitySlide({
     source,
     target,
@@ -245,61 +220,13 @@ function MageWarsEntitySlide({
     const sizeRef = sourceSnapshot ?? targetSnapshot;
     const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition);
     const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition);
-    const fromLeft = fromBox?.left;
-    const fromTop = fromBox?.top;
-    const fromWidth = fromBox?.width;
-    const fromHeight = fromBox?.height;
-    const toLeft = toBox?.left;
-    const toTop = toBox?.top;
-    const toWidth = toBox?.width;
-    const toHeight = toBox?.height;
-    const frozenPath = useMemo(() => {
-        if (
-            fromLeft == null
-            || fromTop == null
-            || fromWidth == null
-            || fromHeight == null
-            || toLeft == null
-            || toTop == null
-            || toWidth == null
-            || toHeight == null
-        ) return null;
-        // 首帧同步读棋盘表面并冻结起终点。表面矩形每帧变会让 portal 重算，克隆会闪没。
-        const resolvedFromBox: FxBox = {
-            left: fromLeft,
-            top: fromTop,
-            width: fromWidth,
-            height: fromHeight,
-        };
-        const resolvedToBox: FxBox = {
-            left: toLeft,
-            top: toTop,
-            width: toWidth,
-            height: toHeight,
-        };
-        const surface = readFxSurfaceRect();
-        return {
-            fromBox: resolvedFromBox,
-            toBox: resolvedToBox,
-            viewportSlide: surface
-                ? {
-                    from: percentBoxToViewport(resolvedFromBox, surface),
-                    to: percentBoxToViewport(resolvedToBox, surface),
-                }
-                : null,
-        };
-    }, [
-        fromLeft,
-        fromTop,
-        fromWidth,
-        fromHeight,
-        toLeft,
-        toTop,
-        toWidth,
-        toHeight,
-    ]);
+    const frozenPathRef = useRef<{ fromBox: FxBox; toBox: FxBox } | null>(null);
+    if (fromBox && toBox && frozenPathRef.current == null) {
+        frozenPathRef.current = { fromBox, toBox };
+    }
+    const frozenPath = frozenPathRef.current;
     if (!frozenPath) return null;
-    const { fromBox: frozenFromBox, toBox: frozenToBox, viewportSlide } = frozenPath;
+    const { fromBox: frozenFromBox, toBox: frozenToBox } = frozenPath;
     const previewRef = sourceSpellCardId != null
         ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
         : isMageId(mageId)
@@ -320,15 +247,14 @@ function MageWarsEntitySlide({
             )}
         </div>
     );
-    const slide = (
+    return (
         <motion.div
-            className={viewportSlide
-                ? 'pointer-events-none fixed overflow-visible rounded-[0.18rem]'
-                : 'pointer-events-none absolute z-30 overflow-visible rounded-[0.18rem]'}
+            className="pointer-events-none absolute inset-0 z-30 overflow-visible"
             data-testid={`mage-wars-fx-${kind}-slide`}
             data-visual-role="entity-slide"
             data-slide-ease="linear"
-            data-slide-layer={viewportSlide ? 'viewport-portal' : 'arena'}
+            data-slide-layer="arena"
+            data-slide-motion="transform"
             data-object-id={objectId ?? ''}
             data-source-spell-card-id={sourceSpellCardId ?? ''}
             data-mage-id={mageId ?? ''}
@@ -340,41 +266,33 @@ function MageWarsEntitySlide({
             data-from-top={String(frozenFromBox.top)}
             data-to-left={String(frozenToBox.left)}
             data-to-top={String(frozenToBox.top)}
-            data-from-px-left={viewportSlide ? String(viewportSlide.from.left) : undefined}
-            data-from-px-top={viewportSlide ? String(viewportSlide.from.top) : undefined}
-            data-to-px-left={viewportSlide ? String(viewportSlide.to.left) : undefined}
-            data-to-px-top={viewportSlide ? String(viewportSlide.to.top) : undefined}
-            initial={viewportSlide
-                ? { ...viewportSlide.from, opacity: 1 }
-                : {
-                    left: `${frozenFromBox.left}%`,
-                    top: `${frozenFromBox.top}%`,
+            initial={{
+                x: `${frozenFromBox.left}%`,
+                y: `${frozenFromBox.top}%`,
+            }}
+            animate={{
+                x: `${frozenToBox.left}%`,
+                y: `${frozenToBox.top}%`,
+            }}
+            transition={{ duration: durationMs / 1000, ease: 'linear' }}
+            style={{ willChange: 'transform' }}
+        >
+            <motion.div
+                className="absolute left-0 top-0 overflow-visible rounded-[0.18rem]"
+                initial={{
                     width: `${frozenFromBox.width}%`,
                     height: `${frozenFromBox.height}%`,
-                    opacity: 1,
                 }}
-            animate={viewportSlide
-                ? { ...viewportSlide.to, opacity: 1 }
-                : {
-                    left: `${frozenToBox.left}%`,
-                    top: `${frozenToBox.top}%`,
+                animate={{
                     width: `${frozenToBox.width}%`,
                     height: `${frozenToBox.height}%`,
-                    opacity: 1,
                 }}
-            transition={{ duration: durationMs / 1000, ease: 'linear' }}
-            style={viewportSlide
-                ? { position: 'fixed', zIndex: 1100, margin: 0 }
-                : undefined}
-        >
-            {slideBody}
+                transition={{ duration: durationMs / 1000, ease: 'linear' }}
+            >
+                {slideBody}
+            </motion.div>
         </motion.div>
     );
-
-    if (viewportSlide && typeof document !== 'undefined') {
-        return createPortal(slide, document.body);
-    }
-    return slide;
 }
 
 export const SummonRenderer: React.FC<FxRendererProps> = ({
@@ -746,11 +664,20 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
     onImpact,
 }) => {
     const cell = event.ctx.cell;
-    const stableComplete = useStableComplete(onComplete);
-
-    useEffect(() => {
-        if (!cell) stableComplete();
-    }, [cell, stableComplete]);
+    const diceResults = useMemo(
+        () => Array.isArray(event.params?.diceResults)
+            ? event.params.diceResults.filter((result): result is number => typeof result === 'number')
+            : [],
+        [event.params],
+    );
+    const hasDice = diceResults.length > 0;
+    useTimedImpactAndComplete(
+        cell,
+        onImpact,
+        onComplete,
+        0,
+        hasDice ? MAGE_WARS_FX_TIMING.meleeResultVisibleMs : 1_100,
+    );
 
     if (!cell) return null;
 
@@ -767,19 +694,25 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
 
     return (
-        <BoardHealingImpactPreset
-            cell={cell}
-            getCellPosition={getCellPosition}
-            targetSnapshot={targetSnapshot}
-            targetAnchorId={targetAnchorId}
-            amount={amount}
-            quality={resolveEventQuality(event)}
-            hostTestId="mage-wars-fx-healing-impact"
-            burstTestId="mage-wars-fx-healing-burst"
-            numberTestId="mage-wars-fx-healing-number"
-            onImpact={onImpact}
-            onComplete={stableComplete}
-        />
+        <>
+            <BoardHealingImpactPreset
+                cell={cell}
+                getCellPosition={getCellPosition}
+                targetSnapshot={targetSnapshot}
+                targetAnchorId={targetAnchorId}
+                amount={amount}
+                quality={resolveEventQuality(event)}
+                hostTestId="mage-wars-fx-healing-impact"
+                burstTestId="mage-wars-fx-healing-burst"
+                numberTestId="mage-wars-fx-healing-number"
+            />
+            {hasDice ? (
+                <AttackDiceFeedback
+                    diceResults={diceResults}
+                    visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                />
+            ) : null}
+        </>
     );
 };
 

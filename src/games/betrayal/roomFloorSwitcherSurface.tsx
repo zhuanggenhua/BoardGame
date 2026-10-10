@@ -38,7 +38,7 @@ export function BetrayalRoomFloorSwitcherSurface({
   return (
     <div
       data-testid="betrayal-room-floor-switcher"
-      className={`pointer-events-auto absolute bottom-1 right-[228px] z-[60] w-[54px] flex-col items-center overflow-hidden rounded-[10px] border bg-[rgba(8,10,8,0.76)] text-[11px] font-semibold text-[#d6c498] shadow-[0_10px_24px_rgba(0,0,0,0.36)] backdrop-blur-sm ${hidden ? "hidden" : "flex"} ${
+      className={`pointer-events-auto absolute bottom-3 right-[228px] z-[60] w-[54px] flex-col items-center overflow-hidden rounded-[10px] border bg-[rgba(8,10,8,0.76)] text-[11px] font-semibold text-[#d6c498] shadow-[0_10px_24px_rgba(0,0,0,0.36)] backdrop-blur-sm ${hidden ? "hidden" : "flex"} ${
         highlightSwitcher
           ? "border-[#d1b05f] shadow-[0_0_26px_rgba(209,176,95,0.34),0_10px_24px_rgba(0,0,0,0.36)] ring-2 ring-[#d1b05f] ring-offset-2 ring-offset-[rgba(8,10,8,0.78)]"
           : "border-[rgba(211,179,109,0.30)]"

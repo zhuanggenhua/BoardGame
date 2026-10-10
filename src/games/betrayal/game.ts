@@ -852,6 +852,9 @@ export interface BetrayalPendingEventChoiceState {
     itemResolution?: 'tooth-necklace-end-turn';
     itemCardId?: string;
     deferredTurnEnd?: BetrayalTurnEndedPayload;
+    allTraitCheckProgress?: {
+        results: BetrayalAllTraitCheckResult[];
+    };
 }
 
 export type BetrayalPendingCardResolutionStepKind = Extract<

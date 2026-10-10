@@ -582,17 +582,23 @@ describe('qidahen tutorial flow', () => {
         expect(wheelActionPrompts.every((text) => text.includes('点击轮盘') && text.includes('高亮'))).toBe(true);
         expect(wheelActionPrompts.every((text) => !/免费走\s*1/.test(text))).toBe(true);
         expect(enTutorialText).not.toMatch(/Move 1\s+for\s+free/i);
-        expect(basic.wheelResult).toContain('正规军从 2 支变为 4 支');
-        expect(basic.wheelResult).toContain('炮兵从 1 级升至 2 级');
+        expect(basic.wheelResult).toContain('总兵力由 2 支增至 4 支');
+        expect(basic.wheelResult).toContain('新增 2 支等级 2 正规军');
+        expect(basic.wheelResult).toContain('原有 1 支等级 1 炮兵训练至 2 级');
+        expect(basic.wheelResult).not.toContain('正规军从 2 支变为 4 支');
         expect(basic.wheelResult).not.toContain('查看地图');
         expect(basic.wheelResult).not.toContain('先看');
         const wheelRecruitTrainResult = (zh.tutorial as any).wheelRecruitTrain.steps.result as string;
         const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
-        expect(wheelRecruitTrainResult).toContain('宣府正规军从 2 支变为 4 支');
-        expect(wheelRecruitTrainResult).toContain('炮兵从 1 级升至 2 级');
+        expect(wheelRecruitTrainResult).toContain('宣府总兵力由 2 支增至 4 支');
+        expect(wheelRecruitTrainResult).toContain('新增 2 支等级 2 正规军');
+        expect(wheelRecruitTrainResult).toContain('原有 1 支等级 1 炮兵训练至 2 级');
+        expect(wheelRecruitTrainResult).not.toContain('宣府正规军从 2 支变为 4 支');
         expect(wheelRecruitTrainResult).not.toContain('地图新增');
-        expect(englishWheelRecruitTrainResult).toContain('Xuanfu regular troops increase from 2 to 4');
-        expect(englishWheelRecruitTrainResult).toContain('artillery increases from level 1 to 2');
+        expect(englishWheelRecruitTrainResult).toContain("Xuanfu's total troop count rises from 2 to 4");
+        expect(englishWheelRecruitTrainResult).toContain('2 new level-2 regular troops are added');
+        expect(englishWheelRecruitTrainResult).toContain('existing level-1 artillery is trained to level 2');
+        expect(englishWheelRecruitTrainResult).not.toContain('Xuanfu regular troops increase from 2 to 4');
         expect(englishWheelRecruitTrainResult).not.toContain('look at the map');
         expect(basic.chooseGrantPardonTarget).toContain('点击地图上高亮的山海关');
         expect(basic.chooseGrantPardonTarget).toContain('自动锁定该对手');
@@ -725,6 +731,12 @@ describe('qidahen tutorial flow', () => {
             },
         });
         expect(state.sys.tutorial.step?.id).toBe('battle-result');
+        expect((state.core as any).lastSeasonSummary?.mapResult).toMatchObject({
+            regionId: 'city-region-14',
+            troopDelta: -1,
+            beforeTroops: 1,
+            afterTroops: 0,
+        });
         expect((state.core as any).postBattleSelection).toBeTruthy();
         expect((state.core as any).factions.jin.defeatMarkers).toBe(1);
 
@@ -992,11 +1004,16 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('result');
         expect(state.sys.tutorial.step?.hideOverlay).toBeUndefined();
+        expect((state.core as any).currentPlayer).toBe('0');
         expect((state.core as any).actionWheelPosition).toBe('wheel-recruit-train');
         expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘征兵/训练');
-        expect((state.core as any).regions.find((region: any) => region.id === 'city-region-24')?.troops).toBe(4);
+        const recruitTrainRegion = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
+        expect(recruitTrainRegion?.troops).toBe(4);
+        expect(recruitTrainRegion?.specialTroops).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'artillery', count: 1, level: 2 }),
+        ]));
         expect(
-            (state.core as any).regions.find((region: any) => region.id === 'city-region-24')?.note,
+            recruitTrainRegion?.note,
         ).toContain('轮盘征兵训练将');
     });
 
@@ -1651,6 +1668,12 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('korea-attrition');
         expect((state.core as any).lastSeasonSummary?.title).toBe('新年结算');
         expect(((state.core as any).lastSeasonSummary?.lines ?? []).join(' ')).toContain('朝鲜耗损');
+        expect((state.core as any).lastSeasonSummary?.mapResult).toMatchObject({
+            regionId: 'city-region-29',
+            troopDelta: -1,
+            beforeTroops: 1,
+            afterTroops: 0,
+        });
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,

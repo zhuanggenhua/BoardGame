@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     buildQidahenMapTroopSnapshot,
     findQidahenMapTroopResult,
+    findQidahenMapTroopResults,
     getQidahenMapRegionTroopCount,
 } from '../domain/mapTroopResult';
 
@@ -59,5 +60,19 @@ describe('Qidahen map troop results', () => {
             afterTroops: 4,
         });
         expect(findQidahenMapTroopResult(before, [region()])).toBeNull();
+    });
+
+    it('returns all changed runtime regions in stable visual-priority order', () => {
+        const before = new Map([
+            ['city-region-25', 2],
+            ['city-region-29', 1],
+        ]);
+        expect(findQidahenMapTroopResults(before, [
+            region({ id: 'city-region-25', troops: 1 }),
+            region({ id: 'city-region-29', troops: 0 }),
+        ])).toEqual([
+            { regionId: 'city-region-25', troopDelta: -1, beforeTroops: 2, afterTroops: 1 },
+            { regionId: 'city-region-29', troopDelta: -1, beforeTroops: 1, afterTroops: 0 },
+        ]);
     });
 });

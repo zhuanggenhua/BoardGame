@@ -1608,6 +1608,7 @@ const MapToken: React.FC<{
     onResolveInstigateDefection?: (choiceId: string) => void;
     wuzhenChaohaSelectable?: boolean;
     onResolveWuzhenChaoha?: (choiceId: string) => void;
+    tutorialResultArtilleryFocus?: boolean;
 }> = ({
     token,
     revealFront,
@@ -1624,6 +1625,7 @@ const MapToken: React.FC<{
     onResolveInstigateDefection,
     wuzhenChaohaSelectable = false,
     onResolveWuzhenChaoha,
+    tutorialResultArtilleryFocus = false,
 }) => {
     const { t } = useTranslation('game-qidahen');
     const size = token.size ?? 30;
@@ -1686,7 +1688,14 @@ const MapToken: React.FC<{
                 filter: 'brightness(1.1) saturate(1.14)',
             }
             : undefined;
-    const resolvedSelectionTone = grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;
+    const tutorialResultArtilleryTone = tutorialResultArtilleryFocus
+        ? {
+            opacity: 1,
+            boxShadow: '0 0 0 3px rgba(255, 226, 161, 0.98), 0 0 18px rgba(255, 214, 102, 0.9)',
+            filter: 'brightness(1.22) saturate(1.18)',
+        }
+        : undefined;
+    const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;
     const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;
     const resolvedBoxShadow = resolvedSelectionTone?.boxShadow;
     return (
@@ -1696,6 +1705,7 @@ const MapToken: React.FC<{
             data-qidahen-map-token-type={token.type}
             data-qidahen-map-token-faction={token.faction}
             data-qidahen-map-token-region={token.regionId}
+            data-qidahen-map-token-troop-kind={isArmyToken ? token.troopKind : undefined}
             data-qidahen-army-face={isArmyToken ? (revealFront ? 'front' : 'hidden-back') : undefined}
             data-grant-pardon-source-selectable={grantPardonSourceSelectable ? 'true' : undefined}
             data-grant-pardon-source-selected={grantPardonSourceSelectable ? String(grantPardonSourceSelected) : undefined}
@@ -1714,9 +1724,11 @@ const MapToken: React.FC<{
                         ? pincerAdvanceSelected
                         : pendingCommittedSelected)
                 : undefined}
-            data-tutorial-id={grantPardonSourceSelectable || grantPardonSourceSelected
-                ? `qidahen-grant-pardon-source-token-${token.id}`
-                : undefined}
+            data-tutorial-id={tutorialResultArtilleryFocus
+                ? 'qidahen-tutorial-result-artillery'
+                : grantPardonSourceSelectable || grantPardonSourceSelected
+                    ? `qidahen-grant-pardon-source-token-${token.id}`
+                    : undefined}
             tabIndex={tokenSelectable ? 0 : undefined}
             onClick={grantPardonSourceSelectable
                 ? () => onSelectGrantPardonSource?.(token.regionId, token.id)
@@ -1753,11 +1765,11 @@ const MapToken: React.FC<{
                 width: size,
                 height: size,
                 color: UI_STYLE.ink,
-                transform: `translate(-50%, -50%) rotate(${token.rotationDeg ?? 0}deg)`,
+                transform: `translate(-50%, -50%) rotate(${token.rotationDeg ?? 0}deg) scale(${tutorialResultArtilleryFocus ? 1.45 : 1})`,
                 opacity: resolvedSelectionTone?.opacity,
                 filter: resolvedSelectionTone?.filter,
                 boxShadow: resolvedBoxShadow,
-                zIndex: tokenSelectable ? 64 : undefined,
+                zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : undefined,
             }}
         >
             {showTokenImage ? (
@@ -1956,7 +1968,10 @@ const MapSceneLayer: React.FC<{
     const tutorialMapTargetRegionId = tutorialStepId === 'select-region'
         ? 'song-jin'
         : null;
-    const activeResultFeedback = resultFeedback ?? (
+    const tutorialResultFeedback = tutorialHighlightsResultFeedback && core.lastSeasonSummary?.mapResult
+        ? { ...core.lastSeasonSummary.mapResult, resultId: core.lastSeasonSummary.id }
+        : null;
+    const activeResultFeedback = tutorialResultFeedback ?? resultFeedback ?? (
         tutorialStepId === 'result' && core.lastSeasonSummary?.mapResult
             ? { ...core.lastSeasonSummary.mapResult, resultId: core.lastSeasonSummary.id }
             : null
@@ -3018,6 +3033,12 @@ const MapSceneLayer: React.FC<{
                             onResolveInstigateDefection={onResolveInstigateDefection}
                             wuzhenChaohaSelectable={wuzhenChaohaChoice != null}
                             onResolveWuzhenChaoha={onResolveWuzhenChaoha}
+                            tutorialResultArtilleryFocus={Boolean(
+                                tutorialHighlightsResultFeedback
+                                && activeResultFeedback?.regionId === token.regionId
+                                && token.troopKind === 'artillery'
+                                && shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)
+                            )}
                         />
                     );
                 })}
@@ -3053,7 +3074,7 @@ const MapSceneLayer: React.FC<{
                                 data-testid="qidahen-map-result-feedback-safe-zone"
                                 aria-hidden="true"
                             />
-                            <div
+                            {!tutorialHighlightsResultFeedback ? <div
                                 className="pointer-events-none absolute left-1/2 top-[-92px] -translate-x-1/2 whitespace-nowrap rounded border-[3px] border-[#fff0b0] bg-[rgba(61,35,13,0.94)] px-3 py-2 text-[15px] font-black tracking-wide text-[#fff4c9] shadow-[0_4px_14px_rgba(42,23,6,0.72)]"
                                 data-testid="qidahen-map-result-feedback-text"
                             >
@@ -3063,8 +3084,8 @@ const MapSceneLayer: React.FC<{
                                     after: activeResultFeedback.afterTroops,
                                     defaultValue: '{{regionName}}部队：{{before}} → {{after}}',
                                 })}
-                            </div>
-                            {Array.from({ length: troopDelta }, (_, index) => (
+                            </div> : null}
+                            {!tutorialHighlightsResultFeedback ? Array.from({ length: troopDelta }, (_, index) => (
                                 <span
                                     key={`${activeResultFeedback.resultId}-troop-${String(index + 1)}`}
                                     className="qidahen-map-result-troop-fade absolute left-1/2 top-1/2 grid place-items-center overflow-hidden rounded-[6px] border-[2px] border-[#fff0b0] bg-[rgba(168,63,38,0.94)] shadow-[0_3px_10px_rgba(42,23,6,0.72),0_0_18px_rgba(255,214,93,0.92)]"
@@ -3093,7 +3114,7 @@ const MapSceneLayer: React.FC<{
                                         />
                                     )}
                                 </span>
-                            ))}
+                            )) : null}
                         </div>
                     );
                 })() : null}

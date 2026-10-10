@@ -1224,6 +1224,31 @@ export class FeedbackService {
                 appBuildTime: '$clientContext.appBuildTime',
                 lastUserAction: '$clientContext.lastUserAction',
                 activeElement: '$clientContext.activeElement',
+                performance: {
+                    capturedAt: '$clientContext.performance.capturedAt',
+                    windowMs: '$clientContext.performance.windowMs',
+                    frame: {
+                        averageFps: '$clientContext.performance.frame.averageFps',
+                        minFps: '$clientContext.performance.frame.minFps',
+                        averageFrameTimeMs: '$clientContext.performance.frame.averageFrameTimeMs',
+                        maxFrameTimeMs: '$clientContext.performance.frame.maxFrameTimeMs',
+                        bucketCount: '$clientContext.performance.frame.bucketCount',
+                    },
+                    longTasks: {
+                        count: '$clientContext.performance.longTasks.count',
+                        totalDurationMs: '$clientContext.performance.longTasks.totalDurationMs',
+                        maxDurationMs: '$clientContext.performance.longTasks.maxDurationMs',
+                    },
+                    network: {
+                        connectionRttMs: '$clientContext.performance.network.connectionRttMs',
+                        effectiveType: '$clientContext.performance.network.effectiveType',
+                        downlinkMbps: '$clientContext.performance.network.downlinkMbps',
+                        requestCount: '$clientContext.performance.network.requestCount',
+                        averageDurationMs: '$clientContext.performance.network.averageDurationMs',
+                        maxDurationMs: '$clientContext.performance.network.maxDurationMs',
+                        averageTtfbMs: '$clientContext.performance.network.averageTtfbMs',
+                    },
+                },
             },
             errorContext: {
                 source: '$errorContext.source',

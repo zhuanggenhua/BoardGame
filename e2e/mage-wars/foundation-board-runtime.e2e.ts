@@ -3081,10 +3081,10 @@ test.describe('Mage Wars foundation runtime board', () => {
             };
         });
         expect(interactionVisualAudit.sourceClassName).toContain('-translate-y-2');
-        expect(interactionVisualAudit.sourceFrameClassName).toContain('border-emerald-300/95');
-        expect(interactionVisualAudit.sourceFrameClassName).toContain('border-2');
-        expect(interactionVisualAudit.targetFrameClassName).toContain('border-emerald-300/95');
-        expect(interactionVisualAudit.targetFrameClassName).toContain('border-2');
+        expect(interactionVisualAudit.sourceFrameClassName).toContain('border-lime-300');
+        expect(interactionVisualAudit.sourceFrameClassName).toContain('border-[3px]');
+        expect(interactionVisualAudit.targetFrameClassName).toContain('border-lime-300');
+        expect(interactionVisualAudit.targetFrameClassName).toContain('border-[3px]');
         expect(interactionVisualAudit.sourceFrameClassName).toContain('inset-0');
         expect(interactionVisualAudit.targetFrameClassName).toContain('inset-0');
         expect(interactionVisualAudit.sourceFrameClassName).not.toContain('-inset');

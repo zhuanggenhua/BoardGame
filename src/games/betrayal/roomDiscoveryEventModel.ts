@@ -384,7 +384,10 @@ export function resolveBetrayalRoomExploredPayload(
             random,
             roomTextResolvedCore.currentExplorer,
             roomTextResolvedCore,
-            { materializeRandomResults: !deferEventRollEffectRandomResults },
+            {
+                materializeRandomResults:
+                    !deferEventRollEffectRandomResults && eventEffect.mode !== 'allTraitChecks',
+            },
         );
         const deathPrevention = deferEventRollEffectRandomResults
             ? undefined

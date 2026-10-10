@@ -278,6 +278,7 @@ export type BetrayalUseEffectSeed =
         mode: 'placeExplorerInDiscoveredRoomByFloor';
         targetRoomScope:
             | 'anyDiscovered'
+            | 'upperDiscovered'
             | 'groundDiscovered'
             | 'basementDiscovered'
             | 'groundOrBasementDiscovered'
@@ -1703,9 +1704,8 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                         min: 5,
                         label: '放置到上层起始板块',
                         effect: {
-                            mode: 'placeExplorerInFloorStartingRoom',
-                            floor: 'upper',
-                            roomName: '上层起始点',
+                            mode: 'placeExplorerInDiscoveredRoomByFloor',
+                            targetRoomScope: 'upperDiscovered',
                             recommendedAction: 'explore',
                         },
                     },
@@ -1713,9 +1713,8 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                         min: 3,
                         label: '放置到地面层起始板块',
                         effect: {
-                            mode: 'placeExplorerInFloorStartingRoom',
-                            floor: 'ground',
-                            roomName: '地面层起始点',
+                            mode: 'placeExplorerInDiscoveredRoomByFloor',
+                            targetRoomScope: 'groundDiscovered',
                             recommendedAction: 'explore',
                         },
                     },
@@ -1723,9 +1722,8 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                         min: 0,
                         label: '放置到地下室起始板块',
                         effect: {
-                            mode: 'placeExplorerInFloorStartingRoom',
-                            floor: 'basement',
-                            roomName: '地下室起始点',
+                            mode: 'placeExplorerInDiscoveredRoomByFloor',
+                            targetRoomScope: 'basementDiscovered',
                             recommendedAction: 'endTurn',
                         },
                     },

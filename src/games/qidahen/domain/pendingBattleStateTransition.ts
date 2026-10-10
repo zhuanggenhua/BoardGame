@@ -1,6 +1,7 @@
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import { syncQidahenJadeCasketControlAfterRegionChange } from './jadeCasketControl';
+import { getQidahenMapRegionTroopCount } from './mapTroopResult';
 import type { QidahenPostBattleDecisionResolution } from './postBattleDecisionResolution';
 import type {
     QidahenCore,
@@ -42,6 +43,7 @@ interface QidahenPendingBattleStateTransitionDependencies {
 }
 
 const buildPendingActionResolutionSummary = (
+    state: Pick<QidahenCore, 'regions'>,
     pendingTargetAction: QidahenPendingTargetAction,
     resolution: Pick<QidahenPendingActionResolution, 'regions' | 'logText' | 'postBattleSelection'>,
     timestamp: number,
@@ -63,7 +65,30 @@ const buildPendingActionResolutionSummary = (
     if (resolution.postBattleSelection?.summary) {
         lines.push(resolution.postBattleSelection.summary);
     }
-    return buildSeasonSummary(title, timestamp, lines);
+    const previousTargetRegion = state.regions.find((region) => (
+        !region.isLogicalRegion && region.id === pendingTargetAction.targetRuntimeRegionId
+    ));
+    const nextTargetRegion = resolution.regions.find((region) => (
+        !region.isLogicalRegion && region.id === pendingTargetAction.targetRuntimeRegionId
+    ));
+    const beforeTroops = previousTargetRegion == null
+        ? null
+        : getQidahenMapRegionTroopCount(previousTargetRegion);
+    const afterTroops = nextTargetRegion == null
+        ? null
+        : getQidahenMapRegionTroopCount(nextTargetRegion);
+    const mapResult = beforeTroops != null && afterTroops != null && beforeTroops !== afterTroops
+        ? {
+            regionId: pendingTargetAction.targetRuntimeRegionId,
+            troopDelta: afterTroops - beforeTroops,
+            beforeTroops,
+            afterTroops,
+        }
+        : undefined;
+    return {
+        ...buildSeasonSummary(title, timestamp, lines),
+        ...(mapResult ? { mapResult } : {}),
+    };
 };
 
 const buildPostBattleDecisionSummary = (
@@ -91,6 +116,7 @@ export const applyPendingActionResolutionToBattleFlowState = (
 ): QidahenCore => {
     const currentFactionId = dependencies.getFactionIdByPlayerId(state, playerId);
     const lastSeasonSummary = buildPendingActionResolutionSummary(
+        state,
         pendingTargetAction,
         resolution,
         timestamp,

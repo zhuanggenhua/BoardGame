@@ -415,6 +415,38 @@ describe('Feedback Module (e2e)', () => {
                     route: '/play/smashup/match/lazy-load',
                     gameId: 'smashup',
                     appVersion: 'test-build',
+                    performance: {
+                        capturedAt: '2026-10-06T10:00:01.000Z',
+                        windowMs: 30_000,
+                        frame: {
+                            averageFps: 24.5,
+                            minFps: 12.1,
+                            averageFrameTimeMs: 40.8,
+                            maxFrameTimeMs: 82.4,
+                            bucketCount: 2,
+                        },
+                        longTasks: {
+                            count: 3,
+                            totalDurationMs: 220,
+                            maxDurationMs: 120,
+                        },
+                        network: {
+                            connectionRttMs: 160,
+                            effectiveType: '3g',
+                            downlinkMbps: 1.5,
+                            requestCount: 2,
+                            averageDurationMs: 480,
+                            maxDurationMs: 900,
+                            averageTtfbMs: 210,
+                            recentRequests: [{
+                                path: '/api/feedback',
+                                initiatorType: 'fetch',
+                                durationMs: 900,
+                                ttfbMs: 210,
+                                connectMs: 40,
+                            }],
+                        },
+                    },
                     lastUserAction: {
                         type: 'click',
                         at: '2026-03-14T10:00:00.000Z',
@@ -449,6 +481,7 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.hasClientContext).toBe(true);
         expect(summaryItem.hasErrorContext).toBe(true);
         expect(summaryItem.clientContext?.route).toBe('/play/smashup/match/lazy-load');
+        expect(summaryItem.clientContext?.performance?.network?.connectionRttMs).toBe(160);
         expect(summaryItem.errorContext?.name).toBe('SlowFeedbackPanel');
         expect(summaryItem.canManage).toBe(true);
 
@@ -463,6 +496,7 @@ describe('Feedback Module (e2e)', () => {
         expect(detailRes.body.diagnosticPacket.captureId).toBe('capture-feedback-1');
         expect(detailRes.body.diagnosticPacket.missingFields).toContain('snapshots.before');
         expect(detailRes.body.clientContext?.lastUserAction?.target?.testId).toBe('feedback-entry');
+        expect(detailRes.body.clientContext?.performance?.frame?.minFps).toBe(12.1);
         expect(detailRes.body.errorContext?.jsStack).toContain('Feedback.tsx');
         expect(detailRes.body.canManage).toBe(true);
 

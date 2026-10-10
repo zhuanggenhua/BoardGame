@@ -75,7 +75,7 @@ function createRegistry(): FxRegistry {
     });
 
     registry.register(MW_FX.HEALING_IMPACT, HealingImpactRenderer, {
-        timeoutMs: 1400,
+        timeoutMs: 5600,
         maxConcurrent: 4,
         debounceMs: 20,
         budget: {

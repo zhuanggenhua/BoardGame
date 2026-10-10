@@ -39,7 +39,7 @@ export interface BetrayalTopPromptStackSurfaceProps {
 }
 
 function resolveStackClassName() {
-  return "pointer-events-none absolute left-[248px] right-[232px] top-[84px] z-[58] flex flex-col items-center gap-2";
+  return "pointer-events-none absolute inset-x-0 top-[84px] z-[58] flex flex-col items-center gap-2 px-4";
 }
 
 function resolveDustProgressClassName(

@@ -236,6 +236,17 @@ export type BetrayalEvent =
         uponReflectionSetup?: BetrayalUponReflectionRuntimeState;
         hauntRoll?: BetrayalPendingEventRollResolutionState['hauntRoll'];
         nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+        allTraitCheckProgress?: {
+            sourceTitle: string;
+            playerId: string;
+            results: {
+                trait: BetrayalTraitKey;
+                total: number;
+                dice: number[];
+                passiveBonus: number;
+                passed: boolean;
+            }[];
+        };
         eventEffect?: UseEffectProfile;
         deathPrevention?: {
             playerId: string;

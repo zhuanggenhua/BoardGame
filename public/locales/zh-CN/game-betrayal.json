@@ -246,6 +246,8 @@
       "noSelectedCard": "未选卡牌",
       "damage": "伤害",
       "damageAllocationTitle": "伤害分配",
+      "chooseTrait": "选择属性",
+      "chooseCheckTrait": "检定属性",
       "damageAllocationHeading": "分配 {{amount}} 点{{kind}}",
       "damageAllocationAmount": "{{amount}} 点{{kind}}",
       "damageAllocationSource": "来源：{{source}}",
@@ -1016,9 +1018,9 @@
       "diceFaces": "骰面 {{value}}",
       "cancelModifier": "取消",
       "confirmModifier": "确认使用{{card}}"
-      ,"modifierAppliedFlashlight": "手电筒已生效：本次事件属性检定额外投 2 骰"
-      ,"modifierAppliedLantern": "灯笼已生效：本次事件属性检定额外投 2 骰"
-      ,"modifierAppliedCamera": "魔法相机已生效：本次知识检定改用神志"
+      ,"modifierAppliedFlashlight": "事件属性检定：加值 +2（手电筒）"
+      ,"modifierAppliedLantern": "事件属性检定：加值 +2（灯笼）"
+      ,"modifierAppliedCamera": "知识检定替代为神志检定（魔法相机）"
       ,"modifierAppliedBook": "书本已使用：本次非战斗检定改用知识"
     },
     "useEffects": {

@@ -30,6 +30,34 @@ describe('resolveRuntimeSeatControllers', () => {
             '1': { type: 'human' },
         });
     });
+
+    it('运行时状态只保存 type 时，仍保留建房配置的手动开局标记', () => {
+        const state = {
+            core: {
+                seatControllers: {
+                    '1': { type: 'local-ai' },
+                },
+            },
+            sys: {},
+        } as MatchState<unknown>;
+
+        const resolved = resolveRuntimeSeatControllers({
+            state,
+            seatControllers: {
+                '1': {
+                    type: 'local-ai',
+                    manualSetupSelection: true,
+                    manualFactionSelection: true,
+                },
+            },
+        });
+
+        expect(resolved['1']).toMatchObject({
+            type: 'local-ai',
+            manualSetupSelection: true,
+            manualFactionSelection: true,
+        });
+    });
 });
 
 describe('isPersistedLocalStateCompatible', () => {

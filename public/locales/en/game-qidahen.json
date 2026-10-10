@@ -401,7 +401,7 @@
         "wheelFirst": "The opening hand-limit check has resolved automatically. Ming has 3 cards and a 15-card limit, so no discard is required. Enter the wheel action.",
         "wheelRule": "The shared wheel can move 1, 2, or 3 spaces. All three moves are legal, and each produces a different wheel resolution.",
         "wheelMove": "Click the highlighted Recruit / Train sector on the wheel.",
-        "wheelResult": "Recruit / Train is resolved: Xuanfu regular troops increase from 2 to 4, and artillery increases from level 1 to level 2.",
+        "wheelResult": "Recruit / Train is resolved: Xuanfu's total troop count rises from 2 to 4; 2 new level-2 regular troops are added, and the existing level-1 artillery is trained to level 2.",
         "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. The rules set no fixed order among these four actions; the hand action and wheel action also have no fixed order.",
         "grantPardonRule": "Grant Pardon: discard 3 hand cards and name 1 opponent. That player chooses a troop adjacent to a Ming-controlled region, moves it into the neighboring Ming-controlled region, and converts it to Ming. In the digital flow, click the receiving region first; if it uniquely identifies one opponent, the system locks that opponent automatically. Only when multiple opponents remain does the acting player choose the remaining opponent.",
         "pickAction": "Click the Grant Pardon action on the right.",
@@ -424,7 +424,7 @@
         "battleOpen": "Entering an enemy region starts a field battle. Reveal both sides, then open the tactic window.",
         "tacticWindow": "Click Cavalry Charge, then click Play Tactic Card to confirm.",
         "battleDamage": "Now click Rear Guard to resolve the field battle. Resolve artillery, cavalry, then infantry; each 3 points deals 1 damage.",
-        "battleResult": "The field battle is resolved. Read the surviving troops and the next post-battle action.",
+        "battleResult": "The field battle is resolved: Chahar troops decrease from 1 to 0. Then read the surviving troops and the next post-battle action.",
         "retreatAndDefeat": "The losing side chooses either Rear Guard or Rout.",
         "postBattleChoice": "Now use the post-battle panel to choose the closing action.",
         "finish": "Field battle, retreat, and post-battle handling are complete. Return to the map result."
@@ -530,7 +530,7 @@
       "steps": {
         "overview": "Enter Wheel Recruit / Train resolution.",
         "chooseMove": "Click the highlighted Recruit / Train sector on the wheel.",
-        "result": "Recruit / Train is complete: Xuanfu regular troops increase from 2 to 4, and artillery increases from level 1 to 2.",
+        "result": "Recruit / Train is complete: Xuanfu's total troop count rises from 2 to 4; 2 new level-2 regular troops are added, and the existing level-1 artillery is trained to level 2.",
         "finish": "Recruit / Train is complete."
       }
     },

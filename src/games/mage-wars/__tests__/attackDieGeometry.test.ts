@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     ATTACK_DIE_FACES,
+    ATTACK_DIE_SETTLED_POSE,
+    ATTACK_DIE_SETTLED_TILT,
     getAttackDieFaceKind,
     getAttackDieSettledFaceId,
     getAttackDieSettledTransform,
@@ -40,5 +42,7 @@ describe('mage wars attack die cube net', () => {
         expect(getAttackDieSettledTransform(1)).toBe('rotateX(0deg) rotateY(180deg)');
         expect(getAttackDieSettledTransform(3)).toBe('rotateX(0deg) rotateY(90deg)');
         expect(getAttackDieSettledTransform(0)).toBe('rotateX(0deg) rotateY(-90deg)');
+        expect(ATTACK_DIE_SETTLED_POSE).toBe('rotateX(-16deg) rotateY(18deg)');
+        expect(ATTACK_DIE_SETTLED_TILT).toBe('camera-pose');
     });
 });

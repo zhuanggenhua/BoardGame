@@ -37,6 +37,7 @@ export function RecentRollPanel({
   compactRowsClassName = "",
   actorLabel = null,
   modifierEffectLabel = null,
+  modifierEffectSources = null,
   resultReadable = true,
   actionSlot = null,
   onDiceSettledChange,
@@ -65,6 +66,7 @@ export function RecentRollPanel({
   compactRowsClassName?: string;
   actorLabel?: string | null;
   modifierEffectLabel?: string | null;
+  modifierEffectSources?: string | null;
   resultReadable?: boolean;
   actionSlot?: React.ReactNode;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
@@ -486,11 +488,12 @@ export function RecentRollPanel({
           </div>
         ) : null}
         {modifierEffectLabel ? (
-          <div
-            data-testid="betrayal-recent-roll-modifier-effect"
-            data-result-role="modifier-effect"
-            className="mt-1 max-w-full whitespace-normal break-words text-[12px] font-semibold tracking-[0.03em] text-[#8fe7c3]"
-          >
+      <div
+        data-testid="betrayal-recent-roll-modifier-effect"
+        data-result-role="modifier-effect"
+        title={modifierEffectSources ?? modifierEffectLabel ?? undefined}
+        className="mt-1 max-w-full whitespace-normal break-words text-[12px] font-semibold tracking-[0.03em] text-[#8fe7c3]"
+      >
             {modifierEffectLabel}
           </div>
         ) : null}
@@ -709,7 +712,7 @@ export function StandardRecentRollOverlay({
     >
       <div
         data-testid="betrayal-roll-result-dock"
-        className="pointer-events-auto absolute bottom-[106px] left-[392px] right-[240px] z-40 flex flex-col items-center gap-2"
+        className="pointer-events-auto absolute bottom-[106px] left-1/2 z-40 flex w-[min(700px,calc(100%-32px))] -translate-x-1/2 flex-col items-center gap-2"
         onClick={(event) => event.stopPropagation()}
       >
         <RecentRollPanel

@@ -294,7 +294,10 @@ export function applyBetrayalRoomExploredState(
         event.payload.deckKind === 'event'
         && eventEffectNeedsPendingEventChoice(event.payload.eventEffect)
     ) {
-        if (event.payload.eventEffect.mode === 'allTraitChecks') {
+        if (
+            event.payload.eventEffect.mode === 'allTraitChecks' &&
+            Boolean(event.payload.eventEffect.results?.length)
+        ) {
             applyEventEffect(core, event.payload.eventEffect);
             applyDustEventEffectDeathIfNeeded(core);
         }

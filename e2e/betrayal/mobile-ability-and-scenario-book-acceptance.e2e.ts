@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 import {
-  BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR,
+  BETRAYAL_FLOOR_OVERLAY_RESTORE_EVIDENCE_DIR,
   initBetrayalContext,
   waitForBetrayalFloatingTextGone,
   waitForBetrayalPageReady,
@@ -20,7 +20,7 @@ const PC_VIEWPORT = { width: 1920, height: 1080 } as const;
 const VIVO_CSS_VIEWPORT = { width: 796, height: 360 } as const;
 const EVIDENCE_DIR =
   "evidence/betrayal-mobile-readable-ability-and-book-20261008";
-const HUD_EVIDENCE_DIR = BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR;
+const HUD_EVIDENCE_DIR = BETRAYAL_FLOOR_OVERLAY_RESTORE_EVIDENCE_DIR;
 
 async function enterStartedBoard(page: Page) {
   await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
@@ -45,22 +45,30 @@ async function enterScenarioBook(page: Page) {
   await expect(page.getByTestId("betrayal-scenario-book")).toBeVisible();
 }
 
-async function expectFloorSwitcherAlignedWithEndTurn(page: Page) {
+async function expectFloorSwitcherPinnedAboveEndTurn(page: Page) {
   const geometry = await page.getByTestId("betrayal-room-floor-switcher").evaluate((switcher) => {
+    const overlay = switcher.parentElement;
     const dock =
       document.querySelector("[data-testid='betrayal-action-endTurn']") ??
       document.querySelector("[data-testid='betrayal-action-rail']");
+    if (!overlay) {
+      throw new Error("缺少楼层切换的地图覆盖层父节点");
+    }
     if (!dock) {
       throw new Error("缺少结束回合或底部操作栏");
     }
     const switcherRect = switcher.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
     const dockRect = dock.getBoundingClientRect();
     return {
       switcherBottom: switcherRect.bottom,
+      overlayBottom: overlayRect.bottom,
       dockBottom: dockRect.bottom,
     };
   });
-  expect(Math.abs(geometry.switcherBottom - geometry.dockBottom)).toBeLessThanOrEqual(12);
+  expect(geometry.overlayBottom - geometry.switcherBottom).toBeGreaterThanOrEqual(4);
+  expect(geometry.overlayBottom - geometry.switcherBottom).toBeLessThan(36);
+  expect(geometry.dockBottom - geometry.switcherBottom).toBeGreaterThan(12);
 }
 
 async function saveDeviceScaleScreenshot(page: Page, relativePath: string) {
@@ -116,10 +124,10 @@ test.describe("山屋惊魂能力查看与剧本书 PC / Vivo 视口回归", () 
         pc.page,
         `${EVIDENCE_DIR}/01-PC-1920x1080-能力与物品栏.jpg`,
       );
-      await expectFloorSwitcherAlignedWithEndTurn(pc.page);
+      await expectFloorSwitcherPinnedAboveEndTurn(pc.page);
       await saveDeviceScaleScreenshot(
         pc.page,
-        `${HUD_EVIDENCE_DIR}/01-PC-1920x1080-切层与结束回合同高.jpg`,
+        `${HUD_EVIDENCE_DIR}/01-PC-1920x1080-切层贴地图底边高于结束回合.jpg`,
       );
     } finally {
       await pc.context.close();
@@ -228,10 +236,10 @@ test.describe("山屋惊魂能力查看与剧本书 PC / Vivo 视口回归", () 
         phone.page,
         `${EVIDENCE_DIR}/02-Vivo-796x360-DPR3-能力与物品栏.jpg`,
       );
-      await expectFloorSwitcherAlignedWithEndTurn(phone.page);
+      await expectFloorSwitcherPinnedAboveEndTurn(phone.page);
       await saveDeviceScaleScreenshot(
         phone.page,
-        `${HUD_EVIDENCE_DIR}/02-Vivo-796x360-切层与结束回合同高.jpg`,
+        `${HUD_EVIDENCE_DIR}/02-Vivo-796x360-切层贴地图底边高于结束回合.jpg`,
       );
 
       await compactAbility.click();

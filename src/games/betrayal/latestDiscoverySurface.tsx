@@ -50,8 +50,10 @@ type BetrayalLatestDiscoverySurfaceProps = {
   rollActorLabel: string;
   rollModifierActionSlot: React.ReactNode;
   modifierEffectLabel?: string | null;
+  modifierEffectSources?: string | null;
   hasPendingEventRollStart: boolean;
   canStartPendingEventRoll: boolean;
+  suppressExternalActionDock?: boolean;
   continueButton: BetrayalLatestDiscoveryContinueButtonState;
   effectiveLocale: string;
   canDismissByBackdrop: boolean;
@@ -127,8 +129,10 @@ export function BetrayalLatestDiscoverySurface({
   rollActorLabel,
   rollModifierActionSlot,
   modifierEffectLabel = null,
+  modifierEffectSources = null,
   hasPendingEventRollStart,
   canStartPendingEventRoll,
+  suppressExternalActionDock = false,
   continueButton,
   effectiveLocale,
   canDismissByBackdrop,
@@ -148,8 +152,13 @@ export function BetrayalLatestDiscoverySurface({
   // Automatic event rolls skip shared confirmation, but still need a visible
   // player-controlled way to return to the board after the dice settle.
   const shouldHideExternalActionDock =
+    suppressExternalActionDock ||
     hasRollModifierActionSlot ||
     Boolean(shouldShowRoll && recentRoll && continueButton.eventRollReadable === false);
+  const shouldRenderCardFace = Boolean(
+    shouldShowCardFace ||
+      (discovery.kind === "event" && panelVisual),
+  );
   const displayedDiscoveryDetail = resolveDisplayedDiscoveryDetail(
     discovery,
     resolutionSteps,
@@ -264,7 +273,7 @@ export function BetrayalLatestDiscoverySurface({
             {searchFinalEffectText}
           </div>
         ) : null}
-        {shouldShowCardFace || (shouldShowRoll && recentRoll) ? (
+        {shouldRenderCardFace || (shouldShowRoll && recentRoll) ? (
           <div
             data-testid="betrayal-discovery-panel-main"
             className={`flex min-h-0 max-w-[920px] flex-row items-center justify-center gap-5 ${
@@ -277,7 +286,7 @@ export function BetrayalLatestDiscoverySurface({
                   : "max-w-[900px]"
             }`}
           >
-            {shouldShowCardFace ? (
+            {shouldRenderCardFace ? (
               <div
                 className={`relative shrink-0 transition-opacity duration-100 ${
                   isPossessionGainTransitionActive ? "opacity-0" : "opacity-100"
@@ -324,6 +333,7 @@ export function BetrayalLatestDiscoverySurface({
                 }
                 resultReadable={continueButton.eventRollReadable !== false}
                 modifierEffectLabel={modifierEffectLabel}
+                modifierEffectSources={modifierEffectSources}
                 openTable
                 compactResult={false}
                 denseResult={false}

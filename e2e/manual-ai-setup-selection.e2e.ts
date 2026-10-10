@@ -16,6 +16,7 @@ import {
 import { selectCharacter, waitForCharacterSelection } from './helpers/dicethrone';
 import { waitForFactionDraft, waitForSmashUpUI } from './helpers/smashup';
 import { getMatchState } from './helpers/state-injection';
+import { QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD } from '../src/games/qidahen/roomSetup';
 import {
     clickFactionReady,
     getPlayerStatusCard,
@@ -157,7 +158,7 @@ async function selectSmashUpFactionById(page: Page, factionId: string) {
 async function expectSmashUpCurrentSeat(page: Page, playerId: string) {
     const currentCard = page.getByTestId(`faction-selection-player-card-${playerId}`);
     await expect(currentCard).toBeVisible({ timeout: 10000 });
-    await expect(currentCard).toHaveClass(/bg-\[#fef3c7\]/, { timeout: 10000 });
+    await expect(currentCard).toHaveClass(/border-amber-500/, { timeout: 10000 });
     await expect(page.getByText(/现在轮到你了|Your Turn/i).first()).toBeVisible({ timeout: 10000 });
 }
 
@@ -257,6 +258,26 @@ async function prepareHostContext(args: {
     }, args.guestId);
 }
 
+async function waitForQidahenFactionSelection(page: Page) {
+    await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-title')).toContainText('选择你的阵营', { timeout: 15000 });
+}
+
+async function selectQidahenFactionById(
+    page: Page,
+    factionId: 'ming' | 'mongol' | 'jin',
+) {
+    const factionOption = page.getByTestId(`qidahen-faction-option-${factionId}`);
+    await expect(factionOption).toBeVisible({ timeout: 10000 });
+    await factionOption.click();
+    await expect(factionOption).toHaveAttribute('aria-pressed', 'true');
+    const confirmButton = page.getByTestId('qidahen-faction-selection-confirm');
+    await expect(confirmButton).toBeEnabled({ timeout: 10000 });
+    await confirmButton.click();
+    await page.waitForTimeout(500);
+}
+
 test.describe('在线房间手动代 AI 做前置选择', () => {
     test('SmashUp 四人房房主可依次为 3 个 AI 完成派系选择并进入对局', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
@@ -321,6 +342,14 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForAiSeatCredentials(page, matchId, ['1', '2', '3']);
             await installSmashUpFactionDraftRemountProbe(page);
 
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-before-draft', {
+                    subdir: 'smashup/manual-ai-setup',
+                    filename: 'smashup-manual-ai-before-draft.png',
+                }),
+                fullPage: false,
+            });
+
             const draftSequence = ['aliens', 'ninjas', 'robots', 'wizards', 'tricksters', 'zombies', 'dinosaurs', 'pirates'];
             await expectSmashUpCurrentSeat(page, '0');
             await selectSmashUpFactionById(page, draftSequence[0]);
@@ -362,6 +391,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
 
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-mid-draft', {
+                    subdir: 'smashup/manual-ai-setup',
                     filename: 'smashup-manual-ai-mid-draft.png',
                 }),
                 fullPage: false,
@@ -426,6 +456,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
 
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-board-started', {
+                    subdir: 'smashup/manual-ai-setup',
                     filename: 'smashup-manual-ai-board-started.png',
                 }),
                 fullPage: false,
@@ -490,6 +521,14 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForFactionSelectionReady(page);
             await waitForAiSeatCredentials(page, matchId, ['1']);
 
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-before-selection', {
+                    subdir: 'summonerwars/manual-ai-setup',
+                    filename: 'summonerwars-manual-ai-before-selection.png',
+                }),
+                fullPage: false,
+            });
+
             await selectFactionById(page, 'trickster');
             await page.waitForTimeout(800);
             await expect(page.getByTestId('sw-faction-card-trickster')).toHaveAttribute('data-selected', 'true');
@@ -533,6 +572,14 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             });
             await page.waitForTimeout(300);
 
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-selected', {
+                    subdir: 'summonerwars/manual-ai-setup',
+                    filename: 'summonerwars-manual-ai-selected.png',
+                }),
+                fullPage: false,
+            });
+
             await selectFactionById(page, 'necromancer');
             await expect.poll(async () => {
                 const core = await readLiveCore<{
@@ -558,8 +605,9 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
 
             await expect(getPlayerStatusCard(page, '1')).toHaveAttribute('data-faction-id', 'trickster');
             await page.screenshot({
-                path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-selected', {
-                    filename: 'summonerwars-manual-ai-selected.png',
+                path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-host-finalized', {
+                    subdir: 'summonerwars/manual-ai-setup',
+                    filename: 'summonerwars-manual-ai-host-finalized.png',
                 }),
                 fullPage: false,
             });
@@ -624,6 +672,14 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForCharacterSelection(page);
             await waitForAiSeatCredentials(page, matchId, ['1']);
 
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-before-selection', {
+                    subdir: 'dicethrone/manual-ai-setup',
+                    filename: 'dicethrone-manual-ai-before-selection.png',
+                }),
+                fullPage: false,
+            });
+
             await selectCharacter(page, 'gunslinger');
             await page.waitForTimeout(800);
             await expect(page.locator('[data-character-id="gunslinger"], [data-char-id="gunslinger"]').first()).toContainText(/P2/i);
@@ -669,6 +725,14 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForCharacterSelection(page);
             await page.waitForTimeout(300);
 
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-selected', {
+                    subdir: 'dicethrone/manual-ai-setup',
+                    filename: 'dicethrone-manual-ai-selected.png',
+                }),
+                fullPage: false,
+            });
+
             await selectCharacter(page, 'samurai');
             await expect.poll(async () => {
                 const core = await readLiveCore<{
@@ -695,8 +759,172 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await expect(page.locator('[data-character-id="samurai"], [data-char-id="samurai"]').first()).toContainText(/P1/i);
             await expect(page.locator('[data-character-id="gunslinger"], [data-char-id="gunslinger"]').first()).toContainText(/P2/i);
             await page.screenshot({
-                path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-selected', {
-                    filename: 'dicethrone-manual-ai-selected.png',
+                path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-host-finalized', {
+                    subdir: 'dicethrone/manual-ai-setup',
+                    filename: 'dicethrone-manual-ai-host-finalized.png',
+                }),
+                fullPage: false,
+            });
+        } finally {
+            await hostContext.close();
+        }
+    });
+
+    test('七大恨在线房间房主可替两个 AI 选择阵营且 AI 不会抢先自动选择', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const hostContext = await browser.newContext({ baseURL });
+        const guestId = createGuestId('qidahen-manual-ai');
+        await prepareHostContext({
+            context: hostContext,
+            guestId,
+            storageKey: '__qidahen_manual_ai_setup',
+        });
+
+        const page = await hostContext.newPage();
+
+        try {
+            await page.goto('/', { waitUntil: 'domcontentloaded' });
+            await waitForHomeGameList(page);
+            test.skip(!(await ensureGameServerAvailable(page)), '游戏服务器不可用');
+
+            const matchId = await createOnlineAiRoom({
+                page,
+                gameName: 'qidahen',
+                numPlayers: 3,
+                guestId,
+                setupData: {
+                    enableAi: true,
+                    [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+                    seatControllers: buildManualAiSeatControllers(['1', '2']),
+                },
+            });
+
+            const hostCredentials = await claimSeatViaApi({
+                page,
+                gameName: 'qidahen',
+                matchId,
+                playerId: '0',
+                guestId,
+                playerName: '七大恨-房主',
+            });
+            const aiSeatCredentials = Object.fromEntries(
+                await Promise.all(
+                    ['1', '2'].map(async (playerId) => {
+                        const credentials = await claimSeatViaApi({
+                            page,
+                            gameName: 'qidahen',
+                            matchId,
+                            playerId,
+                            guestId,
+                            playerName: `七大恨-AI-${playerId}`,
+                        });
+                        return [playerId, credentials] as const;
+                    }),
+                ),
+            );
+
+            await seedMatchCredentials(hostContext, 'qidahen', matchId, '0', hostCredentials);
+            await seedAiSeatCredentials(hostContext, matchId, aiSeatCredentials);
+
+            await page.goto(`/play/qidahen/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
+            await waitForQidahenFactionSelection(page);
+            await waitForAiSeatCredentials(page, matchId, ['1', '2']);
+
+            await expect(page.getByTestId('qidahen-scenario-menu-open')).toBeVisible({ timeout: 10000 });
+            await page.getByTestId('qidahen-scenario-menu-open').click();
+            await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 10000 });
+            const scenarioOption = page.getByTestId('qidahen-scenario-vote-option-post-sarhu-1619');
+            await scenarioOption.click();
+            await expect(scenarioOption).toHaveAttribute('aria-pressed', 'true');
+            await expect(page.getByTestId('qidahen-scenario-vote-confirm')).toBeEnabled();
+            await page.getByTestId('qidahen-scenario-vote-confirm').click();
+            await expect(page.getByTestId('qidahen-scenario-vote-screen')).toHaveCount(0);
+            await waitForQidahenFactionSelection(page);
+
+            await expect.poll(async () => {
+                const core = await readLiveCore<{
+                    factionSelection?: { selections?: Record<string, string> } | null;
+                }>(matchId, page);
+                return core.factionSelection?.selections ?? {};
+            }, {
+                timeout: 12000,
+                message: '等待七大恨进入阵营选择且 AI 保持未选择',
+            }).toEqual({});
+
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, '七大恨-手动代AI选阵营-01-开始状态', {
+                    subdir: 'qidahen/manual-ai-setup',
+                    filename: '七大恨-手动代AI选阵营-01-开始状态.png',
+                    format: 'png',
+                }),
+                fullPage: false,
+            });
+
+            await selectQidahenFactionById(page, 'ming');
+            await expect.poll(async () => {
+                const core = await readLiveCore<{
+                    factionSelection?: { selections?: Record<string, string> } | null;
+                }>(matchId, page);
+                return core.factionSelection?.selections ?? {};
+            }, {
+                timeout: 15000,
+                message: '等待七大恨 AI1 阵营写回 shared state',
+            }).toEqual({ '1': 'ming' });
+
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, '七大恨-手动代AI选阵营-02-AI1已选择', {
+                    subdir: 'qidahen/manual-ai-setup',
+                    filename: '七大恨-手动代AI选阵营-02-AI1已选择.png',
+                    format: 'png',
+                }),
+                fullPage: false,
+            });
+
+            await selectQidahenFactionById(page, 'mongol');
+            await expect.poll(async () => {
+                const core = await readLiveCore<{
+                    factionSelection?: { selections?: Record<string, string> } | null;
+                }>(matchId, page);
+                return core.factionSelection?.selections ?? {};
+            }, {
+                timeout: 15000,
+                message: '等待七大恨 AI2 阵营写回 shared state',
+            }).toEqual({ '1': 'ming', '2': 'mongol' });
+
+            await selectQidahenFactionById(page, 'jin');
+            await expect.poll(async () => {
+                const core = await readLiveCore<{
+                    factionSelection?: { selections?: Record<string, string> } | null;
+                    factions?: Record<string, { playerId?: string }>;
+                }>(matchId, page);
+                return {
+                    factionSelection: core.factionSelection,
+                    factionOwners: {
+                        ming: core.factions?.ming?.playerId ?? null,
+                        mongol: core.factions?.mongol?.playerId ?? null,
+                        jin: core.factions?.jin?.playerId ?? null,
+                    },
+                };
+            }, {
+                timeout: 20000,
+                message: '等待七大恨房主和 AI 阵营全部写回并离开阵营选择阶段',
+            }).toEqual({
+                factionSelection: null,
+                factionOwners: {
+                    ming: '1',
+                    mongol: '2',
+                    jin: '0',
+                },
+            });
+
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, '七大恨-手动代AI选阵营-03-全部确认进入前置', {
+                    subdir: 'qidahen/manual-ai-setup',
+                    filename: '七大恨-手动代AI选阵营-03-全部确认进入前置.png',
+                    format: 'png',
                 }),
                 fullPage: false,
             });

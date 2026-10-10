@@ -1,5 +1,6 @@
 import {
     isManualSetupSelectionEnabledForSeat,
+    mergeSeatControllerRecords,
     withManualSetupSelectionAliases,
     type AiSeatController,
     type ManualSetupSeatControllerLike,
@@ -95,10 +96,10 @@ export function resolveRawOnlineAiWatchdogSeatControllers(args: {
         return undefined;
     }
 
-    return {
-        ...(setupSeatControllers ?? {}),
-        ...(stateSeatControllers ?? {}),
-    };
+    return mergeSeatControllerRecords(
+        setupSeatControllers ?? {},
+        stateSeatControllers ?? {},
+    ) as Record<string, SetupSeatController>;
 }
 
 export function normalizeOnlineAiWatchdogSeatControllerType(

@@ -82,14 +82,14 @@ export function BetrayalDamageAllocationSurface({
 
   return (
     <div
-        data-testid="betrayal-damage-allocation-backdrop"
-        className="pointer-events-auto absolute bottom-[96px] left-[248px] right-[232px] top-[92px] flex items-center justify-center px-4 py-8"
-        style={{ zIndex: UI_Z_INDEX.overlayRaised + 170 }}
-      >
+      data-testid="betrayal-damage-allocation-backdrop"
+      className="pointer-events-auto absolute inset-0 flex items-center justify-center px-[320px] pb-[118px] pt-[112px]"
+      style={{ zIndex: UI_Z_INDEX.overlayRaised + 170 }}
+    >
         <div
           data-testid="betrayal-damage-allocation-panel"
           data-player-id={allocation.playerId}
-          className={`grid w-full max-w-[720px] gap-4 border border-[rgba(214,181,109,0.38)] bg-[rgba(12,14,12,0.94)] p-5 text-[#f3e0a6] shadow-[0_26px_54px_rgba(0,0,0,0.58)] ${
+          className={`grid w-full max-w-[860px] gap-4 border border-[rgba(214,181,109,0.38)] bg-[rgba(12,14,12,0.96)] p-5 text-[#f3e0a6] shadow-[0_26px_54px_rgba(0,0,0,0.58)] ${
             ""
           }`}
         >
@@ -232,7 +232,10 @@ export function BetrayalDamageAllocationSurface({
             })}
           </div>
 
-          <div className="flex justify-end">
+          <div
+            data-ui-role="shared-action-dock"
+            className="flex justify-center border-t border-[rgba(214,191,129,0.18)] pt-3"
+          >
             <BetrayalConfirmButton
               type="button"
               data-testid="betrayal-damage-allocation-confirm"

@@ -6,7 +6,7 @@ import sharp from 'sharp';
 const projectRoot = process.cwd();
 const baseDir = path.join(projectRoot, 'test-results', 'evidence-screenshots', 'mage-wars');
 const sourceRoot = path.join(baseDir, 'online-runtime.e2e');
-const outDir = path.join(baseDir, '全部独立端到端截图-20261011');
+const outDir = path.join(baseDir, '全部独立端到端截图-20261011-r3');
 
 const groups = [
     ['01', '传送', '01-传送', ['正式页面传送法术过程帧覆盖来源闪现落点'], '正式页面传送法术过程帧覆盖来源闪现落点', 'teleport'],
@@ -20,7 +20,7 @@ const groups = [
     ['09', '推斥', '09-推斥', ['正式页面推斥法术过程帧覆盖实体滑移'], '正式页面推斥法术过程帧覆盖实体滑移', 'push'],
     ['10', '召唤', '10-召唤', ['正式页面召唤和攻击必要过程帧覆盖', '召唤'], '正式页面召唤和攻击必要过程帧覆盖/召唤', 'summon'],
     ['11', '远程攻击', '11-远程攻击', ['正式页面召唤和攻击必要过程帧覆盖', '远程攻击'], '正式页面召唤和攻击必要过程帧覆盖/远程攻击', 'ranged'],
-    ['12', '治疗之光', '12-治疗之光', ['Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局'], 'Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局', 'healingLight'],
+    ['12', '治疗之光', '12-治疗之光', ['正式页面治疗之光实际动效独立证据覆盖'], '正式页面治疗之光实际动效独立证据覆盖', 'healingLight'],
 ].map(([order, label, folder, sourceParts, sourceDir, key]) => ({ order, label, folder, sourceParts, sourceDir, key }));
 
 const ensureDir = (dir) => fs.mkdirSync(dir, { recursive: true });
@@ -67,9 +67,9 @@ const describe = (key, entry, visibleEffectDelta) => {
         const after = visibleEffectDelta?.after ?? '恢复';
         if (name.includes('动作前')) return `治疗前同一只野性山猫显示生命为 ${before}，建立受伤基线。`;
         if (name.includes('入口')) return '玩家点击来源单位后，屏幕中下出现治疗动作按钮。';
-        if (name.includes('过程帧')) return '玩家选择受伤目标后，同一目标出现治疗光效和恢复数字。';
+        if (name.includes('过程帧')) return '玩家选择受伤目标后，同一目标出现攻击骰、治疗光效和恢复数字。';
         if (name.includes('结算后')) return `治疗结算后，同一只野性山猫生命由 ${before} 升至 ${after}。`;
-        return `动图连续展示同一次治疗中的光效、恢复数字和生命值由 ${before} 升至 ${after}。`;
+        return `动图连续展示同一次治疗中的攻击骰、光效、恢复数字和生命值由 ${before} 升至 ${after}。`;
     }
     if (key === 'mageStaff' || key === 'elementalStaff') {
         if (name.includes('施放前')) return '玩家从准备区点击法术牌后，己方法师成为可用目标。';
@@ -93,7 +93,7 @@ const describe = (key, entry, visibleEffectDelta) => {
         if (name.includes('附件入口')) return '玩家点击来源附件后，屏幕中下出现发动能力按钮，受伤目标仍保持可见。';
         if (name.includes('目标选择')) return '玩家提交能力后，友方目标整卡进入可识别的目标高亮。';
         if (name.includes('模式选择')) return '玩家选择目标后，屏幕中下同时出现治疗和近战加成两个选项。';
-        if (name.includes('治疗模式')) return '玩家选择治疗后，同一目标出现治疗光效和恢复数字。';
+        if (name.includes('治疗模式')) return '玩家选择治疗后，同一目标出现攻击骰、治疗光效和恢复数字。';
         if (name.includes('结算后')) return '治疗结算后，同一目标生命由 5/8 升至 7/8。';
         return '动图连续展示目标选择、治疗光效、恢复数字和生命值上升。';
     }

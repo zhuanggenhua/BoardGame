@@ -245,6 +245,8 @@
       "noSelectedCard": "No card selected",
       "damage": "Damage",
       "damageAllocationTitle": "Damage Allocation",
+      "chooseTrait": "Choose a trait",
+      "chooseCheckTrait": "Choose a trait to check",
       "damageAllocationHeading": "Assign {{amount}} {{kind}}",
       "damageAllocationAmount": "{{amount}} {{kind}}",
       "damageAllocationSource": "Source: {{source}}",

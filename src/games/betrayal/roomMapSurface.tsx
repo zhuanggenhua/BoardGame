@@ -40,6 +40,7 @@ import {
   BetrayalRoomPlacementFailureBanner,
   BetrayalRoomPlacementSurface,
 } from "./roomPlacementSurface";
+import { BetrayalRoomFloorSwitcherSurface } from "./roomFloorSwitcherSurface";
 
 export type BetrayalRoomMapHauntTargetGuide = {
   kind: "room" | "explorer" | "monster";
@@ -78,6 +79,13 @@ export interface BetrayalRoomMapSurfaceProps {
   matchData?: MatchPlayerInfo[];
   roomGridRef: React.Ref<HTMLDivElement>;
   selectedFloor: BetrayalRoomNode["floor"];
+  upperFloor: BetrayalRoomNode["floor"] | null;
+  lowerFloor: BetrayalRoomNode["floor"] | null;
+  upperFloorHasSelectionTarget: boolean;
+  lowerFloorHasSelectionTarget: boolean;
+  hasCrossFloorMoveTargets: boolean;
+  hasCrossFloorRoomSelectionTargets: boolean;
+  hiddenTableChrome: boolean;
   visibleRooms: readonly BetrayalRoomNode[];
   roomCanvasLayout: RoomCanvasLayout;
   roomCanvasTransformStyle: React.CSSProperties;
@@ -205,6 +213,7 @@ export interface BetrayalRoomMapSurfaceProps {
   onSelectRoomTileAdjustment: (
     option: BetrayalRoomTileAdjustmentOption,
   ) => void;
+  onSelectFloor: (floor: BetrayalRoomNode["floor"]) => void;
 }
 
 export function BetrayalRoomMapSurface({
@@ -213,6 +222,13 @@ export function BetrayalRoomMapSurface({
   matchData,
   roomGridRef,
   selectedFloor,
+  upperFloor,
+  lowerFloor,
+  upperFloorHasSelectionTarget,
+  lowerFloorHasSelectionTarget,
+  hasCrossFloorMoveTargets,
+  hasCrossFloorRoomSelectionTargets,
+  hiddenTableChrome,
   visibleRooms,
   roomCanvasLayout,
   roomCanvasTransformStyle,
@@ -324,6 +340,7 @@ export function BetrayalRoomMapSurface({
   onCancelRoomPlacement,
   onConfirmRoomPlacement,
   onSelectRoomTileAdjustment,
+  onSelectFloor,
 }: BetrayalRoomMapSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
   const attackImpactByPlayerId = React.useMemo(
@@ -1021,6 +1038,17 @@ export function BetrayalRoomMapSurface({
           onSelectTileAdjustment={onSelectRoomTileAdjustment}
         />
       ) : null}
+      <BetrayalRoomFloorSwitcherSurface
+        selectedFloor={selectedFloor}
+        upperFloor={upperFloor}
+        lowerFloor={lowerFloor}
+        upperFloorHasSelectionTarget={upperFloorHasSelectionTarget}
+        lowerFloorHasSelectionTarget={lowerFloorHasSelectionTarget}
+        hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
+        hasCrossFloorRoomSelectionTargets={hasCrossFloorRoomSelectionTargets}
+        hidden={hiddenTableChrome}
+        onSelectFloor={onSelectFloor}
+      />
     </div>
   );
 }

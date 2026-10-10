@@ -323,6 +323,16 @@ export function applyBetrayalEventChoiceResolvedState(
     mergePreviousDiscoveryResolutionSteps(previousDiscovery, nextDiscovery);
     core.latestDiscovery = nextDiscovery;
     core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+    if (event.payload.allTraitCheckProgress) {
+        core.recentAllTraitCheck = {
+            sourceTitle: event.payload.allTraitCheckProgress.sourceTitle,
+            playerId: event.payload.allTraitCheckProgress.playerId,
+            results: event.payload.allTraitCheckProgress.results.map((result) => ({
+                ...result,
+                dice: [...result.dice],
+            })),
+        };
+    }
     if (event.payload.drawnEventCardNameToBury) {
         buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
     }

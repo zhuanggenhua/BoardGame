@@ -354,6 +354,20 @@ function formatPageFlags(context: FeedbackClientContext): string {
     return parts.join(', ') || '-';
 }
 
+function formatPerformance(context: FeedbackClientContext): string[] {
+    const performance = context.performance;
+    if (!performance) return ['- performance: -'];
+
+    const frame = performance.frame;
+    const longTasks = performance.longTasks;
+    const network = performance.network;
+    return [
+        `- performance.frame: avg ${frame?.averageFps ?? '-'} FPS / min ${frame?.minFps ?? '-'} FPS / max frame ${frame?.maxFrameTimeMs ?? '-'} ms`,
+        `- performance.longTasks: ${longTasks?.count ?? 0} 次 / ${longTasks?.totalDurationMs ?? 0} ms`,
+        `- performance.network: RTT ${network?.connectionRttMs ?? '-'} ms / ${network?.effectiveType ?? '-'} / ${network?.requestCount ?? 0} requests / avg ${network?.averageDurationMs ?? '-'} ms / TTFB ${network?.averageTtfbMs ?? '-'} ms`,
+    ];
+}
+
 function buildClientContextLines(context: FeedbackClientContext | null | undefined): string[] {
     if (!context) return ['- 未附带客户端上下文'];
 
@@ -376,6 +390,7 @@ function buildClientContextLines(context: FeedbackClientContext | null | undefin
         `- lastRouteChange: ${formatRouteChange(context)}`,
         `- recentRouteChanges: ${formatRecentRouteChanges(context)}`,
         `- pageFlags: ${formatPageFlags(context)}`,
+        ...formatPerformance(context),
         `- userAgent: ${context.userAgent || '-'}`,
     ];
 }

@@ -57,8 +57,9 @@ const SETTLED_FACE_ALIGN: Record<AttackDieFaceKind, string> = {
     blank: 'rotateX(0deg) rotateY(-90deg)',
 };
 
-/** Camera tilt on the pose wrapper so every result face stays a 3D cube. */
-export const ATTACK_DIE_SETTLED_TILT = 'rotateX(-28deg) rotateY(34deg)';
+/** Cube FACE_ALIGN puts the result on +Z; this pose shows thin adjacent-face slivers. */
+export const ATTACK_DIE_SETTLED_POSE = 'rotateX(-16deg) rotateY(18deg)';
+export const ATTACK_DIE_SETTLED_TILT = 'camera-pose';
 
 export function getAttackDieFaceKind(result: number): AttackDieFaceKind {
     if (result >= 3) return 'burst';

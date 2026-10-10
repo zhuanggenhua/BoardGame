@@ -184,6 +184,18 @@ it('嘎吱的木门按官方锁定文本执行知识检定和楼层起始点放�
         expect(core.latestDiscovery?.title).toBe('嘎吱的木门');
         expect(core.latestDiscovery?.detail).toContain('知识检定 6');
         expect(core.latestDiscovery?.detail).toContain('放置到上层起始板块');
+        expect(core.currentExplorer.roomId).toBe('ground-north');
+        expect(core.pendingEventChoice?.sourceTitle).toBe('嘎吱的木门');
+        expect(core.pendingEventChoice?.effect).toMatchObject({
+            mode: 'placeExplorerInDiscoveredRoomByFloor',
+            targetRoomScope: 'upperDiscovered',
+        });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { targetRoomId: 'upper-landing' },
+        );
         expect(core.currentExplorer.roomId).toBe('upper-landing');
         expect(core.activeRoomId).toBe('upper-landing');
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -212,6 +224,14 @@ it('嘎吱的木门按官方锁定文本执行知识检定和楼层起始点放�
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 4');
         expect(core.latestDiscovery?.detail).toContain('放置到地面层起始板块');
+        expect(core.currentExplorer.roomId).toBe('ground-north');
+        expect(core.pendingEventChoice?.sourceTitle).toBe('嘎吱的木门');
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { targetRoomId: 'grand-staircase' },
+        );
         expect(core.currentExplorer.roomId).toBe('grand-staircase');
         expect(core.activeRoomId).toBe('grand-staircase');
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -240,6 +260,14 @@ it('嘎吱的木门按官方锁定文本执行知识检定和楼层起始点放�
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 0');
         expect(core.latestDiscovery?.detail).toContain('放置到地下室起始板块');
+        expect(core.currentExplorer.roomId).toBe('ground-north');
+        expect(core.pendingEventChoice?.sourceTitle).toBe('嘎吱的木门');
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { targetRoomId: 'basement-landing' },
+        );
         expect(core.currentExplorer.roomId).toBe('basement-landing');
         expect(core.activeRoomId).toBe('basement-landing');
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -691,6 +719,34 @@ it('吊死鬼按官方锁定文本执行四项属性连续检定', () => {
 
         expect(core.latestDiscovery?.title).toBe('吊死鬼');
         expect(core.latestDiscovery?.detail).toContain('每项属性各检定一次');
+        expect(core.recentAllTraitCheck).toBeNull();
+        expect(core.pendingEventChoice?.effect).toMatchObject({
+            mode: 'allTraitChecks',
+            traits: ['might', 'speed', 'knowledge', 'sanity'],
+        });
+        expect(core.currentExplorer.traits.might).toBe(3);
+        expect(core.currentExplorer.traits.speed).toBe(3);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
+        expect(core.currentExplorer.traits.sanity).toBe(3);
+        expect(core.turnEndedByDiscovery).toBe(false);
+
+        const traitRolls = [[3, 3], [1, 1], [3, 3], [1, 1]] as const;
+        for (const [index, trait] of (['might', 'speed', 'knowledge', 'sanity'] as const).entries()) {
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+                '0',
+                { trait },
+                100,
+                createBetrayalScriptedRandom(...traitRolls[index]),
+            );
+            if (trait !== 'sanity') {
+                expect(core.pendingEventChoice?.sourceTitle).toBe('吊死鬼');
+                expect(core.recentAllTraitCheck?.results).toHaveLength(
+                    index + 1,
+                );
+            }
+        }
         expect(core.recentAllTraitCheck?.results.map((result) => [result.trait, result.total, result.passed])).toEqual([
             ['might', 4, true],
             ['speed', 0, false],
@@ -734,7 +790,7 @@ it('吊死鬼按官方锁定文本执行四项属性连续检定', () => {
             createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2),
         );
 
-        expect(core.recentAllTraitCheck?.results.every((result) => result.passed)).toBe(true);
+        expect(core.recentAllTraitCheck).toBeNull();
         expect(core.pendingEventChoice?.sourceTitle).toBe('吊死鬼');
         expect(core.currentExplorer.traits.might).toBe(3);
         expect(core.currentExplorer.traits.speed).toBe(3);
@@ -742,6 +798,18 @@ it('吊死鬼按官方锁定文本执行四项属性连续检定', () => {
         expect(core.currentExplorer.traits.sanity).toBe(3);
         expect(core.turnEndedByDiscovery).toBe(false);
 
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as const) {
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+                '0',
+                { trait },
+                100,
+                createBetrayalScriptedRandom(2, 2),
+            );
+        }
+        expect(core.recentAllTraitCheck?.results.every((result) => result.passed)).toBe(true);
+        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,

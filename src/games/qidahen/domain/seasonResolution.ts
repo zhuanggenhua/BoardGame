@@ -32,6 +32,10 @@ import {
 import { getActionRuleDisplayRegionName } from './regionRuleSemantics';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
+import {
+    buildQidahenMapTroopSnapshot,
+    findQidahenMapTroopResults,
+} from './mapTroopResult';
 import { getQidahenRuleRegionController } from './specialRuleState';
 import {
     cloneRuntimeRegionAsPieceSnapshot,
@@ -897,6 +901,7 @@ export const resolveQidahenNewYear = (
         applyChronologyCharactersForYear,
     },
 ): QidahenNewYearResolution => {
+    const beforeMapTroopSnapshot = buildQidahenMapTroopSnapshot(state.regions);
     let nextFactions = { ...state.factions };
     let nextFortifications = state.fortifications.map((fortification) => ({ ...fortification }));
     let nextKoreaDeckCount = state.koreaDeckCount;
@@ -1155,6 +1160,9 @@ export const resolveQidahenNewYear = (
         currentYearIndex,
     );
     const refreshedRegions = refreshRuntimeRegionRules(nextRuntimeRegions, nextFortifications);
+    const mapResults = findQidahenMapTroopResults(beforeMapTroopSnapshot, refreshedRegions);
+    const koreaMapResult = mapResults.find((result) => isQidahenKoreaRuntimeRegionId(result.regionId));
+    const primaryMapResult = koreaMapResult ?? mapResults[0];
 
     summaryLines.push(...chronologyCharacters.summaryLines);
     summaryLines.push(...factionOrder.map((factionId) => (
@@ -1171,6 +1179,10 @@ export const resolveQidahenNewYear = (
         regions: refreshedRegions,
         fortifications: nextFortifications,
         koreaDeckCount: nextKoreaDeckCount,
-        lastSeasonSummary: buildSeasonSummary('新年结算', timestamp, summaryLines),
+        lastSeasonSummary: {
+            ...buildSeasonSummary('新年结算', timestamp, summaryLines),
+            ...(primaryMapResult ? { mapResult: primaryMapResult } : {}),
+            ...(mapResults.length > 0 ? { mapResults } : {}),
+        },
     };
 };

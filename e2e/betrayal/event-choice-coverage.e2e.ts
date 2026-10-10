@@ -3022,6 +3022,9 @@ type DirectRollEventFullChainCase = {
     pendingAmount: number;
     allocationTraits: BetrayalTraitKey[];
   };
+  postRollChoice?: {
+    targetRoomId: string;
+  };
   setupCore?: (core: BetrayalCore) => void;
   assertClosed?: (page: Page) => Promise<void>;
 };
@@ -3650,6 +3653,7 @@ const cases: EventChoiceCase[] = [
       "betrayal-event-choice-trait-might",
       "betrayal-room-hallway",
       "betrayal-event-choice-damage-might-increase",
+      "betrayal-event-choice-confirm",
     ],
     expectedTexts: ["力量检定", "放置到门厅", "通用伤害 1（力量）"],
     expectNoRecentRollBeforeChoice: true,
@@ -3693,6 +3697,7 @@ const cases: EventChoiceCase[] = [
     actions: [
       "betrayal-event-choice-trait-speed",
       "betrayal-room-hallway",
+      "betrayal-event-choice-confirm",
     ],
     expectedTexts: ["速度 +1", "放置到门厅"],
     expectedRecentRollBeforeChoice: [
@@ -3708,7 +3713,10 @@ const cases: EventChoiceCase[] = [
       createPendingChoiceCore("吊死鬼", allPassEffect("吊死鬼"), {
         id: "e2e-hanging-tree-trait-choice",
       }),
-    actions: ["betrayal-event-choice-trait-knowledge"],
+    actions: [
+      "betrayal-event-choice-trait-knowledge",
+      "betrayal-event-choice-confirm",
+    ],
     expectedTexts: ["知识 +1"],
   },
   {
@@ -3720,7 +3728,10 @@ const cases: EventChoiceCase[] = [
         roomId: "ground-north",
         traits: { knowledge: 4 },
       }),
-    actions: ["betrayal-room-hallway"],
+    actions: [
+      "betrayal-room-hallway",
+      "betrayal-event-choice-confirm",
+    ],
     expectedTexts: [
       "在当前板块放置秘密通道标志物",
       "在门厅放置秘密通道标志物",
@@ -3734,7 +3745,10 @@ const cases: EventChoiceCase[] = [
       createPendingChoiceCore("脑状食品", branchEffect("脑状食品", 5), {
         id: "e2e-brain-food-reward-choice",
       }),
-    actions: ["betrayal-event-choice-trait-speed"],
+    actions: [
+      "betrayal-event-choice-trait-speed",
+      "betrayal-event-choice-confirm",
+    ],
     expectedTexts: ["速度 +1"],
   },
   {
@@ -3747,6 +3761,7 @@ const cases: EventChoiceCase[] = [
     actions: [
       "betrayal-event-choice-damage-might-increase",
       "betrayal-event-choice-damage-knowledge-increase",
+      "betrayal-event-choice-confirm",
     ],
     expectedTexts: ["通用伤害 2（力量、知识）"],
   },
@@ -3757,7 +3772,10 @@ const cases: EventChoiceCase[] = [
       createExploredEventChoiceCore("夜幕众星", {
         traits: { knowledge: 4 },
       }),
-    actions: ["betrayal-event-choice-trait-knowledge"],
+    actions: [
+      "betrayal-event-choice-trait-knowledge",
+      "betrayal-event-choice-confirm",
+    ],
     expectedTexts: ["知识检定", "治疗知识"],
     expectNoRecentRollBeforeChoice: true,
     actionRandomQueue: [0.1, 0.1, 0.1, 0.1],
@@ -3886,7 +3904,30 @@ async function assertReadyForStateInjection(
   );
   await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
-  await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
+  if (eventCase.postRollChoice) {
+    const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
+    await expect(eventChoicePanel).toHaveAttribute(
+      "aria-label",
+      eventCase.eventName,
+    );
+    await expect(
+      page.getByTestId(
+        `betrayal-room-event-choice-target-${eventCase.postRollChoice.targetRoomId}`,
+      ),
+    ).toBeVisible();
+    await saveScreenshot(page, `${screenshotBase}-05-选择板块前.jpg`);
+    await page
+      .getByTestId(
+        `betrayal-room-event-choice-target-${eventCase.postRollChoice.targetRoomId}`,
+      )
+      .click();
+    await expect(page.getByTestId("betrayal-event-choice-confirm")).toBeEnabled();
+    await saveScreenshot(page, `${screenshotBase}-06-选择板块后等待确认.jpg`);
+    await page.getByTestId("betrayal-event-choice-confirm").click();
+    await expect(eventChoicePanel).toHaveCount(0);
+  } else {
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
+  }
   await expect(page.getByTestId("betrayal-room-placement-panel")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toHaveCount(0);
@@ -4032,12 +4073,15 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(eventChoicePanel).toHaveAttribute("aria-label", "脑状食品");
     await expect(page.getByTestId("betrayal-event-choice-trait-might")).toBeVisible();
     await expect(page.getByTestId("betrayal-event-choice-trait-speed")).toBeVisible();
-    await expect(page.getByTestId("betrayal-event-choice-confirm")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-choice-confirm")).toBeDisabled();
     await saveScreenshot(page, `${screenshotBase}-08-玩家确认检定后选择力量或速度.jpg`);
 
     const speedBeforeCore = await readCurrentCore(page);
     const speedBeforePosition = speedBeforeCore.currentExplorer.traitTracks.speed.position;
     await page.getByTestId("betrayal-event-choice-trait-speed").click();
+    await expect(page.getByTestId("betrayal-event-choice-confirm")).toBeEnabled();
+    await saveScreenshot(page, `${screenshotBase}-09-速度候选已高亮等待确认.jpg`);
+    await page.getByTestId("betrayal-event-choice-confirm").click();
     await expect(eventChoicePanel).toBeHidden();
     await expect(discoveryPanel).toBeVisible();
     const resultCore = await readCurrentCore(page);
@@ -4046,7 +4090,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
     expect(resultCore.currentExplorer.traits.speed).toBe(5);
     await expect(discoveryPanel.getByTestId("betrayal-discovery-detail")).toContainText("速度 +1");
-    await saveScreenshot(page, `${screenshotBase}-09-玩家选择速度后属性加一结果可见.jpg`);
+    await saveScreenshot(page, `${screenshotBase}-10-玩家选择速度后属性加一结果可见.jpg`);
 
     await discoveryPanel.getByTestId("betrayal-discovery-continue").click();
     await expect(discoveryPanel).toHaveCount(0);
@@ -4060,7 +4104,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(finalCore.currentPlayer).toBe("0");
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeEnabled();
-    await saveScreenshot(page, `${screenshotBase}-10-结果关闭并返回可操作牌桌.jpg`);
+    await saveScreenshot(page, `${screenshotBase}-11-结果关闭并返回可操作牌桌.jpg`);
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-settlement-safe-representative-state", diagnostics },
     ]);
@@ -4421,7 +4465,17 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       if (eventCase.actionRandomQueue) {
         await setHarnessRandomQueue(page, eventCase.actionRandomQueue);
       }
-      for (const testId of eventCase.actions) {
+      for (const [actionIndex, testId] of eventCase.actions.entries()) {
+        if (testId === "betrayal-event-choice-confirm") {
+          await expect(
+            page.getByTestId(testId),
+            `${eventCase.title} 选择完成后确认按钮必须可见且可用`,
+          ).toBeEnabled();
+          await saveScreenshot(
+            page,
+            `${screenshotBase}-选择确认前-${String(actionIndex + 1).padStart(2, "0")}.jpg`,
+          );
+        }
         await page.getByTestId(testId).click();
       }
 

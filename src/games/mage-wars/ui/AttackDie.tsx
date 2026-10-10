@@ -4,6 +4,7 @@ import { OptimizedImage } from '../../../components/common/media/OptimizedImage'
 import { useResultRevealAnimation } from '../../../hooks/ui/useResultRevealAnimation';
 import {
     ATTACK_DIE_FACES,
+    ATTACK_DIE_SETTLED_POSE,
     ATTACK_DIE_SETTLED_TILT,
     ATTACK_DIE_TEXTURE,
     getAttackDieFaceKind,
@@ -37,6 +38,7 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
             data-asset-status="source-verified"
             data-model-source="cube-net:attack-die-texture"
             data-rendering-mode="css-native-cube-faces"
+            data-visual-mode="css-2d-cube"
             data-roll-duration-ms={tumbleMs}
             data-settle-duration-ms={settleMs}
             aria-label={`攻击骰 ${result}`}
@@ -45,8 +47,8 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
             <div className="mage-wars-attack-die-shadow" aria-hidden="true" />
             <div
                 className="mage-wars-attack-die-pose"
-                style={{ transform: ATTACK_DIE_SETTLED_TILT }}
-                data-settled-tilt="result-3d"
+                data-settled-tilt={ATTACK_DIE_SETTLED_TILT}
+                style={{ transform: ATTACK_DIE_SETTLED_POSE }}
                 aria-hidden="true"
             >
                 <div
@@ -64,7 +66,7 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
                     data-settled-face-value={result}
                     data-settled-face-id={settledFaceId}
                     data-settled-face-kind={settledKind}
-                    data-settled-tilt="result-3d"
+                    data-settled-tilt="face-align"
                     aria-hidden="true"
                 >
                 {ATTACK_DIE_FACES.map((face) => {

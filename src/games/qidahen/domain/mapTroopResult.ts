@@ -29,7 +29,12 @@ export const buildQidahenMapTroopSnapshot = (
 export const findQidahenMapTroopResult = (
     previousSnapshot: ReadonlyMap<string, number>,
     regions: readonly QidahenMapTroopRegion[],
-): QidahenMapTroopResult | null => regions
+): QidahenMapTroopResult | null => findQidahenMapTroopResults(previousSnapshot, regions)[0] ?? null;
+
+export const findQidahenMapTroopResults = (
+    previousSnapshot: ReadonlyMap<string, number>,
+    regions: readonly QidahenMapTroopRegion[],
+): QidahenMapTroopResult[] => regions
     .filter((region) => !region.isLogicalRegion)
     .map((region) => {
         const beforeTroops = previousSnapshot.get(region.id);
@@ -46,5 +51,4 @@ export const findQidahenMapTroopResult = (
     .filter((change): change is QidahenMapTroopResult => change != null && change.troopDelta !== 0)
     .sort((left, right) => Math.abs(right.troopDelta) - Math.abs(left.troopDelta)
         || right.troopDelta - left.troopDelta
-        || left.regionId.localeCompare(right.regionId, 'en'))[0]
-    ?? null;
+        || left.regionId.localeCompare(right.regionId, 'en'));

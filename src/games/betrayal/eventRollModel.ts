@@ -116,6 +116,17 @@ export function materializeEventEffect(
         return cloneUseEffect(effect);
     }
     if (effect.mode === 'allTraitChecks') {
+        if (effect.results) {
+            return {
+                ...effect,
+                traits: [...effect.traits],
+                results: effect.results.map((result) => ({
+                    ...result,
+                    dice: [...result.dice],
+                })),
+                allPassEffect: cloneUseEffect(effect.allPassEffect),
+            };
+        }
         if (!materializeRandomResults) {
             return cloneUseEffect(effect);
         }

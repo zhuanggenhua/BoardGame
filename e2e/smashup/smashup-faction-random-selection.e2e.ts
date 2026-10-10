@@ -159,7 +159,20 @@ test.describe('SmashUp 随机派系选择', () => {
         expect(afterState?.core?.factionSelection?.playerSelections?.['0']).toContain(selectedFaction);
         expect(afterState?.core?.factionSelection?.takenFactions).toContain(selectedFaction);
 
-        await expect(page.getByTestId(`faction-option-${selectedFaction}`)).toContainText(/已选择|点按取消选择|已占领|Selected|Taken by/i);
+        const selectedFactionOption = page.getByTestId(`faction-option-${selectedFaction}`);
+        await expect(selectedFactionOption).toContainText(/已选择|点按取消选择|已占领|Selected|Taken by/i);
+        await expect.poll(async () => {
+            const box = await selectedFactionOption.boundingBox();
+            const viewport = page.viewportSize();
+            return Boolean(
+                box
+                && viewport
+                && box.width > 0
+                && box.height > 0
+                && box.top >= 0
+                && box.bottom <= viewport.height,
+            );
+        }, { timeout: 10000, intervals: [100, 200, 400] }).toBe(true);
         await page.screenshot({ path: join(evidenceDir, '02-random-faction-selected.png'), fullPage: false });
         await page.screenshot({ path: testInfo.outputPath('02-random-faction-selected.png'), fullPage: false });
 

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'path';
 import {
-    BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR,
+    BETRAYAL_FLOOR_OVERLAY_RESTORE_EVIDENCE_DIR,
     initBetrayalContext,
     injectCore,
     saveScreenshot,
@@ -90,6 +90,7 @@ type FloorSwitcherGeometry = {
     switcherLeft: number;
     switcherRight: number;
     switcherBottom: number;
+    overlayBottom: number;
     actionDockBottom: number;
     gridCenterX: number;
     gridCenterY: number;
@@ -99,22 +100,27 @@ type FloorSwitcherGeometry = {
     gridHeight: number;
 };
 
-const expectFloorSwitcherAlignedWithActionDock = async (
+const expectFloorSwitcherPinnedToMapOverlayBottom = async (
     page: Page,
     previous?: FloorSwitcherGeometry,
 ): Promise<FloorSwitcherGeometry> => {
     const geometry = await page.getByTestId('betrayal-room-floor-switcher').evaluate((switcher) => {
         const grid = document.querySelector('[data-testid="betrayal-room-grid"]');
+        const overlay = switcher.parentElement;
         const dock =
             document.querySelector('[data-testid="betrayal-action-endTurn"]') ??
             document.querySelector('[data-testid="betrayal-action-rail"]');
         if (!grid) {
             throw new Error('missing betrayal-room-grid');
         }
+        if (!overlay) {
+            throw new Error('missing floor switcher overlay parent');
+        }
         if (!dock) {
             throw new Error('missing betrayal action dock');
         }
         const switcherRect = switcher.getBoundingClientRect();
+        const overlayRect = overlay.getBoundingClientRect();
         const gridRect = grid.getBoundingClientRect();
         const dockRect = dock.getBoundingClientRect();
         return {
@@ -122,6 +128,7 @@ const expectFloorSwitcherAlignedWithActionDock = async (
             switcherLeft: switcherRect.left,
             switcherRight: switcherRect.right,
             switcherBottom: switcherRect.bottom,
+            overlayBottom: overlayRect.bottom,
             actionDockBottom: dockRect.bottom,
             gridCenterX: gridRect.left + gridRect.width / 2,
             gridCenterY: gridRect.top + gridRect.height / 2,
@@ -135,7 +142,9 @@ const expectFloorSwitcherAlignedWithActionDock = async (
     expect(geometry.gridRight - geometry.switcherRight).toBeGreaterThanOrEqual(160);
     expect(geometry.gridRight - geometry.switcherRight).toBeLessThan(320);
     expect(geometry.switcherLeft).toBeGreaterThan(geometry.gridCenterX);
-    expect(Math.abs(geometry.switcherBottom - geometry.actionDockBottom)).toBeLessThanOrEqual(12);
+    expect(geometry.overlayBottom - geometry.switcherBottom).toBeGreaterThanOrEqual(4);
+    expect(geometry.overlayBottom - geometry.switcherBottom).toBeLessThan(36);
+    expect(geometry.actionDockBottom - geometry.switcherBottom).toBeGreaterThan(12);
     expect(geometry.switcherCenterY).toBeGreaterThan(geometry.gridCenterY);
     if (previous) {
         expect(Math.abs(geometry.switcherRight - previous.switcherRight)).toBeLessThanOrEqual(2);
@@ -175,7 +184,7 @@ test.describe('山屋惊魂楼层切换视觉验收', () => {
         await expectOnlyFloorVisible(page, 'upper', 'upper-landing', ['grand-staircase', 'basement-landing']);
         await expect(page.getByTestId('betrayal-room-floor-up')).toBeDisabled();
         await expect(page.getByTestId('betrayal-room-floor-down')).toBeEnabled();
-        const upperSwitcherGeometry = await expectFloorSwitcherAlignedWithActionDock(page);
+        const upperSwitcherGeometry = await expectFloorSwitcherPinnedToMapOverlayBottom(page);
         await saveScreenshot(page, UPPER_FLOOR_SCREENSHOT);
 
         await page.getByTestId('betrayal-room-floor-down').click();
@@ -183,15 +192,15 @@ test.describe('山屋惊魂楼层切换视觉验收', () => {
         await expect(page.getByTestId('betrayal-room-floor-up')).toBeEnabled();
         await expect(page.getByTestId('betrayal-room-floor-down')).toBeDisabled();
         await expect(page.getByTestId('betrayal-room-floor-basement')).toHaveCount(0);
-        await expectFloorSwitcherAlignedWithActionDock(page, upperSwitcherGeometry);
+        await expectFloorSwitcherPinnedToMapOverlayBottom(page, upperSwitcherGeometry);
         await page.getByTestId('betrayal-room-floor-down').evaluate((node) => (node as HTMLButtonElement).click());
         await expectOnlyFloorVisible(page, 'ground', 'grand-staircase', ['upper-landing', 'basement-landing']);
         await saveScreenshot(page, GROUND_FLOOR_SCREENSHOT);
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await expectFloorSwitcherAlignedWithActionDock(page);
+        await expectFloorSwitcherPinnedToMapOverlayBottom(page);
         await saveScreenshot(
             page,
-            `${BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR}/03-PC-1920x1080-一层切换后切层与结束回合同高.jpg`,
+            `${BETRAYAL_FLOOR_OVERLAY_RESTORE_EVIDENCE_DIR}/03-PC-1920x1080-一层切换后仍贴地图底边.jpg`,
         );
     });
 
@@ -216,7 +225,7 @@ test.describe('山屋惊魂楼层切换视觉验收', () => {
         await waitForBetrayalFloatingTextGone(page);
         await expectOnlyFloorVisible(page, 'upper', 'upper-landing', ['grand-staircase', 'basement-landing']);
         await expect(page.getByTestId('betrayal-room-floor-down')).toBeEnabled();
-        const switcherGeometry = await expectFloorSwitcherAlignedWithActionDock(page);
+        const switcherGeometry = await expectFloorSwitcherPinnedToMapOverlayBottom(page);
        await addRedCallout(page, 'betrayal-room-floor-down', '1 点切层按钮');
        await saveScreenshot(page, STEP_1_SWITCH_FLOOR_SCREENSHOT);
 
@@ -227,10 +236,10 @@ test.describe('山屋惊魂楼层切换视觉验收', () => {
        await clearRedCallouts(page);
        await page.getByTestId('betrayal-action-move').click();
         await expectOnlyFloorVisible(page, 'upper', 'upper-landing', ['grand-staircase', 'basement-landing']);
-        await expectFloorSwitcherAlignedWithActionDock(page, switcherGeometry);
+        await expectFloorSwitcherPinnedToMapOverlayBottom(page, switcherGeometry);
         await page.getByTestId('betrayal-room-floor-down').click();
         await expectOnlyFloorVisible(page, 'ground', 'grand-staircase', ['upper-landing', 'basement-landing']);
-        await expectFloorSwitcherAlignedWithActionDock(page, switcherGeometry);
+        await expectFloorSwitcherPinnedToMapOverlayBottom(page, switcherGeometry);
        await expect(page.getByTestId('betrayal-room-grand-staircase')).toBeEnabled();
        await addRedCallout(page, 'betrayal-room-grand-staircase', '3 点目标房间');
         await saveScreenshot(page, MOVE_TARGET_FLOOR_SCREENSHOT);

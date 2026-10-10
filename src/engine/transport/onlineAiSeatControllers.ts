@@ -1,5 +1,5 @@
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
-import type { AiSeatController } from '../ai';
+import { mergeSeatControllerRecords, type AiSeatController } from '../ai';
 import type { MatchState } from '../types';
 
 export type OnlineAiSeatControllerType = 'human' | 'local-ai' | 'remote-ai';
@@ -86,10 +86,10 @@ export const resolveRawOnlineAiWatchdogSeatControllers = (
         return undefined;
     }
 
-    return {
-        ...(setupSeatControllers ?? {}),
-        ...(stateSeatControllers ?? {}),
-    };
+    return mergeSeatControllerRecords(
+        setupSeatControllers ?? {},
+        stateSeatControllers ?? {},
+    ) as RawOnlineAiSeatControllers;
 };
 
 export const normalizeOnlineAiWatchdogSeatControllerType = (

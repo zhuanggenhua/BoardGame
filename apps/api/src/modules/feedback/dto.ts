@@ -130,6 +130,123 @@ export class FeedbackPageFlagsDto {
     mobileProfile?: string;
 }
 
+export class FeedbackPerformanceFrameDto {
+    @IsNumber()
+    @IsOptional()
+    averageFps?: number;
+
+    @IsNumber()
+    @IsOptional()
+    minFps?: number;
+
+    @IsNumber()
+    @IsOptional()
+    averageFrameTimeMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxFrameTimeMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    bucketCount?: number;
+}
+
+export class FeedbackPerformanceLongTasksDto {
+    @IsNumber()
+    count!: number;
+
+    @IsNumber()
+    totalDurationMs!: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxDurationMs?: number;
+}
+
+export class FeedbackPerformanceRequestDto {
+    @IsString()
+    @MaxLength(300)
+    path!: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    initiatorType?: string;
+
+    @IsNumber()
+    durationMs!: number;
+
+    @IsNumber()
+    @IsOptional()
+    ttfbMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    connectMs?: number;
+}
+
+export class FeedbackPerformanceNetworkDto {
+    @IsNumber()
+    @IsOptional()
+    connectionRttMs?: number;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    effectiveType?: string;
+
+    @IsNumber()
+    @IsOptional()
+    downlinkMbps?: number;
+
+    @IsNumber()
+    requestCount!: number;
+
+    @IsNumber()
+    @IsOptional()
+    averageDurationMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxDurationMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    averageTtfbMs?: number;
+
+    @IsArray()
+    @ArrayMaxSize(8)
+    @ValidateNested({ each: true })
+    @Type(() => FeedbackPerformanceRequestDto)
+    @IsOptional()
+    recentRequests?: FeedbackPerformanceRequestDto[];
+}
+
+export class FeedbackPerformanceContextDto {
+    @IsString()
+    @MaxLength(40)
+    capturedAt!: string;
+
+    @IsNumber()
+    windowMs!: number;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceFrameDto)
+    @IsOptional()
+    frame?: FeedbackPerformanceFrameDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceLongTasksDto)
+    @IsOptional()
+    longTasks?: FeedbackPerformanceLongTasksDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceNetworkDto)
+    @IsOptional()
+    network?: FeedbackPerformanceNetworkDto;
+}
+
 export class FeedbackClientContextDto {
     @IsString()
     @IsOptional()
@@ -229,6 +346,11 @@ export class FeedbackClientContextDto {
     @Type(() => FeedbackPageFlagsDto)
     @IsOptional()
     pageFlags?: FeedbackPageFlagsDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceContextDto)
+    @IsOptional()
+    performance?: FeedbackPerformanceContextDto;
 }
 
 export class FeedbackErrorContextDto {

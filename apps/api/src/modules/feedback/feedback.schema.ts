@@ -51,6 +51,40 @@ export interface FeedbackClientContext {
     lastRouteChange?: FeedbackRouteChangeSummary;
     recentRouteChanges?: FeedbackRouteChangeSummary[];
     pageFlags?: FeedbackPageFlags;
+    performance?: FeedbackPerformanceContext;
+}
+
+export interface FeedbackPerformanceContext {
+    capturedAt: string;
+    windowMs: number;
+    frame?: {
+        averageFps?: number;
+        minFps?: number;
+        averageFrameTimeMs?: number;
+        maxFrameTimeMs?: number;
+        bucketCount?: number;
+    };
+    longTasks?: {
+        count: number;
+        totalDurationMs: number;
+        maxDurationMs?: number;
+    };
+    network?: {
+        connectionRttMs?: number;
+        effectiveType?: string;
+        downlinkMbps?: number;
+        requestCount: number;
+        averageDurationMs?: number;
+        maxDurationMs?: number;
+        averageTtfbMs?: number;
+        recentRequests?: Array<{
+            path: string;
+            initiatorType?: string;
+            durationMs: number;
+            ttfbMs?: number;
+            connectMs?: number;
+        }>;
+    };
 }
 
 export interface FeedbackErrorContext {

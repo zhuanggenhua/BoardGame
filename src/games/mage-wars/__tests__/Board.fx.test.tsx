@@ -34,6 +34,7 @@ import {
     SpellTeleportRenderer,
     SummonRenderer,
 } from '../ui/fxRenderers';
+import { ATTACK_DIE_SETTLED_POSE, ATTACK_DIE_SETTLED_TILT } from '../ui/attackDieGeometry';
 import { mageWarsFxRegistry } from '../ui/fxSetup';
 import { MW_FX } from '../ui/fxCues';
 import { MAGE_WARS_FX_TIMING } from '../ui/fxTuning';
@@ -1390,7 +1391,7 @@ describe('MageWarsBoard FX wiring', () => {
                 Array.from({ length: 12 }, (_, index) => String(index + 1)),
             );
             expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-face-value', String(rawEffectDieResult));
-            expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-tilt', 'result-3d');
+            expect(effectDieBody?.querySelector('[data-settled-face-value]')).toHaveAttribute('data-settled-tilt', 'face-align');
             expect(effectDieBody).toHaveAttribute('data-roll-duration-ms', String(MAGE_WARS_FX_TIMING.diceResultRollMs));
             const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
             expect(attackDieFaces).toHaveLength(2);
@@ -1417,8 +1418,10 @@ describe('MageWarsBoard FX wiring', () => {
             attackDieFaces.forEach((die) => {
                 const pose = die.querySelector('.mage-wars-attack-die-pose');
                 const cube = die.querySelector('[data-die-renderer="css-d6"]');
-                expect(pose).toHaveAttribute('data-settled-tilt', 'result-3d');
-                expect(cube).toHaveAttribute('data-settled-tilt', 'result-3d');
+                expect(pose).toHaveAttribute('data-settled-tilt', ATTACK_DIE_SETTLED_TILT);
+                expect(cube).toHaveAttribute('data-settled-tilt', 'face-align');
+                expect((pose as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_POSE);
+                expect(die).toHaveAttribute('data-visual-mode', 'css-2d-cube');
                 expect(pose?.contains(cube)).toBe(true);
             });
             expect(attackDice).toHaveAttribute('data-visible-duration-ms', '3000');
@@ -1510,7 +1513,8 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1');
     });
 
-    it('renders healing with a shared burst and positive recovery number', () => {
+    it('renders healing with attack dice, a shared burst and positive recovery number', () => {
+        vi.useFakeTimers();
         const onImpact = vi.fn();
         const onComplete = vi.fn();
         const event: FxEvent = {
@@ -1521,6 +1525,60 @@ describe('MageWarsBoard FX wiring', () => {
                 targetObjectId: 'mwobj-healed-cat',
                 healingAmount: 3,
                 actualHealing: 2,
+                diceResults: [2],
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <HealingImpactRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            expect(screen.queryByTestId('mage-wars-fx-healing-impact')).not.toBeNull();
+            expect(screen.getByTestId('mage-wars-fx-healing-impact').getAttribute('data-target-anchor-id')).toBe('mwobj-healed-cat');
+            expect(screen.queryByTestId('mage-wars-fx-healing-burst')).not.toBeNull();
+            expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('2');
+            expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+2');
+            const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
+            expect(attackDice.getAttribute('data-visible-duration-ms')).toBe(String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs));
+            const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
+            expect(attackDieFaces).toHaveLength(1);
+            expect(attackDieFaces[0]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'hit2');
+            const pose = attackDieFaces[0]?.querySelector('.mage-wars-attack-die-pose');
+            expect(pose).toHaveAttribute('data-settled-tilt', ATTACK_DIE_SETTLED_TILT);
+            expect((pose as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_POSE);
+
+            act(() => {
+                advanceSharedFxClockDelay(1_100);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+            expect(onComplete).not.toHaveBeenCalled();
+            expect(screen.getByTestId('mage-wars-fx-attack-dice')).toBeTruthy();
+
+            act(() => {
+                advanceSharedFxClockDelay(1_900);
+            });
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        } finally {
+            resetFxFrameClockForTests();
+            vi.useRealTimers();
+        }
+    });
+
+    it('skips attack dice when a heal event has no dice results', () => {
+        const event: FxEvent = {
+            id: 'fx-healing-no-dice',
+            cue: 'mage-wars.healing.impact',
+            ctx: { cell: { row: 1, col: 1 }, intensity: 'normal' },
+            params: {
+                targetObjectId: 'mwobj-healed-mage',
+                healingAmount: 1,
+                actualHealing: 1,
             },
         };
 
@@ -1528,16 +1586,15 @@ describe('MageWarsBoard FX wiring', () => {
             <HealingImpactRenderer
                 event={event}
                 getCellPosition={getCellPosition}
-                onImpact={onImpact}
-                onComplete={onComplete}
+                onImpact={vi.fn()}
+                onComplete={vi.fn()}
             />,
         );
 
         expect(screen.queryByTestId('mage-wars-fx-healing-impact')).not.toBeNull();
-        expect(screen.getByTestId('mage-wars-fx-healing-impact').getAttribute('data-target-anchor-id')).toBe('mwobj-healed-cat');
-        expect(screen.queryByTestId('mage-wars-fx-healing-burst')).not.toBeNull();
-        expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('2');
-        expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+2');
+        expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+1');
+        expect(screen.queryByTestId('mage-wars-fx-attack-dice')).toBeNull();
+        expect(screen.queryByTestId('mage-wars-fx-attack-die-face')).toBeNull();
     });
 
     it('renders force push with source-to-target travel before impact', () => {
@@ -1575,8 +1632,14 @@ describe('MageWarsBoard FX wiring', () => {
             expect(slide.getAttribute('data-source-col')).toBe('1');
             expect(slide.getAttribute('data-target-col')).toBe('2');
             expect(slide.getAttribute('data-visual-role')).toBe('entity-slide');
+            expect(slide.getAttribute('data-slide-layer')).toBe('arena');
+            expect(slide.getAttribute('data-from-px-left')).toBeNull();
+            expect(slide.className).toContain('absolute');
+            expect(slide.className).not.toContain('fixed');
             expect(slide.getAttribute('data-from-left')).toBe('25');
             expect(slide.getAttribute('data-to-left')).toBe('50');
+            expect(slide.getAttribute('data-slide-motion')).toBe('transform');
+            expect(slide.className).toContain('inset-0');
 
             act(() => {
                 advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.pushTravelImpactMs);
@@ -3016,8 +3079,8 @@ describe('MageWarsBoard spell cast choices', () => {
         const attachmentTargetFrame = visibleEnchantmentCard?.querySelector<HTMLElement>('[data-testid="mage-wars-attachment-target-frame"]');
         expect(attachmentTargetFrame?.className).toContain('inset-0');
         expect(attachmentTargetFrame?.className).not.toContain('-inset');
-        expect(attachmentTargetFrame?.className).toContain('border-emerald-300/95');
-        expect(attachmentTargetFrame?.className).toContain('border-2');
+        expect(attachmentTargetFrame?.className).toContain('border-lime-300');
+        expect(attachmentTargetFrame?.className).toContain('border-[3px]');
         fireEvent.click(visibleEnchantmentCard!);
 
         await waitFor(() => {
@@ -3030,8 +3093,8 @@ describe('MageWarsBoard spell cast choices', () => {
         );
         expect(attachmentSourceFrame?.className).toContain('inset-0');
         expect(attachmentSourceFrame?.className).not.toContain('-inset');
-        expect(attachmentSourceFrame?.className).toContain('border-emerald-300/95');
-        expect(attachmentSourceFrame?.className).toContain('border-2');
+        expect(attachmentSourceFrame?.className).toContain('border-lime-300');
+        expect(attachmentSourceFrame?.className).toContain('border-[3px]');
         const friendlyTargetCard = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-zone-field-card"][data-object-id="steal-friendly-cat-0"]',
         );
@@ -3428,7 +3491,8 @@ describe('MageWarsBoard object ability choices', () => {
         expect(targetZone?.className).not.toContain('outline-emerald');
         expect(targetZone?.className).not.toContain('rgba(110,231,183');
         const targetFrame = targetCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-target-frame"]');
-        expect(targetFrame?.className).toContain('emerald');
+        expect(targetFrame?.className).toContain('border-lime-300');
+        expect(targetFrame?.className).toContain('border-[3px]');
         expect(targetFrame?.className).toContain('inset-0');
         expect(targetFrame?.className).not.toContain('-inset');
         fireEvent.click(targetCard!);
@@ -3484,7 +3548,8 @@ describe('MageWarsBoard object ability choices', () => {
             expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
         });
         const targetFrame = targetCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-target-frame"]');
-        expect(targetFrame?.className).toContain('emerald');
+        expect(targetFrame?.className).toContain('border-lime-300');
+        expect(targetFrame?.className).toContain('border-[3px]');
         expect(targetFrame?.className).toContain('inset-0');
         expect(targetFrame?.className).not.toContain('-inset');
         fireEvent.click(targetCard!);

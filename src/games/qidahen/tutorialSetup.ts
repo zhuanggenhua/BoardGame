@@ -881,7 +881,7 @@ const createWheelSharedCostTutorialSetup = (): QidahenTutorialPreset => ({
         core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
         core.turnPhase = 'action-window';
         core.wheelActionUsed = false;
-        core.factionActionUsed = true;
+        core.factionActionUsed = false;
         core.actionWheelPosition = 'wheel-military-farm';
         core.selectedWheelMoveId = 'move-3-all-opponents';
         core.selectedRegionId = 'city-region-24';
@@ -928,7 +928,9 @@ const createWheelReclaimTutorialSetup = (): QidahenTutorialPreset => ({
         core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
         core.turnPhase = 'action-window';
         core.wheelActionUsed = false;
-        core.factionActionUsed = true;
+        // This standalone wheel tutorial must keep Ming as the visible actor after resolution.
+        // The hand action is not part of this tutorial's demonstrated path.
+        core.factionActionUsed = false;
         core.actionWheelPosition = 'wheel-new-year';
         core.selectedWheelMoveId = 'move-1-free';
         core.selectedRegionId = 'city-region-24';
@@ -973,7 +975,7 @@ const createWheelMilitaryFarmTutorialSetup = (): QidahenTutorialPreset => ({
         core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
         core.turnPhase = 'action-window';
         core.wheelActionUsed = false;
-        core.factionActionUsed = true;
+        core.factionActionUsed = false;
         core.actionWheelPosition = 'wheel-reclaim';
         core.selectedWheelMoveId = 'move-1-free';
         core.selectedRegionId = 'city-region-24';
@@ -1018,7 +1020,7 @@ const createWheelRecruitTrainTutorialSetup = (): QidahenTutorialPreset => ({
         core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
         core.turnPhase = 'action-window';
         core.wheelActionUsed = false;
-        core.factionActionUsed = true;
+        core.factionActionUsed = false;
         core.actionWheelPosition = 'wheel-military-farm';
         core.selectedWheelMoveId = 'move-1-free';
         core.selectedRegionId = 'city-region-24';
@@ -1433,8 +1435,8 @@ const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     'wheel-recruit-train': withContract(createWheelRecruitTrainTutorialSetup(), actionWindowContract({
         currentActorFaction: 'ming',
         firstRealDecision: 'choose-wheel-move',
-        precedingAtoms: ['setup-complete', 'hand-limit', 'hand-action'],
-        injectedDifferences: ['预置轮盘位于军屯入口，只演示征兵与训练的真实地图结果。'],
+        precedingAtoms: ['setup-complete', 'hand-limit'],
+        injectedDifferences: ['预置轮盘位于军屯入口，保留大明为当前行动人，只演示征兵与训练的真实地图结果。'],
     })),
     'armament-upgrade': withContract(createArmamentUpgradeTutorialSetup(), actionWindowContract({
         currentActorFaction: 'ming',

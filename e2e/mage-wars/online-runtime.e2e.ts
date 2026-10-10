@@ -537,10 +537,11 @@ async function startMageWarsFxGifCapture(
             });
     });
     await cdpSession.send('Page.startScreencast', {
-        format: 'png',
+        format: 'jpeg',
+        quality: 55,
         everyNthFrame: 1,
-        maxWidth: 1920,
-        maxHeight: 1080,
+        maxWidth: 1280,
+        maxHeight: 720,
     });
     recording.startedAtMs = Date.now();
 
@@ -3222,7 +3223,7 @@ async function waitForFxLayerIdle(page: Page, label: string) {
         if (!layer) return false;
         const activeCount = Number.parseInt(layer.dataset.fxActiveCount ?? '0', 10);
         return Number.isFinite(activeCount) && activeCount === 0;
-    }, undefined, { timeout: 5_000 }).catch(async (error: unknown) => {
+    }, undefined, { timeout: 8_000 }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const debug = await readHealingFloatDebug(page);
         throw new Error([
@@ -3267,7 +3268,9 @@ async function waitForHealingVisualFrame(page: Page, label: string) {
         const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-impact"]');
         const burst = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-burst"]');
         const number = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-number"]');
-        if (!impact || !burst || !number) return false;
+        const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+        const settledDie = document.querySelector<HTMLElement>('[data-die-renderer="css-d6"][data-roll-animation="settled"]');
+        if (!impact || !burst || !number || !dice || !settledDie) return false;
         const visible = (element: HTMLElement) => {
             const rect = element.getBoundingClientRect();
             let effectiveOpacity = 1;
@@ -3286,12 +3289,13 @@ async function waitForHealingVisualFrame(page: Page, label: string) {
         return visible(impact)
             && visible(burst)
             && visible(number)
+            && visible(dice)
             && (number.textContent?.includes('+') ?? false);
-    }, undefined, { timeout: 5_000 }).catch(async (error: unknown) => {
+    }, undefined, { timeout: 6_000 }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const debug = await readHealingFloatDebug(page);
         throw new Error([
-            `${label} 治疗过程帧未同时捕捉到治疗光效和恢复数字`,
+            `${label} 治疗过程帧未同时捕捉到治疗光效、恢复数字和攻击骰`,
             message,
             `debug=${JSON.stringify(debug, null, 2)}`,
         ].join('\n'));
@@ -3496,6 +3500,22 @@ async function captureMageWarsFxProcessScreenshots(
         expect(audit.hasTravel).toBe(true);
         expect(audit.hasImpact).toBe(true);
         expect(`${audit.sourceRow}:${audit.sourceCol}`).not.toBe(`${audit.targetRow}:${audit.targetCol}`);
+        const slideLayer = await slide.evaluate((element) => {
+            const el = element as HTMLElement;
+            const arena = el.closest('[data-testid="mage-wars-arena-stage"], [data-testid="mage-wars-fx-layer"]');
+            return {
+                layer: el.dataset.slideLayer ?? null,
+                inArena: Boolean(arena),
+                parentIsBody: el.parentElement === document.body,
+                position: getComputedStyle(el).position,
+                zIndex: getComputedStyle(el).zIndex,
+            };
+        });
+        expect(slideLayer.layer, '推斥克隆必须留在棋盘层').toBe('arena');
+        expect(slideLayer.inArena, '推斥克隆必须挂在竞技场内').toBe(true);
+        expect(slideLayer.parentIsBody, '推斥不得 portal 到 document.body').toBe(false);
+        expect(slideLayer.position).toBe('absolute');
+        expect(Number(slideLayer.zIndex), '推斥不得抬到法术书上层').toBeLessThan(200);
         const slidePath = await slide.evaluate((element) => {
             const dataset = (element as HTMLElement).dataset;
             return {
@@ -3503,10 +3523,6 @@ async function captureMageWarsFxProcessScreenshots(
                 fromTop: Number(dataset.fromTop),
                 toLeft: Number(dataset.toLeft),
                 toTop: Number(dataset.toTop),
-                fromPxLeft: Number(dataset.fromPxLeft),
-                fromPxTop: Number(dataset.fromPxTop),
-                toPxLeft: Number(dataset.toPxLeft),
-                toPxTop: Number(dataset.toPxTop),
             };
         });
         expect(
@@ -3520,18 +3536,17 @@ async function captureMageWarsFxProcessScreenshots(
             slidePath.fromLeft !== slidePath.toLeft || slidePath.fromTop !== slidePath.toTop,
             `推斥滑移起终点不能重合: ${JSON.stringify(slidePath)}`,
         ).toBe(true);
-        const hasViewportPath = Number.isFinite(slidePath.fromPxLeft)
-            && Number.isFinite(slidePath.fromPxTop)
-            && Number.isFinite(slidePath.toPxLeft)
-            && Number.isFinite(slidePath.toPxTop)
-            && (slidePath.fromPxLeft !== slidePath.toPxLeft || slidePath.fromPxTop !== slidePath.toPxTop);
-        expect(hasViewportPath, `推斥滑移必须写出视口起终点: ${JSON.stringify(slidePath)}`).toBe(true);
         const readSlideProgress = () => slide.evaluate((element) => {
             const el = element as HTMLElement;
-            const fromLeft = Number(el.dataset.fromPxLeft);
-            const fromTop = Number(el.dataset.fromPxTop);
-            const toLeft = Number(el.dataset.toPxLeft);
-            const toTop = Number(el.dataset.toPxTop);
+            const parent = el.offsetParent instanceof HTMLElement
+                ? el.offsetParent
+                : el.closest('[data-testid="mage-wars-arena-stage"], [data-testid="mage-wars-fx-layer"]');
+            if (!(parent instanceof HTMLElement)) return 0;
+            const parentRect = parent.getBoundingClientRect();
+            const fromLeft = parentRect.left + (Number(el.dataset.fromLeft) / 100) * parentRect.width;
+            const fromTop = parentRect.top + (Number(el.dataset.fromTop) / 100) * parentRect.height;
+            const toLeft = parentRect.left + (Number(el.dataset.toLeft) / 100) * parentRect.width;
+            const toTop = parentRect.top + (Number(el.dataset.toTop) / 100) * parentRect.height;
             const rect = el.getBoundingClientRect();
             const dist = Math.hypot(toLeft - fromLeft, toTop - fromTop);
             if (!(dist > 1)) return 1;
@@ -3594,6 +3609,8 @@ async function captureMageWarsFxProcessScreenshots(
     await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-投射开始`);
     if (options.expectHealingFloat) {
         await waitForHealingVisualFrame(page, label);
+        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-治疗骰`);
+        await expectMageWarsAttackResultLayerIsolated(page, `${label}-治疗骰`);
     }
     if (kind === 'attack') {
         await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-投射开始`);
@@ -7266,6 +7283,278 @@ test.describe('Mage Wars formal online runtime', () => {
                     evidence: [
                         'E2E：野性山猫 2906 的攻击事件没有 effectDieResult / rawEffectDieResult',
                         'E2E：正式页面没有 mage-wars-fx-effect-die-face',
+                    ],
+                },
+            ],
+        });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, recording);
+    });
+
+    test('正式页面治疗之光实际动效独立证据覆盖', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        const recording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '治疗之光',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const clericObjectId = 'mw-e2e-healing-light-cleric';
+        const animalObjectId = 'mw-e2e-healing-light-bobcat';
+        let gifCapture: MageWarsFxGifCapture | undefined;
+        let healingVisibleDelta: {
+            before: { life: number; remaining: number };
+            after: { life: number; remaining: number };
+        } | null = null;
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                replaceObjects: true,
+                objects: [
+                    {
+                        ...createMageWarsE2eCreatureObject(
+                            clericObjectId,
+                            '0',
+                            2811,
+                            '阿希拉牧师',
+                            ARENA_ZONE_IDS.A3,
+                        ),
+                        actionReady: true,
+                    },
+                    {
+                        ...createMageWarsE2eCreatureObject(
+                            animalObjectId,
+                            '0',
+                            2906,
+                            '野性山猫',
+                            ARENA_ZONE_IDS.A3,
+                        ),
+                        damage: 4,
+                        actionReady: false,
+                    },
+                ],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A1,
+                        mana: 12,
+                        actionReady: true,
+                        quickcastReady: true,
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                    },
+                },
+            });
+
+            const clericCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${clericObjectId}"]`,
+            ).first();
+            const animalCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${animalObjectId}"]`,
+            ).first();
+            await expect(clericCard).toBeVisible({ timeout: 5_000 });
+            await expect(animalCard).toBeVisible({ timeout: 5_000 });
+            const woundedDamage = await readServerObjectDamage(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                '治疗之光前应能读取受伤野性山猫真实伤害',
+            );
+            expect(woundedDamage).toBeGreaterThan(0);
+            const beforeHealingLife = await readVisibleFieldCardLife(
+                match.hostPage,
+                animalCard,
+                '阿希拉牧师治疗之光动作前',
+            );
+            expect(beforeHealingLife.remaining, '治疗前野性山猫必须显示受伤生命').toBeLessThan(beforeHealingLife.life);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '治疗之光动作前截图');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '01-治疗之光动作前-野性山猫生命读数显示',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await clickFieldObject(match.hostPage, clericCard, '治疗之光前选择阿希拉牧师来源');
+            const healingLightButton = match.hostPage.getByTestId('mage-wars-selected-object-ability-healing-light');
+            await expect(healingLightButton).toBeVisible({ timeout: 3_000 });
+            const healingAbilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(healingAbilityDock).toBeVisible({ timeout: 3_000 });
+            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(healingLightButton).toContainText('治疗之光');
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '治疗之光入口截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '02-治疗之光入口-来源卡牌下方动作按钮可见',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await healingLightButton.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(animalCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
+            await waitForFxLayerIdle(match.hostPage, '治疗之光目标提交前');
+            await waitForTestHarness(match.hostPage);
+            const healingDiceReady = await match.hostPage.evaluate(() => {
+                const harness = (window as Window & {
+                    __BG_TEST_HARNESS__?: {
+                        dice?: {
+                            setValues?: (values: number[]) => void;
+                            remaining?: () => number;
+                            getValues?: () => number[];
+                        };
+                    };
+                }).__BG_TEST_HARNESS__;
+                harness?.dice?.setValues?.([2]);
+                return {
+                    hasHarness: Boolean(harness),
+                    remaining: harness?.dice?.remaining?.() ?? null,
+                    values: harness?.dice?.getValues?.() ?? [],
+                };
+            });
+            expect(healingDiceReady).toMatchObject({
+                hasHarness: true,
+                remaining: 1,
+                values: [2],
+            });
+            gifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
+            const healingFxAuditPromise = captureMageWarsFxProcessScreenshots(
+                match.hostPage,
+                testInfo,
+                'healing',
+                '03-阿希拉牧师治疗之光',
+                {
+                    expectHealingFloat: true,
+                    evidenceDir: evidenceRun.stagingDir,
+                    captureFrame: (animations) => gifCapture?.capture(animations) ?? Promise.resolve(),
+                },
+            );
+            await clickFieldObject(match.hostPage, animalCard, '治疗之光选择受伤野性山猫');
+            const healingFxAudit = await healingFxAuditPromise;
+            await gifCapture.stop();
+            expect(healingFxAudit.targetAnchorId).toBe(animalObjectId);
+            await expect.poll(async () => (
+                hasArenaObjectAbilityResolvedEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                    animalObjectId,
+                )
+            ), {
+                message: '阿希拉牧师治疗之光应通过正式页面产生对象主动能力结算事件',
+                timeout: 5_000,
+            }).toBe(true);
+            await expect.poll(async () => (
+                hasEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    'MW_SPELL_HEALING_ROLLED',
+                    (payload) => payload.sourceAbilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT
+                        && payload.targetObjectId === animalObjectId
+                        && Array.isArray(payload.diceResults)
+                        && payload.diceResults.length === 1
+                        && typeof payload.actualHealing === 'number'
+                        && payload.actualHealing > 0,
+                )
+            ), {
+                message: '阿希拉牧师治疗之光应产生带攻击骰结果的治疗掷骰事件',
+                timeout: 5_000,
+            }).toBe(true);
+            await expectServerObjectDamageLessThan(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                woundedDamage,
+                '治疗之光结算后野性山猫伤害应降低',
+            );
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '治疗之光结算后截图前');
+            const afterHealingLife = await waitForVisibleFieldCardLifeIncrease(
+                match.hostPage,
+                animalCard,
+                beforeHealingLife,
+                '阿希拉牧师治疗之光结算后',
+            );
+            expect(afterHealingLife.life).toBe(beforeHealingLife.life);
+            expect(
+                afterHealingLife.remaining,
+                '治疗之光必须让同一目标的可见当前生命值上升',
+            ).toBeGreaterThan(beforeHealingLife.remaining);
+            healingVisibleDelta = {
+                before: beforeHealingLife,
+                after: afterHealingLife,
+            };
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '04-治疗之光结算后-野性山猫生命读数上升',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+        } finally {
+            await gifCapture?.stop().catch(() => undefined);
+            await Promise.all([
+                match.hostContext.close(),
+                match.guestContext.close(),
+            ]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(healingVisibleDelta, '治疗之光必须在最终证据前留下同一对象的可见生命前后值').not.toBeNull();
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '治疗之光代表态',
+            chainId: 'mage-wars-independent-healing-light-20261011',
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            required: true,
+            requireVisibleEffectDelta: true,
+            screenshotIncludes: [
+                '01-治疗之光动作前-野性山猫生命读数显示',
+                '02-治疗之光入口-来源卡牌下方动作按钮可见',
+                '03-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧',
+                '04-治疗之光结算后-野性山猫生命读数上升',
+            ],
+            screenshotDescriptions: {
+                '01-治疗之光动作前-野性山猫生命读数显示': {
+                    description: '治疗之光；玩家查看受伤野性山猫，画面显示当前生命低于最大生命，建立治疗前基线。',
+                    transition: '本链起点：目标已受伤且生命读数可见。',
+                    testedObject: '阿希拉牧师的治疗之光',
+                    effectClaim: '掷 1 颗攻击骰，治疗效果等于掷骰结果',
+                    observedDelta: `效果前：同一只野性山猫当前生命为 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}，服务端伤害大于 0。`,
+                },
+                '02-治疗之光入口-来源卡牌下方动作按钮可见': {
+                    description: '玩家点击阿希拉牧师本体后，来源卡下方出现“治疗之光”入口，受伤野性山猫仍保持可见。',
+                    transition: '相对上一张：从前态进入来源能力入口。',
+                    observedDelta: '目标仍处于受伤前态，治疗尚未提交。',
+                },
+                '03-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧': {
+                    description: '玩家选择受伤野性山猫后，同一目标出现攻击骰、治疗光效和恢复数字，画面进入真实结算过程。',
+                    transition: '相对上一张：提交目标选择，开始治疗掷骰和光效。',
+                    observedDelta: '过程态：攻击骰、治疗光效和恢复数字同屏出现，来源与目标关系保持稳定。',
+                },
+                '04-治疗之光结算后-野性山猫生命读数上升': {
+                    description: '治疗结算完成后，野性山猫的可见当前生命值高于前态，伤害降低，牌桌回到可继续操作状态。',
+                    transition: '相对上一张：动画结束并收口到稳定结果。',
+                    observedDelta: `结果态：同一只野性山猫当前生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}，服务端伤害下降。`,
+                    visibleEffectDelta: {
+                        before: `${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}`,
+                        after: `${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}`,
+                        direction: 'increase',
+                    },
+                },
+            },
+            gifDescription: `玩家选择受伤野性山猫后，动图连续展示攻击骰、治疗光效、恢复数字和同一目标生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life} 的收口过程。`,
+            requirements: [
+                {
+                    requirement: '正式页面治疗之光独立覆盖：玩家从来源能力入口选择受伤目标，攻击骰、治疗光效、恢复数字、伤害降低和稳定收口来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面点击治疗之光来源、目标并产生对象能力结算和治疗掷骰事件',
+                        'E2E：攻击骰、治疗光效和恢复数字过程帧来自当前运行',
+                        recording.finalGifPath!,
                     ],
                 },
             ],

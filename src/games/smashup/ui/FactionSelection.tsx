@@ -107,6 +107,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const [detailPreviewTab, setDetailPreviewTab] = useState<'hand' | 'bases'>('hand');
     const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'titan' } | null>(null);
     const selectionGridRef = useRef<HTMLDivElement | null>(null);
+    const previousFactionSelectionsRef = useRef<string[]>([]);
     const [selectionGridMetrics, setSelectionGridMetrics] = useState<SelectionGridMetrics>(() => ({
         scrollTop: 0,
         viewportHeight: typeof window === 'undefined' ? 900 : Math.max(1, window.innerHeight),
@@ -369,8 +370,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         };
     }, [filteredFactionGroups.length]);
 
-    if (!selectionState) return null;
-
     const handleOpenFactionGroup = (groupId: string, preferredFactionId: string) => {
         setFocusedGroupId(groupId);
         setActiveFactionId(preferredFactionId);
@@ -503,6 +502,52 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         paddingTop: selectionVirtualTopSpacer,
         paddingBottom: selectionVirtualBottomSpacer,
     };
+
+    useEffect(() => {
+        const currentSelections = Object.values(selectionState?.playerSelections ?? {}).flat();
+        const previousSelections = previousFactionSelectionsRef.current;
+        const newlySelectedFactionId = currentSelections.find((factionId) => !previousSelections.includes(factionId));
+        previousFactionSelectionsRef.current = currentSelections;
+
+        if (!newlySelectedFactionId || normalizedFactionSearch.length > 0) return;
+
+        const selectedGroupId = getFactionVariantGroupById(newlySelectedFactionId)?.groupId ?? newlySelectedFactionId;
+        const selectedGroupIndex = filteredFactionGroups.findIndex(({ group }) => group.groupId === selectedGroupId);
+        const grid = selectionGridRef.current;
+        if (!grid || selectedGroupIndex < 0) return;
+
+        const optionIndex = selectedGroupIndex + (showRandomFactionOption ? 1 : 0);
+        const targetRow = Math.floor(optionIndex / selectionVirtualColumnCount);
+        const targetTop = Math.max(0, targetRow * selectionVirtualRowHeight - selectionVirtualRowHeight * 0.75);
+        grid.scrollTo({ top: targetTop, behavior: 'auto' });
+
+        const focusSelectedCard = (attempt = 0) => {
+            const selectedNode = Array.from(
+                grid.querySelectorAll<HTMLElement>('[data-testid^="faction-option-"]'),
+            ).find((node) => node.dataset.testid === `faction-option-${selectedGroupId}`);
+
+            if (selectedNode) {
+                selectedNode.scrollIntoView({ block: 'center', behavior: 'auto' });
+                return;
+            }
+
+            if (attempt < 2) {
+                window.requestAnimationFrame(() => focusSelectedCard(attempt + 1));
+            }
+        };
+
+        window.requestAnimationFrame(() => focusSelectedCard());
+    }, [
+        filteredFactionGroups,
+        normalizedFactionSearch,
+        selectionState,
+        selectionVirtualColumnCount,
+        selectionVirtualRowHeight,
+        showRandomFactionOption,
+    ]);
+
+    if (!selectionState) return null;
+
     const selectionIntro = (
         <motion.div
             initial={{ y: -50, opacity: 0 }}

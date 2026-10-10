@@ -10013,6 +10013,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-room-event-choice-target-basement-landing')).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('放置到门厅');
         expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-room-id', 'hallway');
@@ -10100,6 +10102,8 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-basement-landing'));
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-room-id', 'basement-landing');
@@ -10153,6 +10157,8 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-room-id', 'hallway');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 1（力量）');
@@ -10198,16 +10204,17 @@ describe('Betrayal Board foundation', () => {
         expect(eventChoicePanel).toHaveAttribute('data-surface', 'open-table');
         expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-event-choice-trait-might')).toHaveClass('min-h-[76px]');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-might'));
         expect(screen.getByTestId('betrayal-room-event-choice-target-hallway')).toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-card-front-atlas')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-damage-might')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).not.toHaveTextContent(
@@ -10352,9 +10359,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-event-choice-trait-speed')).toHaveTextContent('速度');
         expect(screen.getByTestId('betrayal-event-choice-trait-might')).toHaveTextContent('力量');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
 
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
@@ -10402,12 +10411,14 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-event-choice-trait-knowledge')).toHaveTextContent('知识');
         expect(screen.getByTestId('betrayal-event-choice-trait-sanity')).toHaveTextContent('神志');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
 
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '佳馔满桌');
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
@@ -10432,13 +10443,15 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-event-choice-trait-knowledge')).toHaveTextContent('知识');
         expect(screen.getByTestId('betrayal-event-choice-trait-sanity')).toHaveTextContent('神志');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
 
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
 
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '佳馔满桌');
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
@@ -10504,6 +10517,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-room-event-choice-target-basement-landing')).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('放置到门厅');
         expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-room-id', 'hallway');
@@ -10752,6 +10767,8 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '肉质苔癣');
         }, { timeout: 12000 });
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
@@ -10873,13 +10890,11 @@ describe('Betrayal Board foundation', () => {
         expect(rollPanel).toHaveTextContent('获得 1 点神志或速度');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
         expect(screen.getByTestId('betrayal-room-event-choice-target-hallway')).toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-card-front-atlas')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-rooms')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-room-hallway')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
@@ -10942,8 +10957,10 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '吊死鬼');
         expect(screen.getByTestId('betrayal-event-choice-all-trait-check')).toHaveTextContent('四项属性检定');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
@@ -10983,8 +11000,10 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '一条秘密通道');
         expect(screen.getByTestId('betrayal-room-event-choice-target-hallway')).toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('在当前板块放置秘密通道标志物');
@@ -11033,6 +11052,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-event-choice-target-basement-landing')).toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-room-basement-landing'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(dispatch).toHaveBeenCalledWith(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, {
             accept: true,
@@ -11064,8 +11085,10 @@ describe('Betrayal Board foundation', () => {
         );
 
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '脑状食品');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('速度 +1');
@@ -11098,8 +11121,9 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-trait-preview-mode', 'damage');
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-trait-preview-step-count', '1');
         expect(screen.getByTestId('betrayal-event-choice-damage-traits')).not.toHaveTextContent(/承担\s*\d+\s*点|×\d/);
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-knowledge-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 2（力量、知识）');
@@ -11133,8 +11157,9 @@ describe('Betrayal Board foundation', () => {
         );
 
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 2（力量、力量）');
@@ -11177,11 +11202,13 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-damage-might-increase')).toBeDisabled();
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-damage-locked', 'true');
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-trait-preview-locked', 'true');
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might-increase'));
         expect(screen.getByTestId('betrayal-event-choice-panel')).toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-speed-increase'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 1（速度）');
     });
@@ -11216,8 +11243,10 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '夜幕众星');
         expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 4');

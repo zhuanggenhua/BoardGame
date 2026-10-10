@@ -1,6 +1,6 @@
 .mage-wars-attack-die {
     --attack-die-size: clamp(3rem, 4vw, 5rem);
-    perspective: 900px;
+    perspective: 480px;
 }
 
 .mage-wars-attack-die-shadow {

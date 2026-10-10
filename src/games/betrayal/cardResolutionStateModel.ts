@@ -299,6 +299,14 @@ export function clonePendingEventChoice(
     return {
         ...pending,
         effect: cloneUseEffect(pending.effect),
+        allTraitCheckProgress: pending.allTraitCheckProgress
+            ? {
+                results: pending.allTraitCheckProgress.results.map((result) => ({
+                    ...result,
+                    dice: [...result.dice],
+                })),
+            }
+            : undefined,
         deferredTurnEnd: pending.deferredTurnEnd
             ? cloneTurnEndedPayload(pending.deferredTurnEnd)
             : undefined,

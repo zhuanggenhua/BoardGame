@@ -671,8 +671,7 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
         {
             id: 'battle-result',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.battleResult',
-            highlightTarget: 'qidahen-post-battle-selection',
-            position: 'left',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
             infoStep: true,
         },
         {

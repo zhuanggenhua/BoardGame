@@ -22,7 +22,7 @@ const TUTORIAL_STEP_02 = `${TUTORIAL_DIR}/02-开局检查-3张手牌未超过15�
 const TUTORIAL_STEP_02A = `${TUTORIAL_DIR}/02a-轮盘规则-1格2格3格对应不同轮盘结算.png`;
 const TUTORIAL_STEP_03 = `${TUTORIAL_DIR}/03-轮盘选择-点击高亮征兵训练.png`;
 const TUTORIAL_STEP_03A = `${TUTORIAL_DIR}/03a-轮盘合法分支自动恢复到选择.png`;
-const TUTORIAL_STEP_04 = `${TUTORIAL_DIR}/04-轮盘结算-征兵训练建立部队并训练炮兵.png`;
+const TUTORIAL_STEP_04 = `${TUTORIAL_DIR}/04-轮盘结算-宣府总兵力2到4并训练炮兵.png`;
 const TUTORIAL_STEP_04A = `${TUTORIAL_DIR}/04a-手牌行动规则-四个同层行动.png`;
 const TUTORIAL_STEP_05 = `${TUTORIAL_DIR}/05-赐印招安规则原文.png`;
 const TUTORIAL_STEP_06 = `${TUTORIAL_DIR}/06-手牌行动-现在选择赐印招安.png`;
@@ -42,8 +42,8 @@ const WHEEL_RECLAIM_STEP_02 = `${TUTORIAL_DIR}/15b-开垦第2步-看己方控制
 const WHEEL_MILITARY_FARM_STEP_01 = `${TUTORIAL_DIR}/15c-军屯第1步-点击高亮军屯.png`;
 const WHEEL_MILITARY_FARM_STEP_02 = `${TUTORIAL_DIR}/15d-军屯第2步-看补牌并建立正规军.png`;
 const WHEEL_RECRUIT_TRAIN_STEP_01 = `${TUTORIAL_DIR}/15e-征兵训练第1步-点击高亮征兵训练.png`;
-const WHEEL_RECRUIT_TRAIN_STEP_02 = `${TUTORIAL_DIR}/15f-征兵训练第2步-宣府正规军2到4炮兵升至2级.png`;
-const WHEEL_RECRUIT_TRAIN_FEEDBACK_DETAIL = `${TUTORIAL_DIR}/15f-征兵训练第2步-地图区域闪烁与兵牌淡出特写.png`;
+const WHEEL_RECRUIT_TRAIN_STEP_02 = `${TUTORIAL_DIR}/15f-征兵训练第2步-宣府总兵力2到4并训练炮兵.png`;
+const WHEEL_RECRUIT_TRAIN_FEEDBACK_DETAIL = `${TUTORIAL_DIR}/15f-征兵训练第2步-宣府炮兵与新增部队特写.png`;
 const ARMAMENT_STEP_00 = `${TUTORIAL_DIR}/16-军备第0步-四个势力行动总览.png`;
 const ARMAMENT_STEP_01 = `${TUTORIAL_DIR}/16-军备第1步-先点升级军备.png`;
 const ARMAMENT_STEP_02 = `${TUTORIAL_DIR}/17-军备第2步-点击底部手牌支付2张.png`;
@@ -174,32 +174,6 @@ const expectTutorialOverlayNotToCover = async (
         readLocatorRect(target),
     ]);
     expect(getRectOverlapArea(overlayRect, targetRect), label).toBeLessThanOrEqual(1);
-};
-
-const expectResultTroopSizeToMatchMapToken = async (page: Page) => {
-    const feedback = page.locator('[data-testid="qidahen-map-result-feedback"]');
-    const regionId = await feedback.getAttribute('data-qidahen-map-result-region');
-    if (!regionId) {
-        throw new Error('征兵训练地图反馈缺少区域标识');
-    }
-    const resultTroop = page.locator('[data-testid="qidahen-map-result-troop-fade"]').first();
-    const mapTroop = page.locator(
-        `[data-qidahen-map-token-type="army"][data-qidahen-map-token-region="${regionId}"]`,
-    ).first();
-    await expect(resultTroop).toBeVisible();
-    await expect(mapTroop).toBeVisible();
-    const [resultTroopSize, mapTroopSize] = await Promise.all([
-        resultTroop.evaluate((element) => {
-            const style = getComputedStyle(element);
-            return { height: Number.parseFloat(style.height), width: Number.parseFloat(style.width) };
-        }),
-        mapTroop.evaluate((element) => {
-            const style = getComputedStyle(element);
-            return { height: Number.parseFloat(style.height), width: Number.parseFloat(style.width) };
-        }),
-    ]);
-    expect(Math.abs(resultTroopSize.width - mapTroopSize.width), '新增兵牌宽度必须匹配地图原兵牌').toBeLessThanOrEqual(0.01);
-    expect(Math.abs(resultTroopSize.height - mapTroopSize.height), '新增兵牌高度必须匹配地图原兵牌').toBeLessThanOrEqual(0.01);
 };
 
 const readQidahenCore = async (page: Page) => (
@@ -405,19 +379,22 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军从 2 支变为 4 支');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵从 1 级升至 2 级');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('宣府总兵力由 2 支增至 4 支');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('新增 2 支等级 2 正规军');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('原有 1 支等级 1 炮兵训练至 2 级');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toHaveAttribute('data-qidahen-map-result-troop-delta', '2');
-        await expect(page.locator('[data-testid="qidahen-map-result-troop-fade"]')).toHaveCount(2);
+        await expect(page.locator('[data-testid="qidahen-map-result-feedback-text"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-result-troop-fade"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-result-troop-delta"]')).toHaveCount(0);
+        await expect(page.locator('[data-tutorial-id="qidahen-tutorial-result-artillery"]')).toHaveCount(1);
+        await expect(page.locator('[data-tutorial-id="qidahen-tutorial-result-artillery"]')).toHaveAttribute('data-qidahen-map-token-troop-kind', 'artillery');
         await expectTutorialOverlayNotToCover(
             page,
             page.locator('[data-testid="qidahen-map-result-feedback-safe-zone"]'),
             'wheel-result tutorial card must not cover map feedback safe zone',
         );
-        await expectResultTroopSizeToMatchMapToken(page);
         await saveScreenshot(page, TUTORIAL_STEP_04);
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
@@ -665,8 +642,9 @@ test.describe('七大恨新游戏收口', () => {
             await expect(touchPage.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
             await touchPage.getByTestId('qidahen-wheel-move-target-move-1-free').click();
             await expect(touchPage.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军从 2 支变为 4 支');
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵从 1 级升至 2 级');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('宣府总兵力由 2 支增至 4 支');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('新增 2 支等级 2 正规军');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('原有 1 支等级 1 炮兵训练至 2 级');
             await expect(touchPage.locator('[data-testid="qidahen-map-result-feedback"]')).toBeVisible({ timeout: 10000 });
             await touchPage.locator('[data-testid="tutorial-next-button"]').click();
             await expect(touchPage.locator('[data-tutorial-step="hand-action-order"]')).toBeVisible({ timeout: 10000 });
@@ -918,8 +896,10 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-tutorial-step="result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('宣府正规军从 2 支变为 4 支');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵从 1 级升至 2 级');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('宣府总兵力由 2 支增至 4 支');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('新增 2 支等级 2 正规军');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('原有 1 支等级 1 炮兵训练至 2 级');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('宣府正规军从 2 支变为 4 支');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('轮盘征兵/训练');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('+2');
         await page.waitForTimeout(2800);
@@ -927,14 +907,22 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-map-result-feedback-canvas"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toHaveAttribute('data-qidahen-map-result-region', 'city-region-24');
         await expect(page.locator('[data-testid="qidahen-map-result-feedback"]')).toHaveAttribute('data-qidahen-map-result-troop-delta', '2');
-        await expect(page.locator('[data-testid="qidahen-map-result-troop-fade"]')).toHaveCount(2);
+        await expect(page.locator('[data-testid="qidahen-map-result-feedback-text"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-result-troop-fade"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-result-troop-delta"]')).toHaveCount(0);
+        const mapTokenImages = await page.locator('[data-testid^="qidahen-map-token-"][data-qidahen-map-token-region="city-region-24"][data-qidahen-army-face="front"] img').evaluateAll((elements) => elements.map((element) => ({
+            src: (element as HTMLImageElement).currentSrc || (element as HTMLImageElement).src,
+            naturalWidth: (element as HTMLImageElement).naturalWidth,
+        })));
+        expect(mapTokenImages).toHaveLength(4);
+        expect(mapTokenImages.some((image) => image.src.includes('ming-regular-artillery-unit') && image.naturalWidth > 0)).toBe(true);
+        await expect(page.locator('[data-tutorial-id="qidahen-tutorial-result-artillery"]')).toHaveCount(1);
+        await expect(page.locator('[data-tutorial-id="qidahen-tutorial-result-artillery"]')).toHaveAttribute('data-qidahen-map-token-troop-kind', 'artillery');
         await expectTutorialOverlayNotToCover(
             page,
             page.locator('[data-testid="qidahen-map-result-feedback-safe-zone"]'),
             'recruit-train tutorial card must not cover map feedback safe zone',
         );
-        await expectResultTroopSizeToMatchMapToken(page);
         const feedbackBox = await page.locator('[data-testid="qidahen-map-result-feedback"]').boundingBox();
         if (!feedbackBox) {
             throw new Error('征兵训练地图反馈特写缺少真实地图锚点');

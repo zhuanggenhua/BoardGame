@@ -243,8 +243,8 @@ export function BetrayalEventChoiceSurface({
               </div>
             </div>
           ) : null}
-          <div
-            className={`flex min-h-0 min-w-0 flex-col justify-center ${
+            <div
+              className={`flex min-h-0 min-w-0 flex-col justify-start ${
               isEventSymbolSkip
                 ? "pointer-events-auto justify-start gap-4"
                 : roll
@@ -269,9 +269,7 @@ export function BetrayalEventChoiceSurface({
               </div>
             ) : null}
             <div
-              className={`custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pr-1 ${
-                "justify-center gap-6"
-              }`}
+              className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pr-1"
             >
               {traitChoices.length > 0 ? (
                 <div
@@ -279,7 +277,11 @@ export function BetrayalEventChoiceSurface({
                   data-testid="betrayal-event-choice-traits"
                 >
                   <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {t("board.sections.traits")}
+                    {choice.effect.mode === "allTraitChecks" &&
+                    (!choice.effect.results ||
+                      choice.effect.results.length < choice.effect.traits.length)
+                      ? t("board.status.chooseCheckTrait")
+                      : t("board.status.chooseTrait")}
                   </span>
                   <div
                     className={
@@ -400,10 +402,11 @@ export function BetrayalEventChoiceSurface({
             </div>
             {choice.declineLabel || showAcceptButton ? (
               <div
-                className={`shrink-0 ${
+                data-ui-role="shared-action-dock"
+                className={`sticky bottom-0 shrink-0 border-t border-[rgba(214,191,129,0.18)] bg-[rgba(8,10,9,0.86)] pt-4 ${
                   isEventSymbolSkip
-                    ? "mt-1 grid grid-cols-2 gap-4 border-t border-[rgba(74,222,128,0.24)] pt-4"
-                    : "mt-7 flex justify-end gap-4 pt-3"
+                    ? "mt-4 grid grid-cols-2 gap-4 border-t border-[rgba(74,222,128,0.24)]"
+                    : "mt-5 flex justify-center gap-4"
                 }`}
               >
                 {choice.declineLabel ? (

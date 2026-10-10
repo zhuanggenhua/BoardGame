@@ -38,6 +38,7 @@ const SAFE_OMEN_MATRIX_DONE_SCREENSHOT = '09-当前9张预兆矩阵-末张确认
 const HAUNT_OMEN_MATRIX_REVEAL_SCREENSHOT = '10-当前9张预兆触发矩阵-首张先翻预兆.jpg';
 const HAUNT_OMEN_MATRIX_DONE_SCREENSHOT = '11-当前9张预兆触发矩阵-末张确认后作祟牌桌.jpg';
 const TEST_URL = '/play/betrayal?players=3&playerID=0&seat0=human&seat1=human&seat2=human&seed=haunt-reveal-discovery-confirmation';
+const SIX_PLAYER_TEST_URL = '/play/betrayal?players=6&playerID=0&seat0=human&seat1=local-ai&seat2=local-ai&seat3=local-ai&seat4=local-ai&seat5=local-ai&seed=haunt-reveal-discovery-confirmation-six-player';
 
 type OmenDiscoveryCard = BetrayalCore['possessionOrderByKind']['omen'][number];
 type ItemDiscoveryCard = BetrayalCore['possessionOrderByKind']['item'][number];
@@ -67,14 +68,14 @@ const LUCKY_COIN_ITEM_CARD =
     ({ id: 'lucky-coin', name: '幸运硬币', kind: 'item' } satisfies ItemDiscoveryCard);
 const HELD_OMEN_CARDS = [BOOK_OMEN_CARD, MASK_OMEN_CARD, SKULL_OMEN_CARD] as const;
 
-function pickVisibleHeldOmenCards(excludedCardId: string): OmenDiscoveryCard[] {
+function pickVisibleHeldOmenCards(excludedCardId: string, count = 3): OmenDiscoveryCard[] {
     const preferredCards = [
         ...HELD_OMEN_CARDS,
         ...CURRENT_OMEN_DISCOVERY_CARDS,
     ].filter((card) => card.id !== excludedCardId);
     const byId = new Map(preferredCards.map((card) => [card.id, card]));
-    const cards = [...byId.values()].slice(0, 3);
-    if (cards.length < 3) {
+    const cards = [...byId.values()].slice(0, count);
+    if (cards.length < count) {
         throw new Error('山屋 E2E 缺少足够真实预兆卡来构造作祟检定压力态');
     }
     return cards.map((card) => ({ ...card }));
@@ -146,14 +147,15 @@ type HauntDiscoveryConfirmationState = {
 function createOmenHauntPendingResolutionCore(
     omenCard: OmenDiscoveryCard = DOG_OMEN_CARD,
     actorPlayerId = '0',
+    playerIds: string[] = ['0', '1', '2'],
 ): BetrayalCore {
-    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    let core = createStartedFirstScenarioCore(playerIds);
     core = focusFixtureOnPlayer(core, actorPlayerId);
     core.drawOrder = ['omen'];
     core.possessionOrderByKind.omen = [
         { ...omenCard },
     ];
-    const heldOmenCards = pickVisibleHeldOmenCards(omenCard.id);
+    const heldOmenCards = pickVisibleHeldOmenCards(omenCard.id, playerIds.length);
     core.currentExplorer.inventory = [
         { ...heldOmenCards[0]! },
     ];
@@ -192,9 +194,9 @@ function createOmenHauntPendingResolutionCore(
     if (
         core.pendingCardResolutionQueue[0]?.stepKind !== 'drawn-card'
         || core.pendingCardResolutionQueue[0]?.total !== 1
-        || core.pendingCardResolutionQueue[0]?.requiredPlayerIds?.length !== 3
+        || core.pendingCardResolutionQueue[0]?.requiredPlayerIds?.length !== playerIds.length
     ) {
-        throw new Error('普通预兆作祟 E2E 必须是一个确认步骤，但仍要求 3 名玩家逐一确认');
+        throw new Error(`普通预兆作祟 E2E 必须是一个确认步骤，但仍要求 ${playerIds.length} 名玩家逐一确认`);
     }
     return core;
 }
@@ -538,6 +540,72 @@ test('普通预兆触发作祟时先确认预兆和检定，再承接作祟揭�
 
     await assertNoFatalFrontendErrors([
         { label: 'betrayal-haunt-reveal-discovery-confirmation', diagnostics },
+    ]);
+});
+
+test('六人混合席位中 AI 已确认五席时真人可见可点并完成预兆结算', async ({ page, context }, testInfo) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context);
+    const diagnostics = attachPageDiagnostics(page, 'betrayal-six-player-haunt-discovery-confirmation');
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await warmBetrayalFrontend(context);
+    await page.goto(SIX_PLAYER_TEST_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForBetrayalPageReady(page);
+
+    const playerIds = ['0', '1', '2', '3', '4', '5'];
+    const core = createOmenHauntPendingResolutionCore(DOG_OMEN_CARD, '0', playerIds);
+    core.pendingCardResolutionQueue[0]!.acknowledgedPlayerIds = playerIds.slice(1);
+    expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+        requiredPlayerIds: playerIds,
+        acknowledgedPlayerIds: ['1', '2', '3', '4', '5'],
+    });
+    await injectCore(page, core);
+    await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+
+    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+    await expect(discoveryPanel, '六人真实入口必须显示预兆结算面板').toBeVisible({ timeout: 10000 });
+    const continueButton = discoveryPanel.getByTestId('betrayal-discovery-continue');
+    await expect(continueButton).toBeVisible();
+    await expect(continueButton).toBeEnabled();
+    await expect(continueButton).toHaveText('确认 5/6');
+
+    const interactionMetrics = await continueButton.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        const centerElement = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2,
+        );
+        return {
+            width: rect.width,
+            height: rect.height,
+            pointerEvents: style.pointerEvents,
+            centerCovered: Boolean(centerElement && (centerElement === element || element.contains(centerElement))),
+        };
+    });
+    expect(interactionMetrics.width).toBeGreaterThan(1);
+    expect(interactionMetrics.height).toBeGreaterThan(1);
+    expect(interactionMetrics.pointerEvents).not.toBe('none');
+    expect(interactionMetrics.centerCovered).toBe(true);
+    await saveEvidenceScreenshot(page, testInfo, '六人AI已确认五席-真人确认5-6.jpg');
+
+    await continueButton.click();
+    await expect.poll(() => readHauntDiscoveryConfirmationState(page), { timeout: 15000 }).toMatchObject({
+        pendingSteps: [],
+        rejected: null,
+    });
+    await expect(discoveryPanel).toHaveCount(0);
+    const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
+    await expect(scenarioReader, '真人确认后六人房间必须出现下一步剧本入口').toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('betrayal-scenario-reader-close')).toBeVisible();
+    await page.getByTestId('betrayal-scenario-reader-close').click();
+    await expect(scenarioReader).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-open-scenario')).toBeVisible();
+    await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟中|恶兆后|Haunt/i);
+
+    await assertNoFatalFrontendErrors([
+        { label: 'betrayal-six-player-haunt-discovery-confirmation', diagnostics },
     ]);
 });
 

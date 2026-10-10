@@ -917,12 +917,6 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         transform-origin: bottom center;
     }
 
-    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-room-floor-switcher"],
-    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-room-floor-switcher"] {
-        transform: scale(var(--betrayal-hud-scale));
-        transform-origin: bottom right;
-    }
-
     [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-prev-zone"],
     body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-prev-zone"],
     [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-close"],

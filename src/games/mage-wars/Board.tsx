@@ -1461,8 +1461,9 @@ function PreparedSpellCard({
     );
 }
 
-const SCENE_OBJECT_LEGAL_STROKE_CLASS = 'pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-2 border-emerald-300/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.36),0_0_12px_rgba(16,185,129,0.42)]';
-const SCENE_OBJECT_LEGAL_GLOW_CLASS = 'shadow-[0_0_30px_rgba(16,185,129,0.48)]';
+// 合法目标主边界贴本体。深色内描边把 lime 从金卡框里衬出来，外发光只辅助，不另做离体框。
+const SCENE_OBJECT_LEGAL_STROKE_CLASS = 'pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-[3px] border-lime-300 shadow-[inset_0_0_0_2px_rgba(6,78,59,0.92),0_0_0_1px_rgba(236,252,203,0.95),0_0_14px_rgba(163,230,53,0.95),0_0_28px_rgba(52,211,153,0.72)]';
+const SCENE_OBJECT_LEGAL_GLOW_CLASS = 'shadow-[0_0_30px_rgba(16,185,129,0.48),0_0_18px_rgba(163,230,53,0.7)]';
 
 function ZoneFieldCard({
     cardId,

@@ -751,6 +751,12 @@ export interface QidahenSeasonSummary {
         beforeTroops: number;
         afterTroops: number;
     };
+    mapResults?: Array<{
+        regionId: string;
+        troopDelta: number;
+        beforeTroops: number;
+        afterTroops: number;
+    }>;
 }
 
 export interface QidahenActiveEventCard {

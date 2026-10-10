@@ -265,6 +265,9 @@ describe('FeedbackModal', () => {
             matchId: 'tIB30DkkiVZ',
             playerId: '0',
             gameId: 'betrayal',
+            performance: {
+                windowMs: 30_000,
+            },
         });
         expect(body.actionLog).toContain('user-feedback-diagnostic');
         expect(body.actionLog).toContain('玩家 0 结算事件：小机器人');
