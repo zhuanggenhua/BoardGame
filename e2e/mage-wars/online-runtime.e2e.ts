@@ -3480,21 +3480,20 @@ async function captureMageWarsFxProcessScreenshots(
         : undefined;
 
     if (kind === 'push') {
-        // 0.3s 滑移窗口禁止：locator.evaluate、阻塞型整页截图、页面内长 rAF evaluate。
-        // 这三样都会让 CDP screencast 丢掉克隆中段，路径中就会抽到空棋盘。
-        // 只做一次 querySelector 快照，然后等克隆卸掉；开始/路径/落点全部 GIF 停后再抽。
+        // 0.3s 滑移窗口禁止：locator.evaluate 之后再截图、阻塞型整页截图、页面内长 rAF evaluate。
+        // 看见克隆立刻记下窗口起点，快照只读当前几何，开始/路径/落点全部 GIF 停后再抽。
         const slide = page.getByTestId('mage-wars-fx-push-slide').first();
         await expect(slide).toBeVisible({ timeout: 5_000 });
-        await expect(slide).toHaveAttribute('data-slide-layer', 'body-portal', { timeout: 1_000 });
         const recordingOriginMs = options.recording?.startedAtMs ?? Date.now();
-        const evidenceWindowElapsedStartMs = Math.max(0, Date.now() - recordingOriginMs - 80);
+        const evidenceWindowElapsedStartMs = Math.max(0, Date.now() - recordingOriginMs - 16);
         const evidenceWindowElapsedEndMs = evidenceWindowElapsedStartMs
-            + MAGE_WARS_FX_TIMING.pushTravelCompleteMs
-            + 80;
+            + MAGE_WARS_FX_TIMING.pushTravelCompleteMs;
+        await expect(slide).toHaveAttribute('data-slide-layer', 'body-portal', { timeout: 1_000 });
         const snapshot = await page.evaluate(() => {
             const el = document.querySelector('[data-testid="mage-wars-fx-push-slide"]');
             if (!(el instanceof HTMLElement)) return null;
             const arena = el.closest('[data-testid="mage-wars-arena-stage"], [data-testid="mage-wars-fx-layer"]');
+            const rect = el.getBoundingClientRect();
             return {
                 sourceRow: el.dataset.sourceRow ?? null,
                 sourceCol: el.dataset.sourceCol ?? null,
@@ -3505,6 +3504,7 @@ async function captureMageWarsFxProcessScreenshots(
                 layer: el.dataset.slideLayer ?? null,
                 motion: el.dataset.slideMotion ?? null,
                 paint: el.querySelector('[data-slide-paint]')?.getAttribute('data-slide-paint') ?? null,
+                art: el.querySelector('[data-slide-art]')?.getAttribute('data-slide-art') ?? null,
                 inArena: Boolean(arena),
                 parentIsBody: el.parentElement === document.body,
                 position: getComputedStyle(el).position,
@@ -3514,15 +3514,19 @@ async function captureMageWarsFxProcessScreenshots(
                 toLeft: Number(el.dataset.toLeft),
                 toTop: Number(el.dataset.toTop),
                 fromPxLeft: Number(el.dataset.fromPxLeft),
+                fromPxTop: Number(el.dataset.fromPxTop),
                 toPxLeft: Number(el.dataset.toPxLeft),
+                toPxTop: Number(el.dataset.toPxTop),
+                currentLeft: rect.left,
+                currentTop: rect.top,
                 hasTravelNode: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-travel"]')),
                 hasSourceWake: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-source-wake"]')),
                 hasMidBurst: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-travel-mid-burst"]')),
                 hasSpellBurst: Boolean(document.querySelector('[data-testid="mage-wars-fx-spell-push-burst"]')),
                 opacity: getComputedStyle(el).opacity,
                 visibility: getComputedStyle(el).visibility,
-                width: el.getBoundingClientRect().width,
-                height: el.getBoundingClientRect().height,
+                width: rect.width,
+                height: rect.height,
             };
         });
         expect(snapshot, '推斥滑移克隆可见时必须读到路径数据').not.toBeNull();
@@ -3555,12 +3559,46 @@ async function captureMageWarsFxProcessScreenshots(
         expect(snapshot!.layer, '推斥克隆必须 portal 到 body，避开竞技场 overflow 裁切和合成层').toBe('body-portal');
         expect(snapshot!.parentIsBody, '推斥克隆必须挂在 document.body').toBe(true);
         expect(snapshot!.position).toBe('fixed');
-        expect(snapshot!.motion).toBe('css-position');
+        expect(snapshot!.motion).toBe('waapi-transform');
         expect(snapshot!.paint).toBe('opaque');
         expect(Number(snapshot!.zIndex), '推斥不得抬到法术书上层').toBeLessThan(200);
         expect(Number(snapshot!.fromPxLeft), '推斥克隆必须有视口像素起点').toBeGreaterThan(0);
+        expect(Number(snapshot!.fromPxTop), '推斥克隆必须有视口像素起点 top').toBeGreaterThan(0);
         expect(Number(snapshot!.toPxLeft), '推斥克隆必须有视口像素终点').toBeGreaterThan(0);
-        expect(Number(snapshot!.fromPxLeft)).not.toBe(Number(snapshot!.toPxLeft));
+        expect(Number(snapshot!.toPxTop), '推斥克隆必须有视口像素终点 top').toBeGreaterThan(0);
+        expect(
+            Math.abs(Number(snapshot!.fromPxLeft) - Number(snapshot!.toPxLeft))
+            + Math.abs(Number(snapshot!.fromPxTop) - Number(snapshot!.toPxTop)),
+            `推斥克隆必须沿任一轴滑移: ${JSON.stringify({
+                fromPxLeft: snapshot!.fromPxLeft,
+                fromPxTop: snapshot!.fromPxTop,
+                toPxLeft: snapshot!.toPxLeft,
+                toPxTop: snapshot!.toPxTop,
+            })}`,
+        ).toBeGreaterThan(24);
+        expect(
+            snapshot!.art === 'live-atlas' || snapshot!.art === 'preview',
+            `推斥克隆必须画出被推生物卡图: art=${String(snapshot!.art)}`,
+        ).toBe(true);
+        const travelAxis = Math.abs(Number(snapshot!.toPxTop) - Number(snapshot!.fromPxTop))
+            >= Math.abs(Number(snapshot!.toPxLeft) - Number(snapshot!.fromPxLeft))
+            ? 'top'
+            : 'left';
+        const fromPx = travelAxis === 'top' ? Number(snapshot!.fromPxTop) : Number(snapshot!.fromPxLeft);
+        const toPx = travelAxis === 'top' ? Number(snapshot!.toPxTop) : Number(snapshot!.toPxLeft);
+        const currentPx = travelAxis === 'top' ? Number(snapshot!.currentTop) : Number(snapshot!.currentLeft);
+        const travelSpan = toPx - fromPx;
+        const travelProgress = Math.abs(travelSpan) < 1 ? 0 : (currentPx - fromPx) / travelSpan;
+        expect(
+            travelProgress,
+            `首次快照必须仍在滑移途中，不能已经停在落点: ${JSON.stringify({
+                travelAxis,
+                fromPx,
+                toPx,
+                currentPx,
+                travelProgress,
+            })}`,
+        ).toBeLessThan(0.75);
         expect(
             Number.isFinite(snapshot!.fromLeft)
             && Number.isFinite(snapshot!.fromTop)

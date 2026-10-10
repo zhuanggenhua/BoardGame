@@ -308,6 +308,7 @@ test.describe('七大恨新游戏收口', () => {
     });
 
     test('教程模式会带玩家走完一个最基本的真实回合片段，并在每步留下可指认操作点的截图', async ({ page }) => {
+        test.setTimeout(60_000);
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {

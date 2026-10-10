@@ -203,11 +203,13 @@ export function acknowledgePendingEventRollResolution(
       throw new Error("山屋测试夹具确认事件骰超过安全上限");
     }
     const pendingResolution = nextCore.pendingEventRollResolution;
-    const requiredPlayerIds = pendingResolution.requiredPlayerIds?.length
-      ? pendingResolution.requiredPlayerIds
-      : nextCore.playerIds.length > 0
-        ? nextCore.playerIds
-        : [pendingResolution.playerId];
+    const requiredPlayerIds = pendingResolution.requiresAcknowledgement === false
+      ? [pendingResolution.playerId]
+      : pendingResolution.requiredPlayerIds?.length
+        ? pendingResolution.requiredPlayerIds
+        : nextCore.playerIds.length > 0
+          ? nextCore.playerIds
+          : [pendingResolution.playerId];
     const acknowledgedPlayerIds = new Set(pendingResolution.acknowledgedPlayerIds ?? []);
     const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
     if (!nextPlayerId) {

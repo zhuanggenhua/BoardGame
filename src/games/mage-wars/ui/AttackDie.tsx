@@ -111,18 +111,17 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
                         </div>
                     );
                 })}
-                {!isRolling && isHit ? (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="mage-wars-attack-die-hit-glow"
-                        data-testid="mage-wars-fx-attack-die-hit-glow"
-                        data-hit-glow-mode="face-hugging"
-                        style={{ transform: `translateZ(${translateZ})` }}
-                        aria-hidden="true"
-                    />
-                ) : null}
             </div>
+            {!isRolling && isHit ? (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mage-wars-attack-die-hit-glow"
+                    data-testid="mage-wars-fx-attack-die-hit-glow"
+                    data-hit-glow-mode="outer-halo"
+                    aria-hidden="true"
+                />
+            ) : null}
             {!isRolling && !isHit ? (
                 <div
                     className="pointer-events-none absolute inset-0 rounded-[0.5vw]"

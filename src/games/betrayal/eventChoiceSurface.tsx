@@ -14,7 +14,6 @@ import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
 import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { DiscoveryAtlasFrame } from "./atlasFrameSurface";
 import { RecentRollPanel } from "./recentRollSurface";
-import { BETRAYAL_HOUSE_DICE_STYLE_PROFILE } from "./houseDicePresentation";
 import {
   ExplorerTraitOutcomePreview,
   TRAIT_CHOICE_TONE_CLASS,
@@ -148,7 +147,9 @@ export function BetrayalEventChoiceSurface({
           data-surface="open-table"
           aria-label={choice.sourceTitle}
           className={`${
-            awaitsMapTargetClick ? "pointer-events-none" : "pointer-events-auto"
+            awaitsMapTargetClick
+              ? "pointer-events-none [&_*]:pointer-events-none"
+              : "pointer-events-auto"
           } grid overflow-visible text-[#f3e0a6] ${
             isEventSymbolSkip
               ? "max-h-[440px] w-[620px] grid-cols-1 gap-4"

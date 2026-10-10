@@ -1439,9 +1439,10 @@ describe('MageWarsBoard FX wiring', () => {
                 expect(cube).toHaveAttribute('data-roll-animation', 'settled');
                 expect(cube).toHaveAttribute('data-settled-tilt', 'isometric-front');
                 expect((cube as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_TRANSFORM);
-                const hitGlow = cube?.querySelector('[data-testid="mage-wars-fx-attack-die-hit-glow"]');
+                const hitGlow = die.querySelector('[data-testid="mage-wars-fx-attack-die-hit-glow"]');
                 expect(hitGlow).toBeTruthy();
-                expect(hitGlow).toHaveAttribute('data-hit-glow-mode', 'face-hugging');
+                expect(hitGlow).toHaveAttribute('data-hit-glow-mode', 'outer-halo');
+                expect(cube?.contains(hitGlow)).toBe(false);
                 expect(cube?.querySelectorAll('[data-hit-edge="true"]')).toHaveLength(6);
             });
             expect(attackDice).toHaveAttribute('data-visible-duration-ms', '3000');
@@ -1630,6 +1631,7 @@ describe('MageWarsBoard FX wiring', () => {
             params: {
                 source: { row: 1, col: 1 },
                 spellCardId: 3523,
+                sourceSpellCardId: 3523,
                 targetObjectId: 'mwobj-push-target',
                 fromZoneId: ARENA_ZONE_IDS.B2,
                 toZoneId: ARENA_ZONE_IDS.C2,
@@ -1663,6 +1665,7 @@ describe('MageWarsBoard FX wiring', () => {
             expect(slide.getAttribute('data-slide-motion')).toBe('css-position');
             expect(slide.className).not.toContain('inset-0');
             expect(screen.getByTestId('mage-wars-fx-push-slide-body').getAttribute('data-slide-paint')).toBe('opaque');
+            expect(screen.getByTestId('mage-wars-fx-push-slide-body').getAttribute('data-slide-art')).toBe('preview');
 
             act(() => {
                 advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.pushTravelImpactMs);

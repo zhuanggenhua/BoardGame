@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import {
@@ -22,8 +22,27 @@ import {
 } from '../../../engine/fx';
 import type { MageId } from '../domain/ids';
 import { MAGE_IDS } from '../domain/ids';
-import { UI_Z_INDEX } from '../../../core';
-import { getMageWarsMagePreviewRef, getMageWarsSpellCardPreviewRef } from './cardAtlas';
+import {
+    getPreloadedImageElement,
+    getResolvedImageCacheUrl,
+    getResolvedImageCandidateUrl,
+    getRuntimeImageCandidateUrls,
+    UI_Z_INDEX,
+    type CardPreviewRef,
+} from '../../../core';
+import { getCardAtlasSource, getLazyRegistration } from '../../../components/common/media/cardAtlasRegistry';
+import {
+    computeSpriteImgStyle,
+    computeSpriteStyle,
+    generateUniformAtlasConfig,
+    type SpriteAtlasConfig,
+} from '../../../engine/primitives/spriteAtlas';
+import {
+    getMageWarsMagePreviewAspectRatio,
+    getMageWarsMagePreviewRef,
+    getMageWarsSpellCardAspectRatio,
+    getMageWarsSpellCardPreviewRef,
+} from './cardAtlas';
 import {
     MAGE_WARS_ATTACK_FX_TUNING,
     MAGE_WARS_DIRECT_DAMAGE_FX_TUNING,
@@ -214,16 +233,239 @@ function readSlideHostRect(): DOMRect | null {
     return rect;
 }
 
-function readLivePieceImageSrc(objectId?: string): string | undefined {
-    if (!objectId || typeof document === 'undefined') return undefined;
-    const host = document.querySelector<HTMLElement>(`[data-object-id="${objectId}"]`);
-    if (!host) return undefined;
-    const img = host.querySelector('img');
-    if (img instanceof HTMLImageElement) {
-        const src = img.currentSrc || img.src;
-        if (src) return src;
+type LiveFieldCardSize = { width: number; height: number };
+type SlideArtKind = 'atlas-css' | 'preview' | 'fallback';
+type SlideAtlasPaint = {
+    url: string;
+    paintMode: 'canvas' | 'css';
+    backgroundSize: string;
+    backgroundPosition: string;
+    imgWidth: string;
+    imgHeight: string;
+    translateX: string;
+    translateY: string;
+};
+
+function queryLiveFieldCard(objectId?: string): HTMLElement | null {
+    if (!objectId || typeof document === 'undefined') return null;
+    return document.querySelector<HTMLElement>(
+        `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+    );
+}
+
+function queryLiveAtlasFrame(objectId?: string): HTMLElement | null {
+    const card = queryLiveFieldCard(objectId);
+    if (!card) return null;
+    return card.querySelector<HTMLElement>('[data-card-atlas-frame="true"]');
+}
+
+function readLiveFieldCardSize(objectId?: string): LiveFieldCardSize | null {
+    const frame = queryLiveAtlasFrame(objectId) ?? queryLiveFieldCard(objectId);
+    if (!frame) return null;
+    const rect = frame.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return null;
+    return { width: rect.width, height: rect.height };
+}
+
+function applyLiveSize(box: ViewportBox, size: LiveFieldCardSize | null): ViewportBox {
+    if (!size) return box;
+    return {
+        left: box.left + (box.width - size.width) / 2,
+        top: box.top + (box.height - size.height) / 2,
+        width: size.width,
+        height: size.height,
+    };
+}
+
+function fitAspectInBox(box: ViewportBox, aspect: number): ViewportBox {
+    if (!(aspect > 0) || box.width < 8 || box.height < 8) return box;
+    const boxAspect = box.width / box.height;
+    if (boxAspect > aspect) {
+        const width = box.height * aspect;
+        return {
+            left: box.left + (box.width - width) / 2,
+            top: box.top,
+            width,
+            height: box.height,
+        };
     }
-    return undefined;
+    const height = box.width / aspect;
+    return {
+        left: box.left,
+        top: box.top + (box.height - height) / 2,
+        width: box.width,
+        height,
+    };
+}
+
+function measureSlideViewportPath(
+    frozenPath: { fromBox: FxBox; toBox: FxBox },
+    objectId: string | undefined,
+    aspect: number | null,
+): { from: ViewportBox; to: ViewportBox } | null {
+    const host = readSlideHostRect();
+    if (!host) return null;
+    const liveSize = readLiveFieldCardSize(objectId);
+    const sizeBox = (box: ViewportBox): ViewportBox => {
+        if (liveSize) return applyLiveSize(box, liveSize);
+        if (aspect && aspect > 0) return fitAspectInBox(box, aspect);
+        return box;
+    };
+    return {
+        from: sizeBox(percentBoxToViewport(frozenPath.fromBox, host)),
+        to: sizeBox(percentBoxToViewport(frozenPath.toBox, host)),
+    };
+}
+
+function isDecodedAtlasImage(img: HTMLImageElement | null | undefined): img is HTMLImageElement {
+    return Boolean(img && img.naturalWidth >= 16 && img.naturalHeight >= 16);
+}
+
+function queryDecodedAtlasImage(atlasId: string, index: number, objectId?: string): HTMLImageElement | null {
+    const liveImg = queryLiveAtlasFrame(objectId)?.querySelector<HTMLImageElement>('img[data-card-atlas-img="true"]');
+    if (isDecodedAtlasImage(liveImg)) return liveImg;
+    const sameSlot = document.querySelectorAll<HTMLImageElement>(
+        `[data-card-atlas-id="${atlasId}"][data-card-atlas-index="${String(index)}"] img[data-card-atlas-img="true"]`,
+    );
+    for (const img of sameSlot) {
+        if (isDecodedAtlasImage(img)) return img;
+    }
+    const sameAtlas = document.querySelectorAll<HTMLImageElement>(
+        `[data-card-atlas-id="${atlasId}"] img[data-card-atlas-img="true"]`,
+    );
+    for (const img of sameAtlas) {
+        if (isDecodedAtlasImage(img)) return img;
+    }
+    return null;
+}
+
+function scaleSlideAtlasConfig(
+    atlas: SpriteAtlasConfig,
+    imageW: number,
+    imageH: number,
+): SpriteAtlasConfig {
+    if (imageW <= 0 || imageH <= 0) return atlas;
+    if (atlas.imageW === imageW && atlas.imageH === imageH) return atlas;
+    const scaleX = imageW / atlas.imageW;
+    const scaleY = imageH / atlas.imageH;
+    if ('frames' in atlas) {
+        return {
+            ...atlas,
+            imageW,
+            imageH,
+            frames: atlas.frames.map((frame) => ({
+                x: frame.x * scaleX,
+                y: frame.y * scaleY,
+                width: frame.width * scaleX,
+                height: frame.height * scaleY,
+            })),
+        };
+    }
+    return {
+        ...atlas,
+        imageW,
+        imageH,
+        colStarts: atlas.colStarts.map((value) => value * scaleX),
+        colWidths: atlas.colWidths.map((value) => value * scaleX),
+        rowStarts: atlas.rowStarts.map((value) => value * scaleY),
+        rowHeights: atlas.rowHeights.map((value) => value * scaleY),
+    };
+}
+
+function readSpriteFrame(index: number, atlas: SpriteAtlasConfig): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+} {
+    if ('frames' in atlas) {
+        if (atlas.frames.length === 0) {
+            return { x: 0, y: 0, width: atlas.imageW, height: atlas.imageH };
+        }
+        const safeIndex = index % atlas.frames.length;
+        return atlas.frames[safeIndex] ?? atlas.frames[0];
+    }
+    const safeIndex = index % (atlas.cols * atlas.rows);
+    const col = safeIndex % atlas.cols;
+    const row = Math.floor(safeIndex / atlas.cols);
+    return {
+        x: atlas.colStarts[col] ?? atlas.colStarts[0],
+        y: atlas.rowStarts[row] ?? atlas.rowStarts[0],
+        width: atlas.colWidths[col] ?? atlas.colWidths[0],
+        height: atlas.rowHeights[row] ?? atlas.rowHeights[0],
+    };
+}
+
+function snapshotDecodedAtlasFrame(
+    img: HTMLImageElement,
+    config: SpriteAtlasConfig,
+    index: number,
+): string | null {
+    try {
+        const frame = readSpriteFrame(index, config);
+        const width = Math.max(1, Math.round(frame.width));
+        const height = Math.max(1, Math.round(frame.height));
+        if (width < 8 || height < 8) return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        ctx.drawImage(img, frame.x, frame.y, frame.width, frame.height, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/webp', 0.92);
+        return dataUrl.startsWith('data:image/') ? dataUrl : canvas.toDataURL();
+    } catch {
+        return null;
+    }
+}
+
+function resolveSlideAtlasPaint(
+    previewRef: CardPreviewRef | null,
+    objectId: string | undefined,
+): SlideAtlasPaint | null {
+    if (!previewRef || previewRef.type !== 'atlas' || typeof document === 'undefined') return null;
+    const locale = document.documentElement.lang || 'zh-CN';
+    const source = getCardAtlasSource(previewRef.atlasId, locale) ?? getCardAtlasSource(previewRef.atlasId);
+    const lazy = source ? undefined : getLazyRegistration(previewRef.atlasId);
+    const image = source?.image ?? lazy?.image;
+    const liveDecoded = queryDecodedAtlasImage(previewRef.atlasId, previewRef.index, objectId);
+    const preloaded = image
+        ? (getPreloadedImageElement(image, locale) ?? getPreloadedImageElement(image))
+        : null;
+    const decoded = isDecodedAtlasImage(liveDecoded)
+        ? liveDecoded
+        : (isDecodedAtlasImage(preloaded) ? preloaded : null);
+    const candidateUrls = image ? getRuntimeImageCandidateUrls(image, locale) : [];
+    const url = (decoded?.currentSrc || decoded?.src || '')
+        || (image ? getResolvedImageCandidateUrl(candidateUrls, image, locale) : '')
+        || (image ? getResolvedImageCacheUrl(image, locale) : '');
+    if (!url) return null;
+    const rawConfig = source?.config
+        ?? (decoded && lazy
+            ? generateUniformAtlasConfig(
+                decoded.naturalWidth,
+                decoded.naturalHeight,
+                lazy.grid.rows,
+                lazy.grid.cols,
+            )
+            : undefined);
+    if (!rawConfig) return null;
+    const config = decoded
+        ? scaleSlideAtlasConfig(rawConfig, decoded.naturalWidth, decoded.naturalHeight)
+        : rawConfig;
+    const style = computeSpriteStyle(previewRef.index, config);
+    const imgStyle = computeSpriteImgStyle(previewRef.index, config);
+    const snapshotUrl = decoded ? snapshotDecodedAtlasFrame(decoded, config, previewRef.index) : null;
+    return {
+        url: snapshotUrl ?? url,
+        paintMode: snapshotUrl ? 'canvas' : 'css',
+        backgroundSize: String(style.backgroundSize ?? '100% 100%'),
+        backgroundPosition: String(style.backgroundPosition ?? '0% 0%'),
+        imgWidth: imgStyle.imgWidth,
+        imgHeight: imgStyle.imgHeight,
+        translateX: imgStyle.translateX,
+        translateY: imgStyle.translateY,
+    };
 }
 
 function MageWarsEntitySlide({
@@ -285,57 +527,114 @@ function MageWarsEntitySlide({
         toWidth,
         toHeight,
     ]);
-    const [viewportPath, setViewportPath] = useState<{ from: ViewportBox; to: ViewportBox } | null>(null);
-    const [atTarget, setAtTarget] = useState(false);
-    useLayoutEffect(() => {
-        if (!frozenPath) return undefined;
-        const host = readSlideHostRect();
-        if (host) {
-            setViewportPath({
-                from: percentBoxToViewport(frozenPath.fromBox, host),
-                to: percentBoxToViewport(frozenPath.toBox, host),
-            });
-        }
-        let frame2 = 0;
-        const frame1 = requestAnimationFrame(() => {
-            frame2 = requestAnimationFrame(() => setAtTarget(true));
-        });
-        return () => {
-            cancelAnimationFrame(frame1);
-            cancelAnimationFrame(frame2);
-        };
-    }, [frozenPath]);
-    if (!frozenPath) return null;
-    const { fromBox: frozenFromBox, toBox: frozenToBox } = frozenPath;
+    const slideRef = useRef<HTMLDivElement>(null);
+    const motionTokenRef = useRef('');
     const previewRef = sourceSpellCardId != null
         ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
         : isMageId(mageId)
             ? getMageWarsMagePreviewRef(mageId, 'portrait')
             : null;
-    const liveImageSrc = readLivePieceImageSrc(objectId);
+    const cardAspect = sourceSpellCardId != null
+        ? getMageWarsSpellCardAspectRatio(sourceSpellCardId)
+        : isMageId(mageId)
+            ? getMageWarsMagePreviewAspectRatio()
+            : null;
+    const atlasPaint = useMemo(
+        () => resolveSlideAtlasPaint(previewRef, objectId),
+        [objectId, previewRef],
+    );
+    const slideArt: SlideArtKind = atlasPaint ? 'atlas-css' : previewRef ? 'preview' : 'fallback';
+    const viewportPath = useMemo(
+        () => (frozenPath ? measureSlideViewportPath(frozenPath, objectId, cardAspect) : null),
+        [cardAspect, frozenPath, objectId],
+    );
     const useViewport = viewportPath != null;
+    useLayoutEffect(() => {
+        const el = slideRef.current;
+        if (!el || !frozenPath) return undefined;
+        const token = useViewport && viewportPath ? 'viewport' : 'arena';
+        if (motionTokenRef.current === token) return undefined;
+        motionTokenRef.current = token;
+        const releaseToken = () => {
+            if (motionTokenRef.current === token) motionTokenRef.current = '';
+        };
+        if (viewportPath) {
+            const dx = viewportPath.to.left - viewportPath.from.left;
+            const dy = viewportPath.to.top - viewportPath.from.top;
+            if (typeof el.animate === 'function') {
+                const animation = el.animate(
+                    [
+                        { transform: 'translate(0px, 0px)' },
+                        { transform: `translate(${dx}px, ${dy}px)` },
+                    ],
+                    { duration: durationMs, easing: 'linear', fill: 'forwards' },
+                );
+                return () => {
+                    animation.cancel();
+                    releaseToken();
+                };
+            }
+            const frame = requestAnimationFrame(() => {
+                el.style.transition = `transform ${durationMs}ms linear`;
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+            });
+            return () => {
+                cancelAnimationFrame(frame);
+                releaseToken();
+            };
+        }
+        const frame = requestAnimationFrame(() => {
+            el.style.transition = `left ${durationMs}ms linear, top ${durationMs}ms linear`;
+            el.style.left = `${frozenPath.toBox.left}%`;
+            el.style.top = `${frozenPath.toBox.top}%`;
+        });
+        return () => {
+            cancelAnimationFrame(frame);
+            releaseToken();
+        };
+    }, [durationMs, frozenPath, useViewport, viewportPath]);
+    if (!frozenPath) return null;
+    const { fromBox: frozenFromBox, toBox: frozenToBox } = frozenPath;
     const fromViewport = viewportPath?.from;
     const toViewport = viewportPath?.to;
-    const box = useViewport
-        ? (atTarget ? toViewport! : fromViewport!)
-        : (atTarget ? frozenToBox : frozenFromBox);
-    const transition = atTarget
-        ? `left ${durationMs}ms linear, top ${durationMs}ms linear, width ${durationMs}ms linear, height ${durationMs}ms linear`
-        : 'none';
+    const box = useViewport ? fromViewport! : frozenFromBox;
     const slideBody = (
         <div
-            className="h-full w-full overflow-hidden rounded-[0.16rem] bg-[#4a3424] shadow-[0_10px_18px_rgba(0,0,0,0.42)] ring-2 ring-amber-100/80"
+            className="relative h-full w-full overflow-hidden rounded-[0.16rem] bg-[#4a3424] shadow-[0_10px_18px_rgba(0,0,0,0.42)] ring-2 ring-amber-100/80"
             data-testid={`mage-wars-fx-${kind}-slide-body`}
             data-slide-paint="opaque"
-            style={liveImageSrc
-                ? {
-                    backgroundImage: `url("${liveImageSrc}")`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                }
-                : undefined}
+            data-slide-art={slideArt}
         >
-            {previewRef ? (
+            {atlasPaint?.paintMode === 'canvas' ? (
+                <img
+                    alt=""
+                    className="absolute inset-0 h-full w-full rounded-[0.16rem] object-fill"
+                    data-slide-atlas-paint="canvas"
+                    data-slide-atlas-url="canvas-snapshot"
+                    draggable={false}
+                    src={atlasPaint.url}
+                />
+            ) : atlasPaint ? (
+                <img
+                    alt=""
+                    data-slide-atlas-paint="css"
+                    data-slide-atlas-url="cached-url"
+                    draggable={false}
+                    src={atlasPaint.url}
+                    style={{
+                        height: atlasPaint.imgHeight,
+                        left: 0,
+                        maxWidth: 'none',
+                        pointerEvents: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        transform: `translate(${atlasPaint.translateX}, ${atlasPaint.translateY})`,
+                        transformOrigin: 'top left',
+                        userSelect: 'none',
+                        width: atlasPaint.imgWidth,
+                    }}
+                />
+            ) : previewRef ? (
                 <CardPreview
                     previewRef={previewRef}
                     className="h-full w-full rounded-[0.16rem]"
@@ -345,6 +644,7 @@ function MageWarsEntitySlide({
     );
     const slideNode = (
         <div
+            ref={slideRef}
             className={useViewport
                 ? 'pointer-events-none fixed overflow-visible'
                 : 'pointer-events-none absolute z-30 overflow-visible'}
@@ -355,20 +655,19 @@ function MageWarsEntitySlide({
                     width: box.width,
                     height: box.height,
                     zIndex: 80,
-                    transition,
+                    willChange: 'transform',
                 }
                 : {
                     left: `${box.left}%`,
                     top: `${box.top}%`,
                     width: `${box.width}%`,
                     height: `${box.height}%`,
-                    transition,
                 }}
             data-testid={`mage-wars-fx-${kind}-slide`}
             data-visual-role="entity-slide"
             data-slide-ease="linear"
             data-slide-layer={useViewport ? 'body-portal' : 'arena'}
-            data-slide-motion="css-position"
+            data-slide-motion={useViewport ? 'waapi-transform' : 'css-position'}
             data-object-id={objectId ?? ''}
             data-source-spell-card-id={sourceSpellCardId ?? ''}
             data-mage-id={mageId ?? ''}
