@@ -36,10 +36,10 @@ export const MAGE_WARS_FX_TIMING = {
     meleeResultVisibleMs: 3_000,
     teleportArrivalImpactMs: 420,
     teleportCompleteMs: 1_250,
-    // 实体滑移必须长到过程帧能看见真实棋子；线性位移，落点再停一拍给截图和 registry 超时对齐。
-    pushTravelImpactMs: 2_200,
+    // 推斥滑移约 0.3 秒；complete 再留一拍给落点帧和 registry 收口。
+    pushTravelImpactMs: 300,
     pushSameCellImpactMs: 80,
-    pushTravelCompleteMs: 3_200,
+    pushTravelCompleteMs: 450,
     pushSameCellCompleteMs: 180,
     moveTravelImpactMs: 560,
     moveSameCellImpactMs: 80,

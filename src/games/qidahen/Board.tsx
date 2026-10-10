@@ -1976,6 +1976,11 @@ const MapSceneLayer: React.FC<{
             ? { ...core.lastSeasonSummary.mapResult, resultId: core.lastSeasonSummary.id }
             : null
     );
+    // 轮盘 / 专题结果卡已经承担“发生了什么”的说明；战斗结果仍保留正式战果文字，
+    // 因为战斗后处理需要同时读战损与战后面板，不能只靠教程卡补课。
+    const showStandardMapResultFeedback = tutorialStepId == null
+        || tutorialStepId === 'battle-result'
+        || tutorialStepId === 'city-result';
     const defeatInDetailSelectableSourceRegionIds = React.useMemo(
         () => getQidahenDefeatInDetailSelectableSourceRegionIds(pendingTargetAction),
         [pendingTargetAction],
@@ -3062,6 +3067,8 @@ const MapSceneLayer: React.FC<{
                             data-tutorial-id="qidahen-map-result-feedback"
                             data-qidahen-map-result-region={activeResultFeedback.regionId}
                             data-qidahen-map-result-troop-delta={troopDelta}
+                            data-qidahen-map-result-before-troops={activeResultFeedback.beforeTroops}
+                            data-qidahen-map-result-after-troops={activeResultFeedback.afterTroops}
                             style={{
                                 left: resultRegion.x * QIDAHEN_MAP_WIDTH,
                                 top: resultRegion.y * QIDAHEN_MAP_HEIGHT,
@@ -3074,7 +3081,7 @@ const MapSceneLayer: React.FC<{
                                 data-testid="qidahen-map-result-feedback-safe-zone"
                                 aria-hidden="true"
                             />
-                            {!tutorialHighlightsResultFeedback ? <div
+                            {showStandardMapResultFeedback ? <div
                                 className="pointer-events-none absolute left-1/2 top-[-92px] -translate-x-1/2 whitespace-nowrap rounded border-[3px] border-[#fff0b0] bg-[rgba(61,35,13,0.94)] px-3 py-2 text-[15px] font-black tracking-wide text-[#fff4c9] shadow-[0_4px_14px_rgba(42,23,6,0.72)]"
                                 data-testid="qidahen-map-result-feedback-text"
                             >
@@ -3085,7 +3092,7 @@ const MapSceneLayer: React.FC<{
                                     defaultValue: '{{regionName}}部队：{{before}} → {{after}}',
                                 })}
                             </div> : null}
-                            {!tutorialHighlightsResultFeedback ? Array.from({ length: troopDelta }, (_, index) => (
+                            {showStandardMapResultFeedback ? Array.from({ length: troopDelta }, (_, index) => (
                                 <span
                                     key={`${activeResultFeedback.resultId}-troop-${String(index + 1)}`}
                                     className="qidahen-map-result-troop-fade absolute left-1/2 top-1/2 grid place-items-center overflow-hidden rounded-[6px] border-[2px] border-[#fff0b0] bg-[rgba(168,63,38,0.94)] shadow-[0_3px_10px_rgba(42,23,6,0.72),0_0_18px_rgba(255,214,93,0.92)]"

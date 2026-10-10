@@ -32,18 +32,12 @@ export const CategoryPills = ({ activeCategory, onSelect }: CategoryPillsProps) 
                             key={category}
                             onClick={() => onSelect(category)}
                             className={`
-                                group relative text-sm tracking-wide transition-colors duration-300 cursor-pointer whitespace-nowrap px-3 py-1.5 rounded-full sm:px-4
+                                group relative inline-flex h-8 items-center text-sm tracking-wide transition-colors duration-300 cursor-pointer whitespace-nowrap px-2 sm:px-3
                                 ${isActive ? 'text-parchment-base-text font-bold' : 'text-parchment-light-text hover:text-parchment-base-text'}
                             `}
                         >
-                            <span className="relative z-10">
-                                {t(categoryLabelKeys[category])}
-                            </span>
-
-                            {/* 当前选中背景 */}
-                            {isActive && (
-                                <span className="absolute inset-0 rounded-full bg-parchment-brown/10 z-0 transition-all duration-300" />
-                            )}
+                            {t(categoryLabelKeys[category])}
+                            <span className={`underline-center ${isActive ? '!left-0 !w-full' : ''}`} />
                         </button>
                     );
                 })}

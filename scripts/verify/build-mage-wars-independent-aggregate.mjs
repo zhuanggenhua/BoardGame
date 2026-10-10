@@ -6,7 +6,7 @@ import sharp from 'sharp';
 const projectRoot = process.cwd();
 const baseDir = path.join(projectRoot, 'test-results', 'evidence-screenshots', 'mage-wars');
 const sourceRoot = path.join(baseDir, 'online-runtime.e2e');
-const outDir = path.join(baseDir, '全部独立端到端截图-20261011-r3');
+const outDir = path.join(baseDir, '全部独立端到端截图-20261011-r5');
 
 const groups = [
     ['01', '传送', '01-传送', ['正式页面传送法术过程帧覆盖来源闪现落点'], '正式页面传送法术过程帧覆盖来源闪现落点', 'teleport'],
@@ -283,6 +283,26 @@ const manifest = {
             status: 'PASS',
             evidence: ['正式页面召唤和攻击必要过程帧覆盖/召唤'],
         },
+        {
+            requirement: '检视放大层中可用的法师魔杖附件有绿色合法描边；点选后放大层关闭，屏幕中下出现施放力量汲取按钮',
+            status: 'PASS',
+            evidence: ['正式页面法师魔杖已绑定力量汲取可从检视附件施放且不弃牌'],
+        },
+        {
+            requirement: '25A 放大层附件与 25B 关闭放大层后的屏幕中下施放入口是两张不同画面，近战过程帧按唤醒、命中、收口分文件',
+            status: 'PASS',
+            evidence: ['正式页面法师魔杖已绑定力量汲取可从检视附件施放且不弃牌', '正式页面近战攻击实际动效独立证据覆盖'],
+        },
+        {
+            requirement: '推斥实体滑移过渡约 450 毫秒，画面没有炮弹或飞行路径',
+            status: 'PASS',
+            evidence: ['正式页面推斥法术过程帧覆盖实体滑移'],
+        },
+        {
+            requirement: '攻击骰和治疗骰采用与召唤师战争相同的 CSS 立方体贴面：官方骰网、等距停稳、命中绿光，不是红底数字徽章',
+            status: 'PASS',
+            evidence: ['正式页面近战攻击实际动效独立证据覆盖', '正式页面治疗之光实际动效独立证据覆盖', '正式页面有效果骰近战攻击独立证据覆盖'],
+        },
     ],
     media: media.map((entry) => path.relative(projectRoot, path.join(outDir, entry.path)).split(path.sep).join('/')),
     evidenceIndex: '.e2e-image-index.json',
@@ -311,6 +331,10 @@ const manifest = {
             '附加卡宽度约为宿主卡宽三分之一。',
             '召唤光柱等宽贴卡，没有另做光圈。',
             '治疗之光同一只野性山猫由源清单记录生命值上升，动图中治疗光效与恢复数字可见。',
+            '检视可用附件有绿色合法描边，选中后放大层关闭。',
+            '25A 与 25B 画面不同，近战过程帧无重复文件。',
+            '推斥滑移过渡约 450 毫秒。',
+            '攻击骰与治疗骰是 CSS 立方体，带官方骰网和命中绿光。',
         ],
         unresolvedExternalReview: '独立复核服务不可用；此状态不构成独立复核通过。',
     },

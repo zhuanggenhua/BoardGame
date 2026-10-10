@@ -345,7 +345,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-before-draft', {
                     subdir: 'smashup/manual-ai-setup',
-                    filename: 'smashup-manual-ai-before-draft.png',
+                    filename: '01-smashup-manual-ai-before-draft.png',
                 }),
                 fullPage: false,
             });
@@ -392,7 +392,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-mid-draft', {
                     subdir: 'smashup/manual-ai-setup',
-                    filename: 'smashup-manual-ai-mid-draft.png',
+                    filename: '02-smashup-manual-ai-mid-draft.png',
                 }),
                 fullPage: false,
             });
@@ -457,7 +457,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-board-started', {
                     subdir: 'smashup/manual-ai-setup',
-                    filename: 'smashup-manual-ai-board-started.png',
+                    filename: '03-smashup-manual-ai-board-started.png',
                 }),
                 fullPage: false,
             });
@@ -524,7 +524,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-before-selection', {
                     subdir: 'summonerwars/manual-ai-setup',
-                    filename: 'summonerwars-manual-ai-before-selection.png',
+                    filename: '01-summonerwars-manual-ai-before-selection.png',
                 }),
                 fullPage: false,
             });
@@ -533,6 +533,15 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.waitForTimeout(800);
             await expect(page.getByTestId('sw-faction-card-trickster')).toHaveAttribute('data-selected', 'true');
             await expect(getPlayerStatusCard(page, '1')).toHaveAttribute('data-faction-id', 'trickster');
+
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-host-selecting', {
+                    subdir: 'summonerwars/manual-ai-setup',
+                    filename: '02-summonerwars-manual-ai-host-selecting.png',
+                }),
+                fullPage: false,
+            });
+
             expect(await readLiveCore<{
                 selectedFactions?: Record<string, string>;
                 readyPlayers?: Record<string, boolean>;
@@ -575,7 +584,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-selected', {
                     subdir: 'summonerwars/manual-ai-setup',
-                    filename: 'summonerwars-manual-ai-selected.png',
+                    filename: '03-summonerwars-manual-ai-selected.png',
                 }),
                 fullPage: false,
             });
@@ -607,7 +616,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'summonerwars-manual-ai-host-finalized', {
                     subdir: 'summonerwars/manual-ai-setup',
-                    filename: 'summonerwars-manual-ai-host-finalized.png',
+                    filename: '04-summonerwars-manual-ai-host-finalized.png',
                 }),
                 fullPage: false,
             });
@@ -675,7 +684,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-before-selection', {
                     subdir: 'dicethrone/manual-ai-setup',
-                    filename: 'dicethrone-manual-ai-before-selection.png',
+                    filename: '01-dicethrone-manual-ai-before-selection.png',
                 }),
                 fullPage: false,
             });
@@ -683,6 +692,15 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await selectCharacter(page, 'gunslinger');
             await page.waitForTimeout(800);
             await expect(page.locator('[data-character-id="gunslinger"], [data-char-id="gunslinger"]').first()).toContainText(/P2/i);
+
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-host-selecting', {
+                    subdir: 'dicethrone/manual-ai-setup',
+                    filename: '02-dicethrone-manual-ai-host-selecting.png',
+                }),
+                fullPage: false,
+            });
+
             expect(await readLiveCore<{
                 selectedCharacters?: Record<string, string>;
                 readyPlayers?: Record<string, boolean>;
@@ -728,7 +746,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-selected', {
                     subdir: 'dicethrone/manual-ai-setup',
-                    filename: 'dicethrone-manual-ai-selected.png',
+                    filename: '03-dicethrone-manual-ai-selected.png',
                 }),
                 fullPage: false,
             });
@@ -761,7 +779,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'dicethrone-manual-ai-host-finalized', {
                     subdir: 'dicethrone/manual-ai-setup',
-                    filename: 'dicethrone-manual-ai-host-finalized.png',
+                    filename: '04-dicethrone-manual-ai-host-finalized.png',
                 }),
                 fullPage: false,
             });

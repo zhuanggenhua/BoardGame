@@ -397,6 +397,11 @@ describe('qidahen tutorial flow', () => {
         expect((state.core as any).handLimitDiscardSelection).toBeNull();
         expect((state.core as any).factions.ming.handCount)
             .toBeLessThanOrEqual((state.core as any).factions.ming.handLimit);
+        const openingXuanfu = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
+        expect(openingXuanfu?.troops).toBe(1);
+        expect(openingXuanfu?.specialTroops ?? []).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'artillery' }),
+        ]));
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -427,6 +432,11 @@ describe('qidahen tutorial flow', () => {
         expect((state.core as any).factionActionUsed).toBe(false);
         expect((state.core as any).actionWheelPosition).toBe('wheel-recruit-train');
         expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘征兵/训练');
+        const resultXuanfu = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
+        expect(resultXuanfu?.troops).toBe(3);
+        expect(resultXuanfu?.specialTroops ?? []).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'artillery' }),
+        ]));
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -582,9 +592,10 @@ describe('qidahen tutorial flow', () => {
         expect(wheelActionPrompts.every((text) => text.includes('点击轮盘') && text.includes('高亮'))).toBe(true);
         expect(wheelActionPrompts.every((text) => !/免费走\s*1/.test(text))).toBe(true);
         expect(enTutorialText).not.toMatch(/Move 1\s+for\s+free/i);
-        expect(basic.wheelResult).toContain('总兵力由 2 支增至 4 支');
+        expect(basic.wheelResult).toContain('部队由 1 支增至 3 支');
         expect(basic.wheelResult).toContain('新增 2 支等级 2 正规军');
-        expect(basic.wheelResult).toContain('原有 1 支等级 1 炮兵训练至 2 级');
+        expect(basic.wheelResult).toContain('当前没有炮兵');
+        expect(basic.wheelResult).not.toContain('炮兵训练至 2 级');
         expect(basic.wheelResult).not.toContain('正规军从 2 支变为 4 支');
         expect(basic.wheelResult).not.toContain('查看地图');
         expect(basic.wheelResult).not.toContain('先看');

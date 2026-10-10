@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import {
@@ -193,6 +193,39 @@ function resolveEntitySlideBox(
     return cellBox;
 }
 
+type ViewportBox = { left: number; top: number; width: number; height: number };
+
+function percentBoxToViewport(box: FxBox, host: DOMRect): ViewportBox {
+    return {
+        left: host.left + (box.left / 100) * host.width,
+        top: host.top + (box.top / 100) * host.height,
+        width: (box.width / 100) * host.width,
+        height: (box.height / 100) * host.height,
+    };
+}
+
+function readSlideHostRect(): DOMRect | null {
+    if (typeof document === 'undefined') return null;
+    const host = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]')
+        ?? document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+    if (!host) return null;
+    const rect = host.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return null;
+    return rect;
+}
+
+function readLivePieceImageSrc(objectId?: string): string | undefined {
+    if (!objectId || typeof document === 'undefined') return undefined;
+    const host = document.querySelector<HTMLElement>(`[data-object-id="${objectId}"]`);
+    if (!host) return undefined;
+    const img = host.querySelector('img');
+    if (img instanceof HTMLImageElement) {
+        const src = img.currentSrc || img.src;
+        if (src) return src;
+    }
+    return undefined;
+}
+
 function MageWarsEntitySlide({
     source,
     target,
@@ -252,6 +285,26 @@ function MageWarsEntitySlide({
         toWidth,
         toHeight,
     ]);
+    const [viewportPath, setViewportPath] = useState<{ from: ViewportBox; to: ViewportBox } | null>(null);
+    const [atTarget, setAtTarget] = useState(false);
+    useLayoutEffect(() => {
+        if (!frozenPath) return undefined;
+        const host = readSlideHostRect();
+        if (host) {
+            setViewportPath({
+                from: percentBoxToViewport(frozenPath.fromBox, host),
+                to: percentBoxToViewport(frozenPath.toBox, host),
+            });
+        }
+        let frame2 = 0;
+        const frame1 = requestAnimationFrame(() => {
+            frame2 = requestAnimationFrame(() => setAtTarget(true));
+        });
+        return () => {
+            cancelAnimationFrame(frame1);
+            cancelAnimationFrame(frame2);
+        };
+    }, [frozenPath]);
     if (!frozenPath) return null;
     const { fromBox: frozenFromBox, toBox: frozenToBox } = frozenPath;
     const previewRef = sourceSpellCardId != null
@@ -259,29 +312,63 @@ function MageWarsEntitySlide({
         : isMageId(mageId)
             ? getMageWarsMagePreviewRef(mageId, 'portrait')
             : null;
+    const liveImageSrc = readLivePieceImageSrc(objectId);
+    const useViewport = viewportPath != null;
+    const fromViewport = viewportPath?.from;
+    const toViewport = viewportPath?.to;
+    const box = useViewport
+        ? (atTarget ? toViewport! : fromViewport!)
+        : (atTarget ? frozenToBox : frozenFromBox);
+    const transition = atTarget
+        ? `left ${durationMs}ms linear, top ${durationMs}ms linear, width ${durationMs}ms linear, height ${durationMs}ms linear`
+        : 'none';
     const slideBody = (
         <div
-            className="h-full w-full overflow-hidden rounded-[0.16rem] shadow-[0_10px_18px_rgba(0,0,0,0.42)]"
+            className="h-full w-full overflow-hidden rounded-[0.16rem] bg-[#4a3424] shadow-[0_10px_18px_rgba(0,0,0,0.42)] ring-2 ring-amber-100/80"
             data-testid={`mage-wars-fx-${kind}-slide-body`}
+            data-slide-paint="opaque"
+            style={liveImageSrc
+                ? {
+                    backgroundImage: `url("${liveImageSrc}")`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }
+                : undefined}
         >
             {previewRef ? (
                 <CardPreview
                     previewRef={previewRef}
                     className="h-full w-full rounded-[0.16rem]"
                 />
-            ) : (
-                <div className="h-full w-full rounded-[0.16rem] bg-stone-900/85 ring-1 ring-amber-100/40" />
-            )}
+            ) : null}
         </div>
     );
-    return (
-        <motion.div
-            className="pointer-events-none absolute inset-0 z-30 overflow-visible"
+    const slideNode = (
+        <div
+            className={useViewport
+                ? 'pointer-events-none fixed overflow-visible'
+                : 'pointer-events-none absolute z-30 overflow-visible'}
+            style={useViewport
+                ? {
+                    left: box.left,
+                    top: box.top,
+                    width: box.width,
+                    height: box.height,
+                    zIndex: 80,
+                    transition,
+                }
+                : {
+                    left: `${box.left}%`,
+                    top: `${box.top}%`,
+                    width: `${box.width}%`,
+                    height: `${box.height}%`,
+                    transition,
+                }}
             data-testid={`mage-wars-fx-${kind}-slide`}
             data-visual-role="entity-slide"
             data-slide-ease="linear"
-            data-slide-layer="arena"
-            data-slide-motion="transform"
+            data-slide-layer={useViewport ? 'body-portal' : 'arena'}
+            data-slide-motion="css-position"
             data-object-id={objectId ?? ''}
             data-source-spell-card-id={sourceSpellCardId ?? ''}
             data-mage-id={mageId ?? ''}
@@ -293,33 +380,18 @@ function MageWarsEntitySlide({
             data-from-top={String(frozenFromBox.top)}
             data-to-left={String(frozenToBox.left)}
             data-to-top={String(frozenToBox.top)}
-            initial={{
-                x: `${frozenFromBox.left}%`,
-                y: `${frozenFromBox.top}%`,
-            }}
-            animate={{
-                x: `${frozenToBox.left}%`,
-                y: `${frozenToBox.top}%`,
-            }}
-            transition={{ duration: durationMs / 1000, ease: 'linear' }}
-            style={{ willChange: 'transform' }}
+            data-from-px-left={fromViewport ? String(fromViewport.left) : undefined}
+            data-from-px-top={fromViewport ? String(fromViewport.top) : undefined}
+            data-to-px-left={toViewport ? String(toViewport.left) : undefined}
+            data-to-px-top={toViewport ? String(toViewport.top) : undefined}
         >
-            <motion.div
-                className="absolute left-0 top-0 overflow-visible rounded-[0.18rem]"
-                initial={{
-                    width: `${frozenFromBox.width}%`,
-                    height: `${frozenFromBox.height}%`,
-                }}
-                animate={{
-                    width: `${frozenToBox.width}%`,
-                    height: `${frozenToBox.height}%`,
-                }}
-                transition={{ duration: durationMs / 1000, ease: 'linear' }}
-            >
-                {slideBody}
-            </motion.div>
-        </motion.div>
+            {slideBody}
+        </div>
     );
+    if (useViewport && typeof document !== 'undefined') {
+        return createPortal(slideNode, document.body);
+    }
+    return slideNode;
 }
 
 export const SummonRenderer: React.FC<FxRendererProps> = ({

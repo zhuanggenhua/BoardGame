@@ -569,6 +569,7 @@ function resolveMaterializedChoicePayload(
     effect: UseEffectProfile,
     accepted: boolean,
     toneOverride?: BetrayalDiscoverySummary['tone'],
+    detailPrefix?: string,
 ): BetrayalEventChoiceResolvedPayload {
     const selectedEffect = applyEventChoiceSelections(core, effect, payload);
     const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
@@ -584,7 +585,7 @@ function resolveMaterializedChoicePayload(
             kind: 'event',
             title: pending.sourceTitle,
             summary,
-            detail: effectLabel,
+            detail: detailPrefix ? `${detailPrefix}；${effectLabel}` : effectLabel,
             tone: toneOverride ?? (isWarningEventEffect(eventEffect) ? 'warning' : 'accent'),
         },
         logText: `${actorName}${logVerb}：${pending.sourceTitle}（${effectLabel}）`,
@@ -806,6 +807,8 @@ export function resolveBetrayalEventChoiceResolvedPayload(
                 '选择通过后的奖励属性',
                 pending.effect.allPassEffect,
                 true,
+                undefined,
+                '四项属性检定均通过',
             );
         }
         const selectedTrait = payload.trait;
@@ -950,6 +953,9 @@ export function resolveBetrayalEventChoiceResolvedPayload(
         || effectNeedsAdjacentRoomChoice(pending.effect)
         || effectNeedsRoomTargetChoice(pending.effect)
     ) {
+        const allTraitChecksPassed = pending.allTraitCheckProgress?.results.length
+            ? pending.allTraitCheckProgress.results.every((result) => result.passed)
+            : false;
         return resolveMaterializedChoicePayload(
             core,
             pending,
@@ -961,6 +967,8 @@ export function resolveBetrayalEventChoiceResolvedPayload(
             '选择事件效果',
             pending.effect,
             true,
+            undefined,
+            allTraitChecksPassed ? '每项属性均通过' : undefined,
         );
     }
     if (pending.effect.mode === 'optionalEffect') {

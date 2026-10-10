@@ -24,4 +24,12 @@ describe('Home compatibility source guards', () => {
         expect(categoryPills).not.toContain('overflow-x-auto');
         expect(categoryPills).not.toContain('min-w-max');
     });
+
+    it('首页分类选中态应使用下划线，而不是圆角底框', () => {
+        const categoryPills = readCategoryPillsSource();
+
+        expect(categoryPills).toContain('underline-center');
+        expect(categoryPills).not.toContain('rounded-full');
+        expect(categoryPills).not.toContain('bg-parchment-brown/10');
+    });
 });

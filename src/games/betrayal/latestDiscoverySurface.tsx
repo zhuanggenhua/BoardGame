@@ -168,8 +168,7 @@ export function BetrayalLatestDiscoverySurface({
     .trim();
   const shouldShowVisibleDiscoveryDetail = Boolean(
     displayedDiscoveryDetail &&
-      (!panelVisual || !shouldShowCardFace) &&
-      !(shouldShowRoll && recentRoll && !shouldShowCardFace),
+      !(shouldShowRoll && recentRoll),
   );
 
   return (

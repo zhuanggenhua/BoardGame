@@ -147,9 +147,12 @@ import {
     type SeatOwnerSide,
 } from './ui/arenaEntityPresentation';
 import {
+    canMageWarsObjectCastBoundSpell,
     canMageWarsObjectStartAction,
     isCreatureActionPhase,
     isMageWarsActionableCreatureObject,
+    isMageWarsArenaObjectActionable,
+    isMageWarsCastPhase,
 } from './ui/actionReadModel';
 import { MageWarsSelectedAbilityActionDock } from './ui/selectedAbilityActionDock';
 import {
@@ -187,6 +190,8 @@ type MageWarsInspectAttachment = {
     aspectRatio: number;
     boundSpellCardId?: number;
     boundSpellName?: string;
+    usable?: boolean;
+    selected?: boolean;
 };
 
 type MageWarsMagnifiedPreview = {
@@ -274,7 +279,6 @@ const SPELL_CARD_BACK = 'mage-wars/cards/backs/spell-card-back';
 const SPELL_CARD_BACK_ASPECT_RATIO = 992 / 1391;
 const ROTATED_WALL_CARD_WIDTH_PERCENT = `${(100 / SPELL_CARD_BACK_ASPECT_RATIO).toFixed(2)}%`;
 
-const CAST_PHASES = new Set(['deployment', 'initiativeQuickcast', 'creatureAction', 'finalQuickcast']);
 const SIMULTANEOUS_PREPARATION_PHASES = new Set(['reset', 'channel', 'upkeep', 'planning']);
 
 type SpellbookCategoryId = 'all' | 'attack' | 'enchantment' | 'creature' | 'incantation' | 'equipment';
@@ -1842,6 +1846,7 @@ function ArenaAttachmentCard({
         'data-secondary-inspect': hasSecondaryInspect ? 'true' : undefined,
         'data-primary-action': hasPrimaryActionIntent ? 'true' : undefined,
         'data-primary-action-state': hasPrimaryActionIntent ? (primaryActionEnabled ? 'enabled' : 'disabled') : undefined,
+        'data-attachment-usable': !role && primaryActionEnabled ? 'true' : undefined,
     };
 
     if (primaryActionEnabled || hasBrowseInspectAction || hasPrimaryActionIntent) {
@@ -2364,7 +2369,7 @@ function PreparedSpellsDock({
         : [];
     const showingPlanningDraft = planningDraftIds.length > 0;
     const visibleIds = showingPlanningDraft ? planningDraftIds : preparedIds;
-    const canSelectSpell = canAct && canCast && CAST_PHASES.has(phase);
+    const canSelectSpell = canAct && canCast && isMageWarsCastPhase(phase);
 
     return (
         <section
@@ -2416,7 +2421,7 @@ function PreparedSpellsDock({
                                         ? 'actionUnavailable'
                                         : !canCast
                                             ? 'tutorialBlocked'
-                                            : !CAST_PHASES.has(phase)
+                                            : !isMageWarsCastPhase(phase)
                                                 ? 'wrongPhase'
                                                 : 'actionUnavailable',
                                 )}
@@ -2764,6 +2769,14 @@ function ArenaStage({
         && mageRestoreAvailablePlayerIds?.has(selectedMage.id),
     );
     const hasPendingAbilityTarget = Boolean(pendingObjectAbility || pendingMageAbility);
+    const targetingBusy = Boolean(selectedSpell || hasPendingAbilityTarget);
+    const arenaObjectActionableOptions = {
+        canAct,
+        activePlayerId: activePlayer?.id,
+        phase,
+        objectAbilitySourceIds,
+        targetingBusy,
+    };
     const selectedObjectAttackProfile = selectedObject
         ? getMageWarsObjectAttackProfiles(selectedObject).find((profile) => (
             selectedObject.actionReady || canMageWarsObjectUsePostMoveQuickAction(selectedObject, profile)
@@ -2996,7 +3009,7 @@ function ArenaStage({
                     if (isSpellObjectTarget || selectedSpellCastCurrentChainSubmitObjectId === object.id) {
                         return () => onObjectSelect?.(object.id);
                     }
-                    if (!selectedSpell && !hasPendingAbilityTarget && objectAbilitySourceIds?.has(object.id)) {
+                    if (isMageWarsArenaObjectActionable(object, arenaObjectActionableOptions)) {
                         return () => onActorObjectSelect?.(object.id);
                     }
                     return undefined;
@@ -3055,17 +3068,9 @@ function ArenaStage({
                         pendingMageAbility
                         && pendingMageAbilityTargetIds?.has(object.id),
                     );
-                    const isObjectAbilityActor = objectAbilitySourceIds?.has(object.id) === true;
-                    const canSelectObjectActor = Boolean(
-                        !selectedSpell
-                        && !hasPendingAbilityTarget
-                        && (
-                            (
-                                creatureActionActive
-                                && canMageWarsObjectStartAction(object, activePlayer?.id)
-                            )
-                            || isObjectAbilityActor
-                        ),
+                    const canSelectObjectActor = isMageWarsArenaObjectActionable(
+                        object,
+                        arenaObjectActionableOptions,
                     );
                     const fieldRole = object.id === pendingSpellTargetObjectId
                         || selectedSpellCastChainPathObjectIds?.has(object.id)
@@ -4464,15 +4469,17 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             },
         }))
         : undefined;
-    const selectedBoundSpellCast = selectedObject?.boundSpellCardId != null
-        && CAST_PHASES.has(phase as MageWarsPhase)
-        && canAct
-        && activePlayer?.id === selectedObject.ownerId
+    const selectedBoundSpellCardId = selectedObject?.boundSpellCardId;
+    const selectedBoundSpellCast = canMageWarsObjectCastBoundSpell(selectedObject, {
+        canAct,
+        activePlayerId: activePlayer?.id,
+        phase,
+    }) && selectedBoundSpellCardId != null
         ? {
-            spellCardId: selectedObject.boundSpellCardId,
-            name: getMageWarsSpellCardName(selectedObject.boundSpellCardId) ?? t('privateZones.spell'),
+            spellCardId: selectedBoundSpellCardId,
+            name: getMageWarsSpellCardName(selectedBoundSpellCardId) ?? t('privateZones.spell'),
             onSelect: () => {
-                setSelectedSpellCardId(selectedObject.boundSpellCardId ?? null);
+                setSelectedSpellCardId(selectedBoundSpellCardId);
                 setSelectedObjectId(null);
                 setPendingObjectAbility(null);
                 setPendingObjectAbilityTargetObjectId(null);
@@ -5082,6 +5089,14 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 aspectRatio: getMageWarsSpellCardAspectRatio(attachment.sourceSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO,
                 boundSpellCardId: attachment.boundSpellCardId,
                 boundSpellName,
+                usable: isMageWarsArenaObjectActionable(attachment, {
+                    canAct,
+                    activePlayerId: activePlayer?.id,
+                    phase,
+                    objectAbilitySourceIds,
+                    targetingBusy: Boolean(selectedSpellCardId != null || pendingObjectAbility || pendingMageAbility),
+                }),
+                selected: selectedObjectId === attachment.id,
             }];
         })
     );
@@ -5541,17 +5556,23 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                                         <button
                                             key={attachment.objectId}
                                             type="button"
-                                            className="relative w-full shrink-0 overflow-hidden rounded-[0.2rem] text-left shadow-2xl"
+                                            className={cx(
+                                                'relative w-full shrink-0 overflow-visible rounded-[0.2rem] text-left shadow-2xl',
+                                                (attachment.usable || attachment.selected) && SCENE_OBJECT_LEGAL_GLOW_CLASS,
+                                            )}
                                             style={{ aspectRatio: attachment.aspectRatio }}
                                             data-testid="mage-wars-card-magnify-attachment"
                                             data-object-id={attachment.objectId}
                                             data-source-card-id={attachment.sourceCardId}
                                             data-bound-spell-card-id={attachment.boundSpellCardId}
+                                            data-attachment-usable={attachment.usable ? 'true' : undefined}
+                                            data-attachment-selected={attachment.selected ? 'true' : undefined}
                                             onClick={() => {
                                                 setSelectedObjectId(attachment.objectId);
                                                 setSelectedMageId(null);
                                                 setPendingObjectAbility(null);
                                                 setPendingObjectAbilityTargetObjectId(null);
+                                                setMagnifiedPreview(null);
                                             }}
                                         >
                                             <CardPreview
@@ -5569,6 +5590,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                                                     {attachment.title}
                                                 </span>
                                             )}
+                                            {attachment.usable || attachment.selected ? (
+                                                <span
+                                                    className={SCENE_OBJECT_LEGAL_STROKE_CLASS}
+                                                    data-testid="mage-wars-card-magnify-attachment-legal-frame"
+                                                />
+                                            ) : null}
                                         </button>
                                     ))}
                                 </div>

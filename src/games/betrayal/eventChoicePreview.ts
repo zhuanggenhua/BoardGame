@@ -514,7 +514,13 @@ export function resolveBetrayalPendingEventChoiceReadModel({
     (!pendingEventTargetRooms.length || Boolean(selectedEventTargetRoomId)) &&
     (!pendingEventDamageChoice ||
       selectedEventDamageTraits.length === pendingEventDamageChoice.amount);
-  const shouldShowPendingEventAcceptButton = Boolean(pendingEventChoice);
+  const pendingEventHasUnresolvedAllTraitChecks =
+    pendingEventChoice?.effect.mode === "allTraitChecks" &&
+    (!pendingEventChoice.effect.results ||
+      pendingEventChoice.effect.results.length <
+        pendingEventChoice.effect.traits.length);
+  const shouldShowPendingEventAcceptButton =
+    Boolean(pendingEventChoice) && !pendingEventHasUnresolvedAllTraitChecks;
   const pendingEventAwaitsMapTargetClick =
     pendingEventTargetRooms.length > 0 &&
     !selectedEventTargetRoomId &&

@@ -282,11 +282,20 @@ function buildPendingCardResolutionDisplayEntry(
   ) {
     return null;
   }
-  const relatedRecentRoll =
+  const recentRollMatchesPendingResolution =
     core.recentRoll?.sourceTitle === pendingResolution.discoveryTitle &&
-    core.recentRoll.playerId === pendingResolution.playerId
+    core.recentRoll.playerId === pendingResolution.playerId;
+  const relatedRecentRoll =
+    recentRollMatchesPendingResolution &&
+    core.recentRoll &&
+    core.recentRoll.kind !== "eventTraitCheck" &&
+    core.recentRoll.kind !== "eventDiceRoll"
       ? core.recentRoll
-      : null;
+      : recentRollMatchesPendingResolution &&
+          core.pendingEventRollResolution?.sourceTitle === pendingResolution.discoveryTitle &&
+          core.pendingEventRollResolution.playerId === pendingResolution.playerId
+        ? core.recentRoll
+        : null;
   const sourceKey = buildPendingCardResolutionSourceKey(
     core,
     pendingResolution,

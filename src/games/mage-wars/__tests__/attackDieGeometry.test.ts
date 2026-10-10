@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+    ATTACK_DIE_ATLAS,
     ATTACK_DIE_FACES,
     ATTACK_DIE_SETTLED_POSE,
     ATTACK_DIE_SETTLED_TILT,
+    getAttackDieFaceArtStyle,
     getAttackDieFaceKind,
     getAttackDieSettledFaceId,
     getAttackDieSettledTransform,
@@ -38,11 +40,20 @@ describe('mage wars attack die cube net', () => {
         expect(getAttackDieSettledFaceId(1)).toBe('back-hit1');
         expect(getAttackDieSettledFaceId(2)).toBe('front-hit2');
         expect(getAttackDieSettledFaceId(3)).toBe('left-burst');
-        expect(getAttackDieSettledTransform(2)).toBe('rotateX(0deg) rotateY(0deg)');
-        expect(getAttackDieSettledTransform(1)).toBe('rotateX(0deg) rotateY(180deg)');
-        expect(getAttackDieSettledTransform(3)).toBe('rotateX(0deg) rotateY(90deg)');
-        expect(getAttackDieSettledTransform(0)).toBe('rotateX(0deg) rotateY(-90deg)');
-        expect(ATTACK_DIE_SETTLED_POSE).toBe('rotateX(-16deg) rotateY(18deg)');
-        expect(ATTACK_DIE_SETTLED_TILT).toBe('camera-pose');
+        expect(getAttackDieSettledTransform(2)).toBe('rotateX(-22deg) rotateY(28deg)');
+        expect(getAttackDieSettledTransform(1)).toBe('rotateX(-22deg) rotateY(28deg)');
+        expect(getAttackDieSettledTransform(3)).toBe('rotateX(-22deg) rotateY(28deg)');
+        expect(getAttackDieSettledTransform(0)).toBe('rotateX(-22deg) rotateY(28deg)');
+        expect(ATTACK_DIE_SETTLED_POSE).toBe('none');
+        expect(ATTACK_DIE_SETTLED_TILT).toBe('isometric-front');
+    });
+
+    it('crops official net faces with the same CSS background math as Summoner Wars Dice3D', () => {
+        expect('frames' in ATTACK_DIE_ATLAS).toBe(true);
+        if (!('frames' in ATTACK_DIE_ATLAS)) return;
+        expect(ATTACK_DIE_ATLAS.frames).toHaveLength(6);
+        const frontStyle = getAttackDieFaceArtStyle(ATTACK_DIE_FACES[0]);
+        expect(frontStyle.backgroundSize).toMatch(/%/);
+        expect(frontStyle.backgroundPosition).toMatch(/%/);
     });
 });

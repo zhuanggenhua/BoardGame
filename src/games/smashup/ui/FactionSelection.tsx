@@ -519,7 +519,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         const optionIndex = selectedGroupIndex + (showRandomFactionOption ? 1 : 0);
         const targetRow = Math.floor(optionIndex / selectionVirtualColumnCount);
         const targetTop = Math.max(0, targetRow * selectionVirtualRowHeight - selectionVirtualRowHeight * 0.75);
-        grid.scrollTo({ top: targetTop, behavior: 'auto' });
+        if (typeof grid.scrollTo === 'function') {
+            grid.scrollTo({ top: targetTop, behavior: 'auto' });
+        }
 
         const focusSelectedCard = (attempt = 0) => {
             const selectedNode = Array.from(
@@ -527,7 +529,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             ).find((node) => node.dataset.testid === `faction-option-${selectedGroupId}`);
 
             if (selectedNode) {
-                selectedNode.scrollIntoView({ block: 'center', behavior: 'auto' });
+                if (typeof selectedNode.scrollIntoView === 'function') {
+                    selectedNode.scrollIntoView({ block: 'center', behavior: 'auto' });
+                }
                 return;
             }
 
@@ -710,7 +714,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 `}
             >
                 <div className={selectionCardFrameClassName} style={selectionCardFrameStyle}>
-                    <div className={`
+                    <div
+                        className={`
                         ${selectionCardSurfaceClassName}
                         ${isSelectedByMe
                             ? 'border-green-500 scale-105 -translate-y-2'
@@ -718,8 +723,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                 ? 'border-dashed'
                                 : 'border-white'
                         }
-                    `}>
-                        <div className="smashup-card-inner w-full h-full overflow-hidden relative border">
+                    `}
+                        style={isSelectedByMe ? { borderColor: '#22c55e' } : undefined}
+                    >
+                        <div className="smashup-card-inner w-full h-full overflow-hidden relative">
                             {selectionPreviewReady ? (
                                 <CardPreview
                                     previewRef={coverCard ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: coverCard.id } } : undefined}

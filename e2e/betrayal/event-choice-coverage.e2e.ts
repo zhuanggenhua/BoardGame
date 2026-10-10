@@ -3904,30 +3904,7 @@ async function assertReadyForStateInjection(
   );
   await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
-  if (eventCase.postRollChoice) {
-    const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
-    await expect(eventChoicePanel).toHaveAttribute(
-      "aria-label",
-      eventCase.eventName,
-    );
-    await expect(
-      page.getByTestId(
-        `betrayal-room-event-choice-target-${eventCase.postRollChoice.targetRoomId}`,
-      ),
-    ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-05-选择板块前.jpg`);
-    await page
-      .getByTestId(
-        `betrayal-room-event-choice-target-${eventCase.postRollChoice.targetRoomId}`,
-      )
-      .click();
-    await expect(page.getByTestId("betrayal-event-choice-confirm")).toBeEnabled();
-    await saveScreenshot(page, `${screenshotBase}-06-选择板块后等待确认.jpg`);
-    await page.getByTestId("betrayal-event-choice-confirm").click();
-    await expect(eventChoicePanel).toHaveCount(0);
-  } else {
-    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
-  }
+  await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-room-placement-panel")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toHaveCount(0);
@@ -6881,45 +6858,103 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       page.getByTestId("betrayal-event-choice-card-front-atlas"),
     ).toBeVisible();
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
-    const allTraitPanel = page.getByTestId(
-      "betrayal-event-choice-all-trait-check",
-    );
-    await expect(allTraitPanel).toBeVisible();
-    for (const [trait, label] of [
+    await expect(
+      page.getByTestId("betrayal-event-choice-all-trait-check"),
+    ).toHaveCount(0);
+    const traits = [
       ["might", "力量"],
       ["speed", "速度"],
       ["knowledge", "知识"],
       ["sanity", "神志"],
-    ] as const) {
-      const row = page.getByTestId(
-        `betrayal-event-choice-all-trait-check-${trait}`,
-      );
-      await expect(row).toContainText(label);
-      await expect(row).toContainText("6 / 通过");
-    }
-    for (const trait of ["might", "speed", "knowledge", "sanity"]) {
+    ] as const;
+    for (const [trait] of traits) {
       await expect(
         page.getByTestId(`betrayal-event-choice-trait-${trait}`),
       ).toBeVisible();
     }
     const beforeRewardCore = await readCurrentCore(page);
     expect(beforeRewardCore.pendingEventChoice?.sourceTitle).toBe("吊死鬼");
-    expect(
-      beforeRewardCore.recentAllTraitCheck?.results.every(
-        (result) => result.passed,
-      ),
-    ).toBe(true);
+    expect(beforeRewardCore.recentAllTraitCheck).toBeNull();
     expect(beforeRewardCore.currentExplorer.traits.knowledge).toBe(3);
     await expect(
       page.getByTestId("betrayal-event-choice-confirm"),
-      "吊死鬼没有二选一语义，最终提交应由奖励属性点击完成，不能先露出额外确认按钮",
+      "吊死鬼四项检定未完成前不应显示最终确认",
     ).toHaveCount(0);
     await saveScreenshot(
       page,
-      `${screenshotBase}-03-事件牌翻出四项检定全过.jpg`,
+      `${screenshotBase}-03-事件牌翻出等待逐项检定.jpg`,
     );
 
+    await setHarnessRandomQueue(page, Array(12).fill(0.99));
+    for (const [index, [trait, label]] of traits.entries()) {
+      const traitButton = page.getByTestId(
+        `betrayal-event-choice-trait-${trait}`,
+      );
+      await expect(traitButton).toBeVisible();
+      await traitButton.click();
+      await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
+
+      const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+      const rollPanel = discoveryPanel.getByTestId(
+        "betrayal-recent-roll-panel",
+      );
+      await expect(discoveryPanel).toBeVisible();
+      await expect(discoveryPanel).toHaveAttribute(
+        "aria-label",
+        /事件牌 吊死鬼/,
+      );
+      await expect(rollPanel).toBeVisible();
+      await expect(rollPanel).toContainText(`${label}检定`);
+
+      const settledCore = await readCurrentCore(page);
+      expect(settledCore.recentAllTraitCheck?.results).toHaveLength(index + 1);
+      expect(
+        settledCore.recentAllTraitCheck?.results[index]?.trait,
+      ).toBe(trait);
+      expect(settledCore.pendingEventChoice).toBeNull();
+      await waitForPhysicalDiceSettled(rollPanel);
+      await expect(rollPanel).toContainText("总点数");
+      await expect(
+        discoveryPanel.getByTestId("betrayal-discovery-continue"),
+      ).toBeEnabled();
+      await saveScreenshot(
+        page,
+        `${screenshotBase}-${String(index + 4).padStart(2, "0")}-${label}检定停稳.jpg`,
+      );
+      await discoveryPanel.getByTestId("betrayal-discovery-continue").click();
+
+      await expect
+        .poll(async () => (await readCurrentCore(page)).pendingEventRollResolution)
+        .toBeNull();
+      if (index < traits.length - 1) {
+        await expect(eventChoicePanel).toBeVisible();
+        await expect(
+          page.getByTestId(`betrayal-event-choice-trait-${trait}`),
+        ).toHaveCount(0);
+      }
+    }
+
+    await expect(eventChoicePanel).toBeVisible();
+    const allTraitPanel = page.getByTestId(
+      "betrayal-event-choice-all-trait-check",
+    );
+    await expect(allTraitPanel).toBeVisible();
+    for (const [trait, label] of traits) {
+      const row = page.getByTestId(
+        `betrayal-event-choice-all-trait-check-${trait}`,
+      );
+      await expect(row).toContainText(label);
+      await expect(row).toContainText("6 / 通过");
+    }
+    await expect(
+      page.getByTestId("betrayal-event-choice-confirm"),
+      "四项检定完成后才显示一次奖励确认",
+    ).toBeDisabled();
+    await saveScreenshot(page, `${screenshotBase}-08-四项检定完成选择奖励.jpg`);
+
     await page.getByTestId("betrayal-event-choice-trait-knowledge").click();
+    await expect(page.getByTestId("betrayal-event-choice-confirm")).toBeEnabled();
+    await page.getByTestId("betrayal-event-choice-confirm").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
@@ -6927,10 +6962,22 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
     await expect(discoveryDetail).toContainText("每项属性均通过");
     await expect(discoveryDetail).toContainText("知识 +1");
+    await expect(
+      discoveryPanel.getByTestId("betrayal-recent-roll-panel"),
+      "奖励结算后不应继续显示上一项属性检定骰盘",
+    ).toHaveCount(0);
+    const visibleDiscoveryDetail = page.getByTestId(
+      "betrayal-discovery-visible-detail",
+    );
+    await expect(visibleDiscoveryDetail).toContainText("每项属性均通过");
+    await expect(visibleDiscoveryDetail).toContainText("知识 +1");
+    await expect(page.getByTestId("betrayal-discovery-continue")).toContainText(
+      /确认|返回牌桌/,
+    );
     const afterSettleCore = await readCurrentCore(page);
     expect(afterSettleCore.pendingEventChoice).toBeNull();
     expect(afterSettleCore.currentExplorer.traits.knowledge).toBe(4);
-    await saveScreenshot(page, `${screenshotBase}-05-知识奖励结算结果可见.jpg`);
+    await saveScreenshot(page, `${screenshotBase}-09-知识奖励结算结果可见.jpg`);
 
     await dismissDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-board")).toBeVisible();

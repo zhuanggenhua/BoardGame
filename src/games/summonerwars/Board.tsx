@@ -107,6 +107,58 @@ const MOBILE_LANDSCAPE_MAP_PADDING = '4vw';
 const DESKTOP_MAP_SIDE_RATIO = 0.1;
 const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
 const DICE_RESULT_OVERLAY_DURATION_MS = 3000;
+const LIFE_TOGGLE_SCALE_SPACER_LABEL = '100%';
+
+function SummonerWarsLifeToggle({
+  pressed,
+  onToggle,
+}: {
+  pressed: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslation('game-summonerwars');
+  const label = t(pressed ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals');
+
+  return (
+    <button
+      type="button"
+      data-testid="sw-life-toggle"
+      data-tutorial-id="sw-life-toggle"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggle();
+      }}
+      className={`pointer-events-auto flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border text-white transition-[background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-amber-200/80 ${
+        pressed
+          ? 'border-amber-200 bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.7)]'
+          : 'border-amber-100/55 bg-zinc-950/90 shadow-[0_8px_22px_rgba(0,0,0,0.55),0_0_12px_rgba(251,191,36,0.28)] hover:border-amber-200/80 hover:bg-zinc-900'
+      }`}
+    >
+      <svg
+        aria-hidden="true"
+        className="h-6 w-6"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    </button>
+  );
+}
 
 export const SummonerWarsBoard: React.FC<Props> = ({
   G, dispatch, playerID, reset, matchData, isMultiplayer, locale,
@@ -1170,43 +1222,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   contentTestId="sw-map-content"
                   scaleTestId="sw-map-scale"
                   scaleBadgeAddon={shouldShowLifeToggle ? (
-                    <button
-                      type="button"
-                      data-testid="sw-life-toggle"
-                      data-tutorial-id="sw-life-toggle"
-                      aria-label={t(showBoardLifeTotals ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals')}
-                      aria-pressed={showBoardLifeTotals}
-                      title={t(showBoardLifeTotals ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals')}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onTouchStart={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setShowBoardLifeTotals((value) => !value);
-                      }}
-                      className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border text-white shadow-lg transition-[background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-amber-200/80 ${
-                        showBoardLifeTotals
-                          ? 'border-amber-300/70 bg-amber-500/80 shadow-[0_0_14px_rgba(245,158,11,0.45)]'
-                          : 'border-white/20 bg-black/70 hover:border-amber-300/60 hover:bg-slate-800/90'
-                      }`}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    </button>
+                    <div
+                      className="h-11 w-11 shrink-0"
+                      aria-hidden="true"
+                      data-testid="sw-life-toggle-slot"
+                    />
                   ) : undefined}
                 >
                   <div className="relative inline-block">
@@ -1295,6 +1315,21 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   </div>
                 </MapContainer>
                   </div>
+
+                  {shouldShowLifeToggle ? (
+                    <div className="absolute top-3 left-3 z-30 flex items-center gap-2 pointer-events-none">
+                      <div
+                        className="invisible rounded-lg border px-3 py-1.5 text-sm font-bold"
+                        aria-hidden="true"
+                      >
+                        {LIFE_TOGGLE_SCALE_SPACER_LABEL}
+                      </div>
+                      <SummonerWarsLifeToggle
+                        pressed={showBoardLifeTotals}
+                        onToggle={() => setShowBoardLifeTotals((value) => !value)}
+                      />
+                    </div>
+                  ) : null}
 
                   {/* UI 层 */}
                   <div className="absolute inset-0 z-20 pointer-events-none">

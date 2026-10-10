@@ -34,7 +34,7 @@ import {
     SpellTeleportRenderer,
     SummonRenderer,
 } from '../ui/fxRenderers';
-import { ATTACK_DIE_SETTLED_POSE, ATTACK_DIE_SETTLED_TILT } from '../ui/attackDieGeometry';
+import { ATTACK_DIE_SETTLED_TILT, ATTACK_DIE_SETTLED_TRANSFORM } from '../ui/attackDieGeometry';
 import { mageWarsFxRegistry } from '../ui/fxSetup';
 import { MW_FX } from '../ui/fxCues';
 import { MAGE_WARS_FX_TIMING } from '../ui/fxTuning';
@@ -1402,8 +1402,14 @@ describe('MageWarsBoard FX wiring', () => {
                 expect(die).toHaveAttribute('data-settle-duration-ms', String(MAGE_WARS_FX_TIMING.diceResultSettleMs));
                 const body = die.querySelector('[data-die-renderer="css-d6"]');
                 expect(body).toBeTruthy();
-                expect(body?.querySelectorAll('img')).toHaveLength(6);
-                expect(body?.querySelectorAll('[data-d6-face-id]')).toHaveLength(6);
+                expect(die).toHaveAttribute('data-face-renderer', 'css-background');
+                expect(body?.querySelectorAll('img')).toHaveLength(0);
+                const faces = Array.from(body?.querySelectorAll<HTMLElement>('[data-d6-face-id]') ?? []);
+                expect(faces).toHaveLength(6);
+                for (const face of faces) {
+                    const art = face.querySelector<HTMLElement>('.mage-wars-attack-die-face-art');
+                    expect(art?.style.backgroundImage ?? '').toContain('url(');
+                }
                 expect(Array.from(body?.querySelectorAll('[data-d6-face-id]') ?? []).map((face) => face.getAttribute('data-d6-face-id')).sort()).toEqual([
                     'back-hit1',
                     'bottom-two',
@@ -1415,14 +1421,28 @@ describe('MageWarsBoard FX wiring', () => {
             });
             expect(attackDieFaces[0]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'hit2');
             expect(attackDieFaces[1]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'burst');
-            attackDieFaces.forEach((die) => {
-                const pose = die.querySelector('.mage-wars-attack-die-pose');
+            attackDieFaces.forEach((die, index) => {
+                expect(die.querySelector('.mage-wars-attack-die-pose')).toBeNull();
                 const cube = die.querySelector('[data-die-renderer="css-d6"]');
-                expect(pose).toHaveAttribute('data-settled-tilt', ATTACK_DIE_SETTLED_TILT);
-                expect(cube).toHaveAttribute('data-settled-tilt', 'face-align');
-                expect((pose as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_POSE);
+                expect(cube).toHaveAttribute('data-settled-tilt', ATTACK_DIE_SETTLED_TILT);
+                expect(cube).toHaveAttribute('data-roll-animation', 'mage-wars-d6-tumble');
+                expect((cube as HTMLElement | null)?.style.transform).toBe(
+                    `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`,
+                );
                 expect(die).toHaveAttribute('data-visual-mode', 'css-2d-cube');
-                expect(pose?.contains(cube)).toBe(true);
+            });
+            act(() => {
+                vi.advanceTimersByTime(800);
+            });
+            attackDieFaces.forEach((die) => {
+                const cube = die.querySelector('[data-die-renderer="css-d6"]');
+                expect(cube).toHaveAttribute('data-roll-animation', 'settled');
+                expect(cube).toHaveAttribute('data-settled-tilt', 'isometric-front');
+                expect((cube as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_TRANSFORM);
+                const hitGlow = cube?.querySelector('[data-testid="mage-wars-fx-attack-die-hit-glow"]');
+                expect(hitGlow).toBeTruthy();
+                expect(hitGlow).toHaveAttribute('data-hit-glow-mode', 'face-hugging');
+                expect(cube?.querySelectorAll('[data-hit-edge="true"]')).toHaveLength(6);
             });
             expect(attackDice).toHaveAttribute('data-visible-duration-ms', '3000');
             expect(attackDice.querySelector('[data-token-kind]')).toBeNull();
@@ -1437,7 +1457,7 @@ describe('MageWarsBoard FX wiring', () => {
             }
 
             act(() => {
-                advanceSharedFxClockDelay(2_900);
+                advanceSharedFxClockDelay(2_100);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
             expect(onComplete).not.toHaveBeenCalled();
@@ -1549,9 +1569,11 @@ describe('MageWarsBoard FX wiring', () => {
             const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
             expect(attackDieFaces).toHaveLength(1);
             expect(attackDieFaces[0]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'hit2');
-            const pose = attackDieFaces[0]?.querySelector('.mage-wars-attack-die-pose');
-            expect(pose).toHaveAttribute('data-settled-tilt', ATTACK_DIE_SETTLED_TILT);
-            expect((pose as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_POSE);
+            expect(attackDieFaces[0]?.querySelector('.mage-wars-attack-die-pose')).toBeNull();
+            const cube = attackDieFaces[0]?.querySelector('[data-die-renderer="css-d6"]');
+            expect(cube).toHaveAttribute('data-settled-tilt', ATTACK_DIE_SETTLED_TILT);
+            expect(cube).toHaveAttribute('data-roll-animation', 'mage-wars-d6-tumble');
+            expect((cube as HTMLElement | null)?.style.transform).toBe('rotateX(720deg) rotateY(720deg)');
 
             act(() => {
                 advanceSharedFxClockDelay(1_100);
@@ -1638,8 +1660,9 @@ describe('MageWarsBoard FX wiring', () => {
             expect(slide.className).not.toContain('fixed');
             expect(slide.getAttribute('data-from-left')).toBe('25');
             expect(slide.getAttribute('data-to-left')).toBe('50');
-            expect(slide.getAttribute('data-slide-motion')).toBe('transform');
-            expect(slide.className).toContain('inset-0');
+            expect(slide.getAttribute('data-slide-motion')).toBe('css-position');
+            expect(slide.className).not.toContain('inset-0');
+            expect(screen.getByTestId('mage-wars-fx-push-slide-body').getAttribute('data-slide-paint')).toBe('opaque');
 
             act(() => {
                 advanceSharedFxClockDelay(MAGE_WARS_FX_TIMING.pushTravelImpactMs);
@@ -3716,6 +3739,9 @@ describe('MageWarsBoard object ability choices', () => {
         expect(staffCard).not.toBeNull();
         expect(staffCard?.querySelector('[data-testid="mage-wars-bound-spell-overlay"]')?.getAttribute('data-bound-spell-card-id'))
             .toBe('3500');
+        expect(staffCard?.getAttribute('data-attachment-usable')).toBe('true');
+        expect(staffCard?.getAttribute('data-primary-action-state')).toBe('enabled');
+        expect(staffCard?.querySelector('[data-testid="mage-wars-attachment-legal-frame"]')).toBeTruthy();
         fireEvent.click(staffCard!);
 
         const boundCastButton = screen.getByTestId('mage-wars-selected-bound-spell-cast');
@@ -3763,8 +3789,11 @@ describe('MageWarsBoard object ability choices', () => {
         expect(attachment.getAttribute('data-object-id')).toBe('mage-staff-bound-0');
         expect(attachment.getAttribute('data-source-card-id')).toBe('3725');
         expect(attachment.getAttribute('data-bound-spell-card-id')).toBe('3500');
+        expect(attachment.getAttribute('data-attachment-usable')).toBe('true');
+        expect(screen.getByTestId('mage-wars-card-magnify-attachment-legal-frame')).toBeTruthy();
         fireEvent.click(attachment);
 
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('true');
         const boundCastButton = screen.getByTestId('mage-wars-selected-bound-spell-cast');
         expect(boundCastButton.getAttribute('data-bound-spell-card-id')).toBe('3500');
         expect(screen.getByTestId('mage-wars-selected-ability-action-dock').getAttribute('data-ability-action-placement'))

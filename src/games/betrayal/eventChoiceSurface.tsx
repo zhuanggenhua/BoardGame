@@ -181,25 +181,7 @@ export function BetrayalEventChoiceSurface({
               )}
             </div>
           )}
-          {roll ? (
-            <RecentRollPanel
-              roll={roll}
-                className="col-start-2 row-start-1 h-[410px] min-h-[410px] w-full min-w-0 justify-self-start"
-                diceClassName="min-h-[236px]"
-              effectiveLocale={locale}
-              actorLabel={rollActorLabel}
-              showSource={false}
-              showRollLabel={false}
-              openTable
-              compactResult={false}
-              denseResult
-              denseResultPlacement="stacked"
-                openTableResultDocked={false}
-                diceVisualScale={isMobileViewport ? 2.85 : 1}
-                resultReadable={resultReadable}
-                onDiceSettledChange={onDiceSettledChange}
-              />
-          ) : allTraitCheck ? (
+          {allTraitCheck ? (
             <div
               data-testid="betrayal-event-choice-all-trait-check"
               className="pointer-events-none flex h-[430px] min-h-[340px] min-w-0 flex-col justify-center gap-4 border-l border-[rgba(214,191,129,0.24)] pl-6"
@@ -242,6 +224,24 @@ export function BetrayalEventChoiceSurface({
                 ))}
               </div>
             </div>
+          ) : roll ? (
+            <RecentRollPanel
+              roll={roll}
+              className="col-start-2 row-start-1 h-[410px] min-h-[410px] w-full min-w-0 justify-self-start"
+              diceClassName="min-h-[236px]"
+              effectiveLocale={locale}
+              actorLabel={rollActorLabel}
+              showSource={false}
+              showRollLabel={false}
+              openTable
+              compactResult={false}
+              denseResult
+              denseResultPlacement="stacked"
+              openTableResultDocked={false}
+              diceVisualScale={isMobileViewport ? 2.85 : 1}
+              resultReadable={resultReadable}
+              onDiceSettledChange={onDiceSettledChange}
+            />
           ) : null}
             <div
               className={`flex min-h-0 min-w-0 flex-col justify-start ${

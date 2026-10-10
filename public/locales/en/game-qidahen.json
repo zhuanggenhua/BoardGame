@@ -401,7 +401,7 @@
         "wheelFirst": "The opening hand-limit check has resolved automatically. Ming has 3 cards and a 15-card limit, so no discard is required. Enter the wheel action.",
         "wheelRule": "The shared wheel can move 1, 2, or 3 spaces. All three moves are legal, and each produces a different wheel resolution.",
         "wheelMove": "Click the highlighted Recruit / Train sector on the wheel.",
-        "wheelResult": "Recruit / Train is resolved: Xuanfu's total troop count rises from 2 to 4; 2 new level-2 regular troops are added, and the existing level-1 artillery is trained to level 2.",
+        "wheelResult": "Recruit / Train is resolved: Xuanfu's troop count rises from 1 to 3; 2 new level-2 regular troops are added. Xuanfu has no artillery at this point, so no artillery is trained.",
         "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. The rules set no fixed order among these four actions; the hand action and wheel action also have no fixed order.",
         "grantPardonRule": "Grant Pardon: discard 3 hand cards and name 1 opponent. That player chooses a troop adjacent to a Ming-controlled region, moves it into the neighboring Ming-controlled region, and converts it to Ming. In the digital flow, click the receiving region first; if it uniquely identifies one opponent, the system locks that opponent automatically. Only when multiple opponents remain does the acting player choose the remaining opponent.",
         "pickAction": "Click the Grant Pardon action on the right.",

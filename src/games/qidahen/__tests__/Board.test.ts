@@ -1006,8 +1006,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("border: pendingCommittedSelected ? '1.5px solid #8cf694' : '1.5px solid #69d873'");
         expect(boardSource).toContain("background: pendingCommittedSelected ? 'rgba(101, 255, 128, 0.045)' : 'rgba(87, 240, 103, 0.028)'");
         expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;');
-        expect(boardSource).toContain('const resolvedSelectionTone = grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
-        expect(boardSource).toContain('zIndex: tokenSelectable ? 64 : undefined');
+        expect(boardSource).toContain('const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
+        expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : undefined');
         expect(boardSource).toContain('className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
         expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");
@@ -1189,13 +1189,12 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('tutorialHighlightsResultFeedback && core.lastSeasonSummary?.mapResult');
         expect(boardSource).toContain('tutorialResultArtilleryFocus');
         expect(boardSource).toContain('data-qidahen-map-token-troop-kind={isArmyToken ? token.troopKind : undefined}');
-        expect(boardSource).toContain('!tutorialHighlightsResultFeedback ?');
+        expect(boardSource).toContain('showStandardMapResultFeedback ?');
         expect(boardSource).toContain("tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'");
         expect(boardSource).toContain('lastSeasonSummaryRegionSnapshotRef.current');
-        expect(boardSource).toContain('const summaryChanged = resultId != null && resultId !== previousResultId;');
-        expect(boardSource).toContain('const regionSnapshotChangedDuringSummary = resultId != null');
-        expect(boardSource).toContain('if (resultId && (summaryChanged || regionSnapshotChangedDuringSummary))');
-        expect(boardSource).toContain('if (resultId || previousResultId !== null || previousRegionSnapshot === null)');
+        expect(boardSource).toContain('if (resultId && resultId !== previousResultId)');
+        expect(boardSource).toContain('const explicitMapResult = core.lastSeasonSummary?.mapResult;');
+        expect(boardSource).toContain('findQidahenMapTroopResult(previousRegionSnapshot, core.regions)');
         expect(boardSource).toContain('resultId !== previousResultId');
         expect(boardSource).toContain('lastSeasonSummaryRegionSnapshotRef.current = currentRegionSnapshot;');
         expect(boardSource).toContain('lastSeasonSummaryIdRef.current = resultId;');

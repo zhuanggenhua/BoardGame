@@ -274,13 +274,23 @@ async function materializeMageWarsFxEvidenceFrameSeries(
     recording: MageWarsFxVideoRecording,
     names: string[],
     fractions: number[],
-    options: { elapsedStartMs?: number; elapsedEndMs?: number } = {},
+    options: {
+        elapsedStartMs?: number;
+        elapsedEndMs?: number;
+        origin?: 'first-frame' | 'recording-start';
+    } = {},
 ): Promise<void> {
     if (!recording.evidenceDir || !recording.frames || recording.frames.length < names.length) {
         throw new Error('Mage Wars 动效过程图必须从同一次真实录制中提取足够的原始帧');
     }
     const allFrames = [...recording.frames].sort((left, right) => left.capturedAtMs - right.capturedAtMs);
-    const originMs = allFrames[0]!.capturedAtMs;
+    const firstFrameMs = allFrames[0]!.capturedAtMs;
+    const recordingStartMs = recording.startedAtMs;
+    const clocksAligned = recordingStartMs != null
+        && Math.abs(firstFrameMs - recordingStartMs) < 120_000;
+    const originMs = options.origin === 'recording-start' && recordingStartMs != null && clocksAligned
+        ? recordingStartMs
+        : firstFrameMs;
     const windowStartMs = options.elapsedStartMs == null
         ? originMs
         : originMs + Math.max(0, options.elapsedStartMs);
@@ -296,6 +306,10 @@ async function materializeMageWarsFxEvidenceFrameSeries(
             'Mage Wars 动效过程图的滑移窗口帧不足，拒绝回退到整段录屏',
             `elapsedStartMs=${options.elapsedStartMs}`,
             `elapsedEndMs=${options.elapsedEndMs ?? 'none'}`,
+            `origin=${options.origin ?? 'first-frame'}`,
+            `originMs=${originMs}`,
+            `firstFrameMs=${firstFrameMs}`,
+            `recordingStartedAtMs=${recordingStartMs ?? 'none'}`,
             `windowedFrames=${windowedFrames.length}`,
             `allFrames=${allFrames.length}`,
             `names=${names.join(',')}`,
@@ -3439,6 +3453,7 @@ async function captureMageWarsFxProcessScreenshots(
         startDamageFloatProbe?: boolean;
         expectHealingFloat?: boolean;
         evidenceDir?: string;
+        damageFloatScreenshotName?: string;
         captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>;
         recording?: MageWarsFxVideoRecording;
     } = {},
@@ -3465,117 +3480,103 @@ async function captureMageWarsFxProcessScreenshots(
         : undefined;
 
     if (kind === 'push') {
-        // 滑移过程帧必须在克隆仍可见时用整页截图采集；CDP 整段采样会落到法术书遮挡后的空棋盘。
+        // 0.3s 滑移窗口禁止：locator.evaluate、阻塞型整页截图、页面内长 rAF evaluate。
+        // 这三样都会让 CDP screencast 丢掉克隆中段，路径中就会抽到空棋盘。
+        // 只做一次 querySelector 快照，然后等克隆卸掉；开始/路径/落点全部 GIF 停后再抽。
         const slide = page.getByTestId('mage-wars-fx-push-slide').first();
         await expect(slide).toBeVisible({ timeout: 5_000 });
+        await expect(slide).toHaveAttribute('data-slide-layer', 'body-portal', { timeout: 1_000 });
         const recordingOriginMs = options.recording?.startedAtMs ?? Date.now();
-        const evidenceWindowElapsedStartMs = Date.now() - recordingOriginMs;
-        // 开始帧必须在克隆刚出现时拍。先跑 evaluate 会把 C2 起点窗口错过，三张静帧都会落在 C3。
-        await options.captureFrame?.('allow');
-        await saveProcessEvidenceScreenshot(`${label}-实体滑移开始过程帧`, {
-            animations: 'allow',
-            evidenceDir: options.evidenceDir,
-        });
-        await expect(page.getByTestId('mage-wars-fx-push-travel')).toHaveCount(0);
-        await expect(page.getByTestId('mage-wars-fx-push-source-wake')).toHaveCount(0);
-        await expect(page.getByTestId('mage-wars-fx-push-travel-mid-burst')).toHaveCount(0);
-        await expect(page.getByTestId('mage-wars-fx-spell-push-burst')).toHaveCount(0);
-        const audit = await slide.evaluate((element) => {
-            const dataset = (element as HTMLElement).dataset;
-            return {
-                sourceRow: dataset.sourceRow ?? null,
-                sourceCol: dataset.sourceCol ?? null,
-                targetRow: dataset.targetRow ?? null,
-                targetCol: dataset.targetCol ?? null,
-                sourceAnchorId: dataset.sourceAnchorId ?? null,
-                targetAnchorId: dataset.objectId || null,
-                targetAnchorVisible: true,
-                targetAnchorOpacity: 1,
-                hasSourceWake: false,
-                hasImpact: true,
-                hasTravel: true,
-            };
-        }) as MageWarsFxAudit;
-        expect(audit.hasSourceWake).toBe(false);
-        expect(audit.hasTravel).toBe(true);
-        expect(audit.hasImpact).toBe(true);
-        expect(`${audit.sourceRow}:${audit.sourceCol}`).not.toBe(`${audit.targetRow}:${audit.targetCol}`);
-        const slideLayer = await slide.evaluate((element) => {
-            const el = element as HTMLElement;
+        const evidenceWindowElapsedStartMs = Math.max(0, Date.now() - recordingOriginMs - 80);
+        const evidenceWindowElapsedEndMs = evidenceWindowElapsedStartMs
+            + MAGE_WARS_FX_TIMING.pushTravelCompleteMs
+            + 80;
+        const snapshot = await page.evaluate(() => {
+            const el = document.querySelector('[data-testid="mage-wars-fx-push-slide"]');
+            if (!(el instanceof HTMLElement)) return null;
             const arena = el.closest('[data-testid="mage-wars-arena-stage"], [data-testid="mage-wars-fx-layer"]');
             return {
+                sourceRow: el.dataset.sourceRow ?? null,
+                sourceCol: el.dataset.sourceCol ?? null,
+                targetRow: el.dataset.targetRow ?? null,
+                targetCol: el.dataset.targetCol ?? null,
+                sourceAnchorId: el.dataset.sourceAnchorId ?? null,
+                targetAnchorId: el.dataset.objectId || null,
                 layer: el.dataset.slideLayer ?? null,
+                motion: el.dataset.slideMotion ?? null,
+                paint: el.querySelector('[data-slide-paint]')?.getAttribute('data-slide-paint') ?? null,
                 inArena: Boolean(arena),
                 parentIsBody: el.parentElement === document.body,
                 position: getComputedStyle(el).position,
                 zIndex: getComputedStyle(el).zIndex,
+                fromLeft: Number(el.dataset.fromLeft),
+                fromTop: Number(el.dataset.fromTop),
+                toLeft: Number(el.dataset.toLeft),
+                toTop: Number(el.dataset.toTop),
+                fromPxLeft: Number(el.dataset.fromPxLeft),
+                toPxLeft: Number(el.dataset.toPxLeft),
+                hasTravelNode: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-travel"]')),
+                hasSourceWake: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-source-wake"]')),
+                hasMidBurst: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-travel-mid-burst"]')),
+                hasSpellBurst: Boolean(document.querySelector('[data-testid="mage-wars-fx-spell-push-burst"]')),
+                opacity: getComputedStyle(el).opacity,
+                visibility: getComputedStyle(el).visibility,
+                width: el.getBoundingClientRect().width,
+                height: el.getBoundingClientRect().height,
             };
         });
-        expect(slideLayer.layer, '推斥克隆必须留在棋盘层').toBe('arena');
-        expect(slideLayer.inArena, '推斥克隆必须挂在竞技场内').toBe(true);
-        expect(slideLayer.parentIsBody, '推斥不得 portal 到 document.body').toBe(false);
-        expect(slideLayer.position).toBe('absolute');
-        expect(Number(slideLayer.zIndex), '推斥不得抬到法术书上层').toBeLessThan(200);
-        const slidePath = await slide.evaluate((element) => {
-            const dataset = (element as HTMLElement).dataset;
-            return {
-                fromLeft: Number(dataset.fromLeft),
-                fromTop: Number(dataset.fromTop),
-                toLeft: Number(dataset.toLeft),
-                toTop: Number(dataset.toTop),
-            };
-        });
+        expect(snapshot, '推斥滑移克隆可见时必须读到路径数据').not.toBeNull();
+        expect(Number(snapshot!.width), '推斥克隆必须有可见宽度').toBeGreaterThan(16);
+        expect(Number(snapshot!.height), '推斥克隆必须有可见高度').toBeGreaterThan(16);
+        expect(snapshot!.visibility).toBe('visible');
+        expect(Number(snapshot!.opacity)).toBeGreaterThan(0.5);
+        await options.captureFrame?.('allow');
+        const audit: MageWarsFxAudit = {
+            sourceRow: snapshot!.sourceRow,
+            sourceCol: snapshot!.sourceCol,
+            targetRow: snapshot!.targetRow,
+            targetCol: snapshot!.targetCol,
+            sourceAnchorId: snapshot!.sourceAnchorId,
+            targetAnchorId: snapshot!.targetAnchorId,
+            targetAnchorVisible: true,
+            targetAnchorOpacity: 1,
+            hasSourceWake: false,
+            hasImpact: true,
+            hasTravel: true,
+        };
+        expect(audit.hasSourceWake).toBe(false);
+        expect(audit.hasTravel).toBe(true);
+        expect(audit.hasImpact).toBe(true);
+        expect(snapshot!.hasTravelNode, '推斥不得复用投射物 travel 节点').toBe(false);
+        expect(snapshot!.hasSourceWake, '推斥不得出现来源闪现').toBe(false);
+        expect(snapshot!.hasMidBurst, '推斥不得出现路径中爆发').toBe(false);
+        expect(snapshot!.hasSpellBurst, '推斥不得出现法术爆发层').toBe(false);
+        expect(`${audit.sourceRow}:${audit.sourceCol}`).not.toBe(`${audit.targetRow}:${audit.targetCol}`);
+        expect(snapshot!.layer, '推斥克隆必须 portal 到 body，避开竞技场 overflow 裁切和合成层').toBe('body-portal');
+        expect(snapshot!.parentIsBody, '推斥克隆必须挂在 document.body').toBe(true);
+        expect(snapshot!.position).toBe('fixed');
+        expect(snapshot!.motion).toBe('css-position');
+        expect(snapshot!.paint).toBe('opaque');
+        expect(Number(snapshot!.zIndex), '推斥不得抬到法术书上层').toBeLessThan(200);
+        expect(Number(snapshot!.fromPxLeft), '推斥克隆必须有视口像素起点').toBeGreaterThan(0);
+        expect(Number(snapshot!.toPxLeft), '推斥克隆必须有视口像素终点').toBeGreaterThan(0);
+        expect(Number(snapshot!.fromPxLeft)).not.toBe(Number(snapshot!.toPxLeft));
         expect(
-            Number.isFinite(slidePath.fromLeft)
-            && Number.isFinite(slidePath.fromTop)
-            && Number.isFinite(slidePath.toLeft)
-            && Number.isFinite(slidePath.toTop),
+            Number.isFinite(snapshot!.fromLeft)
+            && Number.isFinite(snapshot!.fromTop)
+            && Number.isFinite(snapshot!.toLeft)
+            && Number.isFinite(snapshot!.toTop),
             '推斥滑移必须写出起终点格子盒',
         ).toBe(true);
         expect(
-            slidePath.fromLeft !== slidePath.toLeft || slidePath.fromTop !== slidePath.toTop,
-            `推斥滑移起终点不能重合: ${JSON.stringify(slidePath)}`,
+            snapshot!.fromLeft !== snapshot!.toLeft || snapshot!.fromTop !== snapshot!.toTop,
+            `推斥滑移起终点不能重合: ${JSON.stringify({
+                fromLeft: snapshot!.fromLeft,
+                fromTop: snapshot!.fromTop,
+                toLeft: snapshot!.toLeft,
+                toTop: snapshot!.toTop,
+            })}`,
         ).toBe(true);
-        const readSlideProgress = () => slide.evaluate((element) => {
-            const el = element as HTMLElement;
-            const parent = el.offsetParent instanceof HTMLElement
-                ? el.offsetParent
-                : el.closest('[data-testid="mage-wars-arena-stage"], [data-testid="mage-wars-fx-layer"]');
-            if (!(parent instanceof HTMLElement)) return 0;
-            const parentRect = parent.getBoundingClientRect();
-            const fromLeft = parentRect.left + (Number(el.dataset.fromLeft) / 100) * parentRect.width;
-            const fromTop = parentRect.top + (Number(el.dataset.fromTop) / 100) * parentRect.height;
-            const toLeft = parentRect.left + (Number(el.dataset.toLeft) / 100) * parentRect.width;
-            const toTop = parentRect.top + (Number(el.dataset.toTop) / 100) * parentRect.height;
-            const rect = el.getBoundingClientRect();
-            const dist = Math.hypot(toLeft - fromLeft, toTop - fromTop);
-            if (!(dist > 1)) return 1;
-            return Math.hypot(rect.left - fromLeft, rect.top - fromTop) / dist;
-        });
-        const waitUntilSlideProgress = async (minFraction: number) => {
-            await expect.poll(async () => {
-                const progress = await readSlideProgress();
-                return Number.isFinite(progress) && progress >= minFraction;
-            }, {
-                timeout: Math.max(2_400, MAGE_WARS_FX_TIMING.pushTravelImpactMs + 400),
-                message: `推斥滑移未到达进度 ${minFraction}`,
-            }).toBe(true);
-            await expect(slide).toBeVisible({ timeout: 800 });
-        };
-        let evidenceWindowElapsedEndMs = Date.now() - recordingOriginMs;
-        await waitUntilSlideProgress(0.4);
-        await options.captureFrame?.('allow');
-        await saveProcessEvidenceScreenshot(`${label}-${resolveFxTravelScreenshotSuffix(kind)}`, {
-            animations: 'allow',
-            evidenceDir: options.evidenceDir,
-        });
-        await waitUntilSlideProgress(0.78);
-        await options.captureFrame?.('allow');
-        await saveProcessEvidenceScreenshot(`${label}-${resolveFxImpactScreenshotSuffix(kind)}`, {
-            animations: 'allow',
-            evidenceDir: options.evidenceDir,
-        });
-        evidenceWindowElapsedEndMs = Date.now() - recordingOriginMs;
         await expect(slide).toBeHidden({ timeout: MAGE_WARS_FX_TIMING.pushTravelCompleteMs + 1_000 });
         if (audit.targetAnchorId) {
             await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-滑移落点`);
@@ -3654,7 +3655,7 @@ async function captureMageWarsFxProcessScreenshots(
             await page.waitForTimeout(120);
             await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-命中和伤害飘字`);
             await options.captureFrame?.('allow');
-            await saveProcessEvidenceScreenshot(`${label}-命中动画和伤害飘字过程帧`, {
+            await saveProcessEvidenceScreenshot(options.damageFloatScreenshotName ?? `${label}-命中动画和伤害飘字过程帧`, {
                 animations: 'allow',
                 evidenceDir: options.evidenceDir,
             });
@@ -3688,7 +3689,7 @@ async function captureMageWarsFxProcessScreenshots(
         await page.waitForTimeout(160);
         await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-命中和伤害飘字`);
         await options.captureFrame?.('allow');
-        await saveProcessEvidenceScreenshot(`${label}-命中动画和伤害飘字过程帧`, {
+        await saveProcessEvidenceScreenshot(options.damageFloatScreenshotName ?? `${label}-命中动画和伤害飘字过程帧`, {
             animations: 'allow',
             evidenceDir: options.evidenceDir,
         });
@@ -6977,6 +6978,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 {
                     startDamageFloatProbe: false,
                     expectDamageFloat: true,
+                    damageFloatScreenshotName: '04-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧',
                     evidenceDir: evidenceRun.stagingDir,
                     captureFrame: (animations) => meleeGifCapture.capture(animations),
                 },
@@ -7228,7 +7230,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 timeout: 5_000,
             }).toBe(true);
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '近战攻击稳定收口截图前');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-近战攻击稳定收口-目标可继续', {
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-近战攻击稳定收口-目标可继续', {
                 evidenceDir: evidenceRun.stagingDir,
             });
         } finally {
@@ -7248,8 +7250,8 @@ test.describe('Mage Wars formal online runtime', () => {
                 '01-近战攻击代表态-来源和目标可见',
                 '02-近战攻击选择态-目标高亮',
                 '03-野性山猫近战攻击阿希拉牧师-来源唤醒和命中过程帧',
-                '03-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧',
-                '04-近战攻击稳定收口-目标可继续',
+                '04-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧',
+                '05-近战攻击稳定收口-目标可继续',
             ],
             requirements: [
                 {
@@ -9179,6 +9181,9 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(attachedCard).toBeVisible({ timeout: 5_000 });
             await expect(attachedCard.getByTestId('mage-wars-bound-spell-overlay'))
                 .toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
+            await expect(attachedCard).toHaveAttribute('data-attachment-usable', 'true');
+            await expect(attachedCard.getByTestId('mage-wars-attachment-legal-frame'))
+                .toBeVisible({ timeout: 3_000 });
             const hostManaReadout = await readMageWarsHudMana(match.hostPage, 'self');
             const opponentManaReadout = await readMageWarsHudMana(match.hostPage, 'opponent');
             expect(hostManaReadout).toBe(hostManaBefore);
@@ -9213,6 +9218,9 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(magnifyAttachment).toHaveAttribute('data-object-id', staffObjectId);
             await expect(magnifyAttachment).toHaveAttribute('data-source-card-id', '3725');
             await expect(magnifyAttachment).toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
+            await expect(magnifyAttachment).toHaveAttribute('data-attachment-usable', 'true');
+            await expect(magnifyAttachment.getByTestId('mage-wars-card-magnify-attachment-legal-frame'))
+                .toBeVisible({ timeout: 3_000 });
             const magnifyHostBox = await magnifyContent.locator(':scope > div').first().boundingBox();
             const magnifyAttachmentBox = await magnifyAttachment.boundingBox();
             expect(magnifyHostBox, '放大层宿主单位必须有屏幕矩形').not.toBeNull();
@@ -9232,6 +9240,7 @@ test.describe('Mage Wars formal online runtime', () => {
             );
 
             await magnifyAttachment.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(match.hostPage.getByTestId('mage-wars-card-magnify-overlay')).toBeHidden({ timeout: 5_000 });
             const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(abilityDock).toBeVisible({ timeout: 3_000 });
             await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
@@ -9240,6 +9249,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(boundCastButton).toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
             await expect(boundCastButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
             await expect(boundCastButton).toHaveText('施放力量汲取');
+            await expect(attachedCard.getByTestId('mage-wars-attachment-source-frame')).toBeVisible({ timeout: 3_000 });
             await assertMageWarsActionDockAboveSpellbook(match.hostPage, '检视附件施放力量汲取');
             await saveEvidenceScreenshot(
                 match.hostPage,
@@ -10482,7 +10492,7 @@ test.describe('Mage Wars formal online runtime', () => {
     });
 
     test('正式页面推斥法术过程帧覆盖实体滑移', async ({ browser, baseURL }, testInfo) => {
-        test.setTimeout(180_000);
+        test.setTimeout(240_000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const recording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '推斥' });
         let gifCapture: MageWarsFxGifCapture | null = null;
@@ -10529,6 +10539,21 @@ test.describe('Mage Wars formal online runtime', () => {
             await clickLegalTargetZone(match.guestPage, 'c3', '原力推斥选择推离落点');
             const pushFxAudit = await pushFxAuditPromise;
             await gifCapture.stop();
+            await materializeMageWarsFxEvidenceFrameSeries(
+                testInfo,
+                recording,
+                [
+                    '12A-原力推斥-实体滑移开始过程帧',
+                    '12A-原力推斥-实体滑移路径中',
+                    '12A-原力推斥-滑移落点过程帧',
+                ],
+                [0.12, 0.45, 0.82],
+                {
+                    elapsedStartMs: pushFxAudit.evidenceWindowElapsedStartMs,
+                    elapsedEndMs: pushFxAudit.evidenceWindowElapsedEndMs,
+                    origin: 'recording-start',
+                },
+            );
             expect(pushFxAudit.sourceRow).toBe('1');
             expect(pushFxAudit.sourceCol).toBe('2');
             expect(pushFxAudit.targetRow).toBe('2');

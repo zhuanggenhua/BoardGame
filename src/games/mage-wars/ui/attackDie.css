@@ -1,46 +1,66 @@
 .mage-wars-attack-die {
-    --attack-die-size: clamp(3rem, 4vw, 5rem);
-    perspective: 480px;
+    --attack-die-size: 4vw;
+    width: 4vw;
+    height: 4vw;
+    perspective: 800px;
+    overflow: visible;
 }
 
 .mage-wars-attack-die-shadow {
     position: absolute;
-    left: 14%;
-    right: 14%;
-    bottom: 0;
-    height: 14%;
+    left: 10%;
+    width: 80%;
+    height: 15%;
+    bottom: -12%;
     border-radius: 50%;
-    background: rgb(0 0 0 / 28%);
-    filter: blur(5px);
+    background: radial-gradient(ellipse, rgb(0 0 0 / 70%), transparent);
+    filter: blur(3px);
+    opacity: 0.3;
 }
 
-.mage-wars-attack-die-pose {
-    position: absolute;
-    inset: 0;
-    transform-style: preserve-3d;
-}
-
-/* Filters, clipping and opacity here flatten the solid before it rotates. */
 .mage-wars-attack-die-cube {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
     transform-style: preserve-3d;
 }
 
 .mage-wars-attack-die-face {
     position: absolute;
     inset: 0;
-    overflow: hidden;
     backface-visibility: hidden;
-    border-radius: 0.28rem;
-    background-color: #c41e1e;
-    box-shadow: inset 0 0 0.55rem rgb(0 0 0 / 45%);
+    border-radius: 0.5vw;
+    border: 0.12vw solid rgb(255 255 255 / 15%);
+    box-shadow: inset 0 0 0.8vw rgb(0 0 0 / 50%);
+}
+
+.mage-wars-attack-die-face-hit {
+    border-color: rgb(190 242 100 / 92%);
+    box-shadow:
+        inset 0 0 0.8vw rgb(0 0 0 / 50%),
+        0 0 0.45vw 0.1vw rgb(74 222 128 / 95%),
+        0 0 1vw 0.28vw rgb(34 197 94 / 80%);
+}
+
+.mage-wars-attack-die-hit-glow {
+    position: absolute;
+    inset: -0.18vw;
+    border-radius: 0.55vw;
+    pointer-events: none;
+    border: 0.16vw solid rgb(187 247 208 / 100%);
+    background: radial-gradient(circle, rgb(74 222 128 / 32%) 0%, rgb(74 222 128 / 0%) 72%);
+    box-shadow:
+        0 0 0.4vw 0.12vw rgb(190 242 100 / 100%),
+        0 0 1.1vw 0.4vw rgb(74 222 128 / 95%),
+        0 0 2.2vw 0.75vw rgb(34 197 94 / 72%);
+    filter: drop-shadow(0 0 0.55vw rgb(74 222 128 / 100%));
 }
 
 .mage-wars-attack-die-face-art {
     position: absolute;
     inset: 0;
-    overflow: hidden;
+    border-radius: inherit;
 }
 
 @keyframes mage-wars-d6-tumble {
