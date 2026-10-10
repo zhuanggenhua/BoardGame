@@ -1023,8 +1023,10 @@ const captureFeedbackScreenshot = async (modalElement: HTMLElement | null): Prom
         return null;
     }
 
+    const previousDisplay = modalElement?.style.display;
     const previousVisibility = modalElement?.style.visibility;
     if (modalElement) {
+        modalElement.style.display = 'none';
         modalElement.style.visibility = 'hidden';
     }
 
@@ -1034,6 +1036,9 @@ const captureFeedbackScreenshot = async (modalElement: HTMLElement | null): Prom
         const viewportHeight = Math.max(1, Math.round(window.innerHeight || target.clientHeight || 1));
         const canvas = await html2canvas(target, {
             backgroundColor: null,
+            // Tailwind v4 emits oklab colors; Chromium's native foreignObject
+            // renderer preserves those styles without html2canvas color parsing.
+            foreignObjectRendering: true,
             useCORS: true,
             logging: false,
             width: viewportWidth,
@@ -1049,6 +1054,7 @@ const captureFeedbackScreenshot = async (modalElement: HTMLElement | null): Prom
         return compressCanvas(canvas);
     } finally {
         if (modalElement) {
+            modalElement.style.display = previousDisplay ?? '';
             modalElement.style.visibility = previousVisibility ?? '';
         }
     }
