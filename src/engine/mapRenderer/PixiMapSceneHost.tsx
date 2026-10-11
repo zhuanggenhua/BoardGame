@@ -197,6 +197,10 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
         }
     }, [getMapPoint, interactive, onInteraction, resolveRegionId]);
 
+    const handlePointerUp = React.useCallback((event: FederatedPointerEvent) => {
+        handleClick(event);
+    }, [handleClick]);
+
     const drawSurface = React.useCallback((graphics: Graphics) => {
         graphics.clear();
         graphics.rect(0, 0, mapWidth, mapHeight);
@@ -248,7 +252,7 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
                         cursor={interactive ? 'pointer' : 'default'}
                         onPointerMove={handlePointerMove}
                         onPointerOut={handlePointerOut}
-                        onClick={handleClick}
+                        onPointerUp={handlePointerUp}
                     />
                 </pixiContainer>
             </Application>

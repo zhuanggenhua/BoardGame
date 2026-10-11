@@ -14,6 +14,7 @@ interface QidahenBoardShellProps {
     layout: QidahenBoardLayoutConfig;
     scene: React.ReactNode;
     hud: React.ReactNode;
+    sceneOverlay?: React.ReactNode;
     backgroundColor: string;
 }
 
@@ -73,6 +74,7 @@ export const QidahenBoardShell: React.FC<QidahenBoardShellProps> = ({
     layout,
     scene,
     hud,
+    sceneOverlay,
     backgroundColor,
 }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
@@ -165,6 +167,26 @@ export const QidahenBoardShell: React.FC<QidahenBoardShellProps> = ({
                     {hud}
                 </div>
             </div>
+            {sceneOverlay ? (
+                <div
+                    className="pointer-events-none absolute inset-0 z-[80] overflow-hidden"
+                    data-testid="qidahen-scene-overlay-layer"
+                >
+                    <div
+                        className="absolute overflow-visible"
+                        style={{
+                            width: layout.width,
+                            height: layout.height,
+                            left: metrics.scene.left,
+                            top: metrics.scene.top,
+                            transform: `scale(${metrics.scene.scale})`,
+                            transformOrigin: 'top left',
+                        }}
+                    >
+                        {sceneOverlay}
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 };

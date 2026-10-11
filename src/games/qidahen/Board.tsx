@@ -656,7 +656,11 @@ const resolveViewerFactionId = (
 );
 
 type QidahenPrimaryStageMode = 'faction' | 'wheel';
-type QidahenMapViewport = MapViewportState;
+type QidahenMapViewport = {
+    zoom: number;
+    panX: number;
+    panY: number;
+};
 
 const DEFAULT_QIDAHEN_MAP_VIEWPORT: QidahenMapViewport = {
     zoom: 1,
@@ -1875,6 +1879,58 @@ const MapToken: React.FC<{
     );
 };
 
+const MapViewportControls: React.FC<{
+    viewport: QidahenMapViewport;
+    onViewportChange: (viewport: QidahenMapViewport) => void;
+}> = ({ viewport, onViewportChange }) => {
+    const { t } = useTranslation('game-qidahen');
+    return (
+        <div
+            className="pointer-events-auto absolute bottom-[132px] left-[26px] z-30 flex flex-col gap-2"
+            data-testid="qidahen-map-viewport-controls"
+            data-ui-anchor="left-bottom"
+        >
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    data-testid="qidahen-map-zoom-out"
+                    className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                    onClick={() => onViewportChange(clampQidahenMapViewport({
+                        zoom: viewport.zoom / 1.14,
+                        panX: viewport.panX,
+                        panY: viewport.panY,
+                    }))}
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                >
+                    -
+                </button>
+                <button
+                    type="button"
+                    data-testid="qidahen-map-zoom-reset"
+                    className="inline-flex h-[38px] min-w-[74px] items-center justify-center border-[3px] px-3 text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                    onClick={() => onViewportChange(DEFAULT_QIDAHEN_MAP_VIEWPORT)}
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                >
+                    {t('devtools.regionMaskTool.compactBoundaryStats.reset', { defaultValue: '复位' })}
+                </button>
+                <button
+                    type="button"
+                    data-testid="qidahen-map-zoom-in"
+                    className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                    onClick={() => onViewportChange(clampQidahenMapViewport({
+                        zoom: viewport.zoom * 1.14,
+                        panX: viewport.panX,
+                        panY: viewport.panY,
+                    }))}
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                >
+                    +
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const MapSceneLayer: React.FC<{
     core: QidahenCore;
     perspectiveFactionId: QidahenFactionId | null;
@@ -2860,7 +2916,7 @@ const MapSceneLayer: React.FC<{
                 />
             ) : null}
             <div
-                className="absolute"
+                className={`absolute ${usePixiMapPilot ? 'pointer-events-none' : ''}`}
                 data-testid="qidahen-map-content"
                 style={{
                     left: MAP_COVER_LEFT + viewport.panX,
@@ -3309,49 +3365,9 @@ const MapSceneLayer: React.FC<{
                     aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
                 />
             </div>
-            <div
-                className="pointer-events-auto absolute bottom-[132px] left-[26px] z-30 flex flex-col gap-2"
-                data-testid="qidahen-map-viewport-controls"
-                data-ui-anchor="left-bottom"
-            >
-                <div className="flex gap-2">
-                    <button
-                        type="button"
-                        data-testid="qidahen-map-zoom-out"
-                        className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                        onClick={() => onViewportChange(clampQidahenMapViewport({
-                            zoom: viewport.zoom / 1.14,
-                            panX: viewport.panX,
-                            panY: viewport.panY,
-                        }))}
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                    >
-                        -
-                    </button>
-                    <button
-                        type="button"
-                        data-testid="qidahen-map-zoom-reset"
-                        className="inline-flex h-[38px] min-w-[74px] items-center justify-center border-[3px] px-3 text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                        onClick={() => onViewportChange(DEFAULT_QIDAHEN_MAP_VIEWPORT)}
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                    >
-                        {t('devtools.regionMaskTool.compactBoundaryStats.reset', { defaultValue: '复位' })}
-                    </button>
-                    <button
-                        type="button"
-                        data-testid="qidahen-map-zoom-in"
-                        className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                        onClick={() => onViewportChange(clampQidahenMapViewport({
-                            zoom: viewport.zoom * 1.14,
-                            panX: viewport.panX,
-                            panY: viewport.panY,
-                        }))}
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                    >
-                        +
-                    </button>
-                </div>
-            </div>
+            {usePixiMapPilot ? null : (
+                <MapViewportControls viewport={viewport} onViewportChange={onViewportChange} />
+            )}
             {mapSelectionGuide
                 && core.gaoDiDispatchSelection == null
                 && internalDispatchSelection == null
@@ -7303,6 +7319,9 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 layout={QIDAHEN_BOARD_LAYOUT}
                 backgroundColor={QIDAHEN_STAGE_BG}
                 scene={boardScene}
+                sceneOverlay={QIDAHEN_PIXI_MAP_PILOT_ENABLED ? (
+                    <MapViewportControls viewport={mapViewport} onViewportChange={setMapViewport} />
+                ) : null}
                 hud={(
                     <>
             {!scenarioVotePending && scenarioChoicesPending ? (
