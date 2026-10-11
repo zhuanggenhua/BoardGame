@@ -2871,17 +2871,17 @@ const MapSceneLayer: React.FC<{
                     transformOrigin: 'top left',
                 }}
             >
-                {!usePixiMapPilot ? (
-                    <OptimizedImage
-                        src={ASSETS.mainMap}
-                        locale={locale}
-                        alt={t('board.map.mainMapAlt', { defaultValue: '七大恨主地图' })}
-                        className="absolute inset-0 h-full w-full select-none object-fill"
-                        data-testid="qidahen-main-map-image"
-                        draggable={false}
-                        placeholder={false}
-                    />
-                ) : null}
+                <OptimizedImage
+                    src={ASSETS.mainMap}
+                    locale={locale}
+                    alt={t('board.map.mainMapAlt', { defaultValue: '七大恨主地图' })}
+                    className={`absolute inset-0 h-full w-full select-none object-fill ${usePixiMapPilot ? 'pointer-events-none opacity-0' : ''}`}
+                    data-testid="qidahen-main-map-image"
+                    data-map-renderer-compat={usePixiMapPilot ? 'legacy-hidden' : undefined}
+                    aria-hidden={usePixiMapPilot ? true : undefined}
+                    draggable={false}
+                    placeholder={false}
+                />
                 <svg
                     className="pointer-events-none absolute inset-0 h-full w-full"
                     viewBox={`0 0 ${QIDAHEN_MAP_WIDTH} ${QIDAHEN_MAP_HEIGHT}`}
@@ -3295,20 +3295,19 @@ const MapSceneLayer: React.FC<{
                         })}
                     </div>
                 ) : null}
-                {!usePixiMapPilot ? (
-                    <canvas
-                        ref={canvasRef}
-                        width={QIDAHEN_MAP_WIDTH}
-                        height={QIDAHEN_MAP_HEIGHT}
-                        className={`${mapHitTestingDisabled ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 h-full w-full cursor-pointer opacity-0`}
-                        data-testid="qidahen-map-hitmap-canvas"
-                        data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
-                        onPointerMove={handlePointerMove}
-                        onPointerLeave={() => setHoveredRegionId(null)}
-                        onPointerUp={handlePointerUp}
-                        aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
-                    />
-                ) : null}
+                <canvas
+                    ref={canvasRef}
+                    width={QIDAHEN_MAP_WIDTH}
+                    height={QIDAHEN_MAP_HEIGHT}
+                    className={`${mapHitTestingDisabled || usePixiMapPilot ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 h-full w-full cursor-pointer opacity-0`}
+                    data-testid="qidahen-map-hitmap-canvas"
+                    data-map-renderer-compat={usePixiMapPilot ? 'legacy-hidden' : undefined}
+                    data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
+                    onPointerMove={handlePointerMove}
+                    onPointerLeave={() => setHoveredRegionId(null)}
+                    onPointerUp={handlePointerUp}
+                    aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
+                />
             </div>
             <div
                 className="pointer-events-auto absolute bottom-[132px] left-[26px] z-30 flex flex-col gap-2"

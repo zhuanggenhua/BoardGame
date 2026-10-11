@@ -54,6 +54,11 @@ const STABLE_OPTIMIZE_DEPS = [
   'howler',
   'normalize-wheel',
   'socket.io-msgpack-parser',
+  // Pixi 8 ships CommonJS internals through eventemitter3; prebundle the full
+  // chain so Vite dev/E2E does not load the nested CJS file as a raw ESM module.
+  'pixi.js',
+  '@pixi/react',
+  'eventemitter3',
 ] as const
 const QIDAHEN_REGION_MASK_SAVE_ROUTE = '/devtools/qidahen-region-mask/save'
 const QIDAHEN_REGION_MASK_LOAD_ROUTE = '/devtools/qidahen-region-mask/load'
