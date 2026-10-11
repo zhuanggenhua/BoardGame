@@ -13,6 +13,10 @@ export { HandAreaSkeleton } from './HandAreaSkeleton';
 export { ActionBarSkeleton } from './ActionBarSkeleton';
 export { ResourceTraySkeleton } from './ResourceTraySkeleton';
 export { ZoomPanViewport } from './ZoomPanViewport';
+export {
+    ZOOM_PAN_CANCEL_INERTIA_EVENT,
+    ZOOM_PAN_RESET_CENTER_EVENT,
+} from './ZoomPanViewport';
 export type {
     ZoomPanViewportProps,
     ZoomPanViewportState,

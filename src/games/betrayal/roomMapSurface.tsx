@@ -364,7 +364,8 @@ export function BetrayalRoomMapSurface({
         initialScale={1}
         minScale={0.55}
         maxScale={2.4}
-          panToTarget={
+        imperativeRender
+        panToTarget={
             roomFocusPanTarget ?? null
           }
           panToTargetKey={roomFocusPanInstructionKey}

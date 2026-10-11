@@ -2771,6 +2771,7 @@ const MapSceneLayer: React.FC<{
             panBoundsMode="free"
             controlledViewport={controlledMapViewport}
             onControlledViewportChange={handleControlledViewportChange}
+            controlledViewportSchedule="animation-frame"
             coordinateSize={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}
             clampViewport={(nextViewport) => {
                 const clampedViewport = clampQidahenMapViewport({
