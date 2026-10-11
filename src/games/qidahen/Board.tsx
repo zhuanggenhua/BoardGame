@@ -12,6 +12,12 @@ import {
     type ZoomPanViewportState,
     type ZoomPanViewportZoomAnchorArgs,
 } from '../../components/game/framework';
+import {
+    PixiMapSceneHost,
+    type MapInteractionIntent,
+    type MapScenePoint,
+    type MapViewportState,
+} from '../../engine/mapRenderer';
 import { UI_Z_INDEX } from '../../core';
 import type { CardPreviewRef } from '../../core/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
@@ -122,7 +128,11 @@ import {
 } from './domain/pendingTargetChoiceOptions';
 import { buildPendingTargetAction } from './domain/pendingTargetActionBuilder';
 import type { QidahenPendingTargetChoiceValue } from './domain/interactionContracts';
-import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './ui/mapRegions';
+import {
+    QIDAHEN_MAP_HEIGHT,
+    QIDAHEN_MAP_REGION_SHAPES,
+    QIDAHEN_MAP_WIDTH,
+} from './ui/mapRegions';
 import {
     getQidahenDirectedPassage,
     getQidahenPrintedRegionIdsForRuntimeRegionId,
@@ -166,6 +176,11 @@ const ASSETS = {
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
 const MAP_COVER_LEFT = (STAGE_WIDTH - QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE) / 2;
 const MAP_COVER_TOP = (STAGE_HEIGHT - QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE) / 2;
+const QIDAHEN_PIXI_MAP_PILOT_ENABLED = import.meta.env.VITE_QIDAHEN_PIXI_MAP_PILOT === '1';
+const QIDAHEN_PIXI_MAP_SCENE_REGIONS = QIDAHEN_MAP_REGION_SHAPES.map((shape) => ({
+    id: shape.id,
+    polygon: shape.polygon.map(([x, y]) => ({ x, y })),
+}));
 const QIDAHEN_MAP_MIN_ZOOM = 1;
 const QIDAHEN_MAP_MAX_ZOOM = 5;
 const QIDAHEN_PASSAGE_BOUNDARY_TYPE_IDS: ReadonlySet<QidahenPassageBoundaryType> = new Set([
@@ -641,11 +656,7 @@ const resolveViewerFactionId = (
 );
 
 type QidahenPrimaryStageMode = 'faction' | 'wheel';
-type QidahenMapViewport = {
-    zoom: number;
-    panX: number;
-    panY: number;
-};
+type QidahenMapViewport = MapViewportState;
 
 const DEFAULT_QIDAHEN_MAP_VIEWPORT: QidahenMapViewport = {
     zoom: 1,
@@ -1890,6 +1901,10 @@ const MapSceneLayer: React.FC<{
     const { t } = useTranslation('game-qidahen');
     const { t: tCommon } = useTranslation('common');
     const currentFactionId = perspectiveFactionId;
+    const pixiMapBackgroundUrl = React.useMemo(() => (
+        getOptimizedImageUrls(getLocalizedAssetPath(ASSETS.mainMap, locale ?? 'zh-CN')).webp
+    ), [locale]);
+    const usePixiMapPilot = QIDAHEN_PIXI_MAP_PILOT_ENABLED;
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const resultFeedbackCanvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -2163,6 +2178,15 @@ const MapSceneLayer: React.FC<{
         return runtimeRegionIdByPixel[(y * QIDAHEN_MAP_WIDTH) + x] ?? null;
     }, []);
 
+    const resolveRegionAtMapPoint = React.useCallback((point: MapScenePoint) => {
+        const runtimeRegionIdByPixel = runtimeRegionIdByPixelRef.current;
+        if (!runtimeRegionIdByPixel) return null;
+        const x = Math.floor(point.x);
+        const y = Math.floor(point.y);
+        if (x < 0 || y < 0 || x >= QIDAHEN_MAP_WIDTH || y >= QIDAHEN_MAP_HEIGHT) return null;
+        return runtimeRegionIdByPixel[(y * QIDAHEN_MAP_WIDTH) + x] ?? null;
+    }, []);
+
     const handlePointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         setHoveredRegionId(getRegionFromPointer(event));
     }, [getRegionFromPointer]);
@@ -2207,6 +2231,16 @@ const MapSceneLayer: React.FC<{
             onSelectRegion(regionId);
         }
     }, [getRegionFromPointer, onSelectRegion]);
+
+    const handlePixiMapInteraction = React.useCallback((intent: MapInteractionIntent) => {
+        if (intent.type === 'hover-region') {
+            setHoveredRegionId(intent.regionId);
+            return;
+        }
+        if (intent.type === 'select-region') {
+            onSelectRegion(intent.regionId);
+        }
+    }, [onSelectRegion]);
 
     const tipLeft = focusedRegion
         ? Math.min(
@@ -2806,6 +2840,25 @@ const MapSceneLayer: React.FC<{
                 height: STAGE_HEIGHT,
             }}
         >
+            {usePixiMapPilot ? (
+                <PixiMapSceneHost
+                    backgroundUrl={pixiMapBackgroundUrl}
+                    mapWidth={QIDAHEN_MAP_WIDTH}
+                    mapHeight={QIDAHEN_MAP_HEIGHT}
+                    viewport={viewport}
+                    origin={{ x: MAP_COVER_LEFT, y: MAP_COVER_TOP }}
+                    baseScale={MAP_COVER_SCALE}
+                    regions={QIDAHEN_PIXI_MAP_SCENE_REGIONS}
+                    selectedRegionId={core.explicitRegionId}
+                    hoveredRegionId={hoveredRegionId}
+                    hitTestRegionAtPoint={resolveRegionAtMapPoint}
+                    onInteraction={handlePixiMapInteraction}
+                    interactive={!mapHitTestingDisabled}
+                    canvasTestId="qidahen-pixi-map-canvas"
+                    resourceErrorLabel={t('board.map.mainMapLoadError', { defaultValue: '七大恨地图加载失败' })}
+                    ariaLabel={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
+                />
+            ) : null}
             <div
                 className="absolute"
                 data-testid="qidahen-map-content"
@@ -2818,15 +2871,17 @@ const MapSceneLayer: React.FC<{
                     transformOrigin: 'top left',
                 }}
             >
-                <OptimizedImage
-                    src={ASSETS.mainMap}
-                    locale={locale}
-                    alt={t('board.map.mainMapAlt', { defaultValue: '七大恨主地图' })}
-                    className="absolute inset-0 h-full w-full select-none object-fill"
-                    data-testid="qidahen-main-map-image"
-                    draggable={false}
-                    placeholder={false}
-                />
+                {!usePixiMapPilot ? (
+                    <OptimizedImage
+                        src={ASSETS.mainMap}
+                        locale={locale}
+                        alt={t('board.map.mainMapAlt', { defaultValue: '七大恨主地图' })}
+                        className="absolute inset-0 h-full w-full select-none object-fill"
+                        data-testid="qidahen-main-map-image"
+                        draggable={false}
+                        placeholder={false}
+                    />
+                ) : null}
                 <svg
                     className="pointer-events-none absolute inset-0 h-full w-full"
                     viewBox={`0 0 ${QIDAHEN_MAP_WIDTH} ${QIDAHEN_MAP_HEIGHT}`}
@@ -3240,18 +3295,20 @@ const MapSceneLayer: React.FC<{
                         })}
                     </div>
                 ) : null}
-                <canvas
-                    ref={canvasRef}
-                    width={QIDAHEN_MAP_WIDTH}
-                    height={QIDAHEN_MAP_HEIGHT}
-                    className={`${mapHitTestingDisabled ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 h-full w-full cursor-pointer opacity-0`}
-                    data-testid="qidahen-map-hitmap-canvas"
-                    data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
-                    onPointerMove={handlePointerMove}
-                    onPointerLeave={() => setHoveredRegionId(null)}
-                    onPointerUp={handlePointerUp}
-                    aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
-                />
+                {!usePixiMapPilot ? (
+                    <canvas
+                        ref={canvasRef}
+                        width={QIDAHEN_MAP_WIDTH}
+                        height={QIDAHEN_MAP_HEIGHT}
+                        className={`${mapHitTestingDisabled ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 h-full w-full cursor-pointer opacity-0`}
+                        data-testid="qidahen-map-hitmap-canvas"
+                        data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
+                        onPointerMove={handlePointerMove}
+                        onPointerLeave={() => setHoveredRegionId(null)}
+                        onPointerUp={handlePointerUp}
+                        aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
+                    />
+                ) : null}
             </div>
             <div
                 className="pointer-events-auto absolute bottom-[132px] left-[26px] z-30 flex flex-col gap-2"
