@@ -175,3 +175,97 @@ test.describe('DiceThrone - 玩家面板放大预览技能选择', () => {
         await game.screenshot('03-大招执行后-进入诅咒金币选择', testInfo);
     });
 });
+
+test.describe('DiceThrone - 玩家面板与提示卡固定控件图标', () => {
+    test.use({
+        viewport: { width: 936, height: 432 },
+        screen: { width: 936, height: 432 },
+        deviceScaleFactor: 2.5,
+        isMobile: true,
+        hasTouch: true,
+        userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+    });
+
+    test('手机横屏下提示卡放大镜图标保持可读尺寸（与玩家面板独立断言）', async ({ page, game }, testInfo) => {
+        await setupMagnifyAbilitySelectionScene(game);
+
+        const readMetrics = async (button: ReturnType<typeof page.getByTestId>) => button.locator('svg').evaluate((svg) => {
+            const buttonElement = svg.closest('button');
+            const buttonBox = buttonElement?.getBoundingClientRect();
+            const iconBox = svg.getBoundingClientRect();
+            const rootStyle = window.getComputedStyle(document.documentElement);
+            return {
+                buttonWidth: buttonBox?.width ?? 0,
+                iconWidth: iconBox.width,
+                iconClass: svg.getAttribute('class') ?? '',
+                shellScale: Number.parseFloat(rootStyle.getPropertyValue('--mobile-board-shell-scale')),
+            };
+        });
+
+        const playerBoardMagnifyButton = page.getByTestId('player-board-magnify-button');
+        await expect(playerBoardMagnifyButton).toBeVisible({ timeout: 5000 });
+        const playerBoardMetrics = await readMetrics(playerBoardMagnifyButton);
+        expect(playerBoardMetrics.shellScale).toBeLessThan(1);
+        expect(playerBoardMetrics.iconClass).toContain('board-shell-fixed-icon');
+        expect(playerBoardMetrics.buttonWidth).toBeGreaterThanOrEqual(40);
+        expect(playerBoardMetrics.iconWidth).toBeGreaterThanOrEqual(16);
+        expect(playerBoardMetrics.iconWidth / playerBoardMetrics.buttonWidth).toBeGreaterThan(0.35);
+
+        await game.screenshot('00-壳内固定控件-玩家面板放大镜-前态整屏', testInfo);
+        const playerBoardSurface = page.getByTestId('player-board-surface');
+        const playerBoardPath = getEvidenceScreenshotPath(testInfo, '01-壳内固定控件-玩家面板放大镜-中态局部', {
+            filename: `${sanitizeEvidencePathSegment('01-壳内固定控件-玩家面板放大镜-中态局部')}.png`,
+        });
+        await mkdir(dirname(playerBoardPath), { recursive: true });
+        await playerBoardSurface.screenshot({ path: playerBoardPath });
+
+        const tipBoardToggle = page.locator('[data-tutorial-id="tip-board"] > button').first();
+        await expect(tipBoardToggle).toBeVisible({ timeout: 5000 });
+        await tipBoardToggle.click();
+
+        const tipBoardSurface = page.getByTestId('tip-board-surface');
+        const tipBoardImage = tipBoardSurface.getByTestId('tip-board-image');
+        const tipBoardMagnifyButton = tipBoardSurface.getByTestId('tip-board-magnify-button');
+        await expect(tipBoardSurface).toBeVisible({ timeout: 5000 });
+        await expect(tipBoardImage).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => tipBoardImage.evaluate((node) => {
+            if (!(node instanceof HTMLImageElement)) return false;
+            return node.complete && node.naturalWidth > 0 && node.naturalHeight > 0;
+        }), { timeout: 5000 }).toBe(true);
+        await expect.poll(async () => Number.parseFloat(await tipBoardImage.evaluate((node) => getComputedStyle(node).opacity)), { timeout: 5000 }).toBe(1);
+        await expect(tipBoardMagnifyButton).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => (await tipBoardSurface.boundingBox())?.width ?? 0, { timeout: 5000 }).toBeGreaterThan(100);
+        console.log('[tip-board-geometry]', await tipBoardSurface.evaluate((node) => {
+            const surface = node.getBoundingClientRect();
+            const image = node.querySelector('[data-testid="tip-board-image"]')?.getBoundingClientRect();
+            const button = node.querySelector('[data-testid="tip-board-magnify-button"]')?.getBoundingClientRect();
+            const shell = node.closest('.mobile-board-shell')?.getBoundingClientRect();
+            return {
+                surface: { x: surface.x, y: surface.y, width: surface.width, height: surface.height },
+                image: image ? { x: image.x, y: image.y, width: image.width, height: image.height } : null,
+                button: button ? { x: button.x, y: button.y, width: button.width, height: button.height } : null,
+                shell: shell ? { x: shell.x, y: shell.y, width: shell.width, height: shell.height } : null,
+                imageSrc: node.querySelector('[data-testid="tip-board-image"]')?.getAttribute('src'),
+                computedOpacity: getComputedStyle(node).opacity,
+                computedTransform: getComputedStyle(node).transform,
+                naturalSize: node.querySelector('[data-testid="tip-board-image"]') instanceof HTMLImageElement
+                    ? {
+                        width: (node.querySelector('[data-testid="tip-board-image"]') as HTMLImageElement).naturalWidth,
+                        height: (node.querySelector('[data-testid="tip-board-image"]') as HTMLImageElement).naturalHeight,
+                    }
+                    : null,
+            };
+        }));
+        const tipBoardMetrics = await readMetrics(tipBoardMagnifyButton);
+        expect(tipBoardMetrics.iconClass).toContain('board-shell-fixed-icon');
+        expect(tipBoardMetrics.buttonWidth).toBeGreaterThanOrEqual(40);
+        expect(tipBoardMetrics.iconWidth).toBeGreaterThanOrEqual(16);
+        expect(tipBoardMetrics.iconWidth / tipBoardMetrics.buttonWidth).toBeGreaterThan(0.35);
+
+        const tipBoardPath = getEvidenceScreenshotPath(testInfo, '02-壳内固定控件-提示卡放大镜-后态局部', {
+            filename: `${sanitizeEvidencePathSegment('02-壳内固定控件-提示卡放大镜-后态局部')}.png`,
+        });
+        await mkdir(dirname(tipBoardPath), { recursive: true });
+        await tipBoardSurface.screenshot({ path: tipBoardPath });
+    });
+});

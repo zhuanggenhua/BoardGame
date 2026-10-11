@@ -1,31 +1,5 @@
-import type { FateDominationCore, LocationId, PlayerState } from './types';
-
-/** Demo 的地图是单向路线：魔术工房→深山町→新都→侦察。 */
-export const FATE_LOCATION_ORDER: LocationId[] = ['workshop', 'miyama', 'shinto', 'recon'];
-export const FATE_STEP_COST: Record<LocationId, number> = { workshop: 1, miyama: 2, shinto: 2, recon: 0 };
-
-export function movementCost(from: LocationId, to: LocationId): number | null {
-    const fromIndex = FATE_LOCATION_ORDER.indexOf(from);
-    const toIndex = FATE_LOCATION_ORDER.indexOf(to);
-    if (fromIndex < 0 || toIndex <= fromIndex) return null;
-    return FATE_LOCATION_ORDER.slice(fromIndex, toIndex).reduce((sum, location) => sum + FATE_STEP_COST[location], 0);
-}
-
-export function legalMoveTargets(core: FateDominationCore, player: PlayerState): LocationId[] {
-    if (core.phase !== 'action' || !player.locationId) return [];
-    const targets: LocationId[] = [];
-    for (const locationId of FATE_LOCATION_ORDER) {
-        const cost = movementCost(player.locationId, locationId);
-        if (cost === null) continue;
-        const target = core.battlefield[locationId];
-        if (target.capacity !== null && target.playerIds.length >= target.capacity) continue;
-        if (player.mana < cost) continue;
-        if ((locationId === 'shinto' || locationId === 'recon') && ['身处地狱之门', '天之杯'].includes(core.situation.name)) continue;
-        if (target.eventCards.some((event) => event.name === '固有结界')) continue;
-        targets.push(locationId);
-    }
-    return targets;
-}
+import type { FateDominationCore, LocationId } from './types';
+export { FATE_LOCATION_ORDER, FATE_STEP_COST, legalMoveTargets, movementCost } from './movement';
 
 export function situationPowerBonus(core: FateDominationCore, locationId: LocationId, attackTypes: string[]): number {
     if (!['miyama', 'shinto'].includes(locationId)) return 0;

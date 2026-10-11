@@ -1,7 +1,8 @@
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTER_BY_ID, FATE_SERVANT_BY_ID, FATE_SITUATIONS } from '../data';
 import type { FateDominationCommand, FateDominationCore, FateDominationEvent, BattleResult, LocationId } from './types';
-import { movementCost, situationPowerBonus, eventPowerBonus } from './rules';
+import { resolveFateMovement } from './movement';
+import { situationPowerBonus, eventPowerBonus } from './rules';
 
 const eventMeta = (command: FateDominationCommand) => ({ sourceCommandType: command.type, timestamp: typeof command.timestamp === 'number' ? command.timestamp : 0 });
 
@@ -42,7 +43,12 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
         case 'SELECT_MASTER': return [{ type: 'MASTER_SELECTED', payload: { playerId: command.playerId, masterId: command.payload.masterId }, ...meta }];
         case 'SELECT_SERVANT': return [{ type: 'SERVANT_SELECTED', payload: { playerId: command.playerId, servantId: command.payload.servantId }, ...meta }];
         case 'DEPLOY_MASTER': { const location = core.battlefield[command.payload.locationId]; return [{ type: 'MASTER_DEPLOYED', payload: { playerId: command.playerId, locationId: command.payload.locationId, manaGain: command.payload.locationId === 'workshop' ? 2 : location.terrainPower }, ...meta }]; }
-        case 'MOVE_PLAYER': { const from = core.players[command.playerId].locationId!; return [{ type: 'PLAYER_MOVED', payload: { playerId: command.playerId, from, to: command.payload.locationId, manaSpent: movementCost(from, command.payload.locationId) ?? 0 }, ...meta }]; }
+        case 'MOVE_PLAYER': {
+            const from = core.players[command.playerId].locationId!;
+            const resolution = resolveFateMovement(core, command.playerId, command.payload.locationId, 'normal');
+            if (!resolution.valid || !resolution.path || resolution.cost === null) return [];
+            return [{ type: 'PLAYER_MOVED', payload: { playerId: command.playerId, from, to: command.payload.locationId, path: [...resolution.path], mode: resolution.mode, manaSpent: resolution.cost }, ...meta }];
+        }
         case 'PASS_ACTION': return [{ type: 'ACTION_PASSED', payload: { playerId: command.playerId }, ...meta }];
         case 'PLAY_SKILL': { const skill = core.players[command.playerId].skills.find((item) => item.id === command.payload.skillId)!; return [{ type: 'SKILL_PLAYED', payload: { playerId: command.playerId, skillId: skill.id, manaSpent: Number(skill.req ?? skill.cost ?? 0), targetPlayerId: command.payload.targetPlayerId, targetLocationId: command.payload.targetLocationId }, ...meta }]; }
         case 'SELECT_ATTACK_CARD': { const selected = core.players[command.playerId].selectedAttackIds.includes(command.payload.cardId); return [{ type: 'ATTACK_CARD_SELECTED', payload: { playerId: command.playerId, cardId: command.payload.cardId, selected: !selected }, ...meta }]; }

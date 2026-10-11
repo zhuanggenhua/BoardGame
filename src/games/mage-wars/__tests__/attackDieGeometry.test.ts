@@ -8,6 +8,7 @@ import {
     getAttackDieFaceKind,
     getAttackDieSettledFaceId,
     getAttackDieSettledTransform,
+    getAttackDieTileUprightRotateDeg,
 } from '../ui/attackDieGeometry';
 
 describe('mage wars attack die cube net', () => {
@@ -40,12 +41,16 @@ describe('mage wars attack die cube net', () => {
         expect(getAttackDieSettledFaceId(1)).toBe('back-hit1');
         expect(getAttackDieSettledFaceId(2)).toBe('front-hit2');
         expect(getAttackDieSettledFaceId(3)).toBe('left-burst');
-        expect(getAttackDieSettledTransform(2)).toBe('rotateX(-22deg) rotateY(28deg)');
-        expect(getAttackDieSettledTransform(1)).toBe('rotateX(-22deg) rotateY(28deg)');
-        expect(getAttackDieSettledTransform(3)).toBe('rotateX(-22deg) rotateY(28deg)');
-        expect(getAttackDieSettledTransform(0)).toBe('rotateX(-22deg) rotateY(28deg)');
+        expect(getAttackDieSettledTransform(2)).toBe('rotateX(0deg) rotateY(0deg)');
+        expect(getAttackDieSettledTransform(1)).toBe('rotateX(0deg) rotateY(0deg)');
+        expect(getAttackDieSettledTransform(3)).toBe('rotateX(0deg) rotateY(0deg)');
+        expect(getAttackDieSettledTransform(0)).toBe('rotateX(0deg) rotateY(0deg)');
         expect(ATTACK_DIE_SETTLED_POSE).toBe('none');
-        expect(ATTACK_DIE_SETTLED_TILT).toBe('isometric-front');
+        expect(ATTACK_DIE_SETTLED_TILT).toBe('camera-front');
+        expect(getAttackDieTileUprightRotateDeg('hit1')).toBe(270);
+        expect(getAttackDieTileUprightRotateDeg('hit2')).toBe(0);
+        expect(getAttackDieTileUprightRotateDeg('burst')).toBe(0);
+        expect(getAttackDieTileUprightRotateDeg('blank')).toBe(0);
     });
 
     it('crops official net faces with the same CSS background math as Summoner Wars Dice3D', () => {

@@ -729,7 +729,7 @@ const UnitCell: React.FC<{
             className={`absolute flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyUnit ? 'rotate-180' : ''}`}
             style={{ ...MAGNIFY_BUTTON_STYLE, zIndex: BOARD_GRID_Z.magnifyButton }}
           >
-            <svg className="fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
+            <svg className="board-shell-fixed-icon fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </button>
@@ -896,7 +896,7 @@ const StructureCell: React.FC<{
             className={`absolute flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyStructure ? 'rotate-180' : ''}`}
             style={{ ...MAGNIFY_BUTTON_STYLE, zIndex: BOARD_GRID_Z.magnifyButton }}
           >
-            <svg className="fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
+            <svg className="board-shell-fixed-icon fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </button>

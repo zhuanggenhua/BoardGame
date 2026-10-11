@@ -20,3 +20,4 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
 export * from './types';
 export * from './setup';
 export * from './rules';
+export * from './movement';

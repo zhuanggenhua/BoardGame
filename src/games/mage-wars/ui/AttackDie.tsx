@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import { getLocalizedAssetPath, getOptimizedImageUrls } from '../../../core/AssetLoader';
 import { useResultRevealAnimation } from '../../../hooks/ui/useResultRevealAnimation';
 import {
@@ -14,6 +14,7 @@ import {
     getAttackDieResultFace,
     getAttackDieSettledFaceId,
     getAttackDieSettledTransform,
+    getAttackDieTileUprightRotateDeg,
 } from './attackDieGeometry';
 import { MAGE_WARS_FX_TIMING } from './fxTuning';
 import './attackDie.css';
@@ -23,7 +24,7 @@ function resolveAttackDieTextureUrl(): string {
     return getOptimizedImageUrls(localized).webp;
 }
 
-/** CSS cube from the official attack-die net, matching Summoner Wars Dice3D face painting. */
+/** CSS 3D cube from the official attack-die net. Result paints on the camera-front face like Summoner Wars Dice3D. */
 export function AttackDie({ result, index = 0 }: { result: number; index?: number }) {
     const reducedMotion = useReducedMotion() === true;
     const tumbleMs = ATTACK_DIE_REVEAL_MS + index * ATTACK_DIE_REVEAL_STAGGER_MS;
@@ -39,7 +40,8 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
     const resultFace = getAttackDieResultFace(result);
     const textureUrl = React.useMemo(() => resolveAttackDieTextureUrl(), []);
     const translateZ = 'calc(var(--attack-die-size) / 2)';
-    const isHit = result > 0;
+    const isMiss = result <= 0;
+    const frontArtRotateDeg = getAttackDieTileUprightRotateDeg(settledKind);
 
     return (
         <div
@@ -50,7 +52,7 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
             data-asset-status="source-verified"
             data-model-source="cube-net:attack-die-texture"
             data-rendering-mode="css-native-cube-faces"
-            data-visual-mode="css-2d-cube"
+            data-visual-mode="css-3d-cube"
             data-face-renderer="css-background"
             data-roll-duration-ms={tumbleMs}
             data-settle-duration-ms={settleMs}
@@ -83,15 +85,15 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
                         ? `${face.cubeRotate} translateZ(${translateZ})`
                         : `translateZ(${translateZ})`;
                     const artStyle = getAttackDieFaceArtStyle(artFace);
+                    const artRotateDeg = isFront ? frontArtRotateDeg : artFace.glyphRotateDeg;
                     return (
                         <div
                             key={face.id}
-                            className={`mage-wars-attack-die-face${!isRolling && isHit ? ' mage-wars-attack-die-face-hit' : ''}`}
+                            className="mage-wars-attack-die-face"
                             data-d6-face-id={face.id}
                             data-d6-face-kind={isFront ? settledKind : face.kind}
                             data-d6-face-result={isFront ? result : face.result}
                             data-face-renderer="css-background"
-                            data-hit-edge={!isRolling && isHit ? 'true' : undefined}
                             style={{
                                 transform: cubeTransform,
                                 backgroundColor: ATTACK_DIE_FACE_BACKGROUND,
@@ -103,26 +105,14 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
                                     backgroundImage: textureUrl ? `url(${textureUrl})` : undefined,
                                     backgroundRepeat: 'no-repeat',
                                     ...artStyle,
-                                    transform: artFace.glyphRotateDeg
-                                        ? `rotate(${artFace.glyphRotateDeg}deg)`
-                                        : undefined,
+                                    transform: artRotateDeg ? `rotate(${artRotateDeg}deg)` : undefined,
                                 }}
                             />
                         </div>
                     );
                 })}
             </div>
-            {!isRolling && isHit ? (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mage-wars-attack-die-hit-glow"
-                    data-testid="mage-wars-fx-attack-die-hit-glow"
-                    data-hit-glow-mode="outer-halo"
-                    aria-hidden="true"
-                />
-            ) : null}
-            {!isRolling && !isHit ? (
+            {!isRolling && isMiss ? (
                 <div
                     className="pointer-events-none absolute inset-0 rounded-[0.5vw]"
                     data-testid="mage-wars-fx-attack-die-miss-overlay"

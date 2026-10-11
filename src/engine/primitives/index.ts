@@ -28,3 +28,4 @@ export * from './spriteAtlas';
 export * from './actionLogHelpers';
 export * from './entityIdentity';
 export * from './factionRelations';
+export * from './movement';

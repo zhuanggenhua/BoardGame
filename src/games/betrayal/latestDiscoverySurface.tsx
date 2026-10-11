@@ -6,6 +6,7 @@ import {
   BetrayalConfirmButton,
   BETRAYAL_CONFIRM_BUTTON_CLASS,
 } from "./confirmButtonSurface";
+import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
 import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
 import type {
   BetrayalDiscoveryResolutionStep,
@@ -53,6 +54,7 @@ type BetrayalLatestDiscoverySurfaceProps = {
   modifierEffectSources?: string | null;
   hasPendingEventRollStart: boolean;
   canStartPendingEventRoll: boolean;
+  autoFinalizeEventRollWhenSettled: boolean;
   suppressExternalActionDock?: boolean;
   continueButton: BetrayalLatestDiscoveryContinueButtonState;
   effectiveLocale: string;
@@ -132,6 +134,7 @@ export function BetrayalLatestDiscoverySurface({
   modifierEffectSources = null,
   hasPendingEventRollStart,
   canStartPendingEventRoll,
+  autoFinalizeEventRollWhenSettled,
   suppressExternalActionDock = false,
   continueButton,
   effectiveLocale,
@@ -149,10 +152,10 @@ export function BetrayalLatestDiscoverySurface({
   }
 
   const hasRollModifierActionSlot = Boolean(rollModifierActionSlot);
-  // Automatic event rolls skip shared confirmation, but still need a visible
-  // player-controlled way to return to the board after the dice settle.
+  // Intermediate multi-check rolls advance automatically after the result is readable.
   const shouldHideExternalActionDock =
     suppressExternalActionDock ||
+    autoFinalizeEventRollWhenSettled ||
     hasRollModifierActionSlot ||
     Boolean(shouldShowRoll && recentRoll && continueButton.eventRollReadable === false);
   const shouldRenderCardFace = Boolean(
@@ -345,9 +348,9 @@ export function BetrayalLatestDiscoverySurface({
           </div>
         ) : null}
         {shouldHideExternalActionDock ? null : (
-          <div
-            data-testid="betrayal-discovery-card-external-action-dock"
-            className="pointer-events-none relative mt-3 flex min-h-[72px] w-full justify-center pb-[env(safe-area-inset-bottom)]"
+          <BetrayalDecisionActionDock
+            testId="betrayal-discovery-card-external-action-dock"
+            className="pointer-events-none relative mt-3 border-t-0 bg-transparent"
           >
             {hasPendingEventRollStart ? (
               <button
@@ -403,7 +406,7 @@ export function BetrayalLatestDiscoverySurface({
                 {continueButton.label}
               </BetrayalConfirmButton>
             )}
-          </div>
+          </BetrayalDecisionActionDock>
         )}
       </div>
     </div>

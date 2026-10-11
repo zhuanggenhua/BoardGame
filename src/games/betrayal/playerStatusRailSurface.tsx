@@ -308,7 +308,7 @@ export function BetrayalObservedExplorerPanelSurface({
                   ) : null}
                 </span>
                 <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] border border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.72)] text-[#f3e0b4]">
-                  <Maximize2 size={12} aria-hidden="true" />
+                  <Maximize2 className="board-shell-fixed-icon" size={12} aria-hidden="true" />
                 </span>
               </button>
               <MagnifyOverlay

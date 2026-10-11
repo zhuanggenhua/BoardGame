@@ -1,4 +1,5 @@
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
+import type { MovementMode } from '../../../engine/primitives';
 
 export const FATE_DOMINATION_COMMANDS = {
     SELECT_MASTER: 'SELECT_MASTER',
@@ -219,7 +220,7 @@ export type AttacksConfirmedEvent = GameEvent<'ATTACKS_CONFIRMED', { playerId: P
 export type CardInspectedEvent = GameEvent<'CARD_INSPECTED', { playerId: PlayerId; cardId: string }>;
 export type PhaseAdvancedEvent = GameEvent<'PHASE_ADVANCED', { phase: FatePhase; round: number; currentPlayerId: PlayerId }>;
 export type BattleResolvedEvent = GameEvent<'BATTLE_RESOLVED', { result: BattleResult; nextRound: number; gameResult?: GameOverResult }>;
-export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', { playerId: PlayerId; from: LocationId; to: LocationId; manaSpent: number }>;
+export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', { playerId: PlayerId; from: LocationId; to: LocationId; path: LocationId[]; mode: MovementMode; manaSpent: number }>;
 export type ActionPassedEvent = GameEvent<'ACTION_PASSED', { playerId: PlayerId }>;
 export type LocationResolvedEvent = GameEvent<'LOCATION_RESOLVED', { locationId: LocationId; results: BattleResult[] }>;
 export type SkillPlayedEvent = GameEvent<'SKILL_PLAYED', { playerId: PlayerId; skillId: string; manaSpent: number; targetPlayerId?: PlayerId; targetLocationId?: LocationId }>;

@@ -143,7 +143,7 @@ function SummonerWarsLifeToggle({
     >
       <svg
         aria-hidden="true"
-        className="h-6 w-6"
+        className="board-shell-fixed-icon h-6 w-6"
         viewBox="0 0 24 24"
         fill="none"
       >

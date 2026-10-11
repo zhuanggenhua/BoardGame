@@ -444,8 +444,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         }
         : undefined;
     const selectionCardSurfaceClassName = useDesktopLikeLandscapeLayout
-        ? 'smashup-card-frame absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] transition-transform duration-150 p-[3px] will-change-transform'
-        : 'smashup-card-frame absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-transform duration-150 p-[3px] lg:p-[4px] will-change-transform';
+        ? 'smashup-card-frame absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-4 transition-transform duration-150 p-[3px] will-change-transform'
+        : 'smashup-card-frame absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-4 transition-transform duration-150 p-[3px] lg:p-[4px] will-change-transform';
     const selectionVirtualColumnCount = useDesktopLikeLandscapeLayout
         ? 5
         : useFocusedDesktopDraftLayout
@@ -647,7 +647,14 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             `}
         >
             <div className={selectionCardFrameClassName} style={selectionCardFrameStyle}>
-                <div className={`${selectionCardSurfaceClassName} border-amber-300`}>
+                <div
+                    className={`${selectionCardSurfaceClassName} border-amber-300`}
+                    style={{
+                        borderWidth: '4px',
+                        borderStyle: 'solid',
+                        borderColor: '#fcd34d',
+                    }}
+                >
                     <div className="smashup-card-inner relative flex h-full w-full flex-col items-center justify-center overflow-hidden border bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.42),_rgba(88,28,135,0.56)_45%,_rgba(15,23,42,0.94))] p-3 text-center">
                         <div className="absolute inset-0 bg-[linear-gradient(135deg,_rgba(255,255,255,0.16),_transparent_38%,_rgba(0,0,0,0.26))]" />
                         <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2">
@@ -724,7 +731,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                 : 'border-white'
                         }
                     `}
-                        style={isSelectedByMe ? { borderColor: '#22c55e' } : undefined}
+                        style={{
+                            borderWidth: '4px',
+                            borderStyle: isTakenByOther ? 'dashed' : 'solid',
+                            ...(isSelectedByMe ? { borderColor: '#22c55e' } : {}),
+                        }}
                     >
                         <div className="smashup-card-inner w-full h-full overflow-hidden relative">
                             {selectionPreviewReady ? (
@@ -760,10 +771,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             )}
 
                             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
-                            {!isSelectedByMe && !isTakenByOther && (
-                                <div className="pointer-events-none absolute inset-0 z-20 border-[4px] border-amber-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
-                            )}
-
                             <div className="absolute bottom-1.5 left-1.5 right-1.5 lg:bottom-2 lg:left-2 lg:right-2 text-left">
                                 <h3 className="text-white font-black text-[11px] lg:text-base leading-none mb-0.5 lg:mb-1 drop-shadow-md uppercase italic tracking-tight lg:tracking-tighter">
                                     {t(labelMeta.nameKey)}
@@ -1186,7 +1193,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                         data-testid="faction-mechanic-tutorial-entry"
                                                                         onClick={() => navigate(`/play/smashup/tutorial/${focusedMechanicTutorial.tutorialId}`)}
                                                                     >
-                                                                        <BookOpen size={14} />
+                                                                        <BookOpen className="board-shell-fixed-icon" size={14} />
                                                                         {t('ui.mechanic_tutorial')}
                                                                     </GameButton>
                                                                 ) : null}
@@ -1303,7 +1310,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                                                 title={titanName}
                                                                                             />
                                                                                             <div className="absolute top-2 right-2 rounded-full bg-black/75 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                                                                                                <ZoomIn size={14} />
+                                                                                                <ZoomIn className="board-shell-fixed-icon" size={14} />
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
@@ -1431,7 +1438,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                 )}
 
                                                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
-                                                                    <ZoomIn size={16} />
+                                                                    <ZoomIn className="board-shell-fixed-icon" size={16} />
                                                                 </div>
 
                                                                 <div className="smashup-card-hover-overlay absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 pointer-events-none">
@@ -1464,7 +1471,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                 />
 
                                                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
-                                                                    <ZoomIn size={16} />
+                                                                    <ZoomIn className="board-shell-fixed-icon" size={16} />
                                                                 </div>
 
                                                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent p-2 text-left">

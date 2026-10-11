@@ -211,7 +211,7 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
                                     <OptimizedImage src={definition.assetPath} alt={definition.name} className="fd-hand-card-image" />
                                     <span className="fd-card-stats"><b>{definition.basePower}</b><small>{definition.manaCost} M</small></span>
                                 </button>
-                                <button type="button" className="fd-inspect-button" onClick={() => inspect(card.id)} aria-label={`${t('inspect')} ${definition.name}`} title={t('inspect')}><Eye size={14} /></button>
+                                <button type="button" className="fd-inspect-button" onClick={() => inspect(card.id)} aria-label={`${t('inspect')} ${definition.name}`} title={t('inspect')}><Eye className="board-shell-fixed-icon" size={14} /></button>
                             </div>;
                         })}
                     </div>

@@ -367,7 +367,7 @@ const HandCard: React.FC<HandCardProps> = ({
                     }}
                 >
                     <svg
-                        className="fill-current"
+                        className="board-shell-fixed-icon fill-current"
                         style={{ width: inspectIconSize, height: inspectIconSize }}
                         viewBox="0 0 20 20"
                     >

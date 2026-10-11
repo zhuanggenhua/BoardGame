@@ -76,4 +76,33 @@ describe('DiceThrone compatibility source guards', () => {
         expect(boardOverlays).toContain('height: `calc(${playerBoardPreviewWidth} / ${playerBoardAspectRatio})`');
         expect(boardOverlays).toContain("? 'block w-full h-full object-contain'");
     });
+
+    it('壳内固定操作控件应同时补偿视觉图标与命中区，避免整体 scale 后二次缩小', () => {
+        const centerBoard = readUiSource('CenterBoard.tsx');
+        const abilityOverlays = readUiSource('AbilityOverlays.tsx');
+        const discardPile = readUiSource('DiscardPile.tsx');
+        const drawDeck = readUiSource('DrawDeck.tsx');
+
+        expect(centerBoard.match(/board-shell-fixed-icon/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+        expect(centerBoard).toContain('width: buildBoardShellScreenPixelValue(44)');
+        expect(centerBoard).toContain('minWidth: buildBoardShellScreenPixelValue(44)');
+        expect(abilityOverlays).toContain('className="board-shell-fixed-icon min-h-[8px] min-w-[8px] fill-current"');
+        expect(abilityOverlays).toContain('width: buildBoardShellScreenPixelValue(44)');
+        expect(discardPile).toContain('board-shell-fixed-icon');
+        expect(discardPile).toContain('width: buildBoardShellScreenPixelValue(44)');
+        expect(drawDeck).toContain('width: buildBoardShellScreenPixelValue(44)');
+    });
+
+    it('玩家面板与提示卡必须保持独立对象契约', () => {
+        const centerBoard = readUiSource('CenterBoard.tsx');
+
+        expect(centerBoard).toContain('data-testid="player-board-surface"');
+        expect(centerBoard).toContain('data-testid="player-board-image"');
+        expect(centerBoard).toContain('data-testid="player-board-magnify-button"');
+        expect(centerBoard).toContain('data-tutorial-id="tip-board"');
+        expect(centerBoard).toContain('data-testid="tip-board-surface"');
+        expect(centerBoard).toContain('data-testid="tip-board-image"');
+        expect(centerBoard).toContain('data-testid="tip-board-magnify-button"');
+        expect(centerBoard).toContain("alt={t('imageAlt.tipBoard')}");
+    });
 });

@@ -129,7 +129,7 @@ export const CustomDeckCard: React.FC<CustomDeckCardProps> = ({
           }}
           title={t('actions.magnify')}
         >
-          <svg width="clamp(14px,1vw,20px)" height="clamp(14px,1vw,20px)" viewBox="0 0 20 20" fill="currentColor">
+          <svg className="board-shell-fixed-icon" width="clamp(14px,1vw,20px)" height="clamp(14px,1vw,20px)" viewBox="0 0 20 20" fill="currentColor">
             <path d="M5 8a1 1 0 011-1h1V6a1 1 0 012 0v1h1a1 1 0 110 2H9v1a1 1 0 11-2 0V9H6a1 1 0 01-1-1z" />
             <path fillRule="evenodd" d="M8 14A6 6 0 108 2a6 6 0 000 12zm0-2a4 4 0 100-8 4 4 0 000 8z" clipRule="evenodd" />
             <path d="M12.293 11.293a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414z" />
@@ -162,7 +162,7 @@ export const CustomDeckCard: React.FC<CustomDeckCardProps> = ({
         title={t('factionSelection.editDeck')}
       >
         {/* 铅笔图标 */}
-        <svg width="clamp(12px,0.8vw,18px)" height="clamp(12px,0.8vw,18px)" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="board-shell-fixed-icon" width="clamp(12px,0.8vw,18px)" height="clamp(12px,0.8vw,18px)" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
         </svg>

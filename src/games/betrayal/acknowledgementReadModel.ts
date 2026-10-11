@@ -120,6 +120,15 @@ export function eventRollResolutionNeedsAcknowledgement(
     return resolveEventRollResolutionRequiresAcknowledgement(resolution);
 }
 
+export function isIntermediateAllTraitCheckEventRollResolution(
+    resolution: Pick<BetrayalPendingEventRollResolutionState, 'nextPendingEventChoice'>,
+): boolean {
+    const nextPendingEventChoice = resolution.nextPendingEventChoice;
+    return Boolean(
+        (nextPendingEventChoice?.allTraitCheckProgress?.results.length ?? 0) > 0,
+    );
+}
+
 export function resolveEventRollResolutionRequiresAcknowledgement(
     resolution: Pick<
         BetrayalPendingEventRollResolutionState,
@@ -134,6 +143,9 @@ export function resolveEventRollResolutionRequiresAcknowledgement(
         | 'effect'
     >,
 ): boolean {
+    if (isIntermediateAllTraitCheckEventRollResolution(resolution)) {
+        return false;
+    }
     return Boolean(
         resolution.nextPendingEventChoice
         || resolution.hauntRevealResolution

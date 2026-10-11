@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { DiceBoxStyleProfile } from "../../lib/dice-box-threejs/engine";
 import type { BetrayalRecentRollState } from "./game";
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
+import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
 import {
   BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
 } from "./houseDicePresentation";
@@ -731,12 +732,12 @@ export function StandardRecentRollOverlay({
           onDiceSettledChange={onDiceSettledChange}
         />
         {resultReadable ? (
-          <div
-            data-testid="betrayal-roll-continue-dock"
-            className="pointer-events-auto mt-2 flex w-[min(700px,100%)] justify-center"
+          <BetrayalDecisionActionDock
+            testId="betrayal-roll-continue-dock"
+            className="pointer-events-auto mt-2 min-h-0 w-[min(700px,100%)] border-t-0 bg-transparent pt-0"
           >
             {dockedActionSlot}
-          </div>
+          </BetrayalDecisionActionDock>
         ) : null}
       </div>
     </div>

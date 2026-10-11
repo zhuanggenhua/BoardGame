@@ -89,7 +89,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 fixed w-max max-w-[min(20rem,calc(100vw-1.5rem))] whitespace-normal
                 bg-slate-900/95 border border-amber-500/30 rounded-[0.5vw] p-[0.8vw] 
                 shadow-[0_0_1vw_rgba(0,0,0,0.5)] backdrop-blur-xl 
-                animate-in fade-in slide-in-from-left-[0.5vw] duration-200
+                transition-opacity duration-200 ease-out
                 pointer-events-none origin-left
                 ${className}
             `}
@@ -100,6 +100,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 maxHeight: 'calc(100vh - 1.5rem)',
                 overflowY: 'auto',
                 visibility: layout ? 'visible' : 'hidden',
+                opacity: layout ? 1 : 0,
             }}
         >
             {/* 箭头 */}

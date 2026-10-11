@@ -10958,8 +10958,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '吊死鬼');
         expect(screen.getByTestId('betrayal-event-choice-all-trait-check')).toHaveTextContent('四项属性检定');
         expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
+        expect(screen.getByTestId('betrayal-decision-action-dock')).toHaveAttribute('data-action-position', 'bottom');
+        expect(screen.getAllByTestId('betrayal-decision-action-dock')).toHaveLength(1);
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
         expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
+        expect(screen.getByTestId('betrayal-decision-action-dock')).toHaveAttribute('data-action-position', 'bottom');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();

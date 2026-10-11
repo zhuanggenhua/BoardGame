@@ -37,7 +37,7 @@ try {
     if (result === null) {
         throw new Error('PASS 清单没有 display.finalPassBeforeOpen=true，不能作为最终交付验收');
     }
-    console.log(`E2E 证据验收通过: ${result.mediaCount} 张媒体, ${result.chainCount} 条前中后链路`);
+    console.log(`E2E 证据验收通过: ${result.mediaCount} 张媒体, ${result.chainCount} 条前中后链路, ${result.visualReview?.mediaCount ?? 0} 张逐图视觉审计, ${result.outOfScopeMediaCount ?? 0} 张合同外媒体已显式登记`);
 } catch (error) {
     console.error(`E2E 证据验收失败: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);

@@ -166,6 +166,14 @@
     "effectNativeAssetNote": "蓝色十二面效果骰",
     "settlement": "掷骰预备"
   },
+  "diceResult": {
+    "meleeAttack": "近战攻击",
+    "rangedAttack": "远程攻击",
+    "heal": "治疗",
+    "damage": "{{count}} 点伤害",
+    "miss": "未命中",
+    "healed": "+{{count}}"
+  },
   "actionDock": {
     "title": "当前行动",
     "yourWindow": "你可以执行当前合法动作",

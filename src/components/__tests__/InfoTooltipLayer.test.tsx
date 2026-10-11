@@ -38,6 +38,9 @@ describe('InfoTooltip layer context', () => {
         expect(tooltipLayer).not.toBeNull();
         expect(tooltipLayer).toHaveStyle({ zIndex: String(UI_Z_INDEX.modalTooltip) });
         expect(tooltipLayer).toHaveClass('fixed');
+        expect(tooltipLayer).toHaveClass('transition-opacity', 'duration-200', 'ease-out');
+        expect(tooltipLayer).not.toHaveClass('animate-in');
+        expect(tooltipLayer).not.toHaveClass('slide-in-from-left-[0.5vw]');
     });
 
     it('靠近右侧边界时会把提示翻到左侧并限制在视口内', () => {

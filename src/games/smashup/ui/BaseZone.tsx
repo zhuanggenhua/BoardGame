@@ -605,7 +605,7 @@ export const BaseZone: React.FC<{
                                 : 'absolute top-[0.15vw] right-[0.15vw] flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
                         >
                             <svg
-                                className={isCoarsePointer ? 'h-4 w-4 fill-current' : 'h-[0.8vw] w-[0.8vw] fill-current'}
+                                className={isCoarsePointer ? 'board-shell-fixed-icon h-4 w-4 fill-current' : 'board-shell-fixed-icon h-[0.8vw] w-[0.8vw] fill-current'}
                                 viewBox="0 0 20 20"
                             >
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -830,7 +830,7 @@ export const BaseZone: React.FC<{
                         : 'absolute top-[0.15vw] right-[0.15vw] z-60 flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
                 >
                     <svg
-                        className={isCoarsePointer ? 'h-4 w-4 fill-current' : 'h-[0.8vw] w-[0.8vw] fill-current'}
+                        className={isCoarsePointer ? 'board-shell-fixed-icon h-4 w-4 fill-current' : 'board-shell-fixed-icon h-[0.8vw] w-[0.8vw] fill-current'}
                         viewBox="0 0 20 20"
                     >
                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -1083,7 +1083,7 @@ export const BaseZone: React.FC<{
                         onClick={(e) => { e.stopPropagation(); onViewBase(base.defId); }}
                         className="absolute top-[0.6vw] left-[0.6vw] w-[1.6vw] h-[1.6vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover/base:opacity-100 group-hover/base:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-30 cursor-zoom-in"
                     >
-                        <svg className="w-[0.9vw] h-[0.9vw] fill-current" viewBox="0 0 20 20">
+                        <svg className="board-shell-fixed-icon w-[0.9vw] h-[0.9vw] fill-current" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                         </svg>
                     </button>
@@ -1356,7 +1356,7 @@ export const BaseZone: React.FC<{
                                                                     }}
                                                                     className="absolute top-[0.15vw] right-[0.15vw] z-40 flex h-[1.25vw] w-[1.25vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in"
                                                                 >
-                                                                    <svg className="h-[0.72vw] w-[0.72vw] fill-current" viewBox="0 0 20 20">
+                                                                    <svg className="board-shell-fixed-icon h-[0.72vw] w-[0.72vw] fill-current" viewBox="0 0 20 20">
                                                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                                                     </svg>
                                                                 </button>
@@ -1916,7 +1916,7 @@ const MinionCard: React.FC<{
                         onClick={(e) => { e.stopPropagation(); onView(); }}
                         className="absolute top-[0.15vw] right-[0.15vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-[110] cursor-zoom-in"
                     >
-                        <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                        <svg className="board-shell-fixed-icon w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                         </svg>
                     </button>

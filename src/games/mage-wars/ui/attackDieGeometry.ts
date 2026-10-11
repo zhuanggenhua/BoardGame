@@ -36,8 +36,8 @@ function uv(x: number, y: number): Pick<AttackDieFace, 'uvMin' | 'uvSize'> {
  *           [back 1]
  * ```
  * Cube placement follows Summoner Wars Dice3D: result paints on the camera-front
- * face; the cube itself keeps a small isometric rest so red-on-red net faces
- * still read as a solid instead of a 2D badge.
+ * face; the cube rests identity so the settled face is a square tile facing the
+ * camera, matching the SW overlay stills.
  */
 export const ATTACK_DIE_FACES: readonly AttackDieFace[] = [
     { id: 'front-hit2', kind: 'hit2', result: 2, ...uv(483, 320), cubeRotate: '', glyphRotateDeg: 0 },
@@ -67,14 +67,14 @@ const SETTLED_FACE_ID: Record<AttackDieFaceKind, string> = {
 };
 
 /**
- * Summoner Wars Dice3D paints the result on i === 0 and never yaws 90/180.
- * Identity rest hides this net: every face is the same red as the cube shell,
- * so the solid collapses to a rounded badge. A small isometric rest keeps the
- * result on the front while the top/right slivers stay readable.
+ * Summoner Wars Dice3D paints the result on i === 0 and settles
+ * rotateX(0deg) rotateY(0deg). Mage Wars keeps the official numbered/burst net
+ * on that same camera-front rest so the still matches a flat red tile, not an
+ * isometric cube.
  */
-export const ATTACK_DIE_SETTLED_TRANSFORM = 'rotateX(-22deg) rotateY(28deg)';
+export const ATTACK_DIE_SETTLED_TRANSFORM = 'rotateX(0deg) rotateY(0deg)';
 export const ATTACK_DIE_SETTLED_POSE = 'none';
-export const ATTACK_DIE_SETTLED_TILT = 'isometric-front';
+export const ATTACK_DIE_SETTLED_TILT = 'camera-front';
 export const ATTACK_DIE_REVEAL_MS = 600;
 export const ATTACK_DIE_REVEAL_STAGGER_MS = 100;
 export const ATTACK_DIE_FACE_BACKGROUND = '#8b2020';
@@ -102,4 +102,13 @@ export function getAttackDieSettledTransform(_result?: number): string {
 export function getAttackDieResultFace(result: number): AttackDieFace {
     const settledFaceId = getAttackDieSettledFaceId(result);
     return ATTACK_DIE_FACES.find((face) => face.id === settledFaceId) ?? ATTACK_DIE_FACES[0];
+}
+
+/**
+ * Camera-front result face shows the official net crop upright.
+ * The net paints hit1 on its side; decorative cube faces keep `glyphRotateDeg`.
+ */
+export function getAttackDieTileUprightRotateDeg(kind: AttackDieFaceKind): number {
+    if (kind === 'hit1') return 270;
+    return 0;
 }

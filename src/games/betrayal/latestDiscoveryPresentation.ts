@@ -11,7 +11,10 @@ import {
   buildRecentRollDisplayKey,
   type EventRollConfirmationPresentation,
 } from "./recentRollPresentation";
-import { isPendingCardResolutionFullyAcknowledged } from "./acknowledgementReadModel";
+import {
+  isIntermediateAllTraitCheckEventRollResolution,
+  isPendingCardResolutionFullyAcknowledged,
+} from "./acknowledgementReadModel";
 import { effectIsTraitOnly } from "./possessionEffects";
 
 export type LatestDiscoveryDisplayEntry = {
@@ -66,6 +69,7 @@ export type BetrayalLatestDiscoveryPanelPresentation = {
   pendingEventRollStart: BetrayalCore["pendingEventRollStart"] | null;
   canCurrentViewerStartEventRoll: boolean;
   pendingEventRollRequiresNoAcknowledgement: boolean;
+  shouldAutoFinalizeEventRollWhenSettled: boolean;
   eventChoiceDiscoveryForVisual: BetrayalDiscoverySummary | null;
   displayKindLabel: string;
   displaySummary: string;
@@ -1214,6 +1218,10 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     canCurrentViewerStartEventRoll,
     pendingEventRollRequiresNoAcknowledgement: Boolean(
       core.pendingEventRollResolution?.requiresAcknowledgement === false,
+    ),
+    shouldAutoFinalizeEventRollWhenSettled: Boolean(
+      core.pendingEventRollResolution
+      && isIntermediateAllTraitCheckEventRollResolution(core.pendingEventRollResolution),
     ),
     eventChoiceDiscoveryForVisual,
     displayKindLabel,

@@ -112,6 +112,7 @@
     },
     "map": {
       "mainMapAlt": "Qidahen main map",
+      "mainMapLoadError": "Failed to load the Qidahen map",
       "armyBackAlt": "Army back",
       "regionSelectionAria": "Qidahen map region selection",
       "regionTroopsPopulation": "Troops {{troops}} · Population {{population}}",
@@ -399,11 +400,12 @@
         "welcome": "Three victory conditions: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige.",
         "turnFlow": "The player action flow is: 1. Check the hand limit; 2. Move the wheel; 3. Perform one wheel action and one hand action in either order.",
         "wheelFirst": "The opening hand-limit check has resolved automatically. Ming has 3 cards and a 15-card limit, so no discard is required. Enter the wheel action.",
-        "wheelRule": "The shared wheel can move 1, 2, or 3 spaces. All three moves are legal, and each produces a different wheel resolution.",
+        "wheelRule": "Wheel Action\nThe action marker determines which wheel action can be performed. Everyone shares the movement of the action marker and performs the wheel action at the marker's position. On a player's turn, they may move the action marker: move forward 1 space for free, name one opponent to draw 2 cards and move forward 2 spaces, or have all opponents draw 2 cards and move forward 3 spaces.",
+        "wheelRecruitTrainRule": "Recruit action: directly create 1 level-2 regular troop.",
         "wheelMove": "Click the highlighted Recruit / Train sector on the wheel.",
         "wheelResult": "Recruit / Train is resolved: Xuanfu's troop count rises from 1 to 3; 2 new level-2 regular troops are added. Xuanfu has no artillery at this point, so no artillery is trained.",
         "handActionOrder": "Each turn allows 1 hand action. Ming's four same-level faction actions are Raid, Recruit, Grant Pardon, and Drive Tiger. The rules set no fixed order among these four actions; the hand action and wheel action also have no fixed order.",
-        "grantPardonRule": "Grant Pardon: discard 3 hand cards and name 1 opponent. That player chooses a troop adjacent to a Ming-controlled region, moves it into the neighboring Ming-controlled region, and converts it to Ming. In the digital flow, click the receiving region first; if it uniquely identifies one opponent, the system locks that opponent automatically. Only when multiple opponents remain does the acting player choose the remaining opponent.",
+        "grantPardonRule": "Grant Pardon: discard 3 hand cards, name 1 opponent, and move 1 troop adjacent to a Ming-controlled region into an adjacent Ming-controlled region, converting it to a Ming troop. The named player must choose the troop.",
         "pickAction": "Click the Grant Pardon action on the right.",
         "payCards": "Click 3 hand cards in turn. Each clicked card lifts, enlarges, and shows a gold Selected mark; confirm when the payment panel reaches 3 / 3.",
         "chooseGrantPardonTarget": "Click the highlighted Shanhaiguan region as the receiving region. If it uniquely identifies one opponent, the system locks that opponent automatically.",
@@ -529,6 +531,7 @@
       "description": "Wheel Recruit / Train adds troops and trains artillery by armament level.",
       "steps": {
         "overview": "Enter Wheel Recruit / Train resolution.",
+        "ruleReference": "Recruit action: directly create 1 level-2 regular troop.\nTrain action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.\n(Note: the artillery level cap must be raised through armament.)",
         "chooseMove": "Click the highlighted Recruit / Train sector on the wheel.",
         "result": "Recruit / Train is complete: Xuanfu's total troop count rises from 2 to 4; 2 new level-2 regular troops are added, and the existing level-1 artillery is trained to level 2.",
         "finish": "Recruit / Train is complete."

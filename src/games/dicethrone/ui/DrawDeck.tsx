@@ -82,9 +82,13 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                     className={handToggleClassName}
                     style={{
                         left: `calc(100% + ${buildBoardShellInlineUnitValue(0.35)})`,
-                        bottom: `max(0px, calc((44px / var(--mobile-board-shell-scale, 1) - ${buildBoardShellInlineUnitValue(2.2)}) / 2))`,
-                        width: buildBoardShellInlineUnitValue(2.2),
-                        height: buildBoardShellInlineUnitValue(2.2),
+                        bottom: '0px',
+                        width: buildBoardShellScreenPixelValue(44),
+                        height: buildBoardShellScreenPixelValue(44),
+                        minWidth: buildBoardShellScreenPixelValue(44),
+                        minHeight: buildBoardShellScreenPixelValue(44),
+                        maxWidth: buildBoardShellScreenPixelValue(44),
+                        maxHeight: buildBoardShellScreenPixelValue(44),
                         boxShadow: isHandHidden
                             ? `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(245,158,11,0.32)`
                             : `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(34,211,238,0.32)`,
@@ -100,8 +104,8 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                         aria-hidden="true"
                     />
                     {isHandHidden
-                        ? <ChevronUp className="relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />
-                        : <ChevronDown className="relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />}
+                        ? <ChevronUp className="board-shell-fixed-icon relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />
+                        : <ChevronDown className="board-shell-fixed-icon relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />}
                 </button>
             )}
         </div>

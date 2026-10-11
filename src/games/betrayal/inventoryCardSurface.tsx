@@ -501,7 +501,7 @@ export function BetrayalInventoryCardSurface({
           }}
           className={`betrayal-inventory-card-magnify pointer-events-auto absolute ${isCompact ? "right-1 top-1 h-7 w-7" : "right-2 top-2 h-8 w-8"} z-[80] inline-flex items-center justify-center rounded-[5px] border border-[rgba(238,204,126,0.52)] bg-[rgba(18,15,12,0.86)] text-[#f3dfab] shadow-[0_8px_18px_rgba(0,0,0,0.34)] transition hover:border-[#f1d68d] hover:bg-[rgba(35,27,18,0.94)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd17c]`}
         >
-          <Search size={isCompact ? 13 : 16} aria-hidden="true" />
+          <Search className="board-shell-fixed-icon" size={isCompact ? 13 : 16} aria-hidden="true" />
         </button>
       ) : null}
     </div>

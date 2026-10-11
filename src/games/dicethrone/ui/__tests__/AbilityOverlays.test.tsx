@@ -112,6 +112,7 @@ describe('AbilityOverlays', () => {
 
         expect(onMagnifyCard).toHaveBeenCalledTimes(1);
         expect(onMagnifyCard.mock.calls[0]?.[0]).toMatchObject({ id: 'card-thrust-punch-2' });
+        expect(getByTestId('dt-upgrade-magnify-button-fist').querySelector('svg')).toHaveClass('board-shell-fixed-icon');
         expect(onSelectAbility).not.toHaveBeenCalled();
     });
 

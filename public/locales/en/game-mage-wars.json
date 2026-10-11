@@ -166,6 +166,14 @@
     "effectNativeAssetNote": "Blue twelve-sided effect die",
     "settlement": "Dice ready"
   },
+  "diceResult": {
+    "meleeAttack": "Melee Attack",
+    "rangedAttack": "Ranged Attack",
+    "heal": "Heal",
+    "damage": "{{count}} Damage",
+    "miss": "Miss",
+    "healed": "+{{count}}"
+  },
   "actionDock": {
     "title": "Current Action",
     "yourWindow": "You can take the current legal action",

@@ -23,7 +23,10 @@ import {
     getUpgradeCardForAbilityLevel,
 } from './abilityOverlayHelpers';
 import type { HeroState } from '../domain/types';
-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+import {
+    buildBoardShellInlineUnitValue,
+    buildBoardShellScreenPixelValue,
+} from '../../../shared/runtimeLayoutUnits';
 
 const dtUnit = buildBoardShellInlineUnitValue;
 
@@ -412,8 +415,10 @@ const buildAbilityHighlightStyle = (
         const inspectButtonStyle: React.CSSProperties = {
             right: dtUnit(0.2),
             top: dtUnit(0.2),
-            width: dtUnit(1.15),
-            height: dtUnit(1.15),
+            width: buildBoardShellScreenPixelValue(44),
+            height: buildBoardShellScreenPixelValue(44),
+            minWidth: buildBoardShellScreenPixelValue(44),
+            minHeight: buildBoardShellScreenPixelValue(44),
             boxShadow: `0 ${dtUnit(0.18)} ${dtUnit(0.42)} rgba(0,0,0,0.45)`,
         };
         const abilityHighlightTone = React.useMemo(
@@ -703,8 +708,8 @@ const buildAbilityHighlightStyle = (
                                     }}
                                 >
                                     <svg
-                                        className="min-h-[8px] min-w-[8px] fill-current"
-                                        style={{ width: dtUnit(0.44), height: dtUnit(0.44) }}
+                                        className="board-shell-fixed-icon min-h-[8px] min-w-[8px] fill-current"
+                                        style={{ width: dtUnit(0.84), height: dtUnit(0.84) }}
                                         viewBox="0 0 20 20"
                                         aria-hidden="true"
                                     >

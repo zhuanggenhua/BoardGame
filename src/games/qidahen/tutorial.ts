@@ -60,6 +60,8 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
             return core.wheelActionUsed === false;
         case 'wheel-rule':
             return core.wheelActionUsed === false;
+        case 'wheel-recruit-train-rule':
+            return core.wheelActionUsed === false;
         case 'wheel-branch-recovery':
             return core.wheelActionUsed === true
                 && core.lastSeasonSummary?.title !== '轮盘征兵/训练';
@@ -297,6 +299,7 @@ const wheelRecruitTrainStepValidator = (state: MatchState<unknown>, step: { id: 
     const artilleryTech = core.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech');
     switch (step.id) {
         case 'choose-move':
+        case 'rule-reference':
             return (
             core.turnPhase === 'action-window'
             && core.actionWheelPosition === 'wheel-military-farm'
@@ -498,6 +501,13 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
         {
             id: 'wheel-rule',
             content: 'game-qidahen:tutorial.basic.steps.wheelRule',
+            highlightTarget: 'qidahen-action-wheel',
+            position: 'right',
+            infoStep: true,
+        },
+        {
+            id: 'wheel-recruit-train-rule',
+            content: 'game-qidahen:tutorial.basic.steps.wheelRecruitTrainRule',
             highlightTarget: 'qidahen-action-wheel',
             position: 'right',
             infoStep: true,
@@ -1068,6 +1078,13 @@ const QIDAHEN_WHEEL_RECRUIT_TRAIN_TUTORIAL: TutorialManifest = {
             position: 'center',
             requireAction: false,
             showMask: true,
+        },
+        {
+            id: 'rule-reference',
+            content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.ruleReference',
+            highlightTarget: 'qidahen-action-wheel',
+            position: 'left',
+            infoStep: true,
         },
         {
             id: 'choose-move',

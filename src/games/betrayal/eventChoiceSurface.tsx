@@ -13,6 +13,12 @@ import type {
 import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
 import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { DiscoveryAtlasFrame } from "./atlasFrameSurface";
+import {
+  BetrayalConfirmButton,
+  BetrayalSecondaryButton,
+} from "./confirmButtonSurface";
+import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
+import { BetrayalChoiceOptionButton } from "./choiceOptionSurface";
 import { RecentRollPanel } from "./recentRollSurface";
 import {
   ExplorerTraitOutcomePreview,
@@ -31,34 +37,6 @@ type BetrayalEventDamageChoice = Extract<
   UseEffectProfile,
   { mode: "generalDamageChoice" }
 >;
-
-function BetrayalSelectionChip({
-  selected,
-  children,
-  className = "",
-  selectedClassName = "",
-  idleClassName = "",
-  ...buttonProps
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  selected: boolean;
-  selectedClassName?: string;
-  idleClassName?: string;
-}) {
-  return (
-    <button
-      {...buttonProps}
-      className={`pointer-events-auto inline-flex min-h-[76px] min-w-[168px] cursor-pointer items-center justify-center rounded-[10px] border-2 px-7 py-4 text-[24px] font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(0,0,0,0.32)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] ${
-        selected
-          ? selectedClassName ||
-            "border-[#d1b05f] bg-[rgba(209,176,95,0.22)] text-[#fff1b8] shadow-[0_0_16px_rgba(209,176,95,0.20)]"
-          : idleClassName ||
-            "border-[rgba(211,179,109,0.24)] bg-[rgba(18,15,10,0.34)] text-[#d6c498] hover:border-[rgba(211,179,109,0.44)] hover:bg-[rgba(209,176,95,0.10)] hover:text-[#f0dfad]"
-      } disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:bg-[rgba(13,15,11,0.28)] disabled:text-[#7a6a4a] disabled:shadow-none ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
 
 export function BetrayalEventChoiceSurface({
   choice,
@@ -150,18 +128,31 @@ export function BetrayalEventChoiceSurface({
             awaitsMapTargetClick
               ? "pointer-events-none [&_*]:pointer-events-none"
               : "pointer-events-auto"
-          } grid overflow-visible text-[#f3e0a6] ${
+          } flex min-h-0 flex-col overflow-visible text-[#f3e0a6] ${
             isEventSymbolSkip
-              ? "max-h-[440px] w-[620px] grid-cols-1 gap-4"
+              ? "max-h-[440px] w-[620px]"
               : hasResultPanel
                 ? isMobileViewport
-                  ? "max-h-full w-full max-w-[1420px] grid-cols-[minmax(230px,260px)_minmax(620px,1fr)_minmax(352px,360px)] items-start gap-[90px]"
-                  : "max-h-full w-full max-w-[1100px] grid-cols-[minmax(230px,260px)_minmax(330px,1fr)_minmax(352px,360px)] items-start gap-5"
+                  ? "max-h-full w-full max-w-[1420px]"
+                  : "max-h-full w-full max-w-[1100px]"
                 : usesWideDamageChoiceLayout
-                  ? "max-h-full w-full max-w-[1000px] grid-cols-[minmax(240px,280px)_minmax(420px,1fr)] items-start gap-6"
-                  : "max-h-full w-full max-w-[820px] grid-cols-[minmax(240px,280px)_minmax(380px,1fr)] items-start gap-6"
+                  ? "max-h-full w-full max-w-[1000px]"
+                  : "max-h-full w-full max-w-[820px]"
           }`}
         >
+          <div
+            className={`grid min-h-0 ${
+              isEventSymbolSkip
+                ? "grid-cols-1 gap-4"
+                : hasResultPanel
+                  ? isMobileViewport
+                    ? "grid-cols-[minmax(230px,260px)_minmax(620px,1fr)_minmax(352px,360px)] items-start gap-[90px]"
+                    : "grid-cols-[minmax(230px,260px)_minmax(330px,1fr)_minmax(352px,360px)] items-start gap-5"
+                  : usesWideDamageChoiceLayout
+                    ? "grid-cols-[minmax(240px,280px)_minmax(420px,1fr)] items-start gap-6"
+                    : "grid-cols-[minmax(240px,280px)_minmax(380px,1fr)] items-start gap-6"
+            }`}
+          >
           {isEventSymbolSkip ? null : (
             <div className="pointer-events-none w-full min-w-0 justify-self-center drop-shadow-[0_26px_54px_rgba(0,0,0,0.58)]">
               {latestDiscoveryVisual ? (
@@ -249,7 +240,7 @@ export function BetrayalEventChoiceSurface({
               isEventSymbolSkip
                 ? "pointer-events-auto justify-start gap-4"
                 : roll
-                  ? "pointer-events-auto relative col-start-3 row-start-1 z-[140] h-[410px] justify-center"
+                  ? "pointer-events-auto relative col-span-full row-start-2 z-[140] mt-2 w-full justify-start border-t border-[rgba(214,191,129,0.18)] pt-4"
                   : "pointer-events-auto"
             }`}
           >
@@ -270,7 +261,9 @@ export function BetrayalEventChoiceSurface({
               </div>
             ) : null}
             <div
-              className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pr-1"
+              className={`custom-scrollbar min-h-0 flex flex-col overflow-y-auto pr-1 ${
+                roll ? "max-h-[280px] w-full" : "flex-1"
+              }`}
             >
               {traitChoices.length > 0 ? (
                 <div
@@ -284,15 +277,11 @@ export function BetrayalEventChoiceSurface({
                       ? t("board.status.chooseCheckTrait")
                       : t("board.status.chooseTrait")}
                   </span>
-                  <div
-                    className={
-                      "flex flex-nowrap gap-4"
-                    }
-                  >
+                  <div className="grid grid-cols-2 gap-3">
                     {traitChoices.map((trait) => {
                       const isSelectedTrait = selectedTrait === trait;
                       return (
-                        <BetrayalSelectionChip
+                        <BetrayalChoiceOptionButton
                           key={trait}
                           type="button"
                           onClick={() => onSelectTrait(trait)}
@@ -305,7 +294,7 @@ export function BetrayalEventChoiceSurface({
                           }
                         >
                           {TRAIT_LABEL_LOCAL[trait]}
-                        </BetrayalSelectionChip>
+                        </BetrayalChoiceOptionButton>
                       );
                     })}
                   </div>
@@ -326,7 +315,7 @@ export function BetrayalEventChoiceSurface({
                       }
                     >
                       {itemChoiceCards.map((card) => (
-                        <BetrayalSelectionChip
+                        <BetrayalChoiceOptionButton
                           key={card.id}
                           type="button"
                           onClick={() => onSelectCard(card.id)}
@@ -339,7 +328,7 @@ export function BetrayalEventChoiceSurface({
                           }
                         >
                           {card.name}
-                        </BetrayalSelectionChip>
+                        </BetrayalChoiceOptionButton>
                       ))}
                     </div>
                   ) : (
@@ -401,44 +390,40 @@ export function BetrayalEventChoiceSurface({
                 </div>
               ) : null}
             </div>
-            {choice.declineLabel || showAcceptButton ? (
-              <div
-                data-ui-role="shared-action-dock"
-                className={`sticky bottom-0 shrink-0 border-t border-[rgba(214,191,129,0.18)] bg-[rgba(8,10,9,0.86)] pt-4 ${
-                  isEventSymbolSkip
-                    ? "mt-4 grid grid-cols-2 gap-4 border-t border-[rgba(74,222,128,0.24)]"
-                    : "mt-5 flex justify-center gap-4"
-                }`}
-              >
-                {choice.declineLabel ? (
-                  <button
-                    type="button"
-                    onClick={() => onResolve(false)}
-                    disabled={!canDecline}
-                    data-testid="betrayal-event-choice-decline"
-                    className={`pointer-events-auto cursor-pointer rounded-[10px] border-2 border-[rgba(211,179,109,0.42)] bg-[rgba(18,15,10,0.58)] font-black tracking-[0.06em] text-[#d6c498] shadow-[0_12px_26px_rgba(0,0,0,0.30)] transition-colors duration-150 hover:border-[rgba(211,179,109,0.68)] hover:text-[#f0dfad] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:text-[#7a6a4a] disabled:shadow-none ${
-                      "min-h-[72px] min-w-[160px] px-8 text-[18px]"
-                    }`}
-                  >
-                    {choice.declineLabel}
-                  </button>
-                ) : null}
-                {showAcceptButton ? (
-                  <button
-                    type="button"
-                    onClick={() => onResolve(true)}
-                    disabled={!ready}
-                    data-testid="betrayal-event-choice-confirm"
-                    className={`pointer-events-auto cursor-pointer rounded-[10px] border-2 border-[#f0d27f] bg-[#d1b05f] font-black tracking-[0.06em] text-[#17130d] shadow-[0_0_30px_rgba(209,176,95,0.42)] transition-shadow duration-150 hover:bg-[#e5c86f] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.26)] disabled:bg-[rgba(13,15,11,0.34)] disabled:text-[#7a6a4a] disabled:shadow-none ${
-                      "min-h-[72px] min-w-[160px] px-8 text-[18px]"
-                    }`}
-                  >
-                    {choice.acceptLabel ?? t("common:button.confirm")}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
           </div>
+          </div>
+          {choice.declineLabel || showAcceptButton ? (
+            <BetrayalDecisionActionDock
+              className={
+                isEventSymbolSkip
+                  ? "relative z-[200] mt-4 grid grid-cols-2 gap-4 border-t-[rgba(74,222,128,0.24)]"
+                  : "relative z-[200] mt-5"
+              }
+            >
+              {choice.declineLabel ? (
+                <BetrayalSecondaryButton
+                  type="button"
+                  onClick={() => onResolve(false)}
+                  disabled={!canDecline}
+                  data-testid="betrayal-event-choice-decline"
+                  className="min-h-[72px] min-w-[160px] rounded-[10px] px-8 text-[18px] font-black"
+                >
+                  {choice.declineLabel}
+                </BetrayalSecondaryButton>
+              ) : null}
+              {showAcceptButton ? (
+                <BetrayalConfirmButton
+                  type="button"
+                  onClick={() => onResolve(true)}
+                  disabled={!ready}
+                  data-testid="betrayal-event-choice-confirm"
+                  className="min-h-[72px] min-w-[160px] rounded-[10px] px-8 text-[18px] font-black shadow-[0_0_30px_rgba(209,176,95,0.42)]"
+                >
+                  {choice.acceptLabel ?? t("common:button.confirm")}
+                </BetrayalConfirmButton>
+              ) : null}
+            </BetrayalDecisionActionDock>
+          ) : null}
         </div>
       </div>
   );

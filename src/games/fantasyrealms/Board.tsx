@@ -561,7 +561,7 @@ function renderCardMagnifyButton(
             data-testid={`fantasyrealms-card-magnify-button-${zone}-${card.id}`}
             aria-label={t('actions.openMagnifyAria', { name: getFantasyRealmsCardDisplayName(card) })}
         >
-            <Search aria-hidden="true" className="fr-card-magnify-icon" strokeWidth={2.2} />
+            <Search aria-hidden="true" className="board-shell-fixed-icon fr-card-magnify-icon" strokeWidth={2.2} />
         </span>
     );
 }

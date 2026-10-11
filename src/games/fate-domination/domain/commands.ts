@@ -1,7 +1,7 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANT_BY_ID } from '../data';
 import type { FateDominationCommand, FateDominationCore, LocationId } from './types';
-import { movementCost, legalMoveTargets } from './rules';
+import { canPlayAttack, movementFailureToError, resolveFateMovement } from './movement';
 
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
@@ -40,14 +40,8 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             const player = core.players[command.playerId];
             if (!player.locationId) return fail('notDeployed');
             if (!locationExists(command.payload.locationId)) return fail('unknownLocation');
-            if (player.locationId === command.payload.locationId) return fail('alreadyThere');
-            const target = core.battlefield[command.payload.locationId];
-            if (target.capacity !== null && target.playerIds.length >= target.capacity) return fail('locationFull');
-            const distance = movementCost(player.locationId, command.payload.locationId);
-            if (distance === null) return fail('illegalRoute');
-            if (player.mana < distance) return fail('notEnoughMana');
-            if (!legalMoveTargets(core, player).includes(command.payload.locationId)) return fail('moveNotAllowed');
-            return ok();
+            const resolution = resolveFateMovement(core, command.playerId, command.payload.locationId, 'normal');
+            return resolution.valid ? ok() : fail(movementFailureToError(resolution) ?? 'moveNotAllowed');
         }
         case 'PASS_ACTION':
             if (core.phase !== 'action') return fail('wrongPhase');
@@ -87,6 +81,8 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
                 return sum + (selected ? FATE_ATTACK_BY_ID[selected.definitionId].manaCost : 0);
             }, 0);
             if (!definition || selectedCost + definition.manaCost > player.mana) return fail('notEnoughMana');
+            const attackCheck = canPlayAttack(core, command.playerId, definition);
+            if (!attackCheck.valid) return fail(attackCheck.error ?? 'attackNotAllowed');
             return ok();
         }
         case 'CONFIRM_ATTACK': {
@@ -99,6 +95,13 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
                 return sum + (selected ? FATE_ATTACK_BY_ID[selected.definitionId]?.manaCost ?? 0 : 0);
             }, 0);
             if (selectedCost > player.mana) return fail('notEnoughMana');
+            for (const cardId of player.selectedAttackIds) {
+                const card = player.hand.find((item) => item.id === cardId);
+                const definition = card ? FATE_ATTACK_BY_ID[card.definitionId] : undefined;
+                if (!definition) return fail('staleCard');
+                const attackCheck = canPlayAttack(core, command.playerId, definition);
+                if (!attackCheck.valid) return fail(attackCheck.error ?? 'attackNotAllowed');
+            }
             return ok();
         }
         case 'INSPECT_CARD': {

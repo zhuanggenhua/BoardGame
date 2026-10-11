@@ -1,12 +1,11 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import sharp from 'sharp';
 
 const projectRoot = process.cwd();
 const baseDir = path.join(projectRoot, 'test-results', 'evidence-screenshots', 'mage-wars');
 const sourceRoot = path.join(baseDir, 'online-runtime.e2e');
-const outDir = path.join(baseDir, '全部独立端到端截图-20261011-r5');
+const outDir = path.join(baseDir, '全部独立端到端截图-20261011-r6');
 
 const groups = [
     ['01', '传送', '01-传送', ['正式页面传送法术过程帧覆盖来源闪现落点'], '正式页面传送法术过程帧覆盖来源闪现落点', 'teleport'],
@@ -164,17 +163,7 @@ for (const group of groups) {
         if (!fs.existsSync(sourceMediaPath)) throw new Error(`源媒体不存在: ${sourceMediaPath}`);
         const fileName = `${group.order}-${path.basename(entry.path)}`;
         const destinationPath = path.join(outDir, fileName);
-        const healingProcessFrame = group.key === 'healingLight' && entry.path.includes('过程帧')
-            ? path.join(sourceDir, '_gif-frames', '治疗之光', '0012.png')
-            : null;
-        if (healingProcessFrame) {
-            if (!fs.existsSync(healingProcessFrame)) {
-                throw new Error(`治疗之光同次运行治疗过程帧不存在：${healingProcessFrame}`);
-            }
-            await sharp(healingProcessFrame).jpeg({ quality: 95 }).toFile(destinationPath);
-        } else {
-            fs.linkSync(sourceMediaPath, destinationPath);
-        }
+        fs.linkSync(sourceMediaPath, destinationPath);
         const description = describe(group.key, entry, visibleEffectDelta);
         if (!description || /[A-Za-z]/.test(description) || description.includes('\n')) {
             throw new Error(`描述不满足纯中文一句话: ${group.label}/${fileName}: ${description}`);
@@ -187,10 +176,6 @@ for (const group of groups) {
             label: fileName,
             description,
             ...(group.key === 'healingLight' ? { visibleEffectDelta } : {}),
-            ...(healingProcessFrame ? {
-                derivedFromSourceFrame: path.relative(sourceDir, healingProcessFrame).split(path.sep).join('/'),
-                sourceRun: entry.sourceRun,
-            } : {}),
             transition: entry.transition || '同一行为链继续推进到当前玩家可见状态。',
         };
         groupMedia.push(merged);
@@ -303,6 +288,17 @@ const manifest = {
             status: 'PASS',
             evidence: ['正式页面近战攻击实际动效独立证据覆盖', '正式页面治疗之光实际动效独立证据覆盖', '正式页面有效果骰近战攻击独立证据覆盖'],
         },
+        {
+            requirement: '伤害文案不透明可读，效果骰在 overlay 中可见，过程帧竞技场居中不缩成邮票',
+            status: 'PASS',
+            evidence: [
+                '正式页面近战攻击实际动效独立证据覆盖',
+                '正式页面有效果骰近战攻击独立证据覆盖',
+                '正式页面治疗之光实际动效独立证据覆盖',
+                '正式页面召唤和攻击必要过程帧覆盖/召唤',
+                '正式页面召唤和攻击必要过程帧覆盖/远程攻击',
+            ],
+        },
     ],
     media: media.map((entry) => path.relative(projectRoot, path.join(outDir, entry.path)).split(path.sep).join('/')),
     evidenceIndex: '.e2e-image-index.json',
@@ -335,6 +331,7 @@ const manifest = {
             '25A 与 25B 画面不同，近战过程帧无重复文件。',
             '推斥滑移过渡约 450 毫秒。',
             '攻击骰与治疗骰是 CSS 立方体，带官方骰网和命中绿光。',
+            '伤害文案不透明可读，效果骰可见，过程帧竞技场居中。',
         ],
         unresolvedExternalReview: '独立复核服务不可用；此状态不构成独立复核通过。',
     },
@@ -347,7 +344,7 @@ const manifest = {
 };
 
 const index = {
-    title: '法师战争 · 当前独立端到端截图总览 · 2026-10-10',
+    title: '法师战争 · 当前独立端到端截图总览 · 2026-10-11',
     gameId: 'mage-wars',
     evidenceCategory: 'independent',
     generatedAt,

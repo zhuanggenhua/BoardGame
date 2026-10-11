@@ -110,7 +110,7 @@ export function CardInspectButton({
             <svg
                 aria-hidden="true"
                 viewBox="0 0 20 20"
-                className="fill-current"
+                className="board-shell-fixed-icon fill-current"
                 style={iconStyle}
             >
                 <path

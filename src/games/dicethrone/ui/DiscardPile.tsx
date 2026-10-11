@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import type { AbilityCard } from '../types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+import {
+    buildBoardShellInlineUnitValue,
+    buildBoardShellScreenPixelValue,
+} from '../../../shared/runtimeLayoutUnits';
 
 const dtUnit = buildBoardShellInlineUnitValue;
 
@@ -33,12 +36,12 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
     const inspectButtonStyle = {
         top: dtUnit(0.24),
         right: dtUnit(0.48),
-        width: dtUnit(2),
-        height: dtUnit(2),
-        minWidth: '0',
-        minHeight: '0',
-        maxWidth: dtUnit(2),
-        maxHeight: dtUnit(2),
+        width: buildBoardShellScreenPixelValue(44),
+        height: buildBoardShellScreenPixelValue(44),
+        minWidth: buildBoardShellScreenPixelValue(44),
+        minHeight: buildBoardShellScreenPixelValue(44),
+        maxWidth: buildBoardShellScreenPixelValue(44),
+        maxHeight: buildBoardShellScreenPixelValue(44),
         appearance: 'none',
         WebkitAppearance: 'none',
         fontSize: '0',
@@ -110,9 +113,9 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
                     >
                         <span className={inspectButtonVisualClassName}>
                             <svg
-                                className={inspectIconClassName}
+                                className={`board-shell-fixed-icon ${inspectIconClassName}`}
                                 viewBox="0 0 20 20"
-                                style={{ width: dtUnit(0.52), height: dtUnit(0.52) }}
+                                style={{ width: dtUnit(0.84), height: dtUnit(0.84) }}
                             >
                                 <path d="M5 8a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-5a5 5 0 1 0 3.164 8.871l4.482 4.483a1 1 0 0 0 1.415-1.415l-4.483-4.482A5 5 0 0 0 8 3z" />
                             </svg>

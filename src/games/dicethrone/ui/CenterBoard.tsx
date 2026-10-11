@@ -11,7 +11,10 @@ import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlot
 import type { AbilityCard } from '../types';
 import { hasDiceThroneTipBoard, type HeroState } from '../domain/types';
 import { NyraCompanionPanel, type NyraDamageResponse } from './NyraCompanionPanel';
-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+import {
+    buildBoardShellInlineUnitValue,
+    buildBoardShellScreenPixelValue,
+} from '../../../shared/runtimeLayoutUnits';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -79,12 +82,12 @@ export const CenterBoard = ({
     const overlayButtonStyle = {
         top: buildBoardShellInlineUnitValue(boardUiTuning.magnifyButtonTop),
         right: buildBoardShellInlineUnitValue(0.9),
-        width: buildBoardShellInlineUnitValue(2.6),
-        height: buildBoardShellInlineUnitValue(2.6),
-        minWidth: '0',
-        minHeight: '0',
-        maxWidth: buildBoardShellInlineUnitValue(2.6),
-        maxHeight: buildBoardShellInlineUnitValue(2.6),
+        width: buildBoardShellScreenPixelValue(44),
+        height: buildBoardShellScreenPixelValue(44),
+        minWidth: buildBoardShellScreenPixelValue(44),
+        minHeight: buildBoardShellScreenPixelValue(44),
+        maxWidth: buildBoardShellScreenPixelValue(44),
+        maxHeight: buildBoardShellScreenPixelValue(44),
         appearance: 'none',
         WebkitAppearance: 'none',
         fontSize: '0',
@@ -93,6 +96,8 @@ export const CenterBoard = ({
     const tipToggleButtonStyle = {
         [isTipOpen ? 'right' : 'left']: isTipOpen ? buildBoardShellInlineUnitValue(0.8) : buildBoardShellInlineUnitValue(0.1),
         padding: buildBoardShellInlineUnitValue(0.5),
+        minWidth: buildBoardShellScreenPixelValue(44),
+        minHeight: buildBoardShellScreenPixelValue(44),
     } as const;
     const tipToggleButtonClassName = 'absolute top-[55%] z-50 flex text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16';
 
@@ -352,8 +357,8 @@ export const CenterBoard = ({
                     >
                         <span className={overlayButtonVisualClassName}>
                             <svg
-                                className={overlayButtonIconClassName}
-                                style={{ width: buildBoardShellInlineUnitValue(0.72), height: buildBoardShellInlineUnitValue(0.72) }}
+                                className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
+                                style={{ width: buildBoardShellInlineUnitValue(1.05), height: buildBoardShellInlineUnitValue(1.05) }}
                                 viewBox="0 0 20 20"
                             >
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -416,8 +421,8 @@ export const CenterBoard = ({
                             >
                                 <span className={overlayButtonVisualClassName}>
                                     <svg
-                                        className={overlayButtonIconClassName}
-                                        style={{ width: buildBoardShellInlineUnitValue(0.72), height: buildBoardShellInlineUnitValue(0.72) }}
+                                        className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
+                                        style={{ width: buildBoardShellInlineUnitValue(1.05), height: buildBoardShellInlineUnitValue(1.05) }}
                                         viewBox="0 0 20 20"
                                     >
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />

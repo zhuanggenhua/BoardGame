@@ -1,6 +1,7 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
     BoardDamageImpactPreset,
     BoardHealingImpactPreset,
@@ -60,25 +61,138 @@ function isMageId(value: unknown): value is MageId {
     return typeof value === 'string' && MAGE_ID_VALUES.has(value);
 }
 
+type ViewportBox = { left: number; top: number; width: number; height: number };
+
+function readElementRect(testId: string): DOMRect | null {
+    if (typeof document === 'undefined') return null;
+    const element = document.querySelector(`[data-testid="${testId}"]`);
+    if (!element) return null;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return null;
+    return rect;
+}
+
+function rectToBox(rect: DOMRect): ViewportBox {
+    return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+    };
+}
+
+function intersectBoxes(left: ViewportBox, right: ViewportBox): ViewportBox | null {
+    const nextLeft = Math.max(left.left, right.left);
+    const nextTop = Math.max(left.top, right.top);
+    const nextRight = Math.min(left.left + left.width, right.left + right.width);
+    const nextBottom = Math.min(left.top + left.height, right.top + right.height);
+    const width = nextRight - nextLeft;
+    const height = nextBottom - nextTop;
+    if (width < 1 || height < 1) return null;
+    return { left: nextLeft, top: nextTop, width, height };
+}
+
+function readVisibleMapOverlayBox(): ViewportBox | null {
+    const viewportRect = readElementRect('mage-wars-arena-viewport');
+    const stageRect = readElementRect('mage-wars-arena-stage');
+    if (viewportRect && stageRect) {
+        const visibleMap = intersectBoxes(rectToBox(viewportRect), rectToBox(stageRect));
+        if (visibleMap) return visibleMap;
+    }
+    if (viewportRect) return rectToBox(viewportRect);
+    if (typeof window === 'undefined' || window.innerWidth < 1 || window.innerHeight < 1) {
+        return null;
+    }
+    return {
+        left: 0,
+        top: 0,
+        width: window.innerWidth,
+        height: window.innerHeight,
+    };
+}
+
+function sameOverlayBox(
+    left: ViewportBox | null,
+    right: ViewportBox | null,
+): boolean {
+    if (left === right) return true;
+    if (!left || !right) return false;
+    return left.left === right.left
+        && left.top === right.top
+        && left.width === right.width
+        && left.height === right.height;
+}
+
+function useAttackDiceOverlayBox() {
+    const [overlayBox, setOverlayBox] = useState(readVisibleMapOverlayBox);
+
+    useLayoutEffect(() => {
+        let frameId = 0;
+        const sync = () => {
+            const nextBox = readVisibleMapOverlayBox();
+            setOverlayBox((current) => (sameOverlayBox(current, nextBox) ? current : nextBox));
+            frameId = window.requestAnimationFrame(sync);
+        };
+        frameId = window.requestAnimationFrame(sync);
+        return () => window.cancelAnimationFrame(frameId);
+    }, []);
+
+    return overlayBox;
+}
+
 function AttackDiceFeedback({
     diceResults,
     effectDieResult,
     rawEffectDieResult,
     visibleDurationMs,
+    kind,
+    resultAmount,
 }: {
     diceResults: number[];
     effectDieResult?: number;
     rawEffectDieResult?: number;
     visibleDurationMs: number;
+    kind: 'melee' | 'ranged' | 'heal';
+    resultAmount: number;
 }) {
+    const { t } = useTranslation('game-mage-wars');
+    const overlayBox = useAttackDiceOverlayBox();
     if (diceResults.length === 0 && effectDieResult === undefined) return null;
 
-    const resultLayer = (
+    const titleKey = kind === 'heal'
+        ? 'diceResult.heal'
+        : kind === 'ranged'
+            ? 'diceResult.rangedAttack'
+            : 'diceResult.meleeAttack';
+    const resultText = kind === 'heal'
+        ? t('diceResult.healed', { count: resultAmount })
+        : resultAmount > 0
+            ? t('diceResult.damage', { count: resultAmount })
+            : t('diceResult.miss');
+    // Cobblestone stills captured mid-tumble; SW `text-red-400` + 0.8s fade
+    // reads as translucent. Keep the sum fully opaque with a dark outline.
+    const resultColor = kind === 'heal'
+        ? '#4ade80'
+        : resultAmount > 0
+            ? '#ff2d2d'
+            : '#f8fafc';
+
+    const overlay = (
         <motion.div
-            className="pointer-events-none fixed inset-0 flex items-center justify-center"
-            style={{ zIndex: UI_Z_INDEX.overlayRaised }}
+            className="pointer-events-none flex items-center justify-center"
+            style={{
+                position: 'fixed',
+                left: overlayBox?.left ?? 0,
+                top: overlayBox?.top ?? 0,
+                width: overlayBox?.width ?? '100vw',
+                height: overlayBox?.height ?? '100vh',
+                zIndex: UI_Z_INDEX.overlayRaised,
+                isolation: 'isolate',
+                overflow: 'visible',
+            }}
             data-testid="mage-wars-fx-attack-dice"
-            data-placement="board-center"
+            data-placement="visible-map-center"
+            data-overlay-layer="visible-map"
             data-visual-role="attack-dice-result"
             data-visible-duration-ms={visibleDurationMs}
             initial={{ opacity: 0, scale: 0.8 }}
@@ -86,23 +200,47 @@ function AttackDiceFeedback({
             exit={{ opacity: 0, scale: 0.8, y: -20 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
         >
-            <div
-                className="flex max-w-[34rem] items-center justify-center gap-[1.2vw]"
-                data-testid="mage-wars-fx-attack-dice-content"
-            >
-                {diceResults.slice(0, 6).map((result, index) => (
-                    <AttackDie key={`${index}-${result}`} result={result} index={index} />
-                ))}
-                {effectDieResult !== undefined ? (
-                    <EffectDie result={rawEffectDieResult ?? effectDieResult} resolvedResult={effectDieResult} />
-                ) : null}
+            <div className="flex flex-col items-center gap-[0.8vw]">
+                <div
+                    className="text-center text-[1.3vw] font-black tracking-wider text-white"
+                    style={{ textShadow: '0 0 1vw rgba(255,255,255,0.3)' }}
+                    data-testid="mage-wars-fx-attack-dice-title"
+                >
+                    {t(titleKey)}
+                </div>
+                <div
+                    className="flex max-w-[34rem] items-center justify-center gap-[1.2vw]"
+                    data-testid="mage-wars-fx-attack-dice-content"
+                >
+                    {diceResults.slice(0, 6).map((result, index) => (
+                        <AttackDie key={`${index}-${result}`} result={result} index={index} />
+                    ))}
+                    {effectDieResult !== undefined ? (
+                        <EffectDie result={rawEffectDieResult ?? effectDieResult} resolvedResult={effectDieResult} />
+                    ) : null}
+                </div>
+                <motion.div
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0 }}
+                    className="text-center text-[1.6vw] font-black tracking-wide"
+                    style={{
+                        color: resultColor,
+                        opacity: 1,
+                        WebkitTextStroke: '0.06vw #111111',
+                        paintOrder: 'stroke fill',
+                        textShadow: '0 0.06vw 0 #111, 0 -0.06vw 0 #111, 0.06vw 0 0 #111, -0.06vw 0 0 #111, 0 0.18vw 0.24vw rgba(0,0,0,0.9)',
+                    }}
+                    data-testid="mage-wars-fx-attack-dice-summary"
+                    data-contrast="opaque"
+                >
+                    {resultText}
+                </motion.div>
             </div>
         </motion.div>
     );
-
-    return typeof document === 'undefined'
-        ? resultLayer
-        : createPortal(resultLayer, document.body);
+    if (typeof document === 'undefined') return overlay;
+    return createPortal(overlay, document.body);
 }
 
 function useStableComplete(onComplete?: () => void): () => void {
@@ -210,17 +348,6 @@ function resolveEntitySlideBox(
     const cellBox = getCellPosition(cell.row, cell.col);
     if (sizeRef?.box) return centerEntityBoxInCell(cellBox, sizeRef.box);
     return cellBox;
-}
-
-type ViewportBox = { left: number; top: number; width: number; height: number };
-
-function percentBoxToViewport(box: FxBox, host: DOMRect): ViewportBox {
-    return {
-        left: host.left + (box.left / 100) * host.width,
-        top: host.top + (box.top / 100) * host.height,
-        width: (box.width / 100) * host.width,
-        height: (box.height / 100) * host.height,
-    };
 }
 
 function readSlideHostRect(): DOMRect | null {
@@ -996,6 +1123,8 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                     effectDieResult={effectDieResult}
                     rawEffectDieResult={rawEffectDieResult}
                     visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                    kind="melee"
+                    resultAmount={damage}
                 />
             </>
         );
@@ -1050,6 +1179,8 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 effectDieResult={effectDieResult}
                 rawEffectDieResult={rawEffectDieResult}
                 visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                kind="ranged"
+                resultAmount={damage}
             />
         </>
     );
@@ -1108,6 +1239,8 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
                 <AttackDiceFeedback
                     diceResults={diceResults}
                     visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                    kind="heal"
+                    resultAmount={amount}
                 />
             ) : null}
         </>

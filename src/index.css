@@ -775,6 +775,30 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     box-sizing: border-box;
 }
 
+/* 壳内固定控件图标：按钮命中区继续随设计坐标缩放，图标视觉层按 inverse scale 补偿。 */
+@media (max-width: 1023px) {
+    [data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .board-shell-fixed-icon,
+    .mobile-board-shell .board-shell-fixed-icon {
+        display: block;
+        flex: 0 0 auto;
+        transform: scale(var(--mobile-board-shell-inverse-scale, 1));
+        transform-origin: center;
+        transform-box: fill-box;
+    }
+}
+
+/* Betrayal 手机门户 HUD 使用独立缩放变量，固定检视图标沿用同一视觉补偿。 */
+@media (max-width: 1023px) and (orientation: landscape) {
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region .board-shell-fixed-icon,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region .board-shell-fixed-icon {
+        display: block;
+        flex: 0 0 auto;
+        transform: scale(var(--betrayal-hud-inverse-scale, 1));
+        transform-origin: center;
+        transform-box: fill-box;
+    }
+}
+
 .mobile-board-shell__canvas {
     position: relative;
     width: 100%;

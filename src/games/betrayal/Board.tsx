@@ -158,6 +158,7 @@ import {
   resolveRecentRollAcknowledgementPresentation,
   resolveRecentRollActorLabel as resolveRecentRollActorLabelPresentation,
 } from "./recentRollPresentation";
+import { isIntermediateAllTraitCheckEventRollResolution } from "./acknowledgementReadModel";
 import { resolvePlayerName } from "./playerPresentation";
 import { resolveBetrayalAttackLineOfSightSegments } from "./attackLineOfSightPresentation";
 import {
@@ -257,6 +258,7 @@ import {
 } from "./visualTransitionSurface";
 import {
   BETRAYAL_DISCOVERY_ITEM_AUTO_ADVANCE_DELAY_MS,
+  BETRAYAL_EVENT_ROLL_AUTO_FINALIZE_AFTER_SETTLED_MS,
   BETRAYAL_VISUAL_TRANSITION_DURATION_MS,
 } from "./visualTiming";
 import { logMobileRuntimeCritical } from "../../lib/mobile/mobileRuntimeDebug";
@@ -3514,6 +3516,7 @@ export default function BetrayalBoard({
     pendingEventRollStart: pendingLatestDiscoveryEventRollStart,
     canCurrentViewerStartEventRoll:
       canCurrentViewerStartLatestDiscoveryEventRoll,
+    shouldAutoFinalizeEventRollWhenSettled,
     eventChoiceDiscoveryForVisual,
     displaySummary: latestDiscoveryDisplaySummary,
     shouldShowCardFace: shouldShowLatestDiscoveryCardFace,
@@ -3531,6 +3534,40 @@ export default function BetrayalBoard({
     displayedTitle: latestDiscoveryDisplayedTitle,
     continueButton: latestDiscoveryContinueButton,
   } = latestDiscoveryPresentation;
+  React.useEffect(() => {
+    const pendingResolution = core.pendingEventRollResolution;
+    if (
+      !shouldAutoFinalizeEventRollWhenSettled ||
+      !pendingResolution ||
+      !isIntermediateAllTraitCheckEventRollResolution(pendingResolution) ||
+      !core.recentRoll ||
+      core.recentRoll.id !== pendingResolution.rollId ||
+      !isLatestDiscoveryRecentRollReadable ||
+      isVisualBusy
+    ) {
+      return;
+    }
+    const rollId = pendingResolution.rollId;
+    const timer = window.setTimeout(() => {
+      const currentResolution = core.pendingEventRollResolution;
+      if (
+        !currentResolution ||
+        currentResolution.rollId !== rollId ||
+        !isIntermediateAllTraitCheckEventRollResolution(currentResolution)
+      ) {
+        return;
+      }
+      dispatchCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, { rollId });
+    }, BETRAYAL_EVENT_ROLL_AUTO_FINALIZE_AFTER_SETTLED_MS);
+    return () => window.clearTimeout(timer);
+  }, [
+    core,
+    core.recentRoll?.id,
+    dispatchCommand,
+    isLatestDiscoveryRecentRollReadable,
+    isVisualBusy,
+    shouldAutoFinalizeEventRollWhenSettled,
+  ]);
   const latestDiscoveryRerollSelection =
     canCurrentPlayerModifyLatestDiscoveryRoll
       ? recentRollRerollSelection
@@ -6546,6 +6583,9 @@ export default function BetrayalBoard({
                   )}
                   canStartPendingEventRoll={
                     canCurrentViewerStartLatestDiscoveryEventRoll
+                  }
+                  autoFinalizeEventRollWhenSettled={
+                    shouldAutoFinalizeEventRollWhenSettled
                   }
                   suppressExternalActionDock={Boolean(
                     pendingDamageAllocation &&

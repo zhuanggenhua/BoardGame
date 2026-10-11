@@ -717,11 +717,12 @@ async function finalizeMageWarsFxVideoRecording(
             ],
         },
         {
-            requirement: '法师战争攻击结果反馈已改为牌桌中心结果层：近战和远程攻击的骰子都不再按来源 / 目标位置漂移',
+            requirement: '法师战争攻击骰在可见窗口居中独立播放：投骰不改玩家镜头和底图，骰子不得钉在战斗格上',
             status: 'PASS' as const,
             evidence: [
-                'E2E：攻击骰结果层使用牌桌中心位 data-placement=board-center',
-                'E2E：攻击开始和投射飞行中都断言骰子中心接近牌桌中心',
+                'E2E：攻击骰结果层 data-placement=visible-map-center',
+                'E2E：攻击骰内容落在可见石板中心，布局宿主是视窗与舞台相交区域，不是整块棋盘、变换后舞台或战斗格',
+                'E2E：投骰前拖到角落后断言 pan/zoom 不变，截图前不得 reset-center',
                 ...attackEvidence,
                 recording.finalGifPath,
             ],
@@ -1695,6 +1696,185 @@ async function readViewportRelation(locator: Locator, safeInset = 48) {
     }, safeInset);
 }
 
+async function cancelMageWarsArenaViewportInertia(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        document.querySelector('[data-testid="mage-wars-arena-viewport"]')
+            ?.dispatchEvent(new Event('zoompan:cancel-inertia'));
+    });
+}
+
+type MageWarsArenaCameraSnapshot = {
+    transform: string;
+    contentCenterOffsetX: number;
+    contentCenterOffsetY: number;
+};
+
+async function readMageWarsArenaCamera(page: Page): Promise<MageWarsArenaCameraSnapshot> {
+    const snapshot = await page.evaluate(() => {
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        if (!viewport || !content) return null;
+        const viewportRect = viewport.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        return {
+            transform: content.style.transform,
+            contentCenterOffsetX: Math.round(
+                (contentRect.left + contentRect.width / 2) - (viewportRect.left + viewportRect.width / 2),
+            ),
+            contentCenterOffsetY: Math.round(
+                (contentRect.top + contentRect.height / 2) - (viewportRect.top + viewportRect.height / 2),
+            ),
+        };
+    });
+    expect(snapshot, '必须读到竞技场当前镜头').toBeTruthy();
+    if (!snapshot) {
+        throw new Error('必须读到竞技场当前镜头');
+    }
+    return snapshot;
+}
+
+async function expectMageWarsArenaCameraUnchanged(
+    page: Page,
+    before: MageWarsArenaCameraSnapshot,
+    label: string,
+) {
+    const after = await readMageWarsArenaCamera(page);
+    expect(after.transform, `${label} 投骰后镜头 transform 必须保持玩家机位`).toBe(before.transform);
+    expect(
+        Math.abs(after.contentCenterOffsetX - before.contentCenterOffsetX),
+        `${label} 投骰后镜头水平偏移不能被拉回：before=${JSON.stringify(before)} after=${JSON.stringify(after)}`,
+    ).toBeLessThanOrEqual(8);
+    expect(
+        Math.abs(after.contentCenterOffsetY - before.contentCenterOffsetY),
+        `${label} 投骰后镜头垂直偏移不能被拉回：before=${JSON.stringify(before)} after=${JSON.stringify(after)}`,
+    ).toBeLessThanOrEqual(8);
+}
+
+async function panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+    page: Page,
+    locator: Locator,
+    label: string,
+): Promise<MageWarsArenaCameraSnapshot> {
+    const arenaViewport = page.getByTestId('mage-wars-arena-viewport');
+    const arenaContent = page.getByTestId('mage-wars-arena-viewport-content');
+    await expect(arenaViewport).toBeVisible({ timeout: 5_000 });
+    await expect(arenaContent).toBeVisible({ timeout: 5_000 });
+    await expect(locator).toBeAttached({ timeout: 3_000 });
+    await cancelMageWarsArenaViewportInertia(page);
+
+    const viewportBox = await arenaViewport.boundingBox();
+    const locatorBox = await locator.boundingBox();
+    if (!viewportBox || !locatorBox) {
+        throw new Error(`${label} 需要拖拽竞技场视窗，但视窗或战斗对象没有可操作区域`);
+    }
+
+    const beforeTransform = await arenaContent.evaluate((element) => (element as HTMLElement).style.transform);
+    const locatorCenterX = locatorBox.x + locatorBox.width / 2;
+    const locatorCenterY = locatorBox.y + locatorBox.height / 2;
+    // 把战斗对象拖进竞技场视窗上半区，避开底部法术书；地图中心因此离开视窗中心。
+    const desiredX = viewportBox.x + viewportBox.width * 0.62;
+    const desiredY = viewportBox.y + viewportBox.height * 0.34;
+    const maxDragX = Math.max(120, viewportBox.width * 0.36);
+    const maxDragY = Math.max(90, viewportBox.height * 0.28);
+    const dragX = Math.max(-maxDragX, Math.min(maxDragX, desiredX - locatorCenterX));
+    const dragY = Math.max(-maxDragY, Math.min(maxDragY, desiredY - locatorCenterY));
+    const startX = viewportBox.x + viewportBox.width / 2;
+    const startY = viewportBox.y + viewportBox.height / 2;
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + dragX, startY + dragY, { steps: 8 });
+    await page.mouse.up();
+    await cancelMageWarsArenaViewportInertia(page);
+    await expect.poll(async () => arenaContent.evaluate((element) => (element as HTMLElement).style.transform), {
+        message: `${label} 拖到角落后地图 transform 应变化`,
+        timeout: 2_000,
+    }).not.toBe(beforeTransform);
+    await page.waitForTimeout(180);
+
+    const camera = await readMageWarsArenaCamera(page);
+    const offset = Math.hypot(camera.contentCenterOffsetX, camera.contentCenterOffsetY);
+    expect(offset, `${label} 玩家镜头必须离开地图中心：${JSON.stringify(camera)}`).toBeGreaterThan(80);
+
+    const relation = await readViewportRelation(locator, 48);
+    const locatorAfter = await locator.boundingBox();
+    const stillInArena = Boolean(locatorAfter
+        && locatorAfter.x + locatorAfter.width > viewportBox.x + 24
+        && locatorAfter.y + locatorAfter.height > viewportBox.y + 24
+        && locatorAfter.x < viewportBox.x + viewportBox.width - 24
+        && locatorAfter.y < viewportBox.y + viewportBox.height - 24);
+    if (!relation.intersectsViewport || !stillInArena) {
+        throw new Error([
+            `${label} 拖到角落后战斗对象离开竞技场视窗`,
+            `camera=${JSON.stringify(camera)}`,
+            `relation=${JSON.stringify(relation)}`,
+            `locatorAfter=${JSON.stringify(locatorAfter)}`,
+        ].join('\n'));
+    }
+    return camera;
+}
+
+async function expectMageWarsArenaFramedInViewport(page: Page, label: string): Promise<void> {
+    const geometry = await page.evaluate(() => {
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+        const viewportRect = viewport?.getBoundingClientRect();
+        const contentRect = content?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        if (!viewportRect || !contentRect || !stageRect) return null;
+        const visibleLeft = Math.max(stageRect.left, 0);
+        const visibleTop = Math.max(stageRect.top, 0);
+        const visibleRight = Math.min(stageRect.right, window.innerWidth);
+        const visibleBottom = Math.min(stageRect.bottom, window.innerHeight);
+        return {
+            viewport: {
+                width: Math.round(viewportRect.width),
+                height: Math.round(viewportRect.height),
+                left: Math.round(viewportRect.left),
+                top: Math.round(viewportRect.top),
+            },
+            content: {
+                width: Math.round(contentRect.width),
+                height: Math.round(contentRect.height),
+                left: Math.round(contentRect.left),
+                top: Math.round(contentRect.top),
+            },
+            stage: {
+                width: Math.round(stageRect.width),
+                height: Math.round(stageRect.height),
+                left: Math.round(stageRect.left),
+                top: Math.round(stageRect.top),
+            },
+            contentCenterOffsetX: Math.round(
+                (contentRect.left + contentRect.width / 2) - (viewportRect.left + viewportRect.width / 2),
+            ),
+            contentCenterOffsetY: Math.round(
+                (contentRect.top + contentRect.height / 2) - (viewportRect.top + viewportRect.height / 2),
+            ),
+            visibleStageWidth: Math.round(Math.max(0, visibleRight - visibleLeft)),
+            visibleStageHeight: Math.round(Math.max(0, visibleBottom - visibleTop)),
+        };
+    });
+    expect(geometry, `${label} 必须能量到竞技场视窗几何`).toBeTruthy();
+    if (!geometry) return;
+    expect(
+        Math.abs(geometry.contentCenterOffsetX),
+        `${label} 竞技场水平方向不能滑出画面中心：${JSON.stringify(geometry)}`,
+    ).toBeLessThanOrEqual(Math.max(72, geometry.viewport.width * 0.16));
+    expect(
+        Math.abs(geometry.contentCenterOffsetY),
+        `${label} 竞技场垂直方向不能滑出画面中心：${JSON.stringify(geometry)}`,
+    ).toBeLessThanOrEqual(Math.max(72, geometry.viewport.height * 0.16));
+    expect(
+        geometry.visibleStageWidth,
+        `${label} 可见竞技场宽度不能缩成邮票：${JSON.stringify(geometry)}`,
+    ).toBeGreaterThan(480);
+    expect(
+        geometry.visibleStageHeight,
+        `${label} 可见竞技场高度不能缩成邮票：${JSON.stringify(geometry)}`,
+    ).toBeGreaterThan(320);
+}
+
 async function dragArenaViewportUntilLocatorActionable(
     page: Page,
     locator: Locator,
@@ -1708,6 +1888,7 @@ async function dragArenaViewportUntilLocatorActionable(
     await expect(locator).toBeAttached({ timeout: 3_000 });
 
     const safeInset = options.safeInset ?? 72;
+    await cancelMageWarsArenaViewportInertia(page);
     let lastRelation = await readViewportRelation(locator, safeInset);
     let lastHit = await readHitTest(locator).catch(() => null);
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -1753,6 +1934,7 @@ async function dragArenaViewportUntilLocatorActionable(
         await page.mouse.down();
         await page.mouse.move(startX + dragX, startY + dragY, { steps: 6 });
         await page.mouse.up();
+        await cancelMageWarsArenaViewportInertia(page);
         await expect.poll(async () => arenaContent.evaluate((element) => (element as HTMLElement).style.transform), {
             message: `${contextLabel} 拖拽竞技场视窗后地图 transform 应变化`,
             timeout: 2_000,
@@ -1776,68 +1958,29 @@ async function recenterMageWarsArenaViewportForEvidence(page: Page, contextLabel
     const arenaContent = page.getByTestId('mage-wars-arena-viewport-content');
     await expect(arenaViewport).toBeVisible({ timeout: 5_000 });
     await expect(arenaContent).toBeVisible({ timeout: 5_000 });
-
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-        const viewportBox = await arenaViewport.boundingBox();
-        const contentBox = await arenaContent.boundingBox();
-        if (!viewportBox || !contentBox) {
-            throw new Error(`${contextLabel} 需要重新取景，但竞技场视窗或内容没有可测量区域`);
-        }
-
-        const viewportCenter = {
-            x: viewportBox.x + viewportBox.width / 2,
-            y: viewportBox.y + viewportBox.height / 2,
-        };
-        const contentCenter = {
-            x: contentBox.x + contentBox.width / 2,
-            y: contentBox.y + contentBox.height / 2,
-        };
-        const deltaX = viewportCenter.x - contentCenter.x;
-        const deltaY = viewportCenter.y - contentCenter.y;
-        if (Math.abs(deltaX) < 8 && Math.abs(deltaY) < 8) return;
-
-        const maxDragX = Math.max(120, viewportBox.width * 0.42);
-        const maxDragY = Math.max(90, viewportBox.height * 0.42);
-        const dragX = Math.max(-maxDragX, Math.min(maxDragX, deltaX));
-        const dragY = Math.max(-maxDragY, Math.min(maxDragY, deltaY));
-        const beforeTransform = await arenaContent.evaluate(
-            (element) => (element as HTMLElement).style.transform,
-        );
-        const startX = viewportCenter.x;
-        const startY = viewportCenter.y;
-        await page.mouse.move(startX, startY);
-        await page.mouse.down();
-        await page.mouse.move(startX + dragX, startY + dragY, { steps: 6 });
-        await page.mouse.up();
-        await expect.poll(
-            async () => arenaContent.evaluate((element) => (element as HTMLElement).style.transform),
-            {
-                message: `${contextLabel} 重新取景后竞技场 transform 应变化`,
-                timeout: 2_000,
-            },
-        ).not.toBe(beforeTransform);
-        await page.waitForTimeout(180);
-    }
-
     const viewportBox = await arenaViewport.boundingBox();
-    const contentBox = await arenaContent.boundingBox();
-    if (!viewportBox || !contentBox) return;
-    const viewportCenter = {
-        x: viewportBox.x + viewportBox.width / 2,
-        y: viewportBox.y + viewportBox.height / 2,
-    };
-    const contentCenter = {
-        x: contentBox.x + contentBox.width / 2,
-        y: contentBox.y + contentBox.height / 2,
-    };
-    const residualDistance = Math.hypot(
-        viewportCenter.x - contentCenter.x,
-        viewportCenter.y - contentCenter.y,
-    );
-    expect(
-        residualDistance,
-        `${contextLabel} 动效截图前竞技场仍偏离页面中心`,
-    ).toBeLessThanOrEqual(Math.max(48, Math.min(viewportBox.width, viewportBox.height) * 0.12));
+    const maxResidual = Math.max(48, Math.min(viewportBox?.width ?? 1920, viewportBox?.height ?? 1080) * 0.12);
+    await page.evaluate(() => {
+        document.querySelector('[data-testid="mage-wars-arena-viewport"]')
+            ?.dispatchEvent(new Event('zoompan:reset-center'));
+    });
+    await expect.poll(async () => {
+        const nextViewportBox = await arenaViewport.boundingBox();
+        const contentBox = await arenaContent.boundingBox();
+        if (!nextViewportBox || !contentBox) return Number.POSITIVE_INFINITY;
+        return Math.hypot(
+            (nextViewportBox.x + nextViewportBox.width / 2) - (contentBox.x + contentBox.width / 2),
+            (nextViewportBox.y + nextViewportBox.height / 2) - (contentBox.y + contentBox.height / 2),
+        );
+    }, {
+        message: `${contextLabel} 动效截图前竞技场仍偏离页面中心`,
+        timeout: 2_000,
+    }).toBeLessThanOrEqual(maxResidual);
+}
+
+async function frameMageWarsArenaForEvidence(page: Page, contextLabel: string) {
+    await recenterMageWarsArenaViewportForEvidence(page, contextLabel);
+    await expectMageWarsArenaFramedInViewport(page, contextLabel);
 }
 
 type LocatorScreenPoint = {
@@ -2475,6 +2618,7 @@ async function captureMageWarsSummonFxProcessScreenshot(
     const fxAudit = await waitForSummonFxVisualAudit(page, context);
     // 卡缘光圈 CSS 在 host 挂载时即可见。再等 420ms 落到 strong 召唤爆发段（约 0.12×3.4s）。
     await page.waitForTimeout(420);
+    await frameMageWarsArenaForEvidence(page, `${label} 召唤光柱过程帧`);
     await captureFrame?.('allow');
     const screenshotPath = isMageWarsGoldenVideoRun()
         ? undefined
@@ -2809,6 +2953,7 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
     page: Page,
     audit: MageWarsFxAudit,
     label: string,
+    cameraBefore?: MageWarsArenaCameraSnapshot | null,
 ) {
     const targetAnchorId = audit.targetAnchorId;
     expect(targetAnchorId, `${label} 必须有目标对象锚点才能检查骰子遮挡`).toBeTruthy();
@@ -2821,6 +2966,41 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
         }).__mageWarsTargetContinuityProbe;
         return Boolean(probe?.samples?.some((sample) => sample.diceVisible === true));
     }, undefined, { timeout: 3_000 });
+    if (cameraBefore) {
+        await expectMageWarsArenaCameraUnchanged(page, cameraBefore, `${label} 攻击骰出现后`);
+    }
+    await page.waitForFunction(() => {
+        const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]') ?? dice;
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+        if (!dice || !content || !viewport) return false;
+        if (dice.dataset.placement !== 'visible-map-center') return false;
+        const viewportRect = viewport.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        const overlayRect = dice.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        if (viewportRect.width < 480 || viewportRect.height < 240) return false;
+        const visibleLeft = stageRect ? Math.max(viewportRect.left, stageRect.left) : viewportRect.left;
+        const visibleTop = stageRect ? Math.max(viewportRect.top, stageRect.top) : viewportRect.top;
+        const visibleRight = stageRect ? Math.min(viewportRect.right, stageRect.right) : viewportRect.right;
+        const visibleBottom = stageRect ? Math.min(viewportRect.bottom, stageRect.bottom) : viewportRect.bottom;
+        const visibleWidth = visibleRight - visibleLeft;
+        const visibleHeight = visibleBottom - visibleTop;
+        if (visibleWidth < 240 || visibleHeight < 160) return false;
+        const overlayMatchesVisibleMap = Math.abs(overlayRect.left - visibleLeft) <= 12
+            && Math.abs(overlayRect.top - visibleTop) <= 12
+            && Math.abs(overlayRect.width - visibleWidth) <= 24
+            && Math.abs(overlayRect.height - visibleHeight) <= 24;
+        if (!overlayMatchesVisibleMap) return false;
+        const contentCenterX = contentRect.left + contentRect.width / 2;
+        const contentCenterY = contentRect.top + contentRect.height / 2;
+        const mapCenterX = visibleLeft + visibleWidth / 2;
+        const mapCenterY = visibleTop + visibleHeight / 2;
+        const distance = Math.hypot(contentCenterX - mapCenterX, contentCenterY - mapCenterY);
+        const tolerance = Math.max(80, Math.min(visibleWidth, visibleHeight) * 0.22);
+        return distance <= tolerance;
+    }, undefined, { timeout: 2_000 });
 
     const overlap = await page.evaluate((anchorId) => {
         const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -2830,78 +3010,125 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
             `[data-testid="mage-wars-zone-mage-entity"][data-player-id="${escapeAttr(anchorId)}"]`,
         );
         const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
         const probe = (window as typeof window & {
             __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
         }).__mageWarsTargetContinuityProbe;
         const historicalDice = [...(probe?.samples ?? [])]
             .reverse()
             .find((sample) => sample.diceVisible === true);
-        if (!anchor || (!dice && !historicalDice)) {
+        const viewportRect = viewport?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        const visibleMapRect = viewportRect
+            ? {
+                left: stageRect ? Math.max(viewportRect.left, stageRect.left) : viewportRect.left,
+                top: stageRect ? Math.max(viewportRect.top, stageRect.top) : viewportRect.top,
+                width: (stageRect ? Math.min(viewportRect.right, stageRect.right) : viewportRect.right)
+                    - (stageRect ? Math.max(viewportRect.left, stageRect.left) : viewportRect.left),
+                height: (stageRect ? Math.min(viewportRect.bottom, stageRect.bottom) : viewportRect.bottom)
+                    - (stageRect ? Math.max(viewportRect.top, stageRect.top) : viewportRect.top),
+            }
+            : undefined;
+        const measureCenterDistance = (
+            rect: { x: number; y: number; width: number; height: number } | null,
+            host: DOMRect | undefined,
+        ) => {
+            if (!rect || !host) return Number.POSITIVE_INFINITY;
+            return Math.round(Math.hypot(
+                (host.left + host.width / 2) - (rect.x + rect.width / 2),
+                (host.top + host.height / 2) - (rect.y + rect.height / 2),
+            ) * 10) / 10;
+        };
+        if (!dice && historicalDice) {
+            const historicalDiceRect = historicalDice.diceRect as { x?: number; y?: number; width?: number; height?: number } | null;
+            const diceRect = historicalDiceRect
+                && typeof historicalDiceRect.x === 'number'
+                && typeof historicalDiceRect.y === 'number'
+                && typeof historicalDiceRect.width === 'number'
+                && typeof historicalDiceRect.height === 'number'
+                ? {
+                    x: historicalDiceRect.x,
+                    y: historicalDiceRect.y,
+                    width: historicalDiceRect.width,
+                    height: historicalDiceRect.height,
+                }
+                : null;
             return {
                 hasAnchor: Boolean(anchor),
-                hasDice: Boolean(dice || historicalDice),
-                viewportCenterDistancePx: Number.POSITIVE_INFINITY,
-                targetRect: null,
-                diceRect: null,
-                dicePlacement: dice?.dataset.placement ?? historicalDice?.dicePlacement ?? null,
-                source: dice ? 'live' : historicalDice ? 'probe' : null,
-            };
-        }
-
-        const anchorRect = anchor.getBoundingClientRect();
-        if (!dice && historicalDice) {
-            return {
-                hasAnchor: true,
                 hasDice: true,
-                viewportCenterDistancePx: Number(historicalDice.diceCenterDistancePx ?? Number.POSITIVE_INFINITY),
-                targetRect: {
-                    x: Math.round(anchorRect.x),
-                    y: Math.round(anchorRect.y),
-                    width: Math.round(anchorRect.width),
-                    height: Math.round(anchorRect.height),
-                },
-                diceRect: historicalDice.diceRect ?? null,
+                viewportCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect as DOMRect | undefined),
+                diceInsideViewport: Boolean(diceRect && visibleMapRect
+                    && (diceRect.x + diceRect.width / 2) >= visibleMapRect.left
+                    && (diceRect.x + diceRect.width / 2) <= visibleMapRect.left + visibleMapRect.width
+                    && (diceRect.y + diceRect.height / 2) >= visibleMapRect.top
+                    && (diceRect.y + diceRect.height / 2) <= visibleMapRect.top + visibleMapRect.height),
+                diceRect,
                 dicePlacement: historicalDice.dicePlacement ?? null,
+                overlayMatchesViewport: false,
                 source: 'probe',
             };
         }
 
-        const diceRect = dice!.getBoundingClientRect();
-        const diceCenter = {
-            x: diceRect.left + diceRect.width / 2,
-            y: diceRect.top + diceRect.height / 2,
-        };
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]') ?? dice;
+        const overlayRect = dice?.getBoundingClientRect();
+        const contentRect = content?.getBoundingClientRect();
+        const diceRect = contentRect
+            ? {
+                x: Math.round(contentRect.x),
+                y: Math.round(contentRect.y),
+                width: Math.round(contentRect.width),
+                height: Math.round(contentRect.height),
+            }
+            : null;
 
         return {
-            hasAnchor: true,
-            hasDice: true,
-            viewportCenterDistancePx: Math.round(Math.hypot(
-                window.innerWidth / 2 - diceCenter.x,
-                window.innerHeight / 2 - diceCenter.y,
-            ) * 10) / 10,
-            targetRect: {
-                x: Math.round(anchorRect.x),
-                y: Math.round(anchorRect.y),
-                width: Math.round(anchorRect.width),
-                height: Math.round(anchorRect.height),
-            },
-            diceRect: {
-                x: Math.round(diceRect.x),
-                y: Math.round(diceRect.y),
-                width: Math.round(diceRect.width),
-                height: Math.round(diceRect.height),
-            },
-            dicePlacement: dice!.dataset.placement ?? null,
-            source: 'live',
+            hasAnchor: Boolean(anchor),
+            hasDice: Boolean(dice),
+            viewportCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect as DOMRect | undefined),
+            diceInsideViewport: Boolean(diceRect && visibleMapRect
+                && (diceRect.x + diceRect.width / 2) >= visibleMapRect.left
+                && (diceRect.x + diceRect.width / 2) <= visibleMapRect.left + visibleMapRect.width
+                && (diceRect.y + diceRect.height / 2) >= visibleMapRect.top
+                && (diceRect.y + diceRect.height / 2) <= visibleMapRect.top + visibleMapRect.height),
+            diceRect,
+            dicePlacement: dice?.dataset.placement ?? null,
+            overlayMatchesViewport: Boolean(overlayRect && visibleMapRect
+                && Math.abs(overlayRect.left - visibleMapRect.left) <= 12
+                && Math.abs(overlayRect.top - visibleMapRect.top) <= 12
+                && Math.abs(overlayRect.width - visibleMapRect.width) <= 24
+                && Math.abs(overlayRect.height - visibleMapRect.height) <= 24),
+            overlayRect: overlayRect
+                ? {
+                    width: Math.round(overlayRect.width),
+                    height: Math.round(overlayRect.height),
+                }
+                : null,
+            viewportRect: visibleMapRect
+                ? {
+                    width: Math.round(visibleMapRect.width),
+                    height: Math.round(visibleMapRect.height),
+                }
+                : null,
+            source: dice ? 'live' : null,
         };
     }, targetAnchorId);
 
     expect(overlap.hasAnchor, `${label} 必须找到目标单位`).toBe(true);
     expect(overlap.hasDice, `${label} 必须找到攻击骰结果层`).toBe(true);
-    expect(overlap.dicePlacement, `${label} 攻击骰必须使用页面中心结果层`).toBe('board-center');
-    const centerTolerance = Math.max(18, Math.min(await page.evaluate(() => window.innerWidth), await page.evaluate(() => window.innerHeight)) * 0.03);
-    expect(overlap.viewportCenterDistancePx, `${label} 攻击骰必须位于页面中心：${JSON.stringify(overlap)}`)
-        .toBeLessThanOrEqual(centerTolerance);
+    expect(overlap.dicePlacement, `${label} 攻击骰必须在可见石板居中：${JSON.stringify(overlap)}`).toBe('visible-map-center');
+    expect(overlap.diceInsideViewport, `${label} 攻击骰内容必须落在可见石板内：${JSON.stringify(overlap)}`).toBe(true);
+    if (overlap.source === 'live') {
+        expect(overlap.overlayMatchesViewport, `${label} 攻击骰 overlay 必须以可见石板为布局宿主：${JSON.stringify(overlap)}`).toBe(true);
+    }
+    const centerTolerance = Math.max(80, Math.min(
+        overlap.viewportRect?.width ?? await page.evaluate(() => window.innerWidth),
+        overlap.viewportRect?.height ?? await page.evaluate(() => window.innerHeight),
+    ) * 0.22);
+    expect(
+        overlap.viewportCenterDistancePx,
+        `${label} 攻击骰必须位于可见竞技场窗口中心：${JSON.stringify(overlap)}`,
+    ).toBeLessThanOrEqual(centerTolerance);
 }
 
 async function expectMageWarsAttackResultLayerIsolated(page: Page, label: string) {
@@ -3031,13 +3258,34 @@ async function startMageWarsTargetContinuityProbe(
             const travelVisibility = isVisible(travel);
             const impactVisibility = isVisible(impact);
             const damageFloatVisibility = isVisible(damageFloat);
-            const diceRect = diceVisibility.rect;
+            const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]');
+            const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+            const contentRect = content ? isVisible(content).rect : diceVisibility.rect;
+            const stageRect = stage?.getBoundingClientRect();
+            const diceRect = contentRect ?? diceVisibility.rect;
             const diceCenterDistancePx = diceRect
                 ? Math.round(Math.hypot(
                     window.innerWidth / 2 - (diceRect.x + diceRect.width / 2),
                     window.innerHeight / 2 - (diceRect.y + diceRect.height / 2),
                 ) * 10) / 10
                 : null;
+            const arenaCenterDistancePx = diceRect && stageRect
+                ? Math.round(Math.hypot(
+                    (stageRect.left + stageRect.width / 2) - (diceRect.x + diceRect.width / 2),
+                    (stageRect.top + stageRect.height / 2) - (diceRect.y + diceRect.height / 2),
+                ) * 10) / 10
+                : null;
+            const targetDistancePx = diceRect && anchorVisibility.rect
+                ? Math.round(Math.hypot(
+                    (anchorVisibility.rect.x + anchorVisibility.rect.width / 2) - (diceRect.x + diceRect.width / 2),
+                    (anchorVisibility.rect.y + anchorVisibility.rect.height / 2) - (diceRect.y + diceRect.height / 2),
+                ) * 10) / 10
+                : null;
+            const diceInsideArena = Boolean(diceRect && stageRect
+                && (diceRect.x + diceRect.width / 2) >= stageRect.left
+                && (diceRect.x + diceRect.width / 2) <= stageRect.right
+                && (diceRect.y + diceRect.height / 2) >= stageRect.top
+                && (diceRect.y + diceRect.height / 2) <= stageRect.bottom);
             const tokenRails = Array.from(document.querySelectorAll<HTMLElement>(
                 '[data-testid="mage-wars-entity-status-token-rail"]',
             ));
@@ -3054,6 +3302,9 @@ async function startMageWarsTargetContinuityProbe(
                 diceVisible: diceVisibility.visible,
                 diceRect,
                 diceCenterDistancePx,
+                arenaCenterDistancePx,
+                targetDistancePx,
+                diceInsideArena,
                 dicePlacement: dice?.dataset.placement ?? null,
                 diceRole: dice?.dataset.visualRole ?? null,
                 tokenKindsInsideDice: dice?.querySelectorAll('[data-token-kind]').length ?? 0,
@@ -3505,6 +3756,7 @@ async function captureMageWarsFxProcessScreenshots(
                 motion: el.dataset.slideMotion ?? null,
                 paint: el.querySelector('[data-slide-paint]')?.getAttribute('data-slide-paint') ?? null,
                 art: el.querySelector('[data-slide-art]')?.getAttribute('data-slide-art') ?? null,
+                atlasPaint: el.querySelector('[data-slide-atlas-paint]')?.getAttribute('data-slide-atlas-paint') ?? null,
                 inArena: Boolean(arena),
                 parentIsBody: el.parentElement === document.body,
                 position: getComputedStyle(el).position,
@@ -3577,8 +3829,12 @@ async function captureMageWarsFxProcessScreenshots(
             })}`,
         ).toBeGreaterThan(24);
         expect(
-            snapshot!.art === 'live-atlas' || snapshot!.art === 'preview',
-            `推斥克隆必须画出被推生物卡图: art=${String(snapshot!.art)}`,
+            snapshot!.art,
+            `推斥克隆必须用已解码图集裁帧，不能再走 CardPreview 空窗: art=${String(snapshot!.art)} paint=${String(snapshot!.atlasPaint)}`,
+        ).toBe('atlas-css');
+        expect(
+            snapshot!.atlasPaint === 'canvas' || snapshot!.atlasPaint === 'css',
+            `推斥克隆必须画出图集像素: paint=${String(snapshot!.atlasPaint)}`,
         ).toBe(true);
         const travelAxis = Math.abs(Number(snapshot!.toPxTop) - Number(snapshot!.fromPxTop))
             >= Math.abs(Number(snapshot!.toPxLeft) - Number(snapshot!.fromPxLeft))
@@ -3646,14 +3902,24 @@ async function captureMageWarsFxProcessScreenshots(
         await page.waitForTimeout(80);
     }
     await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-投射开始`);
+    const playerCamera = (kind === 'attack' || Boolean(options.expectHealingFloat))
+        ? await readMageWarsArenaCamera(page)
+        : null;
+    if (!playerCamera) {
+        await frameMageWarsArenaForEvidence(page, `${label} 过程帧`);
+    }
     if (options.expectHealingFloat) {
         await waitForHealingVisualFrame(page, label);
-        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-治疗骰`);
+        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-治疗骰`, playerCamera);
         await expectMageWarsAttackResultLayerIsolated(page, `${label}-治疗骰`);
     }
     if (kind === 'attack') {
-        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-投射开始`);
+        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-投射开始`, playerCamera);
         await expectMageWarsAttackResultLayerIsolated(page, `${label}-投射开始`);
+        await saveProcessEvidenceScreenshot(`${label}-攻击骰-玩家当前镜头`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
     }
     if (options.expectTravel) {
         const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`).first();
@@ -3683,7 +3949,7 @@ async function captureMageWarsFxProcessScreenshots(
     if (!options.expectTravel) {
         expect(audit.hasTravel).toBe(false);
         if (kind === 'attack') {
-            await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-攻击结果`);
+            await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-攻击结果`, playerCamera);
             await expectMageWarsAttackResultLayerIsolated(page, `${label}-攻击结果`);
         }
         if (options.expectHealingFloat) {
@@ -3813,7 +4079,7 @@ async function clickFieldObject(
     page: Page,
     fieldObject: Locator,
     contextLabel: string,
-    options: { safeInset?: number } = {},
+    options: { safeInset?: number; keepCurrentCamera?: boolean } = {},
 ) {
     await expect(fieldObject).toBeVisible({ timeout: 3_000 }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -3836,9 +4102,17 @@ async function clickFieldObject(
 
     // 底部法术书可以合法覆盖底行场景；先用真实拖拽把目标带入可点击视口，
     // 不修改对象 zone、lane 或实体位置来迁就截图。
-    await dragArenaViewportUntilLocatorActionable(page, fieldObject, contextLabel, {
-        safeInset: options.safeInset ?? 120,
-    });
+    // keepCurrentCamera：玩家已经把镜头拖到战斗处，投骰点击不得再把视窗拖回安全中心。
+    if (options.keepCurrentCamera) {
+        const relation = await readViewportRelation(fieldObject, options.safeInset ?? 24);
+        if (!relation.intersectsViewport) {
+            throw new Error(`${contextLabel} 要求保持当前镜头，但场上对象已离开视口：${JSON.stringify(relation)}`);
+        }
+    } else {
+        await dragArenaViewportUntilLocatorActionable(page, fieldObject, contextLabel, {
+            safeInset: options.safeInset ?? 120,
+        });
+    }
     const beforeHit = await readHitTest(fieldObject);
     await clickLocatorAtVisibleHitPoint(page, fieldObject, contextLabel).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -3856,6 +4130,11 @@ async function clickFieldObject(
             `snapshot=${JSON.stringify(snapshot, null, 2)}`,
         ].join('\n'));
     });
+    // 拖拽只为了点到被 HUD 挡住的对象。默认证据取景可以回中；
+    // 投骰 / 结算镜头合同必须保持玩家当前机位，不能在点击后 reset-center。
+    if (!options.keepCurrentCamera) {
+        await recenterMageWarsArenaViewportForEvidence(page, `${contextLabel} 点击后恢复取景`);
+    }
 }
 
 async function clickMageWarsTurnEnd(page: Page, contextLabel: string) {
@@ -5876,18 +6155,19 @@ async function deployCreatureWithSummonProcessEvidence(
     const targetZone = page.getByTestId(`mage-wars-arena-zone-${zoneId}`);
     await expect(targetZone).toHaveAttribute('data-legal-target-zone', 'true', { timeout: 3_000 });
     await expect(targetZone).toHaveAttribute('data-zone-target-scope', 'zone', { timeout: 3_000 });
-    await dragArenaViewportUntilLocatorActionable(page, targetZone, `${label} 召唤目标格 ${zoneId}`, {
-        safeInset: 120,
-    });
+    await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤来源目标截图前`);
+    await frameMageWarsArenaForEvidence(page, `${label} 召唤来源目标截图`);
     const targetRect = await targetZone.boundingBox();
     if (!targetRect) throw new Error(`${label} 召唤目标格 ${zoneId} 没有可截图矩形，无法做过程帧目标格审计`);
-    await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤来源目标截图前`);
     const beforeScreenshotPath = isMageWarsGoldenVideoRun()
         ? undefined
         : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤来源和目标区域`, {
             animations: 'allow',
             evidenceDir: options.evidenceDir,
         });
+    await dragArenaViewportUntilLocatorActionable(page, targetZone, `${label} 召唤目标格 ${zoneId}`, {
+        safeInset: 120,
+    });
     const summonFxAuditPromise = captureMageWarsSummonFxProcessScreenshot(page, testInfo, label, {
         match,
         playerId,
@@ -5908,13 +6188,8 @@ async function deployCreatureWithSummonProcessEvidence(
         diagnostics,
     });
     await expect(page.getByTestId('mage-wars-fx-summon')).toHaveCount(0, { timeout: 5_000 });
-    const summonedCard = page.locator(
-        `[data-testid="mage-wars-zone-field-card"][data-source-card-id="${sourceCardId}"]`,
-    ).last();
-    await dragArenaViewportUntilLocatorActionable(page, summonedCard, `${label} 召唤完成单位`, {
-        safeInset: 120,
-    });
     await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤落场完成截图前`);
+    await frameMageWarsArenaForEvidence(page, `${label} 召唤完成单位落场`);
     if (!isMageWarsGoldenVideoRun()) {
         await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`, {
             evidenceDir: options.evidenceDir,
@@ -5972,13 +6247,16 @@ async function castPreparedSpellOnFieldObject(
     spellName: string,
     target: Locator,
     beforeTargetClick?: () => Promise<void> | void,
+    options: { keepCurrentCamera?: boolean } = {},
 ) {
     const prepared = selfPreparedCardByName(page, spellName);
     await advanceUntilEnabled(page, prepared);
     await selectPreparedSpell(page, prepared, spellName);
     await expect(target.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
     await beforeTargetClick?.();
-    await clickFieldObject(page, target, `${spellName} 选择目标`);
+    await clickFieldObject(page, target, `${spellName} 选择目标`, {
+        keepCurrentCamera: options.keepCurrentCamera,
+    });
 }
 
 async function resolveCurrentActorOrder(
@@ -6628,7 +6906,7 @@ test.describe('Mage Wars formal online runtime', () => {
     });
 
     test('正式页面召唤和攻击必要过程帧覆盖', async ({ browser, baseURL }, testInfo) => {
-        test.setTimeout(240_000);
+        test.setTimeout(360_000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const summonEvidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
         const rangedEvidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
@@ -6686,6 +6964,7 @@ test.describe('Mage Wars formal online runtime', () => {
             );
             await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '召唤完成稳定收口截图前');
+            await frameMageWarsArenaForEvidence(match.hostPage, '召唤完成并可继续');
             await saveEvidenceScreenshot(
                 match.hostPage,
                 testInfo,
@@ -6736,6 +7015,11 @@ test.describe('Mage Wars formal online runtime', () => {
                 .first();
             await expect(attackTarget).toBeVisible({ timeout: 5_000 });
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '攻击代表态目标牌面截图前预加载');
+            await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                attackPage,
+                attackTarget,
+                '远程攻击投骰前玩家镜头',
+            );
             await startMageWarsTargetContinuityProbe(
                 attackPage,
                 attackTargetObjectId,
@@ -6756,7 +7040,7 @@ test.describe('Mage Wars formal online runtime', () => {
                         captureFrame: (animations) => attackGifCapture?.capture(animations) ?? Promise.resolve(),
                     },
                 );
-            });
+            }, { keepCurrentCamera: true });
             if (!attackFxAuditPromise) {
                 throw new Error('间歇喷泉点击前未启动攻击 FX 捕捉');
             }
@@ -6806,6 +7090,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 { timeout: 5_000 },
             ).not.toBe('0');
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '召唤和攻击必要过程帧完成后');
+            await frameMageWarsArenaForEvidence(attackPage, '远程攻击稳定收口');
             await saveEvidenceScreenshot(attackPage, testInfo, '04-远程攻击稳定收口-目标损伤已落地', {
                 evidenceDir: rangedEvidenceRun.stagingDir,
             });
@@ -6987,6 +7272,12 @@ test.describe('Mage Wars formal online runtime', () => {
                 evidenceDir: evidenceRun.stagingDir,
             });
 
+            const playerCamera = await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                match.hostPage,
+                target,
+                '近战攻击投骰前玩家镜头',
+            );
+
             await startMageWarsTargetContinuityProbe(match.hostPage, targetObjectId, '近战攻击目标连续可见');
             const meleeGifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
             await startMageWarsAttackDamageFloatProbe(match.hostPage);
@@ -7058,11 +7349,13 @@ test.describe('Mage Wars formal online runtime', () => {
                 if (right <= left || bottom <= top) return false;
                 const x = (left + right) / 2;
                 const y = (top + bottom) / 2;
-                const hitCard = document.elementsFromPoint(x, y).find((element) => (
-                    element instanceof HTMLElement
-                    && element.matches('[data-testid="mage-wars-zone-field-card"]')
-                )) as HTMLElement | undefined;
+                const hitCard = document.elementsFromPoint(x, y)
+                    .filter((element): element is HTMLElement => element instanceof HTMLElement)
+                    .filter((element) => !element.closest('[data-testid="mage-wars-fx-attack-dice"]'))
+                    .map((element) => element.closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]'))
+                    .find((element): element is HTMLElement => element != null);
                 const hitObjectId = hitCard?.getAttribute('data-object-id') ?? null;
+                if (hitObjectId !== attackerId) return false;
                 return {
                     overlapArea: Math.round((right - left) * (bottom - top)),
                     lungeDistance,
@@ -7116,7 +7409,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 match.hostPage,
                 target,
                 '近战攻击选择阿希拉牧师目标',
-                { safeInset: 24 },
+                { safeInset: 24, keepCurrentCamera: true },
             );
             await meleeLungePromise.catch(async (error: unknown) => {
                 const browserState = await match.hostPage.evaluate(() => {
@@ -7162,6 +7455,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     `serverSnapshot=${JSON.stringify(serverSnapshot, null, 2)}`,
                 ].join('\n'));
             });
+            await expectMageWarsArenaCameraUnchanged(match.hostPage, playerCamera, '近战冲刺期间宿主竞技场');
             const stackingAuditHandle = await stackingAuditPromise;
             const stackingAudit = await stackingAuditHandle.jsonValue<{
                 attacker: Array<{
@@ -7216,7 +7510,19 @@ test.describe('Mage Wars formal online runtime', () => {
                 'data-visible-duration-ms',
                 String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs),
             );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                'data-overlay-layer',
+                'visible-map',
+            );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                'data-placement',
+                'visible-map-center',
+            );
             await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeVisible({ timeout: 3_000 });
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveAttribute(
+                'data-contrast',
+                'opaque',
+            );
             await expect(match.hostPage.getByTestId('mage-wars-fx-effect-die-face')).toHaveCount(0);
             await match.hostPage.waitForFunction(
                 () => document.querySelector('[data-testid="mage-wars-fx-attack-dice"]') == null,
@@ -7528,6 +7834,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 before: beforeHealingLife,
                 after: afterHealingLife,
             };
+            await frameMageWarsArenaForEvidence(match.hostPage, '治疗之光结算后');
             await saveEvidenceScreenshot(
                 match.hostPage,
                 testInfo,
@@ -7680,9 +7987,10 @@ test.describe('Mage Wars formal online runtime', () => {
                     ? beforeSnapshot.eventStream.length
                     : 0;
                 await clickFieldObject(match.hostPage, attacker, `有效果骰近战第 ${attempt} 次选择火烙魔婴来源`);
-                await recenterMageWarsArenaViewportForEvidence(
+                await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
                     match.hostPage,
-                    `有效果骰近战第 ${attempt} 次动效截图`,
+                    target,
+                    `有效果骰近战第 ${attempt} 次投骰前玩家镜头`,
                 );
                 await expect(target.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
 
@@ -7691,10 +7999,22 @@ test.describe('Mage Wars formal online runtime', () => {
                     match.hostPage,
                     target,
                     `有效果骰近战第 ${attempt} 次选择阿希拉牧师目标`,
-                    { safeInset: 24 },
+                    { safeInset: 24, keepCurrentCamera: true },
                 );
                 await expect(match.hostPage.getByTestId('mage-wars-fx-attack-melee-strike').first()).toBeVisible({ timeout: 5_000 });
                 await expect(match.hostPage.getByTestId('mage-wars-fx-effect-die-face').first()).toBeVisible({ timeout: 5_000 });
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                    'data-overlay-layer',
+                    'visible-map',
+                );
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                    'data-placement',
+                    'visible-map-center',
+                );
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveAttribute(
+                    'data-contrast',
+                    'opaque',
+                );
                 await expectMageWarsAttackResultLayerIsolated(match.hostPage, `有效果骰近战第 ${attempt} 次结果层`);
                 await saveEvidenceScreenshot(match.hostPage, testInfo, '02-有效果骰近战攻击-效果骰与斩击过程', {
                     animations: 'allow',

@@ -693,7 +693,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                     )}
                     style={factionPageButtonStyle}
                   >
-                    <ChevronLeft aria-hidden="true" style={factionPageIconStyle} />
+                    <ChevronLeft className="board-shell-fixed-icon" aria-hidden="true" style={factionPageIconStyle} />
                   </motion.button>
                 </div>
 
@@ -824,7 +824,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                     )}
                     style={factionPageButtonStyle}
                   >
-                    <ChevronRight aria-hidden="true" style={factionPageIconStyle} />
+                    <ChevronRight className="board-shell-fixed-icon" aria-hidden="true" style={factionPageIconStyle} />
                   </motion.button>
                 </div>
               </div>
@@ -1124,7 +1124,7 @@ const FactionCard: React.FC<FactionCardProps> = ({
           onClick={(e) => onMagnify(faction.id, e)}
           title={t('actions.magnify')}
         >
-          <svg style={magnifyIconStyle} viewBox="0 0 20 20" fill="currentColor">
+          <svg className="board-shell-fixed-icon" style={magnifyIconStyle} viewBox="0 0 20 20" fill="currentColor">
             <path d="M5 8a1 1 0 011-1h1V6a1 1 0 012 0v1h1a1 1 0 110 2H9v1a1 1 0 11-2 0V9H6a1 1 0 01-1-1z" />
             <path fillRule="evenodd" d="M8 14A6 6 0 108 2a6 6 0 000 12zm0-2a4 4 0 100-8 4 4 0 000 8z" clipRule="evenodd" />
             <path d="M12.293 11.293a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414z" />

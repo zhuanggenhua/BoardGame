@@ -65,4 +65,15 @@ describe('SummonerWars compatibility source guards', () => {
         expect(factionSelection).toContain("height: 'var(--runtime-viewport-height, 100vh)'");
         expect(factionSelection).not.toContain('w-screen h-screen');
     });
+
+    it('自定义牌组的放大、编辑与翻页图标应抵消 board-shell 缩放', () => {
+        const customDeckCard = readUiSource('CustomDeckCard.tsx');
+        const cardPoolPanel = readUiSource('deckbuilder/CardPoolPanel.tsx');
+        const factionSelection = readUiSource('FactionSelectionAdapter.tsx');
+
+        expect(customDeckCard.match(/board-shell-fixed-icon/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+        expect(cardPoolPanel).toContain('<svg className="board-shell-fixed-icon"');
+        expect(factionSelection).toContain('<ChevronLeft className="board-shell-fixed-icon"');
+        expect(factionSelection).toContain('<ChevronRight className="board-shell-fixed-icon"');
+    });
 });

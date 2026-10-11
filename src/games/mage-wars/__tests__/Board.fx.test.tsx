@@ -47,6 +47,12 @@ vi.mock('react-i18next', () => ({
         t: (key: string, params?: Record<string, string | number>) => {
             if (key === 'spellbook.selected') return '已选';
             if (key === 'spellbook.selectedCount') return `选 ${params?.count}`;
+            if (key === 'diceResult.meleeAttack') return '近战攻击';
+            if (key === 'diceResult.rangedAttack') return '远程攻击';
+            if (key === 'diceResult.heal') return '治疗';
+            if (key === 'diceResult.damage') return `${params?.count} 点伤害`;
+            if (key === 'diceResult.miss') return '未命中';
+            if (key === 'diceResult.healed') return `+${params?.count}`;
             return params ? `${key}:${JSON.stringify(params)}` : key;
         },
     }),
@@ -1300,9 +1306,12 @@ describe('MageWarsBoard FX wiring', () => {
             const travel = screen.getByTestId('mage-wars-fx-attack-travel');
             expect(screen.queryByTestId('mage-wars-fx-attack-impact')).not.toBeNull();
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
-            expect(attackDice.getAttribute('data-placement')).toBe('board-center');
-            expect(attackDice.className).toContain('fixed');
-            expect(attackDice.className).toContain('inset-0');
+            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
+            expect((attackDice as HTMLElement).style.position).toBe('fixed');
+            expect(attackDice.className).toContain('items-center');
+            expect(attackDice.className).toContain('justify-center');
+            expect(attackDice.className).not.toContain('absolute');
             expect(screen.queryByTestId('mage-wars-fx-attack-source-wake')).toBeNull();
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-show-number')).toBe('true');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-intensity')).toBe('strong');
@@ -1341,6 +1350,168 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
+    it('clips overflowing transformed stage to the visible map instead of using the combat cell', () => {
+        const viewport = document.createElement('div');
+        viewport.setAttribute('data-testid', 'mage-wars-arena-viewport');
+        viewport.getBoundingClientRect = () => ({
+            x: 80,
+            y: 40,
+            left: 80,
+            top: 40,
+            width: 900,
+            height: 520,
+            right: 980,
+            bottom: 560,
+            toJSON: () => ({}),
+        } as DOMRect);
+        const stage = document.createElement('div');
+        stage.setAttribute('data-testid', 'mage-wars-arena-stage');
+        stage.getBoundingClientRect = () => ({
+            x: -420,
+            y: -180,
+            left: -420,
+            top: -180,
+            width: 1600,
+            height: 1200,
+            right: 1180,
+            bottom: 1020,
+            toJSON: () => ({}),
+        } as DOMRect);
+        document.body.append(viewport, stage);
+
+        const event: FxEvent = {
+            id: 'fx-attack-corner',
+            cue: 'mage-wars.attack.impact',
+            ctx: { cell: { row: 2, col: 3 }, intensity: 'normal' },
+            params: {
+                source: { row: 1, col: 0 },
+                rangeKind: 'ranged',
+                damageAmount: 2,
+                diceResults: [1],
+            },
+        };
+
+        const view = renderFxRenderer(
+            <AttackImpactRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={vi.fn()}
+                onComplete={vi.fn()}
+            />,
+        );
+
+        try {
+            const attackDice = screen.getByTestId('mage-wars-fx-attack-dice') as HTMLElement;
+            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
+            expect(attackDice.style.position).toBe('fixed');
+            expect(attackDice.parentElement).toBe(document.body);
+            const overlayLeft = Number.parseFloat(attackDice.style.left);
+            const overlayTop = Number.parseFloat(attackDice.style.top);
+            const overlayWidth = Number.parseFloat(attackDice.style.width);
+            const overlayHeight = Number.parseFloat(attackDice.style.height);
+            const overlayCenterX = overlayLeft + overlayWidth / 2;
+            const overlayCenterY = overlayTop + overlayHeight / 2;
+            const viewportCenterX = 80 + 900 / 2;
+            const viewportCenterY = 40 + 520 / 2;
+            const combatCenterX = -420 + (75 / 100) * 1600 + (25 / 100) * 1600 / 2;
+            const combatCenterY = -180 + (66.6666 / 100) * 1200 + (33.3333 / 100) * 1200 / 2;
+            const stageCenterX = -420 + 1600 / 2;
+            const stageCenterY = -180 + 1200 / 2;
+            expect(overlayLeft).toBeCloseTo(80, 0);
+            expect(overlayTop).toBeCloseTo(40, 0);
+            expect(overlayWidth).toBeCloseTo(900, 0);
+            expect(overlayHeight).toBeCloseTo(520, 0);
+            expect(Math.hypot(overlayCenterX - viewportCenterX, overlayCenterY - viewportCenterY)).toBeLessThan(8);
+            expect(Math.hypot(overlayCenterX - viewportCenterX, overlayCenterY - viewportCenterY))
+                .toBeLessThan(Math.hypot(overlayCenterX - combatCenterX, overlayCenterY - combatCenterY));
+            expect(Math.hypot(overlayCenterX - viewportCenterX, overlayCenterY - viewportCenterY))
+                .toBeLessThan(Math.hypot(overlayCenterX - stageCenterX, overlayCenterY - stageCenterY));
+        } finally {
+            view.unmount();
+            viewport.remove();
+            stage.remove();
+        }
+    });
+
+    it('centers attack dice on the visible cobblestone instead of the full board viewport', () => {
+        const viewport = document.createElement('div');
+        viewport.setAttribute('data-testid', 'mage-wars-arena-viewport');
+        viewport.getBoundingClientRect = () => ({
+            x: 0,
+            y: 0,
+            left: 0,
+            top: 0,
+            width: 1920,
+            height: 1080,
+            right: 1920,
+            bottom: 1080,
+            toJSON: () => ({}),
+        } as DOMRect);
+        const stage = document.createElement('div');
+        stage.setAttribute('data-testid', 'mage-wars-arena-stage');
+        stage.getBoundingClientRect = () => ({
+            x: 860,
+            y: 48,
+            left: 860,
+            top: 48,
+            width: 980,
+            height: 560,
+            right: 1840,
+            bottom: 608,
+            toJSON: () => ({}),
+        } as DOMRect);
+        document.body.append(viewport, stage);
+
+        const event: FxEvent = {
+            id: 'fx-attack-visible-map',
+            cue: 'mage-wars.attack.impact',
+            ctx: { cell: { row: 2, col: 3 }, intensity: 'normal' },
+            params: {
+                source: { row: 1, col: 0 },
+                rangeKind: 'melee',
+                damageAmount: 6,
+                diceResults: [3, 3],
+            },
+        };
+
+        const view = renderFxRenderer(
+            <AttackImpactRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={vi.fn()}
+                onComplete={vi.fn()}
+            />,
+        );
+
+        try {
+            const attackDice = screen.getByTestId('mage-wars-fx-attack-dice') as HTMLElement;
+            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
+            const overlayLeft = Number.parseFloat(attackDice.style.left);
+            const overlayTop = Number.parseFloat(attackDice.style.top);
+            const overlayWidth = Number.parseFloat(attackDice.style.width);
+            const overlayHeight = Number.parseFloat(attackDice.style.height);
+            const overlayCenterX = overlayLeft + overlayWidth / 2;
+            const overlayCenterY = overlayTop + overlayHeight / 2;
+            const mapCenterX = 860 + 980 / 2;
+            const mapCenterY = 48 + 560 / 2;
+            const boardCenterX = 1920 / 2;
+            const boardCenterY = 1080 / 2;
+            expect(overlayLeft).toBeCloseTo(860, 0);
+            expect(overlayTop).toBeCloseTo(48, 0);
+            expect(overlayWidth).toBeCloseTo(980, 0);
+            expect(overlayHeight).toBeCloseTo(560, 0);
+            expect(Math.hypot(overlayCenterX - mapCenterX, overlayCenterY - mapCenterY)).toBeLessThan(8);
+            expect(Math.hypot(overlayCenterX - mapCenterX, overlayCenterY - mapCenterY))
+                .toBeLessThan(Math.hypot(overlayCenterX - boardCenterX, overlayCenterY - boardCenterY));
+        } finally {
+            view.unmount();
+            viewport.remove();
+            stage.remove();
+        }
+    });
+
     it.each([
         ['melee', { row: 1, col: 0 }, 12, 13],
         ['ranged', { row: 1, col: 0 }, 1, 0],
@@ -1374,6 +1545,18 @@ describe('MageWarsBoard FX wiring', () => {
             );
 
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
+            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
+            expect((attackDice as HTMLElement).style.position).toBe('fixed');
+            expect(screen.getByTestId('mage-wars-fx-attack-dice-title')).toHaveTextContent(
+                rangeKind === 'melee' ? '近战攻击' : '远程攻击',
+            );
+            const summary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
+            expect(summary).toHaveAttribute('data-contrast', 'opaque');
+            expect(summary).toHaveTextContent('4 点伤害');
+            expect(summary.className).not.toMatch(/text-red-400|text-emerald-300|text-slate-500/);
+            expect((summary as HTMLElement).style.opacity).toBe('1');
+            expect((summary as HTMLElement).style.color).toBe('rgb(255, 45, 45)');
             expect(attackDice.getAttribute('data-visible-duration-ms')).toBe(String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs));
             const effectDie = screen.getByTestId('mage-wars-fx-effect-die-face');
             expect(effectDie).toHaveAttribute('aria-label', `效果骰 ${rawEffectDieResult}`);
@@ -1395,7 +1578,7 @@ describe('MageWarsBoard FX wiring', () => {
             expect(effectDieBody).toHaveAttribute('data-roll-duration-ms', String(MAGE_WARS_FX_TIMING.diceResultRollMs));
             const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
             expect(attackDieFaces).toHaveLength(2);
-            attackDieFaces.forEach((die) => {
+            attackDieFaces.forEach((die, index) => {
                 expect(die).toHaveAttribute('data-die-kind', 'd6');
                 expect(die).toHaveAttribute('data-rendering-mode', 'css-native-cube-faces');
                 expect(die).toHaveAttribute('data-model-source', 'cube-net:attack-die-texture');
@@ -1410,7 +1593,7 @@ describe('MageWarsBoard FX wiring', () => {
                     const art = face.querySelector<HTMLElement>('.mage-wars-attack-die-face-art');
                     expect(art?.style.backgroundImage ?? '').toContain('url(');
                 }
-                expect(Array.from(body?.querySelectorAll('[data-d6-face-id]') ?? []).map((face) => face.getAttribute('data-d6-face-id')).sort()).toEqual([
+                expect(faces.map((face) => face.getAttribute('data-d6-face-id')).sort()).toEqual([
                     'back-hit1',
                     'bottom-two',
                     'front-hit2',
@@ -1418,6 +1601,11 @@ describe('MageWarsBoard FX wiring', () => {
                     'right-blank',
                     'top-blank',
                 ]);
+                const frontFace = faces.find((face) => face.getAttribute('data-d6-face-id') === 'front-hit2');
+                expect(frontFace).toHaveAttribute(
+                    'data-d6-face-kind',
+                    index === 0 ? 'hit2' : 'burst',
+                );
             });
             expect(attackDieFaces[0]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'hit2');
             expect(attackDieFaces[1]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'burst');
@@ -1429,7 +1617,7 @@ describe('MageWarsBoard FX wiring', () => {
                 expect((cube as HTMLElement | null)?.style.transform).toBe(
                     `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`,
                 );
-                expect(die).toHaveAttribute('data-visual-mode', 'css-2d-cube');
+                expect(die).toHaveAttribute('data-visual-mode', 'css-3d-cube');
             });
             act(() => {
                 vi.advanceTimersByTime(800);
@@ -1437,13 +1625,10 @@ describe('MageWarsBoard FX wiring', () => {
             attackDieFaces.forEach((die) => {
                 const cube = die.querySelector('[data-die-renderer="css-d6"]');
                 expect(cube).toHaveAttribute('data-roll-animation', 'settled');
-                expect(cube).toHaveAttribute('data-settled-tilt', 'isometric-front');
+                expect(cube).toHaveAttribute('data-settled-tilt', 'camera-front');
                 expect((cube as HTMLElement | null)?.style.transform).toBe(ATTACK_DIE_SETTLED_TRANSFORM);
-                const hitGlow = die.querySelector('[data-testid="mage-wars-fx-attack-die-hit-glow"]');
-                expect(hitGlow).toBeTruthy();
-                expect(hitGlow).toHaveAttribute('data-hit-glow-mode', 'outer-halo');
-                expect(cube?.contains(hitGlow)).toBe(false);
-                expect(cube?.querySelectorAll('[data-hit-edge="true"]')).toHaveLength(6);
+                expect(die.querySelector('[data-testid="mage-wars-fx-attack-die-hit-glow"]')).toBeNull();
+                expect(cube?.querySelectorAll('[data-hit-edge="true"]')).toHaveLength(0);
             });
             expect(attackDice).toHaveAttribute('data-visible-duration-ms', '3000');
             expect(attackDice.querySelector('[data-token-kind]')).toBeNull();
@@ -1506,6 +1691,12 @@ describe('MageWarsBoard FX wiring', () => {
 
         expect(screen.getByTestId('mage-wars-fx-attack-dice')).toBeTruthy();
         expect(screen.queryByTestId('mage-wars-fx-effect-die-face')).toBeNull();
+        const summary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
+        expect(summary).toHaveAttribute('data-contrast', 'opaque');
+        expect(summary).toHaveTextContent('4 点伤害');
+        expect(summary.className).not.toMatch(/text-red-400|text-emerald-300|text-slate-500/);
+        expect((summary as HTMLElement).style.opacity).toBe('1');
+        expect((summary as HTMLElement).style.color).toBe('rgb(255, 45, 45)');
     });
 
     it('renders direct damage with Mage Wars light impact tuning through the shared preset', () => {
@@ -1566,6 +1757,16 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('2');
             expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+2');
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
+            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
+            expect((attackDice as HTMLElement).style.position).toBe('fixed');
+            expect(screen.getByTestId('mage-wars-fx-attack-dice-title')).toHaveTextContent('治疗');
+            const healSummary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
+            expect(healSummary).toHaveAttribute('data-contrast', 'opaque');
+            expect(healSummary).toHaveTextContent('+2');
+            expect(healSummary.className).not.toMatch(/text-emerald-300|text-red-400/);
+            expect((healSummary as HTMLElement).style.opacity).toBe('1');
+            expect((healSummary as HTMLElement).style.color).toBe('rgb(74, 222, 128)');
             expect(attackDice.getAttribute('data-visible-duration-ms')).toBe(String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs));
             const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
             expect(attackDieFaces).toHaveLength(1);

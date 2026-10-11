@@ -34,6 +34,7 @@ import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 import { GlobalHUD } from './components/system/GlobalHUD';
 import { CONFIG_REVIEW_PAGE_ROUTES, ConfigReviewRoutePage } from './pages/ConfigReviewRoutes';
 import { useOnlineMatchRouteMissingGuard } from './pages/useOnlineMatchRouteMissingGuard';
+import { PcAltObjectMagnifier } from './components/system/PcAltObjectMagnifier';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
@@ -147,6 +148,7 @@ const AppRouteChrome = ({
 
   return (
     <>
+      {isPlayRoute ? <PcAltObjectMagnifier enabled={!isNativeMobile} /> : null}
       {DevMobileEvidenceCaptureAgent ? (
         <React.Suspense fallback={null}>
           <DevMobileEvidenceCaptureAgent />

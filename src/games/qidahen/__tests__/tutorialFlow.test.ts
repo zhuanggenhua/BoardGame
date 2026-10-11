@@ -242,6 +242,7 @@ describe('qidahen tutorial flow', () => {
             'turn-flow',
             'wheel-first',
             'wheel-rule',
+            'wheel-recruit-train-rule',
             'wheel-move',
             'wheel-branch-recovery',
             'wheel-result',
@@ -415,6 +416,13 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
+        expect(state.sys.tutorial.step?.id).toBe('wheel-recruit-train-rule');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
         expect(state.sys.tutorial.step?.id).toBe('wheel-move');
         expect((state.core as any).wheelActionUsed).toBe(false);
         expect((state.core as any).factionActionUsed).toBe(false);
@@ -573,9 +581,16 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelFirst).toContain('3 张手牌');
         expect(basic.wheelFirst).toContain('15 张');
         expect(basic.wheelFirst).toContain('不需要弃牌');
-        expect(basic.wheelRule).toContain('前进 1、2 或 3 格');
-        expect(basic.wheelRule).toContain('三种走法都是合法选择');
+        expect(basic.wheelRule).toContain('免费向前走 1 格');
+        expect(basic.wheelRule).toContain('轮盘上的行动标记决定该能执行的轮盘行动');
+        expect(basic.wheelRule).toContain('所有人都共享行动标记的移动');
+        expect(basic.wheelRule).not.toContain('规则原文');
         expect(basic.wheelRule).not.toContain('进入征兵训练');
+        expect(basic.wheelRecruitTrainRule).toBe('征兵行动：直接建立 1 个等级 2 的正规军部队。');
+        expect(basic.wheelRecruitTrainRule).not.toContain('规则原文');
+        expect(basic.wheelRecruitTrainRule).not.toContain('当前点击');
+        expect(basic.wheelRecruitTrainRule).not.toContain('训练行动');
+        expect(basic.wheelRecruitTrainRule).not.toContain('弃一张手牌');
         expect(basic.wheelMove).toBe('点击轮盘上高亮的“征兵训练”区域。');
         expect(zhTutorialText).not.toMatch(/免费走\s*1/);
         expect(enTutorialText).not.toContain('Move 1 for free');
@@ -600,7 +615,23 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelResult).not.toContain('查看地图');
         expect(basic.wheelResult).not.toContain('先看');
         const wheelRecruitTrainResult = (zh.tutorial as any).wheelRecruitTrain.steps.result as string;
+        const wheelRecruitTrainRule = (zh.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
         const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
+        const englishWheelRecruitTrainRule = (en.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
+        expect(wheelRecruitTrainRule).toBe([
+            '征兵行动：直接建立 1 个等级 2 的正规军部队。',
+            '训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。',
+            '(注意炮兵的等级上限须由军备来提升)',
+        ].join('\n'));
+        expect(wheelRecruitTrainRule).not.toContain('规则原文');
+        expect(wheelRecruitTrainRule).not.toContain('当前点击');
+        expect(englishWheelRecruitTrainRule).toBe([
+            'Recruit action: directly create 1 level-2 regular troop.',
+            'Train action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.',
+            '(Note: the artillery level cap must be raised through armament.)',
+        ].join('\n'));
+        expect(englishWheelRecruitTrainRule).not.toContain('Rule text');
+        expect(englishWheelRecruitTrainRule).not.toContain('This click');
         expect(wheelRecruitTrainResult).toContain('宣府总兵力由 2 支增至 4 支');
         expect(wheelRecruitTrainResult).toContain('新增 2 支等级 2 正规军');
         expect(wheelRecruitTrainResult).toContain('原有 1 支等级 1 炮兵训练至 2 级');
@@ -622,6 +653,11 @@ describe('qidahen tutorial flow', () => {
                 recoveryStepId: 'wheel-move',
             }),
         }));
+        const basicStepIds = manifest?.steps.map((step) => step.id) ?? [];
+        expect(basicStepIds.indexOf('wheel-recruit-train-rule')).toBeLessThan(basicStepIds.indexOf('wheel-move'));
+        const wheelRecruitTrainManifest = QIDAHEN_TUTORIALS.tutorials['wheel-recruit-train']?.manifest;
+        const wheelRecruitTrainStepIds = wheelRecruitTrainManifest?.steps.map((step) => step.id) ?? [];
+        expect(wheelRecruitTrainStepIds.indexOf('rule-reference')).toBeLessThan(wheelRecruitTrainStepIds.indexOf('choose-move'));
         expect(basic.turnFlow).toContain('顺序由玩家决定');
         expect(basic.turnFlow).not.toContain('示范路径');
         expect(basic.handActionOrder).toContain('手牌行动每回合选 1 项');
@@ -633,10 +669,9 @@ describe('qidahen tutorial flow', () => {
         expect(basic.handActionOrder).toContain('驱虎吞狼');
         expect(basic.handActionOrder).not.toContain('弃 1');
         expect(basic.handActionOrder).not.toContain('弃 3');
-        expect(basic.grantPardonRule).toContain('赐印招安：弃 3 张手牌');
-        expect(basic.grantPardonRule).toContain('由被指定的玩家选择一支与大明控制区相邻的部队');
-        expect(basic.grantPardonRule).toContain('接收区唯一对应一名对手');
-        expect(basic.grantPardonRule).toContain('系统自动锁定该对手');
+        expect(basic.grantPardonRule).toBe('赐印招安：弃 3 张手牌，指定 1 个对手，对手相邻于大明控制区域的 1 个部队移动到相邻的大明控制区域并转换阵营成为大明部队。(必须由被指定的玩家选择部队)');
+        expect(basic.grantPardonRule).not.toContain('接收区唯一对应一名对手');
+        expect(basic.grantPardonRule).not.toContain('系统自动锁定该对手');
         expect(basic.pickAction).toBe('点击右侧的“赐印招安”行动。');
         expect(basic.actionResult).toContain('锦州部队从 2 支变为 1 支');
         expect(basic.actionResult).toContain('山海关部队从 2 支变为 3 支');
@@ -844,6 +879,11 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
 
         expect(state.sys.tutorial.step?.id).toBe('wheel-move');
         expect(state.sys.tutorial.step?.allowedTargets).toBeUndefined();
@@ -997,6 +1037,13 @@ describe('qidahen tutorial flow', () => {
             payload: { manifest },
         });
         expect(state.sys.tutorial.step?.id).toBe('overview');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('rule-reference');
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,

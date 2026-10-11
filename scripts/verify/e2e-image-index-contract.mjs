@@ -1,7 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
-const REQUIRED_FIELDS = ['path', 'chainId', 'chainStep', 'sourceRun', 'sourceDir', 'description'];
+const REQUIRED_FIELDS = ['path', 'chainId', 'chainStep', 'sourceRun', 'sourceDir', 'stage', 'role', 'viewport', 'transition', 'description'];
+const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.mp4', '.webm', '.mov', '.m4v', '.mkv']);
+const REQUIRED_VISUAL_CHECKS = new Set(['target-visible', 'interaction-ui', 'layout-readable', 'no-error']);
+const FORBIDDEN_VISUAL_CHECKS = new Set(['numeric-correctness', 'rule-correctness', 'value-delta']);
 const GENERIC_DESCRIPTIONS = new Set([
     '正常',
     '测试通过',
@@ -47,6 +50,173 @@ const assertChineseDescription = (description, index) => {
     }
 };
 
+const readJsonFile = (filePath, label) => {
+    try {
+        return JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+        throw new Error(`${label}不是有效 JSON: ${filePath}; ${error instanceof Error ? error.message : String(error)}`);
+    }
+};
+
+const validateVisualReview = ({ manifest, manifestMedia, manifestDir, projectRoot, indexDir }) => {
+    const visualReview = manifest?.visualReview;
+    if (!visualReview || visualReview.mode !== 'all-media' || visualReview.claimScope !== 'interaction-ui' || visualReview.status !== 'PASS') {
+        throw new Error('最终 PASS 必须声明 visualReview=all-media / interaction-ui / PASS，禁止用关键图抽查代替全量视觉验收');
+    }
+    if (visualReview?.reviewer?.kind !== 'subagent' || typeof visualReview?.reviewer?.id !== 'string' || visualReview.reviewer.id.trim().length === 0) {
+        throw new Error('最终 PASS 的 visualReview 必须由子代理完成并记录 reviewer.kind=subagent 与 reviewer.id');
+    }
+
+    const reviewPath = visualReview.reviewFile
+        ? path.resolve(manifestDir, visualReview.reviewFile)
+        : null;
+    if (reviewPath && !existsSync(reviewPath)) {
+        throw new Error(`最终 PASS 缺少逐图视觉审计报告: ${reviewPath}`);
+    }
+    const review = reviewPath ? readJsonFile(reviewPath, '逐图视觉审计报告') : visualReview;
+    if (review.mode !== 'all-media' || review.claimScope !== 'interaction-ui' || review.status !== 'PASS') {
+        throw new Error('逐图视觉审计报告必须声明 all-media / interaction-ui / PASS');
+    }
+
+    const entries = Array.isArray(review.media) ? review.media : review.entries;
+    if (!Array.isArray(entries) || entries.length !== manifestMedia.length) {
+        throw new Error(`逐图视觉审计必须覆盖全部媒体：期望 ${manifestMedia.length} 条，实际 ${Array.isArray(entries) ? entries.length : 0} 条`);
+    }
+
+    const expectedPaths = new Set(manifestMedia.map((reference) => (
+        normalizePath(resolveMediaReference(reference, { projectRoot, manifestDir, indexDir }))
+    )));
+    const reviewedPaths = new Set();
+    for (const [entryIndex, entry] of entries.entries()) {
+        assertString(entry?.path, `第 ${entryIndex + 1} 条视觉审计的 path`);
+        if (entry.status !== 'PASS') {
+            throw new Error(`逐图视觉审计第 ${entryIndex + 1} 条未 PASS: ${entry.path}`);
+        }
+        if (!Array.isArray(entry.checks)) {
+            throw new Error(`逐图视觉审计第 ${entryIndex + 1} 条缺少 checks: ${entry.path}`);
+        }
+        const checkSet = new Set(entry.checks);
+        for (const requiredCheck of REQUIRED_VISUAL_CHECKS) {
+            if (!checkSet.has(requiredCheck)) {
+                throw new Error(`逐图视觉审计第 ${entryIndex + 1} 条缺少 ${requiredCheck}: ${entry.path}`);
+            }
+        }
+        for (const forbiddenCheck of FORBIDDEN_VISUAL_CHECKS) {
+            if (checkSet.has(forbiddenCheck)) {
+                throw new Error(`逐图视觉审计不得承担数值/规则正确性：${entry.path} 使用了 ${forbiddenCheck}`);
+            }
+        }
+        assertChineseDescription(entry.observation, entryIndex);
+        const resolvedPath = normalizePath(resolveMediaReference(entry.path, { projectRoot, manifestDir, indexDir }));
+        if (!expectedPaths.has(resolvedPath)) {
+            throw new Error(`逐图视觉审计引用了不在 PASS 清单中的媒体: ${entry.path}`);
+        }
+        if (reviewedPaths.has(resolvedPath)) {
+            throw new Error(`逐图视觉审计存在重复媒体: ${entry.path}`);
+        }
+        reviewedPaths.add(resolvedPath);
+    }
+    if (reviewedPaths.size !== expectedPaths.size || [...expectedPaths].some((entry) => !reviewedPaths.has(entry))) {
+        throw new Error('逐图视觉审计与 PASS 清单 media/images 未一一对应');
+    }
+
+    const behavioralVerification = manifest?.behavioralVerification;
+    if (!behavioralVerification || behavioralVerification.owner !== 'vitest' || behavioralVerification.status !== 'PASS') {
+        throw new Error('最终 PASS 必须单独声明 behavioralVerification.owner=vitest 且 status=PASS');
+    }
+    if (!Array.isArray(behavioralVerification.commands) || !behavioralVerification.commands.some((command) => typeof command === 'string' && /vitest/i.test(command))) {
+        throw new Error('behavioralVerification 必须记录实际 Vitest 命令，数值/规则正确性不能由截图承担');
+    }
+    if (!Array.isArray(behavioralVerification.evidence) || behavioralVerification.evidence.length === 0) {
+        throw new Error('behavioralVerification 必须记录至少一条数值/规则测试证据');
+    }
+
+    return { reviewPath, mediaCount: entries.length };
+};
+
+const validateChainSteps = (mediaEntries) => {
+    const chains = new Map();
+    for (const entry of mediaEntries) {
+        const chain = chains.get(entry.chainId) ?? [];
+        chain.push(entry);
+        chains.set(entry.chainId, chain);
+    }
+    for (const [chainId, entries] of chains.entries()) {
+        const sorted = [...entries].sort((a, b) => Number(a.chainStep) - Number(b.chainStep));
+        const seenSteps = new Set();
+        for (const [index, entry] of sorted.entries()) {
+            const step = Number(entry.chainStep);
+            if (!Number.isInteger(step) || step < 1) {
+                throw new Error(`E2E 证据链 ${chainId} 的 chainStep 必须是正整数: ${entry.chainStep}`);
+            }
+            if (seenSteps.has(step)) {
+                throw new Error(`E2E 证据链 ${chainId} 的 chainStep 重复: ${step}`);
+            }
+            seenSteps.add(step);
+            if (step !== index + 1) {
+                throw new Error(`E2E 证据链 ${chainId} 的 chainStep 不连续，期望 ${index + 1}，实际 ${step}`);
+            }
+        }
+        for (const stage of ['前态', '中态', '后态']) {
+            if (!sorted.some((entry) => entry.stage === stage && entry.role === 'main-flow')) {
+                throw new Error(`E2E 证据链 ${chainId} 的 ${stage} 缺少 main-flow 主图，细节辅证不能独立充当流程证据`);
+            }
+        }
+    }
+};
+
+const validateMediaDirectoryCompleteness = ({ mediaEntries, projectRoot, manifestDir, indexDir }) => {
+    const expectedByDirectory = new Map();
+    for (const entry of mediaEntries) {
+        const directory = path.resolve(projectRoot, entry.sourceDir);
+        const files = expectedByDirectory.get(directory) ?? new Set();
+        files.add(resolveMediaReference(entry.path, { projectRoot, manifestDir, indexDir }));
+        expectedByDirectory.set(directory, files);
+    }
+    for (const [directory, expectedFiles] of expectedByDirectory.entries()) {
+        if (!existsSync(directory) || !statSync(directory).isDirectory()) {
+            throw new Error(`E2E 证据 sourceDir 不存在或不是目录: ${directory}`);
+        }
+        const extraMedia = readdirSync(directory, { withFileTypes: true })
+            .filter((entry) => entry.isFile() && MEDIA_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
+            .map((entry) => path.resolve(directory, entry.name))
+            .filter((entry) => !expectedFiles.has(entry));
+        if (extraMedia.length > 0) {
+            throw new Error(`E2E 证据目录存在未登记媒体：${extraMedia.join(', ')}`);
+        }
+    }
+};
+
+const validateOutOfScopeMedia = ({ manifest, manifestMedia, projectRoot, manifestDir, indexDir }) => {
+    const declarations = manifest?.outOfScopeMedia;
+    if (declarations === undefined) return [];
+    if (!Array.isArray(declarations)) {
+        throw new Error('outOfScopeMedia 必须是数组，并为每张合同外媒体写明 path、contract 和 reason');
+    }
+
+    const manifestPaths = new Set(manifestMedia.map((reference) => (
+        normalizePath(resolveMediaReference(reference, { projectRoot, manifestDir, indexDir }))
+    )));
+    const seenPaths = new Set();
+    for (const [index, declaration] of declarations.entries()) {
+        assertString(declaration?.path, `第 ${index + 1} 条 outOfScopeMedia 的 path`);
+        assertString(declaration?.contract, `第 ${index + 1} 条 outOfScopeMedia 的 contract`);
+        assertString(declaration?.reason, `第 ${index + 1} 条 outOfScopeMedia 的 reason`);
+        const resolvedPath = normalizePath(resolveMediaReference(declaration.path, { projectRoot, manifestDir, indexDir }));
+        if (!existsSync(resolvedPath)) {
+            throw new Error(`outOfScopeMedia 引用的媒体不存在: ${declaration.path}`);
+        }
+        if (manifestPaths.has(resolvedPath)) {
+            throw new Error(`outOfScopeMedia 不能重复声明 PASS 清单媒体: ${declaration.path}`);
+        }
+        if (seenPaths.has(resolvedPath)) {
+            throw new Error(`outOfScopeMedia 存在重复媒体: ${declaration.path}`);
+        }
+        seenPaths.add(resolvedPath);
+    }
+    return declarations;
+};
+
 export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [], projectRoot }) => {
     if (manifest?.display?.finalPassBeforeOpen !== true) return null;
 
@@ -80,6 +250,12 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
         if (!existsSync(resolvedPath)) {
             throw new Error(`E2E 证据索引引用的媒体不存在: ${entry.path}`);
         }
+        if (!['main-flow', 'auxiliary-detail'].includes(entry.role)) {
+            throw new Error(`E2E 证据索引第 ${entryIndex + 1} 条 role 必须是 main-flow 或 auxiliary-detail: ${entry.path}`);
+        }
+        if (!['desktop', 'mobile'].includes(entry.viewport)) {
+            throw new Error(`E2E 证据索引第 ${entryIndex + 1} 条 viewport 必须是 desktop 或 mobile: ${entry.path}`);
+        }
         const normalizedKey = normalizePath(resolvedPath);
         if (seenPaths.has(normalizedKey)) throw new Error(`E2E 证据索引存在重复媒体: ${entry.path}`);
         seenPaths.add(normalizedKey);
@@ -98,6 +274,9 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
         }
     }
 
+    validateChainSteps(mediaEntries);
+    validateMediaDirectoryCompleteness({ mediaEntries, projectRoot, manifestDir, indexDir });
+
     const manifestMedia = Array.isArray(manifest.media) ? manifest.media : manifest.images;
     if (!Array.isArray(manifestMedia) || manifestMedia.length === 0) {
         throw new Error('最终 PASS 缺少 media/images，无法与证据索引对账');
@@ -112,11 +291,32 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
         throw new Error('E2E 证据索引与 PASS 清单 media/images 未一一对应');
     }
 
+    const visualReview = validateVisualReview({
+        manifest,
+        manifestMedia,
+        manifestDir,
+        projectRoot,
+        indexDir,
+    });
+    const outOfScopeMedia = validateOutOfScopeMedia({
+        manifest,
+        manifestMedia,
+        projectRoot,
+        manifestDir,
+        indexDir,
+    });
+
     for (const imagePath of imagePaths) {
         if (!seenPaths.has(normalizePath(imagePath))) {
             throw new Error(`本次打开的媒体不在 E2E 证据索引中: ${imagePath}`);
         }
     }
 
-    return { indexPath, mediaCount: mediaEntries.length, chainCount: chains.size };
+    return {
+        indexPath,
+        mediaCount: mediaEntries.length,
+        chainCount: chains.size,
+        visualReview,
+        outOfScopeMediaCount: outOfScopeMedia.length,
+    };
 };

@@ -443,7 +443,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                         ? 'absolute top-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-100 pointer-events-auto shadow-lg hover:bg-amber-500/80 cursor-zoom-in'
                                         : 'absolute top-1 right-1 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
                                 >
-                                    <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
+                                    <svg className="board-shell-fixed-icon h-3 w-3 fill-current" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </span>
@@ -625,7 +625,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                         event.stopPropagation();
                                     }}
                                 >
-                                    <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
+                                    <svg className="board-shell-fixed-icon h-3 w-3 fill-current" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </button>
