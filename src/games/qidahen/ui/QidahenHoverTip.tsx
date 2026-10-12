@@ -45,7 +45,6 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     children,
 }) => {
     const tipRef = useRef<HTMLDivElement>(null);
-    const layoutRef = useRef<{ left: number; top: number } | null>(null);
     const resolvedZIndex = Math.max(UI_Z_INDEX.tooltip, useResolvedOverlayTooltipZIndex());
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
@@ -83,7 +82,6 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
             VIEWPORT_PADDING,
             Math.max(VIEWPORT_PADDING, innerHeight - tooltipHeight - VIEWPORT_PADDING),
         );
-        layoutRef.current = { left, top };
         node.style.left = `${left}px`;
         node.style.top = `${top}px`;
         node.style.visibility = 'visible';
@@ -91,7 +89,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
 
     useLayoutEffect(() => {
         updateLayout();
-    }, [updateLayout, children]);
+    });
 
     useEffect(() => {
         if (!open) return undefined;
@@ -104,7 +102,6 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     }, [open, updateLayout]);
 
     if (!open || !anchor || !portalRoot) {
-        if (!open) layoutRef.current = null;
         return null;
     }
 
@@ -125,8 +122,8 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
                 }
             } : undefined}
             style={{
-                left: layoutRef.current?.left ?? -9999,
-                top: layoutRef.current?.top ?? -9999,
+                left: -9999,
+                top: -9999,
                 width: TIP_WIDTH,
                 zIndex: resolvedZIndex,
                 borderColor: TIP_SKIN.borderColor,
@@ -136,7 +133,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
                 borderRadius: 3,
                 textShadow: 'none',
                 whiteSpace: 'normal',
-                visibility: layoutRef.current ? 'visible' : 'hidden',
+                visibility: 'hidden',
             }}
         >
             {children}
