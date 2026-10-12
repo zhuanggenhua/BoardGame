@@ -36,11 +36,11 @@ export interface PixiMapSceneHostProps {
     selectedRegionId?: string | null;
     hoveredRegionId?: string | null;
     hitTestRegionAtPoint?: MapSceneRegionHitTest;
-     onInteraction?: (intent: MapInteractionIntent) => void;
-     onResourceStateChange?: (state: MapSceneResourceStatus) => void;
-     interactive?: boolean;
-     regionSelectionEnabled?: boolean;
-     canvasTestId?: string;
+    onInteraction?: (intent: MapInteractionIntent) => void;
+    onResourceStateChange?: (state: MapSceneResourceStatus) => void;
+    interactive?: boolean;
+    regionSelectionEnabled?: boolean;
+    canvasTestId?: string;
     resourceErrorLabel?: string;
     className?: string;
     ariaLabel?: string;
@@ -141,10 +141,10 @@ const CameraWorld: React.FC<{
     selectedRegionId: string | null;
     hoveredRegionId: string | null;
     resolveRegionId: (point: MapScenePoint) => string | null;
-     onInteraction?: (intent: MapInteractionIntent) => void;
-     interactive: boolean;
-     regionSelectionEnabled: boolean;
- }> = ({
+    onInteraction?: (intent: MapInteractionIntent) => void;
+    interactive: boolean;
+    regionSelectionEnabled: boolean;
+}> = ({
     texture,
     mapWidth,
     mapHeight,
@@ -159,10 +159,10 @@ const CameraWorld: React.FC<{
     selectedRegionId,
     hoveredRegionId,
     resolveRegionId,
-     onInteraction,
-     interactive,
-     regionSelectionEnabled,
- }) => {
+    onInteraction,
+    interactive,
+    regionSelectionEnabled,
+}) => {
     const { app, isInitialised } = useApplication();
     const worldRef = React.useRef<Container>(null);
     const hitAreaRef = React.useRef(new Rectangle(0, 0, 1, 1));
