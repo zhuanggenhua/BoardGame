@@ -37,20 +37,24 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         innerStrokeRadius: 2,
     },
     ming: {
-        fill: [159, 52, 38, 28],
-        stroke: [159, 52, 38, 74],
+        fill: [159, 52, 38, 18],
+        stroke: [42, 22, 16, 228],
+        innerStrokeRadius: 1,
     },
     mongol: {
-        fill: [105, 88, 44, 28],
-        stroke: [125, 107, 58, 70],
+        fill: [105, 88, 44, 18],
+        stroke: [40, 30, 16, 224],
+        innerStrokeRadius: 1,
     },
     jin: {
-        fill: [71, 88, 128, 26],
-        stroke: [86, 103, 146, 68],
+        fill: [71, 88, 128, 18],
+        stroke: [28, 32, 48, 224],
+        innerStrokeRadius: 1,
     },
     neutral: {
-        fill: [116, 100, 76, 22],
-        stroke: [126, 111, 92, 56],
+        fill: [116, 100, 76, 14],
+        stroke: [38, 30, 22, 216],
+        innerStrokeRadius: 1,
     },
     selected: {
         fill: [182, 53, 39, 86],

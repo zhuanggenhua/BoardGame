@@ -370,9 +370,10 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="wheel-recruit-train-rule"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征兵行动：直接建立 1 个等级 2 的正规军部队。');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('-  征兵行动：直接建立 1 个等级 2 的正规军部队。');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('规则原文');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('当前点击');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('征兵训练');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('训练行动');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('弃一张手牌');
         await saveScreenshot(page, TUTORIAL_STEP_02B);
@@ -613,9 +614,11 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="wheel-rule"]')).toBeVisible({ timeout: 10000 });
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="wheel-recruit-train-rule"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征兵行动：直接建立 1 个等级 2 的正规军部队。');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('-  征兵行动：直接建立 1 个等级 2 的正规军部队。');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('规则原文');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('征兵训练');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('训练行动');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('弃一张手牌');
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
 
@@ -661,9 +664,11 @@ test.describe('七大恨新游戏收口', () => {
             await expect(touchPage.locator('[data-tutorial-step="wheel-rule"]')).toBeVisible({ timeout: 10000 });
             await touchPage.locator('[data-testid="tutorial-next-button"]').click();
             await expect(touchPage.locator('[data-tutorial-step="wheel-recruit-train-rule"]')).toBeVisible({ timeout: 10000 });
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征兵行动：直接建立 1 个等级 2 的正规军部队。');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('-  征兵行动：直接建立 1 个等级 2 的正规军部队。');
             await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('规则原文');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('征兵训练');
             await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('训练行动');
+            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('弃一张手牌');
             await touchPage.locator('[data-testid="tutorial-next-button"]').click();
             await expect(touchPage.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
             await touchPage.getByTestId('qidahen-wheel-move-target-move-1-free').click();
@@ -787,24 +792,14 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="dispatch-ready"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('进攻目标');
+        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-panel"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-status"]')).toContainText('需弃 1 张');
+        await expect(page.locator('[data-testid="qidahen-operation-banner"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
         await expect(page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')).toHaveCount(0);
-        const committedTroopToken = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]').first();
-        await expect(committedTroopToken).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘落点进入进攻调度');
         await saveScreenshot(page, WHEEL_COST_STEP_02A);
-
-        await committedTroopToken.click();
-        await expect(committedTroopToken).toHaveAttribute('data-pending-committed-selected', 'true');
-        const wheelDispatchTargetIds = await page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')
-            .evaluateAll((elements) => elements.map((element) => element.getAttribute('data-testid')));
-        expect(wheelDispatchTargetIds).toEqual(expect.arrayContaining([
-            'qidahen-map-guide-hit-target-jinzhou',
-            'qidahen-map-guide-hit-target-city-region-20',
-        ]));
-        expect(wheelDispatchTargetIds).toHaveLength(2);
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘落点进入进攻调度');
         await saveScreenshot(page, WHEEL_COST_STEP_03);
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
@@ -914,12 +909,14 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="rule-reference"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征兵行动：直接建立 1 个等级 2 的正规军部队');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('训练行动：将部队向上转 1 级');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('-  征兵行动：直接建立 1 个等级 2 的正规军部队');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('-  训练行动：将部队向上转 1 级');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('征兵训练');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('弃一张手牌，最多可进行4 次的征兵或训练行动');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('炮兵的等级上限须由军备来提升');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('规则原文');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('当前点击');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('轮盘上的行动标记决定');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('弃一张手牌');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('点击轮盘上高亮');
         await saveScreenshot(page, WHEEL_RECRUIT_TRAIN_RULE);
         await page.locator('[data-testid="tutorial-next-button"]').click();
@@ -980,7 +977,8 @@ test.describe('七大恨新游戏收口', () => {
         });
         await page.waitForTimeout(300);
         await saveScreenshot(page, WHEEL_RECRUIT_TRAIN_STEP_02);
-        await expect(page.locator('[data-testid="qidahen-armaments-ming"]')).toContainText('火炮技术2');
+        await expect(page.locator('[data-testid="qidahen-player-ming"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-player-ming"]')).not.toContainText('军备详情');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         const recruitTrainCore = await readQidahenCore(page) as {
             factions: {
@@ -1034,6 +1032,7 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="pay-cards"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('弃 1 张手牌');
+        await expect(page.locator('[data-testid="qidahen-operation-banner"]')).toHaveCount(0);
         await saveScreenshot(page, ARMAMENT_STEP_02);
 
         const discardCard = page.locator('button[data-testid^="qidahen-hand-card-hand-"]:not([data-tutorial-id="qidahen-atlas05-1626-artillery-tech"])').first();
@@ -1043,7 +1042,8 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-action-payment-confirm"]').click();
 
         await expect(page.locator('[data-tutorial-step="result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-armaments-ming"]')).toContainText('火炮技术2');
+        await expect(page.locator('[data-testid="qidahen-player-ming"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-player-ming"]')).not.toContainText('军备详情');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('火炮技术从 1 级升到 2 级');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await saveScreenshot(page, ARMAMENT_STEP_03);
@@ -1087,6 +1087,7 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="pay-cards"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('已选 0 / 1 张');
+        await expect(page.locator('[data-testid="qidahen-operation-banner"]')).toHaveCount(0);
         await saveScreenshot(page, EVENT_STEP_02);
 
         const handCards = page.locator('button[data-testid^="qidahen-hand-card-hand-"]');
@@ -1168,6 +1169,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="pay-raid"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('现在选择 1 张手牌');
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('已选 0 / 1 张');
+        await expect(page.locator('[data-testid="qidahen-operation-banner"]')).toHaveCount(0);
         const beforePaymentCore = await readQidahenCore(page) as {
             handCards: Array<{
                 cardKind?: string;

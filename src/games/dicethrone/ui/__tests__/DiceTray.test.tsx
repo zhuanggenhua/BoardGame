@@ -124,11 +124,9 @@ describe('DiceTray', () => {
         const tray = screen.getByTestId('dicethrone-2d-dice-tray');
         expect(tray).toHaveAttribute('data-tutorial-id', 'dice-tray');
         expect(screen.getByTestId('mock-dice-2d')).toBeInTheDocument();
-        expect(screen.queryByTestId('dicethrone-board-dice-stage')).toBeNull();
-        expect(screen.queryByTestId('dicethrone-board-dice-box-canvas')).toBeNull();
     });
 
-    it('右侧骰盘不接入棋盘物理骰台或中场骰台', () => {
+    it('右侧骰盘用 CSS Dice2D 按棋盘单位渲染', () => {
         render(
             <DiceTray
                 dice={twoDice}
@@ -142,8 +140,6 @@ describe('DiceTray', () => {
 
         expect(dice2DCalls).toHaveLength(2);
         expect(dice2DCalls.every((props) => String(props.size).includes('--mobile-board-shell-inline-unit'))).toBe(true);
-        expect(screen.queryByTestId('mock-dice-field-3d')).toBeNull();
-        expect(screen.queryByTestId('mock-dice-box-physics-source')).toBeNull();
     });
 
     it('奖励骰骰面按自身 definitionId 渲染，并保留真实 ownerId', () => {

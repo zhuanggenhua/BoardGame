@@ -1,4 +1,5 @@
 import type { FateDominationCore, LocationId } from './types';
+// 移动合法性统一由 movement adapter 负责；demo-only 的局势文案不在这里直接变成规则。
 export { FATE_LOCATION_ORDER, FATE_STEP_COST, legalMoveTargets, movementCost } from './movement';
 
 export function situationPowerBonus(core: FateDominationCore, locationId: LocationId, attackTypes: string[]): number {

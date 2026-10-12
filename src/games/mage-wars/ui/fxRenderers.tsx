@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -63,83 +63,6 @@ function isMageId(value: unknown): value is MageId {
 
 type ViewportBox = { left: number; top: number; width: number; height: number };
 
-function readElementRect(testId: string): DOMRect | null {
-    if (typeof document === 'undefined') return null;
-    const element = document.querySelector(`[data-testid="${testId}"]`);
-    if (!element) return null;
-    const rect = element.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return null;
-    return rect;
-}
-
-function rectToBox(rect: DOMRect): ViewportBox {
-    return {
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-    };
-}
-
-function intersectBoxes(left: ViewportBox, right: ViewportBox): ViewportBox | null {
-    const nextLeft = Math.max(left.left, right.left);
-    const nextTop = Math.max(left.top, right.top);
-    const nextRight = Math.min(left.left + left.width, right.left + right.width);
-    const nextBottom = Math.min(left.top + left.height, right.top + right.height);
-    const width = nextRight - nextLeft;
-    const height = nextBottom - nextTop;
-    if (width < 1 || height < 1) return null;
-    return { left: nextLeft, top: nextTop, width, height };
-}
-
-function readVisibleMapOverlayBox(): ViewportBox | null {
-    const viewportRect = readElementRect('mage-wars-arena-viewport');
-    const stageRect = readElementRect('mage-wars-arena-stage');
-    if (viewportRect && stageRect) {
-        const visibleMap = intersectBoxes(rectToBox(viewportRect), rectToBox(stageRect));
-        if (visibleMap) return visibleMap;
-    }
-    if (viewportRect) return rectToBox(viewportRect);
-    if (typeof window === 'undefined' || window.innerWidth < 1 || window.innerHeight < 1) {
-        return null;
-    }
-    return {
-        left: 0,
-        top: 0,
-        width: window.innerWidth,
-        height: window.innerHeight,
-    };
-}
-
-function sameOverlayBox(
-    left: ViewportBox | null,
-    right: ViewportBox | null,
-): boolean {
-    if (left === right) return true;
-    if (!left || !right) return false;
-    return left.left === right.left
-        && left.top === right.top
-        && left.width === right.width
-        && left.height === right.height;
-}
-
-function useAttackDiceOverlayBox() {
-    const [overlayBox, setOverlayBox] = useState(readVisibleMapOverlayBox);
-
-    useLayoutEffect(() => {
-        let frameId = 0;
-        const sync = () => {
-            const nextBox = readVisibleMapOverlayBox();
-            setOverlayBox((current) => (sameOverlayBox(current, nextBox) ? current : nextBox));
-            frameId = window.requestAnimationFrame(sync);
-        };
-        frameId = window.requestAnimationFrame(sync);
-        return () => window.cancelAnimationFrame(frameId);
-    }, []);
-
-    return overlayBox;
-}
-
 function AttackDiceFeedback({
     diceResults,
     effectDieResult,
@@ -156,7 +79,6 @@ function AttackDiceFeedback({
     resultAmount: number;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    const overlayBox = useAttackDiceOverlayBox();
     if (diceResults.length === 0 && effectDieResult === undefined) return null;
 
     const titleKey = kind === 'heal'
@@ -179,20 +101,14 @@ function AttackDiceFeedback({
 
     const overlay = (
         <motion.div
-            className="pointer-events-none flex items-center justify-center"
+            className="pointer-events-none fixed inset-0 flex items-center justify-center"
             style={{
-                position: 'fixed',
-                left: overlayBox?.left ?? 0,
-                top: overlayBox?.top ?? 0,
-                width: overlayBox?.width ?? '100vw',
-                height: overlayBox?.height ?? '100vh',
                 zIndex: UI_Z_INDEX.overlayRaised,
                 isolation: 'isolate',
-                overflow: 'visible',
             }}
             data-testid="mage-wars-fx-attack-dice"
-            data-placement="visible-map-center"
-            data-overlay-layer="visible-map"
+            data-placement="screen-center"
+            data-overlay-layer="screen"
             data-visual-role="attack-dice-result"
             data-visible-duration-ms={visibleDurationMs}
             initial={{ opacity: 0, scale: 0.8 }}

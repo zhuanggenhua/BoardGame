@@ -411,7 +411,12 @@ const buildAbilityHighlightStyle = (
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
         const highlightOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10 animate-pulse';
         const selectedOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-20';
-        const inspectButtonClassName = 'absolute z-20 flex min-h-[14px] min-w-[14px] items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 transition-[background-color,border-color,opacity] duration-200 hover:border-amber-300/45 hover:bg-amber-500/78';
+        const inspectButtonClassName = 'absolute z-20 flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-200 hover:brightness-125';
+        const inspectButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_2px_7px_rgba(0,0,0,0.45)]';
+        const inspectButtonVisualStyle = {
+            width: dtUnit(1.15),
+            height: dtUnit(1.15),
+        };
         const inspectButtonStyle: React.CSSProperties = {
             right: dtUnit(0.2),
             top: dtUnit(0.2),
@@ -707,6 +712,11 @@ const buildAbilityHighlightStyle = (
                                         onMagnifyCard?.(upgradeCard);
                                     }}
                                 >
+                                    <span
+                                        className={inspectButtonVisualClassName}
+                                        style={inspectButtonVisualStyle}
+                                        data-fixed-control-visual="true"
+                                    >
                                     <svg
                                         className="board-shell-fixed-icon min-h-[8px] min-w-[8px] fill-current"
                                         style={{ width: dtUnit(0.84), height: dtUnit(0.84) }}
@@ -715,6 +725,7 @@ const buildAbilityHighlightStyle = (
                                     >
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
+                                    </span>
                                 </button>
                             )}
                             {isEditing && (

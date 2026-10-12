@@ -77,8 +77,12 @@ export const CenterBoard = ({
     const shellTransform = shellTranslateX === 0 ? '' : `translateX(${buildBoardShellInlineUnitValue(shellTranslateX)})`;
     const shellFrameClassName = 'absolute bottom-0 flex items-center justify-center pointer-events-auto';
     const overlayButtonIconClassName = 'fill-current';
-    const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
-    const overlayButtonVisualClassName = 'flex h-full w-full items-center justify-center';
+    const overlayButtonClassName = `absolute flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-300 hover:brightness-125 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+    const overlayButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl';
+    const overlayButtonVisualStyle = {
+        width: buildBoardShellInlineUnitValue(2.6),
+        height: buildBoardShellInlineUnitValue(2.6),
+    } as const;
     const overlayButtonStyle = {
         top: buildBoardShellInlineUnitValue(boardUiTuning.magnifyButtonTop),
         right: buildBoardShellInlineUnitValue(0.9),
@@ -92,6 +96,11 @@ export const CenterBoard = ({
         WebkitAppearance: 'none',
         fontSize: '0',
         lineHeight: '0',
+    } as const;
+    const tipBoardOverlayButtonStyle = {
+        ...overlayButtonStyle,
+        top: buildBoardShellInlineUnitValue(0.25),
+        right: buildBoardShellInlineUnitValue(0.25),
     } as const;
     const tipToggleButtonStyle = {
         [isTipOpen ? 'right' : 'left']: isTipOpen ? buildBoardShellInlineUnitValue(0.8) : buildBoardShellInlineUnitValue(0.1),
@@ -355,10 +364,14 @@ export const CenterBoard = ({
                         data-board-magnify-ignore="true"
                         aria-label={t('actions.magnify')}
                     >
-                        <span className={overlayButtonVisualClassName}>
+                        <span
+                            className={overlayButtonVisualClassName}
+                            style={overlayButtonVisualStyle}
+                            data-fixed-control-visual="true"
+                        >
                             <svg
                                 className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
-                                style={{ width: buildBoardShellInlineUnitValue(1.05), height: buildBoardShellInlineUnitValue(1.05) }}
+                                style={{ width: buildBoardShellInlineUnitValue(0.72), height: buildBoardShellInlineUnitValue(0.72) }}
                                 viewBox="0 0 20 20"
                             >
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -414,15 +427,19 @@ export const CenterBoard = ({
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onMagnifyImage(tipBoardPath); }}
                                 className={overlayButtonClassName}
-                                style={{ ...overlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
+                                style={{ ...tipBoardOverlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                                 data-testid="tip-board-magnify-button"
                                 data-board-magnify-ignore="true"
                                 aria-label={t('actions.magnify')}
                             >
-                                <span className={overlayButtonVisualClassName}>
+                                <span
+                                    className={overlayButtonVisualClassName}
+                                    style={overlayButtonVisualStyle}
+                                    data-fixed-control-visual="true"
+                                >
                                     <svg
                                         className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
-                                        style={{ width: buildBoardShellInlineUnitValue(1.05), height: buildBoardShellInlineUnitValue(1.05) }}
+                                        style={{ width: buildBoardShellInlineUnitValue(0.72), height: buildBoardShellInlineUnitValue(0.72) }}
                                         viewBox="0 0 20 20"
                                     >
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />

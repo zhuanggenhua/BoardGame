@@ -567,7 +567,7 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step).toBeNull();
     });
 
-    it('七大恨教程文案必须先解释规则结果，不能用实现词冒充教学', () => {
+    it('七大恨规则参考卡必须逐字使用上游规则原文', () => {
         const zh = JSON.parse(readFileSync('public/locales/zh-CN/game-qidahen.json', 'utf8')) as {
             tutorial: Record<string, unknown>;
         };
@@ -576,6 +576,38 @@ describe('qidahen tutorial flow', () => {
         };
         const zhTutorialText = JSON.stringify(zh.tutorial);
         const enTutorialText = JSON.stringify(en.tutorial);
+        const ruleSource = readFileSync('src/games/qidahen/rule/七大恨规则.md', 'utf8');
+        const recruitTrainSectionStart = ruleSource.indexOf('### 征兵训练');
+        const recruitTrainSectionEnd = ruleSource.indexOf('\n### ', recruitTrainSectionStart + 1);
+        const recruitTrainRuleLines = ruleSource
+            .slice(recruitTrainSectionStart, recruitTrainSectionEnd === -1 ? undefined : recruitTrainSectionEnd)
+            .replace(/^### /, '')
+            .split(/\r?\n/);
+        recruitTrainRuleLines.shift();
+        const canonicalRecruitTrainRule = recruitTrainRuleLines
+            .reduce<{ lines: string[]; previousBlank: boolean }>((state, line) => {
+                if (line.trim().length === 0) {
+                    state.previousBlank = true;
+                    return state;
+                }
+                if (
+                    state.lines.length === 0
+                    || state.previousBlank
+                    || line.startsWith('-  ')
+                    || line.startsWith('(')
+                ) {
+                    state.lines.push(line);
+                } else {
+                    state.lines[state.lines.length - 1] += line;
+                }
+                state.previousBlank = false;
+                return state;
+            }, { lines: [], previousBlank: true })
+            .lines
+            .join('\n');
+        const canonicalRecruitActionRule = canonicalRecruitTrainRule
+            .split('\n')
+            .find((line) => line.includes('征兵行动：')) as string;
         const basic = (zh.tutorial.basic as { steps: Record<string, string> }).steps;
 
         expect(basic.wheelFirst).toContain('3 张手牌');
@@ -586,11 +618,15 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelRule).toContain('所有人都共享行动标记的移动');
         expect(basic.wheelRule).not.toContain('规则原文');
         expect(basic.wheelRule).not.toContain('进入征兵训练');
-        expect(basic.wheelRecruitTrainRule).toBe('征兵行动：直接建立 1 个等级 2 的正规军部队。');
+        expect(basic.wheelRecruitTrainRule).toBe(canonicalRecruitActionRule);
         expect(basic.wheelRecruitTrainRule).not.toContain('规则原文');
         expect(basic.wheelRecruitTrainRule).not.toContain('当前点击');
+        expect(basic.wheelRecruitTrainRule).not.toContain('征兵训练');
         expect(basic.wheelRecruitTrainRule).not.toContain('训练行动');
         expect(basic.wheelRecruitTrainRule).not.toContain('弃一张手牌');
+        expect(basic.wheelRecruitTrainRule).not.toContain('炮兵的等级上限');
+        expect(basic.wheelRecruitTrainRule).not.toContain('徵兵');
+        expect(basic.wheelRecruitTrainRule).not.toContain('正規軍');
         expect(basic.wheelMove).toBe('点击轮盘上高亮的“征兵训练”区域。');
         expect(zhTutorialText).not.toMatch(/免费走\s*1/);
         expect(enTutorialText).not.toContain('Move 1 for free');
@@ -618,20 +654,23 @@ describe('qidahen tutorial flow', () => {
         const wheelRecruitTrainRule = (zh.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
         const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
         const englishWheelRecruitTrainRule = (en.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
-        expect(wheelRecruitTrainRule).toBe([
-            '征兵行动：直接建立 1 个等级 2 的正规军部队。',
-            '训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。',
-            '(注意炮兵的等级上限须由军备来提升)',
-        ].join('\n'));
+        expect(wheelRecruitTrainRule).toBe(canonicalRecruitTrainRule
+            .split('\n')
+            .filter((line) => line.includes('征兵行动：') || line.includes('训练行动：'))
+            .join('\n'));
         expect(wheelRecruitTrainRule).not.toContain('规则原文');
         expect(wheelRecruitTrainRule).not.toContain('当前点击');
+        expect(wheelRecruitTrainRule).not.toContain('征兵训练');
+        expect(wheelRecruitTrainRule).not.toContain('弃一张手牌');
+        expect(wheelRecruitTrainRule).not.toContain('炮兵的等级上限');
         expect(englishWheelRecruitTrainRule).toBe([
-            'Recruit action: directly create 1 level-2 regular troop.',
-            'Train action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.',
-            '(Note: the artillery level cap must be raised through armament.)',
+            '-  Recruit action: directly create 1 level-2 regular troop.',
+            '-  Train action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.',
         ].join('\n'));
         expect(englishWheelRecruitTrainRule).not.toContain('Rule text');
         expect(englishWheelRecruitTrainRule).not.toContain('This click');
+        expect(englishWheelRecruitTrainRule).not.toContain('Discard 1 hand card');
+        expect(englishWheelRecruitTrainRule).not.toContain('artillery level cap');
         expect(wheelRecruitTrainResult).toContain('宣府总兵力由 2 支增至 4 支');
         expect(wheelRecruitTrainResult).toContain('新增 2 支等级 2 正规军');
         expect(wheelRecruitTrainResult).toContain('原有 1 支等级 1 炮兵训练至 2 级');

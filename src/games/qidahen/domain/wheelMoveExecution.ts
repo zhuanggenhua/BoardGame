@@ -29,6 +29,11 @@ import type {
     QidahenSeasonSummary,
 } from './types';
 import { applyQidahenVictoryStatus } from './victoryResolution';
+import {
+    buildQidahenWheelDispatchPaymentState,
+    countQidahenWheelDispatchPayableCards,
+    QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED,
+} from './wheelDispatchPayment';
 
 const wheelSectorOrder = [
     'wheel-reclaim',
@@ -226,31 +231,48 @@ export const resolveQidahenWheelMoveExecuted = (
         nextState.selectedRegionId,
     );
     if (wheelDispatchSelection) {
-        const shouldPersistExplicitWheelDispatchSelection = shouldPersistExplicitWheelDispatchSelectionForWheelState(
-            nextState,
-            wheelDispatchSelection,
-            nextWheelPosition,
-        );
-        nextState = {
-            ...nextState,
-            selectedRegionId: wheelDispatchSelection.sourceRegionId,
-            explicitRegionId: null,
-            regionFocusState: buildQidahenRegionFocusState(wheelDispatchSelection.sourceRegionId, {
-                lockedSourceRegionId: wheelDispatchSelection.sourceRegionId,
-                displayAnchorRegionId: wheelDispatchSelection.displayAnchorRegionId ?? wheelDispatchSelection.sourceRegionId,
-            }),
-            turnPhase: 'dispatch-targeting',
-            wheelDispatchProgress: shouldPersistExplicitWheelDispatchSelection ? wheelDispatchSelection : null,
-            pendingTargetAction: null,
-            actionLog: [
-                {
-                    id: `log-wheel-dispatch-${timestamp}`,
-                    faction: currentFactionId,
-                    text: `${nextState.factions[currentFactionId].name} 轮盘进入进攻/调度，等待选择目标 · ${wheelDispatchSelection.movementProfileLabel}。`,
-                },
-                ...nextState.actionLog,
-            ].slice(0, 6),
-        };
+        if (countQidahenWheelDispatchPayableCards(nextState) < QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED) {
+            nextState = {
+                ...nextState,
+                actionLog: [
+                    {
+                        id: `log-wheel-dispatch-unpayable-${timestamp}`,
+                        faction: currentFactionId,
+                        text: `${nextState.factions[currentFactionId].name} 手牌不足，无法支付进攻调度弃牌。`,
+                    },
+                    ...nextState.actionLog,
+                ].slice(0, 6),
+            };
+        } else {
+            const shouldPersistExplicitWheelDispatchSelection = shouldPersistExplicitWheelDispatchSelectionForWheelState(
+                nextState,
+                wheelDispatchSelection,
+                nextWheelPosition,
+            );
+            nextState = {
+                ...nextState,
+                selectedRegionId: wheelDispatchSelection.sourceRegionId,
+                explicitRegionId: null,
+                confirmedActionId: null,
+                selectedPaymentCardIds: [],
+                payment: buildQidahenWheelDispatchPaymentState(0),
+                regionFocusState: buildQidahenRegionFocusState(wheelDispatchSelection.sourceRegionId, {
+                    lockedSourceRegionId: wheelDispatchSelection.sourceRegionId,
+                    displayAnchorRegionId: wheelDispatchSelection.displayAnchorRegionId ?? wheelDispatchSelection.sourceRegionId,
+                }),
+                turnPhase: 'dispatch-targeting',
+                wheelDispatchProgress: shouldPersistExplicitWheelDispatchSelection ? wheelDispatchSelection : null,
+                pendingTargetAction: null,
+                actionLog: [
+                    {
+                        id: `log-wheel-dispatch-${timestamp}`,
+                        faction: currentFactionId,
+                        text: `${nextState.factions[currentFactionId].name} 轮盘进入进攻/调度，先弃 1 张手牌 · ${wheelDispatchSelection.movementProfileLabel}。`,
+                    },
+                    ...nextState.actionLog,
+                ].slice(0, 6),
+            };
+        }
     }
 
     return dependencies.advanceTurnIfReady(

@@ -9,6 +9,7 @@ import {
     createUponReflectionRuntimeState,
 } from './hauntRuntimeSetupModel';
 import {
+    isIntermediateAllTraitCheckEventRollResolution,
     resolveEventRollResolutionRequiresAcknowledgement,
     resolveHumanAcknowledgementPlayerIds,
 } from './acknowledgementReadModel';
@@ -241,6 +242,9 @@ export function applyBetrayalEventRollReplacementState(
         effect: cloneUseEffect(replacement.effect),
         nextPendingEventChoice,
         deathPrevention: cloneEventRollReplacementDeathPrevention(replacement.deathPrevention),
+        requiresPlayerAdvance: isIntermediateAllTraitCheckEventRollResolution({
+            nextPendingEventChoice,
+        }),
         hauntTriggered: replacement.hauntTriggered,
         hauntCardNumber: replacement.hauntCardNumber,
         hauntTriggerLabel: replacement.hauntTriggerLabel,

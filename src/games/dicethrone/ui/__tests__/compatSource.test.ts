@@ -93,6 +93,30 @@ describe('DiceThrone compatibility source guards', () => {
         expect(drawDeck).toContain('width: buildBoardShellScreenPixelValue(44)');
     });
 
+    it('固定控件只放大 SVG，不放大圆形可视层', () => {
+        const centerBoard = readUiSource('CenterBoard.tsx');
+        const abilityOverlays = readUiSource('AbilityOverlays.tsx');
+        const discardPile = readUiSource('DiscardPile.tsx');
+        const drawDeck = readUiSource('DrawDeck.tsx');
+
+        expect(centerBoard).toContain('data-fixed-control-visual="true"');
+        expect(centerBoard).toContain('absolute top-0 right-0 flex items-center justify-center');
+        expect(centerBoard).toContain('width: buildBoardShellInlineUnitValue(2.6)');
+        expect(centerBoard).toContain('width: buildBoardShellInlineUnitValue(0.72)');
+        expect(centerBoard).toContain('const tipBoardOverlayButtonStyle =');
+        expect(centerBoard).toContain('top: buildBoardShellInlineUnitValue(0.25)');
+        expect(centerBoard).toContain('right: buildBoardShellInlineUnitValue(0.25)');
+        expect(abilityOverlays).toContain('data-fixed-control-visual="true"');
+        expect(abilityOverlays).toContain('absolute top-0 right-0 flex items-center justify-center');
+        expect(abilityOverlays).toContain('width: dtUnit(1.15)');
+        expect(abilityOverlays).toContain('width: dtUnit(0.84)');
+        expect(discardPile).toContain('width: dtUnit(2)');
+        expect(discardPile).toContain('width: dtUnit(0.84)');
+        expect(discardPile).toContain('absolute top-0 right-0 flex items-center justify-center');
+        expect(drawDeck).toContain('width: buildBoardShellInlineUnitValue(2.2)');
+        expect(drawDeck).toContain('data-fixed-control-visual="true"');
+    });
+
     it('玩家面板与提示卡必须保持独立对象契约', () => {
         const centerBoard = readUiSource('CenterBoard.tsx');
 

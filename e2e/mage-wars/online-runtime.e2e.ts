@@ -717,11 +717,11 @@ async function finalizeMageWarsFxVideoRecording(
             ],
         },
         {
-            requirement: '法师战争攻击骰在可见窗口居中独立播放：投骰不改玩家镜头和底图，骰子不得钉在战斗格上',
+            requirement: '法师战争攻击骰在玩家屏幕中央独立播放：投骰不改玩家镜头和底图，骰子不得钉在战斗格或可见石板上',
             status: 'PASS' as const,
             evidence: [
-                'E2E：攻击骰结果层 data-placement=visible-map-center',
-                'E2E：攻击骰内容落在可见石板中心，布局宿主是视窗与舞台相交区域，不是整块棋盘、变换后舞台或战斗格',
+                'E2E：攻击骰结果层 data-placement=screen-center',
+                'E2E：攻击骰内容落在玩家屏幕中央，布局宿主是整窗 fixed inset-0，不是可见石板、整块棋盘、变换后舞台或战斗格',
                 'E2E：投骰前拖到角落后断言 pan/zoom 不变，截图前不得 reset-center',
                 ...attackEvidence,
                 recording.finalGifPath,
@@ -2972,33 +2972,42 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
     await page.waitForFunction(() => {
         const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
         const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]') ?? dice;
-        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
-        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
-        if (!dice || !content || !viewport) return false;
-        if (dice.dataset.placement !== 'visible-map-center') return false;
-        const viewportRect = viewport.getBoundingClientRect();
-        const stageRect = stage?.getBoundingClientRect();
+        if (!dice || !content) return false;
+        if (dice.dataset.placement !== 'screen-center') return false;
+        if (dice.dataset.overlayLayer !== 'screen') return false;
         const overlayRect = dice.getBoundingClientRect();
         const contentRect = content.getBoundingClientRect();
-        if (viewportRect.width < 480 || viewportRect.height < 240) return false;
-        const visibleLeft = stageRect ? Math.max(viewportRect.left, stageRect.left) : viewportRect.left;
-        const visibleTop = stageRect ? Math.max(viewportRect.top, stageRect.top) : viewportRect.top;
-        const visibleRight = stageRect ? Math.min(viewportRect.right, stageRect.right) : viewportRect.right;
-        const visibleBottom = stageRect ? Math.min(viewportRect.bottom, stageRect.bottom) : viewportRect.bottom;
-        const visibleWidth = visibleRight - visibleLeft;
-        const visibleHeight = visibleBottom - visibleTop;
-        if (visibleWidth < 240 || visibleHeight < 160) return false;
-        const overlayMatchesVisibleMap = Math.abs(overlayRect.left - visibleLeft) <= 12
-            && Math.abs(overlayRect.top - visibleTop) <= 12
-            && Math.abs(overlayRect.width - visibleWidth) <= 24
-            && Math.abs(overlayRect.height - visibleHeight) <= 24;
-        if (!overlayMatchesVisibleMap) return false;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        if (windowWidth < 480 || windowHeight < 240) return false;
+        const overlayMatchesWindow = Math.abs(overlayRect.left) <= 12
+            && Math.abs(overlayRect.top) <= 12
+            && Math.abs(overlayRect.width - windowWidth) <= 24
+            && Math.abs(overlayRect.height - windowHeight) <= 24;
+        if (!overlayMatchesWindow) return false;
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+        const viewportRect = viewport?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        if (viewportRect && stageRect) {
+            const visibleLeft = Math.max(viewportRect.left, stageRect.left);
+            const visibleTop = Math.max(viewportRect.top, stageRect.top);
+            const visibleWidth = Math.min(viewportRect.right, stageRect.right) - visibleLeft;
+            const visibleHeight = Math.min(viewportRect.bottom, stageRect.bottom) - visibleTop;
+            const overlayMatchesVisibleMap = visibleWidth >= 240
+                && visibleHeight >= 160
+                && Math.abs(overlayRect.left - visibleLeft) <= 12
+                && Math.abs(overlayRect.top - visibleTop) <= 12
+                && Math.abs(overlayRect.width - visibleWidth) <= 24
+                && Math.abs(overlayRect.height - visibleHeight) <= 24;
+            if (overlayMatchesVisibleMap) return false;
+        }
         const contentCenterX = contentRect.left + contentRect.width / 2;
         const contentCenterY = contentRect.top + contentRect.height / 2;
-        const mapCenterX = visibleLeft + visibleWidth / 2;
-        const mapCenterY = visibleTop + visibleHeight / 2;
-        const distance = Math.hypot(contentCenterX - mapCenterX, contentCenterY - mapCenterY);
-        const tolerance = Math.max(80, Math.min(visibleWidth, visibleHeight) * 0.22);
+        const screenCenterX = windowWidth / 2;
+        const screenCenterY = windowHeight / 2;
+        const distance = Math.hypot(contentCenterX - screenCenterX, contentCenterY - screenCenterY);
+        const tolerance = Math.max(80, Math.min(windowWidth, windowHeight) * 0.22);
         return distance <= tolerance;
     }, undefined, { timeout: 2_000 });
 
@@ -3018,6 +3027,9 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
         const historicalDice = [...(probe?.samples ?? [])]
             .reverse()
             .find((sample) => sample.diceVisible === true);
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const screenHost = { left: 0, top: 0, width: windowWidth, height: windowHeight };
         const viewportRect = viewport?.getBoundingClientRect();
         const stageRect = stage?.getBoundingClientRect();
         const visibleMapRect = viewportRect
@@ -3032,7 +3044,7 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
             : undefined;
         const measureCenterDistance = (
             rect: { x: number; y: number; width: number; height: number } | null,
-            host: DOMRect | undefined,
+            host: { left: number; top: number; width: number; height: number } | undefined,
         ) => {
             if (!rect || !host) return Number.POSITIVE_INFINITY;
             return Math.round(Math.hypot(
@@ -3057,16 +3069,16 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
             return {
                 hasAnchor: Boolean(anchor),
                 hasDice: true,
-                viewportCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect as DOMRect | undefined),
-                diceInsideViewport: Boolean(diceRect && visibleMapRect
-                    && (diceRect.x + diceRect.width / 2) >= visibleMapRect.left
-                    && (diceRect.x + diceRect.width / 2) <= visibleMapRect.left + visibleMapRect.width
-                    && (diceRect.y + diceRect.height / 2) >= visibleMapRect.top
-                    && (diceRect.y + diceRect.height / 2) <= visibleMapRect.top + visibleMapRect.height),
+                screenCenterDistancePx: typeof historicalDice.diceCenterDistancePx === 'number'
+                    ? historicalDice.diceCenterDistancePx
+                    : measureCenterDistance(diceRect, screenHost),
+                visibleMapCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect),
                 diceRect,
                 dicePlacement: historicalDice.dicePlacement ?? null,
-                overlayMatchesViewport: false,
+                overlayMatchesWindow: false,
+                overlayMatchesVisibleMap: false,
                 source: 'probe',
+                windowRect: { width: Math.round(windowWidth), height: Math.round(windowHeight) },
             };
         }
 
@@ -3085,50 +3097,59 @@ async function expectMageWarsAttackDiceCenteredOnBoard(
         return {
             hasAnchor: Boolean(anchor),
             hasDice: Boolean(dice),
-            viewportCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect as DOMRect | undefined),
-            diceInsideViewport: Boolean(diceRect && visibleMapRect
-                && (diceRect.x + diceRect.width / 2) >= visibleMapRect.left
-                && (diceRect.x + diceRect.width / 2) <= visibleMapRect.left + visibleMapRect.width
-                && (diceRect.y + diceRect.height / 2) >= visibleMapRect.top
-                && (diceRect.y + diceRect.height / 2) <= visibleMapRect.top + visibleMapRect.height),
+            screenCenterDistancePx: measureCenterDistance(diceRect, screenHost),
+            visibleMapCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect),
             diceRect,
             dicePlacement: dice?.dataset.placement ?? null,
-            overlayMatchesViewport: Boolean(overlayRect && visibleMapRect
+            overlayLayer: dice?.dataset.overlayLayer ?? null,
+            overlayMatchesWindow: Boolean(overlayRect
+                && Math.abs(overlayRect.left) <= 12
+                && Math.abs(overlayRect.top) <= 12
+                && Math.abs(overlayRect.width - windowWidth) <= 24
+                && Math.abs(overlayRect.height - windowHeight) <= 24),
+            overlayMatchesVisibleMap: Boolean(overlayRect && visibleMapRect
                 && Math.abs(overlayRect.left - visibleMapRect.left) <= 12
                 && Math.abs(overlayRect.top - visibleMapRect.top) <= 12
                 && Math.abs(overlayRect.width - visibleMapRect.width) <= 24
                 && Math.abs(overlayRect.height - visibleMapRect.height) <= 24),
             overlayRect: overlayRect
                 ? {
+                    left: Math.round(overlayRect.left),
+                    top: Math.round(overlayRect.top),
                     width: Math.round(overlayRect.width),
                     height: Math.round(overlayRect.height),
                 }
                 : null,
-            viewportRect: visibleMapRect
-                ? {
-                    width: Math.round(visibleMapRect.width),
-                    height: Math.round(visibleMapRect.height),
-                }
-                : null,
+            windowRect: {
+                width: Math.round(windowWidth),
+                height: Math.round(windowHeight),
+            },
             source: dice ? 'live' : null,
         };
     }, targetAnchorId);
 
     expect(overlap.hasAnchor, `${label} 必须找到目标单位`).toBe(true);
     expect(overlap.hasDice, `${label} 必须找到攻击骰结果层`).toBe(true);
-    expect(overlap.dicePlacement, `${label} 攻击骰必须在可见石板居中：${JSON.stringify(overlap)}`).toBe('visible-map-center');
-    expect(overlap.diceInsideViewport, `${label} 攻击骰内容必须落在可见石板内：${JSON.stringify(overlap)}`).toBe(true);
+    expect(overlap.dicePlacement, `${label} 攻击骰必须在玩家屏幕中央：${JSON.stringify(overlap)}`).toBe('screen-center');
+    expect(overlap.overlayMatchesVisibleMap, `${label} 攻击骰不得锚到可见石板中心（右上角失败）：${JSON.stringify(overlap)}`).toBe(false);
     if (overlap.source === 'live') {
-        expect(overlap.overlayMatchesViewport, `${label} 攻击骰 overlay 必须以可见石板为布局宿主：${JSON.stringify(overlap)}`).toBe(true);
+        expect(overlap.overlayLayer, `${label} 攻击骰 overlay 层必须是整窗：${JSON.stringify(overlap)}`).toBe('screen');
+        expect(overlap.overlayMatchesWindow, `${label} 攻击骰 overlay 必须以玩家整窗为布局宿主：${JSON.stringify(overlap)}`).toBe(true);
     }
     const centerTolerance = Math.max(80, Math.min(
-        overlap.viewportRect?.width ?? await page.evaluate(() => window.innerWidth),
-        overlap.viewportRect?.height ?? await page.evaluate(() => window.innerHeight),
+        overlap.windowRect?.width ?? await page.evaluate(() => window.innerWidth),
+        overlap.windowRect?.height ?? await page.evaluate(() => window.innerHeight),
     ) * 0.22);
     expect(
-        overlap.viewportCenterDistancePx,
-        `${label} 攻击骰必须位于可见竞技场窗口中心：${JSON.stringify(overlap)}`,
+        overlap.screenCenterDistancePx,
+        `${label} 攻击骰必须位于玩家屏幕中央：${JSON.stringify(overlap)}`,
     ).toBeLessThanOrEqual(centerTolerance);
+    if (Number.isFinite(overlap.visibleMapCenterDistancePx)) {
+        expect(
+            overlap.screenCenterDistancePx,
+            `${label} 攻击骰必须比可见石板中心更靠近屏幕中央：${JSON.stringify(overlap)}`,
+        ).toBeLessThanOrEqual(overlap.visibleMapCenterDistancePx);
+    }
 }
 
 async function expectMageWarsAttackResultLayerIsolated(page: Page, label: string) {
@@ -7512,11 +7533,11 @@ test.describe('Mage Wars formal online runtime', () => {
             );
             await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
                 'data-overlay-layer',
-                'visible-map',
+                'screen',
             );
             await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
                 'data-placement',
-                'visible-map-center',
+                'screen-center',
             );
             await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeVisible({ timeout: 3_000 });
             await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveAttribute(
@@ -8005,11 +8026,11 @@ test.describe('Mage Wars formal online runtime', () => {
                 await expect(match.hostPage.getByTestId('mage-wars-fx-effect-die-face').first()).toBeVisible({ timeout: 5_000 });
                 await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
                     'data-overlay-layer',
-                    'visible-map',
+                    'screen',
                 );
                 await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
                     'data-placement',
-                    'visible-map-center',
+                    'screen-center',
                 );
                 await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveAttribute(
                     'data-contrast',

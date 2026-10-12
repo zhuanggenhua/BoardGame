@@ -34,6 +34,7 @@ import type {
     HandLimitDiscardResolvedEvent,
     PendingActionResolvedEvent,
     PostBattleDecisionResolvedEvent,
+    ConfirmWheelDispatchPaymentCommand,
     ResolveHandLimitDiscardCommand,
     ResolveInternalDispatchCommand,
     ResolveKhanEdictChoiceCommand,
@@ -97,6 +98,20 @@ const buildQidahenHandLimitDiscardResolvedEvent = (
     type: 'HAND_LIMIT_DISCARD_RESOLVED',
     payload: {
         playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenWheelDispatchPaymentResolvedEvent = (
+    state: MatchState<QidahenCore>,
+    command: ConfirmWheelDispatchPaymentCommand,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'WHEEL_DISPATCH_PAYMENT_RESOLVED',
+    payload: {
+        playerId: command.playerId,
+        cardIds: [...state.core.selectedPaymentCardIds],
     },
     sourceCommandType: command.type,
     timestamp,
@@ -462,6 +477,12 @@ const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEv
         commandTypes: [QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD],
         buildEvents: buildSingleResolvedCommandEvents<ResolveHandLimitDiscardCommand>(
             buildQidahenHandLimitDiscardResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT],
+        buildEvents: buildStatefulResolvedCommandEvents<ConfirmWheelDispatchPaymentCommand>(
+            buildQidahenWheelDispatchPaymentResolvedEvent,
         ),
     },
     {

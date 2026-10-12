@@ -1,6 +1,7 @@
 import type { RandomFn } from '../../engine/types';
 import {
     resolveRoomExploredCardResolutionRequiredPlayerIds,
+    isIntermediateAllTraitCheckEventRollResolution,
     resolveEventRollResolutionRequiresAcknowledgement,
 } from './acknowledgementReadModel';
 import {
@@ -334,6 +335,9 @@ export function applyBetrayalRoomExploredState(
             requiredPlayerIds: resolveHumanAcknowledgementPlayerIds(core, event.payload.playerId),
             acknowledgedPlayerIds: [],
             effect: cloneUseEffect(event.payload.eventEffect),
+            requiresPlayerAdvance: isIntermediateAllTraitCheckEventRollResolution({
+                nextPendingEventChoice: event.payload.nextPendingEventChoice,
+            }),
             requiresAcknowledgement: resolveEventRollResolutionRequiresAcknowledgement({
                 effect: event.payload.eventEffect,
                 nextPendingEventChoice: event.payload.nextPendingEventChoice,

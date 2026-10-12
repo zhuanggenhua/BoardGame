@@ -7,13 +7,14 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANT_BY_ID, FATE_SERVANTS } from './data';
 import { legalMoveTargets } from './domain';
+import { FATE_BATTLE_LOCATION_ORDER } from './domain';
 import type { FateDominationCommandMap, FateDominationCore, LocationId } from './domain';
 import { FATE_DOMINATION_COMMANDS } from './domain';
 import './ui/styles.css';
 
 type Props = GameBoardProps<FateDominationCore, FateDominationCommandMap>;
 
-const LOCATION_ORDER: LocationId[] = ['workshop', 'miyama', 'shinto', 'recon'];
+const LOCATION_ORDER: LocationId[] = [...FATE_BATTLE_LOCATION_ORDER];
 const LOCATION_POSITIONS: Record<LocationId, React.CSSProperties> = {
     workshop: { left: '10%', bottom: '13%' },
     miyama: { left: '34%', top: '44%' },
@@ -81,7 +82,7 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
         core.phase === 'preparation'
         || (core.phase === 'outpost' && allDeployed)
         || core.phase === 'action'
-        || core.phase === 'battle'
+        || (core.phase === 'battle' && !core.battleResolution)
     );
     const actionButtonLabel = core.phase === 'preparation'
         ? t('commands.toOutpost')

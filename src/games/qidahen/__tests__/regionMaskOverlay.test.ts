@@ -123,6 +123,23 @@ describe('Qidahen region mask overlay', () => {
         expect(pixels[offset + 3]).toBeGreaterThan(0);
     });
 
+    it('势力归属态沿区域边界留下比填色更深的描边', () => {
+        const width = 7;
+        const height = 7;
+        const { hitmap } = createRegionHitmap('jinzhou');
+        const pixels = buildRegionMaskOverlayPixels(
+            hitmap,
+            width,
+            height,
+            new Map([['jinzhou', 'ming']]),
+        );
+
+        expect(readAlphaAt(pixels, width, 2, 3)).toBeGreaterThan(readAlphaAt(pixels, width, 3, 3));
+        expect(readAlphaAt(pixels, width, 2, 3)).toBeGreaterThan(180);
+        expect(readAlphaAt(pixels, width, 3, 3)).toBeGreaterThan(0);
+        expect(readAlphaAt(pixels, width, 3, 3)).toBeLessThan(40);
+    });
+
     it('非选中态仍只留在区域内部，不把调度或悬浮提示扩到区域外', () => {
         const width = 7;
         const height = 7;

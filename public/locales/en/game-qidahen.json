@@ -76,30 +76,52 @@
   "board": {
     "magnifyButton": "View",
     "magnifyCardAria": "View {{card}}",
+    "operation": {
+      "discardHand": "Choose a card to discard"
+    },
     "handInteraction": {
       "actionPaymentStatus": "Payment: {{selected}} / {{cost}} card(s)",
       "actionPaymentSelectedCards": "Selected cards: {{cards}}",
       "selectedSeal": "Selected",
-      "actionPaymentHint": "Click a hand card at the bottom to discard it. Click a selected card again to remove it.",
       "confirmExecute": "Confirm action",
       "cancelAction": "Cancel this action",
       "handLimitTitle": "{{factionName}} · Hand limit check",
       "handLimitStatus": "Hand {{handCount}}/{{handLimit}} · Must discard {{requiredDiscardCount}} · Selected {{selected}}",
-      "handLimitHint": "Click a hand card at the bottom to discard it.",
       "confirmDiscard": "Confirm discard",
       "sunYuanhuaStatus": "Discard {{requiredCardCount}} card(s) · Selected {{selected}}",
-      "sunYuanhuaHint": "Click a hand card at the bottom to discard it.",
       "confirmSunYuanhua": "Confirm tech",
       "skipSunYuanhua": "Skip Sun Yuanhua tech",
       "armamentPaymentStatus": "Selected {{selected}} / 2 · 1 armament + discard 1 card",
-      "armamentPaymentHint": "The armament card is already selected; choose 1 more hand card to discard. The armament upgrades by 1 level, and the discard goes to the discard pile.",
       "confirmUseArmament": "Use and upgrade",
       "selectedTacticCard": "Selected tactic card \"{{card}}\"",
       "tacticCardHint": "Click Play Tactic Card to confirm. Click this hand card again to cancel the selection.",
       "confirmTacticCard": "Play Tactic Card",
       "cancelTacticCard": "Cancel",
       "raidPaymentTarget": "Target: {{targetRegionName}} · {{resolutionHint}}",
-      "raidPaymentInvalidTarget": "This region cannot raid. Choose a highlighted legal target on the map."
+      "raidPaymentInvalidTarget": "This region cannot raid. Choose a highlighted legal target on the map.",
+      "wheelDispatchPaymentTitle": "Attack Dispatch · Discard",
+      "wheelDispatchPaymentStatus": "Discard {{required}} · Selected {{selected}}"
+    },
+    "inspect": {
+      "factionHeader": "Faction details",
+      "regionHeader": "Region details",
+      "close": "Close",
+      "factionStats": "VP {{vp}} · Hand {{handCount}}/{{handLimit}} · Troops {{troops}} · Grain {{grain}}",
+      "statVp": "Victory points",
+      "statHand": "Hand",
+      "statTroops": "Troops",
+      "statGrain": "Grain",
+      "statPopulation": "Population",
+      "armamentsTitle": "Armaments",
+      "charactersTitle": "Characters",
+      "charactersEmpty": "No characters in play",
+      "discardTitle": "Discard pile",
+      "discardAlt": "{{name}} discard pile",
+      "discardCount": "{{count}} cards",
+      "discardHint": "The discard pile shows the count only, not card faces.",
+      "missing": "Nothing to inspect.",
+      "openHint": "Click to view armaments and the discard pile",
+      "armamentFallbackSummary": "Developed armament."
     },
     "player": {
       "armamentsUndeveloped": "Not developed",
@@ -107,6 +129,7 @@
       "characterCount": "Characters {{count}}",
       "prestigeBonus": "Hanseong +{{bonus}}",
       "armaments": "Armaments {{summary}}",
+      "armamentsInspect": "Armament details",
       "defeatMarkers": "Defeats ×{{count}}",
       "current": "Current"
     },
@@ -116,6 +139,8 @@
       "armyBackAlt": "Army back",
       "regionSelectionAria": "Qidahen map region selection",
       "regionTroopsPopulation": "Troops {{troops}} · Population {{population}}",
+      "regionPopulation": "Population {{population}}",
+      "statPopulation": "Population",
       "regionSpecialTroops": "Special {{summary}}",
       "regionPassages": "Borders {{summary}}",
       "regionReachable": "Dispatch reach {{summary}}",
@@ -124,7 +149,8 @@
       "selectionContinueHint": "Choose target",
       "clickableRegionSummary": "Targets: {{summary}}",
       "regionTroopChange": "{{regionName}} troops: {{before}} → {{after}}",
-      "grantPardonSourceSelected": "Source selected"
+      "grantPardonSourceSelected": "Source selected",
+      "inspectHint": "Click to view region details"
     },
     "wheel": {
       "aria": "Qidahen action wheel",
@@ -134,7 +160,37 @@
       "centerRight": "ion",
       "centerLeft": "Whe",
       "centerBottom": "el",
-      "currentMarker": "Current position of the action wheel marker"
+      "currentMarker": "Current position of the action wheel marker",
+      "sectors": {
+        "reclaim": {
+          "name": "Reclaim",
+          "detail": "Place 1 population in each of your controlled regions, up to 5 regions, without exceeding the population cap."
+        },
+        "militaryFarm": {
+          "name": "Military Farm",
+          "detail": "Draw 2 cards and raise 1 rank-2 regular army in your homeland."
+        },
+        "recruitTrain": {
+          "name": "Recruit & Train",
+          "detail": "Discard 1 card, then recruit or train up to 4 times."
+        },
+        "attackDispatch": {
+          "name": "Attack & Dispatch",
+          "detail": "Discard 1 card to command up to 6 units. Entering a non-friendly region triggers battle."
+        },
+        "diplomacyHire": {
+          "name": "Diplomacy & Hire",
+          "detail": "Conduct diplomacy on adjacent control-marker regions (friendly/vassal/remove). You may discard cards to raise mercenaries."
+        },
+        "midyear": {
+          "name": "Midyear",
+          "detail": "You must stop here. Resolve land tax, Jiangnan tribute grain, and character checks."
+        },
+        "newYear": {
+          "name": "New Year",
+          "detail": "You must stop here. Resolve Joseon tribute, fortification upkeep, attrition, and reveal the next year card."
+        }
+      }
     },
     "korea": {
       "drawPile": "Korea draw pile",
@@ -531,7 +587,7 @@
       "description": "Wheel Recruit / Train adds troops and trains artillery by armament level.",
       "steps": {
         "overview": "Enter Wheel Recruit / Train resolution.",
-        "ruleReference": "Recruit action: directly create 1 level-2 regular troop.\nTrain action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.\n(Note: the artillery level cap must be raised through armament.)",
+        "ruleReference": "-  Recruit action: directly create 1 level-2 regular troop.\n-  Train action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.",
         "chooseMove": "Click the highlighted Recruit / Train sector on the wheel.",
         "result": "Recruit / Train is complete: Xuanfu's total troop count rises from 2 to 4; 2 new level-2 regular troops are added, and the existing level-1 artillery is trained to level 2.",
         "finish": "Recruit / Train is complete."

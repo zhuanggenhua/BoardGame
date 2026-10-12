@@ -71,6 +71,30 @@ const isGenericObjectCandidate = (element: HTMLElement) => {
     return OBJECT_CLASS_PATTERN.test(classAndTestId) && !INFRASTRUCTURE_CLASS_PATTERN.test(classAndTestId);
 };
 
+const hasRenderableBackground = (element: HTMLElement) => {
+    if (typeof window === 'undefined') return false;
+    const backgroundImage = window.getComputedStyle(element).backgroundImage;
+    return backgroundImage !== 'none' && backgroundImage.includes('url(');
+};
+
+const resolveRenderableObjectSurface = (element: HTMLElement) => {
+    if (element.tagName === 'IMG' || element.tagName === 'CANVAS' || hasRenderableBackground(element)) return element;
+
+    const mediaCandidates = Array.from(element.querySelectorAll('*'))
+        .filter((candidate): candidate is HTMLElement => candidate instanceof HTMLElement)
+        .filter((candidate) => candidate.tagName === 'IMG' || candidate.tagName === 'CANVAS' || hasRenderableBackground(candidate))
+        .filter(isReasonableObjectRect);
+    if (mediaCandidates.length === 0) return element;
+
+    return mediaCandidates.reduce((best, candidate) => {
+        const bestRect = best.getBoundingClientRect();
+        const candidateRect = candidate.getBoundingClientRect();
+        return candidateRect.width * candidateRect.height > bestRect.width * bestRect.height
+            ? candidate
+            : best;
+    });
+};
+
 const resolveInspectableElement = (element: Element | null): HTMLElement | null => {
     const candidates: HTMLElement[] = [];
     let current = element instanceof HTMLElement ? element : null;
@@ -87,24 +111,58 @@ const resolveInspectableElement = (element: Element | null): HTMLElement | null 
         ?? candidates.find((candidate) => (
             candidate.getAttribute('data-browse-inspectable') === 'true' && !isInspectButton(candidate)
         ));
-    if (explicitCandidate) return explicitCandidate;
+    if (explicitCandidate) return resolveRenderableObjectSurface(explicitCandidate);
 
     const genericCandidates = candidates.filter(isGenericObjectCandidate);
     if (genericCandidates.length === 0) return null;
 
-    return genericCandidates.reduce((best, candidate) => {
+    const genericCandidate = genericCandidates.reduce((best, candidate) => {
         const bestRect = best.getBoundingClientRect();
         const candidateRect = candidate.getBoundingClientRect();
-        return candidateRect.width * candidateRect.height > bestRect.width * bestRect.height
-            ? candidate
-            : best;
+        const bestArea = bestRect.width * bestRect.height;
+        const candidateArea = candidateRect.width * candidateRect.height;
+        return candidateArea > bestArea + 1 ? candidate : best;
     });
+
+    return resolveRenderableObjectSurface(genericCandidate);
 };
 
 const buildPreviewMarkup = (target: HTMLElement) => {
     const clone = target.cloneNode(true) as HTMLElement;
     clone.querySelectorAll('[data-card-inspect-variant], [data-testid*="inspect-button"]').forEach((element) => {
         element.remove();
+    });
+    const sourceImages: Array<HTMLImageElement | null> = [
+        target instanceof HTMLImageElement ? target : null,
+        ...Array.from(target.querySelectorAll('img')),
+    ];
+    const cloneImages: Array<HTMLImageElement | null> = [
+        clone instanceof HTMLImageElement ? clone : null,
+        ...Array.from(clone.querySelectorAll('img')),
+    ];
+    cloneImages.forEach((cloneImage, index) => {
+        const sourceImage = sourceImages[index];
+        if (!cloneImage || !sourceImage) return;
+        cloneImage.removeAttribute('data-debug-local-fetch');
+        cloneImage.removeAttribute('data-debug-object-url');
+        cloneImage.removeAttribute('data-debug-rendered-src');
+        cloneImage.removeAttribute('srcset');
+        cloneImage.style.backgroundImage = 'none';
+        cloneImage.style.backgroundColor = 'transparent';
+        cloneImage.style.animation = 'none';
+        cloneImage.style.opacity = '1';
+        if (sourceImage.naturalWidth <= 0 || typeof document === 'undefined') return;
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = sourceImage.naturalWidth;
+            canvas.height = sourceImage.naturalHeight;
+            const context = canvas.getContext('2d');
+            if (!context) return;
+            context.drawImage(sourceImage, 0, 0);
+            cloneImage.src = canvas.toDataURL('image/webp');
+        } catch {
+            // Keep the original src as a fallback when the image cannot be rasterized.
+        }
     });
     clone.removeAttribute('id');
     clone.removeAttribute('data-testid');
@@ -310,10 +368,9 @@ export function PcAltObjectMagnifier({ enabled = true }: { enabled?: boolean }) 
                     height: displayHeight,
                     overflow: 'hidden',
                     padding: 8,
-                    border: '3px solid rgba(251, 191, 36, 0.95)',
                     borderRadius: 16,
                     background: 'rgba(10, 12, 16, 0.97)',
-                    boxShadow: '0 20px 64px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.2)',
+                    boxShadow: '0 20px 64px rgba(0, 0, 0, 0.62)',
                 }}
             >
                 <div

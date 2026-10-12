@@ -131,6 +131,45 @@ describe('PcAltObjectMagnifier', () => {
         expect(screen.getByTestId('pc-alt-object-magnifier')).toBeInTheDocument();
     });
 
+    it('magnifies the renderable child instead of the shared object wrapper', () => {
+        render(
+            <>
+                <PcAltObjectMagnifier />
+                <div data-testid="hero-card" className="character-card" style={{ width: 160, height: 240 }}>
+                    <img data-testid="card-image" alt="card" />
+                </div>
+            </>,
+        );
+
+        const wrapper = screen.getByTestId('hero-card');
+        const image = screen.getByTestId('card-image');
+        const rect = {
+            width: 160,
+            height: 240,
+            left: 40,
+            top: 40,
+            right: 200,
+            bottom: 280,
+            x: 40,
+            y: 40,
+            toJSON: () => ({}),
+        } as DOMRect;
+        vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue(rect);
+        vi.spyOn(image, 'getBoundingClientRect').mockReturnValue(rect);
+        Object.defineProperty(document, 'elementFromPoint', {
+            configurable: true,
+            value: vi.fn(() => image),
+        });
+
+        act(() => {
+            fireEvent.mouseMove(window, { clientX: 80, clientY: 100, altKey: true });
+        });
+
+        const magnifier = screen.getByTestId('pc-alt-object-magnifier');
+        expect(magnifier.innerHTML).toContain('<img');
+        expect(magnifier.innerHTML).not.toContain('character-card');
+    });
+
     it('does not magnify objects inside the shared ignore contract', () => {
         render(
             <>

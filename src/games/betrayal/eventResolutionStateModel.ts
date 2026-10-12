@@ -39,6 +39,7 @@ import {
     type UseEffectProfile,
 } from './possessionEffects';
 import {
+    isIntermediateAllTraitCheckEventRollResolution,
     resolveEventRollResolutionRequiresAcknowledgement,
     resolveHumanAcknowledgementPlayerIds,
 } from './acknowledgementReadModel';
@@ -144,6 +145,22 @@ function createEventRecentRoll(
     };
 }
 
+export function buildEventChoiceRecentRollId(
+    event: Pick<EventChoiceResolvedEvent, 'payload' | 'timestamp'>,
+): string {
+    const eventRoll = event.payload.eventRoll;
+    const traitCheckStep = event.payload.allTraitCheckProgress?.results.length ?? 0;
+    return [
+        event.payload.playerId,
+        event.payload.sourceTitle,
+        event.timestamp,
+        eventRoll?.kind ?? 'none',
+        eventRoll?.trait ?? 'none',
+        traitCheckStep,
+        eventRoll?.rollLabel ?? eventRoll?.label ?? 'roll',
+    ].join('-');
+}
+
 function createPendingEventRollResolution(core: BetrayalCore, input: {
     rollId: string;
     playerId: string;
@@ -177,6 +194,9 @@ function createPendingEventRollResolution(core: BetrayalCore, input: {
         effect: cloneUseEffect(input.eventEffect ?? nextPendingEventChoice!.effect),
         nextPendingEventChoice,
         deathPrevention: cloneEventDeathPrevention(input.deathPrevention),
+        requiresPlayerAdvance: isIntermediateAllTraitCheckEventRollResolution({
+            nextPendingEventChoice,
+        }),
         requiresAcknowledgement: resolveEventRollResolutionRequiresAcknowledgement({
             effect: input.eventEffect ?? nextPendingEventChoice!.effect,
             nextPendingEventChoice,
@@ -356,7 +376,7 @@ export function applyBetrayalEventChoiceResolvedState(
         : null;
     core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
         ? createEventRecentRoll(
-            `${event.payload.playerId}-${event.payload.sourceTitle}-${event.timestamp}`,
+            buildEventChoiceRecentRollId(event),
             event.payload.playerId,
             event.payload.sourceTitle,
             event.payload.eventRoll.eventDescription,

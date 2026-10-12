@@ -811,6 +811,12 @@ const createWaterDispatchTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedWheelMoveId = 'move-3-all-opponents';
         core.selectedRegionId = 'song-jin';
         core.selectedActionId = 'wheel-dispatch';
+        core.selectedPaymentCardIds = [];
+        core.payment = {
+            required: 0,
+            selected: 0,
+            prompt: '进攻调度弃牌已完成',
+        };
         core.wheelDispatchProgress = null;
         core.pendingTargetAction = null;
         core.postBattleSelection = null;

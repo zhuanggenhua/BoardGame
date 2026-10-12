@@ -39,6 +39,7 @@ description: "BoardGame 游戏支撑能力接入 workflow。用于用户要求�
 通用的四项前提按 [`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 锁定。本 workflow 额外写清：
 
 - `gameId` 和实际入口文件；
+- 若用户明确要求“每个游戏 / 所有游戏 / 底层通用”的支撑能力，`gameId` 不得填单一游戏，必须改为公共能力 owner + 代表性跨游戏覆盖矩阵；找不到公共 owner 时停在定位，不得随机挑一个游戏落实现象补丁。
 - `action-log`、`undo-system`、`audio-feedback`、`game-ai-system`、`tutorial-engine`、`debug-config` 哪些本轮接入、哪些只审计；
 - 对应能力的主源规范、现有实现和红测；
 - 每项能力需要的测试、i18n、类型检查、真实入口或截图。

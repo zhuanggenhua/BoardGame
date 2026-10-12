@@ -1,6 +1,7 @@
 import type { RandomFn, PlayerId } from '../../../engine/types';
 import { FATE_ATTACK_CARDS, FATE_EVENTS, FATE_SERVANTS, FATE_SITUATIONS, FATE_MASTERS } from '../data';
 import type { BattlefieldState, CardInstance, FateDominationCore, LocationId, PlayerState } from './types';
+import { createInitialFateRuleState } from './mechanics';
 
 const createDeck = (playerId: PlayerId, servantId: string): CardInstance[] => {
     const servant = FATE_SERVANTS.find((item) => item.id === servantId);
@@ -36,6 +37,8 @@ const createPlayer = (playerId: PlayerId, index: number, _random: RandomFn): Pla
         deck,
         hasPassedAction: false,
         eliminated: false,
+        defeatMarkers: [],
+        eliminationProtectionUsed: false,
         isRevealed: false,
         activeSkills: [],
         skills: [
@@ -78,5 +81,6 @@ export function createInitialFateDominationCore(playerIds: PlayerId[], random: R
         eventDeck,
         eventDiscard: [],
         currentEvents,
+        ruleState: createInitialFateRuleState(),
     };
 }

@@ -29,3 +29,5 @@ export * from './actionLogHelpers';
 export * from './entityIdentity';
 export * from './factionRelations';
 export * from './movement';
+export * from './copyContext';
+export * from './ruleModification';

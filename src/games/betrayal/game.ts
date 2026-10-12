@@ -786,6 +786,8 @@ export interface BetrayalPendingEventRollResolutionState {
         successHauntTriggerLabel?: string;
         successTraitorSelection?: 'current-explorer' | 'magic-camera-owner';
     };
+    /** 多项独立检定停稳后，必须由触发玩家明确承接到下一规则阶段。 */
+    requiresPlayerAdvance?: boolean;
     requiresAcknowledgement?: boolean;
 }
 
@@ -1811,7 +1813,7 @@ function validateEventRollFinalization(core: BetrayalCore, command: BetrayalComm
             return { valid: true };
         }
         if (
-            pending.requiresAcknowledgement === false
+            (pending.requiresAcknowledgement === false || pending.requiresPlayerAdvance)
             && (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
                 || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM)
         ) {
@@ -1819,9 +1821,9 @@ function validateEventRollFinalization(core: BetrayalCore, command: BetrayalComm
         }
         return { valid: false, error: '请先处理当前事件投掷结果。' };
     }
-    if (pending.requiresAcknowledgement === false) {
+    if (pending.requiresAcknowledgement === false || pending.requiresPlayerAdvance) {
         if (command.playerId !== pending.playerId) {
-            return { valid: false, error: '只有触发事件的玩家可以继续处理当前投掷。' };
+            return { valid: false, error: '只有触发事件的玩家可以处理当前检定结果。' };
         }
         if (command.payload.rollId && command.payload.rollId !== pending.rollId) {
             return { valid: false, error: '当前投掷结果已经改变。' };

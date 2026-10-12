@@ -30,8 +30,12 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
         borderRadius: dtUnit(0.4),
         fontSize: dtUnit(0.7),
     };
-    const inspectButtonClassName = 'absolute z-20 flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,opacity] duration-300 hover:bg-amber-500/80';
-    const inspectButtonVisualClassName = 'flex h-full w-full items-center justify-center';
+    const inspectButtonClassName = 'absolute z-20 flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-300 hover:brightness-125';
+    const inspectButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl';
+    const inspectButtonVisualStyle = {
+        width: dtUnit(2),
+        height: dtUnit(2),
+    } as const;
     const inspectIconClassName = 'fill-current';
     const inspectButtonStyle = {
         top: dtUnit(0.24),
@@ -111,7 +115,11 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
                         data-testid="discard-pile-inspect-button"
                         aria-label={t('actions.inspectDiscardPile')}
                     >
-                        <span className={inspectButtonVisualClassName}>
+                        <span
+                            className={inspectButtonVisualClassName}
+                            style={inspectButtonVisualStyle}
+                            data-fixed-control-visual="true"
+                        >
                             <svg
                                 className={`board-shell-fixed-icon ${inspectIconClassName}`}
                                 viewBox="0 0 20 20"

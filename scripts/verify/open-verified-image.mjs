@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { validateE2EImageIndex } from './e2e-image-index-contract.mjs';
+import { ARCHIVE_DIRECTORY_NAMES, assertUserVisibleMediaDirectory, FORBIDDEN_CROP_DIRECTORY_NAMES, mediaPathContainsForbiddenCropDirectory, validateE2EImageIndex } from './e2e-image-index-contract.mjs';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
@@ -115,10 +115,14 @@ const collectMedia = (dirPath) => {
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
+            const directoryName = entry.name.toLowerCase();
+            if (FORBIDDEN_CROP_DIRECTORY_NAMES.has(directoryName) || ARCHIVE_DIRECTORY_NAMES.has(directoryName)) {
+                continue;
+            }
             results.push(...collectMedia(fullPath));
             continue;
         }
-        if (entry.isFile() && isMediaFile(fullPath)) {
+        if (entry.isFile() && isMediaFile(fullPath) && !mediaPathContainsForbiddenCropDirectory(fullPath)) {
             results.push(fullPath);
         }
     }
@@ -776,6 +780,7 @@ const main = () => {
         if (parsed.viewer.toLowerCase() !== 'web') {
             throw new Error('目录查看模式只支持项目唯一的网页查看器入口');
         }
+        assertUserVisibleMediaDirectory(path.resolve(parsed.dir));
         openDirectoryWithWebViewer(parsed);
         return;
     }

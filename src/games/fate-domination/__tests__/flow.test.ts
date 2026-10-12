@@ -3,6 +3,7 @@ import { createReplayAdapter } from '../../../engine/adapter';
 import type { MatchState } from '../../../engine/types';
 import { FateDominationDomain } from '../domain';
 import { engineConfig } from '../game';
+import { FATE_BATTLE_LOCATION_ORDER } from '../domain';
 import type { FateDominationCommand, FateDominationCore } from '../domain';
 import { FATE_MASTERS, FATE_SERVANTS } from '../data/identities';
 import { FATE_ATTACK_BY_ID } from '../data/cards';
@@ -112,6 +113,11 @@ describe('Fate/Domination foundation domain', () => {
         state = confirmFirstTwoCards(state, '1');
         state = confirmFirstTwoCards(state, '2');
         state = apply(state, command('ADVANCE_PHASE', '2', {}));
+        expect(state.core.phase).toBe('battle');
+        expect(state.core.battleResolution?.step).toBe('locations');
+        for (const locationId of FATE_BATTLE_LOCATION_ORDER) {
+            state = apply(state, command('RESOLVE_LOCATION', '2', { locationId }));
+        }
         expect(state.core.players['2'].victoryPoints).toBeGreaterThan(0);
         expect(state.core.round).toBe(2);
         expect(state.core.phase).toBe('preparation');
@@ -125,13 +131,16 @@ describe('Fate/Domination foundation domain', () => {
         expect(state.core.players['0'].mana).toBe(2);
     });
 
-    it('迁入 demo 技能定义后可通过统一技能命令发动并记录激活状态', () => {
+    it('未注册技能不会被伪实现为已激活或扣除资源', () => {
         let state = deployAllPlayers(adapter.setup(['0', '1', '2']));
-        const skill = state.core.players['0'].skills.find((item) => item.type === '行动阶段') ?? state.core.players['0'].skills[0];
+        const skill = state.core.players['0'].skills[0];
         expect(skill).toBeDefined();
         expect(FateDominationDomain.validate(state, command('PLAY_SKILL', '0', { skillId: skill.id })).valid).toBe(true);
+        const mana = state.core.players['0'].mana;
         state = apply(state, command('PLAY_SKILL', '0', { skillId: skill.id }));
-        expect(state.core.players['0'].activeSkills).toContain(skill.id);
+        expect(state.core.players['0'].activeSkills).not.toContain(skill.id);
+        expect(state.core.players['0'].mana).toBe(mana);
+        expect(state.core.actionNotice).toContain('未接入');
     });
 
     it('确认攻击时重新校验当前魔力，避免资源已消耗后仍确认超额攻击', () => {

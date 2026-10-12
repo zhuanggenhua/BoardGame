@@ -982,7 +982,7 @@ const QIDAHEN_WHEEL_SHARED_COST_TUTORIAL: TutorialManifest = {
         {
             id: 'dispatch-ready',
             content: 'game-qidahen:tutorial.wheelSharedCost.steps.dispatchReady',
-            highlightTarget: 'qidahen-wheel-dispatch-selection',
+            highlightTarget: 'qidahen-wheel-dispatch-payment-panel',
             position: 'left',
             infoStep: true,
         },
@@ -1099,7 +1099,7 @@ const QIDAHEN_WHEEL_RECRUIT_TRAIN_TUTORIAL: TutorialManifest = {
             id: 'result',
             content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.result',
             highlightTarget: 'qidahen-map-result-feedback',
-            position: 'right',
+            position: 'left',
             avoidOverlapSelectors: ['[data-testid="qidahen-map-result-feedback-safe-zone"]'],
             tooltipMaxWidth: 300,
             infoStep: true,
@@ -1155,7 +1155,7 @@ const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
         {
             id: 'result',
             content: 'game-qidahen:tutorial.armamentUpgrade.steps.result',
-            highlightTarget: 'qidahen-armaments-ming',
+            highlightTarget: 'qidahen-player-ming',
             position: 'top',
             infoStep: true,
         },

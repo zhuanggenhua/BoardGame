@@ -76,30 +76,52 @@
   "board": {
     "magnifyButton": "看",
     "magnifyCardAria": "查看 {{card}}",
+    "operation": {
+      "discardHand": "选择弃置的手牌"
+    },
     "handInteraction": {
       "actionPaymentStatus": "支付进度：已选 {{selected}} / {{cost}} 张",
       "actionPaymentSelectedCards": "已选牌：{{cards}}",
       "selectedSeal": "已选",
-      "actionPaymentHint": "点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。",
       "confirmExecute": "确认执行",
       "cancelAction": "取消本次行动",
       "handLimitTitle": "{{factionName}} · 检查手牌上限",
       "handLimitStatus": "手牌 {{handCount}}/{{handLimit}} · 需弃 {{requiredDiscardCount}} · 已择 {{selected}}",
-      "handLimitHint": "点击底部手牌选择要弃掉的牌。",
       "confirmDiscard": "确认弃牌",
       "sunYuanhuaStatus": "需弃 {{requiredCardCount}} 张 · 已择 {{selected}}",
-      "sunYuanhuaHint": "点击底部手牌选择要弃掉的牌。",
       "confirmSunYuanhua": "确认打科技",
       "skipSunYuanhua": "跳过孙元化科技",
       "armamentPaymentStatus": "已选 {{selected}} / 2 · 含 1 张军备牌 + 弃 1 张手牌",
-      "armamentPaymentHint": "当前已选军备牌；再选 1 张手牌作为弃牌成本。确认后军备牌升 1 级，弃牌进入弃牌堆。",
       "confirmUseArmament": "使用并升级",
       "selectedTacticCard": "已选战术牌「{{card}}」",
       "tacticCardHint": "点击“打出战术牌”确认；再次点击这张手牌可取消选中。",
       "confirmTacticCard": "打出战术牌",
       "cancelTacticCard": "取消",
       "raidPaymentTarget": "目标：{{targetRegionName}} · {{resolutionHint}}",
-      "raidPaymentInvalidTarget": "当前地区不能发动突袭，请在地图上选择高亮的合法目标"
+      "raidPaymentInvalidTarget": "当前地区不能发动突袭，请在地图上选择高亮的合法目标",
+      "wheelDispatchPaymentTitle": "进攻调度 · 弃牌",
+      "wheelDispatchPaymentStatus": "需弃 {{required}} 张 · 已选 {{selected}} 张"
+    },
+    "inspect": {
+      "factionHeader": "势力详情",
+      "regionHeader": "地点详情",
+      "close": "关闭",
+      "factionStats": "VP {{vp}} · 手牌 {{handCount}}/{{handLimit}} · 兵力 {{troops}} · 粮 {{grain}}",
+      "statVp": "胜利点",
+      "statHand": "手牌",
+      "statTroops": "兵力",
+      "statGrain": "粮",
+      "statPopulation": "人口",
+      "armamentsTitle": "军备",
+      "charactersTitle": "人物",
+      "charactersEmpty": "场上暂无人物",
+      "discardTitle": "弃牌堆",
+      "discardAlt": "{{name}}弃牌堆",
+      "discardCount": "{{count}} 张",
+      "discardHint": "弃牌只显示张数，不公开具体牌面。",
+      "missing": "当前没有可查看的详情。",
+      "openHint": "点击查看军备与弃牌堆",
+      "armamentFallbackSummary": "已开发军备。"
     },
     "player": {
       "armamentsUndeveloped": "未开发",
@@ -107,6 +129,7 @@
       "characterCount": "人物 {{count}}",
       "prestigeBonus": "汉城+{{bonus}}",
       "armaments": "军备 {{summary}}",
+      "armamentsInspect": "军备详情",
       "defeatMarkers": "败×{{count}}",
       "current": "当前"
     },
@@ -116,6 +139,8 @@
       "armyBackAlt": "部队背面",
       "regionSelectionAria": "七大恨地图区域选择",
       "regionTroopsPopulation": "兵力 {{troops}} · 人口 {{population}}",
+      "regionPopulation": "人口 {{population}}",
+      "statPopulation": "人口",
       "regionSpecialTroops": "特殊 {{summary}}",
       "regionPassages": "接边 {{summary}}",
       "regionReachable": "调度可达 {{summary}}",
@@ -124,7 +149,8 @@
       "selectionContinueHint": "选择目标",
       "clickableRegionSummary": "目标：{{summary}}",
       "regionTroopChange": "{{regionName}}部队：{{before}} → {{after}}",
-      "grantPardonSourceSelected": "已选来源"
+      "grantPardonSourceSelected": "已选来源",
+      "inspectHint": "点击查看地点详情"
     },
     "wheel": {
       "aria": "七大恨行动轮盘",
@@ -134,7 +160,37 @@
       "centerRight": "轮",
       "centerLeft": "盘",
       "centerBottom": "动",
-      "currentMarker": "轮盘行动标记当前位置"
+      "currentMarker": "轮盘行动标记当前位置",
+      "sectors": {
+        "reclaim": {
+          "name": "开垦",
+          "detail": "每个己方控制区可放置 1 人口，最多 5 区，不超过人口上限。"
+        },
+        "militaryFarm": {
+          "name": "军屯",
+          "detail": "抽 2 张手牌，并在己方本土建立 1 个等级 2 正规军。"
+        },
+        "recruitTrain": {
+          "name": "征兵训练",
+          "detail": "弃 1 张手牌，最多 4 次征兵或训练。"
+        },
+        "attackDispatch": {
+          "name": "进攻调度",
+          "detail": "弃 1 张手牌，指挥最多 6 个部队移动；进入非己方或友好区会触发战斗。"
+        },
+        "diplomacyHire": {
+          "name": "外交雇佣",
+          "detail": "对邻近控制标记区外交（友好/附庸/移除）；可弃牌建立雇佣军。"
+        },
+        "midyear": {
+          "name": "年中",
+          "detail": "必须停留。结算土地税赋、江南漕运和人物判定。"
+        },
+        "newYear": {
+          "name": "新年",
+          "detail": "必须停留。结算朝鲜朝贡、防线维护、兵力耗损，并翻开下年纪年卡。"
+        }
+      }
     },
     "korea": {
       "drawPile": "朝鲜牌库",
@@ -401,7 +457,7 @@
         "turnFlow": "玩家行动流程是：1. 检查手牌上限；2. 转动轮盘；3. 各执行一次轮盘行动和手牌行动，顺序由玩家决定。",
         "wheelFirst": "开局的手牌上限检查已自动完成。当前大明有 3 张手牌，上限 15 张，不需要弃牌。现在进入轮盘行动。",
         "wheelRule": "轮盘上的行动标记决定该能执行的轮盘行动。所有人都共享行动标记的移动，并依标记所在位置执行轮盘上的行动。轮到玩家时可选择移动行动标记：免费向前走 1 格、指定一个对手抽 2 张牌并向前走 2 格、所有对手抽2 张牌并向前走 3 格。",
-        "wheelRecruitTrainRule": "征兵行动：直接建立 1 个等级 2 的正规军部队。",
+        "wheelRecruitTrainRule": "-  征兵行动：直接建立 1 个等级 2 的正规军部队。",
         "wheelMove": "点击轮盘上高亮的“征兵训练”区域。",
         "wheelResult": "征兵训练已结算：宣府部队由 1 支增至 3 支；新增 2 支等级 2 正规军。宣府当前没有炮兵，本次不发生炮兵训练。",
         "handActionOrder": "手牌行动每回合选 1 项。大明右侧列出四个同层势力行动：突袭作战、征召军队、赐印招安、驱虎吞狼。这四项之间没有规则规定的固定先后；轮盘行动与手牌行动也没有固定先后。",
@@ -531,7 +587,7 @@
       "description": "轮盘征兵训练会直接补兵，并按军备等级训练炮兵。",
       "steps": {
         "overview": "进入轮盘征兵训练结算。",
-        "ruleReference": "征兵行动：直接建立 1 个等级 2 的正规军部队。\n训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。\n(注意炮兵的等级上限须由军备来提升)",
+        "ruleReference": "-  征兵行动：直接建立 1 个等级 2 的正规军部队。\n-  训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。",
         "chooseMove": "点击轮盘上高亮的“征兵训练”区域。",
         "result": "征兵训练完成：宣府总兵力由 2 支增至 4 支；新增 2 支等级 2 正规军；原有 1 支等级 1 炮兵训练至 2 级。",
         "finish": "征兵训练已完成。"

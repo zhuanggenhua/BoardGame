@@ -1,7 +1,10 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANT_BY_ID } from '../data';
+import { FATE_BATTLE_LOCATION_ORDER } from './types';
 import type { FateDominationCommand, FateDominationCore, LocationId } from './types';
 import { canPlayAttack, movementFailureToError, resolveFateMovement } from './movement';
+import { canUseFateAbility } from './mechanics';
+import { resolveFateAbilityDefinition } from './abilityRegistry';
 
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
@@ -11,6 +14,9 @@ const isCurrentPlayer = (core: FateDominationCore, command: FateDominationComman
 
 const locationExists = (locationId: string): locationId is LocationId =>
     ['workshop', 'miyama', 'shinto', 'recon'].includes(locationId);
+
+const abilityPhaseFor = (phase: FateDominationCore['phase']) =>
+    phase === 'preparation' || phase === 'outpost' || phase === 'action' || phase === 'battle' ? phase : undefined;
 
 export function validate(state: MatchState<FateDominationCore>, command: FateDominationCommand): ValidationResult {
     const core = state.core;
@@ -55,15 +61,20 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             const cost = Number(skill.req ?? skill.cost ?? 0);
             if (core.players[command.playerId].mana < cost) return fail('notEnoughMana');
             if (core.players[command.playerId].activeSkills.includes(skill.id)) return fail('skillAlreadyActive');
+            const definition = resolveFateAbilityDefinition(skill.id);
+            const abilityPhase = abilityPhaseFor(core.phase);
+            if (definition?.trigger && abilityPhase && definition.trigger !== abilityPhase) return fail('wrongPhase');
+            if (abilityPhase && !canUseFateAbility(core, command.playerId, abilityPhase).valid) return fail('abilitySuppressed');
             return ok();
         }
         case 'RESOLVE_LOCATION': {
             if (core.phase !== 'battle') return fail('wrongPhase');
             if (!isCurrentPlayer(core, command)) return fail('notYourTurn');
             if (!locationExists(command.payload.locationId)) return fail('unknownLocation');
+            if (!core.battleResolution) return fail('battleResolutionNotStarted');
+            if (core.battleResolution.step !== 'locations') return fail('battleResolutionComplete');
             if (core.resolvedLocations.includes(command.payload.locationId)) return fail('locationAlreadyResolved');
-            const battleOrder: LocationId[] = ['workshop', 'miyama', 'shinto', 'recon'];
-            const nextLocation = battleOrder.find((locationId) => !core.resolvedLocations.includes(locationId));
+            const nextLocation = FATE_BATTLE_LOCATION_ORDER.find((locationId) => !core.resolvedLocations.includes(locationId));
             if (nextLocation !== command.payload.locationId) return fail('wrongResolutionOrder');
             return ok();
         }
@@ -116,7 +127,10 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
                 const allDeployed = core.playerIds.every((id) => core.players[id].eliminated || Boolean(core.players[id].locationId));
                 return allDeployed ? ok() : fail('deploymentRequired');
             }
-            if (core.phase === 'battle') return ok();
+            if (core.phase === 'battle') {
+                if (core.battleResolution && core.battleResolution.step !== 'awards') return fail('battleResolutionIncomplete');
+                return ok();
+            }
             return fail('actionMustBeConfirmed');
         default:
             return fail('unknownCommand');

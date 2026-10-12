@@ -19,7 +19,7 @@ metadata:
 | --- | --- | --- |
 | 项目入口 | [`../AGENTS.md`](../AGENTS.md) | 项目边界、宿主加载、任务路由和 skill 名册 |
 | 硬规则与证据边界 | [`../rules/system.md`](../rules/system.md) | 跨任务不变量、证据不得越权和规范更新后的闭环；规范整理方法由系统 `skill-governance` 负责 |
-| 通用目标锁定 | [`standards/conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 原话保真、问题对象 / 真相源 / 入口环境 / 验收口径，以及目标不明时的停手格式 |
+| 通用目标锁定 | [`standards/conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 原话保真、话语分类、问题对象 / 真相源 / 入口环境 / 验收口径，以及目标不明时的停手格式 |
 | 领域执行标准 | `standards/*.md` | 跨游戏可复用的“怎么做”；同一判断只在一个标准正文维护 |
 | 项目 workflow | `../skills/*/SKILL.md` | 把主源编排成某类任务的执行入口；适配层不得复制主源正文 |
 | 证据 / drift-check | 对应 skill 的 `references/`、任务记录或 `evidence/` | 记录事实、案例和缺口；不能反向成为新规范 |
@@ -35,13 +35,13 @@ metadata:
 | [`asset-pipeline.md`](standards/asset-pipeline.md) | 运行时素材与发布总规范：图片、图集、模型/贴图、引擎内置对象、manifest、上传和运行时加载——改素材链路时查 |
 | [`audio-assets.md`](standards/audio-assets.md) | 音频资源标准：共享包、registry、触发路径和迁移策略——接入或排查音效时查 |
 | [`audit-evidence-template.md`](standards/audit-evidence-template.md) | 审计证据模板：范围、结论、缺口分类和自检口径——写审计 evidence 时查 |
-| [`conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 接续目标锁定：摘要、交接和当前目标防漂移——上下文压缩或接手任务时查 |
+| [`conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 接续目标锁定：原话保真、话语分类、摘要防漂移——压缩接手或判断陈述与验收时查 |
 | [`critical-image-gate.md`](standards/critical-image-gate.md) | 关键图片门禁：阻塞加载、失败提示和验收边界——改关键图片加载时查 |
 | [`critical-image-preload.md`](standards/critical-image-preload.md) | 关键图片预加载：critical/warm 分层、图集初始化和教程裁剪——改预加载链路时查 |
 | [`data-entry.md`](standards/data-entry.md) | 数据录入标准：规则、图片、OCR、配置字段和核对口径——录入规则或资源数据时查 |
 | [`description-to-implementation-audit.md`](standards/description-to-implementation-audit.md) | 描述到实现审计主源：从规则文字追到代码消费点——查玩法实现是否吃对规则时查 |
 | [`documentation-style.md`](standards/documentation-style.md) | 项目文档写作标准：职责落点、相对链接和历史记录边界——写或整理文档时查 |
-| [`e2e-verification.md`](standards/e2e-verification.md) | E2E 与截图证据：正式 V1 网页入口、状态注入、截图资格和证据组——跑端到端验收时查 |
+| [`e2e-verification.md`](standards/e2e-verification.md) | E2E 与截图证据：入口、状态注入、增量核图和证据组——跑端到端或逐图验收时查 |
 | [`engine-ability-framework.md`](standards/engine-ability-framework.md) | 能力框架标准：能力定义、消费点和跨游戏抽象边界——改能力系统时查 |
 | [`engine-action-log.md`](standards/engine-action-log.md) | 行动日志标准：事件、可见记录和反馈追踪——改 action log 或事件展示时查 |
 | [`engine-damage-pipeline.md`](standards/engine-damage-pipeline.md) | 伤害管线标准：伤害计算、结算时机和跨层消费——改伤害或生命值流程时查 |

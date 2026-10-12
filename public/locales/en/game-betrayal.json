@@ -983,6 +983,10 @@
       "confirmedWithProgress": "Confirmed {{confirmed}}/{{total}}",
       "waitingForCardConfirmation": "Waiting {{confirmed}}/{{total}}",
       "nextSearchCard": "Next card",
+      "nextTraitCheck": "Make the {{trait}} check",
+      "chooseRewardTrait": "Choose reward trait",
+      "resolveNextStep": "Enter next rules stage",
+      "reviewResult": "Review result",
       "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "A room with an event symbol has been revealed; choose to skip the event or draw an event card.",
       "rollEvent": "Roll Event"

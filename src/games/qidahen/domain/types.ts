@@ -1051,6 +1051,10 @@ export interface SelectPaymentCardCommand extends Command<'SELECT_PAYMENT_CARD'>
     };
 }
 
+export interface ConfirmWheelDispatchPaymentCommand extends Command<'CONFIRM_WHEEL_DISPATCH_PAYMENT'> {
+    payload: Record<string, never>;
+}
+
 export interface SelectHandLimitDiscardCardCommand extends Command<'SELECT_HAND_LIMIT_DISCARD_CARD'> {
     payload: {
         cardId: string;
@@ -1270,6 +1274,7 @@ export type QidahenCommand =
     | SelectWheelMoveCommand
     | ExecuteWheelMoveCommand
     | SelectPaymentCardCommand
+    | ConfirmWheelDispatchPaymentCommand
     | SelectHandLimitDiscardCardCommand
     | SelectSunYuanhuaTechCardCommand
     | SelectGaoDiDispatchCardCommand
@@ -1347,6 +1352,13 @@ export interface PaymentCardSelectedEvent extends GameEvent<'PAYMENT_CARD_SELECT
     payload: {
         cardId: string;
         playerId: PlayerId;
+    };
+}
+
+export interface WheelDispatchPaymentResolvedEvent extends GameEvent<'WHEEL_DISPATCH_PAYMENT_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        cardIds: string[];
     };
 }
 
@@ -1619,6 +1631,7 @@ export type QidahenEvent =
     | WheelMoveSelectedEvent
     | WheelMoveExecutedEvent
     | PaymentCardSelectedEvent
+    | WheelDispatchPaymentResolvedEvent
     | HandLimitDiscardCardSelectedEvent
     | SunYuanhuaTechCardSelectedEvent
     | GaoDiDispatchCardSelectedEvent
@@ -1661,6 +1674,7 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     SELECT_WHEEL_MOVE: SelectWheelMoveCommand['payload'];
     EXECUTE_WHEEL_MOVE: ExecuteWheelMoveCommand['payload'];
     SELECT_PAYMENT_CARD: SelectPaymentCardCommand['payload'];
+    CONFIRM_WHEEL_DISPATCH_PAYMENT: ConfirmWheelDispatchPaymentCommand['payload'];
     SELECT_HAND_LIMIT_DISCARD_CARD: SelectHandLimitDiscardCardCommand['payload'];
     SELECT_SUN_YUANHUA_TECH_CARD: SelectSunYuanhuaTechCardCommand['payload'];
     SELECT_GAO_DI_DISPATCH_CARD: SelectGaoDiDispatchCardCommand['payload'];

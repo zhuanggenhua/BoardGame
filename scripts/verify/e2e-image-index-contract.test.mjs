@@ -114,6 +114,30 @@ test('视觉审计不得把数值正确性当成图片职责', () => {
     );
 });
 
+test('视觉审计允许未改写媒体标记为 carried-forward', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    const reviewPath = path.join(fixture.root, 'evidence', '.visual-review.json');
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    review.media[0].status = 'carried-forward';
+    review.media[0].unchangedEvidence = '本轮未改该屏实现与验收条件，用户未点名不合格';
+    writeFileSync(reviewPath, JSON.stringify(review, null, 2));
+    assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
+});
+
+test('carried-forward 缺少未改写证据时不能通过最终 PASS', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    const reviewPath = path.join(fixture.root, 'evidence', '.visual-review.json');
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    review.media[0].status = 'carried-forward';
+    writeFileSync(reviewPath, JSON.stringify(review, null, 2));
+    assert.throws(
+        () => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }),
+        /unchangedEvidence|未改写证据/,
+    );
+});
+
 test('合同外媒体声明必须存在且不能重复当前清单媒体', () => {
     const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
     const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
@@ -127,4 +151,85 @@ test('合同外媒体声明必须存在且不能重复当前清单媒体', () =>
         () => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }),
         /不能重复声明 PASS 清单媒体/,
     );
+});
+
+test('证据目录里的特写子目录不能通过最终 PASS', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    const diagDir = path.join(fixture.root, 'evidence', '_diag');
+    mkdirSync(diagDir, { recursive: true });
+    writeFileSync(path.join(diagDir, 'crop.png'), 'fixture');
+    assert.throws(
+        () => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }),
+        /特写\/裁切子目录/,
+    );
+});
+
+test('未登记的递归媒体不能通过最终 PASS', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    const nestedDir = path.join(fixture.root, 'evidence', 'nested');
+    mkdirSync(nestedDir, { recursive: true });
+    writeFileSync(path.join(nestedDir, 'extra.png'), 'fixture');
+    assert.throws(
+        () => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }),
+        /未登记媒体/,
+    );
+});
+
+test('历史整屏归档目录不阻断最终 PASS', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    const historyDir = path.join(fixture.root, 'evidence', '_history');
+    mkdirSync(historyDir, { recursive: true });
+    writeFileSync(path.join(historyDir, 'old-full.png'), 'fixture');
+    assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
+});
+
+test('未点名特写时 auxiliary-detail 不能进入最终 PASS', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const indexPath = path.join(fixture.root, 'evidence', '.e2e-image-index.json');
+    const index = JSON.parse(readFileSync(indexPath, 'utf8'));
+    index.media[0].role = 'auxiliary-detail';
+    writeFileSync(indexPath, JSON.stringify(index, null, 2));
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    assert.throws(
+        () => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }),
+        /禁止特写\/局部图/,
+    );
+});
+
+test('用户点名特写后允许 auxiliary-detail 辅证', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const extraName = '特写辅证.jpg';
+    writeFileSync(path.join(fixture.root, 'evidence', extraName), 'fixture');
+    const indexPath = path.join(fixture.root, 'evidence', '.e2e-image-index.json');
+    const index = JSON.parse(readFileSync(indexPath, 'utf8'));
+    index.media.push({
+        path: extraName,
+        chainId: 'fixture-chain',
+        chainStep: '04',
+        sourceRun: 'fixture-run',
+        sourceDir: 'evidence',
+        stage: '中态',
+        role: 'auxiliary-detail',
+        viewport: 'desktop',
+        transition: '用户点名后补充特写',
+        description: '用户点名后的局部放大画面',
+    });
+    writeFileSync(indexPath, JSON.stringify(index, null, 2));
+    const reviewPath = path.join(fixture.root, 'evidence', '.visual-review.json');
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    review.media.push({
+        path: extraName,
+        status: 'PASS',
+        checks: ['target-visible', 'interaction-ui', 'layout-readable', 'no-error'],
+        observation: '用户点名特写后局部画面清楚可见',
+    });
+    writeFileSync(reviewPath, JSON.stringify(review, null, 2));
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    manifest.display.userRequestedCloseup = true;
+    manifest.media.push(path.join('evidence', extraName));
+    writeFileSync(fixture.manifestPath, JSON.stringify(manifest, null, 2));
+    assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
 });

@@ -73,12 +73,13 @@ export function createReplayAdapter<
             return { sys, core };
         },
         execute: (state: MatchState<TCore>, command: TCommand) => {
-            const events = domain.execute(state, command, random);
-            let core = state.core;
+            const normalizedState = domain.normalizeRuntimeState ? domain.normalizeRuntimeState(state) : state;
+            const events = domain.execute(normalizedState, command, random);
+            let core = normalizedState.core;
             for (const event of events) {
                 core = domain.reduce(core, event);
             }
-            return { state: { ...state, core }, events };
+            return { state: { ...normalizedState, core }, events };
         },
     };
 }

@@ -29,6 +29,10 @@ import {
 } from './domain/interactionSelectionAccessors';
 import { hasRemainingFactionAction } from './domain/factionActionWindow';
 import { getFactionIdByPlayerId } from './domain/factionTurnAccessors';
+import {
+    isQidahenWheelDispatchPaymentPending,
+    QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED,
+} from './domain/wheelDispatchPayment';
 import { buildPendingTargetChoiceOptions } from './domain/pendingTargetChoiceOptions';
 import type { QidahenCore, QidahenFactionId } from './domain/types';
 
@@ -651,11 +655,52 @@ const buildDiplomacyActions = (
     return actions;
 };
 
+const buildWheelDispatchPaymentActions = (
+    state: QidahenState,
+    playerId: string,
+): AiLegalAction[] => {
+    const actions: AiLegalAction[] = [];
+    if (!isQidahenWheelDispatchPaymentPending(state.core)) {
+        return actions;
+    }
+    if (state.core.selectedPaymentCardIds.length >= QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED) {
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('wheel-dispatch-confirm-payment', 'confirm'),
+            kind: 'wheel-dispatch-confirm-payment',
+            label: '确认进攻调度弃牌',
+            commandType: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+            payload: {},
+        }));
+        return actions;
+    }
+    const currentFactionId = getFactionIdByPlayerId(state.core, playerId);
+    const nextCard = state.core.handCards.find((card) => (
+        card.faction === currentFactionId
+        && card.status !== 'disabled'
+        && !state.core.selectedPaymentCardIds.includes(card.id)
+    ));
+    if (!nextCard) {
+        return actions;
+    }
+    appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+        actionId: createAiLegalActionId('wheel-dispatch-select-payment', nextCard.id),
+        kind: 'wheel-dispatch-select-payment',
+        label: `弃牌 ${nextCard.label}`,
+        commandType: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        payload: { cardId: nextCard.id },
+        metadata: { cardId: nextCard.id },
+    }));
+    return actions;
+};
+
 const buildWheelDispatchActions = (
     state: QidahenState,
     playerId: string,
 ): AiLegalAction[] => {
     const actions: AiLegalAction[] = [];
+    if (isQidahenWheelDispatchPaymentPending(state.core)) {
+        return actions;
+    }
     const selection = getQidahenWheelDispatchSelectionForCore(state.core, state.sys.interaction?.current);
     if (!selection) {
         return actions;
@@ -882,6 +927,7 @@ export function buildQidahenAiLegalActions(args: {
         ...buildDiplomacyActions(state, args.playerId),
         ...buildPendingActionResolutionActions(state, args.playerId),
         ...buildPostBattleActions(state, args.playerId),
+        ...buildWheelDispatchPaymentActions(state, args.playerId),
         ...buildWheelDispatchActions(state, args.playerId),
         ...buildFortificationMaintenanceActions(state, args.playerId),
     ];

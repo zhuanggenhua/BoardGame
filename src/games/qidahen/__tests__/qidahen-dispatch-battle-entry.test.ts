@@ -77,6 +77,7 @@ it('轮盘走到进攻调度时会先进入目标选择，再按 travelCost 生�
         expect(targeting.turnPhase).toBe('dispatch-targeting');
         expect(targeting.selectedRegionId).toBe('city-region-24');
         expect(targeting.pendingTargetAction).toBeNull();
+        expect(targeting.payment.required).toBe(1);
         expect(targeting.factions.mongol.handCount).toBe(8);
         expect(targeting.factions.mongol.drawPileCount).toBe(18);
         expect(factionHandCards(targeting, 'mongol')).toHaveLength(8);
@@ -1244,10 +1245,10 @@ it('战后处理可按人口数量选择劫掠并按低保真抽牌结算', () =
             population: 0,
             troops: 3,
         });
-        expect(occupied.factions.ming.handCount).toBe(core.factions.ming.handCount + 3);
+        expect(occupied.factions.ming.handCount).toBe(pending.factions.ming.handCount + 3);
         expect(occupied.drawPileCount).toBe(core.drawPileCount - 6);
         expect(occupied.discardPileCount).toBe(core.discardPileCount + 3);
-        expect(occupied.handCards.length).toBe(core.handCards.length + 3);
+        expect(occupied.handCards.length).toBe(pending.handCards.length + 3);
         expect(occupied.regions.find((region) => region.id === 'city-region-20')?.note).toContain('劫掠移除 3 人口');
         expect(occupied.actionLog[0]?.text).toContain('劫掠');
         expect(occupied.lastSeasonSummary?.lines.some((line) => line.includes('劫掠移除 3 人口'))).toBe(true);
@@ -1313,14 +1314,14 @@ it('战后处理可选择抽被占领者牌堆进行劫掠', () => {
             population: 0,
             troops: 5,
         });
-        expect(occupied.factions.ming.handCount).toBe(core.factions.ming.handCount + 2);
+        expect(occupied.factions.ming.handCount).toBe(pending.factions.ming.handCount + 2);
         expect(occupied.drawPileCount).toBe(core.drawPileCount);
         expect(occupied.factions.ming.drawPileCount).toBe(core.factions.ming.drawPileCount);
         expect(occupied.factions.jin.drawPileCount).toBe(core.factions.jin.drawPileCount - 2);
         expect(occupied.discardPileCount).toBe(core.discardPileCount);
-        expect(occupied.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+        expect(occupied.factions.ming.discardPileCount).toBe(pending.factions.ming.discardPileCount);
         expect(occupied.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount);
-        expect(occupied.handCards.length).toBe(core.handCards.length + 2);
+        expect(occupied.handCards.length).toBe(pending.handCards.length + 2);
         expect(occupied.actionLog[0]?.text).toContain('抽后金牌堆获得 2 张手牌');
     });
 
@@ -1382,7 +1383,7 @@ it('朝鲜区域即使有异常人口数据也不会生成劫掠选项', () => {
             payload: { choiceId: 'occupy' },
         });
 
-        expect(occupied.factions.ming.handCount).toBe(core.factions.ming.handCount + 1);
+        expect(occupied.factions.ming.handCount).toBe(pending.factions.ming.handCount + 1);
         expect(occupied.koreaDeckCount).toBe(core.koreaDeckCount - 1);
         expect(occupied.actionLog[0]?.text).toContain('抽朝鲜牌 1 张');
     });
@@ -1448,7 +1449,7 @@ it('阿敏在场时后金攻陷朝鲜区域会额外多抽 1 张朝鲜牌', () =
             payload: { choiceId: 'occupy' },
         });
 
-        expect(occupied.factions.jin.handCount).toBe(core.factions.jin.handCount + 2);
+        expect(occupied.factions.jin.handCount).toBe(pending.factions.jin.handCount + 2);
         expect(occupied.koreaDeckCount).toBe(core.koreaDeckCount - 2);
         expect(occupied.actionLog[0]?.text).toContain('抽朝鲜牌 2 张');
     });

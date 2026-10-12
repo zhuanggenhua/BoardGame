@@ -1,6 +1,6 @@
-# Fate/Domination 必要数据清单 v0.1
+# Fate/Domination 必要数据清单 v0.2
 
-这份清单由 `rules/core-rules-v0.1.md` 反推，目标是先完成可跑通的最小规则切片，
+这份清单由 `rules/core-rules-v0.1.md` v0.2 反推，目标是先完成可跑通的最小规则切片，
 再扩充完整对象全集。每个对象在进入实现前必须有 `locked / partial / blocked /
 disputed` 状态。
 
@@ -9,79 +9,74 @@ disputed` 状态。
 | 类别 | 规则用途 | 当前状态 | 下一步 |
 | --- | --- | --- | --- |
 | Master | 玩家身份、起始牌组、生命/淘汰 | `partial` | 抓完整 Master 列表、属性、能力和起始牌组 |
-| Servant | 3 个不同 Class 的战场单位 | `partial` | 抓完整 Servant 列表、Class、属性、生命、攻击和技能 |
+| Servant | 每位玩家 1 个秘密 Servant | `partial` | 抓完整 Servant 列表、Class、属性、生命、攻击和技能 |
 | Class | Servant 选择限制与 Class 卡/能力 | `partial` | 抓 Class 规则和各 Class 数据 |
 | Battlefield | 移动、控制、目标结算 | `partial` | 抓战场图、连接、区域规则和控制判定 |
-| Objective | 每轮目标与目标点 | `locked` | 保留 20 张目标牌完整文本和特殊条件 |
-| Event | 每轮事件阶段 | `locked` | 保留 13 张事件牌完整文本和结算时机 |
+| Objective | 每轮战场目标、VP 与场地效果 | `partial` | 20 张目标的名称/VP/效果/aspect 已有正文候选，仍需逐张图面和 ruling 核对 |
+| Event | Prep 阶段事件与 mana 收益 | `partial` | 核对 10 张非高潮事件 + 3 张高潮事件的名称、文本和结算时机 |
 | Attack | 战斗流程和攻击牌 | `partial` | 抓攻击类别、费用、目标、伤害和响应 |
 | Skill | Servant/Master 技能 | `partial` | 抓技能区规则、费用、次数和目标 |
 | Status | 持续、临时、失效和面朝下攻击 | `partial` | 抓状态词条、生命周期和互斥关系 |
 | Game terms | 规则关键词和字段解释 | `partial` | 逐条归一化为规则原子 |
 
-## B. 已抓到的目标牌全集
+## B. 已抓到的目标牌全集（正文候选，需图面核对）
 
-来源：Wiki `Objectives` 页面搜索索引摘要。
+来源：Wiki `Objectives` 页面正文检索结果。
 
-1. The Grail
-2. Protect the Grail
-3. Control the North
-4. Control the South
-5. Control the East
-6. Control the West
-7. Control the Center
-8. Control the Outer
-9. Eliminate an Enemy
-10. Damage the Enemy Master
-11. Have the Most Servants
-12. Have the Most Cards
-13. Have the Most Life
-14. Have the Most Power
-15. Have the Most Mana
-16. Have the Most Faith
-17. Have the Most Bond
-18. Have the Most Support
-19. Have the Most Treasures
-20. Have the Most Relics
-
-状态：`partial`
-
-说明：当前已确认名称清单和“每轮揭示 1 张、目标完成得 1 点”的规则摘要；
-每张牌的精确条件、平分处理和图面字段仍需逐张页面/图片核对。
-
-## C. 已抓到的事件牌全集
-
-来源：Wiki `Events` 页面搜索索引摘要。
-
-1. A New Day
-2. Assassin's Creed
-3. Battle Continuation
-4. Blood Fort Andromeda
-5. Caster's Workshop
-6. Command Spell
-7. Divine Words
-8. Double Summon
-9. Knight's Oath
-10. Noble Phantasm
-11. Reality Marble
-12. The Counter Force
-13. The World
+| # | Objective | VP | Effect | Aspect |
+| --- | --- | ---: | --- | --- |
+| 1 | Honorable Duel | 2 | Strength attacks +2 | Sun |
+| 2 | Difficult Terrain | 2 | Agility attacks +2 | Sun |
+| 3 | Sacrificial Grounds | 2 | Magic attacks +2 | Sun |
+| 4 | Open Ley Line | 2 | Fighting here gives +2 Mana | Sun |
+| 5 | Open Ley Line | 2 | Fighting here gives +2 Mana | Sun |
+| 6 | Test of Strength | 3 | Strength attacks +3 | Stars |
+| 7 | Suppressive Fire | 3 | Agility attacks +3 | Stars |
+| 8 | Sacred Grounds | 3 | Magic attacks +3 | Stars |
+| 9 | Fated Confrontation | 3 | Base power 1/2 cards become base power 5 | Stars |
+| 10 | Synergize | 2 | Matching attack types give +4 Power | Stars |
+| 11 | Bring Illya Back | 5 | No effect | Earth |
+| 12 | Desperation Move | 4 | Bonus power for lowest VP player | Earth |
+| 13 | Desperation Move | 4 | Bonus power for lowest VP player | Earth |
+| 14 | Take High Ground | 3 | Doubles Terrain Advantage | Earth |
+| 15 | Contain Neutral Threat | 2 | Strong Attacks +1 Power; winner restores 1 Command Seal | Earth |
+| 16 | Ambush | 2 | Hidden Servants +5 Power | Moon |
+| 17 | Ambush | 2 | Hidden Servants +5 Power | Moon |
+| 18 | Break Bounded Field | 2 | Bans Specials and prevents movement | Moon |
+| 19 | Break Bounded Field | 2 | Bans Specials and prevents movement | Moon |
+| 20 | Scavenge Ground Zero | 3 | Negates Terrain Advantage | Moon |
 
 状态：`partial`
 
-说明：已确认 13 张事件牌名称和存在事件阶段；每张牌的完整文本、触发时机、
-是否持续、是否可响应仍需逐张核对。
+说明：当前已确认 20 张对象、VP、效果和 aspect 的正文候选；
+每张牌的精确条件、平分处理、图面字段和重复牌物理数量仍需逐张页面/图片核对。
+
+## C. 事件牌候选清单（非锁定全集）
+
+来源：Wiki `Events` 页面正文检索结果；仅作抓取候选，不覆盖
+`How to Play` 已锁定的“10 张非高潮 + 3 张高潮”结构。
+
+已直接核到的事件名 / 结构线索：
+
+- `Angra Mainyu's Curse`：NP Ban，mana value 0。
+- `The Night Fate Stood Still`：Miyama 与 Shinto 各加 1 个 bonus objective，mana value 4。
+- `Heaven's Feel`：Miyama 加 2 个 bonus objectives，mana value 6。
+
+状态：`partial`
+
+说明：上述为当前正文能直接核到的候选项，不能称为官方全集；
+每张牌的完整文本、是否属于高潮事件、触发时机、是否持续、是否可响应仍需逐张核对。
 
 ## D. 规则驱动的最小可玩数据切片
 
 第一批不追求全站 870+ 页面，而是先锁定能支撑主流程的数据：
 
-- 4 个可选 Master，至少覆盖 2–4 人 setup 的玩家身份；
+- 4 个可选 Master，覆盖 3–7 人普通 setup，并保留 2 人变体的身份约束；
 - 每个 Master 至少 1 个起始牌组定义；
-- 6 个以上 Servant，覆盖至少 3 个 Class；
+- 6 个以上 Servant，覆盖至少 3 个 Class；每个玩家初始只召唤 1 个 Servant；
 - 1 个起始 Battlefield 和完整移动/控制规则；
 - 20 张 Objective；
-- 13 张 Event；
+- 10 张非高潮 Event + 3 张高潮 Event；
 - 每类基础攻击至少 1 条；
 - 至少 1 个技能、1 个状态效果、1 个 ongoing/temporary 效果；
 - Master 被击败和 Servant 被击败的终局/淘汰数据。

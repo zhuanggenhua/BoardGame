@@ -2,7 +2,7 @@
   "kind": "html",
   "renderer": "html",
   "exports": ["html", "pdf"],
-  "title": "Fate/Domination 桌面牌桌候选稿 v2",
+  "title": "命运支配开放设计当前工作稿",
   "supportingFiles": [
     "assets/fuyuki-city.webp",
     "assets/situation-turning-point.webp",
@@ -23,9 +23,12 @@
     "canvas": "1920x1080",
     "mediaGenerate": false,
     "implementationGate": "awaiting-design-review",
-    "revision": "v2-map-height-locked",
-    "currentArtifact": "fate-domination-v2.html",
-    "currentExport": "exports/fate-domination-desktop-v2.png",
-    "audit": "audit.md"
+    "revision": "current-working-from-v6-lineage",
+    "currentArtifact": "index-v6.html",
+    "userVisibleIdentity": "current-working",
+    "lineageFile": "index-v6.html",
+    "historicalSixthDraftEvidence": "test-results/evidence-screenshots/fate-domination/open-design-v6",
+    "currentExport": "exports/fate-domination-current-desktop.png",
+    "audit": "DESIGN-v6.md"
   }
 }

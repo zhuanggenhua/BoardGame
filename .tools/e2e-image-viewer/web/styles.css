@@ -14,7 +14,7 @@ body {
   min-height: 100vh;
   background: #0e1013;
   overflow: hidden;
-  user-select: none;
+  user-select: text;
 }
 
 button {
@@ -26,6 +26,7 @@ button {
   font: inherit;
   min-height: 32px;
   padding: 6px 10px;
+  user-select: none;
 }
 
 button:hover {
@@ -62,6 +63,7 @@ input:focus-visible {
   font-size: 12px;
   margin: 0;
   overflow-wrap: anywhere;
+  user-select: text;
 }
 
 .actions {
@@ -103,6 +105,7 @@ input:focus-visible {
   overflow: hidden;
   position: relative;
   touch-action: none;
+  user-select: none;
 }
 
 .index-panel {
@@ -171,6 +174,7 @@ input:focus-visible {
   padding: 8px;
   scrollbar-color: #465063 transparent;
   scrollbar-width: thin;
+  user-select: text;
 }
 
 .index-list::-webkit-scrollbar {
@@ -202,6 +206,7 @@ input:focus-visible {
   min-height: 0;
   padding: 6px;
   text-align: left;
+  user-select: text;
   width: 100%;
 }
 
@@ -282,6 +287,7 @@ input:focus-visible {
 
 .image-detail-title {
   min-width: 0;
+  user-select: text;
 }
 
 .image-detail-title strong,
@@ -361,6 +367,7 @@ input:focus-visible {
   overflow: hidden;
   position: relative;
   touch-action: none;
+  user-select: none;
 }
 
 .image-detail-viewport.dragging {
@@ -389,6 +396,7 @@ input:focus-visible {
   justify-content: space-between;
   min-height: 32px;
   padding: 7px 12px;
+  user-select: text;
 }
 
 .image-detail-status span {

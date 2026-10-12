@@ -5,6 +5,7 @@ const REQUIRED_FIELDS = ['path', 'chainId', 'chainStep', 'sourceRun', 'sourceDir
 const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.mp4', '.webm', '.mov', '.m4v', '.mkv']);
 const REQUIRED_VISUAL_CHECKS = new Set(['target-visible', 'interaction-ui', 'layout-readable', 'no-error']);
 const FORBIDDEN_VISUAL_CHECKS = new Set(['numeric-correctness', 'rule-correctness', 'value-delta']);
+const VALID_VISUAL_STATUS = new Set(['PASS', 'carried-forward']);
 const GENERIC_DESCRIPTIONS = new Set([
     '正常',
     '测试通过',
@@ -14,6 +15,23 @@ const GENERIC_DESCRIPTIONS = new Set([
 ]);
 const CHINESE_CHARACTERS = /[\u3400-\u9fff]/g;
 const LATIN_LETTERS = /[A-Za-z]/;
+export const FORBIDDEN_CROP_DIRECTORY_NAMES = new Set([
+    '_diag',
+    'crops',
+    'clips',
+    '_closeup',
+    '_crops',
+    'closeups',
+    '_clips',
+    '_closeups',
+    'crop',
+    'clip',
+]);
+export const ARCHIVE_DIRECTORY_NAMES = new Set([
+    '_history',
+    '_labeled-for-pureref',
+    '_temporary',
+]);
 
 const normalizePath = (value) => path.normalize(path.resolve(value));
 
@@ -89,8 +107,15 @@ const validateVisualReview = ({ manifest, manifestMedia, manifestDir, projectRoo
     const reviewedPaths = new Set();
     for (const [entryIndex, entry] of entries.entries()) {
         assertString(entry?.path, `第 ${entryIndex + 1} 条视觉审计的 path`);
-        if (entry.status !== 'PASS') {
+        if (!VALID_VISUAL_STATUS.has(entry.status)) {
             throw new Error(`逐图视觉审计第 ${entryIndex + 1} 条未 PASS: ${entry.path}`);
+        }
+        if (entry.status === 'carried-forward') {
+            assertString(entry.unchangedEvidence, `第 ${entryIndex + 1} 条视觉审计的 unchangedEvidence`);
+            const chineseCount = entry.unchangedEvidence.trim().match(CHINESE_CHARACTERS)?.length ?? 0;
+            if (chineseCount < 4) {
+                throw new Error(`carried-forward 必须写未改写证据: ${entry.path}`);
+            }
         }
         if (!Array.isArray(entry.checks)) {
             throw new Error(`逐图视觉审计第 ${entryIndex + 1} 条缺少 checks: ${entry.path}`);
@@ -165,6 +190,53 @@ const validateChainSteps = (mediaEntries) => {
     }
 };
 
+export const mediaPathContainsForbiddenCropDirectory = (filePath) => {
+    const parts = path.normalize(filePath).split(/[\\/]/);
+    return parts.some((part) => FORBIDDEN_CROP_DIRECTORY_NAMES.has(part.toLowerCase()));
+};
+
+export const assertUserVisibleMediaDirectory = (directory) => {
+    if (!existsSync(directory) || !statSync(directory).isDirectory()) {
+        throw new Error(`E2E 证据目录不存在或不是目录: ${directory}`);
+    }
+    if (FORBIDDEN_CROP_DIRECTORY_NAMES.has(path.basename(directory).toLowerCase())) {
+        throw new Error(`用户可见证据目录不能是特写/裁切目录: ${directory}`);
+    }
+    const found = [];
+    const walk = (current) => {
+        for (const entry of readdirSync(current, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            const fullPath = path.join(current, entry.name);
+            if (FORBIDDEN_CROP_DIRECTORY_NAMES.has(entry.name.toLowerCase())) {
+                found.push(fullPath);
+                continue;
+            }
+            if (ARCHIVE_DIRECTORY_NAMES.has(entry.name.toLowerCase())) continue;
+            walk(fullPath);
+        }
+    };
+    walk(directory);
+    if (found.length > 0) {
+        throw new Error(`用户可见证据目录存在特写/裁切子目录，禁止进入 PASS 或查看器: ${found.join(', ')}`);
+    }
+};
+
+const collectUnregisteredMedia = (directory, expectedFiles) => {
+    const extraMedia = [];
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const fullPath = path.resolve(directory, entry.name);
+        if (entry.isDirectory()) {
+            if (ARCHIVE_DIRECTORY_NAMES.has(entry.name.toLowerCase())) continue;
+            extraMedia.push(...collectUnregisteredMedia(fullPath, expectedFiles));
+            continue;
+        }
+        if (entry.isFile() && MEDIA_EXTENSIONS.has(path.extname(entry.name).toLowerCase()) && !expectedFiles.has(fullPath)) {
+            extraMedia.push(fullPath);
+        }
+    }
+    return extraMedia;
+};
+
 const validateMediaDirectoryCompleteness = ({ mediaEntries, projectRoot, manifestDir, indexDir }) => {
     const expectedByDirectory = new Map();
     for (const entry of mediaEntries) {
@@ -177,10 +249,8 @@ const validateMediaDirectoryCompleteness = ({ mediaEntries, projectRoot, manifes
         if (!existsSync(directory) || !statSync(directory).isDirectory()) {
             throw new Error(`E2E 证据 sourceDir 不存在或不是目录: ${directory}`);
         }
-        const extraMedia = readdirSync(directory, { withFileTypes: true })
-            .filter((entry) => entry.isFile() && MEDIA_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
-            .map((entry) => path.resolve(directory, entry.name))
-            .filter((entry) => !expectedFiles.has(entry));
+        assertUserVisibleMediaDirectory(directory);
+        const extraMedia = collectUnregisteredMedia(directory, expectedFiles);
         if (extraMedia.length > 0) {
             throw new Error(`E2E 证据目录存在未登记媒体：${extraMedia.join(', ')}`);
         }
@@ -252,6 +322,12 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
         }
         if (!['main-flow', 'auxiliary-detail'].includes(entry.role)) {
             throw new Error(`E2E 证据索引第 ${entryIndex + 1} 条 role 必须是 main-flow 或 auxiliary-detail: ${entry.path}`);
+        }
+        if (entry.role === 'auxiliary-detail' && manifest?.display?.userRequestedCloseup !== true) {
+            throw new Error(`最终 PASS 禁止特写/局部图: ${entry.path}。只有用户当轮明确点名特写且 display.userRequestedCloseup=true 时才允许 auxiliary-detail`);
+        }
+        if (mediaPathContainsForbiddenCropDirectory(resolvedPath)) {
+            throw new Error(`最终 PASS 媒体不能放在特写/裁切目录: ${entry.path}`);
         }
         if (!['desktop', 'mobile'].includes(entry.viewport)) {
             throw new Error(`E2E 证据索引第 ${entryIndex + 1} 条 viewport 必须是 desktop 或 mobile: ${entry.path}`);

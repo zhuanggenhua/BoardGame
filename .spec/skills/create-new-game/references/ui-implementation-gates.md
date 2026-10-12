@@ -75,7 +75,7 @@ DOM、HTML、TTS/Workshop JSON、XmlUI、对象 Transform、截图、PureRef、�
 
 对包含 UI / runtime 的 change，未完成以下任一项，不得把 UI-facing 数据模型标记完成，不得写 Board、运行时 HUD、动作条、PromptOverlay，不得启动真实页面实现 E2E，也不得宣称进入 UI 实施阶段：
 
-- Open Design artifact 已创建且可渲染；
+- Open Design artifact 已创建且可渲染；当前工作稿指针与用户可见截图身份见 [`boardgame-ui-imagegen`](../../boardgame-ui-imagegen/SKILL.md)「当前工作稿身份」。
 - 导出设计图已完成 AI 图面核验；
 - 当前设计稿已获用户明确批准；
 - 设计稿对应的 UI 前置包、素材账本和风格合同可回查。

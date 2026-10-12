@@ -21,6 +21,8 @@
 - 项目级：`project/image-first-source-priority.md`
 - 项目级：`project/mobile-ota-mandatory-update-policy-2026-07-10.md`
 - 项目级：`project/seat-emote-recipient-first-acceptance.md`
+- 项目级：`project/upload-game-link-auto-check.md`
+- 项目级：`project/profile-activity-list-organization.md`
 
 游戏级用户故事不在本入口维护手写清单；用以下命令查当前真实文件：
 

@@ -19,6 +19,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { ARCHIVE_DIRECTORY_NAMES, assertUserVisibleMediaDirectory, FORBIDDEN_CROP_DIRECTORY_NAMES } from "../../scripts/verify/e2e-image-index-contract.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(TOOL_DIR, "..", "..");
@@ -458,6 +459,10 @@ const findLatestMediaDirectory = (dirPath, { includeStartDirectory = true } = {}
       if (scanned >= MAX_MEDIA_FILES) return;
       const fullPath = path.join(currentDir, entry.name);
       if (entry.isDirectory()) {
+        const directoryName = entry.name.toLowerCase();
+        if (FORBIDDEN_CROP_DIRECTORY_NAMES.has(directoryName) || ARCHIVE_DIRECTORY_NAMES.has(directoryName)) {
+          continue;
+        }
         walk(fullPath);
         continue;
       }
@@ -1126,6 +1131,7 @@ const createViewerServer = (port) => createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/register") {
       const body = await readJsonBody(req);
       const dirPath = resolveDirectory(body.dir);
+      assertUserVisibleMediaDirectory(dirPath);
       const focus = resolveFocusFile(dirPath, body.focus);
       const files = resolveMediaSelection(dirPath, body.files);
       const entry = updateDirectoryState(dirPath, port, {

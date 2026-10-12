@@ -786,9 +786,8 @@ export class DiceBoxThreeEngine {
             const debugWindow = window as unknown as {
                 __E2E_TEST_MODE__?: boolean;
                 __diceBoxThreeDebug?: Record<string, () => unknown>;
-                __dicethroneBoardDiceDebug?: () => unknown;
             };
-            if (debugWindow.__E2E_TEST_MODE__ || config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
+            if (debugWindow.__E2E_TEST_MODE__) {
                 debugWindow.__diceBoxThreeDebug = debugWindow.__diceBoxThreeDebug ?? {};
                 const debugSnapshotReader = () => {
                     engine.renderFrame();
@@ -796,9 +795,6 @@ export class DiceBoxThreeEngine {
                 };
                 engine.debugSnapshotReader = debugSnapshotReader;
                 debugWindow.__diceBoxThreeDebug[config.canvasTestId] = debugSnapshotReader;
-                if (config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
-                    debugWindow.__dicethroneBoardDiceDebug = debugSnapshotReader;
-                }
             }
         }
         if ((config?.rendererMode ?? 'debug-visible') === 'physics-only') {
@@ -1468,13 +1464,9 @@ export class DiceBoxThreeEngine {
         if (typeof window !== 'undefined' && this.debugCanvasTestId && this.debugSnapshotReader) {
             const debugWindow = window as unknown as {
                 __diceBoxThreeDebug?: Record<string, () => unknown>;
-                __dicethroneBoardDiceDebug?: () => unknown;
             };
             if (debugWindow.__diceBoxThreeDebug?.[this.debugCanvasTestId] === this.debugSnapshotReader) {
                 delete debugWindow.__diceBoxThreeDebug[this.debugCanvasTestId];
-            }
-            if (debugWindow.__dicethroneBoardDiceDebug === this.debugSnapshotReader) {
-                delete debugWindow.__dicethroneBoardDiceDebug;
             }
         }
         this.debugSnapshotReader = null;

@@ -1,5 +1,9 @@
 import type { CardPreviewRef } from '../../../core/types';
-import type { QidahenArmamentId, QidahenFactionId, QidahenScenarioId } from '../domain/types';
+import {
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX,
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
+} from '../domain/ordinaryHandCardIdentities';
+import type { QidahenArmamentId, QidahenArmamentState, QidahenFactionId, QidahenScenarioId } from '../domain/types';
 import {
     qidahenAtlas05OrdinaryHandPreview,
     qidahenJinHandPreview,
@@ -29,8 +33,11 @@ const characterPreviewIndexById: Partial<Record<QidahenFactionId, Record<string,
     },
 };
 
-const armamentPreviewIndexById: Partial<Record<QidahenArmamentId, number>> = {
+const armamentPreviewIndexById: Record<QidahenArmamentId, number> = {
     'infantry-armor': 3,
+    'han-banners': 5,
+    'manzhou-banners': 6,
+    'mongol-banners': 7,
     'cavalry-armor': 10,
     'horse-breeding': 17,
     'artillery-tech': 26,
@@ -38,6 +45,11 @@ const armamentPreviewIndexById: Partial<Record<QidahenArmamentId, number>> = {
     'western-bastion': 42,
     'long-barreled-musket': 46,
 };
+
+export interface QidahenArmamentInspectView {
+    previewRef: CardPreviewRef;
+    rulesSummary: string;
+}
 
 export const getQidahenScenarioCardPreview = (scenarioId: QidahenScenarioId): CardPreviewRef => (
     qidahenMongolHandPreview(scenarioPreviewIndexById[scenarioId])
@@ -65,4 +77,31 @@ export const getQidahenSetupArmamentPreview = (
 ): CardPreviewRef | null => {
     const index = armamentPreviewIndexById[armamentId];
     return index == null ? null : qidahenAtlas05OrdinaryHandPreview(index);
+};
+
+export const listQidahenDevelopedArmaments = (
+    armaments: readonly QidahenArmamentState[],
+): QidahenArmamentState[] => armaments.filter((armament) => armament.level > 0);
+
+export const getQidahenArmamentInspectView = (
+    armamentId: QidahenArmamentId,
+): QidahenArmamentInspectView | null => {
+    const previewRef = getQidahenSetupArmamentPreview(armamentId);
+    if (!previewRef || previewRef.type !== 'atlas') {
+        return null;
+    }
+    const identity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX.get(previewRef.index);
+    if (!identity) {
+        return null;
+    }
+    const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+        identity.cardDefId as keyof typeof QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID
+    ];
+    if (!rulesSummary) {
+        return null;
+    }
+    return {
+        previewRef,
+        rulesSummary,
+    };
 };

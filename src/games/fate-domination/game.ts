@@ -1,5 +1,5 @@
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
-import { createBaseSystems, createGameEngine } from '../../engine';
+import { createBaseSystems, createGameEngine, createResolutionFrameSystem, createTimingOpportunitySystem } from '../../engine';
 import { registerCriticalImageResolver } from '../../core';
 import { FateDominationDomain } from './domain';
 import type { FateDominationCommand, FateDominationCore, FateDominationEvent } from './domain';
@@ -42,10 +42,16 @@ function formatActionLog({ command, state }: { command: Command; state: MatchSta
     return text ? { id: `${command.type}-${command.playerId}-${timestamp}-${actionSequence}`, timestamp, actorId: command.playerId, kind: command.type, segments: [{ type: 'text', text }] } : null;
 }
 
-const systems = createBaseSystems<FateDominationCore>({
+const systems = [
+    ...createBaseSystems<FateDominationCore>({
     actionLog: { commandAllowlist: ACTION_ALLOWLIST, formatEntry: formatActionLog },
     undo: { snapshotCommandAllowlist: ACTION_ALLOWLIST },
-});
+    }),
+    createTimingOpportunitySystem(FateDominationDomain),
+    createResolutionFrameSystem<FateDominationCore>({
+        shouldAutoCompleteFrame: ({ state, frame }) => frame.kind === 'fate:battle-resolution' && state.core.phase !== 'battle',
+    }),
+];
 
 export const engineConfig = createGameEngine<FateDominationCore, FateDominationCommand, FateDominationEvent>({
     domain: FateDominationDomain,

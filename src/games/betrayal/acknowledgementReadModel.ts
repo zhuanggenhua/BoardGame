@@ -69,6 +69,9 @@ export function resolvePendingEventRollResolutionRequiredPlayerIds(
     core: PlayerRoster,
     resolution: BetrayalPendingEventRollResolutionState,
 ): string[] {
+    if (resolution.requiresPlayerAdvance) {
+        return [resolution.playerId];
+    }
     if (resolution.requiresAcknowledgement === false) {
         return [resolution.playerId];
     }
@@ -92,7 +95,7 @@ export function isPendingEventRollResolutionFullyAcknowledged(
     resolution: BetrayalPendingEventRollResolutionState,
     acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(resolution),
 ): boolean {
-    if (resolution.requiresAcknowledgement === false) {
+    if (resolution.requiresAcknowledgement === false && !resolution.requiresPlayerAdvance) {
         return true;
     }
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution);

@@ -1306,9 +1306,10 @@ describe('MageWarsBoard FX wiring', () => {
             const travel = screen.getByTestId('mage-wars-fx-attack-travel');
             expect(screen.queryByTestId('mage-wars-fx-attack-impact')).not.toBeNull();
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
-            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
-            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
-            expect((attackDice as HTMLElement).style.position).toBe('fixed');
+            expect(attackDice.getAttribute('data-placement')).toBe('screen-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('screen');
+            expect(attackDice.className).toContain('fixed');
+            expect(attackDice.className).toContain('inset-0');
             expect(attackDice.className).toContain('items-center');
             expect(attackDice.className).toContain('justify-center');
             expect(attackDice.className).not.toContain('absolute');
@@ -1350,7 +1351,7 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
-    it('clips overflowing transformed stage to the visible map instead of using the combat cell', () => {
+    it('keeps attack dice on the player screen instead of the overflowing transformed stage or combat cell', () => {
         const viewport = document.createElement('div');
         viewport.setAttribute('data-testid', 'mage-wars-arena-viewport');
         viewport.getBoundingClientRect = () => ({
@@ -1402,31 +1403,15 @@ describe('MageWarsBoard FX wiring', () => {
 
         try {
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice') as HTMLElement;
-            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
-            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
-            expect(attackDice.style.position).toBe('fixed');
+            expect(attackDice.getAttribute('data-placement')).toBe('screen-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('screen');
+            expect(attackDice.className).toContain('fixed');
+            expect(attackDice.className).toContain('inset-0');
             expect(attackDice.parentElement).toBe(document.body);
-            const overlayLeft = Number.parseFloat(attackDice.style.left);
-            const overlayTop = Number.parseFloat(attackDice.style.top);
-            const overlayWidth = Number.parseFloat(attackDice.style.width);
-            const overlayHeight = Number.parseFloat(attackDice.style.height);
-            const overlayCenterX = overlayLeft + overlayWidth / 2;
-            const overlayCenterY = overlayTop + overlayHeight / 2;
-            const viewportCenterX = 80 + 900 / 2;
-            const viewportCenterY = 40 + 520 / 2;
-            const combatCenterX = -420 + (75 / 100) * 1600 + (25 / 100) * 1600 / 2;
-            const combatCenterY = -180 + (66.6666 / 100) * 1200 + (33.3333 / 100) * 1200 / 2;
-            const stageCenterX = -420 + 1600 / 2;
-            const stageCenterY = -180 + 1200 / 2;
-            expect(overlayLeft).toBeCloseTo(80, 0);
-            expect(overlayTop).toBeCloseTo(40, 0);
-            expect(overlayWidth).toBeCloseTo(900, 0);
-            expect(overlayHeight).toBeCloseTo(520, 0);
-            expect(Math.hypot(overlayCenterX - viewportCenterX, overlayCenterY - viewportCenterY)).toBeLessThan(8);
-            expect(Math.hypot(overlayCenterX - viewportCenterX, overlayCenterY - viewportCenterY))
-                .toBeLessThan(Math.hypot(overlayCenterX - combatCenterX, overlayCenterY - combatCenterY));
-            expect(Math.hypot(overlayCenterX - viewportCenterX, overlayCenterY - viewportCenterY))
-                .toBeLessThan(Math.hypot(overlayCenterX - stageCenterX, overlayCenterY - stageCenterY));
+            expect(attackDice.style.left).toBe('');
+            expect(attackDice.style.top).toBe('');
+            expect(attackDice.style.width).toBe('');
+            expect(attackDice.style.height).toBe('');
         } finally {
             view.unmount();
             viewport.remove();
@@ -1434,7 +1419,7 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
-    it('centers attack dice on the visible cobblestone instead of the full board viewport', () => {
+    it('keeps attack dice at the player screen center even when cobblestone sits inset-right', () => {
         const viewport = document.createElement('div');
         viewport.setAttribute('data-testid', 'mage-wars-arena-viewport');
         viewport.getBoundingClientRect = () => ({
@@ -1464,7 +1449,7 @@ describe('MageWarsBoard FX wiring', () => {
         document.body.append(viewport, stage);
 
         const event: FxEvent = {
-            id: 'fx-attack-visible-map',
+            id: 'fx-attack-screen-center',
             cue: 'mage-wars.attack.impact',
             ctx: { cell: { row: 2, col: 3 }, intensity: 'normal' },
             params: {
@@ -1486,25 +1471,17 @@ describe('MageWarsBoard FX wiring', () => {
 
         try {
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice') as HTMLElement;
-            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
-            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
-            const overlayLeft = Number.parseFloat(attackDice.style.left);
-            const overlayTop = Number.parseFloat(attackDice.style.top);
-            const overlayWidth = Number.parseFloat(attackDice.style.width);
-            const overlayHeight = Number.parseFloat(attackDice.style.height);
-            const overlayCenterX = overlayLeft + overlayWidth / 2;
-            const overlayCenterY = overlayTop + overlayHeight / 2;
-            const mapCenterX = 860 + 980 / 2;
-            const mapCenterY = 48 + 560 / 2;
-            const boardCenterX = 1920 / 2;
-            const boardCenterY = 1080 / 2;
-            expect(overlayLeft).toBeCloseTo(860, 0);
-            expect(overlayTop).toBeCloseTo(48, 0);
-            expect(overlayWidth).toBeCloseTo(980, 0);
-            expect(overlayHeight).toBeCloseTo(560, 0);
-            expect(Math.hypot(overlayCenterX - mapCenterX, overlayCenterY - mapCenterY)).toBeLessThan(8);
-            expect(Math.hypot(overlayCenterX - mapCenterX, overlayCenterY - mapCenterY))
-                .toBeLessThan(Math.hypot(overlayCenterX - boardCenterX, overlayCenterY - boardCenterY));
+            expect(attackDice.getAttribute('data-placement')).toBe('screen-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('screen');
+            expect(attackDice.className).toContain('fixed');
+            expect(attackDice.className).toContain('inset-0');
+            expect(attackDice.className).toContain('items-center');
+            expect(attackDice.className).toContain('justify-center');
+            expect(attackDice.parentElement).toBe(document.body);
+            expect(attackDice.style.left).toBe('');
+            expect(attackDice.style.top).toBe('');
+            expect(attackDice.style.width).toBe('');
+            expect(attackDice.style.height).toBe('');
         } finally {
             view.unmount();
             viewport.remove();
@@ -1545,9 +1522,10 @@ describe('MageWarsBoard FX wiring', () => {
             );
 
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
-            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
-            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
-            expect((attackDice as HTMLElement).style.position).toBe('fixed');
+            expect(attackDice.getAttribute('data-placement')).toBe('screen-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('screen');
+            expect(attackDice.className).toContain('fixed');
+            expect(attackDice.className).toContain('inset-0');
             expect(screen.getByTestId('mage-wars-fx-attack-dice-title')).toHaveTextContent(
                 rangeKind === 'melee' ? '近战攻击' : '远程攻击',
             );
@@ -1757,9 +1735,10 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('2');
             expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+2');
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
-            expect(attackDice.getAttribute('data-placement')).toBe('visible-map-center');
-            expect(attackDice.getAttribute('data-overlay-layer')).toBe('visible-map');
-            expect((attackDice as HTMLElement).style.position).toBe('fixed');
+            expect(attackDice.getAttribute('data-placement')).toBe('screen-center');
+            expect(attackDice.getAttribute('data-overlay-layer')).toBe('screen');
+            expect(attackDice.className).toContain('fixed');
+            expect(attackDice.className).toContain('inset-0');
             expect(screen.getByTestId('mage-wars-fx-attack-dice-title')).toHaveTextContent('治疗');
             const healSummary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
             expect(healSummary).toHaveAttribute('data-contrast', 'opaque');

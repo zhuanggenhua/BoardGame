@@ -78,6 +78,8 @@ metadata:
 
 - Board / table UI 通过共享锚点注册入口暴露可见对象：棋盘对象、卡牌、token、玩家面板、计分区、附件槽等。
 - 一次性 FX 在 push 前捕获 `sourceSnapshot` / `targetSnapshot`；播放期间只读快照，不再查询业务 DOM。
+- 命中、投射、斩击、飘字等一次性 FX 必须锚到来源 / 目标快照。结果骰 / 结算 overlay 是独立播放层：布局宿主是玩家屏幕 / 整窗（`fixed inset-0`），在整屏中央居中；不得改 pan / zoom，不得把可见石板、含 HUD 的整块棋盘视窗或变换后的整张地图当布局盒，也不得把骰子钉在战斗格上冒充“不抢镜头”。镜头所有权见 [`ui-ux`](ui-ux.md)「玩家镜头由玩家持有」；播放结算不得派发回中、fit-to-board 或把 pan / zoom 写回初始机位。
+- 结算 overlay 是独立组件：场景表面可以提供来源 / 目标锚点给命中 FX，但不得成为 overlay 的布局盒。把整张变换后的竞技场当 flex 容器再居中，玩家会以为镜头被抢走；把 overlay 铺满含 HUD 的整块棋盘视窗再居中，骰子会落到 HUD 与石板接缝；把 overlay 锚到可见石板几何中心，骰子会落到石板中右 / 右上；把 overlay 钉在战斗格上则丢失居中。独立播放 = 玩家屏幕中央，底图不动。
 - renderer 不得用 `querySelector`、私有 `data-testid` 或业务 DOM 结构临时找位置。
 - 缺少必要快照时必须 fail-close：跳过、诊断或使用已声明 legacy adapter；禁止静默退回整格中心、牌桌中心、最近对象或随机屏幕坐标。
 - 持续光环、buff、蓄力等跟随宿主的效果必须显式声明 tracking 策略；投射、命中、召唤、飘字不得隐式切成 live tracking。

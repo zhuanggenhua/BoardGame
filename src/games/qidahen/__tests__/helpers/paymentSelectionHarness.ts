@@ -3,6 +3,8 @@ import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelecti
 
 import { QIDAHEN_COMMANDS } from '../../domain/commands';
 import { getQidahenCurrentWheelDispatchSelectionForCore, getQidahenInternalDispatchSelectionForCore } from '../../domain/dispatchSelectionBuilders';
+import { getCurrentFactionId } from '../../domain/factionTurnAccessors';
+import { isQidahenWheelDispatchPaymentPending } from '../../domain/wheelDispatchPayment';
 import { getQidahenGrantPardonSelectionForCore } from '../../domain/selectionBuilders';
 import { syncQidahenRuntimeInteractionState } from '../../domain/runtimeInteractions';import type { QidahenCommand, QidahenCore, QidahenEvent, QidahenFactionId } from '../../domain/types';
 
@@ -75,13 +77,48 @@ export function stateOf(core: QidahenCore): MatchState<QidahenCore> {
     });
 }
 
-export function apply(core: QidahenCore, command: QidahenCommand, randomFn: RandomFn = testRandom): QidahenCore {
+export function applyUnchecked(core: QidahenCore, command: QidahenCommand, randomFn: RandomFn = testRandom): QidahenCore {
     const validation = QidahenDomain.validate(stateOf(core), command);
     expect(validation.valid).toBe(true);
     return QidahenDomain.execute(stateOf(core), command, randomFn).reduce(
         (next, event) => QidahenDomain.reduce(next, event as QidahenEvent),
         core,
     );
+}
+
+export function payWheelDispatchDiscard(
+    core: QidahenCore,
+    playerId = core.currentPlayer,
+    randomFn: RandomFn = testRandom,
+): QidahenCore {
+    if (!isQidahenWheelDispatchPaymentPending(core)) {
+        return core;
+    }
+    const currentFactionId = getCurrentFactionId(core);
+    const paymentCard = factionHandCards(core, currentFactionId).find((card) => (
+        card.status !== 'disabled'
+        && !core.selectedPaymentCardIds.includes(card.id)
+    ));
+    expect(paymentCard).toBeTruthy();
+    const selected = core.selectedPaymentCardIds.length >= 1
+        ? core
+        : applyUnchecked(core, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId,
+            payload: { cardId: paymentCard!.id },
+        }, randomFn);
+    return applyUnchecked(selected, {
+        type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+        playerId,
+        payload: {},
+    }, randomFn);
+}
+
+export function apply(core: QidahenCore, command: QidahenCommand, randomFn: RandomFn = testRandom): QidahenCore {
+    const paidCore = command.type === QIDAHEN_COMMANDS.SELECT_REGION && isQidahenWheelDispatchPaymentPending(core)
+        ? payWheelDispatchDiscard(core, command.playerId, randomFn)
+        : core;
+    return applyUnchecked(paidCore, command, randomFn);
 }
 
 export function getFortificationMaintenanceSelection(core: QidahenCore) {
@@ -216,18 +253,70 @@ export function getWheelDispatchSelection(core: QidahenCore) {
     return getQidahenCurrentWheelDispatchSelectionForCore(core);
 }
 
+function payWheelDispatchDiscardPipeline(
+    state: MatchState<QidahenCore>,
+    playerId: string,
+    playerIds: string[],
+): MatchState<QidahenCore> {
+    if (!isQidahenWheelDispatchPaymentPending(state.core)) {
+        return state;
+    }
+    const currentFactionId = getCurrentFactionId(state.core);
+    const paymentCard = factionHandCards(state.core, currentFactionId).find((card) => (
+        card.status !== 'disabled'
+        && !state.core.selectedPaymentCardIds.includes(card.id)
+    ));
+    expect(paymentCard).toBeTruthy();
+    const selected = state.core.selectedPaymentCardIds.length >= 1
+        ? state
+        : executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any },
+            state,
+            {
+                type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+                playerId,
+                payload: { cardId: paymentCard!.id },
+            } as any,
+            testRandom,
+            playerIds,
+        ).state;
+    return executePipeline(
+        { domain: engineConfig.domain, systems: engineConfig.systems as any },
+        selected,
+        {
+            type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+            playerId,
+            payload: {},
+        } as any,
+        testRandom,
+        playerIds,
+    ).state;
+}
+
 export function applyPipeline(
     state: MatchState<QidahenCore>,
     command: { type: string; playerId: string; payload: Record<string, unknown> },
     playerIds: string[] = ['0', '1', '2'],
 ) {
-    return executePipeline(
+    const paidState = command.type !== QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD
+        && command.type !== QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT
+        && isQidahenWheelDispatchPaymentPending(state.core)
+        ? payWheelDispatchDiscardPipeline(state, command.playerId, playerIds)
+        : state;
+    const result = executePipeline(
         { domain: engineConfig.domain, systems: engineConfig.systems as any },
-        state,
+        paidState,
         command as any,
         testRandom,
         playerIds,
     );
+    if (command.type === QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE && isQidahenWheelDispatchPaymentPending(result.state.core)) {
+        return {
+            ...result,
+            state: payWheelDispatchDiscardPipeline(result.state, command.playerId, playerIds),
+        };
+    }
+    return result;
 }
 
 export function getPromptSummary(state: MatchState<QidahenCore>) {
@@ -356,6 +445,37 @@ export function setRegionCavalry(
                         label: `${factionLabel}骑兵`,
                         faction,
                         troopKind: 'cavalry',
+                        count,
+                        level,
+                    },
+                ],
+            }
+            : region
+    ));
+    return core;
+}
+
+export function setRegionInfantry(
+    core: QidahenCore,
+    regionId: string,
+    faction: 'ming' | 'mongol' | 'jin',
+    count: number,
+    level = 1,
+): QidahenCore {
+    const factionLabel = faction === 'ming' ? '大明' : faction === 'mongol' ? '蒙古' : '后金';
+    core.regions = core.regions.map((region) => (
+        region.id === regionId
+            ? {
+                ...region,
+                controller: faction,
+                controlLabel: factionLabel,
+                troops: count,
+                specialTroops: [
+                    {
+                        id: `${faction}-${regionId}-infantry-lv${level}`,
+                        label: `${factionLabel}步兵`,
+                        faction,
+                        troopKind: 'infantry',
                         count,
                         level,
                     },

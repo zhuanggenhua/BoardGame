@@ -18,15 +18,24 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
     const handToggleLabel = isHandHidden ? t('hud.showHand') : t('hud.hideHand');
     const handToggleClassName = [
         'absolute z-20',
-        'flex items-center justify-center rounded-full',
+        'flex items-center justify-center rounded-full bg-transparent p-0',
+        'transition-[filter,transform] duration-150',
+        'hover:brightness-125 active:scale-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/90',
+    ].join(' ');
+    const handToggleVisualClassName = [
+        'flex items-center justify-center rounded-full backdrop-blur-sm',
         'border border-cyan-200/70 bg-slate-950/88 text-cyan-100',
-        'backdrop-blur-sm',
-        'transition-[background-color,transform,border-color,box-shadow] duration-150',
-        'hover:scale-105 hover:border-cyan-100 hover:bg-cyan-900/90 active:scale-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/90',
         isHandHidden
-            ? 'border-amber-200/80 text-amber-100 hover:border-amber-100 hover:bg-amber-900/90'
+            ? 'border-amber-200/80 text-amber-100'
             : '',
     ].join(' ');
+    const handToggleVisualStyle = {
+        width: buildBoardShellInlineUnitValue(2.2),
+        height: buildBoardShellInlineUnitValue(2.2),
+        boxShadow: isHandHidden
+            ? `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(245,158,11,0.32)`
+            : `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(34,211,238,0.32)`,
+    } as const;
 
     return (
         <div
@@ -89,9 +98,6 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                         minHeight: buildBoardShellScreenPixelValue(44),
                         maxWidth: buildBoardShellScreenPixelValue(44),
                         maxHeight: buildBoardShellScreenPixelValue(44),
-                        boxShadow: isHandHidden
-                            ? `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(245,158,11,0.32)`
-                            : `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(34,211,238,0.32)`,
                     }}
                 >
                     <span
@@ -103,9 +109,16 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                         data-testid="dicethrone-hand-visibility-hit-area"
                         aria-hidden="true"
                     />
-                    {isHandHidden
-                        ? <ChevronUp className="board-shell-fixed-icon relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />
-                        : <ChevronDown className="board-shell-fixed-icon relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />}
+                    <span
+                        className={handToggleVisualClassName}
+                        style={handToggleVisualStyle}
+                        data-testid="dicethrone-hand-visibility-visual"
+                        data-fixed-control-visual="true"
+                    >
+                        {isHandHidden
+                            ? <ChevronUp className="board-shell-fixed-icon relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />
+                            : <ChevronDown className="board-shell-fixed-icon relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />}
+                    </span>
                 </button>
             )}
         </div>

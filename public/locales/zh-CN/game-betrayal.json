@@ -984,6 +984,10 @@
       "confirmedWithProgress": "已确认 {{confirmed}}/{{total}}",
       "waitingForCardConfirmation": "等待确认 {{confirmed}}/{{total}}",
       "nextSearchCard": "下一张",
+      "nextTraitCheck": "进行{{trait}}检定",
+      "chooseRewardTrait": "选择奖励属性",
+      "resolveNextStep": "进入后续规则阶段",
+      "reviewResult": "查看结果",
       "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "已翻出带事件符号的房间；现在选择跳过事件，或抽取事件牌。",
       "rollEvent": "投掷事件"

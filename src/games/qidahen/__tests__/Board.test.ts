@@ -12,6 +12,10 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-map-hitmap-canvas"',
     'data-testid="qidahen-map-overlay"',
     'data-testid="qidahen-map-region-mask-overlay"',
+    'data-qidahen-region-outline="true"',
+    'data-qidahen-map-token-outlined="true"',
+    'MAP_TOKEN_IDLE_OUTLINE',
+    'resolvedBoxShadow ?? MAP_TOKEN_IDLE_OUTLINE',
     'data-testid="qidahen-map-region-movement-preview"',
     'data-testid="qidahen-shared-printed-runtime-switcher"',
     'data-testid={`qidahen-shared-printed-runtime-option-${region.id}`}',
@@ -27,7 +31,11 @@ const REQUIRED_TEST_IDS = [
     'renderRegionOwnershipOverlay',
     "mainMap: 'qidahen/board/qidahen-main-map'",
     'data-testid="qidahen-player-float"',
-    'data-testid={`qidahen-armaments-${faction.id}`}',
+    'data-testid={`qidahen-player-${faction.id}`}',
+    'data-testid="qidahen-inspect-overlay"',
+    'data-testid="qidahen-inspect-panel"',
+    'data-testid="qidahen-inspect-close"',
+    'data-testid="qidahen-wheel-dispatch-payment-panel"',
     'data-testid="qidahen-action-wheel"',
     'data-tutorial-id="qidahen-action-wheel"',
     'data-testid="qidahen-action-wheel-asset"',
@@ -38,7 +46,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-sector"',
     'data-testid="qidahen-wheel-move-layer"',
     'data-testid={`qidahen-wheel-move-target-${choice.id}`}',
-    'data-testid="qidahen-wheel-tip"',
+    'testId="qidahen-wheel-tip"',
     '开垦',
     '军屯',
     '征兵',
@@ -60,6 +68,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-action-rail"',
     'data-testid={`qidahen-action-${action.id}`}',
     'data-testid="qidahen-hand-interaction-tray"',
+    'data-testid="qidahen-operation-banner"',
     'data-testid="qidahen-action-payment-panel"',
     'data-testid="qidahen-action-payment-status"',
     'data-testid="qidahen-action-payment-hint"',
@@ -171,7 +180,10 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
 const boardShellSource = readFileSync(resolve(__dirname, '..', 'QidahenBoardShell.tsx'), 'utf-8');
 const factionSelectionScreenSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenFactionSelectionScreen.tsx'), 'utf-8');
-const combinedBoardSource = `${boardSource}\n${boardShellSource}\n${factionSelectionScreenSource}`;
+const inspectPanelSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenInspectPanel.tsx'), 'utf-8');
+const statReadoutSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenStatReadout.tsx'), 'utf-8');
+const operationBannerSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenOperationBanner.tsx'), 'utf-8');
+const combinedBoardSource = `${boardSource}\n${boardShellSource}\n${factionSelectionScreenSource}\n${inspectPanelSource}\n${operationBannerSource}`;
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
 const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
 const typesSource = readFileSync(resolve(__dirname, '..', 'domain', 'types.ts'), 'utf-8');
@@ -283,6 +295,19 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const currentFactionId = handLimitDiscardSelection?.factionId');
         expect(boardSource).toContain('?? (playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId);');
         expect(boardSource).not.toContain('const currentFactionId = viewerFactionId ?? getCurrentFactionId(core);');
+    });
+
+    it('弃牌步骤显示统一操作提示横幅，文案为选择弃置的手牌', () => {
+        expect(operationBannerSource).toContain('data-testid="qidahen-operation-banner"');
+        expect(boardSource).toContain('resolveQidahenOperationPrompt');
+        expect(boardSource).toContain('<QidahenOperationBanner title={operationPrompt.title} />');
+        expect(boardSource).toContain('handInteractionTrayVisible');
+        expect(boardSource).toContain('gaoDiDiscardPending');
+        expect(boardSource).not.toContain('qidahen-top-action-banner');
+        expect(boardSource).toContain("defaultValue: '选择调度目标 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口'");
+        expect(boardSource).toContain('{core.gaoDiDispatchSelection.summary}');
+        expect(boardSource).toContain('isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection) ? (');
+        expect(boardSource).not.toContain("title: gaoDiTargetSelectionActive");
     });
 
     it('轮盘成为唯一下一步时，只由轮盘本体承接，不再生成重复顶部提示', () => {
@@ -483,8 +508,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain("badgeLabel: '已锁定'");
         expect(boardSource).toContain('focused={core.selectedActionId === action.id}');
         expect(boardSource).toContain('const engagedActionId = core.confirmedActionId;');
-        expect(boardSource).toContain("hint: gaoDiTargetSelectionActive ? '选择目标' : '弃 1 张手牌'");
-        expect(boardSource).toContain("badgeLabel: gaoDiTargetSelectionActive ? '选择目标' : '弃牌'");
+        expect(boardSource).toContain('if (!gaoDiTargetSelectionActive) {');
+        expect(boardSource).toContain("title: '调度目标'");
+        expect(boardSource).toContain("hint: '选择目标'");
+        expect(boardSource).toContain("badgeLabel: '选择目标'");
         expect(boardSource).toContain("title: '点一个进攻目标'");
         expect(boardSource).toContain('hint: `${wheelDispatchSelection.displayAnchorRegionName} 出发`');
         expect(boardSource).toContain("badgeLabel: '选择地区'");
@@ -492,14 +519,17 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("hint: '先点源地区兵牌确认本次出兵'");
         expect(boardSource).toContain("badgeLabel: '选择部队'");
         expect(boardSource).toContain('if (wheelDispatchSelection && (pendingCommittedTroops == null || pendingCommittedTroops <= 0))');
-        expect(boardSource).toContain("? '调度目标'");
+        expect(boardSource).not.toContain("? '调度目标'");
         expect(boardSource).not.toContain("? '点一个调度目标'");
         expect(boardSource).not.toContain("title: '点一个调度目标'");
-        expect(boardSource).toContain("candidateSummary: gaoDiTargetSelectionActive");
-        expect(boardSource).toContain(": '等待弃牌'");
+        expect(boardSource).toContain('candidateSummary: formatQidahenCandidateRegionSummary(core.gaoDiDispatchSelection.candidates.map');
+        expect(boardSource).not.toContain(": '等待弃牌'");
+        expect(boardSource).not.toContain("'先弃 1 张牌'");
         expect(boardSource).toContain('mapSelectionGuide.candidates.length > 0');
-        expect(boardSource).toContain("title: gaoDiTargetSelectionActive");
-        expect(boardSource).toContain("candidates: gaoDiTargetSelectionActive ? core.gaoDiDispatchSelection.candidates.map");
+        expect(boardSource).toContain("title: '高第调度'");
+        expect(boardSource).toContain('candidates: core.gaoDiDispatchSelection.candidates.map');
+        expect(boardSource).not.toContain("title: gaoDiTargetSelectionActive");
+        expect(boardSource).not.toContain("candidates: gaoDiTargetSelectionActive ? core.gaoDiDispatchSelection.candidates.map");
         expect(boardSource).not.toContain("action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const");
     });
 
@@ -641,14 +671,38 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('右侧动作按钮在 hover 或 focus 时必须显示可见功能提示，而不是只依赖原生 title', () => {
         expect(boardSource).toContain('title={action.detail}');
-        expect(boardSource).toContain('data-testid={`qidahen-action-tooltip-${action.id}`}');
-        expect(boardSource).toContain("role=\"tooltip\"");
-        expect(boardSource).toContain('group-hover:block group-focus:block');
-        expect(boardSource).toContain('right-[calc(100%+12px)] top-1/2');
+        expect(boardSource).toContain('testId={`qidahen-action-tooltip-${action.id}`}');
+        expect(boardSource).toContain("from './ui/QidahenHoverTip'");
+        expect(boardSource).toContain('onMouseEnter={(event) => showTip(event.currentTarget)}');
+        expect(boardSource).toContain('onFocus={(event) => showTip(event.currentTarget)}');
+        expect(boardSource).toContain('placement="left"');
         expect(boardSource).toContain("t('board.actions.tooltipHeader', { defaultValue: '功能说明' })");
         expect(boardSource).toContain("t('board.actions.tooltipCost', {");
         expect(boardSource).toContain('{action.label}');
         expect(boardSource).toContain('{action.detail}');
+    });
+
+    it('轮盘扇区与走格 hover/focus 必须显示落地格功能说明，走格还要保留移动花费', () => {
+        const hoverTipSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenHoverTip.tsx'), 'utf-8');
+        const zh = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/locales/zh-CN/game-qidahen.json'), 'utf-8'));
+        const en = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/locales/en/game-qidahen.json'), 'utf-8'));
+
+        expect(hoverTipSource).toContain('createPortal');
+        expect(hoverTipSource).toContain('UI_Z_INDEX.tooltip');
+        expect(hoverTipSource).toContain('pointer-events-none');
+        expect(hoverTipSource).toContain("role={onClick ? 'button' : 'tooltip'}");
+        expect(hoverTipSource).toContain('onPointerEnter={onPointerEnter}');
+        expect(boardSource).not.toContain('testId={`qidahen-player-inspect-tip-${faction.id}`}');
+        expect(boardSource).toContain('onClick={onInspect}');
+        expect(boardSource).toContain('data-testid={`qidahen-wheel-sector-hit-${sector.id}`}');
+        expect(boardSource).toContain('testId="qidahen-wheel-tip"');
+        expect(boardSource).toContain('board.wheel.sectors.');
+        expect(boardSource).toContain('hoveredMove?.label');
+        expect(zh.board.wheel.sectors.militaryFarm.name).toBe('军屯');
+        expect(zh.board.wheel.sectors.attackDispatch.detail).toContain('指挥最多 6 个部队');
+        expect(zh.board.wheel.sectors.diplomacyHire.name).toBe('外交雇佣');
+        expect(en.board.wheel.sectors.militaryFarm.name).toBe('Military Farm');
+        expect(en.board.wheel.sectors.attackDispatch.detail).toContain('up to 6 units');
     });
 
     it('朝鲜牌库在桌面端使用右侧小型 rail，禁止回到右上角大卡悬浮', () => {
@@ -757,12 +811,61 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('地图文案不得再把 region id 直接漏给用户，可见区域名优先走中文规则名', () => {
-        expect(boardSource).toContain("import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';");
-        expect(boardSource).toContain("import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';");
-        expect(boardSource).toContain("regionName: targetRegion");
-        expect(boardSource).toContain("? getActionRuleDisplayRegionName(targetRegion, targetRegion.name)");
-        expect(boardSource).toContain(": getQidahenStatefulRegionDisplayName(regionId)");
+        expect(boardSource).toContain('${region.regionName}${region.usesCoast ? \' 水\' : \'\'}');
         expect(boardSource).not.toContain('regionName: targetRegion?.name ?? regionId');
+        expect(boardSource).not.toContain('activePassageSummary');
+    });
+
+    it('势力详情军备用正式卡面，只显示已开发项，关闭用右上角叉号', () => {
+        expect(inspectPanelSource).toContain('getQidahenArmamentInspectView');
+        expect(inspectPanelSource).toContain('listQidahenDevelopedArmaments');
+        expect(inspectPanelSource).toContain('<CardPreview');
+        expect(inspectPanelSource).toContain('data-testid={`qidahen-inspect-armament-${armament.id}`}');
+        expect(inspectPanelSource).not.toContain('qidahen-inspect-armament-tip');
+        expect(inspectPanelSource).not.toContain('QidahenHoverTip');
+        expect(inspectPanelSource).not.toContain('rulesSummary');
+        expect(inspectPanelSource).toContain("from 'lucide-react'");
+        expect(inspectPanelSource).toContain('data-testid="qidahen-inspect-close"');
+        expect(inspectPanelSource).toContain('absolute right-3 top-3');
+        expect(inspectPanelSource).toContain('armament.level > 1');
+        expect(inspectPanelSource).not.toContain('board.inspect.openHint');
+        expect(inspectPanelSource).not.toContain('qidahen-inspect-discard');
+        expect(inspectPanelSource).not.toContain('discardPileCount');
+        expect(boardSource).not.toContain('getQidahenArmamentInspectView');
+        expect(boardSource).not.toContain('listQidahenDevelopedArmaments');
+        expect(boardSource).not.toContain('board.inspect.openHint');
+    });
+
+    it('势力条悬浮不得倾倒军备树，弃牌堆由桌面实体承接', () => {
+        expect(boardSource).not.toContain('qidahen-player-inspect-tip');
+        expect(boardSource).not.toContain('developedArmaments.map');
+        expect(boardSource).toContain('testId="qidahen-discard-pile"');
+        expect(inspectPanelSource).not.toContain('board.inspect.discardTitle');
+        expect(inspectPanelSource).not.toContain('board.inspect.discardCount');
+        expect(inspectPanelSource).not.toContain('board.inspect.discardHint');
+        expect(boardSource).not.toContain('board.player.armamentsInspect');
+        expect(boardSource).not.toContain('qidahen-armaments-');
+        expect(boardSource).not.toContain('军备详情');
+    });
+
+    it('详情数值必须把对象名和读数拆开，不能再挤成一句中间点串', () => {
+        expect(statReadoutSource).toContain('tabular-nums');
+        expect(statReadoutSource).toContain('`${item.testId}-label`');
+        expect(statReadoutSource).toContain('`${item.testId}-value`');
+        expect(inspectPanelSource).toContain('QidahenStatReadout');
+        expect(inspectPanelSource).toContain('qidahen-inspect-stat-vp');
+        expect(inspectPanelSource).toContain('qidahen-inspect-stat-hand');
+        expect(inspectPanelSource).toContain('qidahen-inspect-stat-troops');
+        expect(inspectPanelSource).toContain('qidahen-inspect-stat-grain');
+        expect(inspectPanelSource).toContain('qidahen-inspect-stat-population');
+        expect(inspectPanelSource).toContain("board.inspect.statVp");
+        expect(inspectPanelSource).toContain("board.inspect.statHand");
+        expect(inspectPanelSource).toContain("board.inspect.statTroops");
+        expect(inspectPanelSource).toContain("board.inspect.statGrain");
+        expect(inspectPanelSource).toContain("board.inspect.statPopulation");
+        expect(inspectPanelSource).not.toContain('board.inspect.factionStats');
+        expect(inspectPanelSource).not.toContain('board.map.regionTroopsPopulation');
+        expect(inspectPanelSource).toContain('region.population > 0');
     });
 
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
@@ -774,7 +877,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('qidahen-action-payment-panel');
         expect(boardSource).toContain('qidahen-action-payment-confirm');
         expect(boardSource).toContain('qidahen-action-payment-cancel');
-        expect(boardSource).toContain('点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张');
+        expect(boardSource).not.toContain('点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张');
+        expect(boardSource).not.toContain('点击底部手牌选择要弃掉的牌。');
+        expect(boardSource).not.toContain('点击底部手牌弃 1 张，确认后才能选择进攻目标。');
+        expect(boardSource).not.toContain('sunYuanhuaSelection!.summary');
         expect(boardSource).toContain('QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION');
         expect(boardSource).toContain('QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD');
         expect(boardSource).toContain('QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION');
@@ -848,9 +954,21 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('if (compactRegionTip && core.explicitRegionId) {');
         expect(boardSource).toContain('const selectedRegion = core.explicitRegionId');
         expect(boardSource).toContain("'data-map-selected': core.explicitRegionId ?? '',");
-        expect(boardSource).toContain('{!compactRegionTip && activePassageSummary ? (');
-        expect(boardSource).toContain('{!compactRegionTip && activeMovementPreview ? (');
+        expect(boardSource).not.toContain('activePassageSummary');
+        expect(boardSource).not.toContain('board.map.inspectHint');
+        expect(boardSource).not.toContain('board.map.regionPassages');
+        expect(boardSource).not.toContain('{boundaryLabel || boundaryMeta.label}');
+        expect(boardSource).toContain('{activeMovementPreview ? (');
         expect(boardSource).toContain('{!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (');
+    });
+
+    it('地图区域 tip 不得再抄地图 token 已主显的兵力，只保留宿主上看不见的人口', () => {
+        expect(boardSource).not.toContain('board.map.regionTroopsPopulation');
+        expect(boardSource).not.toContain('board.map.regionPopulation');
+        expect(boardSource).toContain('board.map.statPopulation');
+        expect(boardSource).toContain('qidahen-map-region-population');
+        expect(boardSource).toContain('QidahenStatReadout');
+        expect(boardSource).toContain('focusedRegion.population > 0');
     });
 
     it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {
@@ -1008,7 +1126,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;');
         expect(boardSource).toContain('const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
         expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : undefined');
-        expect(boardSource).toContain('className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
+        expect(boardSource).toContain('className="pointer-events-auto absolute z-20 cursor-pointer border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
         expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");
         expect(boardSource).toContain("className={`${tokenSelectable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}");

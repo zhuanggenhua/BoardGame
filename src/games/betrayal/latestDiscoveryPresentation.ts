@@ -12,10 +12,12 @@ import {
   type EventRollConfirmationPresentation,
 } from "./recentRollPresentation";
 import {
-  isIntermediateAllTraitCheckEventRollResolution,
   isPendingCardResolutionFullyAcknowledged,
 } from "./acknowledgementReadModel";
-import { effectIsTraitOnly } from "./possessionEffects";
+import {
+  BETRAYAL_TRAIT_LABEL,
+  effectIsTraitOnly,
+} from "./possessionEffects";
 
 export type LatestDiscoveryDisplayEntry = {
   key: string;
@@ -27,7 +29,7 @@ export type LatestDiscoveryDisplayEntry = {
 
 type LatestDiscoveryTranslation = (
   key: string,
-  params?: { confirmed: number; total: number },
+  params?: Record<string, string | number>,
 ) => string;
 
 export type LatestDiscoverySelectionPresentation = {
@@ -69,7 +71,6 @@ export type BetrayalLatestDiscoveryPanelPresentation = {
   pendingEventRollStart: BetrayalCore["pendingEventRollStart"] | null;
   canCurrentViewerStartEventRoll: boolean;
   pendingEventRollRequiresNoAcknowledgement: boolean;
-  shouldAutoFinalizeEventRollWhenSettled: boolean;
   eventChoiceDiscoveryForVisual: BetrayalDiscoverySummary | null;
   displayKindLabel: string;
   displaySummary: string;
@@ -1141,8 +1142,27 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       !core.pendingEventChoice &&
       !core.pendingEventRollResolution,
   );
+  const eventRollAdvanceLabel = (() => {
+    const nextEventChoice = core.pendingEventRollResolution?.nextPendingEventChoice;
+    const nextEffect = nextEventChoice?.effect;
+    if (nextEffect?.mode === "allTraitChecks" && nextEffect.traits[0]) {
+      return t("board.discovery.nextTraitCheck", {
+        trait: BETRAYAL_TRAIT_LABEL[nextEffect.traits[0]],
+      });
+    }
+    if (nextEffect?.mode === "chosenTrait") {
+      return t("board.discovery.chooseRewardTrait");
+    }
+    if (nextEventChoice) {
+      return t("board.discovery.resolveNextStep");
+    }
+    return t("board.discovery.reviewResult");
+  })();
   const continueLabel = (() => {
     if (core.pendingEventRollResolution) {
+      if (core.pendingEventRollResolution.requiresPlayerAdvance) {
+        return eventRollAdvanceLabel;
+      }
       if (core.pendingEventRollResolution.requiresAcknowledgement === false) {
         return t("board.roll.backToBoard");
       }
@@ -1218,10 +1238,6 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     canCurrentViewerStartEventRoll,
     pendingEventRollRequiresNoAcknowledgement: Boolean(
       core.pendingEventRollResolution?.requiresAcknowledgement === false,
-    ),
-    shouldAutoFinalizeEventRollWhenSettled: Boolean(
-      core.pendingEventRollResolution
-      && isIntermediateAllTraitCheckEventRollResolution(core.pendingEventRollResolution),
     ),
     eventChoiceDiscoveryForVisual,
     displayKindLabel,

@@ -55,9 +55,10 @@ describe('DiceThrone compatibility sizing', () => {
         expect(toggle.style.height).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
         expect(toggle.style.minWidth).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
         expect(toggle.style.minHeight).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
-        expect(toggle.className).toContain('border border-cyan-200/70');
-        expect(toggle.className).toContain('bg-slate-950/88');
-        expect(toggle.className).toContain('text-cyan-100');
+        const visual = screen.getByTestId('dicethrone-hand-visibility-visual');
+        expect(visual.className).toContain('border border-cyan-200/70');
+        expect(visual.className).toContain('bg-slate-950/88');
+        expect(visual.className).toContain('text-cyan-100');
         expect(toggle.className).not.toContain('-translate-x-[34%]');
         expect(toggle.className).not.toContain('-translate-y-[34%]');
         const hitArea = screen.getByTestId('dicethrone-hand-visibility-hit-area');
@@ -77,8 +78,9 @@ describe('DiceThrone compatibility sizing', () => {
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.showHand');
         expect(toggle).toHaveAttribute('aria-pressed', 'true');
-        expect(toggle.className).toContain('border-amber-200/80');
-        expect(toggle.className).toContain('text-amber-100');
+        const visual = screen.getByTestId('dicethrone-hand-visibility-visual');
+        expect(visual.className).toContain('border-amber-200/80');
+        expect(visual.className).toContain('text-amber-100');
         expect(screen.getByTestId('dicethrone-hand-visibility-hit-area')).toBeInTheDocument();
         expect(toggle.querySelector('.lucide-chevron-up')).toHaveClass('board-shell-fixed-icon');
         expect(toggle.querySelector('.lucide-eye')).toBeNull();

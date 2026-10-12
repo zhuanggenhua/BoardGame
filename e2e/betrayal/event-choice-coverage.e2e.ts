@@ -198,17 +198,6 @@ async function waitForVisibleRollingDiceFrame(
               };
             }
             const motionType = source.getAttribute("data-dice-motion-type") ?? "";
-            if (motionType !== "roll") {
-              return {
-                key: "pending",
-                motion: group.getAttribute("data-dice-physics-motion"),
-                resultStage: false,
-                total: false,
-                outcome: false,
-                discoveryContinueVisible: false,
-                rollContinueVisible: false,
-              };
-            }
             const engineReady = source.getAttribute("data-dice-engine-ready") === "true";
             const canvas = panel.querySelector<HTMLCanvasElement>("canvas");
             const canvasRect = canvas?.getBoundingClientRect();
@@ -220,11 +209,15 @@ async function waitForVisibleRollingDiceFrame(
                 canvas.dataset.skinsReady === "true",
             );
             const motion = group.getAttribute("data-dice-physics-motion");
-            const resultStage = Boolean(
-              panel.querySelector('[data-testid="betrayal-recent-roll-result-stage"]'),
-            );
-            const total = Boolean(panel.querySelector('[data-testid="betrayal-recent-roll-total"]'));
-            const outcome = Boolean(panel.querySelector('[data-testid="betrayal-recent-roll-outcome"]'));
+            const isVisible = (selector: string) => {
+              const element = panel.querySelector<HTMLElement>(selector);
+              if (!element || element.getClientRects().length === 0) return false;
+              const style = window.getComputedStyle(element);
+              return style.display !== "none" && style.visibility !== "hidden";
+            };
+            const resultStage = isVisible('[data-testid="betrayal-recent-roll-result-stage"]');
+            const total = isVisible('[data-testid="betrayal-recent-roll-total"]');
+            const outcome = isVisible('[data-testid="betrayal-recent-roll-outcome"]');
             const discoveryContinueVisible = (() => {
               const element = document.querySelector<HTMLElement>(
                 '[data-testid="betrayal-discovery-continue"]',
@@ -241,8 +234,8 @@ async function waitForVisibleRollingDiceFrame(
               key:
                 !engineReady || !canvasVisible
                   ? "pending"
-                  : motionType === "roll" &&
-                      motion === "rolling" &&
+                  : motion === "rolling" &&
+                      (motionType === "roll" || canvas?.dataset.diceVisualSettled === "false") &&
                       !resultStage &&
                       !total &&
                       !outcome &&
@@ -292,7 +285,7 @@ async function waitForVisibleRollingDiceFrame(
         timeout: 30000,
         intervals: [5, 10, 20, 40, 80, 160],
         message: label + " 必须先进入滚动中且物理骰子已可见，再采集滚动帧。",
-        },
+      },
       )
       .toBe("roll:rolling:true");
     if (!capturedScreenshot || !capturedState) {
@@ -6944,7 +6937,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "betrayal-event-choice-吊死鬼-完整链路",
     );
     const screenshotBase =
-      "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路";
+      "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路";
     const hangingTree = eventByName("吊死鬼");
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
@@ -7037,28 +7030,33 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
 
     await setHarnessRandomQueue(page, Array(12).fill(0.99));
+    const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+    const rollPanel = discoveryPanel.getByTestId(
+      "betrayal-recent-roll-panel",
+    );
     for (const [index, [trait, label]] of traits.entries()) {
       const traitButton = page.getByTestId(
         `betrayal-event-choice-trait-${trait}`,
       );
       await expect(traitButton).toBeVisible();
+      await expect(traitButton).toBeEnabled();
       const rollingScreenshotPath = `${screenshotBase}-${String(index + 5).padStart(2, "0")}-${label}检定滚动中.png`;
+      const nextActionLabel = index < traits.length - 1
+        ? `进行${traits[index + 1][1]}检定`
+        : "选择奖励属性";
+      const settledScreenshotPath = `${screenshotBase}-${String(index + 5).padStart(2, "0")}-${label}检定停稳-${nextActionLabel}.png`;
       let eventRollStarted = false;
       const rollingFramePromise = waitForVisibleRollingDiceFrame(
         page,
-        page.getByTestId("betrayal-recent-roll-panel"),
+        rollPanel,
         `吊死鬼-${label}检定`,
         rollingScreenshotPath,
         () => eventRollStarted,
       );
-      await traitButton.click();
       eventRollStarted = true;
+      await traitButton.click();
       await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
 
-      const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
-      const rollPanel = discoveryPanel.getByTestId(
-        "betrayal-recent-roll-panel",
-      );
       await expect(discoveryPanel).toBeVisible();
       await expect(discoveryPanel).toHaveAttribute(
         "aria-label",
@@ -7073,6 +7071,9 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
         settledCore.recentAllTraitCheck?.results[index]?.trait,
       ).toBe(trait);
       expect(settledCore.pendingEventChoice).toBeNull();
+      expect(settledCore.pendingEventRollResolution?.requiresPlayerAdvance).toBe(
+        true,
+      );
       const {
         screenshot: rollingScreenshot,
         state: rollingState,
@@ -7084,14 +7085,21 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       expect(rollingState.discoveryContinueVisible).toBe(false);
       expect(rollingState.rollContinueVisible).toBe(false);
       await waitForPhysicalDiceSettled(rollPanel);
-      await expect(rollPanel).toContainText("总点数");
+      const continueButton = discoveryPanel.getByTestId(
+        "betrayal-discovery-continue",
+      );
+      await expect(continueButton, `${label}停稳后必须显示下一规则阶段入口`).toBeVisible();
+      await expect(continueButton, `${label}停稳后入口必须可用`).toBeEnabled();
+      await expect(continueButton, `${label}停稳后入口必须说明下一规则阶段`).toContainText(
+        nextActionLabel,
+      );
+      await expect(eventChoicePanel).toBeHidden();
       await expect(
-        discoveryPanel.getByTestId("betrayal-discovery-continue"),
-        `${label}中间属性检定停稳后不应重复显示确认或返回按钮`,
-      ).toHaveCount(0);
+        page.getByTestId("betrayal-discovery-continue"),
+      ).toHaveCount(1);
       const settledScreenshot = await saveScreenshot(
         page,
-        `${screenshotBase}-${String(index + 5).padStart(2, "0")}-${label}检定停稳.png`,
+        settledScreenshotPath,
         { waitMs: 300 },
       );
       expect(
@@ -7099,6 +7107,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
         `${label}滚动中与停稳截图必须来自不同画面`,
       ).not.toBe(0);
 
+      await expect
+        .poll(async () => (await readCurrentCore(page)).pendingEventRollResolution)
+        .not.toBeNull();
+      await continueButton.click();
       await expect
         .poll(async () => (await readCurrentCore(page)).pendingEventRollResolution)
         .toBeNull();
@@ -7142,7 +7154,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(decisionDock).toHaveAttribute("data-action-position", "bottom");
     await page.getByTestId("betrayal-event-choice-confirm").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
-    const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
     await expect(discoveryPanel).toHaveAttribute("aria-label", /事件牌 吊死鬼/);
     const discoveryDetail = page.getByTestId("betrayal-discovery-detail");

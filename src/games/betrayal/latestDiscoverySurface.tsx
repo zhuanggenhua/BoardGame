@@ -54,7 +54,6 @@ type BetrayalLatestDiscoverySurfaceProps = {
   modifierEffectSources?: string | null;
   hasPendingEventRollStart: boolean;
   canStartPendingEventRoll: boolean;
-  autoFinalizeEventRollWhenSettled: boolean;
   suppressExternalActionDock?: boolean;
   continueButton: BetrayalLatestDiscoveryContinueButtonState;
   effectiveLocale: string;
@@ -134,7 +133,6 @@ export function BetrayalLatestDiscoverySurface({
   modifierEffectSources = null,
   hasPendingEventRollStart,
   canStartPendingEventRoll,
-  autoFinalizeEventRollWhenSettled,
   suppressExternalActionDock = false,
   continueButton,
   effectiveLocale,
@@ -152,10 +150,8 @@ export function BetrayalLatestDiscoverySurface({
   }
 
   const hasRollModifierActionSlot = Boolean(rollModifierActionSlot);
-  // Intermediate multi-check rolls advance automatically after the result is readable.
   const shouldHideExternalActionDock =
     suppressExternalActionDock ||
-    autoFinalizeEventRollWhenSettled ||
     hasRollModifierActionSlot ||
     Boolean(shouldShowRoll && recentRoll && continueButton.eventRollReadable === false);
   const shouldRenderCardFace = Boolean(

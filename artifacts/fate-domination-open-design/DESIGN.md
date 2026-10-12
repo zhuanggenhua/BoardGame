@@ -1,10 +1,11 @@
-# Fate/Domination OpenDesign 桌面牌桌候选稿 v2
+# Fate/Domination OpenDesign 桌面牌桌候选稿 v2（历史）
 
 ## 状态
 
-- `open-design-artifact-candidate`
+- `historical-lineage`
 - 人工设计验收：`not-approved`
-- 本稿用于先确认信息层级、视觉密度和真实素材承接，不直接替代运行时实现。
+- 当前工作稿指针是未版本化 `open-design-artifact.manifest.json`，工作文件是 `index-v6.html`，用户可见身份是「当前工作稿」。
+- 本文件只保留第二稿历史说明。历史 HTML 在 `index-v2.html`。
 
 ## 规则与设计真相源
 

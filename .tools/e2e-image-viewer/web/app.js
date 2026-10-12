@@ -14,6 +14,7 @@ const zoomInButton = document.querySelector("#zoomIn");
 const zoomOutButton = document.querySelector("#zoomOut");
 const fitViewButton = document.querySelector("#fitView");
 const resetViewButton = document.querySelector("#resetView");
+const copyTextButton = document.querySelector("#copyText");
 const indexPanel = document.querySelector("#indexPanel");
 const toggleIndexButton = document.querySelector("#toggleIndex");
 const indexMeta = document.querySelector("#indexMeta");
@@ -402,6 +403,8 @@ const updateTilePosition = (tile, entry) => {
 
 const selectItem = (item, announce = true) => {
   selectedPath = item?.relativePath ?? "";
+  copyTextButton.disabled = !item;
+  copyTextButton.title = item ? `复制当前截图的标题和说明：${displayTitle(item)}` : "当前没有可复制文字";
   for (const tile of board.querySelectorAll(".tile")) {
     tile.classList.toggle("selected", tile.dataset.path === selectedPath);
   }
@@ -421,6 +424,21 @@ const copyPath = async (item) => {
   try {
     await navigator.clipboard.writeText(item.absolutePath);
     selection.textContent = `已复制本地路径：${displayTitle(item)}`;
+  } catch (error) {
+    selection.textContent = `复制失败，请检查浏览器剪贴板权限：${displayTitle(item)}`;
+    throw error;
+  }
+};
+
+const copyItemText = async (item) => {
+  if (!item) {
+    selection.textContent = "当前没有可复制文字";
+    return;
+  }
+  const text = [displayTitle(item), displayDescription(item)].filter(Boolean).join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    selection.textContent = `已复制文字：${displayTitle(item)}`;
   } catch (error) {
     selection.textContent = `复制失败，请检查浏览器剪贴板权限：${displayTitle(item)}`;
     throw error;
@@ -455,7 +473,7 @@ const renderIndex = (indexMatchedCount = 0) => {
     button.type = "button";
     button.className = "index-item";
     button.dataset.path = item.relativePath;
-    button.title = `定位并复制：${displayTitle(item)}`;
+    button.title = `点击定位：${displayTitle(item)}；双击图片可复制本地路径`;
 
     const title = document.createElement("span");
     title.className = "index-item-title";
@@ -471,11 +489,14 @@ const renderIndex = (indexMatchedCount = 0) => {
     }
 
     button.addEventListener("click", () => {
+      const hasSelectedText = Boolean(window.getSelection()?.toString().trim());
       focusItem(item);
       if (detailItem) {
         openDetail(item);
       }
-      copyPath(item).catch(() => {});
+      if (!hasSelectedText) {
+        copyPath(item).catch(() => {});
+      }
     });
 
     indexList.append(button);
@@ -685,6 +706,10 @@ zoomOutButton.addEventListener("click", () => {
 
 fitViewButton.addEventListener("click", fitView);
 resetViewButton.addEventListener("click", resetView);
+copyTextButton.addEventListener("click", () => {
+  const item = items.find((candidate) => candidate.relativePath === selectedPath);
+  copyItemText(item).catch(() => {});
+});
 imageDetailClose.addEventListener("click", closeDetail);
 imageDetailPrevious.addEventListener("click", () => navigateDetail(-1));
 imageDetailNext.addEventListener("click", () => navigateDetail(1));

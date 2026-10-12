@@ -52,6 +52,7 @@ import {
 } from './interactionSources';
 import { buildQidahenOpenGateSurrenderTroopChoices } from './openGateSurrenderSelection';
 import type { QidahenCore } from './types';
+import { isQidahenWheelDispatchPaymentPending } from './wheelDispatchPayment';
 
 function buildQidahenHandLimitDiscardInteraction(
     state: MatchState<QidahenCore>,
@@ -222,6 +223,9 @@ function buildQidahenDiplomacyInteraction(
 function buildQidahenWheelDispatchInteraction(
     state: MatchState<QidahenCore>,
 ): QidahenWheelDispatchInteraction | null {
+    if (isQidahenWheelDispatchPaymentPending(state.core)) {
+        return null;
+    }
     const selection = state.core.turnPhase === 'dispatch-targeting'
         ? (
             getQidahenWheelDispatchSelectionForCore(state.core, state.sys.interaction?.current)

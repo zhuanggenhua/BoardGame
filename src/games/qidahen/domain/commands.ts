@@ -23,6 +23,10 @@ import {
     getQidahenSelectedActionPaymentProgress,
     hasRemainingFactionAction,
 } from './factionActionWindow';
+import {
+    isQidahenWheelDispatchPaymentPending,
+    QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED,
+} from './wheelDispatchPayment';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
 import {
@@ -79,6 +83,7 @@ export const QIDAHEN_COMMANDS = {
     SELECT_WHEEL_MOVE: 'SELECT_WHEEL_MOVE',
     EXECUTE_WHEEL_MOVE: 'EXECUTE_WHEEL_MOVE',
     SELECT_PAYMENT_CARD: 'SELECT_PAYMENT_CARD',
+    CONFIRM_WHEEL_DISPATCH_PAYMENT: 'CONFIRM_WHEEL_DISPATCH_PAYMENT',
     SELECT_HAND_LIMIT_DISCARD_CARD: 'SELECT_HAND_LIMIT_DISCARD_CARD',
     SELECT_SUN_YUANHUA_TECH_CARD: 'SELECT_SUN_YUANHUA_TECH_CARD',
     SELECT_GAO_DI_DISPATCH_CARD: 'SELECT_GAO_DI_DISPATCH_CARD',
@@ -407,6 +412,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (isQidahenWheelDispatchPaymentPending(state.core)) {
+                return { valid: false, error: 'paymentIncomplete' };
+            }
             {
                 const pendingTargetAction = getQidahenPendingTargetActionForCore(
                     state.core,
@@ -543,6 +551,15 @@ export function validate(
             if (!isCurrentSeatCommand(state, command)) {
                 return { valid: false, error: 'notCurrentPlayer' };
             }
+            if (isQidahenWheelDispatchPaymentPending(state.core)) {
+                return state.core.handCards.some((card) => (
+                    card.id === command.payload.cardId
+                    && card.faction === getCurrentFactionId(state.core)
+                    && card.status !== 'disabled'
+                ))
+                    ? { valid: true }
+                    : { valid: false, error: 'unknownPaymentCard' };
+            }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
             }
@@ -553,6 +570,19 @@ export function validate(
             ))
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
+        case QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            if (!isQidahenWheelDispatchPaymentPending(state.core)) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            return state.core.selectedPaymentCardIds.length >= QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
         case QIDAHEN_COMMANDS.SELECT_HAND_LIMIT_DISCARD_CARD:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
