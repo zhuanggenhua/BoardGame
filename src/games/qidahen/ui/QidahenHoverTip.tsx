@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useResolvedOverlayTooltipZIndex } from '../../../components/common/overlays/overlayLayer';
 import { UI_Z_INDEX } from '../../../core';
@@ -45,7 +45,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     children,
 }) => {
     const tipRef = useRef<HTMLDivElement>(null);
-    const [layout, setLayout] = useState<{ left: number; top: number } | null>(null);
+    const layoutRef = useRef<{ left: number; top: number } | null>(null);
     const resolvedZIndex = Math.max(UI_Z_INDEX.tooltip, useResolvedOverlayTooltipZIndex());
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
@@ -53,13 +53,13 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     }, []);
 
     const updateLayout = useCallback(() => {
-        if (!open || !anchor || !tipRef.current || typeof window === 'undefined') {
-            setLayout(null);
+        const node = tipRef.current;
+        if (!open || !anchor || !node || typeof window === 'undefined') {
             return;
         }
 
         const anchorRect = anchor.getBoundingClientRect();
-        const tooltipRect = tipRef.current.getBoundingClientRect();
+        const tooltipRect = node.getBoundingClientRect();
         const tooltipWidth = tooltipRect.width || TIP_WIDTH;
         const tooltipHeight = tooltipRect.height || 120;
         const { innerWidth, innerHeight } = window;
@@ -83,7 +83,10 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
             VIEWPORT_PADDING,
             Math.max(VIEWPORT_PADDING, innerHeight - tooltipHeight - VIEWPORT_PADDING),
         );
-        setLayout({ left, top });
+        layoutRef.current = { left, top };
+        node.style.left = `${left}px`;
+        node.style.top = `${top}px`;
+        node.style.visibility = 'visible';
     }, [open, anchor, placement]);
 
     useLayoutEffect(() => {
@@ -101,6 +104,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     }, [open, updateLayout]);
 
     if (!open || !anchor || !portalRoot) {
+        if (!open) layoutRef.current = null;
         return null;
     }
 
@@ -121,8 +125,8 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
                 }
             } : undefined}
             style={{
-                left: layout?.left ?? -9999,
-                top: layout?.top ?? -9999,
+                left: layoutRef.current?.left ?? -9999,
+                top: layoutRef.current?.top ?? -9999,
                 width: TIP_WIDTH,
                 zIndex: resolvedZIndex,
                 borderColor: TIP_SKIN.borderColor,
@@ -132,7 +136,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
                 borderRadius: 3,
                 textShadow: 'none',
                 whiteSpace: 'normal',
-                visibility: layout ? 'visible' : 'hidden',
+                visibility: layoutRef.current ? 'visible' : 'hidden',
             }}
         >
             {children}
