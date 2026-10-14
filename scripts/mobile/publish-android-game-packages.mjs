@@ -1,12 +1,16 @@
 import { config } from 'dotenv';
 import { createHash } from 'node:crypto';
-import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { Zip, ZipDeflate } from 'fflate';
 import { publishPrimaryAssetBatch } from '../assets/publish-primary-assets.mjs';
 import { waitForServerAssets } from './wait-for-server-assets.mjs';
 import { resolveAndroidAssetsBaseUrl } from './android-assets-base-url.mjs';
+import {
+    assertSharedAudioPackageEntriesArePublishable,
+    createAndroidCompatibleZipFile,
+    shouldIncludeSharedAudioPackagePath,
+} from './android-package-archive.mjs';
 
 const rootDir = process.cwd();
 
@@ -63,7 +67,6 @@ const SMASHUP_ZH_CN_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/zh-CN\/smashup\/(?:bas
 const SMASHUP_ZH_CN_ANDROID_PACKAGE_ATLAS_PATHS = new Set([
     'i18n/zh-CN/smashup/cards/compressed/longzu.webp',
 ]);
-const STABLE_ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const tempZipRoot = path.join(tmpdir(), 'boardgame-mobile-packages');
 const runId = `${process.pid}-${Date.now()}`;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -362,42 +365,6 @@ const buildGamePackageEntries = (gameId) => {
     return { includedFiles };
 };
 
-const shouldIncludeInSharedAudioPackage = (relativePath) => {
-    const normalized = relativePath.replace(/\\/g, '/');
-    if (!normalized.startsWith(SHARED_AUDIO_PREFIX)) {
-        return false;
-    }
-
-    const extension = path.extname(normalized).toLowerCase();
-    const parts = normalized.split('/');
-    return extension === '.ogg'
-        && parts.includes(COMPRESSED_DIR_NAME)
-        && !SOURCE_ASSET_EXTENSIONS.has(extension)
-        && !TEMPORARY_ASSET_NAME_PATTERN.test(normalized);
-};
-
-const assertSharedAudioPackageEntriesArePublishable = (includedFiles) => {
-    const blockedFiles = includedFiles
-        .map((entry) => entry.relativePath)
-        .filter((relativePath) => {
-            const normalized = relativePath.replace(/\\/g, '/');
-            return !normalized.startsWith(SHARED_AUDIO_PREFIX)
-                || path.extname(normalized).toLowerCase() !== '.ogg'
-                || !isCompressedRuntimeMediaPath(normalized)
-                || isSourceOrTemporaryAssetPath(normalized)
-                || normalized.endsWith('/registry.json')
-                || normalized.endsWith('/phrase-mappings.zh-CN.json');
-        });
-
-    if (blockedFiles.length > 0) {
-        throw new Error([
-            'Android 共享音频包候选资源包含非压缩 OGG 或构建/开发配置，已中断发布。',
-            ...blockedFiles.slice(0, 20).map((relativePath) => `- ${relativePath}`),
-            blockedFiles.length > 20 ? `... 还有 ${blockedFiles.length - 20} 个` : '',
-        ].filter(Boolean).join('\n'));
-    }
-};
-
 const buildSharedAudioPackageEntries = () => {
     const allFiles = walkFiles(assetsRoot);
     const includedFiles = allFiles
@@ -405,7 +372,7 @@ const buildSharedAudioPackageEntries = () => {
             fullPath,
             relativePath: path.relative(assetsRoot, fullPath).replace(/\\/g, '/'),
         }))
-        .filter((entry) => shouldIncludeInSharedAudioPackage(entry.relativePath))
+        .filter((entry) => shouldIncludeSharedAudioPackagePath(entry.relativePath))
         .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
     assertSharedAudioPackageEntriesArePublishable(includedFiles);
     return { includedFiles };
@@ -483,87 +450,6 @@ const uploadIndexedAssetObjects = async (includedFiles) => {
             { contentLength: statSync(entry.fullPath).size },
         );
     }
-};
-
-const createAndroidCompatibleZipFile = async (includedFiles, zipFilePath) => {
-    mkdirSync(path.dirname(zipFilePath), { recursive: true });
-    try {
-        unlinkSync(zipFilePath);
-    } catch {}
-
-    return await new Promise((resolve, reject) => {
-        const output = createWriteStream(zipFilePath);
-        const hash = createHash('sha256');
-        let zipEnded = false;
-        let totalBytes = 0;
-        let settled = false;
-
-        const finishWithError = (error) => {
-            if (settled) return;
-            settled = true;
-            try {
-                output.destroy();
-            } catch {}
-            reject(error);
-        };
-
-        output.on('error', finishWithError);
-        output.on('finish', () => {
-            if (settled) return;
-            settled = true;
-            resolve({
-                zipFilePath,
-                bytes: totalBytes,
-                checksum: hash.digest('hex'),
-            });
-        });
-
-        const zip = new Zip((error, chunk, final) => {
-            if (error) {
-                finishWithError(error);
-                return;
-            }
-
-            const buffer = Buffer.from(chunk);
-            hash.update(buffer);
-            totalBytes += buffer.length;
-            output.write(buffer);
-            if (final && !zipEnded) {
-                zipEnded = true;
-                output.end();
-            }
-        });
-
-        (async () => {
-            try {
-                for (const entry of includedFiles) {
-                    await new Promise((entryResolve, entryReject) => {
-                        // Android java.util.zip.ZipInputStream 不接受
-                        // “STORED + data descriptor” 这种 fflate ZipPassThrough 流式格式，
-                        // 否则只会读到第一个 entry 并抛出：
-                        // "only DEFLATED entries can have EXT descriptor"。
-                        // 这里改用 DEFLATE level 0，保持体积基本不变，同时让原生解压稳定兼容。
-                        const zipEntry = new ZipDeflate(entry.relativePath, { level: 0 });
-                        zipEntry.mtime = STABLE_ZIP_DATE;
-                        zip.add(zipEntry);
-
-                        const input = createReadStream(entry.fullPath);
-                        input.on('error', entryReject);
-                        input.on('data', (chunk) => {
-                            zipEntry.push(new Uint8Array(chunk), false);
-                        });
-                        input.on('end', () => {
-                            zipEntry.push(new Uint8Array(0), true);
-                            entryResolve();
-                        });
-                    });
-                }
-                zip.end();
-            } catch (error) {
-                finishWithError(error);
-            }
-        })().catch(finishWithError);
-    });
 };
 
 const buildSharedAudioPackageVersion = (checksum) => (

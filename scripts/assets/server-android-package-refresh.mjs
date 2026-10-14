@@ -1,14 +1,24 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
+    copyFileSync,
     createReadStream,
     existsSync,
     mkdirSync,
     readdirSync,
     readFileSync,
+    renameSync,
+    rmSync,
     statSync,
     writeFileSync,
+    mkdtempSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
+import {
+    assertSharedAudioPackageEntriesArePublishable,
+    createAndroidCompatibleZipFile,
+    shouldIncludeSharedAudioPackagePath,
+} from '../mobile/android-package-archive.mjs';
 import { DEFAULT_ANDROID_ASSETS_BASE_URL } from '../mobile/android-assets-base-url.mjs';
 
 const SHARED_AUDIO_PREFIX = 'common/audio/';
@@ -120,12 +130,38 @@ const writeTextObject = async (releaseDir, key, text) => {
     const normalizedKey = normalizeOfficialKey(key);
     const fullPath = joinKeyPath(releaseDir, normalizedKey);
     mkdirSync(path.dirname(fullPath), { recursive: true });
-    writeFileSync(fullPath, text, { encoding: 'utf8', mode: 0o644 });
+    const tempPath = `${fullPath}.tmp-${process.pid}-${randomUUID()}`;
+    try {
+        writeFileSync(tempPath, text, { encoding: 'utf8', mode: 0o644 });
+        renameSync(tempPath, fullPath);
+    } catch (error) {
+        rmSync(tempPath, { force: true });
+        throw error;
+    }
     const body = Buffer.from(text);
     return {
         key: normalizedKey,
         size: body.byteLength,
         sha256: hashBufferSha256(body),
+    };
+};
+
+const writeBinaryObject = async (releaseDir, key, sourcePath) => {
+    const normalizedKey = normalizeOfficialKey(key);
+    const fullPath = joinKeyPath(releaseDir, normalizedKey);
+    mkdirSync(path.dirname(fullPath), { recursive: true });
+    const tempPath = `${fullPath}.tmp-${process.pid}-${randomUUID()}`;
+    try {
+        copyFileSync(sourcePath, tempPath);
+        renameSync(tempPath, fullPath);
+    } catch (error) {
+        rmSync(tempPath, { force: true });
+        throw error;
+    }
+    return {
+        key: normalizedKey,
+        size: statSync(fullPath).size,
+        sha256: await hashFileSha256(fullPath),
     };
 };
 
@@ -471,6 +507,110 @@ const refreshSingleGameIndexManifest = async ({
     ];
 };
 
+const refreshSharedAudioPackage = async ({
+    releaseDir,
+    packageManagedGames,
+    packageVersionBase,
+    assetsBaseUrl,
+}) => {
+    const officialRoot = path.join(releaseDir, 'official');
+    const includedFiles = walkFiles(officialRoot)
+        .filter((relativePath) => shouldIncludeSharedAudioPackagePath(relativePath))
+        .map((relativePath) => ({
+            relativePath,
+            fullPath: path.join(officialRoot, ...relativePath.split('/')),
+        }))
+        .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+    assertSharedAudioPackageEntriesArePublishable(includedFiles);
+    if (includedFiles.length === 0) {
+        throw new Error('合并后的服务器 release 中没有可进入 Android 共享音频包的资源');
+    }
+
+    const channels = [...discoverExistingChannels(releaseDir, packageManagedGames)]
+        .sort((left, right) => left.localeCompare(right));
+    if (channels.length === 0) {
+        throw new Error('没有找到已有 Android 素材包 channel，无法刷新共享音频包及游戏 manifest');
+    }
+
+    const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'boardgame-shared-audio-refresh-'));
+    try {
+        const zipPath = path.join(temporaryRoot, 'common-audio.zip');
+        const zipResult = await createAndroidCompatibleZipFile(includedFiles, zipPath);
+        const packageVersion = `${packageVersionBase}-shared-audio-${zipResult.checksum.slice(0, 12)}`;
+        const fileIndexPayload = await buildFileIndexPayload(includedFiles, packageVersion);
+        const fileIndexChecksum = hashJsonPayload(fileIndexPayload);
+        const fileCount = includedFiles.length;
+        const sharedAudioId = 'common-audio';
+        const generatedObjects = [];
+
+        for (const channel of channels) {
+            const packagePrefix = `official/mobile-packages/android/${channel}`;
+            const encodedId = encodeURIComponent(sharedAudioId);
+            const encodedVersion = encodeURIComponent(packageVersion);
+            const bundleKey = `${packagePrefix}/bundles/shared/${sharedAudioId}/${packageVersion}.zip`;
+            const fileIndexKey = `${packagePrefix}/file-index/shared/${sharedAudioId}/${packageVersion}.json`;
+            const versionManifestKey = `${packagePrefix}/manifests/shared/${sharedAudioId}/${packageVersion}.json`;
+            const latestManifestKey = `${packagePrefix}/shared/${sharedAudioId}.json`;
+            const bundleUrl = `${assetsBaseUrl}/mobile-packages/android/${channel}/bundles/shared/${encodedId}/${encodedVersion}.zip`;
+            const fileIndexUrl = `${assetsBaseUrl}/mobile-packages/android/${channel}/file-index/shared/${encodedId}/${encodedVersion}.json`;
+            const sharedAudioPack = {
+                id: sharedAudioId,
+                version: packageVersion,
+                url: bundleUrl,
+                checksum: zipResult.checksum,
+                bytes: zipResult.bytes,
+                fileCount,
+                fileIndexUrl,
+                fileIndexChecksum,
+            };
+            const sharedManifest = {
+                gameId: sharedAudioId,
+                runtimeChannel: channel,
+                publishedAt: new Date().toISOString(),
+                modulePack: null,
+                assetPack: { ...sharedAudioPack },
+            };
+
+            generatedObjects.push(await writeBinaryObject(releaseDir, bundleKey, zipPath));
+            generatedObjects.push(await writeTextObject(
+                releaseDir,
+                fileIndexKey,
+                stringifyJsonWithTrailingNewline(fileIndexPayload),
+            ));
+            const sharedManifestJson = stringifyJsonWithTrailingNewline(sharedManifest);
+            generatedObjects.push(await writeTextObject(releaseDir, versionManifestKey, sharedManifestJson));
+            generatedObjects.push(await writeTextObject(releaseDir, latestManifestKey, sharedManifestJson));
+
+            for (const gameId of [...packageManagedGames].sort((left, right) => left.localeCompare(right))) {
+                const latestManifestKeyForGame = `${packagePrefix}/games/${gameId}.json`;
+                const latestManifestPath = joinKeyPath(releaseDir, latestManifestKeyForGame);
+                if (!existsSync(latestManifestPath)) continue;
+
+                const gameManifest = readJsonObject(latestManifestPath, latestManifestKeyForGame);
+                if (!gameManifest.assetPack?.version) {
+                    throw new Error(`已有 Android 游戏 manifest 缺少素材包版本，无法更新共享音频引用: ${latestManifestKeyForGame}`);
+                }
+                gameManifest.runtimeChannel = gameManifest.runtimeChannel || channel;
+                gameManifest.publishedAt = new Date().toISOString();
+                gameManifest.sharedAudioPack = { ...sharedAudioPack };
+                const gameManifestJson = stringifyJsonWithTrailingNewline(gameManifest);
+                const versionManifestKeyForGame = `${packagePrefix}/manifests/${gameId}/${encodeURIComponent(gameManifest.assetPack.version)}.json`;
+                generatedObjects.push(await writeTextObject(releaseDir, versionManifestKeyForGame, gameManifestJson));
+                generatedObjects.push(await writeTextObject(releaseDir, latestManifestKeyForGame, gameManifestJson));
+            }
+        }
+
+        return {
+            gameIds: [...packageManagedGames].sort((left, right) => left.localeCompare(right)),
+            channels,
+            objects: generatedObjects,
+            hasSharedAudioChanges: true,
+        };
+    } finally {
+        rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+};
+
 const isSharedAudioObjectKey = (key) => {
     const relativePath = toOfficialRelativePath(key);
     const normalized = normalizeSlashes(relativePath);
@@ -523,11 +663,7 @@ export const refreshAndroidPackageIndexesForPublishedAssets = async ({
         packageManagedGames,
     });
 
-    if (plan.hasSharedAudioChanges) {
-        throw new Error('共享音频素材上传尚未接入服务器端自动刷新；请走 Android 素材包共享音频发布流程，不能半自动发布。');
-    }
-
-    if (plan.gameIds.length === 0) {
+    if (plan.gameIds.length === 0 && !plan.hasSharedAudioChanges) {
         return {
             gameIds: [],
             channels: [],
@@ -536,32 +672,46 @@ export const refreshAndroidPackageIndexesForPublishedAssets = async ({
         };
     }
 
-    const channels = resolveRefreshChannels({
-        releaseDir,
-        gameIds: plan.gameIds,
-        requestedChannels,
-    });
-    if (channels.length === 0) {
-        throw new Error(`没有找到已有 Android 素材包 channel，无法在服务器自动刷新差异索引: ${plan.gameIds.join(', ')}`);
+    const objects = [];
+    const channels = new Set();
+    if (plan.hasSharedAudioChanges) {
+        const sharedAudioResult = await refreshSharedAudioPackage({
+            releaseDir,
+            packageManagedGames,
+            packageVersionBase,
+            assetsBaseUrl,
+        });
+        for (const channel of sharedAudioResult.channels) channels.add(channel);
+        objects.push(...sharedAudioResult.objects);
     }
 
-    const objects = [];
-    for (const channel of channels) {
-        for (const gameId of plan.gameIds) {
-            objects.push(...await refreshSingleGameIndexManifest({
-                releaseDir,
-                rootDir,
-                channel,
-                gameId,
-                packageVersionBase,
-                assetsBaseUrl,
-            }));
+    if (plan.gameIds.length > 0) {
+        const gameChannels = resolveRefreshChannels({
+            releaseDir,
+            gameIds: plan.gameIds,
+            requestedChannels,
+        });
+        if (gameChannels.length === 0) {
+            throw new Error(`没有找到已有 Android 素材包 channel，无法在服务器自动刷新差异索引: ${plan.gameIds.join(', ')}`);
+        }
+        for (const channel of gameChannels) {
+            channels.add(channel);
+            for (const gameId of plan.gameIds) {
+                objects.push(...await refreshSingleGameIndexManifest({
+                    releaseDir,
+                    rootDir,
+                    channel,
+                    gameId,
+                    packageVersionBase,
+                    assetsBaseUrl,
+                }));
+            }
         }
     }
 
     return {
         ...plan,
-        channels,
-        objects,
+        channels: [...channels].sort((left, right) => left.localeCompare(right)),
+        objects: [...new Map(objects.map((object) => [object.key, object])).values()],
     };
 };
