@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAssetRouter } from './index.mjs';
+import { createAssetRouter, decodeChunkedBody } from './index.mjs';
 
 const createEnv = (overrides = {}) => ({
     ORIGIN_BASE_URL: 'https://origin.example.test',
     ORIGIN_TIMEOUT_MS: '1500',
     ORIGIN_TOKEN: 'test-token',
     ...overrides,
+});
+
+test('分块响应解码时保留多块内容并忽略扩展字段', () => {
+    const encoded = new TextEncoder().encode('4\r\nWiki\r\n5;ext=x\r\npedia\r\n0\r\n\r\n');
+    assert.equal(new TextDecoder().decode(decodeChunkedBody(encoded)), 'Wikipedia');
 });
 
 test('大型发布路径必须请求服务器源', async () => {

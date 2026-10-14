@@ -197,7 +197,14 @@ const hasCompleteChunkedBody = (bodyBytes) => {
     return false;
 };
 
-const decodeChunkedBody = (bodyBytes) => {
+const appendBytes = (left, right) => {
+    const output = new Uint8Array(left.length + right.length);
+    output.set(left);
+    output.set(right, left.length);
+    return output;
+};
+
+export const decodeChunkedBody = (bodyBytes) => {
     let offset = 0;
     let output = new Uint8Array();
     const decoder = new TextDecoder('iso-8859-1');
