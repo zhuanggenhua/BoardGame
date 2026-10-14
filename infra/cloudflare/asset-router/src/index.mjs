@@ -58,7 +58,8 @@ const resolveOriginConfig = (request, env) => {
                 hostHeader: new URL(baseUrl).host,
                 resolveOverride: env.ORIGIN_FALLBACK_RESOLVE_OVERRIDE || '',
                 route: 'primary-paladin',
-                transport: 'fetch',
+                transport: env.ORIGIN_FALLBACK_TRANSPORT || 'fetch',
+                streamResponse: true,
             };
         }
     }
@@ -284,6 +285,97 @@ const fetchHttpOriginOverTcp = async (request, env, originConfig) => {
     writer.releaseLock();
 
     const reader = socket.readable.getReader();
+    let keepSocketOpen = false;
+    if (originConfig.streamResponse && request.method !== 'HEAD') {
+        const maxHeaderBytes = 64 * 1024;
+        const headerBuffer = new Uint8Array(maxHeaderBytes);
+        let receivedLength = 0;
+        let headerEnd = -1;
+        let socketClosed = false;
+        const closeSocket = async () => {
+            if (socketClosed) return;
+            socketClosed = true;
+            try {
+                reader.releaseLock();
+            } catch {
+                // The reader may already have been released after an upstream error.
+            }
+            await socket.close().catch(() => {});
+        };
+
+        try {
+            while (receivedLength < maxHeaderBytes && headerEnd < 0) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const writableLength = Math.min(value.length, maxHeaderBytes - receivedLength);
+                headerBuffer.set(value.subarray(0, writableLength), receivedLength);
+                receivedLength += writableLength;
+                headerEnd = findHeaderEnd(headerBuffer.subarray(0, receivedLength));
+            }
+            if (headerEnd < 0) {
+                throw new Error('TCP fallback returned an invalid or oversized HTTP header');
+            }
+
+            const headerBytes = headerBuffer.subarray(0, receivedLength);
+            const headerText = new TextDecoder('iso-8859-1').decode(headerBytes.slice(0, headerEnd));
+            const [statusLine] = headerText.split('\r\n');
+            const statusMatch = /^HTTP\/\d(?:\.\d)?\s+(\d{3})(?:\s+(.*))?$/i.exec(statusLine || '');
+            if (!statusMatch) {
+                throw new Error('TCP fallback returned an invalid HTTP status line');
+            }
+
+            const headers = parseHeaderLines(headerText);
+            const contentLength = Number.parseInt(headers.get('content-length') || '', 10);
+            if (!Number.isFinite(contentLength) || contentLength < 0 || headers.has('transfer-encoding')) {
+                throw new Error('TCP fallback streaming response requires a Content-Length header');
+            }
+
+            const initialBody = headerBytes.slice(headerEnd + 4, headerEnd + 4 + contentLength);
+            let remainingLength = contentLength - initialBody.length;
+            const body = new ReadableStream({
+                start(controller) {
+                    if (initialBody.length > 0) controller.enqueue(initialBody);
+                    if (remainingLength === 0) {
+                        controller.close();
+                        void closeSocket();
+                    }
+                },
+                async pull(controller) {
+                    if (remainingLength === 0) return;
+                    try {
+                        const { value, done } = await reader.read();
+                        if (done) {
+                            await closeSocket();
+                            controller.error(new Error(`TCP fallback response ended with ${remainingLength} bytes missing`));
+                            return;
+                        }
+                        const writableLength = Math.min(value.length, remainingLength);
+                        if (writableLength > 0) controller.enqueue(value.subarray(0, writableLength));
+                        remainingLength -= writableLength;
+                        if (remainingLength === 0) {
+                            controller.close();
+                            await closeSocket();
+                        }
+                    } catch (error) {
+                        await closeSocket();
+                        controller.error(error);
+                    }
+                },
+                async cancel() {
+                    await closeSocket();
+                },
+            });
+            keepSocketOpen = true;
+            return new Response(body, {
+                status: Number(statusMatch[1]),
+                statusText: statusMatch[2] || '',
+                headers,
+            });
+        } finally {
+            if (!keepSocketOpen) await closeSocket();
+        }
+    }
+
     const maxResponseBytes = originConfig.maxResponseBytes || FALLBACK_TCP_MAX_BYTES;
     const responseBuffer = new Uint8Array(maxResponseBytes);
     let responseLength = 0;
