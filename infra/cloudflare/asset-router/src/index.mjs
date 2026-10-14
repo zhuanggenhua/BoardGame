@@ -8,6 +8,11 @@ const FORWARDED_REQUEST_HEADERS = [
 ];
 
 const FALLBACK_TCP_MAX_BYTES = 1024 * 1024;
+const PRIMARY_PALADIN_ASSETS = new Set([
+    '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp',
+    '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp',
+    '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp',
+]);
 
 const CACHEABLE_MEDIA_EXTENSIONS = new Set([
     '.webp',
@@ -44,7 +49,21 @@ const parseHostnameList = (value = '') => value
     .filter(Boolean);
 
 const resolveOriginConfig = (request, env) => {
-    const incomingHost = new URL(request.url).hostname.toLowerCase();
+    const incomingUrl = new URL(request.url);
+    if (PRIMARY_PALADIN_ASSETS.has(incomingUrl.pathname)) {
+        const baseUrl = (env.ORIGIN_FALLBACK_BASE_URL || '').trim();
+        if (baseUrl) {
+            return {
+                baseUrl,
+                hostHeader: new URL(baseUrl).host,
+                resolveOverride: env.ORIGIN_FALLBACK_RESOLVE_OVERRIDE || '',
+                route: 'primary-paladin',
+                transport: env.ORIGIN_FALLBACK_TRANSPORT || 'fetch',
+            };
+        }
+    }
+
+    const incomingHost = incomingUrl.hostname.toLowerCase();
     const directHostnames = parseHostnameList(env.ORIGIN_DIRECT_HOSTNAMES);
     const directEnabled = Boolean(env.ORIGIN_DIRECT_BASE_URL)
         && (directHostnames.includes('*') || directHostnames.includes(incomingHost));

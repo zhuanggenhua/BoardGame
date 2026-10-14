@@ -82,6 +82,47 @@ test('源站成功时保留响应并标识 server', async () => {
     assert.equal(await response.text(), 'origin-body');
 });
 
+test('圣骑士三张新素材固定读取主服务器源', async () => {
+    const requestedOrigins = [];
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOrigins.push(request.url);
+            return new Response('primary-asset', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=updated'),
+        createEnv({
+            ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10',
+        }),
+    );
+
+    assert.deepEqual(requestedOrigins, [
+        'http://203.0.113.10/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=updated',
+    ]);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'primary-paladin');
+    assert.equal(await response.text(), 'primary-asset');
+});
+
+test('其他圣骑士资源仍走默认 Acer 源', async () => {
+    let requestedOriginUrl = '';
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOriginUrl = request.url;
+            return new Response('acer-origin', { status: 200 });
+        },
+    });
+
+    await router(
+        new Request('https://assets.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp'),
+        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
+    );
+
+    assert.equal(requestedOriginUrl, 'https://origin.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp');
+});
+
 test('配置直连 canary 时请求公网专用回源端口', async () => {
     let requestedOriginUrl = '';
     let fetchOptions;
