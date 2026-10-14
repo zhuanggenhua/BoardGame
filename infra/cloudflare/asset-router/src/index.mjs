@@ -13,6 +13,8 @@ const PRIMARY_PALADIN_ASSETS = new Set([
     '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp',
     '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp',
 ]);
+const ANDROID_STABLE_OTA_MANIFEST = '/official/app-updates/android/stable/latest.json';
+const ANDROID_STABLE_OTA_BUNDLE_PREFIX = '/official/app-updates/android/stable/bundles/';
 
 const CACHEABLE_MEDIA_EXTENSIONS = new Set([
     '.webp',
@@ -50,14 +52,20 @@ const parseHostnameList = (value = '') => value
 
 const resolveOriginConfig = (request, env) => {
     const incomingUrl = new URL(request.url);
-    if (PRIMARY_PALADIN_ASSETS.has(incomingUrl.pathname)) {
+    const isPaladinAsset = PRIMARY_PALADIN_ASSETS.has(incomingUrl.pathname);
+    const isAndroidStableOtaAsset = incomingUrl.pathname === ANDROID_STABLE_OTA_MANIFEST
+        || (
+            incomingUrl.pathname.startsWith(ANDROID_STABLE_OTA_BUNDLE_PREFIX)
+            && incomingUrl.pathname.endsWith('.zip')
+        );
+    if (isPaladinAsset || isAndroidStableOtaAsset) {
         const baseUrl = (env.ORIGIN_FALLBACK_BASE_URL || '').trim();
         if (baseUrl) {
             return {
                 baseUrl,
                 hostHeader: new URL(baseUrl).host,
                 resolveOverride: env.ORIGIN_FALLBACK_RESOLVE_OVERRIDE || '',
-                route: 'primary-paladin',
+                route: isPaladinAsset ? 'primary-paladin' : 'primary-android-ota',
                 transport: env.ORIGIN_FALLBACK_TRANSPORT || 'fetch',
                 streamResponse: true,
             };

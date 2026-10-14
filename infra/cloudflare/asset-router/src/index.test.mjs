@@ -123,6 +123,32 @@ test('其他圣骑士资源仍走默认 Acer 源', async () => {
     assert.equal(requestedOriginUrl, 'https://origin.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp');
 });
 
+test('Android stable OTA 清单和 zip 走主服务器源', async () => {
+    const requestedOriginUrls = [];
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOriginUrls.push(request.url);
+            return new Response('primary-ota-asset', { status: 200 });
+        },
+    });
+
+    const manifest = await router(
+        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json'),
+        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
+    );
+    const bundle = await router(
+        new Request('https://assets.example.test/official/app-updates/android/stable/bundles/build-123.zip'),
+        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
+    );
+
+    assert.deepEqual(requestedOriginUrls, [
+        'http://203.0.113.10/official/app-updates/android/stable/latest.json',
+        'http://203.0.113.10/official/app-updates/android/stable/bundles/build-123.zip',
+    ]);
+    assert.equal(manifest.headers.get('X-Asset-Origin-Route'), 'primary-android-ota');
+    assert.equal(bundle.headers.get('X-Asset-Origin-Route'), 'primary-android-ota');
+});
+
 test('配置直连 canary 时请求公网专用回源端口', async () => {
     let requestedOriginUrl = '';
     let fetchOptions;
@@ -227,13 +253,13 @@ test('源站 5xx 时回退到 IP 主源', async () => {
     });
 
     const response = await router(
-        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json'),
+        new Request('https://assets.example.test/official/app-updates/android/staging/latest.json'),
         createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
     );
 
     assert.deepEqual(requestedOriginUrls, [
-        'https://origin.example.test/official/app-updates/android/stable/latest.json',
-        'http://203.0.113.10/official/app-updates/android/stable/latest.json',
+        'https://origin.example.test/official/app-updates/android/staging/latest.json',
+        'http://203.0.113.10/official/app-updates/android/staging/latest.json',
     ]);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('X-Asset-Source'), 'server');
