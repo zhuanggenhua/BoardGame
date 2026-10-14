@@ -8631,8 +8631,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/ability-cards": {
       "variants": {
         "webp": {
-          "sha256": "d5a687ab0fcd6339ed05ad072171c978eb19b2d6679cd751bd5da72db74c5175",
-          "bytes": 357952,
+          "sha256": "68d0df8ae6cedd3cce1e4045c6a24c3e87c82e1ab0c38be46630524c933212f4",
+          "bytes": 8452896,
           "mime": "image/webp"
         }
       }
@@ -8649,8 +8649,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "5604d728fb35cf4d19e958972d151541a2873ad4350afe0614b1e746a6816f9c",
-          "bytes": 517586,
+          "sha256": "11b4c2e50f5e2732cd38cc448afd4fe2fa89ae5c5cb21cd07f3f8f57e374bdd8",
+          "bytes": 3095888,
           "mime": "image/webp"
         }
       }
@@ -8667,8 +8667,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "8f336e0020b7a547f3a2821af8cc01d5aae3a42000849d9517f6bf193261dfbe",
-          "bytes": 317698,
+          "sha256": "30e1b62010aef2e75be2e31cb1f9abf8f3096100e024d7939ffbc0f18f49304f",
+          "bytes": 743326,
           "mime": "image/webp"
         }
       }
@@ -8676,8 +8676,8 @@
     "zh-CN/dicethrone/images/paladin/player-board": {
       "variants": {
         "png": {
-          "sha256": "8c8db55689d4871ee6a6575ac7dfbb97c20ab69a38edd6cbf64849fd9b7f6ee5",
-          "bytes": 9831345,
+          "sha256": "4ffa4dd72d3124e7a53ea029b544fad11dc3617eb14b171426e3bbb874404a50",
+          "bytes": 16660274,
           "mime": "image/png"
         }
       }
@@ -8694,8 +8694,8 @@
     "zh-CN/dicethrone/images/paladin/tip": {
       "variants": {
         "png": {
-          "sha256": "3044f4ef9f06a9af61e5f2e7cc599938d13fc10d87e53f47482a839bde907e54",
-          "bytes": 7347544,
+          "sha256": "da0afb2bee0e504e726ff39d7256fc3aa4b9402e8189d03a15b443a0c3a9f5c1",
+          "bytes": 3799573,
           "mime": "image/png"
         }
       }

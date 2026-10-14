@@ -222,7 +222,11 @@ async function setupHeroScene(
   await expectHandUsesExpectedPreviewAssets(page, heroId, hand);
 }
 
-async function clickHandCard(page: Page, cardId: string): Promise<void> {
+async function clickHandCard(
+  page: Page,
+  cardId: string,
+  options?: { duringDrag?: () => Promise<void> },
+): Promise<void> {
   const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
   await expect(handCard).toBeVisible({ timeout: 10000 });
   const cardBox = await page.evaluate((nextCardId) => {
@@ -242,6 +246,7 @@ async function clickHandCard(page: Page, cardId: string): Promise<void> {
   await page.mouse.move(startX, startY);
   await page.mouse.down();
   await page.mouse.move(startX, endY, { steps: 12 });
+  await options?.duringDrag?.();
   await page.mouse.up();
   await page.mouse.move(2, 2);
 }
@@ -1196,15 +1201,39 @@ test.describe('DiceThrone hand card preview regression', () => {
   test('圣骑士满升级牌端到端截图', async ({ page, game }) => {
     test.setTimeout(120000);
     const evidenceDir = ensureEvidenceDir();
-    const beforeScreenshotPath = join(evidenceDir, 'legacy-paladin-before-upgrades-board.png');
+    const beforeScreenshotPath = join(evidenceDir, '圣骑士出牌前四张手牌.png');
+    const duringScreenshotPath = join(evidenceDir, '圣骑士拖动升级牌过程.png');
+    const afterScreenshotPath = join(evidenceDir, '圣骑士升级牌落位后.png');
     const screenshotPath = join(evidenceDir, 'legacy-paladin-full-upgrades-board.png');
 
-    await setupHeroScene(page, game, 'paladin', [], {
+    await page.setViewportSize({ width: 1920, height: 1360 });
+    await setupHeroScene(page, game, 'paladin', [
+      'card-holy-strike-2',
+      'card-holy-defense-2',
+      'card-holy-light-2',
+      'card-righteous-combat-2',
+    ], {
       opponentHeroId: 'monk',
     });
     await expect(page.locator('[data-testid="player-board-surface"][data-character-id="paladin"]').first()).toBeVisible({ timeout: 10000 });
+    await page.mouse.move(10, 10);
+    await waitForHandVisualSettled(page);
     await page.screenshot({ path: beforeScreenshotPath, fullPage: true });
     console.log(`[E2E-SCREENSHOT] ${beforeScreenshotPath}`);
+
+    await clickHandCard(page, 'card-holy-strike-2', {
+      duringDrag: async () => {
+        await page.screenshot({ path: duringScreenshotPath, fullPage: true });
+        console.log(`[E2E-SCREENSHOT] ${duringScreenshotPath}`);
+      },
+    });
+    await waitForUpgradeApplied(page, game, 'holy-strike', 2, null, 'card-holy-strike-2', {
+      expectedHandIdsAfter: ['card-holy-defense-2', 'card-holy-light-2', 'card-righteous-combat-2'],
+    });
+    await waitForHandAnimationSettled(page);
+    await expectUpgradeStableOnPlayerBoard(page, game, 'holy-strike', 'card-holy-strike-2');
+    await page.screenshot({ path: afterScreenshotPath, fullPage: true });
+    console.log(`[E2E-SCREENSHOT] ${afterScreenshotPath}`);
 
     await game.openTestGame('dicethrone');
     await page.evaluate(async () => {

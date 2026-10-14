@@ -74,7 +74,7 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
     gunslinger: { width: 2048, height: 1254 },
     monk: { width: 2048, height: 1260 },
     moon_elf: { width: 2048, height: 1260 },
-    paladin: { width: 2048, height: 1250 },
+    paladin: { width: 4005, height: 2476 },
     pyromancer: { width: 2048, height: 1260 },
     samurai: { width: 2048, height: 1248 },
     shadow_thief: { width: 2048, height: 1260 },
