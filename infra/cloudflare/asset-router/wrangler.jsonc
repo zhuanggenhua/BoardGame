@@ -11,9 +11,9 @@
     }
   ],
   "vars": {
-    "ORIGIN_BASE_URL": "https://assets-origin.easyboardgame.top",
-    "ORIGIN_FALLBACK_BASE_URL": "http://8.148.71.102",
-    "ORIGIN_FALLBACK_TRANSPORT": "tcp",
+    "ORIGIN_BASE_URL": "http://8.148.71.102",
+    "ORIGIN_ROUTE": "primary-cloud-server",
+    "ORIGIN_TRANSPORT": "tcp",
     "ORIGIN_TIMEOUT_MS": "10000"
   },
   "observability": {

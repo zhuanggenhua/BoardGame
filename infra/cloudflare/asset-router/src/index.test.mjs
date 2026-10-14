@@ -82,7 +82,7 @@ test('源站成功时保留响应并标识 server', async () => {
     assert.equal(await response.text(), 'origin-body');
 });
 
-test('圣骑士三张新素材固定读取主服务器源', async () => {
+test('普通资源、圣骑士素材和 OTA 清单都读取主服务器源', async () => {
     const requestedOrigins = [];
     const router = createAssetRouter({
         fetchImpl: async (request) => {
@@ -91,36 +91,32 @@ test('圣骑士三张新素材固定读取主服务器源', async () => {
         },
     });
 
-    const response = await router(
-        new Request('https://assets.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=updated'),
-        createEnv({
-            ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10',
-        }),
-    );
-
-    assert.deepEqual(requestedOrigins, [
-        'http://203.0.113.10/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=updated',
-    ]);
-    assert.equal(response.status, 200);
-    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'primary-paladin');
-    assert.equal(await response.text(), 'primary-asset');
-});
-
-test('其他圣骑士资源仍走默认 Acer 源', async () => {
-    let requestedOriginUrl = '';
-    const router = createAssetRouter({
-        fetchImpl: async (request) => {
-            requestedOriginUrl = request.url;
-            return new Response('acer-origin', { status: 200 });
-        },
+    const env = createEnv({
+        ORIGIN_BASE_URL: 'http://203.0.113.10',
+        ORIGIN_ROUTE: 'primary-cloud-server',
+        ORIGIN_TRANSPORT: 'fetch',
     });
+    const paths = [
+        '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=updated',
+        '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp',
+        '/official/app-updates/android/stable/latest.json',
+        '/official/common/image.webp',
+    ];
+    const responses = [];
+    for (const path of paths) {
+        responses.push(await router(
+            new Request(`https://assets.example.test${path}`),
+            env,
+        ));
+    }
 
-    await router(
-        new Request('https://assets.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp'),
-        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
+    assert.deepEqual(requestedOrigins, paths.map((path) => `http://203.0.113.10${path}`));
+    assert.ok(responses.every((response) => response.status === 200));
+    assert.ok(responses.every((response) => response.headers.get('X-Asset-Origin-Route') === 'primary-cloud-server'));
+    assert.deepEqual(
+        await Promise.all(responses.map((response) => response.text())),
+        paths.map(() => 'primary-asset'),
     );
-
-    assert.equal(requestedOriginUrl, 'https://origin.example.test/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp');
 });
 
 test('配置直连 canary 时请求公网专用回源端口', async () => {

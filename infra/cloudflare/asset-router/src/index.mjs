@@ -8,12 +8,6 @@ const FORWARDED_REQUEST_HEADERS = [
 ];
 
 const FALLBACK_TCP_MAX_BYTES = 1024 * 1024;
-const PRIMARY_PALADIN_ASSETS = new Set([
-    '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp',
-    '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp',
-    '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp',
-]);
-
 const CACHEABLE_MEDIA_EXTENSIONS = new Set([
     '.webp',
     '.png',
@@ -50,21 +44,6 @@ const parseHostnameList = (value = '') => value
 
 const resolveOriginConfig = (request, env) => {
     const incomingUrl = new URL(request.url);
-    const isPaladinAsset = PRIMARY_PALADIN_ASSETS.has(incomingUrl.pathname);
-    if (isPaladinAsset) {
-        const baseUrl = (env.ORIGIN_FALLBACK_BASE_URL || '').trim();
-        if (baseUrl) {
-            return {
-                baseUrl,
-                hostHeader: new URL(baseUrl).host,
-                resolveOverride: env.ORIGIN_FALLBACK_RESOLVE_OVERRIDE || '',
-                route: 'primary-paladin',
-                transport: env.ORIGIN_FALLBACK_TRANSPORT || 'fetch',
-                streamResponse: true,
-            };
-        }
-    }
-
     const incomingHost = incomingUrl.hostname.toLowerCase();
     const directHostnames = parseHostnameList(env.ORIGIN_DIRECT_HOSTNAMES);
     const directEnabled = Boolean(env.ORIGIN_DIRECT_BASE_URL)
@@ -74,14 +53,20 @@ const resolveOriginConfig = (request, env) => {
         return {
             baseUrl: env.ORIGIN_BASE_URL,
             resolveOverride: '',
-            route: 'tunnel',
+            hostHeader: env.ORIGIN_HOST_HEADER || new URL(env.ORIGIN_BASE_URL).host,
+            route: env.ORIGIN_ROUTE || 'tunnel',
+            transport: env.ORIGIN_TRANSPORT || 'fetch',
+            streamResponse: env.ORIGIN_TRANSPORT === 'tcp',
         };
     }
 
     return {
         baseUrl: env.ORIGIN_DIRECT_BASE_URL,
+        hostHeader: env.ORIGIN_DIRECT_HOST_HEADER || new URL(env.ORIGIN_DIRECT_BASE_URL).host,
         resolveOverride: env.ORIGIN_DIRECT_RESOLVE_OVERRIDE || '',
         route: 'direct',
+        transport: env.ORIGIN_DIRECT_TRANSPORT || 'fetch',
+        streamResponse: env.ORIGIN_DIRECT_TRANSPORT === 'tcp',
     };
 };
 
@@ -287,7 +272,7 @@ const fetchHttpOriginOverTcp = async (request, env, originConfig) => {
 
     const reader = socket.readable.getReader();
     let keepSocketOpen = false;
-    if (originConfig.streamResponse && request.method !== 'HEAD') {
+    if (originConfig.streamResponse) {
         const maxHeaderBytes = 64 * 1024;
         const headerBuffer = new Uint8Array(maxHeaderBytes);
         let receivedLength = 0;
@@ -326,9 +311,45 @@ const fetchHttpOriginOverTcp = async (request, env, originConfig) => {
             }
 
             const headers = parseHeaderLines(headerText);
+            if (request.method === 'HEAD') {
+                await closeSocket();
+                return new Response(null, {
+                    status: Number(statusMatch[1]),
+                    statusText: statusMatch[2] || '',
+                    headers,
+                });
+            }
+
             const contentLength = Number.parseInt(headers.get('content-length') || '', 10);
-            if (!Number.isFinite(contentLength) || contentLength < 0 || headers.has('transfer-encoding')) {
-                throw new Error('TCP fallback streaming response requires a Content-Length header');
+            const isChunked = (headers.get('transfer-encoding') || '').toLowerCase().includes('chunked');
+            if (isChunked) {
+                const maxResponseBytes = originConfig.maxResponseBytes || FALLBACK_TCP_MAX_BYTES;
+                const responseBuffer = new Uint8Array(maxResponseBytes);
+                responseBuffer.set(headerBytes);
+                let responseLength = headerBytes.length;
+                while (responseLength < maxResponseBytes && !isTcpResponseComplete(responseBuffer.subarray(0, responseLength))) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const writableLength = Math.min(value.length, maxResponseBytes - responseLength);
+                    responseBuffer.set(value.subarray(0, writableLength), responseLength);
+                    responseLength += writableLength;
+                }
+                const completeResponse = responseBuffer.subarray(0, responseLength);
+                if (!isTcpResponseComplete(completeResponse)) {
+                    throw new Error(`TCP fallback chunked response exceeded ${maxResponseBytes} bytes or was incomplete`);
+                }
+                const bodyBytes = decodeChunkedBody(completeResponse.slice(headerEnd + 4));
+                headers.delete('transfer-encoding');
+                headers.set('content-length', String(bodyBytes.length));
+                await closeSocket();
+                return new Response(bodyBytes, {
+                    status: Number(statusMatch[1]),
+                    statusText: statusMatch[2] || '',
+                    headers,
+                });
+            }
+            if (!Number.isFinite(contentLength) || contentLength < 0) {
+                throw new Error('TCP fallback streaming response requires Content-Length or chunked encoding');
             }
 
             const initialBody = headerBytes.slice(headerEnd + 4, headerEnd + 4 + contentLength);
