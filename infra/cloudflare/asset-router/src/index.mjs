@@ -526,7 +526,8 @@ export const createAssetRouter = ({ fetchImpl = fetch } = {}) => async (request,
     try {
         const { response, originConfig } = await fetchOriginWithFallback(request, env, fetchImpl);
         return withServerSource(request, response, originConfig);
-    } catch {
+    } catch (error) {
+        console.error('[asset-router] origin request failed', error);
         const headers = new Headers({ 'Cache-Control': 'no-store' });
         applySharedHeaders(headers, 'server-error');
         headers.set('X-Asset-Origin-Route', resolveOriginConfig(request, env).route);
