@@ -8,7 +8,6 @@ const FORWARDED_REQUEST_HEADERS = [
 ];
 
 const FALLBACK_TCP_MAX_BYTES = 1024 * 1024;
-const PRIMARY_PALADIN_TCP_MAX_BYTES = 12 * 1024 * 1024;
 const PRIMARY_PALADIN_ASSETS = new Set([
     '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp',
     '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp',
@@ -59,8 +58,7 @@ const resolveOriginConfig = (request, env) => {
                 hostHeader: new URL(baseUrl).host,
                 resolveOverride: env.ORIGIN_FALLBACK_RESOLVE_OVERRIDE || '',
                 route: 'primary-paladin',
-                transport: env.ORIGIN_FALLBACK_TRANSPORT || 'fetch',
-                maxResponseBytes: PRIMARY_PALADIN_TCP_MAX_BYTES,
+                transport: 'fetch',
             };
         }
     }
