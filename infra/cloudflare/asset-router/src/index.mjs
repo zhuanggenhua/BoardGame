@@ -162,13 +162,6 @@ const buildOriginRequest = (request, env, originConfig = resolveOriginConfig(req
     });
 };
 
-const appendBytes = (left, right) => {
-    const output = new Uint8Array(left.length + right.length);
-    output.set(left);
-    output.set(right, left.length);
-    return output;
-};
-
 const findHeaderEnd = (bytes) => {
     for (let index = 0; index <= bytes.length - 4; index += 1) {
         if (
@@ -293,17 +286,26 @@ const fetchHttpOriginOverTcp = async (request, env, originConfig) => {
     writer.releaseLock();
 
     const reader = socket.readable.getReader();
-    let chunks = new Uint8Array();
+    const maxResponseBytes = originConfig.maxResponseBytes || FALLBACK_TCP_MAX_BYTES;
+    const responseBuffer = new Uint8Array(maxResponseBytes);
+    let responseLength = 0;
     try {
-        while (chunks.length < (originConfig.maxResponseBytes || FALLBACK_TCP_MAX_BYTES)) {
+        while (responseLength < maxResponseBytes) {
             const { value, done } = await reader.read();
             if (done) break;
-            chunks = appendBytes(chunks, value);
-            if (isTcpResponseComplete(chunks)) break;
+            const writableLength = Math.min(value.length, maxResponseBytes - responseLength);
+            responseBuffer.set(value.subarray(0, writableLength), responseLength);
+            responseLength += writableLength;
+            if (isTcpResponseComplete(responseBuffer.subarray(0, responseLength))) break;
         }
     } finally {
         reader.releaseLock();
         await socket.close().catch(() => {});
+    }
+
+    const chunks = responseBuffer.subarray(0, responseLength);
+    if (!isTcpResponseComplete(chunks)) {
+        throw new Error(`TCP fallback response exceeded ${maxResponseBytes} bytes or was incomplete`);
     }
 
     const headerEnd = findHeaderEnd(chunks);
