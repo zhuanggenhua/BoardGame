@@ -11,6 +11,23 @@
 - 默认镜像分发：CI job 构建后直接 `docker save`、SCP 到服务器、`docker load`，再执行服务器本地 `update-local`。
 - 资源主源：`https://assets.easyboardgame.top/official/...`。
 
+## 向服务器发布素材
+
+素材上传入口为 `https://assets-upload.easyboardgame.top/asset-publish`，发布目标地址为 `https://assets.easyboardgame.top/official/...`。入口接受上传后，仍需确认公开 URL 返回 HTTP 200，且内容与本地文件一致。上传脚本扫描本机 `public/assets`；该目录被 Git 忽略，所以 `git clone` 不会带上本地新增素材。
+
+本机可在仓库根目录的 `.env.local` 配置已有的 `ASSET_SERVER_UPLOAD_TOKEN`（该文件已由 `.gitignore` 忽略），然后直接预览和上传指定文件：
+
+```powershell
+node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg --asset-prefix i18n/zh-CN/betrayal/tokens/monsters/mummy.svg
+node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg --asset-prefix i18n/zh-CN/betrayal/tokens/monsters/mummy.svg
+```
+
+2026-10-14 实测：该入口接受了本机发起的无 token 发布请求；这只验证了本机到入口的请求，其他协作者及其他网络的访问尚未验证。源站本机请求返回 HTTP 200，但公开域名返回 HTTP 404，因此整条发布链路尚未通过核验。客户端和 CI 将 token 作为可选项；若服务器启用身份验证，可在本地 `.env.local` 或 GitHub Actions secret 中配置 `ASSET_SERVER_UPLOAD_TOKEN`。
+
+上传脚本加载仓库根目录的 `.env.local`，再加载 `.env`；调用时进程环境中已有的值优先，不读取 `.env.example`。不会输出 token 内容。仅实际上传且没有 token 时才会尝试匿名请求，服务器是否接受由入口配置决定。显式传入路径的 `--check` 只检查本地文件，不请求服务器。
+
+GitHub Actions 的 `Asset Server Upload` 工作流可选注入仓库 Actions secret `ASSET_SERVER_UPLOAD_TOKEN` 或兼容名 `BG_ASSET_PUBLISH_TOKEN`；实际上传时若未配置 token，客户端会尝试匿名请求；服务端是否允许上传仍由其配置决定。工作流只能发布所选 Git ref 检出的素材；不会收到协作者机器上被忽略的本地文件。`public/assets` 中的文件若仍未纳入所选 Git ref，应从本机执行上传命令。token 的服务端权限范围尚未确认。
+
 ## 默认发布入口
 
 完整更新部署默认包含服务器生产部署和 Android stable OTA：

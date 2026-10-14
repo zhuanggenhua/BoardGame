@@ -94,6 +94,8 @@ const resolveAssetUploadToken = () => (
     || ''
 );
 
+export const isAssetUploadTokenConfigured = () => Boolean(resolveAssetUploadToken());
+
 const normalizeAssetKey = (key) => {
     const normalized = String(key || '').replace(/\\/g, '/').replace(/^\/+/, '');
     const segments = normalized.split('/');

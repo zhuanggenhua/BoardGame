@@ -32,33 +32,9 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-    env:
-      ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
-      ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
-      ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Validate upload secrets
-        shell: bash
-        run: |
-          missing=()
-          [[ -n "${ASSET_SERVER_SSH_PRIVATE_KEY}" ]] || missing+=("ASSET_SERVER_SSH_PRIVATE_KEY")
-          [[ -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}" ]] || missing+=("ASSET_SERVER_SSH_KNOWN_HOSTS")
-          if (( ${#missing[@]} > 0 )); then
-            echo "::error::Missing required asset server secrets: ${missing[*]}"
-            exit 1
-          fi
-
-      - name: Prepare SSH material
-        shell: bash
-        run: |
-          install -m 700 -d "${HOME}/.ssh"
-          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
-          printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
-          chmod 600 "${HOME}/.ssh/asset-publisher" "${HOME}/.ssh/known_hosts"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -75,8 +51,7 @@ jobs:
       - name: Publish selected assets
         shell: bash
         env:
-          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
-          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
+          ASSET_SERVER_UPLOAD_TOKEN: ${{ secrets.ASSET_SERVER_UPLOAD_TOKEN || secrets.BG_ASSET_PUBLISH_TOKEN }}
           ASSET_PREFIX_INPUT: ${{ inputs.asset_prefix }}
           FORCE_UPLOAD_INPUT: ${{ inputs.force_upload }}
           SKIP_ANDROID_PACKAGE_PUBLISH_INPUT: ${{ inputs.skip_android_package_publish }}
