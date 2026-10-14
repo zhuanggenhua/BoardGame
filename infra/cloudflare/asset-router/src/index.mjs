@@ -67,7 +67,7 @@ const resolveOriginConfig = (request, env) => {
                 resolveOverride: env.ORIGIN_FALLBACK_RESOLVE_OVERRIDE || '',
                 route: isPaladinAsset ? 'primary-paladin' : 'primary-android-ota',
                 transport: env.ORIGIN_FALLBACK_TRANSPORT || 'fetch',
-                streamResponse: true,
+                streamResponse: isPaladinAsset || incomingUrl.pathname.startsWith(ANDROID_STABLE_OTA_BUNDLE_PREFIX),
             };
         }
     }
