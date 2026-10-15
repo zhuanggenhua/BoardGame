@@ -203,6 +203,14 @@ jobs:
           printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
           chmod 600 "${HOME}/.ssh/asset-publisher" "${HOME}/.ssh/known_hosts"
 
+      - name: Sync asset publisher helpers to production host
+        if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
+        env:
+          ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
+          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
+        run: bash scripts/deploy/sync-server-asset-publisher.sh
+
       - name: Resolve bundle metadata
         id: bundle
         if: steps.prereq.outputs.ready == 'true'
