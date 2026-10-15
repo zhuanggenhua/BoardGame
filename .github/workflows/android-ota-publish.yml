@@ -203,12 +203,31 @@ jobs:
           printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
           chmod 600 "${HOME}/.ssh/asset-publisher" "${HOME}/.ssh/known_hosts"
 
+      - name: Prepare production SSH for asset helper sync
+        if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
+        shell: bash
+        env:
+          BOARDGAME_DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.BOARDGAME_DEPLOY_SSH_PRIVATE_KEY }}
+          BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          missing=()
+          [[ -n "${BOARDGAME_DEPLOY_SSH_PRIVATE_KEY}" ]] || missing+=("BOARDGAME_DEPLOY_SSH_PRIVATE_KEY")
+          [[ -n "${BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS}" ]] || missing+=("BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS")
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Asset helper sync is missing production SSH configuration: ${missing[*]}"
+            exit 1
+          fi
+          install -m 700 -d "${HOME}/.ssh"
+          printf '%s\n' "${BOARDGAME_DEPLOY_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/boardgame-deploy"
+          printf '%s\n' "${BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts-deploy"
+          chmod 600 "${HOME}/.ssh/boardgame-deploy" "${HOME}/.ssh/known_hosts-deploy"
+
       - name: Sync asset publisher helpers to production host
         if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
         env:
-          ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
-          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
-          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
+          BOARDGAME_DEPLOY_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+          BOARDGAME_DEPLOY_SSH_KEY_PATH: /home/runner/.ssh/boardgame-deploy
+          BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts-deploy
         run: bash scripts/deploy/sync-server-asset-publisher.sh
 
       - name: Resolve bundle metadata

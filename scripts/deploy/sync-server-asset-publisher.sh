@@ -2,17 +2,17 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-ssh_target="${ASSET_SERVER_SSH_TARGET:-admin@8.148.71.102}"
-ssh_key_path="${ASSET_SERVER_SSH_KEY_PATH:-}"
-known_hosts_path="${ASSET_SERVER_SSH_KNOWN_HOSTS_PATH:-}"
+ssh_target="${BOARDGAME_DEPLOY_SSH_TARGET:-admin@8.148.71.102}"
+ssh_key_path="${BOARDGAME_DEPLOY_SSH_KEY_PATH:-}"
+known_hosts_path="${BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH:-}"
 run_id="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
 
 if [[ -z "${ssh_key_path}" || ! -f "${ssh_key_path}" ]]; then
-    echo "asset publisher sync requires ASSET_SERVER_SSH_KEY_PATH" >&2
+    echo "asset publisher sync requires BOARDGAME_DEPLOY_SSH_KEY_PATH" >&2
     exit 1
 fi
 if [[ -z "${known_hosts_path}" || ! -f "${known_hosts_path}" ]]; then
-    echo "asset publisher sync requires ASSET_SERVER_SSH_KNOWN_HOSTS_PATH" >&2
+    echo "asset publisher sync requires BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH" >&2
     exit 1
 fi
 if [[ ! "${run_id}" =~ ^[A-Za-z0-9_-]+$ ]]; then
