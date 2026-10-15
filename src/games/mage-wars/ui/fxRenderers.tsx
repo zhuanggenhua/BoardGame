@@ -21,6 +21,7 @@ import {
     type FxQuality,
     type FxRendererProps,
 } from '../../../engine/fx';
+import { percentBoxToViewport } from './fxGeometry';
 import type { MageId } from '../domain/ids';
 import { MAGE_IDS } from '../domain/ids';
 import {
@@ -62,15 +63,6 @@ function isMageId(value: unknown): value is MageId {
 }
 
 type ViewportBox = { left: number; top: number; width: number; height: number };
-
-export function percentBoxToViewport(box: FxBox, host: DOMRect): ViewportBox {
-    return {
-        left: host.left + host.width * box.left / 100,
-        top: host.top + host.height * box.top / 100,
-        width: host.width * box.width / 100,
-        height: host.height * box.height / 100,
-    };
-}
 
 function AttackDiceFeedback({
     diceResults,

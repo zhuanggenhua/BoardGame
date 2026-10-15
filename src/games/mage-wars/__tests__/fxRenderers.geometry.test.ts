@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { percentBoxToViewport } from '../ui/fxRenderers';
+import { percentBoxToViewport } from '../ui/fxGeometry';
 
 describe('Mage Wars FX percent viewport conversion', () => {
     it('maps a percent box into viewport coordinates relative to its host', () => {
