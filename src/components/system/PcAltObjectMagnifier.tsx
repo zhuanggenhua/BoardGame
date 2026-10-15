@@ -25,6 +25,13 @@ const isEditableTarget = (target: EventTarget | null) => {
     return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 };
 
+const isAltModifierEvent = (event: KeyboardEvent) => (
+    event.key === 'Alt'
+        || event.key === 'AltGraph'
+        || event.code === 'AltLeft'
+        || event.code === 'AltRight'
+);
+
 const isInspectButton = (element: HTMLElement) => (
     element.hasAttribute('data-card-inspect-variant')
         || element.getAttribute('data-testid')?.includes('inspect-button') === true
@@ -260,7 +267,13 @@ export function PcAltObjectMagnifier({ enabled = true }: { enabled?: boolean }) 
 
         const handleMouseMove = (event: MouseEvent) => {
             lastPointerRef.current = { x: event.clientX, y: event.clientY };
-            if (!altHeldRef.current && !event.altKey) return;
+            if (!event.altKey) {
+                if (altHeldRef.current) {
+                    altHeldRef.current = false;
+                    setPreviewState(null);
+                }
+                return;
+            }
             altHeldRef.current = true;
             updateFromPoint(event.clientX, event.clientY);
         };
@@ -271,13 +284,13 @@ export function PcAltObjectMagnifier({ enabled = true }: { enabled?: boolean }) 
                 setPreviewState(null);
                 return;
             }
-            if (event.key !== 'Alt' || isEditableTarget(event.target)) return;
+            if (!isAltModifierEvent(event) || isEditableTarget(event.target)) return;
             altHeldRef.current = true;
             updateFromPoint(lastPointerRef.current.x, lastPointerRef.current.y);
         };
 
         const handleKeyUp = (event: KeyboardEvent) => {
-            if (event.key !== 'Alt') return;
+            if (!isAltModifierEvent(event) && (event.altKey || !altHeldRef.current)) return;
             altHeldRef.current = false;
             setPreviewState(null);
         };

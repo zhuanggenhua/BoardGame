@@ -1514,9 +1514,9 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               if (!unit || unit.card.unitClass === 'summoner') continue;
               if (hasStableAbility(unit, state.core)) continue;
               const dist = manhattanDistance(sourcePosition, { row, col });
-              if (dist > 0 && dist <= maxRange) {
-                candidates.push({ row, col });
-              }
+              if (dist === 0 || dist > maxRange) continue;
+              if (getForceDestinations(state.core, { row, col }, 1).length === 0) continue;
+              candidates.push({ row, col });
             }
           }
           if (candidates.length === 0) return;

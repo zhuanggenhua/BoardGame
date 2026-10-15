@@ -2066,6 +2066,52 @@ describe('SummonerWars 系统交互桥接回归', () => {
     expect(getUnitAt(duplicateResponse.state.core, pushedPos)?.instanceId).toBe(target.instanceId);
   });
 
+  it('[telekinesis_instead] 应排除没有可用推拉方向的目标，避免 AI 重复重开选择', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'trickster', faction1: 'necromancer' });
+    clearRect(core, core.board.map((_, row) => row), core.board[0].map((_, col) => col));
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+    core.players['0'].attackCount = 2;
+
+    const mage = putUnit(core, { row: 1, col: 3 }, mkUnit('wind-mage-blocked-target', {
+      abilities: ['telekinesis_instead'],
+      faction: 'trickster',
+    }), '0');
+    const trappedTargetPos = { row: 2, col: 2 };
+    putUnit(core, trappedTargetPos, mkUnit('trapped-target'), '1');
+    putStructure(core, { row: 1, col: 2 });
+    putUnit(core, { row: 3, col: 2 }, mkUnit('south-blocker'), '0');
+    putStructure(core, { row: 2, col: 1 });
+    putUnit(core, { row: 2, col: 3 }, mkUnit('east-blocker'), '1');
+
+    const state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], interactionSystems),
+    };
+    const aiActions = buildSummonerWarsAiLegalActions({ playerId: '0', state });
+    const blockedTargetActions = aiActions.filter((action) => action.commands.some((command) => {
+      const payload = command.payload as { abilityId?: string; targetPosition?: CellCoord };
+      return payload.abilityId === 'telekinesis_instead'
+        && payload.targetPosition?.row === trappedTargetPos.row
+        && payload.targetPosition?.col === trappedTargetPos.col;
+    }));
+    expect(blockedTargetActions).toHaveLength(0);
+
+    const requested = runPipeline(state, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      playerId: '0',
+      payload: { abilityId: 'telekinesis_instead', sourceUnitId: mage.instanceId },
+    });
+    expect(requested.success).toBe(true);
+    const targetOptions = ((requested.state.sys.interaction.current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(targetOptions.some((option) => {
+      const value = option.value as { targetPosition?: CellCoord } | undefined;
+      return value?.targetPosition?.row === trappedTargetPos.row
+        && value.targetPosition?.col === trappedTargetPos.col;
+    })).toBe(false);
+  });
+
   it('[structure_shift] 移动后两步真实交互应移动友方建筑且重复响应不二次移动', () => {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });

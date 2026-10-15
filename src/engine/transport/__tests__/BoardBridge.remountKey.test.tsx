@@ -7,6 +7,10 @@ import type { GameBoardProps } from '../protocol';
 import type { ImperativeBoardRenderer } from '../../boardRenderer';
 import { BoardBridge, GameClientOverrideProvider, LocalGameProvider, useGameClient } from '../react';
 
+vi.mock('../../../lib/feedback/clientAutoReport', () => ({
+    reportClientAutoFeedbackOnce: vi.fn(),
+}));
+
 const testConfig = {
     gameId: 'board-bridge-test',
     domain: {
@@ -62,6 +66,37 @@ describe('BoardBridge remountKey', () => {
         expect(screen.getByTestId('board-player')).toHaveTextContent('2');
         expect(mountSpy).toHaveBeenCalledTimes(1);
         expect(unmountSpy).not.toHaveBeenCalled();
+    });
+
+    it('Board 报错后父级重渲染不能因 children 元素变化而重新触发错误边界', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        let boardRenderCount = 0;
+        const Board = () => {
+            boardRenderCount += 1;
+            throw new Error('board render regression');
+        };
+
+        const Fixture = ({ revision }: { revision: number }) => (
+            <LocalGameProvider config={testConfig} numPlayers={2} seed="board-bridge-error-boundary-reset">
+                <BoardBridge board={Board} remountKey={false} />
+                <span data-testid="parent-revision">{revision}</span>
+            </LocalGameProvider>
+        );
+
+        try {
+            const { rerender } = render(<Fixture revision={0} />);
+            expect(screen.getByText('游戏加载失败')).toBeInTheDocument();
+            const renderCountAfterFailure = boardRenderCount;
+            expect(renderCountAfterFailure).toBeGreaterThan(0);
+
+            rerender(<Fixture revision={1} />);
+
+            expect(screen.getByTestId('parent-revision')).toHaveTextContent('1');
+            expect(screen.getByText('游戏加载失败')).toBeInTheDocument();
+            expect(boardRenderCount).toBe(renderCountAfterFailure);
+        } finally {
+            errorSpy.mockRestore();
+        }
     });
 
     it('imperative renderer 后端在 playerID 切换时只 update，不重建实例', () => {
