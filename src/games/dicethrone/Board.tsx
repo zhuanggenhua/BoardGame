@@ -1867,7 +1867,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const shouldPlayTutorialHandCardOnClick = Boolean(
         isTutorialActive
         && tutorialStep?.requireAction
-        && tutorialStep.highlightTarget === 'hand-area'
+        && (tutorialStep.highlightTarget === 'hand-area' || tutorialStep.highlightTarget?.startsWith('hand-card-'))
         && tutorialStep.allowedCommands?.some(command => command === 'PLAY_CARD' || command === 'PLAY_UPGRADE_CARD')
     );
 
