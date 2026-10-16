@@ -3835,7 +3835,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('后金处理 1 个战败标记，掷骰 4');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('努尔哈赤(1) 掷 4');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('额亦都(d10) 掷 10→9：无效果');
-        await expect(page.locator('[data-testid="qidahen-character-markers-mongol"]')).toContainText('人物 0');
+        await expect(page.locator('[data-testid="qidahen-character-markers-mongol"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).not.toContainText('人物 0');
         await saveScreenshot(page, MIDYEAR_DEFEAT_MARKERS_SCREENSHOT);
         await expect(page.getByTestId('qidahen-player-jin')).toContainText('当前');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();

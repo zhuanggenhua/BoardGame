@@ -576,38 +576,13 @@ describe('qidahen tutorial flow', () => {
         };
         const zhTutorialText = JSON.stringify(zh.tutorial);
         const enTutorialText = JSON.stringify(en.tutorial);
-        const ruleSource = readFileSync('src/games/qidahen/rule/七大恨规则.md', 'utf8');
-        const recruitTrainSectionStart = ruleSource.indexOf('### 征兵训练');
-        const recruitTrainSectionEnd = ruleSource.indexOf('\n### ', recruitTrainSectionStart + 1);
-        const recruitTrainRuleLines = ruleSource
-            .slice(recruitTrainSectionStart, recruitTrainSectionEnd === -1 ? undefined : recruitTrainSectionEnd)
-            .replace(/^### /, '')
-            .split(/\r?\n/);
-        recruitTrainRuleLines.shift();
-        const canonicalRecruitTrainRule = recruitTrainRuleLines
-            .reduce<{ lines: string[]; previousBlank: boolean }>((state, line) => {
-                if (line.trim().length === 0) {
-                    state.previousBlank = true;
-                    return state;
-                }
-                if (
-                    state.lines.length === 0
-                    || state.previousBlank
-                    || line.startsWith('-  ')
-                    || line.startsWith('(')
-                ) {
-                    state.lines.push(line);
-                } else {
-                    state.lines[state.lines.length - 1] += line;
-                }
-                state.previousBlank = false;
-                return state;
-            }, { lines: [], previousBlank: true })
-            .lines
-            .join('\n');
-        const canonicalRecruitActionRule = canonicalRecruitTrainRule
-            .split('\n')
-            .find((line) => line.includes('征兵行动：')) as string;
+        // Canonical source: 七大恨规则.pdf, p.5. The checked text must stay
+        // Traditional Chinese and must not drift to the translated Markdown.
+        const canonicalRecruitActionRule = ' 徵兵行動：直接建立 1 個等級 2 的正規軍部隊。';
+        const canonicalRecruitTrainRule = [
+            canonicalRecruitActionRule,
+            ' 訓練行動：將部隊向上轉 1 級，在一回合中每個部隊只能各提升 1 級。',
+        ].join('\n');
         const basic = (zh.tutorial.basic as { steps: Record<string, string> }).steps;
 
         expect(basic.wheelFirst).toContain('3 张手牌');
@@ -622,11 +597,10 @@ describe('qidahen tutorial flow', () => {
         expect(basic.wheelRecruitTrainRule).not.toContain('规则原文');
         expect(basic.wheelRecruitTrainRule).not.toContain('当前点击');
         expect(basic.wheelRecruitTrainRule).not.toContain('征兵训练');
-        expect(basic.wheelRecruitTrainRule).not.toContain('训练行动');
         expect(basic.wheelRecruitTrainRule).not.toContain('弃一张手牌');
         expect(basic.wheelRecruitTrainRule).not.toContain('炮兵的等级上限');
-        expect(basic.wheelRecruitTrainRule).not.toContain('徵兵');
-        expect(basic.wheelRecruitTrainRule).not.toContain('正規軍');
+        expect(basic.wheelRecruitTrainRule).not.toContain('征兵行动');
+        expect(basic.wheelRecruitTrainRule).not.toContain('正规军');
         expect(basic.wheelMove).toBe('点击轮盘上高亮的“征兵训练”区域。');
         expect(zhTutorialText).not.toMatch(/免费走\s*1/);
         expect(enTutorialText).not.toContain('Move 1 for free');
@@ -654,10 +628,7 @@ describe('qidahen tutorial flow', () => {
         const wheelRecruitTrainRule = (zh.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
         const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
         const englishWheelRecruitTrainRule = (en.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
-        expect(wheelRecruitTrainRule).toBe(canonicalRecruitTrainRule
-            .split('\n')
-            .filter((line) => line.includes('征兵行动：') || line.includes('训练行动：'))
-            .join('\n'));
+        expect(wheelRecruitTrainRule).toBe(canonicalRecruitTrainRule);
         expect(wheelRecruitTrainRule).not.toContain('规则原文');
         expect(wheelRecruitTrainRule).not.toContain('当前点击');
         expect(wheelRecruitTrainRule).not.toContain('征兵训练');

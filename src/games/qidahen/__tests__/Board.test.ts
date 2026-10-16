@@ -182,6 +182,7 @@ const boardShellSource = readFileSync(resolve(__dirname, '..', 'QidahenBoardShel
 const factionSelectionScreenSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenFactionSelectionScreen.tsx'), 'utf-8');
 const inspectPanelSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenInspectPanel.tsx'), 'utf-8');
 const statReadoutSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenStatReadout.tsx'), 'utf-8');
+const mapPopulationLayerSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenMapPopulationLayer.tsx'), 'utf-8');
 const operationBannerSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenOperationBanner.tsx'), 'utf-8');
 const combinedBoardSource = `${boardSource}\n${boardShellSource}\n${factionSelectionScreenSource}\n${inspectPanelSource}\n${operationBannerSource}`;
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
@@ -857,15 +858,16 @@ describe('Qidahen Board 结构门禁', () => {
         expect(inspectPanelSource).toContain('qidahen-inspect-stat-hand');
         expect(inspectPanelSource).toContain('qidahen-inspect-stat-troops');
         expect(inspectPanelSource).toContain('qidahen-inspect-stat-grain');
-        expect(inspectPanelSource).toContain('qidahen-inspect-stat-population');
+        expect(inspectPanelSource).not.toContain('qidahen-inspect-stat-population');
         expect(inspectPanelSource).toContain("board.inspect.statVp");
         expect(inspectPanelSource).toContain("board.inspect.statHand");
         expect(inspectPanelSource).toContain("board.inspect.statTroops");
         expect(inspectPanelSource).toContain("board.inspect.statGrain");
-        expect(inspectPanelSource).toContain("board.inspect.statPopulation");
+        expect(inspectPanelSource).not.toContain("board.inspect.statPopulation");
         expect(inspectPanelSource).not.toContain('board.inspect.factionStats');
         expect(inspectPanelSource).not.toContain('board.map.regionTroopsPopulation');
-        expect(inspectPanelSource).toContain('region.population > 0');
+        expect(inspectPanelSource).not.toContain('地点详情');
+        expect(inspectPanelSource).not.toContain("kind: 'region'");
     });
 
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
@@ -962,13 +964,37 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('{!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (');
     });
 
-    it('地图区域 tip 不得再抄地图 token 已主显的兵力，只保留宿主上看不见的人口', () => {
+    it('地图区域 tip 不得再抄底图已主显的兵力或人口，也不得打开地点详情', () => {
         expect(boardSource).not.toContain('board.map.regionTroopsPopulation');
         expect(boardSource).not.toContain('board.map.regionPopulation');
-        expect(boardSource).toContain('board.map.statPopulation');
-        expect(boardSource).toContain('qidahen-map-region-population');
-        expect(boardSource).toContain('QidahenStatReadout');
-        expect(boardSource).toContain('focusedRegion.population > 0');
+        expect(boardSource).not.toContain('board.map.statPopulation');
+        expect(boardSource).not.toContain('qidahen-map-region-population');
+        expect(boardSource).not.toContain('QidahenStatReadout');
+        expect(boardSource).not.toContain('onInspectRegion');
+        expect(boardSource).not.toContain("kind: 'region'");
+        expect(boardSource).not.toContain('地点详情');
+        expect(boardSource).toContain('<QidahenMapPopulationLayer regions={core.regions} />');
+    });
+
+    it('势力条第二行只在有战败标记时公开人物，空人物计数不占常驻位', () => {
+        expect(boardSource).toContain('data-testid={`qidahen-character-markers-${faction.id}`}');
+        expect(boardSource).toContain('{characterSummary ? (');
+        expect(boardSource).not.toContain('board.player.characterCount');
+        expect(boardSource).not.toContain("defaultValue: '人物 {{count}}'");
+    });
+
+    it('运行时人口读数落在地图区域锚点，零人口不显示，且不生成人口 token', () => {
+        expect(mapPopulationLayerSource).toContain('data-testid={`qidahen-map-population-${region.id}`}');
+        expect(mapPopulationLayerSource).toContain('region.isLogicalRegion || region.population <= 0');
+        expect(mapPopulationLayerSource).toContain('const CUBE_SIZE = 26');
+        expect(mapPopulationLayerSource).toContain('#ffe566');
+        expect(mapPopulationLayerSource).not.toContain('const CUBE_SIZE = 18');
+        expect(mapPopulationLayerSource).not.toContain('#f4e3a6');
+        expect(mapPopulationLayerSource).not.toContain("type: 'population'");
+        expect(mapPopulationLayerSource).not.toContain('populationMarkerImageSrc');
+        expect(mapTokenSource).not.toContain("type: 'population',");
+        expect(mapTokenSource).not.toContain('populationMarkerImageSrc');
+        expect(typesSource).not.toContain("type: 'army' | 'population' | 'control' | 'marker';");
     });
 
     it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {
@@ -1126,7 +1152,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;');
         expect(boardSource).toContain('const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
         expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : undefined');
-        expect(boardSource).toContain('className="pointer-events-auto absolute z-20 cursor-pointer border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
+        expect(boardSource).toContain('className="pointer-events-auto absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
         expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");
         expect(boardSource).toContain("className={`${tokenSelectable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}");

@@ -93,8 +93,7 @@ const InspectArmamentCard: React.FC<{
 };
 
 export type QidahenInspectTarget =
-    | { kind: 'faction'; factionId: QidahenFactionId }
-    | { kind: 'region'; regionId: string };
+    | { kind: 'faction'; factionId: QidahenFactionId };
 
 interface QidahenInspectPanelProps {
     core: QidahenCore;
@@ -119,9 +118,6 @@ export const QidahenInspectPanel: React.FC<QidahenInspectPanelProps> = ({
     }
 
     const faction = target.kind === 'faction' ? core.factions[target.factionId] : null;
-    const region = target.kind === 'region'
-        ? core.regions.find((item) => item.id === target.regionId) ?? null
-        : null;
     const developedArmaments = faction ? listQidahenDevelopedArmaments(faction.armaments) : [];
 
     return createPortal(
@@ -218,48 +214,6 @@ export const QidahenInspectPanel: React.FC<QidahenInspectPanelProps> = ({
                                     || t('board.inspect.charactersEmpty', { defaultValue: '场上暂无人物' })}
                             </div>
                         </section>
-                    </div>
-                ) : region ? (
-                    <div data-testid={`qidahen-inspect-region-${region.id}`}>
-                        <div>
-                            <div className="text-[12px] font-black tracking-[0.14em]" style={{ color: PANEL_SKIN.muted }}>
-                                {t('board.inspect.regionHeader', { defaultValue: '地点详情' })}
-                            </div>
-                            <div className="mt-1 text-[22px] font-black" style={{ color: PANEL_SKIN.titleColor }}>
-                                {region.name} · {region.controlLabel}
-                            </div>
-                        </div>
-                        <div className="mt-4">
-                            <QidahenStatReadout
-                                testId="qidahen-inspect-region-stats"
-                                tone={{ label: PANEL_SKIN.muted, value: PANEL_SKIN.titleColor }}
-                                items={[
-                                    {
-                                        testId: 'qidahen-inspect-stat-troops',
-                                        label: t('board.inspect.statTroops', { defaultValue: '兵力' }),
-                                        value: String(region.troops),
-                                    },
-                                    ...(region.population > 0
-                                        ? [{
-                                            testId: 'qidahen-inspect-stat-population',
-                                            label: t('board.inspect.statPopulation', { defaultValue: '人口' }),
-                                            value: String(region.population),
-                                        }]
-                                        : []),
-                                ]}
-                            />
-                        </div>
-                        {region.specialTroops.length > 0 ? (
-                            <div className="mt-2 text-[13px] font-black" style={{ color: PANEL_SKIN.muted }}>
-                                {t('board.map.regionSpecialTroops', {
-                                    summary: region.specialTroops.map((stack) => `${stack.label} x${stack.count}`).join('、'),
-                                    defaultValue: '特殊 {{summary}}',
-                                })}
-                            </div>
-                        ) : null}
-                        {region.note ? (
-                            <div className="mt-3 text-[13px] font-black leading-6">{region.note}</div>
-                        ) : null}
                     </div>
                 ) : (
                     <div className="text-[14px] font-black">

@@ -110,7 +110,7 @@ import {
 import { QidahenFactionSelectionScreen } from './ui/QidahenFactionSelectionScreen';
 import { QidahenHoverTip, QidahenHoverTipBody } from './ui/QidahenHoverTip';
 import { QidahenInspectPanel, type QidahenInspectTarget } from './ui/QidahenInspectPanel';
-import { QidahenStatReadout } from './ui/QidahenStatReadout';
+import { QidahenMapPopulationLayer } from './ui/QidahenMapPopulationLayer';
 import { QidahenOperationBanner } from './ui/QidahenOperationBanner';
 import { resolveQidahenOperationPrompt } from './ui/operationPrompt';
 import {
@@ -1579,10 +1579,7 @@ const PlayerChip: React.FC<{
             count: character.defeatMarkers,
             defaultValue: '{{name}}({{number}})败×{{count}}',
         })).join(' / ')
-        : t('board.player.characterCount', {
-            count: faction.characters.filter((character) => character.inPlay).length,
-            defaultValue: '人物 {{count}}',
-        });
+        : null;
     return (
         <button
             type="button"
@@ -1624,13 +1621,15 @@ const PlayerChip: React.FC<{
                     ) : null}
                     <span className="ml-2 text-[12px]" style={{ color: UI_STYLE.bronze }}>{faction.handCount}/{faction.handLimit}</span>
                 </div>
-                <div
-                    className="mt-1 truncate text-[11px] leading-none"
-                    data-testid={`qidahen-character-markers-${faction.id}`}
-                    style={{ color: markedCharacters.length > 0 ? UI_STYLE.mutedInk : 'rgba(42,31,21,0.62)' }}
-                >
-                    {characterSummary}
-                </div>
+                {characterSummary ? (
+                    <div
+                        className="mt-1 truncate text-[11px] leading-none"
+                        data-testid={`qidahen-character-markers-${faction.id}`}
+                        style={{ color: UI_STYLE.mutedInk }}
+                    >
+                        {characterSummary}
+                    </div>
+                ) : null}
             </div>
             {faction.defeatMarkers > 0 ? (
                 <span
@@ -2044,8 +2043,7 @@ const MapSceneLayer: React.FC<{
     onViewportChange: (viewport: QidahenMapViewport) => void;
     locale?: string;
     onSelectRegion: (regionId: string, tokenId?: string) => void;
-    onInspectRegion: (regionId: string) => void;
-}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion, onInspectRegion }) => {
+}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const { t: tCommon } = useTranslation('common');
     const currentFactionId = perspectiveFactionId;
@@ -3223,6 +3221,7 @@ const MapSceneLayer: React.FC<{
                         />
                     );
                 })}
+                <QidahenMapPopulationLayer regions={core.regions} />
                 {activeResultFeedback != null ? (() => {
                     const resultRegion = core.regions.find((region) => region.id === activeResultFeedback.regionId);
                     if (!resultRegion) {
@@ -3476,23 +3475,14 @@ const MapSceneLayer: React.FC<{
             ) : null}
             {focusedRegion ? (
                 <div
-                    className="pointer-events-auto absolute z-20 cursor-pointer border-[3px] px-3 py-2 text-[13px] font-black leading-5"
+                    className="pointer-events-auto absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"
                     data-testid="qidahen-map-region-tip"
-                    role="button"
-                    tabIndex={0}
                     onPointerEnter={() => {
                         regionTipHoverLockRef.current = true;
                     }}
                     onPointerLeave={() => {
                         regionTipHoverLockRef.current = false;
                         setHoveredRegionId(null);
-                    }}
-                    onClick={() => onInspectRegion(focusedRegion.id)}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            onInspectRegion(focusedRegion.id);
-                        }
                     }}
                     style={{
                         left: tipLeft,
@@ -3506,19 +3496,6 @@ const MapSceneLayer: React.FC<{
                     }}
                 >
                     <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{focusedRegion.name} · {focusedRegion.controlLabel}</div>
-                    {focusedRegion.population > 0 ? (
-                        <div className="mt-2">
-                            <QidahenStatReadout
-                                size="tip"
-                                tone={{ label: UI_STYLE.mapGold, value: UI_STYLE.mapIvory }}
-                                items={[{
-                                    testId: 'qidahen-map-region-population',
-                                    label: t('board.map.statPopulation', { defaultValue: '人口' }),
-                                    value: String(focusedRegion.population),
-                                }]}
-                            />
-                        </div>
-                    ) : null}
                     {focusedSpecialTroopsSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                             {t('board.map.regionSpecialTroops', {
@@ -7381,7 +7358,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onViewportChange={setMapViewport}
                 locale={locale}
                 onSelectRegion={selectRegion}
-                onInspectRegion={(regionId) => setDetailInspectTarget({ kind: 'region', regionId })}
             />
             {topLevelMapSelectionGuide && tutorialStep?.id === 'choose-grant-pardon-target' ? (
                 <div className="pointer-events-none absolute inset-0 z-40" aria-hidden="true">

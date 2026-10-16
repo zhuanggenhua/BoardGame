@@ -191,19 +191,41 @@ test.describe('七大恨地点军备详情与轮盘弃牌', () => {
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).not.toContainText('火炮技术');
         await expect(page.locator('[data-testid="qidahen-armaments-ming"]')).toHaveCount(0);
 
+        const songJinPopulation = page.locator('[data-testid="qidahen-map-population-song-jin"]');
+        await expect(songJinPopulation).toHaveText('2');
+        const songJinPopulationBox = await songJinPopulation.boundingBox();
+        const mapLayerBox = await page.locator('[data-testid="qidahen-map-layer"]').boundingBox();
+        expect(songJinPopulationBox).not.toBeNull();
+        expect(mapLayerBox).not.toBeNull();
+        expect(songJinPopulationBox!.width).toBeGreaterThan(20);
+        expect(songJinPopulationBox!.height).toBeGreaterThan(20);
+        expect(songJinPopulationBox!.x + songJinPopulationBox!.width / 2).toBeGreaterThan(mapLayerBox!.x);
+        expect(songJinPopulationBox!.x + songJinPopulationBox!.width / 2).toBeLessThan(mapLayerBox!.x + mapLayerBox!.width);
+        expect(songJinPopulationBox!.y + songJinPopulationBox!.height / 2).toBeGreaterThan(mapLayerBox!.y);
+        expect(songJinPopulationBox!.y + songJinPopulationBox!.height / 2).toBeLessThan(mapLayerBox!.y + mapLayerBox!.height);
+        await expect(page.locator('[data-testid="qidahen-player-ming"]')).not.toContainText('人物 0');
+        await expect(page.locator('[data-testid="qidahen-character-markers-ming"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-inspect-overlay"]')).toHaveCount(0);
+        await captureEvidence(page, testInfo, '前态-底图人口落在皮岛');
+
         await clickMapRegion(page, 'songjin');
         const mapTip = page.locator('[data-testid="qidahen-map-region-tip"]');
         await expect(mapTip).toBeVisible();
         await expect(mapTip).toContainText('皮岛');
-        await expect(page.locator('[data-testid="qidahen-map-region-population-label"]')).toHaveText('人口');
-        await expect(page.locator('[data-testid="qidahen-map-region-population-value"]')).toHaveText('2');
+        await expect(page.locator('[data-testid="qidahen-map-region-population-label"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-region-population-value"]')).toHaveCount(0);
+        await expect(mapTip).not.toContainText('人口');
         await expect(mapTip).not.toContainText('兵力');
         await expect(page.locator('[data-testid^="qidahen-map-token-"][data-qidahen-map-token-type="army"][data-qidahen-map-token-region="song-jin"]')).toHaveCount(2);
         await expect(mapTip).not.toContainText('点击查看地点详情');
+        await expect(mapTip).not.toContainText('地点详情');
         await expect(mapTip).not.toContainText('接边');
         await expect(mapTip).not.toContainText('暂无');
         await expect(page.locator('[data-testid="qidahen-map-overlay"]')).not.toContainText('海岸/水路');
         await expect(page.locator('[data-testid="qidahen-runtime-region-graph"]')).not.toContainText('接边');
+        await mapTip.click();
+        await expect(page.locator('[data-testid="qidahen-inspect-overlay"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-inspect-region-song-jin"]')).toHaveCount(0);
 
         await page.locator('[data-testid="qidahen-player-ming"]').hover();
         const playerTip = page.locator('[data-testid="qidahen-player-inspect-tip-ming"]');
@@ -211,25 +233,8 @@ test.describe('七大恨地点军备详情与轮盘弃牌', () => {
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).not.toContainText('火炮技术');
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).not.toContainText('炮兵');
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toBeVisible();
-        await captureEvidence(page, testInfo, '前态-地图地点与军备悬浮提示可见');
 
         const viewportBeforeInspect = await readMapViewport(page);
-        await mapTip.click();
-        await expect(page.locator('[data-testid="qidahen-inspect-overlay"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-inspect-panel"]')).toHaveAttribute('data-inspect-kind', 'region');
-        await expect(page.locator('[data-testid="qidahen-inspect-region-song-jin"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-inspect-region-song-jin"]')).toContainText('地点详情');
-        await expect(page.locator('[data-testid="qidahen-inspect-stat-troops-label"]')).toHaveText('兵力');
-        await expect(page.locator('[data-testid="qidahen-inspect-stat-troops-value"]')).toHaveText('2');
-        await expect(page.locator('[data-testid="qidahen-inspect-stat-population-label"]')).toHaveText('人口');
-        await expect(page.locator('[data-testid="qidahen-inspect-stat-population-value"]')).toHaveText('2');
-        await expect(page.locator('[data-testid="qidahen-inspect-region-song-jin"]')).not.toContainText('兵力 2 · 人口');
-        const viewportAfterRegionInspect = await readMapViewport(page);
-        expect(viewportAfterRegionInspect).toEqual(viewportBeforeInspect);
-        await captureEvidence(page, testInfo, '中态-地点详情人口分格可读');
-
-        await page.locator('[data-testid="qidahen-inspect-close"]').click();
-        await expect(page.locator('[data-testid="qidahen-inspect-overlay"]')).toHaveCount(0);
 
         await page.locator('[data-testid="qidahen-player-ming"]').click();
         await expect(page.locator('[data-testid="qidahen-inspect-overlay"]')).toBeVisible();
