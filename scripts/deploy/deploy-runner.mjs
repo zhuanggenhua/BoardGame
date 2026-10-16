@@ -49,6 +49,7 @@ const assetPublishRequiredFiles = [
     { id: 'asset-publish-ownership', relativePath: 'scripts/assets/asset-publish-ownership.mjs' },
     { id: 'release-retention', relativePath: 'scripts/assets/release-retention.mjs' },
     { id: 'server-android-package-refresh', relativePath: 'scripts/assets/server-android-package-refresh.mjs' },
+    { id: 'android-package-archive', relativePath: 'scripts/mobile/android-package-archive.mjs' },
     { id: 'android-assets-base-url', relativePath: 'scripts/mobile/android-assets-base-url.mjs' },
 ];
 const jobs = new Map();

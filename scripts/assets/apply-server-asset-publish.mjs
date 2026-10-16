@@ -248,85 +248,100 @@ if (freeBytes - publishBytes < minimumFreeBytes) {
 const releaseId = new Date().toISOString().replace(/\D/g, '').slice(0, 17);
 const releaseDir = path.join(releasesRoot, releaseId);
 mkdirSync(releaseDir, { recursive: true });
+let androidPackageRefresh;
+let releaseOwnership;
+let nextLink = '';
+let releaseActivated = false;
 
-if (existsSync(currentLink)) {
-    const currentRelease = realpathSync(currentLink);
-    const clone = spawnSync('cp', ['-al', `${currentRelease}/.`, `${releaseDir}/`], {
-        encoding: 'utf8',
-    });
-    if (clone.status !== 0) {
-        rmSync(releaseDir, { recursive: true, force: true });
-        mkdirSync(releaseDir, { recursive: true });
-        const fallbackClone = spawnSync('cp', ['-a', `${currentRelease}/.`, `${releaseDir}/`], {
+try {
+    if (existsSync(currentLink)) {
+        const currentRelease = realpathSync(currentLink);
+        const clone = spawnSync('cp', ['-al', `${currentRelease}/.`, `${releaseDir}/`], {
             encoding: 'utf8',
         });
-        if (fallbackClone.status !== 0) {
-            throw new Error(
-                `克隆当前服务器 release 失败: hardlink=${clone.stderr || clone.stdout}; `
-                + `copy=${fallbackClone.stderr || fallbackClone.stdout}`,
-            );
+        if (clone.status !== 0) {
+            rmSync(releaseDir, { recursive: true, force: true });
+            mkdirSync(releaseDir, { recursive: true });
+            const fallbackClone = spawnSync('cp', ['-a', `${currentRelease}/.`, `${releaseDir}/`], {
+                encoding: 'utf8',
+            });
+            if (fallbackClone.status !== 0) {
+                throw new Error(
+                    `克隆当前服务器 release 失败: hardlink=${clone.stderr || clone.stdout}; `
+                    + `copy=${fallbackClone.stderr || fallbackClone.stdout}`,
+                );
+            }
         }
     }
-}
 
-for (const object of manifest.objects) {
-    const sourcePath = resolveWithin(stagingRoot, object.key);
-    const destinationPath = resolveWithin(releaseDir, object.key);
-    mkdirSync(path.dirname(destinationPath), { recursive: true });
-    if (existsSync(destinationPath)) {
-        unlinkSync(destinationPath);
+    for (const object of manifest.objects) {
+        const sourcePath = resolveWithin(stagingRoot, object.key);
+        const destinationPath = resolveWithin(releaseDir, object.key);
+        mkdirSync(path.dirname(destinationPath), { recursive: true });
+        if (existsSync(destinationPath)) {
+            unlinkSync(destinationPath);
+        }
+        copyFileSync(sourcePath, destinationPath);
     }
-    copyFileSync(sourcePath, destinationPath);
-}
 
-const androidPackageRefresh = await refreshAndroidPackageIndexesForPublishedAssets({
-    releaseDir,
-    publishedKeys: manifest.objects.map((object) => object.key),
-});
-const publishedAndGeneratedKeys = new Set([
-    ...manifest.objects.map((object) => object.key),
-    ...androidPackageRefresh.objects.map((object) => object.key),
-]);
-
-if (!preserveExistingAssets) {
-    await pruneInactiveManagedObjects(
+    androidPackageRefresh = await refreshAndroidPackageIndexesForPublishedAssets({
         releaseDir,
-        publishedAndGeneratedKeys,
-    );
-}
+        publishedKeys: manifest.objects.map((object) => object.key),
+    });
+    const publishedAndGeneratedKeys = new Set([
+        ...manifest.objects.map((object) => object.key),
+        ...androidPackageRefresh.objects.map((object) => object.key),
+    ]);
 
-let assetIndex = readAssetIndex(releaseDir);
-if (!assetIndex) {
-    assetIndex = await buildAssetIndex(releaseDir);
-}
-for (const object of manifest.objects) {
-    assetIndex[object.key] = {
-        size: object.size,
-        sha256: object.sha256,
-    };
-}
-for (const object of androidPackageRefresh.objects) {
-    assetIndex[object.key] = {
-        size: object.size,
-        sha256: object.sha256,
-    };
-}
-for (const key of Object.keys(assetIndex)) {
-    if (!existsSync(resolveWithin(releaseDir, key))) {
-        delete assetIndex[key];
+    if (!preserveExistingAssets) {
+        await pruneInactiveManagedObjects(
+            releaseDir,
+            publishedAndGeneratedKeys,
+        );
     }
+
+    let assetIndex = readAssetIndex(releaseDir);
+    if (!assetIndex) {
+        assetIndex = await buildAssetIndex(releaseDir);
+    }
+    for (const object of manifest.objects) {
+        assetIndex[object.key] = {
+            size: object.size,
+            sha256: object.sha256,
+        };
+    }
+    for (const object of androidPackageRefresh.objects) {
+        assetIndex[object.key] = {
+            size: object.size,
+            sha256: object.sha256,
+        };
+    }
+    for (const key of Object.keys(assetIndex)) {
+        if (!existsSync(resolveWithin(releaseDir, key))) {
+            delete assetIndex[key];
+        }
+    }
+    writeAssetIndex(releaseDir, assetIndex);
+    rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
+
+    releaseOwnership = normalizePathOwnership({
+        assetsRoot,
+        targetPath: releaseDir,
+    });
+
+    nextLink = path.join(assetsRoot, `.current-${releaseId}-${process.pid}`);
+    symlinkSync(releaseDir, nextLink, 'dir');
+    renameSync(nextLink, currentLink);
+    releaseActivated = true;
+} catch (error) {
+    if (nextLink) {
+        rmSync(nextLink, { force: true });
+    }
+    if (!releaseActivated) {
+        rmSync(releaseDir, { recursive: true, force: true });
+    }
+    throw error;
 }
-writeAssetIndex(releaseDir, assetIndex);
-rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
-
-const releaseOwnership = normalizePathOwnership({
-    assetsRoot,
-    targetPath: releaseDir,
-});
-
-const nextLink = path.join(assetsRoot, `.current-${releaseId}-${process.pid}`);
-symlinkSync(releaseDir, nextLink, 'dir');
-renameSync(nextLink, currentLink);
 
 const auditRoot = path.join(assetsRoot, 'control', 'publish-audit');
 mkdirSync(auditRoot, { recursive: true });
