@@ -1,0 +1,8 @@
+[Unit]
+Description=Create verified compressed BoardGame MongoDB backup
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/boardgame-mongodb-backup

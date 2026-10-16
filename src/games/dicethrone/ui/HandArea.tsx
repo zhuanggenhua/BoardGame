@@ -973,6 +973,7 @@ export const HandArea = ({
                                 key={`${cardKey}-${returnVersion}`}
                                 data-card-key={cardKey}
                                 data-card-id={card.id}
+                                data-tutorial-id={`hand-card-${card.id}`}
                                 data-can-drag={canDrag}
                                 data-is-flipped={isFlipped}
                                 data-is-discard-mode={isDiscardMode}

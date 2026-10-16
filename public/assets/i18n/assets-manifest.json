@@ -8631,8 +8631,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/ability-cards": {
       "variants": {
         "webp": {
-          "sha256": "68d0df8ae6cedd3cce1e4045c6a24c3e87c82e1ab0c38be46630524c933212f4",
-          "bytes": 8452896,
+          "sha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+          "bytes": 2040596,
           "mime": "image/webp"
         }
       }
@@ -8649,8 +8649,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "11b4c2e50f5e2732cd38cc448afd4fe2fa89ae5c5cb21cd07f3f8f57e374bdd8",
-          "bytes": 3095888,
+          "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+          "bytes": 859280,
           "mime": "image/webp"
         }
       }
@@ -8667,8 +8667,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "30e1b62010aef2e75be2e31cb1f9abf8f3096100e024d7939ffbc0f18f49304f",
-          "bytes": 743326,
+          "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+          "bytes": 186676,
           "mime": "image/webp"
         }
       }

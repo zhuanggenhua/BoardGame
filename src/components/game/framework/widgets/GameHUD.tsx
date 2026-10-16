@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -9,7 +9,6 @@ import {
     Check,
     AlertTriangle,
     MessageSquare,
-    Send,
     Undo2,
     Settings,
     Maximize,
@@ -18,7 +17,6 @@ import {
     Users,
     ListOrdered,
     ArrowLeftRight,
-    SmilePlus,
     Moon,
     Sun,
 } from 'lucide-react';
@@ -33,8 +31,7 @@ import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { matchSocket, type MatchChatMessage, type MatchEmoteEvent } from '../../../../services/matchSocket';
-import { MAX_CHAT_LENGTH, MAX_CHAT_MESSAGES } from '../../../../shared/chat';
+import { matchSocket, type MatchEmoteEvent } from '../../../../services/matchSocket';
 import type { EmoteDefinition } from '../../../../shared/emotes';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';
@@ -45,12 +42,11 @@ import {
 } from '../../utils/actionLogFormat';
 import { ActionLogSegments } from './ActionLogSegments';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardPreviewRegistry';
-import { generateId, copyToClipboard } from '../../../../lib/utils';
+import { copyToClipboard } from '../../../../lib/utils';
 import { OpponentOfflineBanner } from './OpponentOfflineBanner';
-import { logger } from '../../../../lib/logger';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
-import { OptimizedImage } from '../../../common/media/OptimizedImage';
-import { EmotePicker } from './EmotePicker';
+import { MatchChatPanel } from './MatchChatPanel';
+import { useMatchChat } from './useMatchChat';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
 import type { GameOrientationPreference } from '../../../../shared/gameManifest.types';
 import { toggleDocumentFullscreen } from '../../../../lib/webFullscreen';
@@ -70,10 +66,7 @@ import {
     buildGameHudFeedbackActionLog,
     buildGameHudFeedbackStateSnapshot,
     GAME_HUD_FAB_Z_INDEX,
-    getLatestIncomingMessage,
-    isSelfChatMessage,
     resolveGameHudPhase,
-    trimChatMessages,
     type HudPhaseStateLike,
 } from './gameHudModel';
 
@@ -220,20 +213,7 @@ export const GameHUD = ({
         ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY
         : undefined;
 
-    // 聊天逻辑
-    const [chatMessages, setChatMessages] = useState<MatchChatMessage[]>([]);
-    const [chatInput, setChatInput] = useState('');
-    const chatEndRef = useRef<HTMLDivElement>(null);
-    const [showChatEmotePicker, setShowChatEmotePicker] = useState(false);
     const [localChatEmotes, setLocalChatEmotes] = useState<MatchEmoteEvent[]>([]);
-    const isChatReadonly = isSpectator;
-    const [unreadChatState, setUnreadChatState] = useState<{ matchId?: string; count: number }>({
-        matchId,
-        count: 0,
-    });
-    const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
-    const isChatPanelOpenRef = useRef(false);
-    const unreadChatCount = unreadChatState.matchId === matchId ? unreadChatState.count : 0;
     const [seatEmoteEvents, setSeatEmoteEvents] = useState<MatchEmoteEvent[]>([]);
     const canUseSeatEmotes = isOnline && !isSpectator && !isSetupPhase && !!matchId && !!myPlayerId && availableEmotes.length > 0;
     const resolveHudEmote = useCallback((emoteId: string) => (
@@ -245,7 +225,7 @@ export const GameHUD = ({
         const matched = players?.find((p) => String(p.id) === String(myPlayerId));
         return matched?.name ?? (myPlayerId != null
             ? t('hud.status.player', { id: myPlayerId })
-            : t('hud.status.playerUnknown'));
+            : t('hud.chat.spectator'));
     }, [myPlayerId, players, t, user?.username]);
 
     const playerNameMap = useMemo(() => {
@@ -283,88 +263,9 @@ export const GameHUD = ({
         return buildActionLogRows(entries, { getPlayerLabel: getActionLogPlayerLabel });
     }, [getActionLogPlayerLabel, undoState?.G?.sys?.actionLog?.entries]);
 
-    const isSelfMessage = useCallback((message: MatchChatMessage) => {
-        return isSelfChatMessage(message, myPlayerId, myDisplayName);
-    }, [myPlayerId, myDisplayName]);
-
-    const resetUnreadChatCount = useCallback(() => {
-        setUnreadChatState({
-            matchId,
-            count: 0,
-        });
-    }, [matchId]);
-
-    const incrementUnreadChatCount = useCallback(() => {
-        setUnreadChatState((prev) => ({
-            matchId,
-            count: (prev.matchId === matchId ? prev.count : 0) + 1,
-        }));
-    }, [matchId]);
-
-    const handleChatPanelOpenChange = useCallback((isActive: boolean) => {
-        setIsChatPanelOpen(isActive);
-        if (isActive) {
-            resetUnreadChatCount();
-        }
-    }, [resetUnreadChatCount]);
-
-    const latestIncomingMessage = useMemo(() => {
-        return getLatestIncomingMessage(chatMessages, myPlayerId, myDisplayName);
-    }, [chatMessages, myPlayerId, myDisplayName]);
-
-    useEffect(() => {
-        isChatPanelOpenRef.current = isChatPanelOpen;
-    }, [isChatPanelOpen]);
-
-    useEffect(() => {
-        if (!isOnline || !matchId) return;
-
-        matchSocket.joinChat(matchId);
-
-        // 订阅历史消息（加入房间时服务端回推）
-        const unsubHistory = matchSocket.subscribeChatHistory((history) => {
-            setChatMessages((prev) => {
-                // 用 id 去重，合并历史和已有消息
-                const existingIds = new Set(prev.map((m) => m.id));
-                const newMessages = history.filter((m) => !existingIds.has(m.id));
-                if (newMessages.length === 0) return prev;
-                const merged = [...newMessages, ...prev];
-                // 按时间排序
-                merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-                return trimChatMessages(merged);
-            });
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-        });
-
-        const unsubscribe = matchSocket.subscribeChat((message) => {
-            if (message.matchId !== matchId) return;
-            setChatMessages((prev) => {
-                if (prev.some((m) => m.id === message.id)) return prev;
-                const next = [...prev, message];
-                const trimmed = next.length > MAX_CHAT_MESSAGES;
-                const nextMessages = trimChatMessages(next);
-                if (trimmed) {
-                    logger.warn('HUD 聊天消息达到裁剪阈值', {
-                        event: 'trim_messages',
-                        matchId: matchId ?? 'unknown',
-                        size: next.length,
-                        max: MAX_CHAT_MESSAGES,
-                    });
-                }
-                return nextMessages;
-            });
-            if (!isSelfMessage(message) && !isChatPanelOpenRef.current) {
-                incrementUnreadChatCount();
-            }
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-        });
-
-        return () => {
-            unsubscribe();
-            unsubHistory();
-            matchSocket.leaveChat();
-        };
-    }, [incrementUnreadChatCount, isOnline, matchId, isSelfMessage]);
+    const chat = useMatchChat({ isOnline, matchId, playerId: myPlayerId, credentials, displayName: myDisplayName });
+    const unreadChatCount = chat.unreadTotal;
+    const latestIncomingMessage = chat.latestIncoming;
 
     useEffect(() => {
         if (!canUseSeatEmotes || !matchId || !myPlayerId) return;
@@ -381,59 +282,6 @@ export const GameHUD = ({
             matchSocket.leaveEmotes();
         };
     }, [canUseSeatEmotes, matchId, myPlayerId]);
-
-    const handleSendMessage = (e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmed = chatInput.trim();
-        if (!trimmed) return;
-        if (trimmed.length > MAX_CHAT_LENGTH) {
-            toast.warning(t('hud.chat.tooLong', { count: MAX_CHAT_LENGTH }));
-            return;
-        }
-
-        if (isOnline) {
-            if (isChatReadonly) {
-                toast.info(t('hud.chat.readonlyWarning'));
-                return;
-            }
-            const result = matchSocket.sendChat(trimmed, myPlayerId ?? undefined, myDisplayName);
-            if (!result.ok) {
-                if (result.reason === 'not_connected') {
-                    toast.error(t('hud.chat.notConnected'));
-                } else {
-                    if (matchId) matchSocket.joinChat(matchId);
-                    toast.info(t('hud.chat.connecting'));
-                }
-                return;
-            }
-        } else {
-            const localMessage: MatchChatMessage = {
-                id: generateId(),
-                matchId: matchId ?? 'local',
-                senderId: myPlayerId ?? undefined,
-                senderName: myDisplayName,
-                text: trimmed,
-                createdAt: new Date().toISOString(),
-            };
-            setChatMessages((prev) => {
-                const next = [...prev, localMessage];
-                const trimmed = next.length > MAX_CHAT_MESSAGES;
-                const nextMessages = trimChatMessages(next);
-                if (trimmed) {
-                    logger.warn('HUD 聊天消息达到裁剪阈值', {
-                        event: 'trim_messages',
-                        matchId: matchId ?? 'local',
-                        size: next.length,
-                        max: MAX_CHAT_MESSAGES,
-                    });
-                }
-                return nextMessages;
-            });
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-        }
-
-        setChatInput('');
-    };
 
     const handleSendEmote = useCallback((emoteId: string) => {
         const selfEmoteEvent: MatchEmoteEvent | null = matchId && myPlayerId != null
@@ -458,7 +306,6 @@ export const GameHUD = ({
         };
         if (selfEmoteEvent) {
             setLocalChatEmotes((prev) => [...prev.slice(-9), selfEmoteEvent]);
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
         }
         const result = matchSocket.sendEmote(emoteId, (response) => {
             if (response.ok) return;
@@ -697,6 +544,7 @@ export const GameHUD = ({
         // [0] 聊天（主按钮）
         items.push({
             id: 'chat',
+            mobilePopoverVerticalAnchor: viewportHeight < 480 ? 'viewport' : 'button',
             icon: <MessageSquare size={20} />,
             label: t('hud.actions.chat'),
             active: unreadChatCount > 0,
@@ -709,121 +557,14 @@ export const GameHUD = ({
                     })}
                 </div>
             ) : undefined,
-            onActivate: handleChatPanelOpenChange,
+            onActivate: chat.onOpenChange,
             content: (
-                <div className="flex flex-col h-80">
-                    {isOnline && (
-                        <div className="mb-2 space-y-1 text-[10px] text-white/60">
-                            <div className="flex items-center gap-2">
-                                <span className="uppercase font-bold text-white/40">{t('hud.actions.room')}</span>
-                                <span className="font-mono tracking-widest">{matchId ?? '-'}</span>
-                            </div>
-                            {/* 成员列表：显示所有座位的玩家名和在线状态 */}
-                            {players && players.length > 0 && (
-                                <div className="flex flex-col gap-0.5">
-                                    {players.map((p) => {
-                                        const isSelf = String(p.id) === String(myPlayerId);
-                                        const isEmpty = !p.name;
-                                        return (
-                                            <div key={p.id} className="flex items-center gap-1.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                                    isEmpty ? 'bg-white/20' : p.isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'
-                                                }`} />
-                                                <span className={`truncate ${isSelf ? 'text-white/80' : 'text-white/60'}`}>
-                                                    {isEmpty
-                                                        ? t('hud.status.empty')
-                                                        : p.name}
-                                                </span>
-                                                {isSelf && (
-                                                    <span className="text-white/30">({t('hud.status.self')})</span>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs">
-                        {chatMessages.length === 0 && (
-                            <div className="text-white/20 text-center mt-10 italic">{t('hud.chat.empty')}</div>
-                        )}
-                        {chatMessages.map((msg) => (
-                            <div key={msg.id} className="flex flex-col">
-                                <span className="text-[10px] text-white/40 mb-0.5 font-bold">{msg.senderName}</span>
-                                <div className="bg-white/10 text-white/90 p-2 rounded-lg rounded-tl-none self-start break-words max-w-full">
-                                    {msg.text}
-                                </div>
-                            </div>
-                        ))}
-                        {localChatEmotes.map((event) => {
-                            const emote = resolveHudEmote(event.emoteId);
-                            if (!emote) return null;
-                            return (
-                                <div key={`${event.playerId}:${event.createdAt}`} className="flex flex-col items-end" data-testid={`hud-chat-local-emote-${event.emoteId}`}>
-                                    <span className="mb-0.5 text-[10px] font-bold text-white/40">{myDisplayName}</span>
-                                    <div className="rounded-lg rounded-tr-none bg-cyan-400/10 p-2">
-                                        <OptimizedImage
-                                            src={emote.assetPath}
-                                            alt={emote.label}
-                                            placeholder={false}
-                                            draggable={false}
-                                            className="h-16 w-16 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)]"
-                                        />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <div ref={chatEndRef} />
-                    </div>
-                    {showChatEmotePicker && canUseSeatEmotes && (
-                        <div className="mt-2 rounded-md border border-white/10 bg-white/5 p-2" data-testid="hud-chat-emote-panel">
-                            <EmotePicker
-                                emotes={availableEmotes}
-                                onSelect={(emoteId) => {
-                                    handleSendEmote(emoteId);
-                                    setShowChatEmotePicker(false);
-                                }}
-                            />
-                        </div>
-                    )}
-                    <form onSubmit={handleSendMessage} className="shrink-0 mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
-                        {canUseSeatEmotes && (
-                            <button
-                                type="button"
-                                onClick={() => setShowChatEmotePicker((prev) => !prev)}
-                                aria-label={t('hud.actions.emotes')}
-                                className="p-1.5 bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-200 rounded border border-cyan-300/25 transition-colors"
-                                data-testid="hud-chat-emote-toggle"
-                            >
-                                <SmilePlus size={14} />
-                            </button>
-                        )}
-                        <div className="relative flex-1">
-                            <input
-                                type="text"
-                                value={chatInput}
-                                onChange={e => setChatInput(e.target.value)}
-                                placeholder={isChatReadonly ? t('hud.chat.readonlyPlaceholder') : t('hud.chat.placeholder')}
-                                maxLength={MAX_CHAT_LENGTH}
-                                disabled={isChatReadonly}
-                                className="w-full bg-white/15 border border-white/35 rounded px-2 py-1.5 text-base sm:text-xs text-white placeholder-white/60 focus:outline-none focus:border-neon-blue/70 focus:bg-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
-                            />
-                            {chatInput.length >= MAX_CHAT_LENGTH && (
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-amber-300">
-                                    {t('hud.chat.maxLength', { count: MAX_CHAT_LENGTH })}
-                                </span>
-                            )}
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={isChatReadonly || !chatInput.trim()}
-                            className="p-1.5 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 rounded border border-indigo-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Send size={14} />
-                        </button>
-                    </form>
-                </div>
+                <MatchChatPanel
+                    chat={chat} isOnline={isOnline} isSpectator={isSpectator} matchId={matchId}
+                    players={players} myPlayerId={myPlayerId} myDisplayName={myDisplayName}
+                    emotes={availableEmotes} resolveEmote={resolveHudEmote} canUseEmotes={canUseSeatEmotes}
+                    localEmotes={localChatEmotes} onSendEmote={handleSendEmote}
+                />
             )
         });
     }

@@ -58,6 +58,7 @@ export const AutoResponseToggle = ({
                 `}
                 title={enabled ? t('hud.autoResponseEnabled') : t('hud.autoResponseDisabled')}
                 data-testid="auto-response-toggle"
+                data-tutorial-id="response-toggle"
                 aria-pressed={enabled}
                 style={{
                     ...buttonStyle,

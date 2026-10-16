@@ -16,8 +16,7 @@ import { Server as IOServer, Socket as IOSocket } from 'socket.io';
 import msgpackParser from 'socket.io-msgpack-parser';
 import { nanoid } from 'nanoid';
 import { connectDB } from './src/server/db';
-import { sanitizeChatText } from './src/server/chatUtils';
-import { MAX_CHAT_MESSAGES } from './src/shared/chat';
+import { chatHistoryByMatch, registerMatchChat } from './src/server/matchChat';
 import {
     LOBBY_ALL,
     LOBBY_EVENTS,
@@ -71,13 +70,6 @@ const REMATCH_EVENTS = {
     DEBUG_NEW_ROOM: 'debug:newRoom',
 } as const;
 
-const MATCH_CHAT_EVENTS = {
-    JOIN: 'matchChat:join',
-    LEAVE: 'matchChat:leave',
-    SEND: 'matchChat:send',
-    MESSAGE: 'matchChat:message',
-    HISTORY: 'matchChat:history',
-} as const;
 
 const MATCH_EMOTE_EVENTS = {
     JOIN: 'matchEmote:join',
@@ -148,16 +140,6 @@ const updateRematchReady = (state: RematchVoteState): void => {
     state.ready = votedPlayers.length >= 2;
 };
 
-// 对局聊天历史缓存（内存，对局结束后自动清理）
-interface ChatHistoryMessage {
-    id: string;
-    matchId: string;
-    senderId?: string;
-    senderName: string;
-    text: string;
-    createdAt: string;
-}
-const chatHistoryByMatch = new Map<string, ChatHistoryMessage[]>();
 
 interface MatchEmotePayload {
     matchId: string;
@@ -1396,11 +1378,6 @@ lobbySocketIO.on('connection', (socket) => {
         socket.data.rematchPlayerId = undefined;
 
         // 清理聊天订阅
-        const chatMatchId = socket.data.chatMatchId as string | undefined;
-        if (chatMatchId) {
-            socket.leave(`matchchat:${chatMatchId}`);
-        }
-        socket.data.chatMatchId = undefined;
 
         // 清理局内座位表情订阅
         const emoteMatchId = socket.data.emoteMatchId as string | undefined;
@@ -1455,7 +1432,6 @@ lobbySocketIO.on('connection', (socket) => {
             if (matchSubscribers.get(matchId)?.size === 0) {
                 matchSubscribers.delete(matchId);
                 rematchStateByMatch.delete(matchId);
-                chatHistoryByMatch.delete(matchId);
             }
         }
         socket.data.rematchMatchId = undefined;
@@ -1500,69 +1476,7 @@ lobbySocketIO.on('connection', (socket) => {
         }
     });
 
-    // ========== 对局聊天事件处理 ==========
-
-    socket.on(MATCH_CHAT_EVENTS.JOIN, (payload?: { matchId?: string }) => {
-        const matchId = payload?.matchId;
-        if (!matchId) return;
-
-        const prevMatchId = socket.data.chatMatchId as string | undefined;
-        if (prevMatchId && prevMatchId !== matchId) {
-            socket.leave(`matchchat:${prevMatchId}`);
-        }
-
-        socket.data.chatMatchId = matchId;
-        socket.join(`matchchat:${matchId}`);
-        logger.info(`[MatchChat] ${socket.id} 加入对局聊天 ${matchId}`);
-
-        // 回推历史消息
-        const history = chatHistoryByMatch.get(matchId);
-        if (history && history.length > 0) {
-            socket.emit(MATCH_CHAT_EVENTS.HISTORY, history);
-        }
-    });
-
-    socket.on(MATCH_CHAT_EVENTS.LEAVE, () => {
-        const matchId = socket.data.chatMatchId as string | undefined;
-        if (matchId) {
-            socket.leave(`matchchat:${matchId}`);
-        }
-        socket.data.chatMatchId = undefined;
-    });
-
-    socket.on(MATCH_CHAT_EVENTS.SEND, (payload?: { text?: string; senderId?: string; senderName?: string }) => {
-        const matchId = socket.data.chatMatchId as string | undefined;
-        if (!matchId) return;
-
-        const text = sanitizeChatText(payload?.text ?? '');
-        if (!text) return;
-
-        const senderName = String(payload?.senderName ?? '玩家');
-        const senderId = payload?.senderId ? String(payload.senderId) : undefined;
-
-        const message: ChatHistoryMessage = {
-            id: nanoid(),
-            matchId,
-            senderId,
-            senderName,
-            text,
-            createdAt: new Date().toISOString(),
-        };
-
-        // 缓存到历史记录
-        let history = chatHistoryByMatch.get(matchId);
-        if (!history) {
-            history = [];
-            chatHistoryByMatch.set(matchId, history);
-        }
-        history.push(message);
-        // 超过上限时裁剪旧消息
-        if (history.length > MAX_CHAT_MESSAGES) {
-            chatHistoryByMatch.set(matchId, history.slice(-MAX_CHAT_MESSAGES));
-        }
-
-        lobbySocketIO.to(`matchchat:${matchId}`).emit(MATCH_CHAT_EVENTS.MESSAGE, message);
-    });
+    registerMatchChat(lobbySocketIO, socket, storage);
 
     // ========== 对局座位表情事件处理 ==========
 

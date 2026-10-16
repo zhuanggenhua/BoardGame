@@ -4,7 +4,8 @@
  * 只测试教程能启动、显示基本步骤、并能通过点击 Next 推进
  */
 
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { DiceThroneTutorial } from '../../src/games/dicethrone/tutorial';
 import { test, expect } from '../framework';
 import { dirname, join } from 'node:path';
 
@@ -265,525 +266,110 @@ const assertHighlightAligned = async (
     });
 };
 
-test.describe('DiceThrone Tutorial (Simplified)', () => {
-    test('Tutorial starts and shows initial steps', async ({ page }, testInfo) => {
-        test.setTimeout(120000);
 
-        await setChineseLocale(page);
-        await page.goto('/play/dicethrone/tutorial');
-        await waitForTutorialBoardReady(page, 60000);
-
-        // 等待教学覆盖层出现
-        const overlayNextButton = page.getByRole('button', { name: /^(Next|下一步)$/i }).first();
-        await expect(overlayNextButton).toBeVisible({ timeout: 15000 });
-
-        // 验证教学步骤存在
-        const tutorialStep = page.locator('[data-tutorial-step]').first();
-        await expect(tutorialStep).toBeVisible();
-
-        // 获取当前步骤 ID
-        const stepId = await tutorialStep.getAttribute('data-tutorial-step');
-        console.log('Initial tutorial step:', stepId);
-
-        // 点击 Next 按钮推进几步
-        for (let i = 0; i < 5; i++) {
-            if (await overlayNextButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-                await overlayNextButton.click();
-                await page.waitForTimeout(500);
-            } else {
-                break;
-            }
+/** 从真实教程入口逐步操作；每张提示卡取当前画面，禁止用 dispatch 代替玩家点击。 */
+const playTutorial = async (page: Parameters<typeof test>[0]['page'], testInfo: Parameters<typeof test>[1], useChi: boolean) => {
+    await setChineseLocale(page);
+    await page.goto('/play/dicethrone/tutorial');
+    await waitForTutorialBoardReady(page, 60000);
+    await disableFabMenu(page);
+    const records: Array<{ step: string; action: string; screenshot: string }> = [];
+    const dir = testInfo.outputPath('tutorial-chain');
+    mkdirSync(dir, { recursive: true });
+    const seen = new Set<string>();
+    for (let i = 0; i < DiceThroneTutorial.steps.length + 10; i++) {
+        const overlay = page.locator('[data-tutorial-step]').first();
+        await expect(overlay).toBeVisible({ timeout: 30000 });
+        const id = (await overlay.getAttribute('data-tutorial-step'))!;
+        expect(seen.has(id), '同一步不能卡住: ' + id).toBe(false);
+        seen.add(id);
+        const step = DiceThroneTutorial.steps.find(step => step.id === id)!;
+        expect(step, id).toBeDefined();
+        if (step.aiActions?.length) {
+            await expect.poll(async () => {
+                const state = await readTutorialState(page);
+                return state?.sys?.tutorial?.step?.aiActions?.length ?? 0;
+            }, { timeout: 45000 }).toBe(0);
         }
-
-        // 截图
-        await page.screenshot({ path: testInfo.outputPath('tutorial-progress.png'), fullPage: false });
-
-        // 验证教程仍在运行
-        const stillHasStep = await page.locator('[data-tutorial-step]').first().isVisible({ timeout: 1000 }).catch(() => false);
-        expect(stillHasStep).toBe(true);
-    });
-
-    test('Tutorial can advance through main phases', async ({ page }, testInfo) => {
-        test.setTimeout(120000);
-
-        await setChineseLocale(page);
-        await page.goto('/play/dicethrone/tutorial');
-        await waitForTutorialBoardReady(page, 60000);
-
-        const getTutorialStepId = async () => page
-            .locator('[data-tutorial-step]')
-            .first()
-            .getAttribute('data-tutorial-step')
-            .catch(() => null);
-
-        const clickNextOverlayStep = async () => {
-            const nextButton = page.getByRole('button', { name: /^(Next|下一步)$/i }).first();
-            await expect(nextButton).toBeVisible({ timeout: 5000 });
-            const beforeStep = await getTutorialStepId();
-            await nextButton.click({ force: true });
-            await page.waitForFunction(
-                (prev) => {
-                    const el = document.querySelector('[data-tutorial-step]');
-                    return el && el.getAttribute('data-tutorial-step') !== prev;
-                },
-                beforeStep,
-                { timeout: 5000 },
-            );
-        };
-
-        // 信息步：setup 之后一路点到卖牌教学
-        while (true) {
-            const stepId = await getTutorialStepId();
-            if (stepId === 'sell-card-intro') break;
-            await clickNextOverlayStep();
+        await expect(overlay).toHaveAttribute('data-tutorial-step', id);
+        if (step.highlightTarget) {
+            await expect(page.locator('[data-tutorial-id="' + step.highlightTarget + '"]').first()).toBeVisible();
         }
-
-        // 强制步骤：卖掉 deep thought
-        await dispatchLocalCommand(page, 'SELL_CARD', { cardId: 'card-deep-thought' });
-        await page.waitForFunction(() => {
-            const el = document.querySelector('[data-tutorial-step]');
-            return el?.getAttribute('data-tutorial-step') === 'undo-sell-intro';
-        }, { timeout: 5000 });
-
-        // 信息步：撤回介绍
-        await clickNextOverlayStep();
-
-        // 强制步骤：撤回卖牌
-        await dispatchLocalCommand(page, 'UNDO_SELL_CARD', {});
-        await page.waitForFunction(() => {
-            const el = document.querySelector('[data-tutorial-step]');
-            return el?.getAttribute('data-tutorial-step') === 'advance';
-        }, { timeout: 5000 });
-
-        // 验证到达 advance 步骤
-        const advanceStep = page.locator('[data-tutorial-step="advance"]');
-        await expect(advanceStep).toBeVisible({ timeout: 5000 });
-
-        // 点击 Next Phase 按钮
-        const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-        await advanceButton.click();
-        await page.waitForFunction(() => {
-            const el = document.querySelector('[data-tutorial-step]');
-            const stepId = el?.getAttribute('data-tutorial-step');
-            return stepId === 'dice-tray' || stepId === 'dice-roll' || stepId === 'play-six';
-        }, { timeout: 10000 });
-
-        // 截图
-        await page.screenshot({ path: testInfo.outputPath('tutorial-after-advance.png'), fullPage: false });
-
-        // 验证进入了新阶段（骰子相关步骤）
-        const diceStep = await getTutorialStepId();
-        console.log('After advance, step:', diceStep);
-        expect(['dice-tray', 'dice-roll', 'play-six']).toContain(diceStep);
-    });
-
-    test('Tutorial roll visual should not block next required action', async ({ page }, testInfo) => {
-        test.setTimeout(120000);
-
-        await setChineseLocale(page);
-        await page.goto('/play/dicethrone/tutorial');
-        await waitForTutorialBoardReady(page, 60000);
-
-        const getTutorialStepId = async () => page
-            .locator('[data-tutorial-step]')
-            .first()
-            .getAttribute('data-tutorial-step')
-            .catch(() => null);
-
-        const clickNextOverlayStep = async () => {
-            const nextButton = page.getByRole('button', { name: /^(Next|下一步)$/i }).first();
-            const beforeStep = await getTutorialStepId();
-            await expect(nextButton).toBeVisible({ timeout: 5000 });
-            await nextButton.click({ force: true });
-            await page.waitForFunction(
-                (prev) => {
-                    const el = document.querySelector('[data-tutorial-step]');
-                    return el && el.getAttribute('data-tutorial-step') !== prev;
-                },
-                beforeStep,
-                { timeout: 5000 },
-            );
-        };
-
-        while (true) {
-            const stepId = await getTutorialStepId();
-            if (stepId === 'sell-card-intro') break;
-            await clickNextOverlayStep();
-        }
-
-        await dispatchLocalCommand(page, 'SELL_CARD', { cardId: 'card-deep-thought' });
-        await page.waitForFunction(() => document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step') === 'undo-sell-intro', { timeout: 5000 });
-        await clickNextOverlayStep();
-        await dispatchLocalCommand(page, 'UNDO_SELL_CARD', {});
-        await page.waitForFunction(() => document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step') === 'advance', { timeout: 5000 });
-
-        const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-        await advanceButton.click();
-        await page.waitForFunction(() => {
-            const stepId = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-            return stepId === 'dice-tray' || stepId === 'dice-roll';
-        }, { timeout: 10000 });
-
-        if (await page.locator('[data-tutorial-step="dice-tray"]').isVisible().catch(() => false)) {
-            await clickNextOverlayStep();
-        }
-
-        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 10000 });
-        await rollButton.click();
-
-        const handCard = page.locator('[data-card-id="card-play-six"]').first();
-        await expect(handCard).toBeVisible({ timeout: 10000 });
-        await dragHandCardToPlay(page, 'card-play-six');
-
-        await page.waitForFunction(() => {
-            return document.body.textContent?.includes('选择要设为6的骰子');
-        }, { timeout: 10000 });
-
-        const firstDieButton = page.locator('[data-testid="die-button-0"]');
-        await expect(firstDieButton).toBeVisible({ timeout: 10000 });
-        await firstDieButton.click();
-
-        await page.waitForFunction(
-            () => document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step') === 'dice-confirm',
-            { timeout: 10000 },
-        );
-
-        const evidencePath = join(
-            process.cwd(),
-            'test-results',
-            'evidence-screenshots',
-            'dicethrone-tutorial-simple.e2e',
-            'tutorial-roll-visual-should-not-block-next-required-action',
-            'tutorial-roll-visual-non-blocking.png',
-        );
-        mkdirSync(dirname(evidencePath), { recursive: true });
-        await page.screenshot({ path: evidencePath, fullPage: false });
-        await page.screenshot({ path: testInfo.outputPath('tutorial-roll-visual-non-blocking.png'), fullPage: false });
-
-        expect(await getTutorialStepId()).toBe('dice-confirm');
-    });
-
-    test('移动端教程蓝框应在真实点击全流程中与目标元素对齐', async ({ page }, testInfo) => {
-        test.setTimeout(240000);
-
-        await setChineseLocale(page);
-        await page.setViewportSize(MOBILE_LANDSCAPE_VIEWPORT);
-        await page.goto('/play/dicethrone/tutorial');
-        await waitForTutorialBoardReady(page, 60000);
-        await disableFabMenu(page);
-
-        while ((await page.locator('[data-tutorial-step]').first().getAttribute('data-tutorial-step')) !== 'stats') {
+        await page.mouse.move(2,2);
+        await page.waitForTimeout(350);
+        const filename = String(i + 1).padStart(2,'0') + '-' + id + '.png';
+        await page.screenshot({ path: join(dir, filename), fullPage: false });
+        records.push({ step: id, action: step.infoStep || step.aiActions ? '阅读当前规则或公开结果' : '操作正式入口', screenshot: filename });
+        if (id === 'finish') {
+            expect(seen.has('defense-roll')).toBe(true);
+            expect(seen.has('token-response-use')).toBe(true);
+            const state = await readTutorialState(page);
+            expect(state.core.players['0'].abilityLevels.meditation).toBe(2);
+            expect(state.core.players['0'].statusEffects.knockdown ?? 0).toBe(0);
+            writeFileSync(join(dir,'chain.json'), JSON.stringify({ gameId: 'dicethrone', evidenceCategory: 'tutorial', useChi, records },null,2));
             await clickNextOverlayStep(page);
+            return;
         }
-
-        const evidenceDir = join(
-            process.cwd(),
-            'test-results',
-            'evidence-screenshots',
-            'dicethrone-tutorial-simple.e2e',
-            'tutorial-highlight-mobile-real-click-flow',
-        );
-        mkdirSync(evidenceDir, { recursive: true });
-        const captureAlignedStep = async (
-            sequence: number,
-            stepId: string,
-            targetId: string,
-        ) => assertHighlightAligned(page, {
-            stepId,
-            targetId,
-            testInfo,
-            evidenceDir,
-            screenshotKey: `${String(sequence).padStart(2, '0')}-${stepId}`,
-        });
-
-        await captureAlignedStep(1, 'stats', 'player-stats');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(2, 'phases', 'phase-indicator');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(3, 'player-board', 'player-board');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(4, 'tip-board', 'tip-board');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(5, 'hand', 'hand-area');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(6, 'discard', 'discard-pile');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(7, 'status-tokens', 'status-tokens');
-        await clickNextOverlayStep(page);
-
-        await captureAlignedStep(8, 'sell-card-intro', 'hand-area');
-        await dragHandCardToDiscard(page, 'card-deep-thought');
-        await waitForTutorialStep(page, 'undo-sell-intro', 10000);
-
-        await captureAlignedStep(9, 'undo-sell-intro', 'discard-pile');
-        await clickNextOverlayStep(page);
-        await captureAlignedStep(10, 'undo-sell', 'discard-pile');
-        await page.getByTestId('discard-pile').click();
-        await waitForTutorialStep(page, 'advance', 10000);
-
-        await captureAlignedStep(11, 'advance', 'advance-phase-button');
-        await page.locator('[data-tutorial-id="advance-phase-button"]').click();
-
-        const postAdvanceStep = await waitForTutorialStepIn(page, ['dice-tray', 'dice-roll', 'play-six'], 15000);
-        if (postAdvanceStep === 'dice-tray') {
-            await captureAlignedStep(12, 'dice-tray', 'dice-tray');
+        if (step.infoStep || step.aiActions?.length) {
             await clickNextOverlayStep(page);
+            continue;
         }
-
-        await waitForTutorialStepIn(page, ['dice-roll', 'play-six'], 10000);
-        if (await page.locator('[data-tutorial-step="dice-roll"]').isVisible().catch(() => false)) {
-            await captureAlignedStep(13, 'dice-roll', 'dice-roll-button');
-            await page.locator('[data-tutorial-id="dice-roll-button"]').click();
-        }
-
-        await waitForTutorialStep(page, 'play-six', 10000);
-        await captureAlignedStep(14, 'play-six', 'hand-area');
-        await clickHandCardVisibleArea(page, 'card-play-six');
-        await waitForTutorialStep(page, 'play-six-modify', 10000);
-        await captureAlignedStep(15, 'play-six-modify', 'dice-tray');
-        await page.locator('[data-testid="die-button-0"]').click();
-        await finishPlaySixDiceModifyIfNeeded(page);
-        await captureAlignedStep(16, 'dice-confirm', 'dice-confirm-button');
-        await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
-
-        await waitForTutorialStep(page, 'abilities', 10000);
-        await captureAlignedStep(17, 'abilities', 'ability-slots');
-        await clickAbilitySlot(page, 'fist');
-
-        await waitForTutorialStep(page, 'resolve-attack', 10000);
-        await captureAlignedStep(18, 'resolve-attack', 'advance-phase-button');
-        await page.locator('[data-tutorial-id="advance-phase-button"]').click();
-
-        await waitForTutorialStepIn(page, ['opponent-defense', 'main2-intro'], 30000);
-        if (await page.locator('[data-tutorial-step="opponent-defense"]').isVisible().catch(() => false)) {
-            await waitForTutorialStep(page, 'main2-intro', 30000);
-        }
-
-        await captureAlignedStep(19, 'main2-intro', 'hand-area');
-        await clickNextOverlayStep(page);
-
-        await captureAlignedStep(20, 'enlightenment-play', 'hand-area');
-        await clickHandCardVisibleArea(page, 'card-enlightenment');
-        await expectRightTrayBonusDiceConfirmation(page, () => readTutorialState(page));
-        await settleCurrentBonusDice(page, () => readTutorialState(page), {});
-
-        await waitForTutorialStep(page, 'inner-peace', 10000);
-        await captureAlignedStep(21, 'inner-peace', 'hand-area');
-        await clickHandCardVisibleArea(page, 'card-inner-peace');
-
-        const postInnerPeaceStep = await waitForTutorialStepIn(page, ['inner-peace-response', 'ai-turn-intro'], 10000);
-        if (postInnerPeaceStep === 'inner-peace-response') {
-            await captureAlignedStep(22, 'inner-peace-response', 'response-pass-button');
-            await page.getByTestId('dicethrone-response-pass-button').click();
-        }
-
-        await waitForTutorialStep(page, 'ai-turn-intro', 10000);
-        await clickNextOverlayStep(page);
-        await waitForTutorialStep(page, 'knockdown-explain', 45000);
-        await captureAlignedStep(23, 'knockdown-explain', 'status-tokens');
-        await clickNextOverlayStep(page);
-
-        await captureAlignedStep(24, 'purify-use', 'status-tokens');
-        const purifyToken = page.getByTestId('dt-player-0-token-purify-hit-target');
-        await expect(purifyToken).toBeVisible({ timeout: 10000 });
-        await purifyToken.click();
-        await expect(page.getByRole('heading', { name: /使用净化|Purify/i }).first()).toBeVisible({ timeout: 10000 });
-        await page.getByRole('button', { name: /^确认$|^Confirm$/i }).last().click();
-
-        await waitForTutorialStep(page, 'meditation-2', 15000);
-        await captureAlignedStep(25, 'meditation-2', 'hand-area');
-
-        const beforePrevious = await readTutorialState(page);
-        expect(beforePrevious?.sys?.phase).toBe('main1');
-        expect(beforePrevious?.core?.activePlayerId).toBe('0');
-        expect(beforePrevious?.core?.players?.['0']?.hand?.map((card: { id: string }) => card.id)).toContain('card-meditation-2');
-        expect(beforePrevious?.core?.players?.['0']?.statusEffects?.knockdown ?? 0).toBe(0);
-        expect(beforePrevious?.core?.players?.['0']?.tokens?.purify ?? 0).toBe(0);
-
-        await page.getByRole('button', { name: /^上一步$|^Previous$/i }).first().click();
-        await waitForTutorialStep(page, 'purify-use', 10000);
-
-        const afterPrevious = await readTutorialState(page);
-        expect(afterPrevious?.sys?.phase).toBe('main1');
-        expect(afterPrevious?.core?.activePlayerId).toBe('0');
-        expect(afterPrevious?.core?.players?.['0']?.hand?.map((card: { id: string }) => card.id)).toContain('card-meditation-2');
-        expect(afterPrevious?.core?.players?.['0']?.statusEffects?.knockdown).toBe(1);
-        expect(afterPrevious?.core?.players?.['0']?.tokens?.purify).toBe(1);
-
-        // 回到净化步骤后重新完成一次净化，继续验证后续教程仍可走通。
-        const purifyTokenAfterPrevious = page.getByTestId('dt-player-0-token-purify-hit-target');
-        await expect(purifyTokenAfterPrevious).toBeVisible({ timeout: 10000 });
-        await purifyTokenAfterPrevious.click();
-        await expect(page.getByRole('heading', { name: /使用净化|Purify/i }).first()).toBeVisible({ timeout: 10000 });
-        await page.getByRole('button', { name: /^确认$|^Confirm$/i }).last().click();
-        await waitForTutorialStep(page, 'meditation-2', 15000);
-
-        await clickHandCardVisibleArea(page, 'card-meditation-2');
-
-        await waitForTutorialStep(page, 'finish', 30000);
-        await page.screenshot({
-            path: testInfo.outputPath('26-finish.png'),
-            fullPage: false,
-        });
-        await page.screenshot({
-            path: join(evidenceDir, '26-finish.png'),
-            fullPage: false,
-        });
-    });
-
-    test('顿悟后的右侧奖励骰骰盘不应卡死手牌区', async ({ page }, testInfo) => {
-        test.setTimeout(180000);
-
-        await setChineseLocale(page);
-        await page.goto('/play/dicethrone/tutorial');
-        await waitForTutorialBoardReady(page, 60000);
-
-        const getTutorialStepId = async () => page
-            .locator('[data-tutorial-step]')
-            .first()
-            .getAttribute('data-tutorial-step')
-            .catch(() => null);
-
-        const advanceToStep = async (targetStep: string, timeout = 15000) => {
-            const deadline = Date.now() + timeout;
-            while (Date.now() < deadline) {
-                const stepId = await getTutorialStepId();
-                if (stepId === targetStep) return;
-                await clickNextOverlayStep(page);
-                await page.waitForTimeout(200);
-            }
-            throw new Error(`未能到达 ${targetStep} 步骤（最终步骤=${await getTutorialStepId()}）`);
-        };
-
-        while ((await getTutorialStepId()) !== 'sell-card-intro') {
-            await clickNextOverlayStep(page);
-        }
-
-        await dispatchLocalCommand(page, 'SELL_CARD', { cardId: 'card-deep-thought' });
-        await waitForTutorialStep(page, 'undo-sell-intro', 5000);
-        await clickNextOverlayStep(page);
-        await dispatchLocalCommand(page, 'UNDO_SELL_CARD', {});
-        await waitForTutorialStep(page, 'advance', 5000);
-
-        const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-        await advanceButton.click();
-        await page.waitForFunction(() => {
-            const stepId = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-            return stepId === 'dice-tray' || stepId === 'dice-roll' || stepId === 'play-six';
-        }, { timeout: 10000 });
-
-        if ((await getTutorialStepId()) === 'dice-tray') {
-            await clickNextOverlayStep(page);
-        }
-
-        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 10000 });
-        await rollButton.click();
-        await page.waitForTimeout(300);
-
-        if ((await getTutorialStepId()) === 'play-six') {
-            await dispatchLocalCommand(page, 'PLAY_CARD', { cardId: 'card-play-six' });
-            await dispatchLocalCommand(page, 'MODIFY_DIE', { dieId: 0, newValue: 6 });
-            await dispatchLocalCommand(page, 'SYS_INTERACTION_CONFIRM', {});
-            await waitForTutorialStep(page, 'dice-confirm', 10000);
-        }
-
-        if ((await getTutorialStepId()) === 'dice-confirm') {
-            const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
-            await expect(confirmButton).toBeEnabled({ timeout: 10000 });
-            await confirmButton.click();
-            await page.waitForTimeout(300);
-        }
-
-        if ((await getTutorialStepId()) === 'abilities') {
-            await dispatchLocalCommand(page, 'SELECT_ABILITY', { abilityId: 'fist-technique-4' });
-            await waitForTutorialStep(page, 'resolve-attack', 10000);
-        }
-
-        await expect(advanceButton).toBeEnabled({ timeout: 10000 });
-        await advanceButton.click({ force: true });
-        await advanceToStep('main2-intro', 30000);
-        await clickNextOverlayStep(page);
-        await advanceToStep('enlightenment-play', 15000);
-
-        const evidenceDir = join(
-            process.cwd(),
-            'test-results',
-            'evidence-screenshots',
-            'dicethrone-tutorial-simple.e2e',
-            'tutorial-enlightenment-hand-area',
-        );
-        mkdirSync(evidenceDir, { recursive: true });
-        let capturedOverlayVisible = false;
-        let openedEnlightenmentOverlay = false;
-        for (let attempt = 0; attempt < 3; attempt += 1) {
-            await clickHandCardVisibleArea(page, 'card-enlightenment');
-            try {
-                await expectRightTrayBonusDiceConfirmation(page, () => readTutorialState(page));
-                if (!capturedOverlayVisible) {
-                    capturedOverlayVisible = true;
-                    await getRightTrayDiceTray(page).screenshot({
-                        path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-right-tray.png'),
-                    });
-                    await getRightTrayDiceTray(page).screenshot({
-                        path: testInfo.outputPath('tutorial-enlightenment-bonus-die-right-tray.png'),
-                    });
-                    await page.screenshot({
-                        path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-visible.png'),
-                        fullPage: false,
-                    });
-                    await page.screenshot({
-                        path: testInfo.outputPath('tutorial-enlightenment-bonus-die-visible.png'),
-                        fullPage: false,
-                    });
+        switch (id) {
+            case 'sell-card-intro': await dragHandCardToDiscard(page,'card-deep-thought'); break;
+            case 'undo-sell': await page.getByTestId('discard-pile').click(); break;
+            case 'advance': case 'resolve-attack': case 'end-turn': case 'discard-finish': case 'defense-resolve':
+                await page.locator('[data-tutorial-id="advance-phase-button"]').click(); break;
+            case 'dice-roll': case 'dice-reroll': case 'defense-roll':
+                await page.locator('[data-tutorial-id="dice-roll-button"]').click(); break;
+            case 'dice-lock':
+                await page.getByTestId('die-button-0').click(); break;
+            case 'play-six': await clickHandCardVisibleArea(page,'card-play-six'); break;
+            case 'play-six-modify':
+                await page.getByTestId('die-button-0').click();
+                await finishPlaySixDiceModifyIfNeeded(page); break;
+            case 'dice-confirm': case 'defense-confirm': case 'enlightenment-confirm':
+                await page.locator('[data-tutorial-id="dice-confirm-button"]').click(); break;
+            case 'abilities': await clickAbilitySlot(page,'fist'); break;
+            case 'enlightenment-play': await clickHandCardVisibleArea(page,'card-enlightenment'); break;
+            case 'inner-peace': await clickHandCardVisibleArea(page,'card-inner-peace'); break;
+            case 'inner-peace-response': case 'token-response-pass':
+                await page.getByTestId('dicethrone-response-pass-button').click(); break;
+            case 'token-response-use': {
+                const before = await readTutorialState(page);
+                expect(before.core.pendingDamage.responderId).toBe('0');
+                if (useChi) {
+                    await page.getByTestId('dt-player-0-token-taiji-hit-target').click();
+                    await expect.poll(async () => (await readTutorialState(page)).core.players['0'].tokens.taiji).toBe(before.core.players['0'].tokens.taiji - 1);
+                } else {
+                    await page.getByTestId('dicethrone-response-pass-button').click();
+                    await expect.poll(async () => (await readTutorialState(page)).core.pendingDamage).toBeUndefined();
                 }
-                openedEnlightenmentOverlay = true;
                 break;
-            } catch {
-                await page.waitForTimeout(250);
             }
+            case 'purify-use':
+                await page.getByTestId('dt-player-0-token-purify-hit-target').click();
+                await expect(page.getByRole('heading', { name: /使用净化|Purify/i }).first()).toBeVisible();
+                await page.getByRole('button', { name: /^确认$|^Confirm$/i }).last().click(); break;
+            case 'meditation-2': await clickHandCardVisibleArea(page,'card-meditation-2'); break;
+            default: throw Error('未实现真实操作: ' + id);
         }
-        expect(openedEnlightenmentOverlay).toBe(true);
+        await expect.poll(async () => page.locator('[data-tutorial-step]').first().getAttribute('data-tutorial-step'), { timeout: 30000 }).not.toBe(id);
+    }
+    throw Error('教程没有到达结束步骤');
+};
 
-        await settleCurrentBonusDice(page, () => readTutorialState(page), {});
-        await waitForTutorialStep(page, 'inner-peace', 10000);
-        await clickHandCardVisibleArea(page, 'card-inner-peace');
-        await page.screenshot({
-            path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-auto-close.png'),
-            fullPage: false,
-        });
-        await page.screenshot({
-            path: testInfo.outputPath('tutorial-enlightenment-bonus-die-auto-close.png'),
-            fullPage: false,
-        });
-
-        await page.screenshot({
-            path: join(evidenceDir, 'tutorial-enlightenment-hand-area-after-close.png'),
-            fullPage: false,
-        });
-        await page.screenshot({
-            path: testInfo.outputPath('tutorial-enlightenment-hand-area-after-close.png'),
-            fullPage: false,
-        });
-
-        const postInnerPeaceStep = await waitForTutorialStepIn(page, ['inner-peace-response', 'ai-turn-intro'], 10000);
-        if (postInnerPeaceStep === 'inner-peace-response') {
-            await page.getByTestId('dicethrone-response-pass-button').click();
-        }
-
-        const advancedToAiTurn = await page.waitForFunction(() => {
-            const visibleStepId = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-            const runtimeStepId = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.tutorial?.step?.id ?? null;
-            return visibleStepId === 'ai-turn-intro'
-                || visibleStepId === 'ai-turn'
-                || runtimeStepId === 'ai-turn-intro'
-                || runtimeStepId === 'ai-turn';
-        }, { timeout: 10000 }).then(() => true).catch(() => false);
-
-        expect(advancedToAiTurn).toBe(true);
+test.describe('DiceThrone 完整双人教学主线', () => {
+    test.setTimeout(300000);
+    test('桌面：锁骰重掷、亲手防御并使用太极减伤', async ({ page }, testInfo) => {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await playTutorial(page,testInfo,true);
+    });
+    test('手机横屏：亲手完成教学主线', async ({ page }, testInfo) => {
+        await page.setViewportSize(MOBILE_LANDSCAPE_VIEWPORT);
+        await playTutorial(page,testInfo,true);
+    });
+    test('响应分支：直接放弃后仍可结算并完成后续教学', async ({ page }, testInfo) => {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await playTutorial(page,testInfo,false);
     });
 });

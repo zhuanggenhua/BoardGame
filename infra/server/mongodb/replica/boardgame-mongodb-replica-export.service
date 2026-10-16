@@ -1,0 +1,8 @@
+[Unit]
+Description=Export latest BoardGame MongoDB snapshot for Acer standby
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/boardgame-mongodb-replica-export

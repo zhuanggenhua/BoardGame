@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily BoardGame MongoDB backup timer
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+RandomizedDelaySec=10m
+Persistent=true
+Unit=boardgame-mongodb-backup.service
+
+[Install]
+WantedBy=timers.target

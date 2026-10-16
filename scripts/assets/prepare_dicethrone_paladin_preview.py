@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Create and apply a reversible local preview of the refreshed Paladin assets."""
+"""Create and apply a reversible local preview of the refreshed Paladin assets.
+
+压缩依赖 Pillow、numpy、opencv-python，以及项目 Node 依赖 sharp。
+"""
 
 from __future__ import annotations
 
@@ -11,6 +14,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from PIL import Image
 
@@ -26,12 +30,12 @@ ATLAS_COLUMNS = 10
 ATLAS_ROWS = 4
 CELL_GUTTER = 2
 
-# Source image number for each existing runtime previewRef index (0 through 32).
-# This preserves the order consumed by PALADIN_CARDS while using the new source scans.
+# 每个既有 previewRef.index 对应的源图编号；以圣骑士卡牌录入核对.md为准。
+# 覆盖图片1-33只证明数量，卡牌身份还必须逐张对照完整卡面与运行时效果。
 SOURCE_BY_FRAME = [
-    28, 29, 30, 31, 32, 27, 19, 26, 23, 25,
-    24, 33, 20, 21, 22, 18, 17, 16, 15, 14,
-    12, 11, 13, 10, 9, 8, 7, 6, 5, 4,
+    28, 29, 30, 31, 32, 27, 19, 26, 24, 25,
+    23, 33, 20, 21, 22, 18, 17, 16, 15, 14,
+    13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
     3, 2, 1,
 ]
 
@@ -45,9 +49,40 @@ def sha256(path: Path) -> str:
 
 
 def write_webp(source: Path, target: Path) -> None:
+    """保持原尺寸及 alpha，保护高对比边缘后压缩扫描图。"""
+    import cv2
+    import numpy as np
+
+    cv2.setNumThreads(2)
     target.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(source) as image:
-        image.save(target, "WEBP", quality=95, method=6)
+        pixels = np.array(image.convert("RGBA"))
+    rgb = pixels[:, :, :3]
+    edges = cv2.Canny(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), 90, 180)
+    edges = cv2.dilate(edges, np.ones((3, 3), np.uint8)) != 0
+    alpha_border = cv2.dilate(
+        (pixels[:, :, 3] != 255).astype("uint8"), np.ones((5, 5), np.uint8)
+    ) != 0
+    filtered = cv2.GaussianBlur(rgb, (0, 0), 0.9)
+    protected = edges | alpha_border
+    filtered[protected] = rgb[protected]
+    pixels[:, :, :3] = filtered
+    with TemporaryDirectory(prefix="dicethrone-paladin-") as temporary:
+        prepared = Path(temporary) / "prepared.png"
+        encoded = Path(temporary) / "encoded.webp"
+        Image.fromarray(pixels).save(prepared)
+        subprocess.run(
+            [
+                "node", "-e",
+                "require('sharp')(process.argv[1]).webp({quality:75,effort:6,"
+                "preset:'text',smartSubsample:true,alphaQuality:100})"
+                ".toFile(process.argv[2]).catch(error=>{console.error(error);process.exit(1);});",
+                str(prepared), str(encoded),
+            ],
+            cwd=ROOT,
+            check=True,
+        )
+        shutil.copy2(encoded, target)
 
 
 def source_card_path(source: Path, image_number: int) -> Path:

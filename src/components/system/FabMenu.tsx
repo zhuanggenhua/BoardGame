@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { createPortal } from 'react-dom';
@@ -26,7 +26,7 @@ export interface FabAction {
     active?: boolean;    // 通知提示
     onActivate?: (isActive: boolean) => void;
     preview?: ReactNode; // 通知简略信息
-    mobilePopoverVerticalAnchor?: 'button' | 'column';
+    mobilePopoverVerticalAnchor?: 'button' | 'column' | 'viewport';
 }
 
 export type FabPanelRenderContext = {
@@ -829,6 +829,7 @@ const Panel = ({
     const resolvedReference = referenceRect ?? resolvedAnchor;
     const verticalAnchorMode = item.mobilePopoverVerticalAnchor === 'column' ? 'column' : 'button';
     const resolvedVerticalAnchor = verticalAnchorMode === 'column' ? resolvedReference : resolvedAnchor;
+    const useViewportHeight = item.mobilePopoverVerticalAnchor === 'viewport' && viewportHeight < 480;
     const panelAnchorOffset = resolvedAnchor.width + panelGap;
     const isMobileSheetPanel = isMobileViewport && item.mobilePanelVariant === 'sheet';
     const panelWidth = isMobileViewport ? 260 : 300;
@@ -852,17 +853,19 @@ const Panel = ({
     const horizontalPlacement: FabAlignment['h'] = referenceRect
         ? (spaceRight === spaceLeft ? alignment.h : (spaceRight >= spaceLeft ? 'right' : 'left'))
         : alignment.h;
-    const verticalPlacement: FabAlignment['v'] = anchorSpaceBelow === anchorSpaceAbove
+    const verticalPlacement: FabAlignment['v'] = useViewportHeight ? 'top' : anchorSpaceBelow === anchorSpaceAbove
         ? alignment.v
         : (anchorSpaceBelow >= anchorSpaceAbove ? 'top' : 'bottom');
     const safeAvailableWidth = horizontalPlacement === 'right' ? spaceRight : spaceLeft;
-    const safeAvailableHeight = verticalPlacement === 'top' ? anchorSpaceBelow : anchorSpaceAbove;
+    const safeAvailableHeight = useViewportHeight
+        ? Math.max(0, viewportHeight - safeAreaInsets.top - safeAreaInsets.bottom - edgePadding * 2)
+        : verticalPlacement === 'top' ? anchorSpaceBelow : anchorSpaceAbove;
     const panelContainerTopMin = safeAreaInsets.top;
     const panelContainerTopMax = Math.max(
         panelContainerTopMin,
         viewportHeight - safeAreaInsets.bottom - resolvedVerticalAnchor.height,
     );
-    const panelContainerTop = Math.min(
+    const panelContainerTop = useViewportHeight ? safeAreaInsets.top + edgePadding : Math.min(
         Math.max(resolvedVerticalAnchor.top, panelContainerTopMin),
         panelContainerTopMax,
     );
@@ -990,6 +993,8 @@ const Panel = ({
                         width: resolvedPanelWidth,
                         maxWidth: panelMaxWidth,
                         maxHeight: panelMaxHeight,
+                        // 供内部滚动面板使用同一份可用高度，避免外层裁切输入区。
+                        ...({ '--fab-panel-content-height': `${Math.max(0, safeAvailableHeight - 76)}px` } as CSSProperties),
                         minWidth: 0,
                         pointerEvents: 'auto',
                         [horizontalPlacement === 'right' ? 'left' : 'right']: panelAnchorOffset,

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+database=boardgame
+container=boardgame-mongodb
+replica_dir=/home/admin/boardgame-replica
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+install -d -o admin -g admin -m 0700 "$replica_dir"
+tmp=$(mktemp "$replica_dir/.boardgame-latest.${stamp}.XXXXXX.archive.gz")
+trap 'rm -f "$tmp"' EXIT
+
+docker exec "$container" mongodump --db="$database" --archive --gzip > "$tmp"
+gzip -t "$tmp"
+test -s "$tmp"
+chmod 0600 "$tmp"
+mv -- "$tmp" "$replica_dir/boardgame-latest.archive.gz"
+sha256sum "$replica_dir/boardgame-latest.archive.gz" > "$replica_dir/boardgame-latest.archive.gz.sha256"
+chmod 0600 "$replica_dir/boardgame-latest.archive.gz" "$replica_dir/boardgame-latest.archive.gz.sha256"
+chown admin:admin "$replica_dir/boardgame-latest.archive.gz" "$replica_dir/boardgame-latest.archive.gz.sha256"
+printf 'replica=%s bytes=%s sha256=%s\n' "$replica_dir/boardgame-latest.archive.gz" "$(stat -c %s "$replica_dir/boardgame-latest.archive.gz")" "$(sha256sum "$replica_dir/boardgame-latest.archive.gz" | cut -d' ' -f1)"
