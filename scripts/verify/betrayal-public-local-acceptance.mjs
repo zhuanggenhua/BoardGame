@@ -411,10 +411,11 @@ try {
   if (video) {
     try {
       const sourceVideoPath = await video.path();
-      const videoPath = path.join(runDir, '00-完整真实流程录屏.webm');
+      const videoFilename = isPawnSelectionToggleCase ? '00-棋子切换诊断录屏.webm' : '00-完整真实流程录屏.webm';
+      const videoPath = path.join(runDir, videoFilename);
       await copyFile(sourceVideoPath, videoPath);
       const videoStat = await stat(videoPath);
-      if (videoStat.size > 0) media.unshift({ path: path.basename(videoPath), type: 'video', label: 'Real user flow recording from the deployed /local entry.', viewport, recordingStartedAt, recordingStoppedAt });
+      if (videoStat.size > 0) media.unshift({ path: path.basename(videoPath), type: 'video', label: isPawnSelectionToggleCase ? 'Short diagnostic recording through the first stable map and pawn selection toggle.' : 'Real user flow recording from the deployed /local entry.', viewport, recordingStartedAt, recordingStoppedAt });
     } catch (error) {
       diagnostics.videoError = error instanceof Error ? error.message : String(error);
     }
@@ -450,7 +451,7 @@ const report = {
   diagnostics,
   steps,
   media: media.map((item) => ({ ...item, absolutePath: path.join(runDir, item.path), bytes: null })),
-  functionalStatus: functionalStatus ? 'PASS' : 'REVISE',
+  functionalStatus,
   visualReview: { status: isPawnSelectionToggleCase ? 'NOT_REQUESTED' : 'PENDING', reviewer: null, files: screenshots.map((item) => item.path) },
   verdict: isPawnSelectionToggleCase ? 'REVISE' : fullFlowPassed ? 'REVIEW_PENDING' : 'REVISE',
   failure: fatalError,
