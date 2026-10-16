@@ -13,6 +13,7 @@ import {
 } from './matchRoomTutorialStageRuntime';
 import { readCompletedTutorialIds } from './useMatchRoomTutorialLifecycle';
 import { getVisibleTutorialCatalogEntries } from './useMatchRoomRuntimeSetup';
+import { shouldShowMatchRoomTutorialCatalog } from './matchRoomTutorialCatalog';
 
 const fallbackTutorialChapterAccents = ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'] as const;
 
@@ -134,12 +135,7 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
 };
 
 export const MatchRoomTutorialBoardStage = ({ stage }: { stage: MatchRoomTutorialBoardStageModel }) => {
-    const tutorialCatalog = stage.tutorialCatalog;
-    const shouldShowCatalog = !stage.tutorialId
-        && Boolean(tutorialCatalog)
-        && getVisibleTutorialCatalogEntries(tutorialCatalog).length > 1;
-
-    if (shouldShowCatalog) {
+    if (shouldShowMatchRoomTutorialCatalog(stage)) {
         return (
             <GameModeProvider mode="tutorial">
                 <MatchRoomTutorialCatalogStage stage={stage} />

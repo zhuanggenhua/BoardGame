@@ -1,0 +1,1544 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_mobile_final"
+  },
+  "sourceRun": "tutorial-rebuild-20261016-r27-upgrade-copy",
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/01-intro.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开场胜负说明和下一步完整可读，左侧生命与战斗点数、右上对手摘要均可见。",
+      "score": 94,
+      "sha256": "1865355d3330a5f74e9b4435409116b6f01425cef2deff220b064d1bb519d310",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/01-intro.png",
+        "sha256": "efc35843c9928e12f9ce5b3cd07aa39bb5e8e693280b22a293076d338127836a",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/02-stats.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "资源说明已移至下方，左侧自身资源与上方对手体力及战斗点数均完整可读。",
+      "score": 94,
+      "sha256": "47e13c39d357a232b76e140bc5e5847ffea493e4f694d2003f79f6d14383ab7d",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/02-stats.png",
+        "sha256": "3f0d20cd490f2c1193f3d61daf1542fd7d875b0e5c8ba86b09744f84727c4f73",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/03-phases.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左上回合顺序完整高亮，右侧说明和前后步按钮清楚可读。",
+      "score": 94,
+      "sha256": "5c652bd9a79192859b95ef574aac1667f65c443ed9a319983abd69c1ea5cbef0",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/03-phases.png",
+        "sha256": "5c652bd9a79192859b95ef574aac1667f65c443ed9a319983abd69c1ea5cbef0",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/04-player-board.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家面板完整呈现并被主边界标示，说明卡位于右上且目标不被遮挡。",
+      "score": 94,
+      "sha256": "60dd85d6a1dad9adc43bb936ca586f9ac12d152f369634a156c94de5f5937c27",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/04-player-board.png",
+        "sha256": "819f9e746765dd3735ed6ebc0d6979ce2d449fbee7c96a41b76f4833e2bdd9c3",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/05-tip-board.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧提示板完整高亮，展开阅读的下一步入口清楚，两侧资源可见。",
+      "score": 94,
+      "sha256": "8d7c01940ed3f60d4aeece1bd561a71e33d4d4e599c3fa180a5af85f77cfe930",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/05-tip-board.png",
+        "sha256": "8d7c01940ed3f60d4aeece1bd561a71e33d4d4e599c3fa180a5af85f77cfe930",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/06-tip-inspect.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示板放大镜与本体清楚可点，当前动作说明完整，资源摘要可见。",
+      "score": 94,
+      "sha256": "29768f89338fdca156f595cb3e7e18a1251da52d6b6e4e607c7610a1a9b45e53",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/06-tip-inspect.png",
+        "sha256": "55d308bcb67b120f44b1e547e1cd4d3ff9c5741395dafa7cecd8641e69db2faf",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/07-tip-inspect-close.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完整提示板已展开，右上关闭按钮明显，阅读说明与关闭目标没有重叠。",
+      "score": 94,
+      "sha256": "749a60059f33f2db88359e5252ad9036932304ba3933783311bafbc24dbcf832",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/07-tip-inspect-close.png",
+        "sha256": "a5bc4253a817252b84e9bab72a9b6aa2541cf2f619ab95764457bf65d4212740",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/08-card-types.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌边框颜色与费用角标可辨，时机说明完整，下一步入口清楚。",
+      "score": 94,
+      "sha256": "94b04dba0508fc051ccd21d5d161a6d5d9d1e528682b2ee1eb7f6eab3af2dd4f",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/08-card-types.png",
+        "sha256": "94b04dba0508fc051ccd21d5d161a6d5d9d1e528682b2ee1eb7f6eab3af2dd4f",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/09-hand.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌区域高亮完整，出牌条件正文和下一步按钮完整可读。",
+      "score": 94,
+      "sha256": "a1c6ec28904558febd4a844063477031e9492e886ded640f3c502b08f60268d5",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/09-hand.png",
+        "sha256": "a1c6ec28904558febd4a844063477031e9492e886ded640f3c502b08f60268d5",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/10-hand-inspect.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "需要长按的手牌本体被单独高亮，查看说明明确，未被教程卡遮住。",
+      "score": 94,
+      "sha256": "a176f67815dc5ddb2322edd9cc0880d657a9d4b4535dd4e39db2226dfeccc149",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/10-hand-inspect.png",
+        "sha256": "a176f67815dc5ddb2322edd9cc0880d657a9d4b4535dd4e39db2226dfeccc149",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/11-hand-inspect-close.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "长按沉思详情保持展开，牌面正文及右上关闭入口清楚，双方资源读数可见。",
+      "score": 94,
+      "sha256": "0396236da7f1b02caac59d1a3782c69b93bae17252055d04094ca4c90806aadc",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/11-hand-inspect-close.png",
+        "sha256": "0ca1b69f3c32a4ac0b16179482ed78bbecf61b37b2d7d492a70ebc2261d00ccb",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/12-discard.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌堆完整高亮，底部说明完整，双方体力与战斗点数均可读。",
+      "score": 94,
+      "sha256": "421dd8e1198aa9fa6842981041c551e3a820b6dc76951879fd289895e6949ac4",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/12-discard.png",
+        "sha256": "421dd8e1198aa9fa6842981041c551e3a820b6dc76951879fd289895e6949ac4",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/13-response-control.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手动响应开关被清楚圈定，说明与前后步按钮完整，两侧摘要可见。",
+      "score": 94,
+      "sha256": "debc8b77d3da8a6a962f058d01abf51923c389223ba1a32ff3e7d4b84485e254",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/13-response-control.png",
+        "sha256": "debc8b77d3da8a6a962f058d01abf51923c389223ba1a32ff3e7d4b84485e254",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/14-main-actions-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主要阶段三项动作名称完整可读，手牌本体清楚高亮，下一步入口与双方资源可见。",
+      "score": 94,
+      "sha256": "2ee707a583fc22a428216cde114157d2abb425b1e7bb8358ff68ad022372c56d",
+      "reviewMethod": "original-image-read"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/15-sell-card-intro.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "沉思手牌与弃牌堆均可识别，出售动作说明和拖动终点清楚。",
+      "score": 94,
+      "sha256": "cf1f223ce9fe957fc8b05564b42d46e2e322055477c8d8e3ce48385bf263878d",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/15-sell-card-intro.png",
+        "sha256": "cf1f223ce9fe957fc8b05564b42d46e2e322055477c8d8e3ce48385bf263878d",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/16-sell-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "出售结果正文位于下方，自身战斗点数及减少后的手牌可见，对手资源摘要保持清楚。",
+      "score": 94,
+      "sha256": "9e64526eedfde98b4e78c203e40bc1a8f5f3358eb44cac0fef9a50fc825d40fb",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/16-sell-result.png",
+        "sha256": "9e64526eedfde98b4e78c203e40bc1a8f5f3358eb44cac0fef9a50fc825d40fb",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/17-undo-sell-intro.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回说明移至下方，弃牌堆中的沉思清楚高亮，双方资源可读。",
+      "score": 94,
+      "sha256": "c029898af17bcb94eae6a5a4d5f0f26ffe29efe6f97d1390735d9a8592137bb1",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/17-undo-sell-intro.png",
+        "sha256": "c029898af17bcb94eae6a5a4d5f0f26ffe29efe6f97d1390735d9a8592137bb1",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/18-undo-sell.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回目标弃牌堆完整可点，下方操作说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "5dabc686dc8d11ca64542f8db714131194d0502e43bc374c3f3388710966ba00",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/18-undo-sell.png",
+        "sha256": "5dabc686dc8d11ca64542f8db714131194d0502e43bc374c3f3388710966ba00",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/19-undo-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回后的手牌重新出现且区域高亮，返还说明与左侧战斗点数清楚可读。",
+      "score": 94,
+      "sha256": "6bfe0443920ad3a7a2f9c3ef0ca7cd7462c7343f1d5fadb96f8ea141dea1e70c",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/19-undo-result.png",
+        "sha256": "8d0694fb7ddf14daef0b90c74b45b5d42050b77b399364f242ade8b802c20ba9",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/20-advance.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮完整高亮，下方说明与按钮分离，双方资源可读。",
+      "score": 94,
+      "sha256": "14b3e3c7ccb9c89a5673764362d7337154e69135aeeb42e677323bb6cc2e2236",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/20-advance.png",
+        "sha256": "9b63a9b3277224a1e7a65c08f6ec5542dc9b72ca1df28b91876c814c84f5f56c",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/21-dice-tray.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧骰盘完整高亮，底部说明与按钮不遮挡双方资源读数。",
+      "score": 94,
+      "sha256": "64dfadada1037d9aaeb61ba0dac81b5e15e507d87e85c1965489eaf7ca99f6b8",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/21-dice-tray.png",
+        "sha256": "64dfadada1037d9aaeb61ba0dac81b5e15e507d87e85c1965489eaf7ca99f6b8",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/22-roll-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "掷骰与重掷规则完整可读，底部说明未遮挡右侧骰盘及双方资源。",
+      "score": 94,
+      "sha256": "33dfac043e38b56aed3f4280b960cdcd7855e8bfbcd84a84a172338b06691717",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/22-roll-rule.png",
+        "sha256": "33dfac043e38b56aed3f4280b960cdcd7855e8bfbcd84a84a172338b06691717",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/23-dice-roll.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷按钮清楚高亮，底部操作说明完整，双方体力及战斗点数可见。",
+      "score": 94,
+      "sha256": "2111ca05f2ad096b74752b59a2b1ec11e61bb01ab1056a3564044a1d7993d763",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/23-dice-roll.png",
+        "sha256": "dcfce78f40a7c34e052b2b3816b229e328dcbc9bad2773c9fa17c6422e67acbc",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/24-dice-lock.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "可锁定骰子完整高亮，底部教学卡清楚，双方资源均可读。",
+      "score": 94,
+      "sha256": "39640f82a843197d3eada2678acd9d4e9a6dd7e78b0b3b5971da98c5c73c3915",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/24-dice-lock.png",
+        "sha256": "9759280ece105d67f2f0975f5111b789a4d6d4405f0944a0fb4fe7759a329471",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/25-dice-reroll.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "锁定骰子与投掷按钮清楚，底部重掷说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "37fbba8a8ebbd7e804d291bab3ddfe5aa8b8b140bf12f780b50a00f4ea6dd3f1",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/25-dice-reroll.png",
+        "sha256": "98805152d9e2c40bd0ef7ca222a85a3c49cae08c6165ec10508f59e25ce882da",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/26-dice-symbols.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骰面与数字含义说明完整，右侧骰盘高亮，双方资源读数可见。",
+      "score": 94,
+      "sha256": "bda775d634bde896e60aed2ac920db86e7b4bfb895e4606e8a0fd69d7b538859",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/26-dice-symbols.png",
+        "sha256": "f910e1194810caf70a86c73e28d431641b0f9dfa9668034e1d778083c4f499e4",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/27-play-six-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩得六啊手牌本体被清楚高亮，改骰规则完整，下一步入口清楚。",
+      "score": 94,
+      "sha256": "bf04e45e8dc5724d97da6821230a6cdb24c55cd613ac61b422373eabc049ac61",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/27-play-six-rule.png",
+        "sha256": "2b80784fc6e1d9ee5d70d90212da8a715f263b04bd3f9afc40a1ae4c41839a19",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/28-play-six.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "当前要打出的橙色手牌清楚高亮，正文和操作目标没有重叠。",
+      "score": 94,
+      "sha256": "ce6459539df9cf1f8d7a38a57a408ddd6a9d7e06c86789df9cd81e58c84d4cba",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/28-play-six.png",
+        "sha256": "90f08db2d9da0075967d939a36b9623e61eacc6c0c0bba55d1170c7745eaca15",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/29-play-six-modify.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "改骰候选五颗骰子完整呈现，选择提示与已打出卡牌可辨，资源可见。",
+      "score": 94,
+      "sha256": "4ccd9571276af6296d3120f6e1d5ddbd4c574a4615f40027b133ad4269920e53",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/29-play-six-modify.png",
+        "sha256": "0dc250cee97e89e3dfe5dc9fd40bcc3baef807bdb9233c4eb98373e5cf1d531c",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/30-dice-confirm.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认按钮清楚高亮，底部操作说明完整，双方资源读数保持可见。",
+      "score": 94,
+      "sha256": "848a5ea134f4d6dd54482cefed971a8141254accff05e75282931f5f1e811176",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/30-dice-confirm.png",
+        "sha256": "4f12c17e0081572efd674bc4904a2d211691a07c24b4828ac7caf25b6677e4a7",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/31-ability-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "冲拳技能本体高亮清楚，组合规则正文完整，双方资源读数可见。",
+      "score": 94,
+      "sha256": "65964cff3af6168b30808dc30e2fb0c890d0131d92d5cbb0ee83f4193dfe8401",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/31-ability-rule.png",
+        "sha256": "eaafd22e2bedd6e2954772d899a379047816117186b6e468ecfb6cb939d37bd2",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/32-abilities.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "冲拳候选主边界贴合技能本体，攻击操作说明清楚且未遮挡目标。",
+      "score": 94,
+      "sha256": "5754fac614f35ff3db2522a493869e34687ecb63f740b5eb754dd1e40f55cd28",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/32-abilities.png",
+        "sha256": "634ec1fb8292d04340f1fe68e3ec3917deb5ba39c05252a5e045144c9fa29ae7",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/33-attack-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家板与伤害类型说明完整，双方资源摘要可读。",
+      "score": 94,
+      "sha256": "69fd016f6c204d4f9a5e474d28b3b04e89fda1b4460b9f646c10787ddcdc04f3",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/33-attack-rule.png",
+        "sha256": "69fd016f6c204d4f9a5e474d28b3b04e89fda1b4460b9f646c10787ddcdc04f3",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/34-resolve-attack.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算攻击按钮和当前伤害清楚，底部教程卡完整，双方体力及战斗点数可见。",
+      "score": 94,
+      "sha256": "43cc81aa2f413851cdad14e4ea101b16763e28ef1a63629bf9115a77eec03619",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/34-resolve-attack.png",
+        "sha256": "d9be67b9ef48386f350a0cb176cda2f4c2bb45c148a17ef1399d9a2ed6fa21c2",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/35-opponent-defense.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "伤害飘字已退场，反击结果说明完整，自身与对手最终体力及战斗点数清楚。",
+      "score": 94,
+      "sha256": "2106737f5209733d85ab3081072b0437be0116bb2422f0a764512eb4ee4f16c0",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/35-opponent-defense.png",
+        "sha256": "2106737f5209733d85ab3081072b0437be0116bb2422f0a764512eb4ee4f16c0",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/36-main2-intro.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第二主要阶段说明完整，手牌高亮清楚，双方体力及战斗点数可读。",
+      "score": 94,
+      "sha256": "1abf7d3f412b3bf91dfa8943185a65565321c887d7a53f929d8afcd30aadcd0b",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/36-main2-intro.png",
+        "sha256": "1abf7d3f412b3bf91dfa8943185a65565321c887d7a53f929d8afcd30aadcd0b",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/37-enlightenment-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟手牌高亮清楚，莲花结果说明和下一步按钮完整。",
+      "score": 94,
+      "sha256": "b79abf7930c6a30630a6cb2d75b558a3eb922ba95f1e707a91efec4f8e566330",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/37-enlightenment-rule.png",
+        "sha256": "b79abf7930c6a30630a6cb2d75b558a3eb922ba95f1e707a91efec4f8e566330",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/38-enlightenment-play.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟卡牌本体清楚可点，操作说明完整，双方资源可见。",
+      "score": 94,
+      "sha256": "ccb6a3f1c1df6c0e90679f3fb5169cd196caa51b3a16df42d9bc4cb98822230d",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/38-enlightenment-play.png",
+        "sha256": "a2115600959ba7963133275f86b38168d8be7f441292864f68248d5231ea9db0",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/39-enlightenment-confirm.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟骰面和确认按钮清楚，底部操作说明完整，双方资源摘要可读。",
+      "score": 94,
+      "sha256": "dd4c8b5eeba375eaebc647a2c4bfed60611119048a1e41d4463275e594806a27",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/39-enlightenment-confirm.png",
+        "sha256": "c4c6eab9c645b9838a3e33e61b4a095abb7fc646e0550eab2fbcaae5c52853bc",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/40-enlightenment-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极闪避净化标记及数量清楚，底部结果说明完整，双方资源摘要可读。",
+      "score": 94,
+      "sha256": "35a93d386b0bf5b8ba5f4fd9967d4936722e297aaeafba0cc03f29d1b3dedf79",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/40-enlightenment-result.png",
+        "sha256": "35a93d386b0bf5b8ba5f4fd9967d4936722e297aaeafba0cc03f29d1b3dedf79",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/41-status-tokens.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "状态标记与数量清楚，底部效果说明完整，双方体力及战斗点数可见。",
+      "score": 94,
+      "sha256": "05c7783872977284aafb7152b428100bf4416284504fdaef0e6f6d3e54a029da",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/41-status-tokens.png",
+        "sha256": "05c7783872977284aafb7152b428100bf4416284504fdaef0e6f6d3e54a029da",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/42-inner-peace-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心手牌本体被清楚高亮，获得标记说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "68a74db2a4407a280c69d3fb8036903c0f31ddeb2a49654598027a19c19ce205",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/42-inner-peace-rule.png",
+        "sha256": "68a74db2a4407a280c69d3fb8036903c0f31ddeb2a49654598027a19c19ce205",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/43-inner-peace.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心当前出牌目标与说明可辨，教程卡未遮挡手牌及双方资源。",
+      "score": 94,
+      "sha256": "3ac17705b68ff22bc35a8b5dc504c04fa74cd7542be7235f34f8d9d6db3febaa",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/43-inner-peace.png",
+        "sha256": "fc6390fdeb4b1e1df01c3059d27c575c597b94e8f7419eab596e39c7bf55f29e",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/44-ai-turn-intro.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心增加后的太极标记与换回合说明可见，底部教程卡未遮挡双方资源。",
+      "score": 94,
+      "sha256": "78704a0f3ba72190e013f99f9a32fe5f9e11c7da1cf3c489289a74015c41412f",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/44-ai-turn-intro.png",
+        "sha256": "78704a0f3ba72190e013f99f9a32fe5f9e11c7da1cf3c489289a74015c41412f",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/45-discard-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌阶段规则正文完整，当前手牌本体高亮，双方资源摘要可读。",
+      "score": 94,
+      "sha256": "89d308a9a5c3cd99b64ae891b22b6aa1e2d9e7ebf23f281fb36f4844fb19c7cb",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/45-discard-rule.png",
+        "sha256": "89d308a9a5c3cd99b64ae891b22b6aa1e2d9e7ebf23f281fb36f4844fb19c7cb",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/46-end-turn.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮清楚高亮，底部交接说明完整，双方资源读数可见。",
+      "score": 94,
+      "sha256": "f02119fa03c4f2e27e5cd472a2cc790b0ee7af37b257292dca2e5707d9e1ac44",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/46-end-turn.png",
+        "sha256": "f02119fa03c4f2e27e5cd472a2cc790b0ee7af37b257292dca2e5707d9e1ac44",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/47-ai-turn.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手冲拳进攻特写完整可读，教学说明位于下方，下一步按钮清楚；背景虚化属于当前正式特写职责。",
+      "score": 94,
+      "sha256": "7bcd4fbfd3fac8ad44af8003b55d64d9206ccaa67fcbdf00a845ed542a6aae45",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/47-ai-turn.png",
+        "sha256": "0968e08a05d1923a6bd8f10a97bb0afc9e31855913787484d3caad7b1c713a78",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/48-defense-start.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手冲拳进攻特写完整可读，开始防御按钮紧随卡牌下方且清楚高亮，教学说明完整。",
+      "score": 94,
+      "sha256": "6e2fb0e80ee0984315baeb74ca913e1bf375bc3ab5bb2158dec4892efee64037",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/48-defense-start.png",
+        "sha256": "1e99537ee5d0f1c67b4900a5b846074365f48946935481df0a9bde33a17ac530",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/49-defense-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御骰盘与当前伤害标记清楚，规则说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "42170950eef543ba70b787aec066873f68a429bfd8d3fab03a979e2b174361b9",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/49-defense-rule.png",
+        "sha256": "0e231c104cae54c60fb9e1d17cba7ae1e73b541665e7bef788fc7f312b2508ca",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/50-defense-roll.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御投掷按钮及当前伤害清楚，底部操作说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "19aabb840b9605cb87f5cbb4ccccc18081143dee56f0c4cb9ad2dc0ad17478aa",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/50-defense-roll.png",
+        "sha256": "a33bd27d42ba21f54f27954be96cb3fbda0550ee038ab343ca18598d4038e4de",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/51-defense-confirm.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御骰面与确认按钮清楚，底部教学正文完整，双方体力及战斗点数可读。",
+      "score": 94,
+      "sha256": "8f55080bde2b4ba997e6c3b814b24ade2108e31fc5aabfbecab364f080fe5558",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/51-defense-confirm.png",
+        "sha256": "533da336e2bdf45f4d863a2976365fc1d42317ef226c02c3143336b83a2ddf58",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/52-defense-resolve.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结束防御按钮与当前伤害清楚，底部操作说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "5fc6415f6da96626b44f6265e770215ba8e449e53c67cc956bb50806c28e4127",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/52-defense-resolve.png",
+        "sha256": "aa8c0bba9ae60464bb708526d8496e66387f5a9daf8ebaf4a431651f73204bd8",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/53-token-response-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极标记和响应跳过入口清楚，底部规则说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "0e8808489a770a932d431e3644883bf367624b34c08612ad33559e6b30716408",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/53-token-response-rule.png",
+        "sha256": "79ca1300d49ecfdce9da85ec725545137e2172d8e8caa4941fa3050d998f7ee8",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/54-token-response-use.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极标记与跳过入口均清楚，底部操作正文完整，双方资源可读。",
+      "score": 94,
+      "sha256": "30d5044b3722742417b1d262ec79cb12f7e1a1a95f7e257df4437560d422177d",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/54-token-response-use.png",
+        "sha256": "05bf386cedaa39779b7e4f1b2f49e7dea1e7e287e89c057240f775bf4d8e7ead",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/55-evasive-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "闪避标记与当前伤害变化可见，底部规则完整，双方资源可读。",
+      "score": 94,
+      "sha256": "819aadb90515ea934876b25fa7719ba5c71092fded92af12ea9073812dd6e306",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/55-evasive-rule.png",
+        "sha256": "591c77d9a449d8887582e8672ebaeec8603a838344aa1df0e3ab81aab51d827a",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/56-evasive-use.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "闪避标记和响应跳过入口清楚，底部操作正文完整，双方资源可读。",
+      "score": 94,
+      "sha256": "e22e5ad458c82ef6bd5e5dff826769f2d69e1d73d33176e13fab3c627521b75a",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/56-evasive-use.png",
+        "sha256": "758302f81f23fb67a405f2190e90c71ffa13c94f5f87dcde3f489a0206f84b05",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/57-evasive-confirm.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "闪避判定骰面及确认按钮清楚，当前伤害可读，底部说明未遮挡双方资源。",
+      "score": 94,
+      "sha256": "e47f5cd01e02127706272795aac26cc8055aa778e6a37493dadaaa1ea8786d39",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/57-evasive-confirm.png",
+        "sha256": "2502eb7b95675dd132be3e0c2c44c1029ae6e77710672fc8854ad92558c05891",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/58-damage-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "自身最终体力和剩余标记清楚，底部结果说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "1890b4e73b81b43651291ab530c5ede0373d26e2b1100f8c8f9e004f12e79e6c",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/58-damage-result.png",
+        "sha256": "e95c556d3888711f2092efa54242e848f84a0ba4def0cb416ee00b96509f8478",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/59-opponent-end-turn.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回合交接说明与双方当前资源可读，手牌和下一步入口可见。",
+      "score": 94,
+      "sha256": "d2380ba170df8cc263ed6ede2f925a26cd7e09c2239be7f25939831adb4291c5",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/59-opponent-end-turn.png",
+        "sha256": "19df2764050aabc0efb1f52ac9cc2dd6c1b3cf5b65b51789d2582e641f9474cf",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/60-income-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新抽绿色清修升级牌完整高亮，右上收入结果正文完整，双方体力及战斗点数均可读。",
+      "score": 94,
+      "sha256": "2a7c79a0f4f5eb82afeb45a8bc41270612b14dba476c496deb88af8f274ae562",
+      "reviewMethod": "carried-forward",
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；沿用上一轮已实读通过的结果。",
+      "carriedForward": {
+        "sourceRun": "tutorial-rebuild-20261016-r20-fixes",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/60-income-result.png",
+        "sha256": "2d3bda148e4557110610d07fc7ec48e881684e8e2172819f63f9cf7a7bfc9c9b",
+        "sameSha256": false,
+        "reviewer": {
+          "kind": "subagent",
+          "id": "/root/tutorial_mobile_final"
+        },
+        "observation": "新抽绿色清修升级牌完整高亮，右上收入结果正文完整，双方体力及战斗点数均可读。",
+        "reason": "本次仅机械重拍，当前步骤实现与验收条件未变。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/61-knockdown-explain.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒标记清楚高亮，底部移除规则完整，双方体力及战斗点数可读。",
+      "score": 94,
+      "sha256": "6c41d4ce0f045106c45a847b19c01edfa2da72696a5f720a18c59190b0ac7e0b",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/61-knockdown-explain.png",
+        "sha256": "91c6d9b62407c1aedff5f67b7449f55b0a2f03fff7423c94138c8e1ae19d3ac1",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/62-purify-rule.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化标记清楚，底部效果说明完整，双方资源摘要可读。",
+      "score": 94,
+      "sha256": "ba9b1b43d0158f1895a306d16986d4d0d3dc846d9ecd1d0cfd8b0ba54ffd3609",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/62-purify-rule.png",
+        "sha256": "e7f4032c99c36e28db13c3cd3b17bcedb775e194d8e564962b100af24fcbbb86",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/63-purify-use.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化标记清楚高亮，右侧操作说明完整，双方体力与战斗点数可读，操作区域未被遮住。",
+      "score": 94,
+      "sha256": "1581a1e21b4b6d32bcf82539919f00248bded945717cb0bb9c8dd8575aec9a60",
+      "reviewMethod": "carried-forward",
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；沿用上一轮已实读通过的结果。",
+      "carriedForward": {
+        "sourceRun": "tutorial-rebuild-20261016-r20-fixes",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/63-purify-use.png",
+        "sha256": "f018d8bf9acd78ce1b34a4798b022d37e2016985b07f42bd6edbc98969fba8c4",
+        "sameSha256": false,
+        "reviewer": {
+          "kind": "subagent",
+          "id": "/root/tutorial_mobile_final"
+        },
+        "observation": "净化标记清楚高亮，右侧操作说明完整，双方体力与战斗点数可读，操作区域未被遮住。",
+        "reason": "本次仅机械重拍，当前步骤实现与验收条件未变。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/64-purify-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化与击倒移除后的标记结果清楚，底部说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "274ba5d28ed5456f7f6b7410db74ed5bcf8e5eaa96308cca24f5e040a87a0559",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/64-purify-result.png",
+        "sha256": "274ba5d28ed5456f7f6b7410db74ed5bcf8e5eaa96308cca24f5e040a87a0559",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/65-upgrade-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "升级规则两句正文完整，永久升级与支付差价说明可读，手牌本体高亮且双方资源清楚。",
+      "score": 94,
+      "sha256": "a2f76c7e6a04a338cd90807a5492a56c0273b9f0ee59a0b08c3d347f34581129",
+      "reviewMethod": "original-image-read"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/66-meditation-2.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "清修升级牌被清楚高亮，支付与拖动升级说明完整，双方资源可见。",
+      "score": 94,
+      "sha256": "df34dd64ad2156388a9d2cb9ee385634633fca92bd3f516c6d434c2d29a08536",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/66-meditation-2.png",
+        "sha256": "33cdb8153ec9f04f2714ebe647b99e2fdf2cc7543ba99f2d6c8a19052b96b704",
+        "sameSha256": false,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/67-upgrade-result.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家板清修槽已呈现绿色升级牌，自身战斗点数与说明完整可读。",
+      "score": 94,
+      "sha256": "5123837ee527e8550487027e12da60949f50c496dca62098a7f8105fe1d9faa7",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/67-upgrade-result.png",
+        "sha256": "5123837ee527e8550487027e12da60949f50c496dca62098a7f8105fe1d9faa7",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/68-finish.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完成教学说明和完成并返回按钮完整可读，双方资源摘要保持可见。",
+      "score": 94,
+      "sha256": "6080608c4c8609b311f86277014dd9913c34744b8fd57fc61c97f6a9f9b8676c",
+      "reviewMethod": "carried-forward",
+      "carriedForward": {
+        "report": "evidence/dicethrone/tutorial-20261016-r19-mobile-final-visual.json",
+        "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/手机横屏：亲手完成教学主线/68-finish.png",
+        "sha256": "6080608c4c8609b311f86277014dd9913c34744b8fd57fc61c97f6a9f9b8676c",
+        "sameSha256": true,
+        "reason": "已审通过且本步骤实现与验收条件未变，按主代理明确口径沿用。"
+      },
+      "unchangedEvidence": "该屏实现未改，验收条件未变，用户未点名不合格；来源已记录。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/教程目录：手机横屏选课/01-catalog.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "八个章节入口完整呈现，标题及课程名称清楚可读，进入这一章按钮醒目且没有裁切。",
+      "score": 94,
+      "sha256": "853a27dec446206749c23c27bf94c7bf8ae862b1a6f7cb3580fe7477e0e2c753",
+      "reviewMethod": "original-image-read"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/教程目录：手机横屏选课/02-catalog-entry.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末尾击倒付费与跳过练习入口完整可见，八个课程名称清楚，页面按手机实际宽度呈现。",
+      "score": 94,
+      "sha256": "853a27dec446206749c23c27bf94c7bf8ae862b1a6f7cb3580fe7477e0e2c753",
+      "reviewMethod": "original-image-read"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/教程目录：手机横屏选课/03-catalog-open.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "伤害练习已打开，规则正文与下一步完整，太极及对手闪避结果清楚可见。",
+      "score": 94,
+      "sha256": "001eb148ed977c5fa0bf30ff0f6bb889847a1c2acd71ec089ef6a6824b7e7aea",
+      "reviewMethod": "original-image-read"
+    }
+  ]
+}

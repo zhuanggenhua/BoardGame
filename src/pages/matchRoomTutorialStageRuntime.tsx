@@ -195,11 +195,11 @@ const TutorialLocalGameRuntime = ({
             config={runtime.engineConfig}
             numPlayers={numPlayers}
             seed={progressSeed}
-            playerId={playerID ?? '0'}
+            playerId={runtime.tutorialManifest?.playerId ?? playerID ?? '0'}
             setupData={setupData}
             onCommandRejected={runtime.onCommandRejected}
             seatControllers={seatControllers}
-            followCurrentTurnPlayer={Boolean(runtime.engineConfig.resolveLocalRuntimeControlledPlayerId)}
+            followCurrentTurnPlayer={runtime.tutorialManifest?.playerId === undefined && Boolean(runtime.engineConfig.resolveLocalRuntimeControlledPlayerId)}
             persistSession={Boolean(runtime.gameId)}
             persistGameId={runtime.gameId}
             shouldRestorePersistedSession={shouldRestorePersistedSession}

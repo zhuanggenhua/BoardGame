@@ -44,6 +44,34 @@ describe('同窗口聊天频道交互', () => {
         act(() => result.current.selectChannel('room'));
         expect(result.current.unreadTotal).toBe(0);
     });
+    it('重复收到同一消息 ID 不重复触发未读和提醒', () => {
+        const { result } = renderHook(() => useMatchChat(options));
+        const replayedMessage = message('room', 'stable-replay-id');
+        act(() => result.current.selectChannel('room'));
+
+        act(() => state.onMessage?.(replayedMessage));
+        const latestIncoming = result.current.latestIncoming;
+        act(() => state.onMessage?.(replayedMessage));
+
+        expect(result.current.messages).toEqual([replayedMessage]);
+        expect(result.current.unread.room).toBe(1);
+        expect(result.current.latestIncoming).toBe(latestIncoming);
+    });
+    it('房间频道流量不会挤掉仍保留的玩家频道去重记录', () => {
+        const { result } = renderHook(() => useMatchChat(options));
+        const olderPlayerMessage = message('players', 'older-player-message');
+
+        act(() => {
+            state.onMessage?.(olderPlayerMessage);
+            for (let index = 0; index < 400; index += 1) {
+                state.onMessage?.(message('room', `room-${index}`));
+            }
+            state.onMessage?.(olderPlayerMessage);
+        });
+
+        expect(result.current.unread.players).toBe(1);
+        expect(result.current.messages).toEqual([olderPlayerMessage]);
+    });
     it('观众默认进入房间频道，私有历史和实时事件不能进入消息或未读', () => {
         const { result } = renderHook(() => useMatchChat({ ...options, playerId: null, credentials: undefined }));
         expect(result.current.channel).toBe('room');

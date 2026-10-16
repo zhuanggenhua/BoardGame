@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer, type Server as HttpServer } from 'node:http';
-import { Server } from 'socket.io';
+import { Server, type Socket as ServerSocket } from 'socket.io';
 import { io, type Socket } from 'socket.io-client';
 import { chatHistoryByMatch, registerMatchChat } from '../matchChat';
 import { MATCH_CHAT_EVENTS, type MatchChatMessage, type MatchChatIdentity } from '../../shared/chat';
@@ -10,6 +10,7 @@ import type { MatchMetadata } from '../../engine/transport/storage';
 describe('对局聊天频道的服务端权限', () => {
     let http: HttpServer;
     let server: Server;
+    let serverSockets: Map<string, ServerSocket>;
     let url: string;
     let metadata: MatchMetadata;
     const clients: Socket[] = [];
@@ -28,7 +29,12 @@ describe('对局聊天频道的服务端权限', () => {
         } };
         chatHistoryByMatch.clear();
         http = createServer(); server = new Server(http);
-        server.on('connection', socket => registerMatchChat(server, socket, { fetch: async id => ({ metadata: id === 'match' ? metadata : undefined }) }));
+        serverSockets = new Map();
+        server.on('connection', socket => {
+            serverSockets.set(socket.id, socket);
+            socket.on('disconnect', () => serverSockets.delete(socket.id));
+            registerMatchChat(server, socket, { fetch: async id => ({ metadata: id === 'match' ? metadata : undefined }) });
+        });
         await new Promise<void>(resolve => http.listen(0, '127.0.0.1', resolve));
         const address = http.address();
         if (!address || typeof address === 'string') throw new Error('未分配测试端口');
@@ -37,6 +43,7 @@ describe('对局聊天频道的服务端权限', () => {
     afterEach(async () => {
         clients.splice(0).forEach(socket => socket.disconnect());
         await new Promise<void>(resolve => server.close(() => resolve()));
+        serverSockets.clear();
         chatHistoryByMatch.clear();
         vi.restoreAllMocks();
     });
@@ -70,6 +77,128 @@ describe('对局聊天频道的服务端权限', () => {
         });
         expect(await send(host.socket, 'players', '不应留下的消息')).toEqual({ ok: false, reason: 'unavailable' });
         expect(chatHistoryByMatch.get('match') ?? []).toEqual([]);
+    });
+    it('私聊发送等待 adapter 时离开房间会撤销旧成员身份', async () => {
+        const host = await join({ playerId: '0', credentials: 'host-secret' });
+        const received: MatchChatMessage[] = [];
+        host.socket.on(MATCH_CHAT_EVENTS.MESSAGE, message => received.push(message));
+        const originalIn = server.in.bind(server);
+        let startFetch!: () => void;
+        let releaseFetch!: () => void;
+        const fetchStarted = new Promise<void>(resolve => { startFetch = resolve; });
+        const fetchGate = new Promise<void>(resolve => { releaseFetch = resolve; });
+        vi.spyOn(server, 'in').mockImplementation(rooms => {
+            const operator = originalIn(rooms);
+            const originalFetch = operator.fetchSockets.bind(operator);
+            vi.spyOn(operator, 'fetchSockets').mockImplementation(async () => {
+                startFetch();
+                await fetchGate;
+                return originalFetch();
+            });
+            return operator;
+        });
+
+        const pendingSend = send(host.socket, 'players', '离房后不能继续发送', 'leave-race-1');
+        await fetchStarted;
+        host.socket.emit(MATCH_CHAT_EVENTS.LEAVE);
+        await vi.waitFor(() => expect(serverSockets.get(host.socket.id)?.data.matchChatIdentity).toBeUndefined());
+        releaseFetch();
+
+        expect(await pendingSend).toEqual({ ok: false, reason: 'not_joined' });
+        expect(chatHistoryByMatch.get('match') ?? []).toEqual([]);
+        expect(received).toHaveLength(0);
+    });
+    it('私聊发送等待 adapter 时座位凭证轮换会拒绝旧凭证', async () => {
+        const host = await join({ playerId: '0', credentials: 'host-secret' });
+        const received: MatchChatMessage[] = [];
+        host.socket.on(MATCH_CHAT_EVENTS.MESSAGE, message => received.push(message));
+        const originalIn = server.in.bind(server);
+        let startFetch!: () => void;
+        let releaseFetch!: () => void;
+        const fetchStarted = new Promise<void>(resolve => { startFetch = resolve; });
+        const fetchGate = new Promise<void>(resolve => { releaseFetch = resolve; });
+        vi.spyOn(server, 'in').mockImplementation(rooms => {
+            const operator = originalIn(rooms);
+            const originalFetch = operator.fetchSockets.bind(operator);
+            vi.spyOn(operator, 'fetchSockets').mockImplementation(async () => {
+                startFetch();
+                await fetchGate;
+                return originalFetch();
+            });
+            return operator;
+        });
+
+        const pendingSend = send(host.socket, 'players', '凭证轮换后拒绝发送', 'credential-race-1');
+        await fetchStarted;
+        metadata.players['0'].credentials = 'rotated-secret';
+        releaseFetch();
+
+        expect(await pendingSend).toEqual({ ok: false, reason: 'not_player' });
+        expect(chatHistoryByMatch.get('match') ?? []).toEqual([]);
+        expect(received).toHaveLength(0);
+    });
+    it('广播失败后的同 ID 重试会重播原消息', async () => {
+        const host = await join({ playerId: '0', credentials: 'host-secret' });
+        const received: MatchChatMessage[] = [];
+        host.socket.on(MATCH_CHAT_EVENTS.MESSAGE, message => received.push(message));
+        vi.spyOn(server.sockets.adapter, 'broadcast').mockImplementationOnce(() => {
+            throw new Error('临时广播故障');
+        });
+
+        expect(await send(host.socket, 'players', '重试后应送达', 'replay-request-1'))
+            .toEqual({ ok: false, reason: 'unavailable' });
+        expect(chatHistoryByMatch.get('match')).toHaveLength(1);
+        expect(await send(host.socket, 'players', '重试后应送达', 'replay-request-1')).toEqual({ ok: true });
+
+        expect(chatHistoryByMatch.get('match')).toHaveLength(1);
+        expect(received).toHaveLength(1);
+        expect(received[0].text).toBe('重试后应送达');
+    });
+    it('同 ID 私聊重试会按最新座位凭证清退失效接收者', async () => {
+        const host = await join({ playerId: '0', credentials: 'host-secret' });
+        const guest = await join({ playerId: '1', credentials: 'guest-secret' });
+        const guestMessage = new Promise<MatchChatMessage>(resolve => guest.socket.once(MATCH_CHAT_EVENTS.MESSAGE, resolve));
+        const privateRoom = 'matchchat:match:players';
+
+        expect(await send(host.socket, 'players', '座位轮换后不应继续收到', 'rotated-recipient-replay')).toEqual({ ok: true });
+        await guestMessage;
+        const guestServerSocket = serverSockets.get(guest.socket.id);
+        expect(guestServerSocket?.rooms.has(privateRoom)).toBe(true);
+
+        metadata.players['1'].credentials = 'rotated-guest-secret';
+        expect(await send(host.socket, 'players', '座位轮换后不应继续收到', 'rotated-recipient-replay')).toEqual({ ok: true });
+
+        expect(guestServerSocket?.rooms.has(privateRoom)).toBe(false);
+        expect(chatHistoryByMatch.get('match')).toHaveLength(1);
+    });
+    it('正常私聊会在读取最新凭证后清退轮换座位的接收者', async () => {
+        const host = await join({ playerId: '0', credentials: 'host-secret' });
+        const guest = await join({ playerId: '1', credentials: 'guest-secret' });
+        const privateRoom = 'matchchat:match:players';
+        const originalIn = server.in.bind(server);
+        let startFetch!: () => void;
+        let releaseFetch!: () => void;
+        const fetchStarted = new Promise<void>(resolve => { startFetch = resolve; });
+        const fetchGate = new Promise<void>(resolve => { releaseFetch = resolve; });
+        vi.spyOn(server, 'in').mockImplementation(rooms => {
+            const operator = originalIn(rooms);
+            const originalFetch = operator.fetchSockets.bind(operator);
+            vi.spyOn(operator, 'fetchSockets').mockImplementation(async () => {
+                startFetch();
+                await fetchGate;
+                return originalFetch();
+            });
+            return operator;
+        });
+
+        const pendingSend = send(host.socket, 'players', '仅当前座位可见', 'rotated-recipient-send');
+        await fetchStarted;
+        metadata.players['1'].credentials = 'rotated-guest-secret';
+        releaseFetch();
+
+        expect(await pendingSend).toEqual({ ok: true });
+        expect(serverSockets.get(guest.socket.id)?.rooms.has(privateRoom)).toBe(false);
+        expect(chatHistoryByMatch.get('match')).toHaveLength(1);
     });
     it('同一发送请求并发重试时只广播和记录一次', async () => {
         const host = await join({ playerId: '0', credentials: 'host-secret' });

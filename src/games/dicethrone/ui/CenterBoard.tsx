@@ -429,6 +429,7 @@ export const CenterBoard = ({
                                 className={overlayButtonClassName}
                                 style={{ ...tipBoardOverlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                                 data-testid="tip-board-magnify-button"
+                                data-tutorial-id="tip-board-magnify-button"
                                 data-board-magnify-ignore="true"
                                 aria-label={t('actions.magnify')}
                             >

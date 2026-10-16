@@ -143,7 +143,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
     };
 
     /** 每步只执行清单要求的正式动作，说明步骤读取后正常推进。 */
-    const walk = (useChi: boolean, stopAt = 'finish') => {
+    const walk = (useChi: boolean | 'evasive', stopAt = 'finish') => {
         let s = start();
         const visited = new Set<string>();
         for (let guard = 0; guard < manifest.steps.length + 15; guard++) {
@@ -161,6 +161,13 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 continue;
             }
             switch (step.id) {
+                case 'tip-inspect': case 'tip-inspect-close': case 'hand-inspect': case 'hand-inspect-close':
+                    // 放大与关闭属于正式本地 UI 状态，真实触屏及无误出牌由浏览器验证。
+                    s = exec(s, TUTORIAL_COMMANDS.NEXT, '0', { reason: 'auto' });
+                    break;
+                case 'defense-start':
+                    s = nextStep(s, 'defense showcase dismissed');
+                    break;
                 case 'sell-card-intro': {
                     s = exec(s, 'SELL_CARD', '0', { cardId: 'card-deep-thought' });
                     expect(s.core.players['0'].hand).toHaveLength(3);
@@ -172,7 +179,12 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                     expect(s.core.players['0'].hand).toHaveLength(4);
                     expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(2);
                     break;
-                case 'advance': case 'resolve-attack': case 'end-turn': case 'discard-finish': case 'defense-resolve':
+                case 'end-turn':
+                    s = exec(s, 'ADVANCE_PHASE', '0');
+                    // 正式 Board 在手牌不超限时自动交出回合。
+                    if (s.sys.phase === 'discard') s = exec(s, 'ADVANCE_PHASE', '0');
+                    break;
+                case 'advance': case 'resolve-attack': case 'defense-resolve':
                     s = exec(s, 'ADVANCE_PHASE', '0');
                     break;
                 case 'dice-roll': case 'defense-roll':
@@ -220,9 +232,12 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                     const chi = s.core.players['0'].tokens[TOKEN_IDS.TAIJI];
                     const hp = s.core.players['0'].resources[RESOURCE_IDS.HP];
                     s = exec(s, useChi ? 'USE_TOKEN' : 'SKIP_TOKEN_RESPONSE', '0', {
-                        pendingDamageId: pending.id, ...(useChi ? { tokenId: TOKEN_IDS.TAIJI, amount: 1 } : {}),
+                        pendingDamageId: pending.id, ...(useChi ? { tokenId: useChi === 'evasive' ? TOKEN_IDS.EVASIVE : TOKEN_IDS.TAIJI, amount: 1 } : {}),
                     });
-                    if (useChi) {
+                    if (useChi === 'evasive') {
+                        expect(s.core.currentRollContext?.kind).toBe('evasion');
+                        expect(s.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hp);
+                    } else if (useChi) {
                         expect(s.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(chi - 1);
                         expect(s.core.pendingDamage?.currentDamage).toBe(pending.currentDamage - 1);
                         expect(s.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hp);
@@ -232,6 +247,15 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                     }
                     break;
                 }
+                case 'evasive-use':
+                    s = exec(s, 'USE_TOKEN', '0', { pendingDamageId: s.core.pendingDamage!.id, tokenId: TOKEN_IDS.EVASIVE, amount: 1 });
+                    expect(s.core.currentRollContext?.kind).toBe('evasion');
+                    expect(s.core.players['0'].tokens[TOKEN_IDS.EVASIVE]).toBe(0);
+                    break;
+                case 'evasive-confirm':
+                    s = exec(s, 'SKIP_TOKEN_RESPONSE', '0', { pendingDamageId: s.core.pendingDamage!.id });
+                    expect(s.core.pendingDamage).toBeUndefined();
+                    break;
                 case 'token-response-pass': {
                     const pending = s.core.pendingDamage!;
                     const hp = s.core.players['0'].resources[RESOURCE_IDS.HP];
@@ -251,7 +275,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         throw Error('教程未完成');
     };
 
-    it.each([true, false])('亲手防御、%s 使用太极、结算后继续收入净化升级', (useChi) => {
+    it.each([true, false, 'evasive'] as const)('亲手防御、响应分支 %s、结算后继续收入净化升级', (useChi) => {
         const { state, visited } = walk(useChi);
         for (const id of ['dice-lock', 'dice-reroll', 'defense-roll', 'defense-confirm', 'defense-resolve', 'token-response-use', 'damage-result', 'income-result', 'purify-use', 'meditation-2']) expect(visited.has(id), id).toBe(true);
         expect(state.core.activePlayerId).toBe('0');

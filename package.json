@@ -87,6 +87,7 @@
     "check:encoding:strict": "node scripts/infra/check-file-encoding.mjs --strict",
     "check:child-process:e2e": "node scripts/infra/assert-child-process-support.mjs E2E --probe-fork --probe-esbuild",
     "test:e2e": "node scripts/infra/run-e2e-command.mjs default",
+    "verify:betrayal:public-local": "node scripts/verify/betrayal-public-local-acceptance.mjs --case character-turn-prompt",
     "test:e2e:all": "cross-env PW_ALLOW_FULL_RUN=true node scripts/infra/run-e2e-command.mjs default",
     "test:e2e:dev": "node scripts/infra/run-e2e-command.mjs dev",
     "test:e2e:dev:file": "node scripts/infra/run-e2e-dev-single.js",

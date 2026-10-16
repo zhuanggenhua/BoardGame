@@ -10,7 +10,6 @@ const LOCK_FILE_NAME = 'registry.lock';
 const LOCK_TIMEOUT_MS = 10000;
 const LOCK_RETRY_MS = 100;
 const LOCK_STALE_MS = 30000;
-const LOCK_RETRYABLE_CODES = new Set(['EEXIST', 'EPERM', 'EBUSY']);
 const HEARTBEAT_INTERVAL_MS = 5000;
 const HEARTBEAT_TTL_MS = 15000;
 
@@ -57,6 +56,29 @@ function getRegistryLockPath(cwd = process.cwd()) {
     return path.join(getBudgetDir(cwd), LOCK_FILE_NAME);
 }
 
+function describeRegistryLockHolder(lockPath) {
+    let stats;
+    try {
+        stats = fs.statSync(lockPath);
+    } catch (error) {
+        return error?.code === 'ENOENT'
+            ? 'holder=not-present-at-timeout'
+            : `holder=unreadable; inspectError=${error?.code ?? 'unknown'}`;
+    }
+
+    const lockAgeMs = Math.max(0, Math.round(Date.now() - stats.mtimeMs));
+    try {
+        const owner = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+        const pid = Number(owner?.pid);
+        const holderPid = Number.isInteger(pid) && pid > 0 ? pid : 'unknown';
+        const holderCommand = typeof owner?.command === 'string' && owner.command.trim() ? owner.command : 'unknown';
+        const createdAt = typeof owner?.createdAt === 'string' ? owner.createdAt : 'unknown';
+        return `holderPid=${holderPid}; holderCommand=${holderCommand}; holderCreatedAt=${createdAt}; lockAgeMs=${lockAgeMs}`;
+    } catch (error) {
+        return `holder=metadata-unreadable; lockAgeMs=${lockAgeMs}; inspectError=${error?.code ?? 'invalid-json'}`;
+    }
+}
+
 function ensureBudgetDir(cwd = process.cwd()) {
     fs.mkdirSync(getBudgetDir(cwd), { recursive: true });
 }
@@ -84,12 +106,15 @@ async function acquireRegistryLock(cwd = process.cwd()) {
     const lockPath = getRegistryLockPath(cwd);
     ensureBudgetDir(cwd);
     const startedAt = Date.now();
+    let attempts = 0;
 
     while (Date.now() - startedAt < LOCK_TIMEOUT_MS) {
+        attempts += 1;
         try {
             const fd = fs.openSync(lockPath, 'wx');
             fs.writeFileSync(fd, JSON.stringify({
                 pid: process.pid,
+                command: path.basename(process.argv[1] || process.execPath),
                 createdAt: nowIso(),
             }, null, 2));
 
@@ -107,7 +132,7 @@ async function acquireRegistryLock(cwd = process.cwd()) {
             };
         } catch (error) {
             const code = error?.code;
-            if (!code || !LOCK_RETRYABLE_CODES.has(code)) {
+            if (code !== 'EEXIST') {
                 throw error;
             }
 
@@ -130,7 +155,9 @@ async function acquireRegistryLock(cwd = process.cwd()) {
         }
     }
 
-    throw new Error(`获取全局重任务预算锁超时: ${lockPath}`);
+    const elapsedMs = Date.now() - startedAt;
+    const holder = describeRegistryLockHolder(lockPath);
+    throw new Error(`获取全局重任务预算锁超时: ${lockPath}; elapsedMs=${elapsedMs}; attempts=${attempts}; ${holder}`);
 }
 
 async function withRegistryLock(fn, cwd = process.cwd()) {

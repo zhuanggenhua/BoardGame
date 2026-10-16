@@ -267,6 +267,7 @@ export const OpponentHeader = ({
                                                     data-feedback-game="dicethrone"
                                                     data-feedback-player-id={feedbackPlayerId}
                                                     data-feedback-resource={RESOURCE_IDS.HP}
+                                                    data-tutorial-id="opponent-health"
                                                     data-feedback-resource-value={hpValue}
                                                     aria-label={`HP ${hpValue}`}
                                                     title={`HP ${hpValue}`}

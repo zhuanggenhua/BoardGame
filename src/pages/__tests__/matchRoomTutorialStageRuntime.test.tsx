@@ -330,6 +330,20 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         await waitFor(() => expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(true));
     });
 
+    it('声明学习者座位时不随对手回合切换控制身份', async () => {
+        const fixedPlayerRuntime: MatchRoomTutorialBoardRuntimeModel = {
+            ...runtime,
+            tutorialManifest: { ...manifest, playerId: '0' },
+            engineConfig: { ...engineConfig, resolveLocalRuntimeControlledPlayerId: () => '1' },
+        };
+        render(
+            <MemoryRouter>
+                <MatchRoomTutorialBoardRuntime runtime={fixedPlayerRuntime} />
+            </MemoryRouter>,
+        );
+        await waitFor(() => expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(false));
+    });
+
     it('非激活的同章节旧快照不会作为教程进度恢复，避免教程入口落到普通牌桌', async () => {
         const seed = persistProgressSnapshot({ active: false });
 

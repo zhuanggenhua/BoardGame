@@ -632,6 +632,7 @@ const buildAbilityHighlightStyle = (
                             data-ability-slot={slot.id}
                             data-ability-slot-scope={slotScope}
                             data-resolved-ability-id={displayAbilityId ?? ''}
+                            data-tutorial-id={`ability-slot-${slot.id}`}
                             data-available-ability-id={availableAbilityId ?? ''}
                             data-selected-ability-id={selectedSlotAbilityId ?? ''}
                             data-activating-ability-id={activatingSlotAbilityId ?? ''}

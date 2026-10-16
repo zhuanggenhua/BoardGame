@@ -156,9 +156,11 @@ export const RightSidebar = ({
     const diceTrayFrameStyle: CSSProperties = {
         width: buildBoardShellInlineUnitValue(5.8),
         overflow: 'visible',
+        pointerEvents: 'auto',
     };
     const actionRailStyle: CSSProperties = {
         width: buildBoardShellInlineUnitValue(10.2),
+        pointerEvents: 'auto',
     };
     const advanceButtonStyle: CSSProperties = {
         width: buildBoardShellInlineUnitValue(10.2),
@@ -285,7 +287,7 @@ export const RightSidebar = ({
 
     return (
         <div
-            className="absolute top-0 flex flex-col items-center pointer-events-auto"
+            className="absolute top-0 flex flex-col items-center pointer-events-none"
             style={sidebarFrameStyle}
             data-player-seat-anchor={rootPlayerId}
         >
@@ -377,6 +379,7 @@ export const RightSidebar = ({
                 </div>
                 )}
                 {showDiceActions && (
+                    <div className="pointer-events-auto">
                     <DiceActions
                         rollCount={rollCount}
                         rollLimit={rollLimit}
@@ -393,6 +396,7 @@ export const RightSidebar = ({
                         multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
                         isBonusDiceSettlement={isBonusDiceSettlement}
                     />
+                    </div>
                 )}
                 <div className={`w-full flex justify-center ${showAdvancePhaseButton ? '' : 'invisible pointer-events-none'}`}>
                     <GameButton
@@ -400,7 +404,7 @@ export const RightSidebar = ({
                         disabled={!isAdvanceButtonEnabled}
                         variant={isAdvanceButtonEnabled ? "primary" : "secondary"}
                         clickSoundKey={null}
-                        className="!py-0 !min-h-0"
+                        className="!py-0 !min-h-0 pointer-events-auto"
                         style={advanceButtonStyle}
                         size="sm"
                         data-tutorial-id="advance-phase-button"
@@ -409,7 +413,9 @@ export const RightSidebar = ({
                     </GameButton>
                 </div>
                 {passiveAbilityProps && passiveAbilityProps.passives.length > 0 && (
+                    <div className="pointer-events-auto">
                     <PassiveAbilityPanel {...passiveAbilityProps} />
+                    </div>
                 )}
                 <div className="flex justify-center" style={actionRailStyle}>
                     <DiscardPile

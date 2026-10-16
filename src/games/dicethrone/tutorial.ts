@@ -1,6 +1,9 @@
+import { withDiceThroneTutorialSurfaces } from './tutorialLayout';
 import type { TutorialHiddenAutomationContract, TutorialManifest, TutorialEventMatcher } from '../../engine/types';
 import { TOKEN_IDS, STATUS_IDS } from './domain/ids';
 import { MONK_CARDS } from './heroes/monk/cards';
+import type { TutorialCollection } from '../../engine/types';
+import { DiceThroneDamagePractice, DiceThroneDiscardPractice, DiceThroneResponsePractice, DiceThroneUltimatePractice, DiceThroneUpgradePractice, DiceThroneStraightPractice, DiceThroneKnockdownPractice } from './tutorialPractices';
 
 const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
     kind: 'setup-precondition',
@@ -79,17 +82,27 @@ const MATCH_RESPONSE_WINDOW_CLOSED: TutorialEventMatcher = {
 
 export const DiceThroneTutorial: TutorialManifest = {
     id: 'dicethrone-basic',
-    revision: 1,
+    playerId: '0',
+    revision: 4,
     randomPolicy: {
         mode: 'fixed',
         values: [6],
     },
     stepValidator: (state, step) => {
         if (step.id === 'inner-peace-response') return Boolean(state.sys.responseWindow?.current);
-        if (step.id === 'token-response-pass') return Boolean(state.core.pendingDamage);
+        const core = state.core as import('./domain/types').DiceThroneCore;
+        if (step.id === 'discard-finish') return state.sys.phase === 'discard' && core.activePlayerId === '0';
+        if (step.id === 'token-response-pass') return Boolean(core.pendingDamage);
+        if (step.id.startsWith('evasive-')) {
+            if (!core.pendingDamage) return false;
+            const rolling = core.currentRollContext?.kind === 'evasion' && core.currentRollContext.status === 'open';
+            if (step.id === 'evasive-use') return !rolling && (core.players['0'].tokens[TOKEN_IDS.EVASIVE] ?? 0) > 0;
+            if (step.id === 'evasive-confirm') return rolling;
+            return rolling || (core.players['0'].tokens[TOKEN_IDS.EVASIVE] ?? 0) > 0;
+        }
         return true;
     },
-    steps: [
+    steps: withDiceThroneTutorialSurfaces([
         // ==== 段 A：初始化 + UI 介绍 ====
         {
             id: 'setup',
@@ -147,6 +160,8 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'right',
             infoStep: true,
         },
+        { id: 'tip-inspect', content: 'game-dicethrone:tutorial.steps.tip-inspect', highlightTarget: 'tip-board-magnify-button', position: 'left', requireAction: true, allowedCommands: [] },
+        { id: 'tip-inspect-close', content: 'game-dicethrone:tutorial.steps.tip-inspect-close', highlightTarget: 'board-magnify-overlay-close', position: 'right', tooltipMaxWidth: 300, requireAction: true, allowedCommands: [] },
         { id: 'card-types', content: 'game-dicethrone:tutorial.steps.card-types', highlightTarget: 'hand-area', position: 'top', infoStep: true },
         {
             id: 'hand',
@@ -155,6 +170,8 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'top',
             infoStep: true,
         },
+        { id: 'hand-inspect', content: 'game-dicethrone:tutorial.steps.hand-inspect', highlightTarget: 'hand-card-card-deep-thought', position: 'top', requireAction: true, allowedCommands: [] },
+        { id: 'hand-inspect-close', content: 'game-dicethrone:tutorial.steps.hand-inspect-close', highlightTarget: 'board-magnify-overlay-close', position: 'right', tooltipMaxWidth: 300, requireAction: true, allowedCommands: [] },
         {
             id: 'discard',
             content: 'game-dicethrone:tutorial.steps.discard',
@@ -164,6 +181,7 @@ export const DiceThroneTutorial: TutorialManifest = {
         },
 
         // ==== 段 A2：弃牌教学（Turn 1 P0 main1，起手就有 4 张牌） ====
+        { id: 'response-control', content: 'game-dicethrone:tutorial.steps.response-control', highlightTarget: 'response-toggle', position: 'center', tooltipMaxWidth: 400, infoStep: true },
         { id: 'main-actions-rule', content: 'game-dicethrone:tutorial.steps.main-actions-rule', highlightTarget: 'hand-area', position: 'top', infoStep: true },
         {
             id: 'sell-card-intro',
@@ -219,7 +237,7 @@ export const DiceThroneTutorial: TutorialManifest = {
         },
         { id: 'roll-rule', content: 'game-dicethrone:tutorial.steps.roll-rule', highlightTarget: 'dice-tray', position: 'left', infoStep: true },
         {
-            id: 'dice-roll',
+            id: 'dice-roll', randomPolicy: { mode: 'fixed', values: [1] },
             content: 'game-dicethrone:tutorial.steps.rollButton',
             highlightTarget: 'dice-roll-button',
             position: 'left',
@@ -233,7 +251,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             allowedCommands: ["TOGGLE_DIE_LOCK"], advanceOnEvents: [{ type: 'DIE_LOCK_TOGGLED' }],
         },
         {
-            id: 'dice-reroll', content: 'game-dicethrone:tutorial.steps.dice-reroll', highlightTarget: 'dice-roll-button',
+            id: 'dice-reroll', randomPolicy: { mode: 'fixed', values: [1] }, content: 'game-dicethrone:tutorial.steps.dice-reroll', highlightTarget: 'dice-roll-button',
             position: 'left', requireAction: true, allowManualSkip: false,
             allowedCommands: ["ROLL_DICE","TOGGLE_DIE_LOCK"], advanceOnEvents: [{ type: 'DICE_ROLLED' }],
         },
@@ -270,12 +288,13 @@ export const DiceThroneTutorial: TutorialManifest = {
             allowedCommands: ['CONFIRM_ROLL', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
             advanceOnEvents: [{ type: 'ROLL_CONFIRMED' }],
         },
-        { id: 'ability-rule', content: 'game-dicethrone:tutorial.steps.ability-rule', highlightTarget: 'ability-slots', position: 'left', infoStep: true },
+        { id: 'ability-rule', content: 'game-dicethrone:tutorial.steps.ability-rule', highlightTarget: 'ability-slot-fist', position: 'right', tooltipMaxWidth: 330, infoStep: true },
         {
             id: 'abilities',
             content: 'game-dicethrone:tutorial.steps.abilities',
-            highlightTarget: 'ability-slots',
-            position: 'left',
+            highlightTarget: 'ability-slot-fist',
+            position: 'right',
+            tooltipMaxWidth: 330,
             requireAction: true,
             allowedCommands: ['SELECT_ABILITY'],
             advanceOnEvents: [{ type: 'ABILITY_ACTIVATED' }],
@@ -291,7 +310,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             advanceOnEvents: [MATCH_PHASE_DEFENSE, MATCH_PHASE_MAIN2],
         },
         {
-            id: 'opponent-defense',
+            id: 'opponent-defense', randomPolicy: { mode: 'fixed', values: [1] },
             content: 'game-dicethrone:tutorial.steps.opponentDefense',
             position: 'center',
             requireAction: false,
@@ -376,19 +395,14 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'center',
             infoStep: true,
         },
+        { id: 'discard-rule', content: 'game-dicethrone:tutorial.steps.discard-rule', highlightTarget: 'hand-area', position: 'top', infoStep: true },
         {
             id: 'end-turn', content: 'game-dicethrone:tutorial.steps.end-turn', highlightTarget: 'advance-phase-button',
             position: 'left', requireAction: true, allowManualSkip: false,
-            allowedCommands: ["ADVANCE_PHASE"], advanceOnEvents: [{ type: 'SYS_PHASE_CHANGED', match: { to: 'discard' } }],
-        },
-        { id: 'discard-rule', content: 'game-dicethrone:tutorial.steps.discard-rule', highlightTarget: 'hand-area', position: 'top', infoStep: true },
-        {
-            id: 'discard-finish', content: 'game-dicethrone:tutorial.steps.discard-finish', highlightTarget: 'advance-phase-button',
-            position: 'left', requireAction: true, allowManualSkip: false,
-            allowedCommands: ["ADVANCE_PHASE","SELL_CARD"], advanceOnEvents: [{ type: 'TURN_CHANGED' }],
+            allowedCommands: ["ADVANCE_PHASE"], advanceOnEvents: [{ type: 'TURN_CHANGED' }],
         },
         {
-            id: 'ai-turn', content: 'game-dicethrone:tutorial.steps.aiTurn', position: 'center',
+            id: 'ai-turn', randomPolicy: { mode: 'fixed', values: [1] }, content: 'game-dicethrone:tutorial.steps.aiTurn', position: 'center',
             requireAction: false, allowManualSkip: true, autoAdvanceAfterAi: false,
             aiActions: [
                 { commandType: 'PLAY_CARD', playerId: '1', payload: {"cardId":"card-palm-strike"} },
@@ -399,9 +413,14 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
             ],
         },
+        {
+            id: 'defense-start', content: 'game-dicethrone:tutorial.steps.defense-start',
+            highlightTarget: 'defense-start-button', position: 'left',
+            requireAction: true, allowManualSkip: true, allowedCommands: [],
+        },
         { id: 'defense-rule', content: 'game-dicethrone:tutorial.steps.defense-rule', highlightTarget: 'dice-tray', position: 'left', infoStep: true },
         {
-            id: 'defense-roll', content: 'game-dicethrone:tutorial.steps.defense-roll', highlightTarget: 'dice-roll-button',
+            id: 'defense-roll', randomPolicy: { mode: 'fixed', values: [1] }, content: 'game-dicethrone:tutorial.steps.defense-roll', highlightTarget: 'dice-roll-button',
             position: 'left', requireAction: true, allowManualSkip: false,
             allowedCommands: ["ROLL_DICE"], advanceOnEvents: [{ type: 'DICE_ROLLED' }],
         },
@@ -419,7 +438,20 @@ export const DiceThroneTutorial: TutorialManifest = {
         {
             id: 'token-response-use', content: 'game-dicethrone:tutorial.steps.token-response-use', highlightTarget: 'status-tokens',
             position: 'left', requireAction: true, allowManualSkip: false,
-            allowedCommands: ["USE_TOKEN","SKIP_TOKEN_RESPONSE","SYS_INTERACTION_RESPOND","SYS_INTERACTION_CONFIRM"], advanceOnEvents: [{ type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.TAIJI } }, { type: 'TOKEN_RESPONSE_CLOSED' }],
+            allowedCommands: ["USE_TOKEN","SKIP_TOKEN_RESPONSE","SYS_INTERACTION_RESPOND","SYS_INTERACTION_CONFIRM"], advanceOnEvents: [{ type: 'TOKEN_USED', match: { playerId: '0' } }, { type: 'TOKEN_RESPONSE_CLOSED' }],
+        },
+        { id: 'evasive-rule', content: 'game-dicethrone:tutorial.steps.evasive-rule', highlightTarget: 'status-tokens', position: 'right', infoStep: true },
+        {
+            id: 'evasive-use', content: 'game-dicethrone:tutorial.steps.evasive-use', highlightTarget: 'status-tokens', position: 'right',
+            requireAction: true, allowManualSkip: false, randomPolicy: { mode: 'fixed', values: [1] },
+            allowedCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
+            advanceOnEvents: [{ type: 'TOKEN_USED', match: { playerId: '0' } }, { type: 'TOKEN_RESPONSE_CLOSED' }],
+        },
+        {
+            id: 'evasive-confirm', content: 'game-dicethrone:tutorial.steps.evasive-confirm', highlightTarget: 'dice-confirm-button', position: 'left',
+            requireAction: true, allowManualSkip: false,
+            allowedCommands: ['SKIP_TOKEN_RESPONSE', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
+            advanceOnEvents: [{ type: 'TOKEN_RESPONSE_CLOSED' }],
         },
         {
             id: 'token-response-pass', content: 'game-dicethrone:tutorial.steps.token-response-pass', highlightTarget: 'response-pass-button',
@@ -435,7 +467,7 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
             ],
         },
-        { id: 'income-result', content: 'game-dicethrone:tutorial.steps.income-result', highlightTarget: 'player-stats', position: 'left', infoStep: true },
+        { id: 'income-result', content: 'game-dicethrone:tutorial.steps.income-result', highlightTarget: 'hand-card-card-meditation-2', position: 'top', tooltipMaxWidth: 330, infoStep: true },
         // ==== 段 E：净化教程 + 升级（Turn 2 P0 main1） ====
         {
             id: 'knockdown-explain',
@@ -449,7 +481,8 @@ export const DiceThroneTutorial: TutorialManifest = {
             id: 'purify-use',
             content: 'game-dicethrone:tutorial.steps.purifyUse',
             highlightTarget: 'status-tokens',
-            position: 'right',
+            position: 'top',
+            tooltipMaxWidth: 300,
             requireAction: true,
             allowManualSkip: false,
             allowedCommands: ['USE_PURIFY', 'USE_TOKEN'],
@@ -478,7 +511,21 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'center',
             infoStep: true,
         },
-    ],
+    ]),
 };
 
-export default DiceThroneTutorial;
+const DiceThroneTutorials: TutorialCollection = {
+    defaultTutorialId: DiceThroneTutorial.id,
+    tutorials: {
+        [DiceThroneTutorial.id]: { titleKey: 'tutorial.chapters.basic', manifest: DiceThroneTutorial },
+        [DiceThroneResponsePractice.id]: { titleKey: 'tutorial.chapters.response', manifest: DiceThroneResponsePractice },
+        [DiceThroneDiscardPractice.id]: { titleKey: 'tutorial.chapters.limit', manifest: DiceThroneDiscardPractice },
+        [DiceThroneUltimatePractice.id]: { titleKey: 'tutorial.chapters.ultimate', manifest: DiceThroneUltimatePractice },
+        [DiceThroneDamagePractice.id]: { titleKey: 'tutorial.chapters.damage', manifest: DiceThroneDamagePractice },
+        [DiceThroneUpgradePractice.id]: { titleKey: 'tutorial.chapters.upgrade', manifest: DiceThroneUpgradePractice },
+        [DiceThroneStraightPractice.id]: { titleKey: 'tutorial.chapters.straight', manifest: DiceThroneStraightPractice },
+        [DiceThroneKnockdownPractice.id]: { titleKey: 'tutorial.chapters.knockdown', manifest: DiceThroneKnockdownPractice },
+    },
+};
+
+export default DiceThroneTutorials;

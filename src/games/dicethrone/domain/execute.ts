@@ -205,7 +205,6 @@ export function execute(
 ): DiceThroneEvent[] {
     const state = matchState.core;
     const phase = (matchState.sys?.phase ?? 'setup') as TurnPhase;
-    const isTutorialActive = matchState.sys?.tutorial?.active === true;
     const events: DiceThroneEvent[] = [];
     const timestamp = resolveTimestamp(command);
 
@@ -238,17 +237,13 @@ export function execute(
             }
 
             const results: number[] = [];
-            // 教程模式：骰子固定为 1（fist），确保教程流程中技能匹配
-            // randomPolicy.values:[6] 控制其他随机（如悟道卡 rollDie → lotus）
-            const tutorialFixedValue = 1;
-            
             state.dice.slice(0, state.rollDiceCount).forEach(die => {
                 if (!die.isKept) {
-                    results.push(isTutorialActive ? tutorialFixedValue : random.d(6));
+                    results.push(random.d(6));
                 }
             });
             if (phase === 'defensiveRoll' && state.pendingAttack?.defenseAbilityId === 'duel') {
-                results.push(isTutorialActive ? tutorialFixedValue : random.d(6));
+                results.push(random.d(6));
             }
             
             const event: DiceRolledEvent = {

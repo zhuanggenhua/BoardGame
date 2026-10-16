@@ -404,6 +404,16 @@ describe('DiceThrone token response choice contract projection', () => {
             timestamp: 1,
         })).toEqual({ valid: true });
         expect(DiceThroneDomain.validate(allowedState, {
+            type: 'USE_TOKEN', playerId: '0', timestamp: 1,
+            payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId: 'dmg-1', _noSnapshot: true },
+        })).toEqual({ valid: true });
+        for (const extra of [{ amount: 2 }, { pendingDamageId: 'other-damage' }, { unexpected: true }]) {
+            expect(DiceThroneDomain.validate(allowedState, {
+                type: 'USE_TOKEN', playerId: '0', timestamp: 1,
+                payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId: 'dmg-1', _noSnapshot: true, ...extra },
+            })).toEqual({ valid: false, error: 'choice_contract_mismatch' });
+        }
+        expect(DiceThroneDomain.validate(allowedState, {
             type: 'USE_TOKEN',
             playerId: '0',
             payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId: 'other-damage' },

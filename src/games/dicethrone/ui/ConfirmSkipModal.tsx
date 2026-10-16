@@ -31,6 +31,7 @@ export const ConfirmSkipModal = ({
                     <GameButton
                         variant="primary"
                         onClick={onConfirm}
+                        data-tutorial-id="skip-ability-confirm"
                         className="flex-1"
                     >
                         {t('confirmSkip.confirm')}

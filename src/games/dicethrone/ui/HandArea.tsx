@@ -912,8 +912,8 @@ export const HandArea = ({
             {/* 教程高亮目标：仅覆盖实际卡牌区域 */}
             <div
                 data-tutorial-id="hand-area"
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none"
-                style={{ width: buildBoardShellInlineUnitValue(cardSpreadWidth), height: buildBoardShellInlineUnitValue(cardAreaHeight) }}
+                className="absolute bottom-0 left-1/2 pointer-events-none"
+                style={{ width: buildBoardShellInlineUnitValue(cardSpreadWidth), height: buildBoardShellInlineUnitValue(cardAreaHeight), transform: 'translateX(-50%)' }}
             />
             <div
                 className="relative h-full flex justify-center items-end"
@@ -994,6 +994,10 @@ export const HandArea = ({
                                 onPointerUp={(event) => {
                                     updateDragPointerPoint(event);
                                     handleCardPointerUp(cardKey);
+                                }}
+                                onTouchEnd={(event) => {
+                                    // 长按抬手时取消合成点击，避免同一手势立即点中详情背景并关闭它。
+                                    if (shouldBlockLongPressClick(cardKey)) event.preventDefault();
                                 }}
                                 onPointerCancel={(event) => {
                                     updateDragPointerPoint(event);

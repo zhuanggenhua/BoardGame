@@ -482,6 +482,8 @@ export interface TutorialStepSnapshot {
 
 export interface TutorialManifest {
     id: string;
+    /** 固定的学习者座位；声明后不随热座回合或他人响应切换控制身份。 */
+    playerId?: PlayerId;
     /**
      * 教程进度版本。
      *

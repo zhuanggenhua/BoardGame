@@ -1,0 +1,284 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_mobile_final"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/01-upgrade-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "二级与三级清修手牌均清楚呈现，独立升级练习说明完整，双方资源可见。",
+      "score": 94,
+      "sha256": "3069ab1798907033a8df56f7393bc3e33507dfd23aa278d4c04824420454e82a"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/02-upgrade-two.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "二级清修手牌清楚高亮，支付费用说明完整，点击目标未被教程卡遮挡。",
+      "score": 94,
+      "sha256": "7f288f082dce132c3dd4b87c7b416fba0e6ae172e72949b892378724fcfd8b88"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/03-upgrade-two-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "二级清修已覆盖玩家板原技能且清楚高亮，费用结果说明和自身战斗点数可读。",
+      "score": 94,
+      "sha256": "300bc0cf7eb25898c69325baf0e19e01afd3c95779d1f3c61ac7112de0e04c6d"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/04-upgrade-three-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三级清修手牌完整高亮，差价升级说明完整，现有二级技能和双方资源可见。",
+      "score": 94,
+      "sha256": "687351511a5bcdf1563d0ba6e4136d5c6c86794c51ffa5ca4b42fb99a67f182f"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/05-upgrade-three.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三级清修点击目标完整可见，差价支付说明清楚，操作入口未被遮挡。",
+      "score": 94,
+      "sha256": "a9561f898a875a7234e6209182c5df7f2a017e43a7548738dc1552df6117e07a"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/06-upgrade-three-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家板三级清修清楚高亮，升级结果正文与自身战斗点数可读。",
+      "score": 94,
+      "sha256": "c4594d898a124fe9f335d4b8efe4a6e1645487b2facdf4bf92067ee02c83162b"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-upgrade/07-upgrade-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "升级练习总结与下一步按钮清楚，自身战斗点数高亮，三级清修结果保留可见。",
+      "score": 94,
+      "sha256": "1108452411eb13ee42b240c9de2c6a189d889d08736f560850e82bd285663f64"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/01-straight-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顺子练习说明完整，回合顺序清楚高亮，双方资源可读。",
+      "score": 94,
+      "sha256": "89409a5689efe26b9a695d1200769d9c834332eafdf9a41a623253e520da8fb3"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/02-straight-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮清楚高亮，进入进攻掷骰说明完整，双方资源可见。",
+      "score": 94,
+      "sha256": "f78962fe2b2a13cd62d4633c84d60f4e884d1f42870210b05e15504d50335350"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/03-straight-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧投掷按钮清楚高亮，五颗骰子和操作正文完整可见。",
+      "score": 94,
+      "sha256": "19d0abebc0d26986795e7ffb4229472be55d1f775dc543acdac2b89bd4fed454"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/04-straight-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗骰子的连续数字清楚，大小顺技能候选高亮，规则说明完整。",
+      "score": 94,
+      "sha256": "31f9bb1cee1b0873766dd7681367a494ebb17ced88b42f6ab05d746ec89ab959"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/05-straight-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认按钮清楚高亮，连续数字骰面完整，当前操作正文可读。",
+      "score": 94,
+      "sha256": "4b4dc832d4c19358281558b306954657c33214c10631df26193e16847249a6bb"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/06-straight-select.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大小顺候选技能本体清楚高亮，当前骰面和选择说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "0e8ae993203cb44978f68e8761394d1b616bc5c6ebcb891ee7ff67da3dead35b"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/07-straight-resolve.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选小顺技能与当前伤害清楚，结算攻击按钮完整高亮，双方资源可见。",
+      "score": 94,
+      "sha256": "1073c488f05de77a3f1f0c8fd8a8d6b627c29512d140fc6d8f6189e580704e6f"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/08-straight-defense.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手防御后的双方体力及太极标记清楚，反击结果正文完整。",
+      "score": 94,
+      "sha256": "f04e857870896d81b2cfd8526f8c3199214210b29f430f282b001738b1394bca"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/09-straight-small-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "小顺获得的太极标记及数量完整高亮，结果说明和下一步按钮清楚。",
+      "score": 94,
+      "sha256": "69f944778d712318ce94117c71c8265feb3f598102e3f90f5246d7df3e9850e5"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-straight/10-straight-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "反击后自身体力清楚高亮，结算总结完整，对手资源读数可见。",
+      "score": 94,
+      "sha256": "53776672c19b9a48356de264a02f20fcd48f6d38aa90a1a4e9e313d83924544b"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-knockdown/01-knockdown-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒标记完整高亮，练习起始说明完整，双方体力与战斗点数可读。",
+      "score": 94,
+      "sha256": "24d571f9199c7f9c5a4c31d6902200a3ef5c654bbed3ba89112f36ec8b62de02"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-knockdown/02-knockdown-choice.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒标记和下一阶段按钮均清楚，付费与跳过选择说明完整，双方资源可读。",
+      "score": 94,
+      "sha256": "31dbab0711dbec84ffcb0ad1bad8f4c539282305cf1adbb98db5c8ede2f44db7"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-knockdown/03-knockdown-skip-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回合顺序已高亮第二主要阶段，击倒标记移除且战斗点数保留可见，结果说明完整。",
+      "score": 94,
+      "sha256": "5242f42317a29cdda0fb580a9723cd8fa5384711b3678f4208fe27ccfbe21ec0"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶非推荐分支：dicethrone-knockdown/04-knockdown-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第二主要阶段清楚高亮，击倒影响总结完整，完成并返回按钮清楚可点。",
+      "score": 94,
+      "sha256": "602d557fde569786d533a8c469cf9191c9c19fc0f5ede7c6d05680a555196df0"
+    }
+  ]
+}

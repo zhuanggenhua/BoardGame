@@ -1859,12 +1859,34 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             isTutorialActive
             && tutorialStep?.requireAction
             && tutorialStep.highlightTarget === targetId
+            && !tutorialStep.advanceOnEvents?.length
         ) {
             nextTutorialStep();
         }
     }, [isTutorialActive, tutorialStep, nextTutorialStep]);
 
+    React.useEffect(() => {
+        const selected = diceMultistepState.result as DiceSelectResult | null;
+        if (isTutorialActive && tutorialStep?.id === 'interference-target' && selected?.selectedDiceIds?.length) {
+            nextTutorialStep('auto');
+        }
+    }, [diceMultistepState.result, isTutorialActive, nextTutorialStep, tutorialStep?.id]);
+
+    React.useEffect(() => {
+        if (isTutorialActive && tutorialStep?.id === 'knockdown-choice' && modals.removeKnockdown) nextTutorialStep();
+    }, [isTutorialActive, modals.removeKnockdown, nextTutorialStep, tutorialStep?.id]);
+
+    React.useEffect(() => {
+        if (!isTutorialActive) return;
+        const id = tutorialStep?.id;
+        const opened = (id === 'tip-inspect' && Boolean(magnify.image)) || (id === 'hand-inspect' && Boolean(magnify.card));
+        const closed = (id === 'tip-inspect-close' || id === 'hand-inspect-close') && !isMagnifyOpen;
+        const skipOpened = id === 'no-ability-pass' && modals.confirmSkip;
+        if (opened || closed || skipOpened) nextTutorialStep('auto');
+    }, [isMagnifyOpen, isTutorialActive, magnify.card, magnify.image, modals.confirmSkip, nextTutorialStep, tutorialStep?.id]);
+
     const shouldPlayTutorialHandCardOnClick = Boolean(
+        // 目标牌本体与整片手牌沿用同一正式出牌入口。
         isTutorialActive
         && tutorialStep?.requireAction
         && (tutorialStep.highlightTarget === 'hand-area' || tutorialStep.highlightTarget?.startsWith('hand-card-'))
@@ -2488,7 +2510,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 isDiscardMode={isDiscardMode}
                                 onDiscardCard={(cardId) => {
                                     if (shouldBlockTutorialAction('discard-pile')) return;
-                                    engineMoves.discardCard(cardId);
+                                    // 超限处理按弃牌阶段规则出售，每张获得 1 CP。
+                                    engineMoves.sellCard(cardId);
                                     advanceTutorialIfNeeded('discard-pile');
                                 }}
                                 onMagnifyCard={(card) => setMagnifiedCard(card)}
@@ -2512,7 +2535,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         locale={locale}
                         opponentName={opponentName}
                         autoDismissMs={attackShowcaseAutoDismissMs}
-                        onDismiss={dismissAttackShowcase}
+                        onDismiss={() => {
+                            dismissAttackShowcase();
+                            advanceTutorialIfNeeded('defense-start-button');
+                        }}
                     />
                 )}
 

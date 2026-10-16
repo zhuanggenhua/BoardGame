@@ -634,7 +634,8 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 if (!state.sys.tutorial.active) {
                     return { halt: true, state };
                 }
-                if (!state.sys.tutorial.allowManualSkip) {
+                const payload = isRecord(command.payload) ? command.payload as TutorialNextPayload : undefined;
+                if (!state.sys.tutorial.allowManualSkip && payload?.reason !== 'auto') {
                     return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
                 }
                 if (hasPendingAiActions(state.sys.tutorial)) {

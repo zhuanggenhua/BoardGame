@@ -1,0 +1,50 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_skip_tail_check"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/62-upgrade-rule.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "升级正文完整呈现仅自己主要阶段可打出永久升级打出后不可出售新卡盖旧卡及只付差价五项条款，文字与下一步按钮清晰且未裁切",
+      "score": 96,
+      "sha256": "ae00297aca1e3341005dcda328944973ec44e07013079d6b75edc340ad40075b"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/64-upgrade-result.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "清修二级技能已显示于玩家板右下槽位，左侧资源读数完整可见，升级保留到后续回合的提示及下一步按钮清晰可读",
+      "score": 95,
+      "sha256": "e8c31a10620b4693c3325888b80cdd4eb826d6c7f907bfc29fe81a340bb42671"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/65-finish.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程完成提示正文完整显示，完成并返回按钮清晰可见且未被遮挡或裁切，左侧资源与玩家板仍可识别",
+      "score": 96,
+      "sha256": "5399775db09b61826bcdfc87e336a1b86e05243b43ef2ba1c0f3b48e86add25c"
+    }
+  ]
+}

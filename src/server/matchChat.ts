@@ -16,6 +16,41 @@ export const getVisibleChatHistory = (history: MatchChatMessage[], isPlayer: boo
     history.filter(message => message.channel !== 'players' || isPlayer)
 );
 
+type MatchChatMembership = { matchId: string; identity: MatchChatIdentity };
+type PlayerChatAuthorization =
+    | { ok: true; player: NonNullable<ReturnType<typeof resolveChatPlayer>> }
+    | { ok: false; result: MatchChatResult };
+
+async function authorizePlayerChatBroadcast(
+    io: Server,
+    socket: Socket,
+    storage: Pick<MatchStorage, 'fetch'>,
+    membership: MatchChatMembership,
+    isCurrentMembership: () => boolean,
+): Promise<PlayerChatAuthorization> {
+    const playerRoom = roomKey(membership.matchId, 'players');
+    const recipients = await io.in(playerRoom).fetchSockets();
+    if (!socket.connected || !isCurrentMembership()) return { ok: false, result: { ok: false, reason: 'not_joined' } };
+
+    // Read current credentials after collecting the room members, then evict stale identities before broadcast.
+    const { metadata } = await storage.fetch(membership.matchId, { metadata: true });
+    if (!metadata) return { ok: false, result: { ok: false, reason: 'match_not_found' } };
+    if (!socket.connected || !isCurrentMembership()) return { ok: false, result: { ok: false, reason: 'not_joined' } };
+
+    for (const recipient of recipients) {
+        const identity = recipient.data.matchChatIdentity as MatchChatIdentity | undefined;
+        if (!identity || !resolveChatPlayer(metadata, identity)) await recipient.leave(playerRoom);
+    }
+    if (!socket.connected || !isCurrentMembership()) return { ok: false, result: { ok: false, reason: 'not_joined' } };
+
+    const player = resolveChatPlayer(metadata, membership.identity);
+    if (!player) {
+        await socket.leave(playerRoom);
+        return { ok: false, result: { ok: false, reason: 'not_player' } };
+    }
+    return { ok: true, player };
+}
+
 export function registerMatchChat(io: Server, socket: Socket, storage: Pick<MatchStorage, 'fetch'>) {
     let joined: { matchId: string; identity: MatchChatIdentity } | undefined;
     let joinRevision = 0;
@@ -73,7 +108,23 @@ export function registerMatchChat(io: Server, socket: Socket, storage: Pick<Matc
         if (requestKey) {
             const prior = chatHistoryByMatch.get(membership.matchId)?.find(message => message.clientMessageId === clientMessageId);
             if (prior) {
-                ack?.(prior.channel === channel && prior.text === text ? { ok: true } : { ok: false, reason: 'invalid_message' });
+                if (prior.channel !== channel || prior.text !== text) {
+                    ack?.({ ok: false, reason: 'invalid_message' });
+                    return;
+                }
+                const replay = async (): Promise<MatchChatResult> => {
+                    try {
+                        if (!socket.connected || joined !== membership) return { ok: false, reason: 'not_joined' };
+                        if (channel === 'players') {
+                            const authorization = await authorizePlayerChatBroadcast(io, socket, storage, membership, () => joined === membership);
+                            if (!authorization.ok) return authorization.result;
+                        }
+                        if (!socket.connected || joined !== membership) return { ok: false, reason: 'not_joined' };
+                        io.to(roomKey(membership.matchId, channel)).emit(MATCH_CHAT_EVENTS.MESSAGE, prior);
+                        return { ok: true };
+                    } catch { return { ok: false, reason: 'unavailable' }; }
+                };
+                ack?.(await replay());
                 return;
             }
             const inFlight = chatSendsInFlight.get(requestKey);
@@ -87,23 +138,21 @@ export function registerMatchChat(io: Server, socket: Socket, storage: Pick<Matc
             const { metadata } = await storage.fetch(membership.matchId, { metadata: true });
             if (!metadata) { leave(); return { ok: false, reason: 'match_not_found' }; }
             if (joined !== membership) return { ok: false, reason: 'not_joined' };
-            const player = resolveChatPlayer(metadata, membership.identity);
+            let player = resolveChatPlayer(metadata, membership.identity);
             if (!player) await socket.leave(roomKey(membership.matchId, 'players'));
             if (channel === 'players' && !player) return { ok: false, reason: 'not_player' };
+            if (channel === 'players') {
+                const authorization = await authorizePlayerChatBroadcast(io, socket, storage, membership, () => joined === membership);
+                if (!authorization.ok) return authorization.result;
+                player = authorization.player;
+            }
             const message: MatchChatMessage = {
                 id: nanoid(), clientMessageId, matchId: membership.matchId, channel, text,
                 senderId: player ? membership.identity.playerId : socket.id,
                 senderName: player?.name || membership.identity.senderName || '观众',
                 senderRole: player ? 'player' : 'spectator', createdAt: new Date().toISOString(),
             };
-            // 发送前重新核验玩家订阅，离座或凭证失效后不能继续接收私有消息。
-            if (channel === 'players') {
-                const recipients = await io.in(roomKey(membership.matchId, 'players')).fetchSockets();
-                for (const recipient of recipients) {
-                    const identity = recipient.data.matchChatIdentity as MatchChatIdentity | undefined;
-                    if (!identity || !resolveChatPlayer(metadata, identity)) await recipient.leave(roomKey(membership.matchId, 'players'));
-                }
-            }
+            if (!socket.connected || joined !== membership) return { ok: false, reason: 'not_joined' };
             // 可能失败的 adapter 操作完成后才落历史，避免失败回执留下可见消息并在重试时重复。
             const history = [...(chatHistoryByMatch.get(membership.matchId) ?? []), message];
             // 每个频道各自保留上限，公共聊天不能挤掉玩家频道历史。

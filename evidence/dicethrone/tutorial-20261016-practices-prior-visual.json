@@ -1,0 +1,1463 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_practices_final"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/01-damage-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "伤害练习说明及下一步完整，太极与双方资源清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/01-damage-start.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/02-damage-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮贴合骰盘且高亮，说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/02-damage-advance.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/03-damage-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷按钮与五颗骰子可见，资源未遮挡。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/03-damage-roll.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/04-damage-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四个莲花骰面和确认按钮清楚，说明无裁切。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/04-damage-confirm.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/05-undefendable-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "不可防御伤害正文完整，所述莲花技能高亮可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/05-undefendable-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/06-damage-select.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "莲花技能候选本体完整高亮，点击指令清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/06-damage-select.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/07-damage-resolve.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算攻击按钮高亮，当前总伤害五可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/07-damage-resolve.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/08-boost-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极图标高亮，增伤说明与下一步完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/08-boost-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/09-boost-use.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极候选本体可见，当前伤害及双方资源保留。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/09-boost-use.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/10-boost-pass.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "跳过响应按钮居中清楚，伤害由五至六的读数可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/10-boost-pass.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/11-opponent-evades.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "闪避结果正文与下一步完整，对手生命可读。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/11-opponent-evades.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/12-cap-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极上限读数完整高亮，说明面板未占资源。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/12-cap-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/13-pure-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "纯粹伤害正文与前后步骤按钮完整，骰盘保留。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/13-pure-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/14-collateral-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "附属伤害说明全文可读，下一步明确。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/14-collateral-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-damage/15-damage-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结业说明指向对手生命五十，完成并返回入口清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-damage/15-damage-finish.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/01-limit-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌上限说明完整，七张手牌候选与战斗点数可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/01-limit-start.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/02-limit-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "出售规则正文完整，手牌区域高亮且未被说明遮挡。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/02-limit-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/03-limit-discard.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "待出售手牌候选本体清楚，操作说明与手牌相邻。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/03-limit-discard.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/04-limit-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "售后六张手牌与战斗点数十五可见，提示完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/04-limit-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/05-limit-end.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回合转交说明与阶段列表可见，双方资源保留。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/05-limit-end.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/06-limit-opponent.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手结束回合说明完整，新增手牌及牌库数量可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/06-limit-opponent.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/07-reshuffle-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "洗牌抽牌说明完整，手牌候选区域清楚高亮。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/07-reshuffle-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-hand-limit/08-limit-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战斗点数上限十五高亮可读，结束前说明与下一步完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-hand-limit/08-limit-finish.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/01-response-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "出牌时机说明与下一步清楚，两张手牌和双方资源可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/01-response-start.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/02-instant-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即时行动牌规则正文完整，红色牌本体高亮。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/02-instant-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/03-instant-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "高亮红色牌可辨识可点，当前阶段与操作指令清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/03-instant-play.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/04-instant-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战斗点数四高亮可见，响应牌仍在中央手牌处。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/04-instant-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/05-opponent-declares.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五个莲花骰面与响应入口可见，终极启动前说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/05-opponent-declares.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/06-ultimate-prevention.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骰盘五颗骰子高亮清楚，改变骰面说明与下一步完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/06-ultimate-prevention.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/07-interference-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "干扰牌本体完整居中高亮，选择骰子说明不遮骰盘。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/07-interference-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/08-interference-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "干扰牌完整居中高亮，战斗点数与点击说明清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/08-interference-play.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/09-interference-target.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗对手骰子候选完整高亮，目标说明与资源均可读。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/09-interference-target.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/10-interference-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "首颗骰子选中标记清楚，确认按钮与骰盘相邻可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/10-interference-confirm.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/11-interference-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重掷后的拳面及四个莲花清楚，战斗点数三可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/11-interference-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-response/12-response-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手已选技能特写完整，结束正文与完成并返回入口清楚；本步不要求读取背景资源。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-response/12-response-finish.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/01-ultimate-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "终极练习说明与阶段高亮完整，对手剩余生命五可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-ultimate/01-ultimate-start.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/02-ultimate-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段入口高亮，双方资源与骰盘保留。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-ultimate/02-ultimate-advance.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/03-ultimate-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷按钮高亮且五颗骰子完整可见，说明清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-ultimate/03-ultimate-roll.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/04-ultimate-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "不可阻挡与唯一对策两条正文完整，五个莲花骰面高亮，双方资源和确认入口均保留。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/05-ultimate-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五个莲花骰面及确认入口完整，双方资源清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-ultimate/05-ultimate-confirm.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/06-ultimate-select.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "终极技能槽本体独立高亮，点击提示相邻，骰盘与双方资源未被遮挡。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/08-ultimate-resolve.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "终极技能选中描边与总伤害十可见，结算入口清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/独立机制练习：dicethrone-ultimate/07-ultimate-resolve.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/09-ultimate-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜利面板与教程结业按钮清楚，顶部对手生命零未被飘字遮挡。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/01-knockdown-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒标记与战斗点数二清楚，练习说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/01-knockdown-start.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/02-knockdown-choice.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒标记高亮可点，支付与不支付两条入口说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/02-knockdown-choice.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/03-knockdown-pay.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付确认模态正文完整，花费二点移除按钮高亮可点。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/03-knockdown-pay.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/04-knockdown-paid-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战斗点数零高亮可读，击倒已消失，结果说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/04-knockdown-paid-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/05-knockdown-enter.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮高亮，资源和骰盘可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/05-knockdown-enter.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/06-no-ability-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "不发动能力规则全文可读，五颗骰子独立高亮，资源及按钮保留。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/07-no-ability-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷入口高亮，骰子与技能板清楚可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/07-no-ability-roll.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/08-no-ability-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "拳头骰面与确认按钮完整可见，技能候选高亮清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/08-no-ability-confirm.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/09-no-ability-pass.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "不发动技能的结算攻击入口高亮，说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/09-no-ability-pass.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/10-no-ability-confirm-pass.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结束确认模态正文完整，返回选择与确定结束按钮可辨。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/10-no-ability-confirm-pass.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/11-no-ability-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "双方生命五十及战斗点数零清楚，放弃结果说明完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/11-no-ability-result.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-knockdown/12-knockdown-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第二主要阶段高亮，结业说明与返回按钮清楚。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-knockdown/12-knockdown-finish.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/01-straight-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顺子练习说明完整，阶段列表及双方资源可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/01-straight-start.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/02-straight-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮高亮，提示与骰盘不重叠。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/02-straight-advance.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/03-straight-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷入口可见高亮，五颗骰子主体完整。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/03-straight-roll.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/04-straight-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "一至五骰面清楚，大小顺说明完整，技能候选可辨。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/04-straight-rule.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/05-straight-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认按钮高亮，数字顺序与技能候选均完整可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/05-straight-confirm.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/06-straight-select.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大小顺两项技能候选本体可辨，选择说明完整且未压骰盘。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/06-straight-select.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/07-straight-resolve.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大顺技能已选中，总伤害七和结算入口完整可见。",
+      "score": 96,
+      "sourceReview": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/tutorial-20261016-r17-practices-final-visual.json",
+        "media": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/进阶机制练习：dicethrone-straight/07-straight-resolve.png",
+        "reviewer": "/root/tutorial_practices_final",
+        "implementationUnchanged": true,
+        "conditionsUnchanged": true,
+        "notUserInvalidated": true,
+        "reason": "同一实现同一教学状态，机械重拍仅改变动画采样；已点名遮挡条目另行复核。"
+      }
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/08-straight-defense.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御反击结果正文完整，双方生命与战斗点数稳定可读。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/09-straight-large-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极二与闪避一奖励图标清楚，双方生命与战斗点数稳定可读。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/进阶机制练习：dicethrone-straight/10-straight-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "自身生命四十六清楚高亮，对手生命四十三可见，结束正文完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/独立机制练习：dicethrone-ultimate/07-ultimate-lock-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "行动锁定说明全文可读，阶段条高亮且总伤害十与骰盘可见。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/54-token-response-use.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极标记和跳过响应入口可点，总伤害八及双方资源清楚。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/55-damage-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "攻击后自身生命三十八与太极四可读，结果说明完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/56-opponent-end-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回合交接正文完整，双方资源和新手牌可见。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/57-income-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "清修二新牌本体高亮，收入说明及下一步完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/58-knockdown-explain.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒标记高亮可辨，支付或跳过的说明完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/59-purify-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化与击倒标记均可辨，净化规则说明全文完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/60-purify-use.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化本体高亮且操作说明完整，双方生命与战斗点数保留。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/61-purify-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化后击倒已消失，太极四与闪避一可读，结果正文完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/62-upgrade-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "升级规则末句止于战斗点数，后续差值文字被底部按钮区域裁切。",
+      "score": 75,
+      "reviewedDirectly": true
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r19/响应分支：直接放弃后仍可结算并完成后续教学/63-meditation-2.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "清修二本体高亮可点，支付二点及拖动替代入口说明完整。",
+      "score": 96,
+      "reviewedDirectly": true
+    }
+  ]
+}

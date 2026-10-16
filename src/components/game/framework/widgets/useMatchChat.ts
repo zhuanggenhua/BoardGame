@@ -20,6 +20,17 @@ export function useMatchChat(options: {
     const open = useRef(false);
     const active = useRef(channel);
     const [ownIds, setOwnIds] = useState(() => new Set<string>());
+    const seenMessageIds = useRef<Record<MatchChatChannel, Set<string>>>({ players: new Set(), room: new Set() });
+    const rememberSeenMessage = useCallback((messageId: string, channel: MatchChatChannel) => {
+        const seen = seenMessageIds.current[channel];
+        if (seen.has(messageId)) return false;
+        seen.add(messageId);
+        if (seen.size > MAX_CHAT_MESSAGES) {
+            const oldest = seen.values().next().value;
+            if (oldest !== undefined) seen.delete(oldest);
+        }
+        return true;
+    }, []);
     const sessionKey = `${isOnline}:${matchId}:${playerId}:${credentials}:${displayName}`;
     const [previousSessionKey, setPreviousSessionKey] = useState(sessionKey);
     const generation = useRef(0);
@@ -33,6 +44,8 @@ export function useMatchChat(options: {
         setPreviousSessionKey(sessionKey);
         setMessages([]); setDrafts(emptyDrafts()); setUnread(emptyUnread());
         setLatestIncoming(null); setOwnIds(new Set()); setSending(false);
+        seenMessageIds.current.players.clear();
+        seenMessageIds.current.room.clear();
         setChannel(isSpectator ? 'room' : 'players');
     }
     const { t } = useTranslation('game');
@@ -56,12 +69,14 @@ export function useMatchChat(options: {
         const unsubHistory = matchSocket.subscribeChatHistory(history => {
             if (!activeSubscription) return;
             const visible = history.filter(message => message.matchId === matchId && (!isSpectator || message.channel !== 'players'));
+            visible.forEach(message => rememberSeenMessage(message.id, message.channel ?? 'room'));
             setMessages(prev => [...new Map([...visible, ...prev].map(message => [message.id, message])).values()]
                 .sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
         });
         const unsubscribe = matchSocket.subscribeChat(message => {
             if (!activeSubscription || message.matchId !== matchId || (isSpectator && message.channel === 'players')) return;
             const target = message.channel ?? 'room';
+            if (!rememberSeenMessage(message.id, target)) return;
             const own = matchSocket.isOwnChatMessage(message);
             if (own) setOwnIds(prev => new Set([...prev, message.id]));
             setMessages(prev => prev.some(item => item.id === message.id) ? prev : [
@@ -78,7 +93,7 @@ export function useMatchChat(options: {
             activeSubscription = false;
             unsubHistory(); unsubscribe(); matchSocket.leaveChat();
         };
-    }, [isOnline, matchId, playerId, credentials, displayName, isSpectator]);
+    }, [isOnline, matchId, playerId, credentials, displayName, isSpectator, rememberSeenMessage]);
 
     const input = drafts[currentChannel];
     const send = async () => {
