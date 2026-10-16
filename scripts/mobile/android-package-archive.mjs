@@ -58,10 +58,15 @@ export const createAndroidCompatibleZipFile = async (includedFiles, zipFilePath)
         let zipEnded = false;
         let totalBytes = 0;
         let settled = false;
+        let activeInput = null;
+        let outputBackpressured = false;
 
         const finishWithError = (error) => {
             if (settled) return;
             settled = true;
+            try {
+                activeInput?.destroy(error);
+            } catch {}
             try {
                 output.destroy();
             } catch {}
@@ -88,7 +93,15 @@ export const createAndroidCompatibleZipFile = async (includedFiles, zipFilePath)
             const buffer = Buffer.from(chunk);
             hash.update(buffer);
             totalBytes += buffer.length;
-            output.write(buffer);
+            const canContinue = output.write(buffer);
+            if (!canContinue && activeInput && !outputBackpressured) {
+                outputBackpressured = true;
+                activeInput.pause();
+                output.once('drain', () => {
+                    outputBackpressured = false;
+                    activeInput?.resume();
+                });
+            }
             if (final && !zipEnded) {
                 zipEnded = true;
                 output.end();
@@ -104,12 +117,15 @@ export const createAndroidCompatibleZipFile = async (includedFiles, zipFilePath)
                         zip.add(zipEntry);
 
                         const input = createReadStream(entry.fullPath);
+                        activeInput = input;
+                        if (outputBackpressured) input.pause();
                         input.on('error', entryReject);
                         input.on('data', (chunk) => {
                             zipEntry.push(new Uint8Array(chunk), false);
                         });
                         input.on('end', () => {
                             zipEntry.push(new Uint8Array(0), true);
+                            if (activeInput === input) activeInput = null;
                             entryResolve();
                         });
                     });
