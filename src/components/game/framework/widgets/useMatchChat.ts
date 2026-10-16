@@ -38,14 +38,13 @@ export function useMatchChat(options: {
     useEffect(() => {
         generation.current += 1;
         pendingSendIds.current = {};
+        seenMessageIds.current = { players: new Set(), room: new Set() };
         return () => { generation.current += 1; };
     }, [sessionKey]);
     if (previousSessionKey !== sessionKey) {
         setPreviousSessionKey(sessionKey);
         setMessages([]); setDrafts(emptyDrafts()); setUnread(emptyUnread());
         setLatestIncoming(null); setOwnIds(new Set()); setSending(false);
-        seenMessageIds.current.players.clear();
-        seenMessageIds.current.room.clear();
         setChannel(isSpectator ? 'room' : 'players');
     }
     const { t } = useTranslation('game');
