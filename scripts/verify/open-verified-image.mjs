@@ -774,6 +774,9 @@ const main = () => {
     }
 
     if (parsed.dir) {
+        if (parsed.dryRun) {
+            throw new Error('目录模式不支持 --dry-run；请用 --pass-manifest 与 --path/--paths 校验，成功后再用 --dir --no-open 注册。');
+        }
         if (parsed.path || parsed.paths.length > 0 || parsed.latest || parsed.passManifest) {
             throw new Error('目录查看模式不能同时传入图片路径、--latest 或 --pass-manifest；请使用同一条目录入口');
         }

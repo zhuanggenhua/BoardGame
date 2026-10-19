@@ -49,4 +49,24 @@ test.describe('双人交互教学目录的正式入口', () => {
             writeFileSync(join(dir, 'chain.json'), JSON.stringify({ gameId: 'dicethrone', evidenceCategory: 'tutorial', sourceRun: process.env.TUTORIAL_EVIDENCE_RUN ?? 'tutorial-rebuild-20261016-r25-catalog', records }, null, 2));
         });
     }
+
+    test('退出独立教程后关闭提示并清空共享教程状态', async ({ page }) => {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await setChineseLocale(page);
+        await page.goto('/play/dicethrone/tutorial');
+        await expect(page.getByTestId('tutorial-catalog-stage')).toBeVisible();
+        await page.getByTestId('tutorial-catalog-entry-dicethrone-damage').click();
+        await waitForTutorialBoardReady(page, 60000);
+        await expect(page.locator('[data-tutorial-step="damage-start"]')).toBeVisible({ timeout: 60000 });
+
+        await page.getByRole('button', { name: '聊天' }).click();
+        await page.getByRole('button', { name: '离开' }).click();
+        await page.getByRole('button', { name: /返回大厅/ }).click();
+        await expect(page).toHaveURL(/\/(?:\?.*)?$/);
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0);
+        await expect.poll(() => page.evaluate(() => (
+            (window as unknown as { __BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?: { active?: boolean } })
+                .__BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?.active ?? null
+        ))).toBe(false);
+    });
 });

@@ -35,7 +35,7 @@ metadata:
 | [`asset-pipeline.md`](standards/asset-pipeline.md) | 运行时素材与发布总规范：图片、图集、模型/贴图、引擎内置对象、manifest、上传和运行时加载——改素材链路时查 |
 | [`audio-assets.md`](standards/audio-assets.md) | 音频资源标准：共享包、registry、触发路径和迁移策略——接入或排查音效时查 |
 | [`audit-evidence-template.md`](standards/audit-evidence-template.md) | 审计证据模板：范围、结论、缺口分类和自检口径——写审计 evidence 时查 |
-| [`conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 接续目标锁定：原话保真、话语分类、摘要防漂移——压缩接手或判断陈述与验收时查 |
+| [`conversation-handoff-target-lock.md`](standards/conversation-handoff-target-lock.md) | 目标与范围锁定：原话保真、示例辨义、话语分类、摘要防漂移——开工、排查或接续任务时查 |
 | [`critical-image-gate.md`](standards/critical-image-gate.md) | 关键图片门禁：阻塞加载、失败提示和验收边界——改关键图片加载时查 |
 | [`critical-image-preload.md`](standards/critical-image-preload.md) | 关键图片预加载：critical/warm 分层、图集初始化和教程裁剪——改预加载链路时查 |
 | [`data-entry.md`](standards/data-entry.md) | 数据录入标准：规则、图片、OCR、配置字段和核对口径——录入规则或资源数据时查 |

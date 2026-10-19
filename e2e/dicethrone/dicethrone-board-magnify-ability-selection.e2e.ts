@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
 import { getEvidenceScreenshotPath, sanitizeEvidencePathSegment } from '../framework/evidenceScreenshots';
+import { DESKTOP_REFERENCE_VIEWPORT } from '../../src/shared/referenceViewports';
 
 async function setupMagnifyAbilitySelectionScene(game: GameTestContext): Promise<void> {
     await game.openTestGame('dicethrone');
@@ -228,11 +229,12 @@ test.describe('DiceThrone - 玩家面板与提示卡固定控件图标', () => {
         expect(playerBoardMetrics.shellScale).toBeLessThan(1);
         expect(playerBoardMetrics.iconClass).toContain('board-shell-fixed-icon');
         expect(playerBoardMetrics.buttonWidth).toBeGreaterThanOrEqual(40);
-        expect(playerBoardMetrics.visualWidth).toBeGreaterThan(14);
-        expect(playerBoardMetrics.visualWidth).toBeLessThan(24);
-        expect(playerBoardMetrics.visualRightGap).toBeLessThan(8);
-        expect(playerBoardMetrics.visualTopGap).toBeLessThan(16);
-        expect(playerBoardMetrics.iconWidth).toBeGreaterThanOrEqual(12);
+        // 圆形与锚点随恢复后的整体画布走；SVG保留此前已验收的独立屏幕尺寸。
+        const screenUnit = (DESKTOP_REFERENCE_VIEWPORT.width / 100) * playerBoardMetrics.shellScale;
+        expect(playerBoardMetrics.visualWidth).toBeCloseTo(2.6 * screenUnit, 1);
+        expect(playerBoardMetrics.visualRightGap).toBeCloseTo(0.9 * screenUnit, 1);
+        expect(playerBoardMetrics.visualTopGap).toBeCloseTo(1.85 * screenUnit, 1);
+        expect(playerBoardMetrics.iconWidth).toBeCloseTo(13.824, 1);
         expect(playerBoardMetrics.iconWidth).toBeLessThan(playerBoardMetrics.visualWidth - 3);
 
         const tipBoardToggle = page.locator('[data-tutorial-id="tip-board"] > button').first();
@@ -258,11 +260,10 @@ test.describe('DiceThrone - 玩家面板与提示卡固定控件图标', () => {
         await expect(tipBoardMagnifyButton).toBeVisible({ timeout: 5000 });
         const tipBoardMetrics = await readMetrics(tipBoardMagnifyButton);
         expect(tipBoardMetrics.buttonWidth).toBeGreaterThanOrEqual(40);
-        expect(tipBoardMetrics.visualWidth).toBeGreaterThan(14);
-        expect(tipBoardMetrics.visualWidth).toBeLessThan(24);
-        expect(tipBoardMetrics.visualRightGap).toBeLessThan(4);
-        expect(tipBoardMetrics.visualTopGap).toBeLessThan(4);
-        expect(tipBoardMetrics.iconWidth).toBeGreaterThanOrEqual(12);
+        expect(tipBoardMetrics.visualWidth).toBeCloseTo(2.6 * screenUnit, 1);
+        expect(tipBoardMetrics.visualRightGap).toBeCloseTo(0.25 * screenUnit, 1);
+        expect(tipBoardMetrics.visualTopGap).toBeCloseTo(0.25 * screenUnit, 1);
+        expect(tipBoardMetrics.iconWidth).toBeCloseTo(13.824, 1);
         expect(tipBoardMetrics.iconWidth).toBeLessThan(tipBoardMetrics.visualWidth - 3);
 
         // 完整视口上下文：先证明提示卡已加载，再拍目标态主证据。

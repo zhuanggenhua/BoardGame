@@ -48,6 +48,15 @@ export const readBoardShellScaleValue = (fallback = 1) => {
     return parsed && parsed > 0 ? parsed : fallback;
 };
 
+/** 壳层在屏幕上的原点；固定工具仍以屏幕坐标存储，绘制进壳时扣除一次。 */
+export const readBoardShellOffsetPixelValue = () => {
+    const style = readRootComputedStyle();
+    return {
+        x: parseCssNumber(style?.getPropertyValue('--mobile-board-shell-offset-x')) ?? 0,
+        y: parseCssNumber(style?.getPropertyValue('--mobile-board-shell-offset-y')) ?? 0,
+    };
+};
+
 export const readBoardShellInlineUnitPixelValue = () => {
     const parsed = parseCssNumber(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-inline-unit'));
     if (parsed && parsed > 0) {

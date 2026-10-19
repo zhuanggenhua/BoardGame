@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MatchChatMessage } from '../../../../../shared/chat';
 import { useMatchChat } from '../useMatchChat';
 
@@ -22,6 +22,7 @@ const message = (channel: 'players' | 'room', id = 'message'): MatchChatMessage 
 
 describe('同窗口聊天频道交互', () => {
     beforeEach(() => { vi.clearAllMocks(); state.send.mockResolvedValue({ ok: true }); });
+    afterEach(() => { vi.unstubAllGlobals(); });
     it('切换频道分别保留草稿，离开房间后清空旧会话', async () => {
         const { result, rerender } = renderHook(props => useMatchChat(props), { initialProps: options });
         act(() => result.current.setInput('只给玩家的草稿'));
@@ -99,5 +100,17 @@ describe('同窗口聊天频道交互', () => {
         await act(async () => { await result.current.send(); });
         expect(state.send.mock.calls[1][2]).toBe(firstId);
         expect(result.current.input).toBe('');
+    });
+    it('观战席浏览器没有 crypto.randomUUID 时仍可发送房间消息', async () => {
+        vi.stubGlobal('crypto', {
+            getRandomValues: (bytes: Uint8Array) => bytes.fill(5),
+        });
+        const { result } = renderHook(() => useMatchChat({ ...options, playerId: null, credentials: undefined }));
+        act(() => result.current.setInput('观战消息'));
+
+        await act(async () => { await result.current.send(); });
+
+        expect(state.send).toHaveBeenCalledWith('观战消息', 'room', expect.stringMatching(/^[0-9a-f-]{36}$/));
+        expect(state.error).not.toHaveBeenCalled();
     });
 });

@@ -37,6 +37,7 @@ describe('mobile support manifest contract', () => {
             designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
             referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
             referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+            fit: 'contain',
         });
         expect(game?.shellTargets).toEqual(
             expect.arrayContaining(['pwa', 'app-webview', 'mini-program-webview']),
@@ -186,6 +187,7 @@ describe('mobile support helpers', () => {
                 designHeight: 720,
                 referenceWidth: 1920,
                 referenceHeight: 1080,
+                fit: 'contain',
             },
         });
 
@@ -200,6 +202,7 @@ describe('mobile support helpers', () => {
         expect(attrs['data-mobile-board-shell-design-height']).toBe('720');
         expect(attrs['data-mobile-board-shell-reference-width']).toBe('1920');
         expect(attrs['data-mobile-board-shell-reference-height']).toBe('1080');
+        expect(attrs['data-mobile-board-shell-fit']).toBe('contain');
     });
 
     it('mirrors game page attributes to html and body while the page is mounted', () => {

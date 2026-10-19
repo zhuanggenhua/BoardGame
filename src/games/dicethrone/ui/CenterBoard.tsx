@@ -1,4 +1,5 @@
 import React from 'react';
+import './CenterBoard.css';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
@@ -76,7 +77,7 @@ export const CenterBoard = ({
     const shellTranslateX = boardUiTuning.shellTranslateX + (characterId === 'lieren' ? 0.5 : 0);
     const shellTransform = shellTranslateX === 0 ? '' : `translateX(${buildBoardShellInlineUnitValue(shellTranslateX)})`;
     const shellFrameClassName = 'absolute bottom-0 flex items-center justify-center pointer-events-auto';
-    const overlayButtonIconClassName = 'fill-current';
+    const overlayButtonIconClassName = 'dt-board-magnify-icon fill-current';
     const overlayButtonClassName = `absolute flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-300 hover:brightness-125 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
     const overlayButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl';
     const overlayButtonVisualStyle = {
@@ -371,7 +372,7 @@ export const CenterBoard = ({
                         >
                             <svg
                                 className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
-                                style={{ width: buildBoardShellInlineUnitValue(0.72), height: buildBoardShellInlineUnitValue(0.72) }}
+                                style={{ width: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})`, height: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})` }}
                                 viewBox="0 0 20 20"
                             >
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -440,7 +441,7 @@ export const CenterBoard = ({
                                 >
                                     <svg
                                         className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
-                                        style={{ width: buildBoardShellInlineUnitValue(0.72), height: buildBoardShellInlineUnitValue(0.72) }}
+                                        style={{ width: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})`, height: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})` }}
                                         viewBox="0 0 20 20"
                                     >
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />

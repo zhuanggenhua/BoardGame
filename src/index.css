@@ -1159,8 +1159,8 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         bottom: auto;
         transform-origin: top left;
         transform: scale(var(--mobile-board-shell-scale));
-        width: var(--mobile-board-shell-design-width);
-        height: var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1)));
+        width: var(--mobile-board-shell-canvas-width, var(--mobile-board-shell-design-width));
+        height: var(--mobile-board-shell-canvas-height, var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1))));
         max-width: none;
         padding: 0;
     }

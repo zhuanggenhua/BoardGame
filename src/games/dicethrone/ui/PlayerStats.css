@@ -1,0 +1,4 @@
+/* 共享面板默认使用viewport间距；固定构图中须和资源条一起按PC坐标缩放。 */
+.dt-player-stats__panel [data-section="resources"] {
+    gap: calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.5);
+}

@@ -1,0 +1,24 @@
+/* 上限精确对应 1920px PC 基线，避免移动端修复改小桌面基线或放大超宽屏文字。 */
+.dt-phase-indicator,
+.dt-phase-indicator__list {
+    gap: clamp(5px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.4), 7.68px);
+}
+
+.dt-phase-indicator__title {
+    font-size: clamp(13px, var(--mobile-board-shell-inline-unit, 1vw), 19.2px);
+    margin-bottom: clamp(5px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.4), 7.68px);
+    margin-left: clamp(4px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.3), 5.76px);
+}
+
+.dt-phase-indicator [data-dt-phase-item] {
+    padding-inline: clamp(10px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.8), 15.36px);
+    padding-block: clamp(6px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.5), 9.6px);
+    font-size: clamp(12px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.75), 14.4px);
+    border-top-right-radius: clamp(7px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.6), 11.52px);
+    border-bottom-right-radius: clamp(7px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.6), 11.52px);
+    border-left-width: clamp(3px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.3), 5.76px);
+}
+
+.dt-phase-indicator [data-dt-phase-active="true"] {
+    transform: translateX(clamp(5px, calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.5), 9.6px));
+}

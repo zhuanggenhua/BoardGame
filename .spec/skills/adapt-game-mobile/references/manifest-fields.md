@@ -10,6 +10,7 @@ preferredOrientation?: 'landscape' | 'portrait';
 mobileLayoutPreset?: 'board-shell' | 'portrait-simple' | 'map-shell';
 shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 mobileBoardShellLayout?: {
+  fit?: 'contain' | 'width' | 'height';
   designWidth?: number;
   designHeight?: number;
   referenceWidth?: number;
@@ -58,7 +59,8 @@ mobileBoardShellLayout?: {
 
 ### `mobileBoardShellLayout`
 
-- `designWidth` / `designHeight` 是外层固定画布尺寸，只用于 `scale = min(availableWidth / designWidth, availableHeight / designHeight)`。
+- `fit`、design/reference 画布职责和安全区计算以 [响应式标准](../../../knowledge/standards/ui-responsive-layout.md) 为主源；未配置 `fit` 保持旧游戏行为。
+- `designWidth` / `designHeight` 是旧模式的外层固定画布尺寸；显式 `fit` 以完整 reference 画布为排版与缩放坐标。
 - `referenceWidth` / `referenceHeight` 是壳内 UI 单位来源；当移动横屏设计画布与 PC 参考画布不同，必须显式声明 PC 参考尺寸，不能用移动画布宽度重算主按钮、阶段提示、手牌、HUD、token / 状态或牌桌对象尺寸。
 - 未声明 `referenceWidth` / `referenceHeight` 时，壳内单位沿用设计画布尺寸，只用于旧实现兼容；不能把这个兼容默认当成 PC 同构通过证据。
 

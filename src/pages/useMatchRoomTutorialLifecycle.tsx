@@ -294,6 +294,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const tutorialStartWaitingForBoardRef = useRef(false);
     const [, setProgressStorageRevision] = useState(0);
     const lifecycleMountIdRef = useRef(0);
+    const routePathnameRef = useRef(typeof window !== 'undefined' ? window.location.pathname : '');
     const lastTutorialProgressRef = useRef<TutorialProgressSnapshot>({
         manifestId: null,
         stepId: null,
@@ -307,6 +308,12 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const currentTutorialRouteKey = isTutorialRoute && currentManifestId
         ? `${tutorialId ?? currentManifestId}:${currentManifestId}`
         : null;
+
+    useLayoutEffect(() => {
+        if (typeof window !== 'undefined') {
+            routePathnameRef.current = window.location.pathname;
+        }
+    });
     const currentTutorialSessionScope = useMemo(() => (
         isTutorialRoute
             ? buildTutorialSessionScope({
@@ -521,7 +528,9 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             if (tutorialStartedRef.current) {
                 const capturedMountId = lifecycleMountIdRef.current;
                 const capturedTutorialRouteKey = tutorialRouteKeyRef.current;
-                const capturedPath = window.location.pathname;
+                // 路由卸载时 window.location 可能已经是目标页；保留最后一次渲染本教程时的路径，
+                // 这样同 URL 的 StrictMode 重挂载仍可取消清理，真正离开教程则会关闭共享状态。
+                const capturedPath = routePathnameRef.current;
                 const capturedTutorialSessionScope = currentTutorialSessionScope;
                 // 延迟清理：给 StrictMode remount 一个取消的机会
                 cleanupTimerRef.current = window.setTimeout(() => {

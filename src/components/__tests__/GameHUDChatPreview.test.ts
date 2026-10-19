@@ -380,7 +380,7 @@ describe('FabMenu helpers', () => {
         expect(layout.columnCount).toBe(1);
     });
 
-    it('展开态靠近顶部时会整体下移，而不是只把卫星按钮单独推开', () => {
+    it('靠近顶部时卫星按主球下方实际空间排布，不侵入主球', () => {
         const layout = resolveExpandedFabLayout({
             position: { left: 120, top: 6 },
             alignment: { v: 'top', h: 'left' },
@@ -394,7 +394,7 @@ describe('FabMenu helpers', () => {
         });
 
         expect(layout.position).toEqual({ left: 120, top: 6 });
-        expect(layout.listOffset).toEqual({ x: 0, y: -32 });
+        expect(layout.listOffset).toEqual({ x: 0, y: 0 });
         expect(layout.alignment).toEqual({ v: 'top', h: 'right' });
     });
 
@@ -414,5 +414,20 @@ describe('FabMenu helpers', () => {
         expect(layout.columnCount).toBeGreaterThan(1);
         expect(layout.itemsPerColumn).toBeLessThan(8);
         expect(layout.listOffset.y).toBeGreaterThanOrEqual(0);
+    });
+    it.each(['top', 'bottom'] as const)('按主球%s方向可用空间分列，临界高度不把卫星推回主球', (v) => {
+        const position = { left: 712, top: v === 'bottom' ? 275 : 56 };
+        const layout = resolveExpandedFabLayout({ position, alignment: { v, h: 'right' },
+            satelliteCount: 7, buttonSize: 44, buttonGap: 8,
+            viewportHeight: 375, safeAreaTop: 0, safeAreaBottom: 0,
+            getHorizontalAlignment: () => 'right' });
+        expect(layout.position).toEqual(position);
+        expect(layout.itemsPerColumn).toBe(5);
+        expect(layout.columnCount).toBe(2);
+        expect(layout.listOffset).toEqual({ x: 0, y: 0 });
+        const outerEdge = v === 'bottom' ? position.top - layout.itemsPerColumn * 52
+            : position.top + layout.itemsPerColumn * 52 + 44;
+        expect(outerEdge).toBeGreaterThanOrEqual(0);
+        expect(outerEdge).toBeLessThanOrEqual(375);
     });
 });

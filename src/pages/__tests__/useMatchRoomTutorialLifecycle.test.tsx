@@ -437,6 +437,43 @@ describe('useMatchRoomTutorialLifecycle', () => {
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
     });
 
+    it('离开教程后，即使卸载清理时 URL 已切到目标页也会关闭共享教程状态', async () => {
+        const tutorialPath = '/play/betrayal/tutorial/basic-setup-and-turn';
+        window.history.pushState({}, '', tutorialPath);
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', ['setup-runtime', 'overview', 'finish']);
+
+        tutorialState.isBoardMounted = true;
+        const hook = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'basic-setup-and-turn',
+            tutorialCatalog: null,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        window.history.pushState({}, '', '/');
+        hook.unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(tutorialState.closeTutorial).toHaveBeenCalledTimes(1);
+        expect(tutorialState.closeTutorial).toHaveBeenCalledWith(
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
+    });
+
     it('教程进度 seed 会按游戏与章节隔离', () => {
         expect(buildTutorialProgressSeed('qidahen', 'basic-opening', 'basic-opening'))
             .toBe('tutorial-progress:v1:qidahen:basic-opening');

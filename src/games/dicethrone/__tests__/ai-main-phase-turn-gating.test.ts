@@ -665,11 +665,66 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
             timestamp: 0,
         } as never)).toEqual({ valid: true });
 
+        const forcedAdvance = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            playerId: '1',
+            engineConfig,
+            gameId: 'dicethrone',
+        });
+        expect(forcedAdvance?.action.commands).toEqual([{ type: 'ADVANCE_PHASE', payload: {} }]);
+
         const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
         expect(actions).toContainEqual(expect.objectContaining({
             kind: 'advance-phase',
             commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
         }));
+    });
+
+    it('线上反馈：防御骰仍可掷时 watchdog 不得绕过动作强推阶段', () => {
+        const state = createHeroMatchup('treant', 'artificer')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 0;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 4;
+        state.core.rollConfirmed = false;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist-3-5',
+            defenseAbilityId: 'tinker',
+            settlementStage: 'preDamage',
+            isDefendable: true,
+            preDefenseResolved: true,
+        };
+
+        expect(canAdvancePhase(state.core, 'defensiveRoll')).toBe(false);
+        expect(DiceThroneDomain.validate(state, {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+            timestamp: 0,
+        } as never)).toMatchObject({ valid: false, error: 'cannot_advance_phase' });
+        expect(buildDiceThroneAiLegalActions({ playerId: '1', state })).toContainEqual(expect.objectContaining({
+            kind: 'roll-dice',
+            commands: [{ type: 'ROLL_DICE', payload: {} }],
+        }));
+
+        const forcedAdvance = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            playerId: '1',
+            engineConfig,
+            gameId: 'dicethrone',
+        });
+        expect(forcedAdvance).toBeNull();
     });
 
     it('主阶段临时骰确认后，watchdog 不得把攻击掷骰阶段裸推进掉', () => {

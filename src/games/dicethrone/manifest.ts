@@ -26,6 +26,7 @@ const entry: GameManifestEntry = {
         designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
         referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
         referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+        fit: 'contain',
     },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {

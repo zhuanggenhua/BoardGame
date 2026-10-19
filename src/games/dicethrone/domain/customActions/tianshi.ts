@@ -711,7 +711,7 @@ function handleTakeoffTarget(ctx: CustomActionContext): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     const flight = grantTokenEvent(ctx.state, ctx.targetId, TOKEN_IDS.FLIGHT, 1, ctx.sourceAbilityId, ctx.timestamp);
     if (flight) events.push(flight);
-    events.push(...directDamageEvents(ctx.state, ctx.targetId, 3, ctx.sourceAbilityId, ctx.timestamp + 1, ctx.attackerId, true, ctx.random));
+    events.push(...directDamageEvents(ctx.state, ctx.ctx.defenderId, 3, ctx.sourceAbilityId, ctx.timestamp + 1, ctx.attackerId, true, ctx.random));
     return events;
 }
 

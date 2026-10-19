@@ -50,7 +50,7 @@ import type {
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
-import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
+import { canAdvancePhase, getNextPhase, getRollerId, getActiveDice } from './domain/rules';
 import { isCurrentBonusRollSettlement, resolveCurrentRollContext } from './domain/rollContext';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { DICETHRONE_CHEAT_COMMANDS, diceThroneCheatModifier } from './domain/cheatModifier';
@@ -2026,7 +2026,11 @@ export const engineConfig = {
         resolveOfflineAdjudicationCommand: resolveDiceThroneOfflineAdjudicationCommand,
         resolveSeatLegalOnlyRecovery: resolveDiceThroneSeatLegalOnlyRecovery,
         shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,
-        allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
+        allowForceCommandAfterLegalActionExhausted: ({ state, phase }) => {
+            if (phase !== 'defensiveRoll') return false;
+            const core = state.core as DiceThroneCore | undefined;
+            return !!core && canAdvancePhase(core, phase);
+        },
     },
 };
 

@@ -81,8 +81,12 @@ const validateVisualReview = ({ manifest, manifestMedia, manifestDir, projectRoo
     if (!visualReview || visualReview.mode !== 'all-media' || visualReview.claimScope !== 'interaction-ui' || visualReview.status !== 'PASS') {
         throw new Error('最终 PASS 必须声明 visualReview=all-media / interaction-ui / PASS，禁止用关键图抽查代替全量视觉验收');
     }
-    if (visualReview?.reviewer?.kind !== 'subagent' || typeof visualReview?.reviewer?.id !== 'string' || visualReview.reviewer.id.trim().length === 0) {
-        throw new Error('最终 PASS 的 visualReview 必须由子代理完成并记录 reviewer.kind=subagent 与 reviewer.id');
+    const reviewer = visualReview.reviewer;
+    if (!['subagent', 'primary-agent'].includes(reviewer?.kind) || typeof reviewer?.id !== 'string' || !reviewer.id.trim()) {
+        throw new Error('最终 PASS 的 visualReview 必须记录真实 reviewer.kind=subagent 或 primary-agent 与非空 reviewer.id');
+    }
+    if (reviewer.kind === 'primary-agent') {
+        assertString(reviewer.reason, '主代理审查采用原因 reviewer.reason');
     }
 
     const reviewPath = visualReview.reviewFile

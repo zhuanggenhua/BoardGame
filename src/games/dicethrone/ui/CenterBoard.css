@@ -1,0 +1,6 @@
+@media (max-width: 1023px) and (orientation: landscape) {
+    .dt-board-magnify-icon {
+        /* 保留已验收的 0.72 × 19.2px 图形；外层固定图标类只抵消壳层缩放。 */
+        --dt-board-magnify-size: 13.824px;
+    }
+}

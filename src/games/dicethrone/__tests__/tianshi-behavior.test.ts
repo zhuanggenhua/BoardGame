@@ -1619,7 +1619,7 @@ describe('炽天使领域行为', () => {
         expect(events.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.PURIFY)).toBe(false);
     });
 
-    it('起飞的不可防御直接伤害仍会触发目标的神圣祝福致死保护', () => {
+    it('起飞可让所选玩家获得飞行，并将不可防御伤害独立施加给对手', () => {
         const state = createTianshiState();
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 2;
         state.core.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] = 1;
@@ -1637,7 +1637,7 @@ describe('炽天使领域行为', () => {
         };
         const events = resolver({
             ctx: context,
-            targetId: '1',
+            targetId: '0',
             attackerId: '0',
             sourceAbilityId: context.sourceAbilityId,
             state: state.core,
@@ -1646,6 +1646,10 @@ describe('炽天使领域行为', () => {
         });
 
         const after = applyEvents(state.core, events);
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'TOKEN_GRANTED',
+            payload: expect.objectContaining({ targetId: '0', tokenId: TOKEN_IDS.FLIGHT, amount: 1 }),
+        }));
         expect(events).toContainEqual(expect.objectContaining({
             type: 'DAMAGE_DEALT',
             payload: expect.objectContaining({
@@ -1656,6 +1660,7 @@ describe('炽天使领域行为', () => {
         expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(false);
         expect(after.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0).toBe(0);
         expect(after.players['1'].resources[RESOURCE_IDS.HP]).toBe(1);
+        expect(after.players['0'].tokens[TOKEN_IDS.FLIGHT]).toBe(1);
     });
 
     it.each([

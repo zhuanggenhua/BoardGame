@@ -180,6 +180,8 @@ const clearRuntimeScaleVars = (root: HTMLElement) => {
 };
 
 const clearBoardShellVars = (root: HTMLElement) => {
+    root.style.removeProperty('--mobile-board-shell-canvas-width');
+    root.style.removeProperty('--mobile-board-shell-canvas-height');
     root.style.removeProperty('--mobile-board-shell-design-width');
     root.style.removeProperty('--mobile-board-shell-design-height');
     root.style.removeProperty('--mobile-board-shell-reference-width');
@@ -194,8 +196,9 @@ const clearBoardShellVars = (root: HTMLElement) => {
 };
 
 const resolveBoardShellScaleMetrics = (
-    viewport: RuntimeViewportSize,
+    viewport: RuntimeViewportSize | RuntimeViewportMetrics,
     layout: {
+        fit?: 'contain' | 'width' | 'height';
         designWidth?: number;
         designHeight?: number;
         referenceWidth?: number;
@@ -207,6 +210,28 @@ const resolveBoardShellScaleMetrics = (
     const hasExplicitDesignWidth = layout.designWidth !== undefined;
     const designWidth = layout.designWidth ?? DEFAULT_BOARD_SHELL_DESIGN_WIDTH;
     const designHeight = layout.designHeight ?? (hasExplicitDesignWidth ? undefined : DEFAULT_BOARD_SHELL_DESIGN_HEIGHT);
+    if (layout.fit && layout.referenceWidth && layout.referenceHeight) {
+        const referenceWidth = Math.max(1, layout.referenceWidth);
+        const referenceHeight = Math.max(1, layout.referenceHeight);
+        const safeArea = 'safeArea' in viewport ? viewport.safeArea : EMPTY_SAFE_AREA;
+        const availableWidth = Math.max(1, viewport.width - safeArea.left - safeArea.right);
+        const availableHeight = Math.max(1, viewport.height - safeArea.top - safeArea.bottom);
+        const widthScale = availableWidth / referenceWidth;
+        const heightScale = availableHeight / referenceHeight;
+        const scale = Math.max(0.01, layout.fit === 'width' ? widthScale
+            : layout.fit === 'height' ? heightScale : Math.min(widthScale, heightScale));
+        // 手机采样分辨率与PC排版坐标分开；文字、留白、图标和面板只经历同一变换。
+        return {
+            designWidth, designHeight,
+            canvasWidth: referenceWidth, canvasHeight: referenceHeight,
+            referenceWidth, referenceHeight,
+            scale, inverseScale: 1 / scale,
+            logicalHeight: referenceHeight,
+            inlineUnit: referenceWidth / 100, blockUnit: referenceHeight / 100,
+            offsetX: safeArea.left + Math.max(0, (availableWidth - referenceWidth * scale) / 2),
+            offsetY: safeArea.top + Math.max(0, (availableHeight - referenceHeight * scale) / 2),
+        };
+    }
     if (designHeight) {
         const safeDesignWidth = Math.max(1, designWidth);
         const safeDesignHeight = Math.max(1, designHeight);
@@ -334,6 +359,10 @@ export const applyRuntimeViewportCssVars = (
     }
 
     const shellScaleMetrics = resolveBoardShellScaleMetrics(viewport, {
+        fit: gamePageTarget?.dataset.mobileBoardShellFit === 'width'
+            || gamePageTarget?.dataset.mobileBoardShellFit === 'height'
+            || gamePageTarget?.dataset.mobileBoardShellFit === 'contain'
+            ? gamePageTarget.dataset.mobileBoardShellFit : undefined,
         designWidth: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellDesignWidth),
         designHeight: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellDesignHeight),
         referenceWidth: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellReferenceWidth),
@@ -342,6 +371,13 @@ export const applyRuntimeViewportCssVars = (
         minReadableScale: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellMinReadableScale),
     });
     root.style.setProperty('--mobile-board-shell-design-width', `${shellScaleMetrics.designWidth}px`);
+    if ('canvasWidth' in shellScaleMetrics && shellScaleMetrics.canvasWidth) {
+        root.style.setProperty('--mobile-board-shell-canvas-width', `${shellScaleMetrics.canvasWidth}px`);
+        root.style.setProperty('--mobile-board-shell-canvas-height', `${shellScaleMetrics.canvasHeight}px`);
+    } else {
+        root.style.removeProperty('--mobile-board-shell-canvas-width');
+        root.style.removeProperty('--mobile-board-shell-canvas-height');
+    }
     root.style.setProperty('--mobile-board-shell-reference-width', `${shellScaleMetrics.referenceWidth}px`);
     if (shellScaleMetrics.designHeight) {
         root.style.setProperty('--mobile-board-shell-design-height', `${shellScaleMetrics.designHeight}px`);
@@ -373,6 +409,9 @@ export const useRuntimeViewport = (
 ): RuntimeViewportMetrics => {
     const { syncCssVars = true } = options;
     const [viewport, setViewport] = useState<RuntimeViewportMetrics>(() => readRuntimeViewportMetrics());
+    const viewportRef = useRef(viewport);
+    // 首次渲染及游戏参数变化都要通知依赖缩放值的消费者，不能只比较视口宽高。
+    const pendingLayoutRefreshRef = useRef(true);
     const pendingViewportUpdateTimerRef = useRef<number | null>(null);
     const delayedViewportUpdateTimerRefs = useRef<number[]>([]);
 
@@ -391,10 +430,14 @@ export const useRuntimeViewport = (
         const visualViewport = window.visualViewport;
         const flushViewportUpdate = () => {
             pendingViewportUpdateTimerRef.current = null;
-            setViewport((previous) => {
-                const next = readRuntimeViewportMetrics(previous);
-                return areRuntimeViewportMetricsEqual(previous, next) ? previous : next;
-            });
+            const next = readRuntimeViewportMetrics(viewportRef.current);
+            const layoutChanged = pendingLayoutRefreshRef.current;
+            pendingLayoutRefreshRef.current = false;
+            if (!layoutChanged && areRuntimeViewportMetricsEqual(viewportRef.current, next)) return;
+            viewportRef.current = next;
+            // Fab 等在 render 中读取该 CSS 值，必须先同步，避免本次渲染继续使用旧比例。
+            if (syncCssVars) applyRuntimeViewportCssVars(next);
+            setViewport(next);
         };
         const scheduleViewportUpdate = () => {
             if (pendingViewportUpdateTimerRef.current != null) {
@@ -417,15 +460,19 @@ export const useRuntimeViewport = (
 
         const attributeObserver = typeof MutationObserver === 'function'
             ? new MutationObserver((mutations) => {
-                if (!mutations.some((mutation) => mutation.type === 'attributes')) {
+                if (!mutations.some((mutation) => mutation.type === 'attributes'
+                    && mutation.attributeName
+                    && (mutation.target as Element).getAttribute(mutation.attributeName) !== mutation.oldValue)) {
                     return;
                 }
+                pendingLayoutRefreshRef.current = true;
                 scheduleViewportUpdate();
             })
             : null;
 
         attributeObserver?.observe(document.documentElement, {
             attributes: true,
+            attributeOldValue: true,
             attributeFilter: [
                 'data-game-page',
                 'data-game-id',
@@ -433,6 +480,7 @@ export const useRuntimeViewport = (
                 'data-mobile-layout-preset',
                 'data-preferred-orientation',
                 'data-mobile-board-shell-design-width',
+                'data-mobile-board-shell-fit',
                 'data-mobile-board-shell-design-height',
                 'data-mobile-board-shell-reference-width',
                 'data-mobile-board-shell-reference-height',
@@ -443,6 +491,7 @@ export const useRuntimeViewport = (
         if (document.body) {
             attributeObserver?.observe(document.body, {
                 attributes: true,
+                attributeOldValue: true,
                 attributeFilter: [
                     'data-game-page',
                     'data-game-id',
@@ -450,6 +499,7 @@ export const useRuntimeViewport = (
                     'data-mobile-layout-preset',
                     'data-preferred-orientation',
                     'data-mobile-board-shell-design-width',
+                    'data-mobile-board-shell-fit',
                     'data-mobile-board-shell-design-height',
                     'data-mobile-board-shell-reference-width',
                     'data-mobile-board-shell-reference-height',
@@ -470,8 +520,9 @@ export const useRuntimeViewport = (
             window.removeEventListener('orientationchange', scheduleDelayedViewportUpdate);
             visualViewport?.removeEventListener('resize', scheduleViewportUpdate);
             attributeObserver?.disconnect();
+            pendingLayoutRefreshRef.current = true;
         };
-    }, []);
+    }, [syncCssVars]);
 
     return viewport;
 };

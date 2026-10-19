@@ -102,7 +102,7 @@ describe('DiceThrone compatibility source guards', () => {
         expect(centerBoard).toContain('data-fixed-control-visual="true"');
         expect(centerBoard).toContain('absolute top-0 right-0 flex items-center justify-center');
         expect(centerBoard).toContain('width: buildBoardShellInlineUnitValue(2.6)');
-        expect(centerBoard).toContain('width: buildBoardShellInlineUnitValue(0.72)');
+        expect(centerBoard).toContain('var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})');
         expect(centerBoard).toContain('const tipBoardOverlayButtonStyle =');
         expect(centerBoard).toContain('top: buildBoardShellInlineUnitValue(0.25)');
         expect(centerBoard).toContain('right: buildBoardShellInlineUnitValue(0.25)');

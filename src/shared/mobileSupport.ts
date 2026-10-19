@@ -61,6 +61,7 @@ const GAME_PAGE_DOCUMENT_ATTRIBUTE_KEYS = [
     'data-mobile-battlefield-zoom',
     'data-shell-targets',
     'data-mobile-board-shell-design-width',
+    'data-mobile-board-shell-fit',
     'data-mobile-board-shell-design-height',
     'data-mobile-board-shell-reference-width',
     'data-mobile-board-shell-reference-height',
@@ -255,6 +256,9 @@ export const getGamePageDataAttributes = (
     }
 
     const boardShellLayout = support.mobileBoardShellLayout;
+    if (boardShellLayout?.fit) {
+        attributes['data-mobile-board-shell-fit'] = boardShellLayout.fit;
+    }
     const designWidth = stringifyPositiveNumber(boardShellLayout?.designWidth);
     const designHeight = stringifyPositiveNumber(boardShellLayout?.designHeight);
     const referenceWidth = stringifyPositiveNumber(boardShellLayout?.referenceWidth);

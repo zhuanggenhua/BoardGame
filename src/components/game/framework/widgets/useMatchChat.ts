@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../../../contexts/ToastContext';
 import { matchSocket } from '../../../../services/matchSocket';
+import { generateUUID } from '../../../../lib/uuid';
 import { MAX_CHAT_MESSAGES, type MatchChatChannel, type MatchChatMessage } from '../../../../shared/chat';
 
 const emptyUnread = () => ({ players: 0, room: 0 });
@@ -100,7 +101,7 @@ export function useMatchChat(options: {
         if (!text || sending) return;
         const destination = currentChannel;
         const pending = pendingSendIds.current[destination];
-        const clientMessageId = pending?.text === text ? pending.id : crypto.randomUUID();
+        const clientMessageId = pending?.text === text ? pending.id : generateUUID();
         pendingSendIds.current[destination] = { text, id: clientMessageId };
         const sendGeneration = generation.current;
         setSending(true);
@@ -115,7 +116,7 @@ export function useMatchChat(options: {
             if (pendingSendIds.current[destination]?.id === clientMessageId) delete pendingSendIds.current[destination];
         } else {
             const message: MatchChatMessage = {
-                id: crypto.randomUUID(), matchId: matchId ?? 'local', channel: destination,
+                id: generateUUID(), matchId: matchId ?? 'local', channel: destination,
                 senderId: playerId ?? undefined, senderName: displayName, senderRole: 'player', text, createdAt: new Date().toISOString(),
             };
             setOwnIds(prev => new Set([...prev, message.id]));

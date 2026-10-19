@@ -1514,6 +1514,15 @@ export function resolveUnsatisfiableReasonFromInteraction(
         ? interaction.data.options.filter(Boolean)
         : [];
     if (options.length === 0) {
+        const data = interaction.data;
+        const meta = data?.meta && typeof data.meta === 'object'
+            ? data.meta as { dtType?: unknown }
+            : undefined;
+        const isDiceSelection = interaction.kind === 'multistep-choice'
+            && (meta?.dtType === 'selectDie' || meta?.dtType === 'modifyDie');
+        if (isDiceSelection && Array.isArray(data?.allowedDieIds) && data.allowedDieIds.length > 0) {
+            return null;
+        }
         return 'empty-options';
     }
 

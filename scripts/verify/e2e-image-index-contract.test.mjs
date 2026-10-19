@@ -233,3 +233,30 @@ test('用户点名特写后允许 auxiliary-detail 辅证', () => {
     writeFileSync(fixture.manifestPath, JSON.stringify(manifest, null, 2));
     assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
 });
+
+test('主代理真实审查允许明确记录采用原因，仍检查全量证据', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    manifest.visualReview.reviewer = { kind: 'primary-agent', id: 'root-reviewer', reason: '用户明确要求主代理亲自验收' };
+    assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
+    const reviewPath = path.join(fixture.root, 'evidence', '.visual-review.json');
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    review.media.pop();
+    writeFileSync(reviewPath, JSON.stringify(review));
+    assert.throws(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }), /必须覆盖全部媒体/);
+});
+
+test('审查者未知类型、缺失身份或主代理缺采用原因均拒绝', () => {
+    const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
+    const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
+    for (const reviewer of [
+        { kind: 'robot', id: 'reviewer' },
+        { kind: 'subagent', id: ' ' },
+        { kind: 'primary-agent', id: '', reason: '用户要求' },
+        { kind: 'primary-agent', id: 'root-reviewer' },
+        { kind: 'primary-agent', id: 'root-reviewer', reason: ' ' },
+    ]) {
+        manifest.visualReview.reviewer = reviewer;
+        assert.throws(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }), /reviewer|采用原因/);
+    }
+});

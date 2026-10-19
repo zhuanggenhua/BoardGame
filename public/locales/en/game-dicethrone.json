@@ -1951,7 +1951,7 @@
       "gospelArrival": { "title": "Gospel Arrival: choose an opponent to Dazzle" },
       "divineCommand": { "title": "Divine Command: choose an opponent to take 4 undefendable damage" },
       "divineProtection": { "title": "Divine Protection: choose a player to gain 2 Purify and 2 Flight" },
-      "takeoff": { "title": "Takeoff: choose a player to gain Flight and take 3 undefendable damage" },
+      "takeoff": { "title": "Takeoff: choose a player to gain Flight; the opponent takes 3 undefendable damage" },
       "divineArbitrationDazzle": { "title": "Divine Arbitration: choose a player to gain Dazzle" },
       "divineArbitrationFlight": { "title": "Divine Arbitration: choose a player to gain 2 Flight" },
       "divineArbitrationPurify": { "title": "Divine Arbitration: choose a player to gain Purify" },
@@ -4602,7 +4602,7 @@
     },
     "takeoff": {
       "name": "Takeoff",
-      "description": "1 Blade + 2 Wing: choose 1 player to gain Flight and take 3 undefendable damage."
+      "description": "1 Blade + 2 Wing: choose 1 player to gain Flight. The opponent takes 3 undefendable damage."
     },
     "divine-purification": {
       "name": "Divine Purification",
@@ -4693,7 +4693,7 @@
     "upgrade-tianshi-angelic-cloak-3": { "effects": { "upgrade": "Upgrade Angelic Cloak to level III." } },
     "upgrade-tianshi-angelic-cloak-2": { "effects": { "upgrade": "Upgrade Angelic Cloak to level II." } },
     "upgrade-tianshi-triumphant-return-2": { "effects": { "upgrade": "Upgrade Triumphant Return to level II." } },
-    "upgrade-tianshi-holy-radiance-2-takeoff": { "effects": { "upgrade": "Upgrade Holy Radiance to level II.", "secondary": "Choose a player to gain Flight and take 3 undefendable damage." } },
+    "upgrade-tianshi-holy-radiance-2-takeoff": { "effects": { "upgrade": "Upgrade Holy Radiance to level II.", "secondary": "Choose a player to gain Flight; then the opponent takes 3 undefendable damage." } },
     "upgrade-tianshi-holy-blade-3-cherub-2": { "effects": { "upgrade": "Upgrade Holy Blade to level III.", "secondary": "Gain Flight, Purify and Divine Arrival." } },
      "upgrade-tianshi-holy-blade-2-cherub": { "effects": { "upgrade": "Upgrade Holy Blade to level II.", "secondary": "Gain Flight and Divine Arrival." } },
      "card-tianshi-holy-strike": { "effects": { "resolve": "Roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent." } },
@@ -5857,7 +5857,7 @@
     "upgrade-tianshi-angelic-cloak-3": { "name": "Angelic Cloak III", "description": "Defensive roll 1 die; Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once." },
     "upgrade-tianshi-angelic-cloak-2": { "name": "Angelic Cloak II", "description": "Defensive roll 1 die; Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once." },
     "upgrade-tianshi-triumphant-return-2": { "name": "Triumphant Return II", "description": "Small Straight deals 8 damage; bonus die: Blade +1, Wing +2, Cross +3, Holy Pendant makes the attack undefendable." },
-    "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "Holy Radiance II / Takeoff", "description": "Top: Holy Radiance II. Bottom: choose a player to gain Flight and take 3 undefendable damage." },
+    "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "Holy Radiance II / Takeoff", "description": "Top: Holy Radiance II. Bottom: choose 1 player to gain Flight. The opponent takes 3 undefendable damage." },
      "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "Holy Blade III / Cherub II", "description": "Top: Holy Blade III. Bottom: gain Flight, Purify and Divine Arrival." },
      "card-tianshi-divine-arbitration": { "name": "Divine Arbitration!", "description": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." },
     "card-tianshi-supreme-holiness": { "name": "Supreme Holiness!", "description": "Roll 1 bonus die; Holy Pendant gains 2 Flight and 2 Purify, otherwise draw 1 card." },

@@ -12,6 +12,7 @@ import {
 } from '../../../components/common/animations';
 import { ShakeContainer } from '../../../components/common/animations/ShakeContainer';
 import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+import './PlayerStats.css';
 
 /** 护盾图标组件 */
 const ShieldIcon = ({ value }: { value: number }) => (

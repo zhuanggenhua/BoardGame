@@ -60,9 +60,9 @@ AI / 开发者快速检查端到端截图目录时，可使用项目工具索引
 ### AI 核图与链接交付分离
 
 - AI 核图只负责判断媒体是否真实覆盖本轮要求，以及结论为 `PASS` 还是 `REVISE`。
-- **最终媒体账本必须全量，核验只对变化媒体**：最终媒体目录的账本仍须覆盖每一张图 / 每一段录屏。子代理本轮重读范围、`carried-forward` 与未改写沿用规则以 [`e2e-verification`](../../knowledge/standards/e2e-verification.md)「账本全量，核验增量」为唯一主源。不得抽查代表图冒充全量账本。
-- **视觉与行为分层**：子代理只核查目标本体、可操作状态、布局、可读性、裁切、遮挡和可见错误；数值、规则方向、资源变化、归属和结算正确性必须由 Vitest / 领域测试负责。图片里出现数字不等于图片证明数字正确。
-- 最终 PASS 清单必须包含 `visualReview.mode=all-media`、`visualReview.claimScope=interaction-ui`、`visualReview.reviewer.kind=subagent`、逐图报告文件，以及 `behavioralVerification.owner=vitest` 的实际命令和证据。
+- **最终媒体账本必须全量，核验只对变化媒体**：最终媒体目录的账本仍须覆盖每一张图 / 每一段录屏。实际审查者本轮重读范围、`carried-forward` 与未改写沿用规则以 [`e2e-verification`](../../knowledge/standards/e2e-verification.md)「账本全量，核验增量」为唯一主源。不得抽查代表图冒充全量账本。
+- **视觉与行为分层**：视觉审查只核查目标本体、可操作状态、布局、可读性、裁切、遮挡和可见错误；数值、规则方向、资源变化、归属和结算正确性必须由 Vitest / 领域测试负责。图片里出现数字不等于图片证明数字正确。
+- 最终 PASS 清单必须包含 `visualReview.mode=all-media`、`visualReview.claimScope=interaction-ui`、符合上述 E2E 主源的真实 `visualReview.reviewer` 身份、逐图报告文件，以及 `behavioralVerification.owner=vitest` 的实际命令和证据。
 - 同一运行生成但属于其它证据合同的媒体，必须在 `outOfScopeMedia` 中逐项登记所属合同和原因；未登记的合同外媒体不能被当前 PASS 吸收。
 - 只有通过本轮 `PASS` 门禁的最终媒体，才允许输出直链。
 - `view_image`、OCR、缩略图和裁切图只有在宿主不会把结果展示给用户时才可用于私有 AI 自检；否则只用非展示型机器检查、路径和文字证据推进。

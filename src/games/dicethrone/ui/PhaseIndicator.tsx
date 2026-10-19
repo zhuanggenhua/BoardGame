@@ -6,7 +6,7 @@ import { PhaseIndicatorSkeleton } from '../../../components/game/framework';
 import type { PhaseInfo } from '../../../core/ui';
 import { UI_Z_INDEX } from '../../../core';
 import { resolveI18nList, type TranslateFn } from './utils';
-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+import './PhaseIndicator.css';
 
 /** 构建阶段信息列表 */
 const buildPhases = (t: TranslateFn): Array<PhaseInfo & { desc: string[] }> => {
@@ -25,18 +25,13 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
 
     return (
         <div
-            className="flex flex-col pointer-events-auto opacity-100 w-full"
-            style={{ zIndex: UI_Z_INDEX.hud, gap: buildBoardShellInlineUnitValue(0.4) }}
+            className="dt-phase-indicator flex flex-col pointer-events-auto opacity-100 w-full"
+            style={{ zIndex: UI_Z_INDEX.hud }}
             data-testid="dt-phase-indicator"
             data-tutorial-id="phase-indicator"
         >
             <h3
                 className="dt-phase-indicator__title font-black text-slate-300/80 tracking-[0.2em] uppercase truncate drop-shadow-md"
-                style={{
-                    fontSize: buildBoardShellInlineUnitValue(1),
-                    marginBottom: buildBoardShellInlineUnitValue(0.4),
-                    marginLeft: buildBoardShellInlineUnitValue(0.3),
-                }}
             >
                 {t('phase.title')}
             </h3>
@@ -64,15 +59,6 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
                                         ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
                                         : 'bg-slate-900/60 text-slate-400 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/80 hover:text-slate-200 hover:border-slate-500'}
                                 `}
-                                style={{
-                                    paddingInline: buildBoardShellInlineUnitValue(0.8),
-                                    paddingBlock: buildBoardShellInlineUnitValue(0.5),
-                                    fontSize: buildBoardShellInlineUnitValue(0.75),
-                                    borderTopRightRadius: buildBoardShellInlineUnitValue(0.6),
-                                    borderBottomRightRadius: buildBoardShellInlineUnitValue(0.6),
-                                    borderLeftWidth: buildBoardShellInlineUnitValue(0.3),
-                                    transform: isActive ? `translateX(${buildBoardShellInlineUnitValue(0.5)})` : undefined,
-                                }}
                             >
                                 {phase.label}
                             </div>

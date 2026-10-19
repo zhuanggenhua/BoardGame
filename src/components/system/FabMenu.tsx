@@ -14,7 +14,7 @@ import { readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } f
 import { shouldAllowFabDragFromTarget } from './fabDrag';
 import { resolveExpandedFabLayout } from './fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from './fabPosition';
-import { readBoardShellScaleValue } from '../../shared/runtimeLayoutUnits';
+import { readBoardShellOffsetPixelValue, readBoardShellScaleValue } from '../../shared/runtimeLayoutUnits';
 
 export interface FabAction {
     id: string;
@@ -146,6 +146,7 @@ export const FabMenu = ({
     const safeAreaInsets: SafeAreaInsets = viewport.safeArea;
     const isMobileViewport = viewportWidth > 0 && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH;
     const layoutScale = hudPlacement === 'in-shell' ? readBoardShellScaleValue() : 1;
+    const layoutOrigin = hudPlacement === 'in-shell' ? readBoardShellOffsetPixelValue() : { x: 0, y: 0 };
     const iconScale = resolveFabIconScale(isMobileViewport, layoutScale);
     const layoutViewportWidth = viewportWidth / layoutScale;
     const layoutViewportHeight = viewportHeight / layoutScale;
@@ -512,6 +513,18 @@ export const FabMenu = ({
         top: renderPosition.top + liveDragOffset.y,
     };
     const renderAlignment = renderLayout.alignment;
+    // 主球和所有卫星共用屏幕坐标包围盒，portal面板从整列外侧展开。
+    const columnSpan = (renderLayout.columnCount - 1) * renderLayout.columnGap;
+    const menuLeft = liveRenderPosition.left - (renderAlignment.h === 'left' ? columnSpan : 0);
+    const menuRight = liveRenderPosition.left + renderButtonSize + (renderAlignment.h === 'right' ? columnSpan : 0);
+    const menuRowsHeight = isOpen ? Math.min(items.length - 1, renderLayout.itemsPerColumn) * (renderButtonSize + renderButtonGap) : 0;
+    const menuTop = liveRenderPosition.top - (renderAlignment.v === 'bottom' ? menuRowsHeight : 0);
+    const menuBottom = liveRenderPosition.top + renderButtonSize + (renderAlignment.v === 'top' ? menuRowsHeight : 0);
+    const panelReferenceRect = {
+        left: menuLeft * layoutScale, right: menuRight * layoutScale,
+        top: menuTop * layoutScale, bottom: menuBottom * layoutScale,
+        width: (menuRight - menuLeft) * layoutScale, height: (menuBottom - menuTop) * layoutScale,
+    };
     const satellitesToRender = resolveFabSatellitesToRender(items.slice(1));
     const layerZIndex = resolveFabLayerZIndex(zIndex);
 
@@ -531,8 +544,8 @@ export const FabMenu = ({
             onDragEnd={handleDragEnd}
             onPointerDownCapture={handlePointerDownCapture}
             style={{
-                left: renderPosition.left,
-                top: renderPosition.top,
+                left: renderPosition.left - layoutOrigin.x / layoutScale,
+                top: renderPosition.top - layoutOrigin.y / layoutScale,
                 x: dragX,
                 y: dragY,
                 zIndex: layerZIndex.root,
@@ -564,6 +577,7 @@ export const FabMenu = ({
                 viewportHeight={viewportHeight}
                 iconScale={iconScale}
                 panelAnchorPosition={liveRenderPosition}
+                panelReferenceRect={panelReferenceRect}
                 layerZIndex={layerZIndex}
                 onRequestClose={() => {
                     setIsOpen(false);
@@ -583,6 +597,7 @@ export const FabMenu = ({
                 glowColor={glowColor}
                 isDragging={isDragging}
                 fabPosition={liveRenderPosition}
+                panelReferenceRect={panelReferenceRect}
                 listOffset={renderLayout.listOffset}
                 columnCount={renderLayout.columnCount}
                 itemsPerColumn={renderLayout.itemsPerColumn}
@@ -625,6 +640,7 @@ const SatelliteList = ({
     viewportHeight,
     iconScale,
     layerZIndex,
+    panelReferenceRect,
 }: any) => {
     const isButtonBottom = alignment.v === 'bottom';
     const isRightOpening = alignment.h === 'right';
@@ -634,33 +650,18 @@ const SatelliteList = ({
     const itemGroups = Array.from({ length: columnCount }, (_, columnIndex) => (
         items.slice(columnIndex * itemsPerColumn, (columnIndex + 1) * itemsPerColumn)
     )).filter((group) => group.length > 0);
-    const effectiveColumnCount = Math.max(1, itemGroups.length);
     const flexDirection = isButtonBottom ? 'flex-col-reverse' : 'flex-col';
     const rowDirection = isRightOpening ? 'row' : 'row-reverse';
     const alignItems = alignment.h === 'right' ? 'items-start' : 'items-end';
     const offset = buttonSize + buttonGap;
-    const columnHeights = itemGroups.map((group) => group.length * (buttonSize + buttonGap));
-    const visibleColumnTop = isButtonBottom
-        ? fabPosition.top + (listOffset?.y ?? 0) - Math.max(...columnHeights, buttonSize)
-        : fabPosition.top + (listOffset?.y ?? 0) + offset;
-    const visibleColumnBottom = isButtonBottom
-        ? fabPosition.top + (listOffset?.y ?? 0) - offset + buttonSize
-        : fabPosition.top + (listOffset?.y ?? 0) + Math.max(...columnHeights, buttonSize) + offset;
-    const panelReferenceRect = {
-        left: fabPosition.left + (listOffset?.x ?? 0),
-        right: fabPosition.left + (listOffset?.x ?? 0) + buttonSize + ((effectiveColumnCount - 1) * columnGap),
-        top: visibleColumnTop,
-        bottom: visibleColumnBottom,
-        width: buttonSize + ((effectiveColumnCount - 1) * columnGap),
-        height: Math.max(visibleColumnBottom - visibleColumnTop, buttonSize),
-    };
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className={`absolute left-0 flex ${alignItems}`}
+                    className={`absolute flex ${isButtonBottom ? 'items-end' : 'items-start'}`}
                     style={{
+                        [isRightOpening ? 'left' : 'right']: 0,
                         [isButtonBottom ? 'bottom' : 'top']: offset,
                         flexDirection: rowDirection,
                         columnGap: itemGroups.length > 1 ? columnGap - buttonSize : 0,
@@ -827,19 +828,20 @@ const Panel = ({
     };
     const resolvedAnchor = anchorRect ?? logicalAnchor;
     const resolvedReference = referenceRect ?? resolvedAnchor;
+    const resolvedHorizontalAnchor = resolvedReference;
     const verticalAnchorMode = item.mobilePopoverVerticalAnchor === 'column' ? 'column' : 'button';
     const resolvedVerticalAnchor = verticalAnchorMode === 'column' ? resolvedReference : resolvedAnchor;
     const useViewportHeight = item.mobilePopoverVerticalAnchor === 'viewport' && viewportHeight < 480;
-    const panelAnchorOffset = resolvedAnchor.width + panelGap;
+    const panelAnchorOffset = resolvedHorizontalAnchor.width + panelGap;
     const isMobileSheetPanel = isMobileViewport && item.mobilePanelVariant === 'sheet';
     const panelWidth = isMobileViewport ? 260 : 300;
     const spaceRight = Math.max(
         0,
-        Math.floor(viewportWidth - resolvedAnchor.right - panelGap - safeAreaInsets.right - edgePadding),
+        Math.floor(viewportWidth - resolvedHorizontalAnchor.right - panelGap - safeAreaInsets.right - edgePadding),
     );
     const spaceLeft = Math.max(
         0,
-        Math.floor(resolvedAnchor.left - panelGap - safeAreaInsets.left - edgePadding),
+        Math.floor(resolvedHorizontalAnchor.left - panelGap - safeAreaInsets.left - edgePadding),
     );
     const anchorSpaceBelow = Math.max(
         0,
@@ -971,9 +973,9 @@ const Panel = ({
             <div
                 style={{
                     position: 'fixed',
-                    left: resolvedAnchor.left,
+                    left: resolvedHorizontalAnchor.left,
                     top: panelContainerTop,
-                    width: resolvedAnchor.width,
+                    width: resolvedHorizontalAnchor.width,
                     height: resolvedVerticalAnchor.height,
                     zIndex: layerZIndex.panel,
                     pointerEvents: 'none',
