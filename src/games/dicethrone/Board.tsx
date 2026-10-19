@@ -21,7 +21,6 @@ import {
     isNyraCompanionActive,
 } from './domain/rules';
 import { useTranslation } from 'react-i18next';
-import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { DiceThroneDebugConfig } from './debug-config';
 import { DICETHRONE_MANIFEST } from './manifest';
@@ -2114,7 +2113,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     return (
         <UndoProvider value={{ G: rawG, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             <div
-                className="relative w-full h-full bg-black overflow-hidden font-sans select-none text-slate-200"
+                className="relative w-full h-full overflow-hidden font-sans select-none text-slate-200"
                 data-testid="dicethrone-board-root"
             >
                 {!isSpectator && (
@@ -2146,16 +2145,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         </div>
                     </GameDebugPanel>
                 )}
-
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
-                    <OptimizedImage
-                        src="dicethrone/images/Common/background"
-                        locale={locale}
-                        className="w-full h-full object-cover"
-                        alt={t('imageAlt.background')}
-                    />
-                </div>
 
                 {otherPids.length > 0 && (
                     <div
