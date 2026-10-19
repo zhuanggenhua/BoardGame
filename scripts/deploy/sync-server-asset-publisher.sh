@@ -30,6 +30,9 @@ asset_files=(
     scripts/mobile/android-package-archive.mjs
     scripts/mobile/android-assets-base-url.mjs
 )
+dependency_dirs=(
+    node_modules/fflate
+)
 
 for relative_path in "${asset_files[@]}"; do
     if [[ ! -f "${repo_root}/${relative_path}" ]]; then
@@ -38,6 +41,13 @@ for relative_path in "${asset_files[@]}"; do
     fi
     node --check "${repo_root}/${relative_path}"
 done
+for relative_path in "${dependency_dirs[@]}"; do
+    if [[ ! -d "${repo_root}/${relative_path}" ]]; then
+        echo "missing asset publisher dependency directory: ${relative_path}" >&2
+        exit 1
+    fi
+done
+node --check "${repo_root}/node_modules/fflate/esm/index.mjs"
 
 ssh_args=(
     -o BatchMode=yes
@@ -61,7 +71,7 @@ cleanup() {
 trap cleanup EXIT
 
 archive_path="$(mktemp)"
-tar -czf "${archive_path}" -C "${repo_root}" "${asset_files[@]}"
+tar -czf "${archive_path}" -C "${repo_root}" "${asset_files[@]}" "${dependency_dirs[@]}"
 ssh "${ssh_args[@]}" "${ssh_target}" "mkdir -m 700 -p '${remote_stage}'"
 scp "${ssh_args[@]}" "${archive_path}" "${ssh_target}:${remote_archive}"
 
@@ -85,7 +95,7 @@ cleanup_remote_stage() {
 }
 trap cleanup_remote_stage EXIT
 
-mkdir -p "${payload}" "${control_stage}/control" "${control_stage}/mobile"
+mkdir -p "${payload}" "${control_stage}/control" "${control_stage}/mobile" "${control_stage}/node_modules"
 tar -xzf "${remote_stage}/payload.tar.gz" -C "${payload}"
 
 asset_names=(
@@ -99,6 +109,7 @@ asset_names=(
 for name in "${asset_names[@]}"; do
     cp -- "${payload}/scripts/assets/${name}" "${control_stage}/control/${name}"
 done
+cp -a -- "${payload}/node_modules/fflate" "${control_stage}/node_modules/fflate"
 cp -- "${payload}/scripts/mobile/android-package-archive.mjs" "${control_stage}/mobile/android-package-archive.mjs"
 cp -- "${payload}/scripts/mobile/android-assets-base-url.mjs" "${control_stage}/mobile/android-assets-base-url.mjs"
 
@@ -134,6 +145,31 @@ install_one() {
     mv -f -- "${temporary_path}" "${target}"
 }
 
+install_tree() {
+    local source="$1"
+    local target="$2"
+    local relative_backup_path="${target#/}"
+    local backup_path="${backup_root}/${relative_backup_path}"
+    local temporary_path="${target}.new.${run_id}"
+    local previous_path="${target}.previous.${run_id}"
+
+    mkdir -p "$(dirname "${target}")" "$(dirname "${backup_path}")"
+    cp -a -- "${source}" "${temporary_path}"
+    if [[ -e "${target}" || -L "${target}" ]]; then
+        cp -a -- "${target}" "${backup_path}"
+        mv -- "${target}" "${previous_path}"
+    fi
+    if mv -- "${temporary_path}" "${target}"; then
+        rm -rf -- "${previous_path}"
+    else
+        if [[ -e "${previous_path}" || -L "${previous_path}" ]]; then
+            mv -- "${previous_path}" "${target}"
+        fi
+        rm -rf -- "${temporary_path}"
+        return 1
+    fi
+}
+
 for name in "${asset_names[@]}"; do
     install_one "${payload}/scripts/assets/${name}" "/home/admin/BoardGame/scripts/assets/${name}"
     install_one "${payload}/scripts/assets/${name}" "${assets_root}/control/${name}"
@@ -142,6 +178,8 @@ install_one "${payload}/scripts/mobile/android-package-archive.mjs" "/home/admin
 install_one "${payload}/scripts/mobile/android-package-archive.mjs" "${assets_root}/mobile/android-package-archive.mjs"
 install_one "${payload}/scripts/mobile/android-assets-base-url.mjs" "/home/admin/BoardGame/scripts/mobile/android-assets-base-url.mjs"
 install_one "${payload}/scripts/mobile/android-assets-base-url.mjs" "${assets_root}/mobile/android-assets-base-url.mjs"
+install_tree "${payload}/node_modules/fflate" "/home/admin/BoardGame/node_modules/fflate"
+install_tree "${payload}/node_modules/fflate" "${assets_root}/node_modules/fflate"
 
 validate_runtime "/home/admin/BoardGame/scripts/assets" "/home/admin/BoardGame/scripts/mobile"
 validate_runtime "${assets_root}/control" "${assets_root}/mobile"
