@@ -2558,10 +2558,20 @@ describe('online AI watchdog legal-action continuation', () => {
             metadata: createOnlineAiRecoveryMetadata({ gameName: 'dicethrone' }),
         });
 
+        const dicethroneConfig = createEngineConfigWithId('dicethrone');
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId('dicethrone')],
+            games: [{
+                ...dicethroneConfig,
+                onlineAiRecovery: {
+                    ...dicethroneConfig.onlineAiRecovery,
+                    allowForceCommandAfterLegalActionExhausted: ({ phase, nextCandidate }) => (
+                        phase === 'defensiveRoll'
+                        && nextCandidate.allowForceCommandAfterLegalActionExhausted === true
+                    ),
+                },
+            }],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiRecoveryFailureReportThreshold: 1,
