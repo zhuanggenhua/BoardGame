@@ -430,6 +430,7 @@
       "requiredDescriptionWithVersion": "This app build is too old. Update to app version {{version}} or newer to continue.",
       "errorTitle": "Update failed",
       "errorDescription": "Downloading or switching to the new version failed. Please retry.",
+      "releaseNotesTitle": "What’s included",
       "bundleVersion": "Target update no.",
       "currentAppVersion": "Current app version",
       "requiredAppVersion": "Required app version",

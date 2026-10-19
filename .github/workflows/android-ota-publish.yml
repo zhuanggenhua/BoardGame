@@ -174,6 +174,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.params.outputs.target_ref }}
+          fetch-depth: 0
 
       - name: Resolve Android backend URL
         id: backend
@@ -286,7 +287,8 @@ jobs:
           else
             bundle_version="${ota_version_base}-ota-${built_at}"
           fi
-          notes="GitHub Actions ${{ steps.params.outputs.source_mode }} OTA publish ${current_ref}@${short_sha}"
+          notes="$(node scripts/mobile/android-ota-release-notes.mjs --current-ref "${current_ref}" --manifest-url "${manifest_url}" --fallback-manifest-url "${fallback_manifest_url}")"
+          notes_delimiter="OTA_NOTES_$(node --input-type=module -e "import { randomUUID } from 'node:crypto'; console.log(randomUUID())")"
 
           {
             echo "short_sha=${short_sha}"
@@ -297,7 +299,10 @@ jobs:
             echo "fallback_manifest_url=${fallback_manifest_url}"
             echo "ota_version_base=${ota_version_base}"
             echo "bundle_version=${bundle_version}"
-            echo "notes=${notes}"
+            echo "source_ref=${current_ref}"
+            echo "notes<<${notes_delimiter}"
+            printf '%s\n' "${notes}"
+            echo "${notes_delimiter}"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Create Android OTA env file
@@ -334,6 +339,8 @@ jobs:
           ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
           ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
           ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
+          ANDROID_OTA_RELEASE_NOTES: ${{ steps.bundle.outputs.notes }}
+          ANDROID_OTA_SOURCE_REF: ${{ steps.bundle.outputs.source_ref }}
         shell: bash
         run: |
           args=(
@@ -341,7 +348,8 @@ jobs:
             --version "${{ steps.bundle.outputs.bundle_version }}"
             --ota-version-base "${{ steps.bundle.outputs.ota_version_base }}"
             --product-version "${{ steps.bundle.outputs.product_version }}"
-            --notes "${{ steps.bundle.outputs.notes }}"
+            --source-ref "${ANDROID_OTA_SOURCE_REF}"
+            --notes "${ANDROID_OTA_RELEASE_NOTES}"
           )
 
           if [[ -n "${{ steps.params.outputs.expected_base_version }}" ]]; then
@@ -374,6 +382,8 @@ jobs:
 
       - name: Write workflow summary
         shell: bash
+        env:
+          ANDROID_OTA_RELEASE_NOTES: ${{ steps.bundle.outputs.notes }}
         run: |
           {
             echo "### Android OTA 发布结果"
@@ -396,4 +406,8 @@ jobs:
             echo "| Manifest URL | ${{ steps.bundle.outputs.manifest_url || '未生成' }} |"
             echo "| Fallback Manifest URL | ${{ steps.bundle.outputs.fallback_manifest_url || '未生成' }} |"
             echo "| 缺失配置 | ${{ steps.prereq.outputs.missing || '无' }} |"
+            echo ""
+            echo "#### OTA 更新内容"
+            echo ""
+            printf '%s\n' "${ANDROID_OTA_RELEASE_NOTES}"
           } >> "${GITHUB_STEP_SUMMARY}"

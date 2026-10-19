@@ -1183,11 +1183,12 @@ describe('androidLiveUpdates', () => {
                 forceUpdate: true,
                 forceUpdateTitle: '正在更新',
                 forceUpdateMessage: '正在下载必要更新，请稍候',
+                notes: '- 修正 OTA 更新记录显示来源',
             }),
         }));
 
         const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
-        const states: Array<{ phase: string; blocking: boolean }> = [];
+        const states: Array<{ phase: string; blocking: boolean; releaseNotes?: string }> = [];
 
         const result = await startAndroidLiveUpdateBackgroundCheck({
             force: true,
@@ -1198,7 +1199,11 @@ describe('androidLiveUpdates', () => {
                 VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS: '15000',
             },
             onForceStateChange: (state) => {
-                states.push({ phase: state.phase, blocking: state.blocking });
+                states.push({
+                    phase: state.phase,
+                    blocking: state.blocking,
+                    releaseNotes: state.releaseNotes,
+                });
             },
         });
 
@@ -1213,6 +1218,14 @@ describe('androidLiveUpdates', () => {
         expect(setMultiDelayMock).not.toHaveBeenCalled();
         expect(setMock).toHaveBeenCalledWith({ id: 'bundle-next' });
         expect(states.some((state) => state.blocking)).toBe(true);
+        expect(states).toContainEqual(expect.objectContaining({
+            phase: 'checking',
+            releaseNotes: '- 修正 OTA 更新记录显示来源',
+        }));
+        expect(states).toContainEqual(expect.objectContaining({
+            phase: 'downloading',
+            releaseNotes: '- 修正 OTA 更新记录显示来源',
+        }));
     });
 
     it('本地同版本 bundle 若仍在 downloading，不应误判为可直接排队的缓存包', async () => {

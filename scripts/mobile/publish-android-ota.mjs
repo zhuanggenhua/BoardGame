@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -37,6 +38,7 @@ const allowedValueArgs = new Set([
     'force-update-title',
     'force-update-message',
     'notes',
+    'source-ref',
 ]);
 const allowedBooleanArgs = new Set([
     'force-update',
@@ -72,6 +74,7 @@ Android OTA 发布脚本
 - --force-update-title <text>
 - --force-update-message <text>
 - --notes <text>
+- --source-ref <40位 git SHA> 更新说明对应的代码提交；不传时使用当前 HEAD
 - --dry-run
 - --skip-latest 仅允许 dry-run 诊断；正式发布禁止跳过 latest.json
 - --help
@@ -154,7 +157,14 @@ if (explicitBundleVersion) {
         requestedVersionBase: explicitBundleVersion,
     });
 }
-const notes = readArgValue('notes', 'Android embedded OTA bundle');
+const sourceRef = readArgValue('source-ref', '').trim()
+    || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+if (!/^[a-f0-9]{40}$/i.test(sourceRef)) {
+    throw new Error(`OTA source-ref 必须是完整的 40 位 git SHA：${sourceRef}`);
+}
+const latestCommitSubject = execFileSync('git', ['log', '-1', '--format=%s', sourceRef], { encoding: 'utf8' }).trim();
+const notes = readArgValue('notes', '').trim()
+    || (latestCommitSubject ? `- ${latestCommitSubject}` : '本次 OTA 更新。');
 const forbiddenCompatibilityArgs = [
     'target-native-version',
     'min-native-version',
@@ -387,6 +397,7 @@ const manifest = {
     publishedAt: publishedAt.toISOString(),
     size: zipBuffer.length,
     notes,
+    sourceRef: sourceRef.toLowerCase(),
 };
 const publishedAtHumanTime = formatHumanTime(publishedAt);
 
@@ -453,6 +464,7 @@ console.log(`otaVersionBase=${explicitBundleVersion ? '(explicit-version)' : ota
 console.log(`nativeVersion=${nativeVersion}`);
 console.log(`mode=${dryRun ? 'dry-run' : 'publish'}`);
 console.log(`forceUpdate=${forceUpdate ? 'true' : 'false'}`);
+console.log(`sourceRef=${sourceRef.toLowerCase()}`);
 console.log('nativeCompatibilityMode=disabled');
 console.log(`skipLatest=${skipLatest ? 'true' : 'false'}`);
 console.log(`zipBytes=${zipBuffer.length}`);

@@ -2,7 +2,6 @@ import { RefreshCw, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../core';
 import type { AndroidForceUpdateState } from '../../lib/mobile/androidLiveUpdates';
-import { GameChangelogPreview } from './GameChangelogPreview';
 
 interface AndroidForceUpdateGateProps {
     state: AndroidForceUpdateState;
@@ -170,7 +169,19 @@ export const AndroidForceUpdateGate = ({
                         </div>
                     )}
 
-                    <GameChangelogPreview />
+                    {state.releaseNotes?.trim() && (
+                        <div
+                            data-testid="ota-release-notes"
+                            className="mt-5 rounded-2xl border border-amber-200/12 bg-black/20 px-4 py-3 text-left"
+                        >
+                            <h3 className="text-xs font-semibold text-amber-100/85">
+                                {t('ota.forceUpdate.releaseNotesTitle')}
+                            </h3>
+                            <p className="mt-2 whitespace-pre-line text-xs leading-5 text-amber-100/70">
+                                {state.releaseNotes.trim()}
+                            </p>
+                        </div>
+                    )}
 
                     {state.reason && state.phase !== 'checking' && (
                         <p className="mt-4 rounded-2xl border border-red-400/15 bg-red-500/8 px-3 py-2 text-left text-xs leading-5 text-red-100/80">

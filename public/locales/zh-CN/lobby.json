@@ -430,6 +430,7 @@
       "requiredDescriptionWithVersion": "当前 App 版本过旧，需要升级到 {{version}} 或更高版本后继续使用。",
       "errorTitle": "更新失败",
       "errorDescription": "下载或切换新版本失败，请重试。",
+      "releaseNotesTitle": "本次更新内容",
       "bundleVersion": "目标更新号",
       "currentAppVersion": "当前 App 版本",
       "requiredAppVersion": "所需 App 版本",
