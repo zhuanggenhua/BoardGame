@@ -233,6 +233,10 @@ jobs:
         if: steps.prereq.outputs.ready == 'true'
         run: npm ci
 
+      - name: Verify server asset publication
+        if: steps.prereq.outputs.ready == 'true'
+        run: node --test scripts/assets/apply-server-asset-publish.test.mjs scripts/assets/server-android-package-refresh.test.mjs
+
       - name: Sync asset publisher helpers to production host
         if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
         env:

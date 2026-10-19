@@ -17,8 +17,10 @@ import {
     unlinkSync,
     writeFileSync,
 } from 'node:fs';
+import { homedir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
     SERVER_PUBLISH_INDEX_FILE,
     SERVER_PUBLISH_MANIFEST_FILE,
@@ -37,6 +39,26 @@ const MANAGED_PUBLISH_PREFIXES = [
     'official/native-app-updates/',
 ];
 const RELEASE_RETENTION_COUNT = 5;
+
+const resolveProjectRootDir = () => {
+    const candidates = [
+        process.env.BG_ASSET_PUBLISH_PROJECT_ROOT?.trim(),
+        path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
+        path.join(homedir(), 'BoardGame'),
+        process.cwd(),
+    ].filter(Boolean).map((candidate) => path.resolve(candidate));
+    const projectRootDir = candidates.find((candidate) => (
+        existsSync(path.join(candidate, 'package.json'))
+    ));
+    if (!projectRootDir) {
+        throw new Error(
+            '无法定位 BoardGame 项目根目录，请设置 BG_ASSET_PUBLISH_PROJECT_ROOT',
+        );
+    }
+    return projectRootDir;
+};
+
+const projectRootDir = resolveProjectRootDir();
 
 const args = process.argv.slice(2);
 const readArg = (name) => {
@@ -252,6 +274,7 @@ let androidPackageRefresh;
 let releaseOwnership;
 let nextLink = '';
 let releaseActivated = false;
+let serverPrimaryIndexObjects = 0;
 
 try {
     if (existsSync(currentLink)) {
@@ -287,6 +310,7 @@ try {
     androidPackageRefresh = await refreshAndroidPackageIndexesForPublishedAssets({
         releaseDir,
         publishedKeys: manifest.objects.map((object) => object.key),
+        rootDir: projectRootDir,
     });
     const publishedAndGeneratedKeys = new Set([
         ...manifest.objects.map((object) => object.key),
@@ -322,6 +346,7 @@ try {
         }
     }
     writeAssetIndex(releaseDir, assetIndex);
+    serverPrimaryIndexObjects = Object.keys(assetIndex).length;
     rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
 
     releaseOwnership = normalizePathOwnership({
@@ -402,7 +427,7 @@ console.log(`serverPrimaryObjects=${manifest.objects.length}`);
 console.log(`androidPackageRefreshGames=${androidPackageRefresh.gameIds.join(',') || 'none'}`);
 console.log(`androidPackageRefreshChannels=${androidPackageRefresh.channels.join(',') || 'none'}`);
 console.log(`androidPackageRefreshObjects=${androidPackageRefresh.objects.length}`);
-console.log(`serverPrimaryIndexObjects=${Object.keys(assetIndex).length}`);
+console.log(`serverPrimaryIndexObjects=${serverPrimaryIndexObjects}`);
 console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
 console.log(
     `serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size}`

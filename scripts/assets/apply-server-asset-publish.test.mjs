@@ -97,3 +97,45 @@ test('共享音频刷新失败时保留current及旧文件字节，并清理未�
         rmSync(tempRoot, { recursive: true, force: true });
     }
 });
+
+test('成功发布返回成功，并从显式项目根刷新发布索引', () => {
+    const tempRoot = mkdtempSync(path.join(tmpdir(), 'boardgame-asset-publish-success-'));
+    try {
+        const assetsRoot = path.join(tempRoot, 'assets');
+        const stagingRoot = path.join(tempRoot, 'staging');
+        mkdirSync(assetsRoot, { recursive: true });
+        const relativeKey = 'official/app-updates/android/stable/6.0.0-ota-test/index.html';
+        const body = Buffer.from('<html>ota</html>');
+        writeFile(stagingRoot, relativeKey, body);
+        writeFile(
+            stagingRoot,
+            SERVER_PUBLISH_MANIFEST_FILE,
+            `${JSON.stringify({
+                schemaVersion: 1,
+                objects: [{ key: relativeKey, size: body.length, sha256: sha256(body) }],
+            })}\n`,
+        );
+
+        const scriptPath = path.join(process.cwd(), 'scripts/assets/apply-server-asset-publish.mjs');
+        const result = spawnSync(process.execPath, [
+            scriptPath,
+            '--staging', stagingRoot,
+            '--assets-root', assetsRoot,
+        ], {
+            cwd: tempRoot,
+            encoding: 'utf8',
+            timeout: 60_000,
+            env: {
+                ...process.env,
+                BG_ASSET_PUBLISH_PROJECT_ROOT: process.cwd(),
+            },
+        });
+
+        assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+        assert.match(result.stdout, /serverPrimaryIndexObjects=1/);
+        const currentRelease = realpathSync(path.join(assetsRoot, 'current'));
+        assert.deepEqual(readFileSync(path.join(currentRelease, ...relativeKey.split('/'))), body);
+    } finally {
+        rmSync(tempRoot, { recursive: true, force: true });
+    }
+});
