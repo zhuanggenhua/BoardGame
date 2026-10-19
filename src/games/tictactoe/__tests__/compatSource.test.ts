@@ -17,11 +17,13 @@ describe('TicTacToe compatibility source guards', () => {
         expect(board).not.toContain('relative aspect-square h-full max-h-[80vw] md:max-h-[60vh] max-w-full p-4');
     });
 
-    it('窄屏底部 HUD 应给右下调试入口预留避让空间', () => {
+    it('窄屏底部 HUD 应避开悬浮菜单，回合身份不能被压缩断字', () => {
         const board = readBoardSource();
 
-        expect(board).toContain('max-[640px]:pr-24');
+        expect(board).toContain('max-[640px]:pr-[6.5rem]');
         expect(board).toContain('max-[640px]:pb-24');
+        expect(board).toContain('max-[640px]:flex-col max-[640px]:items-center max-[640px]:gap-0');
+        expect(board).toContain('max-[640px]:whitespace-nowrap');
         expect(board).toContain('data-testid="tictactoe-score-right"');
         expect(board).toContain('data-testid="tictactoe-turn-status"');
     });

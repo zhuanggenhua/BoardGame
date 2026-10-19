@@ -421,7 +421,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                 </div>
 
                 {/* 底部 HUD 仪表盘 */}
-                <div className="flex-none z-10 w-full max-w-2xl px-8 pb-12 max-[640px]:px-6 max-[640px]:pr-24 max-[640px]:pb-24">
+                <div className="flex-none z-10 w-full max-w-2xl px-8 pb-12 max-[640px]:px-6 max-[640px]:pr-[6.5rem] max-[640px]:pb-24">
                     <div className="relative flex justify-between items-end">
 
                         {/* 左侧玩家 P0 (X - Pink) */}
@@ -451,11 +451,11 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
-                                    <div className="flex items-baseline gap-2 mb-2">
-                                        <span className={`text-2xl md:text-3xl font-black italic tracking-wider ${String(currentPlayer) === '0' ? 'text-neon-pink drop-shadow-[0_0_15px_rgba(188,19,254,0.6)]' : 'text-neon-blue drop-shadow-[0_0_15px_rgba(0,243,255,0.6)]'}`}>
+                                    <div className="flex items-baseline gap-2 mb-2 max-[640px]:flex-col max-[640px]:items-center max-[640px]:gap-0">
+                                        <span className={`text-2xl md:text-3xl font-black italic tracking-wider max-[640px]:whitespace-nowrap ${String(currentPlayer) === '0' ? 'text-neon-pink drop-shadow-[0_0_15px_rgba(188,19,254,0.6)]' : 'text-neon-blue drop-shadow-[0_0_15px_rgba(0,243,255,0.6)]'}`}>
                                             {getPlayerName(currentPlayer)}
                                         </span>
-                                        <span className="text-sm md:text-base font-bold text-white/80 italic">
+                                        <span className="text-sm md:text-base font-bold text-white/80 italic max-[640px]:whitespace-nowrap">
                                             {t('status.turnSuffix')}
                                         </span>
                                     </div>
