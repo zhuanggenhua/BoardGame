@@ -25,7 +25,8 @@ const entry: GameManifestEntry = {
         designWidth: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width,
         designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
         referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
-        referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+        // 已验收的 001 构图及宽高对照使用 1920×960 排版坐标。
+        referenceHeight: 960,
         fit: 'contain',
     },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],

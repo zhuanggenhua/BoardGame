@@ -36,11 +36,14 @@ describe('InfoTooltip layer context', () => {
         const tooltipLayer = tooltipTitle.closest('[data-testid="info-tooltip"]');
 
         expect(tooltipLayer).not.toBeNull();
+        expect(tooltipLayer?.parentElement).toBe(document.body);
         expect(tooltipLayer).toHaveStyle({ zIndex: String(UI_Z_INDEX.modalTooltip) });
         expect(tooltipLayer).toHaveClass('fixed');
         expect(tooltipLayer).toHaveClass('transition-opacity', 'duration-200', 'ease-out');
         expect(tooltipLayer).not.toHaveClass('animate-in');
         expect(tooltipLayer).not.toHaveClass('slide-in-from-left-[0.5vw]');
+        expect(screen.getByTestId('info-tooltip-title')).toHaveStyle({ fontSize: 'clamp(12px, 0.9vw, 18px)' });
+        expect(screen.getByTestId('info-tooltip-content-line')).toHaveStyle({ fontSize: 'clamp(11px, 0.7vw, 14px)' });
     });
 
     it('靠近右侧边界时会把提示翻到左侧并限制在视口内', () => {

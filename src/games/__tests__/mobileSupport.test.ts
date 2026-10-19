@@ -36,7 +36,7 @@ describe('mobile support manifest contract', () => {
             designWidth: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width,
             designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
             referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
-            referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+            referenceHeight: 960,
             fit: 'contain',
         });
         expect(game?.shellTargets).toEqual(
