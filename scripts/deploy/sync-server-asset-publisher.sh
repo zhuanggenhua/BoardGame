@@ -27,6 +27,7 @@ asset_files=(
     scripts/assets/asset-publish-ownership.mjs
     scripts/assets/release-retention.mjs
     scripts/assets/server-android-package-refresh.mjs
+    scripts/mobile/android-package-archive.mjs
     scripts/mobile/android-assets-base-url.mjs
 )
 
@@ -98,6 +99,7 @@ asset_names=(
 for name in "${asset_names[@]}"; do
     cp -- "${payload}/scripts/assets/${name}" "${control_stage}/control/${name}"
 done
+cp -- "${payload}/scripts/mobile/android-package-archive.mjs" "${control_stage}/mobile/android-package-archive.mjs"
 cp -- "${payload}/scripts/mobile/android-assets-base-url.mjs" "${control_stage}/mobile/android-assets-base-url.mjs"
 
 validate_runtime() {
@@ -107,6 +109,7 @@ validate_runtime() {
     for name in "${asset_names[@]}"; do
         node --check "${assets_dir}/${name}"
     done
+    node --check "${mobile_dir}/android-package-archive.mjs"
     node --check "${mobile_dir}/android-assets-base-url.mjs"
     for name in publish-primary-assets.mjs active-server-assets.mjs asset-publish-ownership.mjs release-retention.mjs server-android-package-refresh.mjs; do
         node --input-type=module --eval 'await import(process.argv[1])' "file://${assets_dir}/${name}"
@@ -135,6 +138,8 @@ for name in "${asset_names[@]}"; do
     install_one "${payload}/scripts/assets/${name}" "/home/admin/BoardGame/scripts/assets/${name}"
     install_one "${payload}/scripts/assets/${name}" "${assets_root}/control/${name}"
 done
+install_one "${payload}/scripts/mobile/android-package-archive.mjs" "/home/admin/BoardGame/scripts/mobile/android-package-archive.mjs"
+install_one "${payload}/scripts/mobile/android-package-archive.mjs" "${assets_root}/mobile/android-package-archive.mjs"
 install_one "${payload}/scripts/mobile/android-assets-base-url.mjs" "/home/admin/BoardGame/scripts/mobile/android-assets-base-url.mjs"
 install_one "${payload}/scripts/mobile/android-assets-base-url.mjs" "${assets_root}/mobile/android-assets-base-url.mjs"
 
