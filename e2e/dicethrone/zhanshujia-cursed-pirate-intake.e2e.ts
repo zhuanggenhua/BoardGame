@@ -5,10 +5,10 @@
  */
 
 import type { Browser, Page, TestInfo } from '@playwright/test';
-import { dirname } from 'node:path';
-import { mkdir } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { test, expect } from '../framework';
-import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotDir, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { getGameServerBaseURL } from '../helpers/common';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import '../../src/games/dicethrone/domain';
@@ -29,6 +29,7 @@ import {
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import {
     CURSED_PIRATE_DICE_FACE_IDS,
+    SHADOW_THIEF_DICE_FACE_IDS,
     STATUS_IDS,
     TOKEN_IDS,
     ZHANSHUJIA_DICE_FACE_IDS,
@@ -170,6 +171,13 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     return path;
 };
 
+const saveEvidenceJson = async (testInfo: TestInfo, name: string, evidence: JsonRecord): Promise<string> => {
+    const path = join(getEvidenceScreenshotDir(testInfo), `${name}.json`);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
+    return path;
+};
+
 const setHarnessRandomQueue = async (page: Page, values: number[]): Promise<void> => {
     await page.evaluate((queueValues) => {
         const harness = (window as Window & {
@@ -201,7 +209,11 @@ const withTutorialRandomPolicy = (sys: JsonRecord, values: number[]): JsonRecord
     },
 });
 
-const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
+const setupNewHeroMatch = async (
+    browser: Browser,
+    baseURL: string | undefined,
+    heroIds: { host?: string; guest?: string } = {},
+): Promise<MatchSetup> => {
     const match = await setupOnlineMatch(browser, baseURL, {
         skipImageGate: true,
         characterSelectionTimeout: CHARACTER_SELECTION_TIMEOUT,
@@ -211,8 +223,8 @@ const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined):
         throw new Error('DiceThrone online setup failed');
     }
 
-    await selectCharacter(match.hostPage, HOST_HERO_ID);
-    await selectCharacter(match.guestPage, GUEST_HERO_ID);
+    await selectCharacter(match.hostPage, heroIds.host ?? HOST_HERO_ID);
+    await selectCharacter(match.guestPage, heroIds.guest ?? GUEST_HERO_ID);
     await readyAndStartGame(match.hostPage, match.guestPage);
     await waitForGameBoard(match.hostPage);
     await waitForGameBoard(match.guestPage);
@@ -288,12 +300,13 @@ const applyOnlineMatchState = async (
         currentPlayerIndex: typeof sys.currentPlayerIndex === 'number' ? sys.currentPlayerIndex : 0,
     };
 
-    await injectMatchState(matchId, next, page);
+    const receipt = await injectMatchState(matchId, next, page);
     await page.evaluate(() => {
         window.dispatchEvent(new Event('focus'));
         window.dispatchEvent(new Event('online'));
     });
     await page.waitForTimeout(1000);
+    return receipt;
 };
 
 const waitForSelectedHeroes = async (page: Page) => {
@@ -1078,7 +1091,7 @@ const setupHighGroundScenario = async (match: MatchSetup) => {
             rollCount: 1,
             rollLimit: 3,
             rollDiceCount: 5,
-            rollConfirmed: true,
+            rollConfirmed: false,
             selectedAbilityId: undefined,
             activatingAbilityId: undefined,
             pendingAttack: undefined,
@@ -3792,7 +3805,7 @@ const setupCursedUpkeepSelfDamageScenario = async (match: MatchSetup) => {
 };
 
 const setupCursedNoAttackPowderKegScenario = async (match: MatchSetup) => {
-    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+    return applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
         const root = asRecord(state.G ?? state);
         const core = asRecord(root.core);
         const sys = asRecord(root.sys);
@@ -3802,6 +3815,12 @@ const setupCursedNoAttackPowderKegScenario = async (match: MatchSetup) => {
         const hostResources = asRecord(host.resources);
         const guestResources = asRecord(guest.resources);
         const guestAbilityLevels = asRecord(guest.abilityLevels);
+        const shadowThiefDice = buildDiceForValues('shadow_thief-dice', [5, 5, 2, 6, 4], {
+            2: SHADOW_THIEF_DICE_FACE_IDS.DAGGER,
+            4: SHADOW_THIEF_DICE_FACE_IDS.BAG,
+            5: SHADOW_THIEF_DICE_FACE_IDS.CARD,
+            6: SHADOW_THIEF_DICE_FACE_IDS.SHADOW,
+        });
 
         players['0'] = {
             ...host,
@@ -3836,20 +3855,14 @@ const setupCursedNoAttackPowderKegScenario = async (match: MatchSetup) => {
             players,
             activePlayerId: '0',
             phase: 'offensiveRoll',
-            dice: buildDiceForValues('zhanshujia-dice', [1, 2, 3, 4, 5], {
-                1: ZHANSHUJIA_DICE_FACE_IDS.SABER,
-                2: ZHANSHUJIA_DICE_FACE_IDS.FLAG,
-                3: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
-                4: ZHANSHUJIA_DICE_FACE_IDS.FLAG,
-                5: ZHANSHUJIA_DICE_FACE_IDS.SABER,
-            }),
+            dice: shadowThiefDice,
             rollCount: 1,
             rollLimit: 3,
             rollDiceCount: 5,
-            rollConfirmed: true,
+            rollConfirmed: false,
             selectedAbilityId: undefined,
             activatingAbilityId: undefined,
-            pendingAttack: undefined,
+            pendingAttack: null,
             pendingBonusDiceSettlement: undefined,
             pendingDamage: undefined,
             offensiveRollAttackMadeThisTurn: undefined,
@@ -10947,26 +10960,168 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
     test('真实入口应在对手未发起攻击时由咒缚施加火药桶', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const match = await setupNewHeroMatch(browser, baseURL);
+        const match = await setupNewHeroMatch(browser, baseURL, {
+            host: 'shadow_thief',
+            guest: 'cursed_pirate',
+        });
 
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            await setupCursedNoAttackPowderKegScenario(match);
+            const injectionReceipt = await setupCursedNoAttackPowderKegScenario(match);
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
 
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-cursed-no-attack-before-advance');
-
-            await dispatchDiceThroneCommand(match.hostPage, {
-                type: 'ADVANCE_PHASE',
-                playerId: '0',
-                payload: {},
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const host = asRecord(asRecordMap(core.players)['0']);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    activePlayerId: core.activePlayerId ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    activatingAbilityId: core.activatingAbilityId ?? null,
+                    selectedAbilityId: core.selectedAbilityId ?? null,
+                    diceValues: Array.isArray(core.dice) ? core.dice.slice(0, 5).map((die) => asRecord(die).value) : [],
+                    powderKeg: asRecord(host.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                    pendingAttack: core.pendingAttack ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'offensiveRoll',
+                activePlayerId: '0',
+                rollConfirmed: false,
+                activatingAbilityId: null,
+                selectedAbilityId: null,
+                diceValues: [5, 5, 2, 6, 4],
+                powderKeg: 0,
+                pendingAttack: null,
             });
+            const injectedState = await readServerRoot(match.matchId, match.hostPage);
+            const consumedActionLog = asRecord(injectedState.sys.actionLog);
+            const consumedEventStream = asRecord(injectedState.sys.eventStream);
+            const injectionEvidence = {
+                injectionReceipt,
+                runtimeReadback: {
+                    phase: injectedState.sys.phase ?? injectedState.core.phase ?? null,
+                    activePlayerId: injectedState.core.activePlayerId ?? null,
+                    rollConfirmed: injectedState.core.rollConfirmed ?? null,
+                    diceValues: Array.isArray(injectedState.core.dice)
+                        ? injectedState.core.dice.slice(0, 5).map((die) => asRecord(die).value)
+                        : [],
+                    activatingAbilityId: injectedState.core.activatingAbilityId ?? null,
+                    selectedAbilityId: injectedState.core.selectedAbilityId ?? null,
+                    pendingAttack: injectedState.core.pendingAttack ?? null,
+                    pendingInteraction: asRecord(asRecord(injectedState.sys.interaction).current).id ?? null,
+                    actionLogTail: Array.isArray(consumedActionLog.entries)
+                        ? consumedActionLog.entries.slice(-8)
+                        : [],
+                    eventStreamTail: Array.isArray(consumedEventStream.entries)
+                        ? consumedEventStream.entries.slice(-8)
+                        : [],
+                },
+            };
+            await testInfo.attach('feedback-state-injection-consumption.json', {
+                body: JSON.stringify(injectionEvidence, null, 2),
+                contentType: 'application/json',
+            });
+            await saveEvidenceJson(testInfo, '咒缚被动-注入时点与消费证明', injectionEvidence);
+            const confirmRollButton = match.hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
+            await expect(confirmRollButton).toBeEnabled({ timeout: 10000 });
+            await confirmRollButton.click();
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const responseWindow = asRecord(asRecord(sys.responseWindow).current);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    responseWindowType: responseWindow.windowType ?? null,
+                    powderKeg: asRecord(asRecordMap(core.players)['0'].statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'offensiveRoll',
+                rollConfirmed: true,
+                powderKeg: 0,
+            });
+            const confirmedState = await readServerRoot(match.matchId, match.hostPage);
+            const confirmedResponseWindow = asRecord(asRecord(confirmedState.sys.responseWindow).current);
+            if (confirmedResponseWindow.windowType === 'afterRollConfirmed') {
+                await expect(match.guestPage.getByTestId('dicethrone-response-pass-button'))
+                    .toBeEnabled({ timeout: 10000 });
+                await match.guestPage.getByTestId('dicethrone-response-pass-button').click();
+                await expect.poll(async () => {
+                    const { sys } = await readServerRoot(match.matchId, match.hostPage);
+                    return asRecord(asRecord(sys.responseWindow).current).windowType ?? null;
+                }, { timeout: 10000 }).toBe(null);
+            }
+            const cornucopiaSlot = match.hostPage.locator(
+                '[data-testid="player-board-surface"] [data-base-ability-id="cornucopia"]',
+            );
+            await expect(cornucopiaSlot).toHaveAttribute('data-available-ability-id', 'cornucopia', { timeout: 10000 });
+            await expect(cornucopiaSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-cornucopia-available-before-select');
+            await cornucopiaSlot.click();
+            let selectedNonAttackSnapshot: JsonRecord | null = null;
+            await expect.poll(async () => {
+                const { core } = await readServerRoot(match.matchId, match.hostPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                const attackMade = asRecord(core.offensiveRollAttackMadeThisTurn);
+                selectedNonAttackSnapshot = {
+                    sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
+                    countsAsOffensiveAttackMade: pendingAttack.countsAsOffensiveAttackMade ?? true,
+                    attackMadeThisTurn: attackMade['0'] === true,
+                    powderKeg: asRecord(asRecordMap(core.players)['0'].statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                };
+                return selectedNonAttackSnapshot;
+            }, { timeout: 10000 }).toMatchObject({
+                sourceAbilityId: 'cornucopia',
+                countsAsOffensiveAttackMade: false,
+                attackMadeThisTurn: false,
+                powderKeg: 0,
+            });
+            await testInfo.attach('feedback-non-attack-selection-before-settlement.json', {
+                body: JSON.stringify(selectedNonAttackSnapshot, null, 2),
+                contentType: 'application/json',
+            });
+            await saveEvidenceJson(testInfo, '咒缚被动-非攻击技能选择后结算前状态', selectedNonAttackSnapshot);
+            const guestAttackShowcase = match.guestPage.getByTestId('attack-showcase-overlay');
+            await expect(guestAttackShowcase).toBeVisible({ timeout: 10000 });
+            await guestAttackShowcase.locator('[data-tutorial-id="defense-start-button"]').click();
+            await expect(guestAttackShowcase).toBeHidden({ timeout: 5000 });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]'))
+                .toBeEnabled({ timeout: 10000 });
+            await match.hostPage.locator('[data-tutorial-id="advance-phase-button"]').click();
 
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 50);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);
+            const outcomeState = await readServerRoot(match.matchId, match.hostPage);
+            const outcomeHost = asRecord(asRecordMap(outcomeState.core.players)['0']);
+            const outcomeActionLog = asRecord(outcomeState.sys.actionLog);
+            const outcomeEventStream = asRecord(outcomeState.sys.eventStream);
+            const outcomeEvents = Array.isArray(outcomeEventStream.entries)
+                ? outcomeEventStream.entries.map((entry) => asRecord(asRecord(entry).event ?? entry))
+                : [];
+            const cornucopiaAttackEvent = outcomeEvents.find((event) => (
+                event.type === 'ATTACK_INITIATED'
+                && asRecord(event.payload).sourceAbilityId === 'cornucopia'
+            ));
+            const outcomeEvidence = {
+                phase: outcomeState.sys.phase ?? outcomeState.core.phase ?? null,
+                activePlayerId: outcomeState.core.activePlayerId ?? null,
+                targetPlayerId: '0',
+                powderKegStacks: asRecord(outcomeHost.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                hp: asRecord(outcomeHost.resources)[RESOURCE_IDS.HP] ?? null,
+                selectedAbilityId: 'cornucopia',
+                cornucopiaAttackEvent: cornucopiaAttackEvent ?? null,
+                actionLogTail: Array.isArray(outcomeActionLog.entries) ? outcomeActionLog.entries.slice(-8) : [],
+                eventStreamTail: Array.isArray(outcomeEventStream.entries) ? outcomeEventStream.entries.slice(-8) : [],
+            };
+            expect(cornucopiaAttackEvent).toBeDefined();
+            expect(asRecord(asRecord(cornucopiaAttackEvent).payload).countsAsOffensiveAttackMade).toBe(false);
+            await testInfo.attach('feedback-powder-keg-runtime-outcome.json', {
+                body: JSON.stringify(outcomeEvidence, null, 2),
+                contentType: 'application/json',
+            });
+            await saveEvidenceJson(testInfo, '咒缚被动-火药桶结算结果', outcomeEvidence);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '79-host-cursed-no-attack-powder-keg-applied');
         } finally {
             await cleanupDTMatch(match);

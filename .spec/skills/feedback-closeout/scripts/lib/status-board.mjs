@@ -126,10 +126,17 @@ function toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt) {
     };
 }
 
-function mergeItem(baseItem, existingItem, summaryPath) {
+function mergeItem(baseItem, existingItem, summaryPath, fetchedAt) {
     if (!existingItem) {
         return baseItem;
     }
+
+    const existingUpdatedAt = Date.parse(existingItem.updatedAt || '');
+    const summaryFetchedAt = Date.parse(fetchedAt || '');
+    const preserveNewerFetchedStatus = Number.isFinite(existingUpdatedAt)
+        && Number.isFinite(summaryFetchedAt)
+        && existingUpdatedAt > summaryFetchedAt
+        && typeof existingItem.lastFetchedStatus === 'string';
 
     return {
         ...baseItem,
@@ -148,7 +155,9 @@ function mergeItem(baseItem, existingItem, summaryPath) {
         packetPath: baseItem.packetPath,
         summaryPath,
         duplicateIds: baseItem.duplicateIds,
-        lastFetchedStatus: baseItem.lastFetchedStatus,
+        lastFetchedStatus: preserveNewerFetchedStatus
+            ? existingItem.lastFetchedStatus
+            : baseItem.lastFetchedStatus,
         evidence: mergeUnique(
             normalizeStringArray(existingItem.evidence),
             baseItem.evidence,
@@ -187,7 +196,7 @@ export function buildBoardFromSummary(summary, summaryPath, existingBoard = null
         for (const feedbackId of groupFeedbackIds(group)) {
             const baseItem = toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt);
             const existingItem = existingMap.get(feedbackId);
-            const mergedItem = mergeItem(baseItem, existingItem, summaryPath);
+            const mergedItem = mergeItem(baseItem, existingItem, summaryPath, fetchedAt);
             mergedItems.push(mergedItem);
             existingMap.delete(feedbackId);
         }

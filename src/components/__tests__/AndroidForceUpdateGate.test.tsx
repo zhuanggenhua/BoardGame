@@ -8,13 +8,14 @@ vi.mock('react-i18next', () => ({
 
 describe('AndroidForceUpdateGate', () => {
     it('displays the release notes carried by the OTA manifest', () => {
+        const releaseNotes = '王权骰铸 0.6.48：伤害响应提示修复\n\n本次更新修复伤害响应提示。\n\n## 修复\n- 修复不可防御伤害错误打开防御窗口';
         render(
             <AndroidForceUpdateGate
                 state={{
                     phase: 'downloading',
                     blocking: true,
                     version: '6.0.0-ota-test',
-                    releaseNotes: '- 修正更新记录来源\n- 显示 Android OTA 更新说明',
+                    releaseNotes,
                 }}
                 onRetry={() => {}}
                 onDismiss={() => {}}
@@ -22,6 +23,7 @@ describe('AndroidForceUpdateGate', () => {
         );
 
         expect(screen.getByTestId('ota-release-notes')).toHaveTextContent('ota.forceUpdate.releaseNotesTitle');
-        expect(screen.getByTestId('ota-release-notes')).toHaveTextContent(/- 修正更新记录来源\s+- 显示 Android OTA 更新说明/);
+        expect(screen.getByTestId('ota-release-notes')).toHaveTextContent(/王权骰铸 0\.6\.48：伤害响应提示修复/);
+        expect(screen.getByTestId('ota-release-notes')).toHaveTextContent(/修复不可防御伤害错误打开防御窗口/);
     });
 });

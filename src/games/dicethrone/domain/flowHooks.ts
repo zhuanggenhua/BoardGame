@@ -720,7 +720,7 @@ function filterPreventedDefenderDamage(
     if (!defenderId) return events;
     return events.filter((event) => {
         if (event.type === 'DAMAGE_DEALT') {
-            return event.payload.targetId !== defenderId;
+            return event.payload.targetId !== defenderId || event.payload.damageScope === 'direct';
         }
         if (event.type === 'TOKEN_RESPONSE_REQUESTED') {
             return event.payload.pendingDamage.targetPlayerId !== defenderId;
@@ -1273,7 +1273,6 @@ function resolveDazzleCheckExitResult(
                         core,
                         sourceCommandType,
                         timestamp,
-                        true,
                     ),
                     ...resolveDeferredCpGrantEvents(core, pendingAttack, sourceCommandType, timestamp),
                 ],

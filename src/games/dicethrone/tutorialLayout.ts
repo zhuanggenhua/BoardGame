@@ -1,25 +1,40 @@
 import type { TutorialStepSnapshot } from '../../engine/types';
 
-/** 双侧操作时把说明留在中央，资源、骰盘和当前伤害仍可读可点。 */
+/** 沿用浮层正式避让，把手牌、资源与骰盘留给当前决策。 */
 export const withDiceThroneTutorialSurfaces = (steps: TutorialStepSnapshot[]): TutorialStepSnapshot[] => steps.map(step => {
     const target = step.highlightTarget ?? '';
     const usesSideControls = target.startsWith('dice-')
         || target === 'advance-phase-button'
         || target === 'response-pass-button'
+        || target === 'response-toggle'
         || target === 'player-stats'
-        || (target === 'status-tokens' && step.id !== 'purify-use');
+        || target === 'status-tokens';
     return {
         ...step,
-        ...(usesSideControls ? { position: 'center' as const } : {}),
-        avoidOverlapSelectors: step.avoidOverlapSelectors ?? [
-        '[data-tutorial-id="player-stats"]',
-        '[data-tutorial-id="status-tokens"]',
-        '[data-testid="dt-top-header-1-hp"]',
-        '[data-testid="dt-top-header-1-cp"]',
-            ...(usesSideControls ? [
+        ...(!target ? { highlightTarget: 'phase-indicator', position: 'right' as const } : usesSideControls ? { position: 'top' as const } : {}),
+        ...(target === 'ability-slots' ? {
+            compactAvoidOverlapSelectors: [
+                ...(step.compactAvoidOverlapSelectors ?? []),
                 '[data-tutorial-id="dice-tray"]',
                 '[data-testid="current-total-damage-badge"]',
-            ] : []),
-        ],
+                ...(['ability-rule', 'abilities'].includes(step.id)
+                    ? ['[data-ability-slot-scope="main-board"][data-can-click="true"]'] : []),
+            ],
+        } : {}),
+        avoidOverlapSelectors: step.avoidOverlapSelectors ?? (['response-finish', 'defense-start'].includes(step.id)
+            // 正式来袭弹窗已模糊背景；此时决策对象是前景技能与开始防御按钮。
+            ? ['[data-testid="attack-showcase-overlay"] > div:last-child'] : [
+        '[data-tutorial-id="player-stats"]',
+        '[data-tutorial-id="status-tokens"]',
+        '[data-testid="dt-top-header-1"]',
+        '[data-tutorial-id="hand-area"]',
+        '[data-tutorial-id="dice-tray"]',
+        '[data-testid="dt-active-phase-indicator"]',
+        '[data-tutorial-id="draw-deck"]',
+        '[data-tutorial-id="discard-pile"]',
+        '[data-testid="current-total-damage-badge"]',
+        ...(step.id === 'hand-inspect' ? ['[data-testid="board-magnify-overlay"][aria-hidden="false"] > div'] : []),
+        ...(target === 'ability-slots' ? ['[data-tutorial-id="tip-board"]'] : []),
+        ]),
     };
 });

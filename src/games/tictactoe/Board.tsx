@@ -26,7 +26,7 @@ type LocalScoreboard = {
 };
 
 const LOCAL_SCOREBOARD_KEY = 'tictactoe_scoreboard_v1';
-const TIC_TAC_TOE_BOARD_VIEWPORT_SIZE = 'min(80vw, 60vh)';
+const TIC_TAC_TOE_BOARD_VIEWPORT_SIZE = 'min(calc(var(--mobile-board-shell-inline-unit) * 80), calc(var(--mobile-board-shell-block-unit) * 60))';
 
 const clearLocalScoreboard = () => {
     try {
@@ -303,8 +303,8 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
     return (
         <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
             <div
-                className="flex flex-col items-center w-full font-sans bg-black overflow-hidden relative pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] select-none"
-                style={{ height: 'var(--runtime-viewport-height, 100vh)' }}
+                data-testid="tictactoe-board-root"
+                className="@container flex h-full min-h-0 w-full flex-col items-center overflow-hidden relative bg-black font-sans select-none"
             >
 
                 {/* 增加一个径向渐变使光晕分布更自然 (放底层) */}
@@ -318,7 +318,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
 
                 {/* 顶部标题 - 霞红青色交错的现代风格 */}
                 <div className="flex-none flex flex-col items-center mt-8 mb-4 z-10">
-                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tight flex items-center gap-1">
+                    <h1 className="text-6xl font-black italic tracking-tight flex items-center gap-1">
                         <span className="text-neon-blue drop-shadow-[0_0_15px_rgba(0,243,255,0.7)]">
                             {t('title.primary')}
                         </span>
@@ -421,7 +421,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                 </div>
 
                 {/* 底部 HUD 仪表盘 */}
-                <div className="flex-none z-10 w-full max-w-2xl px-8 pb-12 max-[640px]:px-6 max-[640px]:pr-[6.5rem] max-[640px]:pb-24">
+                <div className="flex-none z-10 w-full max-w-2xl px-8 pb-12 @max-[640px]:px-6 @max-[640px]:pr-[6.5rem] @max-[640px]:pb-24">
                     <div className="relative flex justify-between items-end">
 
                         {/* 左侧玩家 P0 (X - Pink) */}
@@ -429,11 +429,11 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                             data-testid="tictactoe-score-left"
                             className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${String(currentPlayer) === '0' || isGameOver ? 'opacity-100' : 'opacity-40'}`}
                         >
-                            <div className="text-neon-pink font-bold tracking-widest text-xs md:text-sm uppercase mb-1">
+                            <div className="text-neon-pink font-bold tracking-widest text-sm uppercase mb-1 whitespace-nowrap @max-[640px]:tracking-normal">
                                 {getPlayerName('0')}
                             </div>
-                            <IconX className="w-8 h-8 md:w-10 md:h-10 text-neon-pink drop-shadow-[0_0_8px_rgba(188,19,254,0.5)]" />
-                            <div className="text-3xl md:text-4xl font-black text-neon-pink mt-2 leading-none">
+                            <IconX className="w-10 h-10 text-neon-pink drop-shadow-[0_0_8px_rgba(188,19,254,0.5)]" />
+                            <div className="text-4xl font-black text-neon-pink mt-2 leading-none">
                                 {scoreboard.xWins}
                             </div>
                         </div>
@@ -441,7 +441,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                         {/* 中间状态栏 */}
                         <div data-testid="tictactoe-turn-status" className="flex-1 flex flex-col items-center justify-end pb-2">
                             {isGameOver ? (
-                                <div className="text-xl md:text-2xl font-black italic text-white tracking-widest animate-pulse whitespace-nowrap drop-shadow-lg">
+                                <div className="text-2xl font-black italic text-white tracking-widest animate-pulse whitespace-nowrap drop-shadow-lg">
                                     {isWinner ?
                                         (String(isGameOver.winner) === '0'
                                             ? <span className="text-neon-pink">{t('status.win', { player: getPlayerName('0') })}</span>
@@ -451,11 +451,11 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
-                                    <div className="flex items-baseline gap-2 mb-2 max-[640px]:flex-col max-[640px]:items-center max-[640px]:gap-0">
-                                        <span className={`text-2xl md:text-3xl font-black italic tracking-wider max-[640px]:whitespace-nowrap ${String(currentPlayer) === '0' ? 'text-neon-pink drop-shadow-[0_0_15px_rgba(188,19,254,0.6)]' : 'text-neon-blue drop-shadow-[0_0_15px_rgba(0,243,255,0.6)]'}`}>
+                                    <div className="flex items-baseline gap-2 mb-2 @max-[640px]:flex-col @max-[640px]:items-center @max-[640px]:gap-0">
+                                        <span className={`text-3xl font-black italic tracking-wider @max-[640px]:whitespace-nowrap ${String(currentPlayer) === '0' ? 'text-neon-pink drop-shadow-[0_0_15px_rgba(188,19,254,0.6)]' : 'text-neon-blue drop-shadow-[0_0_15px_rgba(0,243,255,0.6)]'}`}>
                                             {getPlayerName(currentPlayer)}
                                         </span>
-                                        <span className="text-sm md:text-base font-bold text-white/80 italic max-[640px]:whitespace-nowrap">
+                                        <span className="text-base font-bold text-white/80 italic @max-[640px]:whitespace-nowrap">
                                             {t('status.turnSuffix')}
                                         </span>
                                     </div>
@@ -471,11 +471,11 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                             data-testid="tictactoe-score-right"
                             className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${String(currentPlayer) === '1' || isGameOver ? 'opacity-100' : 'opacity-40'}`}
                         >
-                            <div className="text-neon-blue font-bold tracking-widest text-xs md:text-sm uppercase mb-1">
+                            <div className="text-neon-blue font-bold tracking-widest text-sm uppercase mb-1 whitespace-nowrap @max-[640px]:tracking-normal">
                                 {getPlayerName('1')}
                             </div>
-                            <IconO className="w-8 h-8 md:w-10 md:h-10 text-neon-blue drop-shadow-[0_0_8px_rgba(0,243,255,0.5)]" />
-                            <div className="text-3xl md:text-4xl font-black text-neon-blue mt-2 leading-none">
+                            <IconO className="w-10 h-10 text-neon-blue drop-shadow-[0_0_8px_rgba(0,243,255,0.5)]" />
+                            <div className="text-4xl font-black text-neon-blue mt-2 leading-none">
                                 {scoreboard.oWins}
                             </div>
                         </div>

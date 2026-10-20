@@ -15,6 +15,51 @@ import { STATUS_IDS } from './ids';
 import { getCustomActionMeta } from './effects';
 import type { PendingAttackUpdatedEvent, StatusRemovedEvent } from './types';
 
+export const orderPowderKegExplosionBeforeAttackDamage = (
+    events: DiceThroneEvent[],
+): DiceThroneEvent[] => {
+    const ordered = [...events];
+
+    while (true) {
+        let movedExplosion = false;
+
+        for (let index = 0; index + 2 < ordered.length; index += 1) {
+            const removed = ordered[index];
+            const explosion = ordered[index + 1];
+            const reapplied = ordered[index + 2];
+            if (
+                removed.type !== 'STATUS_REMOVED'
+                || removed.payload.statusId !== STATUS_IDS.POWDER_KEG
+                || explosion.type !== 'DAMAGE_DEALT'
+                || explosion.payload.targetId !== removed.payload.targetId
+                || explosion.payload.sourceAbilityId === undefined
+                || explosion.payload.damageScope !== 'direct'
+                || reapplied.type !== 'STATUS_APPLIED'
+                || reapplied.payload.statusId !== STATUS_IDS.POWDER_KEG
+                || reapplied.payload.targetId !== removed.payload.targetId
+                || reapplied.payload.sourceAbilityId !== explosion.payload.sourceAbilityId
+            ) {
+                continue;
+            }
+
+            const attackDamageIndex = ordered.findIndex(event => (
+                event.type === 'DAMAGE_DEALT'
+                && event.payload.targetId === removed.payload.targetId
+                && event.payload.sourceAbilityId === explosion.payload.sourceAbilityId
+                && event.payload.damageScope === 'attack'
+            ));
+            if (attackDamageIndex < 0 || attackDamageIndex >= index) continue;
+
+            const [removedEvent, explosionEvent, reappliedEvent] = ordered.splice(index, 3);
+            ordered.splice(attackDamageIndex, 0, removedEvent, explosionEvent, reappliedEvent);
+            movedExplosion = true;
+            break;
+        }
+
+        if (!movedExplosion) return ordered;
+    }
+};
+
 const pendingAttackHasAttackScopedDamage = (state: DiceThroneCore): boolean => {
     const pending = state.pendingAttack;
     if (!pending?.sourceAbilityId) return false;
@@ -307,13 +352,13 @@ export const resolveAttack = (
         const hasTokenResponseInPostDamage = postDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
         const hasBonusDiceRerollInPostDamage = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
         if (hasChoiceInPostDamage || hasTokenResponseInPostDamage || hasBonusDiceRerollInPostDamage) {
-            events.push(...attackEvents);
+            events.push(...orderPowderKegExplosionBeforeAttackDamage(attackEvents));
             return events;
         }
 
         totalDamage = attackCtx.damageDealt;
     }
-    events.push(...attackEvents);
+    events.push(...orderPowderKegExplosionBeforeAttackDamage(attackEvents));
 
     const resolvedEvent: AttackResolvedEvent = {
         type: 'ATTACK_RESOLVED',
@@ -394,7 +439,9 @@ export const resolveAttackWithSneakImmunityAfterDefense = (
         });
         const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random });
         events.push(...[...withDamageEvents, ...postDamageEvents].filter((event) => (
-            event.type !== 'DAMAGE_DEALT' || event.payload.targetId !== defenderId
+            event.type !== 'DAMAGE_DEALT'
+            || event.payload.targetId !== defenderId
+            || event.payload.damageScope === 'direct'
         )));
     }
 

@@ -11,6 +11,19 @@ const cleanSubject = (subject) => subject
     .trim()
     .slice(0, 180);
 
+export const resolveAndroidOtaManifestNotes = ({
+    requestedNotes = '',
+    latestCommitSubject = '',
+    emptyNotes = false,
+}) => {
+    if (emptyNotes) return '';
+    const trimmedNotes = requestedNotes.trim();
+    if (trimmedNotes) return trimmedNotes;
+    return latestCommitSubject.trim()
+        ? `- ${cleanSubject(latestCommitSubject)}`
+        : '本次 OTA 更新。';
+};
+
 export const resolvePreviousAndroidOtaSourceRef = (manifest) => {
     const sourceRef = typeof manifest?.sourceRef === 'string' ? manifest.sourceRef.trim() : '';
     if (SHA_PATTERN.test(sourceRef)) return sourceRef.toLowerCase();

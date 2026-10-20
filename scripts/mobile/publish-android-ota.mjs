@@ -14,6 +14,7 @@ import {
     resolveAndroidControlAssetsBaseUrl,
 } from './android-assets-base-url.mjs';
 import { classifyOtaBundleFile } from './ota-bundle-files.mjs';
+import { resolveAndroidOtaManifestNotes } from './android-ota-release-notes.mjs';
 import { waitForServerAssets } from './wait-for-server-assets.mjs';
 
 const rootDir = process.cwd();
@@ -45,6 +46,7 @@ const allowedBooleanArgs = new Set([
     'no-force-update',
     'dry-run',
     'skip-latest',
+    'empty-notes',
     'help',
 ]);
 const helpText = `
@@ -74,6 +76,7 @@ Android OTA 发布脚本
 - --force-update-title <text>
 - --force-update-message <text>
 - --notes <text>
+- --empty-notes 完整部署无玩家可见更新时将 OTA 清单说明留空
 - --source-ref <40位 git SHA> 更新说明对应的代码提交；不传时使用当前 HEAD
 - --dry-run
 - --skip-latest 仅允许 dry-run 诊断；正式发布禁止跳过 latest.json
@@ -163,8 +166,14 @@ if (!/^[a-f0-9]{40}$/i.test(sourceRef)) {
     throw new Error(`OTA source-ref 必须是完整的 40 位 git SHA：${sourceRef}`);
 }
 const latestCommitSubject = execFileSync('git', ['log', '-1', '--format=%s', sourceRef], { encoding: 'utf8' }).trim();
-const notes = readArgValue('notes', '').trim()
-    || (latestCommitSubject ? `- ${latestCommitSubject}` : '本次 OTA 更新。');
+if (hasFlag('empty-notes') && readArgValue('notes', '').trim()) {
+    throw new Error('--empty-notes 不能与非空 --notes 同时使用。');
+}
+const notes = resolveAndroidOtaManifestNotes({
+    requestedNotes: readArgValue('notes', ''),
+    latestCommitSubject,
+    emptyNotes: hasFlag('empty-notes'),
+});
 const forbiddenCompatibilityArgs = [
     'target-native-version',
     'min-native-version',

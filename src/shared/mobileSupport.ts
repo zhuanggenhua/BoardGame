@@ -366,10 +366,13 @@ export const shouldUseBoardShellScale = (
     height = 0,
 ) => {
     const support = resolveGameMobileSupport(entry);
+    const isPortrait = isPortraitViewport(width, height);
     return isMobileViewport(width)
-        && !isPortraitViewport(width, height)
-        && support.mobileProfile === 'landscape-adapted'
-        && support.mobileLayoutPreset === 'board-shell';
+        && support.mobileLayoutPreset === 'board-shell'
+        && (
+            (support.mobileProfile === 'landscape-adapted' && !isPortrait)
+            || (support.mobileProfile === 'portrait-adapted' && isPortrait)
+        );
 };
 
 export const resolveStableViewportSize = (

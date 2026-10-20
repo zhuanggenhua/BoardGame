@@ -55,6 +55,7 @@ import {
     resolveMageWarsGameHudFabInitialOffset,
 } from '../../../../games/mage-wars/layout';
 import { useRuntimeViewport } from '../../../../hooks/ui/useRuntimeViewport';
+import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../../../shared/mobileSupport';
 import {
     applySystemDisplayThemeToDocument,
     persistSystemDisplayThemePreference,
@@ -159,7 +160,7 @@ export const GameHUD = ({
     const { t, i18n } = useTranslation('game');
     const toast = useToast();
     const { user } = useAuth();
-    const { height: viewportHeight } = useRuntimeViewport({ syncCssVars: false });
+    const { width: viewportWidth, height: viewportHeight } = useRuntimeViewport({ syncCssVars: false });
 
     // 从注册表获取游戏特定的卡牌预览函数
     const getCardPreviewRef = useMemo(() => {
@@ -196,16 +197,24 @@ export const GameHUD = ({
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
     const isBetrayalGame = _gameId === 'betrayal';
+    const isTicTacToePortraitMobile = _gameId === 'tictactoe'
+        && viewportWidth > 0
+        && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH
+        && viewportHeight > viewportWidth;
     const isBetrayalCharacterSelect = isBetrayalGame &&
         ((undoState?.G as { core?: { phase?: unknown } } | null | undefined)?.core?.phase === 'characterSelect');
     // Betrayal 选角阶段的确认区占用右下角，悬浮菜单必须让位；进入牌桌后恢复右下角基线。
     const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_POSITION
+        : isTicTacToePortraitMobile
+            ? 'top-right'
         : isBetrayalGame
             ? (isSetupPhase || isBetrayalCharacterSelect ? 'top-right' : 'bottom-right')
             : 'bottom-right';
     const fabMenuStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
+        : isTicTacToePortraitMobile
+            ? 'game_hud_fab_position:tictactoe:portrait:v1'
         : isBetrayalGame
             ? 'game_hud_fab_position:betrayal:v2'
             : undefined;
@@ -990,6 +999,9 @@ export const GameHUD = ({
                 position={fabMenuPosition}
                 initialOffset={_gameId === 'mage-wars'
                     ? resolveMageWarsGameHudFabInitialOffset(viewportHeight)
+                    : isTicTacToePortraitMobile
+                        // 放在标题与棋盘之间的空档，避免闭合态悬浮球压住棋盘格。
+                        ? { top: Math.max(0, Math.min(64, viewportHeight * 0.075)) }
                     : undefined}
                 zIndex={GAME_HUD_FAB_Z_INDEX}
                 storageKey={fabMenuStorageKey}

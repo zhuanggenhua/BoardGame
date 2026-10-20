@@ -8,22 +8,24 @@ const readBoardSource = () =>
     readFileSync(resolve(TEST_DIR, '..', 'Board.tsx'), 'utf8');
 
 describe('TicTacToe compatibility source guards', () => {
-    it('棋盘主容器应提供显式宽高，避免旧 WebView 丢失 aspect-square 后塌陷', () => {
+    it('棋盘尺寸应使用共享 board-shell 设计单位，不再二次读取真实视口尺寸', () => {
         const board = readBoardSource();
 
-        expect(board).toContain("const TIC_TAC_TOE_BOARD_VIEWPORT_SIZE = 'min(80vw, 60vh)'");
+        expect(board).toContain("const TIC_TAC_TOE_BOARD_VIEWPORT_SIZE = 'min(calc(var(--mobile-board-shell-inline-unit) * 80), calc(var(--mobile-board-shell-block-unit) * 60))'");
         expect(board).toContain('width: TIC_TAC_TOE_BOARD_VIEWPORT_SIZE,');
         expect(board).toContain('height: TIC_TAC_TOE_BOARD_VIEWPORT_SIZE,');
+        expect(board).toContain('data-testid="tictactoe-board-root"');
+        expect(board).not.toMatch(/\b\d+(?:\.\d+)?(?:vw|vh)\b/);
         expect(board).not.toContain('relative aspect-square h-full max-h-[80vw] md:max-h-[60vh] max-w-full p-4');
     });
 
-    it('窄屏底部 HUD 应避开悬浮菜单，回合身份不能被压缩断字', () => {
+    it('壳内 HUD 保持 PC 排版，不按真实视口断点切换移动专版', () => {
         const board = readBoardSource();
 
-        expect(board).toContain('max-[640px]:pr-[6.5rem]');
-        expect(board).toContain('max-[640px]:pb-24');
-        expect(board).toContain('max-[640px]:flex-col max-[640px]:items-center max-[640px]:gap-0');
-        expect(board).toContain('max-[640px]:whitespace-nowrap');
+        expect(board).not.toMatch(/\b(?:sm|md|lg|xl|2xl):/);
+        expect(board).toContain('@container');
+        expect(board).not.toMatch(/(?<!@)max-\[/);
+        expect(board).toContain('@max-[640px]:flex-col');
         expect(board).toContain('data-testid="tictactoe-score-right"');
         expect(board).toContain('data-testid="tictactoe-turn-status"');
     });

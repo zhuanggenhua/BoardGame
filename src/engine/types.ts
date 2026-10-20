@@ -410,6 +410,8 @@ export interface TutorialStepSnapshot {
      * that the tutorial card must avoid covering when choosing a placement.
      */
     avoidOverlapSelectors?: string[];
+    /** Additional protected regions used only by the compact landscape layout. */
+    compactAvoidOverlapSelectors?: string[];
     /**
      * Optional maximum width for dense layouts where the tooltip must fit
      * beside a protected reading surface without covering it.

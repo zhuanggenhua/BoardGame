@@ -5,7 +5,75 @@ import os from 'node:os';
 import path from 'node:path';
 import { mock, test } from 'node:test';
 import { getGitCommonDir } from './e2e-runtime-registry.js';
-import { pruneGlobalHeavyBudget } from './global-heavy-budget.mjs';
+import { acquireGlobalHeavyBudget, listGlobalHeavyBudgetEntries, pruneGlobalHeavyBudget } from './global-heavy-budget.mjs';
+
+async function withResourceReadings({ freeGb = 8, busy = false }, run) {
+    const cwd = createTemporaryRepo();
+    const keys = ['BG_HEAVY_STARTUP_COOLDOWN_MS', 'BG_HEAVY_CPU_SAMPLE_COUNT', 'BG_HEAVY_CPU_SAMPLE_INTERVAL_MS', 'BG_HEAVY_GLOBAL_MAX_WEIGHT', 'BG_HEAVY_E2E_GROUP_MAX_WEIGHT'];
+    const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+    Object.assign(process.env, {
+        BG_HEAVY_STARTUP_COOLDOWN_MS: '0', BG_HEAVY_CPU_SAMPLE_COUNT: '1', BG_HEAVY_CPU_SAMPLE_INTERVAL_MS: '1',
+        BG_HEAVY_GLOBAL_MAX_WEIGHT: '1', BG_HEAVY_E2E_GROUP_MAX_WEIGHT: '1',
+    });
+    let ticks = 0;
+    const memory = mock.method(os, 'freemem', () => freeGb * 1024 ** 3);
+    const cpu = mock.method(os, 'cpus', () => {
+        ticks += 100;
+        return [{ times: { user: busy ? ticks : 0, idle: busy ? 0 : ticks, nice: 0, sys: 0, irq: 0 } }];
+    });
+    try { await run(cwd); }
+    finally {
+        memory.mock.restore(); cpu.mock.restore();
+        for (const [key, value] of Object.entries(previous)) {
+            if (value === undefined) delete process.env[key]; else process.env[key] = value;
+        }
+        await new Promise(resolve => setImmediate(resolve));
+        fs.rmSync(cwd, { recursive: true, force: true });
+    }
+}
+
+test('资源充足时多个 E2E 同时登记，旧的固定名额配置不再拦截', async () => {
+    await withResourceReadings({}, async cwd => {
+        const handles = [];
+        try {
+            for (let i = 0; i < 5; i++) handles.push(await acquireGlobalHeavyBudget({ group: 'e2e', cwd, waitForBudget: false }));
+            assert.equal((await listGlobalHeavyBudgetEntries({ cwd })).length, 5);
+            assert.ok(handles.every(handle => !handle.bypassed), '必须经过实际资源检查');
+        } finally {
+            for (const handle of handles) await handle.release();
+        }
+    });
+});
+
+test('CPU 压力过高时即使没有其它任务也拒绝启动', async () => {
+    await withResourceReadings({ busy: true }, async cwd => {
+        await assert.rejects(acquireGlobalHeavyBudget({ group: 'e2e', cwd, waitForBudget: false }), /CPU 过高/);
+        assert.equal((await listGlobalHeavyBudgetEntries({ cwd })).length, 0);
+    });
+});
+
+test('等待服务后资源恶化时，浏览器启动前重新检查并阻止启动', async () => {
+    await withResourceReadings({}, async cwd => {
+        const handle = await acquireGlobalHeavyBudget({ group: 'e2e', cwd, waitForBudget: false });
+        const pressure = mock.method(os, 'freemem', () => 0.5 * 1024 ** 3);
+        let browserStarted = false;
+        try {
+            await assert.rejects(async () => {
+                await handle.waitForResources();
+                browserStarted = true;
+            }, /可用内存不足/);
+            assert.equal(browserStarted, false);
+            assert.equal((await listGlobalHeavyBudgetEntries({ cwd })).length, 1, '重采样不能重复登记');
+        } finally { pressure.mock.restore(); await handle.release(); }
+    });
+});
+
+test('可用内存低于下限时即使没有其它任务也拒绝启动', async () => {
+    await withResourceReadings({ freeGb: 0.5 }, async cwd => {
+        await assert.rejects(acquireGlobalHeavyBudget({ group: 'e2e', cwd, waitForBudget: false }), /可用内存不足/);
+        assert.equal((await listGlobalHeavyBudgetEntries({ cwd })).length, 0);
+    });
+});
 
 function createTemporaryRepo() {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'global-heavy-budget-test-'));

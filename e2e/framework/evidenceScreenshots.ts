@@ -145,7 +145,9 @@ export function getEvidenceScreenshotDir(
     }
 
     // 证据截图统一锚定到仓库工作目录，避免混用 rootDir / cwd 导致输出目录漂移。
-    return join(process.cwd(), 'test-results', 'evidence-screenshots', evidenceSubdir);
+    const session = process.env.PW_E2E_SESSION_ID;
+    return join(process.cwd(), 'test-results', 'evidence-screenshots', evidenceSubdir,
+        ...(session ? ['_runs', sanitizeEvidencePathSegment(session)] : []));
 }
 
 export function getEvidenceScreenshotPath(

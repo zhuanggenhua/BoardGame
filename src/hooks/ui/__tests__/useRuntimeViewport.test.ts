@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { applyRuntimeViewportCssVars, useRuntimeViewport } from '../useRuntimeViewport';
-import { readBoardShellScaleValue } from '../../../shared/runtimeLayoutUnits';
+import { readBoardShellCanvasSizeValue, readBoardShellScaleValue } from '../../../shared/runtimeLayoutUnits';
 
 describe('applyRuntimeViewportCssVars', () => {
     it.each([
@@ -29,6 +29,7 @@ describe('applyRuntimeViewportCssVars', () => {
         expect(style.getPropertyValue('--mobile-board-shell-inline-unit')).toBe('19.2000px');
         expect(style.getPropertyValue('--mobile-board-shell-block-unit')).toBe('9.6000px');
         expect(style.getPropertyValue('--mobile-board-shell-offset-x')).toBe(offsetX);
+        expect(readBoardShellCanvasSizeValue()).toEqual({ width: 1920, height: 960 });
     });
     it('完整适配使用安全区内的可用矩形，偏移包含安全区原点', () => {
         const gamePage = document.createElement('div');
@@ -203,6 +204,30 @@ describe('applyRuntimeViewportCssVars', () => {
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.400000');
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('84.000px');
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-y')).toBe('0.000px');
+    });
+
+    it('portrait board-shell fits a portrait reference canvas without rotating or cropping it', () => {
+        const gamePage = document.createElement('div');
+        for (const [key, value] of Object.entries({
+            'data-game-page': 'true', 'data-game-id': 'tictactoe',
+            'data-mobile-profile': 'portrait-adapted', 'data-mobile-layout-preset': 'board-shell',
+            'data-mobile-board-shell-design-width': '1080', 'data-mobile-board-shell-design-height': '2340',
+            'data-mobile-board-shell-reference-width': '1080', 'data-mobile-board-shell-reference-height': '2340',
+            'data-mobile-board-shell-fit': 'contain',
+        })) gamePage.setAttribute(key, value);
+        document.body.appendChild(gamePage);
+
+        applyRuntimeViewportCssVars({ width: 390, height: 845 });
+
+        const style = document.documentElement.style;
+        expect(style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1080px');
+        expect(style.getPropertyValue('--mobile-board-shell-design-height')).toBe('2340px');
+        expect(style.getPropertyValue('--mobile-board-shell-canvas-width')).toBe('1080px');
+        expect(style.getPropertyValue('--mobile-board-shell-canvas-height')).toBe('2340px');
+        expect(style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.361111');
+        expect(style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('0.000px');
+        expect(style.getPropertyValue('--mobile-board-shell-offset-y')).toBe('0.000px');
+        expect(readBoardShellCanvasSizeValue()).toEqual({ width: 1080, height: 2340 });
     });
 
     it('separates the mobile shell canvas from the PC visual reference units', () => {

@@ -264,7 +264,7 @@ export default defineConfig({
             ['list'],
         ]
         : 'list',
-    outputDir: './test-results/playwright-artifacts',
+    outputDir: process.env.PW_E2E_OUTPUT_DIR || './test-results/playwright-artifacts',
     preserveOutput: shouldRecordVideo ? 'always' : 'failures-only',
     globalSetup: shouldStartServers ? './e2e/global-setup.ts' : undefined,
     globalTeardown: shouldStartServers ? './e2e/global-teardown.ts' : undefined,

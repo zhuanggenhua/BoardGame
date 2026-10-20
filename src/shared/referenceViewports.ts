@@ -23,6 +23,25 @@ export const MOBILE_LANDSCAPE_CAPPED_REFERENCE_VIEWPORT = {
     height: 500,
 } as const;
 
+// 手机竖屏逻辑设计画布：对应 1080×2388 物理屏（DPR 3）的 360×796 CSS px。
+export const MOBILE_PORTRAIT_DESIGN_VIEWPORT = {
+    width: 360,
+    height: 796,
+} as const;
+
+// 以设备 CSS 逻辑视口做 E2E；DPR 3 时截图输出 1080×2388 物理像素。
+export const MOBILE_PORTRAIT_E2E_VIEWPORT = {
+    width: 360,
+    height: 796,
+} as const;
+
+export const MOBILE_PORTRAIT_E2E_DEVICE_SCALE_FACTOR = 3;
+
+export const MOBILE_PORTRAIT_E2E_OUTPUT_RESOLUTION = {
+    width: MOBILE_PORTRAIT_E2E_VIEWPORT.width * MOBILE_PORTRAIT_E2E_DEVICE_SCALE_FACTOR,
+    height: MOBILE_PORTRAIT_E2E_VIEWPORT.height * MOBILE_PORTRAIT_E2E_DEVICE_SCALE_FACTOR,
+} as const;
+
 export const MOBILE_REFERENCE_VIEWPORT = {
     width: 375,
     height: 812,

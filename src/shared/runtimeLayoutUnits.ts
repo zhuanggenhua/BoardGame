@@ -57,6 +57,20 @@ export const readBoardShellOffsetPixelValue = () => {
     };
 };
 
+/** 当前被缩放的壳层画布逻辑尺寸；可用于把壳内固定控件限制在实际可见画布内。 */
+export const readBoardShellCanvasSizeValue = () => {
+    const style = readRootComputedStyle();
+    const width = parseCssNumber(style?.getPropertyValue('--mobile-board-shell-canvas-width'))
+        ?? parseCssNumber(style?.getPropertyValue('--mobile-board-shell-design-width'));
+    const height = parseCssNumber(style?.getPropertyValue('--mobile-board-shell-canvas-height'))
+        ?? parseCssNumber(style?.getPropertyValue('--mobile-board-shell-design-height'))
+        ?? parseCssNumber(style?.getPropertyValue('--mobile-board-shell-logical-height'));
+    return {
+        width: width && width > 0 ? width : undefined,
+        height: height && height > 0 ? height : undefined,
+    };
+};
+
 export const readBoardShellInlineUnitPixelValue = () => {
     const parsed = parseCssNumber(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-inline-unit'));
     if (parsed && parsed > 0) {

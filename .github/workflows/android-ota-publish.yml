@@ -59,6 +59,18 @@ on:
         description: '强更页正文（可选）'
         required: false
         type: string
+      release_notes_mode:
+        description: '更新说明来源；完整部署使用 shared，独立 OTA 默认根据提交生成'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - shared
+      release_notes:
+        description: '完整部署传入的网页共用更新说明；shared 模式允许为空'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -98,6 +110,7 @@ jobs:
             force_update="${{ inputs.force_update }}"
             force_update_title="${{ inputs.force_update_title }}"
             force_update_message="${{ inputs.force_update_message }}"
+            release_notes_mode="${{ inputs.release_notes_mode || 'auto' }}"
             expected_base_version="${{ inputs.expected_base_version }}"
             explicit_version="${{ inputs.version }}"
             display_version="${{ inputs.display_version }}"
@@ -136,6 +149,7 @@ jobs:
             echo "force_update=${force_update}"
             echo "force_update_title=${force_update_title}"
             echo "force_update_message=${force_update_message}"
+            echo "release_notes_mode=${release_notes_mode}"
             echo "source_mode=${source_mode}"
           } >> "${GITHUB_OUTPUT}"
 
@@ -249,6 +263,8 @@ jobs:
       - name: Resolve bundle metadata
         id: bundle
         if: steps.prereq.outputs.ready == 'true'
+        env:
+          ANDROID_OTA_PROVIDED_RELEASE_NOTES: ${{ inputs.release_notes }}
         shell: bash
         run: |
           short_sha="$(git rev-parse --short=7 HEAD)"
@@ -287,7 +303,11 @@ jobs:
           else
             bundle_version="${ota_version_base}-ota-${built_at}"
           fi
-          notes="$(node scripts/mobile/android-ota-release-notes.mjs --current-ref "${current_ref}" --manifest-url "${manifest_url}" --fallback-manifest-url "${fallback_manifest_url}")"
+          if [[ "${{ steps.params.outputs.release_notes_mode }}" == "shared" ]]; then
+            notes="${ANDROID_OTA_PROVIDED_RELEASE_NOTES}"
+          else
+            notes="$(node scripts/mobile/android-ota-release-notes.mjs --current-ref "${current_ref}" --manifest-url "${manifest_url}" --fallback-manifest-url "${fallback_manifest_url}")"
+          fi
           notes_delimiter="OTA_NOTES_$(node --input-type=module -e "import { randomUUID } from 'node:crypto'; console.log(randomUUID())")"
 
           {
@@ -349,8 +369,13 @@ jobs:
             --ota-version-base "${{ steps.bundle.outputs.ota_version_base }}"
             --product-version "${{ steps.bundle.outputs.product_version }}"
             --source-ref "${ANDROID_OTA_SOURCE_REF}"
-            --notes "${ANDROID_OTA_RELEASE_NOTES}"
           )
+
+          if [[ -n "${ANDROID_OTA_RELEASE_NOTES}" ]]; then
+            args+=(--notes "${ANDROID_OTA_RELEASE_NOTES}")
+          elif [[ "${{ steps.params.outputs.release_notes_mode }}" == "shared" ]]; then
+            args+=(--empty-notes)
+          fi
 
           if [[ -n "${{ steps.params.outputs.expected_base_version }}" ]]; then
             args+=(--expected-base-version "${{ steps.params.outputs.expected_base_version }}")
@@ -399,6 +424,7 @@ jobs:
             echo "| OTA Version Base | ${{ steps.bundle.outputs.ota_version_base || '未生成' }} |"
             echo "| Bundle Version | ${{ steps.bundle.outputs.bundle_version || '未生成' }} |"
             echo "| Display Version | ${{ steps.params.outputs.display_version || '自动递增' }} |"
+            echo "| 更新说明来源 | ${{ steps.params.outputs.release_notes_mode }} |"
             echo "| Dry Run | ${{ steps.params.outputs.dry_run }} |"
             echo "| Skip Latest | ${{ steps.params.outputs.skip_latest }} |"
             echo "| Force Update | true（项目硬门禁） |"

@@ -19,6 +19,8 @@
 import { describe, it, expect } from 'vitest';
 import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
+import { executePipeline } from '../../../engine/pipeline';
+import { DiceThroneDomain } from '../domain';
 import {
     fixedRandom,
     createQueuedRandom,
@@ -28,8 +30,9 @@ import {
     getCardById,
     cmd,
     advanceTo,
+    testSystems,
 } from './test-utils';
-import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { PALADIN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_HEALTH, INITIAL_CP } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
@@ -43,6 +46,7 @@ import { BARBARIAN_TOKENS } from '../heroes/barbarian/tokens';
 import { PALADIN_TOKENS } from '../heroes/paladin/tokens';
 import { SAMURAI_TOKENS } from '../heroes/samurai/tokens';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
+import { createCharacterDice } from '../domain/characters';
 
 initializeCustomActions();
 
@@ -1036,6 +1040,70 @@ describe('致盲 (Blinded) 攻击判定', () => {
         expect(settled.success).toBe(true);
         expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(settled.finalState.sys.phase).toBe('defensiveRoll');
+    });
+
+    it('状态注入全命令链：致盲失败会取消圣光术的治疗与奖励骰效果', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.turnNumber = 2;
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 40;
+        state.core.players['0'].statusEffects[STATUS_IDS.BLINDED] = 1;
+        const values = [5, 5, 1, 1, 3];
+        const faces = [
+            PALADIN_DICE_FACE_IDS.HEART,
+            PALADIN_DICE_FACE_IDS.HEART,
+            PALADIN_DICE_FACE_IDS.SWORD,
+            PALADIN_DICE_FACE_IDS.SWORD,
+            PALADIN_DICE_FACE_IDS.HELM,
+        ];
+        state.core.dice = createCharacterDice('paladin').map((die, index) => ({
+            ...die,
+            value: values[index],
+            symbol: faces[index],
+            symbols: [faces[index]],
+            isKept: false,
+        }));
+
+        const selectAbility = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            cmd('SELECT_ABILITY', '0', { abilityId: 'holy-light' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selectAbility.success).toBe(true);
+        if (!selectAbility.success) return;
+
+        const openBlindedCheck = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selectAbility.state,
+            cmd('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(openBlindedCheck.success).toBe(true);
+        if (!openBlindedCheck.success) return;
+        expect(openBlindedCheck.state.core.pendingBonusDiceSettlement?.customResolutionId).toBe('blinded-check');
+        expect(openBlindedCheck.state.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(1);
+
+        const settled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            openBlindedCheck.state,
+            cmd('SKIP_BONUS_DICE_REROLL', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(settled.success).toBe(true);
+        if (!settled.success) return;
+
+        expect(settled.state.sys.phase).toBe('main2');
+        expect(settled.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(settled.state.core.players['0'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(0);
+        expect(settled.state.core.players['0'].tokens[TOKEN_IDS.PROTECT] ?? 0).toBe(0);
+        expect(settled.state.core.pendingBonusDiceSettlement).toBeUndefined();
     });
 });
 

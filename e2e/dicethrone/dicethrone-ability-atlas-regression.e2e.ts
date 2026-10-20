@@ -1173,13 +1173,22 @@ test.describe('DiceThrone hand card preview regression', () => {
 
     for (const scenario of legacyScenarios) {
       await test.step(`老派系 ${scenario.heroId} 打出 ${scenario.cardId}`, async () => {
+        const isShadowThiefUpgrade = scenario.heroId === 'shadow_thief';
+        const expectedCp = isShadowThiefUpgrade ? 2 : null;
         await setupHeroScene(page, game, scenario.heroId, [scenario.cardId], {
           opponentHeroId: 'monk',
+          ...(isShadowThiefUpgrade ? { player0Resources: { cp: 4 } } : {}),
         });
         await clickHandCard(page, scenario.cardId);
-        await waitForUpgradeApplied(page, game, scenario.abilityId, 2, null, scenario.cardId, {
-          expectedHandIdsAfter: [],
-        });
+        await waitForUpgradeApplied(
+          page,
+          game,
+          scenario.abilityId,
+          2,
+          expectedCp,
+          scenario.cardId,
+          { expectedHandIdsAfter: [] },
+        );
         await waitForHandAnimationSettled(page);
         await expectUpgradeStableOnPlayerBoard(page, game, scenario.abilityId, scenario.cardId);
         if ('expectedSlotId' in scenario) {

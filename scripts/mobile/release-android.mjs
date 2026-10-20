@@ -51,6 +51,8 @@ ota 额外选项:
   --product-version <version>   显式指定商业产品版本；不传则使用 package.json.version 作为兼容展示值
   --expected-base-version <version>
                                 可选 package.json 断言；用于确认发布 ref，不传则不阻塞 OTA
+  --notes <text>                覆盖 OTA manifest 更新说明
+  --empty-notes                 将 OTA manifest 更新说明留空
 
 ota / full 额外选项:
   --ota-version-base <semver>   未显式 --version 时的 OTA 游标基线，可与产品版本解耦
@@ -280,7 +282,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
         'force-update-message',
         'notes',
     ]),
-    new Set(['dry-run', 'skip-latest', 'force-update']),
+    new Set(['dry-run', 'skip-latest', 'force-update', 'empty-notes']),
     sourceArgs,
 );
 

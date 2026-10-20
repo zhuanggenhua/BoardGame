@@ -470,17 +470,11 @@ function applyPowderKegIfThreeOfAKind({
     const target = state.players[targetId];
     if (!target) return [];
 
-    const currentStacks = target.statusEffects[STATUS_IDS.POWDER_KEG] ?? 0;
-    const maxStacks = getTokenStackLimit(state, targetId, STATUS_IDS.POWDER_KEG);
-    const newTotal = Math.min(currentStacks + 1, maxStacks);
-    const stacks = Math.max(0, newTotal - currentStacks);
-    if (stacks <= 0) return [];
-
     return buildStatusAppliedOrChoiceEvents({
         state,
         targetId,
         statusId: STATUS_IDS.POWDER_KEG,
-        stacks,
+        stacks: 1,
         sourceAbilityId,
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,

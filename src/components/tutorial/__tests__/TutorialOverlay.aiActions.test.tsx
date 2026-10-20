@@ -43,7 +43,7 @@ vi.mock('react-i18next', () => ({
 
 const renderWithStep = (
     step: TutorialStepSnapshot,
-    options: { stepIndex?: number; isLastStep?: boolean; steps?: TutorialStepSnapshot[] } = {},
+    options: { stepIndex?: number; isLastStep?: boolean; steps?: TutorialStepSnapshot[]; skippedStepIds?: string[] } = {},
 ) => {
     const nextStep = vi.fn();
     const previousStep = vi.fn();
@@ -63,7 +63,7 @@ const renderWithStep = (
             active: true,
             stepIndex,
             steps,
-            skippedStepIds: [],
+            skippedStepIds: options.skippedStepIds ?? [],
         },
     });
 
@@ -123,6 +123,17 @@ describe('TutorialOverlay aiActions visibility', () => {
             document.querySelector('[data-tutorial-step="unclassified-ai-step"]'),
         ).not.toBeNull();
         expect(screen.getByTestId('tutorial-overlay-card')).toBeTruthy();
+    });
+
+    it('跳过不适用步骤时不把内部步骤计数显示给玩家', () => {
+        renderWithStep({
+            id: 'current-action',
+            content: 'tutorial.currentAction',
+            infoStep: true,
+        }, { skippedStepIds: ['optional-action'] });
+
+        expect(screen.getByTestId('tutorial-overlay-card')).toBeTruthy();
+        expect(screen.queryByTestId('tutorial-skipped-notice')).toBeNull();
     });
 
     it('显示教程步骤绑定的真实图片图例', () => {

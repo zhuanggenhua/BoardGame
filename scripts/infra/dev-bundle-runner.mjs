@@ -1,10 +1,12 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { build as nativeBuild, context as nativeContext } from 'esbuild';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import { resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 import { withWindowsHide } from './windows-hide.js';
+import { captureSourceIdentity } from './e2e-source-identity.mjs';
 
 await assertChildProcessSupport('bundle-runner / esbuild watch', { probeEsbuild: true });
 
@@ -272,6 +274,7 @@ const rebuildPlugin = {
             }
 
             buildVersion += 1;
+            writeSourceIdentity(result);
             const action = buildVersion === 1 ? 'initial build ready' : 'rebuilt';
             console.log(`[bundle-runner] ${label} ${action} in ${durationMs}ms`);
             await queueRestart(buildVersion === 1 ? 'ready' : 'reloaded');
@@ -284,6 +287,7 @@ const sharedBuildOptions = {
     entryPoints: [entry],
     outfile,
     bundle: true,
+    metafile: true,
     platform: 'node',
     format: 'esm',
     packages: 'external',
@@ -291,6 +295,15 @@ const sharedBuildOptions = {
     logLevel: 'info',
     tsconfig,
 };
+
+function writeSourceIdentity(result) {
+    const configuration = ['package.json', 'package-lock.json', tsconfig,
+        ...fs.readdirSync(repoRoot).filter(name => /^tsconfig.*\.json$/.test(name) || /^\.env(?:\.|$)/.test(name)),
+    ].filter(file => fs.existsSync(path.resolve(repoRoot, file)));
+    const inputs = [...Object.keys(result.metafile.inputs), ...configuration];
+    if (inputs.some(input => fs.statSync(path.resolve(repoRoot, input)).mtimeMs > currentBuildStartedAt)) throw new Error('构建期间输入文件改变，不能将当前源码身份赋给旧构建。');
+    fs.writeFileSync(`${absOutfile}.sources.json`, JSON.stringify(captureSourceIdentity(inputs, repoRoot)));
+}
 
 if (onceMode) {
     process.on('SIGINT', () => {
@@ -303,7 +316,8 @@ if (onceMode) {
     currentBuildStartedAt = Date.now();
     console.log(`[bundle-runner] ${label} building ${entry}`);
     try {
-        await buildWithFallback(sharedBuildOptions);
+        const result = await buildWithFallback(sharedBuildOptions);
+        writeSourceIdentity(result);
         console.log(`[bundle-runner] ${label} initial build ready in ${Date.now() - currentBuildStartedAt}ms`);
         await restartRuntime('ready');
     } catch (error) {

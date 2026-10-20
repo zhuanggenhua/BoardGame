@@ -16,6 +16,12 @@
 - 在局部 UI / 状态合同已实现后，验证可见结果和拒绝分支。
 - 缩短调试循环，再用真实入口或低层测试补齐证明。
 
+## 在线状态注入回执
+
+`e2e/helpers/state-injection.ts` 中的 `injectMatchState` 和 `patchMatchState` 返回服务端确认的 `{ stateID, randomCursor }`。辅助函数会在服务端未返回这两个数值时直接失败；有 `page` 参数时，还会等客户端同步到注入的阶段、交互或响应窗。
+
+反馈诊断测试应保留这份回执，并与注入后从服务端或页面运行时读取的 `phase`、`interaction`、`responseWindow`、目标状态和 `actionLog` / `eventStream` 尾部一起写入 JSON 证据。注入只证明情景已进入运行时；触发操作仍须通过玩家可执行的界面动作完成，才能验证后续消费链。
+
 ## 不允许用途
 
 - 用注入替代玩家动作来宣称“用户真实链路已完成”。

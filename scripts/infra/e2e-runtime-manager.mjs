@@ -9,6 +9,7 @@ import {
     waitForPortsFree,
 } from './port-allocator.js';
 import {
+    acquireSharedRegistryLock,
     describeRuntimeConflict,
     findRuntimeById,
     findRuntimesByPorts,
@@ -23,12 +24,51 @@ import {
 } from './e2e-runtime-registry.js';
 import { startSingleWorkerRuntime } from './single-worker-runtime.js';
 import { withE2ELocalAssetEnv } from './e2e-local-assets-env.mjs';
+import { getFrontendSourceHash, readRuntimeSourceIdentity, sourceIdentityMatches } from './e2e-source-identity.mjs';
 
 const TMP_DIR = path.join(process.cwd(), '.tmp');
 const RUNTIME_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '420000', 10);
 const RUNTIME_STOP_TIMEOUT_MS = Number.parseInt(process.env.PW_PORT_CLEANUP_TIMEOUT_MS || '20000', 10);
 const HEALTH_POLL_INTERVAL_MS = 1000;
 const HEALTH_REQUEST_TIMEOUT_MS = Number.parseInt(process.env.PW_HEALTH_REQUEST_TIMEOUT_MS || '8000', 10);
+
+/** 只保护同一服务的检查与冷启动；就绪后释放，不占用测试执行期。 */
+export async function withRuntimeStartupLock(scope, start, { cwd = process.cwd(), timeoutMs = RUNTIME_READY_TIMEOUT_MS } = {}) {
+    const directory = path.join(cwd, '.tmp', 'runtime-startup-locks');
+    const lockPath = path.join(directory, `${normalizeScope(scope)}.json`);
+    fs.mkdirSync(directory, { recursive: true });
+    const startedAt = Date.now();
+    let ownerPid;
+    while (true) {
+        const releaseRegistry = acquireSharedRegistryLock(cwd);
+        let claimed = false;
+        try {
+            if (fs.existsSync(lockPath)) {
+                ownerPid = Number(JSON.parse(fs.readFileSync(lockPath, 'utf8')).pid);
+                if (!Number.isInteger(ownerPid) || ownerPid <= 0) throw new Error(`服务启动锁缺少有效 owner PID: ${lockPath}`);
+                if (!isPidAlive(ownerPid)) fs.unlinkSync(lockPath);
+            }
+            if (!fs.existsSync(lockPath)) {
+                const fd = fs.openSync(lockPath, 'wx');
+                try { fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, scope, createdAt: new Date().toISOString() })); }
+                finally { fs.closeSync(fd); }
+                claimed = true;
+            }
+        } finally { releaseRegistry(); }
+        if (claimed) break;
+        if (Date.now() - startedAt >= timeoutMs) throw new Error(`等待同一服务启动超时: scope=${scope}, ownerPid=${ownerPid}, lock=${lockPath}`);
+        await sleep(100);
+    }
+    try { return await start(); }
+    finally {
+        const releaseRegistry = acquireSharedRegistryLock(cwd);
+        try {
+            const owner = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+            if (Number(owner.pid) !== process.pid) throw new Error(`服务启动锁 owner 已变化: ${lockPath}`);
+            fs.unlinkSync(lockPath);
+        } finally { releaseRegistry(); }
+    }
+}
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -193,8 +233,8 @@ async function cleanupManagedRuntimeGracefully(runtime, controller, logger = con
     }
 
     await waitForPortsFree(Object.values(runtime.ports ?? {}), RUNTIME_STOP_TIMEOUT_MS);
-    releaseReservedPortsForScope(runtime.scope, process.cwd());
-    removeRuntimeById(runtime.runtimeId, process.cwd());
+    await releaseReservedPortsForScope(runtime.scope, process.cwd(), runtime.ownerPid);
+    removeRuntimeById(runtime.runtimeId, process.cwd(), { ownerPid: runtime.ownerPid });
 }
 
 function getRuntimeBootstrapLogFile(scope) {
@@ -286,21 +326,26 @@ export async function stopManagedRuntime({ runtimeId = '', scope = '', logger = 
     logger.log?.(`🛑 停止 E2E runtime: ${formatRuntimeSummary(runtime)}`);
     stopRuntime(runtime, { logger });
     await waitForPortsFree(Object.values(runtime.ports ?? {}), RUNTIME_STOP_TIMEOUT_MS);
-    releaseReservedPortsForScope(runtime.scope, process.cwd());
-    removeRuntimeById(runtime.runtimeId, process.cwd());
+    await releaseReservedPortsForScope(runtime.scope, process.cwd(), runtime.ownerPid);
+    removeRuntimeById(runtime.runtimeId, process.cwd(), { ownerPid: runtime.ownerPid });
 
     return { stopped: true, runtime };
 }
 
 export async function ensureSingleWorkerRuntime(options = {}) {
-    const logger = options.logger ?? console;
-    const target = options.target ?? '';
-    const requestedScope = options.requestedScope ?? process.env.PW_RUNTIME_SCOPE ?? '';
     const plan = buildSingleWorkerPlan({
         preferSharedSingleRun: options.preferSharedSingleRun === true,
-        requestedScope,
-        target,
+        requestedScope: options.requestedScope ?? process.env.PW_RUNTIME_SCOPE ?? '',
+        target: options.target ?? '',
     });
+    return withRuntimeStartupLock(plan.scope, () => ensureSingleWorkerRuntimeUnlocked(options, plan), { timeoutMs: options.timeoutMs });
+}
+
+async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
+    const logger = options.logger ?? console;
+    const target = options.target ?? '';
+    const serverRuntime = process.env.PW_SERVER_RUNTIME || 'bundle';
+    const frontendSourceHash = getFrontendSourceHash();
     const currentWorktreeRoot = getWorktreeRoot(process.cwd());
 
     pruneStaleRuntimes(process.cwd(), { killOrphans: true, logger });
@@ -317,7 +362,10 @@ export async function ensureSingleWorkerRuntime(options = {}) {
     const existingRuntime = getLocalRuntimeByScope(plan.scope, process.cwd());
     if (existingRuntime) {
         const inspected = await inspectManagedRuntime({ runtimeId: existingRuntime.runtimeId });
-        if (inspected?.health?.ready) {
+        if (inspected?.health?.ready && inspected.serverRuntime === serverRuntime
+            && inspected.frontendSourceHash === frontendSourceHash && sourceIdentityMatches(inspected.sourceIdentity)) {
+            const consumerPids = [...new Set([...(inspected.consumerPids ?? []).filter(isPidAlive), Number(process.env.PW_E2E_CLIENT_PID || process.pid)])];
+            touchRuntime(inspected.scope, { consumerPids });
             logger.log?.(`♻️ 复用已就绪的 E2E runtime: ${formatRuntimeSummary(inspected)}`);
             return {
                 runtime: inspected,
@@ -326,6 +374,9 @@ export async function ensureSingleWorkerRuntime(options = {}) {
             };
         }
 
+        if (!existingRuntime.sourceIdentity || existingRuntime.consumerPids?.some(isPidAlive)) {
+            throw new Error(`现有 E2E 服务不满足健康或源码身份要求，且仍有消费者或缺少可验证身份；保留它，不重启他人服务: ${formatRuntimeSummary(inspected ?? existingRuntime)}`);
+        }
         await stopManagedRuntime({ runtimeId: existingRuntime.runtimeId, logger });
     }
 
@@ -337,7 +388,7 @@ export async function ensureSingleWorkerRuntime(options = {}) {
             target,
         });
     } else {
-        releaseReservedPortsForScope(plan.scope, process.cwd());
+        await releaseReservedPortsForScope(plan.scope, process.cwd(), process.pid);
         ports = await reserveAvailablePorts(0, {
             scope: plan.scope,
             ownerPid: process.pid,
@@ -348,8 +399,10 @@ export async function ensureSingleWorkerRuntime(options = {}) {
     const logFile = getRuntimeBootstrapLogFile(plan.scope);
     let controller = null;
     let provisionalRuntime = null;
+    let directSourceIdentity = null;
 
     try {
+        directSourceIdentity = serverRuntime !== 'bundle' ? readRuntimeSourceIdentity(plan.scope) : null;
         controller = await startSingleWorkerRuntime({
             env: withE2ELocalAssetEnv({
                 ...process.env,
@@ -387,6 +440,9 @@ export async function ensureSingleWorkerRuntime(options = {}) {
             targetLabel: process.env.PW_E2E_TARGET?.trim() || target,
             ports,
             ownerPids: [process.pid],
+            consumerPids: [Number(process.env.PW_E2E_CLIENT_PID || process.pid)],
+            serverRuntime,
+            frontendSourceHash,
             servicePids: controller.getServicePids(),
             pids: [process.pid, ...controller.getServicePids()],
             bootstrapLogFiles: [logFile],
@@ -410,6 +466,10 @@ export async function ensureSingleWorkerRuntime(options = {}) {
                 throw error;
             }),
         ]);
+        const sourceIdentity = directSourceIdentity ?? readRuntimeSourceIdentity(plan.scope);
+        if (!sourceIdentityMatches(sourceIdentity)) throw new Error('服务启动期间源码发生变化，请按当前源码重新启动。');
+        if (frontendSourceHash !== getFrontendSourceHash()) throw new Error('前端启动期间源码发生变化，请按当前源码重新启动。');
+        touchRuntime(plan.scope, { sourceIdentity });
         logger.log?.(`✅ E2E runtime 已就绪: ${formatRuntimeSummary(readyRuntime)}`);
 
         return {
@@ -423,9 +483,9 @@ export async function ensureSingleWorkerRuntime(options = {}) {
             controller.stop('runtime startup failed');
             await waitForPortsFree(Object.values(ports ?? {}), RUNTIME_STOP_TIMEOUT_MS);
         }
-        releaseReservedPortsForScope(plan.scope, process.cwd());
+        await releaseReservedPortsForScope(plan.scope, process.cwd(), process.pid);
         if (provisionalRuntime?.runtimeId) {
-            removeRuntimeById(provisionalRuntime.runtimeId, process.cwd());
+            removeRuntimeById(provisionalRuntime.runtimeId, process.cwd(), { ownerPid: provisionalRuntime.ownerPid });
         }
         throw error;
     }
@@ -458,6 +518,24 @@ function createLogger(quiet) {
         warn() {},
         error() {},
     };
+}
+
+/** 共享服务独立于发起测试存活；控制连接关闭后继续承载后续测试。 */
+export async function holdRuntimeOwner(result, input = process.stdin) {
+    const keepSharedOwner = result.runtime.mode === 'shared-single' && Boolean(result.controller);
+    let finish;
+    const released = new Promise(resolve => { finish = resolve; });
+    const onInputEnd = () => { if (!keepSharedOwner) finish(); };
+    process.once('SIGINT', finish);
+    process.once('SIGTERM', finish);
+    input.once('end', onInputEnd);
+    input.resume();
+    try { await Promise.race([released, result.controller?.failurePromise ?? new Promise(() => {})]); }
+    finally {
+        process.removeListener('SIGINT', finish);
+        process.removeListener('SIGTERM', finish);
+        input.removeListener('end', onInputEnd);
+    }
 }
 
 async function main() {
@@ -496,18 +574,9 @@ async function main() {
         console.log(jsonMode ? JSON.stringify(payload) : JSON.stringify(payload, null, 2));
         if (holdMode) {
             try {
-                await Promise.race([
-                    new Promise((resolve) => {
-                        const finish = () => resolve();
-                        process.once('SIGINT', finish);
-                        process.once('SIGTERM', finish);
-                        process.stdin.resume();
-                        process.stdin.once('end', finish);
-                    }),
-                    result.controller?.failurePromise ?? new Promise(() => {}),
-                ]);
+                await holdRuntimeOwner(result);
             } finally {
-                if (payload.mode === 'isolated-single') {
+                if (payload.mode === 'isolated-single' || result.controller) {
                     if (result.controller) {
                         await cleanupManagedRuntimeGracefully(result.runtime, result.controller, logger);
                     } else {

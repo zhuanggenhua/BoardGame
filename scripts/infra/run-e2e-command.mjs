@@ -1,5 +1,4 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,12 +9,6 @@ import { runEncodingCheck } from './check-file-encoding.mjs';
 import { runE2ESafetyCheck } from './check-e2e-safety.js';
 import { cleanupTestConnections } from './cleanup_test_connections.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
-import {
-    formatRuntimeSummary,
-    getWorktreeRoot,
-    listActiveRuntimes,
-    pruneStaleRuntimes,
-} from './e2e-runtime-registry.js';
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
 import { acquireTaskGuard } from './heavy-task-guard.mjs';
 import { ensureE2EAssets } from './ensure-e2e-assets.mjs';
@@ -45,151 +38,17 @@ const SAFETY_CACHE_TTL_MS = 90_000;
 const PREFLIGHT_WRITE_RETRYABLE_CODES = new Set(['EBUSY', 'EPERM']);
 const PREFLIGHT_WRITE_RETRY_COUNT = 6;
 const PREFLIGHT_WRITE_RETRY_DELAY_MS = 50;
-const HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
-const HEAVY_TASK_GUARD_WAIT_POLL_MS = 10 * 1000;
-const E2E_RUNTIME_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
-const E2E_RUNTIME_WAIT_POLL_MS = 10 * 1000;
+const RESOURCE_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
 const E2E_PROCESS_TIMEOUT_MS = 30 * 60 * 1000;
 const CRITICAL_MEMORY_PERCENT = 1;
 const CRITICAL_MEMORY_SAMPLE_COUNT = 3;
 const CRITICAL_MEMORY_SAMPLE_INTERVAL_MS = 2000;
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 function parsePositiveIntegerEnv(name, fallback) {
     const raw = process.env[name];
     if (raw === undefined || raw === '') return fallback;
     const parsed = Number.parseInt(raw, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function isHeavyTaskGuardContention(error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return message.includes('已有同类重任务在运行')
-        || message.includes('检测到冲突重任务正在运行');
-}
-
-export function findBlockingE2ERuntimes(runtimes, {
-    preferSharedSingleRun = false,
-    currentWorktreeRoot = getWorktreeRoot(process.cwd()),
-} = {}) {
-    return (Array.isArray(runtimes) ? runtimes : []).filter((runtime) => {
-        const status = runtime?.status;
-        if (status !== 'active' && status !== 'active-unhealthy') {
-            return false;
-        }
-
-        const isReusableSharedRuntime = (
-            preferSharedSingleRun
-            && status === 'active'
-            && runtime.mode === 'shared-single'
-            && runtime.scope === 'shared-single'
-            && runtime.health?.ready === true
-            && path.resolve(runtime.worktreeRoot ?? '') === path.resolve(currentWorktreeRoot)
-        );
-
-        return !isReusableSharedRuntime;
-    });
-}
-
-function formatRuntimeQueueSummary(runtimes) {
-    return runtimes
-        .map(runtime => `- ${formatRuntimeSummary(runtime)}`)
-        .join('\n');
-}
-
-async function waitForE2ERuntimeWindow({
-    isListMode,
-    mode,
-    preferSharedSingleRun,
-    logger = console,
-} = {}) {
-    if (isListMode || mode === 'parallel' || process.env.BG_BYPASS_E2E_RUNTIME_GUARD === '1') {
-        return;
-    }
-
-    const waitTimeoutMs = parsePositiveIntegerEnv(
-        'BG_E2E_RUNTIME_WAIT_TIMEOUT_MS',
-        E2E_RUNTIME_WAIT_TIMEOUT_MS,
-    );
-    const waitPollMs = parsePositiveIntegerEnv(
-        'BG_E2E_RUNTIME_WAIT_POLL_MS',
-        E2E_RUNTIME_WAIT_POLL_MS,
-    );
-    const currentWorktreeRoot = getWorktreeRoot(process.cwd());
-    const startedAt = Date.now();
-    let attempt = 0;
-
-    while (true) {
-        pruneStaleRuntimes(process.cwd(), { killOrphans: true, logger });
-        const blockingRuntimes = findBlockingE2ERuntimes(listActiveRuntimes(process.cwd()), {
-            preferSharedSingleRun,
-            currentWorktreeRoot,
-        });
-
-        if (blockingRuntimes.length === 0) {
-            return;
-        }
-
-        const elapsedMs = Date.now() - startedAt;
-        if (elapsedMs >= waitTimeoutMs) {
-            throw new Error([
-                '已有不可复用的 E2E runtime 仍在运行，拒绝继续启动新的 E2E。',
-                '这会让多个会话同时拉起浏览器/前端/游戏服/API 服务，直接增加 CPU 和内存占用。',
-                formatRuntimeQueueSummary(blockingRuntimes),
-                '请等待该 runtime 结束，或确认它已经失联后再运行安全清理。',
-            ].join('\n'));
-        }
-
-        attempt += 1;
-        const remainingMs = Math.max(0, waitTimeoutMs - elapsedMs);
-        logger.log?.([
-            '[e2e-runtime-guard] 检测到不可复用的活跃 E2E runtime，进入低资源排队等待。',
-            `第 ${attempt} 次检查命中，${Math.ceil(waitPollMs / 1000)}s 后重试。`,
-            `最长还可等待 ${Math.ceil(remainingMs / 1000)}s。`,
-            formatRuntimeQueueSummary(blockingRuntimes),
-        ].join('\n'));
-        await sleep(waitPollMs);
-    }
-}
-
-async function acquireTaskGuardWithQueue(args) {
-    const waitTimeoutMs = parsePositiveIntegerEnv(
-        'BG_HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS',
-        HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS,
-    );
-    const waitPollMs = parsePositiveIntegerEnv(
-        'BG_HEAVY_TASK_GUARD_WAIT_POLL_MS',
-        HEAVY_TASK_GUARD_WAIT_POLL_MS,
-    );
-    const startedAt = Date.now();
-    let attempt = 0;
-
-    while (true) {
-        attempt += 1;
-        try {
-            return acquireTaskGuard(args);
-        } catch (error) {
-            if (!isHeavyTaskGuardContention(error)) {
-                throw error;
-            }
-
-            const elapsedMs = Date.now() - startedAt;
-            if (elapsedMs >= waitTimeoutMs) {
-                throw error;
-            }
-
-            const remainingMs = Math.max(0, waitTimeoutMs - elapsedMs);
-            console.log([
-                '[heavy-task-guard] 已有 E2E/quality-gate 重任务在运行，进入低资源排队等待。',
-                `第 ${attempt} 次检查失败，${Math.ceil(waitPollMs / 1000)}s 后重试。`,
-                `最长还可等待 ${Math.ceil(remainingMs / 1000)}s。`,
-            ].join(' '));
-            await sleep(waitPollMs);
-        }
-    }
 }
 
 function createE2ESessionId() {
@@ -367,11 +226,16 @@ function runJsonCommand(command, args, env) {
 
 function ensureManagedRuntimeWithHold(command, args, env) {
     return new Promise((resolve, reject) => {
+        const managerLog = path.resolve('.tmp', `runtime-manager-${env.PW_E2E_SESSION_ID}.log`);
+        fs.mkdirSync(path.dirname(managerLog), { recursive: true });
+        const errorLogFd = fs.openSync(managerLog, 'a');
         const child = spawn(command, args, withWindowsHide({
-            stdio: ['pipe', 'pipe', 'pipe'],
+            stdio: ['pipe', 'pipe', errorLogFd],
+            detached: args.includes('shared-single'),
             env,
             shell: false,
         }, env));
+        fs.closeSync(errorLogFd);
 
         let stdout = '';
         let stderr = '';
@@ -387,6 +251,7 @@ function ensureManagedRuntimeWithHold(command, args, env) {
                     fallbackMessage,
                     stdout.trim() ? `stdout:\n${stdout.trim()}` : '',
                     stderr.trim() ? `stderr:\n${stderr.trim()}` : '',
+                    `manager log: ${managerLog}\n${fs.readFileSync(managerLog, 'utf8').slice(-4000)}`,
                 ].filter(Boolean).join('\n\n'),
             ));
         };
@@ -431,8 +296,17 @@ function ensureManagedRuntimeWithHold(command, args, env) {
     });
 }
 
-async function stopHeldManager(child) {
+async function stopHeldManager(child, runtime) {
     if (!child || child.exitCode !== null || child.killed) {
+        return;
+    }
+
+    if (runtime?.mode === 'shared-single') {
+        // 服务 owner 独立存活；测试结束只关闭本次控制连接。
+        child.stdin?.end();
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        child.unref();
         return;
     }
 
@@ -734,34 +608,6 @@ function summarizeRuntimeBootstrapFailure(error) {
     return firstParagraph?.trim() || rawMessage;
 }
 
-function deriveManagedRuntimeScope(mode, explicitTargetPath) {
-    const normalizedTarget = String(explicitTargetPath ?? '')
-        .trim()
-        .replace(/\\/g, '/')
-        .toLowerCase();
-    const normalizedWorktree = process.cwd()
-        .trim()
-        .replace(/\\/g, '/')
-        .toLowerCase();
-    const baseName = path.basename(normalizedTarget)
-        .replace(/\.e2e\.[cm]?tsx?$/i, '')
-        .replace(/[^a-z0-9_-]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
-        || 'target';
-    const worktreeName = path.basename(normalizedWorktree)
-        .replace(/[^a-z0-9_-]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
-        || 'worktree';
-    const digest = createHash('sha1')
-        .update(`${normalizedWorktree}:${mode}:${normalizedTarget}`)
-        .digest('hex')
-        .slice(0, 10);
-
-    return `single-${mode}-${worktreeName}-${baseName}-${digest}`;
-}
-
 function resolveBootstrapMode({ isListMode, shouldUseManagedSingleRuntime }) {
     if (isListMode) {
         return 'none';
@@ -822,9 +668,11 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     const bootstrapMode = resolveBootstrapMode({ isListMode, shouldUseManagedSingleRuntime });
     const commandSource = [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' ');
     modeEnv.PW_E2E_STANDARD_ENTRY = 'true';
+    modeEnv.PW_E2E_CLIENT_PID = String(process.pid);
     modeEnv.PW_E2E_SESSION_ID = modeEnv.PW_E2E_SESSION_ID
         || process.env.PW_E2E_SESSION_ID
         || createE2ESessionId();
+    modeEnv.PW_E2E_OUTPUT_DIR = path.resolve('test-results/playwright-artifacts', modeEnv.PW_E2E_SESSION_ID);
     modeEnv.PW_E2E_ENTRYPOINT = entrypoint;
     modeEnv.PW_E2E_COMMAND_SOURCE = commandSource;
     modeEnv.PW_E2E_LIST_ONLY = isListMode ? 'true' : 'false';
@@ -858,12 +706,6 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     if (isListMode) {
         console.log('🧾 检测到 Playwright --list，仅列举用例，跳过托管 runtime 启动。');
     }
-
-    await waitForE2ERuntimeWindow({
-        isListMode,
-        mode,
-        preferSharedSingleRun,
-    });
 
     const preflightCache = readPreflightCache();
     const preflightKey = getPreflightCacheKey(mode, {
@@ -910,9 +752,8 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     let managedRuntime = null;
     const taskGuard = isListMode
         ? null
-        : await acquireTaskGuardWithQueue({
+        : acquireTaskGuard({
             name: 'e2e-run',
-            conflicts: ['quality-gate'],
             command: [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' '),
             metadata: {
                 mode,
@@ -935,7 +776,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
                 waitForBudget: true,
                 waitTimeoutMs: parsePositiveIntegerEnv(
                     'BG_HEAVY_WAIT_TIMEOUT_MS',
-                    HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS,
+                    RESOURCE_WAIT_TIMEOUT_MS,
                 ),
                 metadata: {
                     mode,
@@ -1013,16 +854,17 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
 
         playwrightArgs.push(...extraArgs);
 
+        if (globalBudgetHandle) await globalBudgetHandle.waitForResources();
         const exitCode = await run(runtimeNode, [playwrightCli, ...playwrightArgs], modeEnv);
         if (exitCode !== 0) {
             process.exitCode = exitCode;
         }
     } finally {
-        await stopHeldManager(heldRuntimeManager);
+        await stopHeldManager(heldRuntimeManager, managedRuntime);
         if (managedRuntime?.mode === 'isolated-single' && !heldRuntimeManager) {
             stopManagedRuntime(managedRuntime.runtimeId, modeEnv);
         }
-        globalBudgetHandle?.release?.();
+        await globalBudgetHandle?.release?.();
         taskGuard?.release?.();
     }
 }

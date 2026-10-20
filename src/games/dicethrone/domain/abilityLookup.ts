@@ -90,6 +90,61 @@ export function playerAbilityHasDamage(
 }
 
 /**
+ * 判断选中的进攻技能是否以对手为伤害目标。
+ *
+ * 这与“最终有没有造成伤害”不同：休战、防止伤害或眩光判定失败
+ * 可以让实际伤害归零，但不会把已选定的攻击技能改判为非攻击。
+ * 纯自我效果（如聚宝盆抽牌）和仅造成连带伤害的效果不算攻击。
+ */
+export function playerAbilityTargetsOpponentWithDamage(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    abilityId: string
+): boolean {
+    const match = findPlayerAbility(state, playerId, abilityId);
+    if (!match) return false;
+
+    const effects = match.variant
+        ? match.variant.effects ?? []
+        : match.ability.variants?.length
+            ? match.ability.variants.flatMap(variant => variant.effects ?? [])
+            : match.ability.effects ?? [];
+
+    return effects.some(effect => effect.action ? actionTargetsOpponentWithDamage(effect.action) : false);
+}
+
+function actionTargetsOpponentWithDamage(action: EffectAction): boolean {
+    if (action.target === 'all' || action.target === 'allOpponents') {
+        // 群体 / 连带伤害不等同于明确以一名对手为目标的攻击。
+        return false;
+    }
+
+    if (action.type === 'damage') {
+        return action.target === 'opponent' && (action.value ?? 0) > 0;
+    }
+
+    if (action.type === 'custom' && action.customActionId) {
+        return action.target === 'opponent'
+            && (getCustomActionMeta(action.customActionId)?.categories.includes('damage') ?? false);
+    }
+
+    if (action.type === 'rollDie') {
+        // 奖励骰的 damage 分支结算到当前 pending attack；target=self 表示掷骰者，
+        // 不表示伤害施加给自己。排除 allOpponents 后，其伤害仍属于对手攻击意图。
+        const branches = [
+            ...(action.conditionalEffects ?? []),
+            ...(action.defaultEffect ? [action.defaultEffect] : []),
+        ];
+        return branches.some(branch => (
+            (typeof branch.bonusDamage === 'number' && branch.bonusDamage > 0)
+            || (typeof branch.unblockableDamage === 'number' && branch.unblockableDamage > 0)
+        ));
+    }
+
+    return false;
+}
+
+/**
  * 判断该技能是否依赖“单一敌方目标”
  *
  * 用于 4 人 / 2v2 下判断是否真的需要进入 targetingRoll。

@@ -573,6 +573,8 @@ export interface AttackInitiatedEvent extends GameEvent<'ATTACK_INITIATED'> {
         isDefendable: boolean;
         /** 是否为终极技能（不可被干扰） */
         isUltimate?: boolean;
+        /** 该技能是否以对手为伤害目标；实际伤害被阻止时仍保留攻击分类。 */
+        countsAsOffensiveAttackMade?: boolean;
     };
 }
 

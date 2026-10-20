@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -283,15 +284,7 @@ function resolveMemoryMinFreeGb(group) {
 function readBudgetConfig(group) {
     const normalizedGroup = normalizeName(group, 'default');
     const defaultGroupWeight = normalizedGroup === 'quality-gate' ? 2 : 1;
-    const defaultGroupMaxWeight = normalizedGroup === 'quality-gate'
-        ? 2
-        : normalizedGroup === 'e2e'
-            ? 1
-            : parseEnvNumber('BG_HEAVY_GLOBAL_MAX_WEIGHT', 4);
-
     return {
-        globalMaxWeight: parseEnvNumber('BG_HEAVY_GLOBAL_MAX_WEIGHT', 4),
-        groupMaxWeight: parseEnvNumber(`BG_HEAVY_${normalizedGroup.toUpperCase().replace(/-/g, '_')}_GROUP_MAX_WEIGHT`, defaultGroupMaxWeight),
         weight: parseEnvNumber(`BG_HEAVY_${normalizedGroup.toUpperCase().replace(/-/g, '_')}_WEIGHT`, defaultGroupWeight),
         waitForBudget: process.env.BG_HEAVY_WAIT_FOR_BUDGET === '1',
         waitTimeoutMs: parseEnvNumber('BG_HEAVY_WAIT_TIMEOUT_MS', 120000),
@@ -301,7 +294,6 @@ function readBudgetConfig(group) {
         cpuSampleCount: parseEnvNumber('BG_HEAVY_CPU_SAMPLE_COUNT', 3),
         cpuSampleIntervalMs: parseEnvNumber('BG_HEAVY_CPU_SAMPLE_INTERVAL_MS', 250),
         memoryMinFreeGb: resolveMemoryMinFreeGb(normalizedGroup),
-        startupCooldownMs: parseEnvNumber('BG_HEAVY_STARTUP_COOLDOWN_MS', 10000),
     };
 }
 
@@ -338,16 +330,11 @@ async function sampleCpuUsagePercent({ sampleCount, sampleIntervalMs }) {
     return samples > 0 ? totalUsage / samples : 0;
 }
 
-async function evaluateBudgetGate({ group, weight, cwd = process.cwd() } = {}) {
+export async function evaluateBudgetGate({ group = 'e2e', weight = 1, cwd = process.cwd() } = {}) {
     const config = readBudgetConfig(group);
     const entries = await listGlobalHeavyBudgetEntries({ cwd });
     const totalWeight = sumWeight(entries);
     const groupWeight = sumWeight(entries, entry => entry.group === normalizeName(group, 'default'));
-    const latestStartedAt = entries.reduce((latest, entry) => {
-        const startedAt = Date.parse(entry.startedAt ?? '');
-        return Number.isFinite(startedAt) ? Math.max(latest, startedAt) : latest;
-    }, 0);
-
     const cpuUsagePercent = await sampleCpuUsagePercent({
         sampleCount: config.cpuSampleCount,
         sampleIntervalMs: config.cpuSampleIntervalMs,
@@ -355,29 +342,15 @@ async function evaluateBudgetGate({ group, weight, cwd = process.cwd() } = {}) {
     const freeMemoryGb = os.freemem() / (1024 ** 3);
     const projectedTotalWeight = totalWeight + weight;
     const projectedGroupWeight = groupWeight + weight;
-    const now = Date.now();
-    const cooldownRemainingMs = latestStartedAt > 0
-        ? Math.max(0, config.startupCooldownMs - (now - latestStartedAt))
-        : 0;
-
     let allowed = true;
     let reason = '';
 
-    if (projectedTotalWeight > config.globalMaxWeight) {
-        allowed = false;
-        reason = `全仓库重任务预算不足：当前=${totalWeight}，申请=${weight}，上限=${config.globalMaxWeight}`;
-    } else if (projectedGroupWeight > config.groupMaxWeight) {
-        allowed = false;
-        reason = `${group} 组预算不足：当前=${groupWeight}，申请=${weight}，上限=${config.groupMaxWeight}`;
-    } else if (cpuUsagePercent >= config.cpuHardLimit) {
+    if (cpuUsagePercent >= config.cpuHardLimit) {
         allowed = false;
         reason = `CPU 过高：${cpuUsagePercent.toFixed(1)}% >= ${config.cpuHardLimit}%`;
     } else if (freeMemoryGb < config.memoryMinFreeGb) {
         allowed = false;
         reason = `可用内存不足：${freeMemoryGb.toFixed(2)}GB < ${config.memoryMinFreeGb}GB`;
-    } else if (entries.length > 0 && cooldownRemainingMs > 0) {
-        allowed = false;
-        reason = `命中启动冷却窗口：剩余 ${Math.ceil(cooldownRemainingMs / 1000)}s`;
     } else if (entries.length > 0 && cpuUsagePercent >= config.cpuSoftLimit) {
         allowed = false;
         reason = `CPU 已处于高压区：${cpuUsagePercent.toFixed(1)}% >= ${config.cpuSoftLimit}%`;
@@ -394,7 +367,6 @@ async function evaluateBudgetGate({ group, weight, cwd = process.cwd() } = {}) {
             activeEntryCount: entries.length,
             cpuUsagePercent,
             freeMemoryGb,
-            cooldownRemainingMs,
             config,
             entries,
         },
@@ -420,9 +392,6 @@ export function formatGlobalHeavyBudgetStatus(status) {
     lines.push(`groupWeight=${status.snapshot.groupWeight} -> ${status.snapshot.projectedGroupWeight}`);
     lines.push(`cpu=${status.snapshot.cpuUsagePercent.toFixed(1)}%`);
     lines.push(`freeMemory=${status.snapshot.freeMemoryGb.toFixed(2)}GB`);
-    if (status.snapshot.cooldownRemainingMs > 0) {
-        lines.push(`cooldownRemainingMs=${status.snapshot.cooldownRemainingMs}`);
-    }
     if (status.snapshot.entries.length > 0) {
         lines.push('active:');
         for (const entry of status.snapshot.entries) {
@@ -430,6 +399,18 @@ export function formatGlobalHeavyBudgetStatus(status) {
         }
     }
     return lines.join('\n');
+}
+
+export async function waitForHeavyResources({ group = 'e2e', weight = 1, cwd = process.cwd(), logger = console, waitForBudget = true, waitTimeoutMs, waitPollMs } = {}) {
+    const config = readBudgetConfig(group);
+    const startedAt = Date.now();
+    while (true) {
+        const status = await evaluateBudgetGate({ group, weight, cwd });
+        if (status.allowed) return status;
+        if (!waitForBudget || Date.now() - startedAt >= (waitTimeoutMs ?? config.waitTimeoutMs)) throw new Error(formatGlobalHeavyBudgetStatus(status));
+        logger.log?.(`[global-heavy-budget] 启动前资源压力过高，等待重采样: ${status.reason}`);
+        await sleep(waitPollMs ?? config.waitPollMs);
+    }
 }
 
 export async function acquireGlobalHeavyBudget({
@@ -451,6 +432,7 @@ export async function acquireGlobalHeavyBudget({
             entry: null,
             bypassed: true,
             status: null,
+            async waitForResources() {},
         };
     }
 
@@ -461,7 +443,7 @@ export async function acquireGlobalHeavyBudget({
     const timeoutMs = waitTimeoutMs ?? config.waitTimeoutMs;
     const pollMs = waitPollMs ?? config.waitPollMs;
     const startedAt = Date.now();
-    const entryId = `${normalizedGroup}-${process.pid}-${Date.now()}`;
+    const entryId = `${normalizedGroup}-${process.pid}-${randomUUID()}`;
 
     while (true) {
         let status;
@@ -504,25 +486,10 @@ export async function acquireGlobalHeavyBudget({
                         }
                     }
 
-                    const currentTotalWeight = sumWeight(activeEntries);
-                    const currentGroupWeight = sumWeight(activeEntries, existingEntry => existingEntry.group === normalizedGroup);
-                    const latestStartedAt = activeEntries.reduce((latest, existingEntry) => {
-                        const startedAtMs = Date.parse(existingEntry.startedAt ?? '');
-                        return Number.isFinite(startedAtMs) ? Math.max(latest, startedAtMs) : latest;
-                    }, 0);
-                    const cooldownRemainingMs = latestStartedAt > 0
-                        ? Math.max(0, config.startupCooldownMs - (Date.now() - latestStartedAt))
-                        : 0;
-
-                    if (currentTotalWeight + normalizedWeight > config.globalMaxWeight) {
-                        throw new Error(`全仓库重任务预算在写入前已被占满：当前=${currentTotalWeight}，申请=${normalizedWeight}，上限=${config.globalMaxWeight}`);
-                    }
-                    if (currentGroupWeight + normalizedWeight > config.groupMaxWeight) {
-                        throw new Error(`${normalizedGroup} 组预算在写入前已被占满：当前=${currentGroupWeight}，申请=${normalizedWeight}，上限=${config.groupMaxWeight}`);
-                    }
-                    if (activeEntries.length > 0 && cooldownRemainingMs > 0) {
-                        throw new Error(`启动冷却窗口内预算状态变化，需稍后重试：剩余 ${Math.ceil(cooldownRemainingMs / 1000)}s`);
-                    }
+                    // 注册与启动之间重新采样，避免并发申请都消费同一个过时的资源快照。
+                    const currentStatus = await evaluateBudgetGate({ group: normalizedGroup, weight: normalizedWeight, cwd });
+                    if (!currentStatus.allowed) throw new Error(formatGlobalHeavyBudgetStatus(currentStatus));
+                    status = currentStatus;
 
                     activeEntries.push(entry);
                     writeRegistry({ entries: activeEntries }, cwd);
@@ -532,7 +499,7 @@ export async function acquireGlobalHeavyBudget({
                     throw error;
                 }
 
-                logger.log?.(`[global-heavy-budget] 预算写入竞争，${Math.ceil(pollMs / 1000)}s 后重试。原因: ${error instanceof Error ? error.message : String(error)}`);
+                logger.log?.(`[global-heavy-budget] 资源检查或登记竞争，${Math.ceil(pollMs / 1000)}s 后重试。原因: ${error instanceof Error ? error.message : String(error)}`);
                 await sleep(pollMs);
                 continue;
             }
@@ -568,7 +535,7 @@ export async function acquireGlobalHeavyBudget({
                 released = true;
                 clearInterval(heartbeat);
 
-                withRegistryLock(async () => {
+                const releasePromise = withRegistryLock(async () => {
                     const registry = readRegistry(cwd);
                     registry.entries = (registry.entries ?? [])
                         .map(rawEntry => normalizeEntry(rawEntry, cwd))
@@ -579,14 +546,17 @@ export async function acquireGlobalHeavyBudget({
                 });
 
                 process.removeListener('exit', release);
+                return releasePromise;
             };
 
             process.once('exit', release);
+            logger.log?.(`[global-heavy-budget] 资源检查通过: CPU=${status.snapshot.cpuUsagePercent.toFixed(1)}%, 可用内存=${status.snapshot.freeMemoryGb.toFixed(2)}GB, 其它活跃任务=${status.snapshot.activeEntryCount}（不设任务数量上限）。`);
             return {
                 release,
                 entry,
                 bypassed: false,
                 status,
+                waitForResources: () => waitForHeavyResources({ group: normalizedGroup, weight: normalizedWeight, cwd, logger, waitForBudget: shouldWait, waitTimeoutMs: timeoutMs, waitPollMs: pollMs }),
             };
         }
 
@@ -594,7 +564,7 @@ export async function acquireGlobalHeavyBudget({
             throw new Error(formatGlobalHeavyBudgetStatus(status));
         }
 
-        logger.log?.(`[global-heavy-budget] 预算不足，${Math.ceil(pollMs / 1000)}s 后重试。原因: ${status.reason}`);
+        logger.log?.(`[global-heavy-budget] 当前资源压力过高，${Math.ceil(pollMs / 1000)}s 后重试。原因: ${status.reason}`);
         await sleep(pollMs);
     }
 }

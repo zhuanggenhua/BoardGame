@@ -1,9 +1,10 @@
 import { execSync } from 'node:child_process';
 import { createServer } from 'node:net';
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { E2E_MULTI_WORKER_BASE_PORTS } from './e2e-port-config.js';
-import { listActiveRuntimes } from './e2e-runtime-registry.js';
+import { getWorktreeRoot, getGitCommonDir, listActiveRuntimes } from './e2e-runtime-registry.js';
 import { withWindowsHide } from './windows-hide.js';
 
 export const BASE_PORTS = {
@@ -29,23 +30,6 @@ function execHidden(command, options = {}) {
   return execSync(command, withWindowsHide(options));
 }
 
-function runGit(command, cwd = process.cwd()) {
-  try {
-    return execHidden(command, {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return '';
-  }
-}
-
-function getWorktreeRoot(cwd = process.cwd()) {
-  const raw = runGit('git rev-parse --show-toplevel', cwd);
-  return raw ? path.resolve(cwd, raw) : path.resolve(cwd);
-}
-
 function isGitWorktreeCheckout(cwd = process.cwd()) {
   const gitPath = path.join(getWorktreeRoot(cwd), '.git');
   try {
@@ -53,47 +37,6 @@ function isGitWorktreeCheckout(cwd = process.cwd()) {
   } catch {
     return false;
   }
-}
-
-function resolveGitCommonDirCandidate(candidate) {
-  if (!candidate) {
-    return '';
-  }
-
-  try {
-    const stats = fs.statSync(candidate);
-    if (stats.isDirectory()) {
-      return candidate;
-    }
-
-    if (!stats.isFile()) {
-      return candidate;
-    }
-
-    const gitPointer = fs.readFileSync(candidate, 'utf-8').trim();
-    const match = gitPointer.match(/^gitdir:\s*(.+)$/i);
-    if (!match?.[1]) {
-      return candidate;
-    }
-
-    const worktreeGitDir = path.resolve(path.dirname(candidate), match[1].trim());
-    const commonDirFile = path.join(worktreeGitDir, 'commondir');
-    if (fs.existsSync(commonDirFile)) {
-      const commonDirRelative = fs.readFileSync(commonDirFile, 'utf-8').trim();
-      return path.resolve(worktreeGitDir, commonDirRelative);
-    }
-
-    return worktreeGitDir;
-  } catch {
-    return candidate;
-  }
-}
-
-function getGitCommonDir(cwd = process.cwd()) {
-  const worktreeRoot = getWorktreeRoot(cwd);
-  const raw = runGit('git rev-parse --git-common-dir', cwd);
-  const candidate = raw ? path.resolve(worktreeRoot, raw) : path.join(worktreeRoot, '.git');
-  return resolveGitCommonDirCandidate(candidate);
 }
 
 function getRuntimeScope(scope = process.env.PW_RUNTIME_SCOPE) {
@@ -134,7 +77,8 @@ function getReservationLockPath(cwd = process.cwd()) {
 }
 
 function getReservationFilePath(workerId, scope = process.env.PW_RUNTIME_SCOPE, cwd = process.cwd()) {
-  return path.join(getSharedReservationDir(cwd), `${getRuntimeScope(scope)}-worker-${workerId}.json`);
+  const worktreeId = createHash('sha256').update(getWorktreeRoot(cwd)).digest('hex').slice(0, 16);
+  return path.join(getSharedReservationDir(cwd), `${worktreeId}-${getRuntimeScope(scope)}-worker-${workerId}.json`);
 }
 
 function clearWindowsNetstatCache() {
@@ -279,6 +223,7 @@ function getReservedPortSet(cwd = process.cwd(), options = {}) {
       && reservation.scope === ignoreScope
       && ignoreWorkerId !== null
       && Number(reservation.workerId) === ignoreWorkerId
+      && reservation.worktreeRoot === getWorktreeRoot(cwd)
     );
     if (sameReservation) {
       continue;
@@ -298,7 +243,7 @@ function getRuntimeReservedPortSet(cwd = process.cwd(), options = {}) {
   const activeRuntimes = listActiveRuntimes(cwd);
 
   for (const runtime of activeRuntimes) {
-    if (ignoreScope !== null && runtime.scope === ignoreScope) {
+    if (ignoreScope !== null && runtime.scope === ignoreScope && runtime.worktreeRoot === getWorktreeRoot(cwd)) {
       continue;
     }
 
@@ -552,18 +497,24 @@ export async function reserveAvailablePorts(workerId, options = {}) {
   }, cwd);
 }
 
-export function releaseReservedPorts(workerId, scope = process.env.PW_RUNTIME_SCOPE, cwd = process.cwd()) {
-  const filePath = getReservationFilePath(workerId, scope, cwd);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+export async function releaseReservedPorts(workerId, scope = process.env.PW_RUNTIME_SCOPE, cwd = process.cwd()) {
+  return withReservationLock(async () => {
+  for (const filePath of listReservationFiles(cwd)) {
+    const reservation = readReservation(filePath);
+    if (reservation?.scope === getRuntimeScope(scope)
+      && reservation.worktreeRoot === getWorktreeRoot(cwd)
+      && Number(reservation.workerId) === Number(workerId)) fs.unlinkSync(filePath);
   }
+  }, cwd);
 }
 
-export function releaseReservedPortsForScope(scope = process.env.PW_RUNTIME_SCOPE, cwd = process.cwd()) {
+export async function releaseReservedPortsForScope(scope = process.env.PW_RUNTIME_SCOPE, cwd = process.cwd(), ownerPid) {
+  return withReservationLock(async () => {
   const normalizedScope = getRuntimeScope(scope);
   for (const filePath of listReservationFiles(cwd)) {
     const reservation = readReservation(filePath);
-    if (reservation?.scope === normalizedScope) {
+    if (reservation?.scope === normalizedScope && reservation.worktreeRoot === getWorktreeRoot(cwd)
+      && (ownerPid === undefined || Number(reservation.ownerPid) === Number(ownerPid))) {
       try {
         fs.unlinkSync(filePath);
       } catch {
@@ -571,6 +522,7 @@ export function releaseReservedPortsForScope(scope = process.env.PW_RUNTIME_SCOP
       }
     }
   }
+  }, cwd);
 }
 
 export function getPortPids(port) {
@@ -647,10 +599,10 @@ export function removeWorkerPortFile(workerId) {
   }
 }
 
-export function cleanupWorkerPorts(workerId) {
+export async function cleanupWorkerPorts(workerId) {
   const ports = loadWorkerPorts(workerId) ?? allocatePorts(workerId);
   cleanupPorts(ports, `Worker ${workerId}`);
-  releaseReservedPorts(workerId);
+  await releaseReservedPorts(workerId);
 }
 
 export async function waitForPortFree(port, timeoutMs = 5000) {
@@ -694,7 +646,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  cleanupWorkerPorts(workerId);
+  await cleanupWorkerPorts(workerId);
   removeWorkerPortFile(workerId);
   console.log(`\n✅ Worker ${workerId} 端口清理完成`);
 }

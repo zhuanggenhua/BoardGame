@@ -1943,7 +1943,6 @@ mkdirSync(CACHE_DIR, { recursive: true });
 
 const taskGuard = acquireTaskGuard({
   name: 'quality-gate',
-  conflicts: ['e2e-run'],
   command: process.argv.join(' '),
   metadata: {
     mode,

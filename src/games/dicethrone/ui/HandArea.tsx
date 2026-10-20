@@ -223,6 +223,7 @@ export const HandArea = ({
     onSellHintChange,
     onPlayHintChange,
     onSellButtonChange,
+    tutorialAllowedCardIds,
     isDiscardMode = false,
     onDiscardCard,
     onMagnifyCard,
@@ -250,6 +251,8 @@ export const HandArea = ({
     onSellHintChange?: (show: boolean) => void;
     onPlayHintChange?: (show: boolean) => void;
     onSellButtonChange?: (show: boolean) => void;
+    /** Tutorial action focus; other cards remain readable but cannot be played or sold in this step. */
+    tutorialAllowedCardIds?: string[];
     /** 弃牌模式：手牌超限时点击卡牌直接弃置 */
     isDiscardMode?: boolean;
     /** 弃牌模式下点击卡牌的回调 */
@@ -301,9 +304,9 @@ export const HandArea = ({
     const handKeysRef = React.useRef<string[]>([]);
     const cardBackImage = React.useMemo(() => buildLocalizedImageSet(ASSETS.CARD_BG, locale), [locale]);
     const handAreaRef = React.useRef<HTMLDivElement>(null);
-    // 防止拖拽后触发点击：记录最近拖拽的卡牌和时间
-    const lastDragEndRef = React.useRef<{ cardKey: string; timestamp: number } | null>(null);
-    const DRAG_CLICK_DEBOUNCE = 300; // 拖拽后 300ms 内忽略点击
+    // 拖拽后的合成 click 属于同一次手势，不能打开卡牌预览。
+    // 若浏览器没有派发 click，则下一次 pointerdown 会清除这个标记。
+    const draggedCardClickBlockRef = React.useRef<string | null>(null);
     const {
         clearLongPressState,
         handlePointerDown: handleCardPointerDown,
@@ -468,7 +471,6 @@ export const HandArea = ({
     }, []);
 
     const beginPendingCardAction = React.useCallback((entry: HandCardEntry, offset: CardOffset, originalIndex: number) => {
-        lastDragEndRef.current = { cardKey: entry.key, timestamp: Date.now() };
         pendingPlayRef.current = { cardKey: entry.key, card: entry.card, offset, originalIndex };
         if (pendingPlayTimeoutRef.current) {
             window.clearTimeout(pendingPlayTimeoutRef.current);
@@ -791,6 +793,7 @@ export const HandArea = ({
     const handleCardDragStart = React.useCallback((entry: HandCardEntry, canDrag: boolean, dragValues: DragValues) => {
         if (!canDrag) return;
         clearLongPressState(entry.key);
+        draggedCardClickBlockRef.current = entry.key;
         dragEndHandledRef.current = false;
         draggingCardRef.current = entry;
         screenDragOffsetRef.current = { x: 0, y: 0 };
@@ -808,15 +811,11 @@ export const HandArea = ({
         canPreviewCard: boolean;
     }) => {
         const { canClickDiscard, canClickPlay, canPreviewCard } = options;
-        if (shouldBlockLongPressClick(entry.key)) return;
-
-        const lastDragEnd = lastDragEndRef.current;
-        if (lastDragEnd && lastDragEnd.cardKey === entry.key) {
-            const timeSinceDrag = Date.now() - lastDragEnd.timestamp;
-            if (timeSinceDrag < DRAG_CLICK_DEBOUNCE) {
-                return;
-            }
+        if (draggedCardClickBlockRef.current === entry.key) {
+            draggedCardClickBlockRef.current = null;
+            return;
         }
+        if (shouldBlockLongPressClick(entry.key)) return;
 
         if (canClickDiscard && onDiscardCard) {
             pendingDiscardRef.current = {
@@ -934,11 +933,12 @@ export const HandArea = ({
                         const zIndex = isDragging ? UI_Z_INDEX.hud + 40 : UI_Z_INDEX.hud + 1 + i;
                         const isReturning = !!returningEntry;
                         const returnVersion = returningVersionMap[cardKey] ?? 0;
+                        const tutorialCardAllowed = !tutorialAllowedCardIds?.length || tutorialAllowedCardIds.includes(card.id);
                         // 弃牌模式下禁用拖拽，改用点击
-                        const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
-                        const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
-                        const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode;
-                        const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning;
+                        const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode && tutorialCardAllowed;
+                        const canClickDiscard = isDiscardMode && isFlipped && !isReturning && tutorialCardAllowed;
+                        const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode && tutorialCardAllowed;
+                        const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning && tutorialCardAllowed;
                         const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))
                             && !disableCardPointerEvents;
                         // 动画期间（dealing/returning）统一禁用 hover
@@ -975,12 +975,16 @@ export const HandArea = ({
                                 data-card-id={card.id}
                                 data-tutorial-id={`hand-card-${card.id}`}
                                 data-can-drag={canDrag}
+                                data-tutorial-allowed={tutorialCardAllowed}
                                 data-is-flipped={isFlipped}
                                 data-is-discard-mode={isDiscardMode}
                                 drag={canDrag}
                                 dragElastic={0.1}
                                 dragMomentum={false}
                                 onPointerDown={(event) => {
+                                    if (draggedCardClickBlockRef.current === cardKey) {
+                                        draggedCardClickBlockRef.current = null;
+                                    }
                                     updateDragPointerPoint(event);
                                     handleCardPointerDown(event, cardKey, card);
                                 }}
@@ -1013,7 +1017,7 @@ export const HandArea = ({
                                 }}
                                 className={`
                                     absolute bottom-0
-                                    ${canClickDiscard || canClickPlay ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
+                                    ${!tutorialCardAllowed ? 'cursor-default' : (canClickDiscard || canClickPlay ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing')}
                                     ${disableCardPointerEvents ? 'pointer-events-none' : 'pointer-events-auto'}
                                     origin-bottom-center bg-transparent overflow-visible
                                 `}
@@ -1024,6 +1028,7 @@ export const HandArea = ({
                                     aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
                                     left: buildHandCardLeftValue(offset),
                                     borderRadius: buildBoardShellInlineUnitValue(0.8),
+                                    opacity: tutorialCardAllowed ? 1 : 0.58,
                                     x: dragValues.x,
                                     y: dragValues.y,
                                     zIndex,

@@ -13,7 +13,10 @@ import {
     clearLocalMatchSnapshot,
     readLocalMatchSnapshot,
 } from '../engine/transport/localSession';
-import { getTutorialCatalogEntry } from './useMatchRoomRuntimeSetup';
+import {
+    getTutorialCatalogEntry,
+    getVisibleTutorialCatalogEntries,
+} from './useMatchRoomRuntimeSetup';
 
 let latestTutorialLifecycleMountId = 0;
 let latestTutorialRouteKey: string | null = null;
@@ -305,7 +308,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const activeTutorialManifestId = tutorial.manifestId ?? null;
     const currentManifestSteps = resolvedTutorialManifest?.steps ?? null;
     const currentManifestLastStepId = currentManifestSteps?.[currentManifestSteps.length - 1]?.id ?? null;
-    const currentTutorialRouteKey = isTutorialRoute && currentManifestId
+    // 多课程路由也承载选课目录：它仍是教程路由，但不是正在进行的课程会话。
+    const isTutorialLessonRoute = Boolean(
+        isTutorialRoute
+        && currentManifestId
+        && (
+            tutorialId
+            || !tutorialCatalog
+            || getVisibleTutorialCatalogEntries(tutorialCatalog).length <= 1
+        ),
+    );
+    const currentTutorialRouteKey = isTutorialLessonRoute && currentManifestId
         ? `${tutorialId ?? currentManifestId}:${currentManifestId}`
         : null;
 
@@ -315,14 +328,14 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         }
     });
     const currentTutorialSessionScope = useMemo(() => (
-        isTutorialRoute
+        isTutorialLessonRoute
             ? buildTutorialSessionScope({
                 gameId,
                 tutorialId,
                 manifest: resolvedTutorialManifest,
             })
             : null
-    ), [gameId, isTutorialRoute, resolvedTutorialManifest, tutorialId]);
+    ), [gameId, isTutorialLessonRoute, resolvedTutorialManifest, tutorialId]);
     const activeTutorialBelongsToCurrentRoute = Boolean(
         isActive
         && activeTutorialManifestId === currentManifestId
@@ -408,7 +421,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     // setState 在 useLayoutEffect 中同步触发重新渲染，
     // CriticalImageGate 直接看到 playing 阶段的 state，只需预加载一次。
     useLayoutEffect(() => {
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         // 等待 i18n 命名空间加载完成，避免在 namespace 加载期间启动教程
         // （namespace 加载会导致 Board 卸载重挂载，重置游戏状态）
         if (!isGameNamespaceReady) return;
@@ -431,7 +444,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         gameImplReady,
         isBoardMounted,
         isGameNamespaceReady,
-        isTutorialRoute,
+        isTutorialLessonRoute,
         resolvedTutorialManifest,
         shouldWaitForTutorialResumeDecision,
         startResolvedTutorial,
@@ -443,7 +456,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     // 等游戏实现加载完后需要重新尝试启动教程。
     useEffect(() => {
         if (!gameImplReady) return;
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         if (!isGameNamespaceReady) return;
         if (shouldWaitForTutorialResumeDecision) return;
         const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
@@ -459,14 +472,14 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         gameImplReady,
         isBoardMounted,
         isGameNamespaceReady,
-        isTutorialRoute,
+        isTutorialLessonRoute,
         resolvedTutorialManifest,
         shouldWaitForTutorialResumeDecision,
         startResolvedTutorial,
     ]);
 
     useEffect(() => {
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         if (!isBoardMounted) return;
         if (!gameImplReady) return;
         if (!isGameNamespaceReady) return;
@@ -507,7 +520,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         isActive,
         isBoardMounted,
         isGameNamespaceReady,
-        isTutorialRoute,
+        isTutorialLessonRoute,
         resolvedTutorialManifest,
         shouldWaitForTutorialResumeDecision,
         startResolvedTutorial,
@@ -560,17 +573,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     }, [closeTutorial, currentTutorialSessionScope]);
 
     useEffect(() => {
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         if (!isActive) return;
         // 教程已激活时同步标记（兜底：如果 startTutorial 之外的路径激活了教程）
         tutorialStartedRef.current = true;
         if (activeTutorialManifestId === currentManifestId) {
             tutorialStartWaitingForBoardRef.current = false;
         }
-    }, [activeTutorialManifestId, currentManifestId, isTutorialRoute, isActive]);
+    }, [activeTutorialManifestId, currentManifestId, isTutorialLessonRoute, isActive]);
 
     useEffect(() => {
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         if (lastTutorialProgressRef.current.manifestId !== currentManifestId) {
             lastTutorialProgressRef.current = {
                 manifestId: currentManifestId,
@@ -583,24 +596,24 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                 stepId: currentStep.id,
             };
         }
-    }, [currentManifestId, currentStep?.id, isTutorialRoute]);
+    }, [currentManifestId, currentStep?.id, isTutorialLessonRoute]);
 
     // 教程视角自动切换：步骤指定 viewAs 时切换到对应玩家视角，步骤结束后恢复到 '0'
     useEffect(() => {
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         const targetView = currentStep?.viewAs ?? '0';
         setPlayerID(targetView);
-    }, [currentStep?.viewAs, isTutorialRoute, setPlayerID]);
+    }, [currentStep?.viewAs, isTutorialLessonRoute, setPlayerID]);
 
     useLayoutEffect(() => {
-        // 离开教程路由后若仍暴露激活教程，必须关闭旧教程会话，避免普通房间被教程初始化层遮住。
-        if (isTutorialRoute) return;
+        // 离开具体课程后若仍暴露激活教程，必须关闭旧会话，避免目录页或普通房间被教程层遮住。
+        if (isTutorialLessonRoute) return;
         if (!isActive) return;
-        closeTutorial();
-    }, [closeTutorial, isActive, isTutorialRoute]);
+        closeTutorial(activeSessionScope ?? undefined);
+    }, [activeSessionScope, closeTutorial, isActive, isTutorialLessonRoute]);
 
     useEffect(() => {
-        if (!isTutorialRoute) return;
+        if (!isTutorialLessonRoute) return;
         if (!tutorialStartedRef.current) return;
 
         // 教程模式下，部分游戏会在初始化/重置时短暂触发 tutorial.active=false。
@@ -640,7 +653,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         currentManifestRevision,
         currentManifestLastStepId,
         gameId,
-        isTutorialRoute,
+        isTutorialLessonRoute,
         isActive,
         navigate,
         nextTutorialId,
@@ -648,10 +661,10 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     ]);
 
     useEffect(() => {
-        // 关键约束：教程提示层只允许在 /tutorial 路由出现。
+        // 关键约束：教程提示层只允许在具体课程中出现，不在选课目录显示。
         // 否则如果某个联机对局状态中残留了 sys.tutorial.active=true（例如历史教程状态被持久化），
         // 就会在联机模式下误弹出教程提示。
-        if (!isTutorialRoute) {
+        if (!isTutorialLessonRoute) {
             if (tutorialModalIdRef.current) {
                 closeModal(tutorialModalIdRef.current);
                 tutorialModalIdRef.current = null;
@@ -685,7 +698,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             closeModal(tutorialModalIdRef.current);
             tutorialModalIdRef.current = null;
         }
-    }, [closeModal, isActive, isBoardMounted, isTutorialRoute, openModal]);
+    }, [closeModal, isActive, isBoardMounted, isTutorialLessonRoute, openModal]);
 
     useEffect(() => {
         return () => {

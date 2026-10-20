@@ -408,7 +408,14 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
     state,
     event
 ) => {
-    const { attackerId, defenderId, sourceAbilityId, isDefendable, isUltimate } = event.payload;
+    const {
+        attackerId,
+        defenderId,
+        sourceAbilityId,
+        isDefendable,
+        isUltimate,
+        countsAsOffensiveAttackMade = true,
+    } = event.payload;
     const activeAttackDice = getActiveDice(state);
     const attackFaceCounts = getFaceCounts(activeAttackDice);
     const attackDiceValues = activeAttackDice
@@ -451,6 +458,7 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             isDefendable,
             sourceAbilityId,
             isUltimate,
+            ...(countsAsOffensiveAttackMade ? {} : { countsAsOffensiveAttackMade: false }),
             damageResolved: false,
             resolvedDamage: 0,
             statusEffectsAppliedThisAttack: {},
@@ -460,10 +468,12 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             attackModifierBonusDamage: queuedAttackModifierBonusDamage,
             bonusDamageSources: queuedBonusDamageSources.length > 0 ? queuedBonusDamageSources : undefined,
         },
-        offensiveRollAttackMadeThisTurn: {
-            ...(state.offensiveRollAttackMadeThisTurn ?? {}),
-            [attackerId]: true,
-        },
+        offensiveRollAttackMadeThisTurn: countsAsOffensiveAttackMade
+            ? {
+                ...(state.offensiveRollAttackMadeThisTurn ?? {}),
+                [attackerId]: true,
+            }
+            : state.offensiveRollAttackMadeThisTurn,
     };
 };
 

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 5000;
@@ -67,11 +68,6 @@ function isGuardActive(record) {
     return leaseExpiresAt > Date.now();
 }
 
-function isDirectParentGuardRecord(record) {
-    const pid = Number(record?.pid);
-    return Number.isInteger(pid) && pid > 0 && pid === process.ppid;
-}
-
 function removeGuardFile(name) {
     try {
         fs.unlinkSync(getGuardFilePath(name));
@@ -87,31 +83,6 @@ function writeGuardRecord(name, record) {
         JSON.stringify(record, null, 2),
         'utf8',
     );
-}
-
-function compareGuardPriority(left, right) {
-    const leftStarted = Date.parse(left?.startedAt ?? '') || 0;
-    const rightStarted = Date.parse(right?.startedAt ?? '') || 0;
-    if (leftStarted !== rightStarted) {
-        return leftStarted - rightStarted;
-    }
-
-    const leftPid = Number(left?.pid) || 0;
-    const rightPid = Number(right?.pid) || 0;
-    return leftPid - rightPid;
-}
-
-function isSameGuardFamilyName(recordName, baseName) {
-    const normalizedRecordName = sanitizeGuardName(recordName);
-    const normalizedBaseName = sanitizeGuardName(baseName);
-    return normalizedRecordName === normalizedBaseName
-        || normalizedRecordName.startsWith(`${normalizedBaseName}--pid-`);
-}
-
-function listActiveGuardsByBaseName(baseName) {
-    const normalizedBaseName = sanitizeGuardName(baseName);
-    return listTaskGuards()
-        .filter(record => isSameGuardFamilyName(record.name, normalizedBaseName));
 }
 
 function formatMetadata(metadata) {
@@ -191,34 +162,16 @@ export function pruneTaskGuards({ logger = console } = {}) {
 
 export function acquireTaskGuard({
     name,
-    conflicts = [],
     command = '',
     metadata = {},
     logger = console,
     heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS,
     heartbeatTtlMs = DEFAULT_HEARTBEAT_TTL_MS,
-    allowConcurrency = process.env.BG_ALLOW_HEAVY_TASK_CONCURRENCY === '1',
 } = {}) {
+    // 这里只登记任务身份；是否能启动由全局资源采样决定，不按任务名称互斥。
     const normalizedName = sanitizeGuardName(name);
-    const normalizedConflicts = [...new Set(conflicts.map(sanitizeGuardName))];
-    const guardRecordName = allowConcurrency
-        ? `${normalizedName}--pid-${process.pid}`
-        : normalizedName;
-
+    const guardRecordName = `${normalizedName}--pid-${process.pid}-${randomUUID()}`;
     pruneTaskGuards({ logger });
-
-    const existingSameGuard = listActiveGuardsByBaseName(normalizedName)
-        .filter(record => Number(record.pid) !== process.pid)
-        .sort(compareGuardPriority)[0];
-    if (!allowConcurrency && existingSameGuard) {
-        throw new Error(
-            [
-                `已有同类重任务在运行，拒绝重复启动: ${normalizedName}`,
-                formatTaskGuardSummary(existingSameGuard),
-                '如确需并发，请显式设置 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1。',
-            ].join('\n'),
-        );
-    }
 
     const startedAt = nowIso();
     const state = {
@@ -228,33 +181,10 @@ export function acquireTaskGuard({
         updatedAt: startedAt,
         leaseExpiresAt: new Date(Date.now() + heartbeatTtlMs).toISOString(),
         command: command || process.argv.join(' '),
-        conflicts: normalizedConflicts,
         metadata,
     };
 
     writeGuardRecord(guardRecordName, state);
-
-    if (!allowConcurrency) {
-        const activeConflicts = normalizedConflicts
-            .flatMap(conflictName => listActiveGuardsByBaseName(conflictName))
-            .filter(record => Number(record.pid) !== process.pid)
-            // 允许 quality-gate 之类的父流程拉起自己的子重任务，不把同一条链路误判成并发冲突。
-            .filter(record => !isDirectParentGuardRecord(record));
-
-        const blockingConflict = activeConflicts
-            .sort(compareGuardPriority)[0];
-
-        if (blockingConflict && compareGuardPriority(blockingConflict, state) <= 0) {
-            removeGuardFile(guardRecordName);
-            throw new Error(
-                [
-                    `检测到冲突重任务正在运行，拒绝并发启动: ${normalizedName} -> ${blockingConflict.name}`,
-                    formatTaskGuardSummary(blockingConflict),
-                    '如确需并发，请显式设置 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1。',
-                ].join('\n'),
-            );
-        }
-    }
 
     const heartbeat = setInterval(() => {
         writeGuardRecord(guardRecordName, {

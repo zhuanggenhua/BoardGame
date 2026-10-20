@@ -16,7 +16,8 @@ if (replaySeed) targetUrlObject.searchParams.set('seed', replaySeed);
 const targetUrl = targetUrlObject.toString();
 const expectedDeployedBundles = [
   { filename: 'PixiMapSceneHost-BFA5pObl.js', sha256: '06850e8b97421890a4c071c5ea5555ef1883af826017a399e876c6cf7716ecfd' },
-  { filename: 'Board-DA9jXqfR.js', sha256: '28d941c9067bea67b46218a5c7327016c2a7be1af5fbc53f9546a6fa831c7d9b' },
+  { filename: 'Board-C7NFu7Cx.js', sha256: '4ec23f0e58c7085b010693b57133a03f5d435176ee814d82c718fd04d3b7e22a' },
+  { filename: 'game-C8IlukYU.js', sha256: '051aed75e7f943f284637f30f3bae3f9ace9af35a821b63eb4358e52fdc7d25c' },
 ];
 const caseArgIndex = process.argv.indexOf('--case');
 const requestedCase = caseArgIndex === -1 ? null : process.argv[caseArgIndex + 1] ?? null;
@@ -38,7 +39,6 @@ const videoTempDir = path.join(runDir, '.video-tmp');
 const commandLine = process.argv.join(' ');
 const taskGuard = acquireTaskGuard({
   name: 'e2e-run',
-  conflicts: ['quality-gate'],
   command: commandLine,
   metadata: { mode: 'public-local-external', target: targetUrl, managedRuntime: false, runtimeScope: 'external-public-local', serviceReuse: 'none', listOnly: false, entrypoint: 'betrayal-public-local-acceptance' },
 });
@@ -516,7 +516,8 @@ const readPersistedLocalGameState = async () => page.evaluate(() => {
   const controllerTypes = Object.fromEntries(Object.entries(seatControllers).map(([playerId, value]) => [playerId, value.type]));
   const normalizeResolution = (resolution) => {
     if (!resolution || typeof resolution !== 'object') return null;
-    const required = Array.isArray(resolution.requiredPlayerIds) && resolution.requiredPlayerIds.length
+    const hasPersistedRequiredPlayerIds = Array.isArray(resolution.requiredPlayerIds) && resolution.requiredPlayerIds.length > 0;
+    const required = hasPersistedRequiredPlayerIds
       ? resolution.requiredPlayerIds.map(String)
       : resolution.playerId == null ? [] : [String(resolution.playerId)];
     const acknowledged = Array.isArray(resolution.acknowledgedPlayerIds)
@@ -534,6 +535,7 @@ const readPersistedLocalGameState = async () => page.evaluate(() => {
       requiresAcknowledgement: resolution.requiresAcknowledgement ?? null,
       requiresPlayerAdvance: resolution.requiresPlayerAdvance ?? null,
       requiredPlayerIds: required,
+      requiredPlayerIdsSource: hasPersistedRequiredPlayerIds ? 'persisted requiredPlayerIds' : 'derived from persisted playerId because requiredPlayerIds was absent',
       acknowledgedPlayerIds: acknowledged,
       missingPlayerIds: required.filter((id) => !acknowledged.includes(id)),
       confirmedCount: required.filter((id) => acknowledged.includes(id)).length,
@@ -571,9 +573,12 @@ const readPersistedLocalGameState = async () => page.evaluate(() => {
     seedMatchesCurrentUrl: Boolean(seed && snapshot?.seed === seed),
     numPlayers: snapshot?.numPlayers ?? numPlayers,
     currentPlayerId: core?.currentPlayer == null ? null : String(core.currentPlayer),
+    currentPlayerIdSource: 'persisted state.core.currentPlayer',
+    activePlayerId: core?.activePlayerId == null ? null : String(core.activePlayerId),
+    activePlayerIdSource: Object.hasOwn(core ?? {}, 'activePlayerId') ? 'persisted state.core.activePlayerId' : 'activePlayerId absent from persisted state.core',
     playerIds,
-    viewerPlayerId: url.searchParams.get('playerID') ?? (core?.currentPlayer == null ? null : String(core.currentPlayer)),
-    viewerPlayerIdSource: url.searchParams.get('playerID') ? 'explicit route query' : 'local current-player follow / Board fallback',
+    viewerPlayerId: url.searchParams.get('playerID') ?? null,
+    viewerPlayerIdSource: url.searchParams.has('playerID') ? 'explicit route query' : 'not exposed; do not infer from saved currentPlayerId',
     seatControllers,
     stateSeatControllers: core?.seatControllers ?? null,
     pendingCardResolutionQueueLength: pendingCards.length,
@@ -640,7 +645,7 @@ try {
     if (isRoomAtlasUrl(url)) diagnostics.roomAtlasResponses.push({ url, status, at: new Date().toISOString(), contentType: response.headers()['content-type'] ?? null, resourceType: response.request().resourceType() });
     if (status >= 400) diagnostics.httpErrors.push({ status, url });
     if (status === 404 && /footsteps\/Kenney%20Impact%20Sounds\/compressed\/footstep_/i.test(url)) diagnostics.footstep404s.push(url);
-    if (/(?:PixiMapSceneHost|Board)-[A-Za-z0-9_-]+\.js(?:\?|$)/.test(url)) {
+    if (/(?:PixiMapSceneHost|Board|game)-[A-Za-z0-9_-]+\.js(?:\?|$)/.test(url)) {
       pendingChunkDigests.push((async () => {
         const body = await response.body().catch(() => Buffer.alloc(0));
         diagnostics.chunks.push({ filename: path.posix.basename(new URL(url).pathname), status, url, bytes: body.length, sha256: createHash('sha256').update(body).digest('hex') });
@@ -799,14 +804,37 @@ try {
           ].join('|');
           if (!clickedActions.has(fingerprint)) {
             const persistedStateBefore = await readMatchingPersistedLocalGameState(uiSample);
+            const persistedResolution = enabledAction.pendingCardResolutionId
+              ? persistedStateBefore.pendingCardResolutions.find((item) => item.id === enabledAction.pendingCardResolutionId) ?? null
+              : persistedStateBefore.pendingEventRollResolution;
+            const humanSeatIds = Object.entries(persistedStateBefore.seatControllers ?? {})
+              .filter(([, controller]) => controller.type === 'human')
+              .map(([playerId]) => playerId);
+            const missingHumanAcknowledgementIds = (persistedResolution?.missingPlayerIds ?? [])
+              .filter((playerId) => humanSeatIds.includes(String(playerId)));
             const actionRecord = {
               kind: 'visible-enabled-player-control',
               sampledAt: uiSample.sampledAt,
               button: enabledAction,
               stateBefore: persistedStateBefore,
+              persistedResolution,
+              humanSeatIds,
+              missingHumanAcknowledgementIds,
               status: 'click-not-attempted-yet',
             };
             state.aiAcknowledgementActions.push(actionRecord);
+            expect(persistedStateBefore.snapshotFound).toBe(true);
+            expect(persistedStateBefore.seedMatchesCurrentUrl).toBe(true);
+            expect(persistedStateBefore.matchesVisibleResolution).toBe(true);
+            expect(persistedResolution).not.toBeNull();
+            expect(persistedResolution.requiredPlayerIdsSource).toBe('persisted requiredPlayerIds');
+            if (missingHumanAcknowledgementIds.length === 0) {
+              actionRecord.status = 'skipped-no-unconfirmed-human-seat';
+              actionRecord.statusDetail = 'The visible control is for a resolution whose persisted missingPlayerIds contain no human seat; left it untouched for local AI progression.';
+              clickedActions.add(fingerprint);
+              await page.waitForTimeout(100);
+              continue;
+            }
             const actionLocator = page.getByTestId(enabledAction.testId);
             const stillVisible = await actionLocator.isVisible().catch(() => false);
             const stillEnabled = stillVisible && await actionLocator.isEnabled().catch(() => false);
@@ -895,6 +923,12 @@ try {
 
       await expect(turnIntroSkip).toBeVisible({ timeout: 30_000 });
       state.humanReturned = await readTurnPromptSample();
+      state.persistedAfterHumanReturn = await readPersistedLocalGameState();
+      expect(state.persistedAfterHumanReturn.snapshotFound).toBe(true);
+      expect(state.persistedAfterHumanReturn.seedMatchesCurrentUrl).toBe(true);
+      expect(state.persistedAfterHumanReturn.currentPlayerId).not.toBeNull();
+      expect(state.persistedAfterHumanReturn.seatControllers[state.persistedAfterHumanReturn.currentPlayerId]?.type).toBe('human');
+      expect(state.aiAcknowledgementActions.some((item) => item.status === 'clicked-by-real-visible-ui' && item.missingHumanAcknowledgementIds.length > 0)).toBe(true);
       expect(state.humanReturned.statusText).toMatch(/\u795e\u7236\s*\u6881\u6c83\u4f26/u);
       expect(state.humanReturned.turnIntroSkipVisible).toBe(true);
       expect(state.humanReturned.yourTurnVisible).toBe(true);
@@ -1465,7 +1499,7 @@ try {
   if (video) {
     try {
       const sourceVideoPath = await video.path();
-      const videoFilename = isCharacterTurnPromptCase ? '00-public-local-v5-character-and-turn-recheck.webm' : isPawnSelectionToggleCase ? '00-棋子切换诊断录屏.webm' : isRoomRevealSequenceCase ? '00-房间揭示真实录屏.webm' : isLocalUiCloseoutCase ? '00-本地UI闭环真实录屏.webm' : '00-完整真实流程录屏.webm';
+      const videoFilename = isCharacterTurnPromptCase ? '00-public-local-v6-character-and-turn-recheck.webm' : isPawnSelectionToggleCase ? '00-棋子切换诊断录屏.webm' : isRoomRevealSequenceCase ? '00-房间揭示真实录屏.webm' : isLocalUiCloseoutCase ? '00-本地UI闭环真实录屏.webm' : '00-完整真实流程录屏.webm';
       const videoPath = path.join(runDir, videoFilename);
       await copyFile(sourceVideoPath, videoPath);
       const videoStat = await stat(videoPath);

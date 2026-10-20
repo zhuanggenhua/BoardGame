@@ -139,6 +139,42 @@ test('按开放反馈摘要刷新时保留摘要外已有终态记录', () => {
     assert.equal(board.items[1].resolvedMethod, '已修复。');
 });
 
+test('旧分诊摘要合并时保留更新更晚的远端状态回写结果', () => {
+    const existingBoard = {
+        version: 1,
+        updatedAt: '2026-10-20T01:30:00.000Z',
+        items: [
+            {
+                id: '64f0c0ffee00000000000001',
+                feedbackId: '64f0c0ffee00000000000001',
+                title: 'AI 卡死了',
+                status: 'closed',
+                lastFetchedStatus: 'closed',
+                closedReason: '已按当前证据关闭。',
+                evidence: ['closeout-evidence.md'],
+                verification: ['远端回写为 closed'],
+                updatedAt: '2026-10-20T01:30:00.000Z',
+            },
+        ],
+    };
+    const staleSummary = makeResolvedSummary();
+    staleSummary.generatedAt = '2026-10-20T01:17:00.000Z';
+    staleSummary.groups[0].status = 'in_progress';
+
+    const staleMerge = buildBoardFromSummary(staleSummary, SUMMARY_PATH, existingBoard).items[0];
+    assert.equal(staleMerge.status, 'closed');
+    assert.equal(staleMerge.lastFetchedStatus, 'closed');
+
+    const freshSummary = {
+        ...staleSummary,
+        generatedAt: '2026-10-20T01:31:00.000Z',
+        groups: staleSummary.groups.map((group) => ({ ...group, status: 'open' })),
+    };
+    const freshMerge = buildBoardFromSummary(freshSummary, SUMMARY_PATH, existingBoard).items[0];
+    assert.equal(freshMerge.status, 'closed');
+    assert.equal(freshMerge.lastFetchedStatus, 'open');
+});
+
 test('状态离开 closed 时清理旧关闭理由', () => {
     const board = {
         version: 1,

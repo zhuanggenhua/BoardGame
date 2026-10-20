@@ -41,7 +41,7 @@ import {
     getAttackSnapshotDieIndex,
     isAttackSnapshotDieId,
 } from './rules';
-import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
+import { findPlayerAbility, playerAbilityHasDamage, playerAbilityTargetsOpponentWithDamage } from './abilityLookup';
 import { applyEvents } from './utils';
 import { reduce } from './reducer';
 import type { InteractionDescriptor as PendingInteraction } from './core-types';
@@ -562,6 +562,11 @@ export function execute(
                         sourceAbilityId: abilityId,
                         isDefendable,
                         isUltimate,
+                        countsAsOffensiveAttackMade: playerAbilityTargetsOpponentWithDamage(
+                            state,
+                            state.activePlayerId,
+                            abilityId,
+                        ),
                     },
                     sourceCommandType: command.type,
                     timestamp,

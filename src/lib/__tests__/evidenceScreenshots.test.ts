@@ -1,10 +1,11 @@
-import { mkdtemp, mkdir, readdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { join, dirname } from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
 import {
     getEvidenceScreenshotPath,
     promoteEvidenceScreenshotRun,
+    clearEvidenceScreenshotsForTest,
 } from '../../../e2e/framework/evidenceScreenshots';
 
 const testInfo = {
@@ -13,6 +14,29 @@ const testInfo = {
 } as any;
 
 describe('evidence screenshot format contract', () => {
+    it('同一用例并发截图的清理只能作用于当前 session', async () => {
+        const root = await mkdtemp(join(tmpdir(), 'boardgame-evidence-session-'));
+        const cwd = vi.spyOn(process, 'cwd').mockReturnValue(root);
+        const previous = process.env.PW_E2E_SESSION_ID;
+        try {
+            process.env.PW_E2E_SESSION_ID = 'session-first';
+            const first = getEvidenceScreenshotPath(testInfo, '首个现场.png');
+            await mkdir(dirname(first), { recursive: true });
+            await writeFile(first, 'first-current-media');
+            process.env.PW_E2E_SESSION_ID = 'session-second';
+            const second = getEvidenceScreenshotPath(testInfo, '第二现场.png');
+            expect(second).not.toBe(first);
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await mkdir(dirname(second), { recursive: true });
+            await writeFile(second, 'second-current-media');
+            await expect(readFile(first, 'utf8')).resolves.toBe('first-current-media');
+            await expect(readFile(second, 'utf8')).resolves.toBe('second-current-media');
+        } finally {
+            if (previous === undefined) delete process.env.PW_E2E_SESSION_ID; else process.env.PW_E2E_SESSION_ID = previous;
+            cwd.mockRestore();
+            await rm(root, { recursive: true, force: true });
+        }
+    });
     it('preserves a png filename when format is omitted', () => {
         expect(getEvidenceScreenshotPath(testInfo, '蜘蛛侠-牌桌', {
             filename: '蜘蛛侠-牌桌.png',

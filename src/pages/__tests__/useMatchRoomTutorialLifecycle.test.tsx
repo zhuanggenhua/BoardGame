@@ -396,6 +396,77 @@ describe('useMatchRoomTutorialLifecycle', () => {
         expect(tutorialState.startTutorial).not.toHaveBeenCalled();
     });
 
+    it('从课程返回多课程目录时，会关闭共享教程会话和提示层', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'tutorial-modal');
+        const closeModal = vi.fn();
+        const catalog = makeCatalog([
+            { id: 'basic-opening' },
+            { id: 'attack-and-battle' },
+        ]);
+        const manifest = catalog.tutorials['basic-opening']!.manifest;
+        let tutorialId: string | undefined = 'basic-opening';
+        let resolvedTutorialManifest: TutorialManifest | null = manifest;
+
+        tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
+        tutorialState.currentStep = manifest.steps[0] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'dicethrone',
+            tutorialId,
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(openModal).toHaveBeenCalledTimes(1);
+
+        tutorialId = undefined;
+        resolvedTutorialManifest = null;
+        rerender();
+
+        expect(tutorialState.closeTutorial).toHaveBeenCalledTimes(1);
+        expect(closeModal).toHaveBeenCalledWith('tutorial-modal');
+        expect(tutorialState.startTutorial).not.toHaveBeenCalled();
+    });
+
+    it('没有多课程目录的默认教程入口仍会启动单课程', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('single-tutorial', ['overview', 'finish']);
+
+        renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'dicethrone',
+            tutorialId: undefined,
+            tutorialCatalog: makeCatalog([{ id: 'single-tutorial' }]),
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            manifest,
+            expectTutorialScope('dicethrone', undefined, manifest),
+        );
+        expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
+
     it('同一教程 URL 的临时卸载不会关闭正在启动的教程', async () => {
         window.history.pushState({}, '', '/play/betrayal/tutorial/basic-setup-and-turn');
         const setPlayerID = vi.fn();

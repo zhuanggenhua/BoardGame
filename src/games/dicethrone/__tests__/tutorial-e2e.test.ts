@@ -5,9 +5,11 @@
  * 模拟客户端 TutorialContext 的行为：执行 AI 操作 → consumeAi → 手动推进。
  *
  * 教程流程（与 tutorial.ts 步骤顺序一致）：
- *   setup → intro系列 → 弃牌教学 → 首次攻击 → 对手防御
- *   → main2阶段（顿悟+静心）→ AI回合（掌击+攻击）
- *   → 击倒说明 → 净化移除击倒 → 清修升级 → 结束
+ *   setup → 读牌与出售 → 蓝框顿悟及奖励骰 → 首次攻击与防御
+ *   → 主要阶段 2 用红框加倍补牌，留 CP 给对手回合的响应牌
+ *   → 对手回合及当前玩家响应
+ *   → AI回合（掌击+攻击）
+ *   → 击倒说明 → 用已有净化保留进攻权与 CP → 清修升级 → 结束
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -16,12 +18,14 @@ import { testSystems, createQueuedRandom } from './test-utils';
 import { executePipeline, createInitialSystemState } from '../../../engine/pipeline';
 import type { DiceThroneCore, DiceThroneCommand } from '../domain/types';
 import type { MatchState, PlayerId, TutorialAiAction } from '../../../engine/types';
-import { TOKEN_IDS, STATUS_IDS } from '../domain/ids';
+import { TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_CP } from '../domain/types';
 import { DiceThroneTutorial } from '../tutorial';
 import { TUTORIAL_COMMANDS } from '../../../engine/systems/TutorialSystem';
 import { injectTutorialInteractionId } from '../../../engine/transport/tutorialAiCommand';
+import { buildLocalDispatchCommand } from '../../../engine/transport/localDispatchCommand';
+import { resolveDiceThroneTokenResponseInteractionPendingDamageId } from '../domain/tokenResponseChoiceContract';
 
 describe('教程端到端测试（TutorialSystem 活跃）', () => {
     const playerIds: PlayerId[] = ['0', '1'];
@@ -62,6 +66,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
             throw new Error(
                 `Command ${type} (p${playerId})${desc} failed: ${result.error}\n` +
                 `  phase=${state.sys.phase} active=${state.core.activePlayerId}\n` +
+                `  interaction=${state.sys.interaction.current?.kind ?? 'none'}:${state.sys.interaction.current?.id ?? 'none'}\n` +
                 `  tutorialStep=${t.step?.id ?? 'none'} stepIndex=${t.stepIndex} active=${t.active}`
             );
         }
@@ -101,8 +106,9 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 isTutorialAiCommand: true,
             }) as Record<string, unknown>;
             if (action.commandType === 'SKIP_TOKEN_RESPONSE') {
-                expect(s.core.pendingDamage?.id, `${label}: AI action[${i}] should have live pendingDamage`).toBeTypeOf('string');
-                expect(payload).toMatchObject({ pendingDamageId: s.core.pendingDamage?.id });
+                const pendingDamageId = resolveDiceThroneTokenResponseInteractionPendingDamageId(s.sys.interaction.current);
+                expect(pendingDamageId, `${label}: AI action[${i}] should have a live token-response interaction`).toBeTypeOf('string');
+                expect(payload).toMatchObject({ pendingDamageId });
             }
             const result = tryExec(s, action.commandType, pid as PlayerId, payload);
             if (!result.success) {
@@ -161,24 +167,19 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 continue;
             }
             switch (step.id) {
-                case 'tip-inspect': case 'tip-inspect-close': case 'hand-inspect': case 'hand-inspect-close':
-                    // 放大与关闭属于正式本地 UI 状态，真实触屏及无误出牌由浏览器验证。
+                case 'hand-inspect':
+                    // 长按只打开正式本地检视层；真实触屏和不误出牌由浏览器验证。
                     s = exec(s, TUTORIAL_COMMANDS.NEXT, '0', { reason: 'auto' });
                     break;
                 case 'defense-start':
                     s = nextStep(s, 'defense showcase dismissed');
                     break;
                 case 'sell-card-intro': {
-                    s = exec(s, 'SELL_CARD', '0', { cardId: 'card-deep-thought' });
+                    s = exec(s, 'SELL_CARD', '0', { cardId: 'card-palm-strike' });
                     expect(s.core.players['0'].hand).toHaveLength(3);
-                    expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(3);
-                    break;
-                }
-                case 'undo-sell':
-                    s = exec(s, 'UNDO_SELL_CARD', '0');
-                    expect(s.core.players['0'].hand).toHaveLength(4);
                     expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(2);
                     break;
+                }
                 case 'end-turn':
                     s = exec(s, 'ADVANCE_PHASE', '0');
                     // 正式 Board 在手牌不超限时自动交出回合。
@@ -186,6 +187,18 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                     break;
                 case 'advance': case 'resolve-attack': case 'defense-resolve':
                     s = exec(s, 'ADVANCE_PHASE', '0');
+                    if (step.id === 'defense-resolve') expect(s.core.players['0'].tokens.taiji).toBe(5);
+                    break;
+                case 'opponent-defense-response-pass':
+                    s = exec(s, 'RESPONSE_PASS', '0');
+                    break;
+                case 'interference-target':
+                    // 真实选骰由浏览器验证；领域链只需承接同一 interaction 到确认步骤。
+                    s = exec(s, TUTORIAL_COMMANDS.NEXT, '0', { reason: 'auto' });
+                    break;
+                case 'interference-confirm':
+                    s = exec(s, 'REROLL_DIE', '0', { dieId: 0 });
+                    s = exec(s, 'SYS_INTERACTION_CONFIRM', '0');
                     break;
                 case 'dice-roll': case 'defense-roll':
                     s = exec(s, 'ROLL_DICE', '0');
@@ -200,27 +213,34 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                     s = exec(s, 'ROLL_DICE', '0');
                     expect(s.core.dice.find(die => die.id === 0)?.value).toBe(kept.value);
                     expect(s.core.rollCount).toBe(rolls + 1);
+                    expect(s.core.dice.map(die => die.value).sort((left, right) => left - right)).toEqual([1, 2, 3, 4, 5]);
                     break;
                 }
-                case 'play-six': case 'enlightenment-play': case 'inner-peace': case 'meditation-2': {
-                    const cardId = ({ 'play-six': 'card-play-six', 'enlightenment-play': 'card-enlightenment', 'inner-peace': 'card-inner-peace', 'meditation-2': 'card-meditation-2' } as Record<string,string>)[step.id];
+                case 'enlightenment-play': case 'double-play': case 'interference-play': case 'meditation-2': {
+                    const cardId = ({ 'enlightenment-play': 'card-enlightenment', 'double-play': 'card-double', 'interference-play': 'card-give-hand', 'meditation-2': 'card-meditation-2' } as Record<string,string>)[step.id];
                     const cp = s.core.players['0'].resources[RESOURCE_IDS.CP];
                     s = exec(s, 'PLAY_CARD', '0', { cardId });
+                    if (step.id === 'double-play') {
+                        expect(cp).toBe(2);
+                        expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(1);
+                        expect(s.core.players['0'].hand.map(card => card.id)).toEqual(expect.arrayContaining(['card-meditation-2', 'card-inner-peace']));
+                    }
                     if (step.id === 'meditation-2') {
                         expect(s.core.players['0'].abilityLevels?.meditation).toBe(2);
                         expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(cp - 2);
                     }
                     break;
                 }
-                case 'play-six-modify':
-                    s = exec(s, 'MODIFY_DIE', '0', { dieId: 0, newValue: 6 });
-                    s = exec(s, 'SYS_INTERACTION_CONFIRM', '0');
+                case 'enlightenment-confirm':
+                    expect(s.core.pendingBonusDiceSettlement).toBeDefined();
+                    s = exec(s, 'CONFIRM_ROLL', '0');
+                    expect(s.core.players['0'].tokens).toMatchObject({ taiji: 2, evasive: 1, purify: 1 });
                     break;
-                case 'dice-confirm': case 'defense-confirm': case 'enlightenment-confirm':
+                case 'dice-confirm': case 'defense-confirm':
                     s = exec(s, 'CONFIRM_ROLL', '0');
                     break;
                 case 'abilities':
-                    s = exec(s, 'SELECT_ABILITY', '0', { abilityId: 'fist-technique-4' });
+                    s = exec(s, 'SELECT_ABILITY', '0', { abilityId: 'harmony' });
                     break;
                 case 'inner-peace-response':
                     expect(s.sys.responseWindow.current).toBeDefined();
@@ -250,48 +270,77 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 case 'evasive-use':
                     s = exec(s, 'USE_TOKEN', '0', { pendingDamageId: s.core.pendingDamage!.id, tokenId: TOKEN_IDS.EVASIVE, amount: 1 });
                     expect(s.core.currentRollContext?.kind).toBe('evasion');
-                    expect(s.core.players['0'].tokens[TOKEN_IDS.EVASIVE]).toBe(0);
                     break;
                 case 'evasive-confirm':
                     s = exec(s, 'SKIP_TOKEN_RESPONSE', '0', { pendingDamageId: s.core.pendingDamage!.id });
                     expect(s.core.pendingDamage).toBeUndefined();
                     break;
-                case 'token-response-pass': {
+                case 'attack-token-pass': case 'token-response-pass': {
                     const pending = s.core.pendingDamage!;
                     const hp = s.core.players['0'].resources[RESOURCE_IDS.HP];
                     s = exec(s, 'SKIP_TOKEN_RESPONSE', '0', { pendingDamageId: pending.id });
                     expect(s.core.pendingDamage).toBeUndefined();
-                    expect(s.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hp - pending.currentDamage);
+                    if (step.id === 'token-response-pass') expect(s.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hp - pending.currentDamage);
                     break;
                 }
                 case 'purify-use':
-                    s = exec(s, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN });
-                    expect(s.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN] ?? 0).toBe(0);
-                    expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBe(0);
+                    s = exec(s, 'USE_PURIFY', '0', { statusId: 'knockdown' });
+                    expect(s.core.players['0'].statusEffects.knockdown ?? 0).toBe(0);
+                    expect(s.core.players['0'].tokens.purify).toBe(0);
                     break;
                 default: throw Error('未覆盖正式动作: ' + step.id);
             }
         }
-        throw Error('教程未完成');
+        throw Error(`教程未完成: step=${s.sys.tutorial.step?.id ?? 'none'} phase=${s.sys.phase} interaction=${s.sys.interaction.current?.kind ?? 'none'} visited=${Array.from(visited).join(',')}`);
     };
 
-    it.each([true, false, 'evasive'] as const)('亲手防御、响应分支 %s、结算后继续收入净化升级', (useChi) => {
+    it.each([true, false, 'evasive'] as const)('亲手防御、响应分支 %s、结算后保留费用并升级', (useChi) => {
         const { state, visited } = walk(useChi);
-        for (const id of ['dice-lock', 'dice-reroll', 'defense-roll', 'defense-confirm', 'defense-resolve', 'token-response-use', 'damage-result', 'income-result', 'purify-use', 'meditation-2']) expect(visited.has(id), id).toBe(true);
+        for (const id of ['sell-card-intro', 'enlightenment-play', 'enlightenment-confirm', 'double-play', 'dice-lock', 'dice-reroll', 'defense-roll', 'defense-confirm', 'defense-resolve', 'opponent-defense-resolve', 'token-response-use', 'income-result', 'purify-use', 'meditation-2']) expect(visited.has(id), id).toBe(true);
         expect(state.core.activePlayerId).toBe('0');
         expect(state.sys.phase).toBe('main1');
         const finished = nextStep(state, 'finish');
         expect(finished.sys.tutorial.active).toBe(false);
     });
 
-    it('回退净化同时恢复状态与标记，重新执行后仍能继续', () => {
+    it('回退净化恢复击倒与标记，重新执行后仍能继续', () => {
         let { state } = walk(true, 'purify-use');
-        state = exec(state, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN });
+        state = exec(state, 'USE_PURIFY', '0', { statusId: 'knockdown' });
         expect(state.sys.tutorial.step?.id).toBe('purify-result');
         state = exec(state, TUTORIAL_COMMANDS.PREVIOUS, '0');
         expect(state.sys.tutorial.step?.id).toBe('purify-use');
-        expect(state.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBe(1);
-        expect(state.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN]).toBe(1);
+        expect(state.sys.phase).toBe('main1');
+        expect(state.core.players['0'].statusEffects.knockdown).toBe(1);
+        expect(state.core.players['0'].tokens.purify).toBe(1);
+    });
+
+    it('其它手牌可合法出售，亲手撤回后恢复完整局面继续预算决策', () => {
+        let { state } = walk(true, 'sell-card-intro');
+        const original = state.core;
+        state = exec(state, 'SELL_CARD', '0', { cardId: 'card-meditation-2' });
+        expect(state.sys.tutorial.step?.id).toBe('sell-card-intro');
+        expect(state.core.players['0'].resources.cp).toBe(2);
+        state = exec(state, 'UNDO_SELL_CARD', '0');
+        expect(state.core.players['0'].hand.map(card => card.id)).toContain('card-meditation-2');
+        expect(state.core.players['0'].resources.cp).toBe(1);
+        expect(state.sys.tutorial.step?.id).toBe('sell-card-intro');
+        expect(state.core.players['0'].hand.map(card => card.id).sort()).toEqual(original.players['0'].hand.map(card => card.id).sort());
+        state = exec(state, 'SELL_CARD', '0', { cardId: 'card-palm-strike' });
+        expect(state.sys.tutorial.step?.id).toBe('discard-rule');
+    });
+
+    it('连续出售造成前提缺失时恢复出售前完整检查点', () => {
+        let { state } = walk(true, 'sell-card-intro');
+        const original = state.core;
+        state = exec(state, 'SELL_CARD', '0', { cardId: 'card-meditation-2' });
+        state = exec(state, 'SELL_CARD', '0', { cardId: 'card-palm-strike' });
+        expect(state.sys.tutorial.step?.id).toBe('sale-branch-recovery');
+        const { command } = buildLocalDispatchCommand({ state, commandType: TUTORIAL_COMMANDS.PREVIOUS, payload: { __tutorialAiCommand: true, __tutorialPlayerId: '0' }, localPregameControlledPlayerId: null });
+        const recovery = executePipeline(pipelineConfig, state, command as DiceThroneCommand, random, playerIds);
+        expect(recovery.success).toBe(true);
+        state = recovery.state as MatchState<DiceThroneCore>;
+        expect(state.sys.tutorial.step?.id).toBe('sell-card-intro');
+        expect(state.core).toEqual(original);
     });
 
     it('首次防御和响应不能被 AI 代操作或手动跳过', () => {
@@ -303,5 +352,21 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         const { state } = walk(true, 'token-response-use');
         expect(tryExec(state, TUTORIAL_COMMANDS.NEXT, '0').success).toBe(false);
         expect(tryExec(state, 'ADVANCE_PHASE', '0').success).toBe(false);
+    });
+
+    it('可以合法不发动能力，恢复同一骰面后仍可亲手选择进攻', () => {
+        let { state } = walk(true, 'abilities');
+        const original = state.core;
+        state = exec(state, 'ADVANCE_PHASE', '0');
+        expect(state.sys.phase).toBe('main2');
+        expect(state.sys.tutorial.step?.id).toBe('ability-branch-recovery');
+        const { command } = buildLocalDispatchCommand({ state, commandType: TUTORIAL_COMMANDS.PREVIOUS, payload: { __tutorialAiCommand: true, __tutorialPlayerId: '0' }, localPregameControlledPlayerId: null });
+        const recovery = executePipeline(pipelineConfig, state, command as DiceThroneCommand, random, playerIds);
+        expect(recovery.success).toBe(true);
+        state = recovery.state as MatchState<DiceThroneCore>;
+        expect(state.sys.tutorial.step?.id).toBe('abilities');
+        expect(state.core).toEqual(original);
+        state = exec(state, 'SELECT_ABILITY', '0', { abilityId: 'harmony' });
+        expect(state.sys.tutorial.step?.id).toBe('attack-rule');
     });
 });

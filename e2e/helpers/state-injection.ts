@@ -52,6 +52,11 @@ export interface StateSyncExpectation {
     responseWindowId?: string;
 }
 
+export interface StateInjectionReceipt {
+    stateID: number;
+    randomCursor: number;
+}
+
 async function resolveTestMatchAccess(
     matchId: string,
     page?: Page,
@@ -122,7 +127,7 @@ export async function injectMatchState(
     page?: Page,
     access?: TestMatchAccess,
     options?: { randomCursor?: number },
-): Promise<void> {
+): Promise<StateInjectionReceipt> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
     const testApiBase = await resolveTestApiBase(page);
     const response = await fetch(`${testApiBase}/test/inject-state`, {
@@ -148,6 +153,8 @@ export async function injectMatchState(
             responseWindowId: state.sys?.responseWindow?.current?.id,
         });
     }
+
+    return { stateID: result._stateID, randomCursor: result.randomCursor };
 }
 
 /**
@@ -165,7 +172,7 @@ export async function patchMatchState(
     page?: Page,
     access?: TestMatchAccess,
     options?: { randomCursor?: number },
-): Promise<void> {
+): Promise<StateInjectionReceipt> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
     const testApiBase = await resolveTestApiBase(page);
     const response = await fetch(`${testApiBase}/test/patch-state`, {
@@ -187,6 +194,8 @@ export async function patchMatchState(
     if (page) {
         await waitForStateSync(page, 5000);
     }
+
+    return { stateID: result._stateID, randomCursor: result.randomCursor };
 }
 
 /**

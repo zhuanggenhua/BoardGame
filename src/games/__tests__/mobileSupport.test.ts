@@ -232,7 +232,7 @@ describe('mobile support helpers', () => {
         expect(document.body.getAttribute('data-mobile-battlefield-zoom')).toBeNull();
     });
 
-    it('only landscape board-shell games enable legacy scale fallback', () => {
+    it('board-shell 只在 manifest 主方向匹配时启用缩放兜底', () => {
         expect(
             shouldUseBoardShellScale(
                 { mobileProfile: 'landscape-adapted', mobileLayoutPreset: 'board-shell' },
@@ -246,6 +246,22 @@ describe('mobile support helpers', () => {
                 { mobileProfile: 'portrait-adapted', mobileLayoutPreset: 'portrait-simple' },
                 900,
                 500,
+            ),
+        ).toBe(false);
+
+        expect(
+            shouldUseBoardShellScale(
+                { mobileProfile: 'portrait-adapted', mobileLayoutPreset: 'board-shell' },
+                390,
+                844,
+            ),
+        ).toBe(true);
+
+        expect(
+            shouldUseBoardShellScale(
+                { mobileProfile: 'portrait-adapted', mobileLayoutPreset: 'board-shell' },
+                844,
+                390,
             ),
         ).toBe(false);
     });

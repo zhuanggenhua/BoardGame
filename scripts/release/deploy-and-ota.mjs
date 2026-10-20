@@ -1,4 +1,18 @@
 import { spawn } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import {
+    loadGameNames,
+    loadUnderConstructionGameIds,
+    parsePublishOptions,
+    publishChangelogDrafts,
+    readPackageVersion,
+} from './publish-game-changelog.mjs';
+import {
+    formatDeploymentOtaNotes,
+    prepareDeploymentGameChangelog,
+    resolveDeploymentChangelogApiBaseUrl,
+} from './deployment-game-changelog.mjs';
 
 const rootDir = process.cwd();
 const rawArgs = process.argv.slice(2);
@@ -54,6 +68,9 @@ const helpText = `
   --ota-workflow <file>      OTA workflow 文件，默认 android-ota-publish.yml
   --ota-ref <ref>            触发 OTA workflow 的 Git ref，默认同 --ci-ref
   --ota-git-ref <ref>        OTA workflow 实际 checkout/publish 的 git_ref，默认同 --ci-ref
+  --changelog-file <path>    可选游戏更新日志 JSON；发布网页日志并将同一文案传给 OTA
+  --changelog-api-base-url <url>
+                             游戏更新日志 API 地址；也可用 BG_CHANGELOG_API_BASE_URL / VITE_BACKEND_URL
   --resume-ota-run-id <id>   不重新触发 OTA workflow，继续等待已有 run
   --skip-ota                 只更新服务器，不执行 Android OTA 发布
   --ota-extra "<args>"       追加给 OTA 的额外参数；workflow 模式支持 --version/--display-version/--ota-version-base/--product-version/--expected-base-version/--dry-run/--skip-latest/--force-update-title/--force-update-message，local 模式原样传给 release-android ota；禁止传 --no-force-update
@@ -109,11 +126,25 @@ const otaRef = readArgValue('ota-ref', ciRef);
 const otaGitRef = readArgValue('ota-git-ref', ciRef);
 const resumeOtaRunId = readArgValue('resume-ota-run-id', '');
 const skipOta = hasFlag('skip-ota');
+const changelogFile = readArgValue('changelog-file', '').trim();
+const changelogApiBaseUrl = readArgValue('changelog-api-base-url', '').trim();
 const otaExtraRaw = readArgValue('ota-extra', '').trim();
 const otaExtraArgs = otaExtraRaw ? otaExtraRaw.split(/\s+/).filter(Boolean) : [];
+const hasOtaNotesOverride = otaExtraArgs.some((arg) => {
+    const optionName = arg.includes('=') ? arg.slice(0, arg.indexOf('=')) : arg;
+    return optionName === '--notes' || optionName === '--empty-notes';
+});
+let deploymentChangelogDrafts = [];
+let deploymentChangelogSkippedGameIds = [];
+let deploymentChangelogOptions;
+let sharedReleaseNotes = '';
 
 if (otaExtraArgs.includes('--no-force-update')) {
     throw new Error('所有 OTA 已强制更新，--ota-extra 禁止传入 --no-force-update。');
+}
+
+if (hasOtaNotesOverride) {
+    throw new Error('完整部署的 OTA 更新说明由共享游戏日志统一决定，--ota-extra 禁止传入 --notes / --empty-notes。');
 }
 
 if (hasFlag('help') || rawArgs.includes('-h')) {
@@ -185,7 +216,7 @@ if (otaMode === 'workflow') {
 }
 
 const runCommand = (command, args, label) => new Promise((resolve, reject) => {
-    console.log(`[deploy-and-ota] 执行 ${label}: ${command} ${args.join(' ')}`);
+    console.log(`[deploy-and-ota] 执行 ${label}: ${command} ${formatArgsForLog(args)}`);
     const child = spawn(command, args, {
         cwd: rootDir,
         env: process.env,
@@ -238,10 +269,39 @@ const workflowPollMs = Math.round(workflowPollSeconds * 1000);
 
 const runNode = async (args, label) => {
     if (dryRun) {
-        console.log(`[deploy-and-ota] dry-run 将执行 ${label}: ${process.execPath} ${args.join(' ')}`);
+        console.log(`[deploy-and-ota] dry-run 将执行 ${label}: ${process.execPath} ${formatArgsForLog(args)}`);
         return;
     }
     await runCommand(process.execPath, args, label);
+};
+
+const formatArgsForLog = (args) => args.map((arg) => (
+    arg.startsWith('release_notes=') ? `release_notes=[${arg.length - 'release_notes='.length} chars]` : arg
+)).join(' ');
+
+const prepareDeploymentChangelog = async () => {
+    if (!changelogFile) return;
+
+    const payload = JSON.parse(await readFile(resolve(rootDir, changelogFile), 'utf8'));
+    deploymentChangelogOptions = parsePublishOptions([], process.env);
+    if (!deploymentChangelogOptions.versionLabel) {
+        deploymentChangelogOptions.versionLabel = await readPackageVersion();
+    }
+    const prepared = prepareDeploymentGameChangelog({
+        payload,
+        gameNames: await loadGameNames(),
+        underConstructionGameIds: await loadUnderConstructionGameIds(),
+        defaultVersionLabel: deploymentChangelogOptions.versionLabel,
+    });
+    deploymentChangelogDrafts = prepared.drafts;
+    deploymentChangelogSkippedGameIds = prepared.skippedGameIds;
+    sharedReleaseNotes = formatDeploymentOtaNotes(deploymentChangelogDrafts);
+    if (deploymentChangelogDrafts.length > 0) {
+        deploymentChangelogOptions.apiBaseUrl = resolveDeploymentChangelogApiBaseUrl({
+            explicitUrl: changelogApiBaseUrl,
+            env: process.env,
+        });
+    }
 };
 
 const findTriggeredWorkflowRun = async ({ workflow, startedAt, label }) => {
@@ -400,6 +460,9 @@ const workflowOtaInputs = () => ([
     `skip_latest=${hasExtraFlag('skip-latest') ? 'true' : 'false'}`,
     '-f',
     'force_update=true',
+    '-f',
+    'release_notes_mode=shared',
+    ...(sharedReleaseNotes ? ['-f', `release_notes=${sharedReleaseNotes}`] : []),
     ...(readExtraArgValue('version') ? ['-f', `version=${readExtraArgValue('version')}`] : []),
     ...(readExtraArgValue('display-version') ? ['-f', `display_version=${readExtraArgValue('display-version')}`] : []),
     ...(readExtraArgValue('ota-version-base') ? ['-f', `ota_version_base=${readExtraArgValue('ota-version-base')}`] : []),
@@ -420,7 +483,7 @@ const triggerOtaWorkflow = async () => {
     const args = workflowOtaInputs();
 
     if (dryRun) {
-        console.log(`[deploy-and-ota] dry-run 将触发 Android OTA workflow: gh ${args.join(' ')}`);
+        console.log(`[deploy-and-ota] dry-run 将触发 Android OTA workflow: gh ${formatArgsForLog(args)}`);
         return;
     }
 
@@ -451,6 +514,26 @@ const main = async () => {
         console.log('[deploy-and-ota] --allow-current-version 已兼容保留；当前部署默认不要求修改商业产品版本。');
     }
 
+    await prepareDeploymentChangelog();
+    if (changelogFile && deploymentChangelogSkippedGameIds.length > 0) {
+        console.log(`[deploy-and-ota] 跳过实施中游戏日志: ${deploymentChangelogSkippedGameIds.join(', ')}`);
+    }
+    if (deploymentChangelogDrafts.length > 0) {
+        console.log(`[deploy-and-ota] 已准备 ${deploymentChangelogDrafts.length} 条网页/OTA 共用更新日志:`);
+        deploymentChangelogDrafts.forEach(({ gameId, title, content }) => {
+            console.log(`\n[${gameId}] ${title}\n${content}`);
+        });
+    } else {
+        console.log('[deploy-and-ota] 未提供可公开的玩家更新日志；完整部署的 OTA 更新说明将留空。');
+    }
+    if (otaMode === 'local') {
+        if (sharedReleaseNotes) {
+            otaCommandArgs.push('--notes', sharedReleaseNotes);
+        } else {
+            otaCommandArgs.push('--empty-notes');
+        }
+    }
+
     if (!skipWait) {
         const waitMs = Math.round(waitMinutes * 60 * 1000);
         console.log(`[deploy-and-ota] 将在 ${waitMinutes} 分钟后开始部署与 OTA`);
@@ -477,7 +560,7 @@ const main = async () => {
     if (skipOta) {
         console.log('[deploy-and-ota] OTA 命令: 已跳过');
     } else if (otaMode === 'workflow') {
-        console.log(`[deploy-and-ota] OTA workflow: gh ${workflowOtaInputs().join(' ')}`);
+        console.log(`[deploy-and-ota] OTA workflow: gh ${formatArgsForLog(workflowOtaInputs())}`);
     } else {
         console.log(`[deploy-and-ota] OTA 命令: ${process.execPath} ${otaCommandArgs.join(' ')}`);
     }
@@ -493,11 +576,33 @@ const main = async () => {
     } else {
         await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署（服务器直拉）');
     }
+    if (deploymentChangelogDrafts.length > 0) {
+        try {
+            await publishChangelogDrafts({
+                drafts: deploymentChangelogDrafts,
+                options: deploymentChangelogOptions,
+            });
+        } catch (error) {
+            throw new Error(
+                `服务器部署已成功；网页更新日志写入失败，Android OTA 未启动。可能已有部分游戏日志写入，重试会执行重复检查。${error instanceof Error ? ` ${error.message}` : ` ${String(error)}`}`,
+            );
+        }
+    }
+
     if (!skipOta) {
-        if (otaMode === 'workflow') {
-            await triggerOtaWorkflow();
-        } else {
-            await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
+        try {
+            if (otaMode === 'workflow') {
+                await triggerOtaWorkflow();
+            } else {
+                await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
+            }
+        } catch (error) {
+            if (deploymentChangelogDrafts.length > 0) {
+                throw new Error(
+                    `服务器部署和网页更新日志已完成；Android OTA 失败。${error instanceof Error ? error.message : String(error)}`,
+                );
+            }
+            throw error;
         }
     }
 };

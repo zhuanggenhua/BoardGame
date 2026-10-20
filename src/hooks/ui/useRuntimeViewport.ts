@@ -349,9 +349,11 @@ export const applyRuntimeViewportCssVars = (
     const mobileLayoutPreset = gamePageTarget?.dataset.mobileLayoutPreset;
     const mobileProfile = gamePageTarget?.dataset.mobileProfile;
     const shouldUseBoardShellScale = mobileLayoutPreset === 'board-shell'
-        && mobileProfile === 'landscape-adapted'
         && viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH
-        && isLandscapeMobileViewport;
+        && (
+            (mobileProfile === 'landscape-adapted' && isLandscapeMobileViewport)
+            || (mobileProfile === 'portrait-adapted' && viewport.height > viewport.width)
+        );
 
     if (!shouldUseBoardShellScale) {
         clearBoardShellVars(root);
