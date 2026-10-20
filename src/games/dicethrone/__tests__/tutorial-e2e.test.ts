@@ -25,6 +25,7 @@ import { DiceThroneTutorial } from '../tutorial';
 import { TUTORIAL_COMMANDS } from '../../../engine/systems/TutorialSystem';
 import { injectTutorialInteractionId } from '../../../engine/transport/tutorialAiCommand';
 import { buildLocalDispatchCommand } from '../../../engine/transport/localDispatchCommand';
+import { getCurrentInteractionData, getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { resolveDiceThroneTokenResponseInteractionPendingDamageId } from '../domain/tokenResponseChoiceContract';
 
 describe('教程端到端测试（TutorialSystem 活跃）', () => {
@@ -62,11 +63,12 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         const result = executePipeline(pipelineConfig, state, command, random, playerIds);
         if (!result.success) {
             const t = state.sys.tutorial;
+            const interaction = getCurrentInteractionSummary(state);
             const desc = label ? ` [${label}]` : '';
             throw new Error(
                 `Command ${type} (p${playerId})${desc} failed: ${result.error}\n` +
                 `  phase=${state.sys.phase} active=${state.core.activePlayerId}\n` +
-                `  interaction=${state.sys.interaction.current?.kind ?? 'none'}:${state.sys.interaction.current?.id ?? 'none'}\n` +
+                `  interaction=${interaction.kind ?? 'none'}:${interaction.id ?? 'none'}\n` +
                 `  tutorialStep=${t.step?.id ?? 'none'} stepIndex=${t.stepIndex} active=${t.active}`
             );
         }
@@ -106,7 +108,10 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 isTutorialAiCommand: true,
             }) as Record<string, unknown>;
             if (action.commandType === 'SKIP_TOKEN_RESPONSE') {
-                const pendingDamageId = resolveDiceThroneTokenResponseInteractionPendingDamageId(s.sys.interaction.current);
+                const pendingDamageId = resolveDiceThroneTokenResponseInteractionPendingDamageId({
+                    ...getCurrentInteractionSummary(s),
+                    data: getCurrentInteractionData(s),
+                });
                 expect(pendingDamageId, `${label}: AI action[${i}] should have a live token-response interaction`).toBeTypeOf('string');
                 expect(payload).toMatchObject({ pendingDamageId });
             }
@@ -291,7 +296,8 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 default: throw Error('未覆盖正式动作: ' + step.id);
             }
         }
-        throw Error(`教程未完成: step=${s.sys.tutorial.step?.id ?? 'none'} phase=${s.sys.phase} interaction=${s.sys.interaction.current?.kind ?? 'none'} visited=${Array.from(visited).join(',')}`);
+        const interaction = getCurrentInteractionSummary(s);
+        throw Error(`教程未完成: step=${s.sys.tutorial.step?.id ?? 'none'} phase=${s.sys.phase} interaction=${interaction.kind ?? 'none'} visited=${Array.from(visited).join(',')}`);
     };
 
     it.each([true, false, 'evasive'] as const)('亲手防御、响应分支 %s、结算后保留费用并升级', (useChi) => {
