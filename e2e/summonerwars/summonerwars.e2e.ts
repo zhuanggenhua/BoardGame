@@ -20,6 +20,7 @@ import { setChineseLocale } from '../helpers/common';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { DESKTOP_REFERENCE_VIEWPORT, MOBILE_LANDSCAPE_REFERENCE_VIEWPORT } from '../../src/shared/referenceViewports';
+import { validateCommand } from '../../src/games/summonerwars/domain/validate';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
@@ -2298,6 +2299,12 @@ const setupAttackState = (coreState: any) => {
   }
 
   const getUnitAt = (position: { row: number; col: number }) => board[position.row]?.[position.col]?.unit;
+  const isLegalAttack = (attacker: { row: number; col: number }, target: { row: number; col: number }) => (
+    validateCommand(
+      { core: { ...next, phase: 'attack', currentPlayer: '0' } } as any,
+      { type: 'sw:declare_attack', payload: { attacker, target } },
+    ).valid
+  );
   const getRemainingLife = (unit: any) => {
     const maxLife = Number(unit?.card?.life ?? 0);
     const damage = Number(unit?.damage ?? 0);
@@ -2334,10 +2341,8 @@ const setupAttackState = (coreState: any) => {
           continue;
         }
 
-        board[durableEnemyOrigin.row][durableEnemyOrigin.col] = {
-          ...board[durableEnemyOrigin.row][durableEnemyOrigin.col],
-          unit: undefined,
-        };
+        const originCell = board[durableEnemyOrigin.row][durableEnemyOrigin.col];
+        board[durableEnemyOrigin.row][durableEnemyOrigin.col] = { ...originCell, unit: undefined };
         board[target.row][target.col] = {
           ...targetCell,
           unit: {
@@ -2346,11 +2351,16 @@ const setupAttackState = (coreState: any) => {
           },
         };
 
-        next.phase = 'attack';
-        next.currentPlayer = '0';
-        next.selectedUnit = undefined;
-        next.attackTargetMode = undefined;
-        return { core: next, attacker, target };
+        if (isLegalAttack(attacker, target)) {
+          next.phase = 'attack';
+          next.currentPlayer = '0';
+          next.selectedUnit = undefined;
+          next.attackTargetMode = undefined;
+          return { core: next, attacker, target };
+        }
+
+        board[durableEnemyOrigin.row][durableEnemyOrigin.col] = originCell;
+        board[target.row][target.col] = targetCell;
       }
     }
   }
@@ -2360,7 +2370,7 @@ const setupAttackState = (coreState: any) => {
       const target = { row: attacker.row + dir.row, col: attacker.col + dir.col };
       if (!board[target.row]?.[target.col]) continue;
       const targetUnit = board[target.row][target.col].unit;
-      if (targetUnit && targetUnit.owner === '1') {
+      if (targetUnit && targetUnit.owner === '1' && isLegalAttack(attacker, target)) {
         next.phase = 'attack';
         next.currentPlayer = '0';
         next.selectedUnit = undefined;
@@ -2385,6 +2395,16 @@ const setupAttackState = (coreState: any) => {
       if (!board[target.row]?.[target.col]) continue;
       const targetCell = board[target.row][target.col];
       if (!targetCell.unit && !targetCell.structure) {
+        const originCell = board[enemyOrigin.row][enemyOrigin.col];
+        board[enemyOrigin.row][enemyOrigin.col] = { ...originCell, unit: undefined };
+        board[target.row][target.col] = {
+          ...targetCell,
+          unit: { ...enemyUnit, position: { ...target } },
+        };
+        const validAttack = isLegalAttack(attacker, target);
+        board[enemyOrigin.row][enemyOrigin.col] = originCell;
+        board[target.row][target.col] = targetCell;
+        if (!validAttack) continue;
         attackerPick = attacker;
         targetPick = target;
         break;
