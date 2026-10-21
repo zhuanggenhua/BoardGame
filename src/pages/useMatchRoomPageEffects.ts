@@ -22,7 +22,7 @@ export function useMatchRoomPageEffects(args: {
     } = args;
 
     useEffect(() => {
-        syncGamePageDocumentAttributes(gamePageDataAttributes);
+        return syncGamePageDocumentAttributes(gamePageDataAttributes);
     }, [gamePageDataAttributes]);
 
     useEffect(() => {

@@ -23,7 +23,7 @@ import { FACTION_CATALOG, resolveFactionId, type FactionCatalogEntry } from '../
 import { CardSprite } from './CardSprite';
 import { initSpriteAtlases, getSpriteAtlasSource, getFactionAtlasId } from './cardAtlas';
 import { DeckBuilderDrawer } from './DeckBuilderDrawer';
-import { UI_Z_INDEX, markImageLoaded } from '../../../core';
+import { HudPortal, UI_Z_INDEX, markImageLoaded } from '../../../core';
 import type { SerializedCustomDeck } from '../config/deckSerializer';
 import type { TFunction } from 'i18next';
 import { listCustomDecks, getCustomDeck, type SavedDeckSummary } from '../../../api/custom-deck';
@@ -592,6 +592,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   if (!isOpen) return null;
 
   return (
+    <HudPortal>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -1018,6 +1019,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
         onDeckSaved={refreshDeckList}
       />
     </motion.div>
+    </HudPortal>
   );
 };
 

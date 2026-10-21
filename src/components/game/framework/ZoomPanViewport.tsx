@@ -493,16 +493,18 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     }, [activeZoomLevel, applyViewport, clampedPositionX, clampedPositionY, isControlled]);
 
     const convertDeltaToViewportUnits = useCallback((deltaX: number, deltaY: number) => {
-        if (!coordinateSize) {
+        const container = containerRef.current;
+        const rect = container?.getBoundingClientRect();
+        if (!container || !rect || rect.width <= 0 || rect.height <= 0) {
             return { x: deltaX, y: deltaY };
         }
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect || rect.width <= 0 || rect.height <= 0) {
-            return { x: deltaX, y: deltaY };
-        }
+        // 触摸 / 指针使用屏幕像素，position 使用未变换的画布坐标。
+        // 壳层缩放也需要换算，不能只处理显式 coordinateSize 的地图。
+        const width = coordinateSize?.width ?? container.offsetWidth;
+        const height = coordinateSize?.height ?? container.offsetHeight;
         return {
-            x: (deltaX / rect.width) * coordinateSize.width,
-            y: (deltaY / rect.height) * coordinateSize.height,
+            x: width > 0 ? (deltaX / rect.width) * width : deltaX,
+            y: height > 0 ? (deltaY / rect.height) * height : deltaY,
         };
     }, [coordinateSize]);
 

@@ -36,6 +36,7 @@ import { GameButton } from './GameButton';
 import { CardMagnifyOverlay } from './CardMagnifyOverlay';
 import { ImplementationStatusRibbon } from '../../../components/game/framework/ImplementationStatusRibbon';
 import { buildSmashUpTakenFactionsFromPlayerSelections } from '../domain/pregameDraft';
+import { SMASH_UP_MANIFEST } from '../manifest';
 
 interface Props {
     core: SmashUpCore;
@@ -408,7 +409,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     };
 
     const useDesktopLikeLandscapeLayout = isMobileLandscape;
-    const useCompactDetailSidebarHeight = viewportSize.width < 768;
+    // 横屏详情仍在等比画布内，断点按画布宽度判断；屏幕宽度不能再次触发手机重排。
+    const detailLayoutWidth = isMobileLandscape
+        ? SMASH_UP_MANIFEST.mobileBoardShellLayout?.designWidth ?? viewportSize.width
+        : viewportSize.width;
+    const useCompactDetailSidebarHeight = !isMobileLandscape && viewportSize.width < 768;
     const detailSidebarMaxHeight = 'calc(var(--runtime-viewport-height, 100vh) * 0.42)';
     const useMinimalPlayerRail = !useDesktopLikeLandscapeLayout
         && playerOrder.length <= 2
@@ -1073,7 +1078,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     return (
         <div
             data-tutorial-id="su-faction-select"
-            className="absolute inset-0 bg-[#2d1b10] flex flex-col items-center overflow-hidden font-sans selection:bg-amber-500/30"
+            className="group/smashup-selection absolute inset-0 bg-[#2d1b10] flex flex-col items-center overflow-hidden font-sans selection:bg-amber-500/30"
+            data-detail-sm={detailLayoutWidth >= 640 ? '' : undefined}
+            data-detail-md={detailLayoutWidth >= 768 ? '' : undefined}
+            data-detail-lg={detailLayoutWidth >= 1024 ? '' : undefined}
+            data-detail-xl={detailLayoutWidth >= 1280 ? '' : undefined}
             style={{ zIndex: UI_Z_INDEX.overlay }}
         >
             <div
@@ -1110,7 +1119,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             data-testid="faction-detail-backdrop"
                         />
                         <div
-                            className="pointer-events-none fixed inset-x-2 top-[5.25rem] bottom-[5.5rem] sm:inset-x-3 sm:top-[5.75rem] sm:bottom-[5.75rem] md:inset-x-4 md:top-[6.25rem] md:bottom-[6rem] flex items-stretch justify-center"
+                            className="pointer-events-none fixed inset-x-2 top-[5.25rem] bottom-[5.5rem] group-data-[detail-sm]/smashup-selection:inset-x-3 group-data-[detail-sm]/smashup-selection:top-[5.75rem] group-data-[detail-sm]/smashup-selection:bottom-[5.75rem] group-data-[detail-md]/smashup-selection:inset-x-4 group-data-[detail-md]/smashup-selection:top-[6.25rem] group-data-[detail-md]/smashup-selection:bottom-[6rem] flex items-stretch justify-center"
                             style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                         >
                             <div className="pointer-events-auto flex h-full w-full justify-center">
@@ -1118,7 +1127,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                     className="relative flex h-full items-center justify-center"
                                     style={isMobileLandscape
                                         ? {
-                                            width: 'min(calc(var(--mobile-board-shell-design-width, 1500px) * 0.64), 80rem)',
+                                            width: '100%',
                                             height: '100%',
                                         }
                                         : {
@@ -1138,7 +1147,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                     >
                                         <motion.div
                                             layoutId={focusedGroupId}
-                                            className="smashup-faction-detail-panel relative h-full w-full min-h-0 border-4 shadow-[0_20px_50px_rgba(0,0,0,0.55)] rounded-sm overflow-hidden flex flex-col md:flex-row clip-path-jagged backdrop-blur-[2px]"
+                                            className="smashup-faction-detail-panel relative h-full w-full min-h-0 border-4 shadow-[0_20px_50px_rgba(0,0,0,0.55)] rounded-sm overflow-hidden flex flex-col group-data-[detail-md]/smashup-selection:flex-row clip-path-jagged backdrop-blur-[2px]"
                                             initial={{ x: 32, opacity: 0, scale: 0.97 }}
                                             animate={{ x: 0, opacity: 1, scale: 1 }}
                                             exit={{ x: 32, opacity: 0, scale: 0.97 }}
@@ -1147,14 +1156,14 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                         <div className="smashup-faction-detail-tape absolute top-0 left-1/2 -translate-x-1/2 w-40 h-8 z-50 -translate-y-4" />
                                         <button
                                             onClick={handleCloseDetails}
-                                            className="smashup-chip absolute top-3 right-3 md:top-4 md:right-4 z-50 rounded-full border p-2 transition-colors"
+                                            className="smashup-chip absolute top-3 right-3 group-data-[detail-md]/smashup-selection:top-4 group-data-[detail-md]/smashup-selection:right-4 z-50 rounded-full border p-2 transition-colors"
                                             data-testid="faction-detail-close"
                                         >
                                             <X size={24} />
                                         </button>
 
                                         <div
-                                            className="smashup-faction-detail-sidebar smashup-themed-scrollbar w-full md:w-1/3 min-h-0 shrink-0 p-4 sm:p-5 md:p-4 lg:p-8 flex flex-col border-b-2 md:border-b-0 md:border-r-2 border-dashed relative overflow-y-auto"
+                                            className="smashup-faction-detail-sidebar smashup-themed-scrollbar w-full group-data-[detail-md]/smashup-selection:w-1/3 min-h-0 shrink-0 p-4 group-data-[detail-sm]/smashup-selection:p-5 group-data-[detail-md]/smashup-selection:p-4 group-data-[detail-lg]/smashup-selection:p-8 flex flex-col border-b-2 group-data-[detail-md]/smashup-selection:border-b-0 group-data-[detail-md]/smashup-selection:border-r-2 border-dashed relative overflow-y-auto"
                                             style={useCompactDetailSidebarHeight ? { maxHeight: detailSidebarMaxHeight } : undefined}
                                         >
                                             <div
@@ -1180,7 +1189,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                 <span className="text-xs font-black uppercase tracking-widest">{t('ui.faction_details')}</span>
                                                             </div>
                                                             <div className="mb-3 flex items-start justify-between gap-3">
-                                                                <h2 className="smashup-text-main text-3xl md:text-3xl lg:text-4xl font-black uppercase tracking-tighter italic">
+                                                                <h2 className="smashup-text-main text-3xl group-data-[detail-md]/smashup-selection:text-3xl group-data-[detail-lg]/smashup-selection:text-4xl font-black uppercase tracking-tighter italic">
                                                                     {t(focusedFactionMeta.nameKey)}
                                                                 </h2>
                                                                 {focusedMechanicTutorial ? (
@@ -1241,7 +1250,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                 </div>
                                                             )}
 
-                                                            <div className="flex gap-2 mb-4 lg:mb-6">
+                                                            <div className="flex gap-2 mb-4 group-data-[detail-lg]/smashup-selection:mb-6">
                                                                 <div className="smashup-chip px-2 py-1 rounded text-xs font-black border shadow-sm">
                                                                     {t('ui.minion_count', { count: detailFactionCards.filter((card) => card.type === 'minion').length })}
                                                                 </div>
@@ -1250,12 +1259,12 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                 </div>
                                                             </div>
 
-                                                            <p className="smashup-text-muted text-sm md:text-sm lg:text-base leading-relaxed mb-4 lg:mb-8 font-medium">
+                                                            <p className="smashup-text-muted text-sm group-data-[detail-md]/smashup-selection:text-sm group-data-[detail-lg]/smashup-selection:text-base leading-relaxed mb-4 group-data-[detail-lg]/smashup-selection:mb-8 font-medium">
                                                                 {t(focusedFactionMeta.descriptionKey)}
                                                             </p>
 
                                                             {focusedFactionMeta.mechanicRule ? (
-                                                                <div className="mb-4 lg:mb-6" data-testid="faction-mechanic-rules">
+                                                                <div className="mb-4 group-data-[detail-lg]/smashup-selection:mb-6" data-testid="faction-mechanic-rules">
                                                                     <div className="smashup-text-faint mb-2 flex items-center gap-2">
                                                                         <BookOpen size={16} />
                                                                         <span className="text-xs font-black uppercase tracking-widest">
@@ -1281,7 +1290,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                             ) : null}
                                                         </div>
 
-                                                        <div className="relative z-10 mb-4 lg:mb-6">
+                                                        <div className="relative z-10 mb-4 group-data-[detail-lg]/smashup-selection:mb-6">
                                                             <div className="smashup-text-faint mb-2 flex items-center gap-2">
                                                                 <Layers size={16} />
                                                                 <span className="text-xs font-black uppercase tracking-widest">
@@ -1291,7 +1300,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
 
                                                             <div className="smashup-paper-subtle-panel rounded-sm border p-3 shadow-inner" data-testid="faction-titan-section">
                                                                 {detailFactionTitans.length > 0 ? (
-                                                                    <div className={`grid ${titanGridCols} gap-3 md:gap-4`}>
+                                                                    <div className={`grid ${titanGridCols} gap-3 group-data-[detail-md]/smashup-selection:gap-4`}>
                                                                         {detailFactionTitans.map((titan) => {
                                                                             const titanName = resolveCardName(titan, t) || titan.id;
                                                                             return (
@@ -1320,7 +1329,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                     </div>
                                                                 ) : (
                                                                     <div
-                                                                        className="smashup-empty-panel flex min-h-[12rem] items-center justify-center rounded-sm border border-dashed px-4 text-center text-sm font-bold leading-relaxed md:min-h-[14rem] lg:min-h-[18rem]"
+                                                                        className="smashup-empty-panel flex min-h-[12rem] items-center justify-center rounded-sm border border-dashed px-4 text-center text-sm font-bold leading-relaxed group-data-[detail-md]/smashup-selection:min-h-[14rem] group-data-[detail-lg]/smashup-selection:min-h-[18rem]"
                                                                         data-testid="faction-titan-empty"
                                                                     >
                                                                         {t('ui.faction_titan_missing')}
@@ -1329,7 +1338,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                             </div>
                                                         </div>
 
-                                                        <div className="smashup-faction-detail-footer sticky bottom-0 mt-4 pt-3 lg:mt-6 lg:pt-4 relative z-20">
+                                                        <div className="smashup-faction-detail-footer sticky bottom-0 mt-4 pt-3 group-data-[detail-lg]/smashup-selection:mt-6 group-data-[detail-lg]/smashup-selection:pt-4 relative z-20">
                                                             {isSelectedByMe ? (
                                                                 isMyTurn ? (
                                                                     <GameButton
@@ -1337,20 +1346,20 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                         type="button"
                                                                         variant="secondary"
                                                                         size="md"
-                                                                        className="md:text-base lg:text-xl md:py-3 lg:py-4"
+                                                                        className="group-data-[detail-md]/smashup-selection:text-base group-data-[detail-lg]/smashup-selection:text-xl group-data-[detail-md]/smashup-selection:py-3 group-data-[detail-lg]/smashup-selection:py-4"
                                                                         fullWidth
                                                                         data-testid="faction-cancel-button"
                                                                     >
                                                                         {t('ui.cancel_selection')}
                                                                     </GameButton>
                                                                 ) : (
-                                                                    <div className="smashup-chip-success w-full py-3 lg:py-4 border-2 rounded font-black text-center flex items-center justify-center gap-2 uppercase italic shadow-md">
+                                                                    <div className="smashup-chip-success w-full py-3 group-data-[detail-lg]/smashup-selection:py-4 border-2 rounded font-black text-center flex items-center justify-center gap-2 uppercase italic shadow-md">
                                                                         <Check size={20} strokeWidth={3} />
                                                                         {t('ui.selected')}
                                                                     </div>
                                                                 )
                                                             ) : isTakenByOther ? (
-                                                                <div className="smashup-chip-disabled w-full py-3 lg:py-4 rounded font-black text-center cursor-not-allowed uppercase shadow-inner">
+                                                                <div className="smashup-chip-disabled w-full py-3 group-data-[detail-lg]/smashup-selection:py-4 rounded font-black text-center cursor-not-allowed uppercase shadow-inner">
                                                                     {t('ui.taken_by_other')}
                                                                 </div>
                                                             ) : (
@@ -1359,7 +1368,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                     disabled={!canSelect}
                                                                     variant="primary"
                                                                     size="md"
-                                                                    className="md:text-base lg:text-xl md:py-3 lg:py-4"
+                                                                    className="group-data-[detail-md]/smashup-selection:text-base group-data-[detail-lg]/smashup-selection:text-xl group-data-[detail-md]/smashup-selection:py-3 group-data-[detail-lg]/smashup-selection:py-4"
                                                                     fullWidth
                                                                     data-testid="faction-confirm-button"
                                                                 >
@@ -1374,9 +1383,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             })()}
                                         </div>
 
-                                        <div className="smashup-faction-detail-content smashup-themed-scrollbar flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-8 custom-scrollbar">
+                                        <div className="smashup-faction-detail-content smashup-themed-scrollbar flex-1 min-h-0 overflow-y-auto p-3 group-data-[detail-sm]/smashup-selection:p-4 group-data-[detail-md]/smashup-selection:p-8 custom-scrollbar">
                                             <div
-                                                className="mb-4 flex flex-wrap items-center gap-2 md:mb-6"
+                                                className="mb-4 flex flex-wrap items-center gap-2 group-data-[detail-md]/smashup-selection:mb-6"
                                                 role="tablist"
                                                 aria-label={t('ui.preview_cards')}
                                             >
@@ -1416,11 +1425,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             </div>
 
                                             {detailPreviewTab === 'hand' ? (
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4" data-testid="faction-preview-grid">
+                                                <div className="grid grid-cols-2 group-data-[detail-sm]/smashup-selection:grid-cols-3 group-data-[detail-xl]/smashup-selection:grid-cols-4 gap-3 group-data-[detail-md]/smashup-selection:gap-4" data-testid="faction-preview-grid">
                                                     {detailFactionCards.map((card, cidx) => (
                                                         <div
                                                             key={card.id}
-                                                            className="smashup-card-frame group relative aspect-[0.714] rounded-sm overflow-hidden p-[2px] lg:p-[3px] shadow-md border-2 transition-all cursor-zoom-in hover:z-20 hover:scale-110 hover:shadow-xl"
+                                                            className="smashup-card-frame group relative aspect-[0.714] rounded-sm overflow-hidden p-[2px] group-data-[detail-lg]/smashup-selection:p-[3px] shadow-md border-2 transition-all cursor-zoom-in hover:z-20 hover:scale-110 hover:shadow-xl"
                                                             style={{ transform: `rotate(${(cidx % 5) - 2}deg)` }}
                                                             onClick={() => setViewingCard({ defId: card.id, type: card.type })}
                                                             data-testid="faction-preview-card"
@@ -1491,7 +1500,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                 </div>
                                             ) : (
                                                 <div
-                                                    className="smashup-empty-panel flex min-h-[12rem] items-center justify-center rounded-sm border border-dashed px-4 text-center text-sm font-bold leading-relaxed md:min-h-[14rem]"
+                                                    className="smashup-empty-panel flex min-h-[12rem] items-center justify-center rounded-sm border border-dashed px-4 text-center text-sm font-bold leading-relaxed group-data-[detail-md]/smashup-selection:min-h-[14rem]"
                                                     data-testid="faction-base-empty"
                                                 >
                                                     {t('ui.preview_bases_empty')}
