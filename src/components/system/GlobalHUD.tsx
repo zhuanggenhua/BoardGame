@@ -5,18 +5,13 @@ import { useModalStack } from '../../contexts/ModalStackContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
+import './global-hud.css';
+import { PlatformAudioSettings } from './PlatformAudioSettings';
+import { useHomeHudClearance } from './useHomeHudClearance';
+import { useHomeFormHudSuppression } from './useHomeFormHudSuppression';
+import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw, Moon, Sun } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import {
-    HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
-    HOME_ENTRY_STYLE_VERSION,
-    isHomeEntryRoute,
-    isHomeV2PreviewRoute,
-    persistHomeEntryStyle,
-    resolveHomeEntryStyle,
-    subscribeHomeEntryStyleChange,
-    type HomeEntryStyle,
-} from '../../lib/homeV2Routing';
+import { useLocation } from 'react-router-dom';
 import type { AndroidLiveUpdateActivityState } from '../../lib/mobile/androidLiveUpdates';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { shouldShowAndroidOtaToastOncePerDay } from '../../lib/mobile/otaToastGate';
@@ -34,13 +29,10 @@ import {
 
 const HUD_MODAL_NS = 'hud';
 export const GLOBAL_HUD_FAB_Z_INDEX = UI_Z_INDEX.globalHudFab;
-const LazyAudioProvider = lazy(() => import('../../contexts/AudioContext').then(m => ({ default: m.AudioProvider })));
-const LazyAudioControlSection = lazy(() => import('../game/framework/widgets/AudioControlSection').then(m => ({ default: m.AudioControlSection })));
 const LazyFriendsChatModal = lazy(() => import('../social/FriendsChatModal').then(m => ({ default: m.FriendsChatModal })));
 const LazyAboutModal = lazy(() => import('./AboutModal').then(m => ({ default: m.AboutModal })));
 const LazyFeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
 
-const HOME_STYLE_QUERY_PARAM = 'homeStyle';
 const IDLE_OTA_ACTIVITY_STATE: AndroidLiveUpdateActivityState = {
     active: false,
     phase: 'idle',
@@ -68,19 +60,14 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     const { openModal, closeModal, closeByNamespace } = useModalStack();
     const { user } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate();
+    const homeHudClearance = useHomeHudClearance(location.pathname);
+    const suppressFormFab = useHomeFormHudSuppression(location.pathname, useMobileViewport());
     const toast = useToast();
-    const [homeStyleRevision, setHomeStyleRevision] = useState(0);
     const [displayTheme, setDisplayTheme] = useState<SystemDisplayTheme>(() => readSystemDisplayThemePreference());
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
     const shouldHideHud = shouldHideOnRoute(location.pathname);
-    const isHomeEntryStyleRoute = isNativeAndroid && isHomeEntryRoute(location.pathname);
-    const currentHomeEntryStyle: HomeEntryStyle = isHomeV2PreviewRoute(location.pathname)
-        ? 'book'
-        : resolveHomeEntryStyle(location.search);
-    void homeStyleRevision;
 
     const isDark = displayTheme === 'night';
 
@@ -96,23 +83,6 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         const nextTheme = displayTheme === 'night' ? 'light' : 'night';
         persistSystemDisplayThemePreference(nextTheme);
         setDisplayTheme(nextTheme);
-    };
-
-    const applyHomeEntryStyle = (nextStyle: HomeEntryStyle, closePanel?: () => void) => {
-        persistHomeEntryStyle(nextStyle);
-        closePanel?.();
-        const nextSearchParams = new URLSearchParams();
-        nextSearchParams.set(HOME_STYLE_QUERY_PARAM, nextStyle);
-        if (nextStyle === 'book') {
-            nextSearchParams.set(HOME_ENTRY_STYLE_QUERY_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
-        }
-        navigate(
-            {
-                pathname: '/',
-                search: `?${nextSearchParams.toString()}`,
-            },
-            { replace: true },
-        );
     };
 
     const toggleFullscreen = async () => {
@@ -218,11 +188,6 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         };
     }, [isNativeAndroid]);
 
-    useEffect(() => {
-        return subscribeHomeEntryStyleChange(() => {
-            setHomeStyleRevision((value) => value + 1);
-        });
-    }, []);
 
     useEffect(() => {
         applySystemDisplayThemeToDocument(displayTheme);
@@ -255,46 +220,9 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         id: 'settings',
         icon: <Settings size={22} />,
         label: t('hud.actions.settings'),
-        content: ({ closePanel }) => (
-            <div className="space-y-4">
-                {isHomeEntryStyleRoute ? (
-                    <section className="space-y-2 border-b border-white/10 pb-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8b6a47]">
-                            {t('hud.homeStyle.title')}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {([
-                                { id: 'book', label: t('hud.homeStyle.book') },
-                                { id: 'classic', label: t('hud.homeStyle.classic') },
-                            ] as Array<{ id: HomeEntryStyle; label: string }>).map((option) => {
-                                const isActive = currentHomeEntryStyle === option.id;
-                                return (
-                                    <button
-                                        key={option.id}
-                                        type="button"
-                                        className={`rounded-[10px] border px-3 py-2.5 text-sm font-semibold transition-colors ${
-                                            isActive
-                                                ? 'border-[#b98741] bg-[linear-gradient(180deg,_rgba(247,232,192,0.96)_0%,_rgba(238,214,164,0.96)_100%)] text-[#5b391f] shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_1px_3px_rgba(91,57,31,0.10)]'
-                                                : 'border-[#d7c3a4] bg-[rgba(255,251,241,0.82)] text-[#7a5a39] hover:border-[#c8ae84] hover:bg-[rgba(255,248,235,0.94)]'
-                                        }`}
-                                        onClick={() => applyHomeEntryStyle(option.id, closePanel)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </section>
-                ) : null}
-                <Suspense fallback={null}>
-                    <LazyAudioProvider>
-                        <div>
-                            <LazyAudioControlSection isDark={isDark} />
-                        </div>
-                    </LazyAudioProvider>
-                </Suspense>
-            </div>
-        )
+        mobilePanelVariant: 'sheet',
+        content: ({ closePanel }) => <PlatformAudioSettings isDark={isDark} onClose={closePanel}/>
+
     });
 
     // 1. 夜间模式
@@ -388,13 +316,15 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
 
     return (
         <>
-            <FabMenu
-                key={`global-hud-${location.pathname}-${currentHomeEntryStyle}`}
+            {!suppressFormFab && <FabMenu
+                className="platform-global-fab"
+                bottomClearance={homeHudClearance}
+                key={`global-hud-${location.pathname}`}
                 isDark={isDark}
                 items={items}
                 position="bottom-right"
                 zIndex={GLOBAL_HUD_FAB_Z_INDEX}
-            />
+            />}
 
             {showAbout && (
                 <Suspense fallback={null}>

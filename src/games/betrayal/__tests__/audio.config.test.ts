@@ -7,6 +7,11 @@ import {
     BETRAYAL_AUDIO_CONFIG,
     BETRAYAL_BGM_HAUNT_KEY,
     BETRAYAL_BGM_PRE_HAUNT_KEY,
+    BETRAYAL_FOOTSTEP_CARPET_KEYS,
+    BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS,
+    BETRAYAL_FOOTSTEP_KEYS,
+    BETRAYAL_FOOTSTEP_SOUND_POOLS,
+    BETRAYAL_FOOTSTEP_WOOD_KEYS,
     BETRAYAL_CONFIRM_EXPLORER_KEY,
     BETRAYAL_END_TURN_KEY,
     BETRAYAL_EVENT_CHOICE_KEY,
@@ -19,7 +24,6 @@ import {
     BETRAYAL_HAUNT_KEY,
     BETRAYAL_JACK_LEARNED_KEY,
     BETRAYAL_LOOT_CORPSE_KEY,
-    BETRAYAL_MOVE_KEY,
     BETRAYAL_REROLL_KEY,
     BETRAYAL_ROOM_EFFECT_KEY,
     BETRAYAL_SCENARIO_COMPLETED_KEY,
@@ -29,6 +33,7 @@ import {
     BETRAYAL_TRADE_KEY,
     BETRAYAL_USE_HOLY_WATER_POSSESSION_KEY,
     BETRAYAL_USE_POSSESSION_KEY,
+    selectBetrayalFootstepKey,
 } from '../audio.config';
 import { createBetrayalCharacterSelectCore } from '../game';
 
@@ -45,7 +50,7 @@ const registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8')) as {
 const registryByKey = new Map(registry.entries.map((entry) => [entry.key, entry]));
 
 const configuredKeys = [
-    BETRAYAL_MOVE_KEY,
+    ...BETRAYAL_FOOTSTEP_KEYS,
     BETRAYAL_EXPLORE_KEY,
     BETRAYAL_EXPLORE_EVENT_KEY,
     BETRAYAL_EXPLORE_OMEN_KEY,
@@ -73,14 +78,27 @@ const configuredKeys = [
 ];
 
 describe('山屋惊魂音频配置', () => {
-    it('移动、探索、作祟和攻击结算映射到公共反馈音', () => {
-        expect(resolveKey({ type: 'EXPLORER_MOVED' })).toBe(BETRAYAL_MOVE_KEY);
+    it('移动脚步留给落地阶段；探索、作祟和攻击仍映射到事件反馈音', () => {
+        expect(resolveKey({ type: 'EXPLORER_MOVED' })).toBeNull();
+        expect(resolveKey({ type: 'MONSTER_MOVED' })).toBeNull();
+        expect(resolveKey({ type: 'HELPING_HANDS_TROLL_HAND_MOVED' })).toBeNull();
         expect(resolveKey({ type: 'ROOM_EXPLORED', payload: { deckKind: 'item', hauntTriggered: false } })).toBe(BETRAYAL_EXPLORE_KEY);
         expect(resolveKey({ type: 'ROOM_EXPLORED', payload: { deckKind: 'event', hauntTriggered: false } })).toBe(BETRAYAL_EXPLORE_EVENT_KEY);
         expect(resolveKey({ type: 'ROOM_EXPLORED', payload: { deckKind: 'omen', hauntTriggered: false } })).toBe(BETRAYAL_EXPLORE_OMEN_KEY);
         expect(resolveKey({ type: 'ROOM_EXPLORED', payload: { hauntTriggered: true } })).toBe(BETRAYAL_HAUNT_KEY);
         expect(resolveKey({ type: 'EVENT_CHOICE_RESOLVED', payload: { hauntTriggered: true } })).toBe(BETRAYAL_HAUNT_KEY);
         expect(resolveKey({ type: 'HAUNT_ATTACK_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
+    });
+
+    it('selects registered Kenney variants by the fixed room artwork, with a neutral hard-ground fallback', () => {
+        expect(selectBetrayalFootstepKey('grand-staircase', 'startTriple', 0)).toBe(BETRAYAL_FOOTSTEP_WOOD_KEYS[0]);
+        expect(selectBetrayalFootstepKey('grand-staircase', 'startTriple', 1)).toBe(BETRAYAL_FOOTSTEP_WOOD_KEYS[1]);
+        expect(selectBetrayalFootstepKey('hallway', 'startHallway', 0)).toBe(BETRAYAL_FOOTSTEP_CARPET_KEYS[0]);
+        expect(selectBetrayalFootstepKey('entrance-hall', 'startTriple', 1)).toBe(BETRAYAL_FOOTSTEP_CARPET_KEYS[1]);
+        expect(selectBetrayalFootstepKey('upper-landing', 'upperLanding', 0)).toBe(BETRAYAL_FOOTSTEP_WOOD_KEYS[0]);
+        expect(selectBetrayalFootstepKey('basement-landing', 'basementLanding', 0)).toBe(BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS[0]);
+        expect(selectBetrayalFootstepKey('new-room', 'unknownVisual', 0)).toBe(BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS[0]);
+        expect(BETRAYAL_FOOTSTEP_SOUND_POOLS.generic).toBe(BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS);
     });
 
     it('角色、剧本、持有物、交易、回合和驱魔事件都有反馈音', () => {
@@ -123,7 +141,7 @@ describe('山屋惊魂音频配置', () => {
         expect(resolveKey({ type: 'MUMMY_ATTACK_REWARD_RESOLVED', payload: { choice: 'damage' } })).toBe(BETRAYAL_ATTACK_KEY);
         expect(resolveKey({ type: 'MONSTER_TURN_START_RESOLVED' })).toBe(BETRAYAL_HAUNT_KEY);
         expect(resolveKey({ type: 'MONSTER_MOVEMENT_GROUP_ROLLED' })).toBe(BETRAYAL_REROLL_KEY);
-        expect(resolveKey({ type: 'MONSTER_MOVED' })).toBe(BETRAYAL_MOVE_KEY);
+        expect(resolveKey({ type: 'MONSTER_MOVED' })).toBeNull();
         expect(resolveKey({ type: 'MONSTER_ATTACK_HERO_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
     });
 
@@ -133,7 +151,7 @@ describe('山屋惊魂音频配置', () => {
         expect(resolveKey({ type: 'BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS_PLACED' })).toBe(BETRAYAL_HAUNT_KEY);
         expect(resolveKey({ type: 'BLOOD_FROM_STONE_MONSTER_TURN_ENDED' })).toBe(BETRAYAL_END_TURN_KEY);
         expect(resolveKey({ type: 'HELPING_HANDS_MONSTER_TURN_STARTED' })).toBe(BETRAYAL_HAUNT_KEY);
-        expect(resolveKey({ type: 'HELPING_HANDS_TROLL_HAND_MOVED' })).toBe(BETRAYAL_MOVE_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_TROLL_HAND_MOVED' })).toBeNull();
         expect(resolveKey({ type: 'HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
         expect(resolveKey({ type: 'HELPING_HANDS_ATTACK_REWARD_RESOLVED', payload: { choice: 'steal' } })).toBe(BETRAYAL_LOOT_CORPSE_KEY);
         expect(resolveKey({ type: 'HELPING_HANDS_ATTACK_REWARD_RESOLVED', payload: { choice: 'damage' } })).toBe(BETRAYAL_ATTACK_KEY);
@@ -165,6 +183,7 @@ describe('山屋惊魂音频配置', () => {
         const criticalSounds = BETRAYAL_AUDIO_CONFIG.criticalSounds ?? [];
         expect(new Set(criticalSounds).size).toBe(criticalSounds.length);
         expect(criticalSounds).toContain(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
+        expect(criticalSounds).toEqual(expect.arrayContaining(BETRAYAL_FOOTSTEP_KEYS));
         expect(BETRAYAL_AUDIO_CONFIG.warmSounds).toEqual(expect.arrayContaining([
             BETRAYAL_USE_HOLY_WATER_POSSESSION_KEY,
         ]));

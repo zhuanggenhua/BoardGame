@@ -27,6 +27,30 @@ afterEach(() => {
     vi.unstubAllEnvs();
 });
 
+    it('仅指定游戏使用构建内素材，原生覆盖优先且清除后恢复构建默认', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        vi.stubEnv('VITE_LOCAL_ASSET_GAMES', ' fate-domination, fate-domination, ');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/fate-domination/servants/compressed/servant-saber.webp': 'abc123',
+        });
+        const path = 'fate-domination/servants/servant-saber.png';
+        expect(getLocalizedImageUrls(path, 'zh-CN').primary.webp)
+            .toBe('/assets/i18n/zh-CN/fate-domination/servants/compressed/servant-saber.webp?v=abc123');
+        expect(getLocalizedImageCandidateUrls(path, 'zh-CN')[0]).toContain('/assets/i18n/zh-CN/fate-domination/');
+        expect(getLocalizedImageUrls(path, 'zh-CN').fallback.webp).toContain('/assets/i18n/en/fate-domination/');
+        expect(getLocalizedImageUrls('betrayal/rooms/hall.png', 'zh-CN').primary.webp)
+            .toContain('https://assets.easyboardgame.top/official/');
+        expect(getOptimizedImageUrls('common/images/example.png').webp)
+            .toContain('https://assets.easyboardgame.top/official/');
+        setGameAssetBaseOverride('fate-domination', '/installed/assets');
+        expect(getLocalizedImageUrls(path, 'zh-CN').primary.webp).toContain('/installed/assets/');
+        clearGameAssetBaseOverrides();
+        expect(getLocalizedImageUrls(path, 'zh-CN').primary.webp).toContain('/assets/i18n/');
+        vi.stubEnv('VITE_LOCAL_ASSET_GAMES', '');
+        expect(getLocalizedImageUrls(path, 'zh-CN').primary.webp)
+            .toContain('https://assets.easyboardgame.top/official/');
+    });
+
     it('SVG 资源保持原路径', () => {
         const urls = getOptimizedImageUrls('dicethrone/thumbnails/fengm.svg');
         expect(urls).toEqual({

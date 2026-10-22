@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join, parse, relative, sep } from 'node:path';
 import type { TestInfo } from '@playwright/test';
 
-const EVIDENCE_GAME_IDS = new Set(['betrayal', 'smashup', 'dicethrone', 'summonerwars', 'qidahen', 'tictactoe', 'cardia', 'the-gang', 'mage-wars', '_shared']);
+const EVIDENCE_GAME_IDS = new Set(['betrayal', 'smashup', 'dicethrone', 'summonerwars', 'qidahen', 'tictactoe', 'cardia', 'the-gang', 'mage-wars', 'fate-domination', '_shared']);
 export const EVIDENCE_SCREENSHOT_EXTENSION = '.jpg';
 export const EVIDENCE_SCREENSHOT_TYPE = 'jpeg';
 export const EVIDENCE_SCREENSHOT_QUALITY = 90;
@@ -29,13 +29,21 @@ export interface EvidenceScreenshotIndexEntry {
     path: string;
     chainId: string;
     chainStep: number | string;
-    stage: '前态' | '中态' | '后态';
+    stage: '前态' | '中态' | '后态' | '独特界面态';
+    uiStateId?: string;
+    uiChange?: 'layout' | 'panel' | 'interaction-mode' | 'target-highlight' | 'error' | 'empty' | 'animation-phase';
+    uiChangeReason?: string;
+    behaviorStepId?: string;
+    sourceRevision?: string;
+    requirements?: string[];
     description: string;
 }
 
 export interface EvidenceScreenshotIndexOptions {
     gameId: string;
     evidenceCategory: 'golden' | 'tutorial' | 'independent';
+    /** New captures use distinct-ui-state; omitted only for historical callers. */
+    capturePolicy?: 'distinct-ui-state' | 'legacy-three-stage';
     media: EvidenceScreenshotIndexEntry[];
 }
 
@@ -222,6 +230,8 @@ export async function promoteEvidenceScreenshotRun(
             version: 1,
             gameId: indexOptions.gameId,
             evidenceCategory: indexOptions.evidenceCategory,
+            acceptanceMode: 'behavioral-chain',
+            capturePolicy: indexOptions.capturePolicy ?? 'legacy-three-stage',
             media: indexOptions.media.map((entry) => ({
                 ...entry,
                 chainStep: String(entry.chainStep).padStart(2, '0'),

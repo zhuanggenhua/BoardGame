@@ -7,7 +7,8 @@ import {
     Rectangle,
     Sprite,
     Texture,
-    type FederatedPointerEvent,
+    isWebGLSupported,
+    isWebGPUSupported,
 } from 'pixi.js';
 import type {
     MapInteractionIntent,
@@ -15,19 +16,39 @@ import type {
     MapSceneRegion,
     MapSceneRegionHitTest,
     MapSceneResourceStatus,
+    MapSceneSprite,
+    MapSceneSpriteMotionPhaseCallback,
+    MapSceneSpriteMotionFrameCallback,
     MapViewportState,
 } from './types';
+import { PixiSceneSpriteLayer } from './PixiSceneSpriteLayer';
+import { useCameraMotionPreference } from './useCameraMotionPreference';
+import { resolveWheelZoom } from './wheelZoomModel';
+import { PixiSceneViewport } from './PixiSceneViewport';
 
 extend({ Container, Graphics, Sprite });
 
 export interface PixiMapSceneHostProps {
-    backgroundUrl: string;
+    backgroundUrl?: string;
+    sprites?: readonly MapSceneSprite[];
+    /** Non-interactive game effects in the same world transform and ticker. */
+    sceneForeground?: React.ReactNode;
+    onSpriteMotionComplete?: (spriteId: string, motionId: string) => void;
+    onSpriteMotionPhase?: MapSceneSpriteMotionPhaseCallback;
+    onSpriteMotionFrame?: MapSceneSpriteMotionFrameCallback;
+    /** Optional shared input surface while accessible DOM scene objects are present. */
+    inputElement?: HTMLElement | null;
+    /** Imperative projection for DOM accessibility/feedback overlays; not a second camera. */
+    onDisplayViewportChange?: (viewport: MapViewportState) => void;
+    /** Reports a real drag, pinch, or wheel gesture so the game can suspend automatic camera ownership. */
+    onManualCameraInteraction?: () => void;
     mapWidth: number;
     mapHeight: number;
     viewport: MapViewportState;
     onViewportChange?: (viewport: MapViewportState) => void;
     minimumZoom?: number;
     maximumZoom?: number;
+    /** Zoom-in multiplier per 120px wheel notch; omitted preserves existing sensitivity. */
     wheelZoomFactor?: number;
     inertiaEnabled?: boolean;
     origin?: MapScenePoint;
@@ -42,6 +63,7 @@ export interface PixiMapSceneHostProps {
     regionSelectionEnabled?: boolean;
     canvasTestId?: string;
     resourceErrorLabel?: string;
+    rendererUnavailableLabel?: string;
     className?: string;
     ariaLabel?: string;
 }
@@ -51,8 +73,15 @@ const CAMERA_DAMPING = 6.2;
 const INERTIA_DAMPING = 11;
 const INERTIA_MIN_SPEED = 24;
 const INERTIA_VELOCITY_SMOOTHING = 0.65;
-const WHEEL_SENSITIVITY = 0.0012;
 const PINCH_MIN_DISTANCE = 24;
+const EMPTY_REGIONS: readonly MapSceneRegion[] = [];
+const EMPTY_SPRITES: readonly MapSceneSprite[] = [];
+const DEFAULT_ORIGIN: MapScenePoint = { x: 0, y: 0 };
+
+type CameraPointerEvent = {
+    pointerId: number; pointerType: string; button: number;
+    global: CameraPoint; nativeEvent: object;
+};
 
 type CameraPose = MapViewportState;
 type CameraPoint = { x: number; y: number };
@@ -128,12 +157,22 @@ const poseForScreenAnchor = (
 
 const CameraWorld: React.FC<{
     texture: Texture;
+    sprites: readonly MapSceneSprite[];
+    sceneForeground?: React.ReactNode;
+    onSpriteMotionComplete?: (spriteId: string, motionId: string) => void;
+    onSpriteMotionPhase?: MapSceneSpriteMotionPhaseCallback;
+    onSpriteMotionFrame?: MapSceneSpriteMotionFrameCallback;
+    inputElement?: HTMLElement | null;
+    onSpriteResourceStateChange: (state: MapSceneResourceStatus) => void;
+    onDisplayViewportChange?: (viewport: MapViewportState) => void;
+    onManualCameraInteraction?: () => void;
     mapWidth: number;
     mapHeight: number;
     viewport: MapViewportState;
     onViewportChange?: (viewport: MapViewportState) => void;
     minimumZoom: number;
     maximumZoom: number;
+    wheelZoomFactor?: number;
     inertiaEnabled: boolean;
     origin: MapScenePoint;
     baseScale: number;
@@ -146,12 +185,22 @@ const CameraWorld: React.FC<{
     regionSelectionEnabled: boolean;
 }> = ({
     texture,
+    sprites,
+    sceneForeground,
+    onSpriteMotionComplete,
+    onSpriteMotionPhase,
+    onSpriteMotionFrame,
+    inputElement,
+    onSpriteResourceStateChange,
+    onDisplayViewportChange,
+    onManualCameraInteraction,
     mapWidth,
     mapHeight,
     viewport,
     onViewportChange,
     minimumZoom,
     maximumZoom,
+    wheelZoomFactor,
     inertiaEnabled,
     origin,
     baseScale,
@@ -188,10 +237,21 @@ const CameraWorld: React.FC<{
     const emitFrameRef = React.useRef<number | null>(null);
     const lastHoveredRegionIdRef = React.useRef<string | null>(null);
     const [isDragging, setIsDragging] = React.useState(false);
-    const prefersReducedMotion = typeof window !== 'undefined'
-        && typeof window.matchMedia === 'function'
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion = useCameraMotionPreference({
+        activePointersRef,
+        velocityRef,
+        inertiaActiveRef,
+        cameraActiveRef,
+    });
 
+    const displayCallbackRef = React.useRef(onDisplayViewportChange);
+    React.useLayoutEffect(() => { displayCallbackRef.current = onDisplayViewportChange; }, [onDisplayViewportChange]);
+    const manualCameraInteractionRef = React.useRef(onManualCameraInteraction);
+    React.useLayoutEffect(() => { manualCameraInteractionRef.current = onManualCameraInteraction; }, [onManualCameraInteraction]);
+    const notifyManualCameraInteraction = React.useCallback(() => {
+        manualCameraInteractionRef.current?.();
+    }, []);
+    const lastDisplayedPoseRef = React.useRef<CameraPose | null>(null);
     const onInteractionRef = React.useRef(onInteraction);
     const onViewportChangeRef = React.useRef(onViewportChange);
     onInteractionRef.current = onInteraction;
@@ -293,10 +353,10 @@ const CameraWorld: React.FC<{
         setIsDragging(false);
     }, [baseScale, origin]);
 
-    const handlePointerDown = React.useCallback((event: FederatedPointerEvent) => {
+    const handlePointerDown = React.useCallback((event: CameraPointerEvent) => {
         if (!interactive) return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
-        const nativeTarget = event.nativeEvent.currentTarget;
+        const nativeTarget = 'currentTarget' in event.nativeEvent ? event.nativeEvent.currentTarget : null;
         if (nativeTarget && typeof (nativeTarget as HTMLCanvasElement).setPointerCapture === 'function') {
             (nativeTarget as HTMLCanvasElement).setPointerCapture(event.pointerId);
         }
@@ -309,7 +369,7 @@ const CameraWorld: React.FC<{
         beginDrag(event.pointerId, point);
     }, [beginDrag, beginPinch, interactive]);
 
-    const handleGlobalPointerMove = React.useCallback((event: FederatedPointerEvent) => {
+    const handleGlobalPointerMove = React.useCallback((event: CameraPointerEvent) => {
         if (!interactive) return;
         const point = { x: event.global.x, y: event.global.y };
         if (activePointersRef.current.has(event.pointerId)) {
@@ -333,6 +393,7 @@ const CameraWorld: React.FC<{
                 minimumZoom,
                 maximumZoom,
             );
+            notifyManualCameraInteraction();
             setDesiredPose(poseForScreenAnchor(
                 center,
                 pinch.anchorMapPoint,
@@ -374,13 +435,14 @@ const CameraWorld: React.FC<{
         dragStartedRef.current = true;
         suppressTapRef.current = true;
         cameraActiveRef.current = true;
+        notifyManualCameraInteraction();
         setIsDragging(true);
         desiredPoseRef.current = nextPose;
         emitViewport(nextPose);
         lastPointerRef.current = { point, timestamp: now };
-    }, [baseScale, emitViewport, interactive, maximumZoom, minimumZoom, origin, setDesiredPose, updateHoveredRegion]);
+    }, [baseScale, emitViewport, interactive, maximumZoom, minimumZoom, notifyManualCameraInteraction, origin, setDesiredPose, updateHoveredRegion]);
 
-    const handlePointerUp = React.useCallback((event: FederatedPointerEvent) => {
+    const handlePointerUp = React.useCallback((event: CameraPointerEvent) => {
         if (!interactive) return;
         activePointersRef.current.delete(event.pointerId);
 
@@ -389,6 +451,8 @@ const CameraWorld: React.FC<{
             const remaining = Array.from(activePointersRef.current.entries())[0];
             if (remaining) {
                 beginDrag(remaining[0], remaining[1]);
+                // Continuing a pinch is not a new tap, even if the remaining finger stays still.
+                suppressTapRef.current = true;
             } else {
                 dragPointerIdRef.current = null;
                 cameraActiveRef.current = false;
@@ -415,7 +479,7 @@ const CameraWorld: React.FC<{
         dragStartedRef.current = false;
     }, [beginDrag, inertiaEnabled, interactive, prefersReducedMotion]);
 
-    const handlePointerCancel = React.useCallback((event: FederatedPointerEvent) => {
+    const handlePointerCancel = React.useCallback((event: CameraPointerEvent) => {
         activePointersRef.current.delete(event.pointerId);
         pinchRef.current = null;
         dragPointerIdRef.current = null;
@@ -425,7 +489,7 @@ const CameraWorld: React.FC<{
         setIsDragging(false);
     }, []);
 
-    const handlePointerTap = React.useCallback((event: FederatedPointerEvent) => {
+    const handlePointerTap = React.useCallback((event: CameraPointerEvent) => {
         if (!interactive) return;
         if (!regionSelectionEnabled) {
             suppressTapRef.current = false;
@@ -454,16 +518,13 @@ const CameraWorld: React.FC<{
         pointer: CameraPoint,
     ) => {
         const pageHeight = Math.max(1, isInitialised ? app.screen.height : 1);
-        let delta = deltaY;
-        if (deltaMode === 1) delta *= 16;
-        if (deltaMode === 2) delta *= pageHeight;
         const currentPose = desiredPoseRef.current;
-        const nextZoom = clamp(
-            currentPose.zoom * Math.exp(-delta * WHEEL_SENSITIVITY),
-            minimumZoom,
-            maximumZoom,
-        );
+        const nextZoom = resolveWheelZoom({
+            currentZoom: currentPose.zoom,
+            deltaY, deltaMode, pageHeight, minimumZoom, maximumZoom, wheelZoomFactor,
+        });
         if (Math.abs(nextZoom - currentPose.zoom) < 0.0001) return;
+        notifyManualCameraInteraction();
         const anchorMapPoint = mapPointAtScreen(pointer, currentPose, origin, baseScale);
         setDesiredPose(poseForScreenAnchor(
             pointer,
@@ -472,11 +533,11 @@ const CameraWorld: React.FC<{
             origin,
             baseScale,
         ));
-    }, [app, baseScale, isInitialised, maximumZoom, minimumZoom, origin, setDesiredPose]);
+    }, [app, baseScale, isInitialised, maximumZoom, minimumZoom, notifyManualCameraInteraction, origin, setDesiredPose, wheelZoomFactor]);
 
     const handleNativeWheel = React.useCallback((event: WheelEvent) => {
         if (!interactive || !isInitialised) return;
-        if (!app.canvas.contains(event.target as Node)) return;
+        if (!(inputElement ?? app.canvas).contains(event.target as Node)) return;
         event.stopPropagation();
         event.preventDefault();
         const rect = app.canvas.getBoundingClientRect();
@@ -485,13 +546,73 @@ const CameraWorld: React.FC<{
             y: (event.clientY - rect.top) * app.screen.height / Math.max(1, rect.height),
         };
         applyWheel(event.deltaY, event.deltaMode, screen);
-    }, [app, applyWheel, interactive, isInitialised]);
+    }, [app, applyWheel, inputElement, interactive, isInitialised]);
 
     React.useEffect(() => {
         if (!isInitialised) return undefined;
         window.addEventListener('wheel', handleNativeWheel, { passive: false, capture: true });
         return () => window.removeEventListener('wheel', handleNativeWheel, true);
     }, [app, handleNativeWheel, isInitialised]);
+
+    React.useEffect(() => {
+        if (!inputElement || !isInitialised || !interactive) return;
+        const pointer = (event: PointerEvent): CameraPointerEvent => {
+            const rect = app.canvas.getBoundingClientRect();
+            return {
+                pointerId: event.pointerId, pointerType: event.pointerType, button: event.button,
+                global: {
+                    x: (event.clientX - rect.left) * app.screen.width / Math.max(1, rect.width),
+                    y: (event.clientY - rect.top) * app.screen.height / Math.max(1, rect.height),
+                },
+                // Preserve ordinary button taps; capture the common surface only after drag begins.
+                nativeEvent: { currentTarget: null },
+            };
+        };
+        const down = (event: PointerEvent) => handlePointerDown(pointer(event));
+        const move = (event: PointerEvent) => {
+            if (!activePointersRef.current.has(event.pointerId) && !inputElement.contains(event.target as Node)) return;
+            handleGlobalPointerMove(pointer(event));
+            if (activePointersRef.current.has(event.pointerId) && (dragStartedRef.current || pinchRef.current)) {
+                inputElement.setPointerCapture(event.pointerId);
+            }
+        };
+        const up = (event: PointerEvent) => {
+            if (!activePointersRef.current.has(event.pointerId)) return;
+            handlePointerUp(pointer(event));
+            if (inputElement.hasPointerCapture(event.pointerId)) inputElement.releasePointerCapture(event.pointerId);
+        };
+        const cancel = (event: PointerEvent) => {
+            if (!activePointersRef.current.has(event.pointerId)) return;
+            handlePointerCancel(pointer(event));
+            suppressTapRef.current = true;
+        };
+        const click = (event: MouseEvent) => {
+            // Keyboard/assistive activation has no pointer click count and remains available after cancellation.
+            if (!suppressTapRef.current || event.detail === 0) return;
+            if (activePointersRef.current.size === 0) suppressTapRef.current = false;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        };
+        inputElement.addEventListener('pointerdown', down, true);
+        window.addEventListener('pointermove', move, true);
+        window.addEventListener('pointerup', up, true);
+        window.addEventListener('pointercancel', cancel, true);
+        inputElement.addEventListener('click', click, true);
+        inputElement.addEventListener('pointerleave', handlePointerOut);
+        return () => {
+            inputElement.removeEventListener('pointerdown', down, true);
+            window.removeEventListener('pointermove', move, true);
+            window.removeEventListener('pointerup', up, true);
+            window.removeEventListener('pointercancel', cancel, true);
+            inputElement.removeEventListener('click', click, true);
+            inputElement.removeEventListener('pointerleave', handlePointerOut);
+            activePointersRef.current.clear();
+            pinchRef.current = null;
+            dragPointerIdRef.current = null;
+            inertiaActiveRef.current = false;
+            velocityRef.current = { x: 0, y: 0 };
+        };
+    }, [app, handleGlobalPointerMove, handlePointerCancel, handlePointerDown, handlePointerUp, handlePointerOut, inputElement, interactive, isInitialised]);
 
     useTick((ticker) => {
         if (!isInitialised) return;
@@ -505,6 +626,7 @@ const CameraWorld: React.FC<{
 
         if (
             inertiaActiveRef.current
+            && !prefersReducedMotion
             && dragPointerIdRef.current === null
             && pinchRef.current === null
         ) {
@@ -522,7 +644,7 @@ const CameraWorld: React.FC<{
         }
 
         const renderedPose = renderedPoseRef.current;
-        const alpha = prefersReducedMotion
+        const alpha = prefersReducedMotion || activePointersRef.current.size > 0 || inertiaActiveRef.current
             ? 1
             : 1 - Math.exp(-CAMERA_DAMPING * dt);
         renderedPose.panX += (desiredPose.panX - renderedPose.panX) * alpha;
@@ -535,13 +657,17 @@ const CameraWorld: React.FC<{
         }
         world.position.set(origin.x + renderedPose.panX, origin.y + renderedPose.panY);
         world.scale.set(baseScale * renderedPose.zoom);
+        if (!lastDisplayedPoseRef.current || poseDistance(lastDisplayedPoseRef.current, renderedPose) > 0) {
+            lastDisplayedPoseRef.current = copyPose(renderedPose);
+            displayCallbackRef.current?.(copyPose(renderedPose));
+        }
     });
 
     return (
         <>
             <pixiContainer
                 label="camera-input"
-                eventMode={interactive ? 'static' : 'none'}
+                eventMode={interactive && !inputElement ? 'static' : 'none'}
                 hitArea={hitAreaRef.current}
                 cursor={interactive ? (isDragging ? 'grabbing' : 'grab') : 'default'}
                 onPointerDown={handlePointerDown}
@@ -554,6 +680,14 @@ const CameraWorld: React.FC<{
             />
             <pixiContainer ref={worldRef} label="map-world" eventMode="none">
                 <pixiSprite texture={texture} width={mapWidth} height={mapHeight} eventMode="none" />
+                <PixiSceneSpriteLayer
+                    sprites={sprites}
+                    onResourceStateChange={onSpriteResourceStateChange}
+                    onMotionComplete={onSpriteMotionComplete}
+                    onMotionPhase={onSpriteMotionPhase}
+                    onMotionFrame={onSpriteMotionFrame}
+                />
+                {sceneForeground}
                 {regions.map((region) => (
                     <RegionShape
                         key={region.id}
@@ -571,7 +705,7 @@ const RegionShape: React.FC<{
     region: MapSceneRegion;
     selected: boolean;
     hovered: boolean;
-}> = ({ region, selected, hovered }) => {
+}> = ({ region, selected, hovered}) => {
     const points = React.useMemo(
         () => region.polygon.flatMap(({ x, y }) => [x, y]),
         [region.polygon],
@@ -594,18 +728,26 @@ const RegionShape: React.FC<{
 };
 
 export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
-    backgroundUrl,
+    backgroundUrl = '',
+    sprites = EMPTY_SPRITES,
+    sceneForeground,
+    onSpriteMotionComplete,
+    onSpriteMotionPhase,
+    onSpriteMotionFrame,
+    inputElement,
+    onDisplayViewportChange,
+    onManualCameraInteraction,
     mapWidth,
     mapHeight,
     viewport,
     onViewportChange,
     minimumZoom = 0.5,
     maximumZoom = 5,
-    wheelZoomFactor: _wheelZoomFactor = 1.14,
+    wheelZoomFactor,
     inertiaEnabled = true,
-    origin = { x: 0, y: 0 },
+    origin = DEFAULT_ORIGIN,
     baseScale = 1,
-    regions = [],
+    regions = EMPTY_REGIONS,
     selectedRegionId = null,
     hoveredRegionId = null,
     hitTestRegionAtPoint,
@@ -615,6 +757,7 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
     regionSelectionEnabled = true,
     canvasTestId = 'pixi-map-scene-canvas',
     resourceErrorLabel = '地图资源加载失败',
+    rendererUnavailableLabel = '当前浏览器无法显示地图，请使用支持 WebGL 或 WebGPU 的浏览器。',
     className = '',
     ariaLabel = 'Pixi 地图场景',
 }) => {
@@ -626,14 +769,40 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
         resourceUrl: backgroundUrl,
     });
 
+    const [spriteResourceState, setSpriteResourceState] = React.useState<MapSceneResourceStatus>({ status: 'loading', resourceUrl: '' });
+    const [rendererSupport, setRendererSupport] = React.useState<MapSceneResourceStatus>({ status: 'loading', resourceUrl: '' });
+    React.useEffect(() => {
+        let cancelled = false;
+        const checkSupport = async () => {
+            try {
+                const supported = isWebGLSupported() || await isWebGPUSupported();
+                if (!supported) throw new Error('No supported WebGL or WebGPU map renderer');
+                if (!cancelled) setRendererSupport({ status: 'ready', resourceUrl: '' });
+            } catch (error: unknown) {
+                if (!cancelled) setRendererSupport({ status: 'error', resourceUrl: '', error });
+            }
+        };
+        void checkSupport();
+        return () => { cancelled = true; };
+    }, []);
+    const combinedResourceState = rendererSupport.status !== 'ready' ? rendererSupport
+        : resourceState.status === 'error' || resourceState.status === 'loading'
+        ? resourceState : spriteResourceState;
+    const inputReady = combinedResourceState.status === 'ready';
     onResourceStateChangeRef.current = onResourceStateChange;
+    React.useEffect(() => {
+        onResourceStateChangeRef.current?.(combinedResourceState);
+    }, [combinedResourceState]);
 
     React.useEffect(() => {
         let cancelled = false;
         const loadingState: MapSceneResourceStatus = { status: 'loading', resourceUrl: backgroundUrl };
         setTexture(Texture.EMPTY);
         setResourceState(loadingState);
-        onResourceStateChangeRef.current?.(loadingState);
+        if (!backgroundUrl) {
+            setResourceState({ status: 'ready', resourceUrl: '' });
+            return () => { cancelled = true; };
+        }
 
         Assets.load(backgroundUrl)
             .then((nextTexture) => {
@@ -641,13 +810,13 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
                 setTexture(nextTexture);
                 const readyState: MapSceneResourceStatus = { status: 'ready', resourceUrl: backgroundUrl };
                 setResourceState(readyState);
-                onResourceStateChangeRef.current?.(readyState);
+
             })
             .catch((error: unknown) => {
                 if (cancelled) return;
                 const errorState: MapSceneResourceStatus = { status: 'error', resourceUrl: backgroundUrl, error };
                 setResourceState(errorState);
-                onResourceStateChangeRef.current?.(errorState);
+
             });
 
         return () => {
@@ -660,7 +829,7 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
         ?? resolveRegionFromPolygons(point, regions)
     ), [hitTestRegionAtPoint, regions]);
 
-    const handleInit = React.useCallback((app: { canvas?: unknown }) => {
+    const handleInit = React.useCallback((app: { canvas?: unknown}) => {
         const canvas = app.canvas;
         if (canvas && typeof (canvas as { setAttribute?: unknown }).setAttribute === 'function') {
             (canvas as HTMLCanvasElement).setAttribute('data-testid', canvasTestId);
@@ -674,25 +843,35 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
             className={`absolute inset-0 overflow-hidden ${className}`}
             data-testid={`${canvasTestId}-host`}
             data-map-renderer="pixi"
-            data-map-resource-status={resourceState.status}
-            style={{ pointerEvents: interactive ? 'auto' : 'none' }}
+            data-map-resource-status={combinedResourceState.status}
+            style={{ pointerEvents: interactive && inputReady ? 'auto' : 'none' }}
         >
-            <Application
+            {rendererSupport.status === 'ready' && <Application
                 autoStart
-                resizeTo={hostRef}
                 backgroundAlpha={0}
                 antialias
                 eventFeatures={{ wheel: false }}
                 onInit={handleInit}
             >
+                <PixiSceneViewport hostRef={hostRef}/>
                 <CameraWorld
                     texture={texture}
+                    sprites={sprites}
+                    sceneForeground={sceneForeground}
+                    onSpriteMotionComplete={onSpriteMotionComplete}
+                    onSpriteMotionPhase={onSpriteMotionPhase}
+                    onSpriteMotionFrame={onSpriteMotionFrame}
+                    inputElement={inputElement}
+                    onSpriteResourceStateChange={setSpriteResourceState}
+                    onDisplayViewportChange={onDisplayViewportChange}
+                    onManualCameraInteraction={onManualCameraInteraction}
                     mapWidth={mapWidth}
                     mapHeight={mapHeight}
                     viewport={viewport}
                     onViewportChange={onViewportChange}
                     minimumZoom={minimumZoom}
                     maximumZoom={maximumZoom}
+                    wheelZoomFactor={wheelZoomFactor}
                     inertiaEnabled={inertiaEnabled}
                     origin={origin}
                     baseScale={baseScale}
@@ -701,16 +880,17 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
                     hoveredRegionId={hoveredRegionId}
                     resolveRegionId={resolveRegionId}
                      onInteraction={onInteraction}
-                     interactive={interactive}
+                     interactive={interactive && inputReady}
                      regionSelectionEnabled={regionSelectionEnabled}
                  />
-            </Application>
-            {resourceState.status === 'error' ? (
+            </Application>}
+            {combinedResourceState.status === 'error' ? (
                 <div
+                    role="alert"
                     data-testid={`${canvasTestId}-resource-error`}
                     className="pointer-events-none absolute inset-0 grid place-items-center bg-[rgba(32,18,7,0.72)] px-6 text-center text-sm font-bold text-[#fff4c9]"
                 >
-                    {resourceErrorLabel}
+                    {rendererSupport.status === 'error' ? rendererUnavailableLabel : resourceErrorLabel}
                 </div>
             ) : null}
         </div>

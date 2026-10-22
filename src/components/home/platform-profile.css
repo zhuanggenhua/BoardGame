@@ -1,0 +1,51 @@
+.platform-profile-backdrop { position: relative; min-height: calc(var(--runtime-viewport-height, 100vh) - 64px); padding: 28px 0 32px; background: #111; isolation: isolate; }
+.platform-profile-background { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.platform-profile-background > *, .platform-profile-background img { width: 100%; height: 100%; object-fit: cover; }
+.platform-profile { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 280px; grid-template-areas: 'identity stats' 'feed stats'; column-gap: 24px; row-gap: 20px; align-content: start; width: min(1280px, calc(100% - 360px)); min-width: 0; margin: 0 auto; padding: 24px 24px 28px; background: #fff; border: 4px solid #000; box-shadow: 12px 12px #000; }
+.platform-profile-identity { grid-area: identity; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; min-width: 0; }
+.platform-profile-avatar { display: grid; place-items: center; width: 120px; height: 120px; border: 4px solid #000; background: #d5ff00; font-size: 48px; font-weight: 800; overflow: hidden; box-shadow: 8px 8px #000; }
+.platform-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.platform-profile h1 { font-size: 32px; font-weight: 800; overflow-wrap: anywhere; }
+.platform-profile h2 { font-size: 24px; font-weight: 800; margin-bottom: 20px; border-bottom: 4px solid #000; padding-bottom: 8px; }
+.platform-profile-identity form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; min-width: 0; }
+.platform-profile-identity label { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }
+.platform-profile-identity input { min-height: 44px; padding: 8px; width: 100%; max-width: 100%; border: 2px solid #000; background: #fff; }
+.platform-profile button, .platform-profile-login button { min-height: 44px; border: 2px solid #000; padding: 8px 16px; font-weight: 700; background: #fff; cursor: pointer; }
+.platform-profile-feed { grid-area: feed; min-width: 0; }
+.platform-profile-game { width: 100%; display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: center; gap: 16px; margin-bottom: 12px; text-align: left; }
+.platform-profile-game-art { width: 160px; aspect-ratio: 231 / 87; flex-shrink: 0; overflow: hidden; }
+.platform-profile-game-art > *, .platform-profile-game-art img { width: 100%; height: 100%; object-fit: cover; }
+.platform-profile-game-info { min-width: 0; }
+.platform-profile-game-info > strong { display: block; overflow-wrap: anywhere; }
+.platform-profile-game-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 8px; color: #555; font-size: 12px; }
+.platform-profile-game small { font-size: inherit; white-space: nowrap; }
+.platform-profile-game time { font-size: inherit; white-space: nowrap; }
+.platform-profile-stats { grid-area: stats; padding-left: 24px; border-left: 3px solid #000; }
+.platform-profile-stats dl > div { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #aaa; }
+.platform-profile-stats dd { font-weight: 800; }
+.platform-profile-login { padding: 32px; }
+@media (max-width: 1023px) {
+    .platform-profile-backdrop { padding: 100px 0 0; background: #fff; }
+    .platform-profile-background { bottom: auto; height: 120px; }
+    .platform-profile-background img { object-position: center 30%; }
+    .platform-profile { display: flex; flex-direction: column; width: 100%; padding: 16px 16px 100px; margin: 0; border: 0; box-shadow: none; gap: 16px; }
+    .platform-profile-avatar { width: 64px; height: 64px; font-size: 28px; box-shadow: 4px 4px #000; }
+    .platform-profile h1 { font-size: 24px; }
+    .platform-profile h2 { font-size: 18px; }
+    .platform-profile-stats { order: 1; padding: 0; border-left: 0; border-bottom: 0; }
+    .platform-profile-stats > button { margin-bottom: 12px; }
+    .platform-profile-stats dl { display: flex; gap: 16px; }
+    .platform-profile-stats dl > div { flex: 1; flex-direction: column; gap: 6px; border: 0; }
+    .platform-profile-feed { order: 2; }
+    .platform-profile-game { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; padding: 10px; }
+    .platform-profile-game-art { width: 72px; aspect-ratio: 1; }
+    .platform-profile-game-meta { gap: 4px 8px; font-size: 11px; }
+}
+
+@media (max-width:1023px) {
+ .platform-profile-identity:has(form) { display:grid; grid-template-columns:64px minmax(0,1fr); align-items:start; }
+ .platform-profile-identity form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; gap:12px 8px; }
+ .platform-profile-identity form label { grid-column:1 / -1; width:100%; }
+ .platform-profile-identity form input[type="file"] { font-size:12px; }
+ .platform-profile-identity form button { padding-inline:8px; }
+}

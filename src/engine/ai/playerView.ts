@@ -14,6 +14,9 @@ export function applyPlayerViewToState(
     let viewCore = state.core;
     let viewSys: unknown = state.sys;
 
+    if (isSpectator && engineConfig.domain.spectatorView) {
+        viewCore = { ...(state.core as Record<string, unknown>), ...engineConfig.domain.spectatorView(state.core) };
+    }
     if (!isSpectator && engineConfig.domain.playerView) {
         const partial = engineConfig.domain.playerView(state.core, effectivePlayerId);
         viewCore = partial !== undefined

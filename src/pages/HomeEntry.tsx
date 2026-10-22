@@ -1,76 +1,27 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Home } from './Home';
-import {
-    HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
-    HOME_ENTRY_STYLE_VERSION,
-    resolveHomeEntryStyle,
-    subscribeHomeEntryStyleChange,
-} from '../lib/homeV2Routing';
+import { HOME_ENTRY_STYLE_QUERY_VERSION_KEY } from '../lib/homeV2Routing';
 
-const LazyHomeV2 = React.lazy(() => import('./HomeV2').then((module) => ({ default: module.HomeV2 })));
-
+/** Every existing home link now reaches the same production platform. */
 export const HomeEntry = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [styleRevision, setStyleRevision] = React.useState(0);
-
     React.useEffect(() => {
-        return subscribeHomeEntryStyleChange(() => {
-            setStyleRevision((value) => value + 1);
-        });
-    }, []);
-
-    void styleRevision;
-    const homeEntryStyle = resolveHomeEntryStyle(searchParams);
-    const currentQueryStyle = searchParams.get('homeStyle');
-
-    React.useEffect(() => {
-        if (typeof document === 'undefined') {
-            return undefined;
-        }
-
-        document.documentElement.dataset.homeEntryStyle = homeEntryStyle;
-        document.body.dataset.homeEntryStyle = homeEntryStyle;
-
+        document.documentElement.dataset.homeEntryStyle = 'platform';
+        document.body.dataset.homeEntryStyle = 'platform';
         return () => {
             delete document.documentElement.dataset.homeEntryStyle;
             delete document.body.dataset.homeEntryStyle;
         };
-    }, [homeEntryStyle]);
-
+    }, []);
     React.useEffect(() => {
-        if (currentQueryStyle === homeEntryStyle) {
-            return;
-        }
-
-        const nextSearchParams = new URLSearchParams(searchParams);
-        nextSearchParams.set('homeStyle', homeEntryStyle);
-        nextSearchParams.delete('homeV2Draft');
-        if (homeEntryStyle === 'book') {
-            nextSearchParams.set(HOME_ENTRY_STYLE_QUERY_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
-        } else {
-            nextSearchParams.delete(HOME_ENTRY_STYLE_QUERY_VERSION_KEY);
-        }
-
-        navigate(
-            {
-                pathname: '/',
-                search: `?${nextSearchParams.toString()}`,
-            },
-            { replace: true },
-        );
-    }, [currentQueryStyle, homeEntryStyle, navigate, searchParams]);
-
-    if (homeEntryStyle === 'book') {
-        return (
-            <React.Suspense fallback={null}>
-                <LazyHomeV2 />
-            </React.Suspense>
-        );
-    }
-
+        const obsoleteKeys = ['homeStyle', 'homeV2Draft', HOME_ENTRY_STYLE_QUERY_VERSION_KEY];
+        if (!obsoleteKeys.some(key => searchParams.has(key))) return;
+        const next = new URLSearchParams(searchParams);
+        for (const key of obsoleteKeys) next.delete(key);
+        navigate({ pathname: '/', search: next.size ? `?${next}` : '' }, { replace: true });
+    }, [navigate, searchParams]);
     return <Home />;
 };
-
 export default HomeEntry;

@@ -255,9 +255,24 @@ async function bootstrap() {
     const distPath = join(process.cwd(), 'dist');
     const uploadsPath = join(process.cwd(), 'uploads');
     const publicAssetsPath = join(process.cwd(), 'public/assets');
+    const localUgcPath = process.env.UGC_LOCAL_PATH?.trim();
+    const rawUgcPublicUrlBase = (process.env.UGC_PUBLIC_URL_BASE || '/assets').trim().replace(/\/+$/, '');
+    const ugcPublicUrlBase = rawUgcPublicUrlBase.startsWith('/') || /^https?:\/\//i.test(rawUgcPublicUrlBase)
+        ? rawUgcPublicUrlBase
+        : `/${rawUgcPublicUrlBase}`;
 
     if (existsSync(uploadsPath)) {
         expressApp.use('/assets', express.static(uploadsPath));
+    }
+    if (
+        (process.env.UGC_STORAGE_MODE || 'local').trim() === 'local'
+        && localUgcPath
+        && ugcPublicUrlBase === '/assets'
+        && path.resolve(localUgcPath) !== path.resolve(uploadsPath)
+    ) {
+        // Local UGC URLs use /assets/ugc/...; serve a task-specific local store
+        // from that same URL base instead of silently pointing at ./uploads.
+        expressApp.use('/assets/ugc', express.static(join(path.resolve(localUgcPath), 'ugc')));
     }
     if (existsSync(distPath)) {
         expressApp.use('/assets', express.static(join(distPath, 'assets'), {

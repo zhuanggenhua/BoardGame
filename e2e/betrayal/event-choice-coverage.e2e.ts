@@ -41,6 +41,8 @@ import {
 } from "./betrayalTestHelpers";
 import { createBetrayalDynamicEvidenceRecorder } from "./betrayalDynamicEvidence";
 
+// 使用 injectCore / 固定牌序 / 骰值的用例是代表态消费链，
+// 即使先走真实角色选择，也不证明事件自然抽取或完整自然黄金链。
 const EVIDENCE_DIR = "evidence/山屋惊魂-事件牌页面承接E2E";
 const ARMOR_EVIDENCE_DIR = "evidence/山屋惊魂-盔甲物理减伤完整链路";
 const RADIO_EVIDENCE_DIR = "evidence/山屋惊魂-头戴耳机精神减伤完整链路";
@@ -3195,22 +3197,26 @@ async function runDirectRollEventFullChain(
   });
   const beforeEventCore = await readCurrentCore(page);
 
-  await page.getByTestId("betrayal-action-move").click();
+  await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+    "data-direct-target",
+    "true",
+  );
   await page.getByTestId("betrayal-room-hallway").click();
   await expect(
     page.getByTestId("betrayal-room-ground-north"),
-  ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-  await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+  ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+  await expect(
+    page.getByTestId("betrayal-room-explore-target-ground-north"),
+  ).toBeVisible();
   await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-  await page.getByTestId("betrayal-action-explore").click();
+  await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
   await expect(
     page.getByTestId("betrayal-room-explore-target-ground-north"),
   ).toBeVisible();
   await expect(
     page.getByTestId("betrayal-room-explore-target-ground-south"),
   ).toBeVisible();
-  await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
   await setHarnessRandomQueue(page, eventCase.randomQueue);
   await confirmGroundNorthRoomPlacement(page);
@@ -3693,7 +3699,10 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
       };
       await injectCore(page, movementCore);
       await expect(page.getByTestId("betrayal-room-grand-staircase")).toBeVisible();
-      await page.getByTestId("betrayal-action-move").click();
+      await expect(page.getByTestId("betrayal-room-laboratory")).toHaveAttribute(
+        "data-direct-target",
+        "true",
+      );
       const laboratoryRoom = page.getByTestId("betrayal-room-laboratory");
       await expect(laboratoryRoom).toBeVisible();
       await expect(laboratoryRoom).toBeEnabled();
@@ -4020,7 +4029,11 @@ async function completeBetrayalScenarioFromRealEntry(page: Page) {
   await page.getByTestId("betrayal-start-scenario-opening-continue").click();
   await expect(openingStage).toHaveCount(0);
   await expect(page.getByTestId("betrayal-board")).toBeVisible();
-  await expect(page.getByTestId("betrayal-action-explore")).toBeVisible();
+  await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
+  await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+    "data-direct-target",
+    "true",
+  );
 }
 
 async function assertReadyForStateInjection(
@@ -4089,7 +4102,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const screenshotBase = `${EVIDENCE_DIR}/状态注入边界`;
     await expect(page.getByTestId("betrayal-character-select-screen")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-start-scenario-opening-stage")).toHaveCount(0);
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(page.getByTestId("betrayal-room-occupant-hallway-0")).toBeVisible();
     await expect(page.getByTestId("betrayal-board")).toHaveAttribute(
@@ -4111,14 +4127,17 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await injectCore(page, representativeCore, "脑状食品玩家移动结算后准备探索");
 
     await expect(page.getByTestId("betrayal-room-ground-north")).toHaveAccessibleName(
-      /未探索.*一层.*尚未翻出/,
+      /未探索.*一层.*可探索/,
     );
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-02-未知事件房可探索.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
-    await expect(page.getByTestId("betrayal-room-explore-target-ground-north")).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-03-玩家打开探索选择事件房.jpg`);
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await page.getByTestId("betrayal-room-ground-north").click();
     const placementPanel = page.getByTestId("betrayal-room-placement-panel");
     await expect(placementPanel).toBeVisible();
@@ -4686,18 +4705,20 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
-    ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
@@ -4707,7 +4728,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
     ).toHaveAccessibleName(/未探索.*一层.*可探索/);
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -4787,22 +4807,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -4883,22 +4907,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -5140,22 +5168,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -5677,9 +5709,12 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await saveScreenshot(page, `${screenshotBase}-01-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
@@ -6140,22 +6175,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -6368,22 +6407,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -6552,19 +6595,23 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
         .find((explorer) => explorer.playerId === "1")
         ?.inventory.some((card) => card.id === "camera"),
     ).toBe(true);
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -6799,22 +6846,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await confirmGroundNorthRoomPlacement(page);
     const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
@@ -6930,7 +6981,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ]);
   });
 
-  test("吊死鬼真实链路从探索翻牌到四项检定后选奖励关闭", async ({ page }) => {
+  test("吊死鬼代表态从探索翻牌到四项检定后选奖励关闭", async ({ page }) => {
     test.setTimeout(120000);
     const diagnostics = attachPageDiagnostics(
       page,
@@ -6962,22 +7013,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.png`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.png`);
 
     await setHarnessRandomQueue(page, Array(12).fill(0.99));
     await page.getByTestId("betrayal-room-ground-north").click();
@@ -7232,22 +7287,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     try {
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     dynamicRecorder.mark("卡牌特写开始");
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
@@ -7443,8 +7502,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
             stateInjection:
               "createRuntimeCore + pinGroundNorthToEventRoom + injectCore + scripted random queue",
             playerActions: [
-              "点击移动并选择门厅",
-              "点击探索并选择未知房间",
+              "直接点击地图门厅房间移动",
+              "直接点击地图问号选择未知房间",
               "点击投掷事件骰",
               "等待物理骰子运动到停稳结果",
               "确认并关闭事件特写",
@@ -7544,7 +7603,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     if (!armorCard) {
       throw new Error("山屋预兆池缺少盔甲");
     }
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(page.getByTestId("betrayal-room-occupant-hallway-0")).toBeVisible();
     const settledCore = await assertReadyForStateInjection(
@@ -7586,16 +7648,17 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}/02-选择未知房间前.jpg`);
 
     await setHarnessRandomQueue(page, [0, 0]);
     await confirmGroundNorthRoomPlacement(page);
@@ -7871,7 +7934,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     if (!radioCard) {
       throw new Error("山屋物品池缺少头戴耳机");
     }
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(page.getByTestId("betrayal-room-occupant-hallway-0")).toBeVisible();
     const settledCore = await assertReadyForStateInjection(
@@ -7916,16 +7982,17 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}/02-选择未知房间前.jpg`);
 
     await setHarnessRandomQueue(page, [0.5, 0.5]);
     await confirmGroundNorthRoomPlacement(page);
@@ -8251,13 +8318,18 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       `${options.evidenceDir}/01-${options.itemName}加骰前牌桌可操作.jpg`,
     );
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
@@ -8465,13 +8537,18 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       `${MAGIC_CAMERA_EVIDENCE_DIR}/01-魔法相机替代前牌桌可操作.jpg`,
     );
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
@@ -8690,13 +8767,18 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       page.getByTestId("betrayal-room-latest-feedback"),
     ).toContainText("本回合下一次非战斗检定可用知识替换");
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
@@ -8855,22 +8937,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
     await confirmGroundNorthRoomPlacement(page);
@@ -8995,34 +9081,38 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       page.getByTestId("betrayal-desktop-layout"),
     ).toBeVisible();
     await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-action-explore"),
-    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await expectMobilePrimaryMapFocus(page, "移动端一条秘密通道初始牌桌");
     await saveScreenshot(page, `${screenshotBase}-01-移动端牌桌入口.jpg`);
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-occupant-hallway-0"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
     await expect(
-      page.getByTestId("betrayal-action-explore"),
-    ).toBeEnabled();
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-02-移动后可探索.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-03-选择未知房间.jpg`);
 
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
     await confirmGroundNorthRoomPlacement(page);
@@ -9207,7 +9297,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "移动端真实剧本开局结算后准备蜘蛛事件态",
     );
     expect(core.currentExplorer.roomId).toBe("entrance-hall");
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-occupant-hallway-0"),
@@ -9248,9 +9341,9 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expectMobilePrimaryMapFocus(page, "移动端蜘蛛初始牌桌");
 
     await expect(
-      page.getByTestId("betrayal-action-explore"),
-    ).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
@@ -9435,7 +9528,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
     const screenshotBase = `${EVIDENCE_DIR}/_temporary/${Date.now()}-脑状食品-完整链路`;
     const brainFood = eventByName("脑状食品");
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(page.getByTestId("betrayal-room-occupant-hallway-0")).toBeVisible();
     const settledCore = await assertReadyForStateInjection(
@@ -9467,14 +9563,13 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
-    ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
@@ -9484,7 +9579,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(
       page.getByTestId("betrayal-room-ground-north"),
     ).toHaveAccessibleName(/未探索.*一层.*可探索/);
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
     await confirmGroundNorthRoomPlacement(page);
@@ -9620,8 +9714,11 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
         recentRollKind: null,
         turnEndedByDiscovery: false,
       });
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-move")).toBeEnabled();
+    await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
     await saveScreenshot(page, `${screenshotBase}-09-下一回合可移动.jpg`);
 
@@ -9643,7 +9740,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "PC 真实剧本开局结算后准备蜘蛛事件态",
     );
     expect(core.currentExplorer.roomId).toBe("entrance-hall");
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-occupant-hallway-0"),
@@ -9676,17 +9776,18 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     });
 
     await expect(page.getByTestId("betrayal-room-ground-north")).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-02-选择未知房间.jpg`);
 
     await setHarnessRandomQueue(page, [0.6, 0.6, 0.6, 0.6]);
     await page.getByTestId("betrayal-room-ground-north").click();

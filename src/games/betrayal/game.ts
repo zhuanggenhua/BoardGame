@@ -1,3 +1,4 @@
+import { resolveBetrayalLocalRuntimeControlledPlayerId } from './localRuntimeControl';
 import { createBaseSystems, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
 import type { AiSeatController } from '../../engine/ai/types';
@@ -4646,6 +4647,7 @@ const baseEngineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betraya
 
 export const engineConfig = {
     ...baseEngineConfig,
+    resolveLocalRuntimeControlledPlayerId: resolveBetrayalLocalRuntimeControlledPlayerId,
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['characterSelect'],
         resolveSeatLegalOnlyRecovery: resolveBetrayalSeatLegalOnlyRecovery,

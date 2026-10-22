@@ -20,7 +20,6 @@ import { GamePageRescueGate } from './components/system/GamePageRescueGate';
 import { LoadingScreen } from './components/system/LoadingScreen';
 import { TextEntryAutoScrollAgent } from './components/system/TextEntryAutoScrollAgent';
 import { MobileTextEntryProxyLayer } from './components/system/MobileTextEntryProxyLayer';
-import { PcWebMascot } from './components/system/PcWebMascot';
 import { InteractionGuardProvider } from './components/game/framework/InteractionGuard';
 import AdminGuard from './components/auth/AdminGuard';
 import { MobileOrientationGuard, type GameMobileEntry } from './components/common/MobileOrientationGuard';
@@ -178,7 +177,6 @@ const AppRouteChrome = ({
           <LazyMobileLiveUpdateManager />
         </React.Suspense>
       ) : null}
-      {!isPlayRoute ? <PcWebMascot /> : null}
       <EngineNotificationListener />
       <GamePageRescueGate />
     </>
@@ -274,14 +272,6 @@ const AppContent = () => {
                       element={(
                         <React.Suspense fallback={playRouteFallback}>
                           <LazyFateDominationDev />
-                        </React.Suspense>
-                      )}
-                    />
-                    <Route
-                      path="/play/fate-domination/match/:matchId"
-                      element={(
-                        <React.Suspense fallback={playRouteFallback}>
-                          <MatchRoom />
                         </React.Suspense>
                       )}
                     />

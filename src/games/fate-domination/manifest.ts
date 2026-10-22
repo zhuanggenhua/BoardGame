@@ -1,8 +1,5 @@
 import type { GameManifestEntry } from '../manifest.types';
 
-export const FATE_DOMINATION_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX = 1920;
-export const FATE_DOMINATION_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX = 1080;
-
 const entry: GameManifestEntry = {
     id: 'fate-domination',
     type: 'game',
@@ -21,11 +18,7 @@ const entry: GameManifestEntry = {
     tags: ['card_driven', 'tabletop', 'prototype'],
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
-    mobileLayoutPreset: 'board-shell',
-    mobileBoardShellLayout: {
-        designWidth: FATE_DOMINATION_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
-        designHeight: FATE_DOMINATION_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX,
-    },
+    mobileLayoutPreset: 'map-shell',
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {
         capture: true,

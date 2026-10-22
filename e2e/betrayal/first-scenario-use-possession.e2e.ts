@@ -1,4 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
@@ -9,6 +14,7 @@ import {
     createSkeletonKeyMoveReadyRuntimeCore,
     initBetrayalContext,
     injectCore,
+    resolveBetrayalEvidencePath,
     saveScreenshot,
     setHarnessRandomQueue,
     waitForBetrayalPageReady,
@@ -32,12 +38,22 @@ const MASK_SETTLED_SCREENSHOT = `${MASK_EVIDENCE_DIR}/05-面具移动结算结�
 const MASK_RETURNED_SCREENSHOT = `${MASK_EVIDENCE_DIR}/06-面具使用后回牌桌状态清空.jpg`;
 
 const SKELETON_KEY_EVIDENCE_DIR = 'evidence/山屋惊魂-骨制钥匙穿墙移动完整链路';
-const SKELETON_KEY_READY_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/01-骨制钥匙移动前牌桌可操作.jpg`;
-const SKELETON_KEY_CARD_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/02-骨制钥匙本体规则可见.jpg`;
-const SKELETON_KEY_TARGETS_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/03-打开移动模式看到穿墙目标.jpg`;
-const SKELETON_KEY_TARGET_HOVER_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/04-点击穿墙目标前.jpg`;
-const SKELETON_KEY_SETTLED_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/05-骨制钥匙移动结算结果可见.jpg`;
-const SKELETON_KEY_RETURNED_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/06-骨制钥匙移动后回牌桌状态清空.jpg`;
+const SKELETON_KEY_READY_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/01-骨制钥匙移动前牌桌可操作.png`;
+const SKELETON_KEY_CARD_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/02-骨制钥匙本体规则可见.png`;
+const SKELETON_KEY_SETTLED_SCREENSHOT = `${SKELETON_KEY_EVIDENCE_DIR}/05-骨制钥匙移动结算结果可见.png`;
+const SKELETON_KEY_FULL_RUN_VIDEO = `${SKELETON_KEY_EVIDENCE_DIR}/03-骨制钥匙穿墙移动同源录屏.webm`;
+const SKELETON_KEY_BEHAVIOR_TRACE = `${SKELETON_KEY_EVIDENCE_DIR}/behavior-chain.json`;
+
+const SKELETON_KEY_SOURCE_FILES = [
+    'e2e/betrayal/first-scenario-use-possession.e2e.ts',
+    'e2e/betrayal/betrayalTestHelpers.ts',
+    'src/games/betrayal/Board.tsx',
+    'src/games/betrayal/game.ts',
+    'src/games/betrayal/movementReadModel.ts',
+    'src/games/betrayal/movementResolutionModel.ts',
+    'src/games/betrayal/sceneMovementModel.ts',
+    'src/games/betrayal/testing/firstScenarioTestUtils.ts',
+];
 
 async function waitForMedicalKitAtlas(page: Page) {
     await expect.poll(async () => page.evaluate(() => {
@@ -340,99 +356,270 @@ async function waitForSkeletonKeyAtlas(page: Page) {
     });
 }
 
+// Independent representative-state chain, not natural item acquisition or a golden run.
 async function readSkeletonKeyMoveState(page: Page) {
     return page.evaluate(() => {
-        const rectOf = (testId: string) => {
-            const element = document.querySelector(`[data-testid="${testId}"]`);
-            if (!element) return null;
-            const rect = element.getBoundingClientRect();
-            return {
-                left: rect.left,
-                top: rect.top,
-                width: rect.width,
-                height: rect.height,
-            };
-        };
         const holder = window as unknown as {
-            __BG_TEST_HARNESS__?: {
-                state?: {
-                    get?: () => {
-                        core?: {
-                            activeRoomId?: string;
-                            currentExplorer?: { roomId?: string; inventory?: Array<{ id: string; name: string }> };
-                            movesRemaining?: number;
-                            activityLog?: Array<{ text: string }>;
-                        };
-                    };
-                };
-            };
+            __BG_TEST_HARNESS__?: { state?: { get?: () => {
+                core?: { scenarioId?: string; proposedScenarioCardId?: string; phase?: string; playerIds?: string[]; currentPlayer?: string; activeRoomId?: string;
+                    currentExplorer?: { playerId?: string; explorerId?: string; roomId?: string; inventory?: Array<{ id: string; name: string }> };
+                    movesRemaining?: number; activityLog?: Array<{ text: string }> };
+                sys?: { eventStream?: { entries?: Array<{ id: number; event: { type: string; payload: Record<string, unknown> } }> } };
+            } } };
             __BG_LAST_COMMAND_REJECTED__?: { error: string; commandType: string };
         };
-        const moveButton = document.querySelector<HTMLButtonElement>('[data-testid="betrayal-action-move"]');
-        const targetButton = document.querySelector<HTMLButtonElement>('[data-testid="betrayal-room-upper-west"]');
-        const targetHighlight = document.querySelector<HTMLElement>('[data-testid="betrayal-room-move-card-highlight-upper-west"]');
-        const feedback = document.querySelector('[data-testid="betrayal-room-latest-feedback"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const state = holder.__BG_TEST_HARNESS__?.state?.get?.();
         return {
-            lockpick: rectOf('betrayal-inventory-lockpick-tool'),
-            moveButton: rectOf('betrayal-action-move'),
-            moveButtonDisabled: Boolean(moveButton?.disabled),
-            moveButtonText: moveButton?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
-            targetButton: rectOf('betrayal-room-upper-west'),
-            targetButtonDisabled: Boolean(targetButton?.disabled),
-            targetHighlight: rectOf('betrayal-room-move-card-highlight-upper-west'),
-            targetHighlightTitle: targetHighlight?.getAttribute('title') ?? '',
-            feedback,
-            currentRoomId: state?.core?.currentExplorer?.roomId ?? '',
-            activeRoomId: state?.core?.activeRoomId ?? '',
-            inventory: state?.core?.currentExplorer?.inventory?.map((item) => item.name) ?? [],
-            movesRemaining: state?.core?.movesRemaining ?? null,
+            scenarioId: state?.core?.scenarioId,
+            proposedScenarioCardId: state?.core?.proposedScenarioCardId,
+            phase: state?.core?.phase,
+            playerIds: state?.core?.playerIds ?? [],
+            currentPlayer: state?.core?.currentPlayer,
+            explorerId: state?.core?.currentExplorer?.explorerId,
+            playerId: state?.core?.currentExplorer?.playerId,
+            currentRoomId: state?.core?.currentExplorer?.roomId,
+            activeRoomId: state?.core?.activeRoomId,
+            inventoryIds: state?.core?.currentExplorer?.inventory?.map(item => item.id) ?? [],
+            movesRemaining: state?.core?.movesRemaining,
             latestLog: state?.core?.activityLog?.[0]?.text ?? '',
+            moves: state?.sys?.eventStream?.entries?.filter(entry => entry.event.type === 'EXPLORER_MOVED') ?? [],
             rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
         };
     });
 }
 
-async function assertSkeletonKeyMoveReady(page: Page) {
-    const metrics = await readSkeletonKeyMoveState(page);
-    expect(metrics.lockpick, '移动前必须看得到骨制钥匙本体').not.toBeNull();
-    expect(metrics.lockpick!.width, '骨制钥匙必须保持真实牌面宽度，不能退成小文字选项').toBeGreaterThanOrEqual(58);
-    expect(metrics.moveButton, '移动按钮必须存在于真实动作区').not.toBeNull();
-    expect(metrics.moveButtonDisabled, '骨制钥匙移动前移动按钮必须可用').toBe(false);
-    expect(metrics.moveButtonText, '移动前应处于默认牌桌态').toContain('移动');
-    expect(metrics.moveButtonText, '移动前不能已经处于取消移动态').not.toContain('取消');
-    expect(metrics.currentRoomId, '骨制钥匙链路必须从上层平台起跑').toBe('upper-landing');
-    expect(metrics.inventory, '骨制钥匙必须在当前探索者持有区').toContain('骨制钥匙');
-    expect(metrics.targetHighlightTitle, '同层相邻但未连门目标必须标成骨制钥匙穿墙移动').toContain('骨制钥匙');
+type SkeletonKeyObservation = {
+    visible: Record<string, unknown>;
+    authoritative: Awaited<ReturnType<typeof readSkeletonKeyMoveState>>;
+};
+
+type SkeletonKeyTraceAssertion = {
+    name: string;
+    actual: unknown;
+    expected: unknown;
+};
+
+type SkeletonKeyTraceStep = {
+    id: string;
+    action: string;
+    before: SkeletonKeyObservation;
+    after: SkeletonKeyObservation;
+    assertions: SkeletonKeyTraceAssertion[];
+};
+
+type SkeletonKeyBehaviorTrace = {
+    version: 1;
+    evidenceCategory: 'independent';
+    gameId: 'betrayal';
+    chainId: string;
+    sourceRun: string;
+    sourceRevision: string;
+    sourceFingerprint: {
+        gitHeadFull: string;
+        files: Record<string, string>;
+    };
+    status: 'RUNNING' | 'PASS' | 'FAIL';
+    outcome: string;
+    requiredSteps: string[];
+    startedAt: string;
+    completedAt?: string;
+    representativeState: {
+        fixtureFactory: string;
+        sourceFile: string;
+        fixtureExplorerId: string;
+        fixturePlayerId: string;
+        fixtureRoomId: string;
+        fixtureCardIds: string[];
+        mode: 'representative-state';
+        naturalAcquisition: false;
+        injectedAfter: string;
+        randomQueue: number[];
+    };
+    steps: SkeletonKeyTraceStep[];
+    uiStates: Array<{
+        id: string;
+        stepId: string;
+        change: 'layout' | 'panel' | 'interaction-mode' | 'target-highlight' | 'error' | 'empty' | 'animation-phase';
+        viewport: 'desktop' | 'mobile';
+        sha256: string;
+    }>;
+    media?: Array<{ path: string; sha256: string; kind: 'image' | 'video' | 'gif' }>;
+    pendingAction?: { id: string; action: string; before: SkeletonKeyObservation; after?: SkeletonKeyObservation };
+    failure?: string;
+};
+
+function hashSkeletonKeyBytes(bytes: Buffer) {
+    return createHash('sha256').update(bytes).digest('hex');
 }
 
-async function assertSkeletonKeyTargetMode(page: Page) {
-    const metrics = await readSkeletonKeyMoveState(page);
-    expect(metrics.moveButtonText, '打开移动模式后动作按钮必须变成取消移动').toContain('取消移动');
-    expect(metrics.targetButton, '穿墙目标房间必须在地图上可见').not.toBeNull();
-    expect(metrics.targetButtonDisabled, '进入移动模式后穿墙目标房间必须可点击').toBe(false);
+function readSkeletonKeySourceFingerprint() {
+    const gitHeadFull = execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+    }).trim();
+    const files = Object.fromEntries(SKELETON_KEY_SOURCE_FILES.map((file) => [
+        file,
+        hashSkeletonKeyBytes(readFileSync(resolve(process.cwd(), file))),
+    ]));
+    const sourceFingerprint = { gitHeadFull, files };
+    const sourceRevision = hashSkeletonKeyBytes(Buffer.from(JSON.stringify(sourceFingerprint)));
+    return { sourceRevision, sourceFingerprint };
 }
 
-async function assertSkeletonKeySettled(page: Page) {
-    await expect.poll(async () => readSkeletonKeyMoveState(page), {
-        message: '骨制钥匙点击穿墙目标后必须移动到目标房间，并记录穿墙日志',
-        timeout: 10000,
-    }).toMatchObject({
-        currentRoomId: 'upper-west',
-        activeRoomId: 'upper-west',
-        inventory: expect.arrayContaining(['骨制钥匙']),
-        movesRemaining: 1,
-        latestLog: expect.stringMatching(/使用骨制钥匙穿过墙壁|图书馆/),
-        rejected: null,
+function persistSkeletonKeyBehaviorTrace(trace: SkeletonKeyBehaviorTrace) {
+    const filePath = resolveBetrayalEvidencePath(SKELETON_KEY_BEHAVIOR_TRACE);
+    mkdirSync(dirname(filePath), { recursive: true });
+    writeFileSync(filePath, `${JSON.stringify(trace, null, 2)}\n`);
+}
+
+async function readSkeletonKeyObservation(page: Page): Promise<SkeletonKeyObservation> {
+    const visible = await page.evaluate(() => {
+        const element = (testId: string) => document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+        const text = (testId: string) => element(testId)?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+        const attribute = (testId: string, name: string) => element(testId)?.getAttribute(name) ?? null;
+        const shown = (testId: string) => {
+            const node = element(testId);
+            if (!node) return false;
+            const style = window.getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+        };
+        const cardAtlas = document.querySelector<HTMLImageElement>('[data-testid="betrayal-inventory-preview-card-front-atlas"]');
+        return {
+            route: `${window.location.pathname}${window.location.search}`,
+            characterGridVisible: shown('betrayal-character-selection-grid'),
+            boardVisible: shown('betrayal-board'),
+            boardVisualBusy: attribute('betrayal-board', 'data-betrayal-visual-busy'),
+            openingVisible: shown('betrayal-start-scenario-opening-stage'),
+            turnIntroCount: document.querySelectorAll('[data-testid="betrayal-turn-intro-skip"]').length,
+            keyVisible: shown('betrayal-inventory-lockpick-tool'),
+            magnifyVisible: shown('betrayal-inventory-lockpick-tool-magnify'),
+            previewVisible: shown('betrayal-inventory-preview-overlay'),
+            previewCardLoaded: Boolean(cardAtlas?.complete && cardAtlas.naturalWidth > 0 && cardAtlas.naturalHeight > 0),
+            targetVisible: shown('betrayal-room-upper-west'),
+            targetDirect: attribute('betrayal-room-upper-west', 'data-direct-target'),
+            targetMoveKind: attribute('betrayal-room-upper-west', 'data-move-kind'),
+            targetMoveCost: attribute('betrayal-room-upper-west', 'data-move-cost'),
+            targetTitle: attribute('betrayal-room-upper-west', 'title'),
+            targetCostText: text('betrayal-room-move-cost-upper-west'),
+            movementRemainingAttribute: attribute('betrayal-movement-snapshot', 'data-moves-remaining'),
+            movementSnapshotText: text('betrayal-movement-snapshot'),
+            sourceOccupantVisible: shown('betrayal-room-occupant-upper-landing-0'),
+            destinationOccupantVisible: shown('betrayal-room-occupant-upper-west-0'),
+            latestFeedback: text('betrayal-room-latest-feedback'),
+            followUpTargetVisible: shown('betrayal-room-upper-landing'),
+            followUpTargetDirect: attribute('betrayal-room-upper-landing', 'data-direct-target'),
+            followUpTargetMoveKind: attribute('betrayal-room-upper-landing', 'data-move-kind'),
+            followUpTargetMoveCost: attribute('betrayal-room-upper-landing', 'data-move-cost'),
+        };
     });
-    await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/使用骨制钥匙穿过墙壁|图书馆/);
+    return { visible, authoritative: await readSkeletonKeyMoveState(page) };
 }
 
-async function assertSkeletonKeySelectionCleared(page: Page) {
-    await expect(page.getByTestId('betrayal-room-move-card-highlight-upper-west'), '骨制钥匙结算后目标房间不能继续保持移动目标高亮').toHaveCount(0);
-    await expect(page.getByTestId('betrayal-action-move'), '骨制钥匙移动后必须回到默认牌桌移动入口').toContainText('移动');
-    await expect(page.getByTestId('betrayal-action-move'), '骨制钥匙移动后不应停在取消移动态').not.toContainText('取消');
-    await expect(page.getByTestId('betrayal-board'), '骨制钥匙移动后必须回到可操作牌桌').toBeVisible();
+function skeletonKeyTraceAssertion(name: string, actual: unknown, expected: unknown): SkeletonKeyTraceAssertion {
+    return { name, actual, expected };
+}
+
+function recordSkeletonKeyTraceStep(
+    trace: SkeletonKeyBehaviorTrace,
+    step: SkeletonKeyTraceStep,
+) {
+    if (!step.id.trim() || !step.action.trim()
+        || Object.keys(step.before.visible).length === 0
+        || Object.keys(step.before.authoritative).length === 0
+        || Object.keys(step.after.visible).length === 0
+        || Object.keys(step.after.authoritative).length === 0
+        || step.assertions.length === 0
+        || step.assertions.some((assertion) => !assertion.name.trim() || !isDeepStrictEqual(assertion.actual, assertion.expected))) {
+        throw new Error(`行为追踪步骤不符合验证器 schema 或实际断言不相等：${step.id}`);
+    }
+    trace.steps.push(step);
+    trace.pendingAction = undefined;
+    persistSkeletonKeyBehaviorTrace(trace);
+}
+
+function validateCompletedSkeletonKeyTrace(trace: SkeletonKeyBehaviorTrace) {
+    const stepIds = trace.steps.map((step) => step.id);
+    const orderedRequiredSteps = trace.requiredSteps.map((id) => stepIds.indexOf(id));
+    const mediaIds = trace.uiStates.map((state) => state.id);
+    if (trace.status !== 'PASS'
+        || trace.evidenceCategory !== 'independent'
+        || trace.gameId !== 'betrayal'
+        || !trace.outcome.trim()
+        || trace.requiredSteps.length === 0
+        || new Set(stepIds).size !== stepIds.length
+        || trace.requiredSteps.some((id) => !stepIds.includes(id))
+        || orderedRequiredSteps.some((position, index) => index > 0 && position <= orderedRequiredSteps[index - 1])
+        || new Set(mediaIds).size !== mediaIds.length
+        || trace.uiStates.some((state) => !stepIds.includes(state.stepId) || !/^[a-f0-9]{64}$/i.test(state.sha256))) {
+        throw new Error('行为追踪完整链 preflight 未符合 evidence validator contract');
+    }
+}
+
+function recordSkeletonKeyUiMedia(
+    trace: SkeletonKeyBehaviorTrace,
+    entry: { path: string; id: string; stepId: string; change: SkeletonKeyBehaviorTrace['uiStates'][number]['change']; viewport: 'desktop' | 'mobile'; bytes: Buffer; kind: 'image' | 'video' | 'gif' },
+) {
+    const sha256 = hashSkeletonKeyBytes(entry.bytes);
+    trace.uiStates.push({
+        id: entry.id,
+        stepId: entry.stepId,
+        change: entry.change,
+        viewport: entry.viewport,
+        sha256,
+    });
+    trace.media ??= [];
+    trace.media.push({ path: entry.path, sha256, kind: entry.kind });
+    persistSkeletonKeyBehaviorTrace(trace);
+}
+
+async function assertSkeletonKeyMoveReady(page: Page) {
+    await expect.poll(() => readSkeletonKeyMoveState(page)).toMatchObject({
+        phase: 'preHaunt', currentPlayer: '0', playerId: '0', currentRoomId: 'upper-landing',
+        inventoryIds: ['lockpick-tool'], movesRemaining: 2, rejected: null,
+    });
+    await expect(page.getByTestId('betrayal-board')).toHaveAttribute('data-betrayal-visual-busy', 'false');
+    await expect(page.getByTestId('betrayal-inventory-lockpick-tool')).toBeVisible();
+    const target = page.getByTestId('betrayal-room-upper-west');
+    await expect(target).toBeVisible();
+    await expect(target).toHaveAttribute('data-direct-target', 'true');
+    await expect(target).toHaveAttribute('data-move-kind', 'skeletonKey');
+    await expect(target).toHaveAttribute('data-move-cost', '1');
+    await expect(target).toHaveAttribute('title', /使用骨制钥匙.*1 点移动力/);
+    await expect(page.getByTestId('betrayal-room-move-cost-upper-west')).toContainText('骨钥匙');
+    await expect(page.getByTestId('betrayal-movement-snapshot')).toHaveAttribute('data-moves-remaining', '2');
+    await expect(page.getByTestId('betrayal-movement-snapshot')).toContainText(/2\s*\/\s*2/);
+    await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0')).toBeVisible();
+}
+
+async function assertSkeletonKeySettled(page: Page, before: Awaited<ReturnType<typeof readSkeletonKeyMoveState>>) {
+    await expect.poll(() => readSkeletonKeyMoveState(page), { timeout: 10000 }).toMatchObject({
+        currentPlayer: before.currentPlayer, playerId: before.playerId, explorerId: before.explorerId,
+        currentRoomId: 'upper-west', activeRoomId: 'upper-west', inventoryIds: ['lockpick-tool'],
+        movesRemaining: 1, rejected: null,
+    });
+    const after = await readSkeletonKeyMoveState(page);
+    expect(after.latestLog).toContain('使用骨制钥匙穿过墙壁');
+    expect(after.latestLog).toContain('图书馆');
+    const freshMoves = after.moves.filter(entry => !before.moves.some(previous => previous.id === entry.id));
+    expect(freshMoves).toHaveLength(1);
+    expect(freshMoves[0].event.payload).toMatchObject({
+        playerId: '0', roomId: 'upper-west', skeletonKeyCardId: 'lockpick-tool',
+        skeletonKeyRoll: 2, skeletonKeyBuried: false,
+    });
+    await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用骨制钥匙穿过墙壁');
+    await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('图书馆');
+    await expect(page.getByTestId('betrayal-movement-snapshot')).toHaveAttribute('data-moves-remaining', '1');
+    await expect(page.getByTestId('betrayal-movement-snapshot')).toContainText(/1\s*\/\s*2/);
+    await expect(page.getByTestId('betrayal-room-occupant-upper-west-0')).toBeVisible();
+    await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-board')).toHaveAttribute('data-betrayal-visual-busy', 'false');
+    // One move remains: legal next targets must not be forcibly cleared as a fake "cleanup".
+    const nextTarget = page.getByTestId('betrayal-room-upper-landing');
+    await expect(nextTarget).toHaveAttribute('data-direct-target', 'true');
+    await expect(nextTarget).toHaveAttribute('data-move-kind', 'skeletonKey');
+    await expect(nextTarget).toHaveAttribute('data-move-cost', '1');
+    await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
 }
 
 test.describe('山屋惊魂首剧本物品使用交互', () => {
@@ -507,41 +694,348 @@ test.describe('山屋惊魂首剧本物品使用交互', () => {
         await assertNoFatalFrontendErrors([{ label: 'betrayal-mask-move-possession', diagnostics }]);
     });
 
-    test('骨制钥匙真实链路打开移动模式、选择穿墙目标并完成移动收口', async ({ page, context }) => {
+    test('骨制钥匙独立代表态：真实开局后直选穿墙房间并完成移动收口', async ({ page, context }) => {
         test.setTimeout(180000);
+        const startedAt = new Date().toISOString();
+        const sourceRun = `skeleton-key-behavior-${startedAt.replace(/[-:.]/g, '')}`;
+        let sourceRevision = '';
+        let sourceFingerprint: SkeletonKeyBehaviorTrace['sourceFingerprint'] = { gitHeadFull: '', files: {} };
+        try {
+            const fingerprint = readSkeletonKeySourceFingerprint();
+            sourceRevision = fingerprint.sourceRevision;
+            sourceFingerprint = fingerprint.sourceFingerprint;
+        } catch (error) {
+            const failedTrace: SkeletonKeyBehaviorTrace = {
+                version: 1,
+                evidenceCategory: 'independent',
+                gameId: 'betrayal',
+                chainId: sourceRun,
+                sourceRun,
+                sourceRevision,
+                sourceFingerprint,
+                status: 'FAIL',
+                outcome: 'Source fingerprint could not be read before the browser run.',
+                requiredSteps: [],
+                startedAt,
+                representativeState: {
+                    fixtureFactory: 'createSkeletonKeyMoveReadyRuntimeCore',
+                    sourceFile: 'src/games/betrayal/testing/firstScenarioTestUtils.ts',
+                    fixtureExplorerId: '',
+                    fixturePlayerId: '',
+                    fixtureRoomId: '',
+                    fixtureCardIds: [],
+                    mode: 'representative-state',
+                    naturalAcquisition: false,
+                    injectedAfter: 'not reached',
+                    randomQueue: [0.9],
+                },
+                steps: [],
+                uiStates: [],
+                failure: error instanceof Error ? error.message : String(error),
+            };
+            persistSkeletonKeyBehaviorTrace(failedTrace);
+            throw error;
+        }
+        const fixture = createSkeletonKeyMoveReadyRuntimeCore();
+        const trace: SkeletonKeyBehaviorTrace = {
+            version: 1,
+            evidenceCategory: 'independent',
+            gameId: 'betrayal',
+            chainId: sourceRun,
+            sourceRun,
+            sourceRevision,
+            sourceFingerprint,
+            status: 'RUNNING',
+            outcome: 'Browser action chain is in progress.',
+            requiredSteps: [
+                'real-three-player-opening',
+                'stage-legal-representative-state',
+                'open-key-card-preview',
+                'close-key-card-preview',
+                'direct-target-click-and-settlement',
+                'verify-follow-up-target',
+            ],
+            startedAt,
+            representativeState: {
+                fixtureFactory: 'createSkeletonKeyMoveReadyRuntimeCore',
+                sourceFile: 'src/games/betrayal/testing/firstScenarioTestUtils.ts',
+                fixtureExplorerId: fixture.currentExplorer.explorerId,
+                fixturePlayerId: fixture.currentExplorer.playerId,
+                fixtureRoomId: fixture.currentExplorer.roomId,
+                fixtureCardIds: fixture.currentExplorer.inventory.map((item) => item.id),
+                mode: 'representative-state',
+                naturalAcquisition: false,
+                injectedAfter: 'real three-player opening and natural turn-intro close',
+                randomQueue: [0.9],
+            },
+            steps: [],
+            uiStates: [],
+            media: [],
+        };
+        persistSkeletonKeyBehaviorTrace(trace);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-skeleton-key-move');
+        try {
+            await page.setViewportSize({ width: 1600, height: 900 });
+            await warmBetrayalFrontend(context);
+            await page.goto('/play/betrayal?players=3&seat0=human&seat1=local-ai&seat2=local-ai&playerID=0');
+            await waitForBetrayalPageReady(page);
 
-        await page.setViewportSize({ width: 1600, height: 900 });
-        await warmBetrayalFrontend(context);
-        await page.goto('/play/betrayal', { waitUntil: 'commit', timeout: 30000 });
-        await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => undefined);
-        await waitForBetrayalPageReady(page);
-        await injectCore(page, createSkeletonKeyMoveReadyRuntimeCore());
-        await setHarnessRandomQueue(page, [3]);
-        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await waitForSkeletonKeyAtlas(page);
-        await assertSkeletonKeyMoveReady(page);
-        await saveScreenshot(page, SKELETON_KEY_READY_SCREENSHOT);
+            const openingBefore = await readSkeletonKeyObservation(page);
+            const openingAction = '选择与代表态夹具相同的角色，真实确认三人剧本并继续；等待片头自然收口，不点击跳过。';
+            trace.pendingAction = { id: 'real-three-player-opening', action: openingAction, before: openingBefore };
+            persistSkeletonKeyBehaviorTrace(trace);
+            await page.getByTestId('betrayal-character-selection-grid').getByTestId(`betrayal-character-card-${fixture.currentExplorer.explorerId}`).click();
+            const confirm = page.getByTestId('betrayal-character-confirm');
+            await confirm.click();
+            await page.getByTestId('betrayal-character-scenario-button').click();
+            await page.getByTestId('betrayal-scenario-option-mummy-rampage').click();
+            await page.getByTestId('betrayal-scenario-select-current').click();
+            const opening = page.getByTestId('betrayal-start-scenario-opening-stage');
+            for (const label of [/确认此剧本卡/, /开始剧本/]) {
+                await expect.poll(
+                    async () => await opening.isVisible() || ((await confirm.isVisible()) && await confirm.isEnabled()),
+                    { timeout: 30000 },
+                ).toBe(true);
+                if (await opening.isVisible()) break;
+                if (label.test(await confirm.textContent() ?? '')) await confirm.click();
+            }
+            await expect(opening).toBeVisible({ timeout: 30000 });
+            await page.getByTestId('betrayal-start-scenario-opening-continue').click();
+            await expect(opening).toHaveCount(0);
+            const intro = page.getByTestId('betrayal-turn-intro-skip');
+            // The announcement auto-closes; `isVisible()` also matches its final fade frame,
+            // when Playwright's stability wait can outlive the transient button itself.
+            await expect(intro).toHaveCount(0, { timeout: 15000 });
+            await expect(page.getByTestId('betrayal-board')).toHaveAttribute('data-betrayal-visual-busy', 'false');
+            await expect.poll(() => readSkeletonKeyMoveState(page)).toMatchObject({
+                scenarioId: 'first-scenario', proposedScenarioCardId: 'mummy-rampage',
+                phase: 'preHaunt', playerIds: ['0', '1', '2'], currentPlayer: '0',
+                playerId: fixture.currentExplorer.playerId, explorerId: fixture.currentExplorer.explorerId,
+            });
+            const openingAfter = await readSkeletonKeyObservation(page);
+            recordSkeletonKeyTraceStep(trace, {
+                id: 'real-three-player-opening',
+                action: openingAction,
+                before: openingBefore,
+                after: openingAfter,
+                assertions: [
+                    skeletonKeyTraceAssertion('opening.playerIds', openingAfter.authoritative.playerIds, ['0', '1', '2']),
+                    skeletonKeyTraceAssertion('opening.currentPlayer', openingAfter.authoritative.currentPlayer, '0'),
+                    skeletonKeyTraceAssertion('opening.scenarioId', openingAfter.authoritative.scenarioId, 'first-scenario'),
+                    skeletonKeyTraceAssertion('opening.proposedScenarioCardId', openingAfter.authoritative.proposedScenarioCardId, 'mummy-rampage'),
+                    skeletonKeyTraceAssertion('opening.phase', openingAfter.authoritative.phase, 'preHaunt'),
+                    skeletonKeyTraceAssertion('opening.fixtureExplorerSelected', openingAfter.authoritative.explorerId, fixture.currentExplorer.explorerId),
+                    skeletonKeyTraceAssertion('opening.boardVisible', openingAfter.visible.boardVisible, true),
+                    skeletonKeyTraceAssertion('opening.boardVisualBusy', openingAfter.visible.boardVisualBusy, 'false'),
+                    skeletonKeyTraceAssertion('opening.cardOpeningClosed', openingAfter.visible.openingVisible, false),
+                    skeletonKeyTraceAssertion('opening.turnIntroNaturallyClosed', openingAfter.visible.turnIntroCount, 0),
+                ],
+            });
 
-        await page.getByTestId('betrayal-inventory-lockpick-tool').hover();
-        await assertSkeletonKeyMoveReady(page);
-        await saveScreenshot(page, SKELETON_KEY_CARD_SCREENSHOT);
+            const fixtureBefore = await readSkeletonKeyObservation(page);
+            const fixtureAction = '在真实开局与回合片头收口后，注入已有合法骨钥代表态夹具并设置正式随机队列为 0.9；此步骤不是自然取得物品。';
+            trace.pendingAction = { id: 'stage-legal-representative-state', action: fixtureAction, before: fixtureBefore };
+            persistSkeletonKeyBehaviorTrace(trace);
+            await injectCore(page, fixture);
+            await setHarnessRandomQueue(page, [0.9]);
+            await waitForSkeletonKeyAtlas(page);
+            await assertSkeletonKeyMoveReady(page);
+            const fixtureAfter = await readSkeletonKeyObservation(page);
+            recordSkeletonKeyTraceStep(trace, {
+                id: 'stage-legal-representative-state',
+                action: fixtureAction,
+                before: fixtureBefore,
+                after: fixtureAfter,
+                assertions: [
+                    skeletonKeyTraceAssertion('fixture.injectedAfterOpening', fixtureBefore.authoritative.phase, 'preHaunt'),
+                    skeletonKeyTraceAssertion('fixture.currentPlayer', fixtureAfter.authoritative.currentPlayer, '0'),
+                    skeletonKeyTraceAssertion('fixture.roomId', fixtureAfter.authoritative.currentRoomId, 'upper-landing'),
+                    skeletonKeyTraceAssertion('fixture.inventoryIds', fixtureAfter.authoritative.inventoryIds, ['lockpick-tool']),
+                    skeletonKeyTraceAssertion('fixture.movesRemaining', fixtureAfter.authoritative.movesRemaining, 2),
+                    skeletonKeyTraceAssertion('fixture.targetDirect', fixtureAfter.visible.targetDirect, 'true'),
+                    skeletonKeyTraceAssertion('fixture.targetMoveKind', fixtureAfter.visible.targetMoveKind, 'skeletonKey'),
+                    skeletonKeyTraceAssertion('fixture.targetMoveCost', fixtureAfter.visible.targetMoveCost, '1'),
+                ],
+            });
+            const readyPng = await saveScreenshot(page, SKELETON_KEY_READY_SCREENSHOT);
+            recordSkeletonKeyUiMedia(trace, {
+                path: SKELETON_KEY_READY_SCREENSHOT,
+                id: 'skeleton-key-ready-board',
+                stepId: 'stage-legal-representative-state',
+                change: 'panel',
+                viewport: 'desktop',
+                bytes: readyPng,
+                kind: 'image',
+            });
 
-        await page.getByTestId('betrayal-action-move').click();
-        await assertSkeletonKeyTargetMode(page);
-        await saveScreenshot(page, SKELETON_KEY_TARGETS_SCREENSHOT);
+            const previewBefore = await readSkeletonKeyObservation(page);
+            const previewAction = '悬停骨制钥匙并点击放大按钮，打开完整卡面规则预览。';
+            trace.pendingAction = { id: 'open-key-card-preview', action: previewAction, before: previewBefore };
+            persistSkeletonKeyBehaviorTrace(trace);
+            await page.getByTestId('betrayal-inventory-lockpick-tool').hover();
+            await expect(page.getByTestId('betrayal-inventory-lockpick-tool-magnify')).toBeVisible();
+            await page.getByTestId('betrayal-inventory-lockpick-tool-magnify').click();
+            await expect(page.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
+            await expect.poll(() => page.getByTestId('betrayal-inventory-preview-card-front-atlas').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0)).toBe(true);
+            const previewAfter = await readSkeletonKeyObservation(page);
+            recordSkeletonKeyTraceStep(trace, {
+                id: 'open-key-card-preview',
+                action: previewAction,
+                before: previewBefore,
+                after: previewAfter,
+                assertions: [
+                    skeletonKeyTraceAssertion('preview.open', previewAfter.visible.previewVisible, true),
+                    skeletonKeyTraceAssertion('preview.cardAtlasLoaded', previewAfter.visible.previewCardLoaded, true),
+                    skeletonKeyTraceAssertion('preview.currentRoomUnchanged', previewAfter.authoritative.currentRoomId, 'upper-landing'),
+                    skeletonKeyTraceAssertion('preview.keyRetained', previewAfter.authoritative.inventoryIds, ['lockpick-tool']),
+                ],
+            });
+            const cardPng = await saveScreenshot(page, SKELETON_KEY_CARD_SCREENSHOT);
+            recordSkeletonKeyUiMedia(trace, {
+                path: SKELETON_KEY_CARD_SCREENSHOT,
+                id: 'skeleton-key-card-preview',
+                stepId: 'open-key-card-preview',
+                change: 'panel',
+                viewport: 'desktop',
+                bytes: cardPng,
+                kind: 'image',
+            });
 
-        await page.getByTestId('betrayal-room-upper-west').hover();
-        await assertSkeletonKeyTargetMode(page);
-        await saveScreenshot(page, SKELETON_KEY_TARGET_HOVER_SCREENSHOT);
+            const closeBefore = await readSkeletonKeyObservation(page);
+            const closeAction = '点击卡面预览关闭按钮并回到可操作牌桌，不执行额外游戏动作。';
+            trace.pendingAction = { id: 'close-key-card-preview', action: closeAction, before: closeBefore };
+            persistSkeletonKeyBehaviorTrace(trace);
+            await page.getByTestId('betrayal-inventory-preview-overlay-close').click();
+            await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
+            await assertSkeletonKeyMoveReady(page);
+            const closeAfter = await readSkeletonKeyObservation(page);
+            recordSkeletonKeyTraceStep(trace, {
+                id: 'close-key-card-preview',
+                action: closeAction,
+                before: closeBefore,
+                after: closeAfter,
+                assertions: [
+                    skeletonKeyTraceAssertion('preview.closed', closeAfter.visible.previewVisible, false),
+                    skeletonKeyTraceAssertion('preview.closeRoomUnchanged', closeAfter.authoritative.currentRoomId, 'upper-landing'),
+                    skeletonKeyTraceAssertion('preview.closeKeyRetained', closeAfter.authoritative.inventoryIds, ['lockpick-tool']),
+                    skeletonKeyTraceAssertion('preview.closeMovesUnchanged', closeAfter.authoritative.movesRemaining, 2),
+                ],
+            });
 
-        await page.getByTestId('betrayal-room-upper-west').click();
-        await assertSkeletonKeySettled(page);
-        await saveScreenshot(page, SKELETON_KEY_SETTLED_SCREENSHOT);
-        await assertSkeletonKeySelectionCleared(page);
-        await saveScreenshot(page, SKELETON_KEY_RETURNED_SCREENSHOT);
+            const before = await readSkeletonKeyMoveState(page);
+            const moveBefore = await readSkeletonKeyObservation(page);
+            const moveAction = '直接点击地图上的图书馆房间 upper-west，使用骨制钥匙穿墙移动。';
+            trace.pendingAction = { id: 'direct-target-click-and-settlement', action: moveAction, before: moveBefore };
+            persistSkeletonKeyBehaviorTrace(trace);
+            await page.getByTestId('betrayal-room-upper-west').click();
+            await assertSkeletonKeySettled(page, before);
+            const moveAfter = await readSkeletonKeyObservation(page);
+            const freshMoves = moveAfter.authoritative.moves.filter((entry) => !before.moves.some((previous) => previous.id === entry.id));
+            const movedPayload = freshMoves[0]?.event.payload ?? {};
+            recordSkeletonKeyTraceStep(trace, {
+                id: 'direct-target-click-and-settlement',
+                action: moveAction,
+                before: moveBefore,
+                after: moveAfter,
+                assertions: [
+                    skeletonKeyTraceAssertion('move.sourceRoomBefore', before.currentRoomId, 'upper-landing'),
+                    skeletonKeyTraceAssertion('move.sameCurrentPlayer', moveAfter.authoritative.currentPlayer, before.currentPlayer),
+                    skeletonKeyTraceAssertion('move.samePlayerId', moveAfter.authoritative.playerId, before.playerId),
+                    skeletonKeyTraceAssertion('move.sameExplorerId', moveAfter.authoritative.explorerId, before.explorerId),
+                    skeletonKeyTraceAssertion('move.destinationRoom', moveAfter.authoritative.currentRoomId, 'upper-west'),
+                    skeletonKeyTraceAssertion('move.activeRoom', moveAfter.authoritative.activeRoomId, 'upper-west'),
+                    skeletonKeyTraceAssertion('move.remainingBefore', before.movesRemaining, 2),
+                    skeletonKeyTraceAssertion('move.remainingAfter', moveAfter.authoritative.movesRemaining, 1),
+                    skeletonKeyTraceAssertion('move.keyRetained', moveAfter.authoritative.inventoryIds, ['lockpick-tool']),
+                    skeletonKeyTraceAssertion('move.eventCount', freshMoves.length, 1),
+                    skeletonKeyTraceAssertion('move.eventType', freshMoves[0]?.event.type, 'EXPLORER_MOVED'),
+                    skeletonKeyTraceAssertion('move.eventPlayerId', movedPayload.playerId, '0'),
+                    skeletonKeyTraceAssertion('move.eventRoomId', movedPayload.roomId, 'upper-west'),
+                    skeletonKeyTraceAssertion('move.eventCardId', movedPayload.skeletonKeyCardId, 'lockpick-tool'),
+                    skeletonKeyTraceAssertion('move.eventRoll', movedPayload.skeletonKeyRoll, 2),
+                    skeletonKeyTraceAssertion('move.eventNotBuried', movedPayload.skeletonKeyBuried, false),
+                    skeletonKeyTraceAssertion('move.sourceRoomVacated', moveAfter.visible.sourceOccupantVisible, false),
+                    skeletonKeyTraceAssertion('move.destinationPawnVisible', moveAfter.visible.destinationOccupantVisible, true),
+                    skeletonKeyTraceAssertion('move.followUpTargetDirect', moveAfter.visible.followUpTargetDirect, 'true'),
+                    skeletonKeyTraceAssertion('move.followUpTargetKind', moveAfter.visible.followUpTargetMoveKind, 'skeletonKey'),
+                    skeletonKeyTraceAssertion('move.followUpTargetCost', moveAfter.visible.followUpTargetMoveCost, '1'),
+                ],
+            });
+            const settledPng = await saveScreenshot(page, SKELETON_KEY_SETTLED_SCREENSHOT);
+            recordSkeletonKeyUiMedia(trace, {
+                path: SKELETON_KEY_SETTLED_SCREENSHOT,
+                id: 'skeleton-key-settled-in-library',
+                stepId: 'direct-target-click-and-settlement',
+                change: 'layout',
+                viewport: 'desktop',
+                bytes: settledPng,
+                kind: 'image',
+            });
 
-        await assertNoFatalFrontendErrors([{ label: 'betrayal-skeleton-key-move', diagnostics }]);
+            const followUpBefore = await readSkeletonKeyObservation(page);
+            const followUpAction = '核对剩余 1 点移动力下的后续合法目标，不点击目标、不改变状态。';
+            trace.pendingAction = { id: 'verify-follow-up-target', action: followUpAction, before: followUpBefore };
+            persistSkeletonKeyBehaviorTrace(trace);
+            await expect(page.getByTestId('betrayal-room-upper-landing')).toHaveAttribute('data-direct-target', 'true');
+            await expect(page.getByTestId('betrayal-room-upper-landing')).toHaveAttribute('data-move-kind', 'skeletonKey');
+            await expect(page.getByTestId('betrayal-room-upper-landing')).toHaveAttribute('data-move-cost', '1');
+            const followUpAfter = await readSkeletonKeyObservation(page);
+            recordSkeletonKeyTraceStep(trace, {
+                id: 'verify-follow-up-target',
+                action: followUpAction,
+                before: followUpBefore,
+                after: followUpAfter,
+                assertions: [
+                    skeletonKeyTraceAssertion('followUp.movesRemaining', followUpAfter.authoritative.movesRemaining, 1),
+                    skeletonKeyTraceAssertion('followUp.targetVisible', followUpAfter.visible.followUpTargetVisible, true),
+                    skeletonKeyTraceAssertion('followUp.targetDirect', followUpAfter.visible.followUpTargetDirect, 'true'),
+                    skeletonKeyTraceAssertion('followUp.targetKind', followUpAfter.visible.followUpTargetMoveKind, 'skeletonKey'),
+                    skeletonKeyTraceAssertion('followUp.targetCost', followUpAfter.visible.followUpTargetMoveCost, '1'),
+                    skeletonKeyTraceAssertion('followUp.previewClosed', followUpAfter.visible.previewVisible, false),
+                ],
+            });
+
+            await assertNoFatalFrontendErrors([{ label: 'betrayal-skeleton-key-move', diagnostics }]);
+            const recordedVideo = page.video();
+            if (process.env.PW_RECORD_VIDEO === 'true' && !recordedVideo) {
+                throw new Error('PW_RECORD_VIDEO=true 但 Playwright page 未提供本轮视频记录');
+            }
+            if (recordedVideo) {
+                await context.close();
+                const videoPath = await recordedVideo.path();
+                const stagedVideoPath = resolveBetrayalEvidencePath(SKELETON_KEY_FULL_RUN_VIDEO);
+                mkdirSync(dirname(stagedVideoPath), { recursive: true });
+                copyFileSync(videoPath, stagedVideoPath);
+                recordSkeletonKeyUiMedia(trace, {
+                    path: SKELETON_KEY_FULL_RUN_VIDEO,
+                    id: 'skeleton-key-continuous-wall-crossing-recording',
+                    stepId: 'direct-target-click-and-settlement',
+                    change: 'animation-phase',
+                    viewport: 'desktop',
+                    bytes: readFileSync(stagedVideoPath),
+                    kind: 'video',
+                });
+            }
+            trace.status = 'PASS';
+            trace.outcome = 'The real three-player opening settled, the legal representative fixture was injected, the key preview was opened and closed, one direct wall-cross move rolled 2 and preserved the key, and a legal next target remained available.';
+            trace.completedAt = new Date().toISOString();
+            validateCompletedSkeletonKeyTrace(trace);
+            persistSkeletonKeyBehaviorTrace(trace);
+        } catch (error) {
+            trace.status = 'FAIL';
+            trace.outcome = 'The E2E behavior chain failed before all required steps completed.';
+            trace.failure = error instanceof Error ? error.message : String(error);
+            if (trace.pendingAction && !page.isClosed()) {
+                try {
+                    trace.pendingAction.after = await readSkeletonKeyObservation(page);
+                } catch {
+                    // Keep the recorded action and pre-state when the page can no longer be observed.
+                }
+            }
+            trace.completedAt = new Date().toISOString();
+            persistSkeletonKeyBehaviorTrace(trace);
+            throw error;
+        }
     });
 });

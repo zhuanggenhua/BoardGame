@@ -1,0 +1,10 @@
+.betrayal-game-thumbnail,
+.betrayal-game-thumbnail > div {
+    width: 100%;
+    height: 100%;
+    background-color: #111;
+}
+
+body .betrayal-game-thumbnail img {
+    object-fit: contain;
+}

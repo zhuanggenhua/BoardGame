@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createServer, request as httpRequest } from "node:http";
+import { exportStaticViewer } from "./static-export.mjs";
 import {
   closeSync,
   createReadStream,
@@ -69,6 +70,8 @@ const usage = () => {
   --files <文件...>  只展示这些目录内的图片 / 视频；用于 PASS 后精确交付
   --port <端口>      本地查看器端口，默认 ${DEFAULT_PORT}
   --no-open          只启动 / 注册目录，不打开浏览器
+  --export-static <目录>  导出原版画布用于静态托管，须与 --no-open 一起使用
+  --public-base-url <网址>  导出目录的公开地址，由脚本生成带原目录 key 的网址
   --reopen           即使该目录已打开过，也重新打开浏览器
   --status           查看指定端口上的查看器状态
   --stop             停止指定端口上的查看器服务
@@ -80,6 +83,8 @@ const usage = () => {
 const parseArgs = (argv) => {
   const parsed = {
     dir: null,
+    exportStatic: null,
+    publicBaseUrl: null,
     port: DEFAULT_PORT,
     noOpen: false,
     reopen: false,
@@ -115,6 +120,13 @@ const parseArgs = (argv) => {
     }
     if (current === "--reopen" || current === "--force-reopen") {
       parsed.reopen = true;
+      continue;
+    }
+    if (current === "--export-static" || current === "--public-base-url") {
+      const value = argv[index + 1];
+      if (!value) throw new Error(current + " 缺少取值");
+      parsed[current === "--export-static" ? "exportStatic" : "publicBaseUrl"] = value;
+      index += 1;
       continue;
     }
     if (current === "--dir") {
@@ -1375,6 +1387,23 @@ const launch = async (args) => {
       && previousEntry.serverInstanceId === health?.instanceId
       && !args.reopen,
   );
+
+  if (args.exportStatic || args.publicBaseUrl) {
+    if (!args.noOpen || !args.exportStatic || !args.publicBaseUrl) {
+      throw new Error("公开导出必须同时指定 --no-open、--export-static 和 --public-base-url");
+    }
+    const listing = await httpJson(args.port, `/api/list${new URL(url).search}`);
+    const exported = exportStaticViewer({
+      outputDirectory: args.exportStatic, webDirectory: WEB_DIR,
+      publicBaseUrl: args.publicBaseUrl, viewerUrl: url, listing,
+    });
+    console.log(`MEDIA_COUNT=${exported.mediaCount}`);
+    console.log(`DIRECTORY_KEY=${exported.directoryKey}`);
+    console.log(`STATIC_EXPORT_DIRECTORY=${exported.outputDirectory}`);
+    console.log(`VIEWER_URL=${exported.viewerUrl}`);
+    console.log('OPEN_BROWSER=false');
+    return;
+  }
 
   if (args.noOpen) {
     console.log(`MEDIA_COUNT=${mediaCount}`);

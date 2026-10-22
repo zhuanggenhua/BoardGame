@@ -881,7 +881,11 @@ function probeSynchronousImageReady(src: string, locale?: string): boolean {
         const testImg = new Image();
         testImg.src = url;
         if (testImg.complete && testImg.naturalWidth > 0) {
-            cacheLoadedImage(url, testImg, locale);
+            // areAllCriticalImagesCached is also read by CriticalImageGate during render.
+            // Populate the cache for that render, but don't synchronously notify mounted
+            // AtlasCard subscribers: their setState would target a different component
+            // while CriticalImageGate is still rendering.
+            cacheLoadedImage(url, testImg, locale, undefined, false);
             return true;
         }
     }
@@ -970,7 +974,13 @@ function orderImageCandidatesByRuntimeState(src: string, locale: string, candida
     return preferred.length > 0 ? [...preferred, ...deferred] : [...candidateUrls];
 }
 
-function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: string, resolvedUrl?: string): void {
+function cacheLoadedImage(
+    src: string,
+    imgElement: HTMLImageElement,
+    locale?: string,
+    resolvedUrl?: string,
+    emitReadyNotification = true,
+): void {
     const keys = getPreloadedImageCacheKeys(src, locale);
     const effectiveResolvedUrl = resolvedUrl || imgElement.currentSrc || imgElement.src || '';
     for (const key of keys) {
@@ -981,8 +991,10 @@ function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: st
         forgetImageCandidateFailure(src, locale, effectiveResolvedUrl);
     }
     rememberPersistentImageReadyHint(src, locale);
-    _emitImageReady(src);
-    keys.forEach((key) => _emitImageReady(key));
+    if (emitReadyNotification) {
+        _emitImageReady(src);
+        keys.forEach((key) => _emitImageReady(key));
+    }
 }
 
 export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement, resolvedUrl?: string): void {
@@ -1319,7 +1331,14 @@ const resolveAssetBaseUrlForPath = (value: string) => {
         }
     }
     const gameId = resolveGameIdFromAssetRelativePath(value);
-    return gameId ? gameAssetBaseOverrides.get(gameId) : undefined;
+    if (!gameId) return undefined;
+    const runtimeOverride = gameAssetBaseOverrides.get(gameId);
+    if (runtimeOverride) return runtimeOverride;
+    // Selected games can ship assets with the web build while other games keep CDN URLs.
+    // This default survives native-package override cleanup; installed packages still win.
+    const bundledGames = (import.meta.env.VITE_LOCAL_ASSET_GAMES ?? '')
+        .split(',').map((id: string) => id.trim()).filter(Boolean);
+    return bundledGames.includes(gameId) ? LOCAL_ASSETS_BASE_URL : undefined;
 };
 const isInternalAssetsUrl = (src: string) => {
     if (src.startsWith(assetsBaseUrl) || src.startsWith(`${assetsBaseUrl}/`)) {

@@ -1,0 +1,161 @@
+.fd-runtime-table {
+    --fd-hand-card-width: 120px;
+}
+.fd-runtime-hand-grid {
+    --fd-hand-hud-clearance: 146px;
+    position: absolute;
+    z-index: 20;
+    left: calc(var(--fd-hud-inline) + var(--fd-hand-hud-clearance));
+    right: var(--fd-hud-inline);
+    /* The 120×174 hand card is recessed by roughly one sixth of its height. */
+    bottom: -28px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: stretch;
+    gap: clamp(36px, 4vw, 84px);
+    box-sizing: border-box;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    pointer-events: none;
+}
+
+.fd-runtime-hand-zone {
+    position: relative;
+    display: flex;
+    flex: 0 1 max-content;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    pointer-events: none;
+}
+
+.fd-attack-hand-zone {
+    z-index: 2;
+    /* The attack zone takes the width left after the skill zone's natural
+       content width. Its card rows browse internally when they overflow. */
+    flex: 1 1 0;
+    width: auto;
+}
+.fd-skill-hand-zone { z-index: 1; flex: 0 1 max-content; width: max-content; }
+
+.fd-runtime-card-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    pointer-events: auto;
+}
+
+.fd-runtime-card {
+    position: relative;
+    flex: 0 0 var(--fd-hand-card-width);
+    width: var(--fd-hand-card-width);
+    aspect-ratio: 148 / 214;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    color: #f8e8b3;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: none;
+}
+
+.fd-runtime-card > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); z-index: 3; }
+.fd-runtime-card:focus-visible { outline: 2px solid #e3ca7b; outline-offset: 4px; }
+.fd-runtime-card.is-staged { outline: 2px solid #f5dc91; outline-offset: 2px; }
+.fd-runtime-card[aria-disabled="true"] { cursor: default; }
+
+.fd-runtime-play-area {
+    display: grid;
+    flex: 0 1 auto;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: end;
+    gap: 12px;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    pointer-events: none;
+}
+
+.fd-play-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: max-content;
+    max-width: 100%;
+    padding: 8px 10px;
+    border-left: 3px solid #c7a74e;
+    background: rgb(9 12 13 / .82);
+    color: #eadba9;
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+
+.fd-play-power { color: #f5dc91; font-size: 18px; font-weight: 800; line-height: 1.35; }
+.fd-played-cards { justify-content: safe center; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
+.fd-hand-parallel { justify-content: safe center; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
+.fd-hand-parallel > .fd-runtime-card { transition: translate .18s ease, filter .18s ease; }
+.fd-hand-parallel > .fd-runtime-card:hover,
+.fd-hand-parallel > .fd-runtime-card:focus-visible { translate: 0 -8px; z-index: 30; }
+.fd-runtime-hand-zone:focus-within,
+.fd-runtime-hand-zone:hover { z-index: 4; }
+
+.fd-runtime-empty-hand { min-height: 80px; display: grid; place-items: center; color: #b9ad8b; font-size: 13px; }
+.fd-hand-mode { align-self: flex-end; padding: 3px 8px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 14px; pointer-events: auto; }
+.fd-hand-mode[aria-pressed="true"] { background: #d2dccb; color: #14221b; }
+.fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
+.fd-runtime-card.is-riding-selected { outline: 2px solid #f5dc91; outline-offset: 3px; filter: drop-shadow(0 3px 8px #e3ca7b99); }
+
+.fd-riding-controls {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 4px 8px;
+    color: #f0e7d0;
+    font-size: 14px;
+    pointer-events: auto;
+}
+
+.fd-riding-status { text-align: center; }
+.fd-riding-controls button { min-height: 44px; padding: 6px 12px; border: 1px solid #758578; border-radius: 4px; background: #182321; color: #f8e8b3; pointer-events: auto; }
+.fd-riding-controls button:disabled { opacity: .5; cursor: not-allowed; }
+.fd-riding-controls button:focus-visible { outline: 2px solid #e3ca7b; outline-offset: 2px; }
+
+@media (max-width: 1023px) {
+    .fd-runtime-table { --fd-hand-card-width: 88px; }
+    .fd-runtime-hand-grid {
+        --fd-hand-hud-clearance: 146px;
+        gap: clamp(24px, 4vw, 36px);
+    }
+    .fd-skill-hand-zone { max-width: 36vw; }
+    .fd-runtime-card-row { gap: 6px; }
+    .fd-runtime-play-area { gap: 8px; }
+    .fd-play-summary { padding-inline: 6px; font-size: 13px; }
+    .fd-play-power { font-size: 16px; }
+    .fd-riding-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0; font-size: 13px; }
+    .fd-riding-status { grid-column: 1 / -1; }
+    .fd-riding-controls button { min-height: 44px; padding: 4px 6px; }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+    .fd-runtime-hand-grid { bottom: -28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fd-hand-parallel > .fd-runtime-card { transition: none; }
+}

@@ -1,4 +1,5 @@
 export { PixiMapSceneHost, type PixiMapSceneHostProps } from './PixiMapSceneHost';
+export { useCameraMotionPreference, type CameraMotionLifecycleRefs } from './useCameraMotionPreference';
 export type {
     MapInteractionIntent,
     MapScenePoint,
@@ -6,5 +7,9 @@ export type {
     MapSceneRegionHitTest,
     MapSceneResourceStatus,
     MapSceneToken,
+    MapSceneSprite,
+    MapSceneSpriteMotionFrameCallback,
+    MapSceneSpriteMotionPhase,
+    MapSceneSpriteMotionPhaseCallback,
     MapViewportState,
 } from './types';

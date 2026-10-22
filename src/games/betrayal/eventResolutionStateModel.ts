@@ -329,6 +329,13 @@ export function applyBetrayalEventChoiceResolvedState(
 ): BetrayalEventStateResolution {
     const previousRecentRoll = core.recentRoll;
     const previousDiscovery = core.latestDiscovery;
+    const confirmedAllTraitReward = Boolean(
+        core.pendingEventChoice?.effect.mode === 'chosenTrait'
+        && core.pendingEventChoice.allTraitCheckProgress?.results.length
+        && core.pendingEventChoice.allTraitCheckProgress.results.every((result) => result.passed)
+        && event.payload.accepted
+        && !event.payload.eventRoll?.dice?.length,
+    );
     const deferNextPendingEventChoiceBehindRoll = Boolean(
         event.payload.eventRoll?.dice?.length
         && event.payload.nextPendingEventChoice,
@@ -448,6 +455,11 @@ export function applyBetrayalEventChoiceResolvedState(
             deckKind: 'event',
             discovery: eventChoiceDiscovery,
         });
+    if (confirmedAllTraitReward) {
+        // The choice command already carries the player's explicit reward
+        // confirmation. Do not ask the same player to confirm it a second time.
+        acknowledgeEventEffectCardResolution(core, event.payload.sourceTitle, event.payload.playerId);
+    }
     const synced = syncCurrentExplorerProjection(core);
     const pendingDamageAllocationAfterEventChoice = core.pendingDamageAllocation;
     const nextCore = {

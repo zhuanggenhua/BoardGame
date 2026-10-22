@@ -804,6 +804,8 @@ export interface DomainCore<
 
     /** 玩家视图过滤（隐藏信息，仅作用于 core） */
     playerView?(state: TState, playerId: PlayerId): Partial<TState>;
+    /** Optional game-specific public spectator projection; absent preserves the existing full spectator view. */
+    spectatorView?(state: TState): Partial<TState>;
 
     /** 判断游戏是否结束（仅作用于 core） */
     isGameOver?(state: TState): GameOverResult | undefined;

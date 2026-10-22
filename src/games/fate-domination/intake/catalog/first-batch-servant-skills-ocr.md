@@ -851,3 +851,21 @@
 - CHM 首页 ScreenShot_2025-10-29_221758_597.png 是中文能力卡（担任世界 / 辉白之钢 / 花之旅途），不是 12 张数字概览。
 - 后续技能图中已读到幸运、令咒和无元剑制等技能/附属，不能据此反推数字概览。
 - 对照：demo-data.ts 为 cardB1, cardB2, cardB3×3, cardB4, cardQ2, cardA1, cardA2, cardSurveil, cardluck×2；仅供人工复核，不锁定。
+
+## 2026-10-20 三人完整切片图面补核
+
+本节只补足上文对应七张卡的未读符号/数值，不把其余 authority-summary 条目整体升级。复核来源为 CHM 已恢复原图，其页面、成员、hash 对应 recovery/fate-assets/chm/04-skills-1/asset-extraction-manifest.json、04-skills-2/asset-extraction-manifest.json 与各自 runtime-promotion.json。已由独立只读审查逐图读取，运行图位于 public/assets/i18n/zh-CN/fate-domination/skills/。
+
+| 实例定义 | 魔耗/基本威力 | 属性与本轮补核 | 原图运行件 SHA256 |
+| --- | --- | --- | --- |
+| sc_emiya_1 炽天覆七重圆环 | 2/4 | 特殊；战斗阶段将同战场所有对手的迅捷攻击威力归零，不作用于自己 | d7de6155a2df92f86fb05ae9ba674a0a6bd90c133cbe2f58a99687e16c47f47f |
+| sc_emiya_2 伪·螺旋剑 | 2/4 | 迅捷、宝具；真名解放、每局一次；行动地利三倍、赢得本场战斗后额外4战果 | fe4314198dc1f941fce305825fcc4948c10e42b078b9c372cc96af764e795d58 |
+| sc_emiya_np 无限剑制 | 8/0 | 特殊，卡面无宝具标签；真名解放；打出时从自己已打出/手牌/牌库/弃牌组合至多12手牌；残留时常规0–4张、不能抽牌，手牌为空关闭 | 325fce344e4e922be58233745d3a1d29152a39a8baaff82cba78150707262dd3 |
+| sc_iskandar_1 骑乘 | 3/0 | 特殊；与基础攻击一同打出抽1；行动效果打出至多3张基本威力不超过3的手牌 | 932896e8fa8492a2a87d429340b325aecef314e97f238659a968dcbdc4313285 |
+| sc_iskandar_2 神威车轮 | 4/7 | 力量、宝具；真名解放；行动弃本地点1事件，抽2选1替换，另1洗回牌库 | 9f69f69bbec08ef23db49ba5ad555a2930ae94ac781c10ac29b42a66ebb948ec |
+| sc_iskandar_np 王之军势 | 8/0 | 特殊、宝具；真名解放；行动生成并激活5张力量或迅捷、威力2临时基础攻击 | f4138c7189ac4eade227b5ee3ae95328526d11e1ddfb6c6138dbdcf67deba6c6 |
+| sc_lance_1 无穷的武练 | 4/0 | 卡面未印特殊属性；战斗阶段复制同战场激活的非残留力量或迅捷攻击，自控源复制威力额外3；败北条件仍按上文正文 | b353b93049a3e6c65ce9c9aed045be9e537ccbcc2f3476f22353bd873f197905 |
+
+以上字段状态：locked（图面核对）。两个荣光技能继续以上文 CHM 中文正文为事实；当前 sc_lance_2/sc_lance_3 PNG 是 TTS 中文恢复图，不能称其字节来自 CHM。两张没有固定印刷攻击费用/威力，不能用默认0/0当普通攻击；行动复制费用取源魔耗向下减半与减4中更省者，并花1令咒。
+
+升华启用规则已找到：chm-前情提要与内容物介绍.md 第403–418行，只有扩展莎士比亚技能激活。此三从者不含莎士比亚，无需伪造普通升华入口。

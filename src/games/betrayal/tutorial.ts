@@ -103,7 +103,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'objective-and-turn',
             content: 'game-betrayal:tutorial.basicSetup.steps.objectiveAndTurn',
-            highlightTarget: 'betrayal-action-move',
+            highlightTarget: 'betrayal-current-explorer-token',
             position: 'top',
             infoStep: true,
             viewAs: '0',
@@ -175,7 +175,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'open-move-targets',
             content: 'game-betrayal:tutorial.basicSetup.steps.openMoveTargets',
-            highlightTarget: 'betrayal-action-move',
+            highlightTarget: 'betrayal-current-explorer-token',
             position: 'top',
             viewAs: '0',
         },
@@ -193,7 +193,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'explore-upper',
             content: 'game-betrayal:tutorial.basicSetup.steps.exploreUpper',
-            highlightTarget: 'betrayal-action-explore',
+            highlightTarget: 'betrayal-room-ground-north',
             position: 'top',
             requireAction: true,
             allowedCommands: [],
@@ -212,7 +212,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             id: 'confirm-room-placement',
             content: 'game-betrayal:tutorial.basicSetup.steps.confirmRoomPlacement',
             highlightTarget: 'betrayal-room-placement-confirm',
-            position: 'top',
+            position: 'right',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.EXPLORE_ROOM],
             advanceOnEvents: [{ type: 'ROOM_EXPLORED', match: { playerId: '0' } }],
@@ -432,7 +432,7 @@ const createBetrayalHeroReaderAndFirstObjectiveSteps = (
             {
                 id: 'open-library-move-after-goal',
                 content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.openLibraryMoveAfterGoal',
-                highlightTarget: 'betrayal-action-move',
+                highlightTarget: 'betrayal-current-explorer-token',
                 position: 'top' as const,
                 requireAction: true,
                 allowedCommands: [],
@@ -867,7 +867,7 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
         {
             id: 'move-to-grand-staircase',
             content: 'game-betrayal:tutorial.mainPath.steps.moveToGrandStaircase',
-            highlightTarget: 'betrayal-action-move',
+            highlightTarget: 'betrayal-current-explorer-token',
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.MOVE_TO_ROOM],

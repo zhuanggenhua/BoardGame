@@ -1,3 +1,4 @@
+import './platform-language.css';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGE_OPTIONS } from '../../../lib/i18n/types';
@@ -5,10 +6,11 @@ import clsx from 'clsx';
 import { UI_Z_INDEX } from '../../../core';
 
 interface LanguageSwitcherProps {
+    visualStyle?: 'classic' | 'platform';
     className?: string;
 }
 
-export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
+export const LanguageSwitcher = ({ className = '', visualStyle = 'classic' }: LanguageSwitcherProps) => {
     const { i18n, t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
     };
 
     return (
-        <div ref={containerRef} className={clsx('relative flex h-8 items-center', className)}>
+        <div data-language-style={visualStyle} ref={containerRef} className={clsx('relative flex h-8 items-center', className)}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(

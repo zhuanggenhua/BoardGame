@@ -28,7 +28,7 @@ function getScopedBundleRoot(runtimeScope) {
   return path.join('temp', 'dev-bundles', 'e2e-single', normalizeScopeSegment(runtimeScope));
 }
 
-function createRuntimeLogWriter(logFile, logger) {
+export function createRuntimeLogWriter(logFile, logger) {
   if (!logFile) {
     return {
       writeLine(message = '') {
@@ -41,20 +41,27 @@ function createRuntimeLogWriter(logFile, logger) {
 
   fs.mkdirSync(path.dirname(logFile), { recursive: true });
   const stream = fs.createWriteStream(logFile, { flags: 'a' });
+  let closed = false;
+  const write = (chunk) => {
+    if (closed || stream.destroyed || stream.writableEnded) return;
+    stream.write(chunk);
+  };
 
   return {
     writeLine(message = '') {
-      stream.write(`${message}\n`);
+      write(`${message}\n`);
     },
     pipeChildOutput(child) {
       child.stdout?.on('data', chunk => {
-        stream.write(chunk);
+        write(chunk);
       });
       child.stderr?.on('data', chunk => {
-        stream.write(chunk);
+        write(chunk);
       });
     },
     close() {
+      if (closed) return;
+      closed = true;
       stream.end();
     },
   };

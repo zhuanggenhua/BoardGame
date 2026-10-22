@@ -1,0 +1,206 @@
+import {CardPreview} from '../../../components/common/media/CardPreview';
+import {fateCardPreview} from '../data/cardArtwork';
+import './identityArtwork';
+import {useLayoutEffect, useRef, useState, type CSSProperties} from 'react';
+import {motion} from 'framer-motion';
+import {OptimizedImage} from '../../../components/common/media/OptimizedImage';
+import {FATE_ATTACK_BY_ID} from '../data';
+import type {CardInstance, PlayerState, SkillDefinition} from '../domain/types';
+import {projectFateHand} from '../domain/handView';
+import './hand-surface.css';
+
+export type FateSkillCardView = {
+    skill: SkillDefinition;
+    assetPath: string;
+    available: boolean;
+    abilityAvailable?: boolean;
+};
+
+interface Props {
+    player: PlayerState;
+    power: number;
+    skills: readonly FateSkillCardView[];
+    canSelect: boolean;
+    canSelectCard?: (id: string, faceDown?: boolean) => boolean;
+    onSelect: (id: string, faceDown?: boolean) => void;
+    onPlaySkill: (id: string) => void;
+    canPlayAbility?: (id: string) => boolean;
+    onInspect: (assetPath: string, name: string, pinned?: boolean) => void;
+    onDismissHoverInspection?: () => void;
+    shouldSuppressFocusPreview?: () => boolean;
+    ridingChoice?: {
+        interactionId: string;
+        round: number;
+        candidateIds: readonly string[];
+        onConfirm: (cardIds: string[]) => void;
+        onCancel: () => void;
+    };
+}
+
+/** The attack and skill hands stay separate; played cards remain direct card objects. */
+export function FateHandSurface({player, power, skills, canSelect, canSelectCard, onSelect, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice}: Props) {
+    const interactionScope = JSON.stringify([player.id, canSelect, ridingChoice?.interactionId ?? null, ridingChoice?.round ?? null]);
+    const [faceDownState, setFaceDownState] = useState<{scope: string; value: boolean}>({scope: '', value: false});
+    const [ridingSelectionState, setRidingSelectionState] = useState<{scope: string; ids: string[]}>({scope: '', ids: []});
+    const surface = useRef<HTMLDivElement>(null);
+    const focusedCard = useRef<string | null>(null);
+
+    useLayoutEffect(() => {
+        if (!ridingChoice) setRidingSelectionState({scope: interactionScope, ids: []});
+    }, [interactionScope, ridingChoice]);
+
+    // React remounts a card as it moves between hand and play areas. Keep keyboard
+    // focus on that same live card when its owning state changes.
+    useLayoutEffect(() => {
+        if (!focusedCard.current || document.activeElement !== document.body) return;
+        const cards = surface.current?.querySelectorAll<HTMLButtonElement>('[data-focus-card]');
+        Array.from(cards ?? []).find(card => card.dataset.focusCard === focusedCard.current)?.focus({preventScroll: true});
+    }, [player.hand, player.selectedAttackIds, player.activeAttackIds, player.activeSkills]);
+
+    const faceDownMode = faceDownState.scope === interactionScope && faceDownState.value;
+    const ridingSelection = ridingSelectionState.scope === interactionScope ? ridingSelectionState.ids : [];
+    const toggleRidingSelection = (id: string) => setRidingSelectionState(previous => {
+        const ids = previous.scope === interactionScope ? previous.ids : [];
+        return {scope: interactionScope, ids: ids.includes(id) ? ids.filter(candidate => candidate !== id) : [...ids, id]};
+    });
+    const zones = projectFateHand(player);
+    const ridingCandidateIds = new Set(ridingChoice?.candidateIds ?? []);
+    const ridingCost = ridingSelection.reduce((sum, id) => sum + (FATE_ATTACK_BY_ID[player.hand.find(card => card.id === id)?.definitionId ?? '']?.manaCost ?? Infinity), 0);
+    const canConfirmRiding = Boolean(ridingChoice && ridingSelection.length <= 3
+        && ridingSelection.every(id => ridingCandidateIds.has(id)) && ridingCost <= player.mana);
+    const playedIds = [...new Set([...player.activeAttackIds, ...player.activeSkills, ...player.selectedAttackIds])];
+    const staged = player.selectedAttackIds.length > 0;
+    const readySkills = skills.filter(item => !player.activeSkills.includes(item.skill.id) && !player.selectedAttackIds.includes(item.skill.id));
+    const canUseHoverPreview = () => typeof window !== 'undefined'
+        && typeof window.matchMedia === 'function'
+        && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    const renderSkill = ({skill, assetPath, available, abilityAvailable}: FateSkillCardView, active = false, stagedSkill = false) => (
+        <motion.button
+            layout
+            layoutId={`fate-skill-${player.id}-${skill.id}`}
+            key={skill.id}
+            type="button"
+            className={`fd-runtime-card${stagedSkill ? ' is-staged' : (active ? abilityAvailable : available) ? ' is-available' : ''}`}
+            aria-label={`${stagedSkill ? '撤回' : active ? '发动' : '选择'} ${skill.name}`}
+            aria-disabled={Boolean(ridingChoice) || (active ? !abilityAvailable : !available)}
+            data-focus-card={`skill-${player.id}-${skill.id}`}
+            data-card-zone={stagedSkill ? 'staged-skill' : active ? 'active-skill' : 'skill'}
+            onMouseEnter={() => {if ((active || stagedSkill) && canUseHoverPreview()) onInspect(assetPath, skill.name);}}
+            onMouseLeave={() => {if (active || stagedSkill) onDismissHoverInspection?.();}}
+            onFocus={event => {if ((active || stagedSkill) && canUseHoverPreview() && !shouldSuppressFocusPreview?.() && event.currentTarget.matches(':focus-visible')) onInspect(assetPath, skill.name);}}
+            onBlur={() => {if (active || stagedSkill) onDismissHoverInspection?.();}}
+            onContextMenu={event => {event.preventDefault(); onInspect(assetPath, skill.name, true);}}
+            onClick={() => {
+                if (ridingChoice) return;
+                if (active) {
+                    if (abilityAvailable) onPlaySkill(skill.id);
+                } else if (stagedSkill || available) {
+                    onSelect(skill.id);
+                }
+            }}
+        >
+            <OptimizedImage src={assetPath} alt={skill.name}/>
+        </motion.button>
+    );
+
+    const renderAttack = (card: CardInstance, isStaged = false, committed = false) => {
+        const definition = FATE_ATTACK_BY_ID[card.definitionId];
+        if (!definition) return null;
+        const abilityAvailable = committed && Boolean(canPlayAbility?.(card.id));
+        const ridingSelected = Boolean(ridingChoice && ridingSelection.includes(card.id));
+        const ridingCardCost = definition.manaCost;
+        const canToggleRiding = Boolean(ridingChoice && ridingCandidateIds.has(card.id) && (ridingSelected
+            || (ridingSelection.length < 3 && ridingCost + ridingCardCost <= player.mana)));
+        const selectable = ridingChoice ? canToggleRiding : canSelect && (canSelectCard?.(card.id, faceDownMode) ?? true);
+        return (
+            <motion.button
+                layout
+                layoutId={`fate-card-${card.id}`}
+                key={card.id}
+                type="button"
+                className={`fd-runtime-card${isStaged ? ' is-staged' : ridingSelected ? ' is-riding-selected' : selectable ? ' is-available' : ''}`}
+                initial={{opacity: 0, y: 14}}
+                animate={{opacity: 1, y: 0}}
+                exit={{opacity: 0, y: -28}}
+                transition={{duration: .2}}
+                data-focus-card={`attack-${player.id}-${card.id}`}
+                data-card-id={card.id}
+                data-card-zone={isStaged ? 'staged' : committed ? 'active' : 'hand'}
+                aria-label={`${ridingChoice ? ridingSelected ? '取消骑乘选择 ' : '选择坐骑召唤 ' : isStaged ? '撤回 ' : committed ? (abilityAvailable ? '发动 ' : '检视 ') : '选择 '}${definition.name}`}
+                aria-pressed={ridingChoice ? ridingSelected : undefined}
+                onMouseEnter={() => {if ((isStaged || committed) && canUseHoverPreview()) onInspect(definition.assetPath, definition.name);}}
+                onMouseLeave={() => {if (isStaged || committed) onDismissHoverInspection?.();}}
+                onFocus={event => {if ((isStaged || committed) && canUseHoverPreview() && !shouldSuppressFocusPreview?.() && event.currentTarget.matches(':focus-visible')) onInspect(definition.assetPath, definition.name);}}
+                onBlur={() => {if (isStaged || committed) onDismissHoverInspection?.();}}
+                onContextMenu={event => {event.preventDefault(); onInspect(definition.assetPath, definition.name, true);}}
+                onClick={() => {
+                    if (ridingChoice) {
+                        if (ridingCandidateIds.has(card.id) && (ridingSelected || canToggleRiding)) toggleRidingSelection(card.id);
+                        return;
+                    }
+                    if (committed) {
+                        if (abilityAvailable) onPlaySkill(card.id);
+                        else onInspect(definition.assetPath, definition.name, true);
+                    } else if (selectable) {
+                        onSelect(card.id, faceDownMode || undefined);
+                    }
+                }}
+                aria-disabled={ridingChoice ? !selectable : !isStaged && !committed && !selectable}
+            >
+                <CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name} style={{width: '100%'}}/>
+                {((player.faceDownAttackIds ?? []).includes(card.id) || (player.selectedFaceDownIds ?? []).includes(card.id)) && <span className="fd-face-down-label">暗置</span>}
+            </motion.button>
+        );
+    };
+
+    const renderPlayed = (id: string) => {
+        const card = player.hand.find(candidate => candidate.id === id);
+        if (card) return renderAttack(card, player.selectedAttackIds.includes(id), player.activeAttackIds.includes(id));
+        const skill = skills.find(item => item.skill.id === id);
+        return skill ? renderSkill(skill, player.activeSkills.includes(id), player.selectedAttackIds.includes(id)) : null;
+    };
+
+    return (
+        <div
+            ref={surface}
+            className="fd-runtime-hand-grid"
+            data-testid="fate-hand-zones"
+            data-played-count={playedIds.length}
+            data-riding-choice={ridingChoice ? 'true' : undefined}
+            onFocusCapture={event => {focusedCard.current = (event.target as HTMLElement).closest<HTMLElement>('[data-focus-card]')?.dataset.focusCard ?? null;}}
+            onBlurCapture={event => {
+                if ((!event.relatedTarget && (event.target as HTMLElement).isConnected) || (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node))) focusedCard.current = null;
+            }}
+        >
+            <section className="fd-runtime-hand-zone fd-attack-hand-zone" aria-label="攻击手牌">
+                {ridingChoice && <div className="fd-riding-controls" data-testid="fate-riding-controls" aria-live="polite">
+                    <span className="fd-riding-status" aria-label={`坐骑召唤 · 已选 ${ridingSelection.length} 张（最多 3 张）· 实付 ${Number.isFinite(ridingCost) ? ridingCost : '—'} / ${player.mana} 魔力 · 本次选牌固定明置`}>
+                        已选 {ridingSelection.length}/3 · 实付 {Number.isFinite(ridingCost) ? ridingCost : '—'}/{player.mana} 魔力
+                    </span>
+                    <button type="button" data-testid="fate-riding-confirm" disabled={!canConfirmRiding} onClick={() => ridingChoice.onConfirm([...ridingSelection])}>确认打出（{ridingSelection.length}）</button>
+                    <button type="button" data-testid="fate-riding-cancel" onClick={ridingChoice.onCancel}>取消骑乘</button>
+                </div>}
+                <div className="fd-runtime-play-area" data-testid="fate-play-area">
+                    <div className="fd-play-summary" data-testid="fate-play-summary">
+                        <span>{staged ? '准备打出' : '已打出'} · {staged ? player.selectedAttackIds.length : playedIds.length}</span>
+                        <strong className="fd-play-power">{staged ? '预计合计威力' : '合计威力'} {power}</strong>
+                    </div>
+                    <div className="fd-runtime-card-row fd-hand-parallel fd-played-cards" data-testid="fate-played-cards" style={{'--card-count': Math.max(1, playedIds.length)} as CSSProperties}>
+                        {playedIds.map(renderPlayed)}
+                    </div>
+                </div>
+                {canSelect && !ridingChoice && <button type="button" className="fd-hand-mode" aria-label="暗置选牌" aria-pressed={faceDownMode} onClick={() => setFaceDownState(previous => ({scope: interactionScope, value: !(previous.scope === interactionScope && previous.value)}))}>{faceDownMode ? '暗置选牌' : '明置选牌'}</button>}
+                <div className="fd-runtime-card-row fd-hand-parallel fd-attack-cards" data-testid="fate-domination-hand" style={{'--card-count': Math.max(1, zones.available.length)} as CSSProperties}>
+                    {zones.available.map(card => renderAttack(card))}
+                    {!zones.available.length && <span className="fd-runtime-empty-hand">手牌已全部打出</span>}
+                </div>
+            </section>
+            <section className="fd-runtime-hand-zone fd-skill-hand-zone" aria-label="技能牌">
+                <div className="fd-runtime-card-row fd-hand-parallel fd-skill-cards" style={{'--card-count': Math.max(1, readySkills.length)} as CSSProperties}>
+                    {readySkills.map(item => renderSkill(item))}
+                </div>
+            </section>
+        </div>
+    );
+}

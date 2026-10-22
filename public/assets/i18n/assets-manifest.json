@@ -5179,96 +5179,6 @@
         }
       }
     },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92": {
-      "variants": {
-        "webp": {
-          "sha256": "fa5e92f43cb9b3461cf955d347dde9b3f0e8e4a5e6fe57346c689814d688d707",
-          "bytes": 42232,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc1842549310182005639809347EDD838C02BDBD328B19A0E4109A23D0E5C": {
-      "variants": {
-        "webp": {
-          "sha256": "530e4db9d14b3b2de059379379be443bc3d02e5d43f203d1c8b93a8b743bc55a",
-          "bytes": 41590,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820059573B63D75D14CC4B00164909AF53B667598F2B7FB9": {
-      "variants": {
-        "webp": {
-          "sha256": "2756dfdc13fb85cf60797018d540b165d68276a3360a06423d0802dfa740faaa",
-          "bytes": 41898,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084": {
-      "variants": {
-        "webp": {
-          "sha256": "81103e0494a1b0cdab8abb8543fe3be471b865f2af2c8ce4eaaecc03ead58b09",
-          "bytes": 40214,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200610455963F811E1050949F60D543AAC3B3C5629AF986": {
-      "variants": {
-        "webp": {
-          "sha256": "0f5cd507aa60e43f9953182f82c23aca7a29defd29bb2e979b1f545d69331c68",
-          "bytes": 31096,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820062522F3CCC3E36EA81E73A60117C0C76B0AF89BE31D0": {
-      "variants": {
-        "webp": {
-          "sha256": "9b162922073979ff63e6c02268eeb6f19be3229c56ea48760b1760d7b2937940",
-          "bytes": 35386,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200705071552C929FC70CBA75EFEAE873B8A027E6510A60": {
-      "variants": {
-        "webp": {
-          "sha256": "b8afe8cb4274ffba5b7e4902334670cddda845e0c8d9186f7a7a5259de63c590",
-          "bytes": 35760,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820071214B70CAE6075AEE1070830AD79EDF55B44EE2998E": {
-      "variants": {
-        "webp": {
-          "sha256": "bf43c1ace0eefb6a3b956adda5ed3e0754e9dd943917be14a7a2d078d464e91d",
-          "bytes": 37642,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200719894AED1A44BD5ACB8C2C46CB2BAF5E89FD82E37B8": {
-      "variants": {
-        "webp": {
-          "sha256": "909116c35eeb8189bdd2a93b2c6dff62cf4ab95179aed6c45c889e778c75bf47",
-          "bytes": 35076,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820073198B1C899FC54A12B01B46328B8645965EF84820A5": {
-      "variants": {
-        "webp": {
-          "sha256": "d0ab9558d9a32271b2c62736dbe0b31a4de78118baaf2178265256ca60c9c693",
-          "bytes": 38350,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/betrayal/tokens/explorers/compressed/isa-valencia": {
       "variants": {
         "webp": {
@@ -5373,96 +5283,6 @@
         "png": {
           "sha256": "5f58e352a277e24984e459c59c8c40cf657ee9b0b46b8e4926b14de3685ea655",
           "bytes": 163121,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92": {
-      "variants": {
-        "png": {
-          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
-          "bytes": 182697,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc1842549310182005639809347EDD838C02BDBD328B19A0E4109A23D0E5C": {
-      "variants": {
-        "png": {
-          "sha256": "7e209e71b4e83913ec7cb0e3b2c7f9fc5fe773dc33d4ec38c5f2704aa7c42871",
-          "bytes": 179148,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820059573B63D75D14CC4B00164909AF53B667598F2B7FB9": {
-      "variants": {
-        "png": {
-          "sha256": "b55d77fd9fedabf0c4bb349d3a47087e249601967c70b2605d9ae7d70e09d74d",
-          "bytes": 181155,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084": {
-      "variants": {
-        "png": {
-          "sha256": "ea8107afca3938d5eaeb1f19b5069cc3c2f057a064b295571c744b23df986c65",
-          "bytes": 176084,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200610455963F811E1050949F60D543AAC3B3C5629AF986": {
-      "variants": {
-        "png": {
-          "sha256": "4b4ed6879a712d014b5fca806fc0c9da0314e831aa1e4291a39c98ec467f2db9",
-          "bytes": 141511,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820062522F3CCC3E36EA81E73A60117C0C76B0AF89BE31D0": {
-      "variants": {
-        "png": {
-          "sha256": "d73c17a2f6c5501d7b79ecbc437e9e616ab0e26c534fa67531d00b7929b177df",
-          "bytes": 160634,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200705071552C929FC70CBA75EFEAE873B8A027E6510A60": {
-      "variants": {
-        "png": {
-          "sha256": "5f58e352a277e24984e459c59c8c40cf657ee9b0b46b8e4926b14de3685ea655",
-          "bytes": 163121,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820071214B70CAE6075AEE1070830AD79EDF55B44EE2998E": {
-      "variants": {
-        "png": {
-          "sha256": "e3e0bdad15b0ee7b3c7790c87ee972498d92bc8c21e53d06409949719aa7c2d2",
-          "bytes": 173984,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200719894AED1A44BD5ACB8C2C46CB2BAF5E89FD82E37B8": {
-      "variants": {
-        "png": {
-          "sha256": "6d81a0f09e6a882d01d34cb29447de714996046a91c5a25e2fbc2f8d6aedfd2f",
-          "bytes": 163003,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820073198B1C899FC54A12B01B46328B8645965EF84820A5": {
-      "variants": {
-        "png": {
-          "sha256": "01ae314b17d9e4171f383157d25035754259ca291a9a6148e3f5ff204011bd7f",
-          "bytes": 172547,
           "mime": "image/png"
         }
       }
@@ -6934,84 +6754,12 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/artificial/面板": {
-      "variants": {
-        "png": {
-          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
-          "bytes": 10727881,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/手牌": {
-      "variants": {
-        "png": {
-          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
-          "bytes": 14880819,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/提示卡": {
-      "variants": {
-        "png": {
-          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
-          "bytes": 3714935,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/骰子": {
-      "variants": {
-        "jpg": {
-          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
-          "bytes": 104021,
-          "mime": "image/jpeg"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/artificial/ability-cards": {
       "variants": {
         "png": {
           "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
           "bytes": 14880819,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/面板": {
-      "variants": {
-        "webp": {
-          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
-          "bytes": 442528,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
-          "bytes": 380930,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/提示卡": {
-      "variants": {
-        "webp": {
-          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
-          "bytes": 324350,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
-          "bytes": 15502,
-          "mime": "image/webp"
         }
       }
     },
@@ -7060,6 +6808,42 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/artificial/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
+          "bytes": 380930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/提示卡": {
+      "variants": {
+        "webp": {
+          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
+          "bytes": 324350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/面板": {
+      "variants": {
+        "webp": {
+          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
+          "bytes": 442528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
+          "bytes": 15502,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/artificial/dice": {
       "variants": {
         "jpg": {
@@ -7084,101 +6868,6 @@
           "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
           "bytes": 720,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
-          "bytes": 637977,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/电能机器人1次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "6f24fa8581cc3721565c32a89cf984bacbfaf32f5c4121bffcac0585b3574eb1",
-          "bytes": 402083,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/电能机器人2次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "63a92955784caa43724caffcc81bea9c960ae26abf8d7c71fdf466446ffaf693",
-          "bytes": 398106,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/合成器": {
-      "variants": {
-        "png": {
-          "sha256": "223f1d98be8696ec4a5b64ad16df7856d667f11363678b692ca3a28a54ec6af5",
-          "bytes": 89335,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/纳米爆蛋": {
-      "variants": {
-        "png": {
-          "sha256": "17e2c1b4eb96083dc94e4655a0e451786a464cca24b88eb4730cf80fa748f855",
-          "bytes": 64853,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/纳米机器人1次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "b1b24cf5dac0a4a91d43e43bb9b97561dbe733115f628a8b51c7ad1ef5e84d63",
-          "bytes": 329783,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/纳米机器人2次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "6ca19753dc92599621d57714c1d665bfbe093d2fd406406c6de9eb2f0f650dbb",
-          "bytes": 316452,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/治疗机器人1次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "642549b3ae84377948940170625ebca832f74d35a29122b7d750566fd3b1888a",
-          "bytes": 310633,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/治疗机器人2次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
-          "bytes": 306226,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人1次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "12fa98ff47d30a62f3e8a9ae28ff347fb47a6ac6c0a25095556a0ba72207b15e",
-          "bytes": 57152,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人2次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "96aaf1ff1f33f98722805474182ca97c157d95d00628e52334ffe2a3b44d65ef",
-          "bytes": 57936,
-          "mime": "image/webp"
         }
       }
     },
@@ -7187,33 +6876,6 @@
         "webp": {
           "sha256": "55db363e3b599a16227fe689dd7ffcafb1d4e91f7e9d5c193f2e265cb4faa4f2",
           "bytes": 9976,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/纳米爆蛋": {
-      "variants": {
-        "webp": {
-          "sha256": "b5d3be4460c7a52732be63687d76593a37eb556d6d877bad6969b027a6c87999",
-          "bytes": 6026,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人1次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "f8d0f56105cb7fe1c8a0a8d4a9ca7a708ebf106a9fdffe97d860fcee021094ad",
-          "bytes": 49818,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人2次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "6e1c87ab0de626fe35b9d8f05709660fdd92ca1b0877b9831f8931a123dcb433",
-          "bytes": 52470,
           "mime": "image/webp"
         }
       }
@@ -7236,12 +6898,165 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "12fa98ff47d30a62f3e8a9ae28ff347fb47a6ac6c0a25095556a0ba72207b15e",
+          "bytes": 57152,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "96aaf1ff1f33f98722805474182ca97c157d95d00628e52334ffe2a3b44d65ef",
+          "bytes": 57936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f8d0f56105cb7fe1c8a0a8d4a9ca7a708ebf106a9fdffe97d860fcee021094ad",
+          "bytes": 49818,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "6e1c87ab0de626fe35b9d8f05709660fdd92ca1b0877b9831f8931a123dcb433",
+          "bytes": 52470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米爆蛋": {
+      "variants": {
+        "webp": {
+          "sha256": "b5d3be4460c7a52732be63687d76593a37eb556d6d877bad6969b027a6c87999",
+          "bytes": 6026,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/合成器": {
+      "variants": {
+        "png": {
+          "sha256": "223f1d98be8696ec4a5b64ad16df7856d667f11363678b692ca3a28a54ec6af5",
+          "bytes": 89335,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/治疗机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "642549b3ae84377948940170625ebca832f74d35a29122b7d750566fd3b1888a",
+          "bytes": 310633,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/治疗机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
+          "bytes": 306226,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/电能机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "6f24fa8581cc3721565c32a89cf984bacbfaf32f5c4121bffcac0585b3574eb1",
+          "bytes": 402083,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/电能机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "63a92955784caa43724caffcc81bea9c960ae26abf8d7c71fdf466446ffaf693",
+          "bytes": 398106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "b1b24cf5dac0a4a91d43e43bb9b97561dbe733115f628a8b51c7ad1ef5e84d63",
+          "bytes": 329783,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "6ca19753dc92599621d57714c1d665bfbe093d2fd406406c6de9eb2f0f650dbb",
+          "bytes": 316452,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米爆蛋": {
+      "variants": {
+        "png": {
+          "sha256": "17e2c1b4eb96083dc94e4655a0e451786a464cca24b88eb4730cf80fa748f855",
+          "bytes": 64853,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/artificial/tip": {
       "variants": {
         "png": {
           "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
           "bytes": 3714935,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
+          "bytes": 14880819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/提示卡": {
+      "variants": {
+        "png": {
+          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
+          "bytes": 3714935,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/面板": {
+      "variants": {
+        "png": {
+          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
+          "bytes": 10727881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
+          "bytes": 104021,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -7311,8 +7126,8 @@
     "zh-CN/dicethrone/images/barbarian/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
-          "bytes": 387,
+          "sha256": "36bbc17b260847ec6297251ceb2d6a0ca1fa2942e03d72fda7107d2d6139e5c7",
+          "bytes": 361,
           "mime": "application/json"
         }
       }
@@ -7380,102 +7195,12 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/人类面板": {
-      "variants": {
-        "png": {
-          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
-          "bytes": 9335738,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/手牌": {
-      "variants": {
-        "png": {
-          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
-          "bytes": 16513454,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/提示板": {
-      "variants": {
-        "jpg": {
-          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
-          "bytes": 1541631,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/骰子": {
-      "variants": {
-        "jpg": {
-          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
-          "bytes": 120704,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/玩家面板": {
-      "variants": {
-        "png": {
-          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
-          "bytes": 9948505,
-          "mime": "image/png"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/cursed/ability-cards": {
       "variants": {
         "png": {
           "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
           "bytes": 16513454,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/人类面板": {
-      "variants": {
-        "webp": {
-          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
-          "bytes": 338966,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
-          "bytes": 402186,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/提示板": {
-      "variants": {
-        "webp": {
-          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
-          "bytes": 334460,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
-          "bytes": 18542,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/玩家面板": {
-      "variants": {
-        "webp": {
-          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
-          "bytes": 377108,
-          "mime": "image/webp"
         }
       }
     },
@@ -7533,6 +7258,51 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/cursed/compressed/人类面板": {
+      "variants": {
+        "webp": {
+          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
+          "bytes": 338966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
+          "bytes": 402186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
+          "bytes": 334460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
+          "bytes": 377108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
+          "bytes": 18542,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/cursed/dice": {
       "variants": {
         "jpg": {
@@ -7566,56 +7336,6 @@
           "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
           "bytes": 604,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
-          "bytes": 317204,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/凋零": {
-      "variants": {
-        "png": {
-          "sha256": "9f786ba6cb8ae1b6c90bec0f76dd86a99c0e60875618e77e7141764334577d06",
-          "bytes": 64632,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/休战": {
-      "variants": {
-        "png": {
-          "sha256": "51aac7cb57d742e84d0f08b9827fbfc309b5e6a1c37cae8013cfc1db04d8921d",
-          "bytes": 40862,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/炸药": {
-      "variants": {
-        "png": {
-          "sha256": "55cdff24a5ce8b057d4b80e1718e83fbe89fbb045c64b8be233228df6239f8ac",
-          "bytes": 77380,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/诅咒金币": {
-      "variants": {
-        "png": {
-          "sha256": "ac01167c8e5dc794df31648a5be03d56a7e42974342bf7eefde79c685a9abcec",
-          "bytes": 86639,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/compressed/凋零": {
-      "variants": {
-        "webp": {
-          "sha256": "bb8c259642f136eef1ccec63c7a37c68626f75adada662624e03e96bc3edfed7",
-          "bytes": 8754,
-          "mime": "image/webp"
         }
       }
     },
@@ -7624,6 +7344,15 @@
         "webp": {
           "sha256": "f6166c3e7750c80b4998ed8d132831e96b89c66b0124ff30d031e992a6a61156",
           "bytes": 5350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/凋零": {
+      "variants": {
+        "webp": {
+          "sha256": "bb8c259642f136eef1ccec63c7a37c68626f75adada662624e03e96bc3edfed7",
+          "bytes": 8754,
           "mime": "image/webp"
         }
       }
@@ -7646,11 +7375,92 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/cursed/status/休战": {
+      "variants": {
+        "png": {
+          "sha256": "51aac7cb57d742e84d0f08b9827fbfc309b5e6a1c37cae8013cfc1db04d8921d",
+          "bytes": 40862,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/凋零": {
+      "variants": {
+        "png": {
+          "sha256": "9f786ba6cb8ae1b6c90bec0f76dd86a99c0e60875618e77e7141764334577d06",
+          "bytes": 64632,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/炸药": {
+      "variants": {
+        "png": {
+          "sha256": "55cdff24a5ce8b057d4b80e1718e83fbe89fbb045c64b8be233228df6239f8ac",
+          "bytes": 77380,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/诅咒金币": {
+      "variants": {
+        "png": {
+          "sha256": "ac01167c8e5dc794df31648a5be03d56a7e42974342bf7eefde79c685a9abcec",
+          "bytes": 86639,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/cursed/tip": {
       "variants": {
         "jpg": {
           "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
           "bytes": 1541631,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/人类面板": {
+      "variants": {
+        "png": {
+          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
+          "bytes": 9335738,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
+          "bytes": 16513454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
+          "bytes": 1541631,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
+          "bytes": 9948505,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
+          "bytes": 120704,
           "mime": "image/jpeg"
         }
       }
@@ -8216,8 +8026,8 @@
     "zh-CN/dicethrone/images/gunslinger/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
-          "bytes": 738,
+          "sha256": "916e0ceda6e0c117593082f64e38e94591085faa89bc52dd231964686e501866",
+          "bytes": 707,
           "mime": "application/json"
         }
       }
@@ -8333,8 +8143,8 @@
     "zh-CN/dicethrone/images/lieren/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "888c4441d144593c66242a20168dff2f285500ad280f95eb91d1fa6b038a30aa",
-          "bytes": 575,
+          "sha256": "4b789841176e01e16e3fb821ca2683fd63ac6e0c29ebed89ddfae3fec30f96b2",
+          "bytes": 545,
           "mime": "application/json"
         },
         "png": {
@@ -8346,11 +8156,6 @@
     },
     "zh-CN/dicethrone/images/lieren/tip": {
       "variants": {
-        "jpg": {
-          "sha256": "b9005884ea62ac6bbc1d1cbe3734a375d48874e5348333182028b12c94502b96",
-          "bytes": 1481068,
-          "mime": "image/jpeg"
-        },
         "png": {
           "sha256": "f6740ef7cc40315f744aef09b61d590f0e6a30082764a7f64478a2bb946d9146",
           "bytes": 3990639,
@@ -8424,8 +8229,8 @@
     "zh-CN/dicethrone/images/monk/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
-          "bytes": 640,
+          "sha256": "11d5b018dd98a57106f0e7c808c06c0da3602e534ce5362f16fff7c5d13c8c9e",
+          "bytes": 598,
           "mime": "application/json"
         }
       }
@@ -8496,8 +8301,8 @@
     "zh-CN/dicethrone/images/moon_elf/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
-          "bytes": 642,
+          "sha256": "9832304c059dadad3dced7df56f40d09e2512ca30dc7dad43cf3e28baf0f4420",
+          "bytes": 600,
           "mime": "application/json"
         }
       }
@@ -8508,51 +8313,6 @@
           "sha256": "ef441060123206505e5c17748f99aacb6513a4e900ca4f6cb2bb114f5046e934",
           "bytes": 2158372,
           "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/慢性中毒": {
-      "variants": {
-        "png": {
-          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
-          "bytes": 49098,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/忍术icon": {
-      "variants": {
-        "png": {
-          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
-          "bytes": 34564,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/提示板": {
-      "variants": {
-        "png": {
-          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
-          "bytes": 9404983,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/玩家面板": {
-      "variants": {
-        "png": {
-          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
-          "bytes": 10431472,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/烟雾弹icon": {
-      "variants": {
-        "png": {
-          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
-          "bytes": 42841,
-          "mime": "image/png"
         }
       }
     },
@@ -8622,9 +8382,54 @@
     "zh-CN/dicethrone/images/ninja/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
-          "bytes": 526,
+          "sha256": "b1992667583f03be602728c8363d90a710c0e95ffad702b5a21cedfb45a61798",
+          "bytes": 491,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/忍术icon": {
+      "variants": {
+        "png": {
+          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
+          "bytes": 34564,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/慢性中毒": {
+      "variants": {
+        "png": {
+          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
+          "bytes": 49098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
+          "bytes": 9404983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/烟雾弹icon": {
+      "variants": {
+        "png": {
+          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
+          "bytes": 42841,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
+          "bytes": 10431472,
+          "mime": "image/png"
         }
       }
     },
@@ -8685,8 +8490,8 @@
     "zh-CN/dicethrone/images/paladin/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
-          "bytes": 797,
+          "sha256": "df4b84cf2b153e001a37fea46e0508883e7c549ce56d70a087306e6cc2d7d389",
+          "bytes": 746,
           "mime": "application/json"
         }
       }
@@ -8766,8 +8571,8 @@
     "zh-CN/dicethrone/images/pyromancer/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
-          "bytes": 664,
+          "sha256": "fe29a5a728c3699e852ecd9ca51d68fe5587b3dc26dc22656892a990485bda23",
+          "bytes": 622,
           "mime": "application/json"
         }
       }
@@ -9321,20 +9126,20 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/samurai/icons/compressed/耻辱": {
-      "variants": {
-        "webp": {
-          "sha256": "db44f98a983c0b719187825194dec6251c75ad071d170bb11f69dfb0acb7a6d9",
-          "bytes": 4010,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/samurai/icons/compressed/反击": {
       "variants": {
         "webp": {
           "sha256": "5a718638ae7475abe32c4dd20db190040988f6b016c3f49e2dee1c5350323348",
           "bytes": 3884,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/icons/compressed/耻辱": {
+      "variants": {
+        "webp": {
+          "sha256": "db44f98a983c0b719187825194dec6251c75ad071d170bb11f69dfb0acb7a6d9",
+          "bytes": 4010,
           "mime": "image/webp"
         }
       }
@@ -9351,8 +9156,8 @@
     "zh-CN/dicethrone/images/samurai/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
-          "bytes": 627,
+          "sha256": "27bcc2b3272757e989340cb8ca74c5f04495e5445c6fa635d1606910bd9033e2",
+          "bytes": 591,
           "mime": "application/json"
         }
       }
@@ -9414,8 +9219,8 @@
     "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
-          "bytes": 521,
+          "sha256": "71c0a9986f14472771418316349054828e0218e16893c166ce8faf98fb1ecb62",
+          "bytes": 487,
           "mime": "application/json"
         }
       }
@@ -9425,42 +9230,6 @@
         "png": {
           "sha256": "24eee5d2515fb1c183289cb9cdabc22c5ad62388cb6b965aa386ebe2a98f2d43",
           "bytes": 9059653,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/飞行": {
-      "variants": {
-        "png": {
-          "sha256": "d6917ba0ad9e929cf13f8bd65797e82d449599ffef75016daa5cff8abdf80daa",
-          "bytes": 68756,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/神圣降临 ": {
-      "variants": {
-        "png": {
-          "sha256": "ae30332db891f3589b325778bfd9e5aa7ff43185dfc8448250bf6f1ed75e1dbf",
-          "bytes": 101236,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/神圣祝福": {
-      "variants": {
-        "png": {
-          "sha256": "ac9418b6d3495e3092a29024cf05866887c8ee9e3c3a414887112c39f6354453",
-          "bytes": 162242,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/炫光": {
-      "variants": {
-        "png": {
-          "sha256": "77b40b01d8cf405454fefa139660735eea538dbd8cb689eb14b99f01ed96651f",
-          "bytes": 112218,
           "mime": "image/png"
         }
       }
@@ -9480,42 +9249,6 @@
           "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
           "bytes": 14654587,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/飞行": {
-      "variants": {
-        "webp": {
-          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
-          "bytes": 15206,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/神圣降临 ": {
-      "variants": {
-        "webp": {
-          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
-          "bytes": 17874,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/神圣祝福": {
-      "variants": {
-        "webp": {
-          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
-          "bytes": 29734,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/炫光": {
-      "variants": {
-        "webp": {
-          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
-          "bytes": 22126,
-          "mime": "image/webp"
         }
       }
     },
@@ -9573,6 +9306,42 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/tianshi/compressed/炫光": {
+      "variants": {
+        "webp": {
+          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
+          "bytes": 22126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣祝福": {
+      "variants": {
+        "webp": {
+          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
+          "bytes": 29734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣降临 ": {
+      "variants": {
+        "webp": {
+          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
+          "bytes": 17874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/飞行": {
+      "variants": {
+        "webp": {
+          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
+          "bytes": 15206,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/tianshi/dice": {
       "variants": {
         "png": {
@@ -9597,11 +9366,6 @@
           "sha256": "f081694215d3a8656801f3aa90b2eb228ee225c2777f5ca3f4d0f5d60157bea6",
           "bytes": 612,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "dcdb39a70056badef9b068fe5be38a94693bb71ff770cb19456120af493976ec",
-          "bytes": 407076,
-          "mime": "image/png"
         }
       }
     },
@@ -9614,56 +9378,38 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/木苗树灵": {
+    "zh-CN/dicethrone/images/tianshi/炫光": {
       "variants": {
         "png": {
-          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
-          "bytes": 69810,
+          "sha256": "77b40b01d8cf405454fefa139660735eea538dbd8cb689eb14b99f01ed96651f",
+          "bytes": 112218,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/神性树灵": {
+    "zh-CN/dicethrone/images/tianshi/神圣祝福": {
       "variants": {
         "png": {
-          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
-          "bytes": 63315,
+          "sha256": "ac9418b6d3495e3092a29024cf05866887c8ee9e3c3a414887112c39f6354453",
+          "bytes": 162242,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/生命源泉": {
+    "zh-CN/dicethrone/images/tianshi/神圣降临 ": {
       "variants": {
         "png": {
-          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
-          "bytes": 64314,
+          "sha256": "ae30332db891f3589b325778bfd9e5aa7ff43185dfc8448250bf6f1ed75e1dbf",
+          "bytes": 101236,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/提示板": {
+    "zh-CN/dicethrone/images/tianshi/飞行": {
       "variants": {
         "png": {
-          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
-          "bytes": 9228891,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/treant/玩家面板": {
-      "variants": {
-        "png": {
-          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
-          "bytes": 12598188,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/treant/幼种树灵": {
-      "variants": {
-        "png": {
-          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
-          "bytes": 50153,
+          "sha256": "d6917ba0ad9e929cf13f8bd65797e82d449599ffef75016daa5cff8abdf80daa",
+          "bytes": 68756,
           "mime": "image/png"
         }
       }
@@ -9734,71 +9480,62 @@
     "zh-CN/dicethrone/images/treant/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
-          "bytes": 789,
+          "sha256": "0e5795f1fb8614a160506240bf5168b6f1b8ed472603d2b609118de33e0b6f13",
+          "bytes": 738,
           "mime": "application/json"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/催眠": {
+    "zh-CN/dicethrone/images/treant/幼种树灵": {
       "variants": {
         "png": {
-          "sha256": "d893d8264ca9e8ae7308f49425f366c4a530eb995f13bfe75f89f690dc02e856",
-          "bytes": 36231,
+          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
+          "bytes": 50153,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/规则qa": {
-      "variants": {
-        "jpg": {
-          "sha256": "c17d65d9aa5ae46a11cd56e3eba8bb902584d104239747970e0c0697bb98ffa7",
-          "bytes": 1210474,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/xixuegui/流血": {
+    "zh-CN/dicethrone/images/treant/提示板": {
       "variants": {
         "png": {
-          "sha256": "7842163861532481c0f09a406a950638250198fb65736fe10e19d54c35a63632",
-          "bytes": 34260,
+          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
+          "bytes": 9228891,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/骰子": {
+    "zh-CN/dicethrone/images/treant/木苗树灵": {
       "variants": {
         "png": {
-          "sha256": "d2902fec2997528762aad309b1a10db2b85613149d9cec7a8792d32927885934",
-          "bytes": 43175,
+          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
+          "bytes": 69810,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/玩家面板": {
+    "zh-CN/dicethrone/images/treant/玩家面板": {
       "variants": {
         "png": {
-          "sha256": "b5a14951ab5ffd52b974bfa6f8b2bfab0e0664072e3007a1b0cbfa6ea094e4e5",
-          "bytes": 10012700,
+          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
+          "bytes": 12598188,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/玩家提示卡": {
+    "zh-CN/dicethrone/images/treant/生命源泉": {
       "variants": {
-        "jpg": {
-          "sha256": "ee612b30442c32024dd464ba5728b2e393ec6e74ea79dad808df415848f32f65",
-          "bytes": 1296222,
-          "mime": "image/jpeg"
+        "png": {
+          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
+          "bytes": 64314,
+          "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/鲜血之力": {
+    "zh-CN/dicethrone/images/treant/神性树灵": {
       "variants": {
         "png": {
-          "sha256": "569ea0fae2591b1731859885b43dce5ae88b53b41b26a3e046ca828d7d13982b",
-          "bytes": 65893,
+          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
+          "bytes": 63315,
           "mime": "image/png"
         }
       }
@@ -9890,11 +9627,6 @@
           "sha256": "5d1e7db203b740b8e62ac38b0bec831aa7fe490396bf96c60e3d9964eb10a171",
           "bytes": 690,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "35c78486104a978df31c70e387d0253182bfeb8b3f4c7eeacec0337fd9d2e715",
-          "bytes": 179406,
-          "mime": "image/png"
         }
       }
     },
@@ -9907,38 +9639,65 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/手牌": {
+    "zh-CN/dicethrone/images/xixuegui/催眠": {
       "variants": {
         "png": {
-          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
-          "bytes": 14961151,
+          "sha256": "d893d8264ca9e8ae7308f49425f366c4a530eb995f13bfe75f89f690dc02e856",
+          "bytes": 36231,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/提示板": {
+    "zh-CN/dicethrone/images/xixuegui/流血": {
+      "variants": {
+        "png": {
+          "sha256": "7842163861532481c0f09a406a950638250198fb65736fe10e19d54c35a63632",
+          "bytes": 34260,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/玩家提示卡": {
       "variants": {
         "jpg": {
-          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
-          "bytes": 1354426,
+          "sha256": "ee612b30442c32024dd464ba5728b2e393ec6e74ea79dad808df415848f32f65",
+          "bytes": 1296222,
           "mime": "image/jpeg"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/骰子": {
+    "zh-CN/dicethrone/images/xixuegui/玩家面板": {
       "variants": {
         "png": {
-          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
-          "bytes": 57745,
+          "sha256": "b5a14951ab5ffd52b974bfa6f8b2bfab0e0664072e3007a1b0cbfa6ea094e4e5",
+          "bytes": 10012700,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/玩家面板": {
+    "zh-CN/dicethrone/images/xixuegui/规则qa": {
+      "variants": {
+        "jpg": {
+          "sha256": "c17d65d9aa5ae46a11cd56e3eba8bb902584d104239747970e0c0697bb98ffa7",
+          "bytes": 1210474,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/骰子": {
       "variants": {
         "png": {
-          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
-          "bytes": 9871576,
+          "sha256": "d2902fec2997528762aad309b1a10db2b85613149d9cec7a8792d32927885934",
+          "bytes": 43175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/鲜血之力": {
+      "variants": {
+        "png": {
+          "sha256": "569ea0fae2591b1731859885b43dce5ae88b53b41b26a3e046ca828d7d13982b",
+          "bytes": 65893,
           "mime": "image/png"
         }
       }
@@ -9949,42 +9708,6 @@
           "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
           "bytes": 14961151,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
-          "bytes": 372752,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/提示板": {
-      "variants": {
-        "webp": {
-          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
-          "bytes": 262658,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
-          "bytes": 17972,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/玩家面板": {
-      "variants": {
-        "webp": {
-          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
-          "bytes": 375712,
-          "mime": "image/webp"
         }
       }
     },
@@ -10033,6 +9756,42 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
+          "bytes": 372752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
+          "bytes": 262658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
+          "bytes": 375712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
+          "bytes": 17972,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/zhanshujia/dice": {
       "variants": {
         "png": {
@@ -10057,10 +9816,32 @@
           "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
           "bytes": 370,
           "mime": "application/json"
-        },
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势": {
+      "variants": {
+        "webp": {
+          "sha256": "7f580d391764df39183b2aa0183cdb7e82d25b19b2c1089f1fdc14f7673ca472",
+          "bytes": 11332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/compressed/紧缚": {
+      "variants": {
+        "webp": {
+          "sha256": "5782a864984f2b5e308dd456c8ac676b6b267317bd2a9de189b0afe71aaba377",
+          "bytes": 8876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/战术优势": {
+      "variants": {
         "png": {
-          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
-          "bytes": 135997,
+          "sha256": "0763e121bd7742d11b0124845314184e2c97ef636d7bb6cfe405b60937b2a999",
+          "bytes": 100459,
           "mime": "image/png"
         }
       }
@@ -10074,33 +9855,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/status/战术优势": {
-      "variants": {
-        "png": {
-          "sha256": "0763e121bd7742d11b0124845314184e2c97ef636d7bb6cfe405b60937b2a999",
-          "bytes": 100459,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/status/compressed/紧缚": {
-      "variants": {
-        "webp": {
-          "sha256": "5782a864984f2b5e308dd456c8ac676b6b267317bd2a9de189b0afe71aaba377",
-          "bytes": 8876,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势": {
-      "variants": {
-        "webp": {
-          "sha256": "7f580d391764df39183b2aa0183cdb7e82d25b19b2c1089f1fdc14f7673ca472",
-          "bytes": 11332,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/zhanshujia/tip": {
       "variants": {
         "jpg": {
@@ -10110,74 +9864,38 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhizhuxia/官方qa": {
+    "zh-CN/dicethrone/images/zhanshujia/手牌": {
       "variants": {
         "png": {
-          "sha256": "f31da27ccf2b230bf899432e61709597f402687b7d6ae3029cb77dae148b3713",
-          "bytes": 4930743,
+          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
+          "bytes": 14961151,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhizhuxia/连击": {
+    "zh-CN/dicethrone/images/zhanshujia/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
+          "bytes": 1354426,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/玩家面板": {
       "variants": {
         "png": {
-          "sha256": "3a1888f1d9aa4a7837067629bfe6278550d3006c2d88a2b8910f0a3dee163506",
-          "bytes": 131562,
+          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
+          "bytes": 9871576,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhizhuxia/落网": {
+    "zh-CN/dicethrone/images/zhanshujia/骰子": {
       "variants": {
         "png": {
-          "sha256": "2f85cd3ba723f11dff2d17b8575bd7bd1459813aa9016e0417113dd1535d9bba",
-          "bytes": 409636,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/手牌": {
-      "variants": {
-        "png": {
-          "sha256": "bb8cd0ca990f224aaa1c825614bf9afb8338c25035032e7b308d20af2582049a",
-          "bytes": 44735909,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/提示卡": {
-      "variants": {
-        "png": {
-          "sha256": "8b1fa00a9bd7173d277e1d9621098926696e48ff63fa1fb0f5d9565991db8f3c",
-          "bytes": 4264382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/骰子": {
-      "variants": {
-        "png": {
-          "sha256": "39b4d3a25d548ed317001eac47f8b2822a445fa860e97885d528fea7593e546d",
-          "bytes": 49208,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/玩家面板": {
-      "variants": {
-        "png": {
-          "sha256": "b14400ad05d0bcfb6101d7a15686194c023953e9a21c0f846644940bb903f4bd",
-          "bytes": 10077624,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/隐形": {
-      "variants": {
-        "png": {
-          "sha256": "2aa169a707551766a1f04ff3bc83894b6c4a0f58914284d4497cebc0871d8b74",
-          "bytes": 73054,
+          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
+          "bytes": 57745,
           "mime": "image/png"
         }
       }
@@ -10188,78 +9906,6 @@
           "sha256": "bb8cd0ca990f224aaa1c825614bf9afb8338c25035032e7b308d20af2582049a",
           "bytes": 44735909,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/官方qa": {
-      "variants": {
-        "webp": {
-          "sha256": "5f684e0788b74e4f28d97ffdfb63e633c2ed87ed2dd40fd5e3ab6e1485d3e0b5",
-          "bytes": 919198,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/连击": {
-      "variants": {
-        "webp": {
-          "sha256": "e1de4f628eb5cca0feb9f8819c32dced5ecc94d008a788ad464994f118dcfe95",
-          "bytes": 29356,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/落网": {
-      "variants": {
-        "webp": {
-          "sha256": "eae55ba70d34d8737b3bdec6b767b38ffc88665f84a19e38c1e42dbbf8f107c1",
-          "bytes": 88078,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "768cd5c1c4ae83cde5e282b7c45341ad1c8391b224a91c7f6411616ada83a48c",
-          "bytes": 5647260,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/提示卡": {
-      "variants": {
-        "webp": {
-          "sha256": "5cba98c0a8db038cdc9d1ccfd5738ce54e67263fecd8497c8eed369397a264dd",
-          "bytes": 802612,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "2f65b03677d272398c0c14f1ee58c0590832c7fd831d8bfa5d253803e3689974",
-          "bytes": 33490,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/玩家面板": {
-      "variants": {
-        "webp": {
-          "sha256": "9b7107e9b105d5e9f2e0a2a52c1b1080ed4126f15a4623c77c68fca1bef49cfe",
-          "bytes": 1868268,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/隐形": {
-      "variants": {
-        "webp": {
-          "sha256": "77f354e6078ab889fb71c362be622a742ddfecaf645231a2f8c81b26c189a5bb",
-          "bytes": 10202,
-          "mime": "image/webp"
         }
       }
     },
@@ -10326,6 +9972,78 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "5f684e0788b74e4f28d97ffdfb63e633c2ed87ed2dd40fd5e3ab6e1485d3e0b5",
+          "bytes": 919198,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "768cd5c1c4ae83cde5e282b7c45341ad1c8391b224a91c7f6411616ada83a48c",
+          "bytes": 5647260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/提示卡": {
+      "variants": {
+        "webp": {
+          "sha256": "5cba98c0a8db038cdc9d1ccfd5738ce54e67263fecd8497c8eed369397a264dd",
+          "bytes": 802612,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "9b7107e9b105d5e9f2e0a2a52c1b1080ed4126f15a4623c77c68fca1bef49cfe",
+          "bytes": 1868268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/落网": {
+      "variants": {
+        "webp": {
+          "sha256": "eae55ba70d34d8737b3bdec6b767b38ffc88665f84a19e38c1e42dbbf8f107c1",
+          "bytes": 88078,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/连击": {
+      "variants": {
+        "webp": {
+          "sha256": "e1de4f628eb5cca0feb9f8819c32dced5ecc94d008a788ad464994f118dcfe95",
+          "bytes": 29356,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/隐形": {
+      "variants": {
+        "webp": {
+          "sha256": "77f354e6078ab889fb71c362be622a742ddfecaf645231a2f8c81b26c189a5bb",
+          "bytes": 10202,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "2f65b03677d272398c0c14f1ee58c0590832c7fd831d8bfa5d253803e3689974",
+          "bytes": 33490,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/zhizhuxia/dice": {
       "variants": {
         "png": {
@@ -10347,14 +10065,9 @@
     "zh-CN/dicethrone/images/zhizhuxia/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "f84df5a9e0a40d77c8291c65ade6c836ba92d9c1093ad85999aacc5a08f685f0",
-          "bytes": 469,
+          "sha256": "631cc4fa8cbee5f41675777393c2aea15fe1ee2c2e13370210da90a4fef76719",
+          "bytes": 457,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "26e280333ff3abece5ef975e547d044df46467f9a35ab246af5bc9a81718850c",
-          "bytes": 101523,
-          "mime": "image/png"
         }
       }
     },
@@ -10363,6 +10076,78 @@
         "png": {
           "sha256": "c42e21f4412effe2c21076a5d5d7c55f4ecc523463ea9a4841cbad264a729018",
           "bytes": 1183485,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "f31da27ccf2b230bf899432e61709597f402687b7d6ae3029cb77dae148b3713",
+          "bytes": 4930743,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "bb8cd0ca990f224aaa1c825614bf9afb8338c25035032e7b308d20af2582049a",
+          "bytes": 44735909,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/提示卡": {
+      "variants": {
+        "png": {
+          "sha256": "8b1fa00a9bd7173d277e1d9621098926696e48ff63fa1fb0f5d9565991db8f3c",
+          "bytes": 4264382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "b14400ad05d0bcfb6101d7a15686194c023953e9a21c0f846644940bb903f4bd",
+          "bytes": 10077624,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/落网": {
+      "variants": {
+        "png": {
+          "sha256": "2f85cd3ba723f11dff2d17b8575bd7bd1459813aa9016e0417113dd1535d9bba",
+          "bytes": 409636,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/连击": {
+      "variants": {
+        "png": {
+          "sha256": "3a1888f1d9aa4a7837067629bfe6278550d3006c2d88a2b8910f0a3dee163506",
+          "bytes": 131562,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/隐形": {
+      "variants": {
+        "png": {
+          "sha256": "2aa169a707551766a1f04ff3bc83894b6c4a0f58914284d4497cebc0871d8b74",
+          "bytes": 73054,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/骰子": {
+      "variants": {
+        "png": {
+          "sha256": "39b4d3a25d548ed317001eac47f8b2822a445fa860e97885d528fea7593e546d",
+          "bytes": 49208,
           "mime": "image/png"
         }
       }
@@ -12065,6 +11850,2121 @@
           "sha256": "ab3c82285c5181d3a2ee960e383a9cb33905000ed90c144e994d9843e154ecb5",
           "bytes": 182306,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/backs/attack": {
+      "variants": {
+        "png": {
+          "sha256": "3e9a8b1bab4b4c0a02a53cab1ef845c3044d1e27195fa32f7c1e3f9b5889e4e9",
+          "bytes": 258782,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/backs/compressed/attack": {
+      "variants": {
+        "webp": {
+          "sha256": "e8710d2cdae6f17ef1d76a2fe5b1081074f26ea9b8674ed6b24995229c023d1a",
+          "bytes": 64948,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/backs/compressed/servant": {
+      "variants": {
+        "webp": {
+          "sha256": "568bf12fb5065655edcfc5149291c02d90b9fb4707969ceb1640cdcfd27ef742",
+          "bytes": 260882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/backs/compressed/skill": {
+      "variants": {
+        "webp": {
+          "sha256": "0ebe1ea3c2ea50c4f4f4e405a8f7914b7449e49a5220015af8a4445c696e5770",
+          "bytes": 64698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/backs/servant": {
+      "variants": {
+        "png": {
+          "sha256": "6fe417667013a15e61d67f3554bcf06b9943604cb908fc4a59959b8cb034c767",
+          "bytes": 1260542,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/backs/skill": {
+      "variants": {
+        "png": {
+          "sha256": "e5e25a237b90524ba6d8ad0d37784f1f94f309b693f05f785c929dc236c89418",
+          "bytes": 414865,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/board/compressed/fuyuki-city": {
+      "variants": {
+        "webp": {
+          "sha256": "cab9d01b400e42e72a7c6bc15110ef30da9ab86723cc8c972d260ccccd8fe654",
+          "bytes": 359298,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/avenger": {
+      "variants": {
+        "png": {
+          "sha256": "98ad5ad4bd08651bd0eca9d2169dae664f89b8910f3bbf1a3b2039bd182cacfc",
+          "bytes": 660620,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/basic-attack-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "fdd7f4e948db94ce4ea36f912d44dc64ab78c25a96a39da33e32e2164891786a",
+          "bytes": 11240829,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/berserker-strength-nine": {
+      "variants": {
+        "png": {
+          "sha256": "1eab0190c426533cff3004ceeddc6782b6a144ea8710970524a8ec687316772a",
+          "bytes": 787642,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/berserker-strength-seven": {
+      "variants": {
+        "png": {
+          "sha256": "c8e91191117ed9167584283547c4e98e0dd21a802db913e002c39a132ce80227",
+          "bytes": 787112,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/berserker-swift-nine": {
+      "variants": {
+        "png": {
+          "sha256": "a3325cf5116d5891ccf6b8dfa6d79f6eb1f1ab982979a2a9be75ef3d87ca453a",
+          "bytes": 860082,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/berserker-swift-seven": {
+      "variants": {
+        "png": {
+          "sha256": "fe38d976b4a545d04c46a59edabf5a14b3348224eacb46f964e125032012efa9",
+          "bytes": 859525,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-strength-high": {
+      "variants": {
+        "webp": {
+          "sha256": "5cc23d1f9f6588d8934323cd15dde864a52524d3242e13d4e113a628c28eabef",
+          "bytes": 30192,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-strength-low": {
+      "variants": {
+        "webp": {
+          "sha256": "da20e3657dfb4b0140980c85b6c0af04ea778d016463126e47112868bebaa10c",
+          "bytes": 24226,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-strength-mid": {
+      "variants": {
+        "webp": {
+          "sha256": "c36da14f16a2dee9b03e103b4d9630024cd98c17de22bd0a691ee5681676e0a1",
+          "bytes": 26870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/avenger": {
+      "variants": {
+        "webp": {
+          "sha256": "f62531570b83af2b438d1727e8000fdea0b434eeaaa1c44aaa8cc5ae21ed7c73",
+          "bytes": 152310,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/basic-attack-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "c98d5339902502d2e6d0abcf88807e0104ab95a038a3a947ef744d1813fde115",
+          "bytes": 1636466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/berserker-strength-nine": {
+      "variants": {
+        "webp": {
+          "sha256": "412a5bfadbb6e37d3fc61cfb90c528df6e9779d78b7308c146bb668e755e9490",
+          "bytes": 152184,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/berserker-strength-seven": {
+      "variants": {
+        "webp": {
+          "sha256": "c371aafaabf2f4d4c2e071dbf70e60f0f9fbe687a40a77e63fa2f4a1e8946ee0",
+          "bytes": 151786,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/berserker-swift-nine": {
+      "variants": {
+        "webp": {
+          "sha256": "8b6802029a8cbbe73da06a8d9d784c35737b78a0c5c039885fe4b69d4c0fb6ff",
+          "bytes": 156164,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/berserker-swift-seven": {
+      "variants": {
+        "webp": {
+          "sha256": "f71926d401b7d21412deef6ee358af19a92611a2a8af981b2a975a9531bdcb85",
+          "bytes": 155846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/ambush": {
+      "variants": {
+        "webp": {
+          "sha256": "53bd7fb71ae3bb7962fadbfb4b5b0675cb02d1c42db6104b793c9d2cbb08a2fa",
+          "bytes": 158946,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/back": {
+      "variants": {
+        "webp": {
+          "sha256": "76963a11ec37b132c01cad6d80b9efb2fec8bfcb03c2857136cffe0dc1c2fbcc",
+          "bytes": 48492,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/fate-battle": {
+      "variants": {
+        "webp": {
+          "sha256": "3ce592dff233ce30b6930aae648be41f8de833b0bfa61b08d8e963180e800447",
+          "bytes": 76450,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/fear-of-future": {
+      "variants": {
+        "webp": {
+          "sha256": "268909dd571fd1a3cc0e5d5a8585b442bc455a0c29bfaf73659dd915696c8b9e",
+          "bytes": 60084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/fire-suppression": {
+      "variants": {
+        "webp": {
+          "sha256": "2994de70feb612df1877f504af6dc3857f6d3f7e33d78f064ea8270556e354a5",
+          "bytes": 83500,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/glorious-duel": {
+      "variants": {
+        "webp": {
+          "sha256": "761ac6f5e924da4cd99ccad8e523d9e327d13243632278c92c054964a8c60582",
+          "bytes": 163080,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/ground-zero": {
+      "variants": {
+        "webp": {
+          "sha256": "33a8e21213ade8a67d94bfafe32954ab6de46d31088dca5bb9cd5644b7c5c52e",
+          "bytes": 44036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/high-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "2bea97fc9e93e5af27fa0d3405a14fd1b11e009c8136c3d62facb9826910ebea",
+          "bytes": 55158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/holy-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "de9c517930e3d488bd400bb6971c16e700dbbf801b646ab59d89240e37940c16",
+          "bytes": 80950,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/leyline": {
+      "variants": {
+        "webp": {
+          "sha256": "84a91005b7707baaeb2d1e0f911086e0c422f8e3309e217fff5cdcda9e680c76",
+          "bytes": 65516,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/milk-sea": {
+      "variants": {
+        "webp": {
+          "sha256": "0bbe9acf6cf5b1b7ea43bc6aa7ea6ea3485b9abcd789c945f80e654735bde0cc",
+          "bytes": 59292,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/power-test": {
+      "variants": {
+        "webp": {
+          "sha256": "df148a2a4ddfe601270a9f6a1bb02cf9fc3371d6d5f85516a63ad6f159ca81be",
+          "bytes": 142456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/reality-marble": {
+      "variants": {
+        "webp": {
+          "sha256": "35c8001d01d00da2a58847b7302f3b59642fe207a3903fea5f4689e2553ad693",
+          "bytes": 80060,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/reclaim-illya": {
+      "variants": {
+        "webp": {
+          "sha256": "ec662299c4827a766c1840b858be914cde183d08e57d00b4e7f8b41f1706d758",
+          "bytes": 79502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/risk-it-all": {
+      "variants": {
+        "webp": {
+          "sha256": "bbbdd0a4ebfeb73ff8a415d41f5eb5b30b040c31bb5a9d62aa8145f2d3211105",
+          "bytes": 84320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/ritual-site": {
+      "variants": {
+        "webp": {
+          "sha256": "329db70e70c2dd5e284237106b59aaa40700615009dea8a40c843943f348d986",
+          "bytes": 124302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/suppress-threat": {
+      "variants": {
+        "webp": {
+          "sha256": "78755436a6a2068878f62557b4341d932182108acc092871e9bfc85662944514",
+          "bytes": 140184,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/synergy": {
+      "variants": {
+        "webp": {
+          "sha256": "bc5d85bc661bd748be066e6be382b7129ea6d77e1d73da687e3282e772d55686",
+          "bytes": 84112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/events/compressed/treacherous-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "ae941d9dde7e9b9c84280a0b176f6f0477fd1e169e4ee41cfe6e59c9c58c1ad5",
+          "bytes": 135176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/emiya-shirou": {
+      "variants": {
+        "webp": {
+          "sha256": "ca5fff2fc192cb6248eb775e7fd394c0250c2b41ded9c182c394cfe8c965ce91",
+          "bytes": 73754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_iliya": {
+      "variants": {
+        "webp": {
+          "sha256": "c8bf299e252c0da7f4b8ffd526a31dd76dd15c797d0ce727dee8f3a644ff82d7",
+          "bytes": 139752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_kariya": {
+      "variants": {
+        "webp": {
+          "sha256": "88748c957abdca7684741494c3ff849468e6824f1fd651eaa4f489c9164f6695",
+          "bytes": 130572,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_kayneth": {
+      "variants": {
+        "webp": {
+          "sha256": "8df72097bdfad8e8b7ab0d85b185cddd75f8c51df6bb621df127bca8ce479453",
+          "bytes": 102230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_kirei": {
+      "variants": {
+        "webp": {
+          "sha256": "22faa87dd18c24b6ec4905aaf8599b181c27c9d24135d84ff20321ce1668110c",
+          "bytes": 119364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_kiritsugu": {
+      "variants": {
+        "webp": {
+          "sha256": "3f724b26c5fa430c4b0eca0a2214b79f0ad6a457502181eabf1d0ff7fa281ca6",
+          "bytes": 94410,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_rin": {
+      "variants": {
+        "webp": {
+          "sha256": "dcfd7bfe1890af02bc683c5ac097a3e66dc1093e002b806d5e4fa2d5171bc1f9",
+          "bytes": 102484,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_ryuunosuke": {
+      "variants": {
+        "webp": {
+          "sha256": "f24d340aac2aea644d942f76e1e674afab1fd336380fa21721d046340834f346",
+          "bytes": 138656,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_sakura": {
+      "variants": {
+        "webp": {
+          "sha256": "bc194be548ad5c6c252597b4e99d46e81e2946fbca9b0bde985fabeeeb83f12b",
+          "bytes": 89442,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_shinji": {
+      "variants": {
+        "webp": {
+          "sha256": "6efff447c7904eb3501760786e6d673552e8d2b3ca5f762480c76fe4659f7803",
+          "bytes": 133344,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_shirou_emiya": {
+      "variants": {
+        "webp": {
+          "sha256": "1c18585e09d16d4bd2d2e84bc63eb38fd0549df71e688eb57d7a4f2cf54d19fe",
+          "bytes": 115998,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_tokiomi": {
+      "variants": {
+        "webp": {
+          "sha256": "f5e45bbb7b8a63e03c006810735ca80861d4fd03440a413f70011447d5109e60",
+          "bytes": 120572,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_waver": {
+      "variants": {
+        "webp": {
+          "sha256": "fdcf115f70169c43dd216022aa6bcfbb6b5d9b7cd337997be8b408cfab0d2c03",
+          "bytes": 209732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/m_zouken": {
+      "variants": {
+        "webp": {
+          "sha256": "9c4933ce2b234ef6d8abc3360d644c41b0fe2f268c0a398f2c9c13c1fd0e7eac",
+          "bytes": 115826,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_iliya": {
+      "variants": {
+        "png": {
+          "sha256": "952a95d9efd32180a2cc32ce6ba3f6fb8896a1e38588897eb094d54af7f1cbe0",
+          "bytes": 647339,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_kariya": {
+      "variants": {
+        "png": {
+          "sha256": "e371332a9ee73e07801b3c0302417ef2441cbaa67b808fc8e77c1eb5d27e6bef",
+          "bytes": 714484,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_kayneth": {
+      "variants": {
+        "png": {
+          "sha256": "90e84114e3df4535a9ad639d5ebd51b882c945cdf84a2957a580a02dfd393448",
+          "bytes": 517250,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_kirei": {
+      "variants": {
+        "png": {
+          "sha256": "2060660b9da4b3580fb65054419f367f5d56b361db79884fc7ed9412f9d936f8",
+          "bytes": 632523,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_kiritsugu": {
+      "variants": {
+        "png": {
+          "sha256": "d07edc456cebe63eb6a57c61e93414c2a1073d435985a192bcd85686510616e9",
+          "bytes": 544350,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_rin": {
+      "variants": {
+        "png": {
+          "sha256": "c0a7cc73799f48489c650140b4b52afd336e0f9118e6d7412adcba27f7a0a95b",
+          "bytes": 553222,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_ryuunosuke": {
+      "variants": {
+        "png": {
+          "sha256": "c05b47383a5ae12c2a2bab7763fbd9a7873bb343a4e24de92529f5b061c30af0",
+          "bytes": 772558,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_sakura": {
+      "variants": {
+        "png": {
+          "sha256": "20c4853585660bb90ce0949234f49b7fe93bd2816e33d748304c695b4792a4d1",
+          "bytes": 513872,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_shinji": {
+      "variants": {
+        "png": {
+          "sha256": "f3ea4b2cad856e120c7a713681b9692a11240f94c2d642ff18d50503e7d8f35b",
+          "bytes": 682161,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_shirou_emiya": {
+      "variants": {
+        "png": {
+          "sha256": "534abf41e3a0e9239060a4a18b7bdd2deb18a2ca6dd81ab2e0964f744dd6200a",
+          "bytes": 655130,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_tokiomi": {
+      "variants": {
+        "png": {
+          "sha256": "e5953b0ea4ffdd85355e7ee3b7230adfb3c7d53c38f33d36477a320a5b4b1abd",
+          "bytes": 587934,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_waver": {
+      "variants": {
+        "png": {
+          "sha256": "df4bad845289ee2fcf3d526457f133adfd031b48c8d0ae21e4eb00f24384875b",
+          "bytes": 956823,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/m_zouken": {
+      "variants": {
+        "png": {
+          "sha256": "4e4f3f5607d7b39bc16f4acb01831976e4036f38ebc180514c4e6bc28f75c6b9",
+          "bytes": 631359,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/command-seal-m_kariya": {
+      "variants": {
+        "png": {
+          "sha256": "b85821d925e4f2d70602830a19df7c81fd4fed60faae14f17930945c0718090e",
+          "bytes": 250016,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/command-seal-m_kayneth": {
+      "variants": {
+        "png": {
+          "sha256": "f67db1df6c2b0969413975419076e50970ebf84619b748105e90e3eaf7d04dad",
+          "bytes": 298300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/command-seal-m_ryuunosuke": {
+      "variants": {
+        "png": {
+          "sha256": "c5577070272af6613c282916cf08d92ee4667650ef373bee764ab7d460691d67",
+          "bytes": 261788,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/command-seal-m_tokiomi": {
+      "variants": {
+        "png": {
+          "sha256": "f832bd2d25648754d061b2f99fb656a6c5454157bf9294dca392f0c6482204b2",
+          "bytes": 289524,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/command-seal-m_waver": {
+      "variants": {
+        "png": {
+          "sha256": "0cc0cb1275cd53d580d983c8154271c935e934994d43dbbb36b1bd72ca264ca2",
+          "bytes": 268827,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/command-seal-shared-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "3990a5dfb7f2d3d9476f9fb2ff0e229453513387c3c5e7960b92ffa4fe079c5f",
+          "bytes": 2731907,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/command-seal-m_kariya": {
+      "variants": {
+        "webp": {
+          "sha256": "4d1112d05947248d9d4260e6cee4e0840c3f69a2a5b7ee285011c5189c560838",
+          "bytes": 68160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/command-seal-m_kayneth": {
+      "variants": {
+        "webp": {
+          "sha256": "c04b2368951e261ff317b3449ab57f037b022f206030f26d84a74db89bba076e",
+          "bytes": 78722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/command-seal-m_ryuunosuke": {
+      "variants": {
+        "webp": {
+          "sha256": "c7727b69c18f375eef1da726a5aecedc492da424ca9533f35757480f3cd51cca",
+          "bytes": 69338,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/command-seal-m_tokiomi": {
+      "variants": {
+        "webp": {
+          "sha256": "e301fd8d0d7c08f4df3426917df79a54c092cd57226bd081958f147f2e1fbfbe",
+          "bytes": 73526,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/command-seal-m_waver": {
+      "variants": {
+        "webp": {
+          "sha256": "19c80d131480aa198ff7ee5080106213ff73fc71529cf04f0f3ee29c6c2aa5dc",
+          "bytes": 71790,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/command-seal-shared-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "d5f0abdf0fcb4ee059a0a4e872614b6e1d7d4c6e6c97c75b005f8d5c9abf3696",
+          "bytes": 600034,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/compressed/emiya-shirou": {
+      "variants": {
+        "webp": {
+          "sha256": "6bf5a3450882dab46f4e62bd1de1038f8c8fa617fb53dac913e108abce606975",
+          "bytes": 43264,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/seals/emiya-shirou": {
+      "variants": {
+        "png": {
+          "sha256": "0f48ea4325924501d040e3ebc49a3119bc6b499c9026e38e64225d019a9bebea",
+          "bytes": 273840,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-archer": {
+      "variants": {
+        "webp": {
+          "sha256": "234b4b46b733adbcee24f42fad02068a48452bc60b34ac9febc96ce3088475e0",
+          "bytes": 133818,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-avenger": {
+      "variants": {
+        "webp": {
+          "sha256": "299760193a5760922f06d7a9ea09075c1d0950987c1ce0275e1c79dd9f425d7b",
+          "bytes": 135076,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-berserker": {
+      "variants": {
+        "webp": {
+          "sha256": "131d087f5a9b1e5be2c89252a27e844269c47e47a30a2d27363e3b8c81d7b3c6",
+          "bytes": 164980,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-caster": {
+      "variants": {
+        "webp": {
+          "sha256": "5d3a60da297d9b85f763d20e735376e27958dc5b25a8d9e993749babaa78459c",
+          "bytes": 120394,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-cu-chulainn": {
+      "variants": {
+        "webp": {
+          "sha256": "3ca463cd719b45d92e7003e1c691060db858cfa333ec09723e57d61da3eee5dc",
+          "bytes": 147890,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-gilgamesh": {
+      "variants": {
+        "webp": {
+          "sha256": "fc70d7ba29439606810ad53f3be2fc8cd911c62a24ebe3cb8db3e3a3186df235",
+          "bytes": 141248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-gilles": {
+      "variants": {
+        "webp": {
+          "sha256": "0419b59f4f04acd582cc894250e7677723e9afd10450a05cac7fe966f820b788",
+          "bytes": 164208,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-hassan": {
+      "variants": {
+        "webp": {
+          "sha256": "1a97e54583ba3f10f00b96e99cc4680eda23c3c2e92d90fb3717e138d56822b9",
+          "bytes": 155960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-heracles": {
+      "variants": {
+        "webp": {
+          "sha256": "89496d98533bb51ef249e80622595a042bbdf1cd7e13445f84321a267ed44c9a",
+          "bytes": 110524,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-lancer": {
+      "variants": {
+        "webp": {
+          "sha256": "6f8b17ac7442688babb717b0191a79da523272fef106b72c2cd5e8c30bb2b281",
+          "bytes": 194786,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-medusa": {
+      "variants": {
+        "webp": {
+          "sha256": "7d6c1a82e36d9971fdb40ffe49f01cffb19eef4ce02248c92b28860ac5beb5cc",
+          "bytes": 97244,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-rider": {
+      "variants": {
+        "webp": {
+          "sha256": "1f2c31ce114b15b7a2cdc733a2d7c2a0f32ed90f6555f601ed55a2891e023360",
+          "bytes": 173872,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-saber": {
+      "variants": {
+        "webp": {
+          "sha256": "5ddedf01af7b7a3e09220ca6b618187b4e8d45660852c3045a6a6981aece29cd",
+          "bytes": 149046,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/servant-sasaki": {
+      "variants": {
+        "webp": {
+          "sha256": "8b864999aff795710d0973547bdaf1982b756c56590ac89e33c4eee0039b3574",
+          "bytes": 103150,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-archer": {
+      "variants": {
+        "png": {
+          "sha256": "141e918a1c2321a6293748022461e45ebcd50eb2e396f523952c06fd7fb61025",
+          "bytes": 726107,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-avenger": {
+      "variants": {
+        "png": {
+          "sha256": "0ebab391ed32c339b07e0fcd9e9a163fa95d39f790edfc412455e05ad9163b60",
+          "bytes": 748099,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-berserker": {
+      "variants": {
+        "png": {
+          "sha256": "e46fe89aeacd992d05e3299c0f9e6165e1b642a84d61352db500173270d284a8",
+          "bytes": 847892,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-caster": {
+      "variants": {
+        "png": {
+          "sha256": "ed7afd1f41053a9c4f6f2f9e7b71f26559710126bbffccc7abdc4a0d7f9cbed7",
+          "bytes": 696208,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-cu-chulainn": {
+      "variants": {
+        "png": {
+          "sha256": "d4a8a7d7910a3d57fc06d435e5c3458dfe6bae1281c0dbeb3c276856effd36c9",
+          "bytes": 838002,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-gilgamesh": {
+      "variants": {
+        "png": {
+          "sha256": "a804065355caf558079e27bcec7539d4ad91e651407402885665f3821cb3e5e3",
+          "bytes": 729785,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-gilles": {
+      "variants": {
+        "png": {
+          "sha256": "76ee3788ab6805c8831e8535358c921bbbbed5365c0ef84aa6ec3c2a84214f81",
+          "bytes": 847029,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-hassan": {
+      "variants": {
+        "png": {
+          "sha256": "c167adb50f9b1f244c15b9efb85576e5c5a17d33e80e09dfeb729d3031e8af1e",
+          "bytes": 833176,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-heracles": {
+      "variants": {
+        "png": {
+          "sha256": "92c91f9c5677afc9c8626eb177539c4ce4d5c166fd19028ada2e11ccfcdeb773",
+          "bytes": 674559,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-lancer": {
+      "variants": {
+        "png": {
+          "sha256": "2b0fb1d2f41b34e109616818edcf617064cf40474a8d391996d39412339e8ccc",
+          "bytes": 946067,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-medusa": {
+      "variants": {
+        "png": {
+          "sha256": "f65c906620a8662bc9b85b7ca6c96f5c883711d4cb283ea98a66444466e6fe03",
+          "bytes": 546128,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-rider": {
+      "variants": {
+        "png": {
+          "sha256": "6d3572a58b1192b6b7e4afc750814efa25ad9b635fdecc8fcd6b446d60f2518f",
+          "bytes": 795931,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-saber": {
+      "variants": {
+        "png": {
+          "sha256": "bcd9c604fb35f516df328e800aab0c05d18591d1b09f2a59244ae1ef42ae5c03",
+          "bytes": 862923,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/servant-sasaki": {
+      "variants": {
+        "png": {
+          "sha256": "22ed83de6fb55d33084f5d818ae08aba936754641b57945267f48c05bbf49a79",
+          "bytes": 712606,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/angra-curse": {
+      "variants": {
+        "webp": {
+          "sha256": "f2d81f827764ced91030593a9d746534845367a95402ca7f5a91b9b23663b9cc",
+          "bytes": 76758,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/angra-shadow": {
+      "variants": {
+        "webp": {
+          "sha256": "2c733f8ed8897f60881fde22135ef5eb26f99ad2a0839cc86a13edb762ec4fe4",
+          "bytes": 49954,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/angra-substance": {
+      "variants": {
+        "webp": {
+          "sha256": "252eba01b5b8adb2ea60f2882a8a782b73bcf7186cc200b2a026ee246068a040",
+          "bytes": 59358,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/back": {
+      "variants": {
+        "webp": {
+          "sha256": "d79092bc9fd60e429c42f34a63334ec0521bb56cffa07aae568d9eef107458cb",
+          "bytes": 106004,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/calm-before-storm": {
+      "variants": {
+        "webp": {
+          "sha256": "f6485ca3ee418224e55daa6377646f32676d696969777a3a050cedb401b4477c",
+          "bytes": 84732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/fate-night": {
+      "variants": {
+        "webp": {
+          "sha256": "61acb74bdca8ba2cf0aa3045582078b3817d33604ed91f72eb65197beaaf2eaa",
+          "bytes": 63032,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/future-hope": {
+      "variants": {
+        "webp": {
+          "sha256": "6208f5d4ed8e351f1b0610cb1627bdb2481e3dcbb6f01ee41b63302730b2e9f3",
+          "bytes": 106642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/heavens-feel": {
+      "variants": {
+        "webp": {
+          "sha256": "cf5f4432f374f5e4f71571a8dcf8abc4a8d8fb24d56764986557a2da93a6b8e9",
+          "bytes": 58220,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/hell-gate": {
+      "variants": {
+        "webp": {
+          "sha256": "04d5164c5bb75f9e4dd8f4011977a1664d79550bfe86b4f101f9fede959271ba",
+          "bytes": 78394,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/miyama-killer": {
+      "variants": {
+        "webp": {
+          "sha256": "6aa9db09b5b7b10c3902713a1cb95b6053b88158d1d045685c12436515fa5696",
+          "bytes": 70686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/new-city-battle": {
+      "variants": {
+        "webp": {
+          "sha256": "0bea305a470535fd17197d705f01bd863784ed30498c9e3c65e2f3bfa3bb9501",
+          "bytes": 66306,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/perfect-flow": {
+      "variants": {
+        "webp": {
+          "sha256": "007fdb9ea27be407c52252b6758ce1d196bd782cb21b969dea55e0577dc64afa",
+          "bytes": 91246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/rage": {
+      "variants": {
+        "webp": {
+          "sha256": "635ebf258844b507942773f14a3dce450dcb24a02e73e73f68a0f98e36a44bb4",
+          "bytes": 78560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/situations/compressed/turning-point": {
+      "variants": {
+        "webp": {
+          "sha256": "7096be3a74c4d96d75fcc6baa720e0a554f4db1bdce4492863a5295b9810b07a",
+          "bytes": 112366,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_angra_1": {
+      "variants": {
+        "webp": {
+          "sha256": "f8517ea580b97baea0e4b0980fe4e311deecdca7d8ab7c93a492f478fee483fd",
+          "bytes": 120712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_angra_2": {
+      "variants": {
+        "webp": {
+          "sha256": "eb15a4ff19e48aa8cd253c72763d33a4f71a194a6c6d1f381590abb2e8bd3f22",
+          "bytes": 102810,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_angra_3": {
+      "variants": {
+        "webp": {
+          "sha256": "d3549be9ab329ac5d00a0698789db0f4a0c2859358b87282fc03dffeaf7ee1cb",
+          "bytes": 113700,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_cu_1": {
+      "variants": {
+        "webp": {
+          "sha256": "3e1079acc27fa33161088920e745b2e832009b4f3a149dcd97e94ab27f3135c6",
+          "bytes": 77468,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_cu_2": {
+      "variants": {
+        "webp": {
+          "sha256": "d5c8abac93a6d17d59cf431058d1e102c51ddd4678d31cf0c71a4ca7956518c5",
+          "bytes": 100490,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_cu_np": {
+      "variants": {
+        "webp": {
+          "sha256": "54c13a2f720d1b1be0502eaae8c1bd466304bd7e804da0271d27e239e69abd22",
+          "bytes": 116866,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_diarmuid_1": {
+      "variants": {
+        "webp": {
+          "sha256": "3bee6d94a3084aa3644e31fe6ad374d3391ad27bbe47b86411e9fe43410b5126",
+          "bytes": 172378,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_diarmuid_2": {
+      "variants": {
+        "webp": {
+          "sha256": "50be3fed78da51997a58cad4acf1c70acf3b5c8ed717d4a8fe73faa224ede8d1",
+          "bytes": 179148,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_diarmuid_3": {
+      "variants": {
+        "webp": {
+          "sha256": "d5c8abac93a6d17d59cf431058d1e102c51ddd4678d31cf0c71a4ca7956518c5",
+          "bytes": 100490,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_emiya_1": {
+      "variants": {
+        "webp": {
+          "sha256": "b9f44f51d24a19f86b18124164432cb4573aadc98fbeb27647021b938955f437",
+          "bytes": 94912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_emiya_2": {
+      "variants": {
+        "webp": {
+          "sha256": "7f5f6decf3465929870ac688cdbd19725d34d17d8cbc4c4de78beb708aad0a7b",
+          "bytes": 84142,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_emiya_np": {
+      "variants": {
+        "webp": {
+          "sha256": "60fdf654b8410766d652a799903c26fd0ae885c762f62028749054d2a178a8b0",
+          "bytes": 112288,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_gil_1": {
+      "variants": {
+        "webp": {
+          "sha256": "3826835a85a4778b211ed038e8eee5b344fc989a858e6a3dd9497eae09fcce9c",
+          "bytes": 144506,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_gil_2": {
+      "variants": {
+        "webp": {
+          "sha256": "a83f23875f8c05ad2e50e65e3e749e619c0fe823ab222111decff8eff1d16370",
+          "bytes": 136158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_gil_np": {
+      "variants": {
+        "webp": {
+          "sha256": "1d627c2cefd5db325b97e6c6b7c8461a54cfc4e6c63a40557012573a9cd71bea",
+          "bytes": 111700,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_gilles_1": {
+      "variants": {
+        "webp": {
+          "sha256": "b0ac93adeb4f991420e462065d6ace1ac856ba4778d2308eb1945fef42e04e25",
+          "bytes": 182454,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_gilles_2": {
+      "variants": {
+        "webp": {
+          "sha256": "b8bdccb9450f801d14449c8fb15ec6d3b40778121bfe4ba944cdb112e528c69b",
+          "bytes": 102034,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_gilles_np": {
+      "variants": {
+        "webp": {
+          "sha256": "0b9e5c2690a9109cb6ccc1f8c413c7b5aea58d20d68edad618193e4c973d46b1",
+          "bytes": 229872,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_hassan_1": {
+      "variants": {
+        "webp": {
+          "sha256": "575a3db5d25866691a119e800951136df1e39b6a5460b983f94b59cb0d57ca4d",
+          "bytes": 64664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_hassan_2": {
+      "variants": {
+        "webp": {
+          "sha256": "c81502a1435b7894b7943c6dae84b4c263e82ddf2b7e973cde5e857c53820d4a",
+          "bytes": 133358,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_hassan_np": {
+      "variants": {
+        "webp": {
+          "sha256": "79d39ff4acdd547dbf07db74bd1c3262d4e434269dc381ee270b87298f18d328",
+          "bytes": 77520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_herc_1": {
+      "variants": {
+        "webp": {
+          "sha256": "78098dd3c7e28b48cf5a5b1eb335900112971a3a1dad972a5decba81b67f16f4",
+          "bytes": 103328,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_herc_2": {
+      "variants": {
+        "webp": {
+          "sha256": "62357f17406df91dc3418584f7069038c4b255391c5deb7948c12ef006dfb689",
+          "bytes": 142792,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_herc_3": {
+      "variants": {
+        "webp": {
+          "sha256": "eb3c188506dfcb2af42a8d5a5403f92565a66ac5fdc4b0b4c8df95c74ffb1b4e",
+          "bytes": 127874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_iskandar_1": {
+      "variants": {
+        "webp": {
+          "sha256": "d7eb3a36e0c365f5eb89e2251961b038301a9cfc8a52b335bea89dd3c2825d71",
+          "bytes": 137336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_iskandar_2": {
+      "variants": {
+        "webp": {
+          "sha256": "c5fff9cb0afca5dc604790b63d021f85563b7154a1c3e2b771a5ed599b36263a",
+          "bytes": 159728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_iskandar_np": {
+      "variants": {
+        "webp": {
+          "sha256": "d59309698cfb9f6bc92a0323c68bd2ad41733a1008d05a1b1ccafd8b4fc133bb",
+          "bytes": 131660,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_lance_1": {
+      "variants": {
+        "webp": {
+          "sha256": "0b88dd901441aae225f280438f79efbb3b85d5acb0b2c79d11cc724848a68a23",
+          "bytes": 145404,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_lance_2": {
+      "variants": {
+        "webp": {
+          "sha256": "c295e7970d850a2cd4572216801f7d95399b1c5b07ac47a25ffcdf44c8b2fcde",
+          "bytes": 187424,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_lance_3": {
+      "variants": {
+        "webp": {
+          "sha256": "fe49c4fc682ba947dbfbdc3794e76d6ac7c758d71e1be9983a4a6b73038a9ae2",
+          "bytes": 202450,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_medea_1": {
+      "variants": {
+        "webp": {
+          "sha256": "73a2a5e212d19e326d0a34e5a25eba61c9f28f0768c4111e52a1ce02b694891d",
+          "bytes": 111464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_medea_2": {
+      "variants": {
+        "webp": {
+          "sha256": "b8bdccb9450f801d14449c8fb15ec6d3b40778121bfe4ba944cdb112e528c69b",
+          "bytes": 102034,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_medea_np": {
+      "variants": {
+        "webp": {
+          "sha256": "18a8be8a7a66e1a3e9127ba5225a5ba2c3e7cf929d74eca3ec3b8c8c68e44654",
+          "bytes": 105134,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_medusa_1": {
+      "variants": {
+        "webp": {
+          "sha256": "d7eb3a36e0c365f5eb89e2251961b038301a9cfc8a52b335bea89dd3c2825d71",
+          "bytes": 137336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_medusa_2": {
+      "variants": {
+        "webp": {
+          "sha256": "fb7b99c0cf6f9fe90b9d3655afd8e981c5449ce14318d7752f2e5fa4c811baaa",
+          "bytes": 111124,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_medusa_np": {
+      "variants": {
+        "webp": {
+          "sha256": "a49c183ac0deef5a4baf3d8d14ce041f2af605987042fdf59e5afa2a1b438c70",
+          "bytes": 96460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_saber_1": {
+      "variants": {
+        "webp": {
+          "sha256": "a1ffd48150e38810c0ba3608754b925d1a599af35e5e32a47a3e304273d223e2",
+          "bytes": 150630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_saber_2": {
+      "variants": {
+        "webp": {
+          "sha256": "c1e9b8c4dee2346b624fd62b7fdb9474665def758a9f2786b391128e8702f13b",
+          "bytes": 109494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_saber_np": {
+      "variants": {
+        "webp": {
+          "sha256": "cc820e43935201d65f978b466a191056ec53e3679cd781cf5b33e7bc87b7aa85",
+          "bytes": 118212,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_sasaki_1": {
+      "variants": {
+        "webp": {
+          "sha256": "e7eb907a1eb38852fb3c25ca18b30dc9af062e4628eef0107600ebdeb0ed5c55",
+          "bytes": 101092,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_sasaki_2": {
+      "variants": {
+        "webp": {
+          "sha256": "0561a41b1cea1d53ef3611cc37e8acdcaf6a893ff856db86fc4395590f3fb06f",
+          "bytes": 84932,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/compressed/sc_sasaki_3": {
+      "variants": {
+        "webp": {
+          "sha256": "b1d32e5facfc9d22daacfe3319e85dcab65f278a0b799a34ecae38adb505b394",
+          "bytes": 58318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_angra_1": {
+      "variants": {
+        "png": {
+          "sha256": "ad202fe3dd39cc0cebe44d6c93e309fefc43440cfd01d68671d0cabfeb82bba9",
+          "bytes": 595861,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_angra_2": {
+      "variants": {
+        "png": {
+          "sha256": "52de7925a8cff67dd611ee675aac35b7a96c7a2d62ec51c604863b1e37822c00",
+          "bytes": 562818,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_angra_3": {
+      "variants": {
+        "png": {
+          "sha256": "e46f1cc72c17a155ad5fef0a0cbe92b05f51aa4642272ee3acd8ad85b835b532",
+          "bytes": 579334,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_cu_1": {
+      "variants": {
+        "png": {
+          "sha256": "57b89016c5f4daf1182e36333e567b419f8dbf6aec503629737d6100c2565750",
+          "bytes": 476114,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_cu_2": {
+      "variants": {
+        "png": {
+          "sha256": "7a3b35327308a287331fc1012583f0678948b9112d7ae7e15b2baa8993ac30a8",
+          "bytes": 531516,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_cu_np": {
+      "variants": {
+        "png": {
+          "sha256": "4f1d45265f60a796141be3b8baa5757738c00aa4a1ab1afdb027463f4e13fd48",
+          "bytes": 580737,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_diarmuid_1": {
+      "variants": {
+        "png": {
+          "sha256": "808d2d5048ffc8710dd430f89293613e405e2ab9b2a2bebf63e3f3bd1f97b7fa",
+          "bytes": 726838,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_diarmuid_2": {
+      "variants": {
+        "png": {
+          "sha256": "c2bc8eba1f69dcb85edeee6cc9201d2ccc9508b40d1f1719465a6425ca53fcd6",
+          "bytes": 732977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_diarmuid_3": {
+      "variants": {
+        "png": {
+          "sha256": "7a3b35327308a287331fc1012583f0678948b9112d7ae7e15b2baa8993ac30a8",
+          "bytes": 531516,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_emiya_1": {
+      "variants": {
+        "png": {
+          "sha256": "d7de6155a2df92f86fb05ae9ba674a0a6bd90c133cbe2f58a99687e16c47f47f",
+          "bytes": 543718,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_emiya_2": {
+      "variants": {
+        "png": {
+          "sha256": "fe4314198dc1f941fce305825fcc4948c10e42b078b9c372cc96af764e795d58",
+          "bytes": 515769,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_emiya_np": {
+      "variants": {
+        "png": {
+          "sha256": "325fce344e4e922be58233745d3a1d29152a39a8baaff82cba78150707262dd3",
+          "bytes": 556555,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_gil_1": {
+      "variants": {
+        "png": {
+          "sha256": "ed44780ea7dd9ed5d4d6738a848992fa31f09e16d49deb686c17740562a0e934",
+          "bytes": 630958,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_gil_2": {
+      "variants": {
+        "png": {
+          "sha256": "48b0a3b7e2f4e541fedf32bfb1d7a72a32c805be96b2cd5b8d0b4ed2858f2d3b",
+          "bytes": 602966,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_gil_np": {
+      "variants": {
+        "png": {
+          "sha256": "d72fa1fbec8c019f82d2f459e01347fbfc388ce2dfce30b0571c5eddcb6e023e",
+          "bytes": 575891,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_gilles_1": {
+      "variants": {
+        "png": {
+          "sha256": "824c3a6f1e66f6daa059b718edf01259bbaa37e55075ed9bfec89cfcf28f8b86",
+          "bytes": 938031,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_gilles_2": {
+      "variants": {
+        "png": {
+          "sha256": "31d5244a00c830eb7af81e3ad62b76b1b5ae993e2f46aae69c6636411127c1b1",
+          "bytes": 542094,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_gilles_np": {
+      "variants": {
+        "png": {
+          "sha256": "5abe8cc57a9fa6421a6ffec59a8c458c6a9d34e66ae2e1f12c8d3e0a97e97bbc",
+          "bytes": 969240,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_hassan_1": {
+      "variants": {
+        "png": {
+          "sha256": "7a522c429457f0c55dd8cb2239d2c8129f409154e9e846b7b65b477a198565b1",
+          "bytes": 342333,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_hassan_2": {
+      "variants": {
+        "png": {
+          "sha256": "a3d64f0d01da5ee20bf6946ace623282a018ae4e5a9a2d206f3392158a43a82b",
+          "bytes": 602643,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_hassan_np": {
+      "variants": {
+        "png": {
+          "sha256": "f3789f4542842d8e4c2322c294228d27b7489ca0725072e1615b3b0120a55dca",
+          "bytes": 446370,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_herc_1": {
+      "variants": {
+        "png": {
+          "sha256": "7c3563e3010cafca8e229329ff9c232ca9469cc7f64c184cd46e4723c202e433",
+          "bytes": 516264,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_herc_2": {
+      "variants": {
+        "png": {
+          "sha256": "9d5799b2c514998b442824cd9d9e74d22cb03fe3723b9a6939412e741cb582f9",
+          "bytes": 766277,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_herc_3": {
+      "variants": {
+        "png": {
+          "sha256": "3b69ba7d06ee10302e43ae51dac1c9b19af79219ef8c6087f994971f27ae5983",
+          "bytes": 711444,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_iskandar_1": {
+      "variants": {
+        "png": {
+          "sha256": "932896e8fa8492a2a87d429340b325aecef314e97f238659a968dcbdc4313285",
+          "bytes": 611654,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_iskandar_2": {
+      "variants": {
+        "png": {
+          "sha256": "9f69f69bbec08ef23db49ba5ad555a2930ae94ac781c10ac29b42a66ebb948ec",
+          "bytes": 699283,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_iskandar_np": {
+      "variants": {
+        "png": {
+          "sha256": "f4138c7189ac4eade227b5ee3ae95328526d11e1ddfb6c6138dbdcf67deba6c6",
+          "bytes": 632983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_lance_1": {
+      "variants": {
+        "png": {
+          "sha256": "b353b93049a3e6c65ce9c9aed045be9e537ccbcc2f3476f22353bd873f197905",
+          "bytes": 644079,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_lance_2": {
+      "variants": {
+        "png": {
+          "sha256": "48e1ac3e4efbe0f3a523352b5fcc3089c5ce3007c5028d1f2abd671712c27841",
+          "bytes": 890508,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_lance_3": {
+      "variants": {
+        "png": {
+          "sha256": "4bf45e321719720e010f0beb3b4c18f9d2bd2c04ca79b14e77eab49082f4220f",
+          "bytes": 930930,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_medea_1": {
+      "variants": {
+        "png": {
+          "sha256": "2c7edf53d83b9e4d5d5d6ae4c5df3d1894e9b269fd942570ee9732a156b83a72",
+          "bytes": 591508,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_medea_2": {
+      "variants": {
+        "png": {
+          "sha256": "31d5244a00c830eb7af81e3ad62b76b1b5ae993e2f46aae69c6636411127c1b1",
+          "bytes": 542094,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_medea_np": {
+      "variants": {
+        "png": {
+          "sha256": "d18b3fba9cb7ad5c9266169485c416b3c911943258d5c4b6c123ed97cc071206",
+          "bytes": 550977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_medusa_1": {
+      "variants": {
+        "png": {
+          "sha256": "932896e8fa8492a2a87d429340b325aecef314e97f238659a968dcbdc4313285",
+          "bytes": 611654,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_medusa_2": {
+      "variants": {
+        "png": {
+          "sha256": "dee376001c373e4a2127e4bdd261f3740cdefde21610f480e6a0f5ddea50a5bb",
+          "bytes": 589786,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_medusa_np": {
+      "variants": {
+        "png": {
+          "sha256": "5b0b512a28e9184496c75aa2ff3adffb8820878cf3c497eff472cc5bd0d5f431",
+          "bytes": 534596,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_saber_1": {
+      "variants": {
+        "png": {
+          "sha256": "ad74e333f0252cbb7215aa566cda73eb07bde3fca24142b00ae5b1b9a1637e2c",
+          "bytes": 781302,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_saber_2": {
+      "variants": {
+        "png": {
+          "sha256": "ac13c3ae915539711c844d23d95551b6c85d07e451b9716a42ea17e1a71bb861",
+          "bytes": 646550,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_saber_np": {
+      "variants": {
+        "png": {
+          "sha256": "a17a46cf4c0071d7e37206d1fc31735152f38ca74ae03f24bd0cecf18f667386",
+          "bytes": 701392,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_sasaki_1": {
+      "variants": {
+        "png": {
+          "sha256": "f379958903f620786164eff4e9b788cf513d1a6745b5c803c788b1bdbbf066c4",
+          "bytes": 533050,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_sasaki_2": {
+      "variants": {
+        "png": {
+          "sha256": "5372e8d25d7d90eeb6fd2f6f5497125676f72881cec337436bfa93cd436de686",
+          "bytes": 490760,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/skills/sc_sasaki_3": {
+      "variants": {
+        "png": {
+          "sha256": "d781334c21e80cd815f999647ae4c4df34e9ad86b327020bba9680c4ecac6ea5",
+          "bytes": 402666,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "cdd4622798e0498832312424a4d67e8fb1361219b547bdcbcc524e9a0ddc7748",
+          "bytes": 68462,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_iliya": {
+      "variants": {
+        "webp": {
+          "sha256": "d15fdff166c1a3e58b870e7164acf2ee7a4b767a07759eb1ab327bf71a541774",
+          "bytes": 42162,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_kariya": {
+      "variants": {
+        "webp": {
+          "sha256": "476505dfc65322c1cce5da77a4eacf5586f9ebd654c8768045bf683e72de7975",
+          "bytes": 57898,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_kayneth": {
+      "variants": {
+        "webp": {
+          "sha256": "450325a434a006c17d9e60445274aaeacad9bf7cce84b97e643fae80405e25e6",
+          "bytes": 136526,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_kiritsugu": {
+      "variants": {
+        "webp": {
+          "sha256": "2b875f7299cf3c85c873e574fb30d92f6fb3ed8977ff1f9a863c4a8543b1a517",
+          "bytes": 84572,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_ryuunosuke": {
+      "variants": {
+        "webp": {
+          "sha256": "19419391d583dec45d6ce15d695b75beddbe7f98b19fff65cb554b2e42447d1b",
+          "bytes": 64550,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_sakura": {
+      "variants": {
+        "webp": {
+          "sha256": "420e03d7cfd50d7d830b4f81ad41a601defb375a75e85550f85c4f4da3281071",
+          "bytes": 92174,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_tokiomi": {
+      "variants": {
+        "webp": {
+          "sha256": "d65ad0fca9baaf7dfc229ea76e7e03d3562226949a6ad9f7dce47951434a2f33",
+          "bytes": 102606,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_waver": {
+      "variants": {
+        "webp": {
+          "sha256": "5f9cd458b538fb1fb7b898ab501b57d2fb372a1b724c6f190b32189f5bd80fc0",
+          "bytes": 106040,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/m_zouken": {
+      "variants": {
+        "webp": {
+          "sha256": "8503717db38a27651bb4a506872891239c9c301c40630b52128d859722ff59bd",
+          "bytes": 52972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/token-emiya-shirou": {
+      "variants": {
+        "webp": {
+          "sha256": "4f5fe55d4ac10c441a15e5c47e405c19ed7825c5aebd1927425a7e24d10bef46",
+          "bytes": 126808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/token-kotomine-kirei": {
+      "variants": {
+        "webp": {
+          "sha256": "f9f54635afb8fb068a2678ddf180d69d26dbae45bb9cd5051eeac5e61d10da2e",
+          "bytes": 62296,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/token-matou-shinji": {
+      "variants": {
+        "webp": {
+          "sha256": "57b6f907e87242a6b752d54d35719ca541f6a03824c18ccfef25a5b6fb98f900",
+          "bytes": 60170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/compressed/token-tohsaka-rin": {
+      "variants": {
+        "webp": {
+          "sha256": "f7f97342b2d0b7b0700603e4cf6915b2122e2280fe1255f0821b9a90cef02cf4",
+          "bytes": 82608,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_iliya": {
+      "variants": {
+        "png": {
+          "sha256": "5bd9377b201d60afe36d1df4297581c1cf0cab199abc3604139199f010eec4ee",
+          "bytes": 318671,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_kariya": {
+      "variants": {
+        "png": {
+          "sha256": "03febeb01eb54675775b0aace7f66a5ed7c9aa86d5bb3ed7df3d1556c7088951",
+          "bytes": 452011,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_kayneth": {
+      "variants": {
+        "png": {
+          "sha256": "21d2dfcdb2dd6100ddf7639cac0d13dc14337adc7b02723faecadd0ae9936c66",
+          "bytes": 836811,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_kiritsugu": {
+      "variants": {
+        "png": {
+          "sha256": "ee4969fad98d0e5453c409657d80598b8253ef0905d8edfef81f359863a04afd",
+          "bytes": 610563,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_ryuunosuke": {
+      "variants": {
+        "png": {
+          "sha256": "bdd22de1ea4adaa265e728375db2bdb9f7d696e8b55d13c33ffac710fd1070b5",
+          "bytes": 488077,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_sakura": {
+      "variants": {
+        "png": {
+          "sha256": "769c7b67442fb004cfd1cb8ab2728cca91258670f57034d7e7f894abca803369",
+          "bytes": 511679,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_tokiomi": {
+      "variants": {
+        "png": {
+          "sha256": "37cf97622f6af4c425b12d9a71ecbac8a2bc6f87cf037d230f9aad4866002734",
+          "bytes": 677674,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_waver": {
+      "variants": {
+        "png": {
+          "sha256": "37feec7fcf772dde5acd444cfbea868ca4092ad6bc88a11c54b0f943041f5d6f",
+          "bytes": 701145,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/m_zouken": {
+      "variants": {
+        "png": {
+          "sha256": "a7112dcb663a13584d40e87b2e553e9e63d5c9c0b9c4aa6e69639ddd20e29c01",
+          "bytes": 455011,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/token-emiya-shirou": {
+      "variants": {
+        "png": {
+          "sha256": "7b84b6a4609a8a8adb673ccd5d628327ce62a748cb1fc21e8e5cd86dc2fac709",
+          "bytes": 755828,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/token-kotomine-kirei": {
+      "variants": {
+        "png": {
+          "sha256": "2138a3a532979158bf2162269e49c02df6ca8ce3896eb1c8b948226abc64b64c",
+          "bytes": 425779,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/token-matou-shinji": {
+      "variants": {
+        "png": {
+          "sha256": "406e4f4ff2144407358d3a7089d98967b8e6890b53e49a69d76a41bfa98f534c",
+          "bytes": 384412,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/tokens/token-tohsaka-rin": {
+      "variants": {
+        "png": {
+          "sha256": "117096ed8e5e652d2ba91c9301f0164364552918353217fb8b741f31809446d8",
+          "bytes": 550892,
+          "mime": "image/png"
         }
       }
     },

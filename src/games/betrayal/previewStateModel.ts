@@ -127,6 +127,19 @@ export function createInitialPreviewState(_core: BetrayalCore): PreviewState {
   };
 }
 
+export function resolveRoomPlacementCancellationState(
+  previousState: PreviewState,
+): PreviewState {
+  return {
+    ...previousState,
+    pendingRoomPlacementSlotId: null,
+    pendingRoomPlacementFailure: null,
+    pendingRoomOrientationTurns: 0,
+    pendingRoomTileAdjustment: null,
+    interactionMode: "default",
+  };
+}
+
 export function resolvePreservedExplorePlacementState(
   core: BetrayalCore,
   previousState: PreviewState,

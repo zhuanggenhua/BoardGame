@@ -53,6 +53,10 @@ const STABLE_OPTIMIZE_DEPS = [
   'debug',
   'howler',
   'normalize-wheel',
+  // Home library news renders changelog markdown. With noDiscovery enabled,
+  // keep its CJS style parser in Vite's ESM prebundle instead of serving it raw.
+  'react-markdown',
+  'style-to-js',
   'socket.io-msgpack-parser',
   // Pixi 8 ships CommonJS internals through eventemitter3; prebundle the full
   // chain so Vite dev/E2E does not load the nested CJS file as a raw ESM module.

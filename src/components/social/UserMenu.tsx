@@ -14,6 +14,7 @@ import { readLocalStorageItem, writeLocalStorageItem } from '../../lib/browserSt
 import { useSocial } from '../../contexts/SocialContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
 import { MyFeedbackModal } from './MyFeedbackModal';
+import './user-menu-platform.css';
 
 const NOTIFICATION_SEEN_KEY = 'notification_last_seen';
 const getNotificationSeenStorageKey = (userId?: string | null) => {
@@ -39,11 +40,12 @@ const getLatestNotificationTimestamp = (list: { createdAt?: string }[]) => {
 
 interface UserMenuProps {
     onLogout: () => void;
-    variant?: 'classic' | 'book';
+    onProfile?: () => void;
+    variant?: 'classic' | 'book' | 'platform';
     triggerTestId?: string;
 }
 
-export const UserMenu = ({ onLogout, variant = 'classic', triggerTestId = 'user-menu-trigger' }: UserMenuProps) => {
+export const UserMenu = ({ onLogout, onProfile, variant = 'classic', triggerTestId = 'user-menu-trigger' }: UserMenuProps) => {
     const { user, token } = useAuth();
     const navigate = useNavigate();
     const { openModal, closeModal } = useModalStack();
@@ -56,6 +58,7 @@ export const UserMenu = ({ onLogout, variant = 'classic', triggerTestId = 'user-
     const accountModalIdRef = useRef<string | null>(null);
     const cursorModalIdRef = useRef<string | null>(null);
     const isBookVariant = variant === 'book';
+    const isPlatformVariant = variant === 'platform';
 
     // 铃铛红点 = 系统通知 OR 好友请求 OR 未读消息
     const hasBellBadge = hasNewNotification || requests.length > 0 || unreadTotal > 0;
@@ -245,7 +248,26 @@ export const UserMenu = ({ onLogout, variant = 'classic', triggerTestId = 'user-
     if (!user) return null;
 
     const canAccessBackoffice = isBackofficeRole(user.role);
-    const trigger = isBookVariant ? (
+    const trigger = isPlatformVariant ? (
+        <>
+            <button type="button" className="platform-account-trigger"
+                data-testid={triggerTestId} aria-label={user.username}
+                aria-haspopup="menu" aria-expanded={isOpen} onClick={() => setIsOpen(!isOpen)}>
+                <span className="platform-account-avatar" aria-hidden="true">
+                    {user.avatar ? <img src={user.avatar} alt="" /> : <UserIcon size={21} />}
+                </span>
+                <span className="platform-account-name">{user.username}</span>
+                <span className="platform-account-points"><RewardPointsBadge points={user.feedbackPoints ?? 0} /></span>
+                {hasBellBadge && <span className="platform-account-dot" />}
+            </button>
+            <button type="button" className="platform-account-notifications" onClick={handleOpenNotifications}
+                aria-label={t('social:menu.notifications')} data-testid="user-menu-notifications">
+                <Bell size={20} aria-hidden="true" />
+                <span>{t('social:menu.notifications')}</span>
+                {hasBellBadge && <span className="platform-account-dot" />}
+            </button>
+        </>
+    ) : isBookVariant ? (
         <button
             onClick={() => setIsOpen(!isOpen)}
             className="group relative flex h-full w-full items-center justify-end gap-2 border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
@@ -318,14 +340,18 @@ export const UserMenu = ({ onLogout, variant = 'classic', triggerTestId = 'user-
     );
 
     return (
-        <div className={isBookVariant ? 'relative h-full w-full' : 'relative flex h-8 items-center gap-1'} ref={menuRef}>
+        <div className={isPlatformVariant ? 'user-menu--platform' : isBookVariant ? 'relative h-full w-full' : 'relative flex h-8 items-center gap-1'} ref={menuRef}>
             {trigger}
 
             {isOpen && (
-                <div className={isBookVariant
+                <div data-user-menu-panel className={isBookVariant
                     ? 'absolute right-0 top-[calc(100%+0.35rem)] z-50 flex min-w-[220px] flex-col gap-1 rounded-[6px] border border-[#8b633e]/35 bg-[#f6ead0] px-2 py-2 text-[#3c2819] shadow-[0_12px_24px_rgba(44,28,18,0.18)] animate-in fade-in slide-in-from-top-1'
                     : 'absolute top-[calc(100%+0.5rem)] right-0 bg-parchment-card-bg shadow-parchment-card-hover border border-parchment-card-border rounded-sm py-2 px-2 z-50 min-w-[200px] animate-in fade-in slide-in-from-top-1 flex flex-col gap-1'}
                 >
+                    {onProfile && <button type="button" onClick={() => { setIsOpen(false); onProfile(); }}
+                        className="min-h-11 px-4 py-2 text-left font-bold" data-testid="user-menu-profile">
+                        {t('auth:menu.profile', { defaultValue: '个人主页' })}
+                    </button>}
                     {isBookVariant ? (
                         <>
                             <button

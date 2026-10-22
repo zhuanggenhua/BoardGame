@@ -10,6 +10,7 @@ interface ImportMetaEnv {
     readonly VITE_ANDROID_CONTROL_ASSETS_BASE_URL?: string;
     readonly VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL?: string;
     readonly VITE_ASSET_SOURCE?: string;
+    readonly VITE_LOCAL_ASSET_GAMES?: string;
     readonly VITE_DEV_REMOTE_ASSETS?: string;
     readonly VITE_E2E_LOCAL_ASSETS_ONLY?: string;
     readonly VITE_APP_VERSION?: string;

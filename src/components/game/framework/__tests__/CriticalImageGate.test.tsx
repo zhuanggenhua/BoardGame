@@ -1,4 +1,5 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CriticalImageGate } from '../CriticalImageGate';
@@ -531,4 +532,41 @@ describe('CriticalImageGate', () => {
 
         resolveFirstRun?.(['warm:setup']);
     });
+});
+
+
+it('显式保持场景时首次仍阻塞，后续加载隐藏并保留同一局部相机状态',async()=>{
+ const resolvers:Array<(paths:string[])=>void>=[];
+ vi.mocked(preloadCriticalImages).mockImplementation(()=>new Promise(resolve=>resolvers.push(resolve)));
+ vi.mocked(resolveCriticalImages).mockImplementation((_id,state)=>({critical:['map'],warm:[],phaseKey:(state as {phase:string}).phase,preserveMountedScene:true}));
+ let mounts=0;
+ function Scene(){const [pose,setPose]=useState(()=>{mounts++;return 0;});return <button data-testid="scene-camera" onClick={()=>setPose(pose+1)}>相机{pose}</button>;}
+ const view=render(<CriticalImageGate gameId="fate-domination" gameState={{phase:'first'}}><Scene/></CriticalImageGate>);
+ expect(screen.queryByTestId('scene-camera')).toBeNull();expect(mounts).toBe(0);
+ await waitFor(()=>expect(resolvers).toHaveLength(1));resolvers[0]([]);
+ await waitFor(()=>expect(screen.getByTestId('scene-camera')).toBeVisible());
+ fireEvent.click(screen.getByTestId('scene-camera'));expect(screen.getByText('相机1')).toBeTruthy();
+ view.rerender(<CriticalImageGate gameId="fate-domination" gameState={{phase:'second'}}><Scene/></CriticalImageGate>);
+ await waitFor(()=>expect(resolvers).toHaveLength(2));
+ expect(screen.getByTestId('scene-camera')).not.toBeVisible();
+ expect(screen.getByTestId('scene-camera').closest('[inert]')).not.toBeNull();expect(mounts).toBe(1);
+ expect(document.querySelector('[data-loading]')).toBeVisible();
+ resolvers[1]([]);await waitFor(()=>expect(screen.getByText('相机1')).toBeVisible());expect(mounts).toBe(1);
+ view.rerender(<CriticalImageGate gameId="another-preserved-game" gameState={{phase:'first'}}><Scene/></CriticalImageGate>);
+ await waitFor(()=>expect(resolvers).toHaveLength(3));
+ expect(screen.queryByTestId('scene-camera')).toBeNull();expect(document.querySelector('[data-loading]')).toBeVisible();
+ resolvers[2]([]);await waitFor(()=>expect(screen.getByText('相机0')).toBeVisible());expect(mounts).toBe(2);
+});
+
+
+it('未选择保持场景的旧默认仍在新阶段加载时卸载子内容',async()=>{
+ const resolvers:Array<(paths:string[])=>void>=[];
+ vi.mocked(preloadCriticalImages).mockImplementation(()=>new Promise(resolve=>resolvers.push(resolve)));
+ vi.mocked(resolveCriticalImages).mockImplementation((_id,state)=>({critical:['map'],warm:[],phaseKey:(state as {phase:string}).phase}));
+ const view=render(<CriticalImageGate gameId="dicethrone" gameState={{phase:'first'}}><div data-testid="legacy-board"/></CriticalImageGate>);
+ await waitFor(()=>expect(resolvers).toHaveLength(1));resolvers[0]([]);
+ await waitFor(()=>expect(screen.getByTestId('legacy-board')).toBeTruthy());
+ view.rerender(<CriticalImageGate gameId="dicethrone" gameState={{phase:'second'}}><div data-testid="legacy-board"/></CriticalImageGate>);
+ await waitFor(()=>expect(resolvers).toHaveLength(2));expect(screen.queryByTestId('legacy-board')).toBeNull();
+ resolvers[1]([]);await waitFor(()=>expect(screen.getByTestId('legacy-board')).toBeTruthy());
 });

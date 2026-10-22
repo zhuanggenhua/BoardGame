@@ -5,7 +5,8 @@ import {
   type CopySourceRef,
   type MovementMode,
 } from '../../../engine/primitives';
-import type { FateDominationCore, FatePhase, LocationId, PlayerId } from './types';
+import type { FateDominationCore, FatePhase, LocationId } from './types';
+import type { PlayerId } from '../../../engine/types';
 
 export type FateAbilityPhase = Extract<FatePhase, 'preparation' | 'outpost' | 'action' | 'battle'>;
 export type FateRuleDuration = 'turn-end' | 'round-end' | 'game-end';
@@ -35,6 +36,7 @@ interface FateRuleModifierBase {
 }
 
 export type FateRuleModifier =
+  | (FateRuleModifierBase & { kind: 'battle-win-reward'; playerId: PlayerId; victoryPoints: number })
   | (FateRuleModifierBase & {
       kind: 'movement';
       mode: MovementMode | 'all';
@@ -63,6 +65,7 @@ export type FateRuleModifier =
       playerIds?: readonly PlayerId[];
       locationId?: LocationId;
       scope: 'players' | 'location';
+      excludeController?: boolean;
     })
   | (FateRuleModifierBase & {
       kind: 'power-transform';
@@ -156,6 +159,7 @@ function appliesToPlayer(
   playerId: PlayerId,
 ): boolean {
   if (modifier.kind === 'ability-suppression') {
+    if(modifier.excludeController&&modifier.source.controllerId===playerId)return false;
     if (modifier.scope === 'players' && modifier.playerIds && !modifier.playerIds.includes(playerId)) return false;
     if (modifier.scope === 'location' && modifier.locationId !== core.players[playerId]?.locationId) return false;
   }

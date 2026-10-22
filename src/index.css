@@ -1283,6 +1283,7 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid^="fab-sheet-"],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid^="fab-tooltip-"],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="debug-toggle-container"],
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-tutorial-step],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="debug-panel"] {
     display: none !important;
 }
@@ -2084,5 +2085,120 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
 @media (prefers-reduced-motion: reduce) {
     [data-dicethrone-token-halo="available"] {
         animation: none !important;
+    }
+}
+
+.betrayal-map-move-reach__path {
+    fill: none;
+    stroke: rgba(173, 225, 189, 0.88);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-dasharray: 5 6;
+    filter: drop-shadow(0 0 4px rgba(123, 194, 145, 0.8));
+    animation: betrayal-map-move-reach-flow 2.4s linear infinite;
+}
+
+.betrayal-map-move-reach__pulse {
+    fill: #d8f0df;
+    filter: drop-shadow(0 0 5px rgba(147, 220, 170, 0.96));
+    animation: betrayal-map-move-reach-pulse 1.8s ease-in-out infinite;
+}
+
+.betrayal-map-move-door-breath {
+    position: absolute;
+    z-index: 18;
+    display: block;
+    width: 30px;
+    height: 5px;
+    pointer-events: none;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(196, 238, 207, 0.96), transparent);
+    box-shadow: 0 0 8px rgba(133, 204, 153, 0.88);
+    animation: betrayal-map-move-door-breathe 1.9s ease-in-out infinite;
+}
+
+.betrayal-map-move-door-breath--north {
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.betrayal-map-move-door-breath--south {
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 50%);
+}
+
+.betrayal-map-move-door-breath--east {
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%) rotate(90deg);
+}
+
+.betrayal-map-move-door-breath--west {
+    top: 50%;
+    left: 0;
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.betrayal-map-explore-mark {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    border: 1px solid rgba(216, 240, 223, 0.65);
+    border-radius: 50%;
+    background: rgba(5, 18, 12, 0.88);
+    color: #e3f7e9;
+    font: bold 42px/1 Georgia, serif;
+    text-shadow: 0 0 12px rgba(147, 220, 170, 0.65);
+    animation: betrayal-map-move-reach-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes betrayal-map-move-reach-flow {
+    to {
+        stroke-dashoffset: -22;
+    }
+}
+
+@keyframes betrayal-map-move-reach-pulse {
+    0%,
+    100% {
+        opacity: 0.58;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes betrayal-map-move-door-breathe {
+    0%,
+    100% {
+        opacity: 0.48;
+        box-shadow: 0 0 5px rgba(133, 204, 153, 0.55);
+    }
+
+    50% {
+        opacity: 0.98;
+        box-shadow: 0 0 11px rgba(156, 222, 174, 0.96);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .betrayal-map-move-reach__path,
+    .betrayal-map-move-reach__pulse,
+    .betrayal-map-explore-mark,
+    .betrayal-map-move-door-breath {
+        animation: none !important;
+    }
+
+    .betrayal-map-move-reach__path {
+        opacity: 0.7;
+    }
+
+    .betrayal-map-move-reach__pulse,
+    .betrayal-map-move-door-breath {
+        opacity: 0.76;
     }
 }

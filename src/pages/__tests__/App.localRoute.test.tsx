@@ -132,9 +132,15 @@ vi.mock('react-hot-toast', () => ({
     Toaster: NullComponent,
 }));
 
-vi.mock('../MatchRoomWithAudio', () => ({
-    default: () => <div data-testid="online-match-room">online</div>,
-}));
+vi.mock('../MatchRoomWithAudio', async () => {
+    const { useParams } = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+    return {
+        default: () => {
+            const { gameId, matchId } = useParams();
+            return <div data-testid="online-match-room" data-game-id={gameId} data-match-id={matchId}>online</div>;
+        },
+    };
+});
 
 vi.mock('../LocalMatchRoomWithAudio', () => ({
     default: () => <div data-testid="local-match-room">local</div>,
@@ -199,6 +205,24 @@ describe('App local route', () => {
             expect(screen.getByTestId('local-match-room')).toBeInTheDocument();
         });
         expect(screen.queryByTestId('test-match-room')).toBeNull();
+    });
+
+    it('Fate 在线房间保留 gameId 并加载正确的游戏客户端', async () => {
+        routerState.initialEntries = ['/play/fate-domination/match/fate-probe?playerID=0'];
+        routeGuardMocks.getMatch.mockResolvedValue({
+            matchID: 'fate-probe',
+            gameName: 'fate-domination',
+            players: [],
+        });
+
+        const { default: App } = await import('../../App');
+
+        render(<App />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('online-match-room')).toHaveAttribute('data-game-id', 'fate-domination');
+        });
+        expect(screen.getByTestId('online-match-room')).toHaveAttribute('data-match-id', 'fate-probe');
     });
 
     it('在线对局路由懒加载前确认房间不存在时应清理本地记录并返回大厅', async () => {

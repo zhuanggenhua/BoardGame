@@ -87,6 +87,7 @@
     "unknownLocation": "未知地点",
     "locationFull": "地点已满",
     "staleCard": "卡牌已不在当前手牌",
+    "invalidAttackSelection": "出牌选择已失效，请重新选择",
     "cardAlreadySelected": "这张牌已选中",
     "tooManyAttackCards": "最多选择两张攻击牌",
     "notEnoughMana": "魔力不足",
@@ -94,5 +95,9 @@
     "cardNotVisible": "这张牌当前不可查看",
     "deploymentRequired": "请先部署御主",
     "actionMustBeConfirmed": "请先确认攻击"
+  },
+  "feedback": {
+    "skillUnavailable": "技能「{{skill}}」尚未实现，本次未生效，也未扣除资源。",
+    "abilityUnavailable": "该技能尚未实现，本次未生效，也未扣除资源。"
   }
 }

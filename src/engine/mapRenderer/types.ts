@@ -24,6 +24,45 @@ export interface MapSceneToken {
     label?: string;
 }
 
+/** A visible map object; geometry is supplied by the game's read model, never DOM measurements. */
+export interface MapSceneSprite {
+    id: string;
+    textureUrls: readonly string[];
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    /** Atlas rectangle in normalized source coordinates, so compressed atlases keep their crop. */
+    frame?: { x: number; y: number; width: number; height: number };
+    rotation?: number;
+    alpha?: number;
+    /** Normalized silhouette and optional printed-token backing. */
+    clipPolygon?: readonly MapScenePoint[];
+    border?: { color: number; width: number };
+    imageFit?: "contain" | "cover";
+    imageScale?: number;
+    motion?: {
+        id: string;
+        from: MapScenePoint;
+        kind: 'hop' | 'fade' | 'reveal';
+        durationMs: number;
+        landingDurationMs?: number;
+        arcHeight?: number;
+        startScale?: number;
+    };
+}
+
+/** Rendered motion progress; consumers must not write authoritative game state. */
+export type MapSceneSpriteMotionFrameCallback = (spriteId: string, motionId: string, progress: number) => void;
+
+export type MapSceneSpriteMotionPhase = 'landing' | 'settled';
+
+export type MapSceneSpriteMotionPhaseCallback = (
+    spriteId: string,
+    motionId: string,
+    phase: MapSceneSpriteMotionPhase,
+) => void;
+
 export type MapInteractionIntent =
     | { type: 'select-region'; regionId: string }
     | { type: 'hover-region'; regionId: string | null }

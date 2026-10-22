@@ -1,0 +1,13 @@
+.game-changelog-content { overflow-wrap: anywhere; line-height: 1.55; }
+.game-changelog-content > :first-child { margin-top: 0; }
+.game-changelog-content > :last-child { margin-bottom: 0; }
+.game-changelog-content h5 { margin: 12px 0 6px; font-size: 15px; font-weight: 800; }
+.game-changelog-content p { margin: 6px 0; }
+.game-changelog-content ul, .game-changelog-content ol { margin: 6px 0; padding-left: 1.25em; }
+.game-changelog-content ul { list-style: disc; }
+.game-changelog-content ol { list-style: decimal; }
+.game-changelog-content li + li { margin-top: 4px; }
+.game-changelog-content a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.game-changelog-content pre { overflow-x: auto; padding: 8px; background: #0000000a; }
+.game-changelog-content img { max-width: 100%; height: auto; }
+.game-changelog-content blockquote { border-left: 3px solid currentColor; margin: 8px 0; padding-left: 10px; }

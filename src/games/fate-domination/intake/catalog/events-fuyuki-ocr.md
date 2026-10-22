@@ -1,6 +1,6 @@
 # Fate/Domination 冬木事件图文合同
 
-登记日期：2026-10-11。主真相源：`D:\gongzuo\webgame\gameasset\fate命运之夜\FD全卡图鉴V1.0.chm`。图面来自 `冬木1.htm` 的 `ScreenShot_2025-10-27_203*.png`；`冬木.htm` 另为 10 张局势 hashed 图，已记录在 `situations-10plus3-ocr.md`。本文件不改 `demo-data.ts`、`image-register` 或 `public/assets`。
+登记日期：2026-10-11。主真相源：`本地素材路径省略`。图面来自 `冬木1.htm` 的 `ScreenShot_2025-10-27_203*.png`；`冬木.htm` 另为 10 张局势 hashed 图，已记录在 `situations-10plus3-ocr.md`。本文件不改 `demo-data.ts`、`image-register` 或 `public/assets`。
 
 ## 读取与对账
 
@@ -17,9 +17,9 @@
 - CHM 页：`冬木1.htm`
 - 类别：事件；VP：5；重复数：1；图标：无
 - 原文（逐字）：卡名为`夺回伊莉雅`；正文区域在 CHM 图面中为空白，未见可读效果文字。
-- 状态：`blocked`
-- blocked 证据：正文缺失，不能以 demo 的“赢区域者得3魔”代替 CHM 原文；待人工复核原始 CHM/卡图。
-- 与 demo-data：demo E0 有缩写效果，但本合同不锁该效果。
+- 状态：`locked`（2026-10-20 已直接解包并核对 CHM 完整原图，正文印刷区域为空，不存在 demo 的“赢区域者得3魔”效果）。
+- 原始 CHM SHA256：2771487eef53443c6a1b5bb4a80c5fec2ad4a92dcb1952bfc83ca31170da35b7；冬木1.htm SHA256：4367b552a344f446ce7f84dcca76d21a96d11969f50133dd659d758e32fa149c；原图 916×1298 SHA256：7c1538fccdea261e98b024fec22f6c9eb047683400bf36adf78724b5fe836bee。目录 hhc 的事件→冬木指向此页，页面引用此原始成员。
+- 与 demo-data：demo E0 的额外魔力效果与原图不符，禁止运行时消费。
 
 ### E1 / E2 / 铤而走险（2 张）
 
