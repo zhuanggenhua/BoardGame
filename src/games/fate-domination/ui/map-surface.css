@@ -1,0 +1,20 @@
+.fd-runtime-map { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+.fd-runtime-map-overlay { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; }
+.fd-runtime-location { position: absolute; padding: 0; border: 2px solid #fff3c9; background: rgb(255 255 255 / .18); pointer-events: auto; cursor: pointer; }
+.fd-runtime-location:hover { background: rgb(255 255 255 / .32); }
+.fd-runtime-map-card-hit { position: absolute; pointer-events: auto; border: 0; background: transparent; cursor: zoom-in; }
+.fd-runtime-map-card-hit:focus-visible { outline: 4px solid #e2c269; }
+.fd-runtime-pawn { position: absolute; width: 74px; height: 74px; display: grid; place-items: center; transform: translate(-50%,-50%); border-radius: 50%; border: 4px solid #e2c269; background: #162e37; color: #ffe8b3; font: 800 32px/1 Arial,sans-serif; box-shadow: 0 4px 12px #000; }
+.fd-runtime-camera-controls { position: absolute; left: 220px; top: 16px; display: flex; align-items: center; gap: 12px; padding: 4px 8px; background: #0c1110; color: #ddc78c; font-size: 12px; }
+.fd-runtime-camera-controls button { min-height: 36px; padding: 6px 12px; border: 1px solid #a88e51; }
+
+.fd-runtime-pawn { border: 0; background: transparent; box-shadow: none; width: 82px; height: 82px; }
+.fd-runtime-pawn > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 5px #0009); }
+.fd-runtime-missing-asset { font-size: 12px; padding: 4px; background: #321c14; color: #fff; }
+.fd-runtime-pawn:not(:disabled) { pointer-events:auto; cursor:pointer; }
+.fd-runtime-pawn[aria-pressed="true"] { outline:3px solid #ffe6a0; outline-offset:3px; }
+.fd-event-deck-count { position:absolute; padding:5px 10px; border-radius:50%; background:#101717; color:#f7e7bb; font-size:22px; z-index:1; }
+
+.fd-runtime-movement-exit { position:absolute; pointer-events:auto; cursor:pointer; padding:0; border:2px solid #fff3c9; background:rgb(255 255 255 / .22); box-shadow:0 0 16px #ffe7a155; }
+.fd-runtime-movement-exit:hover, .fd-runtime-movement-exit:focus-visible { background:rgb(255 255 255 / .4); outline:2px solid #ffe7a1; outline-offset:2px; }
+.fd-runtime-location[aria-pressed="true"] { background:rgb(255 235 180 / .25); border-color:#fff0b8; }

@@ -27,10 +27,10 @@ const SCENARIO_SELECT_DETAIL_NEXT_BODY_SCREENSHOT = `${EVIDENCE_DIR}/02d-山屋�
 const SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/02e-山屋惊魂-基本流程-书本式剧本阅读末页.png`;
 const START_SCENARIO_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/03a-山屋惊魂-开始剧本后开局过场.png`;
 const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-基本流程-运行时.png`;
-const MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-基本流程-移动选目标.png`;
+const DIRECT_MOVE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-基本流程-移动选目标.png`;
 const MOVE_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-基本流程-移动后.png`;
 const MOVE_CONTINUED_SCREENSHOT = `${EVIDENCE_DIR}/07b-山屋惊魂-基本流程-不取消连续移动到大阶梯.png`;
-const DIRECT_MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/07c-山屋惊魂-运行时-移动模式选择门厅.png`;
+const DIRECT_RETURN_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/07c-山屋惊魂-运行时-直选门厅入口.png`;
 const DIRECT_MOVE_AFTER_FIRST_ROOM_SCREENSHOT = `${EVIDENCE_DIR}/07d-山屋惊魂-运行时-移动后仍可继续选择大阶梯.png`;
 const DIRECT_MOVE_CHAIN_SCREENSHOT = `${EVIDENCE_DIR}/07e-山屋惊魂-运行时-不取消连续移动完成.png`;
 const MOBILE_CHARACTER_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-移动端横屏-角色竖向滚动选中与能力提示.jpg`;
@@ -346,7 +346,7 @@ test.describe("山屋惊魂基本流程", () => {
       timeout: 30000,
     });
     await expect(page.getByTestId("betrayal-room-grid")).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-explore")).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await expect(page.getByTestId("betrayal-current-ability")).toBeVisible();
     await expect(page.getByTestId("betrayal-current-ability")).toContainText(
@@ -402,13 +402,10 @@ test.describe("山屋惊魂基本流程", () => {
       firstMoveSourceToken,
     );
 
-    await page.getByTestId("betrayal-action-move").click();
-    await expect(page.getByTestId("betrayal-action-move")).toContainText(
-      "取消移动",
-    );
+    await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
     await expect(page.getByTestId("betrayal-room-hallway")).toBeEnabled();
-    await saveScreenshot(page, MOVE_MODE_SCREENSHOT);
+    await saveScreenshot(page, DIRECT_MOVE_TARGET_SCREENSHOT);
     await page.getByTestId("betrayal-room-hallway").click();
     const moveTransitionBlocker = page.getByTestId(
       "betrayal-visual-transition-blocker",
@@ -464,9 +461,7 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-room-latest-feedback"),
     ).toContainText("移动到门厅");
     await saveScreenshot(page, MOVE_RESULT_SCREENSHOT);
-    await expect(page.getByTestId("betrayal-action-move")).toContainText(
-      "取消移动",
-    );
+    await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-grand-staircase"),
     ).toBeVisible();
@@ -515,13 +510,10 @@ test.describe("山屋惊魂基本流程", () => {
       directMoveSourceToken,
     );
 
-    await page.getByTestId("betrayal-action-move").click();
-    await expect(page.getByTestId("betrayal-action-move")).toContainText(
-      "取消移动",
-    );
+    await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
     await expect(page.getByTestId("betrayal-room-hallway")).toBeEnabled();
-    await saveScreenshot(page, DIRECT_MOVE_MODE_SCREENSHOT);
+    await saveScreenshot(page, DIRECT_RETURN_TARGET_SCREENSHOT);
 
     await page.getByTestId("betrayal-room-hallway").click();
     const directMoveTransitionBlocker = page.getByTestId(
@@ -552,9 +544,7 @@ test.describe("山屋惊魂基本流程", () => {
     );
     await expect(directMoveTransitionBlocker).toHaveCount(0);
     await expect(directMoveTargetToken).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-move")).toContainText(
-      "取消移动",
-    );
+    await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-grand-staircase"),
     ).toBeVisible();

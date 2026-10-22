@@ -1,14 +1,17 @@
 import type { SituationCardDefinition } from '../domain/types';
 import { DEMO_SITUATIONS } from './demo-data';
 
+// IDs and source faces are paired in situations-10plus3-ocr.md.
+const situationAssets: Record<string,string> = {"sit1": "turning-point", "sit2": "new-city-battle", "sit3": "miyama-killer", "sit4": "rage", "sit5": "calm-before-storm", "sit6": "perfect-flow", "sit7": "angra-substance", "sit8": "angra-shadow", "sit9": "angra-curse", "sit10": "future-hope", "sit11": "fate-night", "sit12": "hell-gate", "sit13": "heavens-feel"};
+
 export const FATE_SITUATIONS: SituationCardDefinition[] = DEMO_SITUATIONS.map((situation) => ({
     id: situation.id,
     name: situation.name,
-    assetPath: `fate-domination/situations/${situation.id}`,
+    assetPath: `fate-domination/situations/${situationAssets[situation.id] ?? situation.id}`,
     printedMana: situation.mana,
     sourceStatus: 'verified',
     effectSummary: situation.desc,
-    climax: situation.isClimax,
+    climax: 'isClimax' in situation ? situation.isClimax : false,
 }));
 const fallbackSituations: SituationCardDefinition[] = [
     { id: 'situation-turning-point', name: '转机', assetPath: 'fate-domination/situations/turning-point', printedMana: 2, sourceStatus: 'verified', effectSummary: '于深山町和新都各增加一张正面事件牌。' },

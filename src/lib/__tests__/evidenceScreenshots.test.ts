@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -52,4 +52,13 @@ describe('evidence screenshot format contract', () => {
         await expect(readdir(stableDir)).resolves.toEqual(['new.png']);
         await expect(readdir(historyDir)).resolves.toEqual(['old.png']);
     });
+});
+
+it('Fate新采集策略保留独特界面与行为步骤关联，不补三阶段图片',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'fate-distinct-index-'));const stagingDir=join(root,'staging');await mkdir(stagingDir);
+ await writeFile(join(stagingDir,'并排手牌.png'),'fixture');
+ const stableDir=join(root,'stable');
+ await promoteEvidenceScreenshotRun({runId:'run-current',stableDir,stagingDir,historyDir:join(root,'history')},{gameId:'fate-domination',evidenceCategory:'independent',capturePolicy:'distinct-ui-state',media:[{path:'并排手牌.png',chainId:'hand',chainStep:1,stage:'独特界面态',description:'并排手牌与按钮无遮挡',uiStateId:'hand-parallel',uiChange:'layout',uiChangeReason:'手牌并排布局',behaviorStepId:'select',sourceRevision:'test-revision',requirements:['手牌布局']}]});
+ const index=JSON.parse(await readFile(join(stableDir,'.e2e-image-index.json'),'utf8'));
+ expect(index.capturePolicy).toBe('distinct-ui-state');expect(index.media).toHaveLength(1);expect(index.media[0]).toMatchObject({sourceRun:'run-current',behaviorStepId:'select',uiStateId:'hand-parallel'});
 });

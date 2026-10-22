@@ -616,3 +616,26 @@ describe('CreateRoomModal AI default state', () => {
         }));
     });
 });
+
+it('平台建房弹窗有单一关闭入口并响应原生取消，提交中保持打开', () => {
+    const onClose = vi.fn();
+    const props = { isOpen: true, onClose, onConfirm: vi.fn(), gameManifest: FANTASY_REALMS_MANIFEST };
+    const view = render(createElement(CreateRoomModal, props));
+    const dialog = screen.getByRole('dialog', { name: '创建房间' });
+    expect(screen.getAllByRole('button', { name: '取消' })).toHaveLength(1);
+    const underlyingEscape = vi.fn();
+    window.addEventListener('keydown', underlyingEscape);
+    try {
+        fireEvent.keyDown(dialog, { key: 'Escape' });
+        expect(underlyingEscape).not.toHaveBeenCalled();
+    } finally {
+        window.removeEventListener('keydown', underlyingEscape);
+    }
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+    expect(onClose).toHaveBeenCalledTimes(2);
+    view.rerender(createElement(CreateRoomModal, { ...props, isLoading: true }));
+    fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+    expect(onClose).toHaveBeenCalledTimes(2);
+});

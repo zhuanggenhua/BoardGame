@@ -168,3 +168,10 @@ describe('applyPlayerViewToState', () => {
         expect(authoritativeState.sys.interaction.current.data.meta.source.nested.amount).toBe(2);
     });
 });
+it('显式观战投影只影响注册的游戏，默认与普通席位路径不变',()=>{
+ const state={core:{public:1,secret:9},sys:{}} as unknown as MatchState<unknown>;
+ const config={...engineConfig,systems:[],domain:{...engineConfig.domain,playerView:()=>({public:2,secret:0}),spectatorView:()=>({public:1,secret:0})}};
+ expect(applyPlayerViewToState(config,state,null).core).toEqual({public:1,secret:0});
+ expect(applyPlayerViewToState(config,state,'0').core).toEqual({public:2,secret:0});
+ expect(applyPlayerViewToState({...config,domain:{...config.domain,spectatorView:undefined}},state,null).core).toEqual(state.core);
+});

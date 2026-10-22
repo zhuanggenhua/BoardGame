@@ -1,4 +1,5 @@
 const params = new URLSearchParams(window.location.search);
+const staticListUrl = document.querySelector('meta[name="e2e-viewer-list"]')?.content ?? "";
 const directory = params.get("dir") ?? "";
 const directoryKey = params.get("key") ?? "";
 const focusPath = params.get("focus") ?? "";
@@ -78,7 +79,11 @@ const formatTime = (value) => {
   return new Date(value).toLocaleString("zh-CN", { hour12: false });
 };
 
-const displayTitle = (item) => item.displayTitle || item.relativePath;
+const displayTitle = (item) => {
+  const title = (item.displayTitle || item.relativePath).replace(/^\d+\s*[·.、_-]\s*/, "");
+  const position = items.indexOf(item);
+  return position < 0 ? title : `${String(position + 1).padStart(2, "0")} · ${title}`;
+};
 
 const displayDescription = (item) => item.description || "";
 
@@ -623,7 +628,7 @@ const applyFocusRequest = (request) => {
 };
 
 const loadDirectory = async ({ preserveView = true } = {}) => {
-  const hasDirectoryTarget = Boolean(directory || directoryKey);
+  const hasDirectoryTarget = Boolean(directory || directoryKey || staticListUrl);
   directoryLabel.textContent = hasDirectoryTarget ? "正在读取截图目录..." : "未提供目录";
   if (!hasDirectoryTarget) {
     summary.textContent = "缺少 dir 或 key 参数。";
@@ -644,7 +649,7 @@ const loadDirectory = async ({ preserveView = true } = {}) => {
   for (const selectedPath of selectedPaths) {
     query.append("show", selectedPath);
   }
-  const response = await fetch(`/api/list?${query.toString()}`, { cache: "no-store" });
+  const response = await fetch(staticListUrl || `/api/list?${query.toString()}`, { cache: "no-store" });
   if (!response.ok) {
     const body = await response.text();
     throw new Error(body || `读取失败: ${response.status}`);

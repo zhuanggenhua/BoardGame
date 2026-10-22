@@ -37,3 +37,42 @@
 - [ ] 6.2 Complete master/servant catalog, every attack/event effect, advanced response windows, all elimination/tiebreak rules, and production scoring remain deferred to follow-up changes.
 - [ ] 6.3 Full AI strategy, tutorial flow, Fate/Domination audio, and player-visible debug controls remain outside this foundation implementation.
 - [ ] 6.4 Remote asset upload, server file-index, Android package, and production URL verification remain outside this local foundation change.
+
+## 7. Current Runtime UI Rebuild (2026-10-18)
+
+The user approved moving the current working draft into the actual runtime. Historical foundation checks above are not acceptance of this new UI. Current overall status: REVISE.
+
+- [x] Replace the prototype Board composition with shared Pixi camera/map, two count-aware hand regions, distinct staged/played zones, public seat drawer and adaptive full-card details.
+- [x] Bind same-name skill cards by definition/entity ID, remove clickable departing copies, and test attack/skill reflow and single-confirm command-spell dispatch.
+- [x] Recover and register 27 identity faces, 42 skill faces and original character tokens; preserve corrected source associations and original command-seal atlas.
+- [x] Map 13 situation and 20 event slots to existing semantic source assets, including intentional duplicate event faces.
+- [x] Close the current 14 servants' actual deck-face coverage (20 distinct definitions); source faces verified and manifest tests pass locally on 2026-10-19. The final three mappings are not in published v50 yet.
+- [ ] Resolve the Zouken command-seal visual limitation: the declared TTS source is blank, and the CHM has no dedicated face. Do not invent substitute artwork.
+- [ ] Capture and personally review the actual runtime at baseline and constrained desktop sizes, including selection, play, withdrawal, small/empty hands, opponent drawer, full details, map input and command-spell confirmation.
+- [ ] Reconcile rule-dependent UI gaps against the CHM: face-down normal plays, skill attacks within the normal two-card choice, deployment slot ownership/bonuses and preparation draw/setup.
+- [ ] Publish only through the authorized QA workflow and deliver a current official viewer link after complete visual acceptance. Neither saved Site v48 nor old rejected design screenshots satisfy this item.
+
+Complete card-effect implementation and advanced rule windows remain the explicitly deferred mechanism work in section 6; do not describe this visual rebuild as a production-complete game.
+
+### Runtime review update (2026-10-19)
+
+- The actual v49 selection/withdrawal/confirmation/details chain is archived. It is problem evidence, not overall acceptance: the long rectangular player rail was rejected and the 1366px canvas height is under diagnosis.
+- The root personally reviewed Old King's Crown's public observer table and expanded-player switching screenshots. Adopt the compact summary -> expanded information -> switch -> return interaction hierarchy; preserve Fate artwork, rules and identity layout. These four frames do not cover all common reference interactions; supplementary capture is running.
+- Local unpublished changes: compact master/servant identity anchors, public played cards in a separate adjacent drawer, named identity switching in details, selection-order projection, cross-zone keyboard focus preservation, top-layer Escape handling and detail Tab containment. Fresh full-screen evidence is required.
+- Source backup v38 preserves the main changes; later focus and logical-height fixes await the next checkpoint.
+
+- Source audit correction: Q5/Q6 original images explicitly read Agility, not Magic. Their existing rule types remain unchanged. The retired cloud-3 download host failed; the same UGC images were retrieved via images.steamusercontent.com with TLS verification enabled. Q2 uses the original 高速移动 title and atlas frame 1.
+
+### 用户返工锁定（2026-10-20）
+
+当前状态：REVISE。此前十图只作历史证据，用户否决事件牌库位置、玩家列表形态、详情滚动与手牌锚点。不得将旧 PASS 继续视为当前通过。
+
+- [x] 回读中文 setup 原文确认 B1 为 Objectives 事件牌库槽；当前修复仍待新页面截图。
+- [x] 回查 v52/v54 原图与源快照，恢复详情两排内容、较小数量令咒叠与右侧说明；当前未视觉验收。
+- [x] 手牌布局以当前视口 25%/75% 为两组中心，取消向中央内收；交互仍待先王单机原始证据。
+- [ ] 取证 Old King's Crown 真正私有手牌选择/取消/出牌/余牌重排；旁观公开卡牌浏览不可替代。
+- [ ] 将地图普通移动入口映射到印刷移动费用与箭头白色区域；卡牌/令咒效果移动覆盖合法目标、高亮、确认、落位与取消。
+- [ ] 分离常规技能攻击打出与已激活卡牌的阶段能力使用，禁止扣费空移动；保留部署后和出牌后的合法能力窗口。
+- [ ] 核对并修正基础规则到界面的断口：A1/A2 和真实局势库、暗置信息投影、部署席位与地利、常规明暗出牌及技能混选、准备与御主能力入口、弃牌检视。逐张全卡效果与高级响应仍按原延期边界记录，不能宣称全部规则已实现。
+- [ ] 同状态同视口复核旧/新首屏信息、卡牌大小、锚点、额外滚动和点击，独立审查直接消费用户原文与规则；任何未经授权损失都不得用局部收益抵消。
+- [ ] 本轮覆盖全部通过后重建官方查看器证据；此前链接不构成当前验收完成。

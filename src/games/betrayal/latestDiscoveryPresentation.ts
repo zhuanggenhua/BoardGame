@@ -909,7 +909,12 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       !core.pendingEventRollResolution &&
       (core.pendingCardResolutionQueue?.length ?? 0) === 0 &&
       core.turnEndedByDiscovery &&
-      isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) &&
+      (isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) ||
+        Boolean(
+          core.latestDiscovery?.kind === "event" &&
+          core.recentAllTraitCheck?.sourceTitle === core.latestDiscovery.title &&
+          core.recentAllTraitCheck.results.length === 4,
+        )) &&
       !hasActionableRollModifier,
   );
   const shouldKeepTableChromeOpenForEventResult = Boolean(

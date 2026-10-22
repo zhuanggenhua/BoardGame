@@ -123,3 +123,29 @@ type MapViewportState = {
 - Pixi 依赖是否固定到参考站的 `pixi.js 8.2.6`，还是选择当前仓库统一验证后的 8.x patch 版本？
 - 首轮是否要求保留键盘可达的 DOM region list，还是先以 React tip / banner 满足当前产品无障碍合同？
 - 地图 FX 是否在本 change 内接入 Pixi，还是先保留现有 FxLayer 并仅验证地图 scene？
+
+## 2026-10-13 实玩增量设计（待评审）
+
+### 现有试点与证据边界
+
+基线 `b8098ee` 的 Pixi 分支需要 `VITE_QIDAHEN_PIXI_MAP_PILOT=1`；已有 host 不是默认路径。[Host](../../../src/engine/mapRenderer/PixiMapSceneHost.tsx) 中 `desiredPoseRef` 回传 React，`renderedPoseRef` 在 ticker 平滑后用于 world 和命中；[Board](../../../src/games/qidahen/Board.tsx) 同时保留 DOM token、SVG route 和隐藏 legacy image。此为需要验证的中间帧不一致风险，不是已经测得的 FPS 退化或线上 bug。
+
+### 显示变换与输入 owner
+
+- 区分「玩家想去的相机目标」与「本帧实际显示的相机」；已有业务 viewport 仍唯一。临时保留的 DOM 地图对象必须读取本帧显示变换，不能与 Pixi 分别平滑；命中、路线、教程锚点和 token 同帧对齐。
+- 高频帧更新留在场景/变换 owner；业务选择、规则状态和静态 HUD 不因 pointer sample 全量重渲染。若需要 DOM overlay bridge，职责仅限显示坐标投影，并写明随对象迁入 Pixi 的退场条件。
+- 相机拖动能力与地区/对象选择合法性分开；选择被禁用不意味着整张地图不能查看。一次 wheel 只有一个 owner；pointer capture、tap/drag threshold、双指转单指、取消和浮层关闭都需回归。
+- `wheelZoomFactor` 当前被解构但内部使用固定敏感度：实施前选定且记录唯一参数语义，不能继续向调用方暴露不起作用的配置。
+- 当前 host 若拆分，只按已存在的相机/输入、场景绘制和 overlay 生命周期分职责；不为凑架构层数新增没有消费者的模块。
+
+### 操作设计
+
+HUD、手牌、任务提示不跟地图一起缩放；候选高亮必须贴对象且不被透明 HUD 热区吞掉。满载部署态同时验证当前来源、目标、手牌和提交区，不采用参考站中已观察到的遮挡。详情关闭回到原镜头及仍合法的选择，日志继续复用共享入口。规则结果归属对象本体，日志只解释原因，不代替可见过程。
+
+### 首切片与性能证据
+
+1. 固定同一代码、房间状态、视口、浏览器和资源门禁，分别记录现有路径与试点路径。先记基线，再决定修复落点，不预先声称 Pixi 更快。
+2. 相机切片覆盖连续横/纵拖动、松手、鼠标锚点缩放、双指缩放、drag 后无 tap、详情关闭及 reduced-motion；在起始/中间/结束帧检查地图、token、路线、目标高亮对齐。
+3. 记录帧时间分布、输入到下一可见更新耗时、长任务、React commit、资源请求/解码及对象数量。GPU 内存若浏览器无法可靠提供则标未测，禁止用 JS heap 冒充。
+4. 试点纹理未 ready 或失败时保留正式加载/失败语义；资源就绪和对象迁移验证完成后才条件卸载 legacy 层。`opacity: 0` 不算卸载，不能据此报告减少渲染工作量。
+5. review 检查相机反馈环、监听清理、输入 owner、对象权限与可访问性；再跑实际消费者回归。仅将用户已批准且通过实际验收的能力推广，不把本 change 自动扩大为其它游戏的渲染迁移。

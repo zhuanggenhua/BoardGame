@@ -592,7 +592,7 @@ export function DiceBoxPhysicsSource({
         void run().catch((error) => {
             failEngine(error);
         });
-    }, [dice, emitPhysicsStates, engineReady, failEngine, finalizeVisibleSettledDice, lockedIndices, motionType, rerollIds, rerollMotionKey, rerollPreviousValues, requiredDieSkinsReady, restoreRerollStartValues, restoreVisibleSettledDice, rollingIndices, rollingKey, setSettledState, settledSignalKey, values]);
+    }, [dice, emitPhysicsStates, engineReady, engineVersion, failEngine, finalizeVisibleSettledDice, lockedIndices, motionType, rerollIds, rerollMotionKey, rerollPreviousValues, requiredDieSkinsReady, restoreRerollStartValues, restoreVisibleSettledDice, rollingIndices, rollingKey, setSettledState, settledSignalKey, values]);
 
     return (
         <div

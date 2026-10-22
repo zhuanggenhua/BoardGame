@@ -16,10 +16,13 @@ const command = (type: string, playerId: string, payload: unknown) => ({ type, p
 
 function deployedCore(): FateDominationCore {
   let state = adapter.setup(['0', '1', '2']);
-  state = adapter.execute(state, command('ADVANCE_PHASE', '0', {})).state;
+  for (const id of state.core.turnOrder) state = adapter.execute(state, command('ADVANCE_PHASE', id, {})).state;
   state = adapter.execute(state, command('DEPLOY_MASTER', '0', { locationId: 'miyama' })).state;
+  state = adapter.execute(state, command('ADVANCE_PHASE', '0', {})).state;
   state = adapter.execute(state, command('DEPLOY_MASTER', '1', { locationId: 'miyama' })).state;
+  state = adapter.execute(state, command('ADVANCE_PHASE', '1', {})).state;
   state = adapter.execute(state, command('DEPLOY_MASTER', '2', { locationId: 'shinto' })).state;
+  state = adapter.execute(state, command('ADVANCE_PHASE', '2', {})).state;
   return state.core;
 }
 
@@ -263,6 +266,7 @@ describe('Fate mechanism framework', () => {
     const core = {
       ...deployedCore(),
       phase: 'battle' as const,
+      phaseCompletedPlayerIds: ['1', '2'],
       currentPlayerId: '0',
       battleResult: {
         playerId: '0',

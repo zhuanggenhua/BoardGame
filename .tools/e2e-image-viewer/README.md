@@ -25,6 +25,16 @@ node scripts/verify/open-verified-image.mjs --dir "test-results/evidence-screens
 
 长期交付时同时保留脚本返回的 `OFFLINE_VIEWER_FILE`。网页端口不可达时，不更换目录 key，也不把临时图片 URL 当成长期入口，直接打开同一目录内的 `index.html`。
 
+## 公开托管原版画布
+
+需要跨电脑访问时，可通过同一入口导出原版网页画布与当前目录清单：
+
+```bash
+node scripts/verify/open-verified-image.mjs --dir "<已验收截图目录>" --no-open --export-static "<托管目录>" --public-base-url "https://example.com/evidence/task/"
+```
+
+导出直接复用 `web/index.html`、`web/app.js`、`web/styles.css`；仅把目录清单读取切到静态清单，索引、画布、缩放和平移、原图详情保持同一实现。导出的 `VIEWER_URL` 保留原目录 key。部署导出目录并验证网址可访问后才交付。目录里原有的 `OFFLINE_VIEWER_FILE` 只是简易离线页，不能冒充原版画布。
+
 ## 中文索引
 
 查看器会优先复用现有图组说明，而不是让 AI 每次重新描述图片。支持的索引文件名：

@@ -8,6 +8,10 @@ export class UserUISettings {
     @Prop({ type: 'ObjectId', ref: 'User', required: true })
     userId!: Types.ObjectId;
 
+    /** 用户主动收藏的游戏 ID；不复制游戏目录资料。 */
+    @Prop({ type: [String], default: [] })
+    favoriteGameIds!: string[];
+
     /** 已读过的提示 key 集合（如 'buff-icon-click-hint'） */
     @Prop({ type: [String], default: [] })
     seenHints!: string[];

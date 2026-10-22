@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createReplayAdapter } from '../../../engine/adapter';
 import type { MatchState } from '../../../engine/types';
 import { FATE_ATTACK_CARDS } from '../data/cards';
+import { FATE_SERVANTS } from '../data';
 import { FateDominationDomain } from '../domain';
 import { resolveFateMovement, resolveFateMovementCost, resolveFateMovementPath } from '../domain/movement';
 import type { FateDominationCommand, FateDominationCore } from '../domain/types';
@@ -18,10 +19,13 @@ const apply = (state: MatchState<FateDominationCore>, nextCommand: FateDominatio
 
 const deployedState = () => {
     let state = adapter.setup(['0', '1', '2']);
-    state = apply(state, command('ADVANCE_PHASE', '0', {}));
+    for (const id of state.core.turnOrder) state = apply(state, command('ADVANCE_PHASE', id, {}));
     state = apply(state, command('DEPLOY_MASTER', '0', { locationId: 'miyama' }));
+    state = apply(state, command('ADVANCE_PHASE', '0', {}));
     state = apply(state, command('DEPLOY_MASTER', '1', { locationId: 'workshop' }));
+    state = apply(state, command('ADVANCE_PHASE', '1', {}));
     state = apply(state, command('DEPLOY_MASTER', '2', { locationId: 'shinto' }));
+    state = apply(state, command('ADVANCE_PHASE', '2', {}));
     return state;
 };
 
@@ -83,4 +87,46 @@ describe('Fate movement mechanism seam', () => {
         expect(resolveFateMovementCost(['workshop', 'miyama', 'shinto'], 'normal', { extraCostPerStep: 1 })).toBe(5);
         expect(resolveFateMovementCost(['workshop', 'miyama', 'shinto'], 'effect', { free: false, extraCostPerStep: 1 })).toBe(5);
     });
+    it('工房有其他玩家不构成交战，常规移动仍可用', () => {
+        const state = deployedState();
+        state.core.players['0'].locationId = 'workshop';
+        state.core.battlefield.miyama.playerIds = [];
+        state.core.battlefield.workshop.playerIds = ['0', '1'];
+        state.core.players['0'].mana = 12;
+        expect(resolveFateMovement(state.core, '0', 'miyama', 'normal').valid).toBe(true);
+    });
+
+    it('移动技能必须先有合法目的地，缺目标或原地目标不可扣费', () => {
+        const state = deployedState();
+        const skill = FATE_SERVANTS.flatMap(servant => servant.skillCards ?? []).find(skill => skill.id === 'sc_cu_2')!;
+        expect(skill).toBeDefined();
+        state.core.players['0'].skills.push(skill);
+        state.core.players['0'].activeSkills=[skill.id];
+        state.core.players['0'].mana = 12;
+        expect(FateDominationDomain.validate(state, command('PLAY_SKILL', '0', {skillId:skill.id})).valid).toBe(false);
+        expect(FateDominationDomain.validate(state, command('PLAY_SKILL', '0', {skillId:skill.id,targetLocationId:'miyama'})).valid).toBe(false);
+        const legal = command('PLAY_SKILL', '0', {skillId:skill.id,targetLocationId:'shinto'});
+        expect(FateDominationDomain.validate(state, legal).valid).toBe(true);
+        const moved = apply(state, legal);
+        expect(moved.core.players['0'].locationId).toBe('shinto');
+        expect(moved.core.battlefield.miyama.playerIds).not.toContain('0');
+        expect(moved.core.battlefield.shinto.playerIds).toContain('0');
+    });
+
+    it('常规移动一次决定终点，完成后不得拆段；效果移动仍独立可用',()=>{
+        let state=deployedState();state.core.players['0'].mana=12;
+        // Isolate the one-normal-move rule from independently tested random event locks.
+        for(const location of Object.values(state.core.battlefield)) location.eventCards=[];
+        state.core.currentEvents={miyama:[],shinto:[]};
+        state.core.battlefield.shinto.playerIds=[];state.core.players['2'].locationId='workshop';state.core.battlefield.workshop.playerIds.push('2');
+        state=apply(state,command('MOVE_PLAYER','0',{locationId:'shinto'}));
+        expect(state.core.players['0'].locationId).toBe('shinto');
+        expect(FateDominationDomain.validate(state,command('MOVE_PLAYER','0',{locationId:'recon'})).valid).toBe(false);
+        expect(resolveFateMovement(state.core,'0','recon','effect').valid).toBe(true);
+    });
+    it('常规出牌后不能再回头进行常规移动',()=>{
+        const state=deployedState();state.core.players['0'].normalAttackPlayed=true;
+        expect(FateDominationDomain.validate(state,command('MOVE_PLAYER','0',{locationId:'recon'})).valid).toBe(false);
+    });
+
 });

@@ -14,6 +14,7 @@ export const FATE_DOMINATION_COMMANDS = {
     PASS_ACTION: 'PASS_ACTION',
     RESOLVE_LOCATION: 'RESOLVE_LOCATION',
     PLAY_SKILL: 'PLAY_SKILL',
+    USE_COMMAND_SPELL: 'USE_COMMAND_SPELL',
 } as const;
 
 export type FateDominationCommandType = typeof FATE_DOMINATION_COMMANDS[keyof typeof FATE_DOMINATION_COMMANDS];
@@ -54,6 +55,8 @@ export interface MasterDefinition {
     assetPath: string;
     sourceStatus: SourceStatus;
     initMana?: number;
+    manaLimit?: number;
+    initialCommandSpells?: number;
     skills?: SkillDefinition[];
     ascensionSkill?: SkillDefinition;
 }
@@ -79,6 +82,7 @@ export interface SkillDefinition {
     power?: number;
     desc?: string;
     isMasterSkill?: boolean;
+    oncePerGame?: boolean;
 }
 
 export interface SituationCardDefinition {
@@ -103,15 +107,21 @@ export interface EventCardDefinition {
 }
 
 export interface PlayerState {
+    /** Derived transport projection only; authoritative core never writes this field. */
+    publicView?: { servantClass?: string; power: number; handCount: number; deckCount: number; discardCount: number; playedCards: CardInstance[]; playedSkills: Array<{id:string;name:string;assetPath:string}>; skillCards:Array<{id:string;name:string;assetPath:string}|null> };
     id: PlayerId;
     masterId: string;
     servantId: string;
     locationId: LocationId | null;
+    deploymentSlot: number | null;
     mana: number;
     victoryPoints: number;
     commandSpells: number;
     hand: CardInstance[];
     selectedAttackIds: string[];
+    selectedFaceDownIds: string[];
+    faceDownAttackIds: string[];
+    forcedRevealedHand: CardInstance[];
     activeAttackIds: string[];
     discard: CardInstance[];
     deck: CardInstance[];
@@ -121,6 +131,10 @@ export interface PlayerState {
     eliminationProtectionUsed: boolean;
     isRevealed: boolean;
     activeSkills: string[];
+    usedAbilityIds: string[];
+    revealedSkillIds: string[];
+    normalAttackPlayed: boolean;
+    normalMoveCompleted: boolean;
     skills: SkillDefinition[];
 }
 
@@ -142,6 +156,7 @@ export interface BattleResult {
     eventVictoryPoints: number;
     competitionVictoryPoints: number;
     totalVictoryPoints: number;
+    commandSpellVictoryPoints?: number;
     status: 'representative-win' | 'recon' | 'deferred';
 }
 
@@ -152,7 +167,7 @@ export interface PendingChoice {
     maximum?: number;
 }
 
-export type FateBattleResolutionStep = 'locations' | 'awards' | 'cleanup';
+export type FateBattleResolutionStep = 'locations' | 'awards' | 'after-battle' | 'cleanup';
 
 export interface FateBattleResolutionState {
     frameId: string;
@@ -163,6 +178,8 @@ export interface FateBattleResolutionState {
 }
 
 export interface FateDominationCore {
+    /** Public transport projection: hidden zones expose counts, never card identities. */
+    publicView?: { shintoEventCount: number; canViewHiddenShinto?: boolean };
     gameId: 'fate-domination';
     round: number;
     phase: FatePhase;
@@ -173,6 +190,8 @@ export interface FateDominationCore {
     situation: SituationCardDefinition;
     miyamaEvent: EventCardDefinition;
     shintoEventFaceDown: boolean;
+    /** Actual remaining ordinary situations. Absent only in legacy snapshots. */
+    situationDeck?: SituationCardDefinition[];
     situationDeckCount: number;
     eventDeckCount: number;
     eventDiscardCount: number;
@@ -180,6 +199,9 @@ export interface FateDominationCore {
     battleResult: BattleResult | null;
     actionNotice: string;
     turnOrder: PlayerId[];
+    phaseCompletedPlayerIds: PlayerId[];
+    /** Players whose round-one starting hand already exists, including legacy save migrations. */
+    initialAttackHandDealtPlayerIds?: PlayerId[];
     currentTurnIndex: number;
     actionLimit: number;
     actionCount: number;
@@ -198,8 +220,13 @@ export interface FateDominationCore {
 export type SelectMasterCommand = Command<'SELECT_MASTER', { masterId: string }>;
 export type SelectServantCommand = Command<'SELECT_SERVANT', { servantId: string }>;
 export type DeployMasterCommand = Command<'DEPLOY_MASTER', { locationId: LocationId }>;
-export type SelectAttackCardCommand = Command<'SELECT_ATTACK_CARD', { cardId: string }>;
-export type ConfirmAttackCommand = Command<'CONFIRM_ATTACK', Record<string, never>>;
+export type SelectAttackCardCommand = Command<'SELECT_ATTACK_CARD', { cardId: string; faceDown?: boolean }>;
+export type ConfirmAttackCommand = Command<'CONFIRM_ATTACK', {
+    /** Omitted together only for legacy replay clients. New clients submit one complete local draft. */
+    cardIds?: string[];
+    faceDownIds?: string[];
+    round?: number;
+}>;
 export type InspectCardCommand = Command<'INSPECT_CARD', { cardId: string }>;
 export type AdvancePhaseCommand = Command<'ADVANCE_PHASE', Record<string, never>>;
 export type MovePlayerCommand = Command<'MOVE_PLAYER', { locationId: LocationId }>;
@@ -207,7 +234,10 @@ export type PassActionCommand = Command<'PASS_ACTION', Record<string, never>>;
 export type ResolveLocationCommand = Command<'RESOLVE_LOCATION', { locationId: LocationId }>;
 export type PlaySkillCommand = Command<'PLAY_SKILL', { skillId: string; targetPlayerId?: PlayerId; targetLocationId?: LocationId; targetCardId?: string }>;
 
+export type UseCommandSpellCommand = Command<'USE_COMMAND_SPELL', { effect: 'mana' | 'battle' | 'move'; targetLocationId?: LocationId }>;
+
 export type FateDominationCommand =
+    | UseCommandSpellCommand
     | SelectMasterCommand
     | SelectServantCommand
     | DeployMasterCommand
@@ -234,16 +264,19 @@ export type FateDominationCommandMap = {
     PASS_ACTION: PassActionCommand['payload'];
     RESOLVE_LOCATION: ResolveLocationCommand['payload'];
     PLAY_SKILL: PlaySkillCommand['payload'];
+    USE_COMMAND_SPELL: UseCommandSpellCommand['payload'];
 };
 
 export type MasterSelectedEvent = GameEvent<'MASTER_SELECTED', { playerId: PlayerId; masterId: string }>;
-export type ServantSelectedEvent = GameEvent<'SERVANT_SELECTED', { playerId: PlayerId; servantId: string }>;
-export type MasterDeployedEvent = GameEvent<'MASTER_DEPLOYED', { playerId: PlayerId; locationId: LocationId; manaGain: number }>;
-export type AttackCardSelectedEvent = GameEvent<'ATTACK_CARD_SELECTED', { playerId: PlayerId; cardId: string; selected: boolean }>;
-export type AttacksConfirmedEvent = GameEvent<'ATTACKS_CONFIRMED', { playerId: PlayerId; cardIds: string[]; power: number; manaSpent: number }>;
+export type ServantSelectedEvent = GameEvent<'SERVANT_SELECTED', { playerId: PlayerId; servantId: string; deck?: CardInstance[] }>;
+export type InitialAttackHandDealtEvent = GameEvent<'INITIAL_ATTACK_HAND_DEALT', { playerId: PlayerId; deck: CardInstance[] }>;
+export type MasterDeployedEvent = GameEvent<'MASTER_DEPLOYED', { playerId: PlayerId; locationId: LocationId; manaGain: number; deploymentSlot:number|null }>;
+export type AttackCardSelectedEvent = GameEvent<'ATTACK_CARD_SELECTED', { playerId: PlayerId; cardId: string; selected: boolean; faceDown?: boolean }>;
+export type AttacksConfirmedEvent = GameEvent<'ATTACKS_CONFIRMED', { playerId: PlayerId; cardIds: string[]; power: number; manaSpent: number; faceDownIds?: string[]; revealHand?: boolean }>;
 export type CardInspectedEvent = GameEvent<'CARD_INSPECTED', { playerId: PlayerId; cardId: string }>;
+export type PhasePlayerFinishedEvent = GameEvent<'FATE_PHASE_PLAYER_FINISHED', { playerId: PlayerId; nextPlayerId: PlayerId }>;
 export type PhaseAdvancedEvent = GameEvent<'PHASE_ADVANCED', { phase: FatePhase; round: number; currentPlayerId: PlayerId }>;
-export type BattleResolvedEvent = GameEvent<'BATTLE_RESOLVED', { result: BattleResult; nextRound: number; gameResult?: GameOverResult }>;
+export type BattleResolvedEvent = GameEvent<'BATTLE_RESOLVED', { result: BattleResult; nextRound: number; gameResult?: GameOverResult; recycledAttackDecks?: Record<PlayerId, CardInstance[]>; recycledEventDeck?: EventCardDefinition[]; eventDraw?: { drawn: EventCardDefinition[]; deck: EventCardDefinition[]; discard: EventCardDefinition[] } }>;
 export type BattleResolutionStartedEvent = GameEvent<'FATE_BATTLE_RESOLUTION_STARTED', {
     frameId: string;
     round: number;
@@ -266,6 +299,13 @@ export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', {
 export type ActionPassedEvent = GameEvent<'ACTION_PASSED', { playerId: PlayerId }>;
 export type LocationResolvedEvent = GameEvent<'LOCATION_RESOLVED', { locationId: LocationId; results: BattleResult[] }>;
 export type SkillPlayedEvent = GameEvent<'SKILL_PLAYED', { playerId: PlayerId; skillId: string; manaSpent: number; targetPlayerId?: PlayerId; targetLocationId?: LocationId; targetCardId?: string }>;
+export type FateAbilityUsedEvent = GameEvent<'FATE_ABILITY_USED', {playerId:PlayerId;skillId:string;usageKey?:string;manaSpent?:number}>;
+export type FateRidingChoiceRequestedEvent = GameEvent<'FATE_RIDING_CHOICE_REQUESTED', {playerId:PlayerId;skillId:string;round:number;generation:string;frameId:string}>;
+export type FateRidingCardsPlayedEvent = GameEvent<'FATE_RIDING_CARDS_PLAYED', {playerId:PlayerId;skillId:string;cardIds:string[];manaSpent:number}>;
+export type FatePostBattleStartedEvent = GameEvent<'FATE_POST_BATTLE_STARTED', {round:number;frameId:string;recipients:PlayerId[]}>;
+export type FatePostBattleSealChosenEvent = GameEvent<'FATE_POST_BATTLE_SEAL_CHOSEN', {playerId:PlayerId;restore:boolean}>;
+export type FateManaGainedEvent = GameEvent<'FATE_MANA_GAINED', {playerId:PlayerId;amount:number;sourceId:string}>;
+export type FateCardsDrawnEvent = GameEvent<'FATE_CARDS_DRAWN', {playerId:PlayerId;drawn:CardInstance[];deck:CardInstance[];discard:CardInstance[]}>;
 export type FateAbilityUnimplementedEvent = GameEvent<'FATE_ABILITY_UNIMPLEMENTED', {
     playerId: PlayerId;
     skillId: string;
@@ -305,9 +345,14 @@ export type FatePlayerEliminatedEvent = GameEvent<'FATE_PLAYER_ELIMINATED', {
     sourceId?: string;
 }>;
 
+export type CommandSpellUsedEvent = GameEvent<'COMMAND_SPELL_USED', { playerId: PlayerId; effect: 'mana' | 'battle' | 'move' }>;
+
 export type FateDominationEvent =
+    | PhasePlayerFinishedEvent
+    | CommandSpellUsedEvent
     | MasterSelectedEvent
     | ServantSelectedEvent
+    | InitialAttackHandDealtEvent
     | MasterDeployedEvent
     | AttackCardSelectedEvent
     | AttacksConfirmedEvent
@@ -319,6 +364,13 @@ export type FateDominationEvent =
     | ActionPassedEvent
     | LocationResolvedEvent
     | SkillPlayedEvent
+    | FatePostBattleStartedEvent
+    | FatePostBattleSealChosenEvent
+    | FateManaGainedEvent
+    | FateCardsDrawnEvent
+    | FateAbilityUsedEvent
+    | FateRidingChoiceRequestedEvent
+    | FateRidingCardsPlayedEvent
     | FateAbilityUnimplementedEvent
     | FateRuleModifierAttachedEvent
     | FateRuleModifierRemovedEvent

@@ -41,10 +41,12 @@ type BetrayalEventDamageChoice = Extract<
 export function BetrayalEventChoiceSurface({
   choice,
   isMobileViewport,
+  isResolvingTraitRoll = false,
+  disableTraitChoices = false,
+  rollActionSlot,
   isEventSymbolSkip,
   awaitsMapTargetClick,
   hasMapTargetRooms,
-  hasResultPanel,
   latestDiscoveryVisual,
   roll,
   resultReadable,
@@ -71,8 +73,11 @@ export function BetrayalEventChoiceSurface({
   canIncrementDamageTrait,
   onResolve,
 }: {
-  choice: BetrayalPendingEventChoice;
+  choice: Pick<BetrayalPendingEventChoice, "sourceTitle" | "effect" | "eventSymbolSkip" | "declineLabel" | "acceptLabel" | "allTraitCheckProgress">;
   isMobileViewport: boolean;
+  isResolvingTraitRoll?: boolean;
+  disableTraitChoices?: boolean;
+  rollActionSlot?: React.ReactNode;
   isEventSymbolSkip: boolean;
   awaitsMapTargetClick: boolean;
   hasMapTargetRooms: boolean;
@@ -104,55 +109,31 @@ export function BetrayalEventChoiceSurface({
   onResolve: (accept: boolean) => void;
 }) {
   const { t } = useTranslation(["game-betrayal", "common"]);
-  const usesWideDamageChoiceLayout = showDamageChoice && !isEventSymbolSkip && !hasResultPanel;
-
+  const isTraitCheckSelection = choice.effect.mode === "allTraitChecks";
+  const visibleTraitChoices = isTraitCheckSelection
+    ? (["might", "speed", "knowledge", "sanity"] as BetrayalTraitKey[]).filter(
+        (trait) => traitChoices.includes(trait) || allTraitCheck?.results.some((result) => result.trait === trait),
+      )
+    : traitChoices;
   return (
     <div
-        data-testid="betrayal-event-choice-backdrop"
-        data-scene-visibility={hasMapTargetRooms ? "interactive-map" : "receded"}
-        className={`${
-          awaitsMapTargetClick ? "pointer-events-none" : "pointer-events-auto"
-        } flex items-center ${
-          isEventSymbolSkip
-            ? "absolute bottom-[96px] left-[264px] right-[232px] top-[180px] items-end justify-center px-2 pb-6 pt-0"
-            : "absolute bottom-[96px] left-[264px] right-[232px] top-[180px] items-start justify-center px-2 py-0"
-        }`}
-        style={{ zIndex: UI_Z_INDEX.overlayRaised + 160 }}
+      data-testid="betrayal-event-choice-backdrop"
+      data-scene-visibility={hasMapTargetRooms ? "interactive-map" : "receded"}
+      className={`absolute inset-0 ${hasMapTargetRooms ? "pointer-events-none" : "pointer-events-auto bg-[rgba(3,7,6,0.88)]"}`}
+      style={{ zIndex: UI_Z_INDEX.overlayRaised + 160 }}
+    >
+      <div
+        data-testid="betrayal-event-choice-panel"
+        data-layout="main-stage"
+        data-surface="open-table"
+        aria-label={choice.sourceTitle}
+        className={`${awaitsMapTargetClick ? "pointer-events-none [&_*]:pointer-events-none" : "pointer-events-auto"} absolute flex min-h-0 flex-col gap-4 overflow-hidden text-[#f3e0a6]`}
+        style={{ top: isMobileViewport ? 104 : 120, bottom: isMobileViewport ? 16 : 96, left: isMobileViewport ? 16 : 264, right: isMobileViewport ? 16 : 232 }}
       >
         <div
-          data-testid="betrayal-event-choice-panel"
-          data-layout="main-stage"
-          data-surface="open-table"
-          aria-label={choice.sourceTitle}
-          className={`${
-            awaitsMapTargetClick
-              ? "pointer-events-none [&_*]:pointer-events-none"
-              : "pointer-events-auto"
-          } flex min-h-0 flex-col overflow-visible text-[#f3e0a6] ${
-            isEventSymbolSkip
-              ? "max-h-[440px] w-[620px]"
-              : hasResultPanel
-                ? isMobileViewport
-                  ? "max-h-full w-full max-w-[1420px]"
-                  : "max-h-full w-full max-w-[1100px]"
-                : usesWideDamageChoiceLayout
-                  ? "max-h-full w-full max-w-[1000px]"
-                  : "max-h-full w-full max-w-[820px]"
-          }`}
+          data-testid="betrayal-event-choice-content"
+          className={`custom-scrollbar grid min-h-0 flex-1 items-start gap-6 overflow-y-auto ${isEventSymbolSkip ? "grid-cols-1" : "grid-cols-[minmax(180px,280px)_minmax(0,1fr)]"}`}
         >
-          <div
-            className={`grid min-h-0 ${
-              isEventSymbolSkip
-                ? "grid-cols-1 gap-4"
-                : hasResultPanel
-                  ? isMobileViewport
-                    ? "grid-cols-[minmax(230px,260px)_minmax(620px,1fr)_minmax(352px,360px)] items-start gap-[90px]"
-                    : "grid-cols-[minmax(230px,260px)_minmax(330px,1fr)_minmax(352px,360px)] items-start gap-5"
-                  : usesWideDamageChoiceLayout
-                    ? "grid-cols-[minmax(240px,280px)_minmax(420px,1fr)] items-start gap-6"
-                    : "grid-cols-[minmax(240px,280px)_minmax(380px,1fr)] items-start gap-6"
-            }`}
-          >
           {isEventSymbolSkip ? null : (
             <div className="pointer-events-none w-full min-w-0 justify-self-center drop-shadow-[0_26px_54px_rgba(0,0,0,0.58)]">
               {latestDiscoveryVisual ? (
@@ -173,7 +154,7 @@ export function BetrayalEventChoiceSurface({
               )}
             </div>
           )}
-          {allTraitCheck ? (
+          {allTraitCheck && !(roll && (isTraitCheckSelection || isResolvingTraitRoll)) ? (
             <div
               data-testid="betrayal-event-choice-all-trait-check"
               className="pointer-events-none flex h-[430px] min-h-[340px] min-w-0 flex-col justify-center gap-4 border-l border-[rgba(214,191,129,0.24)] pl-6"
@@ -224,7 +205,7 @@ export function BetrayalEventChoiceSurface({
               effectiveLocale={locale}
               actorLabel={rollActorLabel}
               showSource={false}
-              showRollLabel={false}
+              showRollLabel
               openTable
               compactResult={false}
               denseResult
@@ -233,17 +214,12 @@ export function BetrayalEventChoiceSurface({
               diceVisualScale={isMobileViewport ? 2.85 : 1}
               resultReadable={resultReadable}
               onDiceSettledChange={onDiceSettledChange}
+              actionSlot={rollActionSlot}
             />
           ) : null}
-            <div
-              className={`flex min-h-0 min-w-0 flex-col justify-start ${
-              isEventSymbolSkip
-                ? "pointer-events-auto justify-start gap-4"
-                : roll
-                  ? "pointer-events-auto relative col-span-full row-start-2 z-[140] mt-2 w-full justify-start border-t border-[rgba(214,191,129,0.18)] pt-4"
-                  : "pointer-events-auto"
-            }`}
-          >
+        </div>
+        <BetrayalDecisionActionDock className="relative !items-end px-4 pb-4 max-[700px]:flex-wrap">
+          <div className="min-w-0 flex-1">
             {isEventSymbolSkip ? (
               <div
                 data-testid="betrayal-event-choice-symbol-summary"
@@ -261,25 +237,28 @@ export function BetrayalEventChoiceSurface({
               </div>
             ) : null}
             <div
-              className={`custom-scrollbar min-h-0 flex flex-col overflow-y-auto pr-1 ${
-                roll ? "max-h-[280px] w-full" : "flex-1"
-              }`}
+              className="custom-scrollbar flex max-h-[240px] min-h-0 flex-col overflow-y-auto pr-1"
             >
-              {traitChoices.length > 0 ? (
+              {visibleTraitChoices.length > 0 ? (
                 <div
                   className="grid gap-3.5"
                   data-testid="betrayal-event-choice-traits"
                 >
                   <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {choice.effect.mode === "allTraitChecks" &&
-                    (!choice.effect.results ||
-                      choice.effect.results.length < choice.effect.traits.length)
+                    {(isResolvingTraitRoll && !resultReadable) ||
+                    (choice.effect.mode === "allTraitChecks" &&
+                      (!choice.effect.results || choice.effect.results.length < choice.effect.traits.length))
                       ? t("board.status.chooseCheckTrait")
-                      : t("board.status.chooseTrait")}
+                      : choice.allTraitCheckProgress?.results.length
+                        ? t("board.discovery.chooseRewardTrait")
+                        : t("board.status.chooseTrait")}
                   </span>
-                  <div className="grid grid-cols-2 gap-3">
-                    {traitChoices.map((trait) => {
+                  <div className="grid grid-cols-4 gap-3 max-[700px]:grid-cols-2">
+                    {visibleTraitChoices.map((trait) => {
                       const isSelectedTrait = selectedTrait === trait;
+                      const completedCheck = isTraitCheckSelection
+                        ? allTraitCheck?.results.find((result) => result.trait === trait)
+                        : undefined;
                       return (
                         <BetrayalChoiceOptionButton
                           key={trait}
@@ -287,13 +266,19 @@ export function BetrayalEventChoiceSurface({
                           onClick={() => onSelectTrait(trait)}
                           data-testid={`betrayal-event-choice-trait-${trait}`}
                           selected={isSelectedTrait}
+                          disabled={disableTraitChoices || !traitChoices.includes(trait)}
                           selectedClassName={TRAIT_CHOICE_TONE_CLASS[trait].selected}
                           idleClassName={TRAIT_CHOICE_TONE_CLASS[trait].idle}
-                          className={
-                            ""
-                          }
+                          className="!min-h-[64px] !min-w-0 !px-3 !py-2 !text-[20px]"
                         >
-                          {TRAIT_LABEL_LOCAL[trait]}
+                          <span className="flex flex-col items-center gap-1">
+                            <span>{TRAIT_LABEL_LOCAL[trait]}</span>
+                            {completedCheck && !(isResolvingTraitRoll && !resultReadable && roll?.trait === trait) ? (
+                              <span className="text-[12px] tracking-normal">
+                                {completedCheck.total} · {t(completedCheck.passed ? "board.roll.passed" : "board.roll.failed")}
+                              </span>
+                            ) : null}
+                          </span>
                         </BetrayalChoiceOptionButton>
                       );
                     })}
@@ -391,15 +376,8 @@ export function BetrayalEventChoiceSurface({
               ) : null}
             </div>
           </div>
-          </div>
           {choice.declineLabel || showAcceptButton ? (
-            <BetrayalDecisionActionDock
-              className={
-                isEventSymbolSkip
-                  ? "relative z-[200] mt-4 grid grid-cols-2 gap-4 border-t-[rgba(74,222,128,0.24)]"
-                  : "relative z-[200] mt-5"
-              }
-            >
+            <div className="flex shrink-0 items-center justify-center gap-3">
               {choice.declineLabel ? (
                 <BetrayalSecondaryButton
                   type="button"
@@ -422,9 +400,10 @@ export function BetrayalEventChoiceSurface({
                   {choice.acceptLabel ?? t("common:button.confirm")}
                 </BetrayalConfirmButton>
               ) : null}
-            </BetrayalDecisionActionDock>
+            </div>
           ) : null}
-        </div>
+        </BetrayalDecisionActionDock>
       </div>
+    </div>
   );
 }

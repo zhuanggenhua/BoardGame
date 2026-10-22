@@ -1,3 +1,4 @@
+import { fateLateClimax, fateNoblePhantasmsForbidden } from './environmentRules';
 import {
     canEffectMove,
     canEnterLocation as canEnterMovementLocation,
@@ -119,7 +120,7 @@ export function resolveFateMovementCost(
 }
 
 const engaged = (core: FateDominationCore, player: PlayerState) => {
-    if (!player.locationId) return false;
+    if (player.locationId !== 'miyama' && player.locationId !== 'shinto') return false;
     return core.battlefield[player.locationId].playerIds.some((id) => id !== player.id && !core.players[id]?.eliminated);
 };
 
@@ -129,13 +130,14 @@ export function canEnterLocation(
     locationId: LocationId,
     mode: MovementMode = 'normal',
 ): MovementCheck {
+    if(fateLateClimax(core.situation)&&['shinto','recon'].includes(locationId))return canEnterMovementLocation({allowed:false,failure:{code:'cannotEnterLocation',source:core.situation.id}});
     const locks = activeLocationLocks(core, locationId, playerId).filter((modifier) => !modifier.bypassModes?.includes(mode));
     const location = core.battlefield[locationId];
     const blocker = locks.find((modifier) => modifier.denyEnter);
     if (hasIntrinsicBoundary(core, locationId) || blocker) {
         return canEnterMovementLocation({ allowed: false, failure: { code: 'cannotEnterLocation', source: blocker?.source.sourceId ?? '固有结界' } });
     }
-    if (location.capacity !== null && location.playerIds.filter((id) => id !== playerId).length >= location.capacity) {
+    if ((locationId === 'workshop' && fateLateClimax(core.situation) ? 1 : location.capacity) !== null && location.playerIds.filter((id) => id !== playerId).length >= (locationId === 'workshop' && fateLateClimax(core.situation) ? 1 : location.capacity!)) {
         return canEnterMovementLocation({ allowed: false, failure: { code: 'locationFull' } });
     }
     return canEnterMovementLocation({ allowed: true });
@@ -147,6 +149,7 @@ export function canLeaveLocation(
     locationId: LocationId,
     mode: MovementMode = 'normal',
 ): MovementCheck {
+    if(fateLateClimax(core.situation)&&['shinto','recon'].includes(locationId))return canEnterMovementLocation({allowed:false,failure:{code:'cannotEnterLocation',source:core.situation.id}});
     const locks = activeLocationLocks(core, locationId, playerId).filter((modifier) => !modifier.bypassModes?.includes(mode));
     const blocker = locks.find((modifier) => modifier.denyLeave);
     if (hasIntrinsicBoundary(core, locationId) || blocker) {
@@ -167,7 +170,9 @@ export function resolveFateMovement(
     const effectiveContext = deriveMovementContext(core, playerId, mode, context);
     const path = resolveFateMovementPath(from, to, mode, effectiveContext);
     const cost = resolveFateMovementCost(path, mode, effectiveContext);
-    const leave = from === null
+    const leave = mode === 'normal' && (player?.normalMoveCompleted || player?.normalAttackPlayed)
+        ? movementCheck(false, { code: 'cannotLeaveLocation', source: 'normal-movement-complete' })
+        : from === null
         ? canLeaveMovementLocation({ allowed: false, failure: { code: 'notDeployed' } })
         : canLeaveLocation(core, playerId, from, mode);
     const enter = canEnterLocation(core, playerId, to, mode);
@@ -209,7 +214,7 @@ export function movementCost(from: LocationId, to: LocationId): number | null {
 
 export interface FateAttackCheck {
     valid: boolean;
-    error?: 'notDeployed' | 'specialAttackForbidden' | 'defeatActive';
+    error?: 'notDeployed' | 'specialAttackForbidden' | 'noblePhantasmForbidden' | 'defeatActive';
     source?: string;
 }
 
@@ -219,6 +224,7 @@ export function canPlayAttack(
     card: AttackCardDefinition,
     locationId = currentLocation(core, playerId),
 ): FateAttackCheck {
+    if (fateNoblePhantasmsForbidden(core.situation) && card.type?.includes('宝具')) return {valid:false,error:'noblePhantasmForbidden'};
     if (hasFateDefeat(core, playerId)) return { valid: false, error: 'defeatActive' };
     if (!locationId) return { valid: false, error: 'notDeployed' };
     const specialLocked = activeLocationLocks(core, locationId, playerId).some((modifier) => modifier.denySpecialAttack);

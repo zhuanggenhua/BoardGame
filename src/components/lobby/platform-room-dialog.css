@@ -1,0 +1,45 @@
+/* Approved platform sheet: shared form behavior remains in CreateRoomModal. */
+.platform-room-dialog {
+    position: fixed; inset: 0; margin: auto; padding: 0;
+    width: min(640px, calc(100vw - 32px)); max-width: none;
+    color: #000; background: #fff; border: 4px solid #000; border-radius: 0;
+    box-shadow: 12px 12px 0 #ff008a; font-family: Arial, 'Microsoft YaHei', sans-serif;
+    overflow: hidden; pointer-events: auto;
+}
+.platform-room-dialog[open] { display: flex; flex-direction: column; }
+.platform-room-dialog::backdrop { background: rgb(0 0 0 / .55); }
+.platform-room-heading { flex-shrink: 0; padding: 28px 76px 18px 24px; }
+.platform-room-title { margin: 0; color: #000; font-size: 28px; line-height: 1.25; font-weight: 900; }
+.platform-room-close {
+    position: absolute; right: 12px; top: 12px; z-index: 2;
+    width: 44px; height: 44px; border: 3px solid #000; background: #fff;
+    color: #000; box-shadow: 3px 3px 0 #ff008a; font: inherit; font-size: 28px; cursor: pointer;
+}
+.platform-room-content { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 24px 20px; }
+.platform-room-content input:not([type="checkbox"]), .platform-room-content select {
+    min-height: 44px; border: 3px solid #000; border-radius: 0;
+    background: #fff; color: #000; font-size: 16px;
+}
+.platform-room-content input::placeholder { color: #666; opacity: 1; }
+.platform-room-content label { color: #000; font-weight: 800; }
+.platform-room-content button[aria-pressed] {
+    min-height: 44px; min-width: 44px; border: 3px solid #000; border-radius: 0;
+    color: #000; background: #fff; font-weight: 800;
+}
+.platform-room-content button[aria-pressed="true"] { background: #d5ff00; }
+.platform-room-content [data-testid="create-room-password-toggle"] { min-width: 44px; min-height: 44px; color: #000; }
+.platform-room-footer { display: flex; justify-content: center; flex-shrink: 0; padding: 16px 24px 24px; background: #fff; }
+.platform-room-footer [data-testid="create-room-confirm-button"] {
+    flex: none; width: 72%; max-width: 320px; min-height: 52px;
+    border: 4px solid #000; border-radius: 0; color: #fff; background: #ff008a;
+    box-shadow: 6px 6px 0 #000; font-size: 18px; font-weight: 900;
+}
+.platform-room-dialog button:focus-visible, .platform-room-dialog input:focus-visible, .platform-room-dialog select:focus-visible { outline: 3px solid #00b8d9; outline-offset: 2px; }
+.platform-room-dialog button:disabled { opacity: .5; cursor: not-allowed; }
+@media(max-width: 1023px) {
+    .platform-room-dialog { width: calc(100vw - 32px); box-shadow: 6px 6px 0 #ff008a; }
+    .platform-room-heading { padding: 22px 66px 16px 16px; }
+    .platform-room-title { font-size: 24px; }
+    .platform-room-content { padding: 0 16px 16px; }
+    .platform-room-footer { padding: 12px 16px 20px; }
+}

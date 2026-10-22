@@ -34,6 +34,37 @@ const entry = (
 });
 
 describe('latest discovery presentation', () => {
+  it('四项检定奖励已确认后自动回桌，不因保留末次骰子结果再弹确认', () => {
+    const core = {
+      playerIds: ['0'], currentExplorer: { inventory: [] },
+      latestDiscovery: { kind: 'event', title: '吊死鬼', summary: '每项属性均通过', detail: '知识 +1' },
+      latestDiscoveryOwnerPlayerId: '0', activityLog: [], turnEndedByDiscovery: true,
+      pendingEventChoice: null, pendingEventRollStart: null, pendingEventRollResolution: null,
+      pendingCardResolutionQueue: [],
+      recentAllTraitCheck: { sourceTitle: '吊死鬼', playerId: '0', results: ['might', 'speed', 'knowledge', 'sanity'].map(trait => ({ trait, total: 2, dice: [1, 1], passed: true })) },
+      recentRoll: { id: 'last-check', kind: 'eventTraitCheck', playerId: '0', sourceTitle: '吊死鬼', trait: 'sanity', dice: [1, 1], passiveBonus: 0, latestLabel: '通过', consumedRabbitFootCardIds: [] },
+    } as unknown as BetrayalCore;
+    const selection = resolveBetrayalLatestDiscoverySelectionPresentation({ core,
+      currentEntry: buildLatestDiscoveryDisplayEntry(core), queue: [],
+      dismissedLatestDiscoveryKey: null, dismissedLatestDiscoveryKeys: new Set(),
+    });
+    const options = {
+      core, selection, dismissedLatestDiscoveryKey: null, dismissedRecentRollId: null,
+      viewerPlayerId: '0', inventoryActionPlayerId: '0', hasRecentRollModifier: false,
+      isConfirmedExorciseRoll: false, pendingEventChoice: null,
+      shouldShowHauntRevealCue: false, shouldPauseHauntBoardActions: false,
+      scenarioReaderOpen: false, shouldShowScenarioStartOpening: false,
+      latestDiscoverySearchRevealIndex: 0,
+      eventRollConfirmation: { requiredPlayerIds: [], acknowledgedPlayerIds: [], confirmedCount: 0, totalCount: 0, viewerHasAcknowledged: false, canViewerAcknowledge: false },
+      isRecentRollReadable: true, t: (key: string) => key,
+    };
+    const panel = resolveBetrayalLatestDiscoveryPanelPresentation(options);
+    expect(panel.shouldAutoReturnAfterLatestDiscovery).toBe(true);
+    expect(panel.shouldShow).toBe(false);
+    core.recentAllTraitCheck!.sourceTitle = '其他事件';
+    expect(resolveBetrayalLatestDiscoveryPanelPresentation(options).shouldAutoReturnAfterLatestDiscovery).toBe(false);
+  });
+
   it('事件骰确认名单以 pending 快照为准，不因缺少 seatControllers 把 AI 座位重新算进来', () => {
     const core = {
       playerIds: ['0', '1', '2', '3'],

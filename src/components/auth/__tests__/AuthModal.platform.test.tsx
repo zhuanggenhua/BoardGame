@@ -1,0 +1,21 @@
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { AuthModal } from '../AuthModal';
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => ({ login: vi.fn(), register: vi.fn(), sendRegisterCode: vi.fn(), sendResetCode: vi.fn(), resetPassword: vi.fn() }) }));
+afterEach(cleanup);
+it('平台登录沿用同一表单流程，注册和找回可返回，关闭只有一个入口', () => {
+ const close = vi.fn();
+ render(<AuthModal isOpen visualStyle="platform" onClose={close} />);
+ const tabs = screen.getByRole('navigation', { name: '账户入口' });
+ fireEvent.click(within(tabs).getByRole('button', { name: 'menu.register' }));
+ expect(screen.getByTestId('auth-register-email-input')).toBeTruthy();
+ expect(screen.getAllByTestId('auth-submit-button')).toHaveLength(1);
+ fireEvent.click(within(tabs).getByRole('button', { name: 'menu.login' }));
+ fireEvent.click(screen.getByTestId('auth-login-forgot-button'));
+ expect(screen.queryByRole('navigation', { name: '账户入口' })).toBeNull();
+ fireEvent.click(screen.getByRole('button', { name: '返回登录' }));
+ expect(screen.getByRole('navigation', { name: '账户入口' })).toBeTruthy();
+ fireEvent.click(screen.getByRole('button', { name: '关闭登录窗口' }));
+ expect(close).toHaveBeenCalledOnce();
+});

@@ -1,0 +1,38 @@
+/* Platform utilities retain the shared drag, focus and panel owners. */
+.platform-global-fab [data-fab-visual-id] { border-radius: 16px; border: 2px solid #171717; background: #fff; color: #171717; box-shadow: 3px 3px #171717; backdrop-filter: none; transition: background-color 120ms ease, color 120ms ease; }
+.platform-global-fab [data-fab-visual-id="settings"] { background: #d5ff00; }
+.platform-global-fab [data-fab-id]:hover [data-fab-visual-id], .platform-global-fab [data-fab-id]:focus-visible [data-fab-visual-id] { background: #ff008a; color: #fff; }
+.platform-global-fab [data-fab-id]:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; border-radius: 16px; }
+.platform-global-fab [data-fab-id] { transition-duration: 120ms; }
+@media (prefers-reduced-motion: reduce) { .platform-global-fab [data-fab-id], .platform-global-fab [data-fab-visual-id] { transition: none; } }
+
+[data-testid="fab-panel-settings"]:has(.platform-settings-content) { border:3px solid #111; border-radius:0; background:#fff; color:#111; box-shadow:6px 6px #d5ff00; backdrop-filter:none; }
+.platform-settings-content { color:#111; font-size:14px; }
+.platform-settings-content span { font-size:13px; color:#222; letter-spacing:0; }
+.platform-settings-content input[type="range"] { appearance:auto; height:32px; background:transparent; accent-color:#526300; }
+.platform-settings-content button { min-width:44px; min-height:44px; border-radius:0; color:#222; }
+.platform-settings-content button:not(:disabled):hover { background:#d5ff00; }
+.platform-settings-content button:focus-visible { outline:3px solid #ff008a; outline-offset:2px; }
+.platform-settings-content button:disabled { opacity:.45; }
+.platform-settings-content [class*="rounded-xl"] { border-radius:0; border-color:#aaa; background:#f3f3f3; }
+
+@media (max-width:1023px) {
+ body:has(.platform-upload-workspace) .platform-global-fab,
+ body:has(.platform-profile-identity form) .platform-global-fab { display:none; }
+}
+
+/* Narrow platform panel: track identity and transport each get a full readable row. */
+[data-testid="fab-panel-settings"]:has(.platform-settings-content) [data-fab-panel-heading] { font-size:14px; line-height:1.4; letter-spacing:0; opacity:1; color:#111; }
+.platform-settings-content .audio-now-playing { container-type:inline-size; display:flex; flex-direction:column; align-items:stretch; gap:8px; }
+.platform-settings-content .audio-track-summary { min-width:0; width:100%; gap:10px; }
+.platform-settings-content .audio-track-summary > :first-child { flex-shrink:0; color:#526300; }
+.platform-settings-content .audio-track-summary > :last-child { flex:1; }
+.platform-settings-content .audio-track-summary span { white-space:nowrap; }
+.platform-settings-content .audio-transport-controls { display:grid; grid-template-columns:repeat(4,minmax(44px,1fr)); gap:4px; }
+.platform-settings-content .audio-transport-controls button { display:grid; place-items:center; width:100%; }
+
+@container (max-width:187px) { .platform-settings-content .audio-transport-controls { grid-template-columns:repeat(2,minmax(44px,1fr)); } }
+
+.platform-settings-close { display:none; }
+@media(max-width:1023px) { .platform-settings-content .platform-settings-close { display:block; width:100%; border:2px solid #111; background:#d5ff00; font-weight:700; } }
+[data-testid="fab-sheet-settings"] [data-testid="fab-panel-settings"]:has(.platform-settings-content) { max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px); overflow-y:auto; overscroll-behavior:contain; }

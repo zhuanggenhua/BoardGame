@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-25T09:39:50.7913934+08:00",
+  "generatedAt": "2026-10-15T02:22:04.126Z",
   "source": "public/assets/common/audio (legacy-registry + imported-candidate-b)",
-  "total": 11639,
+  "total": 11645,
   "entries": [
     {
       "key": "ambient.khron_studio_sound_of_survival_vol_1_assets.character.character_drink.fooddrnk_character_drink_01_krst",
@@ -61031,6 +61031,60 @@
       "category": {
         "group": "foley",
         "sub": "analogue_gear_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "footsteps.kenney_impact_sounds.footstep_carpet_000",
+      "src": "sfx/footsteps/Kenney Impact Sounds/footstep_carpet_000.ogg",
+      "type": "sfx",
+      "category": {
+        "group": "footsteps",
+        "sub": "kenney_impact_sounds"
+      }
+    },
+    {
+      "key": "footsteps.kenney_impact_sounds.footstep_carpet_001",
+      "src": "sfx/footsteps/Kenney Impact Sounds/footstep_carpet_001.ogg",
+      "type": "sfx",
+      "category": {
+        "group": "footsteps",
+        "sub": "kenney_impact_sounds"
+      }
+    },
+    {
+      "key": "footsteps.kenney_impact_sounds.footstep_concrete_000",
+      "src": "sfx/footsteps/Kenney Impact Sounds/footstep_concrete_000.ogg",
+      "type": "sfx",
+      "category": {
+        "group": "footsteps",
+        "sub": "kenney_impact_sounds"
+      }
+    },
+    {
+      "key": "footsteps.kenney_impact_sounds.footstep_concrete_001",
+      "src": "sfx/footsteps/Kenney Impact Sounds/footstep_concrete_001.ogg",
+      "type": "sfx",
+      "category": {
+        "group": "footsteps",
+        "sub": "kenney_impact_sounds"
+      }
+    },
+    {
+      "key": "footsteps.kenney_impact_sounds.footstep_wood_000",
+      "src": "sfx/footsteps/Kenney Impact Sounds/footstep_wood_000.ogg",
+      "type": "sfx",
+      "category": {
+        "group": "footsteps",
+        "sub": "kenney_impact_sounds"
+      }
+    },
+    {
+      "key": "footsteps.kenney_impact_sounds.footstep_wood_001",
+      "src": "sfx/footsteps/Kenney Impact Sounds/footstep_wood_001.ogg",
+      "type": "sfx",
+      "category": {
+        "group": "footsteps",
+        "sub": "kenney_impact_sounds"
       }
     },
     {

@@ -336,7 +336,7 @@
       "lootTargetsAvailable": "可搜刮尸体：{{count}}具",
       "noTradeTargets": "当前没有同房间队友",
       "turnHintMove": "可前往：{{targets}}",
-      "turnHintExplore": "可翻：{{floor}}",
+      "turnHintExplore": "点门口的 ? 探索（{{floor}}层）",
       "turnHintDiscoveryEndTurn": "探索完成，结束回合",
       "turnHintHold": "暂留本房间",
       "turnHintBloodFromStoneSetupPlacement": "还需选 {{count}} 间",
@@ -380,8 +380,8 @@
       "actionCueMoveMode": "现在：点绿色房间",
       "actionCueMoveSingle": "现在：点{{room}}",
       "actionCueMoveMany": "现在：点绿色房间",
-      "actionCueExplore": "现在：点探索翻{{floor}}",
-      "actionCueExploreSelect": "现在：点金色门位翻房间",
+      "actionCueExplore": "当前没有可探索门位",
+      "actionCueExploreSelect": "现在：点问号探索房间",
       "actionCueExploreOrient": "现在：旋转{{room}}并确认",
       "actionCueUse": "现在：点使用",
       "actionCueUseCard": "现在：点使用{{card}}",
@@ -610,9 +610,9 @@
         "reader": {
           "prologueLabel": "公开揭示",
           "prologue": "石棺里传出干枯的摩擦声。木乃伊醒来后盯上了女孩，宅邸里每一步都像在靠近一场不该发生的婚礼。",
-          "prologueHeroesLabel": "英雄开场过场",
+          "prologueHeroesLabel": "英雄序章",
           "prologueHeroes": "目睹房中忽然四处尘土飞扬，你心中闪过不祥的阴霾。不远处传来朋友的叫喊，其中混集着惊恐，还有一丝的兴奋。你脑中传来一把陌生而深沉的声音：“与挚爱散失于久远洪荒。纵泪已成灰，心中爱仍炽热如日。今我爱重临，我俩必永不分离！敢阻我者必死，并魂飞魄散！”",
-          "prologueTraitorLabel": "叛徒开场过场",
+          "prologueTraitorLabel": "叛徒序章",
           "prologueTraitor": "墙壁上有一破裂处，你伸手摸上后墙身随即滑动，露出一副尘封并画满了各式图案的石棺。石棺上的图案泛出微光，你禁不住近距离研究这些该是古埃及的象形文字。\n\n你脑中闪过一把陌生而深沉的声音：“与挚爱散失于久远洪荒。纵泪已成灰，心中爱仍炽热如日。今我爱重临，我俩必永不分离！汝辈休想妨碍我俩结合！”你脑中一片空白，只知道为了让有情人终成眷属，牺牲朋友也在所不惜。石棺缓缓打开，你虔诚地仰望你的主宰。",
           "setupLabel": "开局记录",
           "setup": "你的人物已成为奸徒但会继续游戏。\n\n拿出木乃伊怪物标记(大)和五角形物品标记（代表石棺）放在你所在的房间。\n\n你立刻失去小女孩的伴随，丢弃女孩预兆牌并丧失其作用。将女孩预兆牌旁置，拿出一个品红色标记代表女孩，放置到与木乃伊相同楼层的其它房间内。女孩与木乃伊必须最少相隔5个房间。若因楼层过小而没有合乎上述条件的房间，则把女孩标记放置到与木乃伊相隔最远的房间。",
@@ -868,10 +868,14 @@
       "tilePlaceholder": "未翻开房间",
       "ready": "可移动到此",
       "slotUndiscovered": "尚未翻出",
-      "slotReady": "按“探索”翻出新房间",
+      "slotReady": "点击此门口探索新房间",
       "explorable": "可探索",
       "moveTarget": "可移动到此",
       "skeletonKeyMoveTarget": "使用骨制钥匙穿墙移动",
+      "moveCostTitle": "移动至此 · 消耗 {{count}} 点移动力",
+      "skeletonKeyMoveCostTitle": "使用骨制钥匙 · 消耗 {{count}} 点移动力",
+      "moveCostBadge": "{{count}} 点",
+      "skeletonKeyMoveCostBadge": "骨钥匙 · {{count}} 点",
       "preview": "放大查看",
       "focusSelf": "聚焦到我的房间",
       "obstacle": "障碍物",
@@ -942,6 +946,7 @@
       "essence": "本质"
     },
     "players": {
+      "moveTokenAria": "选择{{player}}移动；右键或长按查看详情",
       "inventoryCount": "持有 {{count}}",
       "sameRoom": "同房间",
       "tradeTarget": "交易对象",
@@ -964,6 +969,8 @@
       "nextValue": "优先 {{action}}"
     },
     "discovery": {
+      "roomSceneTitle": "发现新房间",
+      "skipRoomScene": "跳过房间过场",
       "label": "探索结果",
       "resultLabel": "结果",
       "revealed": "已翻开",
@@ -1003,6 +1010,7 @@
       "total": "总点数 {{value}}",
       "thresholds": "判定要求（总点数）：{{value}}",
       "threshold": "达到 {{value}} 点：{{label}}",
+      "thresholdRange": "{{min}}–{{max}} 点：{{label}}",
       "hauntSuccessThreshold": "达到 {{threshold}} 点或以上：{{label}}",
       "hauntFailureThreshold": "低于 {{threshold}} 点：{{label}}",
       "eventRollTotal": "事件总点数 {{value}}",
@@ -1077,6 +1085,10 @@
       "status": {
         "stunned": "击晕"
       }
+    },
+    "turnIntro": {
+      "title": "你的回合",
+      "skip": "跳过回合片头"
     }
   },
   "errors": {
@@ -1096,7 +1108,7 @@
         "endTurnAfterEvent": "伤害分配完成后，事件房探索已经结束你的回合。点“结束回合”，把轮序交给下一名探索者。",
         "watchTeammateOneOmenTurn": "下一名探索者会按自己的回合移动、探索预兆房并获得预兆；你不用代操作，只读公开结果。作祟检定未成功时，轮序会继续。",
         "watchTeammateTwoOmenTurn": "另一名探索者也会按自己的回合移动、探索并获得预兆；作祟检定仍未成功时，轮序会回到你。",
-        "moveToGrandStaircase": "刚才两名探索者各自获得了公开预兆，作祟仍未开始，所以现在回到你的回合。你已经学过移动；保持移动模式，沿厨房、门厅移动到大阶梯；这里连接上下楼层。",
+        "moveToGrandStaircase": "刚才两名探索者各自获得了公开预兆，作祟仍未开始，所以现在回到你的回合。从厨房出发，先点地图上代表你的探索者棋子，再依次点门厅和大阶梯这两个相邻房间；大阶梯连接上下楼层。",
         "switchToUpperFloor": "到大阶梯后，右侧楼层按钮会提示上层还有移动目标。点上箭头切到上层地图，先看见上层平台。",
         "moveToUpperLanding": "现在上层平台已经在画面里。点击已发现的上层平台；这一步是移动，不会翻开新房间。",
         "endTurnFromUpperLanding": "你现在在上层平台。这次先不继续探索。点“结束回合”，让轮序自然推进到作祟公开。",
@@ -1108,7 +1120,7 @@
       "description": "作祟开始前，你可以按任意顺序移动、探索新房间，以及使用物品和预兆的特殊行动。探索新房间会结束你的回合；交易保留在单独专题里教学。",
       "steps": {
         "setupRuntime": "作祟开始前先学一轮基础回合：移动到房间、探索新房间、翻出发现牌，并完成这一回合。",
-        "objectiveAndTurn": "现在是你的回合。先从“移动”开始，移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索。",
+        "objectiveAndTurn": "现在是你的回合。移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索；先找到地图上代表你的探索者棋子。",
         "traitsAndSpeed": "回合开始时查看你的速度值。该数值表示你的探险者本回合最多可以移动多少个板块。",
         "traitTrackReading": "属性轨上的绿色数字是起始属性值；当前值由高亮格表示，骷髅是死亡标记，不是数值。重复的数字仍分别占格。",
         "movesRemaining": "回合开始时查看速度值；右上角的移动标记显示本回合还剩的移动力。速度在回合中途变化，不会改变本回合已经确定的移动力。",
@@ -1119,9 +1131,9 @@
         "inventoryAndHelp": "事件牌翻出后进入当前事件结算，不会放在你面前；物品和预兆会放在你面前。使用、交易或触发卡牌效果时，从这里选择对应牌。",
         "viewBook": "桌面端先把鼠标悬浮到书本本体，右上角才会出现放大按钮，再点它查看牌面；触屏设备请长按书本本体放大查看。长按只用于读牌，不会触发使用书本。读清牌面后关闭：本次非战斗检定可以花费 1 点神志改用知识。",
         "useBook": "现在使用书本本体，扣除 1 点神志后，这次事件检定会改用知识重新投骰。",
-        "openMoveTargets": "点“移动”，然后选择相邻房间。每一点移动力可以移动到一个相邻板块。",
+        "openMoveTargets": "点击地图上代表你的探索者棋子，开启移动目标。每一点移动力可以移动到一个相邻板块。",
         "moveToHallway": "移动到门厅；门厅的未探索走廊可用于探索新房间。",
-        "exploreUpper": "点“探索”后，只点可探索的盖着房间；这不是移动到已发现房间，而是翻开并放置一个新房间。选出口后先看房间牌面和连接走廊。",
+        "exploreUpper": "到达门厅后，直接点地图上带 ? 的可探索房间槽；这不是移动到已发现房间，而是翻开并放置一个新房间。选好出口后，再看房间牌面和连接走廊。",
         "rotateRoomPlacement": "旋转新房间，选择一个能让走廊与当前未探索走廊相连的朝向。",
         "confirmRoomPlacement": "当前朝向已经选好。点“确认放置”后，才会结算房间文字和符号。",
         "discoveryCardType": "这个房间带事件符号，所以翻出事件牌；物品符号会翻物品牌，预兆符号会翻预兆牌。先看清牌型和牌面，再处理牌上的要求。",
@@ -1157,7 +1169,7 @@
         "heroReaderGoal": "英雄剧本书目标页写明：在石棺房、研究室或图书馆找真名；你当前就在图书馆旁边，所以读完后先移动进图书馆。",
         "heroReaderClose": "读完英雄剧本书目标页后，点关闭回到牌桌；后续会在英雄回合按这个目标行动。",
         "waitForHeroTurnAfterHaunt": "请稍候，轮序会回到你的英雄回合。",
-        "openLibraryMoveAfterGoal": "你已经读到英雄目标，也知道图书馆为什么重要。先点“移动”，打开从上层平台可前往的房间。",
+        "openLibraryMoveAfterGoal": "你已经读到英雄目标，也知道图书馆为什么重要。点击地图上代表你的探索者棋子，查看从上层平台可前往的房间。",
         "moveToLibraryAfterGoal": "图书馆现在是相邻移动目标。点击图书馆移动进去；进去后才能执行寻找木乃伊真名。",
         "heroStudyNameRoll": "英雄目标允许在石棺房、研究室或图书馆进行 6+ 知识检定找真名。你当前在图书馆，点“寻找木乃伊真名”；成功取得第 1 枚知识标记。",
         "heroStudyNameResult": "检定成功：英雄取得第 1 枚知识标记，并记录已找到真名。看完投骰结果后点“确认”回到牌桌。",

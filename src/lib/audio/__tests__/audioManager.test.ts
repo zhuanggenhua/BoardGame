@@ -7,6 +7,7 @@ const { howlInstances, readInstalledGamePackageAssetBlobUrl } = vi.hoisted(() =>
         options: Record<string, any>;
         play: ReturnType<typeof vi.fn>;
         stop: ReturnType<typeof vi.fn>;
+        volume: ReturnType<typeof vi.fn>;
         unload: ReturnType<typeof vi.fn>;
         stateValue: 'loaded' | 'loading' | 'unloaded';
         trigger: (event: string, ...args: unknown[]) => void;
@@ -35,13 +36,14 @@ vi.mock('howler', () => {
                 options: Record<string, any>;
                 play: ReturnType<typeof vi.fn>;
                 stop: ReturnType<typeof vi.fn>;
+        volume: ReturnType<typeof vi.fn>;
                 unload: ReturnType<typeof vi.fn>;
                 stateValue: 'loaded' | 'loading' | 'unloaded';
                 trigger: (event: string, ...args: unknown[]) => void;
             });
         }
         fade() {}
-        volume() {}
+        volume = vi.fn();
         state() {
             return this.stateValue;
         }
@@ -77,12 +79,7 @@ import { AudioManager } from '../AudioManager';
 import type { GameAudioConfig } from '../types';
 
 const waitForInstalledAssetRead = async () => {
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (readInstalledGamePackageAssetBlobUrl.mock.calls.length > 0) {
-            return;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    await vi.waitFor(() => expect(readInstalledGamePackageAssetBlobUrl).toHaveBeenCalled(), { timeout: 2000 });
 };
 
 describe('AudioManager', () => {
@@ -417,4 +414,47 @@ describe('AudioManager', () => {
         expect(AudioManager.currentBgm).toBe(null);
         consoleErrorSpy.mockRestore();
     });
+    it('scoped loops preserve one-shot ownership and the SFX volume setting', () => {
+        AudioManager.setSfxVolume(1, false);
+        AudioManager.register('ambience-test', { src: 'https://example.com/loop.ogg' });
+        const stop = AudioManager.playLoop('ambience-test', 0.08);
+        const loop = howlInstances.at(-1)!;
+        expect(loop.options.loop).toBe(true);
+        expect(loop.options.volume).toBe(0.08);
+        expect(loop.play).not.toHaveBeenCalled();
+        (loop.options.onload as () => void)();
+        expect(loop.play).toHaveBeenCalledTimes(1);
+        AudioManager.play('ambience-test');
+        const oneShot = howlInstances.at(-1)!;
+        expect(oneShot).not.toBe(loop);
+        expect(oneShot.options.loop).toBe(false);
+        AudioManager.setSfxVolume(0.5, false);
+        expect(loop.volume).toHaveBeenLastCalledWith(0.04);
+        AudioManager.stopSfx('ambience-test');
+        expect(loop.stop).not.toHaveBeenCalled();
+        oneShot.stop.mockClear();
+        stop(); stop();
+        expect(loop.unload).toHaveBeenCalledTimes(1);
+        expect(oneShot.stop).not.toHaveBeenCalled();
+    });
+
+    it('a stopped loop cannot start when its pending load completes', () => {
+        AudioManager.register('late-loop', { src: 'https://example.com/late.ogg' });
+        const stop = AudioManager.playLoop('late-loop', 0.08);
+        const loop = howlInstances.at(-1)!;
+        stop();
+        (loop.options.onload as () => void)();
+        expect(loop.play).not.toHaveBeenCalled();
+    });
+
+    it('unloadAll also releases scoped loops and prevents late playback', () => {
+        AudioManager.register('unload-loop', { src: 'https://example.com/unload.ogg' });
+        AudioManager.playLoop('unload-loop', 0.08);
+        const loop = howlInstances.at(-1)!;
+        AudioManager.unloadAll();
+        (loop.options.onload as () => void)();
+        expect(loop.unload).toHaveBeenCalledTimes(1);
+        expect(loop.play).not.toHaveBeenCalled();
+    });
+
 });

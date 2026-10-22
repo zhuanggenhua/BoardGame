@@ -223,6 +223,18 @@ export function resolveBetrayalPreviewStateAfterExplorerTargetSelection(
         tradeSelectionTouched: true,
       };
     case "selectTradeOrLootTarget":
+      if (previousState.selectedTradeTargetPlayerId === action.playerId) {
+        return {
+          ...previousState,
+          interactionMode: "default",
+          selectedTradeTargetPlayerId: null,
+          selectedCorpseLootCardId: null,
+          selectedTradeGiveCardIds: [],
+          selectedTradeReturnCardIds: [],
+          selectedDogTradeCardIds: [],
+          tradeSelectionTouched: false,
+        };
+      }
       return {
         ...previousState,
         interactionMode: "default",

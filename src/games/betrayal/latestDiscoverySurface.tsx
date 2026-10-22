@@ -167,6 +167,7 @@ export function BetrayalLatestDiscoverySurface({
     .trim();
   const shouldShowVisibleDiscoveryDetail = Boolean(
     displayedDiscoveryDetail &&
+      !visibleProcessCard &&
       !(shouldShowRoll && recentRoll),
   );
 
@@ -179,9 +180,7 @@ export function BetrayalLatestDiscoverySurface({
       data-allows-inventory-roll-modifiers={canModifyRoll ? "true" : "false"}
       data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
       onClick={canDismissByBackdrop ? onDismiss : undefined}
-      className={`pointer-events-auto absolute inset-0 z-[120] flex cursor-default items-center justify-center px-4 py-16 ${
-        shouldShowRoll && recentRoll ? "" : "bg-[rgba(3,7,6,0.76)]"
-      }`}
+      className="pointer-events-auto absolute inset-0 z-[120] flex cursor-default items-center justify-center bg-[rgba(3,7,6,0.76)] px-4 py-16"
     >
       {panelVisual ? null : (
         <div
@@ -323,6 +322,7 @@ export function BetrayalLatestDiscoverySurface({
                 effectiveLocale={effectiveLocale}
                 actorLabel={rollActorLabel}
                 showSource={false}
+                showThresholds={!panelVisual || recentRoll.kind === "hauntRoll"}
                 showRollLabel
                 showOutcome={
                   recentRoll.kind === "eventRolledDamage" ||

@@ -223,11 +223,27 @@
         "gameFabImageAlt": "局内悬浮球标注截图",
         "opponentPublicInfoImageAlt": "对手公开信息标注截图",
         "longPressImageAlt": "移动端长按放大标注截图",
-        "zoomDialogLabel": "操作指南截图放大查看"
+        "zoomDialogLabel": "操作指南截图放大查看",
+        "originalSize": "原图尺寸",
+        "fitScreen": "适应屏幕",
+        "scrollOriginal": "原尺寸下可横向、纵向滚动查看"
+      },
+      "platform": {
+        "title": "首页操作",
+        "browseTitle": "找到游戏，查看房间",
+        "browseBody": "在发现页搜索游戏。手机上先点封面展开介绍，再点“查看房间”进入游戏详情。",
+        "favoriteTitle": "用星标整理收藏",
+        "favoriteBody": "点击封面右上角星标添加或移除收藏，在收藏库查看游戏与更新。",
+        "settingsTitle": "右下角齿轮是快捷设置",
+        "settingsBody": "点击齿轮展开显示模式、全屏、关于和反馈等入口；手机上的支持作者、语言与操作指南在顶部菜单中。",
+        "gameImages": "对局里的看牌与快捷操作"
       }
     },
     "chat": {
-      "channel": {"players": "玩家", "room": "观战席"},
+      "channel": {
+        "players": "玩家",
+        "room": "观战席"
+      },
       "unreadLabel": "{{channel}}：{{count}} 条未读消息",
       "playersScope": "仅本局参赛玩家可见",
       "roomScope": "玩家与观众均可见",

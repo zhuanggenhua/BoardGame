@@ -47,7 +47,7 @@ export function CinematicNarrationPanel({
       data-cinematic-coordinate={isStage ? coordinateSpace : undefined}
       className={`betrayal-cinematic-narration relative flex min-h-full overflow-hidden text-[#f5e6c7] ${
         isStage
-          ? "border-y border-[rgba(242,207,130,0.30)] bg-[rgba(0,0,0,0.42)] shadow-[0_24px_90px_rgba(0,0,0,0.44)]"
+          ? "border-y border-[rgba(242,207,130,0.30)] bg-[#030605] shadow-[0_24px_90px_rgba(0,0,0,0.44)]"
           : "border border-[rgba(222,184,92,0.44)] bg-[#030506] shadow-[0_18px_46px_rgba(0,0,0,0.42),inset_0_0_0_1px_rgba(255,224,143,0.08)]"
       } ${
         compact ? "px-3 py-4" : "px-8 py-8"

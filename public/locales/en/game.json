@@ -223,11 +223,27 @@
         "gameFabImageAlt": "Annotated in-game floating button screenshot",
         "opponentPublicInfoImageAlt": "Annotated opponent public info screenshot",
         "longPressImageAlt": "Annotated mobile long-press enlargement screenshot",
-        "zoomDialogLabel": "Operation guide screenshot viewer"
+        "zoomDialogLabel": "Operation guide screenshot viewer",
+        "originalSize": "Original size",
+        "fitScreen": "Fit to screen",
+        "scrollOriginal": "Scroll horizontally or vertically to inspect the original image"
+      },
+      "platform": {
+        "title": "Home controls",
+        "browseTitle": "Find games and view rooms",
+        "browseBody": "Search in Discover. On mobile, tap a cover to expand its description, then tap View rooms to open the game details.",
+        "favoriteTitle": "Organize your library with stars",
+        "favoriteBody": "Use the star on a game cover to add or remove favorites. Your library shows saved games and their updates.",
+        "settingsTitle": "The bottom-right gear opens quick settings",
+        "settingsBody": "Open the gear for display mode, fullscreen, About and feedback. On mobile, author support, language and this guide are in the top menu.",
+        "gameImages": "Inspecting cards and in-game controls"
       }
     },
     "chat": {
-      "channel": {"players": "Players", "room": "Spectators"},
+      "channel": {
+        "players": "Players",
+        "room": "Spectators"
+      },
       "unreadLabel": "{{channel}}: {{count}} unread messages",
       "playersScope": "Only players in this match can see this channel",
       "roomScope": "Visible to players and spectators",

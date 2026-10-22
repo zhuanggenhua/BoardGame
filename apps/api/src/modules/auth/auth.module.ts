@@ -1,3 +1,4 @@
+import { UserGameActivityController } from './user-game-activity.controller';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthController } from './auth.controller';
@@ -19,7 +20,7 @@ import { RefreshSession, RefreshSessionSchema } from './schemas/refresh-session.
             { name: RefreshSession.name, schema: RefreshSessionSchema },
         ]),
     ],
-    controllers: [AuthController],
+    controllers: [AuthController, UserGameActivityController],
     providers: [AuthService, AdminInitService, JwtAuthGuard, GuestIdentityClaimService],
     exports: [AuthService, AdminInitService],
 })

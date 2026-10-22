@@ -19,6 +19,7 @@ export function ExplorerFigureToken({
   size = "board",
   missingTokenLabel,
   testIdPrefix = "betrayal-explorer-figure-token",
+  sceneArtwork = false,
   targetHighlight = false,
   targetHighlightSelected = false,
   targetHighlightTestId,
@@ -30,6 +31,7 @@ export function ExplorerFigureToken({
   size?: "board" | "panel";
   missingTokenLabel: string;
   testIdPrefix?: string;
+  sceneArtwork?: boolean;
   targetHighlight?: boolean;
   targetHighlightSelected?: boolean;
   targetHighlightTestId?: string;
@@ -109,7 +111,7 @@ export function ExplorerFigureToken({
             vectorEffect="non-scaling-stroke"
           />
         </svg>
-      ) : (
+      ) : !sceneArtwork || !hasOfficialToken ? (
         <span
           className={`pointer-events-none absolute left-1/2 top-1/2 z-0 ${sizeClass.outline} -translate-x-1/2 -translate-y-1/2`}
           data-testid={`${testIdPrefix}-outline-${explorer.playerId}`}
@@ -119,8 +121,8 @@ export function ExplorerFigureToken({
             filter: outlineShadow,
           }}
         />
-      )}
-      <span
+      ) : null}
+      {(!sceneArtwork || !hasOfficialToken) && <span
         className={`pointer-events-none relative z-10 flex ${sizeClass.frame} items-center justify-center overflow-hidden bg-transparent`}
         data-testid={`${testIdPrefix}-surface-${explorer.playerId}`}
         style={{
@@ -144,7 +146,7 @@ export function ExplorerFigureToken({
             <span>{missingTokenLabel}</span>
           </span>
         )}
-      </span>
+      </span>}
     </span>
   );
 }
@@ -156,6 +158,7 @@ export function MonsterBoardToken({
   quietFrame = false,
   status = "active",
   testIdPrefix = "betrayal-monster-board-token",
+  sceneArtwork = false,
   targetHighlight = false,
   targetHighlightRole = "target",
   targetHighlightRelation,
@@ -167,6 +170,7 @@ export function MonsterBoardToken({
   quietFrame?: boolean;
   status?: BetrayalMonsterStatusKind;
   testIdPrefix?: string;
+  sceneArtwork?: boolean;
   targetHighlight?: boolean;
   targetHighlightRole?: "target" | "source";
   targetHighlightRelation?: EntityRelation;
@@ -241,7 +245,7 @@ export function MonsterBoardToken({
             vectorEffect="non-scaling-stroke"
           />
         </svg>
-      ) : (
+      ) : !sceneArtwork ? (
         <span
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           data-testid={`${testIdPrefix}-outline-${monster.id}`}
@@ -253,8 +257,8 @@ export function MonsterBoardToken({
             filter: outlineShadow,
           }}
         />
-      )}
-      <span
+      ) : null}
+      {!sceneArtwork && <span
         className="pointer-events-none relative z-10 flex items-center justify-center overflow-hidden bg-[rgba(16,11,8,0.28)]"
         style={{
           width: tokenSurfaceSize,
@@ -277,7 +281,7 @@ export function MonsterBoardToken({
           }
           draggable={false}
         />
-      </span>
+      </span>}
       {isStunned ? (
         <span
           className="pointer-events-none absolute -bottom-1 left-1/2 z-20 -translate-x-1/2 rounded-[4px] border border-[rgba(212,224,221,0.62)] bg-[rgba(9,14,14,0.94)] px-1.5 py-0.5 text-[8px] font-black leading-none tracking-[0.08em] text-[#dce7e2] shadow-[0_3px_8px_rgba(0,0,0,0.38)]"

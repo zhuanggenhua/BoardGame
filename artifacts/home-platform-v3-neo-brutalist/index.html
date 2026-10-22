@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>易桌游 · 收藏库</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #000;
+      --paper: #fff;
+      --pink: #ff006e;
+      --lime: #ccff00;
+      --cyan: #00d9ff;
+      --orange: #ff9500;
+      --font: "Noto Sans SC", "IBM Plex Mono", sans-serif;
+      --display: "Archivo Black", "Noto Sans SC", sans-serif;
+      --mono: "IBM Plex Mono", "Noto Sans SC", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font);
+    }
+    button, input, textarea, select { font-family: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .stage {
+      width: 100%;
+      height: 100%;
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: 64px minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .chrome {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 20px;
+      padding: 0 28px;
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 420px; }
+    .logo {
+      width: 36px; height: 36px;
+      background: var(--lime);
+      border: 3px solid var(--paper);
+      color: var(--ink);
+      display: grid; place-items: center; padding: 2px;
+    }
+    .logo svg { width: 100%; height: 100%; display: block; }
+    .wordmark { font-family: var(--display); font-size: 28px; letter-spacing: -0.03em; line-height: 1; }
+    .subtitle { font-family: var(--mono); font-size: 12px; color: #d4d4d4; margin-top: 2px; }
+    .nav { display: flex; gap: 8px; justify-content: center; }
+    .nav-btn, .ghost, .user, .bell {
+      appearance: none;
+      border: 3px solid var(--paper);
+      background: transparent;
+      color: var(--paper);
+      font-weight: 900;
+      height: 36px;
+      padding: 0 14px;
+      box-shadow: 3px 3px 0 var(--pink);
+    }
+    .nav-btn.is-active { background: var(--lime); color: var(--ink); border-color: var(--lime); box-shadow: 3px 3px 0 var(--paper); }
+    .nav-btn:hover, .ghost:hover, .user:hover, .bell:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--pink); }
+    .chrome-actions { display: flex; align-items: center; gap: 8px; }
+    .chrome-extras { display: flex; align-items: center; gap: 8px; }
+    .search {
+      width: 240px; height: 36px;
+      border: 3px solid var(--paper);
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 0 10px;
+    }
+    .search:focus { outline: none; background: #111; box-shadow: 4px 4px 0 var(--cyan); }
+    .search::placeholder { color: #888; }
+    .bell { width: 36px; padding: 0; position: relative; display: grid; place-items: center; }
+    .bell svg { width: 18px; height: 18px; display: block; }
+    .bell i { position: absolute; top: -6px; right: -6px; width: 12px; height: 12px; background: var(--pink); border: 2px solid var(--ink); }
+    .user { display: flex; align-items: center; gap: 8px; }
+    .points { font-family: var(--mono); font-size: 12px; background: var(--orange); color: var(--ink); padding: 2px 6px; font-weight: 700; }
+    .avatar { width: 22px; height: 22px; background: var(--cyan); color: var(--ink); display: grid; place-items: center; font-weight: 900; font-size: 12px; }
+    .ver { font-family: var(--mono); font-size: 12px; color: #888; margin-left: 4px; }
+
+    .body { min-height: 0; overflow: hidden; display: grid; }
+    .body.is-steam { grid-template-columns: 300px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .body.is-discover { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
+    .body.is-upload { grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .body.is-profile {
+      display: block;
+      overflow: auto;
+      background-color: #111;
+      background-image: url("assets/covers/smashup.webp");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .steam-list {
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-right: 3px solid var(--ink);
+      background: #f6f6f6;
+    }
+    .steam-list h2 {
+      margin: 0;
+      padding: 16px 18px 10px;
+      font-family: var(--display);
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+    .steam-count { font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 0 18px 10px; color: #555; }
+    .list-rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; display: flex; flex-direction: column; }
+    .list-row {
+      flex-shrink: 0;
+      appearance: none;
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid #e4e4e4;
+      background: transparent;
+      text-align: left;
+      padding: 10px 16px;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .list-row:hover { background: #ececec; }
+    .list-row.is-on { background: var(--ink); color: var(--paper); }
+    .list-row.is-hub { grid-template-columns: 1fr; font-weight: 900; }
+    .list-thumb {
+      width: 44px; height: 44px;
+      overflow: hidden;
+      background: #111;
+      flex-shrink: 0;
+    }
+    .list-thumb img, .list-thumb .fallback {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .list-thumb .fallback { color: #fff; font-weight: 900; font-size: 14px; display: grid; place-items: center; }
+    .list-name { font-weight: 900; font-size: 14px; line-height: 1.2; }
+    .list-sub { font-family: var(--mono); font-size: 11px; margin-top: 3px; opacity: 0.7; }
+    .list-hours { font-family: var(--mono); font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+    .lib-home {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 260px minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px 16px 80px;
+      background: #f3f3f3;
+    }
+    .whats-new { min-height: 0; display: grid; grid-template-rows: 32px minmax(0, 1fr); gap: 8px; }
+    .whats-head { display: flex; align-items: center; gap: 8px; }
+    .whats-new h3, .my-games-head h3 { margin: 0; font-family: var(--display); font-size: 18px; }
+    .whats-head h3 { flex: 1; }
+    .news-nav {
+      appearance: none;
+      width: 28px; height: 24px;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      font-weight: 900;
+      line-height: 1;
+    }
+    .whats-row {
+      min-height: 0;
+      display: flex;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .news-card {
+      appearance: none;
+      position: relative;
+      height: 100%;
+      flex: 1 1 0;
+      min-width: 0;
+      border: 0;
+      background: #111;
+      padding: 0;
+      overflow: hidden;
+      text-align: left;
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .news-card:hover { transform: translateY(-6px); z-index: 2; }
+    .news-card img, .news-card .fallback {
+      width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;
+    }
+    .news-card .fallback {
+      color: #fff; padding: 12px 14px;
+      display: flex; flex-direction: column; justify-content: flex-end; font-weight: 900;
+    }
+    .news-veil {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 48px 12px 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.82) 100%);
+      color: #fff;
+      pointer-events: none;
+    }
+    .news-veil b {
+      display: block;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .news-veil em {
+      display: block;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #d4d4d4;
+      margin: 4px 0 6px;
+      font-style: normal;
+    }
+    .news-veil p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .my-games { min-height: 0; overflow: hidden; display: grid; grid-template-rows: 28px minmax(0, 1fr); gap: 8px; }
+    .my-games-head { display: flex; align-items: baseline; gap: 10px; }
+    .my-games-head span { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+    .owned-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      align-content: stretch;
+      align-items: stretch;
+      gap: 16px;
+      overflow: hidden;
+      padding-top: 10px;
+    }
+    .owned-tile {
+      appearance: none;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      align-self: stretch;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      overflow: hidden;
+      display: block;
+      text-align: left;
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .owned-art {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+    }
+    .owned-art img, .owned-art .fallback {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+    }
+    .owned-art .fallback {
+      color: #fff; padding: 10px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .owned-overlay {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 22px 8px 8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.78) 100%);
+      color: #fff;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 8px;
+      pointer-events: none;
+      transition: opacity 200ms ease;
+    }
+    .owned-name {
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .owned-hours {
+      flex-shrink: 0;
+      font-style: normal;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+    }
+    .owned-detail {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.42) 42%, rgba(0,0,0,.82) 100%);
+      color: #fff;
+      opacity: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+    .owned-detail b { font-size: 16px; font-weight: 900; }
+    .owned-detail em {
+      font-style: normal;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #d4d4d4;
+      margin: 4px 0 8px;
+    }
+    .owned-detail p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 9;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .owned-tile:hover, .owned-tile:focus-visible {
+      transform: translateY(-8px);
+      z-index: 4;
+      box-shadow: 0 14px 28px rgba(0,0,0,.32);
+    }
+    .owned-tile:hover .owned-overlay, .owned-tile:focus-visible .owned-overlay { opacity: 0; }
+    .owned-tile:hover .owned-detail, .owned-tile:focus-visible .owned-detail { opacity: 1; }
+
+    .steam-page {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 320px minmax(0, 1fr);
+    }
+    .steam-cover { position: relative; overflow: hidden; background: #111; }
+    .steam-cover img, .steam-cover .fallback {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    .steam-cover .fallback {
+      color: #fff; padding: 28px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .steam-cover .fallback b { font-size: 36px; }
+    .steam-veil {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 48px 24px 18px;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.78) 100%);
+      color: #fff;
+    }
+    .steam-veil h1 { margin: 0 0 6px; font-family: var(--display); font-size: 36px; letter-spacing: -0.03em; }
+    .steam-meta { font-family: var(--mono); font-size: 13px; font-weight: 700; color: #d4d4d4; margin-bottom: 12px; }
+    .steam-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+    .cta-play, .cta-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+    .cta-play .btn { display: inline-flex; align-items: center; gap: 6px; }
+    .cta-play .btn svg, .steam-actions .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .steam-body {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) 340px;
+      gap: 0;
+      background: #f3f3f3;
+    }
+    .steam-main {
+      min-width: 0;
+      padding: 18px 24px 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .steam-desc {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #333;
+      background: #fff;
+      border: 2px solid #e5e5e5;
+      padding: 14px 16px;
+    }
+    .steam-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+    .stat-chip {
+      border: 2px solid var(--ink);
+      background: #fff;
+      padding: 4px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .hub-row {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #ddd;
+    }
+    .hub-link {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 8px 14px 10px;
+      font-weight: 900;
+      font-size: 14px;
+      color: #777;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+    .hub-link.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+    .rank-row {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+      background: #fff;
+      border: 2px solid #e5e5e5;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+    }
+    .rank-row.is-me { border-color: var(--ink); }
+    .rank-n { font-family: var(--mono); font-weight: 700; font-size: 13px; }
+    .rank-name { font-weight: 900; }
+    .rank-score, .rank-hours { font-family: var(--mono); font-size: 12px; color: #555; }
+    .review-item {
+      background: #fff;
+      border: 2px solid #e5e5e5;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .review-item b { display: block; margin-bottom: 4px; }
+    .side-block { margin-top: 0; }
+    .side-card {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border: 3px solid var(--ink);
+      background: #fff;
+      box-shadow: 4px 4px 0 #e5e5e5;
+      overflow: hidden;
+    }
+    .side-head {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-bottom: 3px solid var(--ink);
+      background: #f6f6f6;
+      flex-shrink: 0;
+    }
+    .side-head .block-title { margin: 0; }
+    .side-scroll {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+    }
+    .side-room { padding: 8px 10px; margin-bottom: 0; }
+    .side-empty { color: #888; font-size: 12px; font-style: italic; }
+    .empty-home {
+      align-self: center;
+      justify-self: center;
+      width: 520px;
+      padding: 28px;
+      border: 3px dashed var(--ink);
+      font-weight: 900;
+      line-height: 1.6;
+      background: #fff;
+    }
+    .empty-home .btn { margin-top: 16px; }
+    .block-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      margin: 0 0 8px;
+    }
+    .log-list { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+    .log-item, .friend-empty {
+      border: 2px solid #e5e5e5;
+      background: #fff;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .log-item b { display: block; margin-bottom: 4px; }
+    .log-empty, .friend-empty { color: #777; font-style: italic; }
+    .log-empty { padding: 2px 0; }
+    .steam-side {
+      min-width: 0;
+      border-left: 2px solid #eee;
+      padding: 16px;
+      background: #fafafa;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 0;
+    }
+    .upload-hero {
+      position: relative;
+      height: 140px;
+      overflow: hidden;
+      background: #111;
+    }
+    .upload-hero img, .upload-hero .fallback {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+    }
+    .upload-hero .fallback { color: #fff; padding: 24px; display: flex; align-items: flex-end; font-weight: 900; font-size: 28px; }
+    .upload-main {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: #f3f3f3;
+    }
+    .upload-new-head { padding: 16px 24px 0; }
+    .upload-new-head h2 { margin: 0 0 6px; font-family: var(--display); font-size: 28px; }
+    .upload-body {
+      min-height: 0;
+      overflow: hidden;
+      padding: 16px 24px 96px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) 380px;
+      gap: 16px;
+    }
+    .upload-form, .upload-logs {
+      background: #fff;
+      border: 2px solid #e5e5e5;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      overflow: auto;
+    }
+    .upload-form textarea.field { flex: 1; min-height: 120px; }
+    .upload-logs textarea.field { flex: 1.2; min-height: 160px; }
+    .upload-logs .drop { flex: 1; min-height: 140px; }
+    .upload-new-head + .upload-body .actions { margin-top: 8px; }
+    .upload-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .url-check {
+      display: block;
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .url-check[data-status="ok"] { color: #0b7a3b; }
+    .url-check[data-status="bad"], .url-check[data-status="dead"] { color: var(--pink); }
+    .url-check[data-status="idle"] { color: #666; }
+    .upload-form label.grow { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .upload-form label.grow textarea.field { flex: 1; min-height: 160px; }
+    .check-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .check-row label { display: inline-flex; align-items: center; gap: 6px; font-weight: 900; font-size: 13px; }
+    .status-pill {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      background: var(--lime);
+      border: 2px solid var(--ink);
+    }
+    .status-pill.is-review { background: var(--orange); }
+    .friend {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 0;
+    }
+    .invite-btn {
+      appearance: none;
+      border: 3px solid var(--ink);
+      background: var(--lime);
+      height: 28px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .friend-av {
+      width: 36px; height: 36px;
+      background: var(--cyan);
+      color: var(--ink);
+      display: grid; place-items: center;
+      font-weight: 900;
+    }
+    .friend-av.is-off { background: #ddd; }
+    .friend-name { font-weight: 900; font-size: 14px; }
+    .friend-sub { font-family: var(--mono); font-size: 11px; color: #666; margin-top: 2px; }
+    .dot { display: inline-block; width: 8px; height: 8px; background: #19c37d; margin-right: 6px; }
+    .dot.off { background: #bbb; }
+
+    .library {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 48px minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px 24px 110px;
+    }
+    .library-head { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .library-head h2 { margin: 0; font-family: var(--display); font-size: 22px; letter-spacing: -0.03em; }
+    .count { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+    .cats { display: flex; gap: 8px; margin-left: auto; }
+    .cat {
+      appearance: none;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      height: 36px;
+      padding: 0 14px;
+      font-weight: 900;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .cat[data-cat="全部游戏"] { --acc: #ccff00; --fg: #000; }
+    .cat[data-cat="卡牌"] { --acc: #ff006e; --fg: #fff; }
+    .cat[data-cat="骰子"] { --acc: #ff9500; --fg: #000; }
+    .cat[data-cat="抽象"] { --acc: #00d9ff; --fg: #000; }
+    .cat[data-cat="战棋"] { --acc: #000; --fg: #ccff00; }
+    .cat[data-cat="休闲"] { --acc: #ccff00; --fg: #000; }
+    .cat[data-cat="工具"] { --acc: #00d9ff; --fg: #000; }
+    .cat { box-shadow: 3px 3px 0 var(--acc, #000); }
+    .cat.is-active { background: var(--acc); color: var(--fg); box-shadow: 4px 4px 0 var(--ink); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-auto-rows: max-content;
+      align-content: start;
+      align-items: start;
+      gap: 10px;
+      min-height: 0;
+      overflow: visible;
+      padding-top: 8px;
+    }
+    .tile {
+      appearance: none;
+      position: relative;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      min-width: 0;
+      min-height: 0;
+      overflow: visible;
+      text-align: left;
+      color: inherit;
+      display: block;
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .art { position: relative; display: block; width: 100%; aspect-ratio: 3 / 4; height: auto; overflow: hidden; }
+    .art img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+    .tile-name {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      z-index: 2;
+      padding: 28px 8px 8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.82) 100%);
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+    .tile:hover, .tile:focus-visible {
+      transform: translateY(-8px);
+      z-index: 4;
+      box-shadow: 0 14px 28px rgba(0,0,0,.32);
+    }
+    .tile:hover .tile-name, .tile:focus-visible .tile-name { opacity: 0; }
+    .art .fallback {
+      width: 100%; height: 100%;
+      color: #fff; padding: 12px; background: #161616;
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .art .fallback .kicker { font-family: var(--mono); font-size: 11px; color: var(--lime); }
+    .art .fallback b { display: block; font-size: 20px; font-weight: 900; margin-top: 6px; }
+    .tile-veil {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.42) 42%, rgba(0,0,0,.82) 100%);
+      color: #fff;
+      opacity: 0;
+      transition: opacity 220ms ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 14px;
+      z-index: 1;
+    }
+    .tile:hover .tile-veil, .tile:focus-visible .tile-veil { opacity: 1; }
+    .tile-veil strong { display: block; font-size: 16px; font-weight: 900; }
+    .tile-veil .sub { font-family: var(--mono); font-size: 11px; margin: 4px 0 8px; color: #d4d4d4; }
+    .tile-veil p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 8;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .stamp {
+      position: absolute; top: 8px; left: 8px;
+      background: var(--orange); color: var(--ink);
+      border: 3px solid var(--ink);
+      font-weight: 900; font-size: 12px; padding: 2px 8px; z-index: 2;
+    }
+    .stamp.hot { background: var(--pink); color: #fff; }
+    .star {
+      position: absolute; top: 8px; right: 8px;
+      width: 28px; height: 28px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      padding: 0;
+      display: grid; place-items: center;
+      line-height: 0;
+      box-shadow: 3px 3px 0 var(--ink);
+      z-index: 3;
+      color: var(--ink);
+    }
+    .star svg { width: 14px; height: 14px; display: block; }
+    .star.is-on { background: var(--lime); }
+    .empty {
+      grid-column: 1 / -1;
+      border: 4px dashed var(--ink);
+      display: grid; place-items: center;
+      font-weight: 900; text-align: center; padding: 24px;
+    }
+
+    .match-float {
+      pointer-events: none;
+      position: fixed;
+      inset-inline: 0;
+      bottom: 16px;
+      z-index: 40;
+      display: flex;
+      justify-content: center;
+      padding: 0 24px;
+    }
+    body:has(.overlay:not([hidden])) .match-float { display: none; }
+    .match-card {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      min-width: 520px;
+      background: var(--ink);
+      color: var(--paper);
+      border: 4px solid var(--lime);
+      box-shadow: 8px 8px 0 var(--pink);
+      padding: 10px 14px 10px 18px;
+    }
+    .match-kicker { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--lime); letter-spacing: 0.12em; }
+    .match-line { font-weight: 900; font-size: 15px; margin-top: 2px; }
+    .match-line em { font-style: normal; opacity: 0.55; margin: 0 8px; }
+    .match-actions { display: flex; gap: 8px; }
+
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.62);
+      display: grid; place-items: center;
+      z-index: 60;
+    }
+    .modal {
+      width: min(1280px, calc(100vw - 48px)); height: min(800px, calc(100dvh - 48px));
+      background: var(--paper);
+      border: 4px solid var(--ink);
+      box-shadow: 14px 14px 0 var(--lime);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .details-hero {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) 44px;
+      grid-template-areas: "cover copy close" "cover actions actions";
+      gap: 8px 20px;
+      align-items: start;
+      padding: 16px 20px;
+      background: #fff;
+      border-bottom: 4px solid var(--ink);
+    }
+    .details-cover {
+      grid-area: cover;
+      position: relative;
+      width: 150px;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      background: #111;
+      flex-shrink: 0;
+    }
+    .details-cover img, .details-cover .fallback {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+    }
+    .details-cover .fallback {
+      color: #fff; padding: 10px;
+      display: flex; align-items: flex-end; font-weight: 900;
+    }
+    .details-hero-copy { grid-area: copy; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+    .details-hero-copy h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 32px;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    .details-desc {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #111;
+      max-height: none;
+      overflow: visible;
+    }
+    .details-facts {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .player-rec { display: flex; align-items: center; gap: 8px; max-width: 100%; }
+    .player-row { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; max-width: 100%; }
+    .player-count { width: 32px; height: 32px; border: 1px solid #aaa; color: #666; display: inline-grid; place-items: center; font-size: 14px; font-weight: 700; cursor: default; user-select: none; }
+    .player-count.is-best { border: 2px solid var(--ink); background: var(--ink); color: var(--lime); font-weight: 900; }
+    .player-sq {
+      width: 32px; height: 32px;
+      border: 3px solid var(--ink);
+      background: #fff;
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 13px;
+    }
+    .player-sq.is-best { background: var(--lime); }
+    .player-sq.is-pick { background: var(--cyan); }
+    .player-label { font-family: var(--mono); font-size: 12px; font-weight: 700; color: #555; }
+    .play-est {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      border: 2px solid var(--ink);
+      background: var(--lime);
+      padding: 4px 10px;
+    }
+    .details-facts { font-size: 13px; line-height: 1.5; color: #555; }
+    .details-facts .play-est { border: 0; background: transparent; padding: 0; font-family: var(--font); font-weight: 400; }
+    .details-cta { grid-area: actions; display: flex; justify-content: flex-start; align-items: center; gap: 32px; }
+    .details-primary { flex: none; }
+    .details-primary .btn { min-width: 220px; height: 48px; }
+    .details-secondary { display: flex; gap: 20px; }
+    .details-secondary .btn { height: 44px; border-width: 2px; padding: 0 14px; font-size: 13px; box-shadow: none; }
+    .details-secondary .btn:hover { transform: none; background: #f3f3f3; box-shadow: none; }
+    .details-secondary .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .compact-toggle { display: none; }
+    .author-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: #555;
+      min-height: 44px; padding: 0;
+      margin-left: auto;
+      font-size: 12px; font-weight: 400;
+      display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: none;
+    }
+    .author-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .author-btn:hover { color: var(--ink); text-decoration: underline; }
+    .details-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 12px 20px 16px;
+      overflow: hidden;
+      background: #f3f3f3;
+    }
+    .rules-doc {
+      background: #fff;
+      border: 2px solid var(--ink);
+      padding: 16px 18px;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .rules-doc h1 { margin: 0 0 12px; font-family: var(--display); font-size: 22px; }
+    .rules-doc h2 { margin: 16px 0 8px; font-family: var(--display); font-size: 16px; }
+    .rules-doc h3, .rules-doc h4 { margin: 12px 0 6px; font-family: var(--display); font-size: 14px; }
+    .rules-doc p { margin: 0 0 10px; }
+    .rules-doc ul, .rules-doc ol { margin: 0 0 10px; padding-left: 18px; }
+    .rules-doc li { margin: 0 0 4px; }
+    .rules-doc hr { border: 0; border-top: 2px solid #ddd; margin: 12px 0; }
+    .rules-doc code { font-family: var(--mono); font-size: 12px; }
+    .body.is-profile { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
+    .tab-row { display: flex; align-items: center; gap: 4px; margin-bottom: 14px; border-bottom: 3px solid var(--ink); }
+    .tab {
+      appearance: none; border: 0; background: transparent;
+      font-weight: 900; font-size: 15px;
+      padding: 8px 12px 10px; color: #777;
+      border-bottom: 4px solid transparent;
+      margin-bottom: -3px;
+    }
+    .tab.is-active { color: var(--ink); border-bottom-color: var(--pink); }
+    .close-x {
+      appearance: none;
+      width: 36px; height: 36px;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 3px 3px 0 var(--pink);
+      flex-shrink: 0;
+    }
+    .close-x svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+    .details-hero .close-x { grid-area: close; justify-self: end; align-self: start; }
+    .tab-body { flex: 1; min-height: 0; overflow: auto; }
+    .create-room {
+      width: 100%; height: 44px;
+      border: 3px solid var(--ink);
+      background: var(--lime);
+      color: var(--ink);
+      font-weight: 900;
+      box-shadow: 5px 5px 0 var(--ink);
+      margin-bottom: 12px;
+    }
+    .room-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 3px solid var(--ink); background: #fff; padding: 12px; margin-bottom: 8px; }
+    .room-title { font-weight: 900; font-size: 14px; }
+    .mine-tag { display: inline-block; margin-left: 6px; font-size: 10px; background: var(--ink); color: #fff; padding: 1px 6px; font-weight: 900; }
+    .seats { font-family: var(--mono); font-size: 12px; color: #666; margin-top: 4px; }
+    .room-actions { display: flex; gap: 12px; flex-shrink: 0; }
+    .room-btn {
+      appearance: none; border: 3px solid var(--ink); background: var(--paper); color: var(--ink);
+      height: 30px; padding: 0 10px; font-size: 12px; font-weight: 900; white-space: nowrap;
+    }
+    .details-main .room-btn:disabled { background: #eee; color: #888; cursor: not-allowed; }
+    .tab-empty { border: 3px dashed var(--ink); min-height: 180px; display: grid; place-items: center; color: #555; font-weight: 700; background: #fff; }
+
+    .btn {
+      appearance: none;
+      border: 4px solid var(--ink);
+      height: 44px;
+      padding: 0 16px;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 6px 6px 0 var(--ink);
+      background: var(--paper);
+    }
+    .btn-pink { background: var(--pink); color: #fff; }
+    .btn-lime { background: var(--lime); }
+    .btn:hover { transform: translate(-4px, -4px); box-shadow: 10px 10px 0 var(--ink); }
+    .steam-actions .btn { height: 40px; font-size: 13px; }
+    .match-actions .btn { height: 36px; font-size: 13px; }
+    label { font-weight: 900; font-size: 13px; display: block; }
+    .field { width: 100%; border: 4px solid var(--ink); padding: 8px 10px; font-family: var(--mono); font-size: 14px; }
+    textarea.field { min-height: 64px; resize: none; }
+    .drop { border: 4px dashed var(--ink); min-height: 96px; display: grid; place-items: center; font-family: var(--mono); font-size: 13px; background: #fafafa; }
+    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .modal-body h2 { margin: 0; font-family: var(--display); font-size: 32px; }
+    .desc { font-size: 14px; line-height: 1.5; margin: 0; }
+    .actions { display: flex; gap: 8px; margin-top: auto; flex-wrap: wrap; }
+    .menu, .notes {
+      position: absolute; top: 68px; right: 28px; width: 240px;
+      background: var(--paper); border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--ink);
+      z-index: 15; display: flex; flex-direction: column;
+    }
+    .menu button, .notes button {
+      appearance: none; border: 0; border-bottom: 3px solid var(--ink);
+      background: var(--paper); text-align: left; padding: 10px 12px; font-weight: 700;
+    }
+    .menu button:last-child, .notes button:last-child { border-bottom: 0; }
+    .toast {
+      position: fixed; bottom: 108px; left: 50%; transform: translateX(-50%);
+      background: var(--lime); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
+      padding: 10px 16px; font-weight: 900; z-index: 50;
+    }
+    .sheet {
+      width: 480px;
+      background: var(--paper);
+      border: 4px solid var(--ink);
+      box-shadow: 12px 12px 0 var(--pink);
+      padding: 28px 24px 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .sheet .close-x { position: absolute; top: 12px; right: 12px; }
+    .sheet-foot {
+      display: flex;
+      justify-content: center;
+      margin-top: 18px;
+    }
+    .sheet-confirm {
+      min-width: 240px;
+      width: 72%;
+      max-width: 320px;
+      height: 52px;
+      border: 4px solid var(--ink);
+      background: var(--pink);
+      color: #fff;
+      font-weight: 900;
+      font-size: 18px;
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+    .author-modal { width: 400px; box-shadow: 12px 12px 0 var(--lime); }
+    .ai-toggle {
+      width: 100%;
+      height: 44px;
+      margin: 8px 0 0;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+    .ai-toggle.is-on { background: var(--lime); }
+    .ai-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 0 4px;
+    }
+    .player-range {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .player-range span { font-weight: 900; text-align: center; }
+    .sheet-kicker {
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      letter-spacing: 0.14em; margin-bottom: 6px;
+    }
+    .confirm h3, .author-modal h3 { margin: 0 0 10px; font-family: var(--display); font-size: 28px; }
+    .sheet p { margin: 0 0 8px; line-height: 1.5; }
+    .create-sheet { width: 640px; max-height: 820px; overflow: auto; }
+    .seat-row { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
+    .opt-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+    .opt-chip {
+      appearance: none;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .opt-chip.is-on { background: var(--cyan); }
+    .opt-chip:disabled { opacity: 0.55; }
+    .ai-box { display: none; }
+    .profile-page {
+      --profile-inset: 24px;
+      width: min(1280px, calc(100% - 360px));
+      min-width: 0;
+      margin: 28px auto 32px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      grid-template-rows: auto minmax(0, 1fr);
+      column-gap: 24px;
+      row-gap: 20px;
+      align-content: start;
+      background: #fff;
+      border: 4px solid var(--ink);
+      box-shadow: 12px 12px 0 var(--ink);
+      padding: 24px var(--profile-inset) 28px;
+    }
+    .profile-id-band {
+      grid-column: 1;
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+    }
+    .profile-avatar {
+      width: 120px; height: 120px;
+      border: 4px solid var(--ink);
+      box-shadow: 8px 8px 0 var(--ink);
+      display: grid; place-items: center;
+      font-family: var(--display);
+      font-size: 48px;
+      color: var(--ink);
+    }
+    .profile-id { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+    .profile-name { font-family: var(--display); font-size: 32px; letter-spacing: -0.03em; line-height: 1; }
+    .profile-status { font-family: var(--mono); font-size: 13px; font-weight: 700; color: #19c37d; margin-top: 4px; }
+    .avatar-picks { display: grid; grid-template-columns: repeat(8, 28px); gap: 8px; }
+    .avatar-pick {
+      width: 28px; height: 28px;
+      border: 3px solid var(--ink);
+      padding: 0;
+    }
+    .avatar-pick.is-on { outline: 4px solid var(--pink); outline-offset: 2px; }
+    .profile-feed {
+      grid-column: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .feed-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 4px solid var(--ink);
+      padding: 0 0 8px;
+    }
+    .feed-head h2 { margin: 0; font-family: var(--display); font-size: 20px; }
+    .feed-head span { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+    .feed-row {
+      appearance: none;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 231px minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      text-align: left;
+      border: 3px solid var(--ink);
+      background: #fff;
+      box-shadow: 5px 5px 0 var(--ink);
+      padding: 8px;
+    }
+    .feed-art {
+      width: 231px;
+      height: 87px;
+      overflow: hidden;
+      background: #111;
+      flex-shrink: 0;
+    }
+    .feed-art img, .feed-art .fallback {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+    }
+    .feed-art .fallback { color: #fff; font-size: 12px; padding: 6px; }
+    .feed-copy { min-width: 0; }
+    .feed-copy b { display: block; font-family: var(--display); font-size: 20px; }
+    .feed-copy em {
+      display: block;
+      margin-top: 6px;
+      font-style: normal;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #333;
+    }
+    .feed-hours {
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .feed-hours b { display: block; font-family: var(--mono); font-size: 13px; margin-bottom: 4px; }
+    .profile-rail {
+      grid-column: 2;
+      grid-row: 1 / -1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+      border-left: 4px solid var(--ink);
+      padding-left: 20px;
+    }
+    .rail-edit { align-self: start; }
+    .rail-stat {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 2px solid #ddd;
+      padding: 6px 0;
+    }
+    .rail-stat b { font-family: var(--display); font-size: 22px; line-height: 1; }
+    .rail-stat span { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+    .menu-btn, .list-fab, .bottom-nav, .drawer-scrim, .library-tools, .news-toggle { display: none; }
+
+    .tap-hint { display: none; }
+    @media (min-width: 1024px) and (max-width: 1599px) {
+      .chrome { gap: 12px; padding-inline: 16px; }
+      .brand { min-width: 0; gap: 8px; }
+      .wordmark { font-size: 24px; }
+      .subtitle, .ver { display: none; }
+      .nav-btn, .ghost, .user { padding-inline: 10px; }
+      .search { width: clamp(120px, 12vw, 180px); }
+      .body.is-steam { grid-template-columns: 240px minmax(0, 1fr); }
+      .owned-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .lib-home { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+      .whats-new { flex: none; height: 220px; }
+      .my-games { flex: none; display: block; overflow: visible; }
+      .owned-grid { grid-template-rows: none; grid-auto-rows: auto; overflow: visible; }
+      .owned-tile { height: auto; }
+      .owned-art { height: auto; aspect-ratio: 3 / 4; }
+    }
+    .room-btn:disabled { cursor: not-allowed; background: #eee; color: #666; }
+    @media (min-width: 1024px) and (max-height: 800px) {
+      .steam-page { display: block; overflow-y: auto; overflow-x: hidden; }
+      .steam-cover { height: 220px; }
+      .steam-veil { padding-top: 24px; }
+      .steam-body { overflow: visible; align-items: start; padding-bottom: 100px; }
+      .steam-main, .steam-side { overflow: visible; }
+      .steam-side .side-card, .steam-side .side-scroll { flex: none; overflow: visible; }
+    }
+    .steam-page { grid-template-rows: auto minmax(0, 1fr); }
+    .library-summary { grid-template-columns: 120px minmax(0, 1fr); grid-template-areas: "cover copy" "cover actions"; }
+    .library-summary .details-cover { width: 120px; }
+    .library-summary .details-cta { flex-wrap: wrap; gap: 12px 24px; }
+    .library-last-played { font-size: 12px; color: #666; }
+  </style>
+  <link rel="stylesheet" href="mobile.css" />
+</head>
+<body>
+  <div class="stage" data-testid="home-v7">
+    <header class="chrome">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <g fill="currentColor">
+              <rect x="4" y="4" width="4.6" height="4.6"/>
+              <rect x="9.7" y="4" width="4.6" height="4.6"/>
+              <rect x="15.4" y="4" width="4.6" height="4.6"/>
+              <rect x="4" y="9.7" width="4.6" height="4.6"/>
+              <rect x="9.7" y="9.7" width="4.6" height="4.6"/>
+              <rect x="15.4" y="9.7" width="4.6" height="4.6"/>
+              <rect x="4" y="15.4" width="4.6" height="4.6"/>
+              <rect x="9.7" y="15.4" width="4.6" height="4.6"/>
+              <rect x="15.4" y="15.4" width="4.6" height="4.6"/>
+            </g>
+          </svg>
+        </div>
+        <div>
+          <div class="wordmark">易桌游</div>
+          <div class="subtitle">桌游教程、联机与原型制作平台</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="平台分区">
+        <button class="nav-btn" data-view="discover" type="button">发现</button>
+        <button class="nav-btn is-active" data-view="library" type="button">收藏库</button>
+        <button class="nav-btn" data-view="upload" type="button">上传</button>
+      </nav>
+      <div class="chrome-actions">
+        <button class="menu-btn" data-chrome-drawer="1" type="button" aria-label="打开菜单" data-testid="chrome-menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square" aria-hidden="true">
+            <path d="M5 7h14M5 12h14M5 17h14"/>
+          </svg>
+        </button>
+        <div class="chrome-extras" id="chromeExtras" data-testid="chrome-drawer">
+          <input class="search" id="search" type="search" placeholder="搜索游戏" />
+          <button class="ghost" type="button">操作指南</button>
+          <button class="ghost" type="button">中文</button>
+        </div>
+        <button class="bell" id="bell" type="button" aria-label="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+          <i></i>
+        </button>
+        <button class="user" id="userBtn" type="button">
+          <span class="points" id="userPoints">86</span>
+          <span class="avatar" id="userAvatar">衡</span>
+          <span id="userName">衡</span>
+        </button>
+        <span class="ver">0.6.47</span>
+      </div>
+    </header>
+    <div class="body is-steam" id="homeBody"></div>
+  </div>
+  <nav class="bottom-nav" data-testid="bottom-nav" aria-label="平台分区">
+    <button class="nav-btn" data-view="discover" type="button">发现</button>
+    <button class="nav-btn is-active" data-view="library" type="button">收藏库</button>
+    <button class="nav-btn" data-view="upload" type="button">上传</button>
+  </nav>
+  <div class="drawer-scrim" id="drawerScrim" data-drawer-scrim="1" hidden></div>
+
+  <div class="match-float" id="matchFloat" data-testid="home-active-match-banner" hidden></div>
+  <div class="overlay" id="details" hidden></div>
+  <div class="overlay" id="createRoom" hidden></div>
+  <div class="overlay" id="confirm" hidden>
+    <div class="sheet confirm">
+      <button class="close-x" data-testid="confirm-close" data-close="confirm" type="button" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="sheet-kicker">当前房间</div>
+      <h3>销毁当前房间？</h3>
+      <p>销毁后会立即关闭房间，所有玩家将被移出当前对局。</p>
+      <div class="sheet-foot">
+        <button class="sheet-confirm" id="confirmYes" type="button">销毁</button>
+      </div>
+    </div>
+  </div>
+  <div class="overlay" id="author" hidden>
+    <div class="sheet author-modal" data-testid="game-details-author-modal">
+      <button class="close-x" data-testid="author-close" data-close="author" type="button" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="sheet-kicker">电子化作者</div>
+      <h3 id="authorName">佚名</h3>
+      <p id="authorText"></p>
+      <p class="desc">当前先展示作者署名，后续如有更完整的作者介绍，会从这里展开。</p>
+    </div>
+  </div>
+  <div class="menu" id="userMenu" hidden>
+    <button type="button" data-profile="open">个人主页</button>
+    <button type="button">对局记录</button>
+    <button type="button">好友</button>
+    <button type="button">账户设置</button>
+    <button type="button">光标设置</button>
+    <button type="button">我的反馈</button>
+    <button type="button">退出登录</button>
+  </div>
+  <div class="notes" id="notes" hidden>
+    <button type="button">系统：新版本 0.6.47 已发布</button>
+    <button type="button">好友请求：阿凯</button>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const STAR_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><polygon fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+    const TABLE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M3 9h18M9 5v14"/></svg>`;
+    const INFO_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>`;
+    const CLOSE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+    const AVATARS = ["#00d9ff", "#ccff00", "#ff006e", "#ff9500", "#b197fc", "#ffd43b", "#69db7c", "#74c0fc"];
+    // 规则概览原文来自 src/games/<id>/rule/ 玩家可见规则文件，副本在 artifact/rules/
+    const RULE_FILES = {
+      smashup: "rules/smashup.md",
+      dicethrone: "rules/dicethrone.md",
+      betrayal: "rules/betrayal.md",
+      qidahen: "rules/qidahen.md",
+      summonerwars: "rules/summonerwars.md",
+      splendor: "rules/splendor.md",
+      fantasyrealms: "rules/fantasyrealms.md",
+      cardia: "rules/cardia.md",
+    };
+    let RULES = {};
+    const GAMES = [
+      { id: "dicethrone", name: "王权骰铸", cat: "骰子", playerOptions: [2,3,4], bestPlayers: [2,3,4], playMinutes: 30, status: "play", hasTutorial: true, hasConfig: true, hasAi: true, hours: 2.3, lastPlayed: "昨天", hotRank: 2, updated: "本周", desc: "这是一款快节奏且易上手的游戏。从众多英雄之中，挑选一位你最中意的角色。投掷你英雄专属的 5 颗骰子来攻击对手、激活能力。累积战斗点数，并用它们购买效果各异的卡牌，例如升级英雄、施展法术，或直接操控你、队友或对手的骰子。", cover: "assets/covers/dicethrone.webp", author: "佚名", rooms: [{ id: "D8Q1", name: "公开桌", count: 1, seats: 2, names: ["阿凯", "空位"] }], changelog: [{ title: "0.6.40", text: "补充英雄教程入口，修正骰面提示。" }], friends: [{ name: "阿凯", online: false, note: "玩过 1.2 小时" }, { name: "小满", online: true, note: "昨天一起玩过" }] },
+      { id: "smashup", name: "大杀四方", cat: "卡牌", playerOptions: [2,3,4], bestPlayers: [3], playMinutes: 45, status: "play", hot: true, hasTutorial: true, hasConfig: true, hasAi: true, hasSetup: true, hours: 6.7, lastPlayed: "2 小时前", hotRank: 1, updated: "昨天", desc: "2-4 人阵营混搭卡牌对战。选择两个派系组成牌组，围绕基地展开争夺，率先到达胜利分数即可获胜。海盗配恐龙、机器人配熊，不同组合会带来完全不同的节奏。适合想快速开一局、又想看组合爆炸的人。", cover: "assets/covers/smashup.webp", author: "佚名", rooms: [{ id: "A3F2", name: "房间 A3F2", count: 2, seats: 4, mine: true, names: ["衡", "阿凯", "空位", "空位"] }, { id: "B7K1", name: "公开桌", count: 1, seats: 4, names: ["游客", "空位", "空位", "空位"] }, { id: "C2M8", name: "新手桌", count: 3, seats: 4, names: ["游客甲", "游客乙", "游客丙", "空位"] }, { id: "D9P0", name: "计分冲刺", count: 4, seats: 4, names: ["甲", "乙", "丙", "丁"] }], changelog: [{ title: "0.6.47", text: "修复基地计分显示，补充派系组合提示。" }, { title: "0.6.41", text: "新增教程模式入口。" }, { title: "0.6.32", text: "补齐在线大厅房间操作。" }], friends: [{ name: "阿凯", online: true, note: "昨天一起玩过" }, { name: "小满", online: false, note: "玩过 3.1 小时" }, { name: "老周", online: true, note: "上周对局" }, { name: "林夏", online: false, note: "玩过 1.8 小时" }, { name: "北北", online: true, note: "刚离开房间" }, { name: "阿宁", online: false, note: "玩过 0.6 小时" }] },
+      { id: "betrayal", name: "山屋惊魂", cat: "卡牌", playerOptions: [3,4,5,6], bestPlayers: [4,5], playMinutes: 60, status: "wip", hasTutorial: false, hasConfig: true, hours: 0, lastPlayed: "从未玩过", hotRank: 8, updated: "上周", desc: "3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定房间主视图、探索者区与牌堆区。", cover: "assets/covers/betrayal.webp", author: "佚名", rooms: [], changelog: [{ title: "0.6.20", text: "接入房间主视图骨架。" }], friends: [] },
+      { id: "qidahen", name: "七大恨", cat: "战棋", playerOptions: [3], bestPlayers: [3], playMinutes: 90, status: "wip", hasTutorial: false, hasConfig: false, hours: 0, lastPlayed: "从未玩过", hotRank: 7, updated: "", desc: "三势力非对称历史策略游戏。使用手牌资源与行动轮盘争夺东北亚区域控制，并在复杂战斗流程中取得政治霸权。", cover: "assets/covers/qidahen.webp", author: "佚名", rooms: [], changelog: [], friends: [] },
+      { id: "mage-wars", name: "法师战争", cat: "战棋", playerOptions: [2], bestPlayers: [2], playMinutes: 90, status: "wip", hasTutorial: false, hasConfig: false, hours: 0, lastPlayed: "从未玩过", hotRank: 9, updated: "", desc: "双人法术战棋。当前基础流程锁定标准竞技场、法师状态、法术书区域和事件驱动法术特效。", cover: "assets/covers/mage-wars.webp", author: "佚名", rooms: [], changelog: [], friends: [] },
+      { id: "summonerwars", name: "召唤师战争", cat: "战棋", playerOptions: [2], bestPlayers: [2], playMinutes: 45, status: "play", hasTutorial: true, hasConfig: true, hours: 1.3, lastPlayed: "上周", hotRank: 3, updated: "本周", desc: "一款战术卡牌游戏，在网格战场上指挥你的阵营战士。召唤单位、施放法术，摧毁敌方召唤师即可获胜。", cover: "assets/covers/summonerwars.webp", author: "佚名", rooms: [], changelog: [{ title: "0.6.38", text: "补充召唤路径提示。" }], friends: [{ name: "阿凯", online: false, note: "玩过 0.4 小时" }] },
+      { id: "splendor", name: "璀璨宝石", cat: "卡牌", playerOptions: [2,3,4], bestPlayers: [2,3], playMinutes: 30, status: "play", hasTutorial: true, hasConfig: false, hours: 0, lastPlayed: "从未玩过", hotRank: 6, updated: "", desc: "已完成基础版核心规则、主界面与教学引导的璀璨宝石实现。主打公开信息、宝石经营、永久折扣与贵族竞速。", cover: "", author: "佚名", rooms: [], changelog: [], friends: [] },
+      { id: "fantasyrealms", name: "幻想国度", cat: "卡牌", playerOptions: [2,3,4,5,6], bestPlayers: [3,4], playMinutes: 20, status: "play", hasTutorial: true, hasConfig: false, hours: 0.8, lastPlayed: "3 天前", hotRank: 4, updated: "3 天前", desc: "2-6 人奇幻卡牌组合游戏。围绕 7 张手牌与公开弃牌堆做取舍，通过套牌联动冲高终局分数。", cover: "assets/covers/fantasyrealms.webp", author: "佚名", rooms: [], changelog: [{ title: "0.6.35", text: "补齐弃牌堆提示。" }], friends: [] },
+      { id: "cardia", name: "卡迪亚", cat: "卡牌", playerOptions: [2], bestPlayers: [2], playMinutes: 25, status: "play", hasTutorial: true, hasConfig: false, hours: 0.6, lastPlayed: "上周", hotRank: 5, updated: "上周", desc: "四大派系争夺印戒与统治权。打出卡牌、触发能力，在一场场遭遇中智胜对手。", cover: "assets/covers/cardia.webp", author: "佚名", rooms: [], changelog: [{ title: "0.6.29", text: "修正遭遇结算文案。" }], friends: [] },
+      { id: "the-gang", name: "纸牌帮", cat: "卡牌", playerOptions: [3,4,5,6,7,8,9,10], bestPlayers: [4,5,6], playMinutes: 20, status: "play", hasTutorial: true, hasConfig: false, hours: 0.4, lastPlayed: "上周", hotRank: 10, updated: "上周", desc: "合作德州扑克排序游戏。用筹码表达牌力，齐心完成抢劫。", cover: "assets/covers/the-gang.webp", author: "佚名", rooms: [], changelog: [], friends: [] },
+      { id: "fate-domination", name: "命运支配", cat: "卡牌", playerOptions: [3,4,5,6,7], bestPlayers: [], playMinutes: 60, status: "wip", hasTutorial: false, hasConfig: false, hours: 0, lastPlayed: "从未玩过", hotRank: 11, updated: "", desc: "以冬木市为舞台的圣杯战争桌游牌桌原型。", cover: "", author: "佚名", rooms: [], changelog: [], friends: [] },
+      { id: "tictactoe", name: "井字棋", cat: "抽象", playerOptions: [2], bestPlayers: [2], playMinutes: 5, status: "play", hasTutorial: true, hasConfig: false, hours: 0, lastPlayed: "从未玩过", hotRank: 12, updated: "", desc: "经典的井字棋游戏。挑战 AI 或与朋友对战。", cover: "", author: "佚名", rooms: [], changelog: [], friends: [] },
+    ];
+    const CATS = ["全部游戏", "卡牌", "骰子", "抽象", "战棋", "休闲", "工具"];
+
+    const state = {
+      view: "library",
+      cat: "全部游戏",
+      query: "",
+      recents: ["smashup", "dicethrone", "fantasyrealms", "summonerwars", "cardia"],
+      newsStart: 0,
+      libraryPick: "hub",
+      librarySort: "recent",
+      libraryScrollTop: 0,
+      libraryNewsOpen: false,
+      favs: new Set(["smashup", "dicethrone", "fantasyrealms", "summonerwars", "cardia", "the-gang", "betrayal", "qidahen"]),
+      match: { gameId: "smashup", room: "A3F2", players: 2 },
+      detailsTab: "lobby",
+      detailsId: null,
+      gameTab: "changelog",
+      createId: null,
+      createSeats: 2,
+      profile: { name: "衡", avatar: 0, points: 86 },
+      profileEdit: false,
+      createDraft: null,
+      uploadPick: "up-smash",
+      uploads: [
+        { id: "up-smash", name: "阵营混搭桌", status: "live", cat: "卡牌", url: "https://play.example/smashup", desc: "自制混搭规则桌，提交后出现在发现里。", cover: "assets/covers/smashup.webp", players: "2-4", minutes: 45, author: "佚名", rules: "每位玩家选 2 个派系，混洗成 40 张牌库。", changelog: [{ title: "补齐基地计分说明", version: "0.2.1", text: "补齐基地计分说明。", pinned: true, published: true }, { title: "首次提交审核", version: "0.1.0", text: "首次提交审核。", pinned: false, published: true }] },
+        { id: "up-proto", name: "房间测试原型", status: "review", cat: "抽象", url: "https://play.example/proto", desc: "用来验证房间列表和更新日志发布。", cover: "", players: "2", minutes: 15, author: "衡", rules: "", changelog: [] },
+      ],
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const isNarrow = () => window.matchMedia("(max-width: 1023px)").matches;
+    const closeDrawers = () => {
+      document.body.classList.remove("is-chrome-drawer", "is-list-drawer");
+      const scrim = $("drawerScrim");
+      if (scrim) scrim.hidden = true;
+    };
+    const setDrawer = (name, on) => {
+      const next = on ?? !document.body.classList.contains(name);
+      document.body.classList.toggle("is-chrome-drawer", name === "is-chrome-drawer" && next);
+      document.body.classList.toggle("is-list-drawer", name === "is-list-drawer" && next);
+      const scrim = $("drawerScrim");
+      if (scrim) scrim.hidden = !document.body.classList.contains("is-chrome-drawer") && !document.body.classList.contains("is-list-drawer");
+    };
+    const game = (id) => GAMES.find((g) => g.id === id);
+    const hoursText = (g) => g.hours > 0 ? `${g.hours} 小时` : "未记录";
+    const playTimeText = (g) => `估计 ${g.playMinutes} 分钟`;
+    const playersLabel = (g) => {
+      const opts = g.playerOptions || [2];
+      return opts.length === 1 ? `${opts[0]} 人` : `${opts[0]}-${opts[opts.length - 1]} 人`;
+    };
+    const escapeHtml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inlineMd = (s) => escapeHtml(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "<span>$1</span>");
+    const mdToHtml = (md) => {
+      const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+      const out = [];
+      let list = null;
+      const closeList = () => { if (list) { out.push(list === "ul" ? "</ul>" : "</ol>"); list = null; } };
+      for (const raw of lines) {
+        const t = raw.trim();
+        if (!t) { closeList(); continue; }
+        if (/^---+$/.test(t)) { closeList(); out.push("<hr/>"); continue; }
+        const h = t.match(/^(#{1,4})\s+(.*)$/);
+        if (h) { closeList(); out.push(`<h${h[1].length}>${inlineMd(h[2])}</h${h[1].length}>`); continue; }
+        const ul = t.match(/^[-*]\s+(.*)$/);
+        if (ul) {
+          if (list !== "ul") { closeList(); out.push("<ul>"); list = "ul"; }
+          out.push(`<li>${inlineMd(ul[1])}</li>`);
+          continue;
+        }
+        const ol = t.match(/^\d+\.\s+(.*)$/);
+        if (ol) {
+          if (list !== "ol") { closeList(); out.push("<ol>"); list = "ol"; }
+          out.push(`<li>${inlineMd(ol[1])}</li>`);
+          continue;
+        }
+        closeList();
+        out.push(`<p>${inlineMd(t)}</p>`);
+      }
+      closeList();
+      return out.join("");
+    };
+    const rulesHtml = (g) => RULES[g.id] || `<h4>${g.name}规则</h4><p>规则文档尚未接入。</p>`;
+    const closeX = (testId, target) => `<button class="close-x"${testId ? ` data-testid="${testId}"` : ""} data-close="${target}" type="button" aria-label="关闭">${CLOSE_SVG}</button>`;
+    const sheetConfirm = (id, label) => `<div class="sheet-foot"><button class="sheet-confirm" id="${id}" type="button">${label}</button></div>`;
+    const parsePlayers = (s) => {
+      const m = String(s || "").match(/(\d+)\s*[-~至到]?\s*(\d+)?/);
+      const min = m ? Number(m[1]) : 2;
+      const max = m && m[2] ? Number(m[2]) : min;
+      return { min, max };
+    };
+    const playerRangeFields = (minId, maxId, value) => {
+      const { min, max } = parsePlayers(value);
+      const opts = (cur) => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `<option value="${n}" ${n === cur ? "selected" : ""}>${n}</option>`).join("");
+      return `<div class="player-range">
+        <select class="field" id="${minId}" data-testid="${minId}">${opts(min)}</select>
+        <span>至</span>
+        <select class="field" id="${maxId}" data-testid="${maxId}">${opts(max)}</select>
+      </div>`;
+    };
+    const playStats = (g) => ({
+      hours: g.hours || 0,
+      plays: g.hours > 0 ? Math.max(1, Math.round(g.hours * 2.6)) : 0,
+      rankingScore: g.hours > 0 ? Math.round((8.412 - ((g.hotRank || 8) - 1) * 0.281) * 1000) / 1000 : null,
+      rank: g.hours > 0 ? g.hotRank : null,
+    });
+    const classifyGameUrl = (raw) => {
+      const value = String(raw || "").trim();
+      if (!value) return { status: "idle", label: "粘贴后自动检测能否打开" };
+      let parsed;
+      try { parsed = new URL(value); } catch {
+        return { status: "bad", label: "链接格式不对" };
+      }
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { status: "bad", label: "只接受网页地址" };
+      }
+      if (!parsed.hostname.includes(".")) return { status: "bad", label: "链接格式不对" };
+      if (/404|missing|notfound/i.test(`${parsed.hostname}${parsed.pathname}`)) {
+        return { status: "dead", label: "打不开，页面不存在" };
+      }
+      return { status: "ok", label: "可以打开" };
+    };
+    const urlField = (id, value, placeholder) => {
+      const r = classifyGameUrl(value);
+      return `<label>游戏链接<input class="field" id="${id}" value="${escapeHtml(value || "")}" placeholder="${placeholder || "https://"}" data-url-check="1" /><small class="url-check" data-testid="url-check" data-status="${r.status}">${r.label}</small></label>`;
+    };
+    const gateGameUrl = (raw) => {
+      const r = classifyGameUrl(raw);
+      if (r.status === "ok") return true;
+      toast(r.status === "idle" ? "请填写可打开的游戏链接" : r.label);
+      return false;
+    };
+    const profileLetter = () => state.profile.name.slice(0, 1);
+    const renderChromeUser = () => {
+      $("userAvatar").textContent = profileLetter();
+      $("userAvatar").style.background = AVATARS[state.profile.avatar];
+      $("userName").textContent = state.profile.name;
+      $("userPoints").textContent = String(state.profile.points);
+    };
+    const coverInner = (g) => g.cover
+      ? `<img src="${g.cover}" alt="${g.name}" />`
+      : `<div class="fallback"><span class="kicker">封面待接入</span><b>${g.name}</b></div>`;
+    const ownedGames = () => GAMES.filter((g) => state.favs.has(g.id)).sort((a, b) => {
+      const ra = state.recents.indexOf(a.id);
+      const rb = state.recents.indexOf(b.id);
+      const ia = ra === -1 ? 1000 : ra;
+      const ib = rb === -1 ? 1000 : rb;
+      if (ia !== ib) return ia - ib;
+      if (a.hours !== b.hours) return b.hours - a.hours;
+      return a.name.localeCompare(b.name, "zh");
+    });
+    const newsGames = () => ownedGames().filter((g) => g.changelog.length);
+    const ranksFor = (g) => {
+      const mine = { name: "衡", wins: Math.max(1, Math.round((g.hours || 0) * 3 + 2)), hours: g.hours || 0, me: true };
+      const others = (g.friends || []).map((f, i) => ({
+        name: f.name,
+        wins: Math.max(0, 9 - i * 3),
+        hours: Number((String(f.note).match(/[\d.]+/) || ["0.8"])[0]),
+        me: false,
+      }));
+      return [mine, ...others].sort((a, b) => b.wins - a.wins);
+    };
+    const reviewsFor = (g) => (g.friends || []).map((f) => ({
+      name: f.name,
+      text: `${f.note}。${g.name}节奏清楚，适合再开一局。`,
+    }));
+    const hasMatch = (g) => Boolean(state.match && state.match.gameId === g.id);
+    const playCta = (g, createTestId) => {
+      if (hasMatch(g)) return `<button class="btn btn-pink" data-enter="${g.id}" type="button">重连进入</button>`;
+      if (g.status === "play") {
+        const tid = createTestId ? ` data-testid="${createTestId}"` : "";
+        return `<button class="btn btn-pink"${tid} data-create="${g.id}" type="button">创建房间</button>`;
+      }
+      return `<button class="btn" type="button" disabled>暂不可进入</button>`;
+    };
+    const EXP_OPTS = [
+      { id: "titans", label: "泰坦" },
+      { id: "deckQuery", label: "牌堆可查" },
+      { id: "victory20", label: "20分模式" },
+      { id: "diy", label: "DIY" },
+    ];
+    const defaultCreateDraft = (g) => ({
+      name: `${g.name} 的桌子`,
+      password: "",
+      ttl: "0",
+      expansions: ["titans", "deckQuery", "diy"],
+      teamMode: "off",
+      ai: false,
+      difficulty: "normal",
+      think: "3",
+      aiSeats: [],
+      manual: false,
+    });
+    const syncCreateDraft = () => {
+      const draft = state.createDraft;
+      if (!draft) return;
+      const name = $("createName");
+      if (name) draft.name = name.value;
+      const password = $("createPassword");
+      if (password) draft.password = password.value;
+      const ttl = $("createTtl");
+      if (ttl) draft.ttl = ttl.value;
+      const think = $("createThink");
+      if (think) draft.think = think.value;
+    };
+    const visibleNews = () => {
+      const all = newsGames();
+      if (!all.length) return [];
+      const start = ((state.newsStart % all.length) + all.length) % all.length;
+      const count = Math.min(4, all.length);
+      return Array.from({ length: count }, (_, i) => all[(start + i) % all.length]);
+    };
+
+    function toast(text) {
+      const el = $("toast");
+      el.textContent = text;
+      el.hidden = false;
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { el.hidden = true; }, 1800);
+    }
+
+    function renderMatch() {
+      const el = $("matchFloat");
+      if (!state.match) { el.hidden = true; el.innerHTML = ""; return; }
+      const g = game(state.match.gameId);
+      el.hidden = false;
+      el.innerHTML = `
+        <div class="match-card">
+          <div>
+            <div class="match-kicker">当前进行中</div>
+            <div class="match-line">${g.name}<em>|</em>房间 #${state.match.room}<em>|</em>${state.match.players} 人在席</div>
+          </div>
+          <div class="match-actions">
+            <button class="btn" data-destroy="${state.match.gameId}" type="button">销毁</button>
+            <button class="btn btn-lime" data-enter="${state.match.gameId}" type="button">重连进入</button>
+          </div>
+        </div>`;
+    }
+
+    function renderLibraryHub(owned, total) {
+      const news = visibleNews();
+      const newsCards = news.length
+        ? news.map((g) => `
+            <button class="news-card" data-select="${g.id}" type="button">
+              ${coverInner(g)}
+              <span class="news-veil">
+                <b>${g.name}</b>
+                <em>${g.changelog[0].title}</em>
+                <p>${g.changelog[0].text}</p>
+              </span>
+            </button>`).join("")
+        : `<div class="empty-home" style="grid-column:1/-1;margin:0;width:auto">收藏里还没有更新情报。</div>`;
+      const tiles = owned.length
+        ? owned.map((g) => `
+            <button class="owned-tile" data-select="${g.id}" type="button">
+              <span class="owned-art">
+                ${coverInner(g)}
+                <span class="owned-overlay">
+                  <b class="owned-name">${g.name}</b>
+                  <i class="owned-hours">${hoursText(g)}</i>
+                </span>
+                <span class="owned-detail">
+                  <b>${g.name}</b>
+                  <em>上次 ${g.lastPlayed} · ${hoursText(g)}</em>
+                  <p>${g.desc}</p>
+                </span>
+              </span>
+            </button>`).join("")
+        : (state.query.trim() ? `<div class="empty-home" style="grid-column:1/-1;margin:0;width:auto">没有匹配的收藏。</div>` : `<div class="empty-home" style="grid-column:1/-1;margin:0;width:auto">还没有收藏。去发现里点封面上的星标。<div><button class="btn btn-pink" data-view="discover" type="button">去发现</button></div></div>`);
+      return `
+        <section class="lib-home" data-testid="library-hub">
+          <div class="library-tools">
+            <div class="library-heading"><h2>收藏库</h2><span>${state.query.trim() ? `${owned.length} / ` : ""}${total} 款</span></div>
+            <div class="library-filters">
+              <input class="field" id="librarySearch" type="search" placeholder="搜索收藏游戏" aria-label="搜索收藏游戏" />
+              <select class="field" id="librarySort" aria-label="收藏排序"><option value="recent">最近游玩</option><option value="hours">游玩时长</option><option value="name">游戏名称</option></select>
+            </div>
+          </div>
+          <div class="whats-new ${state.libraryNewsOpen ? "is-expanded" : ""}" data-testid="library-whats-new">
+            <div class="whats-head">
+              <h3>新情报速递</h3>
+              <button class="news-toggle" data-library-news="1" aria-expanded="${state.libraryNewsOpen}" type="button">${state.libraryNewsOpen ? "收起" : "展开"}</button>
+              <button class="news-nav" data-news-shift="-1" type="button" aria-label="上一组">‹</button>
+              <button class="news-nav" data-news-shift="1" type="button" aria-label="下一组">›</button>
+            </div>
+            <div class="whats-row">${newsCards}</div>
+          </div>
+          <div class="my-games">
+            <div class="my-games-head"><h3>我的游戏</h3><span>${owned.length} 款</span></div>
+            <div class="owned-grid">${tiles}</div>
+          </div>
+        </section>`;
+    }
+
+    function roomJoinButton(g, room) {
+      return room.count >= room.seats
+        ? `<button class="room-btn" disabled type="button">已满</button>`
+        : `<button class="room-btn" data-enter="${g.id}" type="button">加入</button>`;
+    }
+
+    function renderGameSummary(g, library = false) {
+      const fav = state.favs.has(g.id);
+      const prefix = library ? "library-game" : "game-details";
+      return `
+          <header class="details-hero compact-section ${library ? "library-summary" : ""}">
+            <div class="details-cover" data-testid="${prefix}-cover">${coverInner(g)}</div>
+            <div class="details-hero-copy">
+              <h2 data-testid="${prefix}-title">${g.name}</h2>
+              <p class="details-desc" id="${prefix}-description" data-testid="${prefix}-description">${g.desc}</p>
+              <div class="details-facts">
+                <div data-testid="${prefix}-player-recommendation" class="player-rec">
+                  <span class="player-label">人数</span>
+                  <div class="player-row">${(g.playerOptions || [2]).map(n => `<span class="player-count ${g.bestPlayers.includes(n) ? "is-best" : ""}" aria-label="${n} 人${g.bestPlayers.includes(n) ? "（推荐）" : ""}">${n}</span>`).join("")}</div>
+                  ${g.bestPlayers.length ? `<span class="player-label">推荐 ${g.bestPlayers.join("、")} 人</span>` : ""}
+                </div>
+                <span class="play-est" data-testid="${prefix}-playtime">${playTimeText(g)}</span>
+                ${library ? `<span class="library-last-played">上次游玩 ${g.lastPlayed}</span>` : ""}
+              </div>
+            </div>
+            ${library ? "" : closeX("game-details-close-button", "details")}
+            <div class="details-cta">
+                <div class="cta-play details-primary">${playCta(g, `${prefix}-open-create-room`)}</div>
+                <div class="cta-meta details-secondary" id="${prefix}-secondary">
+                  ${g.hasTutorial ? `<button class="btn" data-tutorial="${g.id}" type="button">教程模式</button>` : ""}
+                  <button class="btn" data-testid="${prefix}-fav" data-fav="${g.id}" type="button">${fav ? "移出收藏" : "添加收藏"}</button>
+                  ${g.hasConfig ? `<button class="btn" data-testid="${library ? "library-config-review-button" : "game-details-config-review-button"}" data-config="${g.id}" type="button">${TABLE_SVG}配置表</button>` : ""}
+                </div>
+                <button class="author-btn" id="${prefix}-author" data-author="${g.id}" type="button"><span>电子化作者：${g.author}</span> ${INFO_SVG}</button>
+            </div>
+            <button class="compact-toggle summary-toggle" data-compact-toggle="summary" type="button" aria-expanded="false" aria-controls="${prefix}-description ${prefix}-secondary ${prefix}-author"><span>游戏介绍与更多操作</span><span class="compact-toggle-mark" aria-hidden="true">＋</span></button>
+          </header>`;
+    }
+
+    function renderSteamPage(g) {
+      const fav = state.favs.has(g.id);
+      const tab = state.gameTab;
+      const ranks = ranksFor(g);
+      const reviews = reviewsFor(g);
+      const logs = g.changelog.length
+        ? g.changelog.map((item) => `<div class="log-item"><b>${item.title}</b>${item.text}</div>`).join("")
+        : `<div class="log-empty">暂无更新记录</div>`;
+      const board = ranks.length
+        ? ranks.map((r, i) => `
+            <div class="rank-row ${r.me ? "is-me" : ""}">
+              <span class="rank-n">#${i + 1}</span>
+              <span class="rank-name">${r.name}${r.me ? "（我）" : ""}</span>
+              <span class="rank-score">${r.wins} 胜</span>
+              <span class="rank-hours">${r.hours ? `${r.hours} 小时` : "未记录"}</span>
+            </div>`).join("")
+        : `<div class="log-empty">还没有排行数据。</div>`;
+      const reviewBlock = reviews.length
+        ? reviews.map((r) => `<div class="review-item"><b>${r.name}</b>${r.text}</div>`).join("")
+        : `<div class="log-empty">暂无评价。</div>`;
+      const rulesBlock = `<div class="rules-doc" data-testid="library-rules">${rulesHtml(g)}</div>`;
+      const panel = tab === "leaderboard" ? board : (tab === "reviews" ? reviewBlock : (tab === "rules" ? rulesBlock : logs));
+      const friends = g.friends.length
+        ? g.friends.map((f) => `
+            <div class="friend">
+              <div class="friend-av ${f.online ? "" : "is-off"}">${f.name.slice(0, 1)}</div>
+              <div>
+                <div class="friend-name"><span class="dot ${f.online ? "" : "off"}"></span>${f.name}</div>
+                <div class="friend-sub">${f.note}</div>
+              </div>
+              <button class="invite-btn" data-invite="${g.id}" data-invite-name="${f.name}" type="button">邀请</button>
+            </div>`).join("")
+        : `<div class="friend-empty">暂无玩过的好友</div>`;
+      const rooms = g.rooms.length
+        ? g.rooms.map((room) => `
+            <div class="room-row side-room">
+              <div>
+                <div class="room-title">${room.name} (${room.count}/${room.seats})${room.mine ? `<span class="mine-tag">我的</span>` : ""}</div>
+                <div class="seats">${room.names.join(" / ")}</div>
+              </div>
+              <div class="room-actions">
+                ${room.mine
+                  ? `<button class="room-btn" data-enter="${g.id}" type="button">重连</button>`
+                  : `${roomJoinButton(g, room)}`}
+              </div>
+            </div>`).join("")
+        : `<div class="side-empty">当前没有房间</div>`;
+      return `
+        <section class="steam-page" data-testid="library-game-page" data-selected="${g.id}">
+          ${renderGameSummary(g, true)}
+          <div class="steam-body">
+            <div class="steam-main">
+              <div class="hub-row" data-testid="library-hub-row">
+                <button class="hub-link ${tab === "changelog" ? "is-on" : ""}" data-gametab="changelog" type="button">更新</button>
+                <button class="hub-link ${tab === "reviews" ? "is-on" : ""}" data-gametab="reviews" type="button">评价</button>
+                <button class="hub-link ${tab === "leaderboard" ? "is-on" : ""}" data-gametab="leaderboard" type="button">排行榜</button>
+                <button class="hub-link ${tab === "rules" ? "is-on" : ""}" data-gametab="rules" type="button">规则概览</button>
+              </div>
+              <div data-testid="library-game-panel">${panel}</div>
+            </div>
+            <aside class="steam-side">
+              <div class="side-card">
+                <div class="side-head">
+                  <div class="block-title">当前房间</div>
+                </div>
+                <div class="side-scroll" data-testid="library-rooms">${rooms}</div>
+              </div>
+              <div class="side-card friends-section compact-section">
+                <div class="side-head">
+                  <div class="block-title friends-heading">玩过的好友</div>
+                  <button class="compact-toggle" data-compact-toggle="friends" type="button" aria-expanded="false" aria-controls="library-friends-content"><span>玩过的好友 · ${g.friends.length}</span><span class="compact-toggle-mark" aria-hidden="true">＋</span></button>
+                </div>
+                <div class="side-scroll" id="library-friends-content" data-testid="library-friends">${friends}</div>
+              </div>
+            </aside>
+          </div>
+        </section>`;
+    }
+
+    function renderUpload() {
+      const pick = state.uploadPick;
+      const item = pick !== "new" ? state.uploads.find((u) => u.id === pick) : null;
+      const rows = [
+        `<button class="list-row is-hub ${pick === "new" ? "is-on" : ""}" data-upload-pick="new" type="button">上传新游戏</button>`,
+        ...state.uploads.map((u) => `
+          <button class="list-row ${u.id === pick ? "is-on" : ""}" data-upload-pick="${u.id}" type="button">
+            <span class="list-thumb">${u.cover ? `<img src="${u.cover}" alt="${u.name}" />` : `<div class="fallback">${u.name.slice(0, 1)}</div>`}</span>
+            <span>
+              <span class="list-name">${u.name}</span>
+              <div class="list-sub">${u.status === "live" ? "已发布" : "审核中"}</div>
+            </span>
+          </button>`),
+      ].join("");
+      const catSelect = (id, value) => `
+            <label>分类
+              <select class="field" id="${id}">
+                ${["卡牌", "骰子", "抽象", "战棋", "休闲"].map((c) => `<option ${c === value ? "selected" : ""}>${c}</option>`).join("")}
+              </select>
+            </label>`;
+      const main = item ? `
+        <div class="upload-hero">${item.cover ? `<img src="${item.cover}" alt="${item.name}" />` : `<div class="fallback">${item.name}</div>`}</div>
+        <div class="upload-body">
+          <div class="upload-form">
+            <div><span class="status-pill ${item.status === "review" ? "is-review" : ""}">${item.status === "live" ? "已发布" : "审核中"}</span></div>
+            <label>游戏名称<input class="field" id="editName" value="${item.name}" /></label>
+            ${urlField("editUrl", item.url)}
+            <label>介绍<textarea class="field" id="editDesc">${item.desc}</textarea></label>
+            ${catSelect("editCat", item.cat)}
+            <label>人数${playerRangeFields("editMin", "editMax", item.players)}</label>
+            <label>估计时长（分钟）<input class="field" id="editMinutes" value="${item.minutes || ""}" /></label>
+            <label>作者<input class="field" id="editAuthor" value="${item.author || ""}" /></label>
+            <div class="actions"><button class="btn btn-lime" id="upSave" type="button">保存资料</button></div>
+          </div>
+          <div class="upload-logs">
+            <div class="block-title">发布更新日志</div>
+            <label>标题<input class="field" id="logTitle" placeholder="例如 修复基地计分" /></label>
+            <label>版本号<input class="field" id="logVer" placeholder="例如 0.2.2" /></label>
+            <label>内容<textarea class="field" id="logBody" placeholder="这次改了什么"></textarea></label>
+            <div class="check-row">
+              <label><input type="checkbox" id="logPin" /> 置顶</label>
+              <label><input type="checkbox" id="logPub" checked /> 发布</label>
+            </div>
+            <button class="btn btn-pink" id="logPublish" type="button">发布更新</button>
+            <div class="block-title">历史</div>
+            <div class="log-list">${item.changelog.length ? item.changelog.map((c) => `<div class="log-item"><b>${c.version || c.title}${c.pinned ? " · 置顶" : ""}${c.published === false ? " · 草稿" : ""}</b>${c.title && c.version ? c.title + "。 " : ""}${c.text}</div>`).join("") : `<div class="log-empty">还没有更新日志</div>`}</div>
+          </div>
+        </div>` : `
+        <div class="upload-new-head">
+          <h2>上传新游戏</h2>
+          <p class="desc">提交外链、介绍、封面和规则文档。通过后会出现在发现，不替代官方实现。</p>
+        </div>
+        <div class="upload-body">
+          <div class="upload-form">
+            <label>游戏名称<input class="field" id="upName" placeholder="例如：新的对战原型" /></label>
+            ${urlField("upUrl", "", "https://")}
+            <div class="upload-pair">
+              ${catSelect("upCat", "卡牌")}
+              <label>人数${playerRangeFields("upMin", "upMax", "2-4")}</label>
+            </div>
+            <div class="upload-pair">
+              <label>估计时长（分钟）<input class="field" id="upMinutes" placeholder="45" /></label>
+              <label>作者<input class="field" id="upAuthor" placeholder="署名" /></label>
+            </div>
+            <label class="grow">介绍<textarea class="field" id="upDesc" placeholder="玩法、人数、你希望玩家看到的一句话"></textarea></label>
+          </div>
+          <div class="upload-logs">
+            <label>规则文档<textarea class="field" id="upRules" placeholder="把规则概要贴在这里"></textarea></label>
+            <div class="drop" id="upDrop">把封面拖到这里，或点选图片（示意）</div>
+            <div class="actions"><button class="btn btn-pink" id="upSubmit" type="button">提交审核</button></div>
+          </div>
+        </div>`;
+      $("homeBody").className = "body is-upload";
+      $("homeBody").innerHTML = `
+        <button class="list-fab" data-list-drawer="1" type="button">工坊列表</button>
+        <aside class="steam-list" data-testid="upload-list">
+          <h2>工坊</h2>
+          <div class="steam-count">${state.uploads.length} 款已提交</div>
+          <div class="list-rows">${rows}</div>
+        </aside>
+        <section class="upload-main" data-testid="upload-page">${main}</section>`;
+    }
+
+    function renderLibrary() {
+      const owned = ownedGames();
+      const q = state.query.trim();
+      const list = owned.filter((g) => !q || g.name.includes(q));
+      if (state.librarySort === "hours") list.sort((a,b) => b.hours-a.hours);
+      if (state.librarySort === "name") list.sort((a,b) => a.name.localeCompare(b.name,"zh"));
+      const rows = [
+        `<button class="list-row is-hub ${state.libraryPick === "hub" ? "is-on" : ""}" data-select="hub" type="button">主页</button>`,
+        ...list.map((g) => `
+          <button class="list-row ${g.id === state.libraryPick ? "is-on" : ""}" data-select="${g.id}" type="button">
+            <span class="list-thumb">${coverInner(g)}</span>
+            <span>
+              <span class="list-name">${g.name}</span>
+              <div class="list-sub">${g.lastPlayed}</div>
+            </span>
+            <span class="list-hours">${hoursText(g)}</span>
+          </button>`),
+      ].join("");
+      const selected = state.libraryPick !== "hub" ? game(state.libraryPick) : null;
+      const page = selected
+        ? renderSteamPage(selected)
+        : renderLibraryHub(list, owned.length);
+      $("homeBody").className = "body is-steam";
+      $("homeBody").innerHTML = `
+        ${selected ? `<button class="list-fab library-back" data-library-back="1" aria-label="返回收藏库" type="button">← 收藏库</button>` : ""}
+        <aside class="steam-list" data-testid="library-list">
+          <h2>收藏库</h2>
+          <div class="steam-count">${owned.length} 款</div>
+          <div class="list-rows" id="steamList">${rows}</div>
+        </aside>
+        ${page}`;
+      if (!selected) {
+        $("librarySearch").value = state.query;
+        $("librarySort").value = state.librarySort;
+        document.querySelector('.lib-home').scrollTop = state.libraryScrollTop;
+      }
+    }
+
+    function visibleDiscover() {
+      let list = GAMES.slice();
+      if (state.cat !== "全部游戏") list = list.filter((g) => g.cat === state.cat);
+      const q = state.query.trim();
+      if (q) list = list.filter((g) => g.name.includes(q));
+      return list;
+    }
+
+    function renderDiscover() {
+      const list = visibleDiscover();
+      $("homeBody").className = "body is-discover";
+      const cats = CATS.map((c) => `<button class="cat ${state.cat === c ? "is-active" : ""}" data-cat="${c}" type="button">${c}</button>`).join("");
+      const tiles = list.length === 0
+        ? `<div class="empty">该分类暂时为空，先切回其它分类。</div>`
+        : list.map((g) => {
+            const ribbon = g.status === "wip" ? `<span class="stamp">实施中</span>` : (g.hot ? `<span class="stamp hot">热门</span>` : "");
+            const on = state.favs.has(g.id) ? "is-on" : "";
+            return `<button class="tile" data-game="${g.id}" type="button">
+              <div class="art">${ribbon}${coverInner(g)}
+                <span class="star ${on}" data-star="${g.id}" title="收藏">${STAR_SVG}</span>
+                <span class="tile-name">${g.name}</span>
+              </div>
+                <span class="tile-veil">
+                  <strong>${g.name}</strong>
+                  <div class="sub">${g.cat} · ${playersLabel(g)} · ${hoursText(g)}</div>
+                  <p>${g.desc}</p>
+                  <span class="tap-hint">再次点按查看详情 →</span>
+                </span>
+            </button>`;
+          }).join("");
+      $("homeBody").innerHTML = `
+        <main class="library">
+          <div class="library-head">
+            <h2>游戏库</h2>
+            <span class="count">${list.length} 款</span>
+            <div class="cats">${cats}</div>
+          </div>
+          <div class="grid" id="grid">${tiles}</div>
+        </main>`;
+    }
+
+    function playerSquares(g, picked) {
+      return (g.playerOptions || [2]).map((n) =>
+        `<button class="player-sq ${picked === n ? "is-pick" : (g.bestPlayers.includes(n) ? "is-best" : "")}" data-create-seats="${n}" type="button">${n}</button>`
+      ).join("");
+    }
+    function roomRows(g) {
+      if (!g.rooms.length) return `<div class="tab-empty">暂无活跃房间</div>`;
+      return g.rooms.map((room) => `
+        <div class="room-row">
+          <div>
+            <div class="room-title">${room.name} (${room.count}/${room.seats})${room.mine ? `<span class="mine-tag">我的</span>` : ""}</div>
+            <div class="seats">${room.names.join(" / ")}</div>
+          </div>
+          <div class="room-actions">
+            ${room.mine
+              ? `<button class="room-btn" data-enter="${g.id}" type="button">重连进入</button><button class="room-btn" data-destroy="${g.id}" type="button">销毁</button>`
+              : `${roomJoinButton(g, room)}<button class="room-btn" type="button">观战</button>`}
+          </div>
+        </div>`).join("");
+    }
+
+    function tabPanel(g) {
+      if (state.detailsTab === "lobby") return roomRows(g);
+      if (state.detailsTab === "changelog") {
+        return g.changelog.length
+          ? g.changelog.map((item) => `<div class="log-item"><b>${item.title}</b>${item.text}</div>`).join("")
+          : `<div class="tab-empty">暂无更新记录</div>`;
+      }
+      if (state.detailsTab === "reviews") {
+        const reviews = reviewsFor(g);
+        return reviews.length
+          ? reviews.map((r) => `<div class="review-item"><b>${r.name}</b>${r.text}</div>`).join("")
+          : `<div class="tab-empty">暂无评价</div>`;
+      }
+      if (state.detailsTab === "rules") {
+        return `<div class="rules-doc" data-testid="game-details-rules">${rulesHtml(g)}</div>`;
+      }
+      const ranks = ranksFor(g);
+      return ranks.length
+        ? ranks.map((r, i) => `
+            <div class="rank-row ${r.me ? "is-me" : ""}">
+              <span class="rank-n">#${i + 1}</span>
+              <span class="rank-name">${r.name}${r.me ? "（我）" : ""}</span>
+              <span class="rank-score">${r.wins} 胜</span>
+              <span class="rank-hours">${r.hours ? `${r.hours} 小时` : "未记录"}</span>
+            </div>`).join("")
+        : `<div class="tab-empty">还没有排行数据。</div>`;
+    }
+
+    function openDetails(id, tab) {
+      const g = game(id);
+      state.detailsId = id;
+      state.detailsTab = tab || "lobby";
+      const fav = state.favs.has(g.id);
+      $("details").hidden = false;
+      $("details").innerHTML = `
+        <div class="modal" role="dialog" aria-label="${g.name}" data-testid="game-details-modal-root">
+          ${renderGameSummary(g)}
+          <section class="details-main">
+            <div class="tab-row" data-testid="game-details-tab-row">
+              <button class="tab ${state.detailsTab === "lobby" ? "is-active" : ""}" data-testid="game-details-tab-lobby" data-tab="lobby" type="button">在线大厅</button>
+              <button class="tab ${state.detailsTab === "changelog" ? "is-active" : ""}" data-tab="changelog" type="button">更新</button>
+              <button class="tab ${state.detailsTab === "reviews" ? "is-active" : ""}" data-tab="reviews" type="button">评价</button>
+              <button class="tab ${state.detailsTab === "leaderboard" ? "is-active" : ""}" data-tab="leaderboard" type="button">排行榜</button>
+              <button class="tab ${state.detailsTab === "rules" ? "is-active" : ""}" data-tab="rules" type="button">规则概览</button>
+            </div>
+            <div class="tab-body">${tabPanel(g)}</div>
+          </section>
+        </div>`;
+    }
+
+    function openCreate(id, keep) {
+      const g = game(id);
+      if (!keep || state.createId !== id) {
+        state.createId = id;
+        state.createSeats = (g.bestPlayers && g.bestPlayers[0]) || (g.playerOptions || [2])[0];
+        state.createDraft = defaultCreateDraft(g);
+      }
+      const d = state.createDraft;
+      d.aiSeats = (d.aiSeats || []).filter((n) => n > 1 && n <= state.createSeats);
+      if (state.createSeats !== 4 && d.teamMode === "2v2") d.teamMode = "off";
+      const setup = g.hasSetup ? `
+          <div class="player-label">扩展规则</div>
+          <div class="opt-row">
+            ${EXP_OPTS.map((opt) => `<button class="opt-chip ${d.expansions.includes(opt.id) ? "is-on" : ""}" data-exp="${opt.id}" type="button">${opt.label}</button>`).join("")}
+          </div>
+          ${state.createSeats === 4 ? `
+          <div class="player-label">对局模式</div>
+          <div class="opt-row">
+            <button class="opt-chip ${d.teamMode === "off" ? "is-on" : ""}" data-team="off" type="button">标准自由混战</button>
+            <button class="opt-chip ${d.teamMode === "2v2" ? "is-on" : ""}" data-team="2v2" type="button">2v2 团队模式</button>
+          </div>` : ""}` : "";
+      const aiSeats = Array.from({ length: state.createSeats }, (_, i) => i + 1).map((n) => {
+        const owner = n === 1;
+        const on = owner ? false : d.aiSeats.includes(n);
+        return `<button class="opt-chip ${on ? "is-on" : ""}" data-ai-seat="${n}" ${owner ? "disabled" : ""} type="button">${n} 号位${owner ? "（房主）" : ""}</button>`;
+      }).join("");
+      const ai = (g.hasAi !== false) ? `
+          <button class="ai-toggle ${d.ai ? "is-on" : ""}" data-ai-toggle="1" type="button" aria-expanded="${d.ai}">
+            <span>加入 AI</span>
+            <span>${d.ai ? "收起" : "展开"}</span>
+          </button>
+          ${d.ai ? `
+          <div class="ai-panel">
+            <div class="player-label">难度</div>
+            <div class="opt-row">
+              ${[["easy", "简单"], ["normal", "普通"], ["hard", "困难"]].map(([id, label]) => `<button class="opt-chip ${d.difficulty === id ? "is-on" : ""}" data-diff="${id}" type="button">${label}</button>`).join("")}
+            </div>
+            <label>AI 思考时长
+              <select class="field" id="createThink">
+                ${[["0", "0 秒"], ["1", "1 秒"], ["3", "3 秒"], ["5", "5 秒"]].map(([v, label]) => `<option value="${v}" ${d.think === v ? "selected" : ""}>${label}</option>`).join("")}
+              </select>
+            </label>
+            <div class="player-label">AI 占位</div>
+            <div class="opt-row">${aiSeats}</div>
+            ${g.hasSetup ? `<label class="check-row"><input type="checkbox" id="createManual" ${d.manual ? "checked" : ""} data-ai-manual="1" /> 手动选择 AI 派系</label>` : ""}
+          </div>` : ""}` : "";
+      $("createRoom").hidden = false;
+      $("createRoom").innerHTML = `
+        <div class="sheet create-sheet" data-testid="create-room-modal">
+          ${closeX("", "createRoom")}
+          <div class="sheet-kicker">房间</div>
+          <h3>创建房间</h3>
+          <p>${g.name} · ${playTimeText(g)}</p>
+          <label>房间名称<input class="field" id="createName" value="${d.name}" maxlength="20" placeholder="输入房间名称（可选）" /></label>
+          <label>房间密码<input class="field" id="createPassword" value="${d.password}" maxlength="10" placeholder="输入密码（可选，留空则公开）" /></label>
+          <div class="player-label">游戏人数</div>
+          <div class="seat-row">${playerSquares(g, state.createSeats)}</div>
+          <label>房间保存
+            <select class="field" id="createTtl">
+              <option value="0" ${d.ttl === "0" ? "selected" : ""}>不保存（所有人离开即销毁）</option>
+              <option value="1" ${d.ttl === "1" ? "selected" : ""}>1 天</option>
+              <option value="3" ${d.ttl === "3" ? "selected" : ""}>3 天</option>
+              <option value="7" ${d.ttl === "7" ? "selected" : ""}>7 天</option>
+            </select>
+          </label>
+          ${setup}
+          ${ai}
+          ${sheetConfirm("createConfirm", "创建")}
+        </div>`;
+    }
+
+    function renderProfile() {
+      const recents = state.recents.map((id) => game(id)).filter(Boolean).slice(0, 5);
+      const editing = state.profileEdit;
+      const favList = ownedGames();
+      const rows = recents.map((g) => ({ g, s: playStats(g) }));
+      const totalHours = rows.reduce((sum, r) => sum + r.s.hours, 0);
+      const totalPlays = rows.reduce((sum, r) => sum + r.s.plays, 0);
+      $("homeBody").className = "body is-profile";
+      $("homeBody").innerHTML = `
+        <section class="profile-page" data-testid="profile-page">
+          <header class="profile-id-band">
+            <div class="profile-avatar" id="profileAvatar" style="background:${AVATARS[state.profile.avatar]}">${profileLetter()}</div>
+            <div class="profile-id">
+              ${editing ? `
+                <label>昵称<input class="field" id="profileName" value="${state.profile.name}" maxlength="12" /></label>
+                <div class="player-label">换头像</div>
+                <div class="avatar-picks">
+                  ${AVATARS.map((c, i) => `<button class="avatar-pick ${state.profile.avatar === i ? "is-on" : ""}" data-avatar="${i}" style="background:${c}" type="button" aria-label="头像 ${i + 1}"></button>`).join("")}
+                </div>
+                <div class="actions"><button class="btn btn-lime" id="profileSave" type="button">保存资料</button></div>
+              ` : `
+                <div class="profile-name">${state.profile.name}</div>
+                <div class="profile-status">在线</div>
+              `}
+            </div>
+          </header>
+          <section class="profile-feed" data-testid="profile-plays">
+            <div class="feed-head"><h2>最新动态</h2><span>${totalHours.toFixed(1)} 小时（过去 2 周）</span></div>
+            ${rows.map(({ g, s }) => `
+              <button class="feed-row" data-select="${g.id}" type="button">
+                <span class="feed-art">${coverInner(g)}</span>
+                <span class="feed-copy">
+                  <b>${g.name}</b>
+                  <em>局数 ${s.plays} · 排行 ${s.rank ? `#${s.rank}` : "暂无"} · 分数 ${s.rankingScore != null ? s.rankingScore.toFixed(3) : "—"}</em>
+                </span>
+                <span class="feed-hours">
+                  <b>总时数 ${hoursText(g)}</b>
+                  最后游玩 ${g.lastPlayed}
+                </span>
+              </button>`).join("")}
+          </section>
+          <aside class="profile-rail" data-testid="profile-rail">
+            ${editing ? "" : `<button class="btn rail-edit" data-profile-edit="1" type="button">编辑个人资料</button>`}
+            <div class="rail-stat"><span>游玩时长</span><b>${totalHours.toFixed(1)} 小时</b></div>
+            <div class="rail-stat"><span>局数</span><b>${totalPlays}</b></div>
+            <div class="rail-stat"><span>收藏</span><b>${favList.length}</b></div>
+          </aside>
+        </section>`;
+    }
+
+    function render() {
+      document.querySelectorAll(".nav-btn[data-view]").forEach((b) => {
+        b.classList.toggle("is-active", b.dataset.view === state.view);
+      });
+      renderChromeUser();
+      if (state.view === "discover") renderDiscover();
+      else if (state.view === "upload") renderUpload();
+      else if (state.view === "profile") renderProfile();
+      else renderLibrary();
+      renderMatch();
+    }
+
+    function toggleCompactSection(button) {
+      const section = button.closest(".compact-section");
+      const expanded = section.classList.toggle("is-expanded");
+      button.setAttribute("aria-expanded", String(expanded));
+      button.querySelector(".compact-toggle-mark").textContent = expanded ? "−" : "＋";
+    }
+
+    document.addEventListener("click", (e) => {
+      const compactToggle = e.target.closest("[data-compact-toggle]");
+      if (compactToggle) { toggleCompactSection(compactToggle); return; }
+      const t = e.target.closest("[data-view],[data-open],[data-close],[data-cat],[data-game],[data-star],[data-select],[data-enter],[data-fav],[data-destroy],[data-tutorial],[data-config],[data-tab],[data-gametab],[data-upload-pick],[data-create],[data-create-seats],[data-author],[data-news-shift],[data-profile],[data-profile-edit],[data-avatar],[data-invite],[data-exp],[data-team],[data-ai-toggle],[data-diff],[data-ai-seat],[data-ai-manual],[data-chrome-drawer],[data-list-drawer],[data-library-back],[data-library-news],[data-drawer-scrim],#userBtn,#bell,#upSubmit,#upSave,#logPublish,#confirmYes,#upDrop,#createConfirm,#profileSave");
+      if (!t) {
+        if (!e.target.closest(".menu,.notes,.user,.bell,.chrome-extras,.steam-list,.menu-btn,.list-fab")) {
+          $("userMenu").hidden = true;
+          $("notes").hidden = true;
+          closeDrawers();
+        }
+        document.querySelectorAll(".tile.is-open, .owned-tile.is-open").forEach((el) => el.classList.remove("is-open"));
+        return;
+      }
+      if (t.dataset.chromeDrawer) {
+        setDrawer("is-chrome-drawer");
+        $("userMenu").hidden = true;
+        $("notes").hidden = true;
+        return;
+      }
+      if (t.dataset.listDrawer) {
+        setDrawer("is-list-drawer");
+        return;
+      }
+      if (t.dataset.drawerScrim) { closeDrawers(); return; }
+      if (t.dataset.libraryBack) {
+        const selected = state.libraryPick;
+        state.libraryPick = "hub";
+        render();
+        document.querySelector(`.owned-tile[data-select="${selected}"]`)?.focus({preventScroll:true});
+        return;
+      }
+      if (t.dataset.libraryNews) {
+        state.libraryScrollTop = document.querySelector('.lib-home').scrollTop;
+        state.libraryNewsOpen = !state.libraryNewsOpen;
+        render();
+        return;
+      }
+      if (t.dataset.view) {
+        const hub = document.querySelector('.lib-home');
+        if (hub) state.libraryScrollTop = hub.scrollTop;
+        state.view = t.dataset.view;
+        if (isNarrow() && state.view === "library") state.libraryPick = "hub";
+        if (state.view === "discover") state.cat = "全部游戏";
+        closeDrawers();
+        render();
+        return;
+      }
+      if (t.dataset.close) { $(t.dataset.close).hidden = true; return; }
+      if (t.dataset.gametab) { state.gameTab = t.dataset.gametab; render(); return; }
+      if (t.dataset.uploadPick) { state.uploadPick = t.dataset.uploadPick; closeDrawers(); render(); return; }
+      if (t.dataset.cat) { state.cat = t.dataset.cat; render(); return; }
+      if (t.dataset.newsShift) {
+        const all = newsGames();
+        if (!all.length) return;
+        state.newsStart = (state.newsStart + Number(t.dataset.newsShift) + all.length) % all.length;
+        render();
+        return;
+      }
+      if (t.dataset.star) {
+        e.stopPropagation();
+        const id = t.dataset.star;
+        if (state.favs.has(id)) state.favs.delete(id); else state.favs.add(id);
+        render();
+        return;
+      }
+      if (t.dataset.select) {
+        const hub = document.querySelector('.lib-home');
+        if (hub) state.libraryScrollTop = hub.scrollTop;
+        state.libraryPick = t.dataset.select;
+        if (t.dataset.select !== "hub") state.gameTab = "changelog";
+        state.view = "library";
+        closeDrawers();
+        render();
+        return;
+      }
+      if (t.dataset.profile === "open") {
+        state.view = "profile";
+        state.profileEdit = false;
+        $("userMenu").hidden = true;
+        render();
+        return;
+      }
+      if (t.dataset.profileEdit) {
+        state.profileEdit = true;
+        render();
+        return;
+      }
+      if (t.dataset.avatar) {
+        const name = $("profileName")?.value.trim();
+        if (name) state.profile.name = name.slice(0, 12);
+        state.profile.avatar = Number(t.dataset.avatar);
+        render();
+        return;
+      }
+      if (t.dataset.invite) {
+        const g = game(t.dataset.invite);
+        const name = t.dataset.inviteName;
+        const mine = (g.rooms || []).find((room) => room.mine);
+        if (!mine) { toast("先创建或加入房间"); return; }
+        if (mine.names.includes(name)) { toast("已经在房间里"); return; }
+        const idx = mine.names.indexOf("空位");
+        if (idx < 0) { toast("房间已满"); return; }
+        mine.names[idx] = name;
+        mine.count += 1;
+        toast(`已邀请${name}`);
+        render();
+        return;
+      }
+      if (t.dataset.exp) {
+        syncCreateDraft();
+        const set = new Set(state.createDraft.expansions);
+        if (set.has(t.dataset.exp)) set.delete(t.dataset.exp); else set.add(t.dataset.exp);
+        state.createDraft.expansions = [...set];
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.team) {
+        syncCreateDraft();
+        state.createDraft.teamMode = t.dataset.team;
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.aiToggle) {
+        syncCreateDraft();
+        state.createDraft.ai = !state.createDraft.ai;
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.diff) {
+        syncCreateDraft();
+        state.createDraft.difficulty = t.dataset.diff;
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.aiSeat) {
+        syncCreateDraft();
+        const n = Number(t.dataset.aiSeat);
+        const seats = new Set(state.createDraft.aiSeats);
+        if (seats.has(n)) seats.delete(n); else seats.add(n);
+        state.createDraft.aiSeats = [...seats];
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.aiManual) {
+        syncCreateDraft();
+        state.createDraft.manual = t.checked;
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.tab) { openDetails(state.detailsId, t.dataset.tab); return; }
+      if (t.dataset.author) {
+        const g = game(t.dataset.author);
+        $("authorName").textContent = g.author;
+        $("authorText").textContent = `作品：${g.name}`;
+        $("author").hidden = false;
+        return;
+      }
+      if (t.dataset.createSeats) {
+        syncCreateDraft();
+        state.createSeats = Number(t.dataset.createSeats);
+        openCreate(state.createId, true);
+        return;
+      }
+      if (t.dataset.create) { openCreate(t.dataset.create); return; }
+      if (t.id === "createConfirm") {
+        const g = game(state.createId);
+        if (!g) return;
+        syncCreateDraft();
+        const d = state.createDraft || defaultCreateDraft(g);
+        const name = d.name.trim() || `${g.name} 的桌子`;
+        const seats = state.createSeats;
+        const id = `R${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        const names = Array.from({ length: seats }, (_, i) => {
+          const n = i + 1;
+          if (n === 1) return state.profile.name;
+          if (d.ai && d.aiSeats.includes(n)) return `AI ${n} 号位`;
+          return "空位";
+        });
+        const count = names.filter((n) => n !== "空位").length;
+        g.rooms.unshift({ id, name, count, seats, mine: true, names, password: Boolean(d.password) });
+        state.match = { gameId: g.id, room: id, players: count };
+        $("createRoom").hidden = true;
+        $("details").hidden = true;
+        toast("房间已创建");
+        render();
+        return;
+      }
+      if (t.id === "profileSave") {
+        const name = $("profileName")?.value.trim();
+        if (!name) { toast("请填写昵称"); return; }
+        state.profile.name = name.slice(0, 12);
+        state.profileEdit = false;
+        toast("资料已保存");
+        render();
+        return;
+      }
+      if (t.dataset.config) { toast("打开配置表"); return; }
+      if (t.dataset.game) {
+        const tile = t.closest(".tile");
+        if (isNarrow() && tile && !tile.classList.contains("is-open")) {
+          document.querySelectorAll(".tile.is-open").forEach((el) => el.classList.remove("is-open"));
+          tile.classList.add("is-open");
+          return;
+        }
+        openDetails(t.dataset.game);
+        return;
+      }
+      if (t.id === "userBtn") { $("userMenu").hidden = !$("userMenu").hidden; $("notes").hidden = true; return; }
+      if (t.id === "bell") { $("notes").hidden = !$("notes").hidden; $("userMenu").hidden = true; return; }
+      if (t.dataset.enter) { toast(state.match && state.match.gameId === t.dataset.enter ? "重连进入房间" : "开始游戏"); $("details").hidden = true; return; }
+      if (t.dataset.tutorial) { toast("打开教程模式"); return; }
+      if (t.dataset.fav) {
+        const id = t.dataset.fav;
+        if (state.favs.has(id)) state.favs.delete(id); else state.favs.add(id);
+        if (state.view === "library" && !state.favs.has(id) && state.libraryPick === id) state.libraryPick = "hub";
+        render();
+        if (state.detailsId === id && !$("details").hidden) openDetails(id, state.detailsTab);
+        return;
+      }
+      if (t.dataset.destroy) { $("confirm").hidden = false; return; }
+      if (t.id === "confirmYes") {
+        state.match = null;
+        $("confirm").hidden = true;
+        $("details").hidden = true;
+        toast("房间已销毁");
+        render();
+        return;
+      }
+      if (t.id === "upSubmit") {
+        const name = $("upName")?.value.trim();
+        const url = $("upUrl")?.value.trim();
+        if (!name) { toast("请填写名称和链接"); return; }
+        if (!gateGameUrl(url)) return;
+        const id = `up-${Date.now()}`;
+        state.uploads.unshift({
+          id, name, status: "review", cat: $("upCat")?.value || "卡牌",
+          url, desc: $("upDesc")?.value.trim() || "", cover: "",
+          players: (() => {
+            const min = Number($("upMin")?.value || 2);
+            const max = Number($("upMax")?.value || min);
+            return min === max ? String(min) : `${Math.min(min, max)}-${Math.max(min, max)}`;
+          })(),
+          minutes: $("upMinutes")?.value.trim() || "",
+          author: $("upAuthor")?.value.trim() || state.profile.name,
+          rules: $("upRules")?.value.trim() || "",
+          changelog: [],
+        });
+        state.uploadPick = id;
+        toast("已提交审核");
+        render();
+        return;
+      }
+      if (t.id === "upSave") {
+        const item = state.uploads.find((u) => u.id === state.uploadPick);
+        if (item) {
+          const nextUrl = $("editUrl")?.value.trim() || item.url;
+          if (!gateGameUrl(nextUrl)) return;
+          item.name = $("editName")?.value.trim() || item.name;
+          item.url = nextUrl;
+          item.desc = $("editDesc")?.value.trim() || item.desc;
+          item.cat = $("editCat")?.value || item.cat;
+          item.players = (() => {
+            const min = Number($("editMin")?.value || 2);
+            const max = Number($("editMax")?.value || min);
+            return min === max ? String(min) : `${Math.min(min, max)}-${Math.max(min, max)}`;
+          })();
+          item.minutes = $("editMinutes")?.value.trim() || item.minutes;
+          item.author = $("editAuthor")?.value.trim() || item.author;
+        }
+        toast("资料已保存");
+        render();
+        return;
+      }
+      if (t.id === "logPublish") {
+        const item = state.uploads.find((u) => u.id === state.uploadPick);
+        const title = $("logTitle")?.value.trim();
+        const version = $("logVer")?.value.trim();
+        const text = $("logBody")?.value.trim();
+        if (!item) return;
+        if (!title || !version || !text) { toast("请填写标题、版本和内容"); return; }
+        item.changelog.unshift({
+          title, version, text,
+          pinned: Boolean($("logPin")?.checked),
+          published: Boolean($("logPub")?.checked),
+        });
+        toast("已发布更新");
+        render();
+        return;
+      }
+      if (t.id === "upDrop") { toast("封面已选择（示意）"); return; }
+    });
+
+    $("search").addEventListener("input", (e) => { state.query = e.target.value; render(); });
+    document.addEventListener("input", (e) => {
+      if (e.target.id === "librarySearch") {
+        if (e.isComposing) return;
+        const cursor = e.target.selectionStart;
+        state.query = e.target.value;
+        state.libraryScrollTop = 0;
+        $("search").value = state.query;
+        renderLibrary();
+        $("librarySearch").focus({preventScroll:true});
+        $("librarySearch").setSelectionRange(cursor,cursor);
+        return;
+      }
+      if (!e.target?.dataset?.urlCheck) return;
+      const box = e.target.parentElement?.querySelector("[data-testid='url-check']");
+      if (!box) return;
+      const r = classifyGameUrl(e.target.value);
+      box.dataset.status = r.status;
+      box.textContent = r.label;
+    });
+    document.addEventListener("change", (e) => {
+      if (e.target.id !== "librarySort") return;
+      state.librarySort = e.target.value;
+      state.libraryScrollTop = 0;
+      renderLibrary();
+      $("librarySort").focus({preventScroll:true});
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        $("details").hidden = true; $("confirm").hidden = true; $("author").hidden = true; $("createRoom").hidden = true;
+        $("userMenu").hidden = true; $("notes").hidden = true;
+        closeDrawers();
+      }
+    });
+    $("details").addEventListener("click", (e) => { if (e.target.id === "details") $("details").hidden = true; });
+    $("createRoom").addEventListener("click", (e) => { if (e.target.id === "createRoom") $("createRoom").hidden = true; });
+    $("confirm").addEventListener("click", (e) => { if (e.target.id === "confirm") $("confirm").hidden = true; });
+    $("author").addEventListener("click", (e) => { if (e.target.id === "author") $("author").hidden = true; });
+
+    window.__home = {
+      getState: () => state,
+      setRecents(ids) {
+        state.recents = Array.isArray(ids) ? ids.slice() : [];
+        render();
+      },
+    };
+
+    async function boot() {
+      await Promise.all(Object.entries(RULE_FILES).map(async ([id, file]) => {
+        try {
+          const res = await fetch(file);
+          if (!res.ok) return;
+          RULES[id] = mdToHtml(await res.text());
+        } catch (err) {}
+      }));
+      render();
+    }
+    boot();
+  </script>
+</body>
+</html>

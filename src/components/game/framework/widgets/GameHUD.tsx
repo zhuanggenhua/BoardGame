@@ -208,7 +208,7 @@ export const GameHUD = ({
         ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
         : isBetrayalGame
             ? 'game_hud_fab_position:betrayal:v2'
-            : undefined;
+            : _gameId === 'fate-domination' ? 'game_hud_fab_position:fate-domination:v2' : undefined;
     const fabMenuLegacyOffsetStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY
         : undefined;
@@ -990,7 +990,7 @@ export const GameHUD = ({
                 position={fabMenuPosition}
                 initialOffset={_gameId === 'mage-wars'
                     ? resolveMageWarsGameHudFabInitialOffset(viewportHeight)
-                    : undefined}
+                    : _gameId === 'fate-domination' ? {left:64,top:-120} : undefined}
                 zIndex={GAME_HUD_FAB_Z_INDEX}
                 storageKey={fabMenuStorageKey}
                 legacyOffsetStorageKey={fabMenuLegacyOffsetStorageKey}

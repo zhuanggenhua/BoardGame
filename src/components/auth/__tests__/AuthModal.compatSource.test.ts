@@ -22,7 +22,7 @@ describe('AuthModal compatibility source guards', () => {
     it('经典首页认证弹层应保持独立卡片壳层，而不是复用 HomeV2 纸面外框', () => {
         const source = readSource();
 
-        expect(source).toContain("const isClassicStandalone = !embedded && !isHomeV2Style;");
+        expect(source).toContain("const isClassicStandalone = !embedded && !isHomeV2Style && !isPlatformStyle;");
         expect(source).toContain("max-w-[400px]");
         expect(source).toContain("bg-[#fcfbf9]");
         expect(source).toContain("border-[#e5e0d0]");

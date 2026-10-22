@@ -63,3 +63,41 @@ Pixi 试点 SHALL 保留地区选择、token 选择、教程目标、相机聚�
 - **GIVEN** 地图或 token 纹理加载失败
 - **WHEN** Pixi loader 返回错误
 - **THEN** 系统展示明确错误 / 正式回退状态，不静默渲染空白对象
+
+### Requirement: Mixed scene layers share the displayed transform
+
+系统 SHALL 使 Pixi 与保留的 DOM 地图对象在过渡中消费同一实际显示变换，命中、路线、token 和教程锚点 MUST 同帧对齐。目标相机与平滑显示相机 MAY 分开计算，但 MUST NOT 分别驱动同屏地图对象。固定 HUD MUST NOT 随场景平移缩放。
+
+#### Scenario: Inertial middle frame keeps tokens aligned
+
+- **GIVEN** 地图仍同时包含 Pixi 地区及 DOM token/路线
+- **WHEN** 拖动或缩放处于中间帧
+- **THEN** 地区、token、路线和命中使用同一显示投影，不能只在停稳后对齐
+- **AND** 固定手牌和任务提示保持界面锚点
+
+### Requirement: Map gestures preserve decision state
+
+系统 SHALL 分离相机查看与对象选择权限，确保一次手势仅有一个输入 owner。拖动 MUST NOT 在结束后触发选择；检视关闭 MUST 保留镜头及仍合法的选择。满载部署时当前目标与主操作区 MUST 可读可点。
+
+#### Scenario: Disabled selection still permits map inspection
+
+- **GIVEN** 当前阶段禁止地区提交但允许查看地图
+- **WHEN** 玩家拖动并滚轮缩放
+- **THEN** 地图仍响应查看，既不提交地区动作也不叠加处理一次滚轮
+
+#### Scenario: Close inspection returns to the same deployment
+
+- **GIVEN** 玩家调整镜头并选择了合法部署对象后打开详情
+- **WHEN** 关闭详情且规则状态未变化
+- **THEN** 原镜头和部署选择保留，目标仍可操作，不新增重复提交入口
+
+### Requirement: Performance promotion requires comparable evidence
+
+系统 MUST 在同代码、同入口、同状态、同视口和同资源门禁下比较旧路径与试点路径，记录用户可感知延迟及直接性能指标。隐藏 legacy 层 MUST NOT 被报告为卸载；无法采集的指标 MUST 标为未测。
+
+#### Scenario: Hidden legacy layer is not a completed migration
+
+- **GIVEN** 旧地图节点仍挂载但设为不可见
+- **WHEN** 评估试点性能与迁移完成度
+- **THEN** 记录仍有的旧消费者和开销，不把视觉隐藏当作退出生命周期
+- **AND** 只有实际消费者迁移、资源状态及交互验收完成后才卸载旧层

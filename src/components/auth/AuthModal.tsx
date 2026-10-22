@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
+import { X } from 'lucide-react';
+import './platform-auth.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import { ModalBase } from '../common/overlays/ModalBase';
@@ -107,7 +109,7 @@ interface AuthModalProps {
     showModeSwitchFooter?: boolean;
     showTitle?: boolean;
     onModeChange?: (mode: AuthMode) => void;
-    visualStyle?: 'default' | 'home-v2';
+    visualStyle?: 'default' | 'home-v2' | 'platform';
 }
 
 export const AuthModal = ({
@@ -150,9 +152,10 @@ export const AuthModal = ({
     const { login, register, sendRegisterCode, sendResetCode, resetPassword: resetPasswordAction } = useAuth();
     const isRightPlacement = placement === 'right';
     const isHomeV2Style = visualStyle === 'home-v2';
+    const isPlatformStyle = visualStyle === 'platform';
     const isCompactHomeV2Layout = !embedded && isHomeV2Style && isCompactLandscape;
-    const isClassicStandalone = !embedded && !isHomeV2Style;
-    const shouldAutoFocusInitialField = !isHomeV2Style;
+    const isClassicStandalone = !embedded && !isHomeV2Style && !isPlatformStyle;
+    const shouldAutoFocusInitialField = !isHomeV2Style && !isPlatformStyle;
     const homeV2FieldLabelClassName = isCompactHomeV2Layout ? homeV2PaperCompactLabelClassName : homeV2PaperLabelClassName;
     const homeV2FieldHintClassName = isCompactHomeV2Layout ? homeV2PaperCompactHintClassName : homeV2PaperHintClassName;
     const homeV2TextInputClassName = isCompactHomeV2Layout ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
@@ -780,7 +783,7 @@ export const AuthModal = ({
                                 : t(mode === 'login' ? 'login.submit' : mode === 'register' ? 'register.submit' : 'reset.submit')}
                     </button>
 
-                    {showModeSwitchFooter ? (
+                    {showModeSwitchFooter && !isPlatformStyle ? (
                         <div className={clsx('flex flex-col items-center', isCompactHomeV2Layout ? 'mt-[7px] gap-[4px]' : 'mt-4 gap-3')}>
                             <div className={clsx('flex items-center justify-center', isCompactHomeV2Layout ? 'gap-2 text-[8px] leading-none' : 'gap-4')}>
                                 <button
@@ -814,6 +817,7 @@ export const AuthModal = ({
         <div
             className={clsx(
                 'pointer-events-auto relative flex flex-col overflow-hidden border',
+                isPlatformStyle && 'platform-auth',
                 embedded
                     ? 'mx-auto h-full w-full max-h-full max-w-[560px] rounded-none border-transparent bg-transparent shadow-none'
                     : 'mx-4 w-[calc(100vw-2rem)] max-w-[400px] max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] rounded-sm border-[#e5e0d0] bg-[#fcfbf9] shadow-[0_10px_40px_rgba(67,52,34,0.1)]',
@@ -856,7 +860,16 @@ export const AuthModal = ({
                 )}
             </AnimatePresence>
 
-            {showTitle ? (
+            {isPlatformStyle ? (
+                <header className="platform-auth-header">
+                    <div><span className="platform-auth-brand">易桌游</span><h2>{modalTitle}</h2></div>
+                    <button type="button" className="platform-auth-close" aria-label="关闭登录窗口" onClick={onClose}><X size={22} /></button>
+                    {mode !== 'reset' ? <nav className="platform-auth-tabs" aria-label="账户入口">
+                        <button type="button" aria-current={mode === 'login' ? 'page' : undefined} onClick={() => switchMode('login')}>{t('menu.login')}</button>
+                        <button type="button" aria-current={mode === 'register' ? 'page' : undefined} onClick={() => switchMode('register')}>{t('menu.register')}</button>
+                    </nav> : <button type="button" className="platform-auth-back" onClick={() => switchMode('login')}>返回登录</button>}
+                </header>
+            ) : showTitle ? (
                 <div className={clsx('shrink-0 text-center', embedded ? 'px-0 pb-3 pt-0' : 'px-6 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-10')}>
                     <h2 className={clsx('font-serif font-bold tracking-wide text-[#433422]', embedded ? 'mb-0 text-[15px]' : 'mb-2 text-2xl')}>
                         {modalTitle}
@@ -894,7 +907,7 @@ export const AuthModal = ({
                                                 placeholder={t('email.placeholder.address')}
                                                 required
                                                 autoComplete="email"
-                                                autoFocus={!embedded}
+                                                autoFocus={!embedded && !isPlatformStyle}
                                                 data-testid="auth-register-email-input"
                                             />
                                         </div>
@@ -947,7 +960,7 @@ export const AuthModal = ({
                                                 placeholder={t('email.placeholder.address')}
                                                 required
                                                 autoComplete="email"
-                                                autoFocus={!embedded}
+                                                autoFocus={!embedded && !isPlatformStyle}
                                                 data-testid="auth-reset-email-input"
                                             />
                                         </div>
@@ -997,7 +1010,7 @@ export const AuthModal = ({
                                     placeholder={t('placeholder.account')}
                                     required
                                     autoComplete="username"
-                                    autoFocus={!embedded}
+                                    autoFocus={!embedded && !isPlatformStyle}
                                     data-testid="auth-login-account-input"
                                 />
                             </div>
@@ -1139,7 +1152,7 @@ export const AuthModal = ({
                             : t(mode === 'login' ? 'login.submit' : mode === 'register' ? 'register.submit' : 'reset.submit')}
                     </button>
 
-                    {showModeSwitchFooter ? (
+                    {showModeSwitchFooter && !isPlatformStyle ? (
                         <div className="mt-5 flex flex-col items-center gap-4 text-sm font-serif italic">
                             {!embedded ? (
                                 <div className="mx-auto h-px w-12 bg-[#c0a080] opacity-35" />
@@ -1184,8 +1197,8 @@ export const AuthModal = ({
             closeOnBackdrop={closeOnBackdrop}
             preserveKeyboardLayout
             disableTextEntryAutoscroll={!isHomeV2Style}
-            containerClassName="p-0"
-            overlayClassName={isHomeV2Style ? '!bg-[rgba(18,13,9,0.56)] !backdrop-blur-[2px]' : 'bg-[rgba(18,13,9,0.50)] backdrop-blur-[3px]'}
+            containerClassName={isPlatformStyle ? "p-0 platform-auth-container" : "p-0"}
+            overlayClassName={isPlatformStyle ? "!bg-black/60 !backdrop-blur-none" : isHomeV2Style ? '!bg-[rgba(18,13,9,0.56)] !backdrop-blur-[2px]' : 'bg-[rgba(18,13,9,0.50)] backdrop-blur-[3px]'}
             overlayStyle={isHomeV2Style ? { backgroundColor: 'rgba(18, 13, 9, 0.56)', backdropFilter: 'blur(2px)' } : undefined}
             containerStyle={{
                 paddingTop: 'max(1rem, var(--safe-area-top))',

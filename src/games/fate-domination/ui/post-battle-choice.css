@@ -1,0 +1,13 @@
+/* Same Fate dialog surface, sized by one source card and its decision rather than an empty fixed height. */
+.fd-post-battle-choice { pointer-events:auto; width:min(560px,calc(100vw - 32px)); max-height:calc(var(--runtime-viewport-height,100dvh) - 32px); overflow-y:auto; padding:20px; border:1px solid #c4a860; background:#111a17; color:#ede3ca; }
+.fd-post-battle-choice header { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.fd-post-battle-choice h2 { margin:0; font-size:20px; }.fd-post-battle-choice header span { color:#c7ba98; font-size:13px; }
+.fd-post-battle-content { display:grid; grid-template-columns:200px minmax(0,1fr); gap:20px; align-items:start; }
+.fd-post-battle-source { width:100%; min-width:0; }
+.fd-post-battle-options { display:grid; gap:12px; align-content:start; }
+.fd-post-battle-options button { min-height:48px; padding:10px 14px; text-align:left; border:1px solid #8d7b4e; background:#202b23; font-size:15px; }
+.fd-post-battle-options button[aria-pressed="true"] { background:#d6bd79; color:#131a14; border-color:#ffe6a0; }
+.fd-post-battle-options .fd-post-battle-confirm { margin-top:8px; background:#d6bd79; color:#131a14; font-weight:700; text-align:center; }
+.fd-post-battle-options button:disabled { opacity:.4; cursor:not-allowed; }
+.fd-post-battle-options button:focus-visible { outline:3px solid #ffe7a1; outline-offset:3px; }
+@media(max-width:600px) { .fd-post-battle-content { grid-template-columns:minmax(0,1fr); gap:16px; }.fd-post-battle-source { width:144px; justify-self:center; } }

@@ -1,3 +1,6 @@
+import { fatePostBattleOpportunities } from './postBattleChoice';
+import { fateRidingChoiceOpportunities, fateRidingDrawOpportunities } from './ridingChoice';
+import { projectFatePlayerView } from './playerView';
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialFateDominationCore } from './setup';
 import { validate } from './commands';
@@ -9,24 +12,46 @@ import { canSufferFateDefeat, fateEliminationOutcome, normalizeFateRuleState } f
 
 export const FateDominationDomain: DomainCore<FateDominationCore, FateDominationCommand, FateDominationEvent> = {
     gameId: 'fate-domination',
+    spectatorView: state => projectFatePlayerView(state, null),
     setup: (playerIds: PlayerId[], random: RandomFn) => createInitialFateDominationCore(playerIds, random),
     normalizeRuntimeState: (state: MatchState<FateDominationCore>) => {
         const core = state.core;
-        const players = Object.fromEntries(Object.entries(core.players ?? {}).map(([playerId, player]) => [playerId, {
-            ...player,
-            defeatMarkers: Array.isArray(player.defeatMarkers) ? player.defeatMarkers : [],
-            eliminationProtectionUsed: player.eliminationProtectionUsed === true,
-        }])) as FateDominationCore['players'];
+        const phaseCompletedPlayerIds = core.phaseCompletedPlayerIds ?? [];
+        const initialAttackHandDealtPlayerIds = new Set(
+            Array.isArray(core.initialAttackHandDealtPlayerIds) ? core.initialAttackHandDealtPlayerIds : [],
+        );
+        // Old saves dealt starting hands during setup and have no explicit marker.
+        // A visible hand is historical information: retain it, and lock identity edits.
+        for (const [playerId, player] of Object.entries(core.players ?? {})) {
+            if (Array.isArray(player.hand) && player.hand.length > 0) initialAttackHandDealtPlayerIds.add(playerId);
+        }
+        const players = Object.fromEntries(Object.entries(core.players ?? {}).map(([playerId, player]) => {
+            return [playerId, {
+                ...player,
+                deploymentSlot: player.deploymentSlot ?? null,
+                selectedFaceDownIds: player.selectedFaceDownIds ?? [],
+                faceDownAttackIds: player.faceDownAttackIds ?? [],
+                forcedRevealedHand: player.forcedRevealedHand ?? [],
+                usedAbilityIds: player.usedAbilityIds ?? [...player.activeSkills],
+                revealedSkillIds: player.revealedSkillIds ?? [...player.activeSkills],
+                normalAttackPlayed: player.normalAttackPlayed ?? player.hasPassedAction,
+                normalMoveCompleted: player.normalMoveCompleted ?? false,
+                defeatMarkers: Array.isArray(player.defeatMarkers) ? player.defeatMarkers : [],
+                eliminationProtectionUsed: player.eliminationProtectionUsed === true,
+            }];
+        })) as FateDominationCore['players'];
         const normalizedCore: FateDominationCore = {
             ...core,
             players,
+            phaseCompletedPlayerIds,
+            initialAttackHandDealtPlayerIds: [...initialAttackHandDealtPlayerIds],
             ruleState: normalizeFateRuleState(core.ruleState),
             resolvedLocations: Array.isArray(core.resolvedLocations) ? core.resolvedLocations : [],
             resolvedResults: Array.isArray(core.resolvedResults) ? core.resolvedResults : [],
             eventDeck: Array.isArray(core.eventDeck) ? core.eventDeck : [],
             eventDiscard: Array.isArray(core.eventDiscard) ? core.eventDiscard : [],
         };
-        return normalizedCore === core ? state : { ...state, core: normalizedCore };
+        return { ...state, core: normalizedCore };
     },
     validate,
     execute,
@@ -97,7 +122,14 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
             },
         };
     },
-    discoverTimingOpportunities: ({ state, timing }) => {
+    discoverTimingOpportunities: ({ state, timing, random }) => {
+        if(timing.event?.type === 'FATE_POST_BATTLE_STARTED')return {opportunities:fatePostBattleOpportunities(timing.event,timing)};
+        if (timing.event?.type === 'FATE_RIDING_CHOICE_REQUESTED') {
+            return { opportunities: fateRidingChoiceOpportunities(timing.event, timing, state.core) };
+        }
+        if (timing.event?.type === 'ATTACKS_CONFIRMED') {
+            return { opportunities: fateRidingDrawOpportunities(timing.event, timing, state.core, random) };
+        }
         if (timing.event?.type === 'FATE_BATTLE_RESOLUTION_STARTED') {
             const event = timing.event;
             return {
@@ -105,13 +137,13 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
                     id: `fate:battle-frame:${event.payload.frameId}`,
                     timing,
                     sourceRef: {
-                        kind: 'event',
+                        kind: 'event' as const,
                         id: event.payload.frameId,
                         ownerId: state.core.currentPlayerId,
                         controllerId: state.core.currentPlayerId,
                     },
                     controllerId: state.core.currentPlayerId,
-                    class: 'mandatory',
+                    class: 'mandatory' as const,
                     condition: true,
                     resolution: {
                         type: 'child-frame' as const,
@@ -141,13 +173,13 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
                     id: `fate:ability:${skill.id}:${timing.id}`,
                     timing,
                     sourceRef: {
-                        kind: 'ability',
+                        kind: 'ability' as const,
                         id: skill.id,
                         ownerId: playerId,
                         controllerId: playerId,
                     },
                     controllerId: playerId,
-                    class: 'mandatory',
+                    class: 'mandatory' as const,
                     condition: true,
                     resolution: { type: 'none' as const },
                     visibility: { scope: 'controller' as const },
@@ -157,17 +189,7 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
         });
         return { opportunities };
     },
-    playerView: (state, playerId) => {
-        const ruleState = normalizeFateRuleState(state.ruleState);
-        return {
-            ...state,
-            ruleState: {
-                ...ruleState,
-                copies: ruleState.copies.filter((record) => record.context.controllerId === playerId || record.context.ownerId === playerId),
-            },
-            players: Object.fromEntries(state.playerIds.map((id) => [id, id === playerId ? state.players[id] : { ...state.players[id], hand: [], selectedAttackIds: [], activeAttackIds: [] }])),
-        };
-    },
+    playerView: projectFatePlayerView,
     isGameOver: (state): GameOverResult | undefined => state.gameResult,
 };
 
@@ -177,3 +199,4 @@ export * from './rules';
 export * from './movement';
 export * from './mechanics';
 export * from './abilityRegistry';
+export * from './ridingChoice';

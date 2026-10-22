@@ -723,10 +723,6 @@ const expectBetrayalMoveTargetsMatchDiscoveredRooms = async (
     page.locator('[data-testid^="betrayal-room-explore-target-"]'),
     `${label}：移动动作只能显示已发现相邻房间，不能把未探索出口渲染成移动目标`,
   ).toHaveCount(0);
-  await expect(
-    page.locator('[data-testid^="betrayal-room-explore-card-highlight-"]'),
-    `${label}：移动动作不能混入探索房间高亮`,
-  ).toHaveCount(0);
 
   const unexploredRoomDiagnostics = await page.evaluate(() => {
     const roomButtons = Array.from(
@@ -753,7 +749,7 @@ const expectBetrayalMoveTargetsMatchDiscoveredRooms = async (
         ),
         hasExploreHighlight: Boolean(
           document.querySelector(
-            `[data-testid="betrayal-room-explore-card-highlight-${roomId}"]`,
+            `[data-testid="betrayal-room-explore-target-${roomId}"]`,
           ),
         ),
       };
@@ -814,7 +810,7 @@ const expectBetrayalExploreTargetsMatchUnexploredRooms = async (
         ),
         hasExploreHighlight: Boolean(
           document.querySelector(
-            `[data-testid="betrayal-room-explore-card-highlight-${roomId}"]`,
+            `[data-testid="betrayal-room-explore-target-${roomId}"]`,
           ),
         ),
       };
@@ -838,7 +834,7 @@ const expectBetrayalExploreTargetsMatchUnexploredRooms = async (
           ),
           hasExploreHighlight: Boolean(
             document.querySelector(
-              `[data-testid="betrayal-room-explore-card-highlight-${roomId}"]`,
+              `[data-testid="betrayal-room-explore-target-${roomId}"]`,
             ),
           ),
         };
@@ -2921,7 +2917,16 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.locator('[data-tutorial-id="betrayal-actions-zone"]'),
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeEnabled();
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-current-explorer-token",
+    );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "现在是你的回合",
     );
@@ -3084,8 +3089,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await clickNext(page);
     await waitForStep(page, "open-move-targets");
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeEnabled();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "点“移动”",
+      "探索者棋子",
     );
     await expect(
       page.getByTestId("betrayal-runtime-header-grid"),
@@ -3449,7 +3460,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     const visibleAfterReaderCloseStepIds = await readVisibleTutorialStepIds(page);
     expect(visibleAfterReaderCloseStepIds).not.toContain("wait-for-hero-turn-after-haunt");
     await expect(tutorialOverlayCard).toContainText("已经读到英雄目标");
-    await expect(tutorialOverlayCard).toContainText("先点“移动”");
+    await expect(tutorialOverlayCard).toContainText("探索者棋子");
     await expect(tutorialOverlayCard).toContainText("从上层平台可前往的房间");
     await expect
       .poll(readHauntState, {
@@ -3465,16 +3476,19 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         mummyTrueNameFound: false,
       });
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toBeHidden();
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-move")).toBeEnabled();
+    const naturalTriggerExplorerToken = page.locator(
+      '[data-tutorial-id="betrayal-current-explorer-token"]',
+    );
+    await expect(naturalTriggerExplorerToken).toBeVisible();
+    await expect(naturalTriggerExplorerToken).toBeEnabled();
     await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
       "data-tutorial-highlight-target",
-      "betrayal-action-move",
+      "betrayal-current-explorer-token",
     );
-    await expectTutorialCardInForeground(page, "先点“移动”");
+    await expectTutorialCardInForeground(page, "探索者棋子");
     await saveScreenshot(page, STEP_HAUNT_NATURAL_07);
 
-    await page.getByTestId("betrayal-action-move").click();
+    await naturalTriggerExplorerToken.click();
     await expectBetrayalMoveTargetsMatchDiscoveredRooms(
       page,
       "自然作祟链目标阅读后的移动",
@@ -4153,7 +4167,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       timeout: 15000,
     });
     await expect(tutorialOverlayCard).toContainText("现在是你的回合");
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeEnabled();
     await saveMainFlowVisibleStep(
       page,
       observedMainFlowStepIds,
@@ -4324,8 +4343,16 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await clickNext(page);
     await waitForStep(page, "open-move-targets");
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
-    await expect(tutorialOverlayCard).toContainText("点“移动”");
+    const currentExplorerToken = page.locator(
+      '[data-tutorial-id="betrayal-current-explorer-token"]',
+    );
+    await expect(currentExplorerToken).toBeVisible();
+    await expect(currentExplorerToken).toBeEnabled();
+    await expect(tutorialOverlayCard).toContainText("探索者棋子");
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-current-explorer-token",
+    );
     await saveMainFlowVisibleStep(
       page,
       observedMainFlowStepIds,
@@ -4333,7 +4360,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       mainFlowFullShot(12, "打开移动目标"),
     );
 
-    await page.getByTestId("betrayal-action-move").click();
+    await currentExplorerToken.click();
     await expectBetrayalMoveTargetsMatchDiscoveredRooms(
       page,
       "基础教程第一次移动",
@@ -4360,34 +4387,29 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
 
     await waitForStep(page, "explore-upper");
-    await expect(page.getByTestId("betrayal-action-explore")).toBeVisible();
-    await expect(tutorialOverlayCard).toContainText("选出口后");
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(tutorialOverlayCard).toContainText("带 ?");
     await expectBetrayalExploreTargetsMatchUnexploredRooms(
       page,
       "基础教程第一次探索",
     );
-    const exploreTargetMarker = page
-      .locator('[data-testid^="betrayal-room-explore-target-"]')
-      .first();
-    await expect(exploreTargetMarker).toBeVisible({ timeout: 10000 });
-    const targetRoomTestId = await exploreTargetMarker.evaluate((node) =>
-      node
-        .getAttribute("data-testid")
-        ?.replace("betrayal-room-explore-target-", "betrayal-room-"),
+    const exploreTargetMarker = page.getByTestId(
+      "betrayal-room-explore-target-ground-north",
     );
-    expect(targetRoomTestId).toBeTruthy();
-    const exploreTargetRoom = page.getByTestId(targetRoomTestId!);
+    await expect(exploreTargetMarker).toBeVisible({ timeout: 10000 });
+    const targetRoomTestId = "betrayal-room-ground-north";
+    const exploreTargetRoom = page.getByTestId(targetRoomTestId);
+    await expect(exploreTargetRoom).toHaveAttribute(
+      "data-tutorial-id",
+      "betrayal-room-ground-north",
+    );
     await expect(exploreTargetRoom).toBeVisible();
     await expect(exploreTargetRoom).toHaveAttribute(
       "data-room-state",
       "unexplored",
     );
     await expect(
-      page.getByTestId(
-        `betrayal-room-explore-card-highlight-${targetRoomTestId!.replace("betrayal-room-", "")}`,
-      ),
-    ).toBeVisible();
+      exploreTargetMarker,
+    ).toContainText("?");
     await saveScreenshot(page, mainFlowFullShot(15, "探索目标房间"));
     await exploreTargetRoom.click();
     const roomPlacementPanel = page.getByTestId("betrayal-room-placement-panel");
@@ -5544,7 +5566,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(tutorialOverlayCard).toContainText("两名探索者");
     await expect(tutorialOverlayCard).toContainText("公开预兆");
     await expect(tutorialOverlayCard).toContainText("作祟仍未开始");
-    await expect(tutorialOverlayCard).toContainText("沿厨房、门厅");
+    await expect(tutorialOverlayCard).toContainText("从厨房出发");
     await expect(tutorialOverlayCard).toContainText("大阶梯");
     await expectNoCurrentPlayerDelegatesOtherSeat(
       tutorialOverlayCard,
@@ -5572,7 +5594,16 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       mainFlowFullShot(26, "回到你的回合后移动到大阶梯"),
     );
 
-    await page.getByTestId("betrayal-action-move").click();
+    const grandStaircaseExplorerToken = page.locator(
+      '[data-tutorial-id="betrayal-current-explorer-token"]',
+    );
+    await expect(grandStaircaseExplorerToken).toBeVisible();
+    await expect(grandStaircaseExplorerToken).toBeEnabled();
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-current-explorer-token",
+    );
+    await grandStaircaseExplorerToken.click();
     await expectBetrayalMoveTargetsMatchDiscoveredRooms(
       page,
       "主线教程一层连续移动",
@@ -5586,6 +5617,19 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       await expect(room).toBeVisible({ timeout: 10000 });
       await expect(room).toBeEnabled();
       await room.click();
+      if (roomId === "hallway") {
+        await waitForStep(page, "move-to-grand-staircase", 10000);
+        await expect(
+          page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+        ).toBeVisible();
+        await expect(
+          page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+        ).toBeEnabled();
+        await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+          "data-tutorial-highlight-target",
+          "betrayal-current-explorer-token",
+        );
+      }
       await expect(
         page.getByTestId(`betrayal-room-occupant-${roomId}-0`),
       ).toBeVisible({ timeout: 10000 });
@@ -5959,7 +6003,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-inventory-omen-book"),
     ).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-tutorial-id="betrayal-current-explorer-token"]'),
+    ).toBeEnabled();
 
     const mobileLayout = await page.evaluate(() => {
       const pcActionButton = document.querySelector<HTMLElement>(
@@ -6276,7 +6325,11 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await saveScreenshot(page, PC_REGRESSION_STEP_USE_BOOK);
 
-    await page.getByTestId("betrayal-action-move").click();
+    const currentExplorerToken = page.locator(
+      '[data-tutorial-id="betrayal-current-explorer-token"]',
+    );
+    await expect(currentExplorerToken).toBeEnabled();
+    await currentExplorerToken.click();
     await waitForStep(page, "move-to-hallway");
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
     await saveScreenshot(page, PC_REGRESSION_STEP_BOARD);

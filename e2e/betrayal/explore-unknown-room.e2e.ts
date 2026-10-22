@@ -18,7 +18,6 @@ import {
 
 const EVIDENCE_DIR = 'evidence/山屋惊魂-未知房间探索';
 const READY_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-未知房间-探索前.png`;
-const TARGETS_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-未知房间-选择门位.png`;
 const REVEALED_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-未知房间-翻开后.png`;
 const DISMISSED_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-未知房间-发现牌关闭后.png`;
 const ROOM_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-日志房间名悬停卡图.jpg`;
@@ -41,22 +40,19 @@ test.describe('山屋惊魂未知房间探索', () => {
         await injectCore(page, createRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
 
-        await page.getByTestId('betrayal-action-move').click();
+        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
         await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('当前回合');
         await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层/);
         await expect(page.getByTestId('betrayal-room-ground-south')).toHaveAccessibleName(/未探索.*一层/);
-        await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
-        await expect(page.getByTestId('betrayal-room-explore-target-ground-north')).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-room-explore-target-ground-south')).toHaveCount(0);
-        await saveScreenshot(page, READY_SCREENSHOT);
-
-        await page.getByTestId('betrayal-action-explore').click();
+        await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-explore-target-ground-north')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-explore-target-ground-south')).toBeVisible();
+        await saveScreenshot(page, READY_SCREENSHOT);
+
+        // The question marks are directly available; there is no second explore-mode state.
         await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*可探索/);
         await expect(page.getByTestId('betrayal-room-ground-south')).toHaveAccessibleName(/未探索.*一层.*可探索/);
-        await saveScreenshot(page, TARGETS_SCREENSHOT);
 
         await page.getByTestId('betrayal-room-ground-north').click();
         await expect(page.getByTestId('betrayal-room-placement-panel')).toBeVisible();

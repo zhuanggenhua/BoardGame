@@ -5,6 +5,7 @@ import {
 import {
     shouldDeadPlayerControlFeverish,
     shouldDeadTraitorControlJackSpirit,
+    isBetrayalPlayerControllingMonster,
 } from './hauntScenarioReadModel';
 import { getAllExplorers } from './explorerReadModel';
 import {
@@ -64,6 +65,17 @@ export function resolveBetrayalMoveTargetReadModel(core: BetrayalCore): Betrayal
     };
 }
 
+export type BetrayalMapMoveKind = 'normal' | 'skeletonKey';
+
+export type BetrayalMapMovementReadModel = {
+    moveTargetRooms: BetrayalRoomNode[];
+    moveTargetRoomIds: Set<string>;
+    skeletonKeyMoveTargetRoomIds: Set<string>;
+    moveCostByRoomId: Map<string, number>;
+    moveKindByRoomId: Map<string, BetrayalMapMoveKind>;
+    isControlledTokenMove: boolean;
+};
+
 function resolveMoveCostFromRoom(room: BetrayalRoomNode | undefined): number {
     return room?.markerTokens?.includes('obstacle') ? 2 : 1;
 }
@@ -109,4 +121,66 @@ export function resolveBetrayalMoveCost(
         return Math.max(baseCost, 2);
     }
     return baseCost;
+}
+
+/**
+ * Map-only projection of the formal adjacent targets and their actual command cost.
+ * The domain candidate model above intentionally keeps its original, unfiltered semantics.
+ */
+export function resolveBetrayalMapMovementReadModel(core: BetrayalCore): BetrayalMapMovementReadModel {
+    const candidates = resolveBetrayalMoveTargetReadModel(core);
+    const isControlledTokenMove = isBetrayalPlayerControllingMonster(
+        core,
+        core.currentExplorer.playerId,
+    );
+    const hasMovementPoint = core.movesRemaining > 0;
+    const ordinaryMoveCost = isControlledTokenMove ? 1 : resolveBetrayalMoveCost(core);
+    const mayUseOrdinaryMove = hasMovementPoint
+        && (!core.turnEndedByDiscovery || isControlledTokenMove)
+        && (isControlledTokenMove || core.movesRemaining >= ordinaryMoveCost);
+    const mayUseSkeletonKey = hasMovementPoint
+        && !core.turnEndedByDiscovery
+        && !isControlledTokenMove;
+    const skeletonKeyCandidates = mayUseSkeletonKey
+        ? candidates.skeletonKeyMoveTargetRooms
+        : [];
+    const skeletonKeyIds = new Set(skeletonKeyCandidates.map((room) => room.id));
+    const byId = new Map<string, BetrayalRoomNode>();
+    const moveCostByRoomId = new Map<string, number>();
+    const moveKindByRoomId = new Map<string, BetrayalMapMoveKind>();
+
+    if (mayUseOrdinaryMove) {
+        for (const room of candidates.normalMoveTargetRooms) {
+            byId.set(room.id, room);
+            moveCostByRoomId.set(room.id, ordinaryMoveCost);
+            moveKindByRoomId.set(room.id, 'normal');
+        }
+    }
+    for (const room of skeletonKeyCandidates) {
+        byId.set(room.id, room);
+        moveCostByRoomId.set(room.id, 1);
+        moveKindByRoomId.set(room.id, 'skeletonKey');
+    }
+
+    const moveTargetRooms = [...byId.values()];
+    return {
+        moveTargetRooms,
+        moveTargetRoomIds: new Set(moveTargetRooms.map((room) => room.id)),
+        skeletonKeyMoveTargetRoomIds: skeletonKeyIds,
+        moveCostByRoomId,
+        moveKindByRoomId,
+        isControlledTokenMove,
+    };
+}
+
+export function resolveBetrayalMapMoveCommandPayload(
+    movement: BetrayalMapMovementReadModel,
+    roomId: string,
+): { roomId: string; useSkeletonKey?: boolean } | null {
+    if (!movement.moveTargetRoomIds.has(roomId)) {
+        return null;
+    }
+    return movement.moveKindByRoomId.get(roomId) === 'skeletonKey'
+        ? { roomId, useSkeletonKey: true }
+        : { roomId };
 }

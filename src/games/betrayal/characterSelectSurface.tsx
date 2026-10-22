@@ -40,6 +40,7 @@ function ExplorerPentagonCard({
   taken,
   playerLabel,
   compact = false,
+  portraitHeight,
   effectiveLocale,
   onClick,
 }: {
@@ -49,6 +50,7 @@ function ExplorerPentagonCard({
   taken: boolean;
   playerLabel?: string | null;
   compact?: boolean;
+  portraitHeight?: number;
   effectiveLocale: string;
   onClick?: () => void;
 }) {
@@ -60,9 +62,7 @@ function ExplorerPentagonCard({
         : selected
           ? `${playerLabel ?? "当前玩家"}已选择`
           : "选择";
-  const assetHeightClass = compact
-    ? "h-[232px]"
-    : "h-[280px]";
+  const assetHeight = portraitHeight ?? (compact ? 232 : 280);
   const widthClass = compact
     ? "w-[224px]"
     : "w-full max-w-[348px]";
@@ -93,7 +93,8 @@ function ExplorerPentagonCard({
       }`}
     >
       <div
-        className={`relative flex w-full items-end justify-center ${assetHeightClass}`}
+        className="relative flex w-full items-end justify-center"
+        style={{ height: assetHeight }}
       >
         {selected ? (
           <div
@@ -496,6 +497,7 @@ export function CharacterSelectScreen({
                   <div className="flex justify-center px-2 pt-1">
                     <ExplorerPentagonCard
                       explorer={selectedExplorer}
+                      portraitHeight={232}
                       selected
                       ready={isReady}
                       taken={false}
@@ -643,7 +645,8 @@ export function CharacterSelectScreen({
           </main>
 
           <footer
-            className="grid border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]"
+            data-testid="betrayal-character-player-footer"
+            className="grid shrink-0 border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]"
             style={{
               gridTemplateColumns:
                 "minmax(0, 1fr) 520px",

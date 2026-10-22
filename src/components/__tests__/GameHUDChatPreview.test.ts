@@ -249,6 +249,9 @@ describe('FabMenu helpers', () => {
 
         expect(layers.panel).toBeGreaterThan(GAME_HUD_FAB_Z_INDEX);
         expect(layers.root).toBeGreaterThan(layers.panel);
+        expect(layers.sheetBackdrop).toBeGreaterThan(layers.root);
+        expect(layers.sheet).toBeGreaterThan(layers.sheetBackdrop);
+        expect(layers.floatingText).toBeGreaterThan(layers.sheet);
         expect(layers.floatingText).toBeGreaterThan(layers.root);
         expect(layers.floatingText).toBeLessThan(UI_Z_INDEX.cardPreviewTooltip);
     });

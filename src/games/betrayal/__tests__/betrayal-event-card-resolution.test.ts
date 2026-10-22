@@ -825,7 +825,8 @@ it('吊死鬼按官方锁定文本执行四项属性连续检定', () => {
         expect(core.currentExplorer.traits.speed).toBe(3);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(3);
-        core = acknowledgeSingleEventEffectResolution(core, '吊死鬼', '知识 +1');
+        // 奖励选择已由玩家确认，不再创建第二次事件效果确认。
+        expect(core.pendingCardResolutionQueue).toEqual([]);
     });
 
 it('一条秘密通道按官方锁定文本放置秘密通道标志物并选择第二目标板块', () => {
