@@ -83,3 +83,6 @@ metadata:
 - 五份工作区显示修改的 asset manifest 未见 Betrayal 运行清单内容变化：两份真实内容变化指向其它资源，三份与 HEAD 的 JSON 语义相同。本轮全部排除，未改动素材和校验表。
 - `.home-e2e-deps-vkPD7u/`、`merge-audit/` 中临时依赖与诊断输出保留在隔离工作区，不提交。
 - 未修改 D 盘主工程；未提交截图、视频、trace、数据库或素材。
+### 候选交付记录
+
+- Betrayal 实施与行为覆盖提交：`6b964a80a0be26c95ebc3fc28af66416b3cf5007`，已推送到 `candidate/home-modern-classic-20261023`；推送后远端 `ls-remote` SHA 与该提交一致。
