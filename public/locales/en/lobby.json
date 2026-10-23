@@ -2496,5 +2496,12 @@
     "gameNameShort": "Name",
     "myGames": "My games",
     "libraryHome": "Library home"
+  },
+  "homeAppearance": {
+    "settings": "Home settings",
+    "title": "Home appearance",
+    "style": "Home style",
+    "modern": "Modern",
+    "classic": "Classic"
   }
 }

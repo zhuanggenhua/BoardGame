@@ -1,8 +1,7 @@
 import { lazy, Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CategoryPills, type Category } from '../components/layout/CategoryPills';
-import { GameList } from '../components/lobby/GameList';
+import type { Category } from '../components/layout/CategoryPills';
 import { getGamesByCategory, getGameById, subscribeGameRegistry } from '../config/games.config';
 import { resolveToolRoute } from '../config/toolRoutes';
 import { useAuth } from '../contexts/AuthContext';
@@ -48,12 +47,15 @@ import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { PlatformHomeSurface } from '../components/home/PlatformHomeSurface';
 import { PlatformFavoriteButton } from '../components/home/PlatformFavoriteButton';
+import { ClassicHomeSurface } from '../components/home/ClassicHomeSurface';
+import { HomeStyleSettings } from '../components/home/HomeStyleSettings';
 import { useMobileViewport } from '../hooks/ui/useMobileViewport';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
 import { HomeModalErrorBoundary } from './HomeModalErrorBoundary';
 import { requireLazyModuleExport } from '../lib/lazyModuleExport';
 import { isNativeMobileRuntime } from '../lib/mobile/mobileRuntime';
+import type { HomeEntryStyle } from '../lib/homeV2Routing';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
@@ -213,7 +215,12 @@ const HomeGameDetailsModalFallback = ({
     </>
 );
 
-export const Home = () => {
+interface HomeProps {
+    homeStyle?: HomeEntryStyle;
+    onHomeStyleChange?: (style: HomeEntryStyle) => void;
+}
+
+export const Home = ({ homeStyle = 'modern', onHomeStyleChange = () => undefined }: HomeProps) => {
     useGlobalCursor();
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [searchParams, setSearchParams] = useSearchParams();
@@ -1061,25 +1068,59 @@ export const Home = () => {
             return next;
         });
     };
+    const styleSettings = (visualStyle: HomeEntryStyle) => (
+        <HomeStyleSettings currentStyle={homeStyle} onSelectStyle={onHomeStyleChange} visualStyle={visualStyle} />
+    );
+    const classicUtility = <>
+        {styleSettings('classic')}
+        <AuthorSupportButton />
+        <OperationGuideButton surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" />
+        {user ? <UserMenu onLogout={handleLogout} /> : <div className="flex items-center gap-6">
+            <button type="button" onClick={() => openAuth('login')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
+                {t('auth:menu.login')}<span className="underline-center" />
+            </button>
+            <div className="w-[1px] h-3 bg-parchment-light-text/30" />
+            <button type="button" onClick={() => openAuth('register')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
+                {t('auth:menu.register')}<span className="underline-center" />
+            </button>
+        </div>}
+        <LanguageSwitcher />
+    </>;
+
     return <>
         <SEO title={activeCategory === 'All' ? undefined : seoT(`common:category.${activeCategory}`)} description={seoT('lobby:home.subtitle')} canonical="https://easyboardgame.top/" />
-        <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
-            brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
-            utility={<><AuthorSupportButton /><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
-            mobileUtility={close => <><AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
-            games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
-            onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
-            onOpenLibraryGame={openLibraryGame}
-            libraryDetails={!isMobileHome && libraryGame && searchParams.get('section') === 'library' ? <HomeModalErrorBoundary resetKey={libraryGame.id}>
-                <Suspense fallback={<p role="status">{t('platform.loading')}</p>}>
-                    <LazyGameDetailsModal key={libraryGame.id} isOpen presentation="inline" onClose={closeLibraryDetails}
-                        gameId={libraryGame.id} titleKey={libraryGame.titleKey} descriptionKey={libraryGame.descriptionKey} thumbnail={libraryGame.thumbnail}
-                        favoriteControl={<PlatformFavoriteButton gameId={libraryGame.id} title={libraryGame.titleKey} />} />
-                </Suspense>
-            </HomeModalErrorBoundary> : undefined}
-            onLogin={() => openAuth('login')} onRegister={() => openAuth('register')} onLogout={handleLogout}
-            activeMatch={activeMatchCard}
-        />
-        <HomeVersionFooter positionClassName="platform-home-version" />
+        {homeStyle === 'classic' ? (
+            <ClassicHomeSurface
+                activeCategory={activeCategory}
+                activeMatch={activeMatchCard}
+                brand={<><HomeGridLogo /><h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[0.1em] text-parchment-base-text leading-none pt-1">{t('lobby:home.title')}</h1></>}
+                games={filteredGames}
+                mostPopularGameId={mostPopularGameId}
+                onCategoryChange={setActiveCategory}
+                onGameClick={handleGameClick}
+                onGameIntent={handleGameIntent}
+                subtitle={t('lobby:home.subtitle')}
+                utility={classicUtility}
+            />
+        ) : (
+            <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
+                brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
+                utility={<>{styleSettings('modern')}<AuthorSupportButton /><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                mobileUtility={close => <>{styleSettings('modern')}<AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
+                onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
+                onOpenLibraryGame={openLibraryGame}
+                libraryDetails={!isMobileHome && libraryGame && searchParams.get('section') === 'library' ? <HomeModalErrorBoundary resetKey={libraryGame.id}>
+                    <Suspense fallback={<p role="status">{t('platform.loading')}</p>}>
+                        <LazyGameDetailsModal key={libraryGame.id} isOpen presentation="inline" onClose={closeLibraryDetails}
+                            gameId={libraryGame.id} titleKey={libraryGame.titleKey} descriptionKey={libraryGame.descriptionKey} thumbnail={libraryGame.thumbnail}
+                            favoriteControl={<PlatformFavoriteButton gameId={libraryGame.id} title={libraryGame.titleKey} />} />
+                    </Suspense>
+                </HomeModalErrorBoundary> : undefined}
+                onLogin={() => openAuth('login')} onRegister={() => openAuth('register')} onLogout={handleLogout}
+                activeMatch={activeMatchCard}
+            />
+        )}
+        <HomeVersionFooter positionClassName={homeStyle === 'modern' ? 'platform-home-version' : undefined} />
     </>;
 };

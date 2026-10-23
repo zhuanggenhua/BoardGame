@@ -2505,5 +2505,12 @@
     "gameNameShort": "名称",
     "myGames": "我的游戏",
     "libraryHome": "收藏库主页"
+  },
+  "homeAppearance": {
+    "settings": "首页设置",
+    "title": "首页外观",
+    "style": "首页风格",
+    "modern": "现代",
+    "classic": "经典"
   }
 }
