@@ -118,6 +118,16 @@ export function BetrayalEventChoiceSurface({
         (trait) => traitChoices.includes(trait) || allTraitCheck?.results.some((result) => result.trait === trait),
       )
     : traitChoices;
+  const traitChoiceGridClass =
+    visibleTraitChoices.length >= 4
+      ? "grid-cols-4 max-[700px]:grid-cols-2"
+      : visibleTraitChoices.length === 3
+        ? "grid-cols-3 max-[700px]:grid-cols-2"
+        : visibleTraitChoices.length === 2
+          ? "grid-cols-2"
+          : "grid-cols-1";
+  const hasDecisionChoices =
+    visibleTraitChoices.length > 0 || hasItemChoice || showDamageChoice;
   const sourceEventVisual = !isEventSymbolSkip
     ? resolveDiscoveryAtlasVisual(
         {
@@ -179,7 +189,7 @@ export function BetrayalEventChoiceSurface({
             {allTraitCheck && !(roll && (isTraitCheckSelection || isResolvingTraitRoll)) ? (
               <div
                 data-testid="betrayal-event-choice-all-trait-check"
-                className="pointer-events-none flex max-h-[220px] min-h-0 min-w-0 flex-col justify-center gap-3 overflow-y-auto border-l border-[rgba(214,191,129,0.24)] pl-4"
+                className="pointer-events-none flex max-h-[220px] min-h-0 min-w-0 max-w-[500px] flex-col justify-center gap-3 overflow-y-auto border-l border-[rgba(214,191,129,0.24)] pl-4"
               >
                 <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
                   {t("board.roll.allTraitCheckTitle")}
@@ -189,31 +199,29 @@ export function BetrayalEventChoiceSurface({
                     <div
                       key={result.trait}
                       data-testid={`betrayal-event-choice-all-trait-check-${result.trait}`}
-                      className="grid gap-1 border-b border-[rgba(214,191,129,0.18)] pb-2 last:border-b-0 last:pb-0"
+                      className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-[rgba(214,191,129,0.18)] pb-2 last:border-b-0 last:pb-0"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span
-                          className={`text-[16px] font-black ${TRAIT_TONE_CLASS[result.trait].text}`}
-                        >
-                          {TRAIT_LABEL_LOCAL[result.trait]}
-                        </span>
-                        <span
-                          className={
-                            result.passed
-                              ? "text-[16px] font-black text-[#c8f6a5]"
-                              : "text-[16px] font-black text-[#ffb1a1]"
-                          }
-                        >
-                          {result.total} /{" "}
-                          {result.passed
-                            ? t("board.roll.passed")
-                            : t("board.roll.failed")}
-                        </span>
-                      </div>
+                      <span
+                        className={`text-[16px] font-black ${TRAIT_TONE_CLASS[result.trait].text}`}
+                      >
+                        {TRAIT_LABEL_LOCAL[result.trait]}
+                      </span>
                       <span className="text-[11px] font-semibold tracking-[0.08em] text-[#d6c498]">
                         {t("board.roll.diceFaces", {
                           value: result.dice.join(" + "),
                         })}
+                      </span>
+                      <span
+                        className={
+                          result.passed
+                            ? "text-[16px] font-black text-[#c8f6a5]"
+                            : "text-[16px] font-black text-[#ffb1a1]"
+                        }
+                      >
+                        {result.total} /{" "}
+                        {result.passed
+                          ? t("board.roll.passed")
+                          : t("board.roll.failed")}
                       </span>
                     </div>
                   ))}
@@ -241,9 +249,19 @@ export function BetrayalEventChoiceSurface({
             ) : null}
             <BetrayalDecisionActionDock
               layout="inline"
-              className="!items-center !justify-start !gap-3 !px-0 !pt-0 !pb-0 max-[700px]:flex-wrap"
+              className={`${
+                hasDecisionChoices && (showAcceptButton || choice.declineLabel)
+                  ? "!items-end"
+                  : "!items-center"
+              } !justify-start !gap-3 !px-0 !pt-0 !pb-0 max-[700px]:flex-wrap`}
             >
-              <div className="min-w-0 flex-1">
+              <div
+                className={`min-w-0 ${
+                  hasDecisionChoices || showAcceptButton || choice.declineLabel
+                    ? "w-fit max-w-full"
+                    : "flex-1"
+                }`}
+              >
                 {isEventSymbolSkip ? (
                   <div
                     data-testid="betrayal-event-choice-symbol-summary"
@@ -265,7 +283,7 @@ export function BetrayalEventChoiceSurface({
                 >
                   {visibleTraitChoices.length > 0 ? (
                     <div
-                      className="grid gap-3.5"
+                      className="grid w-fit max-w-full gap-2"
                       data-testid="betrayal-event-choice-traits"
                     >
                       <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
@@ -277,7 +295,9 @@ export function BetrayalEventChoiceSurface({
                             ? t("board.discovery.chooseRewardTrait")
                             : t("board.status.chooseTrait")}
                       </span>
-                      <div className="grid grid-cols-4 gap-3 max-[700px]:grid-cols-2">
+                      <div
+                        className={`grid ${traitChoiceGridClass} w-fit max-w-full gap-3`}
+                      >
                         {visibleTraitChoices.map((trait) => {
                           const isSelectedTrait = selectedTrait === trait;
                           const completedCheck = isTraitCheckSelection

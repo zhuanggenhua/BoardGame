@@ -24,6 +24,7 @@ import {
 import {
   getBetrayalScenarioCardCandidate,
   resolveImplementedScenarioIdForCard,
+  BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
   type BetrayalScenarioCardId,
 } from "./scenarioConfig";
 import { BetrayalReferenceOverlaySurface } from "./referenceOverlaySurface";
@@ -575,29 +576,31 @@ export function CharacterSelectScreen({
                       ))}
                     </div>
                   </div>
-                  <div className="mt-2 border-t border-[rgba(78,65,45,0.54)] pt-2">
-                    <div className="relative px-0.5 py-0.5">
-                      <div
-                        data-testid="betrayal-character-ability-summary"
-                        className="relative flex min-h-[52px] w-full min-w-0 items-start gap-2 overflow-hidden rounded-[6px] bg-[rgba(23,33,19,0.62)] px-2.5 py-2 text-left text-[16px] font-medium leading-[1.45] tracking-[0.02em] text-[#e4f3d4]"
-                      >
-                        <span className="mt-[0.45em] h-2 w-2 shrink-0 rounded-[2px] bg-[#b5ef42]" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                            <span className="font-semibold text-[#d8bf81]">
-                              {t("board.characterSelect.abilityTitle")}：
-                            </span>
-                            <span className="font-semibold text-[#b5ef42]">
-                              {selectedExplorer.abilityName}：
-                            </span>
-                          </div>
-                          <div className="mt-1 min-w-0 break-words text-[#e4f3d4]">
-                            {selectedExplorer.abilityText}
+                  {selectedExplorer.abilityName !== BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME ? (
+                    <div className="mt-2 border-t border-[rgba(78,65,45,0.54)] pt-2">
+                      <div className="relative px-0.5 py-0.5">
+                        <div
+                          data-testid="betrayal-character-ability-summary"
+                          className="relative flex min-h-[52px] w-full min-w-0 items-start gap-2 overflow-hidden rounded-[6px] bg-[rgba(23,33,19,0.62)] px-2.5 py-2 text-left text-[16px] font-medium leading-[1.45] tracking-[0.02em] text-[#e4f3d4]"
+                        >
+                          <span className="mt-[0.45em] h-2 w-2 shrink-0 rounded-[2px] bg-[#b5ef42]" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                              <span className="font-semibold text-[#d8bf81]">
+                                {t("board.characterSelect.abilityTitle")}：
+                              </span>
+                              <span className="font-semibold text-[#b5ef42]">
+                                {selectedExplorer.abilityName}：
+                              </span>
+                            </div>
+                            <div className="mt-1 min-w-0 break-words text-[#e4f3d4]">
+                              {selectedExplorer.abilityText}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  ) : null}
                   </section>
                 </div>
               </section>

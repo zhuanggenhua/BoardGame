@@ -132,30 +132,30 @@ export function BetrayalInventoryRailSurface({
         maxWidth: compactSectionWidth,
       }}
     >
-      <div
-        className="mb-1 flex items-center justify-between gap-3 px-1 pr-4"
-      >
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
-          <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
-          {t("board.sections.inventory")}
-          {ownerLabel ? (
-            <span
-              data-testid="betrayal-inventory-owner-label"
-              className="max-w-[130px] truncate text-[#d8bf81]"
-            >
-              {ownerLabel}
-            </span>
-          ) : null}
-          <span className="h-px w-8 bg-[rgba(214,191,129,0.12)]" />
+      {cards.length > 0 ? (
+        <div className="mb-1 flex items-center justify-between gap-3 px-1 pr-4">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
+            <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
+            {t("board.sections.inventory")}
+            {ownerLabel ? (
+              <span
+                data-testid="betrayal-inventory-owner-label"
+                className="max-w-[130px] truncate text-[#d8bf81]"
+              >
+                {ownerLabel}
+              </span>
+            ) : null}
+            <span className="h-px w-8 bg-[rgba(214,191,129,0.12)]" />
+          </div>
         </div>
-        <div className="sr-only">
-          {hasSelectedDisplay
-            ? t("board.status.selectedCard", { card: selectedDisplayText })
-            : t("board.status.noSelectedCard")}
-        </div>
-        <div className="sr-only" data-testid="betrayal-use-status">
-          {useStatusText}
-        </div>
+      ) : null}
+      <div className="sr-only">
+        {hasSelectedDisplay
+          ? t("board.status.selectedCard", { card: selectedDisplayText })
+          : t("board.status.noSelectedCard")}
+      </div>
+      <div className="sr-only" data-testid="betrayal-use-status">
+        {useStatusText}
       </div>
       <div
         className="grid gap-2 px-1 pr-2"

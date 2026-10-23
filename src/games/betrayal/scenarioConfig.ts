@@ -707,7 +707,7 @@ export function resolveBetrayalHauntRevealResolution({
     };
 }
 
-const BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME = '无特殊能力';
+export const BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME = '无特殊能力';
 const BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT = '基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。';
 
 export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [

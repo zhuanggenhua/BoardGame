@@ -128,11 +128,7 @@ import {
   toRoomTileAdjustmentSelection,
 } from "./roomMapModel";
 import { resolveRoomEndTurnEffectHint } from "./roomPresentation";
-import {
-  buildDeckItems,
-  buildDiscardItems,
-} from "./deckPresentation";
-import { BetrayalDeckStatusRailSurface } from "./deckStatusRailSurface";
+import { BetrayalHauntRiskSurface } from "./hauntRiskStatusSurface";
 import {
   resolveReferencePages,
   type ReferencePageId,
@@ -1630,14 +1626,6 @@ export default function BetrayalBoard({
       phaseItems.find((item) => item.id === core.phase)?.label ??
       t("board.phase.preHaunt"),
     [core.phase, phaseItems, t],
-  );
-  const deckItems = React.useMemo(
-    () => buildDeckItems(core, t, ASSETS.deck),
-    [core, t],
-  );
-  const discardItems = React.useMemo(
-    () => buildDiscardItems(core, t, ASSETS.deck),
-    [core, t],
   );
   const hauntRisk = React.useMemo(() => resolveBetrayalHauntRisk(core), [core]);
   const numberTracks = React.useMemo(
@@ -7352,12 +7340,9 @@ export default function BetrayalBoard({
                       : ""
                 }`}
               >
-              <BetrayalDeckStatusRailSurface
-                deckItems={deckItems}
-                discardItems={discardItems}
+              <BetrayalHauntRiskSurface
                 hauntRisk={hauntRisk}
                 hauntRiskTrack={hauntRiskTrack}
-                highlightedDeckKind={core.highlightedDeckKind}
                 hauntRiskTrackAsset={ASSETS.ui.hauntRiskTrack}
                 locale={effectiveLocale}
               />

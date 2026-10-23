@@ -14,6 +14,7 @@ import {
   MONSTER_DETAIL_TRAIT_ORDER,
   resolveMonsterTraitValue,
 } from "./entityPresentation";
+import { BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME } from "./scenarioConfig";
 import {
   ExplorerTraitTrackRail,
   TRAIT_LABEL_LOCAL,
@@ -289,20 +290,22 @@ export function ExplorerDetailsDialog({
               ))}
             </div>
 
-            <div className="mt-4 rounded-[10px] border border-[rgba(111,89,51,0.42)] bg-[rgba(11,15,13,0.72)] px-3 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]">
-                {t("board.players.ability")}
+            {abilityName !== BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME ? (
+              <div className="mt-4 rounded-[10px] border border-[rgba(111,89,51,0.42)] bg-[rgba(11,15,13,0.72)] px-3 py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]">
+                  {t("board.players.ability")}
+                </div>
+                <div className="mt-1 text-[14px] leading-6 text-[#dbe6b7]">
+                  <span className="font-semibold text-[#fff1bf]">
+                    {abilityName}
+                  </span>
+                  <span className="text-[#b7c99e]">
+                    {t("board.players.detailSeparator")}
+                    {abilityText}
+                  </span>
+                </div>
               </div>
-              <div className="mt-1 text-[14px] leading-6 text-[#dbe6b7]">
-                <span className="font-semibold text-[#fff1bf]">
-                  {abilityName}
-                </span>
-                <span className="text-[#b7c99e]">
-                  {t("board.players.detailSeparator")}
-                  {abilityText}
-                </span>
-              </div>
-            </div>
+            ) : null}
 
             <div className="mt-4 rounded-[10px] border border-[rgba(111,89,51,0.42)] bg-[rgba(11,15,13,0.72)] px-3 py-3">
               <div className="flex items-center justify-between gap-3">

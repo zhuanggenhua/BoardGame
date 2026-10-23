@@ -2003,12 +2003,6 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-character-page-down')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-character-page-up')).not.toBeInTheDocument();
 
-        const abilitySummary = screen.getByTestId('betrayal-character-ability-summary');
-        expect(abilitySummary).toHaveTextContent('特性：');
-        expect(abilitySummary).toHaveTextContent('无特殊能力');
-        expect(abilitySummary).toHaveTextContent('基础版角色背景不改变规则');
-        expect(abilitySummary).not.toHaveAttribute('title');
-        expect(screen.queryByTestId('betrayal-character-ability-trigger')).not.toBeInTheDocument();
     });
 
     it('角色确认在选角同步延迟时仍只需一次点击', async () => {
@@ -2322,8 +2316,6 @@ describe('Betrayal Board foundation', () => {
         expect(focusSelfRoomButton).toHaveAttribute('data-room-focus-target-id', core.currentExplorer.roomId);
         expect(focusSelfRoomButton).toHaveAttribute('data-room-focus-icon', 'locate-fixed');
         expect(focusSelfRoomButton).toHaveAttribute('title', '聚焦到我的房间');
-        expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent('特性：');
-        expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent(/\S+：\S+/);
         const currentTraits = screen.getByTestId('betrayal-current-traits');
         expect(currentTraits.querySelector('[data-trait-track-rail="true"]')).toBeInTheDocument();
         expect(currentTraits.querySelector('[data-trait-track-rail-shape="continuous-segmented"]')).toBeInTheDocument();

@@ -13,6 +13,7 @@ import type {
 } from "./game";
 import { ExplorerFigureToken } from "./entityTokenSurface";
 import { resolvePlayerName } from "./playerPresentation";
+import { BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME } from "./scenarioConfig";
 import {
   ExplorerTraitTrackRail,
   TRAIT_LABEL_LOCAL,
@@ -190,6 +191,9 @@ export function BetrayalObservedExplorerPanelSurface({
 }: BetrayalObservedExplorerPanelSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
   const [isAbilityDetailsOpen, setIsAbilityDetailsOpen] = useState(false);
+  const hasRuleAbility =
+    abilityName.trim().length > 0 &&
+    abilityName !== BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME;
   const playerName = resolvePlayerName(
     explorer.playerId,
     explorer.displayName,
@@ -270,7 +274,7 @@ export function BetrayalObservedExplorerPanelSurface({
                 </div>
               ))}
             </div>
-            {isMobileViewport ? null : (
+            {!isMobileViewport && hasRuleAbility ? (
               <div
                 data-testid="betrayal-current-ability"
                 data-ability-display="expanded"
@@ -278,9 +282,9 @@ export function BetrayalObservedExplorerPanelSurface({
               >
                 {abilityContent}
               </div>
-            )}
+            ) : null}
           </div>
-          {isMobileViewport ? (
+          {isMobileViewport && hasRuleAbility ? (
             <>
               <button
                 type="button"
