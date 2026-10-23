@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
@@ -108,12 +108,6 @@ const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import(
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
 const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
 const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
-const HomeV2AuthoringPage = ENABLE_INTERNAL_DEVTOOLS
-  ? React.lazy(() => import('./pages/HomeV2Draft').then(m => ({ default: m.HomeV2Draft })))
-  : null;
-const HomeV2PreviewPage = ENABLE_INTERNAL_DEVTOOLS
-  ? React.lazy(() => import('./pages/HomeV2').then(m => ({ default: m.HomeV2 })))
-  : null;
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
@@ -325,11 +319,11 @@ const AppContent = () => {
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsQidahenRuntimePreview && (
                       <Route path="/dev/qidahen-runtime-preview" element={<React.Suspense fallback={null}><DevToolsQidahenRuntimePreview /></React.Suspense>} />
                     )}
-                    {ENABLE_INTERNAL_DEVTOOLS && HomeV2AuthoringPage && (
-                      <Route path="/dev/home-v2-authoring" element={<React.Suspense fallback={null}><HomeV2AuthoringPage /></React.Suspense>} />
+                    {ENABLE_INTERNAL_DEVTOOLS && (
+                      <Route path="/dev/home-v2-authoring" element={<Navigate to="/" replace />} />
                     )}
-                    {ENABLE_INTERNAL_DEVTOOLS && HomeV2PreviewPage && (
-                      <Route path={HOME_V2_PREVIEW_PATH} element={<React.Suspense fallback={null}><HomeV2PreviewPage /></React.Suspense>} />
+                    {ENABLE_INTERNAL_DEVTOOLS && (
+                      <Route path={HOME_V2_PREVIEW_PATH} element={<Navigate to="/" replace />} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && SmashUp4PLayoutTest && (
                       <Route path="/dev/smashup-4p-layout" element={<React.Suspense fallback={null}><SmashUp4PLayoutTest /></React.Suspense>} />

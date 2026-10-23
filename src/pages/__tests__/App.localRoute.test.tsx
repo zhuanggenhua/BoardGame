@@ -135,7 +135,7 @@ vi.mock('react-hot-toast', () => ({
 vi.mock('../MatchRoomWithAudio', async () => {
     const { useParams } = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
     return {
-        default: () => {
+        default: function MatchRoomMock() {
             const { gameId, matchId } = useParams();
             return <div data-testid="online-match-room" data-game-id={gameId} data-match-id={matchId}>online</div>;
         },
@@ -157,6 +157,14 @@ vi.mock('../TutorialMatchRoomWithAudio', () => ({
 vi.mock('../HomeEntry', () => ({
     default: () => <div data-testid="home-entry">home</div>,
     HomeEntry: () => <div data-testid="home-entry">home</div>,
+}));
+
+vi.mock('../HomeV2', () => ({
+    HomeV2: () => <div data-testid="book-home-preview">book home</div>,
+}));
+
+vi.mock('../HomeV2Draft', () => ({
+    HomeV2Draft: () => <div data-testid="book-home-authoring">book home authoring</div>,
 }));
 
 vi.mock('../NotFound', () => ({
@@ -205,6 +213,21 @@ describe('App local route', () => {
             expect(screen.getByTestId('local-match-room')).toBeInTheDocument();
         });
         expect(screen.queryByTestId('test-match-room')).toBeNull();
+    });
+
+    it.each([
+        ['/dev/home-v2-preview', 'book-home-preview'],
+        ['/dev/home-v2-authoring', 'book-home-authoring'],
+    ])('旧首页书本入口 %s 应回到当前首页，而不再渲染第三种首页样式', async (legacyPath, bookSurfaceTestId) => {
+        routerState.initialEntries = [legacyPath];
+        const { default: App } = await import('../../App');
+
+        render(<App />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('home-entry')).toBeInTheDocument();
+        });
+        expect(screen.queryByTestId(bookSurfaceTestId)).toBeNull();
     });
 
     it('Fate 在线房间保留 gameId 并加载正确的游戏客户端', async () => {

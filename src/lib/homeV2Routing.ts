@@ -1,5 +1,6 @@
 import { getLocalStorage } from './browserStorage';
 
+/** Legacy preview URL now redirects to the active modern/classic home. */
 export const HOME_V2_PREVIEW_PATH = '/dev/home-v2-preview';
 export const HOME_ENTRY_STYLE_STORAGE_KEY = 'bg_home_entry_style';
 export const HOME_ENTRY_STYLE_QUERY_VERSION_KEY = 'homeStyleVersion';
@@ -51,11 +52,6 @@ const normalizePathname = (pathname: string) => pathname.replace(/\/+$/, '') || 
 export function isHomeEntryRoute(pathname: string) {
     const normalizedPathname = normalizePathname(pathname);
     return normalizedPathname === '/' || normalizedPathname === '/index.html';
-}
-
-/** The book-style page remains available only as an internal design preview. */
-export function isHomeV2PreviewRoute(pathname: string) {
-    return normalizePathname(pathname) === HOME_V2_PREVIEW_PATH;
 }
 
 export function resolveHomeEntryStyle(search: string | URLSearchParams = ''): HomeEntryStyle {

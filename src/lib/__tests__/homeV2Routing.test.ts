@@ -88,14 +88,13 @@ describe('home style preference', () => {
         unsubscribe();
     });
 
-    it('keeps home routes separate from the internal book preview route', async () => {
-        const { isHomeEntryRoute, isHomeV2PreviewRoute } = await import('../homeV2Routing');
+    it('recognizes only the homepage URLs as home entry routes', async () => {
+        const { isHomeEntryRoute } = await import('../homeV2Routing');
 
         expect(isHomeEntryRoute('/')).toBe(true);
         expect(isHomeEntryRoute('/index.html')).toBe(true);
         expect(isHomeEntryRoute('/dev/home-v2-preview')).toBe(false);
-        expect(isHomeV2PreviewRoute('/dev/home-v2-preview')).toBe(true);
-        expect(isHomeV2PreviewRoute('/')).toBe(false);
+        expect(isHomeEntryRoute('/dev/home-v2-authoring')).toBe(false);
     });
 
     it('falls back safely when local storage is unavailable', async () => {

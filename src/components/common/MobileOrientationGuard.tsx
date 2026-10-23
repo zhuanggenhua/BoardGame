@@ -11,10 +11,7 @@ import {
     type GameMobileBannerKind,
 } from '../../shared/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import {
-    isHomeEntryRoute,
-    isHomeV2PreviewRoute,
-} from '../../lib/homeV2Routing';
+import { isHomeEntryRoute } from '../../lib/homeV2Routing';
 import {
     isStandaloneWebApp,
     tryLockScreenOrientation,
@@ -142,7 +139,6 @@ export function MobileOrientationGuard({
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
     const isHomeRoute = isHomeEntryRoute(location.pathname);
-    const isHomeV2Preview = isHomeV2PreviewRoute(location.pathname);
     const resolvedGameConfig = gameId ? resolveGameMobileEntry(gameId) : undefined;
     const gameConfig = resolvedGameConfig ?? dynamicGameConfig;
     const preferredOrientation = gameId
@@ -150,11 +146,9 @@ export function MobileOrientationGuard({
         : undefined;
     const targetOrientation: 'landscape' | 'portrait' | null = gameId
         ? (preferredOrientation === 'landscape' ? 'landscape' : 'portrait')
-        : isHomeV2Preview
-            ? 'landscape'
-            : isHomeRoute
-                ? 'portrait'
-                : null;
+        : isHomeRoute
+            ? 'portrait'
+            : null;
     const homeBannerKind: GameMobileBannerKind | null = isHomeRoute && isMobileViewport(viewport.width)
         ? (
             !isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-portrait' : null
