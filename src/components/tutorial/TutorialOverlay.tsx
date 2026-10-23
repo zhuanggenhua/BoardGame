@@ -553,7 +553,14 @@ export const TutorialOverlay: React.FC = () => {
           maxWidth: targetlessMaxWidth,
         };
         const targetlessStyle: React.CSSProperties =
-          !rect && position === "top"
+          !rect && currentStep.targetlessPlacement === "center"
+            ? {
+                ...baseTargetlessStyle,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }
+            : !rect && position === "top"
             ? {
                 ...baseTargetlessStyle,
                 top: safeArea.top + 24,

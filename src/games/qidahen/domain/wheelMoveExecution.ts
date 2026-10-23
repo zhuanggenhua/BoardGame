@@ -20,6 +20,7 @@ import {
     getQidahenWheelMoveById,
 } from './wheelMoves';
 import { applyQidahenWheelImmediateEffect } from './wheelImmediateEffect';
+import { beginQidahenWheelRecruitTrain } from './wheelRecruitTrain';
 import {
     advanceQidahenTurnIfReady,
 } from './turnAdvance';
@@ -86,6 +87,7 @@ export const resolveQidahenWheelMoveExecuted = (
     state: QidahenCore,
     moveId: string,
     timestamp: number,
+    opponentFactionId?: QidahenFactionId,
     dependencies: QidahenWheelMoveExecutionDependencies = {
         drawFromFactionPile,
         addFactionHandCards,
@@ -106,24 +108,29 @@ export const resolveQidahenWheelMoveExecuted = (
     if (!nextWheelPosition) {
         return state;
     }
+    const currentFactionId = getCurrentFactionId(state);
+    const opponentFactionIds = (Object.keys(state.factions) as QidahenFactionId[])
+        .filter((factionId) => (
+            factionId !== currentFactionId
+            && !state.factions[factionId].playerId.startsWith('qidahen-neutral-')
+        ));
+    if (move.id === 'move-2-one-opponent' && (!opponentFactionId || !opponentFactionIds.includes(opponentFactionId))) {
+        return state;
+    }
     let wheelDrawFactions = state.factions;
     let wheelDrawHandCards = state.handCards;
-    if (move.steps >= 2) {
-        const mongolDraw = dependencies.drawFromFactionPile(wheelDrawFactions, 'mongol', 2);
-        wheelDrawFactions = dependencies.addFactionHandCards(mongolDraw.factions, 'mongol', mongolDraw.drawnCards);
+    const drawFactionIds = move.id === 'move-2-one-opponent'
+        ? [opponentFactionId!]
+        : move.id === 'move-3-all-opponents'
+            ? opponentFactionIds
+            : [];
+    for (const drawFactionId of drawFactionIds) {
+        const draw = dependencies.drawFromFactionPile(wheelDrawFactions, drawFactionId, 2);
+        wheelDrawFactions = dependencies.addFactionHandCards(draw.factions, drawFactionId, draw.drawnCards);
         wheelDrawHandCards = dependencies.buildDrawnHandCards(
             { ...state, factions: wheelDrawFactions, handCards: wheelDrawHandCards },
-            'mongol',
-            mongolDraw.drawnCards,
-        );
-    }
-    if (move.steps >= 3) {
-        const jinDraw = dependencies.drawFromFactionPile(wheelDrawFactions, 'jin', 2);
-        wheelDrawFactions = dependencies.addFactionHandCards(jinDraw.factions, 'jin', jinDraw.drawnCards);
-        wheelDrawHandCards = dependencies.buildDrawnHandCards(
-            { ...state, factions: wheelDrawFactions, handCards: wheelDrawHandCards },
-            'jin',
-            jinDraw.drawnCards,
+            drawFactionId,
+            draw.drawnCards,
         );
     }
 
@@ -132,7 +139,11 @@ export const resolveQidahenWheelMoveExecuted = (
         selectedWheelMoveId: move.id,
         wheelActionUsed: true,
         actionWheelPosition: nextWheelPosition,
-        wheelMoveSummary: buildQidahenWheelMoveSummary(move.id),
+        wheelMoveSummary: buildQidahenWheelMoveSummary(
+            move.id,
+            opponentFactionId,
+            opponentFactionId ? state.factions[opponentFactionId].name : undefined,
+        ),
         lastSeasonSummary: null,
         diplomacyProgress: null,
         wheelDispatchProgress: null,
@@ -140,8 +151,6 @@ export const resolveQidahenWheelMoveExecuted = (
         factions: wheelDrawFactions,
         handCards: wheelDrawHandCards,
     };
-    const currentFactionId = getCurrentFactionId(nextState);
-
     if (nextWheelPosition === 'wheel-midyear') {
         const midyearResolution = dependencies.resolveMidyear(nextState, timestamp);
         nextState = {
@@ -215,7 +224,9 @@ export const resolveQidahenWheelMoveExecuted = (
                 ]),
             };
         }
-    } else {
+    } else if (nextWheelPosition === 'wheel-recruit-train') {
+        nextState = beginQidahenWheelRecruitTrain(nextState, 'wheel', timestamp);
+    } else if (nextWheelPosition !== 'wheel-midyear' && nextWheelPosition !== 'wheel-new-year') {
         nextState = applyQidahenWheelImmediateEffect(
             nextState,
             currentFactionId,

@@ -363,6 +363,30 @@ export interface QidahenWheelMoveChoice {
     drawText: string;
 }
 
+export interface QidahenWheelRecruitTrainProgress {
+    source: 'wheel' | 'khan-edict';
+    phase: 'payment' | 'choose-action' | 'choose-recruit-target' | 'choose-training-target' | 'extra-training-target';
+    paymentPurpose: 'initial' | 'extra' | null;
+    actionsCompleted: number;
+    extraTrainingsCompleted: number;
+    trainingOnly: boolean;
+    summaryLines: string[];
+}
+
+export interface QidahenWheelRecruitTrainChoice {
+    id: string;
+    kind: 'action' | 'finish' | 'extra-training' | 'recruit-target' | 'training-target';
+    regionId?: string;
+    regionName?: string;
+    pieceId?: string;
+    sourceStackId?: string;
+    level?: number;
+    targetLevel?: number;
+    troopKind?: QidahenTroopKind;
+    troopClass?: QidahenTroopClass;
+    location?: 'field' | 'city' | 'generic-field' | 'generic-city';
+}
+
 export interface QidahenPendingTargetAction {
     actionId: 'raid' | 'marriage-subjugation' | 'wheel-dispatch' | 'drive-tiger';
     battleMode?: QidahenBattleMode;
@@ -970,6 +994,8 @@ export interface QidahenCore {
     confirmedActionId?: string | null;
     selectedPaymentCardIds: string[];
     selectedHandActionCardId: string | null;
+    trainedTroopPieceIdsThisTurn: string[];
+    wheelRecruitTrainProgress: QidahenWheelRecruitTrainProgress | null;
     recruitSelection: QidahenRecruitSelection | null;
     maShiTradeSelection: QidahenMaShiTradeSelection | null;
     grantPardonSelection: QidahenGrantPardonSelection | null;
@@ -1042,6 +1068,7 @@ export interface SelectWheelMoveCommand extends Command<'SELECT_WHEEL_MOVE'> {
 export interface ExecuteWheelMoveCommand extends Command<'EXECUTE_WHEEL_MOVE'> {
     payload: {
         moveId: string;
+        opponentFactionId?: QidahenFactionId;
     };
 }
 
@@ -1053,6 +1080,16 @@ export interface SelectPaymentCardCommand extends Command<'SELECT_PAYMENT_CARD'>
 
 export interface ConfirmWheelDispatchPaymentCommand extends Command<'CONFIRM_WHEEL_DISPATCH_PAYMENT'> {
     payload: Record<string, never>;
+}
+
+export interface ConfirmWheelRecruitTrainPaymentCommand extends Command<'CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT'> {
+    payload: Record<string, never>;
+}
+
+export interface ResolveWheelRecruitTrainChoiceCommand extends Command<'RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE'> {
+    payload: {
+        choiceId: string;
+    };
 }
 
 export interface SelectHandLimitDiscardCardCommand extends Command<'SELECT_HAND_LIMIT_DISCARD_CARD'> {
@@ -1344,6 +1381,7 @@ export interface WheelMoveSelectedEvent extends GameEvent<'WHEEL_MOVE_SELECTED'>
 export interface WheelMoveExecutedEvent extends GameEvent<'WHEEL_MOVE_EXECUTED'> {
     payload: {
         moveId: string;
+        opponentFactionId?: QidahenFactionId;
         playerId: PlayerId;
     };
 }
@@ -1359,6 +1397,20 @@ export interface WheelDispatchPaymentResolvedEvent extends GameEvent<'WHEEL_DISP
     payload: {
         playerId: PlayerId;
         cardIds: string[];
+    };
+}
+
+export interface WheelRecruitTrainPaymentResolvedEvent extends GameEvent<'WHEEL_RECRUIT_TRAIN_PAYMENT_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        cardIds: string[];
+    };
+}
+
+export interface WheelRecruitTrainChoiceResolvedEvent extends GameEvent<'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: string;
     };
 }
 
@@ -1632,6 +1684,8 @@ export type QidahenEvent =
     | WheelMoveExecutedEvent
     | PaymentCardSelectedEvent
     | WheelDispatchPaymentResolvedEvent
+    | WheelRecruitTrainPaymentResolvedEvent
+    | WheelRecruitTrainChoiceResolvedEvent
     | HandLimitDiscardCardSelectedEvent
     | SunYuanhuaTechCardSelectedEvent
     | GaoDiDispatchCardSelectedEvent
@@ -1675,6 +1729,8 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     EXECUTE_WHEEL_MOVE: ExecuteWheelMoveCommand['payload'];
     SELECT_PAYMENT_CARD: SelectPaymentCardCommand['payload'];
     CONFIRM_WHEEL_DISPATCH_PAYMENT: ConfirmWheelDispatchPaymentCommand['payload'];
+    CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT: ConfirmWheelRecruitTrainPaymentCommand['payload'];
+    RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE: ResolveWheelRecruitTrainChoiceCommand['payload'];
     SELECT_HAND_LIMIT_DISCARD_CARD: SelectHandLimitDiscardCardCommand['payload'];
     SELECT_SUN_YUANHUA_TECH_CARD: SelectSunYuanhuaTechCardCommand['payload'];
     SELECT_GAO_DI_DISPATCH_CARD: SelectGaoDiDispatchCardCommand['payload'];

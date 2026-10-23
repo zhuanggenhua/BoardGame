@@ -73,6 +73,7 @@ import {
     QIDAHEN_FEIGNED_RETREAT_CARD_DEF_ID,
 } from './feignedRetreatSelection';
 import { resolveQidahenWheelDispatchPayment } from './wheelDispatchPayment';
+import { resolveQidahenWheelRecruitTrainPayment } from './wheelRecruitTrain';
 
 const WUZHEN_CHAOHA_CARD_DEF_ID = 'qidahen-atlas05-1644-wuzhen-chaoha';
 const ARROWS_LIKE_RAIN_CARD_DEF_ID = 'qidahen-atlas05-1615-arrows-like-rain';
@@ -774,6 +775,14 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
     defineResolvedEventReducer(
         ['WHEEL_DISPATCH_PAYMENT_RESOLVED'],
         (state, event) => resolveQidahenWheelDispatchPayment(state, event.timestamp),
+    ),
+    defineResolvedEventReducer(
+        ['WHEEL_RECRUIT_TRAIN_PAYMENT_RESOLVED'],
+        (state, event) => resolveQidahenWheelRecruitTrainPayment(
+            state,
+            event.payload.cardIds,
+            event.timestamp,
+        ),
     ),
 ] as const satisfies readonly QidahenResolvedEventReducerRuntimeSpec[];
 

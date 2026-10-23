@@ -642,6 +642,9 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                         navigate(`/play/${gameId}/tutorial/${nextTutorialId}`);
                         return;
                     }
+                    if (resolvedTutorialManifest?.stayOnMatchAfterCompletion) {
+                        return;
+                    }
                     navigate(buildTutorialCompletionLobbyPath(gameId), { replace: true });
                 }
             }, 600);
@@ -657,6 +660,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         isActive,
         navigate,
         nextTutorialId,
+        resolvedTutorialManifest,
         tutorialId,
     ]);
 

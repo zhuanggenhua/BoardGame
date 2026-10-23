@@ -38,7 +38,7 @@ import {
 } from './troopCompat';
 import { buildArtilleryTroopStack, buildRegularTroopStack } from './troopStacks';
 import { advanceQidahenTurnIfReady } from './turnAdvance';
-import { getQidahenWheelImmediateEffectConfig } from './wheelRules';
+import { beginQidahenWheelRecruitTrain } from './wheelRecruitTrain';
 import { applyQidahenVictoryStatus } from './victoryResolution';
 import type {
     QidahenCore,
@@ -665,66 +665,15 @@ export const resolveQidahenKhanEdictInteractionChoice = (
         });
     }
 
-    const recruitTargetRegionId = selection.recruitTargetRegionId;
-    if (!recruitTargetRegionId) {
-        return dependencies.updateTurnLabel({
-            ...state,
-            recruitSelection: null,
-            maShiTradeSelection: null,
-            khanEdictSelection: null,
-            diplomacyProgress: null,
-            lastSeasonSummary: dependencies.buildSeasonSummary('大汗令箭', timestamp, [
-                '当前没有可执行征兵训练的蒙古控制区域。',
-            ]),
-        });
-    }
-    const recruitConfig = getQidahenWheelImmediateEffectConfig('wheel-recruit-train');
-    const troopDelta = recruitConfig?.troopDelta ?? 2;
-    const nextRuntimeRegions = state.regions
-        .filter((region) => !region.isLogicalRegion)
-        .map((region) => {
-            if (region.id !== recruitTargetRegionId) {
-                return region;
-            }
-            const actionTargetRegion = dependencies.materializeNonSiegedCityActionSourceRegion(region);
-            return addSpecialTroopStackToRegion({
-                ...actionTargetRegion,
-                troops: actionTargetRegion.troops + troopDelta,
-                note: `${actionTargetRegion.name} 经大汗令箭执行征兵训练后建立 ${troopDelta} 个等级 2 蒙古骑兵。`,
-            }, buildRegularTroopStack('mongol', 'khan-edict-recruit-train', troopDelta));
-        });
-    const nextRegions = dependencies.refreshRuntimeRegionRules(nextRuntimeRegions, state.fortifications);
-    const resolvedState = dependencies.applyVictoryStatus({
+    const startedState = beginQidahenWheelRecruitTrain({
         ...state,
-        selectedRegionId: recruitTargetRegionId,
-        explicitRegionId: null,
-        regionFocusState: buildQidahenRegionFocusState(recruitTargetRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,
         khanEdictSelection: null,
         diplomacyProgress: null,
-        regions: nextRegions,
-        factions: {
-            ...state.factions,
-            mongol: {
-                ...state.factions.mongol,
-                troops: state.factions.mongol.troops + troopDelta,
-            },
-        },
-        lastSeasonSummary: dependencies.buildSeasonSummary('大汗令箭', timestamp, [
-            `${state.factions[currentFactionId].name} 选择征兵训练，${selection.recruitTargetRegionName ?? '当前控制区'} 建立 ${troopDelta} 个等级 2 蒙古骑兵。`,
-        ]),
-        actionLog: [
-            {
-                id: `log-khan-edict-${timestamp}`,
-                faction: currentFactionId,
-                text: `${state.factions[currentFactionId].name} 选择大汗令箭的征兵训练，${selection.recruitTargetRegionName ?? '当前控制区'} 建立 ${troopDelta} 个等级 2 蒙古骑兵。`,
-            },
-            ...state.actionLog,
-        ].slice(0, 6),
-    });
-    return dependencies.advanceTurnIfReady(syncFactionActionWindow(resolvedState, currentFactionId), timestamp);
+    }, 'khan-edict', timestamp, true);
+    return dependencies.advanceTurnIfReady(syncFactionActionWindow(startedState, currentFactionId), timestamp);
 };
 
 const resolveDiplomacyChoice = (

@@ -419,6 +419,8 @@ export interface TutorialStepSnapshot {
     tooltipMaxWidth?: number;
     /** Optional vertical nudge applied after placement, in CSS pixels. */
     tooltipOffsetY?: number;
+    /** Center a targetless card in the viewport instead of pinning it to an edge. */
+    targetlessPlacement?: 'center';
     /**
      * Controls only the tutorial-drawn frame around the target.
      * Use `none` when the target is already a self-explanatory game object
@@ -493,6 +495,11 @@ export interface TutorialManifest {
      * 页面层用它隔离本地教程进度，避免旧快照恢复到新版提示里形成步骤错位。
      */
     revision?: number;
+    /**
+     * Keep the completed tutorial's local match open so the learner can continue playing it.
+     * Defaults to the existing completion route for tutorials that teach an isolated scenario.
+     */
+    stayOnMatchAfterCompletion?: boolean;
     steps: TutorialStepSnapshot[];
     allowManualSkip?: boolean;
     randomPolicy?: TutorialRandomPolicy;

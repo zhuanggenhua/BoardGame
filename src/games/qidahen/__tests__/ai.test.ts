@@ -9,6 +9,7 @@ import type { MatchState } from '../../../engine/types';
 import { buildQidahenAiLegalActions } from '../ai';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { createInitialCore } from '../domain/initialCoreSetup';
+import { beginQidahenWheelRecruitTrain } from '../domain/wheelRecruitTrain';
 import type { QidahenCore } from '../domain/types';
 import { QidahenDomain } from '../domain';
 import { engineConfig } from '../game';
@@ -47,6 +48,83 @@ const applyAiResolution = (
 );
 
 describe('七大恨 AI', () => {
+    it('两格轮盘 AI 会指定真实对手，新增命令通过领域校验', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
+        const state = createAiState(core);
+        const twoSpaceAction = buildQidahenAiLegalActions({ playerId: core.currentPlayer, state })
+            .find((action) => action.commands.some((command) => (
+                command.type === QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE
+                && command.payload.moveId === 'move-2-one-opponent'
+            )));
+
+        expect(twoSpaceAction).toBeTruthy();
+        const command = twoSpaceAction!.commands[0]!;
+        expect(command.payload.opponentFactionId).toBeTruthy();
+        expect(command.payload.opponentFactionId).not.toBe('ming');
+        expect(QidahenDomain.validate(state, {
+            type: command.type as never,
+            playerId: core.currentPlayer,
+            payload: command.payload as never,
+            timestamp: 1,
+        }).valid).toBe(true);
+    });
+
+    it('AI 能支付、执行征兵训练、选择目标、完成，并在教程式进度中持续产生合法动作', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
+        const pendingCore = beginQidahenWheelRecruitTrain({
+            ...core,
+            actionWheelPosition: 'wheel-recruit-train',
+            wheelActionUsed: true,
+        }, 'wheel', 1);
+        let state = createAiState(pendingCore);
+        let executedKinds: string[] = [];
+
+        for (let index = 0; index < 24 && state.core.wheelRecruitTrainProgress != null; index += 1) {
+            const legalActions = buildQidahenAiLegalActions({ playerId: state.core.currentPlayer, state });
+            expect(legalActions.length, `第 ${index + 1} 步必须有可执行的 AI 动作`).toBeGreaterThan(0);
+            const action = legalActions[0]!;
+            executedKinds.push(action.kind);
+            state = action.commands.reduce((currentState, command) => executePipeline(
+                {
+                    domain: engineConfig.domain,
+                    systems: engineConfig.systems as any,
+                },
+                currentState,
+                {
+                    type: command.type,
+                    playerId: currentState.core.currentPlayer,
+                    payload: command.payload as Record<string, unknown>,
+                } as any,
+                testRandom,
+                currentState.core.playerIds,
+            ).state as MatchState<QidahenCore>, state);
+        }
+
+        expect(state.core.wheelRecruitTrainProgress).toBeNull();
+        expect(executedKinds).toContain('wheel-recruit-train-select-payment');
+        expect(executedKinds).toContain('wheel-recruit-train-confirm-payment');
+        expect(executedKinds).toContain('wheel-recruit-train-choice');
+        expect(state.core.wheelActionUsed).toBe(true);
+        const postTutorialActions = buildQidahenAiLegalActions({ playerId: state.core.currentPlayer, state });
+        expect(postTutorialActions, JSON.stringify({
+            currentPlayer: state.core.currentPlayer,
+            turnPhase: state.core.turnPhase,
+            factionActionUsed: state.core.factionActionUsed,
+            wheelActionUsed: state.core.wheelActionUsed,
+            actionChoices: state.core.actionChoices.map((choice) => choice.id),
+            payment: state.core.payment,
+            selectedActionId: state.core.selectedActionId,
+            confirmedActionId: state.core.confirmedActionId,
+            interaction: state.sys.interaction?.current,
+            validation: QidahenDomain.validate(state, {
+                type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+                playerId: state.core.currentPlayer,
+                payload: { actionId: 'recruit' },
+                timestamp: 0,
+            } as never),
+        })).not.toHaveLength(0);
+    });
+
     it('剧本前置选择未完成时，online AI watchdog 应归属待选势力 seat，避免对下一位 AI 发 ADVANCE_PHASE', () => {
         const baseCore = createInitialCore(['0', '1'], 'dingmao-rebellion-1627', false);
         const state = createAiState({

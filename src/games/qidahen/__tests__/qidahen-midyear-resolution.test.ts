@@ -20,7 +20,7 @@ it('轮盘进入年中时会结算土地税赋并留下摘要', () => {
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.actionWheelPosition).toBe('wheel-midyear');
@@ -70,7 +70,7 @@ it('围城区域在年中不会提供土地税赋', () => {
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.factions.ming.handCount).toBe(8);
@@ -108,7 +108,7 @@ it('非围城城市保留在 cityState 的城内人口与守军也会参与年�
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.factions.ming.handCount).toBe(9);
@@ -147,7 +147,7 @@ it('旱灾标记区域在年中土地税赋中人口视为 0', () => {
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.factions.ming.handCount).toBe(8);
@@ -180,7 +180,7 @@ it('轮盘进入年中时会处理并移除已有战败标记', () => {
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.actionWheelPosition).toBe('wheel-midyear');
@@ -237,7 +237,7 @@ it('林丹·乎图克图在场时会让其他人物的年中人物判定点数 -
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.turnPhase).toBe('action-window');
@@ -273,7 +273,7 @@ it('代善在场时会让后金人物免受林丹·乎图克图的年中人物�
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.turnPhase).toBe('action-window');
@@ -340,13 +340,13 @@ it('范文程在场时会在年中按后金控制的汉人区域数量额外抽�
         }, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.actionWheelPosition).toBe('wheel-midyear');
@@ -376,7 +376,7 @@ it('阿敏在年中人物额外判定命中叛逃时会转入大明人物牌堆'
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
 
         expect(next.turnPhase).toBe('action-window');
@@ -409,7 +409,7 @@ it('阿敏年中叛逃进大明人物牌堆后，跨到下一次新年纪年启�
         const afterMidyear = apply(core, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'mongol' },
         });
         const newYearReady = {
             ...afterMidyear,

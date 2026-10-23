@@ -27,6 +27,10 @@ import {
     isQidahenWheelDispatchPaymentPending,
     QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED,
 } from './wheelDispatchPayment';
+import {
+    getQidahenWheelRecruitTrainChoices,
+    isQidahenWheelRecruitTrainPaymentPending,
+} from './wheelRecruitTrain';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
 import {
@@ -84,6 +88,8 @@ export const QIDAHEN_COMMANDS = {
     EXECUTE_WHEEL_MOVE: 'EXECUTE_WHEEL_MOVE',
     SELECT_PAYMENT_CARD: 'SELECT_PAYMENT_CARD',
     CONFIRM_WHEEL_DISPATCH_PAYMENT: 'CONFIRM_WHEEL_DISPATCH_PAYMENT',
+    CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT: 'CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT',
+    RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE: 'RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE',
     SELECT_HAND_LIMIT_DISCARD_CARD: 'SELECT_HAND_LIMIT_DISCARD_CARD',
     SELECT_SUN_YUANHUA_TECH_CARD: 'SELECT_SUN_YUANHUA_TECH_CARD',
     SELECT_GAO_DI_DISPATCH_CARD: 'SELECT_GAO_DI_DISPATCH_CARD',
@@ -142,6 +148,7 @@ const hasBlockingSelection = (state: MatchState<QidahenCore>): boolean => (
     || state.core.infantryCavalryCombinedSelection != null
     || state.core.instigateDefectionSelection != null
     || state.core.wuzhenChaohaSelection != null
+    || state.core.wheelRecruitTrainProgress != null
 );
 
 const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): boolean => (
@@ -541,9 +548,24 @@ export function validate(
             if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
                 return { valid: false, error: 'wheelAlreadyUsed' };
             }
-            return state.core.wheelMoveChoices.some((choice) => choice.id === command.payload.moveId)
-                ? { valid: true }
-                : { valid: false, error: 'unknownWheelMove' };
+            {
+                const move = state.core.wheelMoveChoices.find((choice) => choice.id === command.payload.moveId);
+                if (!move) {
+                    return { valid: false, error: 'unknownWheelMove' };
+                }
+                if (move.id === 'move-2-one-opponent') {
+                    const opponentFactionId = command.payload.opponentFactionId;
+                    const opponent = opponentFactionId ? state.core.factions[opponentFactionId] : null;
+                    if (
+                        !opponent
+                        || opponentFactionId === getCurrentFactionId(state.core)
+                        || opponent.playerId.startsWith('qidahen-neutral-')
+                    ) {
+                        return { valid: false, error: 'invalidWheelMoveOpponent' };
+                    }
+                }
+                return { valid: true };
+            }
         case QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD:
             if (hasPendingScenarioChoices(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
@@ -552,6 +574,15 @@ export function validate(
                 return { valid: false, error: 'notCurrentPlayer' };
             }
             if (isQidahenWheelDispatchPaymentPending(state.core)) {
+                return state.core.handCards.some((card) => (
+                    card.id === command.payload.cardId
+                    && card.faction === getCurrentFactionId(state.core)
+                    && card.status !== 'disabled'
+                ))
+                    ? { valid: true }
+                    : { valid: false, error: 'unknownPaymentCard' };
+            }
+            if (isQidahenWheelRecruitTrainPaymentPending(state.core)) {
                 return state.core.handCards.some((card) => (
                     card.id === command.payload.cardId
                     && card.faction === getCurrentFactionId(state.core)
@@ -583,6 +614,31 @@ export function validate(
             return state.core.selectedPaymentCardIds.length >= QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED
                 ? { valid: true }
                 : { valid: false, error: 'paymentIncomplete' };
+        case QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            if (!isQidahenWheelRecruitTrainPaymentPending(state.core)) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            return state.core.selectedPaymentCardIds.length === 1
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
+        case QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return getQidahenWheelRecruitTrainChoices(state.core).some((choice) => (
+                choice.id === command.payload.choiceId
+            ))
+                ? { valid: true }
+                : { valid: false, error: 'unknownWheelRecruitTrainChoice' };
         case QIDAHEN_COMMANDS.SELECT_HAND_LIMIT_DISCARD_CARD:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };

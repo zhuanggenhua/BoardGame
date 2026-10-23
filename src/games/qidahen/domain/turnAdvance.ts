@@ -128,6 +128,7 @@ export function advanceQidahenTurnIfReady(
     if (
         nextState.pendingTargetAction
         || nextState.postBattleSelection
+        || nextState.wheelRecruitTrainProgress
         || recruitSelection
         || grantPardonSelection
         || maShiTradeSelection

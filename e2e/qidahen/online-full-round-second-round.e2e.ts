@@ -265,6 +265,12 @@ async function performWheelStep(page: Page, moveId: 'move-1-free' | 'move-2-one-
     const target = page.getByTestId(`qidahen-wheel-move-target-${moveId}`);
     await expect(target).toBeVisible({ timeout: 15000 });
     await target.click();
+    if (moveId === 'move-2-one-opponent') {
+        const opponent = page.locator('[data-testid^="qidahen-wheel-opponent-"]').first();
+        await expect(opponent).toBeVisible({ timeout: 10000 });
+        await opponent.click();
+        return;
+    }
     await page.waitForTimeout(200);
     const targetDisabled = (await target.getAttribute('aria-disabled')) === 'true';
     if (!targetDisabled) {

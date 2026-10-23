@@ -77,8 +77,8 @@ const NATURAL_OPENING_CONTRACT: QidahenTutorialSetupContract = {
     formalEntryPhase: 'action-window',
     currentActorFaction: 'ming',
     precedingAtoms: ['setup-complete'],
-    firstRealDecision: 'choose-wheel-move',
-    injectedDifferences: ['固定免费前进 1 格作为可重复的教学示例，不改变正式规则顺序。'],
+    firstRealDecision: 'choose-hand-action',
+    injectedDifferences: [],
     scope: 'mainline',
 };
 
@@ -158,6 +158,8 @@ const resetTutorialTransientState = (core: QidahenCore): QidahenCore => ({
     pendingTargetAction: null,
     postBattleSelection: null,
     wheelDispatchProgress: null,
+    wheelRecruitTrainProgress: null,
+    trainedTroopPieceIdsThisTurn: [],
     recruitSelection: null,
     maShiTradeSelection: null,
     khanEdictSelection: null,
@@ -424,6 +426,8 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
             return region;
         });
         core.wheelDispatchProgress = null;
+        core.wheelRecruitTrainProgress = null;
+        core.trainedTroopPieceIdsThisTurn = [];
         return core;
     },
 });
@@ -901,6 +905,8 @@ const createWheelSharedCostTutorialSetup = (): QidahenTutorialPreset => ({
         core.sunYuanhuaTechSelection = null;
         core.gaoDiDispatchSelection = null;
         core.wheelDispatchProgress = null;
+        core.wheelRecruitTrainProgress = null;
+        core.trainedTroopPieceIdsThisTurn = [];
         core.pendingTargetAction = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
@@ -1040,6 +1046,8 @@ const createWheelRecruitTrainTutorialSetup = (): QidahenTutorialPreset => ({
         core.sunYuanhuaTechSelection = null;
         core.gaoDiDispatchSelection = null;
         core.wheelDispatchProgress = null;
+        core.wheelRecruitTrainProgress = null;
+        core.trainedTroopPieceIdsThisTurn = [];
         core.pendingTargetAction = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
@@ -1488,8 +1496,14 @@ const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     })),
 };
 
-export function buildQidahenTutorialSetupData(tutorialId?: string): QidahenTutorialSetupData | null {
+export function buildQidahenTutorialSetupData(
+    tutorialId?: string,
+    allowQaScenario = false,
+): QidahenTutorialSetupData | null {
     if (!tutorialId) {
+        return null;
+    }
+    if (tutorialId !== 'basic-opening' && !allowQaScenario) {
         return null;
     }
     const preset = TUTORIAL_PRESETS[tutorialId];

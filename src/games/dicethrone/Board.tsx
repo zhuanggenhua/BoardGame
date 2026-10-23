@@ -1866,13 +1866,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [isTutorialActive, tutorialStep, nextTutorialStep]);
 
     React.useEffect(() => {
-        const selected = diceMultistepState.result as DiceSelectResult | null;
-        if (isTutorialActive && tutorialStep?.id === 'interference-target' && selected?.selectedDiceIds?.length) {
-            nextTutorialStep('auto');
-        }
-    }, [diceMultistepState.result, isTutorialActive, nextTutorialStep, tutorialStep?.id]);
-
-    React.useEffect(() => {
         if (isTutorialActive && tutorialStep?.id === 'knockdown-choice' && modals.removeKnockdown) nextTutorialStep();
     }, [isTutorialActive, modals.removeKnockdown, nextTutorialStep, tutorialStep?.id]);
 

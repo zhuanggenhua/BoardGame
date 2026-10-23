@@ -11,6 +11,12 @@ import { getPromptOptions } from '../../../engine/testing/interactionTestFacade'
 import { engineConfig } from '../game';import { random, QidahenDiplomacySelectionSnapshot, apply, getDiplomacySelection, applyPipeline, getPromptSummary, getPromptData, getPromptSourceId, respondToPrompt, factionHandCards, keepOnlyMingHomelandFallback } from './helpers/paymentSelectionHarness';
 
 describe('七大恨轮盘经济与外交雇佣', () => {
+it('正式开局把共用轮盘标记放在新年位置', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+
+        expect(core.actionWheelPosition).toBe('wheel-new-year');
+    });
+
 it('轮盘进入开垦时会给己方区域增加人口并保留摘要', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.actionWheelPosition = 'wheel-new-year';
@@ -48,8 +54,9 @@ it('轮盘进入军屯时会给己方区域加兵并摸牌', () => {
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('获得 2 张手牌');
     });
 
-it('轮盘进入征兵训练时会给己方区域增加 2 部队', () => {
+it('轮盘进入征兵训练时先进入弃牌窗口，不自动建立部队', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
         core.selectedRegionId = 'song-jin';
 
         const next = apply(core, {
@@ -59,30 +66,15 @@ it('轮盘进入征兵训练时会给己方区域增加 2 部队', () => {
         });
 
         expect(next.actionWheelPosition).toBe('wheel-recruit-train');
-        expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(4);
-        expect(next.regions.find((region) => region.id === 'song-jin')?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                id: 'ming-wheel-wheel-recruit-train-regular-infantry-lv2',
-                label: '大明步兵',
-                faction: 'ming',
-                troopKind: 'infantry',
-                count: 2,
-                level: 2,
-            }),
-        ]));
-        expect(next.factions.ming.troops).toBe(20);
-        expect(next.lastSeasonSummary?.title).toBe('轮盘征兵/训练');
-        expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('部队 +2');
-        expect(next.lastSeasonSummary?.mapResult).toEqual({
-            regionId: 'song-jin',
-            troopDelta: 2,
-            beforeTroops: 2,
-            afterTroops: 4,
-        });
+        expect(next.wheelRecruitTrainProgress).toMatchObject({ source: 'wheel', phase: 'payment', paymentPurpose: 'initial' });
+        expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(2);
+        expect(next.factions.ming.troops).toBe(core.factions.ming.troops);
+        expect(next.lastSeasonSummary).toBeNull();
     });
 
-it('轮盘征兵训练以逻辑区宁远为当前选区时，会按真实运行时区域结算并同步 selectedRegionId', () => {
+it('轮盘征兵训练以逻辑区宁远为当前选区时，先保留当前焦点等待玩家选择', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
         core.selectedRegionId = 'ning-yuan';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -121,26 +113,15 @@ it('轮盘征兵训练以逻辑区宁远为当前选区时，会按真实运行�
         });
 
         expect(next.actionWheelPosition).toBe('wheel-recruit-train');
-        expect(next.selectedRegionId).toBe('city-region-24');
-        expect(next.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
-            troops: 4,
-            specialTroops: expect.arrayContaining([
-                expect.objectContaining({
-                    id: 'ming-wheel-wheel-recruit-train-regular-infantry-lv2',
-                    label: '大明步兵',
-                    faction: 'ming',
-                    troopKind: 'infantry',
-                    count: 2,
-                    level: 2,
-                }),
-            ]),
-        });
-        expect(next.lastSeasonSummary?.title).toBe('轮盘征兵/训练');
-        expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('宁远');
+        expect(next.selectedRegionId).toBe('ning-yuan');
+        expect(next.wheelRecruitTrainProgress?.phase).toBe('payment');
+        expect(next.regions.find((region) => region.id === 'city-region-24')?.troops).toBe(2);
+        expect(next.lastSeasonSummary).toBeNull();
     });
 
-it('轮盘征兵训练在非围城 cityState 城市触发时会先并回守军，再建立新部队', () => {
+it('轮盘征兵训练进入弃牌窗口时不合并 cityState 或建立部队', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
         core.selectedRegionId = 'city-region-25';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -174,19 +155,17 @@ it('轮盘征兵训练在非围城 cityState 城市触发时会先并回守军�
 
         expect(next.actionWheelPosition).toBe('wheel-recruit-train');
         expect(next.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
-            troops: 4,
-            population: 2,
-            cityState: null,
-            specialTroops: expect.arrayContaining([
-                expect.objectContaining({ id: 'ming-shanhaiguan-infantry-lv2', count: 2, level: 2 }),
-                expect.objectContaining({ id: 'ming-wheel-wheel-recruit-train-regular-infantry-lv2', count: 2, level: 2 }),
-            ]),
+            troops: 0,
+            cityState: { troops: 2 },
+            specialTroops: [],
         });
-        expect(next.factions.ming.troops).toBe(core.factions.ming.troops + 2);
+        expect(next.wheelRecruitTrainProgress?.phase).toBe('payment');
+        expect(next.factions.ming.troops).toBe(core.factions.ming.troops);
     });
 
-it('轮盘征兵训练会按火炮技术等级训练已有炮兵', () => {
+it('轮盘征兵训练不会在玩家选择训练前自动升级炮兵', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
         core.selectedRegionId = 'song-jin';
         core.factions.ming.armaments = [{ id: 'artillery-tech', name: '火炮技术', level: 2 }];
         core.regions = core.regions.map((region) => {
@@ -217,43 +196,22 @@ it('轮盘征兵训练会按火炮技术等级训练已有炮兵', () => {
         });
 
         const songjin = next.regions.find((region) => region.id === 'song-jin');
-        const artilleryPieceIds = songjin?.specialTroops.find((stack) => stack.troopKind === 'artillery')?.pieceIds ?? [];
         expect(next.actionWheelPosition).toBe('wheel-recruit-train');
         expect(songjin).toMatchObject({
-            troops: 3,
-            specialTroops: expect.arrayContaining([
-                expect.objectContaining({
-                    id: 'ming-recruit-regular-artillery-lv2',
-                    label: '大明炮兵',
-                    faction: 'ming',
-                    troopKind: 'artillery',
-                    count: 1,
-                    level: 2,
-                    pieceIds: ['ming-songjin-artillery-piece-1'],
-                }),
-                expect.objectContaining({
-                    id: 'ming-wheel-wheel-recruit-train-regular-infantry-lv2',
-                    label: '大明步兵',
-                    faction: 'ming',
-                    troopKind: 'infantry',
-                    count: 2,
-                    level: 2,
-                }),
-            ]),
+            troops: 1,
+            specialTroops: [expect.objectContaining({
+                troopKind: 'artillery',
+                level: 1,
+                pieceIds: ['ming-songjin-artillery-piece-1'],
+            })],
         });
-        expect(artilleryPieceIds).toEqual(['ming-songjin-artillery-piece-1']);
-        expect(next.pieces.find((piece) => piece.id === 'ming-songjin-artillery-piece-1')).toMatchObject({
-            sourceStackId: 'ming-recruit-regular-artillery-lv2',
-            regionId: 'song-jin',
-            location: 'field',
-            level: 2,
-        });
-        expect(next.lastSeasonSummary?.title).toBe('轮盘征兵/训练');
-        expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('训练 1 个炮兵至等级 2');
+        expect(next.wheelRecruitTrainProgress?.phase).toBe('payment');
+        expect(next.factions.ming.troops).toBe(core.factions.ming.troops);
     });
 
-it('轮盘征兵训练不会把正规军加到附庸区，而会回退到本土控制区', () => {
+it('轮盘征兵训练先等待弃牌，不按当前附庸选区自动回退并征兵', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
         keepOnlyMingHomelandFallback(core);
         core.selectedRegionId = 'city-region-22';
         core.regions = core.regions.map((region) => {
@@ -291,7 +249,9 @@ it('轮盘征兵训练不会把正规军加到附庸区，而会回退到本土�
             controlLabel: '大明附庸',
             troops: 1,
         });
-        expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(4);
+        expect(next.selectedRegionId).toBe('city-region-22');
+        expect(next.wheelRecruitTrainProgress?.phase).toBe('payment');
+        expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(2);
     });
 
 it('轮盘进入外交雇佣时会先进入外交目标选择，并可同时放友好标记与建立雇佣军', () => {

@@ -35,6 +35,8 @@ QidahenCore,
 | 'confirmedActionId'
 | 'selectedPaymentCardIds'
 | 'selectedHandActionCardId'
+| 'trainedTroopPieceIdsThisTurn'
+| 'wheelRecruitTrainProgress'
 | 'recruitSelection'
 | 'maShiTradeSelection'
 | 'grantPardonSelection'
@@ -70,6 +72,8 @@ QidahenCore,
         confirmedActionId: null,
         selectedPaymentCardIds: [],
         selectedHandActionCardId: null,
+        trainedTroopPieceIdsThisTurn: [],
+        wheelRecruitTrainProgress: null,
         recruitSelection: null,
         maShiTradeSelection: null,
         grantPardonSelection: null,

@@ -1,5 +1,5 @@
 import { withDiceThroneTutorialSurfaces } from './tutorialLayout';
-import type { TutorialAiAction, TutorialManifest, TutorialStepSnapshot } from '../../engine/types';
+import type { TutorialManifest, TutorialStepSnapshot } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { MONK_CARDS } from './heroes/monk/cards';
 
@@ -44,31 +44,17 @@ const setup = (fields: Record<string, unknown>, phase: string): Step => ({
     })(),
 });
 
-const observe = (id: string, aiActions: TutorialAiAction[]): Step => ({
-    id, content: `game-dicethrone:tutorial.practice.${id}`, position: 'center',
-    requireAction: false, allowManualSkip: true, autoAdvanceAfterAi: false, aiActions,
-});
-
 export const DiceThroneDiscardPractice: TutorialManifest = {
-    id: 'dicethrone-hand-limit', playerId: '0', revision: 4, randomPolicy: { mode: 'fixed', values: [1] },
+    id: 'dicethrone-hand-limit', playerId: '0', revision: 5, randomPolicy: { mode: 'fixed', values: [1] },
     steps: withDiceThroneTutorialSurfaces([
         setup({
             activePlayerId: '0', turnNumber: 3,
             players: {
-                '0': { hand: MONK_CARDS.slice(0, 7), deck: [], discard: MONK_CARDS.slice(7), resources: { cp: 14 } },
+                '0': { hand: MONK_CARDS.slice(0, 7), deck: [], discard: MONK_CARDS.slice(7), resources: { cp: 15 } },
                 '1': { hand: [], deck: [...MONK_CARDS] },
             },
         }, 'discard'),
         act('limit-start', 'hand-area', ['SELL_CARD'], [{ type: 'CARD_SOLD', match: { playerId: '0' } }]),
         read('limit-result', 'player-stats'),
-        read('limit-end', 'phase-indicator'),
-        observe('limit-opponent', [
-            { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-            { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-            { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-            { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-        ]),
-        read('reshuffle-result', 'hand-area'),
-        read('limit-finish', 'player-stats'),
     ]),
 };

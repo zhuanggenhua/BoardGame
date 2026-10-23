@@ -35,6 +35,7 @@ import type {
     PendingActionResolvedEvent,
     PostBattleDecisionResolvedEvent,
     ConfirmWheelDispatchPaymentCommand,
+    ConfirmWheelRecruitTrainPaymentCommand,
     ResolveHandLimitDiscardCommand,
     ResolveInternalDispatchCommand,
     ResolveKhanEdictChoiceCommand,
@@ -109,6 +110,20 @@ const buildQidahenWheelDispatchPaymentResolvedEvent = (
     timestamp: number,
 ): QidahenEvent => ({
     type: 'WHEEL_DISPATCH_PAYMENT_RESOLVED',
+    payload: {
+        playerId: command.playerId,
+        cardIds: [...state.core.selectedPaymentCardIds],
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenWheelRecruitTrainPaymentResolvedEvent = (
+    state: MatchState<QidahenCore>,
+    command: ConfirmWheelRecruitTrainPaymentCommand,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'WHEEL_RECRUIT_TRAIN_PAYMENT_RESOLVED',
     payload: {
         playerId: command.playerId,
         cardIds: [...state.core.selectedPaymentCardIds],
@@ -483,6 +498,12 @@ const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEv
         commandTypes: [QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT],
         buildEvents: buildStatefulResolvedCommandEvents<ConfirmWheelDispatchPaymentCommand>(
             buildQidahenWheelDispatchPaymentResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT],
+        buildEvents: buildStatefulResolvedCommandEvents<ConfirmWheelRecruitTrainPaymentCommand>(
+            buildQidahenWheelRecruitTrainPaymentResolvedEvent,
         ),
     },
     {

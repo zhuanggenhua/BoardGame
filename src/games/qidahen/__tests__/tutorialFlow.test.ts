@@ -19,15 +19,20 @@ import {
     getPromptOptions,
 } from '../../../engine/testing/interactionTestFacade';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
-import QIDAHEN_TUTORIALS from '../tutorial';
+import QIDAHEN_TUTORIALS, {
+    QIDAHEN_PLAYER_TUTORIALS,
+    QIDAHEN_TEST_TUTORIALS,
+} from '../tutorial';
 import {
     buildQidahenTutorialSetupData,
     QIDAHEN_TUTORIAL_SETUP_CONTRACTS,
 } from '../tutorialSetup';
 import { QidahenDomain } from '../domain';
+import { getQidahenWheelRecruitTrainChoices } from '../domain/wheelRecruitTrain';
 import { createQidahenInteractionSystem } from '../domain/interactionSystem';
 import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from '../domain/ordinaryHandCardIdentities';
 import { QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';
+import { getCurrentFactionId } from '../domain/factionTurnAccessors';
 
 const random: RandomFn = {
     random: () => 0.5,
@@ -49,7 +54,7 @@ const systems = [
 const playerIds = ['0', '1', '2'];
 
 const buildStateForTutorial = (tutorialId: string): MatchState<unknown> => {
-    const setup = buildQidahenTutorialSetupData(tutorialId);
+    const setup = buildQidahenTutorialSetupData(tutorialId, true);
     if (!setup) {
         throw new Error(`missing tutorial setup for ${tutorialId}`);
     }
@@ -74,6 +79,60 @@ const dispatch = (state: MatchState<unknown>, command: Command): MatchState<unkn
     );
     expect(result.success, result.error ?? `command failed: ${command.type}`).toBe(true);
     return result.state;
+};
+
+const completeBasicOpeningHandAction = (
+    state: MatchState<unknown>,
+    manifest: NonNullable<typeof QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']>['manifest'],
+): MatchState<unknown> => {
+    state = dispatch(state, {
+        type: TUTORIAL_COMMANDS.START,
+        playerId: '0',
+        payload: { manifest },
+    });
+    state = dispatch(state, {
+        type: TUTORIAL_COMMANDS.NEXT,
+        playerId: '0',
+        payload: { reason: 'manual' },
+    });
+    expect(state.sys.tutorial.step?.id).toBe('choose-opening-action');
+
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+        playerId: '0',
+        payload: { actionId: 'recruit' },
+    });
+    const paymentCard = (state.core as any).handCards.find((card: any) => (
+        card.faction === 'ming' && card.status !== 'disabled'
+    ));
+    expect(paymentCard).toBeTruthy();
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        playerId: '0',
+        payload: { cardId: paymentCard.id },
+    });
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+        playerId: '0',
+        payload: {},
+    });
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.SELECT_REGION,
+        playerId: '0',
+        payload: { regionId: 'city-region-24' },
+    });
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE,
+        playerId: '0',
+        payload: { choiceId: 'level-2-troops' },
+    });
+    state = dispatch(state, {
+        type: TUTORIAL_COMMANDS.NEXT,
+        playerId: '0',
+        payload: { reason: 'manual' },
+    });
+    expect(state.sys.tutorial.step?.id).toBe('wheel-move');
+    return state;
 };
 
 const getPromptSummary = (state: MatchState<unknown>) => getCurrentInteractionSummary(state);
@@ -156,6 +215,33 @@ const advanceAttackAndBattleTutorialToPendingBattle = (
 };
 
 describe('qidahen tutorial flow', () => {
+    it('重构过的教程章节递增进度 revision，避免恢复旧步骤快照', () => {
+        expect(QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.revision).toBe(8);
+        for (const tutorialId of [
+            'wheel-shared-cost',
+            'wheel-recruit-train',
+            'event-action',
+            'siege-and-occupation',
+            'retreat-and-rout',
+        ]) {
+            expect(QIDAHEN_TEST_TUTORIALS.tutorials[tutorialId]?.manifest.revision).toBe(1);
+        }
+    });
+
+    it('开场胜利条件卡没有无关锚点，并避开年卡和持续可读的棋盘区域', () => {
+        const welcome = QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.steps
+            .find((step) => step.id === 'welcome');
+
+        expect(welcome).toMatchObject({
+            position: 'center',
+            targetlessPlacement: 'center',
+            highlightFrame: 'none',
+        });
+        expect(welcome?.highlightTarget).toBeUndefined();
+        expect(welcome?.avoidOverlapSelectors).toContain('[data-testid^="qidahen-year-card-slot-"]');
+        expect(welcome?.compactAvoidOverlapSelectors).toContain('[data-testid^="qidahen-year-card-slot-"]');
+    });
+
     it('教程设置按入口类型声明正式前因，不允许把代表态伪装成自然开局', () => {
         expect(QIDAHEN_TUTORIAL_SETUP_CONTRACTS['basic-opening']).toMatchObject({
             entryKind: 'natural-opening',
@@ -163,7 +249,7 @@ describe('qidahen tutorial flow', () => {
             formalEntryPhase: 'action-window',
             currentActorFaction: 'ming',
             precedingAtoms: ['setup-complete'],
-            firstRealDecision: 'choose-wheel-move',
+            firstRealDecision: 'choose-hand-action',
             scope: 'mainline',
         });
         expect(QIDAHEN_TUTORIAL_SETUP_CONTRACTS['event-action']).toMatchObject({
@@ -180,7 +266,7 @@ describe('qidahen tutorial flow', () => {
         });
 
         for (const [tutorialId, contract] of Object.entries(QIDAHEN_TUTORIAL_SETUP_CONTRACTS)) {
-            const setup = buildQidahenTutorialSetupData(tutorialId);
+            const setup = buildQidahenTutorialSetupData(tutorialId, true);
             expect(setup?.setupData.qidahenTutorialContract, tutorialId).toEqual(contract);
             if (contract.entryKind !== 'natural-opening') {
                 expect(contract.startingPoint, tutorialId).toBe('representative-state');
@@ -189,8 +275,8 @@ describe('qidahen tutorial flow', () => {
         }
     });
 
-    it('教程目录保留 6 个玩家主章节，隐藏专题独立入口且保留关键步骤合同', () => {
-        const tutorials = QIDAHEN_TUTORIALS.tutorials;
+    it('教程目录只呈现一条入门主线，补充练习不与主线平铺', () => {
+        const tutorials = QIDAHEN_TEST_TUTORIALS.tutorials;
         const visibleTutorialIds = Object.entries(tutorials)
             .filter(([, tutorial]) => !tutorial.hiddenFromCatalog)
             .map(([tutorialId]) => tutorialId);
@@ -213,48 +299,57 @@ describe('qidahen tutorial flow', () => {
 
         expect(visibleTutorialIds).toEqual([
             'basic-opening',
+        ]);
+        expect(Object.keys(QIDAHEN_PLAYER_TUTORIALS.tutorials)).toEqual(['basic-opening']);
+        expect(Object.keys(QIDAHEN_TUTORIALS.tutorials)).toEqual(['basic-opening']);
+        expect(hiddenTutorialIds).toEqual([
             'attack-and-battle',
             'siege-and-occupation',
-            'wheel-shared-cost',
-            'year-and-characters',
-            'korea-and-special-map-rules',
-        ]);
-        expect(hiddenTutorialIds).toEqual([
             'retreat-and-rout',
             'cavalry-evasion',
             'cavalry-plunder',
             'neutral-invasion',
             'water-dispatch',
+            'wheel-shared-cost',
             'wheel-reclaim',
             'wheel-military-farm',
             'wheel-recruit-train',
             'armament-upgrade',
             'event-action',
             'diplomacy-and-hire',
+            'year-and-characters',
+            'korea-and-special-map-rules',
         ]);
         expect(collectNextTutorialChain('attack-and-battle')).toEqual([]);
         expect(collectNextTutorialChain('wheel-shared-cost')).toEqual([]);
         expect(collectNextTutorialChain('siege-and-occupation')).toEqual([]);
         expect(collectNextTutorialChain('year-and-characters')).toEqual([]);
         expect(collectNextTutorialChain('korea-and-special-map-rules')).toEqual([]);
-        expect(stepIdsOf('basic-opening')).toEqual([
-            'welcome',
-            'turn-flow',
-            'wheel-first',
-            'wheel-rule',
-            'wheel-recruit-train-rule',
-            'wheel-move',
-            'wheel-branch-recovery',
-            'wheel-result',
-            'hand-action-order',
-            'grant-pardon-rule',
-            'pick-action',
-            'pay-cards',
-            'choose-grant-pardon-target',
-            'choose-grant-pardon-source',
-            'action-result',
-            'finish',
+        const basicSteps = stepIdsOf('basic-opening');
+        expect(basicSteps.slice(0, 5)).toEqual([
+            'welcome', 'choose-opening-action', 'pay-recruit', 'choose-recruit-target', 'choose-recruit-formation',
         ]);
+        expect(basicSteps).toContain('recruit-train-decision-0');
+        expect(basicSteps).toContain('recruit-train-decision-1');
+        expect(basicSteps).toContain('recruit-train-extra-payment-0');
+        expect(basicSteps).toContain('recruit-train-recruit-target-0');
+        expect(basicSteps).toContain('recruit-train-training-target-0');
+        expect(basicSteps).toContain('recruit-train-decision-final');
+        expect(basicSteps.filter((stepId) => /^recruit-train-decision-\d+$/.test(stepId))).toHaveLength(5);
+        expect(basicSteps).not.toContain('recruit-train-target-0');
+        expect(basicSteps).not.toContain('recruit-train-recruit-target-rule-0');
+        expect(basicSteps).not.toContain('recruit-train-training-target-rule-0');
+        expect(basicSteps.slice(-1)).toEqual(['wheel-result']);
+        expect(basicSteps).not.toContain('action-result-after-wheel');
+        expect(basicSteps).toContain('wheel-first-result');
+        expect(basicSteps).toContain('pick-action-after-wheel');
+        expect(basicSteps.indexOf('action-result')).toBeLessThan(basicSteps.indexOf('wheel-move'));
+        expect(basicSteps.indexOf('wheel-move')).toBeLessThan(basicSteps.indexOf('recruit-train-payment'));
+        expect(basicSteps.indexOf('wheel-move')).toBeLessThan(basicSteps.indexOf('wheel-move-opponent'));
+        expect(basicSteps.indexOf('wheel-move-opponent')).toBeLessThan(basicSteps.indexOf('wheel-result'));
+        expect(basicSteps.indexOf('recruit-train-decision-final')).toBeLessThan(basicSteps.indexOf('wheel-result'));
+        expect(basicSteps).not.toContain('wheel-first');
+        expect(basicSteps).not.toContain('wheel-rule');
         expect(stepIdsOf('attack-and-battle')).toEqual(expect.arrayContaining([
             'action-overview',
             'choose-action',
@@ -283,12 +378,40 @@ describe('qidahen tutorial flow', () => {
         expect(stepIdsOf('siege-and-occupation')).toEqual(expect.arrayContaining([
             'defend-city',
             'city-battle',
-            'besiege-choice',
+            'choose-post-battle-outcome',
+            'besiege-result',
+            'occupy-result',
+            'withdraw-result',
         ]));
+        const siegeSteps = QIDAHEN_TEST_TUTORIALS.tutorials['siege-and-occupation']?.manifest.steps ?? [];
+        expect(siegeSteps.filter((step) => [
+            'defend-city',
+            'choose-post-battle-outcome',
+            'besiege-result',
+            'occupy-result',
+            'withdraw-result',
+        ].includes(step.id)).every((step) => (
+            step.avoidOverlapSelectors?.includes('[data-testid="qidahen-actions-zone"]')
+        ))).toBe(true);
         expect(stepIdsOf('wheel-shared-cost')).toEqual(expect.arrayContaining([
             'choose-move',
             'draw-result',
-            'dispatch-ready',
+            'dispatch-rule',
+            'pay-dispatch',
+        ]));
+        const dispatchPaymentStep = QIDAHEN_TEST_TUTORIALS.tutorials['wheel-shared-cost']?.manifest.steps
+            .find((step) => step.id === 'pay-dispatch');
+        expect(dispatchPaymentStep?.requireAction).toBe(true);
+        expect(dispatchPaymentStep?.allowedCommands).toEqual(expect.arrayContaining([
+            QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+        ]));
+        expect(dispatchPaymentStep?.advanceOnEvents).toEqual([
+            { type: 'WHEEL_DISPATCH_PAYMENT_RESOLVED' },
+        ]);
+        expect(dispatchPaymentStep?.avoidOverlapSelectors).toEqual(expect.arrayContaining([
+            '[data-testid="qidahen-hand-zone"]',
+            '[data-testid="qidahen-wheel-dispatch-payment-panel"]',
         ]));
         expect(stepIdsOf('year-and-characters')).toEqual(expect.arrayContaining([
             'advance-midyear',
@@ -303,15 +426,24 @@ describe('qidahen tutorial flow', () => {
         ]));
     });
 
-    it('全教程结果步骤回到正式承接物，不再把结算摘要当教程主焦点', () => {
-        const allSteps = Object.values(QIDAHEN_TUTORIALS.tutorials)
+    it('教程结果步骤聚焦真实结果承接物，轮盘落点优先聚焦当前行动标记', () => {
+        const allSteps = Object.values(QIDAHEN_TEST_TUTORIALS.tutorials)
             .flatMap((tutorial) => tutorial.manifest.steps);
-        expect(allSteps.some((step) => step.highlightTarget === 'qidahen-season-summary')).toBe(false);
+        const wheelResult = allSteps.find((step) => step.id === 'wheel-result');
+        expect(wheelResult?.highlightTarget).toBe('qidahen-season-summary');
+        expect(allSteps.find((step) => step.id === 'choose-recruit-target')?.highlightTarget)
+            .toBe('qidahen-map-guide-target-focus-city-region-24');
+        const seasonSummarySteps = allSteps.filter((step) => step.highlightTarget === 'qidahen-season-summary');
+        expect(seasonSummarySteps.length).toBeGreaterThan(0);
+        expect(seasonSummarySteps.every((step) => [
+            'action-result', 'wheel-result', 'wheel-first-result',
+            'result', 'finish',
+        ].includes(step.id))).toBe(true);
 
         const directResultStepIds = new Set([
             'action-result',
             'battle-finish',
-            'occupy-choice',
+            'occupy-result',
             'rout-result',
             'plunder-result',
             'evasion-result',
@@ -323,21 +455,38 @@ describe('qidahen tutorial flow', () => {
             'new-year-attrition',
             'korea-attrition',
         ]);
-        const directResultSteps = allSteps.filter((step) => directResultStepIds.has(step.id));
+        const directResultSteps = allSteps.filter((step) => (
+            directResultStepIds.has(step.id)
+        ));
         expect(directResultSteps.length).toBeGreaterThanOrEqual(13);
-        expect(directResultSteps.every((step) => step.highlightTarget && step.highlightTarget !== 'qidahen-season-summary')).toBe(true);
+        const summaryResultContent = new Set([
+            'game-qidahen:tutorial.basic.steps.actionResult',
+            'game-qidahen:tutorial.wheelRecruitTrain.steps.result',
+            'game-qidahen:tutorial.eventAction.steps.result',
+        ]);
+        expect(directResultSteps.filter((step) => step.highlightTarget === 'qidahen-season-summary')
+            .every((step) => summaryResultContent.has(step.content))).toBe(true);
+        expect(directResultSteps.filter((step) => !summaryResultContent.has(step.content))
+            .every((step) => step.highlightTarget && step.highlightTarget !== 'qidahen-season-summary')).toBe(true);
         expect(directResultSteps.some((step) => step.highlightTarget === 'qidahen-map-result-feedback')).toBe(true);
         expect(directResultSteps.some((step) => step.highlightTarget === 'qidahen-player-float')).toBe(true);
     });
 
     it('教程卡避让正式承接区，不遮支付面板、玩家条和右侧动作区', () => {
-        const allSteps = Object.values(QIDAHEN_TUTORIALS.tutorials)
+        const allSteps = Object.values(QIDAHEN_TEST_TUTORIALS.tutorials)
             .flatMap((tutorial) => tutorial.manifest.steps);
         const hasSelector = (step: (typeof allSteps)[number], selector: string) =>
             step.avoidOverlapSelectors?.includes(selector) ?? false;
 
         expect(allSteps.filter((step) => step.id === 'pay-cards')
             .every((step) => hasSelector(step, '[data-testid="qidahen-action-payment-panel"]'))).toBe(true);
+        expect(allSteps.find((step) => step.id === 'pay-raid'))
+            .toEqual(expect.objectContaining({
+                avoidOverlapSelectors: expect.arrayContaining([
+                    '[data-testid="qidahen-action-payment-panel"]',
+                    '[data-testid="qidahen-hand-interaction-tray"]',
+                ]),
+            }));
         expect(allSteps.filter((step) => step.highlightTarget === 'qidahen-player-float')
             .every((step) => hasSelector(step, '[data-testid="qidahen-actions-zone"]'))).toBe(true);
         expect(allSteps.find((step) => step.id === 'shanhaiguan'))
@@ -348,10 +497,24 @@ describe('qidahen tutorial flow', () => {
                     '[data-testid="qidahen-hand-zone"]',
                 ]),
             }));
+        expect(allSteps.find((step) => step.id === 'result'
+            && step.content === 'game-qidahen:tutorial.wheelReclaim.steps.result'))
+            .toEqual(expect.objectContaining({
+                avoidOverlapSelectors: expect.arrayContaining([
+                    '[data-testid="qidahen-actions-zone"]',
+                ]),
+            }));
+        expect(allSteps.find((step) => step.id === 'action-result'))
+            .toEqual(expect.objectContaining({
+                position: 'left',
+                avoidOverlapSelectors: expect.arrayContaining([
+                    '[data-testid="qidahen-actions-zone"]',
+                ]),
+            }));
     });
 
-    it('基础教程从正式开局进入轮盘推进，读取自动落点结算，再示范一次手牌行动', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
+    it('基础教程先完成手牌行动，再选择轮盘走法并留在同一局继续对战', () => {
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('basic-opening');
@@ -370,6 +533,8 @@ describe('qidahen tutorial flow', () => {
             expectedAtlas05Cards.map((card) => card.cardKind),
         );
         expect(initialMingHandCards.map((card: any) => card.label).join('|')).not.toMatch(/教程|大明事件牌|大明战术牌|银两牌/);
+        expect(initialMingHandCards).toHaveLength(3);
+        const openingXuanfu = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.START,
@@ -383,40 +548,83 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('turn-flow');
+        expect(state.sys.tutorial.step?.id).toBe('choose-opening-action');
         expect((state.core as any).turnPhase).toBe('action-window');
         expect((state.core as any).wheelActionUsed).toBe(false);
         expect((state.core as any).factionActionUsed).toBe(false);
 
+        expect((state.core as any).actionChoices.map((choice: any) => choice.id)).toEqual([
+            'raid',
+            'recruit',
+            'grant-pardon',
+            'drive-tiger',
+        ]);
+
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: { actionId: 'recruit' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('wheel-first');
+        expect(state.sys.tutorial.step?.id).toBe('pay-recruit');
         expect((state.core as any).turnPhase).toBe('action-window');
-        expect((state.core as any).handLimitDiscardSelection).toBeNull();
-        expect((state.core as any).factions.ming.handCount)
-            .toBeLessThanOrEqual((state.core as any).factions.ming.handLimit);
-        const openingXuanfu = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
-        expect(openingXuanfu?.troops).toBe(1);
-        expect(openingXuanfu?.specialTroops ?? []).not.toEqual(expect.arrayContaining([
-            expect.objectContaining({ troopKind: 'artillery' }),
+        expect((state.core as any).payment.required).toBe(1);
+        expect((state.core as any).recruitSelection).toBeNull();
+
+        const paymentCardIds = (state.core as any).handCards
+            .filter((card: any) => card.faction === 'ming' && card.status !== 'disabled')
+            .slice(0, 1)
+            .map((card: any) => card.id);
+        expect(paymentCardIds).toHaveLength(1);
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCardIds[0] },
+        });
+        expect((state.core as any).selectedPaymentCardIds).toEqual([paymentCardIds[0]]);
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-recruit-target');
+        expect((state.core as any).turnPhase).toBe('recruit-choice');
+        expect((state.core as any).confirmedActionId).toBe('recruit');
+        expect((state.core as any).recruitSelection?.targetRegionId).toBe('city-region-24');
+        expect((state.core as any).recruitSelection?.choices.map((choice: any) => choice.id)).toContain('level-2-troops');
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '0',
+            payload: { regionId: 'city-region-24' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-recruit-formation');
+        expect((state.core as any).recruitSelection?.targetRegionId).toBe('city-region-24');
+        expect((state.core as any).recruitSelection?.choices).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'level-2-troops', troopDelta: 6 }),
+            expect.objectContaining({ id: 'level-4-chuanbing', troopDelta: 2 }),
+            expect.objectContaining({ id: 'level-1-artillery', troopDelta: 1 }),
+        ]));
+        expect(getPromptSummary(state).kind).toBe('simple-choice');
+        expect(getPromptOptionIds(state)).toEqual(expect.arrayContaining([
+            'level-2-troops',
+            'level-4-chuanbing',
+            'level-1-artillery',
         ]));
 
+        const xuanfuBeforeRecruit = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: { choiceId: 'level-2-troops' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('wheel-rule');
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('wheel-recruit-train-rule');
+        expect(state.sys.tutorial.step?.id).toBe('action-result');
+        expect(((state.core as any).actionLog ?? []).map((entry: any) => entry.text).join(' | ')).toContain('建立 6 个等级 2 部队');
+        const xuanfuAfterRecruit = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
+        expect(xuanfuAfterRecruit?.troops).toBe(xuanfuBeforeRecruit.troops + 6);
+        expect((state.core as any).lastSeasonSummary?.title).toBe('征召军队');
+        expect((state.core as any).currentPlayer).toBe('0');
+        expect((state.core as any).factionActionUsed).toBe(true);
+        expect((state.core as any).wheelActionUsed).toBe(false);
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -424,24 +632,21 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('wheel-move');
-        expect((state.core as any).wheelActionUsed).toBe(false);
-        expect((state.core as any).factionActionUsed).toBe(false);
+        expect((state.core as any).factionActionUsed).toBe(true);
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: {
-                moveId: 'move-1-free',
-            },
+            payload: { moveId: 'move-1-free' },
         });
         expect(state.sys.tutorial.step?.id).toBe('wheel-result');
         expect(state.sys.tutorial.step?.hideOverlay).toBeUndefined();
-        expect((state.core as any).wheelActionUsed).toBe(true);
-        expect((state.core as any).factionActionUsed).toBe(false);
-        expect((state.core as any).actionWheelPosition).toBe('wheel-recruit-train');
-        expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘征兵/训练');
+        expect((state.core as any).actionWheelPosition).toBe('wheel-reclaim');
+        expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘开垦');
+        expect((state.core as any).currentPlayer).not.toBe('0');
         const resultXuanfu = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
-        expect(resultXuanfu?.troops).toBe(3);
+        expect(resultXuanfu?.population).toBe(openingXuanfu?.population + 1);
+        expect(resultXuanfu?.troops).toBe(openingXuanfu?.troops + 6);
         expect(resultXuanfu?.specialTroops ?? []).not.toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'artillery' }),
         ]));
@@ -451,123 +656,35 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('hand-action-order');
-        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-actions-zone');
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('grant-pardon-rule');
-        expect((state.core as any).actionChoices.map((choice: any) => choice.id)).toEqual([
-            'raid',
-            'recruit',
-            'grant-pardon',
-            'drive-tiger',
-        ]);
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('pick-action');
-
-        state = dispatch(state, {
-            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
-            playerId: '0',
-            payload: { actionId: 'grant-pardon' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('pay-cards');
-        expect((state.core as any).turnPhase).toBe('action-window');
-        expect((state.core as any).payment.required).toBe(3);
-        expect((state.core as any).grantPardonSelection).toBeNull();
-
-        const paymentCardIds = (state.core as any).handCards
-            .filter((card: any) => card.faction === 'ming' && card.status !== 'disabled')
-            .slice(0, 3)
-            .map((card: any) => card.id);
-        expect(paymentCardIds).toHaveLength(3);
-        state = dispatch(state, {
-            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
-            playerId: '0',
-            payload: { cardId: paymentCardIds[0] },
-        });
-        expect((state.core as any).selectedPaymentCardIds).toEqual([paymentCardIds[0]]);
-        for (const cardId of paymentCardIds) {
-            if (cardId === paymentCardIds[0]) continue;
-            state = dispatch(state, {
-                type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
-                playerId: '0',
-                payload: { cardId },
-            });
-        }
-        state = dispatch(state, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
-            playerId: '0',
-            payload: {},
-        });
-        expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-target');
-        expect((state.core as any).turnPhase).toBe('grant-pardon-choice');
-        expect((state.core as any).grantPardonSelection?.targetRegionId).toBeNull();
-        expect((state.core as any).grantPardonSelection?.choices).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                sourceRegionId: 'jinzhou',
-                sourceFactionId: 'jin',
-                targetRegionId: 'city-region-25',
-                sourceTokenId: expect.any(String),
-                sourcePieceId: expect.any(String),
-            }),
-        ]));
-        expect(getPromptSummary(state).kind).toBe('simple-choice');
-        expect(getPromptOptionIds(state)).toContain('region:city-region-25');
-
-        state = dispatch(state, {
-            type: QIDAHEN_COMMANDS.SELECT_REGION,
-            playerId: '0',
-            payload: { regionId: 'city-region-25' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-source');
-        expect((state.core as any).grantPardonSelection?.targetRegionId).toBe('city-region-25');
-        expect((state.core as any).grantPardonSelection?.opponentFactionId).toBe('jin');
-        const jinPlayerId = (state.core as any).factions.jin.playerId as string;
-        expect(state.sys.interaction?.current?.playerId).toBe(jinPlayerId);
-        const sourceChoice = (state.core as any).grantPardonSelection?.choices.find((choice: any) => (
-            choice.sourceRegionId === 'jinzhou'
-            && choice.sourceFactionId === 'jin'
-            && choice.targetRegionId === 'city-region-25'
-        ));
-        expect(sourceChoice).toBeDefined();
-        expect(getPromptOptionIds(state)).toContain(sourceChoice.id);
-
-        const selectedSourceToken = (state.core as any).mapTokens.find((token: any) => (
-            token.type === 'army' && token.faction === 'jin' && token.regionId === 'jinzhou'
-        ));
-        expect(selectedSourceToken).toBeDefined();
-        state = dispatch(state, {
-            type: QIDAHEN_COMMANDS.SELECT_REGION,
-            playerId: jinPlayerId,
-            payload: { regionId: 'jinzhou', tokenId: selectedSourceToken.id },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('action-result');
-        expect(((state.core as any).actionLog ?? []).map((entry: any) => entry.text).join(' | ')).toContain('赐印招安');
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('finish');
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
         expect(state.sys.tutorial.step).toBeNull();
+        expect(state.core).toMatchObject({ turnPhase: 'action-window', wheelActionUsed: false, factionActionUsed: false });
     });
 
-    it('七大恨规则参考卡必须逐字使用上游规则原文', () => {
+    it('选择两格走法后先教学指定对手，再执行轮盘效果', () => {
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest;
+        expect(manifest).toBeTruthy();
+        let state = completeBasicOpeningHandAction(buildStateForTutorial('basic-opening'), manifest!);
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE,
+            playerId: '0',
+            payload: { moveId: 'move-2-one-opponent' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('wheel-move-opponent');
+        expect((state.core as any).selectedWheelMoveId).toBe('move-2-one-opponent');
+        const jinHandCountBefore = (state.core as any).factions.jin.handCount;
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            playerId: '0',
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'jin' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('wheel-result');
+        expect((state.core as any).factions.jin.handCount).toBe(jinHandCountBefore + 2);
+        expect((state.core as any).wheelActionUsed).toBe(false);
+    });
+
+    it('七大恨教程中的规则片段使用权威规则的简体中文准确译文', () => {
         const zh = JSON.parse(readFileSync('public/locales/zh-CN/game-qidahen.json', 'utf8')) as {
             tutorial: Record<string, unknown>;
         };
@@ -576,35 +693,59 @@ describe('qidahen tutorial flow', () => {
         };
         const zhTutorialText = JSON.stringify(zh.tutorial);
         const enTutorialText = JSON.stringify(en.tutorial);
-        // Canonical source: 七大恨规则.pdf, p.5. The checked text must stay
-        // Traditional Chinese and must not drift to the translated Markdown.
-        const canonicalRecruitActionRule = ' 徵兵行動：直接建立 1 個等級 2 的正規軍部隊。';
+        // Canonical recruit source: 七大恨规则.pdf, p.5. Player copy uses its
+        // accurate Simplified Chinese translation, not the source glyphs.
+        const canonicalRecruitActionRule = '征兵行动：直接建立 1 个等级 2 的正规军部队。';
         const canonicalRecruitTrainRule = [
-            canonicalRecruitActionRule,
-            ' 訓練行動：將部隊向上轉 1 級，在一回合中每個部隊只能各提升 1 級。',
+            `-  ${canonicalRecruitActionRule}`,
+            '-  训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。',
         ].join('\n');
+        const wheelRecruitTrainSteps = (zh.tutorial as any).wheelRecruitTrain.steps as Record<string, string>;
+        const englishWheelRecruitTrainSteps = (en.tutorial as any).wheelRecruitTrain.steps as Record<string, string>;
+        const wheelSharedCostSteps = (zh.tutorial as any).wheelSharedCost.steps as Record<string, string>;
+        const englishWheelSharedCostSteps = (en.tutorial as any).wheelSharedCost.steps as Record<string, string>;
         const basic = (zh.tutorial.basic as { steps: Record<string, string> }).steps;
+        const englishBasic = (en.tutorial.basic as { steps: Record<string, string> }).steps;
 
-        expect(basic.wheelFirst).toContain('3 张手牌');
-        expect(basic.wheelFirst).toContain('15 张');
-        expect(basic.wheelFirst).toContain('不需要弃牌');
-        expect(basic.wheelRule).toContain('免费向前走 1 格');
-        expect(basic.wheelRule).toContain('轮盘上的行动标记决定该能执行的轮盘行动');
-        expect(basic.wheelRule).toContain('所有人都共享行动标记的移动');
-        expect(basic.wheelRule).not.toContain('规则原文');
-        expect(basic.wheelRule).not.toContain('进入征兵训练');
-        expect(basic.wheelRecruitTrainRule).toBe(canonicalRecruitActionRule);
-        expect(basic.wheelRecruitTrainRule).not.toContain('规则原文');
-        expect(basic.wheelRecruitTrainRule).not.toContain('当前点击');
-        expect(basic.wheelRecruitTrainRule).not.toContain('征兵训练');
-        expect(basic.wheelRecruitTrainRule).not.toContain('弃一张手牌');
-        expect(basic.wheelRecruitTrainRule).not.toContain('炮兵的等级上限');
-        expect(basic.wheelRecruitTrainRule).not.toContain('征兵行动');
-        expect(basic.wheelRecruitTrainRule).not.toContain('正规军');
-        expect(basic.wheelMove).toBe('点击轮盘上高亮的“征兵训练”区域。');
-        expect(zhTutorialText).not.toMatch(/免费走\s*1/);
-        expect(enTutorialText).not.toContain('Move 1 for free');
-        expect(enTutorialText).not.toContain('Move 1 for Free');
+        expect(basic.chooseOpeningAction).toContain('本回合各进行一次手牌行动和轮盘行动');
+        expect(basic.chooseOpeningAction).toContain('先后由你决定');
+        expect(basic.chooseOpeningAction).toContain('现在选一个先做');
+        expect(basic.chooseOpeningAction).not.toContain('弃 1 张手牌');
+        expect(basic.chooseOpeningAction).not.toContain('费用和落点');
+        expect(basic.chooseOpeningAction).not.toContain('手牌上限');
+        expect(basic.chooseOpeningAction).not.toContain('3 张手牌');
+        expect(basic.chooseOpeningAction).not.toContain('长按手牌');
+        expect(englishBasic.chooseOpeningAction).toContain('one hand action and one wheel action, in either order');
+        expect(englishBasic.chooseOpeningAction).toContain('Choose which to do first');
+        expect(englishBasic.chooseOpeningAction).not.toContain('hand limit');
+        expect(englishBasic.chooseOpeningAction).not.toContain('press and hold');
+        const basicManifest = QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest;
+        expect(basicManifest?.steps.find((step) => step.id === 'welcome')?.highlightTarget).toBeUndefined();
+        expect(basicManifest?.steps.find((step) => step.id === 'welcome')).toMatchObject({
+            position: 'center',
+            targetlessPlacement: 'center',
+        });
+        expect(basicManifest?.steps.find((step) => step.id === 'welcome')?.avoidOverlapSelectors).toContain('[data-testid="qidahen-action-wheel"]');
+        expect(basicManifest?.steps.find((step) => step.id === 'welcome')?.compactAvoidOverlapSelectors).toContain('[data-testid="qidahen-hand-zone"]');
+        expect(basicManifest?.steps.find((step) => step.id === 'welcome')?.avoidOverlapSelectors).toContain('[data-testid^="qidahen-year-card-slot-"]');
+        expect(basicManifest?.steps.find((step) => step.id === 'choose-opening-action')).toMatchObject({
+            position: 'center',
+            targetlessPlacement: 'center',
+            requireAction: true,
+            showMask: false,
+        });
+        expect(basicManifest?.steps.find((step) => step.id === 'choose-opening-action')?.highlightTarget).toBeUndefined();
+        expect(basicManifest?.steps.find((step) => step.id === 'choose-opening-action')?.allowedCommands)
+            .toEqual(expect.arrayContaining([
+                QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+                QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE,
+                QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            ]));
+        expect(basic.wheelMove).toContain('轮盘标记由所有玩家共用');
+        expect(basic.wheelMove).toContain('每位玩家只选一种走法');
+        expect(basic.wheelMove).toContain('费用和落点效果见各格提示');
+        expect(basic.wheelResult).toContain('右侧结果显示刚才行动的实际变化');
+        expect(basic.wheelMove).not.toMatch(/[費輪徵訓]/u);
         const wheelActionPrompts = [
             (zh.tutorial as any).wheelSharedCost.steps.chooseMove,
             (zh.tutorial as any).wheelReclaim.steps.chooseMove,
@@ -616,76 +757,79 @@ describe('qidahen tutorial flow', () => {
         ] as string[];
         expect(wheelActionPrompts.every((text) => text.includes('点击轮盘') && text.includes('高亮'))).toBe(true);
         expect(wheelActionPrompts.every((text) => !/免费走\s*1/.test(text))).toBe(true);
-        expect(enTutorialText).not.toMatch(/Move 1\s+for\s+free/i);
-        expect(basic.wheelResult).toContain('部队由 1 支增至 3 支');
-        expect(basic.wheelResult).toContain('新增 2 支等级 2 正规军');
-        expect(basic.wheelResult).toContain('当前没有炮兵');
-        expect(basic.wheelResult).not.toContain('炮兵训练至 2 级');
-        expect(basic.wheelResult).not.toContain('正规军从 2 支变为 4 支');
-        expect(basic.wheelResult).not.toContain('查看地图');
-        expect(basic.wheelResult).not.toContain('先看');
-        const wheelRecruitTrainResult = (zh.tutorial as any).wheelRecruitTrain.steps.result as string;
-        const wheelRecruitTrainRule = (zh.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
-        const englishWheelRecruitTrainResult = (en.tutorial as any).wheelRecruitTrain.steps.result as string;
-        const englishWheelRecruitTrainRule = (en.tutorial as any).wheelRecruitTrain.steps.ruleReference as string;
-        expect(wheelRecruitTrainRule).toBe(canonicalRecruitTrainRule);
-        expect(wheelRecruitTrainRule).not.toContain('规则原文');
-        expect(wheelRecruitTrainRule).not.toContain('当前点击');
-        expect(wheelRecruitTrainRule).not.toContain('征兵训练');
-        expect(wheelRecruitTrainRule).not.toContain('弃一张手牌');
-        expect(wheelRecruitTrainRule).not.toContain('炮兵的等级上限');
-        expect(englishWheelRecruitTrainRule).toBe([
+        expect((zh.tutorial as any).yearAndCharacters.steps.advanceMidyear)
+            .toContain('指定一个对手抽 2 张牌并向前走 2 格');
+        expect(wheelRecruitTrainSteps.paymentRule).toBe('弃一张手牌，最多可进行4 次的征兵或训练行动');
+        expect(wheelRecruitTrainSteps.actionsRule).toBe(canonicalRecruitTrainRule);
+        expect(wheelRecruitTrainSteps.artilleryRule).toBe('(注意炮兵的等级上限须由军备来提升)');
+        expect(wheelRecruitTrainSteps.homelandRule).toBe('且必须在本土(深色)区域才能建立。');
+        expect(wheelRecruitTrainSteps.extraTrainingRule).toBe('可透过弃手牌进行额外的训练行动，每张弃牌可额外进行 1 次训练。');
+        expect(wheelSharedCostSteps.dispatchRule).toBe('进攻调度：弃 1 张手牌。');
+        expect(wheelSharedCostSteps.payDispatch).toBe('选择 1 张手牌并确认支付。');
+        expect(wheelSharedCostSteps.dispatchRule).not.toContain('最多调度 6 个部队');
+        expect(englishWheelSharedCostSteps.dispatchRule).toBeTruthy();
+        expect(englishWheelSharedCostSteps.payDispatch).toBeTruthy();
+        expect(wheelRecruitTrainSteps.actionsRule).not.toContain('炮兵的等级上限');
+        expect(wheelRecruitTrainSteps.homelandRule).not.toContain('征兵行动');
+        expect(wheelRecruitTrainSteps.paymentRule).not.toContain('额外训练行动');
+        expect(englishWheelRecruitTrainSteps.actionsRule).toBe([
             '-  Recruit action: directly create 1 level-2 regular troop.',
             '-  Train action: rotate a troop up 1 level; each troop may be raised only 1 level per turn.',
         ].join('\n'));
-        expect(englishWheelRecruitTrainRule).not.toContain('Rule text');
-        expect(englishWheelRecruitTrainRule).not.toContain('This click');
-        expect(englishWheelRecruitTrainRule).not.toContain('Discard 1 hand card');
-        expect(englishWheelRecruitTrainRule).not.toContain('artillery level cap');
-        expect(wheelRecruitTrainResult).toContain('宣府总兵力由 2 支增至 4 支');
-        expect(wheelRecruitTrainResult).toContain('新增 2 支等级 2 正规军');
-        expect(wheelRecruitTrainResult).toContain('原有 1 支等级 1 炮兵训练至 2 级');
-        expect(wheelRecruitTrainResult).not.toContain('宣府正规军从 2 支变为 4 支');
-        expect(wheelRecruitTrainResult).not.toContain('地图新增');
-        expect(englishWheelRecruitTrainResult).toContain("Xuanfu's total troop count rises from 2 to 4");
-        expect(englishWheelRecruitTrainResult).toContain('2 new level-2 regular troops are added');
-        expect(englishWheelRecruitTrainResult).toContain('existing level-1 artillery is trained to level 2');
-        expect(englishWheelRecruitTrainResult).not.toContain('Xuanfu regular troops increase from 2 to 4');
-        expect(englishWheelRecruitTrainResult).not.toContain('look at the map');
-        expect(basic.chooseGrantPardonTarget).toContain('点击地图上高亮的山海关');
-        expect(basic.chooseGrantPardonTarget).toContain('自动锁定该对手');
-        expect(basic.chooseGrantPardonSource).toContain('后金玩家点击高亮的锦州部队');
-        const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
+        expect(englishWheelRecruitTrainSteps.artilleryRule).toBe("(Artillery's level cap must be raised by armaments.)");
+        expect(englishWheelRecruitTrainSteps.homelandRule).toBe('and must be established only in homeland (dark-colored) regions.');
+        expect(englishWheelRecruitTrainSteps.actionsRule).not.toContain('artillery level cap');
+        expect(englishWheelRecruitTrainSteps.homelandRule).not.toContain('see Recruit action rules');
+        expect(wheelRecruitTrainSteps.result).toContain('行动摘要');
+        expect(wheelRecruitTrainSteps.result).not.toContain('自动建立');
+        expect(englishWheelRecruitTrainSteps.result).toContain('action summary');
+        expect(englishWheelRecruitTrainSteps.result).not.toContain('automatically create');
+        const manifest = basicManifest;
         expect(manifest?.steps.find((step) => step.id === 'wheel-result')?.hideOverlay).toBeUndefined();
-        expect(manifest?.steps.find((step) => step.id === 'wheel-branch-recovery')).toEqual(expect.objectContaining({
-            hiddenAutomation: expect.objectContaining({
-                kind: 'branch-recovery',
-                recoveryStepId: 'wheel-move',
-            }),
-        }));
+        expect(manifest?.steps.find((step) => step.id === 'action-result')?.highlightTarget).toBe('qidahen-season-summary');
+        expect(manifest?.steps.find((step) => step.id === 'recruit-train-decision-1')?.content)
+            .toBe('game-qidahen:tutorial.basic.steps.recruitTrainExtraDecision');
         const basicStepIds = manifest?.steps.map((step) => step.id) ?? [];
-        expect(basicStepIds.indexOf('wheel-recruit-train-rule')).toBeLessThan(basicStepIds.indexOf('wheel-move'));
-        const wheelRecruitTrainManifest = QIDAHEN_TUTORIALS.tutorials['wheel-recruit-train']?.manifest;
+        expect(basicStepIds).not.toContain('wheel-recruit-train-rule');
+        expect(basicStepIds).not.toContain('wheel-branch-recovery');
+        const wheelRecruitTrainManifest = QIDAHEN_TEST_TUTORIALS.tutorials['wheel-recruit-train']?.manifest;
         const wheelRecruitTrainStepIds = wheelRecruitTrainManifest?.steps.map((step) => step.id) ?? [];
-        expect(wheelRecruitTrainStepIds.indexOf('rule-reference')).toBeLessThan(wheelRecruitTrainStepIds.indexOf('choose-move'));
-        expect(basic.turnFlow).toContain('顺序由玩家决定');
-        expect(basic.turnFlow).not.toContain('示范路径');
-        expect(basic.handActionOrder).toContain('手牌行动每回合选 1 项');
-        expect(basic.handActionOrder).toContain('没有固定先后');
-        expect(basic.handActionOrder).not.toContain('示例顺序不代表规则顺序');
-        expect(basic.handActionOrder).toContain('突袭作战');
-        expect(basic.handActionOrder).toContain('征召军队');
-        expect(basic.handActionOrder).toContain('赐印招安');
-        expect(basic.handActionOrder).toContain('驱虎吞狼');
-        expect(basic.handActionOrder).not.toContain('弃 1');
-        expect(basic.handActionOrder).not.toContain('弃 3');
-        expect(basic.grantPardonRule).toBe('赐印招安：弃 3 张手牌，指定 1 个对手，对手相邻于大明控制区域的 1 个部队移动到相邻的大明控制区域并转换阵营成为大明部队。(必须由被指定的玩家选择部队)');
-        expect(basic.grantPardonRule).not.toContain('接收区唯一对应一名对手');
-        expect(basic.grantPardonRule).not.toContain('系统自动锁定该对手');
-        expect(basic.pickAction).toBe('点击右侧的“赐印招安”行动。');
-        expect(basic.actionResult).toContain('锦州部队从 2 支变为 1 支');
-        expect(basic.actionResult).toContain('山海关部队从 2 支变为 3 支');
-        expect(basic.actionResult).toContain('被选部队归大明');
+        expect(wheelRecruitTrainStepIds.indexOf('rule-payment')).toBeLessThan(wheelRecruitTrainStepIds.indexOf('choose-move'));
+        expect(basic.pickActionAfterWheel).toContain('轮盘行动已完成，本回合还剩一次手牌行动');
+        expect(basic.pickActionAfterWheel).toContain('现在进行征召军队');
+        expect(basic.pickActionAfterWheel).not.toContain('弃 1 张手牌');
+        expect(basic.pickActionAfterWheel).not.toContain('长按手牌');
+        expect(basic.pickActionAfterWheel).toContain('点击右侧“征召军队”');
+        expect(basic.payCards).toBe('征召军队需弃 1 张手牌。选牌前可点“看”查看牌面，移动端长按；选 1 张并确认支付。');
+        expect(englishBasic.payCards).toContain('Tap View to inspect a card on desktop');
+        expect(englishBasic.payCards).toContain('press and hold it on mobile');
+        expect(basic.chooseRecruitTarget).toContain('点击高亮的宣府');
+        expect(basic.chooseRecruitTarget).toContain('必须在本土（深色）区域建立');
+        expect(basic.chooseRecruitFormation).toContain('6 支等级 2 正规军');
+        expect(basic.chooseRecruitFormation).toContain('选择 6 支等级 2 正规军');
+        expect(basic.chooseRecruitFormation).not.toContain('川兵');
+        expect(basic.chooseRecruitFormation).not.toContain('炮兵');
+        expect(basic.recruitTrainExtraDecision).toContain('每额外弃 1 张手牌');
+        expect(basic.recruitTrainExtraDecision).toContain('再训练 1 支部队');
+        expect(basic.recruitTrainContinue).not.toContain('额外训练');
+        expect(basic.wheelMove).not.toContain('大明弃 1 张手牌后最多进行 4 次征兵或训练');
+        expect(basic.recruitTrainPayment).toBe('征兵训练先弃 1 张手牌。选择 1 张并确认。');
+        expect(basic.recruitTrainActionRule).toContain(canonicalRecruitActionRule);
+        expect(basic.recruitTrainActionRule).toContain('训练行动：将部队向上转 1 级');
+        expect(basic.recruitTrainActionRule).toContain('每个部队只能各提升 1 级');
+        expect(basic.recruitTrainActionRule).not.toContain('额外弃牌');
+        expect(basic.recruitTrainActionRule).not.toContain('本土');
+        expect(basic.recruitTrainActionRule).not.toContain('炮兵');
+        expect(basic.recruitTrainExtraPayment).toContain('每额外弃 1 张手牌，可额外进行 1 次训练');
+        expect(basic.recruitTrainRecruitTargetRule).toContain('正规军必须在本土（深色）区域建立');
+        expect(basic.recruitTrainTrainingTargetRule).toContain('当前等级和目标等级');
+        expect(basic.recruitTrainContinue).toContain('右侧显示本次征兵或训练结果');
+        expect(basic.recruitTrainFinalFinish).toContain('点击“完成征兵训练”结束轮盘行动');
+        expect(basic.actionResult).toContain('右侧显示实际建军结果');
+        expect(basic.actionResult).toContain('轮盘行动还未执行');
+        expect(basic.wheelResult).toContain('刚才行动的实际变化');
+        expect(basic.wheelResult).toContain('两种行动都已完成');
+        expect(basic.wheelFirstResult).toContain('还剩一次手牌行动');
 
         for (const text of [zhTutorialText, enTutorialText]) {
             expect(text).not.toContain('正式效果已经结算');
@@ -715,7 +859,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('进攻与野战教程从行动窗口选择突袭作战并支付后，再进入边界说明', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['attack-and-battle']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['attack-and-battle']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('attack-and-battle');
@@ -732,7 +876,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('进攻与野战教程在结算野战前会先走边界与战术时机，再依次进入战果、战败标记与战后收口步骤', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['attack-and-battle']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['attack-and-battle']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('attack-and-battle');
@@ -819,7 +963,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('战败撤退教程在选择溃退后会看到残部清空与战败标记', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['retreat-and-rout']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['retreat-and-rout']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('retreat-and-rout');
@@ -859,69 +1003,59 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
-    it('基础教程允许正式合法的走3分支，并由隐藏恢复机制回到轮盘选择', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
+    it.each([
+        ['move-1-free', 'wheel-reclaim'],
+        ['move-2-one-opponent', 'wheel-military-farm'],
+        ['move-3-all-opponents', 'wheel-recruit-train'],
+    ])('基础教程保留玩家实际选择的轮盘走法 %s', (moveId, expectedPosition) => {
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
 
-        let state = buildStateForTutorial('basic-opening');
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.START,
-            playerId: '0',
-            payload: { manifest },
-        });
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
+        let state = completeBasicOpeningHandAction(buildStateForTutorial('basic-opening'), manifest!);
 
         expect(state.sys.tutorial.step?.id).toBe('wheel-move');
         expect(state.sys.tutorial.step?.allowedTargets).toBeUndefined();
+        const beforeMove = state.core as any;
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-3-all-opponents' },
+            payload: {
+                moveId,
+                ...(moveId === 'move-2-one-opponent' ? { opponentFactionId: 'jin' } : {}),
+            },
         });
 
-        expect(state.sys.tutorial.step?.id).toBe('wheel-branch-recovery');
-        expect((state.core as any).wheelActionUsed).toBe(true);
+        expect(state.sys.tutorial.step?.id).toBe(
+            expectedPosition === 'wheel-recruit-train' ? 'recruit-train-payment' : 'wheel-result',
+        );
+        expect((state.core as any).wheelActionUsed).toBe(expectedPosition === 'wheel-recruit-train');
         expect((state.core as any).wheelMoveSummary).toBeTruthy();
-        expect((state.core as any).turnPhase).toBe('dispatch-targeting');
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.PREVIOUS,
-            playerId: '0',
-            payload: { __tutorialAiCommand: true },
-            skipValidation: true,
-        });
-        expect(state.sys.tutorial.step?.id).toBe('wheel-move');
-        expect((state.core as any).wheelActionUsed).toBe(false);
-        expect((state.core as any).actionWheelPosition).toBe('wheel-military-farm');
+        expect((state.core as any).actionWheelPosition).toBe(expectedPosition);
+        const afterMove = state.core as any;
+        if (expectedPosition === 'wheel-recruit-train') {
+            expect(afterMove.wheelRecruitTrainProgress).toMatchObject({ phase: 'payment', paymentPurpose: 'initial' });
+            expect(afterMove.lastSeasonSummary).toBeNull();
+        } else {
+            expect(afterMove.lastSeasonSummary).toBeTruthy();
+            expect(afterMove.currentPlayer).not.toBe('0');
+        }
+        const xuanfuBefore = beforeMove.regions.find((region: any) => region.id === 'city-region-24');
+        const xuanfuAfter = afterMove.regions.find((region: any) => region.id === 'city-region-24');
+        if (moveId === 'move-1-free') {
+            expect(xuanfuAfter.population).toBe(xuanfuBefore.population + 1);
+        } else if (moveId === 'move-2-one-opponent') {
+            expect(afterMove.factions.jin.handCount).toBe(beforeMove.factions.jin.handCount + 2);
+            expect(xuanfuAfter.troops).toBe(xuanfuBefore.troops + 1);
+        } else {
+            expect(afterMove.factions.mongol.handCount).toBe(beforeMove.factions.mongol.handCount + 2);
+            expect(afterMove.factions.jin.handCount).toBe(beforeMove.factions.jin.handCount + 2);
+            expect(xuanfuAfter.troops).toBe(xuanfuBefore.troops);
+        }
     });
 
-    it('轮盘代价教程在走 3 格后会让两家对手各抽 2，并进入进攻调度', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['wheel-shared-cost']?.manifest;
+    it('轮盘代价教程在走 3 格后让两家对手各抽 2，实际弃牌支付后保留部队调度入口', () => {
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['wheel-shared-cost']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('wheel-shared-cost');
@@ -961,12 +1095,48 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('dispatch-ready');
+        expect(state.sys.tutorial.step?.id).toBe('dispatch-rule');
         expect((state.core as any).selectedRegionId).toBe('city-region-24');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('pay-dispatch');
+        expect((state.core as any).payment.required).toBe(1);
+        const currentFactionId = getCurrentFactionId(state.core as any);
+        const currentFactionHandBeforePayment = (state.core as any).factions[currentFactionId].handCount;
+        const currentFactionDiscardBeforePayment = (state.core as any).factions[currentFactionId].discardPileCount ?? 0;
+
+        const paymentCard = (state.core as any).handCards.find((card: any) => (
+            card.faction === currentFactionId && card.status !== 'disabled'
+        ));
+        expect(paymentCard).toBeTruthy();
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCard.id },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('pay-dispatch');
+        expect((state.core as any).selectedPaymentCardIds).toEqual([paymentCard.id]);
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('finish');
+        expect((state.core as any).payment.required).toBe(0);
+        expect((state.core as any).selectedPaymentCardIds).toEqual([]);
+        expect((state.core as any).factions[currentFactionId].handCount).toBe(currentFactionHandBeforePayment - 1);
+        expect((state.core as any).factions[currentFactionId].discardPileCount).toBe(currentFactionDiscardBeforePayment + 1);
+        expect((state.core as any).turnPhase).toBe('dispatch-targeting');
+        expect((state.core as any).actionWheelPosition).toBe('wheel-hire');
     });
 
     it('轮盘开垦教程会从真实轮盘入口进入，并把己方控制区人口加 1', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['wheel-reclaim']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['wheel-reclaim']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('wheel-reclaim');
@@ -1000,7 +1170,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('轮盘军屯教程会从真实轮盘入口进入，并同时补牌和加兵', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['wheel-military-farm']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['wheel-military-farm']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('wheel-military-farm');
@@ -1035,11 +1205,18 @@ describe('qidahen tutorial flow', () => {
         expect((state.core as any).factions.ming.handCount).toBe(handBefore + 2);
     });
 
-    it('轮盘征兵训练教程会从真实轮盘入口进入，并把加兵与炮兵训练一起结算', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['wheel-recruit-train']?.manifest;
+    it('轮盘征兵训练教程会真实支付、选择训练与征兵、执行额外训练并结束后继续对局', () => {
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['wheel-recruit-train']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('wheel-recruit-train');
+        const next = () => {
+            state = dispatch(state, {
+                type: TUTORIAL_COMMANDS.NEXT,
+                playerId: '0',
+                payload: { reason: 'manual' },
+            });
+        };
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.START,
@@ -1047,19 +1224,9 @@ describe('qidahen tutorial flow', () => {
             payload: { manifest },
         });
         expect(state.sys.tutorial.step?.id).toBe('overview');
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('rule-reference');
-
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('rule-payment');
+        next();
         expect(state.sys.tutorial.step?.id).toBe('choose-move');
         expect((state.core as any).actionWheelPosition).toBe('wheel-military-farm');
 
@@ -1070,23 +1237,116 @@ describe('qidahen tutorial flow', () => {
                 moveId: 'move-1-free',
             },
         });
-        expect(state.sys.tutorial.step?.id).toBe('result');
+        expect(state.sys.tutorial.step?.id).toBe('pay-initial');
         expect(state.sys.tutorial.step?.hideOverlay).toBeUndefined();
         expect((state.core as any).currentPlayer).toBe('0');
         expect((state.core as any).actionWheelPosition).toBe('wheel-recruit-train');
+        expect((state.core as any).lastSeasonSummary).toBeNull();
+
+        const mingCard = (state.core as any).handCards.find((card: any) => card.faction === 'ming' && card.status !== 'disabled');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: mingCard.id },
+        });
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('actions-rule');
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('choose-training');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'action:train' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('artillery-rule');
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('choose-training-target');
+        const artillery = getQidahenWheelRecruitTrainChoices(state.core as any)
+            .find((choice) => choice.regionId === 'city-region-24' && choice.troopKind === 'artillery');
+        expect(artillery).toBeTruthy();
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: artillery!.id },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('training-result');
+        expect((state.core as any).wheelRecruitTrainProgress.actionsCompleted).toBe(1);
+
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('choose-recruit');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'action:recruit' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('recruit-homeland-rule');
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('choose-recruit-target');
+        const recruitTarget = getQidahenWheelRecruitTrainChoices(state.core as any)[0];
+        expect(recruitTarget?.kind).toBe('recruit-target');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: recruitTarget!.id },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('recruit-result');
+        expect((state.core as any).wheelRecruitTrainProgress.actionsCompleted).toBe(2);
+
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('extra-training-rule');
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('choose-extra-training');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'extra-training' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('pay-extra');
+        const extraCard = (state.core as any).handCards.find((card: any) => card.faction === 'ming' && card.status !== 'disabled');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: extraCard.id },
+        });
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-extra-training-target');
+        const extraTarget = getQidahenWheelRecruitTrainChoices(state.core as any)
+            .find((choice) => choice.regionId === 'city-region-24' && choice.troopKind === 'infantry' && choice.level === 2);
+        expect(extraTarget).toBeTruthy();
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: extraTarget!.id },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('extra-training-result');
+        expect((state.core as any).wheelRecruitTrainProgress).toMatchObject({
+            actionsCompleted: 2,
+            extraTrainingsCompleted: 1,
+        });
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('finish-action');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'finish' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('result');
+        expect((state.core as any).wheelRecruitTrainProgress).toBeNull();
         expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘征兵/训练');
-        const recruitTrainRegion = (state.core as any).regions.find((region: any) => region.id === 'city-region-24');
-        expect(recruitTrainRegion?.troops).toBe(4);
-        expect(recruitTrainRegion?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({ troopKind: 'artillery', count: 1, level: 2 }),
-        ]));
-        expect(
-            recruitTrainRegion?.note,
-        ).toContain('轮盘征兵训练将');
+        next();
+        expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
     it('升级军备教程会从当前正式行动入口进入，并把火炮技术升到 2 级', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['armament-upgrade']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['armament-upgrade']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('armament-upgrade');
@@ -1162,8 +1422,8 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
-    it('大汗令箭教程会从当前正式行动入口进入，并把这次效果结算成一次征兵训练', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['event-action']?.manifest;
+    it('大汗令箭教程会支付一次行动费，再真实选择本土征兵并结束效果', () => {
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['event-action']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('event-action');
@@ -1237,9 +1497,53 @@ describe('qidahen tutorial flow', () => {
                 choiceId: 'recruit-train',
             },
         });
+        expect(state.sys.tutorial.step?.id).toBe('recruit-train-actions-rule');
+        expect((state.core as any).wheelRecruitTrainProgress).toMatchObject({ source: 'khan-edict', phase: 'choose-action' });
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '1',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-recruit');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'action:recruit' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('recruit-homeland-rule');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '1',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-recruit-target');
+        const recruitTarget = getQidahenWheelRecruitTrainChoices(state.core as any)[0];
+        expect(recruitTarget?.kind).toBe('recruit-target');
+        const troopsBeforeRecruit = (state.core as any).factions.mongol.troops;
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '1',
+            payload: { choiceId: recruitTarget!.id },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('recruit-result');
+        expect((state.core as any).factions.mongol.troops).toBe(troopsBeforeRecruit + 1);
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '1',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('finish-recruit-train');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'finish' },
+        });
         expect(state.sys.tutorial.step?.id).toBe('result');
-        expect((state.core as any).lastSeasonSummary?.title).toBe('大汗令箭');
-        expect((state.core as any).regions.find((region: any) => region.id === 'city-region-25')?.troops).toBe(4);
+        expect((state.core as any).lastSeasonSummary?.title).toBe('大汗令箭 · 征兵训练');
+        expect((state.core as any).wheelRecruitTrainProgress).toBeNull();
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -1250,7 +1554,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('外交雇佣教程在友好标记后选择仅雇佣会推进到 finish', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['diplomacy-and-hire']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['diplomacy-and-hire']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('diplomacy-and-hire');
@@ -1342,7 +1646,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('攻城教程会先走真实守城宣告，再进入城战待结算和围城选择', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['siege-and-occupation']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['siege-and-occupation']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('siege-and-occupation');
@@ -1361,6 +1665,7 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('defend-city');
         expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action-defender-hold-city');
+        expect(state.sys.tutorial.step?.avoidOverlapSelectors).toContain('[data-testid="qidahen-actions-zone"]');
         expect((state.core as any).pendingTargetAction?.battleMode).toBe('field');
         expect((state.core as any).pendingTargetAction?.title).toContain('守城宣告');
         expect((state.sys as any).interaction?.current?.data?.options?.some((option: any) => option.id === 'defender-hold-city')).toBe(true);
@@ -1399,11 +1704,20 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { reason: 'manual' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('besiege-choice');
+        expect(state.sys.tutorial.step?.id).toBe('choose-post-battle-outcome');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-post-battle-selection');
+        expect(state.sys.tutorial.step?.advanceOnEvents).toEqual([
+            { type: 'POST_BATTLE_DECISION_RESOLVED' },
+        ]);
+        expect(state.sys.tutorial.step?.avoidOverlapSelectors).toContain('[data-testid="qidahen-actions-zone"]');
+        const postBattleChoices = (state.core as any).postBattleSelection?.choices ?? [];
+        expect(postBattleChoices.some((choice: any) => choice.id === 'occupy' && choice.mode === 'occupy')).toBe(true);
+        expect(postBattleChoices.some((choice: any) => choice.id === 'besiege' && choice.mode === 'besiege')).toBe(true);
+        expect(postBattleChoices.some((choice: any) => choice.id === 'withdraw:city-region-24' && choice.mode === 'withdraw')).toBe(true);
     });
 
     it('骑兵劫掠教程会走真实劫掠按钮，并写入结算摘要', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['cavalry-plunder']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['cavalry-plunder']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('cavalry-plunder');
@@ -1440,7 +1754,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('骑兵避战教程会走真实避战按钮，并把骑兵撤到相邻友方区', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['cavalry-evasion']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['cavalry-evasion']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('cavalry-evasion');
@@ -1483,7 +1797,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('中立入侵教程会走真实待结算按钮，并生成中立守军', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['neutral-invasion']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['neutral-invasion']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('neutral-invasion');
@@ -1522,7 +1836,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('水路调度教程会走真实调度目标，锁定海岸水路限 2，并排除水路后接陆路', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['water-dispatch']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['water-dispatch']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('water-dispatch');
@@ -1603,7 +1917,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('年中新年教程在推进到新年后，会先进入朝鲜朝贡，再进入维护并自动进入耗损结果', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['year-and-characters']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['year-and-characters']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('year-and-characters');
@@ -1627,6 +1941,7 @@ describe('qidahen tutorial flow', () => {
             playerId: '1',
             payload: {
                 moveId: 'move-2-one-opponent',
+                opponentFactionId: 'ming',
             },
         });
         expect(state.sys.tutorial.step?.id).toBe('midyear-tax');
@@ -1680,7 +1995,7 @@ describe('qidahen tutorial flow', () => {
     });
 
     it('朝鲜与地图特例教程会从真实新年入口开始，并在维护后看到朝鲜耗损结果', () => {
-        const manifest = QIDAHEN_TUTORIALS.tutorials['korea-and-special-map-rules']?.manifest;
+        const manifest = QIDAHEN_TEST_TUTORIALS.tutorials['korea-and-special-map-rules']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('korea-and-special-map-rules');

@@ -31,6 +31,9 @@ export interface EvidenceScreenshotIndexEntry {
     chainStep: number | string;
     stage: '前态' | '中态' | '后态';
     description: string;
+    role?: 'main-flow' | 'auxiliary-detail';
+    viewport?: 'desktop' | 'mobile';
+    transition?: string;
 }
 
 export interface EvidenceScreenshotIndexOptions {

@@ -191,6 +191,7 @@ export const GameHUD = ({
     const isOnline = mode === 'online';
     const isLocal = mode === 'local';
     const isTutorial = mode === 'tutorial';
+    const isQidahenTutorial = _gameId === 'qidahen' && isTutorial;
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
@@ -206,6 +207,8 @@ export const GameHUD = ({
     // Betrayal 选角阶段的确认区占用右下角，悬浮菜单必须让位；进入牌桌后恢复右下角基线。
     const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_POSITION
+        : isQidahenTutorial
+            ? 'top-right'
         : isTicTacToePortraitMobile
             ? 'top-right'
         : isBetrayalGame
@@ -213,6 +216,8 @@ export const GameHUD = ({
             : 'bottom-right';
     const fabMenuStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
+        : isQidahenTutorial
+            ? 'game_hud_fab_position:qidahen:tutorial:v1'
         : isTicTacToePortraitMobile
             ? 'game_hud_fab_position:tictactoe:portrait:v1'
         : isBetrayalGame

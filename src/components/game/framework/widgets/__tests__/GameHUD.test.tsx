@@ -356,6 +356,24 @@ describe('GameHUD', () => {
         expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:betrayal:v2');
     });
 
+    it('七大恨教程将悬浮菜单放在右上角，避开右下方的对局操作区', () => {
+        renderHud(
+            <GameHUD
+                mode="tutorial"
+                matchId="match-1"
+                gameId="qidahen"
+                myPlayerId="0"
+                isPregameSetupPhase={false}
+            />,
+        );
+
+        const fabMenu = screen.getByTestId('fab-menu-stub');
+        expect(fabMenu).toHaveAttribute('data-fab-position', 'top-right');
+        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:qidahen:tutorial:v1');
+        expect(screen.getByTestId('fab-action-chat')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-settings')).toBeInTheDocument();
+    });
+
     it('Mage Wars 游戏内悬浮菜单默认避开底部准备牌区', () => {
         renderHud(
             <GameHUD

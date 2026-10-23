@@ -37,9 +37,11 @@ import type {
     SelectRegionCommand,
     SelectSunYuanhuaTechCardCommand,
     SelectWheelMoveCommand,
+    ResolveWheelRecruitTrainChoiceCommand,
     SelectedActionExecutedEvent,
     SunYuanhuaTechCardSelectedEvent,
     WheelMoveSelectedEvent,
+    WheelRecruitTrainChoiceResolvedEvent,
 } from './types';
 
 type QidahenCommandEventBuilder = (
@@ -170,6 +172,20 @@ const buildQidahenWheelMoveExecutedEvent = (
     type: 'WHEEL_MOVE_EXECUTED',
     payload: {
         moveId: command.payload.moveId,
+        opponentFactionId: command.payload.opponentFactionId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenWheelRecruitTrainChoiceResolvedEvent = (
+    command: ResolveWheelRecruitTrainChoiceCommand,
+    timestamp: number,
+): WheelRecruitTrainChoiceResolvedEvent => ({
+    type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED',
+    payload: {
+        choiceId: command.payload.choiceId,
         playerId: command.playerId,
     },
     sourceCommandType: command.type,
@@ -425,6 +441,7 @@ const QIDAHEN_COMMAND_EVENT_BUILDERS: readonly QidahenCommandEventBuilderSpec[] 
             QIDAHEN_COMMANDS.SELECT_FACTION,
             QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD,
             QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+            QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT,
             QIDAHEN_COMMANDS.RESOLVE_SUN_YUANHUA_TECH,
             QIDAHEN_COMMANDS.RESOLVE_GAO_DI_DISPATCH,
             QIDAHEN_COMMANDS.RESOLVE_INTERNAL_DISPATCH,
@@ -475,6 +492,12 @@ const QIDAHEN_COMMAND_EVENT_BUILDERS: readonly QidahenCommandEventBuilderSpec[] 
         commandTypes: [QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
         buildEvents: buildSingleCommandEvents<ExecuteWheelMoveCommand>(
             buildQidahenWheelMoveExecutedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE],
+        buildEvents: buildSingleCommandEvents<ResolveWheelRecruitTrainChoiceCommand>(
+            buildQidahenWheelRecruitTrainChoiceResolvedEvent,
         ),
     },
     {

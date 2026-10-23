@@ -41,10 +41,10 @@ const QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIGS: QidahenWheelImmediateEffectConfig[
         id: 'wheel-recruit-train',
         label: '征兵训练',
         summaryTitle: '轮盘征兵/训练',
-        troopDelta: 2,
+        troopDelta: 0,
         populationDelta: 0,
         drawCards: 0,
-        requiresFriendlyRegion: true,
+        requiresFriendlyRegion: false,
     },
 ];
 

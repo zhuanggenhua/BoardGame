@@ -11,6 +11,7 @@ import {
 import {
     resolveQidahenWheelMoveExecuted,
 } from './wheelMoveExecution';
+import { resolveQidahenWheelRecruitTrainChoice } from './wheelRecruitTrain';
 import {
     reduceQidahenDefeatInDetailRegionSelected,
 } from './defeatInDetail';
@@ -83,6 +84,15 @@ const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
         (state, event) => resolveQidahenWheelMoveExecuted(
             state,
             event.payload.moveId,
+            event.timestamp,
+            event.payload.opponentFactionId,
+        ),
+    ),
+    defineDirectInputEventReducer(
+        ['WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED'],
+        (state, event) => resolveQidahenWheelRecruitTrainChoice(
+            state,
+            event.payload.choiceId,
             event.timestamp,
         ),
     ),

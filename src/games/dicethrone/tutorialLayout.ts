@@ -3,6 +3,7 @@ import type { TutorialStepSnapshot } from '../../engine/types';
 /** 沿用浮层正式避让，把手牌、资源与骰盘留给当前决策。 */
 export const withDiceThroneTutorialSurfaces = (steps: TutorialStepSnapshot[]): TutorialStepSnapshot[] => steps.map(step => {
     const target = step.highlightTarget ?? '';
+    const targetsAbilitySlot = target === 'ability-slots' || target.startsWith('ability-slot-');
     const usesSideControls = target.startsWith('dice-')
         || target === 'advance-phase-button'
         || target === 'response-pass-button'
@@ -12,7 +13,7 @@ export const withDiceThroneTutorialSurfaces = (steps: TutorialStepSnapshot[]): T
     return {
         ...step,
         ...(!target ? { highlightTarget: 'phase-indicator', position: 'right' as const } : usesSideControls ? { position: 'top' as const } : {}),
-        ...(target === 'ability-slots' ? {
+        ...(targetsAbilitySlot ? {
             compactAvoidOverlapSelectors: [
                 ...(step.compactAvoidOverlapSelectors ?? []),
                 '[data-tutorial-id="dice-tray"]',
@@ -33,8 +34,10 @@ export const withDiceThroneTutorialSurfaces = (steps: TutorialStepSnapshot[]): T
         '[data-tutorial-id="draw-deck"]',
         '[data-tutorial-id="discard-pile"]',
         '[data-testid="current-total-damage-badge"]',
-        ...(step.id === 'hand-inspect' ? ['[data-testid="board-magnify-overlay"][aria-hidden="false"] > div'] : []),
-        ...(target === 'ability-slots' ? ['[data-tutorial-id="tip-board"]'] : []),
+        ...(['hand-inspect', 'double-play'].includes(step.id)
+            ? ['[data-testid="board-magnify-overlay"][aria-hidden="false"] > div']
+            : []),
+        ...(targetsAbilitySlot ? ['[data-tutorial-id="tip-board"]'] : []),
         ]),
     };
 });

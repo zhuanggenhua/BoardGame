@@ -121,7 +121,7 @@ export const createInitialCore = (
         currentYear: getYearLabelByIndex(currentYearIndex),
         turnLabel: buildTurnLabel(1, factions[openingFactionId].name, 'action-window', false, false, false),
         ...actionWindowEntryState,
-        actionWheelPosition: 'wheel-military-farm',
+        actionWheelPosition: 'wheel-new-year',
         wheelMoveChoices: getQidahenWheelMoveChoices(),
         lastSeasonSummary: null,
         activeEventCards: [],

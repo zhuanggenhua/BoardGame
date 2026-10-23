@@ -15,7 +15,9 @@ import {
 
 describe('七大恨轮盘进攻调度弃牌', () => {
     it('走3格落到进攻调度后必须先弃1张手牌，未支付不能选目标', () => {
-        const sourceSelected = apply(setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2), {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
+        const sourceSelected = apply(setRegionCavalry(core, 'city-region-24', 'ming', 2), {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '0',
             payload: { regionId: 'city-region-24' },
@@ -25,7 +27,6 @@ describe('七大恨轮盘进攻调度弃牌', () => {
             playerId: '0',
             payload: { moveId: 'move-3-all-opponents' },
         });
-
         expect(unpaid.turnPhase).toBe('dispatch-targeting');
         expect(unpaid.actionWheelPosition).toBe('wheel-hire');
         expect(isQidahenWheelDispatchPaymentPending(unpaid)).toBe(true);
@@ -72,7 +73,9 @@ describe('七大恨轮盘进攻调度弃牌', () => {
     });
 
     it('走2格落到进攻调度同样要先弃1张手牌', () => {
-        const sourceSelected = apply(setRegionInfantry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2), {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
+        const sourceSelected = apply(setRegionInfantry(core, 'city-region-24', 'ming', 2), {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '0',
             payload: { regionId: 'city-region-24' },
@@ -80,7 +83,7 @@ describe('七大恨轮盘进攻调度弃牌', () => {
         const unpaid = applyUnchecked(sourceSelected, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'jin' },
         });
 
         expect(unpaid.actionWheelPosition).toBe('wheel-diplomacy');
@@ -94,7 +97,9 @@ describe('七大恨轮盘进攻调度弃牌', () => {
     });
 
     it('手牌不足时跳过进攻调度并记录手牌不足', () => {
-        const sourceSelected = apply(setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2), {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.actionWheelPosition = 'wheel-military-farm';
+        const sourceSelected = apply(setRegionCavalry(core, 'city-region-24', 'ming', 2), {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '0',
             payload: { regionId: 'city-region-24' },

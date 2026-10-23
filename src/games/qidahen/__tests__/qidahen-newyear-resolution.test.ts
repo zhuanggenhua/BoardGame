@@ -176,10 +176,15 @@ it('蒙古跨到后金的新年防线维护等待态会重新锚定逻辑区辽�
             playerId: '1',
             payload: { choiceId: 'recruit-train' },
         });
-        const midyear = apply(khanResolved, {
+        const khanFinished = apply(khanResolved, {
+            type: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'finish' },
+        });
+        const midyear = apply(khanFinished, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '1',
-            payload: { moveId: 'move-2-one-opponent' },
+            payload: { moveId: 'move-2-one-opponent', opponentFactionId: 'ming' },
         });
         const pending = apply(midyear, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
