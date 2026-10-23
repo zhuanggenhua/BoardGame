@@ -1,0 +1,75 @@
+* { box-sizing: border-box; letter-spacing: 0; }
+:root { color: #eeeee4; background: #14191a; font-family: 'Microsoft YaHei', system-ui, sans-serif; font-synthesis: none; }
+body { margin: 0; overflow: hidden; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; border: 0; }
+button:focus-visible { outline: 2px solid #e9cd88; outline-offset: 3px; }
+button:disabled { cursor: default; opacity: 0.48; }
+main { width: 100%; height: 100dvh; min-height: 360px; position: relative; overflow: hidden; }
+.world { position: absolute; inset: 0; touch-action: none; }
+.world canvas { display: block; width: 100%; height: 100%; }
+header { position: absolute; top: 0; left: 0; right: 0; min-height: 105px; display: flex; justify-content: space-between; align-items: center; padding: 25px 34px; pointer-events: none; background: linear-gradient(#111717d9, transparent); }
+header button { pointer-events: auto; }
+.brand { position: relative; }
+.edition { display: block; font-size: 9px; color: #a9b8b5; }
+h1 { font: 32px/1.5 'STSong', 'SimSun', serif; margin: 0; }
+.prototype { position: absolute; left: 150px; bottom: 11px; white-space: nowrap; font-size: 10px; color: #bdc7c4; border-left: 1px solid #68716c; padding-left: 12px; }
+.chapter { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #d4dcd5; position: absolute; left: 50%; transform: translateX(-50%); }
+.status-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #d3b67a; margin-right: 8px; }
+.divider { height: 12px; width: 1px; background: #777d72; margin: 0 8px; }
+.icon { display: grid; place-items: center; width: 40px; height: 40px; background: #1b2526dd; border: 1px solid #66726c55; border-radius: 3px; flex: none; }
+.icon:hover, .icon.active { background: #526057; color: #fff0c2; }
+.location { position: absolute; left: 35px; top: 155px; pointer-events: none; }
+.eyebrow { color: #b5a680; font-size: 10px; }
+.location h2 { font: 25px/1.5 'STSong', 'SimSun', serif; margin: 9px 0; }
+.location p { font-size: 11px; color: #a1ada8; }
+.floor-mark { border-top: 1px solid #7f8a7344; margin-top: 20px; padding-top: 14px; display: flex; gap: 10px; font-size: 10px; color: #a1ada8; }
+.camera-tools { position: absolute; right: 28px; top: 37%; display: flex; flex-direction: column; gap: 7px; }
+.camera-tools > span { height: 8px; }
+.settings { position: absolute; top: 87px; right: 32px; width: 255px; padding: 18px; background: #1c2525f5; border: 1px solid #78827855; border-radius: 4px; box-shadow: 0 12px 35px #0008; }
+.settings-title { display: flex; justify-content: space-between; align-items: center; }
+.settings h2 { font-size: 15px; }
+.settings label { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 12px; margin: 22px 0 5px; }
+input { accent-color: #c8ae78; }
+input[type=range] { width: 135px; }
+.loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #151c1bf0; padding: 24px; border-radius: 4px; font-size: 14px; }
+footer { position: absolute; bottom: 48px; left: 24px; right: 24px; display: grid; grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.1fr) 150px; align-items: center; min-height: 110px; gap: 25px; padding: 17px 23px; background: #151e1ff0; border-top: 1px solid #b2b49465; }
+footer h2 { margin: 7px 0; font-size: 15px; font-weight: 500; }
+footer p { color: #aebbb3; font-size: 11px; margin: 6px 0 0; }
+.explorer { display: flex; align-items: center; gap: 14px; }
+.seal { height: 50px; width: 44px; flex: none; display: grid; place-items: center; font: 29px 'Georgia', serif; color: #dfc5a2; border: 1px solid #9f7d62; background: #583332; }
+dl { display: flex; gap: 17px; margin: 0 0 0 auto; padding-left: 13px; border-left: 1px solid #8c927b33; }
+dt { font-size: 9px; color: #adb5a9; white-space: nowrap; }
+dd { font: 20px/1.5 Georgia, serif; margin: 4px 0 0; }
+.room-detail { display: flex; align-items: center; gap: 15px; border-left: 1px solid #8c927b33; padding-left: 24px; min-width: 0; }
+.room-detail img { width: 70px; height: 70px; object-fit: contain; flex: none; }
+.room-detail > div { flex: 1; min-width: 0; }
+.room-detail p { max-width: 250px; line-height: 1.65; }
+.route-hint { display: flex; align-items: center; gap: 6px; max-width: 185px; color: #d8c28e; border-left: 1px solid #8c927b33; padding-left: 13px; }
+.move { background: none; display: flex; align-items: center; gap: 7px; font-size: 11px; color: #ead19a; padding: 12px 0; white-space: nowrap; }
+.end-turn { background: #c8af78; color: #1e2521; min-height: 48px; padding: 0 17px; display: flex; gap: 14px; justify-content: center; align-items: center; font-size: 12px; border-radius: 3px; white-space: nowrap; }
+.end-turn:hover { background: #e1c68d; }
+.room-strip { position: absolute; left: 24px; right: 24px; bottom: 0; height: 43px; display: flex; gap: 4px; align-items: center; overflow-x: auto; scrollbar-width: thin; }
+.room-strip button { background: transparent; color: #a2b0aa; height: 32px; font-size: 10px; padding: 0 14px; white-space: nowrap; border-bottom: 1px solid transparent; }
+.room-strip button:hover, .room-strip button.selected { border-color: #d4b780; color: #efdab1; }
+main.top-mode footer { transform: translateY(calc(100% + 62px)); opacity: 0.08; pointer-events: none; transition: transform 180ms ease, opacity 180ms ease; }
+main.top-mode .room-strip { bottom: 8px; left: 50%; right: auto; transform: translateX(-50%); width: min(960px, calc(100% - 48px)); justify-content: center; background: #111819e0; border: 1px solid #65736c55; padding: 0 10px; border-radius: 999px; }
+main.top-mode::after { content: '俯视检查：黄铜门槛是可通行连接，整段石墙表示无门通道关闭'; position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); padding: 8px 14px; border: 1px solid #d1b27455; background: #111819d8; color: #ead19a; font-size: 11px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
+@media (max-width: 1100px) {
+  header { padding: 18px 23px; }.location { left: 24px; top: 130px; }
+  footer { grid-template-columns: 1fr 1.1fr 112px; gap: 12px; padding: 14px; left: 15px; right: 15px; }
+  .explorer { gap: 10px; }.seal { display: none; } dl { gap: 11px; }.room-detail { padding-left: 14px; gap: 10px; }.room-detail img { width: 55px; height: 55px; }.room-detail p { display: none; }
+  .route-hint { display: none; }
+  footer h2 { font-size: 12px; }.end-turn { padding: 0 12px; gap: 8px; }
+}
+@media (max-width: 700px) {
+  header { min-height: 83px; padding: 14px 17px; }h1 { font-size: 27px; }.edition { font-size: 7px; }.prototype { left: 124px; bottom: 9px; font-size: 9px; padding-left: 9px; }.chapter { top: 103px; left: auto; right: 18px; transform: none; font-size: 10px; gap: 3px; }.divider { margin: 0 6px; }
+  .location { left: 18px; top: 105px; }.location h2 { font-size: 21px; margin: 5px 0; }.location p,.floor-mark { display: none; }.camera-tools { right: 13px; top: 30%; gap: 5px; }.icon { width: 36px; height: 36px; }
+  footer { bottom: 45px; left: 12px; right: 12px; grid-template-columns: 1fr 105px; gap: 12px; padding: 13px; }
+  .explorer { grid-column: 1 / -1; }.explorer h2 { font-size: 13px; }.explorer p { font-size: 10px; }.room-detail { padding: 10px 0 0; border-left: 0; border-top: 1px solid #8c927b33; }.room-detail img { width: 43px; height: 43px; }.room-detail h2 { margin: 4px 0; }.move { font-size: 10px; }.end-turn { min-height: 44px; }.settings { right: 16px; top: 64px; }.room-strip { left: 10px; right: 10px; }
+  main.top-mode .room-strip { width: calc(100% - 20px); }
+  main.top-mode::after { max-width: calc(100% - 24px); white-space: normal; text-align: center; }
+}
+@media (max-height: 550px) and (min-width: 701px) {
+  header { padding: 10px 20px; min-height: 65px; }h1 { font-size: 26px; }.prototype { bottom: 8px; left: 125px; }.location { top: 90px; }.location p,.floor-mark { display: none; }.camera-tools { flex-direction: row; top: 80px; right: 18px; }.camera-tools > span { width: 3px; }.room-detail img { width: 44px; height: 44px; }footer { min-height: 80px; bottom: 38px; }.room-strip { height: 35px; }dl { gap: 10px; }
+}
