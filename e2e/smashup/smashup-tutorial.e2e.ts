@@ -630,18 +630,44 @@ test.describe('Smash Up Tutorial E2E', () => {
         });
     });
 
-    test('首页可以进入教程路由', async ({ page }) => {
+    test('首页可以进入教程路由', async ({ page }, testInfo) => {
         test.setTimeout(120000);
         await setEnglishLocale(page);
         await disableAudio(page);
 
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
-        await expect(page.locator('[data-game-id]').first()).toBeVisible({ timeout: 30000 });
-        await openSmashUpTutorialFromHomepage(page);
+        const smashUpEntry = page.locator('[data-game-id="smashup"]').first();
+        await expect(smashUpEntry).toBeVisible({ timeout: 30000 });
+        await smashUpEntry.click();
+
+        const detailsModal = page.getByTestId('game-details-modal-root').last();
+        await expect(detailsModal).toBeVisible({ timeout: 30000 });
+        const tutorialButton = detailsModal.getByRole('button', { name: /Tutorial|教程/i }).first();
+        await expect(tutorialButton).toBeVisible();
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'homepage-smashup-tutorial-entry'),
+            fullPage: false,
+            animations: 'disabled',
+        });
+        await tutorialButton.click();
 
         await page.waitForURL(/\/play\/smashup\/tutorial/, { timeout: 15000 });
+        const defaultTutorialEntry = page.getByTestId('tutorial-catalog-entry-smashup-basic');
+        const catalogVisible = await defaultTutorialEntry.waitFor({ state: 'visible', timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+        if (catalogVisible) {
+            await defaultTutorialEntry.click();
+            await page.waitForURL(/\/play\/smashup\/tutorial\/smashup-basic$/, { timeout: 15000 });
+        }
+        await expect(page).toHaveURL(/\/play\/smashup\/tutorial\/smashup-basic$/);
         await waitForTutorialStep(page, 'welcome', 40000);
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'homepage-tutorial-welcome'),
+            fullPage: false,
+            animations: 'disabled',
+        });
     });
 
     test('派系没有机制教程时不显示详情入口占位', async ({ page }, testInfo) => {

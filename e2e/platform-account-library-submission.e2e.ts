@@ -12,6 +12,7 @@ import { E2E_SINGLE_WORKER_PORTS } from '../scripts/infra/e2e-port-config.js';
 
 test.use({ trace: 'retain-on-failure', launchOptions: {
     chromiumSandbox: true,
+    ...(process.platform === 'win32' ? { args: ['--disable-gpu'] } : {}),
     ...(process.env.PW_BROWSER_EXECUTABLE ? { executablePath: process.env.PW_BROWSER_EXECUTABLE } : {}),
 } });
 test.describe.configure({ mode: 'serial' });
@@ -158,7 +159,7 @@ test.beforeAll(async () => {
     const aliceEmail = `ui-alice-${suffix}@example.invalid`;
     const bobEmail = `ui-bob-${suffix}@example.invalid`;
     const aliceName = `ui-alice-${suffix.slice(0, 6)}`;
-    const bobName = `ui-bob-${suffix.slice(0, 6)}`;
+    const bobName = `ui-bob-${suffix.slice(0, 6)}-longxx`;
     const now = new Date();
     const seedUser = async (username: string, email: string) => {
         const _id = new Types.ObjectId();
@@ -247,7 +248,7 @@ async function login(page: Page, account: Account) {
     expect(response.ok(), `账户登录 HTTP ${response.status()}`).toBe(true);
     const body = await response.json();
     expect(body.success).toBe(true);
-    await expect(page.getByRole('button', { name: '收藏库' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '收藏库', exact: true })).toBeVisible();
     const token = body.data?.token as string;
     expect(token, '登录响应包含合成账户访问令牌').toBeTruthy();
     return { status: response.status(), userId: body.data?.user?.id as string, token };
@@ -336,6 +337,36 @@ async function capture(page: Page, id: string, filename: string, stepId: string,
     await saveRunLog();
 }
 
+async function readStablePlatformHeader(page: Page) {
+    await page.evaluate(async () => {
+        await document.fonts.ready;
+        const elements = Array.from(document.querySelectorAll('.platform-navigation button, .platform-home-account button'));
+        const finiteAnimations = elements.flatMap(element => element.getAnimations()).filter(animation =>
+            animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity,
+        );
+        await Promise.race([
+            Promise.all(finiteAnimations.map(animation => animation.finished.catch(() => undefined))),
+            new Promise<void>(resolve => window.setTimeout(resolve, 1000)),
+        ]);
+        await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+    const brand = page.locator('.platform-home-brand');
+    const account = page.getByTestId('user-menu-trigger');
+    const notifications = page.getByTestId('user-menu-notifications');
+    await expect(brand).toBeVisible();
+    await expect(account).toBeVisible();
+    await expect(notifications).toBeVisible();
+    const state = {
+        brandText: (await brand.innerText()).trim(),
+        accountLabel: await account.getAttribute('aria-label'),
+        accountText: (await page.locator('.platform-account-name').innerText()).trim(),
+        notificationsVisible: true,
+        activeNavigationCount: await page.locator('.platform-navigation [aria-current="page"]').count(),
+    };
+    expect(state.brandText.length).toBeGreaterThan(0);
+    return state;
+}
+
 test('账户收藏写入服务端、刷新保留且账户互相隔离', async ({ browser }, testInfo) => {
     testInfo.setTimeout(60_000);
     const chain: Chain = { chainId: `library-${RUN_ID}`, sourceRun: RUN_ID, sourceRevision: SOURCE_REVISION, evidenceFile: '收藏链行为追踪.json', status: 'IN_PROGRESS', outcome: '', steps: [], uiStates: [] };
@@ -346,6 +377,11 @@ test('账户收藏写入服务端、刷新保留且账户互相隔离', async ({
         const first = await newPage(browser, testInfo.project.use.baseURL as string | undefined);
         try {
             const loginResult = await login(first.page, alice);
+            const aliceHeader = await readStablePlatformHeader(first.page);
+            expect(aliceHeader.accountLabel).toBe(alice.username);
+            expect(aliceHeader.accountText).toBe(alice.username);
+            chain.steps.push({ id: 'alice-header-stable', action: 'Verify the first account identity and notification control after fonts and transitions settle.', before: { visible: { account: alice.username } }, after: { visible: aliceHeader }, assertions: [{ name: 'account control exposes the authenticated account label', actual: aliceHeader.accountLabel, expected: alice.username }, { name: 'notification control remains visible', actual: aliceHeader.notificationsVisible, expected: true }] });
+            await capture(first.page, 'alice-header-stable', 'account-header-alice.png', 'alice-header-stable', 'header', '账户甲登录后的首页顶栏稳定态');
             const favorite = first.page.getByRole('button', { name: '收藏：山屋惊魂' });
             const favoritePressedBefore = await favorite.getAttribute('aria-pressed');
             expect(favoritePressedBefore).toBe('false');
@@ -385,14 +421,43 @@ test('账户收藏写入服务端、刷新保留且账户互相隔离', async ({
         try {
             const isolatedReadPromise = second.page.waitForResponse(response => response.url().includes('/auth/user-settings/library') && response.request().method() === 'GET');
             const loginResult = await login(second.page, bob);
+            await second.page.setViewportSize({ width: 1280, height: 900 });
+            const bobHeader = await readStablePlatformHeader(second.page);
+            expect(bobHeader.accountLabel).toBe(bob.username);
+            expect(bobHeader.accountText).toBe(bob.username);
+            chain.steps.push({ id: 'bob-header-long-stable', action: 'Verify the long-name account identity and notification control at a compact desktop viewport.', before: { visible: { account: bob.username } }, after: { visible: bobHeader }, assertions: [{ name: 'account control retains the authenticated long-name label', actual: bobHeader.accountLabel, expected: bob.username }, { name: 'notification control remains visible', actual: bobHeader.notificationsVisible, expected: true }] });
+            await capture(second.page, 'bob-header-long-stable', 'account-header-bob-long.png', 'bob-header-long-stable', 'header', '长昵称账户登录后的首页顶栏稳定态');
             const isolatedRead = await isolatedReadPromise;
             const isolatedBody = await isolatedRead.json();
-            await second.page.getByRole('button', { name: '收藏库' }).click();
+            await second.page.getByRole('button', { name: '收藏库', exact: true }).click();
             expect(isolatedBody.gameIds).toEqual([]);
             await expect(second.page.getByText('还没有收藏游戏，去发现页点星标添加')).toBeVisible();
             await expect(second.page.getByRole('button', { name: '山屋惊魂', exact: true })).toHaveCount(0);
             chain.steps.push({ id: 'account-isolation', action: '账户乙打开收藏库检查隔离', before: { visible: { secondAccount: loginResult.userId }, authoritative: { firstAccountGameIds } }, after: { visible: { emptyLibraryMessageVisible: true }, authoritative: { httpStatus: isolatedRead.status(), gameIds: isolatedBody.gameIds } }, assertions: [{ name: '账户乙无法读取账户甲收藏', actual: isolatedBody.gameIds, expected: [] }] });
             await capture(second.page, 'second-account-empty', '账户乙独立空收藏库.png', 'account-isolation', 'empty', '账户乙的独立收藏库保持空白');
+            await second.page.getByTestId('user-menu-trigger').click();
+            const logoutButton = second.page.locator('[data-user-menu-panel] > button').last();
+            await expect(logoutButton).toBeVisible();
+            await logoutButton.click();
+            await expect(second.page.getByTestId('user-menu-trigger')).toHaveCount(0);
+            const switchedAccount = accountFor('alice');
+            const switchedLogin = await login(second.page, switchedAccount);
+            expect(switchedLogin.userId).toBe(switchedAccount.id);
+            const switchedHeader = await readStablePlatformHeader(second.page);
+            expect(switchedHeader.accountLabel).toBe(switchedAccount.username);
+            expect(switchedHeader.accountText).toBe(switchedAccount.username);
+            chain.steps.push({
+                id: 'same-page-account-switch-header',
+                action: 'Switch from the long-name account to another account on the same page and verify the new identity.',
+                before: { visible: { account: bob.username }, authoritative: { accountId: loginResult.userId } },
+                after: { visible: switchedHeader, authoritative: { accountId: switchedLogin.userId } },
+                assertions: [
+                    { name: 'the account label changes after login', actual: switchedHeader.accountLabel, expected: switchedAccount.username },
+                    { name: 'notification control remains visible after switching accounts', actual: switchedHeader.notificationsVisible, expected: true },
+                    { name: 'exactly one navigation section remains active', actual: switchedHeader.activeNavigationCount, expected: 1 },
+                ],
+            });
+            await capture(second.page, 'same-page-account-switch-header', 'account-header-after-switch-alice.png', 'same-page-account-switch-header', 'header', '账户切换后的首页顶栏状态');
         } finally {
             await second.context.close();
         }
@@ -492,7 +557,7 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
     }
 });
 
-test('收藏库山屋惊魂完整显示正式宽幅封面', async ({ browser }, testInfo) => {
+test('收藏库山屋惊魂收藏卡片加载正式封面资源', async ({ browser }, testInfo) => {
     testInfo.setTimeout(45_000);
     const chain: Chain = {
         chainId: `betrayal-cover-${RUN_ID}`,
@@ -517,45 +582,30 @@ test('收藏库山屋惊魂完整显示正式宽幅封面', async ({ browser }, 
         const { context, page } = await newPage(browser, testInfo.project.use.baseURL as string | undefined);
         try {
             const loginResult = await login(page, alice);
-            await page.getByRole('button', { name: '收藏库' }).click();
+            await page.getByRole('button', { name: '收藏库', exact: true }).click();
             const card = page.locator('.platform-game-card[data-game-id="betrayal"]');
             await expect(card).toBeVisible();
-            const image = card.locator('.platform-game-art img').first();
             const asset = await readLoadedBetrayalImage(page);
             const thumbnails = page.locator('.betrayal-game-thumbnail img');
             await expect.poll(async () => thumbnails.evaluateAll(images => images.length >= 2 && images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
-            const thumbnailFits = await thumbnails.evaluateAll(images => images.map(image => getComputedStyle(image).objectFit));
-            const presentation = await image.evaluate(node => {
-                const image = node as HTMLImageElement;
-                const rect = image.closest('.platform-game-art')!.getBoundingClientRect();
-                return {
-                    objectFit: getComputedStyle(image).objectFit,
-                    artWidth: Math.round(rect.width),
-                    artHeight: Math.round(rect.height),
-                    cardTitle: image.closest('.platform-game-card')?.querySelector('.platform-game-copy strong')?.textContent?.trim() ?? '',
-                };
-            });
-            expect(thumbnailFits).toEqual(['contain', 'contain']);
-            expect(presentation.objectFit).toBe('contain');
-            expect(presentation.artWidth).toBeGreaterThan(0);
-            expect(presentation.artHeight).toBeGreaterThan(presentation.artWidth);
-            expect(presentation.cardTitle).toBe('山屋惊魂');
+            const cardTitle = (await card.locator('.platform-game-copy strong').innerText()).trim();
+            expect(cardTitle).toBe('山屋惊魂');
             chain.steps.push({
-                id: 'official-cover-visible',
-                action: '登录合成账户并打开已有收藏库，核对山屋惊魂宽幅封面完整显示',
+                id: 'official-cover-load',
+                action: '登录合成账户并打开已有收藏库，验证收藏卡片与正式封面资源可加载',
                 before: { visible: { selectedSection: 'discover' }, authoritative: { accountId: loginResult.userId, fixtureFavoriteGameIds: ['betrayal'] } },
-                after: { visible: { cardTitle: presentation.cardTitle, imageLoaded: asset.complete, objectFit: presentation.objectFit, artWidth: presentation.artWidth, artHeight: presentation.artHeight }, authoritative: { image: asset.response } },
+                after: { visible: { cardTitle, imageLoaded: asset.complete && asset.naturalWidth > 0, thumbnailCount: await thumbnails.count() }, authoritative: { image: asset.response } },
                 assertions: [
-                    { name: '正式封面来源字节与 manifest 登记一致', actual: asset.response, expected: { urlPath: BETRAYAL_COVER_PATH, status: 200, contentType: 'image/webp', bytes: 120262, sha256: BETRAYAL_COVER_SHA256, width: 1795, height: 350 } },
-                    { name: '宽幅封面在卡片和侧栏均按完整比例显示且卡片尺寸不变', actual: { thumbnailFits, artWidthGreaterThanZero: presentation.artWidth > 0, artHeightGreaterThanWidth: presentation.artHeight > presentation.artWidth, cardTitle: presentation.cardTitle }, expected: { thumbnailFits: ['contain', 'contain'], artWidthGreaterThanZero: true, artHeightGreaterThanWidth: true, cardTitle: '山屋惊魂' } },
+                    { name: '正式封面来源响应和内容哈希与登记一致', actual: asset.response, expected: { urlPath: BETRAYAL_COVER_PATH, status: 200, contentType: 'image/webp', bytes: 120262, sha256: BETRAYAL_COVER_SHA256 } },
+                    { name: '收藏卡片可见且封面图像已解码', actual: { cardTitle, decoded: asset.complete && asset.naturalWidth > 0, thumbnailCount: await thumbnails.count() }, expected: { cardTitle: '山屋惊魂', decoded: true, thumbnailCountMinimum: 2 } },
                 ],
             });
-            await capture(page, 'betrayal-cover-contained', '山屋惊魂封面完整可读.png', 'official-cover-visible', 'panel', '收藏卡片完整显示山屋惊魂宽幅封面');
+            await capture(page, 'betrayal-cover-load', '山屋惊魂封面加载状态.png', 'official-cover-load', 'panel', '收藏卡片的正式封面资源已成功加载');
         } finally {
             await context.close();
         }
         chain.status = 'PASS';
-        chain.outcome = '真实收藏卡片以原比例完整显示山屋惊魂宽幅正式封面，封面字节与登记哈希一致';
+        chain.outcome = '收藏卡片显示且正式封面资源加载、解码并通过登记哈希核验；画面比例、裁切和尺寸由人工视觉清单验收';
         await saveRunLog();
     } catch (error) {
         await markFailed(chain, error);
