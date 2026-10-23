@@ -2,14 +2,14 @@
 
 该原型保存在 `artifacts/betrayal-3d-prototype/`，是独立的本地实验入口，不注册到正式游戏路由。模型与贴图放在此目录的 `public/`，不会进入项目正式构建使用的根 `public/`。
 
-原型 Vite 配置单独指定该目录为静态资源根。PathFinding.js 0.4.18 在原型自己的 `package.json` 中声明，heap 0.2.5 由它传递安装；运行 `npm install --prefix artifacts/betrayal-3d-prototype` 安装到原型私有目录，不修改项目根依赖。
+原型 Vite 配置单独指定该目录为静态资源根。PathFinding.js 0.4.18 在原型自己的 `package.json` 中声明，heap 0.2.5 由它传递安装；运行 `npm ci --prefix artifacts/betrayal-3d-prototype` 按锁文件安装到原型私有目录，不修改项目根依赖。
 
 本实验只做基础前端效果，不改正式 Betrayal 规则、联机、存档或胜负结算。当前目标是验证原版房间板块、TTS 探索者模型、免费怪物模型、3D 墙体/家具和俯视角自由镜头能否组成可读的恐怖回合制地图原型。
 
 ## 启动
 
 ```powershell
-npm install --prefix artifacts/betrayal-3d-prototype
+npm ci --prefix artifacts/betrayal-3d-prototype
 node node_modules/vite/bin/vite.js --config artifacts/betrayal-3d-prototype/src/vite.config.mjs
 ```
 
