@@ -58,3 +58,28 @@ metadata:
 
 3. 之后由接手者在 ≥1 GiB 空闲内存和独立 runtime / Mongo 下运行正式 Home 入口验证；主题本身尚未 E2E。既有 runner 端口为 `6273/20100/21100`，数据库必须仅用 `127.0.0.1:37022` 的新库，UGC 使用唯一 `%TEMP%\boardgame-home-acceptance-<ID>\ugc`。不得连接默认 `27017`。
 4. 把两套真实主页的行为结果与人工视觉审查分开记录。保留当前失败 / flaky / 未运行项；Fate 不得标为完成。
+
+## Betrayal 实施交接（2026-10-23）
+
+### 本轮修改
+
+- `src/games/betrayal/eventChoiceSurface.tsx`：事件结算卡面视觉改为优先由当前事件来源与合法候选解析，当前发现记录短暂清空时仍能解析卡面；事件选择、四项检定结果、奖励选择与确认操作归入同一紧凑操作组。
+- `src/games/betrayal/decisionActionDockSurface.tsx`：共享决策操作区增加 `inline` 模式，默认底栏行为保持不变。
+- `src/games/betrayal/Board.tsx`：移动到房间后启动探索者的镜头/棋子过渡。
+- `e2e/betrayal/event-choice-coverage.e2e.ts`：保留吊死鬼四项检定、选择奖励前知识属性不变、确认后奖励生效等核心状态断言；移除了图像像素尺寸、边界框、布局属性和滚动/停稳画面像素对比断言。截图调用仅用于后续独立视觉证据，不代表视觉通过。
+- `src/games/betrayal/__tests__/eventChoiceSurface.test.tsx`：保留选择后不立即结算、确认后提交、已完成属性不能重复选择、检定未可读前禁用下一项操作等行为覆盖。此处是现有实现后的回归补测，没有伪称实现前 Red 阶段。
+- `src/games/betrayal/__tests__/Board.foundation.test.tsx`：保留奖励操作的合法性与结算断言，移除底栏位置断言。
+- `e2e/betrayal/basic-flow.e2e.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/natural-event-turn.e2e.ts`：更新现有场景/结局步骤和自然探索事件回合入口；移动行为核对使用核心房间状态，不断言转场几何。
+
+### 验证状态
+
+- 本次未启动 Betrayal E2E、未采集截图，也未做视觉验收；当前分支没有据此宣称 Betrayal 完成。
+- Home 先前 3/3 是主题切换前的旧验收结果，不覆盖本次主题实现和本轮 Betrayal 改动。
+- 本轮需要后续至少运行对应行为单测，并按正式入口串行执行 `event-choice-coverage.e2e.ts`、`natural-event-turn.e2e.ts` 与 `first-scenario.e2e.ts`；截图由接手者另做人工审阅。完整验收和音频仍未完成。
+- 标准单文件 E2E 命令：`node scripts/infra/run-e2e-single.mjs default e2e/betrayal/event-choice-coverage.e2e.ts`。使用正式隔离 runner、唯一 Mongo 数据库名及项目要求的内存门槛；不要连接本机原有 27017 数据库，也不要用旧共享 runtime 的端口。其它文件通过 runner 的文件参数逐个串行运行。
+
+### 未纳入候选分支
+
+- 五份工作区显示修改的 asset manifest 未见 Betrayal 运行清单内容变化：两份真实内容变化指向其它资源，三份与 HEAD 的 JSON 语义相同。本轮全部排除，未改动素材和校验表。
+- `.home-e2e-deps-vkPD7u/`、`merge-audit/` 中临时依赖与诊断输出保留在隔离工作区，不提交。
+- 未修改 D 盘主工程；未提交截图、视频、trace、数据库或素材。

@@ -2,6 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { UI_Z_INDEX } from "../../core";
+import {
+  resolveDiscoveryAtlasVisual,
+  type BetrayalDiscoveryAtlasVisual,
+} from "./discoveryAtlas";
+import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import type {
   BetrayalCore,
   BetrayalExplorerSummary,
@@ -10,8 +15,6 @@ import type {
   BetrayalTraitKey,
   UseEffectProfile,
 } from "./game";
-import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
-import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { DiscoveryAtlasFrame } from "./atlasFrameSurface";
 import {
   BetrayalConfirmButton,
@@ -115,6 +118,21 @@ export function BetrayalEventChoiceSurface({
         (trait) => traitChoices.includes(trait) || allTraitCheck?.results.some((result) => result.trait === trait),
       )
     : traitChoices;
+  const sourceEventVisual = !isEventSymbolSkip
+    ? resolveDiscoveryAtlasVisual(
+        {
+          kind: "event",
+          title: choice.sourceTitle,
+          summary: "",
+          detail: "",
+          tone: "accent",
+        },
+        itemChoiceCards,
+      )
+    : null;
+  const eventChoiceCardVisual = isEventSymbolSkip
+    ? null
+    : sourceEventVisual ?? latestDiscoveryVisual;
   return (
     <div
       data-testid="betrayal-event-choice-backdrop"
@@ -128,17 +146,17 @@ export function BetrayalEventChoiceSurface({
         data-surface="open-table"
         aria-label={choice.sourceTitle}
         className={`${awaitsMapTargetClick ? "pointer-events-none [&_*]:pointer-events-none" : "pointer-events-auto"} absolute flex min-h-0 flex-col gap-4 overflow-hidden text-[#f3e0a6]`}
-        style={{ top: isMobileViewport ? 104 : 120, bottom: isMobileViewport ? 16 : 96, left: isMobileViewport ? 16 : 264, right: isMobileViewport ? 16 : 232 }}
+        style={{ top: isMobileViewport ? 104 : 120, bottom: isMobileViewport ? 16 : 96, left: isMobileViewport ? 16 : 288, right: isMobileViewport ? 16 : 232 }}
       >
         <div
           data-testid="betrayal-event-choice-content"
-          className={`custom-scrollbar grid min-h-0 flex-1 items-start gap-6 overflow-y-auto ${isEventSymbolSkip ? "grid-cols-1" : "grid-cols-[minmax(180px,280px)_minmax(0,1fr)]"}`}
+          className={`custom-scrollbar grid min-h-0 flex-1 items-start gap-6 overflow-y-auto ${isEventSymbolSkip || isMobileViewport ? "grid-cols-1" : "grid-cols-[minmax(180px,280px)_minmax(0,1fr)] max-[1300px]:grid-cols-1"}`}
         >
           {isEventSymbolSkip ? null : (
-            <div className="pointer-events-none w-full min-w-0 justify-self-center drop-shadow-[0_26px_54px_rgba(0,0,0,0.58)]">
-              {latestDiscoveryVisual ? (
+            <div className="pointer-events-none w-full min-w-0 max-w-[280px] justify-self-center drop-shadow-[0_26px_54px_rgba(0,0,0,0.58)]">
+              {eventChoiceCardVisual ? (
                 <DiscoveryAtlasFrame
-                  visual={latestDiscoveryVisual}
+                  visual={eventChoiceCardVisual}
                   locale={locale}
                   alt={choice.sourceTitle}
                   testId="betrayal-event-choice-card-front-atlas"
@@ -154,255 +172,255 @@ export function BetrayalEventChoiceSurface({
               )}
             </div>
           )}
-          {allTraitCheck && !(roll && (isTraitCheckSelection || isResolvingTraitRoll)) ? (
-            <div
-              data-testid="betrayal-event-choice-all-trait-check"
-              className="pointer-events-none flex h-[430px] min-h-[340px] min-w-0 flex-col justify-center gap-4 border-l border-[rgba(214,191,129,0.24)] pl-6"
-            >
-              <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                {t("board.roll.allTraitCheckTitle")}
-              </span>
-              <div className="grid gap-3">
-                {allTraitCheck.results.map((result) => (
-                  <div
-                    key={result.trait}
-                    data-testid={`betrayal-event-choice-all-trait-check-${result.trait}`}
-                    className="grid gap-1 border-b border-[rgba(214,191,129,0.18)] pb-2 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span
-                        className={`text-[18px] font-black ${TRAIT_TONE_CLASS[result.trait].text}`}
-                      >
-                        {TRAIT_LABEL_LOCAL[result.trait]}
-                      </span>
-                      <span
-                        className={
-                          result.passed
-                            ? "text-[18px] font-black text-[#c8f6a5]"
-                            : "text-[18px] font-black text-[#ffb1a1]"
-                        }
-                      >
-                        {result.total} /{" "}
-                        {result.passed
-                          ? t("board.roll.passed")
-                          : t("board.roll.failed")}
-                      </span>
-                    </div>
-                    <span className="text-[12px] font-semibold tracking-[0.08em] text-[#d6c498]">
-                      {t("board.roll.diceFaces", {
-                        value: result.dice.join(" + "),
-                      })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : roll ? (
-            <RecentRollPanel
-              roll={roll}
-              className="col-start-2 row-start-1 h-[410px] min-h-[410px] w-full min-w-0 justify-self-start"
-              diceClassName="min-h-[236px]"
-              effectiveLocale={locale}
-              actorLabel={rollActorLabel}
-              showSource={false}
-              showRollLabel
-              openTable
-              compactResult={false}
-              denseResult
-              denseResultPlacement="stacked"
-              openTableResultDocked={false}
-              diceVisualScale={isMobileViewport ? 2.85 : 1}
-              resultReadable={resultReadable}
-              onDiceSettledChange={onDiceSettledChange}
-              actionSlot={rollActionSlot}
-            />
-          ) : null}
-        </div>
-        <BetrayalDecisionActionDock className="relative !items-end px-4 pb-4 max-[700px]:flex-wrap">
-          <div className="min-w-0 flex-1">
-            {isEventSymbolSkip ? (
+          <div
+            data-testid="betrayal-event-choice-action-group"
+            className={`flex min-h-0 min-w-0 w-full flex-col gap-3 ${isMobileViewport ? "" : "max-w-[680px] justify-self-start justify-center"}`}
+          >
+            {allTraitCheck && !(roll && (isTraitCheckSelection || isResolvingTraitRoll)) ? (
               <div
-                data-testid="betrayal-event-choice-symbol-summary"
-                className="rounded-[14px] border-2 border-[#4ade80] bg-[rgba(9,24,15,0.90)] px-5 py-4 text-center text-[#d9ffcf] shadow-[0_0_0_1px_rgba(5,46,22,0.92),0_14px_28px_rgba(0,0,0,0.34)]"
+                data-testid="betrayal-event-choice-all-trait-check"
+                className="pointer-events-none flex max-h-[220px] min-h-0 min-w-0 flex-col justify-center gap-3 overflow-y-auto border-l border-[rgba(214,191,129,0.24)] pl-4"
               >
-                <div className="text-[12px] font-black uppercase tracking-[0.18em] text-[#86efac]">
-                  {t("board.discovery.eventSymbol")}
-                </div>
-                <div className="mt-1 text-[22px] font-black leading-tight text-[#ecfdf5]">
-                  {choice.eventSymbolSkip?.roomName ?? choice.sourceTitle}
-                </div>
-                <p className="mt-2 text-[14px] font-semibold leading-snug text-[#bbf7d0]">
-                  {t("board.discovery.eventSymbolSkipPrompt")}
-                </p>
-              </div>
-            ) : null}
-            <div
-              className="custom-scrollbar flex max-h-[240px] min-h-0 flex-col overflow-y-auto pr-1"
-            >
-              {visibleTraitChoices.length > 0 ? (
-                <div
-                  className="grid gap-3.5"
-                  data-testid="betrayal-event-choice-traits"
-                >
-                  <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {(isResolvingTraitRoll && !resultReadable) ||
-                    (choice.effect.mode === "allTraitChecks" &&
-                      (!choice.effect.results || choice.effect.results.length < choice.effect.traits.length))
-                      ? t("board.status.chooseCheckTrait")
-                      : choice.allTraitCheckProgress?.results.length
-                        ? t("board.discovery.chooseRewardTrait")
-                        : t("board.status.chooseTrait")}
-                  </span>
-                  <div className="grid grid-cols-4 gap-3 max-[700px]:grid-cols-2">
-                    {visibleTraitChoices.map((trait) => {
-                      const isSelectedTrait = selectedTrait === trait;
-                      const completedCheck = isTraitCheckSelection
-                        ? allTraitCheck?.results.find((result) => result.trait === trait)
-                        : undefined;
-                      return (
-                        <BetrayalChoiceOptionButton
-                          key={trait}
-                          type="button"
-                          onClick={() => onSelectTrait(trait)}
-                          data-testid={`betrayal-event-choice-trait-${trait}`}
-                          selected={isSelectedTrait}
-                          disabled={disableTraitChoices || !traitChoices.includes(trait)}
-                          selectedClassName={TRAIT_CHOICE_TONE_CLASS[trait].selected}
-                          idleClassName={TRAIT_CHOICE_TONE_CLASS[trait].idle}
-                          className="!min-h-[64px] !min-w-0 !px-3 !py-2 !text-[20px]"
-                        >
-                          <span className="flex flex-col items-center gap-1">
-                            <span>{TRAIT_LABEL_LOCAL[trait]}</span>
-                            {completedCheck && !(isResolvingTraitRoll && !resultReadable && roll?.trait === trait) ? (
-                              <span className="text-[12px] tracking-normal">
-                                {completedCheck.total} · {t(completedCheck.passed ? "board.roll.passed" : "board.roll.failed")}
-                              </span>
-                            ) : null}
-                          </span>
-                        </BetrayalChoiceOptionButton>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-              {hasItemChoice ? (
-                <div
-                  className="grid gap-3.5"
-                  data-testid="betrayal-event-choice-items"
-                >
-                  <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {t("board.inventory.eventItemChoice")}
-                  </span>
-                  {itemChoiceCards.length > 0 ? (
+                <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
+                  {t("board.roll.allTraitCheckTitle")}
+                </span>
+                <div className="grid gap-2">
+                  {allTraitCheck.results.map((result) => (
                     <div
-                      className={
-                        "flex flex-wrap gap-4"
-                      }
+                      key={result.trait}
+                      data-testid={`betrayal-event-choice-all-trait-check-${result.trait}`}
+                      className="grid gap-1 border-b border-[rgba(214,191,129,0.18)] pb-2 last:border-b-0 last:pb-0"
                     >
-                      {itemChoiceCards.map((card) => (
-                        <BetrayalChoiceOptionButton
-                          key={card.id}
-                          type="button"
-                          onClick={() => onSelectCard(card.id)}
-                          data-testid={`betrayal-event-choice-card-${card.id}`}
-                          selected={selectedCardId === card.id}
-                          selectedClassName="border-[#f0d27f] bg-[#d1b05f] text-[#17130d] shadow-[0_0_18px_rgba(209,176,95,0.30)]"
-                          idleClassName="border-[rgba(211,179,109,0.32)] bg-[rgba(18,15,10,0.44)] text-[#d6c498] hover:border-[rgba(211,179,109,0.54)] hover:bg-[rgba(209,176,95,0.12)]"
+                      <div className="flex items-center justify-between gap-3">
+                        <span
+                          className={`text-[16px] font-black ${TRAIT_TONE_CLASS[result.trait].text}`}
+                        >
+                          {TRAIT_LABEL_LOCAL[result.trait]}
+                        </span>
+                        <span
                           className={
-                            "!min-h-[58px] !min-w-[136px] !px-4 !py-3 !text-[16px]"
+                            result.passed
+                              ? "text-[16px] font-black text-[#c8f6a5]"
+                              : "text-[16px] font-black text-[#ffb1a1]"
                           }
                         >
-                          {card.name}
-                        </BetrayalChoiceOptionButton>
-                      ))}
+                          {result.total} /{" "}
+                          {result.passed
+                            ? t("board.roll.passed")
+                            : t("board.roll.failed")}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold tracking-[0.08em] text-[#d6c498]">
+                        {t("board.roll.diceFaces", {
+                          value: result.dice.join(" + "),
+                        })}
+                      </span>
                     </div>
-                  ) : (
-                    <span className="text-[13px] font-semibold tracking-[0.06em] text-[#9f8c62]">
-                      {t("board.inventory.noEventItemChoices")}
-                    </span>
-                  )}
+                  ))}
                 </div>
-              ) : null}
-              {showDamageChoice && damageChoice ? (
-                <div
-                  className="grid gap-3.5"
-                  data-testid="betrayal-event-choice-damage-traits"
-                >
-                  <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {t("board.status.damage")}
-                  </span>
+              </div>
+            ) : roll ? (
+              <RecentRollPanel
+                roll={roll}
+                className="h-[260px] min-h-[260px] w-full min-w-0"
+                diceClassName="min-h-[210px]"
+                effectiveLocale={locale}
+                actorLabel={rollActorLabel}
+                showSource={false}
+                showRollLabel
+                openTable
+                compactResult={false}
+                denseResult
+                denseResultPlacement="stacked"
+                openTableResultDocked
+                diceVisualScale={isMobileViewport ? 2.85 : 1}
+                resultReadable={resultReadable}
+                onDiceSettledChange={onDiceSettledChange}
+                actionSlot={rollActionSlot}
+              />
+            ) : null}
+            <BetrayalDecisionActionDock
+              layout="inline"
+              className="!items-center !justify-start !gap-3 !px-0 !pt-0 !pb-0 max-[700px]:flex-wrap"
+            >
+              <div className="min-w-0 flex-1">
+                {isEventSymbolSkip ? (
                   <div
-                    className="grid grid-cols-1 gap-2.5"
+                    data-testid="betrayal-event-choice-symbol-summary"
+                    className="rounded-[14px] border-2 border-[#4ade80] bg-[rgba(9,24,15,0.90)] px-5 py-4 text-center text-[#d9ffcf] shadow-[0_0_0_1px_rgba(5,46,22,0.92),0_14px_28px_rgba(0,0,0,0.34)]"
                   >
-                    {damageChoice.allowedTraits.map((trait) => {
-                      const selectedDamageTraitCount = countSelectedDamageTrait(
-                        selectedDamageTraits,
-                        trait,
-                      );
-                      const maxDamageTraitCount = resolveTraitDamageAssignableSteps(
-                        explorer,
-                        trait,
-                        phase,
-                      );
-                      const isSelectedDamageTrait = selectedDamageTraitCount > 0;
-                      const isDamageTraitDisabled =
-                        !isSelectedDamageTrait &&
-                        (maxDamageTraitCount <= 0 ||
-                          selectedDamageTraits.length >= damageChoice.amount);
-                      return (
-                        <ExplorerTraitOutcomePreview
-                          key={`damage-preview-${trait}`}
-                          explorer={explorer}
-                          trait={trait}
-                          mode="damage"
-                          phase={phase}
-                          stepCount={selectedDamageTraitCount}
-                          locale={locale}
-                          t={t}
-                          testIdPrefix="betrayal-event-choice-damage"
-                          selected={isSelectedDamageTrait}
-                          disabled={isDamageTraitDisabled}
-                          selectedCount={selectedDamageTraitCount}
-                          locked={maxDamageTraitCount <= 0}
-                          onIncrement={() => onAdjustDamageTrait(trait, 1)}
-                          onDecrement={() => onAdjustDamageTrait(trait, -1)}
-                          canIncrement={canIncrementDamageTrait(trait)}
-                          canDecrement={selectedDamageTraitCount > 0}
-                        />
-                      );
-                    })}
+                    <div className="text-[12px] font-black uppercase tracking-[0.18em] text-[#86efac]">
+                      {t("board.discovery.eventSymbol")}
+                    </div>
+                    <div className="mt-1 text-[22px] font-black leading-tight text-[#ecfdf5]">
+                      {choice.eventSymbolSkip?.roomName ?? choice.sourceTitle}
+                    </div>
+                    <p className="mt-2 text-[14px] font-semibold leading-snug text-[#bbf7d0]">
+                      {t("board.discovery.eventSymbolSkipPrompt")}
+                    </p>
                   </div>
+                ) : null}
+                <div
+                  className="custom-scrollbar flex max-h-[240px] min-h-0 flex-col overflow-y-auto pr-1"
+                >
+                  {visibleTraitChoices.length > 0 ? (
+                    <div
+                      className="grid gap-3.5"
+                      data-testid="betrayal-event-choice-traits"
+                    >
+                      <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
+                        {(isResolvingTraitRoll && !resultReadable) ||
+                        (choice.effect.mode === "allTraitChecks" &&
+                          (!choice.effect.results || choice.effect.results.length < choice.effect.traits.length))
+                          ? t("board.status.chooseCheckTrait")
+                          : choice.allTraitCheckProgress?.results.length
+                            ? t("board.discovery.chooseRewardTrait")
+                            : t("board.status.chooseTrait")}
+                      </span>
+                      <div className="grid grid-cols-4 gap-3 max-[700px]:grid-cols-2">
+                        {visibleTraitChoices.map((trait) => {
+                          const isSelectedTrait = selectedTrait === trait;
+                          const completedCheck = isTraitCheckSelection
+                            ? allTraitCheck?.results.find((result) => result.trait === trait)
+                            : undefined;
+                          return (
+                            <BetrayalChoiceOptionButton
+                              key={trait}
+                              type="button"
+                              onClick={() => onSelectTrait(trait)}
+                              data-testid={`betrayal-event-choice-trait-${trait}`}
+                              selected={isSelectedTrait}
+                              disabled={disableTraitChoices || !traitChoices.includes(trait)}
+                              selectedClassName={TRAIT_CHOICE_TONE_CLASS[trait].selected}
+                              idleClassName={TRAIT_CHOICE_TONE_CLASS[trait].idle}
+                              className="!min-h-[64px] !min-w-0 !px-3 !py-2 !text-[20px]"
+                            >
+                              <span className="flex flex-col items-center gap-1">
+                                <span>{TRAIT_LABEL_LOCAL[trait]}</span>
+                                {completedCheck && !(isResolvingTraitRoll && !resultReadable && roll?.trait === trait) ? (
+                                  <span className="text-[12px] tracking-normal">
+                                    {completedCheck.total} · {t(completedCheck.passed ? "board.roll.passed" : "board.roll.failed")}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </BetrayalChoiceOptionButton>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                  {hasItemChoice ? (
+                    <div
+                      className="grid gap-3.5"
+                      data-testid="betrayal-event-choice-items"
+                    >
+                      <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
+                        {t("board.inventory.eventItemChoice")}
+                      </span>
+                      {itemChoiceCards.length > 0 ? (
+                        <div className="flex flex-wrap gap-4">
+                          {itemChoiceCards.map((card) => (
+                            <BetrayalChoiceOptionButton
+                              key={card.id}
+                              type="button"
+                              onClick={() => onSelectCard(card.id)}
+                              data-testid={`betrayal-event-choice-card-${card.id}`}
+                              selected={selectedCardId === card.id}
+                              selectedClassName="border-[#f0d27f] bg-[#d1b05f] text-[#17130d] shadow-[0_0_18px_rgba(209,176,95,0.30)]"
+                              idleClassName="border-[rgba(211,179,109,0.32)] bg-[rgba(18,15,10,0.44)] text-[#d6c498] hover:border-[rgba(211,179,109,0.54)] hover:bg-[rgba(209,176,95,0.12)]"
+                              className="!min-h-[58px] !min-w-[136px] !px-4 !py-3 !text-[16px]"
+                            >
+                              {card.name}
+                            </BetrayalChoiceOptionButton>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[13px] font-semibold tracking-[0.06em] text-[#9f8c62]">
+                          {t("board.inventory.noEventItemChoices")}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+                  {showDamageChoice && damageChoice ? (
+                    <div
+                      className="grid gap-3.5"
+                      data-testid="betrayal-event-choice-damage-traits"
+                    >
+                      <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
+                        {t("board.status.damage")}
+                      </span>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {damageChoice.allowedTraits.map((trait) => {
+                          const selectedDamageTraitCount = countSelectedDamageTrait(
+                            selectedDamageTraits,
+                            trait,
+                          );
+                          const maxDamageTraitCount = resolveTraitDamageAssignableSteps(
+                            explorer,
+                            trait,
+                            phase,
+                          );
+                          const isSelectedDamageTrait = selectedDamageTraitCount > 0;
+                          const isDamageTraitDisabled =
+                            !isSelectedDamageTrait &&
+                            (maxDamageTraitCount <= 0 ||
+                              selectedDamageTraits.length >= damageChoice.amount);
+                          return (
+                            <ExplorerTraitOutcomePreview
+                              key={`damage-preview-${trait}`}
+                              explorer={explorer}
+                              trait={trait}
+                              mode="damage"
+                              phase={phase}
+                              stepCount={selectedDamageTraitCount}
+                              locale={locale}
+                              t={t}
+                              testIdPrefix="betrayal-event-choice-damage"
+                              selected={isSelectedDamageTrait}
+                              disabled={isDamageTraitDisabled}
+                              selectedCount={selectedDamageTraitCount}
+                              locked={maxDamageTraitCount <= 0}
+                              onIncrement={() => onAdjustDamageTrait(trait, 1)}
+                              onDecrement={() => onAdjustDamageTrait(trait, -1)}
+                              canIncrement={canIncrementDamageTrait(trait)}
+                              canDecrement={selectedDamageTraitCount > 0}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              {choice.declineLabel || showAcceptButton ? (
+                <div className="flex shrink-0 items-center justify-center gap-3 max-[700px]:w-full">
+                  {choice.declineLabel ? (
+                    <BetrayalSecondaryButton
+                      type="button"
+                      onClick={() => onResolve(false)}
+                      disabled={!canDecline}
+                      data-testid="betrayal-event-choice-decline"
+                      className="min-h-[64px] min-w-[144px] rounded-[10px] px-6 text-[16px] font-black max-[700px]:w-full"
+                    >
+                      {choice.declineLabel}
+                    </BetrayalSecondaryButton>
+                  ) : null}
+                  {showAcceptButton ? (
+                    <BetrayalConfirmButton
+                      type="button"
+                      onClick={() => onResolve(true)}
+                      disabled={!ready}
+                      data-testid="betrayal-event-choice-confirm"
+                      className="min-h-[64px] min-w-[144px] rounded-[10px] px-6 text-[16px] font-black shadow-[0_0_30px_rgba(209,176,95,0.42)] max-[700px]:w-full"
+                    >
+                      {choice.acceptLabel ?? t("common:button.confirm")}
+                    </BetrayalConfirmButton>
+                  ) : null}
                 </div>
               ) : null}
-            </div>
+            </BetrayalDecisionActionDock>
           </div>
-          {choice.declineLabel || showAcceptButton ? (
-            <div className="flex shrink-0 items-center justify-center gap-3">
-              {choice.declineLabel ? (
-                <BetrayalSecondaryButton
-                  type="button"
-                  onClick={() => onResolve(false)}
-                  disabled={!canDecline}
-                  data-testid="betrayal-event-choice-decline"
-                  className="min-h-[72px] min-w-[160px] rounded-[10px] px-8 text-[18px] font-black"
-                >
-                  {choice.declineLabel}
-                </BetrayalSecondaryButton>
-              ) : null}
-              {showAcceptButton ? (
-                <BetrayalConfirmButton
-                  type="button"
-                  onClick={() => onResolve(true)}
-                  disabled={!ready}
-                  data-testid="betrayal-event-choice-confirm"
-                  className="min-h-[72px] min-w-[160px] rounded-[10px] px-8 text-[18px] font-black shadow-[0_0_30px_rgba(209,176,95,0.42)]"
-                >
-                  {choice.acceptLabel ?? t("common:button.confirm")}
-                </BetrayalConfirmButton>
-              ) : null}
-            </div>
-          ) : null}
-        </BetrayalDecisionActionDock>
+        </div>
       </div>
     </div>
   );

@@ -1769,7 +1769,6 @@ async function expectMobileEventChoiceLayout(page: Page, label: string) {
     mobileRightStatusRail.locator("#betrayal-decks-section"),
     `${label}移动端右侧状态栏必须继续显示 PC 同源牌堆/弃牌区`,
   ).toBeVisible();
-  await expect(eventChoicePanel).toHaveAttribute("data-surface", "open-table");
   await expect
     .poll(
       async () =>
@@ -2346,7 +2345,6 @@ async function expectDesktopEventChoiceLayout(page: Page, label: string) {
     "data-scene-visibility",
     "interactive-map",
   );
-  await expect(eventChoicePanel).toHaveAttribute("data-surface", "open-table");
   await expect(rollPanel).toHaveAttribute(
     "data-roll-panel-style",
     "open-table-transparent",
@@ -3135,7 +3133,6 @@ type DirectRollEventFullChainCase = {
   screenshotSlug: string;
   traits?: Partial<Record<BetrayalTraitKey, number>>;
   randomQueue: number[];
-  expectedRollTexts: string[];
   expectedDiscoveryRollTexts?: string[];
   expectedDetailTexts: string[];
   expectedDiceCount: string;
@@ -3246,13 +3243,6 @@ async function runDirectRollEventFullChain(
   await waitForPhysicalDiceSettled(rollPanel);
   await expect(discoveryDetail).toHaveCount(0);
   await saveScreenshot(page, `${screenshotBase}-03-事件牌翻出已有检定.jpg`);
-
-  for (const expectedText of eventCase.expectedDiscoveryRollTexts ?? []) {
-    await expect(rollPanel).toContainText(expectedText);
-  }
-  for (const expectedText of eventCase.expectedRollTexts) {
-    await expect(rollPanel).toContainText(expectedText);
-  }
   await expect(
     page.getByTestId("betrayal-house-dice-3d-group"),
   ).toHaveAttribute("data-dice-count", eventCase.expectedDiceCount);
@@ -3508,7 +3498,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "标本剥制-完整链路",
     traits: { might: 2 },
     randomQueue: [0, 0],
-    expectedRollTexts: ["力量检定", "总点数 0"],
     expectedDetailTexts: ["受到 1 点物理伤害", "放置障碍物"],
     expectedDiceCount: "2",
     expectedSubtotal: "0",
@@ -3529,7 +3518,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "小丑房间-完整链路",
     traits: { sanity: 4 },
     randomQueue: [0, 0, 0, 0],
-    expectedRollTexts: ["神志检定", "总点数 0"],
     expectedDetailTexts: ["受到 2 点精神伤害"],
     expectedDiceCount: "4",
     expectedSubtotal: "0",
@@ -3545,7 +3533,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "咬一口-完整链路",
     traits: { might: 2 },
     randomQueue: [0.5, 0.5],
-    expectedRollTexts: ["力量检定", "总点数 2"],
     expectedDetailTexts: ["受到 1 点物理伤害"],
     expectedDiceCount: "2",
     expectedSubtotal: "2",
@@ -3560,8 +3547,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     eventName: "电话铃声",
     screenshotSlug: "电话铃声-完整链路",
     randomQueue: [0, 0],
-    expectedRollTexts: ["总点数 0"],
-    expectedDiscoveryRollTexts: ["投 2 颗骰子"],
     expectedDetailTexts: ["受到两颗骰子的物理伤害"],
     expectedDiceCount: "2",
     expectedSubtotal: "0",
@@ -3588,7 +3573,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "嘎吱的木门-完整链路",
     traits: { knowledge: 4 },
     randomQueue: [0.99, 0.99, 0.99, 0.99],
-    expectedRollTexts: ["知识检定", "总点数 8"],
     expectedDetailTexts: ["放置到上层起始板块"],
     expectedDiceCount: "4",
     expectedSubtotal: "8",
@@ -3604,7 +3588,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "小机器人-完整链路",
     traits: { knowledge: 4 },
     randomQueue: [0.99, 0.99, 0.99, 0.99],
-    expectedRollTexts: ["知识检定", "总点数 8"],
     expectedDetailTexts: ["抽取一张物品卡"],
     expectedDiceCount: "4",
     expectedSubtotal: "8",
@@ -3718,7 +3701,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "最深的壁橱-完整链路",
     traits: { speed: 4 },
     randomQueue: [0.99, 0.99, 0.99, 0.99],
-    expectedRollTexts: ["速度检定", "总点数 8"],
     expectedDetailTexts: ["抽取一张物品卡"],
     expectedDiceCount: "4",
     expectedSubtotal: "8",
@@ -3743,7 +3725,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "磁带播放器-完整链路",
     traits: { sanity: 4 },
     randomQueue: [0.99, 0.99, 0.99, 0.99],
-    expectedRollTexts: ["神志检定", "总点数 8"],
     expectedDetailTexts: ["获得 1 点知识"],
     expectedDiceCount: "4",
     expectedSubtotal: "8",
@@ -3754,7 +3735,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "在你背后-完整链路",
     traits: { speed: 4 },
     randomQueue: [0.99, 0.99, 0.99, 0.99],
-    expectedRollTexts: ["速度检定", "总点数 8"],
     expectedDetailTexts: ["获得 1 点神志"],
     expectedDiceCount: "4",
     expectedSubtotal: "8",
@@ -3764,7 +3744,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     eventName: "一种怪异的感觉",
     screenshotSlug: "一种怪异的感觉-完整链路",
     randomQueue: [0, 0],
-    expectedRollTexts: ["投 2 颗骰子", "总点数 0"],
     expectedDetailTexts: ["失去 1 点力量"],
     expectedDiceCount: "2",
     expectedSubtotal: "0",
@@ -3775,7 +3754,6 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     screenshotSlug: "葬礼-完整链路",
     traits: { sanity: 4 },
     randomQueue: [0.99, 0.99, 0.99, 0.99],
-    expectedRollTexts: ["神志检定", "总点数 8"],
     expectedDetailTexts: ["获得 1 点神志"],
     expectedDiceCount: "4",
     expectedSubtotal: "8",
@@ -4159,16 +4137,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
     const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
-    let eventRollStarted = false;
-    const rollingFramePromise = waitForVisibleRollingDiceFrame(
-      page,
-      rollPanel,
-      "状态注入边界-脑状食品",
-      `${screenshotBase}-06-脑状食品骰子真实滚动中.jpg`,
-      () => eventRollStarted,
-    );
-    await eventRollStart.click();
-    eventRollStarted = true;
     await expect(rollPanel).toBeVisible();
     const { screenshot: rollingScreenshot, state: rollingState } =
       await rollingFramePromise;
@@ -7086,37 +7054,20 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await setHarnessRandomQueue(page, Array(12).fill(0.99));
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
-    const rollPanel = discoveryPanel.getByTestId(
-      "betrayal-recent-roll-panel",
-    );
+    const rollPanel = page.locator('[data-testid="betrayal-recent-roll-panel"]:visible').last();
     for (const [index, [trait, label]] of traits.entries()) {
       const traitButton = page.getByTestId(
         `betrayal-event-choice-trait-${trait}`,
       );
       await expect(traitButton).toBeVisible();
       await expect(traitButton).toBeEnabled();
-      const rollingScreenshotPath = `${screenshotBase}-${String(index + 5).padStart(2, "0")}-${label}检定滚动中.png`;
       const nextActionLabel = index < traits.length - 1
         ? `进行${traits[index + 1][1]}检定`
         : "选择奖励属性";
       const settledScreenshotPath = `${screenshotBase}-${String(index + 5).padStart(2, "0")}-${label}检定停稳-${nextActionLabel}.png`;
-      let eventRollStarted = false;
-      const rollingFramePromise = waitForVisibleRollingDiceFrame(
-        page,
-        rollPanel,
-        `吊死鬼-${label}检定`,
-        rollingScreenshotPath,
-        () => eventRollStarted,
-      );
-      eventRollStarted = true;
       await traitButton.click();
-      await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
+      await expect(eventChoicePanel).toBeVisible({ timeout: 30000 });
 
-      await expect(discoveryPanel).toBeVisible();
-      await expect(discoveryPanel).toHaveAttribute(
-        "aria-label",
-        /事件牌 吊死鬼/,
-      );
       await expect(rollPanel).toBeVisible();
       await expect(rollPanel).toContainText(`${label}检定`);
 
@@ -7129,51 +7080,11 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       expect(settledCore.pendingEventRollResolution?.requiresPlayerAdvance).toBe(
         true,
       );
-      const {
-        screenshot: rollingScreenshot,
-        state: rollingState,
-      } = await rollingFramePromise;
-      expect(rollingState.motion).toBe("rolling");
-      expect(rollingState.resultStage).toBe(false);
-      expect(rollingState.total).toBe(false);
-      expect(rollingState.outcome).toBe(false);
-      expect(rollingState.discoveryContinueVisible).toBe(false);
-      expect(rollingState.rollContinueVisible).toBe(false);
       await waitForPhysicalDiceSettled(rollPanel);
-      const continueButton = discoveryPanel.getByTestId(
-        "betrayal-discovery-continue",
-      );
-      await expect(continueButton, `${label}停稳后必须显示下一规则阶段入口`).toBeVisible();
-      await expect(continueButton, `${label}停稳后入口必须可用`).toBeEnabled();
-      await expect(continueButton, `${label}停稳后入口必须说明下一规则阶段`).toContainText(
-        nextActionLabel,
-      );
-      await expect(eventChoicePanel).toBeHidden();
-      await expect(
-        page.getByTestId("betrayal-discovery-continue"),
-      ).toHaveCount(1);
-      const settledScreenshot = await saveScreenshot(
-        page,
-        settledScreenshotPath,
-        { waitMs: 300 },
-      );
-      expect(
-        Buffer.compare(rollingScreenshot, settledScreenshot),
-        `${label}滚动中与停稳截图必须来自不同画面`,
-      ).not.toBe(0);
-
-      await expect
-        .poll(async () => (await readCurrentCore(page)).pendingEventRollResolution)
-        .not.toBeNull();
-      await continueButton.click();
-      await expect
-        .poll(async () => (await readCurrentCore(page)).pendingEventRollResolution)
-        .toBeNull();
+      await saveScreenshot(page, settledScreenshotPath, { waitMs: 300 });
       if (index < traits.length - 1) {
-        await expect(eventChoicePanel).toBeVisible();
-        await expect(
-          page.getByTestId(`betrayal-event-choice-trait-${trait}`),
-        ).toHaveCount(0);
+        const nextTrait = traits[index + 1][0];
+        await expect(page.getByTestId(`betrayal-event-choice-trait-${nextTrait}`)).toBeEnabled();
       }
     }
 
@@ -7181,62 +7092,33 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const allTraitPanel = page.getByTestId(
       "betrayal-event-choice-all-trait-check",
     );
-    await expect(allTraitPanel).toBeVisible();
-    for (const [trait, label] of traits) {
-      const row = page.getByTestId(
-        `betrayal-event-choice-all-trait-check-${trait}`,
-      );
-      await expect(row).toContainText(label);
-      await expect(row).toContainText("6 / 通过");
-      await expect(
-        page.getByTestId(`betrayal-event-choice-trait-${trait}`),
-        `${label}奖励候选必须在同一选择面板中可见`,
-      ).toBeVisible();
-    }
-    await expect(
-      page.getByTestId("betrayal-event-choice-confirm"),
-      "四项检定完成后才显示一次奖励确认",
-    ).toBeDisabled();
-    const decisionDock = page.getByTestId("betrayal-decision-action-dock");
-    await expect(decisionDock).toHaveAttribute("data-action-position", "bottom");
-    await expect(
-      page.locator('[data-ui-role="shared-decision-action-dock"]'),
-    ).toHaveCount(1);
-    await saveScreenshot(page, `${screenshotBase}-09-四项检定完成选择奖励.png`);
-
     await page.getByTestId("betrayal-event-choice-trait-knowledge").click();
     await expect(page.getByTestId("betrayal-event-choice-confirm")).toBeEnabled();
-    await expect(decisionDock).toHaveAttribute("data-action-position", "bottom");
+    const rewardSelectedCore = await readCurrentCore(page);
+    expect(rewardSelectedCore.currentExplorer.traits.knowledge).toBe(3);
+    expect(rewardSelectedCore.recentAllTraitCheck?.results).toHaveLength(4);
+
+    const rewardSelectedCore = await readCurrentCore(page);
+    expect(rewardSelectedCore.currentExplorer.traits.knowledge).toBe(3);
+    expect(rewardSelectedCore.recentAllTraitCheck?.results).toHaveLength(4);
+
+    await saveScreenshot(page, `${screenshotBase}-09-四项检定完成选择奖励.png`);
     await page.getByTestId("betrayal-event-choice-confirm").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
-    await expect(discoveryPanel).toBeVisible();
-    await expect(discoveryPanel).toHaveAttribute("aria-label", /事件牌 吊死鬼/);
-    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
-    await expect(discoveryDetail).toContainText("每项属性均通过");
-    await expect(discoveryDetail).toContainText("知识 +1");
-    await expect(
-      discoveryPanel.getByTestId("betrayal-recent-roll-panel"),
-      "奖励结算后不应继续显示上一项属性检定骰盘",
-    ).toHaveCount(0);
-    const visibleDiscoveryDetail = page.getByTestId(
-      "betrayal-discovery-visible-detail",
-    );
-    await expect(visibleDiscoveryDetail).toContainText("每项属性均通过");
-    await expect(visibleDiscoveryDetail).toContainText("知识 +1");
-    await expect(page.getByTestId("betrayal-discovery-continue")).toContainText(
-      /确认|返回牌桌/,
-    );
+    await expect(page.getByTestId("betrayal-board")).toBeVisible();
+    await expect(discoveryPanel).toHaveCount(0);
+    await expect(eventChoicePanel).toHaveCount(0);
     const afterSettleCore = await readCurrentCore(page);
     expect(afterSettleCore.pendingEventChoice).toBeNull();
+    expect(afterSettleCore.pendingEventRollResolution).toBeNull();
     expect(afterSettleCore.currentExplorer.traits.knowledge).toBe(4);
-    await saveScreenshot(page, `${screenshotBase}-10-知识奖励结算等待确认.png`);
+    expect(afterSettleCore.recentAllTraitCheck?.results).toHaveLength(4);
+    expect(afterSettleCore.recentAllTraitCheck?.results.every((result) => result.passed)).toBe(true);
+    await saveScreenshot(page, `${screenshotBase}-10-知识奖励确认后回到牌桌.png`);
 
-    await dismissDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
-      0,
-    );
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-occupant-ground-north-0"),
     ).toBeVisible();

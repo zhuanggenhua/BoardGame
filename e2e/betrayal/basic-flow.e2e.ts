@@ -318,7 +318,7 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(startScenarioOpeningStage).toBeVisible({ timeout: 30000 });
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-cinematic"),
-    ).toContainText("英雄开场过场");
+    ).toContainText("英雄序章");
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-cinematic"),
     ).toContainText("尘土飞扬");
@@ -345,6 +345,11 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(page.getByTestId("betrayal-board")).toBeVisible({
       timeout: 30000,
     });
+    const turnIntroSkip = page.getByTestId("betrayal-turn-intro-skip");
+    if (await turnIntroSkip.isVisible().catch(() => false)) {
+      await turnIntroSkip.click();
+      await expect(turnIntroSkip).toHaveCount(0);
+    }
     await expect(page.getByTestId("betrayal-room-grid")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();

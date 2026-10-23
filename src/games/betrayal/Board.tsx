@@ -4261,14 +4261,43 @@ export default function BetrayalBoard({
       if (isVisualBusy || !payload) {
         return;
       }
+      const movingExplorer = core.currentExplorer;
+      const sourceRect = readBetrayalViewportRect(
+        findBetrayalTestElement(
+          `betrayal-room-occupant-${movingExplorer.roomId}-0`,
+        ),
+      );
       setRoomMapManualCameraOwned(false);
       dispatch(BETRAYAL_COMMANDS.MOVE_TO_ROOM, payload);
+      if (sourceRect && movingExplorer.playerId === viewerPlayerId) {
+        beginBetrayalVisualTransition({
+          kind: "explorer-move",
+          sourceRect,
+          targetRect: null,
+          targetTestId: `betrayal-room-occupant-${roomId}-0`,
+          fallbackRoomTestId: `betrayal-room-${roomId}`,
+          explorer: movingExplorer,
+          locale: effectiveLocale,
+          tokenLabel: movingExplorer.displayName,
+          tone: "self",
+          missingTokenLabel: t("board.hauntTokens.officialTokenMissing"),
+        });
+      }
       setPreviewState((previousState) => ({
         ...previousState,
         interactionMode: payload.useSkeletonKey ? "default" : "move",
       }));
     },
-    [dispatch, isVisualBusy, mapMovementReadModel],
+    [
+      beginBetrayalVisualTransition,
+      core.currentExplorer,
+      dispatch,
+      effectiveLocale,
+      isVisualBusy,
+      mapMovementReadModel,
+      t,
+      viewerPlayerId,
+    ],
   );
 
   const handleMoveAction = React.useCallback(() => {
