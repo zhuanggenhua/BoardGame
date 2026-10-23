@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {mkdir, writeFile} from 'node:fs/promises';
-import {readFileSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {expect, test, type Page} from '@playwright/test';
@@ -50,6 +50,22 @@ const compressedAssetKey=(assetPath:string)=>{
     const relative=fateCardImageAsset(assetPath).replace('fate-domination/','');
     const slash=relative.lastIndexOf('/');
     return `${relative.slice(0,slash)}/compressed/${relative.slice(slash+1)}`;
+};
+const diagnoseFateAssetUrl=(rawUrl:string)=>{
+    try{
+        const pathname=new URL(rawUrl).pathname;
+        const marker='/i18n/zh-CN/fate-domination/';
+        const markerIndex=pathname.indexOf(marker);
+        if(markerIndex<0)return {url:rawUrl,manifestKey:null,manifestPresent:false,localPath:null,localPresent:false};
+        const relative=decodeURIComponent(pathname.slice(markerIndex+marker.length));
+        const dot=relative.lastIndexOf('.');
+        if(dot<=relative.lastIndexOf('/'))return {url:rawUrl,manifestKey:null,manifestPresent:false,localPath:null,localPresent:false};
+        const manifestKey=relative.slice(0,dot);
+        const variant=relative.slice(dot+1);
+        const localPath=path.resolve('public/assets/i18n/zh-CN/fate-domination',relative);
+        const manifestEntry=cardAssetManifest.files[manifestKey]??null;
+        return {url:rawUrl,manifestKey,variant,manifestPresent:Boolean(manifestEntry?.variants?.[variant]),expected:manifestEntry?.variants?.[variant]??null,localPath,localPresent:existsSync(localPath)};
+    }catch{return {url:rawUrl,manifestKey:null,manifestPresent:false,localPath:null,localPresent:false};}
 };
 
 function sourceRevision(){
@@ -133,7 +149,7 @@ async function snapshot(page:Page):Promise<Snapshot>{
             cardArtwork:Array.from(document.querySelectorAll<HTMLElement>('[data-testid="fate-played-cards"] [data-card-id]')).map(card=>{
                 const frame=card.querySelector<HTMLElement>('[data-card-atlas-frame="true"]');
                 const images=Array.from(card.querySelectorAll<HTMLImageElement>('img'));
-                return {id:card.dataset.cardId,frameReady:frame?(!frame.classList.contains('atlas-shimmer')&&Boolean(frame.querySelector('img'))):null,
+                return {id:card.dataset.cardId,frameAtlasId:frame?.dataset.cardAtlasId??null,frameIndex:frame?.dataset.cardAtlasIndex??null,frameReady:frame?(!frame.classList.contains('atlas-shimmer')&&Boolean(frame.querySelector('img'))):null,
                     images:images.map(image=>({alt:image.alt,complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,src:image.currentSrc||image.src}))};
             }),
             handCount:document.querySelectorAll('[data-testid="fate-domination-hand"] [data-card-id]').length,
@@ -192,6 +208,24 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     test.setTimeout(300000);
     await initContext(context,{skipImageGate:false});
     const diagnostics={...attachPageDiagnostics(page),page};
+    const pageImageResponses:Array<{url:string;status:number;ok:boolean;contentType:string|null}> = [];
+    const pageImageFailures:Array<{url:string;error:string|null}> = [];
+    const cardImageResponses:Array<{url:string;status:number;ok:boolean;contentType:string|null}> = [];
+    const cardImageFailures:Array<{url:string;error:string|null}> = [];
+    const isFateCardImage=(url:string)=>/\/fate-domination\/cards\//i.test(url);
+    page.on('response',response=>{
+        const request=response.request();
+        if(request.resourceType()!=='image')return;
+        const item={url:response.url(),status:response.status(),ok:response.ok(),contentType:response.headers()['content-type']??null};
+        pageImageResponses.push(item);
+        if(isFateCardImage(response.url()))cardImageResponses.push(item);
+    });
+    page.on('requestfailed',request=>{
+        if(request.resourceType()!=='image')return;
+        const item={url:request.url(),error:request.failure()?.errorText??null};
+        pageImageFailures.push(item);
+        if(isFateCardImage(request.url()))cardImageFailures.push(item);
+    });
     const run=await createEvidenceScreenshotRun(testInfo,{requireChineseName:true});
     const screenshots:Array<{name:string;path:string;stepId:string;reason:string;viewport:string;chainId:string}> = [];
     const steps:TraceStep[]=[];
@@ -345,6 +379,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     }
     const remaining=allCards.slice(Math.min(20,allCards.length));
     const beforeDense=await snapshot(page);
+
     await patchState(page,{core:{players:{'0':{hand:denseCards,deck:remaining,selectedAttackIds:[],activeAttackIds:denseCards.map((item:any)=>item.id),activeSkills:[],normalAttackPlayed:true}}}});
     await waitForState(page,s=>s.core.players['0'].activeAttackIds.length===20,'正式牌定义与真实实例进入密集出牌代表态');
     const dense=await snapshot(page);
@@ -354,7 +389,49 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     expect((dense.visible.rowScroll as any).scrollWidth).toBeGreaterThan((dense.visible.rowScroll as any).clientWidth);
     expect(dense.visible.mapTransform).toBe(mapBefore);
     reviewHudClearance(dense,reviewFailures,'twenty-cards');
-    await expect.poll(async()=>loadedPlayedCardArt(await snapshot(page)),{message:'20张原位牌面全部加载正式图像且没有破图',timeout:20000}).toBe(true);
+    try{
+        await expect.poll(async()=>loadedPlayedCardArt(await snapshot(page)),{message:'20张原位牌面全部加载正式图像且没有破图',timeout:20000}).toBe(true);
+    }catch(error){
+        let diagnostic:unknown;
+        try{
+            const finalSnapshot=await snapshot(page);
+            const cardUrls=new Set((finalSnapshot.visible as any).cardArtwork.flatMap((card:any)=>card.images.map((image:any)=>image.src)));
+            diagnostic={
+                fixtureCards:denseCards.map((card:any)=>{
+                    const assetPath=FATE_ATTACK_BY_ID[card.definitionId]?.assetPath??null;
+                    const key=assetPath?compressedAssetKey(assetPath):null;
+                    const manifestEntry=key?cardAssetManifest.files[key]:null;
+                    const localPaths=key?Object.keys(manifestEntry?.variants??{}).map(variant=>path.resolve('public/assets/i18n/zh-CN/fate-domination',`${key}.${variant}`)):[];
+                    return {instanceId:card.id,definitionId:card.definitionId,assetPath,manifestKey:key,manifestPresent:Boolean(manifestEntry),localAssetPaths:localPaths,localAssetsPresent:localPaths.map(localPath=>existsSync(localPath))};
+                }),
+                displayedCards:(finalSnapshot.visible as any).cardArtwork,
+                allDisplayedImages:await page.evaluate(()=>Array.from(document.images).map(image=>{
+                    const rect=image.getBoundingClientRect();
+                    return {alt:image.alt,complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,
+                        src:image.currentSrc||image.src,visible:Boolean(rect.width&&rect.height&&rect.bottom>0&&rect.top<innerHeight&&rect.right>0&&rect.left<innerWidth),
+                        rect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height}};
+                })),
+                visibleAtlasFrames:await page.locator('[data-card-atlas-frame="true"]').evaluateAll(frames=>frames.map(frame=>({
+                    atlasId:(frame as HTMLElement).dataset.cardAtlasId??null,
+                    atlasIndex:(frame as HTMLElement).dataset.cardAtlasIndex??null,
+                    className:(frame as HTMLElement).className,
+                    containsImage:Boolean(frame.querySelector('img')),
+                }))),
+                allImageResponses:pageImageResponses.map(item=>({...item,asset:diagnoseFateAssetUrl(item.url)})),
+                allImageFailures:pageImageFailures.map(item=>({...item,asset:diagnoseFateAssetUrl(item.url)})),
+                matchingResponses:cardImageResponses.filter(item=>cardUrls.has(item.url)),
+                matchingFailures:cardImageFailures.filter(item=>cardUrls.has(item.url)),
+                allCardImageResponses:cardImageResponses,
+                allCardImageFailures:cardImageFailures,
+                resourceTiming:await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>/\/fate-domination\/cards\//i.test(entry.name)).map(entry=>({url:entry.name,duration:entry.duration,transferSize:(entry as PerformanceResourceTiming).transferSize,responseStatus:(entry as any).responseStatus??null}))),
+                originalFailure:String(error),
+            };
+        }catch(captureError){diagnostic={captureError:String(captureError),originalFailure:String(error)};}
+        const body=Buffer.from(JSON.stringify(diagnostic,null,2));
+        await testInfo.attach('twenty-card-artwork-diagnostics.json',{body,contentType:'application/json'});
+        console.error('[twenty-card-artwork-diagnostics]',body.toString('utf8'));
+        throw error;
+    }
     reviewCheck(reviewFailures,'twenty-cards-have-complete-artwork',loadedPlayedCardArt(dense),(dense.visible as any).cardArtwork,'each displayed image complete with natural dimensions');
     const first=page.getByTestId('fate-played-cards').locator('[data-card-id]').first();
     const last=page.getByTestId('fate-played-cards').locator('[data-card-id]').last();

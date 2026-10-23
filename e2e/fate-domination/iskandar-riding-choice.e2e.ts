@@ -12,6 +12,8 @@ import {
 } from '../framework/evidenceScreenshots';
 import { assertNoFatalFrontendErrors, attachPageDiagnostics, initContext } from '../helpers/common';
 import { FATE_ATTACK_BY_ID } from '../../src/games/fate-domination/data';
+import { canPlayAttack } from '../../src/games/fate-domination/domain/movement';
+import { fateRidingCandidates } from '../../src/games/fate-domination/domain/ridingChoice';
 
 test.use({
     viewport: { width: 1920, height: 1080 },
@@ -105,6 +107,73 @@ async function patchOwnMana(page: Page, mana: number) {
     }, mana);
 }
 
+/** Arrange one official strength card into the hand as a legal, deterministic scenario fixture. */
+async function ensureDefinitionInHandScenario(page: Page, definitionId: string) {
+    return page.evaluate(async requestedDefinitionId => {
+        const harness = (window as TestHarnessWindow).__BG_TEST_HARNESS__;
+        if (!harness?.state?.get || !harness.state.patch) throw new Error('Fate TestHarness state 未注册');
+        const player = harness.state.get().core.players['0'];
+        if (player.hand.some((card: any) => card.definitionId === requestedDefinitionId)) {
+            return { moved: false, cardId: player.hand.find((card: any) => card.definitionId === requestedDefinitionId).id };
+        }
+        const deckIndex = player.deck.findIndex((card: any) => card.definitionId === requestedDefinitionId);
+        const handIndex = player.hand.findIndex((card: any) => card.definitionId !== requestedDefinitionId);
+        if (deckIndex < 0 || handIndex < 0) throw new Error(`合法场景牌区中无法找到可置入手牌的 ${requestedDefinitionId}`);
+        const hand = [...player.hand];
+        const deck = [...player.deck];
+        const inserted = deck[deckIndex];
+        const returned = hand[handIndex];
+        hand[handIndex] = inserted;
+        deck[deckIndex] = returned;
+        const allIds = [...hand, ...deck].map((card: any) => card.id);
+        if (new Set(allIds).size !== allIds.length) throw new Error('场景牌区夹具产生重复卡牌实例');
+        await harness.state.patch({ core: { players: { '0': { hand, deck } } } });
+        return { moved: true, cardId: inserted.id, returnedCardId: returned.id, deckIndex };
+    }, definitionId);
+}
+
+/** Keep all official card instances while ensuring the max-selection fixture has a fourth legal option. */
+async function ensureRidingCandidateCountScenario(page: Page, minimum: number) {
+    const state = await readState(page);
+    const player = state.core.players['0'];
+    const hand = [...player.hand];
+    const deck = [...player.deck];
+    const isCandidate = (card: any) => {
+        const definition = FATE_ATTACK_BY_ID[card.definitionId];
+        return Boolean(definition && definition.basePower <= 3 && canPlayAttack(state.core, '0', definition).valid);
+    };
+    const insertedCardIds: string[] = [];
+    let projectedCore = state.core;
+    let candidateCount = fateRidingCandidates(projectedCore, '0').length;
+    while (candidateCount < minimum) {
+        const deckIndex = deck.findIndex(isCandidate);
+        const handIndex = hand.findIndex(card => !isCandidate(card));
+        if (deckIndex < 0 || handIndex < 0) {
+            throw new Error(`固定骑乘场景无法凑足 ${minimum} 个合法选项：已有 ${candidateCount} 个，手牌 ${hand.map((card: any) => card.definitionId).join(',')}，牌库 ${deck.map((card: any) => card.definitionId).join(',')}`);
+        }
+        const incoming = deck[deckIndex];
+        const outgoing = hand[handIndex];
+        hand[handIndex] = incoming;
+        deck[deckIndex] = outgoing;
+        insertedCardIds.push(incoming.id);
+        projectedCore = { ...state.core, players: { ...state.core.players, '0': { ...player, hand, deck } } };
+        candidateCount = fateRidingCandidates(projectedCore, '0').length;
+    }
+    const allIds = [...hand, ...deck].map((card: any) => card.id);
+    if (new Set(allIds).size !== allIds.length) throw new Error('三张上限场景夹具产生重复卡牌实例');
+    if (insertedCardIds.length) {
+        await page.evaluate(async zones => {
+            const harness = (window as TestHarnessWindow).__BG_TEST_HARNESS__;
+            if (!harness?.state?.patch) throw new Error('Fate TestHarness state.patch 未注册');
+            await harness.state.patch({ core: { players: { '0': zones } } });
+        }, { hand, deck });
+    }
+    const updated = await readState(page);
+    const confirmedCount = fateRidingCandidates(updated.core, '0').length;
+    if (confirmedCount < minimum) throw new Error(`固定牌区夹具补入 ${insertedCardIds.join(',')} 后仅有 ${confirmedCount} 个合法骑乘选项`);
+    return { insertedCardIds, candidateCount: confirmedCount, handCount: hand.length, deckCount: deck.length };
+}
+
 async function waitForState(page: Page, predicate: (state: HarnessState) => boolean, message: string) {
     await expect.poll(async () => predicate(await readState(page)), { message, timeout: 15000 }).toBe(true);
 }
@@ -129,7 +198,8 @@ async function snapshot(page: Page): Promise<Snapshot> {
             .filter(Boolean);
         return {
             phaseText: document.querySelector('.fd-runtime-round')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
-            handZoneLabel: document.querySelector('.fd-runtime-hand-zone .fd-runtime-zone-label')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+            ridingCostPreview: document.querySelector('[data-testid="fate-riding-controls"] .fd-riding-status')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+            ridingCostAccessibleLabel: document.querySelector('[data-testid="fate-riding-controls"] .fd-riding-status')?.getAttribute('aria-label') ?? '',
             choiceVisible: Boolean(choice),
             selectedCards,
             confirmText: confirm?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
@@ -171,7 +241,7 @@ function assertion(name: string, actual: unknown, expected: unknown) {
     return { name, actual, expected };
 }
 
-async function prepareRidingAction(page: Page, baseURL: string | undefined, seed: string) {
+async function prepareRidingAction(page: Page, baseURL: string | undefined, seed: string, scenarioDefinitionId?: string) {
     await page.goto(`${baseURL ?? ''}/play/fate-domination?players=3&playerID=0&seed=${encodeURIComponent(seed)}&disableLocalAiAutomation=true`, {
         waitUntil: 'domcontentloaded',
     });
@@ -215,6 +285,7 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
     await page.getByRole('button', { name: '确认使用' }).click();
     await waitForState(page, state => state.core.players['0'].mana >= 8, '以实际令咒恢复魔力后满足常规技能攻击需求');
 
+    if (scenarioDefinitionId) await ensureDefinitionInHandScenario(page, scenarioDefinitionId);
     const beforeAttack = await readState(page);
     const riderSkillId = beforeAttack.core.players['0'].skills.find((skill: any) => skill.id.split(':')[0] === 'sc_iskandar_1')?.id;
     const partner = beforeAttack.core.players['0'].hand.find((card: any) => card.definitionId === 'cardB2');
@@ -462,7 +533,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         expect(committed.authoritative.currentPlayerId).toBe('0');
         expect(committed.authoritative.activeRidingFrames).toEqual([]);
         expect(committed.visible.currentPrimary).toContain('结束行动');
-        const expectedHandZoneLabel = `坐骑召唤 · 已选 1/3 · 实付 ${printedCost} / ${beforeSelect.authoritative.mana} 魔力`;
+        const expectedRidingCostPreview = `已选 1/3 · 实付 ${printedCost}/${beforeSelect.authoritative.mana} 魔力`;
+        const expectedRidingCostAccessibleLabel = `坐骑召唤 · 已选 1 张（最多 3 张）· 实付 ${printedCost} / ${beforeSelect.authoritative.mana} 魔力 · 本次选牌固定明置`;
         const expectedHighPowerObservations = highPowerIds.map((id: string) => ({ id, ariaDisabled: 'true', selected: false }));
         const steps = [
             step('open-choice', '发动骑乘并检查高威力牌不能选', beforeOpen, afterEligibilityChecks, [
@@ -473,7 +545,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
             ]),
             step('select-paid-card', '从本人手牌点击一张印刷费用牌', beforeSelect, selected, [
                 assertion('one-card-selected', selected.visible.selectedCards.length, 1),
-                assertion('visible-printed-cost-preview', selected.visible.handZoneLabel, expectedHandZoneLabel),
+                assertion('visible-printed-cost-preview', selected.visible.ridingCostPreview, expectedRidingCostPreview),
+                assertion('printed-cost-preview-accessible-label', selected.visible.ridingCostAccessibleLabel, expectedRidingCostAccessibleLabel),
                 assertion('confirm-button-count', selected.visible.confirmText, '确认打出（1）'),
             ]),
             step('confirm-paid-card', '确认后按印刷魔耗支付并明置打出', beforeCommit, committed, [
@@ -487,11 +560,15 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         await assertNoFatalFrontendErrors([{ label: 'fate-riding-one-card', diagnostics }]);
     });
 
-    test('骑乘三张上限拒绝第四张并只消费选择的三张', async ({ page, context, baseURL }, testInfo) => {
+    test('骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）', async ({ page, context, baseURL }, testInfo) => {
         test.setTimeout(180000);
         await initContext(context, { skipImageGate: false });
         const diagnostics = attachPageDiagnostics(page, 'fate-riding-three-limit');
-        await prepareRidingAction(page, baseURL, 'iskandar-riding-ui-23');
+        await prepareRidingAction(page, baseURL, 'iskandar-riding-ui-23', 'cardB2');
+        const scenarioCard = await ensureDefinitionInHandScenario(page, 'cardB2');
+        const candidateFixture = await ensureRidingCandidateCountScenario(page, 4);
+        testInfo.annotations.push({ type: 'scenario-fixture', description: `合法固定牌区：先用官方 cardB2 完成常规骑乘搭档攻击；骑乘上限前保证 ${scenarioCard.cardId} 和 ${candidateFixture.insertedCardIds.join(',') || '现有合法选项'} 在手牌并至少有 4 个可选目标。仅在手牌与牌库间交换正式牌实例，维持牌表、实例唯一和各区数量，不主张该组合由自然抽牌产生。` });
+        await waitForState(page, state => state.core.players['0'].hand.some((card: any) => card.id === scenarioCard.cardId), '等待合法骑乘场景牌进入手牌');
         const beforeOpen = await snapshot(page);
         await openRidingChoice(page);
         const open = await snapshot(page);
