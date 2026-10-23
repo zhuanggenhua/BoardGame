@@ -23,6 +23,7 @@ vi.mock('../../../../system/FabMenu', () => ({
         items,
         position,
         storageKey,
+        initialOffset,
     }: {
         items: Array<{
             id: string;
@@ -31,6 +32,7 @@ vi.mock('../../../../system/FabMenu', () => ({
         }>;
         position?: string;
         storageKey?: string;
+        initialOffset?: {top?:number};
     }) => {
         const renderContent = (
             content?: React.ReactNode | ((context: { closePanel: () => void }) => React.ReactNode),
@@ -43,6 +45,7 @@ vi.mock('../../../../system/FabMenu', () => ({
                 data-testid="fab-menu-stub"
                 data-fab-position={position}
                 data-fab-storage-key={storageKey}
+                data-fab-offset-top={initialOffset?.top}
             >
                 {items.map((item) => (
                     <div key={item.id}>
@@ -372,6 +375,14 @@ describe('GameHUD', () => {
         expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:qidahen:tutorial:v1');
         expect(screen.getByTestId('fab-action-chat')).toBeInTheDocument();
         expect(screen.getByTestId('fab-action-settings')).toBeInTheDocument();
+    });
+
+    it('Fate 悬浮菜单避开右下阶段圆钮并隔离旧位置缓存', () => {
+        renderHud(<GameHUD mode="local" gameId="fate-domination" myPlayerId="0"/>);
+        const fab = screen.getByTestId('fab-menu-stub');
+        expect(fab).toHaveAttribute('data-fab-position','bottom-right');
+        expect(fab).toHaveAttribute('data-fab-offset-top','-120');
+        expect(fab).toHaveAttribute('data-fab-storage-key','game_hud_fab_position:fate-domination:v2');
     });
 
     it('Mage Wars 游戏内悬浮菜单默认避开底部准备牌区', () => {

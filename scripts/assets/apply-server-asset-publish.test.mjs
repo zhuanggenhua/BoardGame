@@ -139,3 +139,33 @@ test('成功发布返回成功，并从显式项目根刷新发布索引', () =>
         rmSync(tempRoot, { recursive: true, force: true });
     }
 });
+
+
+test('成功激活增量发布后输出索引数量并以成功状态退出', () => {
+    const tempRoot = mkdtempSync(path.join(tmpdir(), 'boardgame-asset-publish-success-'));
+    try {
+        const assetsRoot = path.join(tempRoot, 'assets');
+        const stagingRoot = path.join(tempRoot, 'staging');
+        const oldRelease = path.join(assetsRoot, 'releases', '20260101000000000');
+        const oldKey = 'official/evidence/retained.txt';
+        const newKey = 'official/evidence/added.txt';
+        writeFile(oldRelease, oldKey, 'keep');
+        symlinkSync(oldRelease, path.join(assetsRoot, 'current'), 'dir');
+        const body = Buffer.from('new evidence');
+        writeFile(stagingRoot, newKey, body);
+        writeFile(stagingRoot, SERVER_PUBLISH_MANIFEST_FILE, JSON.stringify({
+            schemaVersion: 1, objects: [{ key: newKey, size: body.length, sha256: sha256(body) }],
+        }));
+        const result = spawnSync(process.execPath, [
+            path.join(process.cwd(), 'scripts/assets/apply-server-asset-publish.mjs'),
+            '--staging', stagingRoot, '--assets-root', assetsRoot, '--preserve-existing-assets',
+        ], { cwd: process.cwd(), encoding: 'utf8', timeout: 60_000 });
+        assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+        assert.match(result.stdout, /serverPrimaryIndexObjects=2\b/);
+        const current = realpathSync(path.join(assetsRoot, 'current'));
+        assert.equal(readFileSync(path.join(current, oldKey), 'utf8'), 'keep');
+        assert.deepEqual(readFileSync(path.join(current, newKey)), body);
+    } finally {
+        rmSync(tempRoot, { recursive: true, force: true });
+    }
+});

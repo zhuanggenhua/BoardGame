@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '../../../contexts/ToastContext';
 import {
     buildLocalMatchSearchParams,
     createDefaultLocalMatchPreferences,
@@ -248,7 +249,7 @@ vi.mock('../../../contexts/ModalStackContext', () => ({
 }));
 
 vi.mock('../../../contexts/ToastContext', () => ({
-    useToast: () => toastMock,
+    useToast: vi.fn(() => toastMock),
 }));
 
 vi.mock('../../../config/server', () => ({
@@ -370,6 +371,7 @@ vi.mock('../../../services/lobbySocket', () => ({
         }),
         subscribeStatus: vi.fn<(callback: LobbyStatusCallback) => () => void>(() => () => {}),
         requestRefresh: vi.fn(),
+        reconnectWithCurrentSettings: vi.fn(),
     },
 }));
 
@@ -2857,7 +2859,7 @@ describe('GameDetailsModal create room ai entry', () => {
         });
     });
 
-    it('socket 瞬时错误恢复后不再立刻弹服务不可用提示', async () => {
+    it('socket 瞬时错误不报失败，持续失败结束加载并允许重试恢复', async () => {
         vi.useFakeTimers();
         let statusCallback: LobbyStatusCallback | null = null;
         vi.mocked(lobbySocket.subscribeStatus).mockImplementationOnce((callback: LobbyStatusCallback) => {
@@ -2865,15 +2867,40 @@ describe('GameDetailsModal create room ai entry', () => {
             return () => {};
         });
 
-        render(createElement(GameDetailsModal, baseProps));
+        const view = render(createElement(GameDetailsModal, baseProps));
 
-        statusCallback?.({ connected: false, lastError: 'websocket error' });
+        act(() => { statusCallback?.({ connected: false, lastError: 'websocket error' }); });
         expect(toastMock.error).not.toHaveBeenCalled();
 
-        statusCallback?.({ connected: true });
-        vi.advanceTimersByTime(1600);
-
+        act(() => {
+            statusCallback?.({ connected: true });
+            vi.advanceTimersByTime(1600);
+        });
         expect(toastMock.error).not.toHaveBeenCalled();
+        expect(screen.queryByRole('alert')).toBeNull();
+
+        act(() => {
+            statusCallback?.({ connected: false, lastError: 'websocket error' });
+            vi.advanceTimersByTime(1600);
+        });
+        expect(screen.getByRole('alert')).toHaveTextContent('error.serviceUnavailable.title');
+        expect(toastMock.error).not.toHaveBeenCalled();
+        // ToastProvider updates its context object when the toast list changes.
+        vi.mocked(useToast).mockReturnValue({ ...toastMock } as ReturnType<typeof useToast>);
+        view.rerender(createElement(GameDetailsModal, baseProps));
+        expect(screen.getByRole('alert')).toHaveTextContent('error.serviceUnavailable.title');
+        expect(screen.queryByText('rooms.loading')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'platform.retry' }));
+        expect(lobbySocket.reconnectWithCurrentSettings).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(screen.getByText('rooms.loading')).toBeInTheDocument();
+        act(() => {
+            statusCallback?.({ connected: true });
+            const matchListener = vi.mocked(lobbySocket.subscribe).mock.calls.at(-1)?.[1];
+            matchListener?.([]);
+        });
+        expect(screen.queryByText('rooms.loading')).toBeNull();
+        expect(screen.getByText('rooms.empty')).toBeInTheDocument();
     });
 });
 

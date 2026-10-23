@@ -861,8 +861,8 @@
       gap: 16px;
       flex-wrap: wrap;
     }
-    .player-rec { display: flex; align-items: center; gap: 8px; }
-    .player-row { display: flex; gap: 6px; }
+    .player-rec { display: flex; align-items: center; gap: 8px; max-width: 100%; }
+    .player-row { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; max-width: 100%; }
     .player-count { width: 32px; height: 32px; border: 1px solid #aaa; color: #666; display: inline-grid; place-items: center; font-size: 14px; font-weight: 700; cursor: default; user-select: none; }
     .player-count.is-best { border: 2px solid var(--ink); background: var(--ink); color: var(--lime); font-weight: 900; }
     .player-sq {
@@ -892,6 +892,7 @@
     .details-secondary .btn { height: 44px; border-width: 2px; padding: 0 14px; font-size: 13px; box-shadow: none; }
     .details-secondary .btn:hover { transform: none; background: #f3f3f3; box-shadow: none; }
     .details-secondary .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .compact-toggle { display: none; }
     .author-btn {
       appearance: none;
       border: 0;
@@ -1247,6 +1248,11 @@
       .steam-main, .steam-side { overflow: visible; }
       .steam-side .side-card, .steam-side .side-scroll { flex: none; overflow: visible; }
     }
+    .steam-page { grid-template-rows: auto minmax(0, 1fr); }
+    .library-summary { grid-template-columns: 120px minmax(0, 1fr); grid-template-areas: "cover copy" "cover actions"; }
+    .library-summary .details-cover { width: 120px; }
+    .library-summary .details-cta { flex-wrap: wrap; gap: 12px 24px; }
+    .library-last-played { font-size: 12px; color: #666; }
   </style>
   <link rel="stylesheet" href="mobile.css" />
 </head>
@@ -1686,6 +1692,39 @@
         : `<button class="room-btn" data-enter="${g.id}" type="button">加入</button>`;
     }
 
+    function renderGameSummary(g, library = false) {
+      const fav = state.favs.has(g.id);
+      const prefix = library ? "library-game" : "game-details";
+      return `
+          <header class="details-hero compact-section ${library ? "library-summary" : ""}">
+            <div class="details-cover" data-testid="${prefix}-cover">${coverInner(g)}</div>
+            <div class="details-hero-copy">
+              <h2 data-testid="${prefix}-title">${g.name}</h2>
+              <p class="details-desc" id="${prefix}-description" data-testid="${prefix}-description">${g.desc}</p>
+              <div class="details-facts">
+                <div data-testid="${prefix}-player-recommendation" class="player-rec">
+                  <span class="player-label">人数</span>
+                  <div class="player-row">${(g.playerOptions || [2]).map(n => `<span class="player-count ${g.bestPlayers.includes(n) ? "is-best" : ""}" aria-label="${n} 人${g.bestPlayers.includes(n) ? "（推荐）" : ""}">${n}</span>`).join("")}</div>
+                  ${g.bestPlayers.length ? `<span class="player-label">推荐 ${g.bestPlayers.join("、")} 人</span>` : ""}
+                </div>
+                <span class="play-est" data-testid="${prefix}-playtime">${playTimeText(g)}</span>
+                ${library ? `<span class="library-last-played">上次游玩 ${g.lastPlayed}</span>` : ""}
+              </div>
+            </div>
+            ${library ? "" : closeX("game-details-close-button", "details")}
+            <div class="details-cta">
+                <div class="cta-play details-primary">${playCta(g, `${prefix}-open-create-room`)}</div>
+                <div class="cta-meta details-secondary" id="${prefix}-secondary">
+                  ${g.hasTutorial ? `<button class="btn" data-tutorial="${g.id}" type="button">教程模式</button>` : ""}
+                  <button class="btn" data-testid="${prefix}-fav" data-fav="${g.id}" type="button">${fav ? "移出收藏" : "添加收藏"}</button>
+                  ${g.hasConfig ? `<button class="btn" data-testid="${library ? "library-config-review-button" : "game-details-config-review-button"}" data-config="${g.id}" type="button">${TABLE_SVG}配置表</button>` : ""}
+                </div>
+                <button class="author-btn" id="${prefix}-author" data-author="${g.id}" type="button"><span>电子化作者：${g.author}</span> ${INFO_SVG}</button>
+            </div>
+            <button class="compact-toggle summary-toggle" data-compact-toggle="summary" type="button" aria-expanded="false" aria-controls="${prefix}-description ${prefix}-secondary ${prefix}-author"><span>游戏介绍与更多操作</span><span class="compact-toggle-mark" aria-hidden="true">＋</span></button>
+          </header>`;
+    }
+
     function renderSteamPage(g) {
       const fav = state.favs.has(g.id);
       const tab = state.gameTab;
@@ -1735,21 +1774,7 @@
         : `<div class="side-empty">当前没有房间</div>`;
       return `
         <section class="steam-page" data-testid="library-game-page" data-selected="${g.id}">
-          <div class="steam-cover">
-            ${coverInner(g)}
-            <div class="steam-veil">
-              <h1>${g.name}</h1>
-              <div class="steam-meta">上次游玩 ${g.lastPlayed} · ${playTimeText(g)}</div>
-              <div class="steam-actions">
-                <div class="cta-play">
-                  ${playCta(g)}
-                  ${g.hasTutorial ? `<button class="btn" data-tutorial="${g.id}" type="button">教程模式</button>` : ""}
-                  <button class="btn" data-fav="${g.id}" type="button">${fav ? "移出收藏" : "加入收藏"}</button>
-                  ${g.hasConfig ? `<button class="btn" data-testid="library-config-review-button" data-config="${g.id}" type="button">${TABLE_SVG}配置表</button>` : ""}
-                </div>
-              </div>
-            </div>
-          </div>
+          ${renderGameSummary(g, true)}
           <div class="steam-body">
             <div class="steam-main">
               <div class="hub-row" data-testid="library-hub-row">
@@ -1767,11 +1792,12 @@
                 </div>
                 <div class="side-scroll" data-testid="library-rooms">${rooms}</div>
               </div>
-              <div class="side-card">
+              <div class="side-card friends-section compact-section">
                 <div class="side-head">
-                  <div class="block-title">玩过的好友</div>
+                  <div class="block-title friends-heading">玩过的好友</div>
+                  <button class="compact-toggle" data-compact-toggle="friends" type="button" aria-expanded="false" aria-controls="library-friends-content"><span>玩过的好友 · ${g.friends.length}</span><span class="compact-toggle-mark" aria-hidden="true">＋</span></button>
                 </div>
-                <div class="side-scroll" data-testid="library-friends">${friends}</div>
+                <div class="side-scroll" id="library-friends-content" data-testid="library-friends">${friends}</div>
               </div>
             </aside>
           </div>
@@ -1997,31 +2023,7 @@
       $("details").hidden = false;
       $("details").innerHTML = `
         <div class="modal" role="dialog" aria-label="${g.name}" data-testid="game-details-modal-root">
-          <header class="details-hero">
-            <div class="details-cover" data-testid="game-details-cover">${coverInner(g)}</div>
-            <div class="details-hero-copy">
-              <h2 data-testid="game-details-title">${g.name}</h2>
-              <p class="details-desc" data-testid="game-details-description">${g.desc}</p>
-              <div class="details-facts">
-                <div data-testid="game-details-player-recommendation" class="player-rec">
-                  <span class="player-label">人数</span>
-                  <div class="player-row">${(g.playerOptions || [2]).map(n => `<span class="player-count ${g.bestPlayers.includes(n) ? "is-best" : ""}" aria-label="${n} 人${g.bestPlayers.includes(n) ? "（推荐）" : ""}">${n}</span>`).join("")}</div>
-                  ${g.bestPlayers.length ? `<span class="player-label">推荐 ${g.bestPlayers.join("、")} 人</span>` : ""}
-                </div>
-                <span class="play-est" data-testid="game-details-playtime">${playTimeText(g)}</span>
-              </div>
-            </div>
-            ${closeX("game-details-close-button", "details")}
-            <div class="details-cta">
-                <div class="cta-play details-primary">${playCta(g, "game-details-open-create-room")}</div>
-                <div class="cta-meta details-secondary">
-                  ${g.hasTutorial ? `<button class="btn" data-tutorial="${g.id}" type="button">教程模式</button>` : ""}
-                  <button class="btn" data-testid="game-details-fav" data-fav="${g.id}" type="button">${fav ? "移出收藏" : "添加收藏"}</button>
-                  ${g.hasConfig ? `<button class="btn" data-testid="game-details-config-review-button" data-config="${g.id}" type="button">${TABLE_SVG}配置表</button>` : ""}
-                </div>
-                <button class="author-btn" data-author="${g.id}" type="button"><span>电子化作者：${g.author}</span> ${INFO_SVG}</button>
-            </div>
-          </header>
+          ${renderGameSummary(g)}
           <section class="details-main">
             <div class="tab-row" data-testid="game-details-tab-row">
               <button class="tab ${state.detailsTab === "lobby" ? "is-active" : ""}" data-testid="game-details-tab-lobby" data-tab="lobby" type="button">在线大厅</button>
@@ -2168,7 +2170,16 @@
       renderMatch();
     }
 
+    function toggleCompactSection(button) {
+      const section = button.closest(".compact-section");
+      const expanded = section.classList.toggle("is-expanded");
+      button.setAttribute("aria-expanded", String(expanded));
+      button.querySelector(".compact-toggle-mark").textContent = expanded ? "−" : "＋";
+    }
+
     document.addEventListener("click", (e) => {
+      const compactToggle = e.target.closest("[data-compact-toggle]");
+      if (compactToggle) { toggleCompactSection(compactToggle); return; }
       const t = e.target.closest("[data-view],[data-open],[data-close],[data-cat],[data-game],[data-star],[data-select],[data-enter],[data-fav],[data-destroy],[data-tutorial],[data-config],[data-tab],[data-gametab],[data-upload-pick],[data-create],[data-create-seats],[data-author],[data-news-shift],[data-profile],[data-profile-edit],[data-avatar],[data-invite],[data-exp],[data-team],[data-ai-toggle],[data-diff],[data-ai-seat],[data-ai-manual],[data-chrome-drawer],[data-list-drawer],[data-library-back],[data-library-news],[data-drawer-scrim],#userBtn,#bell,#upSubmit,#upSave,#logPublish,#confirmYes,#upDrop,#createConfirm,#profileSave");
       if (!t) {
         if (!e.target.closest(".menu,.notes,.user,.bell,.chrome-extras,.steam-list,.menu-btn,.list-fab")) {

@@ -11,17 +11,17 @@ import {
   saveScreenshot,
   setHarnessRandomQueue,
   waitForBetrayalPageReady,
+  waitForPhysicalDiceSettled,
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
 
 const EVIDENCE_DIR = "evidence/betrayal-first-scenario";
 const HAUNT_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-第一剧本-haunt运行时.png`;
 const SCENARIO_REFERENCE_HOME_SCREENSHOT = `${EVIDENCE_DIR}/02a-山屋惊魂-首剧本查阅-当前剧本首页.png`;
-const SCENARIO_REFERENCE_TURNING_SCREENSHOT = `${EVIDENCE_DIR}/02b-山屋惊魂-首剧本查阅-当前剧本翻页中.png`;
-const SCENARIO_REFERENCE_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/02c-山屋惊魂-首剧本查阅-当前剧本末页.png`;
 const REFERENCE_SCREENSHOT = `${EVIDENCE_DIR}/02d-山屋惊魂-首剧本查阅-帮助参考卡.png`;
 const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-第一剧本-haunt牌桌.png`;
 const ENDGAME_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-终局-幸存者胜利.png`;
+const ENDGAME_REPORT_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-终局-结果报告.png`;
 
 test.describe("山屋惊魂第一剧本", () => {
   test("从真实 haunt 运行时进入幸存者终局", async ({ page, context }) => {
@@ -47,7 +47,27 @@ test.describe("山屋惊魂第一剧本", () => {
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await expect(
       page.getByTestId("betrayal-runtime-header-grid"),
-    ).toContainText(/恶兆后|Haunt/i);
+    ).toContainText(/作祟中|恶兆后|Haunt/i);
+    const skipTurnIntroIfVisible = async () => {
+      const turnIntroSkip = page.getByTestId("betrayal-turn-intro-skip");
+      if (await turnIntroSkip.isVisible().catch(() => false)) {
+        await turnIntroSkip.click();
+        await expect(turnIntroSkip).toHaveCount(0);
+      }
+    };
+    await skipTurnIntroIfVisible();
+    const autoOpenedScenarioReader = page.getByTestId(
+      "betrayal-scenario-reader-dialog",
+    );
+    await expect(autoOpenedScenarioReader).toBeVisible();
+    await expect(
+      autoOpenedScenarioReader.getByTestId("betrayal-scenario-opening-stage"),
+    ).toBeVisible();
+    await autoOpenedScenarioReader
+      .getByTestId("betrayal-scenario-reader-close")
+      .click();
+    await expect(autoOpenedScenarioReader).toHaveCount(0);
+    await skipTurnIntroIfVisible();
     await saveScreenshot(page, HAUNT_SCREENSHOT);
 
     await page.getByTestId("betrayal-open-scenario").click();
@@ -74,48 +94,15 @@ test.describe("山屋惊魂第一剧本", () => {
     ).toBeVisible();
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-1",
       ),
-    ).toContainText("山屋异象");
+    ).toContainText("敌方情报 / 胜利条件");
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
+        "betrayal-scenario-book-page-mummyRampage-dossier-2",
       ),
-    ).toContainText("英雄手册");
+    ).toContainText("驱逐木乃伊");
     await saveScreenshot(page, SCENARIO_REFERENCE_HOME_SCREENSHOT);
-    const scenarioReaderNextZone = scenarioReaderDialog.getByTestId(
-      "betrayal-scenario-reader-next-zone",
-    );
-    await scenarioReaderNextZone.click();
-    const turningSheet = scenarioReaderDialog.getByTestId(
-      "betrayal-scenario-book-turning-sheet",
-    );
-    await expect(turningSheet).toBeVisible();
-    await expect(turningSheet).toHaveAttribute(
-      "data-flip-direction",
-      "forward",
-    );
-    await saveScreenshot(page, SCENARIO_REFERENCE_TURNING_SCREENSHOT);
-    await expect(turningSheet).toHaveCount(0, { timeout: 2000 });
-    await expect(
-      scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-3",
-      ),
-    ).toContainText("驱魔法阵");
-    await expect(
-      scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-4",
-      ),
-    ).toContainText("胜负判定");
-    await expect(scenarioReaderDialog).not.toContainText("叛徒手册");
-    await expect(
-      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-traitor"),
-    ).toHaveCount(0);
-    await expect(
-      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-monster"),
-    ).toHaveCount(0);
-    await expect(scenarioReaderNextZone).toBeDisabled();
-    await saveScreenshot(page, SCENARIO_REFERENCE_BOTTOM_SCREENSHOT);
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(scenarioReaderDialog).toBeHidden();
     await page.getByTestId("betrayal-open-reference").click();
@@ -152,13 +139,19 @@ test.describe("山屋惊魂第一剧本", () => {
     });
     await expect(
       page.getByTestId("betrayal-action-use"),
-    ).toContainText(/驱魔|驱散杰克之灵|Exorcise/i);
-    await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
+    ).toContainText(/驱逐木乃伊|Exorcise/i);
+    await setHarnessRandomQueue(page, [
+      0.99, 0.99, 0.99, 0.99,
+      0.01, 0.01, 0.01, 0.01, 0.01,
+    ]);
     await page.getByTestId("betrayal-action-use").click();
     const exorciseRollReview = page.getByTestId(
       "betrayal-exorcise-roll-review",
     );
     await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
+    await waitForPhysicalDiceSettled(
+      exorciseRollReview.getByTestId("betrayal-recent-roll-panel"),
+    );
     const exorciseRollBackdrop = page.getByTestId(
       "betrayal-roll-review-backdrop",
     );
@@ -176,14 +169,17 @@ test.describe("山屋惊魂第一剧本", () => {
     ).toContainText("结局朗读");
     await expect(
       endgameScreen.getByTestId("betrayal-endgame-ending-narration"),
-    ).toContainText("杰克之灵消失");
+    ).toContainText("木乃伊犹如细砂随风飞散");
+    await saveScreenshot(page, ENDGAME_SCREENSHOT);
+    await endgameScreen.getByTestId("betrayal-endgame-ending-continue").click();
+    const endgameResultReport = endgameScreen.getByTestId(
+      "betrayal-endgame-result-report",
+    );
+    await expect(endgameResultReport).toBeVisible();
     await expect(
-      endgameScreen
-        .getByRole("main")
-        .getByText("幸存者逃脱", { exact: true })
-        .first(),
-    ).toBeVisible();
-    await endgameScreen.screenshot({ path: ENDGAME_SCREENSHOT });
+      endgameScreen.getByTestId("betrayal-endgame-ending-narration"),
+    ).toHaveCount(0);
+    await saveScreenshot(page, ENDGAME_REPORT_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-first-scenario", diagnostics },

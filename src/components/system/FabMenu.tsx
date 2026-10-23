@@ -40,6 +40,9 @@ export type FabPanelRenderContext = {
 export type FabMenuPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface FabMenuProps {
+    className?: string;
+    /** Bottom UI exclusion region in viewport CSS pixels; zero preserves the shared default. */
+    bottomClearance?: number;
     items: FabAction[];
     position?: FabMenuPosition;
     initialOffset?: { left?: number; top?: number };
@@ -76,9 +79,9 @@ export type FabLayerZIndex = {
 export const resolveFabLayerZIndex = (baseZIndex: number = UI_Z_INDEX.hud): FabLayerZIndex => ({
     panel: baseZIndex + 1,
     root: baseZIndex + 2,
-    sheetBackdrop: baseZIndex + 1,
-    sheet: baseZIndex + 2,
-    floatingText: baseZIndex + 3,
+    sheetBackdrop: baseZIndex + 3,
+    sheet: baseZIndex + 4,
+    floatingText: baseZIndex + 5,
 });
 
 export interface FabAction {
@@ -134,6 +137,8 @@ export const areFabAnchorRectsEqual = (left: FabAnchorRect | null, right: FabAnc
 };
 
 export const FabMenu = ({
+    className = '',
+    bottomClearance = 0,
     items,
     position: initialPosition = 'bottom-right',
     initialOffset,
@@ -158,7 +163,7 @@ export const FabMenu = ({
     const layoutSafeAreaInsets: SafeAreaInsets = {
         top: safeAreaInsets.top / layoutScale,
         right: safeAreaInsets.right / layoutScale,
-        bottom: safeAreaInsets.bottom / layoutScale,
+        bottom: Math.max(safeAreaInsets.bottom, bottomClearance) / layoutScale,
         left: safeAreaInsets.left / layoutScale,
     };
     const shellBounds = useMemo(() => (
@@ -241,15 +246,13 @@ export const FabMenu = ({
         const maxLeft = allowOverflow
             ? Math.max(minLeft, layoutBounds.right - edgePeekSize)
             : Math.max(minLeft, layoutBounds.right - resolvedButtonSize - edgePadding - layoutInsets.right);
-        const maxTop = allowOverflow
+        const maxTop = allowOverflow && bottomClearance === 0
             ? Math.max(minTop, layoutBounds.bottom - edgePeekSize)
-            : Math.max(minTop, layoutBounds.bottom - resolvedButtonSize - edgePadding - layoutInsets.bottom);
-        return {
+            : Math.max(minTop, layoutBounds.bottom - resolvedButtonSize - edgePadding - layoutInsets.bottom);        return {
             left: Math.min(Math.max(target.left, minLeft), maxLeft),
             top: Math.min(Math.max(target.top, minTop), maxTop),
         };
-    }, [dockedButtonSize, edgePadding, edgePeekSize, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top, layoutInsets.bottom, layoutInsets.left, layoutInsets.right, layoutInsets.top, layoutViewportHeight, layoutViewportWidth]);
-
+    }, [bottomClearance, dockedButtonSize, edgePadding, edgePeekSize, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top, layoutInsets.bottom, layoutInsets.left, layoutInsets.right, layoutInsets.top, layoutViewportHeight, layoutViewportWidth]);
     const getAlignmentForPosition = useCallback((target: FabPosition, resolvedButtonSize = dockedButtonSize): FabAlignment => {
         const centerY = (layoutBounds.top + layoutBounds.bottom) / 2;
         const centerX = (layoutBounds.left + layoutBounds.right) / 2;
@@ -300,10 +303,10 @@ export const FabMenu = ({
                     clampPosition,
                     resolvedButtonSize: dockedButtonSize,
                 });
-                if (resolved.shouldPersist) {
+                if (resolved.shouldPersist && bottomClearance === 0) {
                     writeLocalStorageItem(storageKey, JSON.stringify(resolved.percent));
                 }
-                if (resolved.clearLegacyOffset) {
+                if (resolved.clearLegacyOffset && bottomClearance === 0) {
                     removeLocalStorageItem(legacyOffsetStorageKey);
                 }
                 setFabPosition(resolved.position);
@@ -314,15 +317,16 @@ export const FabMenu = ({
         });
 
         return () => window.cancelAnimationFrame(frameId);
-    }, [clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, layoutViewportHeight, layoutViewportWidth, legacyOffsetStorageKey, normalizePosition, storageKey]);
+    }, [bottomClearance, clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, layoutViewportHeight, layoutViewportWidth, legacyOffsetStorageKey, normalizePosition, storageKey]);
 
     const handleDragEnd = (_: any, info: any) => {
         if (!fabPosition || layoutViewportWidth <= 0 || layoutViewportHeight <= 0) return;
         setIsDragging(false);
-        const next = normalizePosition({
+        const normalized = normalizePosition({
             left: fabPosition.left + (info.offset.x / layoutScale),
             top: fabPosition.top + (info.offset.y / layoutScale),
         });
+        const next = bottomClearance > 0 ? clampPosition(normalized, { allowOverflow: false }) : normalized;
         flushSync(() => {
             setFabPosition(next);
             setLiveDragOffset({ x: 0, y: 0 });
@@ -564,7 +568,7 @@ export const FabMenu = ({
     return (
         <motion.div
             ref={containerRef}
-            className="fixed font-sans"
+            className={`fixed font-sans ${className}`}
             initial={false}
             drag
             dragMomentum={false}
@@ -904,7 +908,7 @@ const Panel = ({
     const panelMaxWidth = safeAvailableWidth > 0 ? `${safeAvailableWidth}px` : undefined;
     const panelMaxHeight = safeAvailableHeight > 0 ? `${safeAvailableHeight}px` : undefined;
     const panelHeading = (
-        <div className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
+        <div data-fab-panel-heading className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
             {item.label}
         </div>
     );
@@ -979,7 +983,7 @@ const Panel = ({
                         data-testid={`fab-panel-${item.id}`}
                     >
                         <div className="px-4 pt-4">
-                            <div className="truncate border-b border-white/10 pb-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-70">
+                            <div data-fab-panel-heading className="truncate border-b border-white/10 pb-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-70">
                                 {item.label}
                             </div>
                         </div>

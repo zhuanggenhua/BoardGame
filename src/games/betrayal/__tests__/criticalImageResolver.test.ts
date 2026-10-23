@@ -238,4 +238,10 @@ describe('betrayalCriticalImageResolver', () => {
         expect(result.phaseKey).toBe('betrayal:playing:0');
         expect(result.critical).toEqual(_testExports.BETRAYAL_CRITICAL_IMAGE_PATHS);
     });
+    it('普通选角提前覆盖开场所需素材，阶段切换不因新增关键图卸载开场状态', () => {
+        const selection = betrayalCriticalImageResolver(stateOf({ core: { phase: 'characterSelect' } as BetrayalCore }), 'zh-CN', '0');
+        const table = betrayalCriticalImageResolver(stateOf({ core: { phase: 'preHaunt' } as BetrayalCore }), 'zh-CN', '0');
+        expect(table.critical.every(path => selection.critical.includes(path))).toBe(true);
+    });
+
 });

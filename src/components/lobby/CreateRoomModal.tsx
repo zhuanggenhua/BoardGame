@@ -8,7 +8,8 @@
  * - manifest 声明的 setupOptions（单选 / 多选）
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import './platform-room-dialog.css';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion, type MotionStyle } from 'framer-motion';
@@ -400,6 +401,15 @@ export const CreateRoomModal = ({
     }), [createRoomSetup, defaultNumPlayers, gameManifest, rawDefaultSetupSelections, setupFields]);
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
+    const platformDialogRef = useRef<HTMLDialogElement>(null);
+    const platformDialogTitleId = useId();
+    useEffect(() => {
+        if (!isOpen || isHomeV2Style) return;
+        const dialog = platformDialogRef.current;
+        if (!dialog) return;
+        dialog.showModal();
+        return () => { if (dialog.open) dialog.close(); };
+    }, [isOpen, isHomeV2Style]);
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
     const supportsManualSetupSelection = gameManifest.ai?.manualSetupSelection === true;
     const fieldLabelClassName = isCompactHomeV2Layout ? 'mb-[3px] block text-[7.2px] font-semibold tracking-[0.04em] text-[#3f2616]' : homeV2PaperLabelClassName;
@@ -1026,33 +1036,39 @@ export const CreateRoomModal = ({
                                 </div>
                             </HomeV2PaperModalFrame>
                         ) : (
-                            <div
-                                className="pointer-events-auto relative flex w-full max-w-md flex-col overflow-hidden rounded-sm border border-parchment-card-border/30 bg-parchment-card-bg font-serif shadow-parchment-card-hover"
-                                onClick={(event) => event.stopPropagation()}
+                            <dialog
+                                ref={platformDialogRef}
+                                aria-labelledby={platformDialogTitleId}
+                                onKeyDown={(event) => { if (event.key === 'Escape') event.stopPropagation(); }}
+                                onCancel={(event) => { event.preventDefault(); if (!isLoading) onClose(); }}
+                                className="platform-room-dialog"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    const bounds = event.currentTarget.getBoundingClientRect();
+                                    const outside = event.clientX < bounds.left || event.clientX > bounds.right
+                                        || event.clientY < bounds.top || event.clientY > bounds.bottom;
+                                    if (event.target === event.currentTarget && outside && !isLoading) onClose();
+                                }}
                                 style={{
-                                    maxHeight: 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 42rem)',
+                                    maxHeight: 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 820px)',
                                 }}
                                 data-testid="create-room-modal"
                             >
-                                <>
-                                    <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-parchment-card-border/60" />
-                                    <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-parchment-card-border/60" />
-                                    <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-parchment-card-border/60" />
-                                    <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-parchment-card-border/60" />
-                                </>
-                            <div className="relative z-10 shrink-0 p-6 pb-4">
-                                <h2 className="text-center text-xl font-bold tracking-wide text-parchment-base-text">
+                                <button type="button" className="platform-room-close" onClick={onClose}
+                                    disabled={isLoading} aria-label={t('actions.cancel')} data-testid="create-room-cancel-button">×</button>
+                            <div className="platform-room-heading">
+                                <h2 id={platformDialogTitleId} className="platform-room-title">
                                     {t('createRoom.title')}
                                 </h2>
                             </div>
 
-                            <div className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-5 px-6 pb-4">
+                            <div className="platform-room-content space-y-5">
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className="text-sm font-bold text-parchment-base-text">
+                                        <label className="text-sm font-bold text-black">
                                             {t('createRoom.roomName')}
                                         </label>
-                                        <span className="text-xs italic text-parchment-light-text">
+                                        <span className="text-xs italic text-neutral-600">
                                             {t('createRoom.roomNameHint')}
                                         </span>
                                     </div>
@@ -1064,17 +1080,17 @@ export const CreateRoomModal = ({
                                         placeholder={t('createRoom.roomNamePlaceholder')}
                                         maxLength={20}
                                         autoComplete="off"
-                                        className="w-full rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text transition-colors placeholder:text-parchment-light-text/50 focus:border-parchment-base-text focus:outline-none sm:text-sm"
+                                        className="w-full rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-black transition-colors placeholder:text-neutral-600/50 focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                         data-testid="create-room-name-input"
                                     />
                                 </div>
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className="text-sm font-bold text-parchment-base-text">
+                                        <label className="text-sm font-bold text-black">
                                             {t('createRoom.password')}
                                         </label>
-                                        <span className="text-xs italic text-parchment-light-text">
+                                        <span className="text-xs italic text-neutral-600">
                                             {t('createRoom.passwordHint')}
                                         </span>
                                     </div>
@@ -1085,16 +1101,16 @@ export const CreateRoomModal = ({
                                         placeholder={t('createRoom.passwordPlaceholder')}
                                         maxLength={10}
                                         autoComplete="new-password"
-                                        className="w-full rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 pr-9 text-base text-parchment-base-text transition-colors placeholder:text-parchment-light-text/50 focus:border-parchment-base-text focus:outline-none sm:text-sm"
+                                        className="w-full rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 pr-9 text-base text-black transition-colors placeholder:text-neutral-600/50 focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                         data-testid="create-room-password-input"
                                         toggleButtonTestId="create-room-password-toggle"
-                                        toggleButtonClassName="text-parchment-light-text hover:text-parchment-base-text"
+                                        toggleButtonClassName="text-neutral-600 hover:text-black"
                                     />
                                 </div>
 
                                 {hasPlayerOptions && (
                                     <div>
-                                        <label className="mb-2 block text-sm font-bold text-parchment-base-text">
+                                        <label className="mb-2 block text-sm font-bold text-black">
                                             {t('createRoom.playerCount')}
                                         </label>
                                         <div className="flex gap-2 flex-wrap">
@@ -1103,10 +1119,11 @@ export const CreateRoomModal = ({
                                                     key={count}
                                                     type="button"
                                                     onClick={() => handlePlayerCountChange(count)}
+                                                    aria-pressed={numPlayers === count}
                                                     className={`cursor-pointer rounded-[6px] px-4 py-2 text-sm font-bold transition-all ${
                                                         numPlayers === count
                                                             ? 'bg-parchment-base-text text-parchment-card-bg border border-parchment-base-text'
-                                                            : 'bg-parchment-card-bg text-parchment-base-text border border-parchment-card-border/30 hover:bg-parchment-base-bg'
+                                                            : 'bg-parchment-card-bg text-black border border-parchment-card-border/30 hover:bg-parchment-base-bg'
                                                     }`}
                                                 >
                                                     {t('createRoom.playerCountUnit', { count })}
@@ -1118,17 +1135,17 @@ export const CreateRoomModal = ({
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className="text-sm font-bold text-parchment-base-text">
+                                        <label className="text-sm font-bold text-black">
                                             {t('createRoom.retention')}
                                         </label>
-                                        <span className="text-xs italic text-parchment-light-text">
+                                        <span className="text-xs italic text-neutral-600">
                                             {t('createRoom.retentionHint')}
                                         </span>
                                     </div>
                                     <select
                                         value={ttlSeconds}
                                         onChange={(event) => setTtlSeconds(Number(event.target.value))}
-                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
+                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-black cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                     >
                                         {RETENTION_OPTIONS.map((option) => (
                                             <option key={option.value} value={option.value}>
@@ -1161,14 +1178,14 @@ export const CreateRoomModal = ({
                                                     : 'border-parchment-card-border/30 bg-parchment-base-bg/35 hover:bg-parchment-base-bg/60'
                                             }`}
                                         >
-                                            <span className="text-sm font-bold text-parchment-base-text">
+                                            <span className="text-sm font-bold text-black">
                                                 {t('createRoom.enableRoomAi')}
                                             </span>
                                             <span
                                                 className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
                                                     enableAi
                                                         ? 'bg-emerald-600 text-white'
-                                                        : 'bg-parchment-card-bg text-parchment-light-text border border-parchment-card-border/30'
+                                                        : 'bg-parchment-card-bg text-neutral-600 border border-parchment-card-border/30'
                                                 }`}
                                             >
                                                 {enableAi ? t('createRoom.enabled') : t('createRoom.disabled')}
@@ -1179,7 +1196,7 @@ export const CreateRoomModal = ({
                                             <>
                                                 {gameManifest.ai?.localAi && (
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-xs font-bold text-parchment-base-text">
+                                                        <span className="text-xs font-bold text-black">
                                                             {t('ai.difficulty')}
                                                         </span>
                                                         {LOCAL_AI_DIFFICULTY_OPTIONS.map((difficulty) => {
@@ -1193,7 +1210,7 @@ export const CreateRoomModal = ({
                                                                         className={`rounded-[4px] border px-3 py-1.5 text-xs font-bold transition-all ${
                                                                             active
                                                                                 ? 'cursor-pointer border-emerald-600 bg-emerald-600 text-white shadow-sm'
-                                                                                : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg'
+                                                                                : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-black hover:bg-parchment-base-bg'
                                                                         }`}
                                                                     >
                                                                     {t(`ai.difficulties.${difficulty}`)}
@@ -1205,17 +1222,17 @@ export const CreateRoomModal = ({
 
                                                 <div className="space-y-1.5">
                                                     <div className="flex items-center justify-between gap-3">
-                                                        <span className="text-xs font-bold text-parchment-base-text">
+                                                        <span className="text-xs font-bold text-black">
                                                             {t('createRoom.aiThinkingTime')}
                                                         </span>
-                                                        <span className="text-xs italic text-parchment-light-text">
+                                                        <span className="text-xs italic text-neutral-600">
                                                             {t('createRoom.aiThinkingTimeHint')}
                                                         </span>
                                                     </div>
                                                     <select
                                                         value={aiMinimumActionDelayMs}
                                                         onChange={(event) => handleAiMinimumActionDelayChange(Number(event.target.value))}
-                                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
+                                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-black cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                                         data-testid="create-room-ai-thinking-time-select"
                                                     >
                                                         {AI_MINIMUM_ACTION_DELAY_OPTIONS_MS.map((delayMs) => {
@@ -1233,7 +1250,7 @@ export const CreateRoomModal = ({
                                                 </div>
 
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="text-xs font-bold text-parchment-base-text">
+                                                    <span className="text-xs font-bold text-black">
                                                         {t('createRoom.occupiedSeats')}
                                                     </span>
                                                     {Array.from({ length: numPlayers }, (_, index) => {
@@ -1253,10 +1270,10 @@ export const CreateRoomModal = ({
                                                                 aria-pressed={isOwnerSeat ? false : isAiSeat}
                                                                 className={`rounded-[4px] border px-3 py-1.5 text-xs font-bold transition-all ${
                                                                     isOwnerSeat
-                                                                        ? 'cursor-not-allowed border-parchment-card-border/25 bg-parchment-base-bg/55 text-parchment-light-text/80'
+                                                                        ? 'cursor-not-allowed border-parchment-card-border/25 bg-parchment-base-bg/55 text-neutral-600/80'
                                                                         : isAiSeat
                                                                             ? 'cursor-pointer border-emerald-600 bg-emerald-600 text-white shadow-sm'
-                                                                            : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg'
+                                                                            : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-black hover:bg-parchment-base-bg'
                                                                 }`}
                                                             >
                                                                 {label}
@@ -1273,7 +1290,7 @@ export const CreateRoomModal = ({
                                                         className="h-4 w-4 cursor-pointer accent-emerald-600"
                                                         data-testid="create-room-ai-manual-faction-checkbox"
                                                     />
-                                                    <span className="text-xs font-bold text-parchment-base-text">
+                                                    <span className="text-xs font-bold text-black">
                                                         {t('createRoom.aiManualFactionSelection')}
                                                     </span>
                                                 </label>}
@@ -1283,16 +1300,8 @@ export const CreateRoomModal = ({
                                 )}
                             </div>
 
-                            <div className="relative z-10 shrink-0 flex gap-3 border-t border-parchment-card-border/15 bg-parchment-card-bg/95 p-6 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    data-testid="create-room-cancel-button"
-                                    className="flex-1 cursor-pointer rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-4 py-2.5 font-bold text-parchment-base-text transition-all hover:bg-parchment-base-bg"
-                                    disabled={isLoading}
-                                >
-                                    {t('actions.cancel')}
-                                </button>
+                            <div className="platform-room-footer">
+
                                 <button
                                     type="button"
                                     onClick={handleConfirm}
@@ -1303,7 +1312,7 @@ export const CreateRoomModal = ({
                                     {isLoading ? t('button.processing') : t('createRoom.confirm')}
                                 </button>
                             </div>
-                        </div>
+                        </dialog>
                         )}
                     </motion.div>
                 </>

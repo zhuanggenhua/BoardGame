@@ -481,7 +481,7 @@
   "games": {
     "betrayal": {
       "title": "山屋惊魂",
-      "description": "3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定房间主视图、探索者区与牌堆区。",
+      "description": "3-6 人恐怖探索桌游。逐间探索神秘宅邸，遭遇事件、收集物品与预兆；作祟降临后，各自面对新的目标与危机。",
       "players": "3-6 人"
     },
     "tictactoe": {
@@ -2471,5 +2471,46 @@
     "steps": {
       "setup": "正在准备教学场景…"
     }
+  },
+  "platform": {
+    "discover": "发现",
+    "library": "收藏库",
+    "upload": "上传",
+    "search": "搜索游戏",
+    "sort": "排序",
+    "defaultOrder": "默认顺序",
+    "gameName": "游戏名称",
+    "removeFavorite": "移出收藏：{{game}}",
+    "addFavorite": "收藏：{{game}}",
+    "noSearchResults": "没有找到匹配的游戏",
+    "emptyLibrary": "还没有收藏游戏，去发现页点星标添加",
+    "menu": "菜单",
+    "closeMenu": "关闭菜单",
+    "retry": "重试",
+    "save": "收藏",
+    "saved": "已收藏",
+    "favoriteError": "收藏保存失败",
+    "libraryNews": "收藏游戏动态",
+    "librarySyncError": "收藏库暂时无法同步",
+    "loadingLibrary": "正在加载收藏库…",
+    "loading": "正在加载…",
+    "openLobby": "查看房间",
+    "newsNavigation": "切换动态",
+    "previousNews": "上一条动态",
+    "nextNews": "下一条动态",
+    "closeNews": "关闭动态详情",
+    "newsLoadingGames": "正在加载：{{games}}",
+    "newsFailedGames": "未能加载动态：{{games}}",
+    "defaultOrderShort": "默认",
+    "gameNameShort": "名称",
+    "myGames": "我的游戏",
+    "libraryHome": "收藏库主页"
+  },
+  "homeAppearance": {
+    "settings": "首页设置",
+    "title": "首页外观",
+    "style": "首页风格",
+    "modern": "现代",
+    "classic": "经典"
   }
 }

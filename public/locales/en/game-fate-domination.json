@@ -87,6 +87,7 @@
     "unknownLocation": "Unknown location",
     "locationFull": "Location is full",
     "staleCard": "The card is no longer in your hand",
+    "invalidAttackSelection": "The attack selection is invalid or out of date. Please select again.",
     "cardAlreadySelected": "This card is already selected",
     "tooManyAttackCards": "Select no more than two attack cards",
     "notEnoughMana": "Not enough mana",
@@ -94,5 +95,9 @@
     "cardNotVisible": "This card is not currently visible",
     "deploymentRequired": "Deploy your Master first",
     "actionMustBeConfirmed": "Confirm the attack first"
+  },
+  "feedback": {
+    "skillUnavailable": "{{skill}} is not implemented yet. No effect was applied and no resources were spent.",
+    "abilityUnavailable": "This ability is not implemented yet. No effect was applied and no resources were spent."
   }
 }

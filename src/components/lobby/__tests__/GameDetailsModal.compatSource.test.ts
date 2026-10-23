@@ -10,13 +10,16 @@ const readSource = () =>
 describe('GameDetailsModal compatibility source guards', () => {
     it('移动端详情头部应使用紧凑 tab 标签，避免最后一个 tab 在窄屏下被截断', () => {
         const source = readSource();
+        const presentation = readFileSync(resolve(TEST_DIR, '../../home/PlatformGameDetails.tsx'), 'utf8');
+        const styles = readFileSync(resolve(TEST_DIR, '../../home/platform-details.css'), 'utf8');
 
         expect(source).toContain("mobileLabel: t('tabs.leaderboardCompact'");
-        expect(source).toContain("data-testid={`game-details-tab-${tab.id}`}");
-        expect(source).toContain('data-testid="game-details-close-button"');
-        expect(source).toContain('className="sm:hidden"');
-        expect(source).toContain('className="hidden sm:inline"');
-        expect(source).toContain('justify-between gap-1.5');
-        expect(source).toContain('hidden h-4 w-px shrink-0 bg-[#e5e0d0] sm:block sm:h-6');
+        expect(source).toContain('tabs={detailTabs}');
+        expect(presentation).toContain("data-testid={`game-details-tab-${tab.id}`}");
+        expect(presentation).toContain('data-testid="game-details-close-button"');
+        expect(presentation).toContain('{tab.mobileLabel ?? tab.label}');
+        expect(styles).toContain('.platform-details-tab-desktop { display: none; }');
+        expect(styles).toContain('.platform-details-tab-mobile { display: inline; }');
+        expect(styles).toContain('overflow-x: auto');
     });
 });

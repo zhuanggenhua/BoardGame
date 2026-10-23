@@ -169,3 +169,24 @@
   .field { min-height: 44px; font-size: 16px; }
   .actions .btn { min-height: 44px; }
 }
+
+/* Both entries prioritize joining/starting a game; secondary content is opt-in on phones. */
+@media (max-width: 1023px) {
+  .details-hero { grid-template-areas: "cover title close" "cover facts facts" "actions actions actions" "more more more"; }
+  .details-hero.is-expanded { grid-template-areas: "cover title close" "cover facts facts" "desc desc desc" "actions actions actions" "more more more"; }
+  .library-summary { grid-template-columns: 88px minmax(0, 1fr); grid-template-areas: "cover title" "cover facts" "actions actions" "more more"; }
+  .library-summary.is-expanded { grid-template-areas: "cover title" "cover facts" "desc desc" "actions actions" "more more"; }
+  .library-summary .details-cover { width: 88px; }
+  .details-hero:not(.is-expanded) .details-desc,
+  .details-hero:not(.is-expanded) .details-secondary,
+  .details-hero:not(.is-expanded) .author-btn,
+  .details-hero:not(.is-expanded) .library-last-played { display: none; }
+  .details-hero:not(.is-expanded) .details-cta { grid-template-columns: minmax(0, 1fr); grid-template-areas: "primary"; gap: 0; }
+  .details-hero.is-expanded .details-cta { gap: 12px; }
+  .compact-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: var(--ink); font-size: 13px; font-weight: 700; text-align: left; }
+  .summary-toggle { grid-area: more; border-top: 1px solid #ddd; }
+  .compact-toggle-mark { font-size: 20px; }
+  .friends-section:not(.is-expanded) .side-scroll { display: none; }
+  .friends-heading { display: none; }
+  .friends-section .side-head { padding-block: 0; }
+}

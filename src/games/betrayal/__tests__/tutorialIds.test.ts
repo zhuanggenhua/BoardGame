@@ -16,6 +16,7 @@ const sourceByFile = {
     'latestDiscoverySurface.tsx': readGameSource('latestDiscoverySurface.tsx'),
     'playerStatusRailSurface.tsx': readGameSource('playerStatusRailSurface.tsx'),
     'referenceQuickActionsSurface.tsx': readGameSource('referenceQuickActionsSurface.tsx'),
+    'roomEntityLayerSurface.tsx': readGameSource('roomEntityLayerSurface.tsx'),
     'roomMapSurface.tsx': readGameSource('roomMapSurface.tsx'),
 } as const;
 
@@ -63,6 +64,17 @@ describe('Betrayal data-tutorial-id 属性', () => {
         expect(sourceByFile['roomMapSurface.tsx']).toMatch(
             /data-tutorial-id=\{\s*tutorialMapTargetRoomId === room\.id\s*\?\s*tutorialHighlightTarget\s*:\s*undefined\s*\}/,
         );
+    });
+
+    it('当前探索者移动入口直接锚定地图上的正式 token', () => {
+        expect(sourceByFile['roomEntityLayerSurface.tsx']).toMatch(
+            /data-tutorial-id=\{\s*occupant\.playerId === currentExplorerPlayerId\s*\?\s*"betrayal-current-explorer-token"\s*:\s*undefined\s*\}/,
+        );
+    });
+
+    it('移动和探索教程的真实地图输入按固定步骤推进', () => {
+        expect(boardSource).toContain('tutorialStep?.id === "open-move-targets"');
+        expect(boardSource).toContain('tutorialStep?.id === "explore-upper"');
     });
 
     it('Board 已接入教程桥，而不是只留 tutorial manifest', () => {

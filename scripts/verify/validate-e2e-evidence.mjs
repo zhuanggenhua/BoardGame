@@ -37,7 +37,9 @@ try {
     if (result === null) {
         throw new Error('PASS 清单没有 display.finalPassBeforeOpen=true，不能作为最终交付验收');
     }
-    console.log(`E2E 证据验收通过: ${result.mediaCount} 张媒体, ${result.chainCount} 条前中后链路, ${result.visualReview?.mediaCount ?? 0} 张逐图视觉审计, ${result.outOfScopeMediaCount ?? 0} 张合同外媒体已显式登记`);
+    const scope = result.acceptanceMode === 'visual-only' ? '独立纯视觉验收通过' : 'E2E 证据验收通过';
+    const groups = result.acceptanceMode === 'visual-only' ? '组独立代表态' : result.capturePolicy === 'distinct-ui-state' ? '条行为证据链（媒体为独特界面状态）' : '条旧三阶段媒体链';
+    console.log(`${scope}: ${result.mediaCount} 张媒体, ${result.chainCount} ${groups}, ${result.visualReview?.mediaCount ?? 0} 张逐图视觉审计, ${result.outOfScopeMediaCount ?? 0} 张合同外媒体已显式登记`);
 } catch (error) {
     console.error(`E2E 证据验收失败: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);

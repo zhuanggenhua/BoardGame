@@ -335,7 +335,7 @@
       "lootTargetsAvailable": "Lootable corpses: {{count}}",
       "noTradeTargets": "No teammate is in the same room",
       "turnHintMove": "Reach: {{targets}}",
-      "turnHintExplore": "Reveal: {{floor}}",
+      "turnHintExplore": "Tap a doorway marked ? to explore ({{floor}} floor)",
       "turnHintDiscoveryEndTurn": "Discovery complete: end turn",
       "turnHintHold": "Stay in this room",
       "turnHintBloodFromStoneSetupPlacement": "{{count}} rooms left",
@@ -379,8 +379,8 @@
       "actionCueMoveMode": "Now: tap a green room",
       "actionCueMoveSingle": "Now: tap {{room}}",
       "actionCueMoveMany": "Now: tap a green room",
-      "actionCueExplore": "Now: tap Explore for {{floor}}",
-      "actionCueExploreSelect": "Now: tap a gold doorway slot",
+      "actionCueExplore": "Exploration is unavailable right now",
+      "actionCueExploreSelect": "Now: tap a question mark to explore",
       "actionCueExploreOrient": "Now: rotate {{room}} and confirm",
       "actionCueUse": "Now: tap Use",
       "actionCueUseCard": "Now: use {{card}}",
@@ -609,9 +609,9 @@
         "reader": {
           "prologueLabel": "Public Reveal",
           "prologue": "Dry scraping comes from the sarcophagus. The mummy wakes, turns toward the Girl, and every step through the house starts to feel like a march toward a wedding that should never happen.",
-          "prologueHeroesLabel": "Hero Opening Cutscene",
+          "prologueHeroesLabel": "Hero Prologue",
           "prologueHeroes": "Dust suddenly swirls through the room, and a shadow of dread crosses your mind. Not far away, you hear a friend's cry, mixed with fear and a trace of excitement. A strange, deep voice echoes in your head: \"My beloved was lost in the ancient flood. Though my tears have turned to ash, love still burns in my heart like the sun. Now my love has returned. We shall never be parted! Anyone who stops me will die, body and soul!\"",
-          "prologueTraitorLabel": "Traitor Opening Cutscene",
+          "prologueTraitorLabel": "Traitor Prologue",
           "prologueTraitor": "There is a crack in the wall. When you touch it, the wall slides aside, revealing a dusty sarcophagus covered in strange designs. The markings on the sarcophagus glow faintly, and you cannot help studying what must be ancient Egyptian hieroglyphs.\n\nA strange, deep voice flashes through your mind: \"My beloved was lost in the ancient flood. Though my tears have turned to ash, love still burns in my heart like the sun. Now my love has returned. We shall never be parted! You will not stop our union!\" Your mind goes blank. You know only that, to let true lovers be together, sacrificing your friends is worthwhile. The sarcophagus slowly opens, and you gaze devoutly upon your master.",
           "setupLabel": "Opening Record",
           "setup": "Your character has become the traitor but continues playing.\n\nTake the large Mummy monster token and a pentagonal item token, which represents the sarcophagus, and place them in your room.\n\nYou immediately lose the Girl companion. Discard the Girl omen and lose its effect. Set the Girl omen aside, take a magenta token to represent the Girl, and place it in another room on the same floor as the Mummy. The Girl and Mummy must be at least 5 rooms apart. If the floor is too small for that, place the Girl token in the room farthest from the Mummy.",
@@ -867,10 +867,14 @@
       "tilePlaceholder": "Unrevealed room",
       "ready": "Move here",
       "slotUndiscovered": "Not revealed yet",
-      "slotReady": "Press Explore to reveal a new room",
+      "slotReady": "Select this doorway to explore a new room",
       "explorable": "Explorable",
       "moveTarget": "Move target",
       "skeletonKeyMoveTarget": "Use Skeleton Key to move through walls",
+      "moveCostTitle": "Move here · cost {{count}}",
+      "skeletonKeyMoveCostTitle": "Use Skeleton Key · {{count}} move point",
+      "moveCostBadge": "{{count}} pts",
+      "skeletonKeyMoveCostBadge": "Key · {{count}} pt",
       "preview": "Zoom preview",
       "focusSelf": "Focus my room",
       "obstacle": "Obstacle",
@@ -941,6 +945,7 @@
       "essence": "Essence"
     },
     "players": {
+      "moveTokenAria": "Select {{player}} to move; right-click or hold for details",
       "inventoryCount": "Holding {{count}}",
       "sameRoom": "Same room",
       "tradeTarget": "Trade target",
@@ -963,6 +968,8 @@
       "nextValue": "Prioritize {{action}}"
     },
     "discovery": {
+      "roomSceneTitle": "New room discovered",
+      "skipRoomScene": "Skip room reveal",
       "label": "Discovery",
       "resultLabel": "Result",
       "revealed": "Revealed",
@@ -1002,6 +1009,7 @@
       "total": "Total {{value}}",
       "thresholds": "Check requirement (total): {{value}}",
       "threshold": "Total {{value}}: {{label}}",
+      "thresholdRange": "{{min}}–{{max}} points: {{label}}",
       "hauntSuccessThreshold": "Total {{threshold}} or higher: {{label}}",
       "hauntFailureThreshold": "Below {{threshold}}: {{label}}",
       "eventRollTotal": "Event total {{value}}",
@@ -1076,6 +1084,10 @@
       "status": {
         "stunned": "Stunned"
       }
+    },
+    "turnIntro": {
+      "title": "Your turn",
+      "skip": "Skip turn introduction"
     }
   },
   "errors": {
@@ -1095,7 +1107,7 @@
         "endTurnAfterEvent": "After damage allocation, discovering the Event room has already ended your turn. Choose End Turn to pass play to the next explorer.",
         "watchTeammateOneOmenTurn": "The next explorer takes their own turn, moves, discovers an Omen room, and gains an Omen. You do not operate for them; read the public result. If the haunt roll fails, turn order continues.",
         "watchTeammateTwoOmenTurn": "Another explorer also takes their own turn, moves, discovers, and gains an Omen. Because the haunt roll still fails, turn order returns to you.",
-        "moveToGrandStaircase": "Two other explorers have gained public Omens and the haunt has not begun, so play has returned to your turn. You already know movement; stay in move mode and move from the Kitchen through the Hallway to the Grand Staircase; it connects the floors.",
+        "moveToGrandStaircase": "Two other explorers have gained public Omens and the haunt has not begun, so play has returned to your turn. From the Kitchen, click your explorer token on the map, then click the adjacent Hallway and Grand Staircase in sequence. The Grand Staircase connects the floors.",
         "switchToUpperFloor": "At the Grand Staircase, the floor switcher shows an upper-floor move target. Choose the up arrow to switch the map to the upper floor and reveal the Upper Landing.",
         "moveToUpperLanding": "The discovered Upper Landing is now visible. Choose it; this is movement and will not reveal a new room.",
         "endTurnFromUpperLanding": "You are on the Upper Landing. Do not continue exploring this turn; choose End Turn and let turn order advance naturally to the public haunt reveal.",
@@ -1107,7 +1119,7 @@
       "description": "Before the haunt begins, you may move, discover a new room, and take special Item or Omen actions in any order. Discovering a new room ends your turn; trade is taught in its own topic.",
       "steps": {
         "setupRuntime": "Before the haunt begins, learn one core turn: move to a room, discover a new room, reveal a discovery card, and see how the turn closes.",
-        "objectiveAndTurn": "It is your turn. Start with Move: moving changes your room and decides which unexplored doorway you can use next.",
+        "objectiveAndTurn": "It’s your turn. Movement changes your room and determines which unexplored doorway you can use next; first, find your explorer token on the map.",
         "traitsAndSpeed": "At the start of your turn, check your Speed. It is the most rooms your explorer can move this turn.",
         "traitTrackReading": "The green number on a trait track is the starting value; the highlighted slot is the current value, and the skull is death, not a number. Repeated values are still separate slots.",
         "movesRemaining": "Check Speed at the start of the turn; the movement marker in the upper-right shows the movement left this turn. A mid-turn Speed change does not change movement already set for the turn.",
@@ -1118,9 +1130,9 @@
         "inventoryAndHelp": "Event cards enter the current event resolution when revealed and do not stay in front of you; Items and Omens do. Choose the relevant card here when you use, trade, or resolve a card effect.",
         "viewBook": "On desktop, hover the Book itself to reveal the magnifier in its upper-right corner, then click it to read the card. On touch devices, press and hold the Book to open the enlarged view; holding only inspects the card and does not use it. After reading, close the card: this non-combat check can spend 1 Sanity to use Knowledge instead.",
         "useBook": "Now use the Book itself. After you spend 1 Sanity, this Event check rerolls with Knowledge.",
-        "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
+        "openMoveTargets": "Click your explorer token on the map to reveal movement targets. Each point of movement reaches one adjacent room.",
         "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
-        "exploreUpper": "After choosing Explore, choose only the explorable face-down room. This is not movement into a discovered room; it reveals and places a new room. After choosing an exit, read the room tile and the connecting doorway.",
+        "exploreUpper": "Once you reach the Hallway, click an explorable room slot marked ? on the map. This is not movement into a discovered room; it reveals and places a new room. After choosing an exit, read the room tile and the connecting doorway.",
         "rotateRoomPlacement": "Rotate the new room and choose an orientation that connects one doorway to the current unexplored doorway.",
         "confirmRoomPlacement": "The orientation is selected. Choose Confirm Placement; only after placement do you resolve the room text and symbol.",
         "discoveryCardType": "This room has an Event symbol, so it revealed an Event card. Item symbols reveal Item cards, and Omen symbols reveal Omen cards. Read the card kind and face before resolving its instruction.",
@@ -1156,7 +1168,7 @@
         "heroReaderGoal": "The Hero Scenario Book goal page says the hero can find the true name in the Sarcophagus room, Study, or Library. You are beside the Library now, so after reading you should move into it.",
         "heroReaderClose": "After reading the Hero Scenario Book goal page, close it and return to the table; the next hero turn follows this goal.",
         "waitForHeroTurnAfterHaunt": "Please wait; turn order will return to your hero turn.",
-        "openLibraryMoveAfterGoal": "You have read the hero goal and know why the Library matters. Choose Move first to show the rooms reachable from the Upper Landing.",
+        "openLibraryMoveAfterGoal": "You have read the hero goal and know why the Library matters. Click your explorer token on the map to reveal the rooms reachable from the Upper Landing.",
         "moveToLibraryAfterGoal": "The Library is now an adjacent move target. Choose the Library to move into it; only then can you find the Mummy's true name.",
         "heroStudyNameRoll": "The hero goal allows a 6+ Knowledge check in the Sarcophagus room, Study, or Library to find the true name. You are in the Library, so choose Find the Mummy's True Name; success gains the first knowledge token.",
         "heroStudyNameResult": "The check succeeds: the heroes gain the first knowledge token and record the true name. After reading the roll result, press Confirm to return to the table.",

@@ -1,5 +1,13 @@
+import { useBetrayalAmbience } from './useBetrayalAmbience';
 import React from "react";
+import {
+  resolveMapObjectInteraction,
+  resolveMapObjectMonsterSelectionEligibility,
+} from "./mapObjectInteractionModel";
+import { getEventStreamEntries } from "../../engine/systems/EventStreamSystem";
 import { Hourglass } from "lucide-react";
+import { BetrayalTurnIntroSurface, useBetrayalTurnIntro } from "./turnIntroSurface";
+import { RoomDiscoverySceneSurface, useRoomDiscoveryScene } from "./roomDiscoveryScene";
 import { useTranslation } from "react-i18next";
 import {
   useTutorial,
@@ -36,7 +44,10 @@ import {
   createBetrayalCharacterSelectCore,
 } from "./game";
 import { BETRAYAL_COMMANDS } from "./commands";
-import { resolveBetrayalMoveTargetReadModel } from "./movementReadModel";
+import {
+  resolveBetrayalMapMoveCommandPayload,
+  resolveBetrayalMapMovementReadModel,
+} from "./movementReadModel";
 import {
   resolveBetrayalExploreRoomCommandPayload,
   resolveExplorableRoomSlots,
@@ -56,7 +67,12 @@ import { resolveBloodFromStoneSetupPlacementPlan } from "./bloodFromStoneSetupRe
 import { resolveCorpseLootTargets } from "./deathStateReadModel";
 import { resolveBetrayalMonsterRelationToExplorer } from "./entityRelationModel";
 import { resolveBetrayalHauntRevealProtocol } from "./hauntSetupModel";
-import type { BetrayalMonsterActionSlot } from "./monsterActionReadModel";
+import {
+  resolveBloodFromStoneMonsterTurnStatus,
+  resolveHelpingHandsMonsterTurnStatus,
+  type BetrayalMonsterActionSlot,
+} from "./monsterActionReadModel";
+import { isBetrayalPlayerControllingMonster } from "./hauntScenarioReadModel";
 import { resolveBetrayalMonsterActionSelectionReadModel } from "./monsterActionSelectionReadModel";
 import { resolveBetrayalMonsterStatuses } from "./monsterReadModel";
 import { resolveBetrayalHauntSpecialActionTargetSelectionReadModel } from "./hauntSpecialActionReadModel";
@@ -199,6 +215,8 @@ import {
   BetrayalMummyRewardActionsSurface,
 } from "./attackRewardActionSurface";
 import { BetrayalEventChoiceSurface } from "./eventChoiceSurface";
+import { resolveContinuousTraitRollChoice } from "./continuousTraitCheckPresentation";
+import { useContinuousTraitSelection } from "./useContinuousTraitSelection";
 import { BetrayalTableActionCueSurface } from "./tableActionCueSurface";
 import { BetrayalActionDockSurface } from "./actionDockSurface";
 import { resolveBetrayalBoardActionItems } from "./actionBarReadModel";
@@ -257,7 +275,6 @@ import {
 } from "./visualTransitionSurface";
 import {
   BETRAYAL_DISCOVERY_ITEM_AUTO_ADVANCE_DELAY_MS,
-  BETRAYAL_VISUAL_TRANSITION_DURATION_MS,
 } from "./visualTiming";
 import { logMobileRuntimeCritical } from "../../lib/mobile/mobileRuntimeDebug";
 import { BetrayalReferenceOverlaySurface } from "./referenceOverlaySurface";
@@ -270,6 +287,7 @@ import {
 } from "./playerStatusRailSurface";
 import {
   createInitialPreviewState,
+  resolveRoomPlacementCancellationState,
   resolveNextPreviewStateAfterCoreChange,
   type PreviewState,
 } from "./previewStateModel";
@@ -350,6 +368,7 @@ export default function BetrayalBoard({
   playerID,
   matchData,
   isMultiplayer,
+  seatControllers,
   locale,
 }: Props) {
   const { t } = useTranslation(["game-betrayal", "common"]);
@@ -446,6 +465,7 @@ export default function BetrayalBoard({
     reset: resetVisualSequence,
     isVisualBusy,
   } = useVisualSequenceGate();
+  const [isRoomRevealActive, setRoomRevealActive] = React.useState(false);
   const [visualTransition, setVisualTransition] =
     React.useState<BetrayalVisualTransition | null>(null);
   const visualTransitionIdRef = React.useRef(0);
@@ -463,6 +483,26 @@ export default function BetrayalBoard({
   const viewerPlayerId = String(
     playerID ?? baseCore.currentPlayer ?? baseCore.playerIds[0] ?? "0",
   );
+  const viewerSeatController =
+    seatControllers?.[viewerPlayerId] ?? baseCore.seatControllers?.[viewerPlayerId];
+  const { turnIntroKey, dismissTurnIntro } = useBetrayalTurnIntro({
+    phase: baseCore.phase,
+    currentPlayer: baseCore.currentPlayer,
+    viewerPlayerId,
+    canAnnounceTurn:
+      !gameMode?.isSpectator &&
+      (!isMultiplayer || playerID != null) &&
+      (!viewerSeatController || viewerSeatController.type === "human"),
+    entries: getEventStreamEntries(G),
+    rollbackRevision,
+  });
+  const { scene: roomDiscoveryScene, complete: completeRoomDiscoveryScene } = useRoomDiscoveryScene({
+    core: baseCore,
+    entries: getEventStreamEntries(G),
+    rollbackRevision,
+    viewerPlayerId,
+    enabled: !gameMode?.isSpectator && (!isMultiplayer || playerID != null),
+  });
   const tutorialRuntimeSyncKey = React.useMemo(
     () =>
       buildBetrayalTutorialRuntimeSyncKey({
@@ -538,6 +578,7 @@ export default function BetrayalBoard({
     }),
     [G, isGameOver, isMultiplayer, playerID, runtimeDispatch],
   );
+  useBetrayalAmbience(!isGameOver && (baseCore.phase === 'preHaunt' || baseCore.phase === 'haunt'));
   useGameAudio({
     config: BETRAYAL_AUDIO_CONFIG,
     gameId: BETRAYAL_MANIFEST.id,
@@ -563,10 +604,6 @@ export default function BetrayalBoard({
   const [previewState, setPreviewState] = React.useState<PreviewState>(() =>
     createInitialPreviewState(baseCore),
   );
-  const monsterMoveSourceRectRef = React.useRef<{
-    monsterId: string;
-    rect: BetrayalViewportRect;
-  } | null>(null);
   const [referenceOpen, setReferenceOpen] = React.useState(false);
   const [scenarioReaderOpen, setScenarioReaderOpen] = React.useState(false);
   const [referenceSide, setReferenceSide] =
@@ -631,11 +668,19 @@ export default function BetrayalBoard({
   const [selectedRoomMapFloor, setSelectedRoomMapFloor] = React.useState<
     BetrayalRoomNode["floor"]
   >(() => resolveExplorerFloor(baseCore));
+  const [roomMapManualCameraOwned, setRoomMapManualCameraOwned] = React.useState(false);
+  const claimRoomMapManualCameraOwnership = React.useCallback(
+    () => setRoomMapManualCameraOwned(true),
+    [],
+  );
   const [roomFocusPanTarget, setRoomFocusPanTarget] = React.useState<
     string | null
   >(null);
   const [roomFocusPanInstructionKey, setRoomFocusPanInstructionKey] =
     React.useState(0);
+  const [roomFocusPanMode, setRoomFocusPanMode] = React.useState<
+    "automatic" | "explicit"
+  >("automatic");
   const roomGridRef = React.useRef<HTMLDivElement | null>(null);
   React.useLayoutEffect(() => {
     const pendingTransition = visualTransition;
@@ -888,11 +933,19 @@ export default function BetrayalBoard({
   const focusRoomOnMap = React.useCallback(
     (
       roomId: string,
-      options: { pan?: boolean; panTarget?: string } = {},
+      options: {
+        pan?: boolean;
+        panTarget?: string;
+        mode?: "automatic" | "explicit";
+      } = {},
     ) => {
       const targetRoom = core.rooms.find((room) => room.id === roomId);
       if (!targetRoom) {
         return;
+      }
+      const focusMode = options.mode ?? "explicit";
+      if (options.pan !== false && focusMode === "explicit") {
+        setRoomMapManualCameraOwned(false);
       }
       setSelectedRoomMapFloor(targetRoom.floor);
       const nextTarget =
@@ -912,6 +965,7 @@ export default function BetrayalBoard({
       if (options.pan === false) {
         return;
       }
+      setRoomFocusPanMode(focusMode);
       setRoomFocusPanInstructionKey((current) => current + 1);
       window.requestAnimationFrame(() => {
         setRoomFocusPanTarget(nextTarget);
@@ -1059,6 +1113,7 @@ export default function BetrayalBoard({
     if (
       !(
         shouldShowScenarioStartOpening ||
+        roomDiscoveryScene || turnIntroKey ||
         (scenarioReaderOpen && isReferenceScenarioOpeningStage)
       )
     ) {
@@ -1074,6 +1129,8 @@ export default function BetrayalBoard({
     isReferenceScenarioOpeningStage,
     scenarioReaderOpen,
     shouldShowScenarioStartOpening,
+    roomDiscoveryScene,
+    turnIntroKey,
   ]);
 
   React.useEffect(() => {
@@ -1296,85 +1353,6 @@ export default function BetrayalBoard({
     pendingExplorerConfirmationRef.current = null;
     dispatchCommand(BETRAYAL_COMMANDS.CONFIRM_EXPLORER, {});
   }, [baseCore, dispatchCommand, viewerPlayerId]);
-  const startExplorerMoveVisual = React.useCallback(
-    (roomId: string, onComplete: () => void) => {
-      const explorer = core.currentExplorer;
-      const sourceElement =
-        findBetrayalTestElement(
-          `betrayal-room-occupant-${explorer.roomId}-${explorer.playerId}`,
-        ) ??
-        findBetrayalTestElement(
-          `betrayal-explorer-figure-token-${explorer.playerId}`,
-        );
-      const sourceRect = readBetrayalViewportRect(
-        sourceElement,
-      );
-      if (!sourceRect) {
-        return false;
-      }
-      return beginBetrayalVisualTransition({
-        kind: "explorer-move",
-        sourceRect,
-        targetRect: null,
-        targetTestId: `betrayal-room-occupant-${roomId}-${explorer.playerId}`,
-        explorer,
-        locale: effectiveLocale,
-        tokenLabel: resolvePlayerName(
-          explorer.playerId,
-          explorer.displayName,
-          matchData,
-        ),
-        tone: "self",
-        missingTokenLabel: t("board.hauntTokens.officialTokenMissing"),
-        onComplete,
-      });
-    },
-    [
-      beginBetrayalVisualTransition,
-      core.currentExplorer,
-      effectiveLocale,
-      matchData,
-      t,
-    ],
-  );
-  const startMonsterMoveVisual = React.useCallback(
-    (monsterId: string, roomId: string, onComplete: () => void) => {
-      const monster = core.monsters.find(
-        (candidate) => candidate.id === monsterId,
-      );
-      if (!monster) {
-        return false;
-      }
-      const cachedSource = monsterMoveSourceRectRef.current;
-      const sourceRect =
-        cachedSource?.monsterId === monsterId
-          ? cachedSource.rect
-      : readBetrayalViewportRect(
-              findBetrayalTestElement(
-                `betrayal-monster-board-token-surface-${monsterId}`,
-                { visibleOnly: true },
-              ),
-            );
-      if (!sourceRect) {
-        return false;
-      }
-      const monsterStatus = resolveBetrayalMonsterStatuses(core).find(
-        (status) => status.monsterId === monsterId,
-      )?.status;
-      return beginBetrayalVisualTransition({
-        kind: "monster-move",
-        sourceRect,
-        targetRect: null,
-        targetTestId: `betrayal-room-monster-${roomId}-${monsterId}`,
-        monster,
-        monsterStatus,
-        locale: effectiveLocale,
-        missingTokenLabel: t("board.hauntTokens.officialTokenMissing"),
-        onComplete,
-      });
-    },
-    [beginBetrayalVisualTransition, core, effectiveLocale, t],
-  );
   const startGirlTransferVisual = React.useCallback(
     ({
       sourceRoomId,
@@ -1742,11 +1720,17 @@ export default function BetrayalBoard({
     () => resolveBetrayalActivityPresentation({ core, text: t }),
     [core, t],
   );
+  const mapMovementReadModel = React.useMemo(
+    () => resolveBetrayalMapMovementReadModel(core),
+    [core],
+  );
   const {
     skeletonKeyMoveTargetRoomIds,
     moveTargetRooms,
     moveTargetRoomIds,
-  } = React.useMemo(() => resolveBetrayalMoveTargetReadModel(core), [core]);
+    moveCostByRoomId,
+    moveKindByRoomId,
+  } = mapMovementReadModel;
   const inventoryRoomTargetReadModel = React.useMemo(
     () =>
       resolveBetrayalInventoryRoomTargetReadModel({
@@ -2010,6 +1994,9 @@ export default function BetrayalBoard({
     roomMapFloorState.hasCrossFloorSelectionTargets;
   const handleSelectRoomMapFloor = React.useCallback(
     (floor: BetrayalRoomNode["floor"]) => {
+      if (floor !== selectedRoomMapFloor) {
+        setRoomMapManualCameraOwned(true);
+      }
       setSelectedRoomMapFloor(floor);
       if (
         isTutorialActive &&
@@ -2019,14 +2006,27 @@ export default function BetrayalBoard({
         nextStep("auto");
       }
     },
-    [isTutorialActive, nextStep, tutorialStep?.id],
+    [isTutorialActive, nextStep, selectedRoomMapFloor, tutorialStep?.id],
   );
   const canDeclareHolySymbolExplore = canUseHolySymbolForDiscovery(core);
   const useHolySymbolForExplore =
     previewState.useHolySymbolForExplore && canDeclareHolySymbolExplore;
+  const interactionHelpingHandsStatus =
+    resolveHelpingHandsMonsterTurnStatus(core);
+  const interactionBloodFromStoneStatus =
+    resolveBloodFromStoneMonsterTurnStatus(core);
+  const isExclusiveMonsterTurnForCurrentPlayer = Boolean(
+    (interactionHelpingHandsStatus.active &&
+      interactionHelpingHandsStatus.controllerPlayerId === core.currentPlayer) ||
+    (interactionBloodFromStoneStatus.active &&
+      interactionBloodFromStoneStatus.controllerPlayerId === core.currentPlayer)
+  );
   const canStartExploreSelection = Boolean(
     (core.phase === "preHaunt" || core.phase === "haunt") &&
     !core.turnEndedByDiscovery &&
+    core.currentPlayer === viewerPlayerId &&
+    !isExclusiveMonsterTurnForCurrentPlayer &&
+    !isBetrayalPlayerControllingMonster(core, core.currentPlayer) &&
     explorableRoomSlots.length > 0,
   );
   const nextExploreDeckKind = resolveNextRoomDiscoveryDeckKind(core, {
@@ -3687,7 +3687,6 @@ export default function BetrayalBoard({
     completedTutorialUseBookRollKeyRef.current = null;
     completedTutorialUseRabbitFootRollKeyRef.current = null;
     pendingDiscoveryGainVisualRef.current = null;
-    monsterMoveSourceRectRef.current = null;
     lastAnimatedPendingDiscoveryResolutionIdRef.current = null;
     latestDiscoveryPendingResolutionSeenRef.current = null;
     latestDiscoveryPendingEventRollSeenRef.current = null;
@@ -4109,7 +4108,6 @@ export default function BetrayalBoard({
     selectedDogTradeCardCount: selectedDogTradeCardIds.length,
     selectedTradeTarget,
     activeTradeTargetCount: activeTradeTargets.length,
-    unknownRoomLabel: t("board.rooms.unknown"),
     hasRoomEndTurnEffect: Boolean(roomEndTurnEffectHint),
     allExplorers,
     resolvePlayerName: (playerId, explorerName) =>
@@ -4256,55 +4254,49 @@ export default function BetrayalBoard({
 
   const handleMoveToRoom = React.useCallback(
     (roomId: string) => {
-      if (isVisualBusy) {
+      const payload = resolveBetrayalMapMoveCommandPayload(
+        mapMovementReadModel,
+        roomId,
+      );
+      if (isVisualBusy || !payload) {
         return;
       }
-      const useSkeletonKey = skeletonKeyMoveTargetRoomIds.has(roomId);
-      const move = () =>
-        dispatch(BETRAYAL_COMMANDS.MOVE_TO_ROOM, {
-          roomId,
-          ...(useSkeletonKey ? { useSkeletonKey: true } : {}),
+      const movingExplorer = core.currentExplorer;
+      const sourceRect = readBetrayalViewportRect(
+        findBetrayalTestElement(
+          `betrayal-room-occupant-${movingExplorer.roomId}-${movingExplorer.playerId}`,
+        ),
+      );
+      setRoomMapManualCameraOwned(false);
+      dispatch(BETRAYAL_COMMANDS.MOVE_TO_ROOM, payload);
+      if (sourceRect && movingExplorer.playerId === viewerPlayerId) {
+        beginBetrayalVisualTransition({
+          kind: "explorer-move",
+          sourceRect,
+          targetRect: null,
+          targetTestId: `betrayal-room-occupant-${roomId}-${movingExplorer.playerId}`,
+          fallbackRoomTestId: `betrayal-room-${roomId}`,
+          explorer: movingExplorer,
+          locale: effectiveLocale,
+          tokenLabel: movingExplorer.displayName,
+          tone: "self",
+          missingTokenLabel: t("board.hauntTokens.officialTokenMissing"),
         });
-      const focusTargetRoom = () =>
-        focusRoomOnMap(
-          roomId,
-          controlledMoveMonsterId
-            ? {}
-            : {
-                panTarget: `betrayal-explorer-figure-token-${core.currentExplorer.playerId}`,
-              },
-        );
-      const visualStarted = controlledMoveMonsterId
-        ? startMonsterMoveVisual(
-            controlledMoveMonsterId,
-            roomId,
-            focusTargetRoom,
-          )
-        : startExplorerMoveVisual(roomId, focusTargetRoom);
-      move();
-      if (visualStarted) {
-        focusRoomOnMap(roomId, { pan: false });
-        window.setTimeout(
-          focusTargetRoom,
-          BETRAYAL_VISUAL_TRANSITION_DURATION_MS + 40,
-        );
-      } else {
-        focusTargetRoom();
       }
       setPreviewState((previousState) => ({
         ...previousState,
-        interactionMode: useSkeletonKey ? "default" : "move",
+        interactionMode: payload.useSkeletonKey ? "default" : "move",
       }));
     },
     [
-      controlledMoveMonsterId,
+      beginBetrayalVisualTransition,
+      core.currentExplorer,
       dispatch,
-      focusRoomOnMap,
-      core.currentExplorer.playerId,
+      effectiveLocale,
       isVisualBusy,
-      skeletonKeyMoveTargetRoomIds,
-      startExplorerMoveVisual,
-      startMonsterMoveVisual,
+      mapMovementReadModel,
+      t,
+      viewerPlayerId,
     ],
   );
 
@@ -4312,8 +4304,8 @@ export default function BetrayalBoard({
     const shouldAdvanceOpenMoveTutorial =
       isTutorialActive &&
       (tutorialStep?.id === "open-move-targets" ||
-        (tutorialStep?.requireAction === true &&
-          tutorialStep?.highlightTarget === "betrayal-action-move" &&
+        (tutorialStep?.id === "open-library-move-after-goal" &&
+          tutorialStep?.requireAction === true &&
           tutorialStep?.allowedCommands?.length === 0)) &&
       previewState.interactionMode !== "move" &&
       core.movesRemaining > 0 &&
@@ -4347,7 +4339,6 @@ export default function BetrayalBoard({
     nextStep,
     previewState.interactionMode,
     tutorialStep?.allowedCommands?.length,
-    tutorialStep?.highlightTarget,
     tutorialStep?.id,
     tutorialStep?.requireAction,
   ]);
@@ -4461,8 +4452,8 @@ export default function BetrayalBoard({
       }));
       if (
         isTutorialActive &&
+        tutorialStep?.id === "explore-upper" &&
         tutorialStep?.requireAction === true &&
-        tutorialStep?.highlightTarget === "betrayal-action-explore" &&
         tutorialStep?.allowedCommands?.length === 0
       ) {
         nextStep("auto");
@@ -4474,7 +4465,6 @@ export default function BetrayalBoard({
       isTutorialActive,
       nextStep,
       tutorialStep?.allowedCommands?.length,
-      tutorialStep?.highlightTarget,
       tutorialStep?.id,
       tutorialStep?.requireAction,
       useHolySymbolForExplore,
@@ -4528,14 +4518,7 @@ export default function BetrayalBoard({
   );
 
   const handleCancelRoomPlacement = React.useCallback(() => {
-    setPreviewState((previousState) => ({
-      ...previousState,
-      pendingRoomPlacementSlotId: null,
-      pendingRoomPlacementFailure: null,
-      pendingRoomOrientationTurns: 0,
-      pendingRoomTileAdjustment: null,
-      interactionMode: "explore",
-    }));
+    setPreviewState(resolveRoomPlacementCancellationState);
   }, []);
 
   const handleSelectRoomTileAdjustment = React.useCallback(
@@ -4796,6 +4779,21 @@ export default function BetrayalBoard({
       selectedEventDamageTraits: [],
     }));
   }
+
+  const continuousTraitRoll = resolveContinuousTraitRollChoice(core, viewerPlayerId);
+  const renderedEventChoice = pendingEventChoice ?? continuousTraitRoll?.choiceView ?? null;
+  const canAdvanceContinuousTraitRoll = Boolean(
+    continuousTraitRoll && isCoreRecentRollReadable && !isVisualBusy &&
+    !latestDiscoveryContinueButton.disabled &&
+    (core.pendingEventRollResolution?.requiresAcknowledgement === false || eventRollConfirmation.canViewerAcknowledge),
+  );
+  const handleContinuousTraitSelection = useContinuousTraitSelection({
+    currentChoiceId: pendingEventChoice?.id ?? null,
+    nextChoiceId: continuousTraitRoll?.nextChoiceId ?? null,
+    canAdvance: canAdvanceContinuousTraitRoll,
+    onAdvance: handleContinueLatestDiscovery,
+    onSelect: handleSelectEventTrait,
+  });
 
   function handleSelectEventCard(cardId: string) {
     const nextSelectedCardId = selectedEventCardId === cardId ? null : cardId;
@@ -5201,6 +5199,22 @@ export default function BetrayalBoard({
     [dispatchCommand],
   );
 
+  const hasPendingMapDecision = Boolean(
+    core.pendingEventChoice ||
+      pendingDamageAllocation ||
+      hasPendingPlayerAgreement ||
+      shouldShowLatestDiscovery ||
+      shouldShowHauntRevealCue,
+  );
+  const mapMonsterSelectionEligibility =
+    resolveMapObjectMonsterSelectionEligibility({
+      interactionMode: previewState.interactionMode,
+      isViewerTurn: core.currentPlayer === viewerPlayerId,
+      visualBusy: isVisualBusy,
+      hasPendingDecision: hasPendingMapDecision,
+      isHelpingHandsMonsterTurnController,
+    });
+
   const handleHelpingHandsTrollHandMoveAction = React.useCallback(() => {
     setInventoryPreviewCardId(null);
     setPreviewState((previousState) => {
@@ -5234,16 +5248,38 @@ export default function BetrayalBoard({
 
   const handleSelectHelpingHandsTrollHandMoveMonster = React.useCallback(
     (monsterId: string) => {
+      if (
+        !mapMonsterSelectionEligibility.canSelectHelpingHandsMonsterMoveMonster ||
+        !helpingHandsMovableTrollHandIds.has(monsterId)
+      ) {
+        return;
+      }
       setInventoryPreviewCardId(null);
-      setPreviewState((previousState) => ({
-        ...previousState,
-        interactionMode: "helpingHandsTrollMove",
-        selectedHelpingHandsTrollHandMoveMonsterId: monsterId,
-        selectedMonsterAttackMonsterId: null,
-        hauntTargetingActionKind: null,
-      }));
+      setPreviewState((previousState) => {
+        if (
+          previousState.interactionMode === "helpingHandsTrollMove" &&
+          previousState.selectedHelpingHandsTrollHandMoveMonsterId === monsterId
+        ) {
+          return {
+            ...previousState,
+            interactionMode: "default",
+            selectedHelpingHandsTrollHandMoveMonsterId: null,
+            selectedMonsterAttackMonsterId: null,
+          };
+        }
+        return {
+          ...previousState,
+          interactionMode: "helpingHandsTrollMove",
+          selectedHelpingHandsTrollHandMoveMonsterId: monsterId,
+          selectedMonsterAttackMonsterId: null,
+          hauntTargetingActionKind: null,
+        };
+      });
     },
-    [],
+    [
+      helpingHandsMovableTrollHandIds,
+      mapMonsterSelectionEligibility.canSelectHelpingHandsMonsterMoveMonster,
+    ],
   );
 
   function handleHelpingHandsTrollHandMoveToRoom(roomId: string) {
@@ -5256,18 +5292,7 @@ export default function BetrayalBoard({
         monsterId,
         roomId,
       });
-    const focusTargetRoom = () => focusRoomOnMap(roomId);
-    const visualStarted = startMonsterMoveVisual(
-      monsterId,
-      roomId,
-      focusTargetRoom,
-    );
     move();
-    if (visualStarted) {
-      focusRoomOnMap(roomId, { pan: false });
-    } else {
-      focusTargetRoom();
-    }
     setInventoryPreviewCardId(null);
     setPreviewState((previousState) => ({
       ...previousState,
@@ -5321,21 +5346,6 @@ export default function BetrayalBoard({
     }));
   }, [dispatchCommand, monsterMovementRollActionSlot?.groupId]);
 
-  const captureMonsterMoveSourceRect = React.useCallback(
-    (monsterId: string, sourceElement?: HTMLElement) => {
-      const source = sourceElement?.querySelector<HTMLElement>(
-        `[data-testid="betrayal-monster-board-token-surface-${monsterId}"]`,
-      ) ?? findBetrayalTestElement(
-        `betrayal-monster-board-token-surface-${monsterId}`,
-        { visibleOnly: true },
-      );
-      const sourceRect = readBetrayalViewportRect(source);
-      if (sourceRect) {
-        monsterMoveSourceRectRef.current = { monsterId, rect: sourceRect };
-      }
-    },
-  );
-
   const handleMonsterMoveAction = React.useCallback(() => {
     setInventoryPreviewCardId(null);
     const selectedMonsterId = monsterMoveSlots.some(
@@ -5343,9 +5353,6 @@ export default function BetrayalBoard({
     )
       ? previewState.selectedMonsterMoveMonsterId
       : (monsterMoveSlots[0]?.monsterId ?? null);
-    if (previewState.interactionMode !== "monsterMove" && selectedMonsterId) {
-      captureMonsterMoveSourceRect(selectedMonsterId);
-    }
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "monsterMove") {
         return {
@@ -5375,7 +5382,6 @@ export default function BetrayalBoard({
       focusMonsterRoom(selectedMonsterId);
     }
   }, [
-    captureMonsterMoveSourceRect,
     focusMonsterRoom,
     monsterMoveSlots,
     previewState.interactionMode,
@@ -5383,19 +5389,48 @@ export default function BetrayalBoard({
   ]);
 
   const handleSelectMonsterMoveMonster = React.useCallback(
-    (monsterId: string, sourceElement?: HTMLElement) => {
-      captureMonsterMoveSourceRect(monsterId, sourceElement);
+    (monsterId: string) => {
+      if (
+        !mapMonsterSelectionEligibility.canSelectMonsterMoveMonster ||
+        !monsterMovableIds.has(monsterId)
+      ) {
+        return;
+      }
+      const isCancellingCurrentSelection =
+        previewState.interactionMode === "monsterMove" &&
+        previewState.selectedMonsterMoveMonsterId === monsterId;
       setInventoryPreviewCardId(null);
-      setPreviewState((previousState) => ({
-        ...previousState,
-        interactionMode: "monsterMove",
-        selectedMonsterMoveMonsterId: monsterId,
-        selectedMonsterAttackMonsterId: null,
-        hauntTargetingActionKind: null,
-      }));
-      focusMonsterRoom(monsterId);
+      setPreviewState((previousState) => {
+        if (
+          previousState.interactionMode === "monsterMove" &&
+          previousState.selectedMonsterMoveMonsterId === monsterId
+        ) {
+          return {
+            ...previousState,
+            interactionMode: "default",
+            selectedMonsterMoveMonsterId: null,
+            selectedMonsterAttackMonsterId: null,
+          };
+        }
+        return {
+          ...previousState,
+          interactionMode: "monsterMove",
+          selectedMonsterMoveMonsterId: monsterId,
+          selectedMonsterAttackMonsterId: null,
+          hauntTargetingActionKind: null,
+        };
+      });
+      if (!isCancellingCurrentSelection) {
+        focusMonsterRoom(monsterId);
+      }
     },
-    [captureMonsterMoveSourceRect, focusMonsterRoom],
+    [
+      focusMonsterRoom,
+      mapMonsterSelectionEligibility.canSelectMonsterMoveMonster,
+      monsterMovableIds,
+      previewState.interactionMode,
+      previewState.selectedMonsterMoveMonsterId,
+    ],
   );
 
   function handleMoveMonsterToRoom(roomId: string) {
@@ -5408,19 +5443,7 @@ export default function BetrayalBoard({
         monsterId,
         roomId,
       });
-    const focusTargetRoom = () => focusRoomOnMap(roomId);
-    const visualStarted = startMonsterMoveVisual(
-      monsterId,
-      roomId,
-      focusTargetRoom,
-    );
-    monsterMoveSourceRectRef.current = null;
     move();
-    if (visualStarted) {
-      focusRoomOnMap(roomId, { pan: false });
-    } else {
-      focusTargetRoom();
-    }
     setInventoryPreviewCardId(null);
     setPreviewState((previousState) => ({
       ...previousState,
@@ -6032,11 +6055,12 @@ export default function BetrayalBoard({
     roomSpecialActionStatus,
     t,
   );
-  const { visibleActionDisabledReason, visibleActionItems } =
+  const { visibleActionDisabledReason, formalActionItems, visibleActionItems } =
     resolveBetrayalBoardActionItems({
       t,
       phase: core.phase,
       movesRemaining: core.movesRemaining,
+      hasLegalMoveTargets: moveTargetRooms.length > 0,
       currentExplorerInventoryCount: core.currentExplorerInventory.length,
       interactionMode: previewState.interactionMode,
       turnEndedByDiscovery: core.turnEndedByDiscovery,
@@ -6070,6 +6094,7 @@ export default function BetrayalBoard({
       helpingHandsTrollHandMoveEntryCount:
         helpingHandsTrollHandMoveEntries.length,
       isDeadTraitorJackSpiritControlTurn,
+      hasControlledMoveMonster: Boolean(controlledMoveMonsterId),
       pendingBloodFromStoneSetupPlacementCount:
         bloodFromStoneSetupPlacementPlan.pendingPlayerChoiceCount,
       selectedBloodFromStoneStoneCherubRoomCount:
@@ -6103,6 +6128,21 @@ export default function BetrayalBoard({
         ? { name: "", reason: bloodFromStoneMonsterTurnEndActionSlot.reason }
       : null,
     });
+  const mapObjectInteraction = resolveMapObjectInteraction({
+    formalActionItems,
+    visibleActionItems,
+    interactionMode: previewState.interactionMode,
+    isViewerTurn: core.currentPlayer === viewerPlayerId,
+    visualBusy: isVisualBusy,
+    hasPendingDecision: hasPendingMapDecision,
+    isExclusiveMonsterTurn: isExclusiveMonsterTurnForCurrentPlayer,
+    isDeadControlledMonster: Boolean(controlledMoveMonsterId),
+    hasLegalMoveTargets: moveTargetRooms.length > 0,
+    hasInventorySelection: Boolean(selectedInventoryCard),
+    hasHauntAction: Boolean(hauntActionContext),
+    hasTradeSelection: Boolean(selectedTradeTarget || selectedCorpseLootTarget) || hasTradeDraftSelection,
+    hasSicknessExchangeAction: shouldStartDustSicknessExchange || isDustSicknessExchangeMode,
+  });
   const tutorialMapTargetRoomId = React.useMemo(() => {
     const target = tutorialStep?.highlightTarget;
     if (!isTutorialActive || !target) {
@@ -6117,6 +6157,12 @@ export default function BetrayalBoard({
     }
     return null;
   }, [isTutorialActive, tutorialStep?.highlightTarget]);
+
+  const handleSceneMovementPresented = React.useCallback((roomId: string, entityId: string) => {
+    if (!roomMapManualCameraOwned && (entityId === `player:${viewerPlayerId}` || entityId === `monster:${controlledMoveMonsterId}`)) {
+      focusRoomOnMap(roomId, { mode: "automatic" });
+    }
+  }, [controlledMoveMonsterId, focusRoomOnMap, roomMapManualCameraOwned, viewerPlayerId]);
 
   const actionHandlerMap: Record<ActionBarAction["id"], () => void> = {
     move: isHelpingHandsMonsterTurnController
@@ -6190,6 +6236,22 @@ export default function BetrayalBoard({
           ].join(","),
         }}
       >
+        {roomDiscoveryScene && !shouldShowScenarioStartOpening && !isRoomRevealActive && !isVisualBusy ? (
+          <RoomDiscoverySceneSurface key={roomDiscoveryScene.id} scene={roomDiscoveryScene} locale={effectiveLocale}
+            discoveryLabel={t("board.discovery.roomSceneTitle")} skipLabel={t("board.discovery.skipRoomScene")} onComplete={completeRoomDiscoveryScene} />
+        ) : null}
+        {turnIntroKey && !roomDiscoveryScene && !shouldShowScenarioStartOpening && !isVisualBusy ? (
+          <BetrayalTurnIntroSurface
+            key={turnIntroKey}
+            title={t("board.turnIntro.title")}
+            skipLabel={t("board.turnIntro.skip")}
+            portraitAsset={core.currentExplorer.tokenAsset}
+            actorLabel={core.currentExplorer.displayName}
+            subtitle={t("board.status.movesRemaining", { count: core.movesRemaining })}
+            locale={effectiveLocale}
+            onComplete={dismissTurnIntro}
+          />
+        ) : null}
         {!isHauntTargetingMode ? (
           <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
         ) : null}
@@ -6515,7 +6577,9 @@ export default function BetrayalBoard({
                   visible={
                     shouldShowLatestDiscovery &&
                     !shouldAutoReturnAfterLatestDiscovery &&
-                    !pendingEventChoice
+                    !isRoomRevealActive &&
+                    !roomDiscoveryScene &&
+                    !renderedEventChoice
                   }
                   discovery={latestDiscovery}
                   displayedKindLabel={latestDiscoveryDisplayedKindLabel}
@@ -6565,7 +6629,7 @@ export default function BetrayalBoard({
 
                 <BetrayalRecentRollReviewSurface
                   roll={core.recentRoll}
-                  visible={shouldShowRecentRollReview}
+                  visible={shouldShowRecentRollReview && !continuousTraitRoll}
                   isExorciseRollReview={isExorciseRollReview}
                   isEndgameExorciseRollReview={isEndgameExorciseRollReview}
                   canDismissByBackdrop={canDismissRecentRollByBackdrop}
@@ -6618,16 +6682,21 @@ export default function BetrayalBoard({
                   />
                 ) : null}
 
-                {pendingEventChoice ? (
+                {renderedEventChoice && !isRoomRevealActive && !roomDiscoveryScene ? (
                   <BetrayalEventChoiceSurface
-                    choice={pendingEventChoice}
+                    choice={continuousTraitRoll?.terminal
+                      ? { ...renderedEventChoice, acceptLabel: t("board.roll.backToBoard") }
+                      : renderedEventChoice}
                     isMobileViewport={useViewportAnchoredHud}
+                    isResolvingTraitRoll={Boolean(continuousTraitRoll)}
+                    disableTraitChoices={Boolean(continuousTraitRoll) && !canAdvanceContinuousTraitRoll}
+                    rollActionSlot={rollModifierActionSlot}
                     isEventSymbolSkip={pendingEventChoiceIsEventSymbolSkip}
                     awaitsMapTargetClick={pendingEventAwaitsMapTargetClick}
                     hasMapTargetRooms={pendingEventTargetRooms.length > 0}
                     hasResultPanel={pendingEventChoiceHasResultPanel}
                     latestDiscoveryVisual={latestDiscoveryVisual}
-                    roll={pendingEventChoiceRoll}
+                    roll={continuousTraitRoll ? core.recentRoll : pendingEventChoiceRoll}
                     resultReadable={isCoreRecentRollReadable}
                     onDiceSettledChange={handleRecentRollDiceSettledChange}
                     rollActorLabel={
@@ -6635,8 +6704,8 @@ export default function BetrayalBoard({
                         ? resolveRecentRollActorLabel(pendingEventChoiceRoll)
                         : null
                     }
-                    allTraitCheck={pendingEventChoiceAllTraitCheck}
-                    traitChoices={pendingEventTraitChoices}
+                    allTraitCheck={continuousTraitRoll ? core.recentAllTraitCheck : pendingEventChoiceAllTraitCheck}
+                    traitChoices={continuousTraitRoll?.traitChoices ?? pendingEventTraitChoices}
                     selectedTrait={selectedEventTrait}
                     hasItemChoice={Boolean(pendingEventItemChoice)}
                     itemChoiceCards={pendingEventItemChoiceCards}
@@ -6647,14 +6716,14 @@ export default function BetrayalBoard({
                     explorer={core.currentExplorer}
                     phase={core.phase}
                     locale={effectiveLocale}
-                    ready={pendingEventReady}
+                    ready={continuousTraitRoll ? canAdvanceContinuousTraitRoll : pendingEventReady}
                     canDecline={pendingEventCanDecline}
-                    showAcceptButton={shouldShowPendingEventAcceptButton}
-                    onSelectTrait={handleSelectEventTrait}
+                    showAcceptButton={continuousTraitRoll ? continuousTraitRoll.terminal : shouldShowPendingEventAcceptButton}
+                    onSelectTrait={handleContinuousTraitSelection}
                     onSelectCard={handleSelectEventCard}
                     onAdjustDamageTrait={handleAdjustEventDamageTrait}
                     canIncrementDamageTrait={canIncrementEventDamageTrait}
-                    onResolve={handleResolveEventChoice}
+                    onResolve={continuousTraitRoll?.terminal ? handleContinueLatestDiscovery : handleResolveEventChoice}
                   />
                 ) : null}
 
@@ -6759,11 +6828,19 @@ export default function BetrayalBoard({
                 />
 
                 <BetrayalRoomMapSurface
+                  eventEntries={getEventStreamEntries(G)}
+                  rollbackRevision={rollbackRevision}
+                  onSceneMovementStart={beginVisualSequence}
+                  onSceneMovementEnd={endVisualSequence}
+                  onRoomRevealActivity={setRoomRevealActive}
+                  onSceneMovementPresented={handleSceneMovementPresented}
                   core={core}
                   locale={effectiveLocale}
                   matchData={matchData}
                   roomGridRef={roomGridRef}
                   selectedFloor={selectedRoomMapFloor}
+                  manualCameraOwned={roomMapManualCameraOwned}
+                  onManualCameraInteraction={claimRoomMapManualCameraOwnership}
                   upperFloor={upperRoomMapFloor ?? null}
                   lowerFloor={lowerRoomMapFloor ?? null}
                   upperFloorHasSelectionTarget={
@@ -6786,6 +6863,7 @@ export default function BetrayalBoard({
                   isHauntTargetingMode={isHauntTargetingMode}
                   roomFocusPanTarget={roomFocusPanTarget}
                   roomFocusPanInstructionKey={roomFocusPanInstructionKey}
+                  roomFocusPanMode={roomFocusPanMode}
                   attackLineOfSightSegments={attackLineOfSightSegments}
                   roomOccupants={roomOccupants}
                   roomMonsters={roomMonsters}
@@ -6798,6 +6876,8 @@ export default function BetrayalBoard({
                   canPickUpMummyGirlRoomId={canPickUpMummyGirlRoomId}
                   moveTargetRoomIds={moveTargetRoomIds}
                   skeletonKeyMoveTargetRoomIds={skeletonKeyMoveTargetRoomIds}
+                  moveCostByRoomId={moveCostByRoomId}
+                  moveKindByRoomId={moveKindByRoomId}
                   explorableRoomSlotIds={explorableRoomSlotIds}
                   interactionMode={previewState.interactionMode}
                   selectedInventoryUseEffectMode={
@@ -6888,9 +6968,15 @@ export default function BetrayalBoard({
                   visibleFeedback={visibleBoardResultFeedback}
                   traitChangeFeedbackByPlayerId={traitChangeFeedbackByPlayerId}
                   helpingHandsMovableTrollHandIds={
-                    helpingHandsMovableTrollHandIds
+                    mapMonsterSelectionEligibility.canSelectHelpingHandsMonsterMoveMonster
+                      ? helpingHandsMovableTrollHandIds
+                      : new Set<string>()
                   }
-                  monsterMovableIds={monsterMovableIds}
+                  monsterMovableIds={
+                    mapMonsterSelectionEligibility.canSelectMonsterMoveMonster
+                      ? monsterMovableIds
+                      : new Set<string>()
+                  }
                   isMonsterAttackMode={isMonsterAttackMode}
                   monsterAttackableIds={monsterAttackableIds}
                   isBloodFromStonePeekabooMode={isBloodFromStonePeekabooMode}
@@ -6948,6 +7034,11 @@ export default function BetrayalBoard({
                   onOpenRoomPreview={setRoomPreviewId}
                   onSelectExplorerTarget={handleSelectExplorerTarget}
                   onOpenExplorerDetails={openExplorerDetails}
+                  movableExplorerPlayerId={mapObjectInteraction.canSelectExplorer ? core.currentExplorer.playerId : null}
+                  onToggleExplorerMove={handleMoveAction}
+                  canDirectMove={mapObjectInteraction.canMoveToRoom}
+                  canShowPassiveMoveTargets={mapObjectInteraction.canSelectExplorer}
+                  canDirectExplore={mapObjectInteraction.canExplore}
                   onSelectMonsterTarget={handleSelectMonsterTarget}
                   onSelectHelpingHandsTrollHandMoveMonster={
                     handleSelectHelpingHandsTrollHandMoveMonster
@@ -7018,6 +7109,7 @@ export default function BetrayalBoard({
 
                 {visibleActionItems.length > 0 &&
                 !isEndgameExorciseRollReview &&
+                !renderedEventChoice &&
                 !shouldHideTableChromeForBlockingOverlay ? (
                   <BetrayalHudRegion
                     portal={useViewportAnchoredHud}
@@ -7213,7 +7305,7 @@ export default function BetrayalBoard({
                     ) : null}
                     <div className="pointer-events-auto relative flex min-h-[48px] w-full items-end justify-center gap-5">
                       <BetrayalActionDockSurface
-                        actions={visibleActionItems}
+                        actions={mapObjectInteraction.dockActions}
                         phase={core.phase}
                         recommendedAction={core.recommendedAction}
                         interactionMode={previewState.interactionMode}

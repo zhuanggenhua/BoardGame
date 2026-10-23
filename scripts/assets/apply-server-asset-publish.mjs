@@ -272,6 +272,7 @@ const releaseDir = path.join(releasesRoot, releaseId);
 mkdirSync(releaseDir, { recursive: true });
 let androidPackageRefresh;
 let releaseOwnership;
+let publishedIndexObjectCount;
 let nextLink = '';
 let releaseActivated = false;
 let serverPrimaryIndexObjects = 0;
@@ -346,8 +347,7 @@ try {
         }
     }
     writeAssetIndex(releaseDir, assetIndex);
-    serverPrimaryIndexObjects = Object.keys(assetIndex).length;
-    rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
+    publishedIndexObjectCount = Object.keys(assetIndex).length;    rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
 
     releaseOwnership = normalizePathOwnership({
         assetsRoot,
@@ -427,8 +427,7 @@ console.log(`serverPrimaryObjects=${manifest.objects.length}`);
 console.log(`androidPackageRefreshGames=${androidPackageRefresh.gameIds.join(',') || 'none'}`);
 console.log(`androidPackageRefreshChannels=${androidPackageRefresh.channels.join(',') || 'none'}`);
 console.log(`androidPackageRefreshObjects=${androidPackageRefresh.objects.length}`);
-console.log(`serverPrimaryIndexObjects=${serverPrimaryIndexObjects}`);
-console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
+console.log(`serverPrimaryIndexObjects=${publishedIndexObjectCount}`);console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
 console.log(
     `serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size}`
     + ` preflightDeleted=${preflightDeletedReleaseIds.length}`

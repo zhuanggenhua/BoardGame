@@ -11,7 +11,7 @@ import {
   BetrayalHouseDice3DGroup,
   type RecentRollRerollSelection,
 } from "./houseDiceSurface";
-import { resolveRecentRollTotal } from "./recentRollPresentation";
+import { resolveRecentRollTotal, buildRollThresholdRanges } from "./recentRollPresentation";
 
 export function RecentRollPanel({
   roll,
@@ -25,6 +25,7 @@ export function RecentRollPanel({
   showOutcome = true,
   showRollLabel = true,
   showBreakdown = true,
+  showThresholds = true,
   openTable = false,
   compactResult = false,
   denseResult = false,
@@ -54,6 +55,7 @@ export function RecentRollPanel({
   showOutcome?: boolean;
   showRollLabel?: boolean;
   showBreakdown?: boolean;
+  showThresholds?: boolean;
   openTable?: boolean;
   compactResult?: boolean;
   denseResult?: boolean;
@@ -172,8 +174,7 @@ export function RecentRollPanel({
       ? Math.max(...roll.branchThresholds.map((branch) => branch.min))
       : null;
   const eventThresholdsLabel = roll.branchThresholds?.length
-    ? [...roll.branchThresholds]
-      .sort((left, right) => right.min - left.min)
+    ? buildRollThresholdRanges(roll.branchThresholds)
       .map((branch) => {
         if (hauntThreshold !== null) {
           return t(
@@ -186,8 +187,10 @@ export function RecentRollPanel({
             },
           );
         }
-        return t("board.roll.threshold", {
+        return t(branch.max === null ? "board.roll.threshold" : "board.roll.thresholdRange", {
           value: branch.min,
+          min: branch.min,
+          max: branch.max,
           label: branch.label,
         });
       })
@@ -255,13 +258,6 @@ export function RecentRollPanel({
       {isRollStillRolling ? (
         <div className="pointer-events-none mb-1 grid justify-items-center gap-0.5 px-2 py-0.5 drop-shadow-[0_2px_7px_rgba(0,0,0,0.72)]">
           <div
-            data-testid="betrayal-recent-roll-rolling-status"
-            data-result-role="rolling-status"
-            className="text-[12px] font-semibold tracking-[0.12em] text-[#f7e6ab]"
-          >
-            {t("board.roll.rolling")}
-          </div>
-          <div
             data-testid="betrayal-recent-roll-rolling-label"
             data-result-role="rolling-label"
             className="text-[11px] font-semibold tracking-[0.08em] text-[#d8c38b]"
@@ -303,7 +299,7 @@ export function RecentRollPanel({
       shouldShowEventDamageSubtitle ||
       shouldShowEventDamageEffect ||
       shouldShowPrimaryOutcome ||
-      Boolean(eventThresholdsDescriptionLabel) ||
+      (showThresholds && Boolean(eventThresholdsDescriptionLabel)) ||
       shouldShowEventDamageVisibleSummary ||
       (showBreakdown && attackComparisonText),
   );
@@ -320,7 +316,7 @@ export function RecentRollPanel({
         ? "grid-cols-[auto_auto]"
         : "grid-cols-[auto]";
   const shouldShowVisibleBreakdown =
-    showBreakdown && !(showEventDamageDiceStage && visiblePassiveBonus === 0);
+    showBreakdown && visiblePassiveBonus !== 0;
   const breakdownStage = shouldShowVisibleBreakdown ? (
     <div
       data-testid="betrayal-recent-roll-breakdown"
@@ -329,9 +325,6 @@ export function RecentRollPanel({
         denseResult ? "text-[10px] leading-[14px]" : "text-[12px] leading-[16px]"
       }`}
     >
-      <span data-testid="betrayal-recent-roll-detail" className="sr-only">
-        {rollDetailText}
-      </span>
       <span
         data-testid="betrayal-recent-roll-subtotal"
         className="text-[#e2cc91]"
@@ -344,15 +337,6 @@ export function RecentRollPanel({
         className="text-[#cdb783]"
       >
         {passiveBonusLabel}
-      </span>
-      <span
-        data-testid="betrayal-recent-roll-a11y-summary"
-        className="sr-only"
-      >
-        {rollDetailText}
-      </span>
-      <span data-testid="betrayal-recent-roll-bonus" className="sr-only">
-        {bonusText}
       </span>
     </div>
   ) : null;
@@ -419,7 +403,7 @@ export function RecentRollPanel({
             {roll.rollLabel ?? t("board.roll.fallbackLabel")}
           </div>
         ) : null}
-        {eventThresholdsDescriptionLabel ? (
+        {showThresholds && eventThresholdsDescriptionLabel ? (
           <div
             data-testid="betrayal-recent-roll-thresholds"
             data-result-role="thresholds"
@@ -482,7 +466,7 @@ export function RecentRollPanel({
                 ? openTableResultDocked
                   ? "mt-0.5 max-h-[34px] overflow-hidden whitespace-normal break-words text-[12px] leading-[17px]"
                   : "mt-1 whitespace-normal break-words text-[13px] leading-[18px]"
-                : "mt-2 truncate text-[18px]"
+                : "mt-2 whitespace-normal break-words text-[18px] leading-[1.5]"
             }`}
           >
             {primaryOutcomeLabel}
@@ -564,7 +548,7 @@ export function RecentRollPanel({
   const srSummary = isRollStillRolling ? (
     <div className="sr-only">{t("board.roll.rolling")}</div>
   ) : (
-    <div className="sr-only">
+    <div className="sr-only" data-testid="betrayal-recent-roll-a11y-summary">
       {actorLabel ? <span>{actorLabel}</span> : null}
       {showSource ? <span>{roll.sourceTitle}</span> : null}
       {showRollLabel ? (
@@ -572,14 +556,14 @@ export function RecentRollPanel({
       ) : roll.rollLabel && !showEventDamageDiceStage ? (
         <span>{roll.rollLabel}</span>
       ) : null}
-      <span>{bonusText}</span>
+      <span data-testid="betrayal-recent-roll-bonus">{bonusText}</span>
       {attackComparisonText ? <span>{attackComparisonText}</span> : null}
       {eventDamageSummaries.map((damage, index) => (
         <span key={`${damage.damageKind}-${index}-${damage.rollsLabel}`}>
           {damage.srLabel}
         </span>
       ))}
-      <span>{rollDetailText}</span>
+      <span data-testid="betrayal-recent-roll-detail">{rollDetailText}</span>
       <span>{totalLabel}</span>
       {shouldShowEventDamageDescription ? <span>{eventDamageDescriptionLabel}</span> : null}
       {shouldShowEventDamageSubtitle ? <span>{eventDamageSubtitleLabel}</span> : null}

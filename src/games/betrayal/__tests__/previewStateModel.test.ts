@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createBetrayalCharacterSelectCore } from "../game";
 import {
   createInitialPreviewState,
+    resolveRoomPlacementCancellationState,
   resolveNextPreviewStateAfterCoreChange,
 } from "../previewStateModel";
 
@@ -59,5 +60,31 @@ describe("Betrayal preview state history handling", () => {
     const nextState = resolveNextPreviewStateAfterCoreChange(core, previousState);
 
     expect(nextState.selectedInventoryCardId).toBeNull();
+  });
+
+  it("cancels only the room-placement preview and returns to default targeting", () => {
+    const core = createBetrayalCharacterSelectCore();
+    const movesRemainingBeforeCancel = core.movesRemaining;
+    const turnEndedByDiscoveryBeforeCancel = core.turnEndedByDiscovery;
+    const previousState = {
+      ...createInitialPreviewState(core),
+      interactionMode: "explore" as const,
+      pendingRoomPlacementSlotId: "ground-north",
+      pendingRoomPlacementFailure: { roomId: "ground-north", floor: "ground" as const },
+      pendingRoomOrientationTurns: 2 as const,
+      pendingRoomTileAdjustment: { kind: "none" } as const,
+    };
+
+    const cancelled = resolveRoomPlacementCancellationState(previousState);
+
+    expect(cancelled).toMatchObject({
+      interactionMode: "default",
+      pendingRoomPlacementSlotId: null,
+      pendingRoomPlacementFailure: null,
+      pendingRoomOrientationTurns: 0,
+      pendingRoomTileAdjustment: null,
+    });
+    expect(core.movesRemaining).toBe(movesRemainingBeforeCancel);
+    expect(core.turnEndedByDiscovery).toBe(turnEndedByDiscoveryBeforeCancel);
   });
 });

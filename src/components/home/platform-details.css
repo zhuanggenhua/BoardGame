@@ -1,0 +1,101 @@
+.platform-game-details { position: relative; pointer-events: auto; display: flex; flex-direction: column; width: min(1280px, calc(100vw - 48px)); max-height: calc(var(--runtime-viewport-height, 100dvh) - 48px); min-height: min(760px, calc(var(--runtime-viewport-height, 100dvh) - 48px)); border: 4px solid #000; box-shadow: 12px 12px #d5ff00; background: #f3f3f3; color: #000; font-family: Arial, 'Microsoft YaHei', sans-serif; overflow: hidden; }
+.platform-details-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 44px; height: 44px; display: grid; place-items: center; border: 3px solid #000; background: #fff; color: #000; cursor: pointer; }
+.platform-details-summary { display: grid; grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: 'cover title' 'cover description' 'cover players' 'cover actions'; gap: 12px 20px; padding: 20px 72px 20px 20px; background: #fff; }
+.platform-details-cover { grid-area: cover; width: 150px; align-self: start; aspect-ratio: 3 / 4; overflow: hidden; }
+.platform-details-cover > * { width: 100%; height: 100%; }
+.platform-details-cover img { width: 100%; height: 100%; object-fit: cover; }
+.platform-details-title { grid-area: title; }
+.platform-details-actions { grid-area: actions; display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.platform-details-title { font-size: 30px; font-weight: 800; margin: 0 0 12px; }
+.platform-details-title small { font-size: 12px; margin-left: 8px; }
+.platform-details-players { grid-area: players; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.platform-details-players > span { display: grid; place-items: center; min-width: 32px; min-height: 32px; border: 1px solid #aaa; background: #f3f3f3; color: #666; font-weight: 700; }
+.platform-details-players .is-best { background: #d5ff00; color: #243000; border: 2px solid #6c8200; font-weight: 800; }
+.platform-details-players small { color: #526300; background: #f3ffd0; border: 1px solid #c4d98c; padding: 5px 8px; font-weight: 700; }
+.platform-details-mobile-players { display:none; }
+.platform-details-description { grid-area: description; margin: 0; line-height: 1.6; }
+.platform-details-primary { grid-area: primary; min-width: 0; }
+.platform-details-primary > div { margin-bottom: 0; }
+.platform-details-primary button { min-height: 44px; border-radius: 0; }
+.platform-details-primary [data-testid="game-details-open-create-room"] { background: #ff008a; border: 3px solid #000; color: #fff; box-shadow: 5px 5px #000; padding: 10px 24px; max-width: 260px; }
+.platform-details-secondary { grid-area: secondary; display: flex; gap: 16px; flex-wrap: wrap; }
+.platform-details-secondary button { min-height: 44px; padding: 8px 16px; border: 2px solid #000; color: #000; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.platform-details-author { grid-area: author; align-self: center; font-size: 12px; }
+.platform-details-author button { min-height: 44px; }
+.platform-details-main { display: flex; flex-direction: column; padding: 16px 20px 20px; min-height: 0; flex: 1; }
+.platform-details-tabs { display: flex; gap: 12px; overflow-x: auto; flex-shrink: 0; border-bottom: 3px solid #000; margin-bottom: 16px; }
+.platform-details-tabs button { min-height: 44px; flex-shrink: 0; border-bottom: 3px solid transparent; padding: 8px 12px; background: transparent; font-weight: 700; color: #666; cursor: pointer; }
+.platform-details-tabs button[aria-current="page"] { border-color: #ff008a; color: #000; }
+.platform-details-tab-mobile { display: none; }
+.platform-details-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+@media (max-width: 1023px) {
+    .platform-game-details { width: 100vw; height: var(--runtime-viewport-height, 100dvh); max-height: var(--runtime-viewport-height, 100dvh); min-height: 0; border: 0; box-shadow: none; overflow: hidden; }
+    .platform-details-close { position: absolute; top: max(8px, env(safe-area-inset-top)); right: 8px; }
+    /* Keep introduction readable without displacing the room browsing viewport. */
+    .platform-details-summary { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'title' 'players' 'description' 'primary' 'secondary'; grid-template-rows: minmax(32px, auto) auto minmax(0, 1fr) 44px 44px; gap: 8px; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; flex: 0 0 33.333%; min-height: calc(260px + env(safe-area-inset-top)); overflow: hidden; align-content: stretch; }
+    .platform-details-cover, .platform-details-players { display: none; }
+    .platform-details-mobile-players { grid-area:players; display:flex; align-items:center; flex-wrap:wrap; gap:4px 12px; margin:0; font-size:12px; color:#555; }
+    .platform-details-mobile-players strong { padding:2px 6px; background:#d5ff00; color:#243000; font-size:12px; }
+    .platform-details-description { display: block; min-height: 0; overflow-y: auto; overscroll-behavior: contain; font-size: 13px; line-height: 1.5; padding-right: 4px; scrollbar-width: thin; }
+    .platform-details-title { font-size: 22px; line-height: 1.3; margin: 0; min-width: 0; padding-right: 44px; overflow-wrap: anywhere; align-self: center; }
+    .platform-details-actions { display: contents; }
+    .platform-details-primary { grid-area: primary; }
+    .platform-details-primary [data-testid="game-details-open-create-room"] { max-width: none; }
+    .platform-details-secondary { grid-area: secondary; display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; }
+    .platform-details-secondary button { padding: 8px 4px; font-size: 12px; }
+    .platform-details-author { display: none; }
+    .platform-details-author button { min-height: 32px; }
+    .platform-details-main { flex: 1; min-height: 0; overflow: hidden; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
+    .platform-details-tabs { gap: 0; }
+    .platform-details-tab-desktop { display: none; }
+    .platform-details-tab-mobile { display: inline; }
+    .platform-details-tabs button { padding: 8px 12px; }
+}
+.platform-details-favorite { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.platform-details-secondary .platform-details-favorite[aria-pressed="true"] { background: #d5ff00; }
+.platform-game-details--inline { width: 100%; max-height: none; min-height: calc(var(--runtime-viewport-height, 100vh) - 64px); border: 0; box-shadow: none; overflow: visible; }
+.platform-game-details--inline .platform-details-content { overflow: visible; }
+.platform-game-details--inline[data-active-tab="lobby"] .platform-details-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 2fr); gap: 24px; align-items: start; }
+.platform-library-detail-updates h3 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+@media (max-width: 1023px) {
+    .platform-game-details--inline { position: fixed; inset: 0; z-index: 70; overflow: hidden; }
+    .platform-game-details--inline .platform-details-content { overflow-y: auto; }
+    .platform-game-details--inline[data-active-tab="lobby"] .platform-details-content { display: flex; }
+    .platform-library-detail-updates { max-height: 33%; flex-shrink: 0; overflow-y: auto; margin-bottom: 12px; }
+}
+/* Keep existing lobby error semantics, styled only inside the platform detail shell. */
+.platform-details-content [role="alert"] { border: 2px solid #000; border-radius: 0; color: #000; background: #fff; }
+.platform-details-content [role="alert"] button { min-width: 64px; min-height: 44px; padding: 8px 16px; border: 2px solid #000; border-radius: 0; background: #d5ff00; color: #000; cursor: pointer; }
+.platform-details-content [role="alert"] button:focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
+
+/* The existing room actions keep their behavior; platform presentation owns contrast and touch targets. */
+.platform-details-content [data-testid^="room-list-item-"] {
+    gap: 16px;
+    padding: 12px 16px;
+    border: 2px solid #000;
+    border-radius: 0;
+    background: #fff;
+    color: #111;
+}
+.platform-details-content [data-testid^="room-list-item-"] > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.platform-details-content [data-testid^="room-list-item-"] > div:last-child { flex-shrink: 0; }
+.platform-details-content [data-testid^="room-list-item-"] .text-parchment-base-text { color: #111; }
+.platform-details-content [data-testid^="room-list-item-"] .text-parchment-light-text { color: #555; font-size: 12px; }
+.platform-details-content [data-testid^="room-list-item-"] button {
+    min-width: 44px;
+    min-height: 44px;
+    border: 2px solid #000;
+    border-radius: 0;
+    font-size: 14px;
+}
+.platform-details-content [data-testid^="room-list-join-"] { min-width: 64px; background: #d5ff00; color: #111; }
+.platform-details-content [data-testid^="room-list-join-"]:hover:not(:disabled) { background: #111; color: #d5ff00; }
+.platform-details-content [data-testid^="room-list-join-"]:disabled { border-color: #aaa; background: #e5e5e5; color: #666; }
+.platform-details-content [data-testid^="room-list-item-"] button:focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
+
+.platform-details-primary .platform-active-room-primary > div { display:flex; flex-wrap:nowrap; gap:8px; width:100%; }
+.platform-details-primary .platform-active-room-primary button { min-height:44px; border:2px solid #111; background:#d5ff00; color:#111; padding:8px 12px; font-size:12px; letter-spacing:0; }
+.platform-details-primary .platform-active-room-primary [data-action-tone="danger"] { background:#b91c32; color:#fff; border-color:#8c1024; }
+.platform-details-primary .platform-active-room-primary [data-action-tone="warning"] { background:#fff1da; color:#733800; border-color:#a65b00; }
+
+.platform-details-content .game-changelog-date { color:#555; font-size:12px; letter-spacing:normal; }

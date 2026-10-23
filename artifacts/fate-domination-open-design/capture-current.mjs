@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { renderedImagesReady } from './capture-image-readiness.mjs';
 
 const projectRoot = process.cwd();
 const artifactDir = path.join(projectRoot, 'artifacts', 'fate-domination-open-design');
@@ -46,14 +47,22 @@ const expectedPiles = {
   'pile-shinto': { xp: -6.4, yp: 80.8 },
 };
 const expectedEvents = {
-  'event-miyama-1': { xp: 25.5, yp: 50.5 },
-  'event-shinto-2': { xp: 44.75, yp: 82.0 },
+  'event-miyama-1': { xp: 27.5, yp: 49.8 },
+  'event-shinto-2': { xp: 39.8, yp: 81.85 },
 };
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ headless: true, chromiumSandbox: true });
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-await page.goto(`http://127.0.0.1:8765/${currentArtifact}`, { waitUntil: 'networkidle' });
-await page.waitForFunction(() => [...document.images].every((img) => img.complete && img.naturalWidth > 0));
+await page.goto(process.env.FATE_CAPTURE_URL || `http://127.0.0.1:8765/${currentArtifact}`, { waitUntil: 'domcontentloaded' });
+// Wait for the pixels in the currently rendered surface, including newly mounted drawer images.
+const captureFullFrame = async (options) => {
+  await page.waitForFunction(renderedImagesReady, 'ready', { timeout: 120000 });
+  await page.evaluate(renderedImagesReady, 'decode');
+  await page.evaluate(async () => {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  return page.screenshot(options);
+};
 const pageTitle = await page.title();
 if (pageTitle !== title) {
   console.error(`页面标题必须等于当前工作稿标题。期望 ${title}，实际 ${pageTitle}`);
@@ -128,29 +137,14 @@ const metrics = async (label) => page.evaluate((currentLabel) => {
     events,
     oppPlayedInOverlay: Boolean(document.querySelector('#opp-overlay .opp-played, #opp-played, .opp-panel .opp-inspect-card')),
     oppPlayedOnRail: document.querySelectorAll('.opp-played-card, [data-opp-played]').length,
-    oppPlayedLeftCount: document.querySelectorAll('#opp-played-left .opp-inspect-card').length,
-    oppPlayedLeftOfPanel: (() => {
-      const stack = document.querySelector('#opp-played-left');
-      const panel = document.querySelector('.opp-panel');
-      if (!stack || !panel || !stack.children.length || !stack.classList.contains('is-open')) return false;
-      const left = stack.getBoundingClientRect();
-      const box = panel.getBoundingClientRect();
-      return left.right <= box.left + 2 && left.bottom > box.top && left.top < box.bottom;
-    })(),
+    drawerCount: document.querySelectorAll('#player-drawer .opp-inspect-card').length,
+    drawerVisible: Boolean(document.querySelector('#player-drawer:not([hidden])')),
     oppPanelHasPlayedLabel: /已打出/.test(document.querySelector('.opp-panel')?.textContent || ''),
     handGap: (() => {
       const attack = document.querySelector('.attack-hand')?.getBoundingClientRect();
       const skill = document.querySelector('.skill-hand')?.getBoundingClientRect();
       if (!attack || !skill) return null;
       return Number((skill.left - attack.right).toFixed(1));
-    })(),
-    attackOnLeft: (() => {
-      const attack = document.querySelector('.attack-hand')?.getBoundingClientRect();
-      return Boolean(attack && attack.left <= 280);
-    })(),
-    skillOnRight: (() => {
-      const skill = document.querySelector('.skill-hand')?.getBoundingClientRect();
-      return Boolean(skill && skill.right >= window.innerWidth - 200);
     })(),
     oppPanelStacked: (() => {
       const grid = document.querySelector('.opp-grid')?.getBoundingClientRect();
@@ -164,7 +158,7 @@ const metrics = async (label) => page.evaluate((currentLabel) => {
       const style = getComputedStyle(panel);
       return style.display === 'flex' && style.flexDirection === 'row';
     })(),
-    inspectPlayedOverlap: packOverlap('#opp-played-left .opp-inspect-card'),
+    inspectPlayedOverlap: packOverlap('#player-drawer .opp-inspect-card'),
     oppCopyOneRow: [...document.querySelectorAll('.opp-copy')].every((el) => getComputedStyle(el).display === 'flex'),
     mapCenterX: Number((mapRect.left + mapRect.width / 2).toFixed(1)),
     stageCenterX: Number((stage.left + stage.width / 2).toFixed(1)),
@@ -191,7 +185,7 @@ const metrics = async (label) => page.evaluate((currentLabel) => {
 }, label);
 
 const idlePath = path.join(evidence, '01-行动分栏手牌.png');
-await page.screenshot({ path: idlePath, fullPage: false });
+await captureFullFrame({ path: idlePath, fullPage: false });
 copyFileSync(idlePath, path.join(artifactDir, currentExport));
 const m1 = await metrics('idle');
 
@@ -199,48 +193,57 @@ await page.locator('.attack-hand [data-card="skill-moment"]').click();
 await page.mouse.move(720, 360);
 await page.waitForTimeout(180);
 const playedPath = path.join(evidence, '02-打出第二张攻击.png');
-await page.screenshot({ path: playedPath, fullPage: false });
+await captureFullFrame({ path: playedPath, fullPage: false });
 const m2 = await metrics('played-two');
 
 await page.click('.played-card[data-withdraw="skill-moment"]');
 await page.mouse.move(720, 360);
 await page.waitForTimeout(180);
 const withdrawPath = path.join(evidence, '03-撤回攻击.png');
-await page.screenshot({ path: withdrawPath, fullPage: false });
+await captureFullFrame({ path: withdrawPath, fullPage: false });
 const m3 = await metrics('withdraw');
 
 await page.hover('#you-servant');
 await page.waitForTimeout(200);
 const hoverPath = path.join(evidence, '04-悬浮从者牌.png');
-await page.screenshot({ path: hoverPath, fullPage: false });
+await captureFullFrame({ path: hoverPath, fullPage: false });
 const m4 = await metrics('hover-servant');
 
 await page.mouse.move(0, 0);
 await page.waitForTimeout(120);
-await page.locator('.opp-seat[data-player="kirei"]').dispatchEvent('pointerenter');
+await page.locator('.opp-seat[data-player="kirei"]').hover();
+await page.waitForSelector('#player-drawer:not([hidden]) .opp-inspect-card');
+await page.waitForFunction(() => [...document.querySelectorAll('#player-drawer img')].every(img => img.complete && img.naturalWidth > 0));
+await captureFullFrame({ path: path.join(evidence, '05甲-头像选中已打出抽屉.png'), fullPage: false });
+const drawerMetrics = await metrics('selected-player-drawer');
+await page.locator('.opp-seat[data-player="kirei"]').click();
 await page.waitForSelector('#opp-overlay.is-open');
-await page.waitForSelector('#opp-played-left.is-open .opp-inspect-card');
-await page.waitForTimeout(200);
+await page.waitForFunction(() => [...document.querySelectorAll('#opp-overlay img')].every(img => img.complete && img.naturalWidth > 0));
 const oppPath = path.join(evidence, '05-对手详情.png');
-await page.screenshot({ path: oppPath, fullPage: false });
+await captureFullFrame({ path: oppPath, fullPage: false });
 const m5 = await metrics('opp');
 
 await page.click('#close-opp');
 await page.waitForTimeout(150);
+await captureFullFrame({ path: path.join(evidence, '05乙-关闭详情回到抽屉.png'), fullPage: false });
+await page.locator('#player-drawer button[aria-label="收起已打出"]').click();
 await page.click('.seal[data-seal="0"]');
 await page.waitForTimeout(150);
 const sealPath = path.join(evidence, '06-令咒三选一.png');
-await page.screenshot({ path: sealPath, fullPage: false });
+await captureFullFrame({ path: sealPath, fullPage: false });
 await page.click('[data-seal-choice="mana"]');
+await captureFullFrame({ path: path.join(evidence, '06甲-令咒已选择待确认.png'), fullPage: false });
+const beforeConfirm = await metrics('seal-before-confirm');
+await page.locator('#confirm-seal-choice').click();
 await page.waitForTimeout(200);
 const spentPath = path.join(evidence, '07-令咒已用.png');
-await page.screenshot({ path: spentPath, fullPage: false });
+await captureFullFrame({ path: spentPath, fullPage: false });
 const m6 = await metrics('seal-spent');
 
 await page.locator('.skill-hand [data-card="skill-magic-resistance"]').hover();
 await page.waitForSelector('#side-inspect.is-open');
 const inspectPath = path.join(evidence, '08-检视对魔力.png');
-await page.screenshot({ path: inspectPath, fullPage: false });
+await captureFullFrame({ path: inspectPath, fullPage: false });
 const m7 = await metrics('inspect');
 
 await page.locator('.skill-hand [data-card="skill-magic-resistance"]').click();
@@ -249,7 +252,7 @@ await page.mouse.move(720, 360);
 await page.mouse.wheel(0, -480);
 await page.waitForTimeout(200);
 const zoomPath = path.join(evidence, '09-地图缩放对齐.png');
-await page.screenshot({ path: zoomPath, fullPage: false });
+await captureFullFrame({ path: zoomPath, fullPage: false });
 const m8 = await metrics('zoom');
 
 await browser.close();
@@ -314,16 +317,17 @@ const alignmentOk = pieceErrors.every((row) => row.ok)
   && m1.oppCopyOneRow
   && m1.oppPlayedOnRail === 0
   && m1.handGap !== null
-  && m1.handGap > 40
-  && m1.handGap < 900
-  && m1.attackOnLeft
-  && m1.skillOnRight
+  && m1.handGap >= 24
+  && m1.handGap <= 40
+  && drawerMetrics.drawerCount >= 2
+  && drawerMetrics.drawerVisible
+  && beforeConfirm.seals === 3
+  && m6.seals === 2
   && m5.oppPanelStacked
   && !m5.oppPanelOneRow
   && !m5.oppPlayedInOverlay
   && !m5.oppPanelHasPlayedLabel
-  && m5.oppPlayedLeftCount >= 2
-  && m5.oppPlayedLeftOfPanel
+  && !m5.drawerVisible
   && (m5.inspectPlayedOverlap === null || m5.inspectPlayedOverlap <= 8)
   && (m1.attackOverlap === null || m1.attackOverlap <= 8)
   && (m1.skillOverlap === null || m1.skillOverlap <= 8)
@@ -365,8 +369,8 @@ const media = [
     path: '05-对手详情.png',
     chainStep: '5',
     stage: '中态',
-    transition: '悬浮右侧言峰绮礼席位打开对手详情',
-    description: '对手弹窗仍是上排御主从者令咒、下排三张技能红背，没有把弹窗压成一横排；弹窗左侧并排摊开的是对手自己已打出的两张攻击牌，和玩家底部剩余手牌不是同一套牌面',
+    transition: '选中右侧言峰绮礼席位展开抽屉，再点击打开详情',
+    description: '对手弹窗仍是上排御主从者令咒、下排三张技能红背，没有把弹窗压成一横排；详情不显示已打出牌；已打出牌仅在选中头像的抽屉中显示',
   },
   {
     path: '06-令咒三选一.png',
@@ -379,7 +383,7 @@ const media = [
     path: '07-令咒已用.png',
     chainStep: '7',
     stage: '后态',
-    transition: '选择获得魔力后消耗一张令咒',
+    transition: '选择获得魔力并点击唯一确认后消耗一张令咒',
     description: '提示令咒已使用剩余二，左下层叠令咒从三张减到两张',
   },
   {
@@ -398,15 +402,19 @@ const media = [
   },
 ];
 
+media.splice(4, 0, { path: '05甲-头像选中已打出抽屉.png', chainStep: '5甲', stage: '前态', transition: '正常悬浮选中对手头像', description: '头像所在席位展开已打出牌抽屉，完整显示中位魔术和高位魔术，详情尚未打开' });
+media.splice(6, 0, { path: '05乙-关闭详情回到抽屉.png', chainStep: '5乙', stage: '后态', transition: '关闭对手详情', description: '回到之前选中头像的已打出抽屉，详情不残留' });
+media.splice(8, 0, { path: '06甲-令咒已选择待确认.png', chainStep: '6甲', stage: '中态', transition: '选择获得魔力，尚未确认', description: '所选项高亮，确认按钮可用，令咒数量尚未减少' });
+
 writeFileSync(path.join(evidence, '.e2e-image-index.json'), JSON.stringify({
   version: 1,
   gameId: 'fate-domination',
   evidenceCategory: 'independent',
   title,
-  media: media.map((item) => ({
+  media: media.map((item, index) => ({
     path: item.path,
     chainId,
-    chainStep: item.chainStep,
+    chainStep: String(index + 1).padStart(2, '0'),
     sourceRun: 'artifacts/fate-domination-open-design/capture-current.mjs',
     sourceDir: evidenceRel.replace(/\\/g, '/'),
     stage: item.stage,
@@ -425,7 +433,9 @@ const report = {
     evidenceDir: evidenceRel.replace(/\\/g, '/'),
     pageTitle: m1.pageTitle,
   },
-  m1, m2, m3, m4, m5, m6, m7, m8,
+  m1, m2, m3, m4, m5, m6, m7, m8, drawerMetrics, beforeConfirm,
+  visualVerdict: "REVISE",
+  note: "自动化采集与几何检查不能替代原始整屏视觉验收；本脚本不签发视觉通过。",
   pieceErrors,
   pileErrors,
   eventErrors,

@@ -12,6 +12,7 @@ import {
     isImagePreloaded,
     markImageCandidateFailed,
     markImageLoaded,
+    onImageReady,
     registerGameAssets,
     preloadCriticalImages,
     setAssetHashesForTesting,
@@ -450,5 +451,50 @@ describe('preloadCriticalImages', () => {
         });
 
         expect(areAllCriticalImagesCached('test-sync-disk-hit', undefined, 'en')).toBe(true);
+    });
+
+    it('CriticalImageGate 的同步缓存探测不在渲染期间通知 AtlasCard 订阅者', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setAssetHashesForTesting({
+            'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
+        });
+
+        vi.stubGlobal('Image', class {
+            complete = true;
+            naturalWidth = 300;
+            naturalHeight = 600;
+            private _src = '';
+            get src() { return this._src; }
+            get currentSrc() { return this._src; }
+            set src(value: string) { this._src = value; }
+        });
+        registerGameAssets('test-sync-disk-hit-no-notify', {
+            criticalImages: ['smashup/cards/cards1'],
+        });
+        const onImageReadySubscriber = vi.fn();
+        const unsubscribe = onImageReady(onImageReadySubscriber);
+
+        expect(areAllCriticalImagesCached('test-sync-disk-hit-no-notify', undefined, 'en')).toBe(true);
+        expect(isImagePreloaded('smashup/cards/cards1', 'en')).toBe(true);
+        expect(onImageReadySubscriber).not.toHaveBeenCalled();
+
+        unsubscribe();
+    });
+
+    it('markImageLoaded 的普通成功路径仍通知已订阅的 onImageReady 监听器', () => {
+        const source = 'smashup/cards/async-ready-notification';
+        const loadedImage = new Image() as HTMLImageElement;
+        loadedImage.src = '/assets/i18n/zh-CN/smashup/cards/compressed/async-ready-notification.webp';
+        const onImageReadySubscriber = vi.fn();
+        const unsubscribe = onImageReady(onImageReadySubscriber);
+
+        try {
+            markImageLoaded(source, 'zh-CN', loadedImage, loadedImage.src);
+
+            expect(onImageReadySubscriber).toHaveBeenCalledWith(source);
+            expect(getPreloadedImageElement(source, 'zh-CN')).toBe(loadedImage);
+        } finally {
+            unsubscribe();
+        }
     });
 });

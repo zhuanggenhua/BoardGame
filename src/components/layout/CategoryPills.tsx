@@ -30,6 +30,7 @@ export const CategoryPills = ({ activeCategory, onSelect }: CategoryPillsProps) 
                     return (
                         <button
                             key={category}
+                            aria-pressed={isActive}
                             onClick={() => onSelect(category)}
                             className={`
                                 group relative inline-flex h-8 items-center text-sm tracking-wide transition-colors duration-300 cursor-pointer whitespace-nowrap px-2 sm:px-3

@@ -3,74 +3,67 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Home } from './Home';
 import {
     HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
-    HOME_ENTRY_STYLE_VERSION,
+    type HomeEntryStyle,
+    persistHomeEntryStyle,
     resolveHomeEntryStyle,
     subscribeHomeEntryStyleChange,
 } from '../lib/homeV2Routing';
 
-const LazyHomeV2 = React.lazy(() => import('./HomeV2').then((module) => ({ default: module.HomeV2 })));
+const LEGACY_HOME_QUERY_KEYS = ['homeStyle', 'homeV2Draft', HOME_ENTRY_STYLE_QUERY_VERSION_KEY];
 
 export const HomeEntry = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [styleRevision, setStyleRevision] = React.useState(0);
-
-    React.useEffect(() => {
-        return subscribeHomeEntryStyleChange(() => {
-            setStyleRevision((value) => value + 1);
-        });
-    }, []);
-
+    const homeStyle = resolveHomeEntryStyle(searchParams);
     void styleRevision;
-    const homeEntryStyle = resolveHomeEntryStyle(searchParams);
-    const currentQueryStyle = searchParams.get('homeStyle');
+
+    React.useEffect(() => subscribeHomeEntryStyleChange(() => {
+        setStyleRevision((value) => value + 1);
+    }), []);
 
     React.useEffect(() => {
-        if (typeof document === 'undefined') {
-            return undefined;
-        }
-
-        document.documentElement.dataset.homeEntryStyle = homeEntryStyle;
-        document.body.dataset.homeEntryStyle = homeEntryStyle;
-
+        document.documentElement.dataset.homeEntryStyle = homeStyle;
+        document.body.dataset.homeEntryStyle = homeStyle;
         return () => {
             delete document.documentElement.dataset.homeEntryStyle;
             delete document.body.dataset.homeEntryStyle;
         };
-    }, [homeEntryStyle]);
+    }, [homeStyle]);
 
     React.useEffect(() => {
-        if (currentQueryStyle === homeEntryStyle) {
+        const queryStyle = searchParams.get('homeStyle');
+        if (queryStyle === 'modern' || queryStyle === 'classic') {
+            persistHomeEntryStyle(queryStyle);
+        } else if (queryStyle === 'book') {
+            persistHomeEntryStyle('modern');
+        }
+
+        if (!LEGACY_HOME_QUERY_KEYS.some((key) => searchParams.has(key))) {
             return;
         }
 
-        const nextSearchParams = new URLSearchParams(searchParams);
-        nextSearchParams.set('homeStyle', homeEntryStyle);
-        nextSearchParams.delete('homeV2Draft');
-        if (homeEntryStyle === 'book') {
-            nextSearchParams.set(HOME_ENTRY_STYLE_QUERY_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
-        } else {
-            nextSearchParams.delete(HOME_ENTRY_STYLE_QUERY_VERSION_KEY);
+        const next = new URLSearchParams(searchParams);
+        for (const key of LEGACY_HOME_QUERY_KEYS) {
+            next.delete(key);
+        }
+        navigate({ pathname: '/', search: next.size ? `?${next}` : '' }, { replace: true });
+    }, [navigate, searchParams]);
+
+    const handleHomeStyleChange = React.useCallback((style: HomeEntryStyle) => {
+        persistHomeEntryStyle(style);
+        if (!LEGACY_HOME_QUERY_KEYS.some((key) => searchParams.has(key))) {
+            return;
         }
 
-        navigate(
-            {
-                pathname: '/',
-                search: `?${nextSearchParams.toString()}`,
-            },
-            { replace: true },
-        );
-    }, [currentQueryStyle, homeEntryStyle, navigate, searchParams]);
+        const next = new URLSearchParams(searchParams);
+        for (const key of LEGACY_HOME_QUERY_KEYS) {
+            next.delete(key);
+        }
+        navigate({ pathname: '/', search: next.size ? `?${next}` : '' }, { replace: true });
+    }, [navigate, searchParams]);
 
-    if (homeEntryStyle === 'book') {
-        return (
-            <React.Suspense fallback={null}>
-                <LazyHomeV2 />
-            </React.Suspense>
-        );
-    }
-
-    return <Home />;
+    return <Home homeStyle={homeStyle} onHomeStyleChange={handleHomeStyleChange} />;
 };
 
 export default HomeEntry;

@@ -119,7 +119,7 @@ export const DEMO_CARDS = [
   },
   {
     "id": "cardQ2",
-    "name": "瞬间移动",
+    "name": "高速移动",
     "kind": "attack",
     "type": "迅捷",
     "cost": 0,

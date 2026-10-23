@@ -2,7 +2,7 @@
 
 > 游戏：`Fantasy Realms / 幻想国度`
 >  
-> 本地规则来源：`D:\gongzuo\webgame\BoardGame\temp\新游戏幻想国度\规则.txt`
+> 本地规则来源：`本地素材路径省略`
 >  
 > 整理日期：`2026-06-04`
 >  

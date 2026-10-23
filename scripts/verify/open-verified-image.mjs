@@ -46,6 +46,8 @@ const usage = () => {
   --viewer <web|system|pureref>  指定查看器；默认 web。pureref 只保留为显式旧通道
   --web             等同于 --viewer web
   --pureref         等同于 --viewer pureref；非默认
+  --export-static <目录>  通过目录入口导出原版画布；须同时指定 --no-open
+  --public-base-url <网址>  公开导出目录网址；与 --export-static 配套
   --pass-manifest <路径>  本轮用户要求达标清单；没有清单禁止实际代理打开
   --confirmed-pass  历史参数，已废弃；请使用 --pass-manifest
   --force-reopen    强制重开同一份已 PASS 媒体；只在用户明确说没看到、打开错图或要求强制重开时使用
@@ -135,6 +137,8 @@ const parseArgs = (argv) => {
         paths: [],
         latest: null,
         dir: null,
+        exportStatic: null,
+        publicBaseUrl: null,
         focus: null,
         files: [],
         port: null,
@@ -176,6 +180,13 @@ const parseArgs = (argv) => {
         }
         if (current === '--verbose') {
             parsed.verbose = true;
+            continue;
+        }
+        if (current === '--export-static' || current === '--public-base-url') {
+            const value = argv[index + 1];
+            if (!value) throw new Error(current + ' 缺少取值');
+            parsed[current === '--export-static' ? 'exportStatic' : 'publicBaseUrl'] = value;
+            index += 1;
             continue;
         }
         if (current === '--dir') {
@@ -516,7 +527,7 @@ const printCompactOutput = ({ stdout, mediaCount, mediaDirectory, passManifest =
     const resolvedMediaCount = Number.isInteger(mediaCount) ? mediaCount : Number(fields.MEDIA_COUNT);
     if (Number.isInteger(resolvedMediaCount)) lines.push(`MEDIA_COUNT=${resolvedMediaCount}`);
     if (mediaDirectory) lines.push(`MEDIA_DIRECTORY=${mediaDirectory}`);
-    for (const key of ['DIRECTORY_KEY', 'DIRECTORY_PATH', 'OFFLINE_VIEWER_FILE', 'VIEWER_URL']) {
+    for (const key of ['DIRECTORY_KEY', 'DIRECTORY_PATH', 'OFFLINE_VIEWER_FILE', 'STATIC_EXPORT_DIRECTORY', 'VIEWER_URL']) {
         if (fields[key]) lines.push(`${key}=${fields[key]}`);
     }
     for (const key of ['OPENED_BROWSER', 'ALREADY_OPEN', 'OPEN_BROWSER']) {
@@ -730,7 +741,7 @@ const openImagesWithWebViewer = (imagePaths, { forceReopen = false, passManifest
     return { reused: fields.ALREADY_OPEN === 'true', fields };
 };
 
-const openDirectoryWithWebViewer = ({ dir, focus, files, port, noOpen, forceReopen, verbose }) => {
+const openDirectoryWithWebViewer = ({ dir, focus, files, port, noOpen, forceReopen, verbose, exportStatic, publicBaseUrl }) => {
     const args = [
         E2E_IMAGE_VIEWER_ENTRY,
         '--dir',
@@ -750,6 +761,10 @@ const openDirectoryWithWebViewer = ({ dir, focus, files, port, noOpen, forceReop
     }
     if (forceReopen) {
         args.push('--reopen');
+    }
+    if (exportStatic || publicBaseUrl) {
+        if (!exportStatic || !publicBaseUrl || !noOpen) throw new Error('公开导出必须同时指定 --no-open、--export-static 和 --public-base-url');
+        args.push('--export-static', exportStatic, '--public-base-url', publicBaseUrl);
     }
     const result = spawnSync(process.execPath, args, {
         cwd: PROJECT_ROOT,
@@ -783,7 +798,15 @@ const main = () => {
         if (parsed.viewer.toLowerCase() !== 'web') {
             throw new Error('目录查看模式只支持项目唯一的网页查看器入口');
         }
-        assertUserVisibleMediaDirectory(path.resolve(parsed.dir));
+        const directory = path.resolve(parsed.dir);
+        assertUserVisibleMediaDirectory(directory);
+        const media = collectMedia(directory);
+        if (media.length === 0) throw new Error('拒绝打开：目录内没有可验收媒体');
+        const manifest = validatePassManifest(path.join(directory, 'focused-pass-manifest.json'), media, 'web');
+        if (parsed.dryRun) {
+            printCompactOutput({ mediaCount: media.length, mediaDirectory: directory, passManifest: manifest, dryRun: true, verbose: parsed.verbose });
+            return;
+        }
         openDirectoryWithWebViewer(parsed);
         return;
     }

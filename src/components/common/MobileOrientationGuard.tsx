@@ -11,11 +11,7 @@ import {
     type GameMobileBannerKind,
 } from '../../shared/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import {
-    isBookHomeRoute,
-    isHomeEntryRoute,
-    subscribeHomeEntryStyleChange,
-} from '../../lib/homeV2Routing';
+import { isHomeEntryRoute } from '../../lib/homeV2Routing';
 import {
     isStandaloneWebApp,
     tryLockScreenOrientation,
@@ -139,14 +135,10 @@ export function MobileOrientationGuard({
     const nativeAppShellRef = useRef(nativeAppShell);
     const standaloneWebApp = isStandaloneWebApp();
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
-    const [homeEntryStyleRevision, setHomeEntryStyleRevision] = useState(0);
     nativeAppShellRef.current = nativeAppShell;
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
     const isHomeRoute = isHomeEntryRoute(location.pathname);
-    void homeEntryStyleRevision;
-    const isBookHomeEntry = isBookHomeRoute(location.pathname, location.search);
-    const isHomeV2Route = isBookHomeEntry;
     const resolvedGameConfig = gameId ? resolveGameMobileEntry(gameId) : undefined;
     const gameConfig = resolvedGameConfig ?? dynamicGameConfig;
     const preferredOrientation = gameId
@@ -154,16 +146,12 @@ export function MobileOrientationGuard({
         : undefined;
     const targetOrientation: 'landscape' | 'portrait' | null = gameId
         ? (preferredOrientation === 'landscape' ? 'landscape' : 'portrait')
-        : isHomeV2Route
-            ? 'landscape'
-            : isHomeRoute
-                ? 'portrait'
-                : null;
+        : isHomeRoute
+            ? 'portrait'
+            : null;
     const homeBannerKind: GameMobileBannerKind | null = isHomeRoute && isMobileViewport(viewport.width)
         ? (
-            isBookHomeEntry
-                ? (isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-landscape' : null)
-                : (!isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-portrait' : null)
+            !isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-portrait' : null
         )
         : null;
     const bannerKind = homeBannerKind ?? getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
@@ -173,11 +161,6 @@ export function MobileOrientationGuard({
         ? bannerKind
         : null;
 
-    useEffect(() => {
-        return subscribeHomeEntryStyleChange(() => {
-            setHomeEntryStyleRevision((value) => value + 1);
-        });
-    }, []);
     useEffect(() => {
         if (!gameId || resolvedGameConfig || !loadGameMobileEntry) {
             setDynamicGameConfig(undefined);

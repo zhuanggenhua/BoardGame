@@ -6,6 +6,7 @@ import { OptimizedImage } from '../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../components/common/overlays/MagnifyOverlay';
 import { ConfigReviewTable, type ConfigReviewColumn } from '../components/config/ConfigReviewTable';
 import betrayalAssetManifest from '../../public/assets/i18n/zh-CN/betrayal/assets-manifest.json';
+import { BETRAYAL_EXPLORER_CATALOG } from '../games/betrayal/scenarioConfig';
 import {
   BETRAYAL_CONFIG_REVIEW_COLUMN_KEYS,
   BETRAYAL_CONFIG_REVIEW_FIELD_DEFINITIONS,
@@ -60,6 +61,11 @@ type BetrayalConfigTranslate = ReturnType<typeof useTranslation>['t'];
 
 const ASSET_VARIANT_ORDER = ['png', 'jpg', 'jpeg', 'webp'] as const;
 const betrayalManifestFiles = (betrayalAssetManifest as BetrayalAssetManifest).files ?? {};
+const configuredMapTokenAssets = new Set(
+  BETRAYAL_EXPLORER_CATALOG
+    .map(({ tokenAsset }) => tokenAsset)
+    .filter((asset): asset is string => Boolean(asset)),
+);
 
 function resolveManifestExtension(entry: ManifestFileEntry | undefined): string {
   const variants = entry?.variants ?? {};
@@ -96,8 +102,8 @@ function formatAssetCandidateLabel(assetKey: string, prefix: string, candidateIn
   return formatReadableNameFromSlug(slug);
 }
 
-function buildManifestAssetCandidates(prefix: string): AssetCandidate[] {
-  return Object.entries(betrayalManifestFiles)
+export function buildManifestAssetCandidates(prefix: string): AssetCandidate[] {
+  const candidates = Object.entries(betrayalManifestFiles)
     .filter(([assetKey]) => assetKey.startsWith(prefix) && !assetKey.slice(prefix.length).startsWith('compressed/'))
     .sort(([leftAssetKey], [rightAssetKey]) => leftAssetKey.localeCompare(rightAssetKey))
     .map(([assetKey, entry], candidateIndex) => {
@@ -108,6 +114,9 @@ function buildManifestAssetCandidates(prefix: string): AssetCandidate[] {
         label: formatAssetCandidateLabel(assetKey, prefix, candidateIndex),
       };
     });
+  return prefix === 'tokens/explorers/'
+    ? candidates.filter(({ asset }) => configuredMapTokenAssets.has(asset))
+    : candidates;
 }
 
 const PANEL_ASSET_CANDIDATES = buildManifestAssetCandidates('explorers/');

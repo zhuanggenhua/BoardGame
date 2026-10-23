@@ -1,0 +1,121 @@
+.fd-runtime-table { position: relative; width: 100%; height: 100%; min-height: 600px; overflow: clip; background: #121916; color: #f0e7d0; font-family: 'Microsoft YaHei', sans-serif; }
+.fd-runtime-top { position: absolute; top: 0; left: 0; right: 0; z-index: 10; height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: linear-gradient(#101612f5,#101612a8,transparent); pointer-events: none; }
+.fd-runtime-top h1 { margin: 0; font-size: 24px; letter-spacing: .16em; }
+.fd-runtime-top small { font-size: 9px; letter-spacing: .2em; color: #b5a67c; }
+.fd-runtime-top > span { font-size: 13px; color: #d6c18d; }
+.fd-runtime-round { display: flex; align-items: center; gap: 16px; font-size: 18px; }
+.fd-runtime-round span { padding: 6px 14px; border: 1px solid #a58a4b; font-size: 13px; }
+/* Identity anchors stay compact; the expanded public area floats independently. */
+.fd-runtime-player-rail { position: absolute; right: 16px; top: 88px; width: 242px; z-index: 15; height: calc(100% - 350px); pointer-events: none; }
+.fd-runtime-seat-list { display: flex; flex-direction: column; gap: 12px; max-height: 100%; overflow-y: auto; pointer-events: auto; padding: 4px; scrollbar-width: thin; }
+.fd-runtime-seat { position: relative; }
+.fd-runtime-seat-row { display: flex; align-items: center; gap: 9px; padding: 3px; }
+.fd-runtime-avatar { position: relative; flex: 0 0 68px; width: 68px; height: 56px; overflow: visible; background: transparent; border: 0; padding: 0; }
+.fd-runtime-avatar .fd-runtime-master-avatar { position: absolute; left: 0; top: 0; width: 52px; height: 52px; border: 2px solid #c5aa68; border-radius: 50%; object-fit: contain; background: #111a17; }
+.fd-runtime-avatar .fd-runtime-servant-avatar { position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; border: 2px solid #7cb4bb; border-radius: 50%; object-fit: cover; object-position: 50% 18%; background: #111a17; }
+.fd-runtime-seat.is-current .fd-runtime-master-avatar { box-shadow: 0 0 0 3px #e4c46e80; }
+.fd-runtime-seat.is-selected .fd-runtime-master-avatar { border-color: #fff0b8; }
+.fd-runtime-seat-summary { min-width: 0; flex: 1; text-align: left; min-height: 48px; padding: 7px 6px; background: linear-gradient(90deg,#111a17ed,#111a1790 80%,transparent); text-shadow: 0 1px 3px #000; }
+.fd-runtime-opponent-drawer { position: absolute; right: calc(100% + 12px); top: 0; width: 316px; max-height: 100%; overflow-y: auto; pointer-events: auto; padding: 14px; background: #111a17f5; box-shadow: 0 12px 30px #0008; border-top: 2px solid #b89b58; }
+.fd-runtime-opponent-drawer header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.fd-runtime-opponent-drawer header strong { display: block; font-size: 16px; margin-bottom: 6px; }
+.fd-runtime-opponent-drawer header span { color: #c9bd9c; font-size: 12px; }
+.fd-runtime-opponent-drawer header button { min-width: 36px; min-height: 36px; display: grid; place-items: center; }
+.fd-runtime-public-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.fd-runtime-public-cards button { width: 138px; aspect-ratio: 148/214; }
+.fd-runtime-public-cards button > img { width: 100%; height: 100%; object-fit: contain; }
+.fd-runtime-public-cards p { margin: 16px 0; color: #b6b49f; font-size: 13px; }
+.fd-runtime-setup { position: absolute; left: 50%; top: 45%; transform: translate(-50%,-50%); width: 420px; z-index: 18; padding: 28px; background: #111a17f5; border: 1px solid #a58a4b; box-shadow: 0 20px 60px #0009; }
+.fd-runtime-setup h2 { font-size: 22px; margin: 0 0 8px; }.fd-runtime-setup p { font-size: 13px; color: #bfb99f; }
+.fd-runtime-setup label { display: grid; gap: 8px; margin-top: 18px; font-size: 13px; }
+.fd-runtime-setup select { min-height: 44px; background: #202a23; border: 1px solid #8b805e; padding: 8px; }
+.fd-runtime-setup > button { min-height: 44px; margin-top: 18px; color: #e8ce8d; text-decoration: underline; }
+.fd-runtime-inspection { position: fixed; left: 16px; top: 90px; transform:none; z-index: 10000; width: min(310px, 34vw, calc((100dvh - 96px) * 148 / 214)); max-height: calc(100dvh - 96px); display: flex; flex-direction: column; padding: 4px; background: #111a17; border: 2px solid #d5b96b; box-shadow: 0 12px 42px #000b; color:#f0e7d0; font-size:14px; }
+.fd-inspection-card-face { display:flex; flex:0 1 auto; align-items:center; justify-content:center; width:100%; min-width:0; min-height:0; overflow:hidden; }
+.fd-inspection-card-face > img { display:block; width:100%; max-height:calc(100dvh - 104px); object-fit:contain; }
+.fd-inspection-card-face > [data-card-atlas-frame="true"] { width:100%; max-width:100%; max-height:calc(100dvh - 104px); flex-shrink:1; }
+.fd-runtime-table button:focus-visible { outline: 3px solid #ffe7a1; outline-offset: 3px; }
+@media(max-width:1100px) { .fd-runtime-player-rail { width: 230px; right: 10px; }.fd-runtime-top { padding-inline: 14px; } }
+.fd-runtime-seal-choice { pointer-events: auto; width: min(620px,calc(100vw - 32px)); padding: 24px; background: #111a17; border: 1px solid #c4a860; color: #ede3ca; }
+.fd-runtime-seal-choice header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 20px; }.fd-runtime-seal-choice h2 { margin: 0; font-size: 24px; }.fd-runtime-seal-choice p { font-size: 13px; color: #c7ba98; margin: 8px 0 0; }
+.fd-runtime-seal-choice header > button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #72654b; }
+.fd-runtime-seal-options { display: grid; gap: 12px; }.fd-runtime-seal-options button { text-align: left; padding: 16px; border: 1px solid #8d7b4e; min-height: 84px; background: #202b23; }.fd-runtime-seal-options strong { display: block; font-size: 17px; margin-bottom: 8px; }.fd-runtime-seal-options span { font-size: 13px; line-height: 1.5; }
+.fd-runtime-seal-choice button[aria-pressed="true"] { background: #d6bd79; color: #131a14; border-color: #ffe6a0; }.fd-runtime-seal-choice button:disabled { opacity: .4; cursor: not-allowed; }
+.fd-runtime-seal-destinations { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }.fd-runtime-seal-destinations button { padding: 10px 16px; min-height: 44px; border: 1px solid #a98c4c; }
+.fd-runtime-seal-choice footer { display: flex; justify-content: flex-end; margin-top: 20px; }.fd-runtime-seal-choice footer button { min-height: 46px; padding: 10px 30px; background: #d6bd79; color: #131a14; font-weight: 800; }
+
+.fd-self-dock { position:absolute; left:var(--fd-hud-inline); bottom:var(--fd-hud-bottom); z-index:25; width:126px; }
+.fd-self-objects { display:flex; flex-direction:column; align-items:flex-start; gap:12px; margin-bottom:10px; }
+.fd-self-piles { position:relative; display:flex; flex-direction:row; gap:8px; }
+.fd-self-piles button { display:flex; align-items:center; gap:8px; min-width:54px; min-height:40px; color:#ead9a7; background:#111a17e8; border-radius:6px; padding:6px; }
+.fd-self-seals { position:relative; width:118px; height:120px; background:transparent; }
+.fd-self-seals:disabled { cursor:default; }
+.fd-self-identity { display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%; text-align:left; background:transparent; border-left:3px solid #c7a74e; border-radius:0; padding:4px 0 4px 8px; text-shadow:0 2px 7px #000; }
+.fd-self-identity strong { display:block; font-size:14px; }
+.fd-self-identity small { display:block; margin-top:8px; font-size:12px; line-height:1.4; color:#d9cca7; white-space:normal; overflow-wrap:anywhere; }
+.fd-self-pile-info { position:absolute; left:calc(100% + 12px); top:0; white-space:nowrap; z-index:30; background:#111a17f5; padding:10px; font-size:12px; }
+.fd-phase-control { position:absolute; right:var(--fd-hud-inline); bottom:calc(var(--fd-hand-card-width,120px) * 214 / 148 - 28px + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:126px; }
+.fd-phase-control .fd-runtime-primary { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; width:79px; height:79px; border-radius:50%; border:3px solid #eed38a; background:#b9635b; box-shadow:0 4px 18px #0009; color:#f5efe5; font-size:15px; font-weight:800; }
+.fd-phase-control .fd-runtime-primary:disabled { filter:grayscale(.7); opacity:.5; cursor:not-allowed; }
+@media(max-width:1100px) {
+ .fd-self-objects { flex-direction:column-reverse; align-items:flex-start; gap:4px; }
+ .fd-self-piles { flex-direction:row; }
+ .fd-self-identity { flex-direction:column; align-items:flex-start; border-radius:8px; }
+ .fd-phase-control .fd-runtime-primary { width:88px; height:88px; }
+}
+
+.fd-self-copy strong { color:#efcf78; }
+.fd-self-stats { display:flex; gap:12px; margin-top:6px; font-size:10px; }
+.fd-self-stats b { display:block; color:#e7b943; font-size:13px; }
+.fd-phase-copy { text-align:right; text-shadow:0 2px 7px #000; }
+.fd-phase-copy small { display:block; color:#b9ad8b; font-size:10px; }
+.fd-phase-copy b { display:block; margin-top:3px; font-size:15px; font-weight:500; }
+.fd-inspection-backdrop { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; background:#050707d9; }
+.fd-inspection-hover { position:fixed; inset:0; z-index:10000; pointer-events:none; }
+.fd-inspection-hover .fd-runtime-inspection { pointer-events:none; }
+.fd-inspection-backdrop .fd-runtime-inspection.is-pinned { position:relative; top:auto; right:auto; left:auto; transform:none; width:min(480px,75vw,calc((100dvh - 64px) * 148 / 214)); height:calc(100dvh - 64px); max-height:calc(100dvh - 64px); padding:0; border:0; background:transparent; box-shadow:none; overflow:visible; }
+.fd-runtime-inspection.is-pinned .fd-inspection-card-face { width:100%; height:100%; }
+.fd-runtime-inspection.is-pinned .fd-inspection-card-face > img,
+.fd-runtime-inspection.is-pinned .fd-inspection-card-face > [data-card-atlas-frame="true"] { width:100%; height:100%; max-width:100%; max-height:100%; object-fit:contain; }
+.fd-runtime-inspection .fd-inspection-close { position:absolute; top:4px; right:4px; z-index:2; display:grid; place-items:center; width:48px; height:48px; padding:0; border:1px solid #f2db94; border-radius:4px; background:#101717ed; color:#fff2c5; cursor:pointer; }
+.fd-runtime-inspection .fd-inspection-close:focus-visible { outline:3px solid #ffe7a1; outline-offset:2px; }
+
+
+
+.fd-movement-cancel { width:40px; height:40px; display:grid; place-items:center; border:1px solid #c5aa68; border-radius:50%; background:#111a17; }
+
+.fd-discard-inspection { pointer-events:auto; width:min(1000px,calc(100vw - 48px)); padding:24px; background:#101717; color:#efe4c7; }
+.fd-discard-inspection header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.fd-discard-inspection h2 { margin:0; font-size:20px; }
+.fd-discard-inspection header button { width:40px; height:40px; display:grid; place-items:center; }
+.fd-discard-cards { display:flex; gap:16px; overflow-x:auto; padding:4px 4px 16px; }
+.fd-discard-cards > button { flex:0 0 180px; border:0; padding:0; background:transparent; cursor:zoom-in; }
+
+/* HUD anchors are independent overlays; the map camera always uses the full viewport. */
+.fd-runtime-table { --fd-hud-inline:96px; --fd-hud-bottom:96px; }
+@media(max-width:1900px) {
+ .fd-runtime-table { --fd-hud-inline:40px; --fd-hud-bottom:72px; }
+ .fd-self-identity { flex-direction:column; align-items:flex-start; }
+ .fd-phase-control { flex-direction:column; align-items:flex-end; gap:6px; }
+}
+
+@media(max-width:1023px) and (orientation:landscape) {
+ .fd-runtime-table { min-height:0; height:100%; }
+ .fd-runtime-table { --fd-hud-bottom:0px; }
+ .fd-runtime-player-rail { top:72px; height:188px; }
+ .fd-runtime-top { height:64px; padding:6px 12px; }
+ .fd-runtime-top h1 { font-size:20px; }
+ .fd-runtime-round { gap:8px; font-size:15px; }
+ .fd-runtime-round span { padding:4px 8px; font-size:12px; }
+ .fd-self-stats { font-size:12px; }
+ .fd-self-identity strong { font-size:15px; }
+ .fd-self-identity small { margin-top:4px; font-size:13px; }
+ .fd-phase-copy small { font-size:12px; }
+ .fd-phase-copy b { font-size:15px; }
+ .fd-phase-control { flex-direction:row; align-items:center; width:max-content; max-width:calc(100% - 2 * var(--fd-hud-inline)); }
+ .fd-phase-copy { max-width:160px; }
+ .fd-runtime-inspection.is-pinned .fd-inspection-close { top:4px; right:4px; width:48px; height:48px; }
+}
+
+/* Setup completion belongs directly after the identity choices, with one action owner. */
+.fd-runtime-setup .fd-phase-control { position:static; width:100%; margin-top:24px; flex-direction:row; justify-content:flex-end; align-items:center; }

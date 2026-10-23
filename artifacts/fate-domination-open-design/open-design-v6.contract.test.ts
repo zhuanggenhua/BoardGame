@@ -57,8 +57,8 @@ describe('Fate/Domination Open Design v6 layout contract', () => {
     expect(html).toContain('pile-events { left: -6.4%; top: 16.5%; }');
     expect(html).toContain('pile-miyama { left: -6.4%; top: 49.5%; }');
     expect(html).toContain('pile-shinto { left: -6.4%; top: 80.8%; }');
-    expect(html).toContain('event-miyama-1 { left: 25.5%; top: 50.5%;');
-    expect(html).toContain('event-shinto-2 { left: 44.75%; top: 82.0%; width: 12.2%; }');
+    expect(html).toContain('event-miyama-1 { left: 27.5%; top: 49.8%;');
+    expect(html).toContain('event-shinto-2 { left: 39.8%; top: 81.85%; width: 11.9%; }');
     expect(html).toContain('class="map-card event-slot event-miyama-1"');
     expect(html).toContain('class="map-card pile-events"');
     expect(html).toContain('assets/event-back.webp');
@@ -66,14 +66,17 @@ describe('Fate/Domination Open Design v6 layout contract', () => {
     expect(html).not.toContain('class="opp-played"');
     expect(html).not.toContain('data-opp-played="shinji"');
     expect(html).not.toContain('class="opp-played-row"');
-    expect(html).toContain('id="opp-played-left"');
+    expect(html).not.toContain('id="opp-played-left"');
+    expect(html).toContain("playerDrawer.id = 'player-drawer'");
     expect(html).toContain("['assets/attack-magic-mid.webp', '中位魔术', 'attack-magic-mid']");
     expect(html).toContain("['assets/attack-magic-high.webp', '高位魔术', 'attack-magic-high']");
     expect(html).not.toMatch(/kirei:[\s\S]{0,400}skill-moment\.webp/);
     expect(html).not.toMatch(/kirei:[\s\S]{0,400}skill-luck\.webp/);
     expect(html).not.toContain('class="hand-row"');
-    expect(html).toContain('.attack-hand {\n      position: absolute;\n      left: 236px;');
-    expect(html).toContain('.skill-hand {\n      position: absolute;\n      right: 118px;');
+    expect(html).toContain('class="hand-zones"');
+    expect(html).toContain('.attack-hand, .skill-hand { position: relative; flex: 0 0 calc(3 * var(--card-w) + 2 * var(--card-gap))');
+    expect(html).toContain('bottom: 16px');
+    expect(html).toContain('user-select: none');
     expect(html).toContain('grid-auto-flow: row');
     expect(html).toContain('--card-gap: 12px');
     expect(html).not.toContain('--card-overlap');
@@ -123,9 +126,11 @@ describe('Fate/Domination Open Design v6 layout contract', () => {
     expect(html).toContain('合计威力');
     expect(html).toContain('const withdrawAttack');
     expect(html).toContain('const playAttack');
-    expect(html).toContain('id="opp-played-left"');
+    expect(html).not.toContain('id="opp-played-left"');
+    expect(html).toContain("playerDrawer.id = 'player-drawer'");
     expect(html).toContain('const openOpp');
-    expect(html).toContain('const placeOppPlayedLeft');
+    expect(html).toContain('const selectPlayer');
+    expect(html).not.toContain('const placeOppPlayedLeft');
     expect(html).not.toContain('id="opp-played"');
     expect(html).not.toContain('data-opp-played');
     expect(html).not.toContain('class="attack-slot"');
@@ -154,4 +159,17 @@ describe('Fate/Domination Open Design v6 layout contract', () => {
       expect(existsSync(path.join(assets, file)), file).toBe(true);
     }
   });
+  it('补充御主信息和快捷切换，抽弃牌以图标表示', () => {
+    expect(html).toContain('id="opp-player-switch"');
+    expect(html).toContain('id="opp-stats"');
+    expect(html).toContain('id="opp-ability"');
+    expect(html).toContain('当前威力');
+    expect(html).toContain('公开牌与场地');
+    expect(html).toContain('每枚令咒整局使用一次');
+    const piles = html.match(/class="self-piles"[\s\S]*?<\/div>/)?.[0] ?? '';
+    expect(piles.match(/<svg/g)).toHaveLength(2);
+    expect(piles).not.toContain('<img');
+    expect(piles).not.toContain('抽牌 15');
+  });
+
 });
