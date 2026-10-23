@@ -1,0 +1,10 @@
+{
+  "name": "betrayal-3d-prototype",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Isolated 3D prototype dependencies for Betrayal at House on the Hill",
+  "dependencies": {
+    "boardgame-platform": "file:../..",
+    "pathfinding": "0.4.18"
+  }
+}
