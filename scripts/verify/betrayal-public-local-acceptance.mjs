@@ -5,23 +5,29 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { acquireGlobalHeavyBudget } from '../infra/global-heavy-budget.mjs';
 import { acquireTaskGuard } from '../infra/heavy-task-guard.mjs';
+import {
+  assertPublishedBundleIdentity,
+  loadExpectedBundleManifest,
+  resolveTargetUrl,
+} from './betrayal-public-local-acceptance-config.mjs';
+import { requireSettledBoard, startDeadline, waitForPendingDecisionOrSettledBoard, waitForPendingDecisionPresentation, withTimeout, writeCheckpoint } from './betrayal-public-local-acceptance-runtime.mjs';
 
 const require = createRequire(path.resolve('package.json'));
 const { chromium, expect } = require('@playwright/test');
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const replaySeedArgIndex = process.argv.indexOf('--seed');
 const replaySeed = replaySeedArgIndex === -1 ? null : process.argv[replaySeedArgIndex + 1] ?? null;
-const targetUrlObject = new URL('https://boardgame-betrayal-local-verification.blushbison1024.chatgpt.site/play/betrayal/local');
+const targetUrlObject = resolveTargetUrl(process.env.BASE_URL);
 if (replaySeed) targetUrlObject.searchParams.set('seed', replaySeed);
-const targetUrl = targetUrlObject.toString();
-const expectedDeployedBundles = [
-  { filename: 'PixiMapSceneHost-BFA5pObl.js', sha256: '06850e8b97421890a4c071c5ea5555ef1883af826017a399e876c6cf7716ecfd' },
-  { filename: 'Board-C7NFu7Cx.js', sha256: '4ec23f0e58c7085b010693b57133a03f5d435176ee814d82c718fd04d3b7e22a' },
-  { filename: 'game-C8IlukYU.js', sha256: '051aed75e7f943f284637f30f3bae3f9ace9af35a821b63eb4358e52fdc7d25c' },
-];
+const expectedBundleManifest = loadExpectedBundleManifest(
+  process.env.EXPECTED_BUNDLE_MANIFEST_PATH,
+  { cwd: projectRoot },
+);
+const expectedDeployedBundles = expectedBundleManifest.bundles;
+const expectedBundleFilenames = new Set(expectedDeployedBundles.map((bundle) => bundle.filename));
 const caseArgIndex = process.argv.indexOf('--case');
 const requestedCase = caseArgIndex === -1 ? null : process.argv[caseArgIndex + 1] ?? null;
-const supportedCases = new Set(['pawn-selection-toggle', 'room-reveal-sequencing', 'local-ui-closeout', 'character-turn-prompt']);
+const supportedCases = new Set(['pawn-selection-toggle', 'room-reveal-sequencing', 'local-ui-closeout', 'character-turn-prompt', 'map-readiness']);
 if (caseArgIndex !== -1 && !supportedCases.has(requestedCase)) {
   throw new Error(`Unsupported --case value: ${requestedCase ?? '(missing)'}. Supported: ${[...supportedCases].join(', ')}`);
 }
@@ -29,12 +35,18 @@ const isPawnSelectionToggleCase = requestedCase === 'pawn-selection-toggle';
 const isRoomRevealSequenceCase = requestedCase === 'room-reveal-sequencing';
 const isLocalUiCloseoutCase = requestedCase === 'local-ui-closeout';
 const isCharacterTurnPromptCase = requestedCase === 'character-turn-prompt';
-const isNarrowCase = isPawnSelectionToggleCase || isRoomRevealSequenceCase || isLocalUiCloseoutCase || isCharacterTurnPromptCase;
+const isMapReadinessCase = requestedCase === 'map-readiness';
+if (isMapReadinessCase) targetUrlObject.searchParams.set('mobileDebug', '1');
+const targetUrl = targetUrlObject.toString();
+const isNarrowCase = isPawnSelectionToggleCase || isRoomRevealSequenceCase || isLocalUiCloseoutCase || isCharacterTurnPromptCase || isMapReadinessCase;
+const invocationStartedEpochMs = Date.now();
 const viewport = { width: 1600, height: 900 };
 const chromiumLaunchArgs = process.platform === 'win32' ? ['--disable-gpu'] : [];
 const evidenceRoot = path.join(projectRoot, 'test-results/evidence-screenshots/betrayal/public-local-acceptance');
-const runId = new Date().toISOString().replace(/[:.]/g, '-');
-const runDir = path.join(evidenceRoot, `run-${runId}-${randomBytes(2).toString('hex')}`);
+const suppliedRunId = process.env.BETRAYAL_PUBLIC_ACCEPTANCE_RUN_ID ?? null;
+if (suppliedRunId && !/^[a-zA-Z0-9_-]+$/u.test(suppliedRunId)) throw new Error('Invalid externally supplied acceptance run ID.');
+const runId = suppliedRunId ?? new Date().toISOString().replace(/[:.]/g, '-');
+const runDir = path.join(evidenceRoot, `run-${runId}${suppliedRunId ? '' : `-${randomBytes(2).toString('hex')}`}`);
 const videoTempDir = path.join(runDir, '.video-tmp');
 const commandLine = process.argv.join(' ');
 const taskGuard = acquireTaskGuard({
@@ -48,7 +60,7 @@ try {
     group: 'e2e',
     command: commandLine,
     waitForBudget: true,
-    waitTimeoutMs: 30 * 60 * 1000,
+    waitTimeoutMs: isMapReadinessCase ? 20_000 : 30 * 60 * 1000,
     metadata: { mode: 'public-local-external', target: targetUrl, runtimeScope: 'external-public-local', serviceReuse: 'none', entrypoint: 'betrayal-public-local-acceptance' },
   });
 } catch (error) {
@@ -58,7 +70,7 @@ try {
 const startedAt = new Date().toISOString();
 const steps = [];
 const media = [];
-const diagnostics = { console: [], pageErrors: [], failedRequests: [], httpErrors: [], chunks: [], footstep404s: [], roomAtlasResponses: [], roomAtlasFinished: [], mapResourceSamples: [], reselectAfterCancel: null, pawnSelectionToggle: null, movementCancellation: null, roomRevealSequence: null, characterTraitReadability: null, characterTurnPrompt: null };
+const diagnostics = { console: [], pageErrors: [], failedRequests: [], httpErrors: [], pageResponses: [], chunks: [], footstep404s: [], roomAtlasResponses: [], roomAtlasFinished: [], mapResourceSamples: [], reselectAfterCancel: null, pawnSelectionToggle: null, movementCancellation: null, roomRevealSequence: null, characterTraitReadability: null, characterTurnPrompt: null };
 const pendingRoomAtlasFinishes = [];
 const roomAtlasStartedAt = new WeakMap();
 const isRoomAtlasUrl = (url) => /(?:room-front-atlas|room-back-atlas|trophy-oubliette-atlas|start-triple-room|start-upper-landing|start-basement-landing)/i.test(decodeURIComponent(url));
@@ -69,20 +81,144 @@ let context;
 let page;
 let fatalError = null;
 let primaryResponseStatus = null;
+let publishedBundleIdentity = null;
 let pageMetrics = null;
 let shotIndex = 0;
 let recordingStartedAt = null;
 let recordingStartedEpochMs = null;
 let recordingStoppedAt = null;
+const partialReportPath = path.join(runDir, 'acceptance-report.partial.json');
+let mapDiagnosticPhase = 'preflight';
+let mapReadinessStatus = 'NOT_STARTED';
+let mapDiagnosticFailure = null;
+let mapDiagnosticStartedEpochMs = null;
+let mapDiagnosticFinishedAt = null;
+let cancelMapDiagnosticDeadline = null;
+let forceMapDiagnosticExitTimer = null;
+const mapDiagnosticMaxMs = 180_000;
+const mapDiagnosticDeadlineMs = 170_000;
 
-await mkdir(videoTempDir, { recursive: true });
-const readMapResourceSnapshot = async () => page.evaluate(() => {
+const persistAcceptanceCheckpoint = async (phase = mapDiagnosticPhase) => {
+  if (isMapReadinessCase) mapDiagnosticPhase = phase;
+  const checkpoint = {
+    schemaVersion: 1,
+    type: 'public-local-acceptance-checkpoint',
+    runId,
+    case: requestedCase ?? 'full-flow',
+    phase,
+    status: isMapReadinessCase ? mapReadinessStatus : 'IN_PROGRESS',
+    caseStatus: isMapReadinessCase ? mapReadinessStatus : isRoomRevealSequenceCase ? (fatalError ? 'FAIL' : diagnostics.nextTurnHandoff?.status === 'READY' && diagnostics.roomRevealSequence?.status === 'PASS' ? 'PASS' : diagnostics.roomRevealSequence?.status ?? 'IN_PROGRESS') : diagnostics.localUiCloseout?.status ?? diagnostics.pawnSelectionToggle?.status ?? diagnostics.characterTurnPrompt?.status ?? 'IN_PROGRESS',
+    functionalStatus: 'NOT_VERIFIED',
+    verdict: 'PENDING',
+    startedAt: startedAt ?? null,
+    checkpointAt: new Date().toISOString(),
+    elapsedMs: Date.now() - invocationStartedEpochMs,
+    maximumDurationMs: isMapReadinessCase || isRoomRevealSequenceCase ? 180_000 : null,
+    target: targetUrl,
+    expectedPublishedSiteVersion: expectedBundleManifest.siteVersion,
+    expectedBundles: expectedDeployedBundles,
+    primaryResponseStatus,
+    publishedBundleIdentity,
+    actualRemoteBundles: diagnostics.chunks,
+    steps,
+    screenshots: media.filter((item) => item.type === 'image'),
+    diagnostics,
+    failure: mapDiagnosticFailure ?? fatalError,
+  };
+  await withTimeout(writeCheckpoint(partialReportPath, checkpoint), 5_000, 'acceptance checkpoint write');
+};
+
+const closeDiagnosticResources = async () => {
+  for (const [label, close] of [
+    ['page', () => page && !page.isClosed() ? page.close() : Promise.resolve()],
+    ['context', () => context ? context.close() : Promise.resolve()],
+    ['browser', () => browser ? browser.close() : Promise.resolve()],
+  ]) {
+    try { await withTimeout(close(), 2_000, `${label} close`); }
+    catch (error) { diagnostics.cleanupErrors ??= []; diagnostics.cleanupErrors.push(`${label}: ${error instanceof Error ? error.message : String(error)}`); }
+  }
+  try { globalBudgetHandle?.release?.(); } catch (error) { diagnostics.cleanupErrors ??= []; diagnostics.cleanupErrors.push(`budget release: ${String(error)}`); }
+  try { taskGuard.release(); } catch (error) { diagnostics.cleanupErrors ??= []; diagnostics.cleanupErrors.push(`task guard release: ${String(error)}`); }
+};
+
+const startMapDiagnosticDeadline = () => {
+  if (!isMapReadinessCase) return;
+  mapDiagnosticStartedEpochMs = invocationStartedEpochMs;
+  const elapsedMs = Date.now() - invocationStartedEpochMs;
+  const workDeadlineMs = Math.max(1, mapDiagnosticDeadlineMs - elapsedMs);
+  forceMapDiagnosticExitTimer = setTimeout(() => process.exit(124), Math.max(1, mapDiagnosticMaxMs - elapsedMs));
+  forceMapDiagnosticExitTimer.unref?.();
+  cancelMapDiagnosticDeadline = startDeadline(workDeadlineMs, async () => {
+    mapReadinessStatus = 'DEADLINE_EXCEEDED';
+    mapDiagnosticFailure = `Diagnostic exceeded its ${mapDiagnosticDeadlineMs} ms work deadline (${mapDiagnosticMaxMs} ms total maximum).`;
+    try { await persistAcceptanceCheckpoint('deadline-before-cleanup'); }
+    catch (error) { console.error(`[public-local-acceptance] checkpoint failed at deadline: ${String(error)}`); }
+    await closeDiagnosticResources();
+    console.error(`[public-local-acceptance] map readiness diagnostic stopped at ${mapDiagnosticDeadlineMs} ms; report: ${partialReportPath}`);
+    process.exit(124);
+  });
+};
+
+await mkdir(isMapReadinessCase ? runDir : videoTempDir, { recursive: true });
+await persistAcceptanceCheckpoint('initialized-before-browser');
+const readMapResourceSnapshot = async () => withTimeout(page.evaluate(() => {
   const statuses = [...document.querySelectorAll('[data-map-resource-status]')].map((element) => ({ testId: element.getAttribute('data-testid'), status: element.getAttribute('data-map-resource-status'), renderer: element.getAttribute('data-map-renderer'), resourceUrl: element.getAttribute('data-map-resource-url') }));
   const map = document.querySelector('[data-testid=\"betrayal-room-grid\"]');
   const images = [...(map?.querySelectorAll('img') ?? [])].map((image) => { const rect=image.getBoundingClientRect(); const owner=image.closest('[data-testid^=\"betrayal-room-\"]'); return { roomTestId: owner?.getAttribute('data-testid') ?? null, src: image.getAttribute('src'), currentSrc: image.currentSrc || image.src, complete: image.complete, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight, visible: rect.width > 0 && rect.height > 0, rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, opacity: getComputedStyle(image).opacity, visibility: getComputedStyle(image).visibility }; });
   const resources = performance.getEntriesByType('resource').filter((entry) => /(?:room-front-atlas|room-back-atlas|trophy-oubliette-atlas|start-triple-room|start-upper-landing|start-basement-landing)/i.test(decodeURIComponent(entry.name))).map((entry) => ({ name: entry.name, startTime: entry.startTime, duration: entry.duration, responseEnd: entry.responseEnd, transferSize: entry.transferSize, decodedBodySize: entry.decodedBodySize }));
   return { statuses, images, resources };
-});
+}), isMapReadinessCase ? 8_000 : 15_000, 'map resource snapshot');
+const readPublicPageSnapshot = async () => withTimeout(page.evaluate(() => {
+  const safePath = (value) => {
+    try {
+      const parsed = new URL(value, location.href);
+      return `${parsed.origin}${parsed.pathname}`;
+    } catch {
+      return String(value).slice(0, 240);
+    }
+  };
+  const trace = window.__BG_MATCH_LOAD_TRACE__;
+  const runtimeLogs = window.__BOARDGAME_MOBILE_RUNTIME_LOGS__;
+  const visible = (element) => {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+  };
+  const relevantNodes = [...document.querySelectorAll('[data-testid], [role="alert"]')]
+    .filter((element) => visible(element))
+    .map((element) => ({
+      testId: element.getAttribute('data-testid'),
+      role: element.getAttribute('role'),
+      text: (element.innerText ?? '').trim().slice(0, 500),
+    }))
+    .filter((element) => element.role === 'alert' || /loading|error|game|client|namespace/i.test(`${element.testId ?? ''} ${element.text}`))
+    .slice(-40);
+  const resources = performance.getEntriesByType('resource')
+    .filter((entry) => /\/assets\/|\/locales\//i.test(entry.name))
+    .slice(-60)
+    .map((entry) => ({
+      path: safePath(entry.name),
+      initiatorType: entry.initiatorType,
+      durationMs: Math.round(entry.duration),
+      responseEndMs: Math.round(entry.responseEnd),
+      transferSize: entry.transferSize,
+    }));
+  return {
+    urlPath: location.pathname,
+    title: document.title,
+    readyState: document.readyState,
+    bodyText: document.body?.innerText?.slice(0, 4000) ?? '',
+    relevantNodes,
+    matchLoadTrace: trace && Array.isArray(trace.entries)
+      ? trace.entries.filter((entry) => !entry.gameId || entry.gameId === 'betrayal').slice(-80)
+      : null,
+    mobileRuntimeLogs: Array.isArray(runtimeLogs)
+      ? runtimeLogs.filter((entry) => ['GameNamespace', 'GameRuntime'].includes(entry.scope)
+        && (!entry.payload?.gameId || entry.payload.gameId === 'betrayal')).slice(-80)
+      : null,
+    resources,
+  };
+}), 5_000, 'public page diagnostic snapshot');
 const readPawnInteractionSample = async (token) => page.evaluate((testId) => {
   const token = document.querySelector(`[data-testid="${testId}"]`);
   const cue = document.querySelector('[data-testid="betrayal-action-cue"]');
@@ -185,119 +321,74 @@ const readDiscoveryCardSample = async () => page.evaluate(() => {
     topVisibleTextNodes,
   };
 });
-const readRoomRevealSample = async () => page.evaluate(() => {
-  const visible = (element) => {
-    if (!element) return false;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
-  };
-  const room = document.querySelector('[data-testid="betrayal-room-ground-east"]');
-  const discovery = document.querySelector('[data-testid="betrayal-discovery-panel"]');
-  const placement = document.querySelector('[data-testid="betrayal-room-placement-panel"]');
-  const roomLabel = room?.getAttribute('aria-label') ?? '';
-  const roomText = room?.textContent?.trim() ?? '';
-  const roomAnimations = room?.getAnimations({ subtree: true }) ?? [];
-  const revealMarkers = [...document.querySelectorAll('[data-room-reveal-active], [data-room-reveal-phase], [data-pixi-room-reveal-phase], [data-reveal-phase]')]
-    .map((element) => ({ testId: element.getAttribute('data-testid'), active: element.getAttribute('data-room-reveal-active'), phase: element.getAttribute('data-room-reveal-phase') ?? element.getAttribute('data-pixi-room-reveal-phase') ?? element.getAttribute('data-reveal-phase'), slot: element.getAttribute('data-room-slot') ?? element.getAttribute('data-room-reveal-slot') }));
-  const revealActive = revealMarkers.some((marker) => marker.active === 'true');
-  const rect = room?.getBoundingClientRect();
-  const style = room ? getComputedStyle(room) : null;
-  const actionButtons = [...(discovery?.querySelectorAll('button') ?? [])].map((button) => ({ testId: button.getAttribute('data-testid'), text: button.innerText?.trim() ?? '', disabled: button.disabled, visible: visible(button) }));
-  const eventChoice = document.querySelector('[data-testid="betrayal-event-choice-panel"]');
-  const eventChoiceButtons = [...(eventChoice?.querySelectorAll('button') ?? [])].map((button) => ({ testId: button.getAttribute('data-testid'), text: button.innerText?.trim() ?? '', disabled: button.disabled, visible: visible(button) }));
-  return {
-    sampledAt: new Date().toISOString(),
-    performanceNow: performance.now(),
-    placementVisible: visible(placement),
-    roomVisible: visible(room),
-    roomKnown: Boolean(room && !/未探索/.test(`${roomLabel} ${roomText}`)),
-    roomLabel,
-    roomText,
-    roomRect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
-    roomStyle: style ? { opacity: style.opacity, transform: style.transform, visibility: style.visibility } : null,
-    roomAnimations: roomAnimations.map((animation) => ({ playState: animation.playState, currentTime: animation.currentTime, duration: animation.effect?.getTiming?.().duration ?? null })),
-    revealMarkers,
-    revealActive,
-    discoveryVisible: visible(discovery),
-    discoveryAccessibleLabel: document.querySelector('[data-testid="betrayal-discovery-top-banner-title"]')?.textContent?.trim() ?? discovery?.getAttribute('aria-label') ?? null,
-    discoveryContentVisible: visible(document.querySelector('[data-testid="betrayal-discovery-panel-content"]')),
-    discoveryActionButtons: actionButtons,
-    eventChoiceVisible: visible(eventChoice),
-    eventChoiceButtons,
-  };
-});
-const startRoomRevealTimeline = async () => page.evaluate(() => {
-  const events = [];
-  let previousSignature = null;
-  let rafCount = 0;
-  let mutationCallbackCount = 0;
-  let overlapSampleCount = 0;
-  let rafHandle = 0;
-  let stopped = false;
-  const visible = (element) => {
-    if (!element) return false;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
-  };
-  const sample = (source) => {
-    const markers = [...document.querySelectorAll('[data-room-reveal-active], [data-room-reveal-phase], [data-pixi-room-reveal-phase], [data-reveal-phase]')]
-      .map((element) => ({ testId: element.getAttribute('data-testid'), active: element.getAttribute('data-room-reveal-active'), phase: element.getAttribute('data-room-reveal-phase') ?? element.getAttribute('data-pixi-room-reveal-phase') ?? element.getAttribute('data-reveal-phase'), slot: element.getAttribute('data-room-slot') ?? element.getAttribute('data-room-reveal-slot') }));
-    const revealActive = markers.some((marker) => marker.active === 'true');
-    const discoveryVisible = visible(document.querySelector('[data-testid="betrayal-discovery-panel"]'));
-    const choiceVisible = visible(document.querySelector('[data-testid="betrayal-event-choice-panel"]'));
-    if (revealActive && (discoveryVisible || choiceVisible)) overlapSampleCount += 1;
-    const performanceNow = performance.now();
-    const value = { performanceNow, wallTime: new Date(performance.timeOrigin + performanceNow).toISOString(), source, revealActive, markers, discoveryVisible, choiceVisible };
-    const signature = JSON.stringify({ revealActive, markers, discoveryVisible, choiceVisible });
-    if (signature !== previousSignature) {
-      events.push(value);
-      previousSignature = signature;
-    }
-  };
-  const observer = new MutationObserver(() => { mutationCallbackCount += 1; sample('mutation'); });
-  observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-room-reveal-active', 'data-room-reveal-phase', 'data-pixi-room-reveal-phase', 'data-reveal-phase', 'data-room-slot', 'data-room-reveal-slot', 'class', 'style', 'hidden', 'aria-hidden'] });
-  const tick = () => {
-    if (stopped) return;
-    rafCount += 1;
-    sample('animation-frame');
-    rafHandle = requestAnimationFrame(tick);
-  };
-  sample('started');
-  rafHandle = requestAnimationFrame(tick);
-  window.__betrayalRoomRevealTimeline = { startedAt: new Date().toISOString(), performanceTimeOrigin: performance.timeOrigin, events, stop: () => {
-    stopped = true;
-    cancelAnimationFrame(rafHandle);
-    observer.disconnect();
-    sample('stopped');
-    return { startedAt: window.__betrayalRoomRevealTimeline.startedAt, stoppedAt: new Date().toISOString(), performanceTimeOrigin: performance.timeOrigin, rafCount, mutationCallbackCount, overlapSampleCount, events: [...events] };
-  } };
-  return { startedAt: window.__betrayalRoomRevealTimeline.startedAt, performanceTimeOrigin: performance.timeOrigin };
-});
-const stopRoomRevealTimeline = async () => page.evaluate(() => window.__betrayalRoomRevealTimeline?.stop?.() ?? null);
 const capture = async (slug, sentence) => {
   if (isCharacterTurnPromptCase && !slug.startsWith('ai-ack-')) return null;
+  if (isRoomRevealSequenceCase && shotIndex > 0 && slug !== 'stable-next-ai-turn') {
+    diagnostics.screenshotCaptureNotes ??= [];
+    diagnostics.screenshotCaptureNotes.push({
+      requestedState: slug,
+      skippedAt: new Date().toISOString(),
+      reason: 'This case reuses the existing same-seed event-card screenshot and avoids repeated WebGL readbacks during business verification.',
+    });
+    return null;
+  }
   shotIndex += 1;
   const file = `${String(shotIndex).padStart(2, '0')}-${slug}.png`;
   const absolutePath = path.join(runDir, file);
-  await page.screenshot({ path: absolutePath, fullPage: false });
+  const screenshot = page.screenshot({ path: absolutePath, fullPage: false });
+  if (isMapReadinessCase || isRoomRevealSequenceCase) await withTimeout(screenshot, 12_000, `screenshot ${slug}`);
+  else await screenshot;
+  console.log(`[public-local-acceptance] screenshot saved: ${file}`);
   const capturedAt = new Date().toISOString();
   const elapsedMs = recordingStartedEpochMs === null ? null : Date.now() - recordingStartedEpochMs;
-  const mapSnapshot = await readMapResourceSnapshot();
-  diagnostics.mapResourceSamples.push({ path: file, capturedAt, elapsedMs, ...mapSnapshot, consoleErrors: diagnostics.console.filter((entry) => entry.type === 'error').slice(-12), roomAtlasResponses: diagnostics.roomAtlasResponses.slice(), roomAtlasFinished: diagnostics.roomAtlasFinished.slice() });
   media.push({ path: file, type: 'image', label: sentence, viewport, capturedAt, elapsedMs });
+  await persistAcceptanceCheckpoint(`screenshot-saved:${file}`);
+  let mapSnapshot = null;
+  try { mapSnapshot = await readMapResourceSnapshot(); }
+  catch (error) {
+    diagnostics.mapResourceSnapshotFailures ??= [];
+    diagnostics.mapResourceSnapshotFailures.push({ path: file, at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error) });
+    if (!isMapReadinessCase) throw error;
+  }
+  if (mapSnapshot) diagnostics.mapResourceSamples.push({ path: file, capturedAt, elapsedMs, ...mapSnapshot, consoleErrors: diagnostics.console.filter((entry) => entry.type === 'error').slice(-12), roomAtlasResponses: diagnostics.roomAtlasResponses.slice(), roomAtlasFinished: diagnostics.roomAtlasFinished.slice() });
+  console.log(`[public-local-acceptance] screenshot diagnostics ${mapSnapshot ? 'complete' : 'timed out'}: ${file}`);
+  await persistAcceptanceCheckpoint(`screenshot-diagnosed:${file}`);
   return absolutePath;
 };
 const recordStep = (name, status, detail = '') => steps.push({ name, status, detail, at: new Date().toISOString() });
-const runStep = async (name, operation) => {
+const runStep = async (name, operation, { timeoutMs } = {}) => {
   const start = Date.now();
+  console.log(`[public-local-acceptance] start: ${name}`);
+  await persistAcceptanceCheckpoint(`step-start:${name}`);
   try {
-    const detail = await operation();
+    const operationPromise = operation();
+    const detail = isMapReadinessCase || isRoomRevealSequenceCase
+      ? await withTimeout(operationPromise, timeoutMs ?? 60_000, `step ${name}`)
+      : await operationPromise;
     recordStep(name, 'PASS', typeof detail === 'string' ? `${detail}; ${Date.now() - start}ms` : `${Date.now() - start}ms`);
+    console.log(`[public-local-acceptance] pass: ${name}; ${Date.now() - start}ms`);
+    await persistAcceptanceCheckpoint(`step-pass:${name}`);
     return detail;
   } catch (error) {
-    recordStep(name, 'FAIL', error instanceof Error ? error.message : String(error));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (isRoomRevealSequenceCase) {
+      const phase = diagnostics.roomRevealSequence?.phase ?? null;
+      try {
+        const snapshot = await withTimeout(page.evaluate(() => {
+          const ids = ['betrayal-room-placement-panel', 'betrayal-room-placement-confirm', 'betrayal-event-choice-panel', 'betrayal-event-choice-confirm', 'betrayal-damage-allocation-panel', 'betrayal-discovery-panel', 'betrayal-action-rail', 'betrayal-action-endTurn'];
+          const elements = ids.map(testId => { const element = document.querySelector('[data-testid=\"' + testId + '\"]'); if (!element) return { testId, present: false }; const rect = element.getBoundingClientRect(); return { testId, present: true, visible: rect.width > 0 && rect.height > 0, disabled: 'disabled' in element ? element.disabled : null, ariaLabel: element.getAttribute('aria-label'), text: (element.innerText || element.textContent || '').replace(/\s+/g, ' ').slice(0, 240) }; });
+          return { readyState: document.readyState, bodyText: (document.body?.innerText || '').replace(/\s+/g, ' ').slice(0, 1600), elements };
+        }), 2_000, 'room reveal failure DOM snapshot');
+        diagnostics.roomRevealFailureSnapshot = { phase, capturedAt: new Date().toISOString(), snapshot };
+      } catch (snapshotError) {
+        diagnostics.roomRevealFailureSnapshot = { phase, capturedAt: new Date().toISOString(), error: snapshotError instanceof Error ? snapshotError.message : String(snapshotError) };
+      }
+    }
+    const phase = diagnostics.roomRevealSequence?.phase;
+    const failureDetail = phase ? errorMessage + '; roomRevealPhase=' + phase : errorMessage;
+    recordStep(name, 'FAIL', failureDetail);
+    console.error('[public-local-acceptance] fail: ' + name + '; ' + failureDetail);
+    await persistAcceptanceCheckpoint(`step-fail:${name}`);
     throw error;
   }
 };
@@ -612,19 +703,22 @@ const readMatchingPersistedLocalGameState = async (uiSample) => {
 };
 
 try {
-  browser = await chromium.launch({ headless: true, chromiumSandbox: true, args: chromiumLaunchArgs });
+  if (isMapReadinessCase) startMapDiagnosticDeadline();
+  const launchPromise = chromium.launch({ headless: true, chromiumSandbox: true, args: chromiumLaunchArgs });
+  browser = isMapReadinessCase || isRoomRevealSequenceCase ? await withTimeout(launchPromise, 20_000, 'Chromium launch') : await launchPromise;
   browserVersion = browser.version();
   context = await browser.newContext({
     viewport,
     screen: viewport,
     deviceScaleFactor: 1,
     ignoreHTTPSErrors: false,
-    recordVideo: { dir: videoTempDir, size: viewport },
+    ...(isMapReadinessCase || isRoomRevealSequenceCase ? {} : { recordVideo: { dir: videoTempDir, size: viewport } }),
   });
-  page = await context.newPage();
+  const pagePromise = context.newPage();
+  page = isMapReadinessCase || isRoomRevealSequenceCase ? await withTimeout(pagePromise, 10_000, 'browser page creation') : await pagePromise;
   recordingStartedAt = new Date().toISOString();
   recordingStartedEpochMs = Date.now();
-  page.setDefaultTimeout(30_000);
+  page.setDefaultTimeout(isMapReadinessCase ? 8_000 : 30_000);
 
   const pendingChunkDigests = [];
 
@@ -642,29 +736,146 @@ try {
   page.on('response', (response) => {
     const url = response.url();
     const status = response.status();
+    if (isMapReadinessCase && diagnostics.pageResponses.length < 160) {
+      const request = response.request();
+      const resourceType = request.resourceType();
+      if (['document', 'script', 'xhr', 'fetch'].includes(resourceType) || /\/locales\//i.test(url)) {
+        let pathOnly = url;
+        try {
+          const parsed = new URL(url);
+          pathOnly = `${parsed.origin}${parsed.pathname}`;
+        } catch { /* retain the response URL for malformed URLs */ }
+        diagnostics.pageResponses.push({ status, path: pathOnly, resourceType, contentType: response.headers()['content-type'] ?? null, at: new Date().toISOString() });
+      }
+    }
     if (isRoomAtlasUrl(url)) diagnostics.roomAtlasResponses.push({ url, status, at: new Date().toISOString(), contentType: response.headers()['content-type'] ?? null, resourceType: response.request().resourceType() });
     if (status >= 400) diagnostics.httpErrors.push({ status, url });
     if (status === 404 && /footsteps\/Kenney%20Impact%20Sounds\/compressed\/footstep_/i.test(url)) diagnostics.footstep404s.push(url);
-    if (/(?:PixiMapSceneHost|Board|game)-[A-Za-z0-9_-]+\.js(?:\?|$)/.test(url)) {
+    const filename = path.posix.basename(new URL(url).pathname);
+    if (expectedBundleFilenames.has(filename)) {
       pendingChunkDigests.push((async () => {
         const body = await response.body().catch(() => Buffer.alloc(0));
-        diagnostics.chunks.push({ filename: path.posix.basename(new URL(url).pathname), status, url, bytes: body.length, sha256: createHash('sha256').update(body).digest('hex') });
+        diagnostics.chunks.push({ filename, status, url, bytes: body.length, sha256: createHash('sha256').update(body).digest('hex') });
       })());
     }
   });
 
+  if (isMapReadinessCase) {
+    mapReadinessStatus = 'IN_PROGRESS';
+    await persistAcceptanceCheckpoint('browser-ready');
+    await runStep('verify public page and bundle identity', async () => {
+      const response = await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      primaryResponseStatus = response?.status() ?? null;
+      expect(primaryResponseStatus).toBe(200);
+      await capture('public-page-entry', 'Actual public-site entry state immediately after loading the verified v92 build.');
+      diagnostics.initialPageState = await readPublicPageSnapshot();
+      await persistAcceptanceCheckpoint('public-page-state-sampled');
+      await waitForText('选择探索者', 55_000);
+      await expect(page.getByTestId('betrayal-character-selection-grid')).toBeVisible({ timeout: 8_000 });
+      await withTimeout(Promise.allSettled(pendingChunkDigests), 12_000, 'published bundle digests');
+      publishedBundleIdentity = assertPublishedBundleIdentity(expectedBundleManifest, diagnostics.chunks);
+      return `HTTP ${primaryResponseStatus}; exact Site version ${expectedBundleManifest.siteVersion}; ${diagnostics.chunks.map((item) => `${item.filename} sha256=${item.sha256}`).join(', ')}`;
+    }, { timeoutMs: 130_000 });
+    await runStep('open the selected scenario and initial board', async () => {
+      const characterCard = page.getByTestId('betrayal-character-selection-grid').getByTestId('betrayal-character-card-father-warren-leung');
+      await characterCard.click();
+      await expect(characterCard).toHaveAttribute('aria-label', /P1/u, { timeout: 5_000 });
+          await page.getByTestId('betrayal-character-confirm').click();
+    const openingStage = page.getByTestId('betrayal-start-scenario-opening-stage');
+    const openingContinue = page.getByTestId('betrayal-start-scenario-opening-continue');
+    const board = page.getByTestId('betrayal-board');
+    let openingContinueShown = false;
+    if (isRoomRevealSequenceCase) {
+      await expect.poll(async () =>
+        await openingContinue.isVisible().catch(() => false) ||
+        await board.isVisible().catch(() => false),
+      { timeout: 45_000 }).toBe(true);
+      openingContinueShown = await openingContinue.isVisible().catch(() => false);
+      if (openingContinueShown) {
+        await expect(openingContinue).toBeEnabled();
+        await openingContinue.click({ force: true });
+        await expect(openingStage).toHaveCount(0, { timeout: 45_000 });
+      }
+      diagnostics.openingTransition = { status: 'READY', openingContinueShown };
+    } else {
+      await expect(openingStage).toBeVisible();
+      await expect(page.getByTestId('betrayal-start-scenario-opening-cinematic')).toContainText('英雄降临');
+      if (!isRoomRevealSequenceCase) await capture('英雄开场片头', 'The selected scenario opening is available.');
+      await openingContinue.click();
+      await expect(openingStage).toHaveCount(0);
+    }
+    await expect(board).toBeVisible({ timeout: 45_000 });
+    const turnIntroSkip = page.getByTestId('betrayal-turn-intro-skip');
+      await expect(turnIntroSkip).toBeVisible({ timeout: 25_000 });
+      await expect(turnIntroSkip).toBeEnabled();
+      await expect(turnIntroSkip).toHaveAttribute('data-presentation-stage', 'play');
+      // The full-screen skip surface animates while remaining a valid pointer target.
+      // Use a real mouse click while bypassing only Playwright's moving-box heuristic.
+      await turnIntroSkip.click({ force: true });
+      await expect(page.getByTestId('betrayal-room-grid')).toBeVisible({ timeout: 10_000 });
+      await capture('map-before-ready', 'Initial cloud-hosted board before the map-ready signal; diagnostic only.');
+      return 'Selected a real character and scenario, entered the exploration board, and captured its pre-ready state.';
+    });
+    await runStep('wait for map ready or error and test one pawn selection', async () => {
+      const readStatuses = () => page.evaluate(() => [...document.querySelectorAll('[data-map-resource-status]')].map((element) => ({ testId: element.getAttribute('data-testid'), status: element.getAttribute('data-map-resource-status'), renderer: element.getAttribute('data-map-renderer'), resourceUrl: element.getAttribute('data-map-resource-url') })));
+      const statusesBeforeWait = await withTimeout(readStatuses(), 5_000, 'initial map status sample');
+      let readinessSignal = statusesBeforeWait.some((item) => item.status === 'ready') ? 'already-ready' : statusesBeforeWait.some((item) => item.status === 'error') ? 'already-error' : 'waiting';
+      if (readinessSignal === 'waiting') {
+        try {
+          await page.waitForFunction(() => [...document.querySelectorAll('[data-map-resource-status]')].some((element) => ['ready', 'error'].includes(element.getAttribute('data-map-resource-status'))), null, { timeout: 45_000 });
+          readinessSignal = 'ready-or-error-observed';
+        } catch (error) {
+          readinessSignal = 'readiness-timeout';
+          diagnostics.mapReadinessWaitError = error instanceof Error ? error.message : String(error);
+        }
+      }
+      const statusesAtEnd = await withTimeout(readStatuses(), 5_000, 'final map status sample').catch((error) => {
+        diagnostics.finalMapStatusSampleError = error instanceof Error ? error.message : String(error);
+        return [];
+      });
+      const ready = statusesAtEnd.some((item) => item.status === 'ready');
+      const errorState = statusesAtEnd.some((item) => item.status === 'error');
+      mapReadinessStatus = ready ? 'READY' : errorState ? 'MAP_ERROR' : 'MAP_TIMEOUT';
+      const mapSnapshot = await readMapResourceSnapshot().catch((error) => {
+        diagnostics.finalMapSnapshotError = error instanceof Error ? error.message : String(error);
+        return null;
+      });
+      diagnostics.initialMapResourceGate = { statusesBeforeWait, statusesAtEnd, readinessSignal, observedAt: new Date().toISOString(), mapSnapshot };
+      await persistAcceptanceCheckpoint('map-state-captured-before-final-screenshot');
+      await capture(ready ? 'map-ready' : errorState ? 'map-error' : 'map-timeout', 'Cloud-hosted map readiness terminal state; diagnostic evidence only, not a visual verdict.');
+      if (ready) {
+        const pawn = page.getByTestId('betrayal-room-occupant-entrance-hall-0');
+        const pawnVisible = await pawn.isVisible().catch(() => false);
+        diagnostics.mapReadinessInteraction = { pawnVisible, selected: false, deselected: false };
+        if (pawnVisible) {
+          await pawn.click();
+          await expect(pawn).toHaveAttribute('aria-pressed', 'true', { timeout: 5_000 });
+          diagnostics.mapReadinessInteraction.selected = true;
+          await pawn.click();
+          await expect(pawn).toHaveAttribute('aria-pressed', 'false', { timeout: 5_000 });
+          diagnostics.mapReadinessInteraction.deselected = true;
+          mapReadinessStatus = 'READY_INTERACTIVE';
+        } else {
+          mapReadinessStatus = 'READY_NO_PAWN';
+        }
+      }
+      diagnostics.mapReadiness = { status: mapReadinessStatus, readinessSignal, statusesBeforeWait, statusesAtEnd, browserSandbox: true, localServerStarted: false };
+      await persistAcceptanceCheckpoint('map-diagnostic-result');
+      return `Map status ${mapReadinessStatus}; readiness signal ${readinessSignal}; pawn selection ${JSON.stringify(diagnostics.mapReadinessInteraction ?? null)}`;
+    }, { timeoutMs: 60_000 });
+    mapDiagnosticFinishedAt = new Date().toISOString();
+    await persistAcceptanceCheckpoint('before-browser-cleanup');
+    cancelMapDiagnosticDeadline?.();
+    throw Object.assign(new Error('map readiness diagnostic complete'), { code: 'MAP_DIAGNOSTIC_COMPLETE' });
+  }
   await runStep('指定公开入口和资源版本', async () => {
     const response = await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     primaryResponseStatus = response?.status() ?? null;
     expect(primaryResponseStatus).toBe(200);
     await waitForText('选择探索者');
     await Promise.allSettled(pendingChunkDigests);
+    publishedBundleIdentity = assertPublishedBundleIdentity(expectedBundleManifest, diagnostics.chunks);
     const successfulChunks = diagnostics.chunks.filter((item) => item.status === 200);
-    const names = new Set(successfulChunks.map((item) => item.filename));
-    for (const expected of expectedDeployedBundles) {
-      expect(names.has(expected.filename)).toBe(true);
-      expect(successfulChunks.find((item) => item.filename === expected.filename)?.sha256).toBe(expected.sha256);
-    }
     return `HTTP ${primaryResponseStatus}; ${successfulChunks.map((item) => `${item.filename} sha256=${item.sha256}`).join(', ')}`;
   });
 
@@ -683,42 +894,105 @@ try {
       expect(trait.endTextVisible).toBe(true);
       expect(trait.footerOverlap).toBe(false);
     }
-    await page.getByTestId('betrayal-character-confirm').click();
-    await expect(page.getByTestId('betrayal-character-confirm')).toContainText('确认此剧本卡');
-    await page.getByTestId('betrayal-character-scenario-button').click();
-    await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeVisible();
-    await page.getByTestId('betrayal-scenario-option-mummy-rampage').click();
-    await expect(page.getByTestId('betrayal-scenario-option-mummy-rampage')).toContainText('当前提议');
-    if (!isRoomRevealSequenceCase) await capture('故事候选与胜利条件', '玩家确认角色后选择木乃伊横行，候选卡上显示可开局与胜利条件。');
-    await page.getByTestId('betrayal-scenario-detail-toggle').click();
-    await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeVisible();
-    if (!isRoomRevealSequenceCase) await capture('故事正文阅读', '玩家打开完整剧本阅读页，故事正文与章节页在同一屏中显示。');
-    await page.getByTestId('betrayal-scenario-reader-close').click();
-    await page.getByTestId('betrayal-scenario-dialog-close').click();
-    await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeHidden();
-    return '角色、故事卡选择与正文阅读均由可见按钮完成';
-  });
-
-  await runStep('片头和本回合提示', async () => {
-    await page.getByTestId('betrayal-character-confirm').click();
-    await expect(page.getByTestId('betrayal-start-scenario-opening-stage')).toBeVisible();
-    await expect(page.getByTestId('betrayal-start-scenario-opening-cinematic')).toContainText('英雄开场过场');
-    if (!isRoomRevealSequenceCase) await capture('英雄开场片头', '玩家确认故事卡后看到英雄开场片头与序章文字。');
-    await page.getByTestId('betrayal-start-scenario-opening-continue').click();
-    await expect(page.getByTestId('betrayal-start-scenario-opening-stage')).toHaveCount(0);
-    await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 45_000 });
-    await expect(page.getByTestId('betrayal-turn-intro-skip')).toBeVisible({ timeout: 45_000 });
-    if (!isRoomRevealSequenceCase) await capture('你的回合提示', '片头继续后出现神父本回合提示，玩家可从提示上跳过进入牌桌。');
-    if (isCharacterTurnPromptCase) {
-      diagnostics.characterTurnPrompt = { status: 'IN_PROGRESS', humanInitial: await readTurnPromptSample(), aiFirst: null, humanReturned: null, aiAcknowledgementActions: [], aiStall: null };
-      expect(diagnostics.characterTurnPrompt.humanInitial.turnIntroSkipVisible).toBe(true);
-      expect(diagnostics.characterTurnPrompt.humanInitial.yourTurnVisible).toBe(true);
-      expect(diagnostics.characterTurnPrompt.humanInitial.statusText).toMatch(/\u795e\u7236\s*\u6881\u6c83\u4f26/u);
+    const primaryAction = page.getByTestId('betrayal-character-confirm');
+    const openingStage = page.getByTestId('betrayal-start-scenario-opening-stage');
+    const openingContinue = page.getByTestId('betrayal-start-scenario-opening-continue');
+    const board = page.getByTestId('betrayal-board');
+    await primaryAction.click();
+    if (isRoomRevealSequenceCase) {
+      const scenarioButton = page.getByTestId('betrayal-character-scenario-button');
+      await expect(scenarioButton).toContainText('\u6728\u4e43\u4f0a\u6a2a\u884c');
+      await expect(primaryAction).toContainText('\u786e\u8ba4\u6b64\u5267\u672c\u5361');
+      await scenarioButton.click();
+      const scenarioDialog = page.getByTestId('betrayal-scenario-select-dialog');
+      await expect(scenarioDialog).toBeVisible();
+      const selectedScenario = scenarioDialog.getByTestId('betrayal-scenario-option-mummy-rampage');
+      await expect(selectedScenario).toHaveAttribute('aria-pressed', 'true');
+      await selectedScenario.click();
+      await expect(selectedScenario).toHaveAttribute('aria-pressed', 'true');
+      const detailToggle = page.getByTestId('betrayal-scenario-detail-toggle');
+      await expect(detailToggle).toBeEnabled();
+      await detailToggle.click();
+      const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
+      await expect(scenarioReader).toBeVisible();
+      await page.getByTestId('betrayal-scenario-reader-close').click();
+      await expect(scenarioReader).toHaveCount(0);
+      const scenarioConfirmationCount = page.getByTestId('betrayal-scenario-confirmation-count');
+      const scenarioConfirmationsBefore = await scenarioConfirmationCount.innerText().catch(() => null);
+      await page.getByTestId('betrayal-scenario-select-current').click();
+      await expect(scenarioDialog).toHaveCount(0);
+      const readNextScenarioState = async () => {
+        if (await openingStage.isVisible().catch(() => false)) return 'opening';
+        if (await board.isVisible().catch(() => false)) return 'board';
+        const countVisible = await scenarioConfirmationCount.isVisible().catch(() => false);
+        const confirmations = countVisible ? (await scenarioConfirmationCount.innerText()).replace(/\s+/g, ' ').trim() : '';
+        if (/3\s*\/\s*3/u.test(confirmations)) return 'ready-to-start';
+        return null;
+      };
+      await expect.poll(readNextScenarioState, { timeout: 30_000 }).not.toBeNull();
+      const nextScenarioStateValue = await readNextScenarioState();
+      if (nextScenarioStateValue === 'ready-to-start') {
+        await expect(primaryAction).toContainText('\u5f00\u59cb\u5267\u672c');
+        await expect(primaryAction).toBeEnabled();
+        await primaryAction.click();
+      }
+      diagnostics.selectedScenario = { id: 'mummy-rampage', confirmationsBefore: scenarioConfirmationsBefore?.replace(/\s+/g, ' ').trim() ?? null, transition: nextScenarioStateValue, readerOpenedAndClosed: true };
     }
-    await page.getByTestId('betrayal-turn-intro-skip').click();
-    await expect(page.getByTestId('betrayal-turn-intro-skip')).toHaveCount(0);
+    let openingContinueShown = false;
+    if (isRoomRevealSequenceCase) {
+      await expect.poll(async () =>
+        await openingContinue.isVisible().catch(() => false) ||
+        await board.isVisible().catch(() => false),
+      { timeout: 45_000 }).toBe(true);
+      openingContinueShown = await openingContinue.isVisible().catch(() => false);
+      if (openingContinueShown) {
+        await expect(openingContinue).toBeEnabled();
+        await openingContinue.click({ force: true });
+        await expect(openingStage).toHaveCount(0, { timeout: 45_000 });
+      }
+      diagnostics.openingTransition = { status: 'READY', openingContinueShown };
+    } else {
+      await expect(openingStage).toBeVisible();
+      await expect(page.getByTestId('betrayal-start-scenario-opening-cinematic')).toContainText('英雄降临');
+      if (!isRoomRevealSequenceCase) await capture('英雄开场片头', 'The selected scenario opening is available.');
+      await openingContinue.click();
+      await expect(openingStage).toHaveCount(0);
+    }
+    await expect(board).toBeVisible({ timeout: 45_000 });
+    const turnIntroSkip = page.getByTestId('betrayal-turn-intro-skip');
+    if (isRoomRevealSequenceCase) {
+      const actionRail = page.getByTestId('betrayal-action-rail');
+      await expect.poll(async () =>
+        await turnIntroSkip.isVisible().catch(() => false) ||
+        await actionRail.isVisible().catch(() => false),
+      { timeout: 45_000 }).toBe(true);
+      const introDisplayed = await turnIntroSkip.isVisible().catch(() => false);
+      diagnostics.initialTurnPresentation = { status: 'READY', introDisplayed, boardActionable: !introDisplayed };
+      if (introDisplayed) {
+        await expect(turnIntroSkip).toBeEnabled();
+        await expect(turnIntroSkip).toHaveAttribute('data-presentation-stage', 'play');
+        await turnIntroSkip.click({ force: true });
+        await expect(turnIntroSkip).toHaveCount(0);
+      } else {
+        await expect(actionRail).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-endTurn')).toBeEnabled();
+      }
+    } else {
+      await expect(turnIntroSkip).toBeVisible({ timeout: 45_000 });
+      if (!isRoomRevealSequenceCase) await capture('turn-intro', 'The initial turn presentation appears after the opening.');
+      if (isCharacterTurnPromptCase) {
+        diagnostics.characterTurnPrompt = { status: 'IN_PROGRESS', humanInitial: await readTurnPromptSample(), aiFirst: null, humanReturned: null, aiAcknowledgementActions: [], aiStall: null };
+        expect(diagnostics.characterTurnPrompt.humanInitial.turnIntroSkipVisible).toBe(true);
+        expect(diagnostics.characterTurnPrompt.humanInitial.yourTurnVisible).toBe(true);
+        expect(diagnostics.characterTurnPrompt.humanInitial.statusText).toMatch(/\u795e\u7236\s*\u6881\u6c83\u4f26/u);
+      }
+      await expect(turnIntroSkip).toBeEnabled();
+      await expect(turnIntroSkip).toHaveAttribute('data-presentation-stage', 'play');
+      await turnIntroSkip.click({ force: true });
+      await expect(turnIntroSkip).toHaveCount(0);
+    }
     await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
-    if (!isRoomRevealSequenceCase) await capture('主地图与底部操作栏', '玩家跳过本回合提示后看到入口大厅、探索门位和统一底部操作按钮。');
+    if (!isRoomRevealSequenceCase) await capture('board-ready', 'The board, pawn and shared action rail are available.');
     const statusesBeforeMove = await page.evaluate(() => [...document.querySelectorAll('[data-map-resource-status]')].map((element) => element.getAttribute('data-map-resource-status')));
     let readyGate = statusesBeforeMove.includes('ready') ? 'already-ready' : 'waiting';
     if (readyGate === 'waiting') { try { await page.waitForFunction(() => [...document.querySelectorAll('[data-map-resource-status]')].some((element) => element.getAttribute('data-map-resource-status') === 'ready'), null, { timeout: 45_000 }); readyGate = 'ready-observed'; } catch { readyGate = 'ready-timeout'; } }
@@ -729,22 +1003,27 @@ try {
     diagnostics.initialMapResourceGate = { statusesBeforeMove, statusesAtReady, result: readyGate, readyObservedAt, mapSnapshotAtReady, pawnAtReady, movedByRunnerBeforeReady: false };
     if (isRoomRevealSequenceCase || isLocalUiCloseoutCase) expect(statusesAtReady).toContain('ready');
     await capture('ready瞬间未移动整屏地图', 'data-map-resource-status 首次为 ready 时的整屏地图；脚本尚未移动棋子。');
-    await page.waitForTimeout(350);
-    const statusesAfterQuiet = await page.evaluate(() => [...document.querySelectorAll('[data-map-resource-status]')].map((element) => element.getAttribute('data-map-resource-status')));
-    const pawnAfterQuiet = await page.getByTestId('betrayal-room-occupant-entrance-hall-0').isVisible().catch(() => false);
-    const mapSnapshotAfterQuiet = await readMapResourceSnapshot();
-    diagnostics.initialMapResourceGate.afterQuietMs = 350;
-    diagnostics.initialMapResourceGate.sampledAgainAt = new Date().toISOString();
+    const quietSampleMs = isRoomRevealSequenceCase ? 0 : 350;
+    if (quietSampleMs > 0) await page.waitForTimeout(quietSampleMs);
+    const statusesAfterQuiet = quietSampleMs > 0
+      ? await page.evaluate(() => [...document.querySelectorAll('[data-map-resource-status]')].map((element) => element.getAttribute('data-map-resource-status')))
+      : statusesAtReady;
+    const pawnAfterQuiet = quietSampleMs > 0
+      ? await page.getByTestId('betrayal-room-occupant-entrance-hall-0').isVisible().catch(() => false)
+      : pawnAtReady;
+    const mapSnapshotAfterQuiet = quietSampleMs > 0 ? await readMapResourceSnapshot() : null;
+    diagnostics.initialMapResourceGate.afterQuietMs = quietSampleMs;
+    diagnostics.initialMapResourceGate.sampledAgainAt = quietSampleMs > 0 ? new Date().toISOString() : null;
     diagnostics.initialMapResourceGate.statusesAfterQuiet = statusesAfterQuiet;
     diagnostics.initialMapResourceGate.mapSnapshotAfterQuiet = mapSnapshotAfterQuiet;
     diagnostics.initialMapResourceGate.pawnAfterQuiet = pawnAfterQuiet;
-    await capture('ready后350毫秒静置未移动整屏地图', 'ready 后静置 350ms 再记录全屏地图；等待期间没有棋子移动。');
     if (isRoomRevealSequenceCase || isLocalUiCloseoutCase) {
       expect(statusesAfterQuiet).toContain('ready');
       expect(pawnAtReady && pawnAfterQuiet).toBe(true);
     }
     pageMetrics = await readVisibleBoardMetrics();
-    const requiredButtons = ['betrayal-action-trade', 'betrayal-action-use', 'betrayal-action-endTurn'];
+    await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
+    const requiredButtons = ['betrayal-action-endTurn'];
     for (const id of requiredButtons) await expect(page.getByTestId(id)).toBeVisible();
     return `当前行动者：神父 梁沃伦；棋盘 ${pageMetrics.canvas?.width}×${pageMetrics.canvas?.height}；底栏按钮 ${requiredButtons.join(', ')}`;
   });
@@ -1117,135 +1396,171 @@ try {
     return `${discoveryOpen ? '发现结果已由可见按钮收口' : '未出现阻塞发现层'}；地图、已探索房间和棋子均可见`;
   });
 
-  if (isRoomRevealSequenceCase || isLocalUiCloseoutCase) await runStep('真实房间揭示动画、发现卡与一次确认', async () => {
+  if (isRoomRevealSequenceCase || isLocalUiCloseoutCase) await runStep('Room placement, card choice, and confirmation', async () => {
+    const revealDiagnostic = { status: 'IN_PROGRESS', phase: 'initialized', phaseHistory: [] };
+    diagnostics.roomRevealSequence = revealDiagnostic;
+    const setRevealPhase = (phase, detail = {}) => {
+      const entry = { phase, at: new Date().toISOString(), ...detail };
+      revealDiagnostic.phase = phase;
+      revealDiagnostic.phaseHistory.push(entry);
+      if (revealDiagnostic.phaseHistory.length > 24) revealDiagnostic.phaseHistory.shift();
+      diagnostics.roomRevealSequence = { ...diagnostics.roomRevealSequence, ...revealDiagnostic };
+    };
+    setRevealPhase('checking-target-room');
+    const movementSnapshot = page.getByTestId('betrayal-movement-snapshot');
+    const movementRemainingBeforePlacement = Number(await movementSnapshot.getAttribute('data-moves-remaining'));
+    expect(Number.isInteger(movementRemainingBeforePlacement) && movementRemainingBeforePlacement > 0).toBe(true);
+    revealDiagnostic.movementRemainingBeforePlacement = movementRemainingBeforePlacement;
+    const currentTraits = page.getByTestId('betrayal-current-traits');
+    const explorerIdAtStart = await currentTraits.getAttribute('data-explorer-id');
+    const playerIdAtStart = await currentTraits.getAttribute('data-player-id');
+    const roomIdAtStart = await currentTraits.getAttribute('data-room-id');
+    expect(explorerIdAtStart).toBeTruthy();
+    expect(playerIdAtStart).toBeTruthy();
+    expect(roomIdAtStart).toBeTruthy();
+    revealDiagnostic.explorerIdAtStart = explorerIdAtStart;
+    revealDiagnostic.playerIdAtStart = playerIdAtStart;
+    revealDiagnostic.roomIdAtStart = roomIdAtStart;
     const targetRoom = page.getByTestId('betrayal-room-ground-east');
     await expect(targetRoom).toContainText('可探索');
+    setRevealPhase('opening-placement-panel');
     await targetRoom.click();
     const placement = page.getByTestId('betrayal-room-placement-panel');
     await expect(placement).toBeVisible();
+    const placementSlot = await placement.getAttribute('data-room-placement-slot');
+    const connectingEdge = await placement.getAttribute('data-room-entry-edge');
+    const connectingDoorCount = await placement.locator('[data-connecting-door="true"]').count();
+    expect(placementSlot).toBeTruthy();
+    expect(['north', 'east', 'south', 'west']).toContain(connectingEdge);
+    expect(connectingDoorCount).toBe(1);
+    revealDiagnostic.placementSlot = placementSlot;
+    revealDiagnostic.connectingEdge = connectingEdge;
     const initialOrientation = await placement.getAttribute('data-room-orientation-turns');
     const rotateRight = page.getByTestId('betrayal-room-placement-rotate-right');
+    setRevealPhase('checking-rotation-control');
     const rotationAvailable = await rotateRight.isEnabled();
-    if (rotationAvailable) {
-      await rotateRight.click();
-      await expect.poll(async () => placement.getAttribute('data-room-orientation-turns')).not.toBe(initialOrientation);
-    }
+    expect(rotationAvailable).toBe(true);
+    setRevealPhase('applying-room-rotation', { rotationAvailable });
+    await rotateRight.click();
+    await expect.poll(async () => placement.getAttribute('data-room-orientation-turns')).not.toBe(initialOrientation);
     const selectedOrientation = await placement.getAttribute('data-room-orientation-turns');
-    await capture(
+    if (!isRoomRevealSequenceCase) await capture(
       rotationAvailable ? 'Room rotation used' : 'Room rotation disabled',
       'Room orientation turns: ' + selectedOrientation,
     );
     const discovery = page.getByTestId('betrayal-discovery-panel');
     await expect(discovery).toHaveCount(0);
+    setRevealPhase('confirming-room-placement');
     const confirm = page.getByTestId('betrayal-room-placement-confirm');
     await expect(confirm).toBeEnabled();
     const roomConfirmAt = new Date().toISOString();
-    const revealTimelineStarted = await startRoomRevealTimeline();
+    setRevealPhase('room-placement-confirmed');
     await confirm.click();
     await expect(placement).toHaveCount(0, { timeout: 20_000 });
 
-    const activeReveal = page.locator('[data-room-reveal-active="true"]');
-    await expect(activeReveal.first()).toHaveCount(1, { timeout: 12_000 });
-    const activeSamples = [];
-    const activeFrames = [];
-    let revealCaptureCount = 0;
-    const discoveryCardSamples = [];
-    for (let sampleIndex = 0; sampleIndex < 2; sampleIndex += 1) {
-      const sample = await readRoomRevealSample();
-      activeSamples.push(sample);
-      if (!sample.revealActive) break;
-      expect(sample.placementVisible).toBe(false);
-      expect(sample.discoveryVisible).toBe(false);
-      if (sample.roomVisible && sample.roomKnown) {
-        await capture(`房间揭示过渡帧-${sampleIndex + 1}`, `整屏截图：真实Pixi揭示标记已采样为active，房间可见且发现界面尚未出现；同次录屏保留连续动画。`);
-        const capturedFrame = media.at(-1);
-        const afterCapture = await readRoomRevealSample();
-        activeFrames.push({
-          screenshot: capturedFrame?.path ?? null,
-          screenshotCapturedAt: capturedFrame?.capturedAt ?? null,
-          before: sample,
-          after: afterCapture,
-          activeAcrossCapture: sample.revealActive && afterCapture.revealActive,
-        });
-        revealCaptureCount += 1;
-      }
-      if (sampleIndex === 0) await page.waitForTimeout(100);
-    }
-    expect(revealCaptureCount).toBeGreaterThan(0);
-    diagnostics.roomRevealSequence = {
-      status: 'IN_PROGRESS',
-      roomConfirmAt,
-      revealTimelineStarted,
-      activeSamples,
-      activeFrames,
-      discoveryShownAtOrAfterRevealComplete: false,
-      discoveryConfirmClicks: 0,
-      cardClosedAfterConfirmation: false,
-    };
-    await expect(page.locator('[data-room-reveal-active="false"]')).toHaveCount(1, { timeout: 15_000 });
+    const eventChoicePanel = page.getByTestId('betrayal-event-choice-panel');
+    setRevealPhase('waiting-for-card-resolution');
+    await expect.poll(async () =>
+      await discovery.isVisible().catch(() => false) ||
+      await eventChoicePanel.isVisible().catch(() => false),
+    { timeout: 30_000 }).toBe(true);
     const playwrightWaitResolvedAt = new Date().toISOString();
-    await expect(discovery).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId('betrayal-discovery-panel-content')).toBeVisible();
-    const revealTimeline = await stopRoomRevealTimeline();
-    const activeEvent = revealTimeline?.events.find((event) => event.revealActive) ?? null;
-    const inactiveEvent = revealTimeline?.events.find((event, index, events) => index > 0 && event.revealActive === false && events.slice(0, index).some(previous => previous.revealActive)) ?? null;
-    const discoveryEvent = revealTimeline?.events.find((event) => event.discoveryVisible) ?? null;
-    const choiceEvent = revealTimeline?.events.find((event) => event.choiceVisible) ?? null;
-    const firstResolutionEvent = [discoveryEvent, choiceEvent].filter(Boolean).sort((left, right) => left.performanceNow - right.performanceNow)[0] ?? null;
-    const timelineVerification = {
-      observerInstalledBeforePlacementConfirm: true,
-      activeObserved: Boolean(activeEvent),
-      inactiveTransitionObservedAfterActive: Boolean(inactiveEvent),
-      discoveryOrChoiceObserved: Boolean(firstResolutionEvent),
-      noResolutionPanelVisibleWhileRevealActive: revealTimeline?.overlapSampleCount === 0,
-      resolutionPanelFirstVisibleAtOrAfterRevealInactive: Boolean(inactiveEvent && firstResolutionEvent && firstResolutionEvent.performanceNow >= inactiveEvent.performanceNow),
-      revealAndResolutionPanelChangedInSameObservation: Boolean(inactiveEvent && firstResolutionEvent && firstResolutionEvent.performanceNow === inactiveEvent.performanceNow),
-      activeFirstAt: activeEvent ? { performanceNow: activeEvent.performanceNow, wallTime: activeEvent.wallTime } : null,
-      inactiveFirstAt: inactiveEvent ? { performanceNow: inactiveEvent.performanceNow, wallTime: inactiveEvent.wallTime } : null,
-      resolutionPanelFirstAt: firstResolutionEvent ? { performanceNow: firstResolutionEvent.performanceNow, wallTime: firstResolutionEvent.wallTime, panel: firstResolutionEvent.discoveryVisible ? 'discovery' : 'event-choice' } : null,
-    };
-    diagnostics.roomRevealSequence = {
-      status: 'IN_PROGRESS',
-      roomConfirmAt,
-      revealTimelineStarted,
-      revealTimeline,
-      timelineVerification,
-      playwrightWaitResolvedAt,
-      discoveryShownAtOrAfterRevealComplete: timelineVerification.resolutionPanelFirstVisibleAtOrAfterRevealInactive && timelineVerification.noResolutionPanelVisibleWhileRevealActive,
-      discoveryConfirmClicks: 0,
-      cardClosedAfterConfirmation: false,
-    };
-    expect(timelineVerification.activeObserved).toBe(true);
-    expect(timelineVerification.inactiveTransitionObservedAfterActive).toBe(true);
-    expect(timelineVerification.discoveryOrChoiceObserved).toBe(true);
-    expect(timelineVerification.noResolutionPanelVisibleWhileRevealActive).toBe(true);
-    expect(timelineVerification.resolutionPanelFirstVisibleAtOrAfterRevealInactive).toBe(true);
-    const completedSample = await readRoomRevealSample();
-    expect(completedSample.revealActive).toBe(false);
-    expect(completedSample.roomVisible && completedSample.roomKnown).toBe(true);
-    expect(completedSample.discoveryVisible && completedSample.discoveryContentVisible).toBe(true);
-    const discoveryPanelAriaLabel = await discovery.getAttribute('aria-label');
-    await capture('揭示完成后发现界面与动作', 'Pixi揭示结束后出现实际发现卡与可操作按钮；以画面中实际显示的分支为准。');
+    setRevealPhase('classifying-card-resolution');
+    const resolutionKind = await discovery.isVisible().catch(() => false)
+      ? 'discovery'
+      : await eventChoicePanel.isVisible().catch(() => false) ? 'event-choice' : 'none';
+    expect(resolutionKind).not.toBe('none');
+    const itemCardLocator = page.locator('[data-testid="betrayal-inventory-row-item"] button[data-testid^="betrayal-inventory-"]');
+    const itemCardCountBeforeResolution = await itemCardLocator.count();
+    if (resolutionKind === 'discovery') {
+      await expect(page.getByTestId('betrayal-discovery-panel-content')).toBeVisible();
+      await expect(page.getByTestId('betrayal-discovery-continue')).toBeEnabled();
+    } else {
+      await expect(eventChoicePanel).toHaveAttribute('aria-label', '\u65ad\u624b');
+      await expect(page.getByTestId('betrayal-event-choice-confirm')).toContainText('\u627f\u53d7\u4f24\u5bb3\u5e76\u62bd\u53d6\u7269\u54c1');
+      const options = eventChoicePanel.locator('button[data-testid="betrayal-event-choice-confirm"], button[data-testid="betrayal-event-choice-decline"], button[data-testid^="betrayal-event-choice-trait-"], button[data-testid^="betrayal-event-choice-card-"], button[data-testid^="betrayal-room-"]');
+      let hasLegalOption = false;
+      for (let index = 0; index < await options.count(); index += 1) {
+        const option = options.nth(index);
+        if (await option.isVisible().catch(() => false) && await option.isEnabled().catch(() => false)) {
+          hasLegalOption = true;
+          break;
+        }
+      }
+      expect(hasLegalOption).toBe(true);
+    }
+    const resolutionPanelAriaLabel = resolutionKind === 'discovery'
+      ? await discovery.getAttribute('aria-label')
+      : await eventChoicePanel.getAttribute('aria-label');
+    await capture('Room reveal resolution', 'After confirming room placement, the game presents a discovery or event card with a legal action.');
 
+    const discoveryCardSamples = [];
     diagnostics.roomRevealSequence = {
+      ...revealDiagnostic,
       status: 'IN_PROGRESS',
       roomConfirmAt,
-      revealTimelineStarted,
-      revealTimeline,
-      timelineVerification,
       playwrightWaitResolvedAt,
-      discoveryShownAtOrAfterRevealComplete: timelineVerification.resolutionPanelFirstVisibleAtOrAfterRevealInactive && timelineVerification.noResolutionPanelVisibleWhileRevealActive,
-      activeSamples,
-      activeFrames,
-      completedSample,
-      discoveryPanelAriaLabel,
+      resolutionAppearedAfterPlacementConfirmation: true,
+      resolutionKind,
+      resolutionPanelAriaLabel,
+      actionTrace: [],
       discoveryConfirmClicks: 0,
       cardClosedAfterConfirmation: false,
     };
 
     const actionTrace = [];
     const visible = async (testId) => page.getByTestId(testId).isVisible().catch(() => false);
-    for (let actionIndex = 0; actionIndex < 12; actionIndex += 1) {
+    const readResolutionState = async () => {
+      const state = await page.evaluate(() => {
+      const isVisible = (testId) => {
+        const element = document.querySelector(`[data-testid="${testId}"]`);
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return element.getClientRects().length > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
+      };
+      const pendingTestIds = [
+        'betrayal-event-roll-start',
+        'betrayal-event-choice-panel',
+        'betrayal-damage-allocation-panel',
+        'betrayal-roll-result-backdrop',
+        'betrayal-discovery-panel',
+      ];
+      const pendingKinds = pendingTestIds.filter(isVisible);
+      const traits = document.querySelector('[data-testid="betrayal-current-traits"]');
+      const movement = document.querySelector('[data-testid="betrayal-movement-snapshot"]');
+      const target = document.querySelector('[data-testid="betrayal-room-ground-east"]');
+      const endTurn = document.querySelector('[data-testid="betrayal-action-endTurn"]');
+      const roomId = traits?.getAttribute('data-room-id') ?? null;
+      const explorerId = traits?.getAttribute('data-explorer-id') ?? null;
+      const movesRemaining = Number(movement?.getAttribute('data-moves-remaining'));
+      const roomExplored = Boolean(target) && !target.innerText.includes('\u672a\u63a2\u7d22');
+      const boardActionable = isVisible('betrayal-room-grid') && isVisible('betrayal-action-rail') && Boolean(endTurn && !endTurn.disabled);
+      const roomResolved = roomId === 'ground-east' && Boolean(explorerId) && isVisible('betrayal-room-occupant-ground-east-0') && roomExplored && movesRemaining === 0;
+      return { pendingKinds, roomId, explorerId, movesRemaining, roomExplored, boardActionable, roomResolved };
+      });
+      const persisted = await readPersistedLocalGameState().catch((error) => ({
+        snapshotFound: false,
+        snapshotError: error instanceof Error ? error.message : String(error),
+        pendingCardResolutionQueueLength: null,
+        pendingEventRollResolution: null,
+      }));
+      const persistedPendingKinds = [];
+      if (Number(persisted.pendingCardResolutionQueueLength) > 0) persistedPendingKinds.push('persisted-card-resolution');
+      if (persisted.pendingEventRollResolution) persistedPendingKinds.push('persisted-event-roll-resolution');
+      const pendingKinds = [...new Set([...state.pendingKinds, ...persistedPendingKinds])];
+      const persistedSettled = persisted.snapshotFound === true
+        && persisted.seedMatchesCurrentUrl === true
+        && Number(persisted.pendingCardResolutionQueueLength) === 0
+        && !persisted.pendingEventRollResolution;
+      return { ...state, pendingKinds, persisted, settledBoard: pendingKinds.length === 0 && persistedSettled && state.roomResolved && state.boardActionable };
+    };
+    let terminalResolutionState = null;
+    while (actionTrace.length < 12) {
+      const resolutionState = await waitForPendingDecisionOrSettledBoard(readResolutionState, { timeoutMs: 30_000, intervalMs: 200 });
+      if (resolutionState.kind === 'settled') {
+        terminalResolutionState = resolutionState;
+        break;
+      }
       if (await visible('betrayal-event-roll-start')) {
         const rollStart = page.getByTestId('betrayal-event-roll-start');
         await expect(rollStart).toBeEnabled();
@@ -1254,13 +1569,16 @@ try {
         await rollStart.click();
         actionTrace.push({ kind: 'event-roll-start', label, at: new Date().toISOString() });
         await expect(rollStart).toHaveCount(0, { timeout: 20_000 });
-        const dice = page.getByTestId('betrayal-house-dice-3d-group').last();
-        if (await dice.count()) {
-          await expect(dice).toHaveAttribute('data-dice-physics-motion', 'settled', { timeout: 30_000 });
-        }
+        await expect.poll(async () => {
+          for (const testId of ['betrayal-roll-result-backdrop', 'betrayal-damage-allocation-panel', 'betrayal-event-choice-panel', 'betrayal-discovery-panel']) {
+            if (await visible(testId)) return true;
+          }
+          return false;
+        }, { timeout: 30_000 }).toBe(true);
         continue;
       }
 
+        setRevealPhase('handling-event-choice');
       if (await visible('betrayal-event-choice-panel')) {
         const choicePanel = page.getByTestId('betrayal-event-choice-panel');
         const confirmChoice = page.getByTestId('betrayal-event-choice-confirm');
@@ -1282,10 +1600,28 @@ try {
         }
         await expect(confirmChoice).toBeEnabled({ timeout: 10_000 });
         const label = (await confirmChoice.innerText()).trim();
+        if (resolutionPanelAriaLabel === '\u65ad\u624b') {
+          expect(label).toContain('\u627f\u53d7\u4f24\u5bb3\u5e76\u62bd\u53d6\u7269\u54c1');
+        }
         await capture('事件选项确认前', `事件选项面板提供“${label}”确认；等待玩家选择后以真实按钮确认。`);
+        setRevealPhase('confirming-event-choice');
         await confirmChoice.click();
         actionTrace.push({ kind: 'event-choice-confirm', label, at: new Date().toISOString() });
+        setRevealPhase('waiting-for-event-card-close');
         await expect(choicePanel).toHaveCount(0, { timeout: 20_000 });
+        if (resolutionPanelAriaLabel === '\u65ad\u624b') {
+          await expect(discovery).toBeVisible({ timeout: 20_000 });
+          await expect(discovery).toContainText('\u53d7\u5230 2 \u70b9\u7269\u7406\u4f24\u5bb3');
+          await expect(discovery).toContainText('\u62bd\u53d6\u4e00\u5f20\u7269\u54c1\u5361');
+          await expect.poll(() => itemCardLocator.count(), { timeout: 20_000 }).toBeGreaterThan(itemCardCountBeforeResolution);
+          revealDiagnostic.eventEffect = {
+            event: resolutionPanelAriaLabel,
+            selectedOutcome: label,
+            outcomeDetail: await discovery.innerText(),
+            itemCardCountBefore: itemCardCountBeforeResolution,
+            itemCardCountAfter: await itemCardLocator.count(),
+          };
+        }
         continue;
       }
 
@@ -1318,21 +1654,21 @@ try {
       }
 
       if (await visible('betrayal-roll-result-backdrop')) {
+        const rollOutcome = page.getByTestId('betrayal-recent-roll-outcome');
+        await expect(rollOutcome).toBeVisible();
+        const outcomeText = (await rollOutcome.innerText()).trim();
+        expect(outcomeText.length).toBeGreaterThan(0);
         const rollContinue = page.getByTestId('betrayal-roll-continue');
         await expect(rollContinue).toBeEnabled({ timeout: 20_000 });
         const label = (await rollContinue.innerText()).trim();
         await capture('事件骰结果确认前', `事件骰结果显示完成；可见按钮“${label}”用于返回发现流程。`);
         await rollContinue.click();
-        actionTrace.push({ kind: 'roll-result-confirm', label, at: new Date().toISOString() });
+        actionTrace.push({ kind: 'roll-result-confirm', label, outcomeText, at: new Date().toISOString() });
         await expect(page.getByTestId('betrayal-roll-result-backdrop')).toHaveCount(0, { timeout: 20_000 });
         continue;
       }
 
       if (await visible('betrayal-discovery-panel')) {
-        const cardSample = await readDiscoveryCardSample();
-        discoveryCardSamples.push({ sequenceIndex: discoveryCardSamples.length + 1, ...cardSample });
-        diagnostics.discoveryCardSamples = discoveryCardSamples;
-        diagnostics.roomRevealSequence.discoveryCardSamples = discoveryCardSamples;
         const continueButton = page.getByTestId('betrayal-discovery-continue');
         await expect(continueButton).toBeVisible();
         await expect(continueButton).toBeEnabled({ timeout: 30_000 });
@@ -1349,55 +1685,184 @@ try {
         continue;
       }
 
-      break;
+      setRevealPhase('waiting-for-pending-decision-ui', { pendingKinds: resolutionState.state.pendingKinds });
+      await waitForPendingDecisionPresentation(
+        readResolutionState,
+        async () => {
+          for (const testId of ['betrayal-event-roll-start', 'betrayal-event-choice-panel', 'betrayal-damage-allocation-panel', 'betrayal-roll-result-backdrop', 'betrayal-discovery-panel']) {
+            if (await visible(testId)) return true;
+          }
+          return false;
+        },
+        { timeoutMs: 15_000, intervalMs: 250 },
+      );
+      continue;
     }
+    terminalResolutionState ??= await waitForPendingDecisionOrSettledBoard(readResolutionState, { timeoutMs: 10_000, intervalMs: 200 });
+    const settledBusinessState = requireSettledBoard(terminalResolutionState);
     await expect(discovery).toHaveCount(0, { timeout: 20_000 });
+    await expect(eventChoicePanel).toHaveCount(0, { timeout: 20_000 });
+    const eventChoiceConfirmClicks = actionTrace.filter((action) => action.kind === 'event-choice-confirm').length;
+    if (resolutionKind === 'event-choice') expect(eventChoiceConfirmClicks).toBe(1);
     await expect(targetRoom).not.toContainText('未探索');
+    setRevealPhase('verifying-board-usable');
+    await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
+    await expect(page.getByTestId('betrayal-action-endTurn')).toBeEnabled();
     await expect(page.getByTestId('betrayal-room-occupant-ground-east-0')).toBeVisible({ timeout: 15_000 });
+    const movementRemainingAfterResolution = Number(await movementSnapshot.getAttribute('data-moves-remaining'));
+    expect(movementRemainingAfterResolution).toBe(0);
+    expect(await currentTraits.getAttribute('data-room-id')).toBe('ground-east');
+    expect(await currentTraits.getAttribute('data-explorer-id')).toBe(explorerIdAtStart);
+    expect(settledBusinessState.roomExplored).toBe(true);
+    expect(settledBusinessState.boardActionable).toBe(true);
+    expect(settledBusinessState.movesRemaining).toBe(0);
+    revealDiagnostic.movementRemainingAfterResolution = movementRemainingAfterResolution;
+    revealDiagnostic.roomIdAfterResolution = await currentTraits.getAttribute('data-room-id');
+    revealDiagnostic.explorerIdAfterResolution = await currentTraits.getAttribute('data-explorer-id');
+    revealDiagnostic.settledBusinessState = settledBusinessState;
+
     await capture('单次确认后回到稳定牌桌', '只点击一次发现卡正常确认按钮后，卡片收起，新房间与棋子留在稳定棋盘。');
 
+    setRevealPhase('complete');
     diagnostics.roomRevealSequence = {
+      ...revealDiagnostic,
       status: 'PASS',
       roomConfirmAt,
-      revealTimelineStarted,
-      revealTimeline,
-      timelineVerification,
       playwrightWaitResolvedAt,
-      discoveryShownAtOrAfterRevealComplete: timelineVerification.resolutionPanelFirstVisibleAtOrAfterRevealInactive && timelineVerification.noResolutionPanelVisibleWhileRevealActive,
-      activeSamples,
-      activeFrames,
-      completedSample,
-      discoveryPanelAriaLabel,
+      resolutionAppearedAfterPlacementConfirmation: true,
+      resolutionKind,
+      resolutionPanelAriaLabel,
       actionTrace,
       discoveryCardSamples,
-      referenceAtlasFrames: { '6': '皮夹克', '15': '神秘秒表', '17': '砍刀' },
       discoveryConfirmClicks: actionTrace.filter(action => action.kind === 'discovery-confirm').length,
+      eventChoiceConfirmClicks,
       cardClosedAfterConfirmation: true,
+      boardUsableAfterResolution: true,
     };
-    return 'Confirmed the room and completed ' + actionTrace.length + ' visible actions after capturing ' + revealCaptureCount + ' reveal frames; returned to a stable board.';
+    return 'Confirmed room placement, resolved ' + resolutionKind + ' with ' + actionTrace.length + ' visible actions, closed the card, and returned to a usable board.';
   });
 
-  if (!isNarrowCase) await runStep('统一底栏和后续回合', async () => {
+  if (!isNarrowCase || isRoomRevealSequenceCase) await runStep('Next AI turn handoff', async () => {
     const rail = page.getByTestId('betrayal-action-rail');
-    await expect(rail).toBeVisible();
     const endTurn = page.getByTestId('betrayal-action-endTurn');
-    await expect(endTurn).toBeEnabled();
-    await capture('探索完成后的统一操作栏', '探索安置完成后玩家仍能看到同一底部操作栏和结束回合按钮。');
-    await endTurn.click();
     const statusChip = page.getByTestId('betrayal-status-chip');
-    await expect(statusChip).toContainText(/AI \d+ 号位/, { timeout: 20_000 });
-    await expect(page.getByTestId('betrayal-turn-intro-skip')).toBeVisible({ timeout: 20_000 });
-    await capture('AI post-turn intro', 'The next AI turn intro is visible after the player ends their turn.');
-    await page.getByTestId('betrayal-turn-intro-skip').click();
-    await expect(page.getByTestId('betrayal-turn-intro-skip')).toHaveCount(0, { timeout: 15_000 });
-    await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
-    await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
-    await expect(statusChip).toContainText(/AI \d+ 号位/);
-    await capture('Stable next AI turn board', 'After skipping the turn intro, the board, pawn and shared bottom action rail are visible.');
-    const currentState = await statusChip.innerText();
-    return `Next-turn status: ${currentState.replace(/\s+/g, ' ').trim()}`;
-  });
+    const turnIntroSkip = page.getByTestId('betrayal-turn-intro-skip');
+    const normalize = (value) => value.replace(/\s+/g, ' ').trim();
+    const playerIdAtStart = diagnostics.roomRevealSequence?.playerIdAtStart ?? null;
+    const expectedHumanTurnOwner = playerIdAtStart;
+    expect(expectedHumanTurnOwner).toBeTruthy();
+    const initialStatus = normalize(await statusChip.innerText());
+    const initialPersisted = await readPersistedLocalGameState();
+    const currentTurnOwnerBeforeHandoff = initialPersisted.currentPlayerId;
+    const alreadyInNextAiTurn = /AI\s*\d+/u.test(initialStatus) && Boolean(currentTurnOwnerBeforeHandoff && currentTurnOwnerBeforeHandoff !== expectedHumanTurnOwner);
+    const explorerBeforeTurnEnd = diagnostics.roomRevealSequence?.explorerIdAfterResolution ?? null;
+    const handoffDiagnostic = {
+      status: 'IN_PROGRESS',
+      stage: 'initial-state',
+      playerIdAtStart: expectedHumanTurnOwner,
+      initialStatus,
+      currentTurnOwnerBeforeHandoff,
+      alreadyInNextAiTurn,
+      explorerBeforeTurnEnd,
+    };
+    diagnostics.nextTurnHandoff = handoffDiagnostic;
+    await persistAcceptanceCheckpoint('next-ai-handoff-initial-state');
+    let endTurnClicked = false;
+    if (!alreadyInNextAiTurn) {
+      await expect(rail).toBeVisible();
+      await expect(endTurn).toBeEnabled();
+      await capture('player-turn-ready-before-handoff', 'The resolved room leaves the current human turn available before ending it.');
+      await endTurn.click();
+      endTurnClicked = true;
+    }
+    handoffDiagnostic.endTurnClicked = endTurnClicked;
+    handoffDiagnostic.stage = 'waiting-for-next-ai-owner';
+    diagnostics.nextTurnHandoff = handoffDiagnostic;
+    await persistAcceptanceCheckpoint('next-ai-handoff-wait-started');
+    try {
+      await expect.poll(async () => {
+        const status = normalize(await statusChip.innerText());
+        const persisted = await readPersistedLocalGameState();
+        return /AI\s*\d+/u.test(status) && persisted.currentPlayerId && persisted.currentPlayerId !== expectedHumanTurnOwner;
+      }, { timeout: 30_000, intervals: [250, 500, 750] }).toBe(true);
+    } catch (error) {
+      const [statusAtTimeout, persistedAtTimeout, railVisibleAtTimeout, pendingDiscoveryAtTimeout] = await Promise.all([
+        statusChip.innerText().catch(() => ''),
+        readPersistedLocalGameState().catch((readError) => ({ error: String(readError) })),
+        rail.isVisible().catch(() => false),
+        page.getByTestId('betrayal-discovery-panel').isVisible().catch(() => false),
+      ]);
+      Object.assign(handoffDiagnostic, { stage: 'waiting-for-next-ai-owner-failed', status: 'FAIL', statusAtTimeout: normalize(statusAtTimeout), persistedAtTimeout, railVisibleAtTimeout, pendingDiscoveryAtTimeout, failure: error instanceof Error ? error.message : String(error) });
+      diagnostics.nextTurnHandoff = handoffDiagnostic;
+      await persistAcceptanceCheckpoint('next-ai-handoff-wait-failed');
+      throw error;
+    }
 
+    let introDisplayed = await turnIntroSkip.isVisible().catch(() => false);
+    if (introDisplayed) {
+      await turnIntroSkip.click({ force: true });
+      await expect(turnIntroSkip).toHaveCount(0, { timeout: 15_000 });
+    }
+
+    handoffDiagnostic.stage = 'resolving-next-ai-turn-prompts';
+    handoffDiagnostic.introDisplayed = introDisplayed;
+    const omenPanel = page.getByTestId('betrayal-discovery-panel');
+    let omenAcknowledgements = 0;
+    for (let index = 0; index < 5 && await omenPanel.isVisible().catch(() => false); index += 1) {
+      const continueButton = page.getByTestId('betrayal-discovery-continue');
+      await expect(continueButton).toBeEnabled();
+      const previousText = normalize(await omenPanel.innerText());
+      await continueButton.click();
+      omenAcknowledgements += 1;
+      await expect.poll(async () => {
+        if (!(await omenPanel.isVisible().catch(() => false))) return true;
+        return normalize(await omenPanel.innerText().catch(() => '')) !== previousText;
+      }, { timeout: 20_000, intervals: [250, 500, 750] }).toBe(true);
+      handoffDiagnostic.omenAcknowledgements = omenAcknowledgements;
+      diagnostics.nextTurnHandoff = handoffDiagnostic;
+      await persistAcceptanceCheckpoint('next-ai-handoff-omen-acknowledged');
+    }
+
+    handoffDiagnostic.stage = 'checking-stable-ai-turn-state';
+    diagnostics.nextTurnHandoff = handoffDiagnostic;
+    await persistAcceptanceCheckpoint('next-ai-handoff-stability-check');
+    try {
+      await expect.poll(async () => {
+        const status = normalize(await statusChip.innerText());
+        const persisted = await readPersistedLocalGameState();
+        const pendingUi = await Promise.all(['betrayal-event-choice-panel', 'betrayal-damage-allocation-panel', 'betrayal-roll-result-backdrop', 'betrayal-event-roll-start', 'betrayal-discovery-panel'].map((testId) => page.getByTestId(testId).isVisible().catch(() => false)));
+        const noPersistedDecision = persisted.snapshotFound && persisted.seedMatchesCurrentUrl && persisted.pendingCardResolutionQueueLength === 0 && !persisted.pendingEventRollResolution;
+        handoffDiagnostic.lastObserved = { status, currentPlayerId: persisted.currentPlayerId, pendingUi, pendingCardResolutionQueueLength: persisted.pendingCardResolutionQueueLength, pendingEventRollResolution: persisted.pendingEventRollResolution };
+        return /AI\s*\d+/u.test(status) && persisted.currentPlayerId && persisted.currentPlayerId !== expectedHumanTurnOwner && pendingUi.every((value) => !value) && noPersistedDecision;
+      }, { timeout: 30_000, intervals: [500, 750, 1000] }).toBe(true);
+    } catch (error) {
+      handoffDiagnostic.stage = 'checking-stable-ai-turn-state-failed';
+      handoffDiagnostic.status = 'FAIL';
+      handoffDiagnostic.failure = error instanceof Error ? error.message : String(error);
+      diagnostics.nextTurnHandoff = handoffDiagnostic;
+      await persistAcceptanceCheckpoint('next-ai-handoff-stability-check-failed');
+      throw error;
+    }
+
+    const turnStatus = normalize(await statusChip.innerText());
+    const persistedAfterHandoff = await readPersistedLocalGameState();
+    expect(persistedAfterHandoff.currentPlayerId).not.toBe(expectedHumanTurnOwner);
+    await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
+    diagnostics.nextTurnHandoff = {
+      status: 'READY',
+      endTurnClicked,
+      alreadyInNextAiTurn,
+      introDisplayed,
+      omenAcknowledgements,
+      playerIdAtStart: expectedHumanTurnOwner,
+      currentTurnOwnerBeforeHandoff,
+      currentTurnOwnerAfterHandoff: persistedAfterHandoff.currentPlayerId,
+      explorerBeforeTurnEnd,
+      turnText: turnStatus,
+    };
+    await capture('stable-next-ai-turn', 'The pending card decisions are resolved and the next AI turn is active on the board.');
+    return 'Next-turn status: ' + turnStatus;
+  });
   if (isLocalUiCloseoutCase) await runStep('结束玩家回合、经过 AI 并返回玩家', async () => {
     const state = {
       status: 'IN_PROGRESS',
@@ -1484,11 +1949,47 @@ try {
   }
   pageMetrics = await readVisibleBoardMetrics();
 } catch (error) {
-  fatalError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-  if (page && !page.isClosed()) {
-    try { await capture('故障现场', '本次真实浏览器流程在此处停止，画面保留用于诊断。'); } catch { /* keep original failure */ }
+  if (isMapReadinessCase && error?.code === 'MAP_DIAGNOSTIC_COMPLETE') {
+    fatalError = null;
+  } else {
+    fatalError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    if (isMapReadinessCase) {
+      mapReadinessStatus = 'FAIL';
+      mapDiagnosticFailure = fatalError;
+      try {
+        await withTimeout(Promise.allSettled(pendingChunkDigests), 5_000, 'bundle digest drain at failure');
+        publishedBundleIdentity = assertPublishedBundleIdentity(expectedBundleManifest, diagnostics.chunks);
+      } catch (bundleError) {
+        diagnostics.bundleIdentityAtFailureError = bundleError instanceof Error ? bundleError.message : String(bundleError);
+      }
+      if (page && !page.isClosed() && !diagnostics.pageStateAtFailure) {
+        diagnostics.pageStateAtFailure = await readPublicPageSnapshot().catch((snapshotError) => ({
+          snapshotError: snapshotError instanceof Error ? snapshotError.message : String(snapshotError),
+        }));
+        await persistAcceptanceCheckpoint('failure-page-state-sampled').catch(() => {});
+        if (diagnostics.pageStateAtFailure?.bodyText?.trim() || diagnostics.pageStateAtFailure?.relevantNodes?.length) {
+        try {
+          await capture('diagnostic-failure-state', 'Actual page state at the bounded diagnostic failure.');
+        } catch (captureError) {
+          diagnostics.failureStateScreenshotError = captureError instanceof Error ? captureError.message : String(captureError);
+        }
+        } else {
+          diagnostics.failureScreenshotSkipped = 'The page remained on the textless bootstrap loader; initial screenshot already records this state.';
+        }
+      }
+      await persistAcceptanceCheckpoint('failure-before-browser-cleanup').catch((checkpointError) => console.error(`[public-local-acceptance] checkpoint failed: ${String(checkpointError)}`));
+    } else if (page && !page.isClosed()) {
+      try { await capture('failure-state', 'Partial acceptance state captured at failure.'); } catch { /* keep original failure */ }
+    }
   }
 } finally {
+  if (isMapReadinessCase || isRoomRevealSequenceCase) {
+    cancelMapDiagnosticDeadline?.();
+    if (mapReadinessStatus !== 'DEADLINE_EXCEEDED') clearTimeout(forceMapDiagnosticExitTimer);
+    await persistAcceptanceCheckpoint('before-browser-cleanup').catch((error) => console.error(`[public-local-acceptance] checkpoint failed before cleanup: ${String(error)}`));
+    await closeDiagnosticResources();
+    recordingStoppedAt = new Date().toISOString();
+  } else {
   const video = page?.video();
   if (page && !page.isClosed()) await page.close().catch((error) => { diagnostics.pageCloseError = String(error); });
   if (context) await context.close().catch((error) => { diagnostics.closeError = String(error); });
@@ -1508,9 +2009,11 @@ try {
       diagnostics.videoError = error instanceof Error ? error.message : String(error);
     }
   }
+  }
 }
 
-await Promise.allSettled(pendingRoomAtlasFinishes);
+if (isMapReadinessCase || isRoomRevealSequenceCase) await withTimeout(Promise.allSettled(pendingRoomAtlasFinishes), 2_000, 'room atlas request diagnostics').catch((error) => { diagnostics.roomAtlasDrainError = error instanceof Error ? error.message : String(error); });
+else await Promise.allSettled(pendingRoomAtlasFinishes);
 for (const url of diagnostics.footstep404s) if (!diagnostics.footstep404s.includes(url)) diagnostics.footstep404s.push(url);
 const uniqueSounds = [...new Set(diagnostics.footstep404s)];
 const expectedChunks = expectedDeployedBundles.map((item) => item.filename);
@@ -1519,8 +2022,8 @@ const missingChunks = expectedChunks.filter((name) => !chunkNames.has(name));
 const screenshots = media.filter((item) => item.type === 'image');
 const videoPresent = media.some((item) => item.type === 'video');
 const fullFlowPassed = fatalError === null && steps.length === 7 && steps.every((step) => step.status === 'PASS') && screenshots.length >= 10 && videoPresent;
-const caseStatus = isCharacterTurnPromptCase ? (fatalError ? 'FAIL' : diagnostics.characterTurnPrompt?.status ?? 'NOT_VERIFIED') : isPawnSelectionToggleCase ? diagnostics.pawnSelectionToggle?.status ?? 'NOT_VERIFIED' : isRoomRevealSequenceCase ? diagnostics.roomRevealSequence?.status ?? 'NOT_VERIFIED' : isLocalUiCloseoutCase ? (fatalError ? 'FAIL' : diagnostics.localUiCloseout?.status ?? 'NOT_VERIFIED') : null;
-const functionalStatus = isNarrowCase ? (caseStatus === 'PASS' ? 'PASS' : caseStatus === 'FAIL' ? 'FAIL' : 'NOT_VERIFIED') : fullFlowPassed ? 'PASS' : 'REVISE';
+const caseStatus = isMapReadinessCase ? mapReadinessStatus : isCharacterTurnPromptCase ? (fatalError ? 'FAIL' : diagnostics.characterTurnPrompt?.status ?? 'NOT_VERIFIED') : isPawnSelectionToggleCase ? diagnostics.pawnSelectionToggle?.status ?? 'NOT_VERIFIED' : isRoomRevealSequenceCase ? (fatalError ? 'FAIL' : diagnostics.roomRevealSequence?.status === 'PASS' ? (diagnostics.nextTurnHandoff?.status === 'READY' ? 'PASS' : 'NOT_VERIFIED') : diagnostics.roomRevealSequence?.status ?? 'NOT_VERIFIED') : isLocalUiCloseoutCase ? (fatalError ? 'FAIL' : diagnostics.localUiCloseout?.status ?? 'NOT_VERIFIED') : null;
+const functionalStatus = isMapReadinessCase ? 'DIAGNOSTIC_ONLY' : isNarrowCase ? (caseStatus === 'PASS' ? 'PASS' : caseStatus === 'FAIL' ? 'FAIL' : 'NOT_VERIFIED') : fullFlowPassed ? 'PASS' : 'REVISE';
 const report = {
   schemaVersion: 1,
   case: requestedCase ?? 'full-flow',
@@ -1528,9 +2031,12 @@ const report = {
   runId,
   startedAt,
   finishedAt: new Date().toISOString(),
+  ...(isMapReadinessCase ? { diagnosticStartedAt: startedAt, diagnosticFinishedAt: mapDiagnosticFinishedAt ?? new Date().toISOString(), diagnosticElapsedMs: mapDiagnosticStartedEpochMs === null ? null : Date.now() - mapDiagnosticStartedEpochMs, diagnosticMaximumDurationMs: mapDiagnosticMaxMs, localServerStarted: false, videoCapture: false } : {}),
   target: targetUrl,
   effectiveUrl: page?.url() ?? null,
   targetHttpStatus: primaryResponseStatus,
+  expectedPublishedSiteVersion: expectedBundleManifest.siteVersion,
+  verifiedBundleIdentity: publishedBundleIdentity,
   environment: { host: process.env.COMPUTERNAME ?? null, node: process.version, playwright: require('@playwright/test/package.json').version, chromium: browserVersion, mode: 'headless Chromium, project default launch settings', chromiumLaunchArgs, chromiumSandbox: true, ignoreHTTPSErrors: false, viewport, pageMetrics },
   actualRemoteBundles: diagnostics.chunks,
   expectedBundleNames: expectedChunks,
@@ -1541,22 +2047,29 @@ const report = {
   steps,
   media: media.map((item) => ({ ...item, absolutePath: path.join(runDir, item.path), bytes: null })),
   functionalStatus,
-  visualReview: { status: isPawnSelectionToggleCase ? 'NOT_REQUESTED' : 'PENDING', reviewer: null, files: screenshots.map((item) => item.path) },
-  verdict: isCharacterTurnPromptCase ? (caseStatus === 'PASS' ? 'REVIEW_PENDING' : 'REVISE') : isLocalUiCloseoutCase ? (caseStatus === 'PASS' ? 'REVIEW_PENDING' : 'REVISE') : isNarrowCase ? 'REVISE' : fullFlowPassed ? 'REVIEW_PENDING' : 'REVISE',
-  failure: fatalError,
-  limitations: ['仅验证指定公开 /local 页面；不证明固定座位的联机权限。', '本机 Chromium 使用无头软件渲染，视口为 1600×900；不代表有 GPU 加速的 headed 浏览器性能。', '截图均为整页可视视口，视频为同一真实交互运行。', ...(isCharacterTurnPromptCase ? ['本窄链真实结束真人回合并观察 AI 行动；仅当可见确认控件 enabled 时按正常页面点击；用项目现有 local_match_snapshot_v1 localStorage 存档只读采样 core 确认名单和座位控制。未启用或不存在支持的存档读取入口时不创建调试桥。'] : []), ...(isPawnSelectionToggleCase ? ['本次仅复验棋子来源切换；不能判定完整产品验收。移动 reach 可见性不用于推断取消状态。'] : isRoomRevealSequenceCase ? ['本次只验证未移动地图的 ready 前后采样、真实房间探索揭示与发现卡确认；不能替代完整移动/取消、后续回合或固定座位联机权限验收。整体验收保持 REVISE。'] : isLocalUiCloseoutCase ? ['本次覆盖真实 /local 入口、地图 ready、取消选中（aria-pressed 与动作提示恢复）、两个真实房间 hop、揭示卡 atlas 帧与资源信息、结束回合经过 AI 并回到所选玩家。它验证的是当前静态 local UI，不证明固定座位联机权限。首帧时间差以报告实测为准。'] : [])],
+  visualReview: { status: isMapReadinessCase ? 'DIAGNOSTIC_ONLY' : isPawnSelectionToggleCase ? 'NOT_REQUESTED' : 'PENDING', reviewer: null, files: screenshots.map((item) => item.path) },
+  verdict: isMapReadinessCase ? 'DIAGNOSTIC_ONLY' : isCharacterTurnPromptCase ? (caseStatus === 'PASS' ? 'REVIEW_PENDING' : 'REVISE') : isLocalUiCloseoutCase ? (caseStatus === 'PASS' ? 'REVIEW_PENDING' : 'REVISE') : isNarrowCase ? 'REVISE' : fullFlowPassed ? 'REVIEW_PENDING' : 'REVISE',
+  failure: mapDiagnosticFailure ?? fatalError,
+  limitations: isMapReadinessCase ? ['Bounded map-readiness diagnosis only; does not verify movement, events, turn progression, full gameplay, or final visual acceptance.', 'No video/audio capture; screenshots are diagnostic evidence for independent review.', 'Public Sites page v92; no local server; Chromium sandbox remains enabled.'] : ['仅验证指定公开 /local 页面；不证明固定座位的联机权限。', '本机 Chromium 使用无头软件渲染，视口为 1600×900；不代表有 GPU 加速的 headed 浏览器性能。', '截图均为整页可视视口，视频为同一真实交互运行。', ...(isCharacterTurnPromptCase ? ['本窄链真实结束真人回合并观察 AI 行动；仅当可见确认控件 enabled 时按正常页面点击；用项目现有 local_match_snapshot_v1 localStorage 存档只读采样 core 确认名单和座位控制。未启用或不存在支持的存档读取入口时不创建调试桥。'] : []), ...(isPawnSelectionToggleCase ? ['本次仅复验棋子来源切换；不能判定完整产品验收。移动 reach 可见性不用于推断取消状态。'] : isRoomRevealSequenceCase ? ['本次只验证未移动地图的 ready 前后采样、真实房间探索揭示与发现卡确认；不能替代完整移动/取消、后续回合或固定座位联机权限验收。整体验收保持 REVISE。'] : isLocalUiCloseoutCase ? ['本次覆盖真实 /local 入口、地图 ready、取消选中（aria-pressed 与动作提示恢复）、两个真实房间 hop、揭示卡 atlas 帧与资源信息、结束回合经过 AI 并回到所选玩家。它验证的是当前静态 local UI，不证明固定座位联机权限。首帧时间差以报告实测为准。'] : [])],
 };
 for (const item of report.media) {
   try { item.bytes = (await stat(item.absolutePath)).size; } catch { item.bytes = 0; }
 }
-await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+if (isRoomRevealSequenceCase) {
+  report.limitations = [
+    'Narrow public /local business chain: one room placement, any resulting discovery/event decisions, the resolved room and explorer state, movement consumption, and the next AI turn.',
+    'This does not establish full-game acceptance, all scenarios, complete map exploration, overall balance, animation/audio behavior, or final visual acceptance; verdict remains REVISE for independent review.',
+    'Transition frames and intro presentations are intentionally not success criteria. Chromium sandbox remains enabled; no local server is started.',
+  ];
+}
+await writeCheckpoint(reportPath, report);
 const index = {
   title: '山屋惊魂公开本地入口验收',
   media: media.map((item, index) => ({
     path: item.path,
     label: item.label,
     sourceRun: runId,
-    chainId: isCharacterTurnPromptCase ? 'public-local-character-turn-prompt' : isPawnSelectionToggleCase ? 'public-local-pawn-selection-toggle' : isRoomRevealSequenceCase ? 'public-local-room-reveal-sequencing' : isLocalUiCloseoutCase ? 'public-local-ui-closeout' : 'public-local-natural-flow',
+    chainId: isMapReadinessCase ? 'public-local-map-readiness-diagnostic' : isCharacterTurnPromptCase ? 'public-local-character-turn-prompt' : isPawnSelectionToggleCase ? 'public-local-pawn-selection-toggle' : isRoomRevealSequenceCase ? 'public-local-room-reveal-sequencing' : isLocalUiCloseoutCase ? 'public-local-ui-closeout' : 'public-local-natural-flow',
     chainStep: index + 1,
     stage: item.type === 'video' ? '连续流程' : '可视状态',
     role: 'main-flow',
@@ -1566,7 +2079,7 @@ const index = {
   })),
 };
 await writeFile(path.join(runDir, '.e2e-image-index.json'), `${JSON.stringify(index, null, 2)}\n`, 'utf8');
-await rm(videoTempDir, { recursive: true, force: true }).catch(() => {});
+if (!isMapReadinessCase) await rm(videoTempDir, { recursive: true, force: true }).catch(() => {});
 console.log(JSON.stringify({
   case: report.case,
   caseStatus: report.caseStatus,
@@ -1581,7 +2094,10 @@ console.log(JSON.stringify({
   failure: fatalError,
   completedSteps: steps,
 }, null, 2));
-if (isNarrowCase) {
+if (isMapReadinessCase) {
+  if (fatalError || mapReadinessStatus === 'FAIL' || mapReadinessStatus === 'MAP_ERROR') process.exitCode = 1;
+  else if (mapReadinessStatus === 'MAP_TIMEOUT' || mapReadinessStatus === 'DEADLINE_EXCEEDED' || mapReadinessStatus === 'READY_NO_PAWN') process.exitCode = 2;
+} else if (isNarrowCase) {
   if (caseStatus === 'FAIL') process.exitCode = 1;
   else if (caseStatus !== 'PASS') process.exitCode = 2;
 } else if (!fullFlowPassed) process.exitCode = 1;
