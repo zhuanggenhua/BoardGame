@@ -46,11 +46,14 @@ test('a hung acceptance step has an initial checkpoint and a readable timeout re
     });
     const report = JSON.parse(await readFile(result.reportPath, 'utf8'));
     assert.equal(result.timedOut, true);
-    assert.equal(result.childTerminated, true);
+    assert.equal(result.childTerminated, true, JSON.stringify(report.watchdog.termination));
     assert.equal(timeoutReportWasReadableBeforeTermination, true);
     assert.equal(report.caseStatus, 'TIMEOUT');
     assert.equal(report.watchdog.childTerminated, true);
   } finally {
-    await rm(directory, { recursive: true, force: true });
+    // Windows may briefly keep the child's former working directory busy after
+    // its exit event. Retry only this test-owned temporary directory; if the
+    // lock is persistent, let cleanup fail rather than hiding an orphan child.
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

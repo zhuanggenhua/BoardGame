@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
+  isExpectedLocalAiTurnOwner,
   requireSettledBoard,
   waitForPendingDecisionOrSettledBoard,
   waitForPendingDecisionPresentation,
@@ -11,6 +12,21 @@ import {
   withTimeout,
   writeCheckpoint,
 } from './betrayal-public-local-acceptance-runtime.mjs';
+
+test('AI turn handoff is recognized while its pending check is still resolving', () => {
+  const persisted = {
+    snapshotFound: true,
+    seedMatchesCurrentUrl: true,
+    currentPlayerId: '1',
+    seatControllers: { '1': { type: 'local-ai' } },
+    pendingEventRollStart: { sourceTitle: '一条秘密通道' },
+    pendingEventRollResolution: null,
+  };
+  assert.equal(isExpectedLocalAiTurnOwner(persisted, '0'), true);
+  assert.equal(isExpectedLocalAiTurnOwner({ ...persisted, currentPlayerId: '0' }, '0'), false);
+  assert.equal(isExpectedLocalAiTurnOwner({ ...persisted, seedMatchesCurrentUrl: false }, '0'), false);
+  assert.equal(isExpectedLocalAiTurnOwner({ ...persisted, seatControllers: { '1': { type: 'human' } } }, '0'), false);
+});
 
 test('resolution polling ignores a transient empty panel gap until a decision or usable board appears', async () => {
   const states = [

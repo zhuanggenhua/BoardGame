@@ -31,15 +31,22 @@ async function terminateOwnedChildTree(child) {
   if (!child.pid || childHasExited(child)) return { attempted: false, childTerminated: childHasExited(child) };
 
   if (process.platform === 'win32') {
+    let taskkillFailure = null;
     try {
-      execFileSync('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
+      execFileSync('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     } catch (error) {
+      taskkillFailure = {
+        code: error?.code ?? null,
+        exitCode: error?.status ?? null,
+        stderr: Buffer.isBuffer(error?.stderr) ? error.stderr.toString('utf8').trim() : String(error?.stderr ?? '').trim(),
+        message: error instanceof Error ? error.message : String(error),
+      };
       if (!(await waitForChildExit(child, 1_000))) {
-        return { attempted: true, childTerminated: false, error: error instanceof Error ? error.message : String(error) };
+        return { attempted: true, childTerminated: false, error: taskkillFailure };
       }
     }
     const childTerminated = await waitForChildExit(child, 2_000);
-    return { attempted: true, childTerminated, method: 'taskkill /T /F' };
+    return { attempted: true, childTerminated, method: 'taskkill /T /F', ...(taskkillFailure ? { taskkillFailure } : {}) };
   }
 
   child.kill('SIGTERM');

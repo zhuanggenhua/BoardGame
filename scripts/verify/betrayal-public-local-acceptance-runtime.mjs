@@ -2,6 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+export function isExpectedLocalAiTurnOwner(persisted, humanPlayerId) {
+  if (!persisted?.snapshotFound || !persisted.seedMatchesCurrentUrl) return false;
+  const currentPlayerId = String(persisted.currentPlayerId ?? '');
+  return currentPlayerId.length > 0
+    && currentPlayerId !== String(humanPlayerId)
+    && persisted.seatControllers?.[currentPlayerId]?.type === 'local-ai';
+}
+
 export function withTimeout(promise, timeoutMs, label = 'operation') {
   let timer;
   const timeout = new Promise((_, reject) => {

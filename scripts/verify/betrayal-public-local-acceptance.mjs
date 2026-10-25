@@ -10,7 +10,7 @@ import {
   loadExpectedBundleManifest,
   resolveTargetUrl,
 } from './betrayal-public-local-acceptance-config.mjs';
-import { requireSettledBoard, startDeadline, waitForPendingDecisionOrSettledBoard, waitForPendingDecisionPresentation, withTimeout, writeCheckpoint } from './betrayal-public-local-acceptance-runtime.mjs';
+import { isExpectedLocalAiTurnOwner, requireSettledBoard, startDeadline, waitForPendingDecisionOrSettledBoard, waitForPendingDecisionPresentation, withTimeout, writeCheckpoint } from './betrayal-public-local-acceptance-runtime.mjs';
 
 const require = createRequire(path.resolve('package.json'));
 const { chromium, expect } = require('@playwright/test');
@@ -70,7 +70,7 @@ try {
 const startedAt = new Date().toISOString();
 const steps = [];
 const media = [];
-const diagnostics = { console: [], pageErrors: [], failedRequests: [], httpErrors: [], pageResponses: [], chunks: [], footstep404s: [], roomAtlasResponses: [], roomAtlasFinished: [], mapResourceSamples: [], reselectAfterCancel: null, pawnSelectionToggle: null, movementCancellation: null, roomRevealSequence: null, characterTraitReadability: null, characterTurnPrompt: null };
+const diagnostics = { console: [], pageErrors: [], failedRequests: [], httpErrors: [], pageResponses: [], chunks: [], footstep404s: [], roomAtlasResponses: [], roomAtlasFinished: [], mapResourceSamples: [], reselectAfterCancel: null, pawnSelectionToggle: null, movementCancellation: null, roomRevealSequence: null, aiSecretPassageRoundTrip: null, characterTraitReadability: null, characterTurnPrompt: null };
 const pendingRoomAtlasFinishes = [];
 const roomAtlasStartedAt = new WeakMap();
 const isRoomAtlasUrl = (url) => /(?:room-front-atlas|room-back-atlas|trophy-oubliette-atlas|start-triple-room|start-upper-landing|start-basement-landing)/i.test(decodeURIComponent(url));
@@ -107,7 +107,7 @@ const persistAcceptanceCheckpoint = async (phase = mapDiagnosticPhase) => {
     case: requestedCase ?? 'full-flow',
     phase,
     status: isMapReadinessCase ? mapReadinessStatus : 'IN_PROGRESS',
-    caseStatus: isMapReadinessCase ? mapReadinessStatus : isRoomRevealSequenceCase ? (fatalError ? 'FAIL' : diagnostics.nextTurnHandoff?.status === 'READY' && diagnostics.roomRevealSequence?.status === 'PASS' ? 'PASS' : diagnostics.roomRevealSequence?.status ?? 'IN_PROGRESS') : diagnostics.localUiCloseout?.status ?? diagnostics.pawnSelectionToggle?.status ?? diagnostics.characterTurnPrompt?.status ?? 'IN_PROGRESS',
+    caseStatus: isMapReadinessCase ? mapReadinessStatus : isRoomRevealSequenceCase ? (fatalError ? 'FAIL' : diagnostics.roomRevealSequence?.status === 'PASS' && diagnostics.nextTurnHandoff?.status === 'READY' && diagnostics.aiSecretPassageRoundTrip?.status === 'PASS' ? 'PASS' : 'IN_PROGRESS') : diagnostics.localUiCloseout?.status ?? diagnostics.pawnSelectionToggle?.status ?? diagnostics.characterTurnPrompt?.status ?? 'IN_PROGRESS',
     functionalStatus: 'NOT_VERIFIED',
     verdict: 'PENDING',
     startedAt: startedAt ?? null,
@@ -323,7 +323,7 @@ const readDiscoveryCardSample = async () => page.evaluate(() => {
 });
 const capture = async (slug, sentence) => {
   if (isCharacterTurnPromptCase && !slug.startsWith('ai-ack-')) return null;
-  if (isRoomRevealSequenceCase && shotIndex > 0 && slug !== 'stable-next-ai-turn') {
+  if (isRoomRevealSequenceCase && shotIndex > 0 && !['stable-next-ai-turn', 'ai-secret-passage-knowledge-result', 'human-turn-actionable-after-ai-check'].includes(slug)) {
     diagnostics.screenshotCaptureNotes ??= [];
     diagnostics.screenshotCaptureNotes.push({
       requestedState: slug,
@@ -344,14 +344,16 @@ const capture = async (slug, sentence) => {
   media.push({ path: file, type: 'image', label: sentence, viewport, capturedAt, elapsedMs });
   await persistAcceptanceCheckpoint(`screenshot-saved:${file}`);
   let mapSnapshot = null;
-  try { mapSnapshot = await readMapResourceSnapshot(); }
-  catch (error) {
-    diagnostics.mapResourceSnapshotFailures ??= [];
-    diagnostics.mapResourceSnapshotFailures.push({ path: file, at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error) });
-    if (!isMapReadinessCase) throw error;
+  if (!isRoomRevealSequenceCase) {
+    try { mapSnapshot = await readMapResourceSnapshot(); }
+    catch (error) {
+      diagnostics.mapResourceSnapshotFailures ??= [];
+      diagnostics.mapResourceSnapshotFailures.push({ path: file, at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error) });
+      if (!isMapReadinessCase) throw error;
+    }
   }
   if (mapSnapshot) diagnostics.mapResourceSamples.push({ path: file, capturedAt, elapsedMs, ...mapSnapshot, consoleErrors: diagnostics.console.filter((entry) => entry.type === 'error').slice(-12), roomAtlasResponses: diagnostics.roomAtlasResponses.slice(), roomAtlasFinished: diagnostics.roomAtlasFinished.slice() });
-  console.log(`[public-local-acceptance] screenshot diagnostics ${mapSnapshot ? 'complete' : 'timed out'}: ${file}`);
+  console.log(`[public-local-acceptance] screenshot diagnostics ${isRoomRevealSequenceCase ? 'not requested for this business case' : mapSnapshot ? 'complete' : 'timed out'}: ${file}`);
   await persistAcceptanceCheckpoint(`screenshot-diagnosed:${file}`);
   return absolutePath;
 };
@@ -496,7 +498,8 @@ const readCharacterTraitReadability = async () => page.evaluate(async () => {
     endTextRects: endLines,
   };
 });
-const readTurnPromptSample = async () => page.evaluate(() => {
+const readTurnPromptSample = async (pendingUiTestIds = []) => page.evaluate((pendingIds) => {
+  const startedAt = performance.now();
   const normalize = (value) => (value ?? '').replace(/\s+/gu, ' ').trim();
   const visible = (element) => {
     if (!element) return false;
@@ -505,24 +508,36 @@ const readTurnPromptSample = async () => page.evaluate(() => {
     return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
   };
   const yourTurnText = String.fromCharCode(0x4f60, 0x7684, 0x56de, 0x5408);
-  const matches = [...document.querySelectorAll('div,span,p,h1,h2,h3')]
-    .filter((element) => visible(element) && normalize(element.innerText).includes(yourTurnText) && normalize(element.innerText).length <= 160)
-    .sort((left, right) => normalize(left.innerText).length - normalize(right.innerText).length);
-  const cue = matches[0] ?? null;
+  const cue = document.querySelector('[data-testid="betrayal-turn-intro-title"]');
   const skip = document.querySelector('[data-testid="betrayal-turn-intro-skip"]');
   const status = document.querySelector('[data-testid="betrayal-status-chip"]');
-  const cueRect = cue?.getBoundingClientRect();
+  const board = document.querySelector('[data-testid="betrayal-board"]');
+  const actionRail = document.querySelector('[data-testid="betrayal-action-rail"]');
+  const endTurn = document.querySelector('[data-testid="betrayal-action-endTurn"]');
+  const pendingUi = pendingIds.map((testId) => {
+    const element = document.querySelector(`[data-testid="${testId}"]`);
+    return { testId, visible: visible(element) };
+  });
+  const cueText = normalize(cue?.textContent);
   return {
     sampledAt: new Date().toISOString(),
+    sampleDurationMs: Math.round((performance.now() - startedAt) * 100) / 100,
     statusText: normalize(status?.innerText),
     turnIntroSkipVisible: visible(skip),
+    turnIntroSkipPresent: Boolean(skip),
+    turnIntroSkipEnabled: Boolean(skip && !skip.disabled && skip.getAttribute('aria-disabled') !== 'true'),
     turnIntroSkipTestId: skip?.getAttribute('data-testid') ?? null,
-    yourTurnVisible: Boolean(cue),
-    yourTurnCue: cue ? { text: normalize(cue.innerText), tagName: cue.tagName, testId: cue.getAttribute('data-testid'), className: String(cue.className ?? ''), rect: cueRect ? { x: cueRect.x, y: cueRect.y, width: cueRect.width, height: cueRect.height } : null } : null,
+    yourTurnVisible: Boolean(cue && visible(cue) && cueText.includes(yourTurnText)),
+    yourTurnCue: cue ? { text: cueText, testId: cue.getAttribute('data-testid') } : null,
+    actionRailVisible: visible(actionRail),
+    endTurnEnabled: Boolean(endTurn && !endTurn.disabled && endTurn.getAttribute('aria-disabled') !== 'true'),
+    visualBusy: board?.getAttribute('data-betrayal-visual-busy') === 'true',
+    pendingUi,
   };
-});
+}, pendingUiTestIds);
 
 const readAiConfirmationUiSample = async () => page.evaluate(() => {
+  const startedAt = performance.now();
   const normalize = (value) => (value ?? '').replace(/\s+/gu, ' ').trim();
   const visible = (element) => {
     if (!element) return false;
@@ -550,12 +565,25 @@ const readAiConfirmationUiSample = async () => page.evaluate(() => {
       eventRollReadable: button.getAttribute('data-event-roll-readable'),
     };
   }).filter((button) => button?.visible);
+  const board = document.querySelector('[data-testid="betrayal-board"]');
   const discovery = document.querySelector('[data-testid="betrayal-discovery-panel"]');
   const status = document.querySelector('[data-testid="betrayal-status-chip"]');
+  const readCue = (testId) => {
+    const element = document.querySelector(`[data-testid="${testId}"]`);
+    return { present: Boolean(element), visible: visible(element), text: normalize(element?.innerText ?? element?.textContent ?? '') };
+  };
   return {
     sampledAt: new Date().toISOString(),
+    sampleDurationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+    visualBusy: board?.getAttribute('data-betrayal-visual-busy') === 'true',
     currentActorText: normalize(status?.innerText),
     discoveryPanelText: normalize(discovery?.innerText),
+    recentRoll: {
+      panel: readCue('betrayal-recent-roll-panel'),
+      source: readCue('betrayal-recent-roll-source-title'),
+      label: readCue('betrayal-recent-roll-label'),
+      outcome: readCue('betrayal-recent-roll-outcome'),
+    },
     visibleConfirmationButtons: buttons,
     explicitViewerPlayerId: new URL(location.href).searchParams.get('playerID'),
   };
@@ -634,6 +662,10 @@ const readPersistedLocalGameState = async () => page.evaluate(() => {
     };
   };
   const pendingEvent = core?.pendingEventRollResolution ?? null;
+  const pendingEventChoice = core?.pendingEventChoice ?? null;
+  const pendingEventRollStart = core?.pendingEventRollStart ?? null;
+  const latestDiscovery = core?.latestDiscovery ?? null;
+  const recentRollState = core?.recentRoll ?? null;
   let eventRoll = normalizeResolution(pendingEvent);
   if (pendingEvent && eventRoll && (!Array.isArray(pendingEvent.requiredPlayerIds) || pendingEvent.requiredPlayerIds.length === 0)) {
     const requiresOwnerAdvance = pendingEvent.requiresPlayerAdvance || pendingEvent.requiresAcknowledgement === false;
@@ -675,7 +707,27 @@ const readPersistedLocalGameState = async () => page.evaluate(() => {
     pendingCardResolutionQueueLength: pendingCards.length,
     pendingCardResolutions: pendingCards,
     pendingEventRollResolution: eventRoll,
-    recentRoll: normalizeResolution(core?.recentRoll),
+    pendingEventChoice: pendingEventChoice ? {
+      playerId: pendingEventChoice.playerId == null ? null : String(pendingEventChoice.playerId),
+      sourceTitle: pendingEventChoice.sourceTitle ?? null,
+      eventTitle: pendingEventChoice.eventTitle ?? null,
+    } : null,
+    pendingEventRollStart: pendingEventRollStart ? {
+      playerId: pendingEventRollStart.playerId == null ? null : String(pendingEventRollStart.playerId),
+      sourceTitle: pendingEventRollStart.sourceTitle ?? null,
+    } : null,
+    latestDiscovery: latestDiscovery ? {
+      kind: latestDiscovery.kind ?? null,
+      title: latestDiscovery.title ?? null,
+      sourceTitle: latestDiscovery.sourceTitle ?? null,
+    } : null,
+    recentRoll: recentRollState ? {
+      ...(normalizeResolution(recentRollState) ?? {}),
+      sourceTitle: recentRollState.sourceTitle ?? null,
+      rollLabel: recentRollState.rollLabel ?? null,
+      total: recentRollState.total ?? null,
+      outcome: recentRollState.outcome ?? null,
+    } : null,
   };
 });
 const readMatchingPersistedLocalGameState = async (uiSample) => {
@@ -1495,6 +1547,8 @@ try {
     await capture('Room reveal resolution', 'After confirming room placement, the game presents a discovery or event card with a legal action.');
 
     const discoveryCardSamples = [];
+    const actionTrace = [];
+    revealDiagnostic.actionTrace = actionTrace;
     diagnostics.roomRevealSequence = {
       ...revealDiagnostic,
       status: 'IN_PROGRESS',
@@ -1503,12 +1557,11 @@ try {
       resolutionAppearedAfterPlacementConfirmation: true,
       resolutionKind,
       resolutionPanelAriaLabel,
-      actionTrace: [],
+      actionTrace,
       discoveryConfirmClicks: 0,
       cardClosedAfterConfirmation: false,
     };
 
-    const actionTrace = [];
     const visible = async (testId) => page.getByTestId(testId).isVisible().catch(() => false);
     const readResolutionState = async () => {
       const state = await page.evaluate(() => {
@@ -1636,8 +1689,28 @@ try {
             const option = increments.nth(optionIndex);
             if (await option.isVisible().catch(() => false) && await option.isEnabled().catch(() => false)) {
               const optionTestId = await option.getAttribute('data-testid');
-              await option.click();
-              actionTrace.push({ kind: 'damage-allocation-trait', testId: optionTestId, at: new Date().toISOString() });
+              const allocationTrait = optionTestId?.match(/-trait-(.+)-increase$/u)?.[1];
+              expect(allocationTrait).toBeTruthy();
+              const selectedCount = page.getByTestId(`betrayal-damage-allocation-trait-${allocationTrait}-selected-count`);
+              const selectedCountBeforeText = await selectedCount.getAttribute('data-damage-selected-count');
+              expect(selectedCountBeforeText).not.toBeNull();
+              const selectedCountBefore = Number(selectedCountBeforeText);
+              expect(Number.isInteger(selectedCountBefore)).toBe(true);
+
+              // This control only changes the local damage preview; the business effect is
+              // proven by the selected-count update below, so do not wait for document navigation.
+              await option.click({ noWaitAfter: true });
+              await expect.poll(
+                async () => Number(await selectedCount.getAttribute('data-damage-selected-count')),
+                { timeout: 5_000 },
+              ).toBe(selectedCountBefore + 1);
+              actionTrace.push({
+                kind: 'damage-allocation-trait',
+                testId: optionTestId,
+                selectedCountBefore,
+                selectedCountAfter: selectedCountBefore + 1,
+                at: new Date().toISOString(),
+              });
               selected = true;
               break;
             }
@@ -1804,39 +1877,30 @@ try {
       await expect(turnIntroSkip).toHaveCount(0, { timeout: 15_000 });
     }
 
-    handoffDiagnostic.stage = 'resolving-next-ai-turn-prompts';
+    handoffDiagnostic.stage = 'checking-ai-turn-owner';
     handoffDiagnostic.introDisplayed = introDisplayed;
-    const omenPanel = page.getByTestId('betrayal-discovery-panel');
-    let omenAcknowledgements = 0;
-    for (let index = 0; index < 5 && await omenPanel.isVisible().catch(() => false); index += 1) {
-      const continueButton = page.getByTestId('betrayal-discovery-continue');
-      await expect(continueButton).toBeEnabled();
-      const previousText = normalize(await omenPanel.innerText());
-      await continueButton.click();
-      omenAcknowledgements += 1;
-      await expect.poll(async () => {
-        if (!(await omenPanel.isVisible().catch(() => false))) return true;
-        return normalize(await omenPanel.innerText().catch(() => '')) !== previousText;
-      }, { timeout: 20_000, intervals: [250, 500, 750] }).toBe(true);
-      handoffDiagnostic.omenAcknowledgements = omenAcknowledgements;
-      diagnostics.nextTurnHandoff = handoffDiagnostic;
-      await persistAcceptanceCheckpoint('next-ai-handoff-omen-acknowledged');
-    }
-
-    handoffDiagnostic.stage = 'checking-stable-ai-turn-state';
     diagnostics.nextTurnHandoff = handoffDiagnostic;
     await persistAcceptanceCheckpoint('next-ai-handoff-stability-check');
     try {
       await expect.poll(async () => {
-        const status = normalize(await statusChip.innerText());
         const persisted = await readPersistedLocalGameState();
-        const pendingUi = await Promise.all(['betrayal-event-choice-panel', 'betrayal-damage-allocation-panel', 'betrayal-roll-result-backdrop', 'betrayal-event-roll-start', 'betrayal-discovery-panel'].map((testId) => page.getByTestId(testId).isVisible().catch(() => false)));
-        const noPersistedDecision = persisted.snapshotFound && persisted.seedMatchesCurrentUrl && persisted.pendingCardResolutionQueueLength === 0 && !persisted.pendingEventRollResolution;
-        handoffDiagnostic.lastObserved = { status, currentPlayerId: persisted.currentPlayerId, pendingUi, pendingCardResolutionQueueLength: persisted.pendingCardResolutionQueueLength, pendingEventRollResolution: persisted.pendingEventRollResolution };
-        return /AI\s*\d+/u.test(status) && persisted.currentPlayerId && persisted.currentPlayerId !== expectedHumanTurnOwner && pendingUi.every((value) => !value) && noPersistedDecision;
+        const status = normalize(await statusChip.innerText());
+        const aiTurnOwner = isExpectedLocalAiTurnOwner(persisted, expectedHumanTurnOwner);
+        handoffDiagnostic.lastObserved = {
+          currentPlayerId: persisted.currentPlayerId,
+          controller: persisted.seatControllers?.[persisted.currentPlayerId]?.type ?? null,
+          snapshotFound: persisted.snapshotFound,
+          seedMatchesCurrentUrl: persisted.seedMatchesCurrentUrl,
+          statusText: status,
+          pendingCardResolutionQueueLength: persisted.pendingCardResolutionQueueLength,
+          pendingEventChoice: persisted.pendingEventChoice,
+          pendingEventRollStart: persisted.pendingEventRollStart,
+          pendingEventRollResolution: persisted.pendingEventRollResolution,
+        };
+        return aiTurnOwner && /AI\s*\d+/u.test(status);
       }, { timeout: 30_000, intervals: [500, 750, 1000] }).toBe(true);
     } catch (error) {
-      handoffDiagnostic.stage = 'checking-stable-ai-turn-state-failed';
+      handoffDiagnostic.stage = 'checking-ai-turn-owner-failed';
       handoffDiagnostic.status = 'FAIL';
       handoffDiagnostic.failure = error instanceof Error ? error.message : String(error);
       diagnostics.nextTurnHandoff = handoffDiagnostic;
@@ -1846,23 +1910,334 @@ try {
 
     const turnStatus = normalize(await statusChip.innerText());
     const persistedAfterHandoff = await readPersistedLocalGameState();
-    expect(persistedAfterHandoff.currentPlayerId).not.toBe(expectedHumanTurnOwner);
+    expect(isExpectedLocalAiTurnOwner(persistedAfterHandoff, expectedHumanTurnOwner)).toBe(true);
     await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
     diagnostics.nextTurnHandoff = {
       status: 'READY',
       endTurnClicked,
       alreadyInNextAiTurn,
       introDisplayed,
-      omenAcknowledgements,
       playerIdAtStart: expectedHumanTurnOwner,
       currentTurnOwnerBeforeHandoff,
       currentTurnOwnerAfterHandoff: persistedAfterHandoff.currentPlayerId,
+      controllerAfterHandoff: persistedAfterHandoff.seatControllers?.[persistedAfterHandoff.currentPlayerId]?.type ?? null,
+      pendingDecisionAtHandoff: {
+        pendingCardResolutionQueueLength: persistedAfterHandoff.pendingCardResolutionQueueLength,
+        pendingEventChoice: persistedAfterHandoff.pendingEventChoice,
+        pendingEventRollStart: persistedAfterHandoff.pendingEventRollStart,
+        pendingEventRollResolution: persistedAfterHandoff.pendingEventRollResolution,
+      },
       explorerBeforeTurnEnd,
       turnText: turnStatus,
     };
-    await capture('stable-next-ai-turn', 'The pending card decisions are resolved and the next AI turn is active on the board.');
+    await capture('stable-next-ai-turn', 'The AI seat owns the next turn; any pending event roll is resolved by the following business step.');
     return 'Next-turn status: ' + turnStatus;
   });
+  if (isRoomRevealSequenceCase) await runStep('AI Secret Passage knowledge check returns to an actionable human turn', async () => {
+    const state = {
+      status: 'IN_PROGRESS',
+      classification: 'Acceptance extension for an existing product flow; no TDD red is claimed because this adds verification without implementing product behavior.',
+      humanPlayerId: diagnostics.roomRevealSequence?.playerIdAtStart ?? null,
+      aiPlayerId: null,
+      initialEvidence: null,
+      aiAcknowledgementActions: [],
+      resultStage: null,
+      finalState: null,
+      failure: null,
+    };
+    diagnostics.aiSecretPassageRoundTrip = state;
+    await persistAcceptanceCheckpoint('ai-secret-passage-return-started');
+
+    const normalize = (value) => String(value ?? '').replace(/\s+/gu, ' ').trim();
+    const secretPassage = String.fromCharCode(0x4e00, 0x6761, 0x79d8, 0x5bc6, 0x901a, 0x9053);
+    const knowledgeCheck = String.fromCharCode(0x77e5, 0x8bc6, 0x68c0, 0x5b9a);
+    const playerName = String.fromCharCode(0x795e, 0x7236, 0x20, 0x6881, 0x6c83, 0x4f26);
+    const humanPlayerId = state.humanPlayerId;
+    expect(humanPlayerId).toBeTruthy();
+
+    const turnIntroSkip = page.getByTestId('betrayal-turn-intro-skip');
+    const captureBusinessEvidence = async (slug, sentence) => {
+      try {
+        await capture(slug, sentence);
+        return true;
+      } catch (error) {
+        state.evidenceCaptureFailures ??= [];
+        state.evidenceCaptureFailures.push({ slug, at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error) });
+        await persistAcceptanceCheckpoint(`evidence-capture-failed:${slug}`);
+        return false;
+      }
+    };
+    const initialPersisted = await readPersistedLocalGameState();
+    const initialTurn = await readTurnPromptSample();
+    const initialUiSample = await readAiConfirmationUiSample();
+    const sourceEvidence = [
+      initialPersisted.latestDiscovery?.title,
+      initialPersisted.latestDiscovery?.sourceTitle,
+      initialPersisted.pendingEventChoice?.sourceTitle,
+      initialPersisted.pendingEventRollStart?.sourceTitle,
+      initialPersisted.recentRoll?.sourceTitle,
+      initialUiSample.recentRoll.source.text,
+      initialUiSample.recentRoll.panel.text,
+    ].filter(Boolean).join(' ');
+    const checkEvidence = [
+      initialPersisted.recentRoll?.rollLabel,
+      initialUiSample.recentRoll.label.text,
+      initialUiSample.recentRoll.panel.text,
+    ].filter(Boolean).join(' ');
+    state.aiPlayerId = initialPersisted.currentPlayerId;
+    state.initialEvidence = {
+      turn: initialTurn,
+      currentPlayerId: initialPersisted.currentPlayerId,
+      controller: initialPersisted.seatControllers?.[initialPersisted.currentPlayerId]?.type ?? null,
+      sourceEvidence,
+      checkEvidence,
+      pendingCardResolutionQueueLength: initialPersisted.pendingCardResolutionQueueLength,
+      pendingEventChoice: initialPersisted.pendingEventChoice,
+      pendingEventRollStart: initialPersisted.pendingEventRollStart,
+      pendingEventRollResolution: initialPersisted.pendingEventRollResolution,
+    };
+    expect(initialPersisted.snapshotFound).toBe(true);
+    expect(initialPersisted.seedMatchesCurrentUrl).toBe(true);
+    expect(initialPersisted.currentPlayerId).not.toBe(humanPlayerId);
+    expect(state.initialEvidence.controller).toBe('local-ai');
+    await persistAcceptanceCheckpoint('ai-secret-passage-ai-turn-started');
+
+    const pendingUiIds = [
+      'betrayal-event-choice-panel',
+      'betrayal-damage-allocation-panel',
+      'betrayal-roll-result-backdrop',
+      'betrayal-event-roll-start',
+      'betrayal-discovery-panel',
+      'betrayal-room-placement-panel',
+    ];
+    const clickedActions = new Set();
+    const deadline = Date.now() + 75_000;
+    let returnedToHuman = false;
+    let resultScreenshotTaken = false;
+    let turnIntroDismissRequested = false;
+
+    while (Date.now() < deadline) {
+      const [turnSample, persisted, uiSample] = await Promise.all([
+        withTimeout(readTurnPromptSample(pendingUiIds), 5_000, 'AI turn prompt sample'),
+        withTimeout(readPersistedLocalGameState(), 5_000, 'AI persisted state sample'),
+        withTimeout(readAiConfirmationUiSample(), 5_000, 'AI confirmation UI sample'),
+      ]);
+      const currentSourceEvidence = [
+        persisted.latestDiscovery?.title,
+        persisted.latestDiscovery?.sourceTitle,
+        persisted.pendingEventChoice?.sourceTitle,
+        persisted.pendingEventRollStart?.sourceTitle,
+        persisted.recentRoll?.sourceTitle,
+        uiSample.recentRoll.source.text,
+        uiSample.recentRoll.panel.text,
+      ].filter(Boolean).join(' ');
+      const currentCheckEvidence = [
+        persisted.recentRoll?.rollLabel,
+        uiSample.recentRoll.label.text,
+        uiSample.recentRoll.panel.text,
+      ].filter(Boolean).join(' ');
+      const currentOutcome = uiSample.recentRoll.outcome.text;
+      const resultVisible = uiSample.recentRoll.outcome.visible;
+      if (
+        !resultScreenshotTaken
+        && resultVisible
+        && currentSourceEvidence.includes(secretPassage)
+        && currentCheckEvidence.includes(knowledgeCheck)
+        && normalize(currentOutcome)
+      ) {
+        state.resultStage = {
+          source: currentSourceEvidence,
+          label: currentCheckEvidence,
+          outcome: normalize(currentOutcome),
+          capturedAt: new Date().toISOString(),
+        };
+        await captureBusinessEvidence('ai-secret-passage-knowledge-result', 'The AI Secret Passage knowledge check has a readable settled outcome.');
+        resultScreenshotTaken = true;
+      }
+
+      if (persisted.currentPlayerId === humanPlayerId && turnSample.statusText.includes(playerName)) {
+        const noPersistedDecisions = persisted.pendingCardResolutionQueueLength === 0
+          && persisted.pendingEventChoice === null
+          && persisted.pendingEventRollStart === null
+          && persisted.pendingEventRollResolution === null;
+        const noVisibleDecisionUi = turnSample.pendingUi.every((item) => !item.visible);
+        const actionable = !turnSample.turnIntroSkipPresent
+          && !turnSample.visualBusy
+          && turnSample.actionRailVisible
+          && turnSample.endTurnEnabled
+          && noPersistedDecisions
+          && noVisibleDecisionUi;
+        state.humanReturnCandidate = {
+          turn: turnSample,
+          persisted,
+          noPersistedDecisions,
+          noVisibleDecisionUi,
+          actionable,
+        };
+        if (turnSample.turnIntroSkipPresent && !turnIntroDismissRequested) {
+          state.turnIntroDismissProgress = { phase: 'click-started', sampledAt: turnSample.sampledAt, visible: turnSample.turnIntroSkipVisible, enabled: turnSample.turnIntroSkipEnabled };
+          expect(turnSample.turnIntroSkipVisible).toBe(true);
+          expect(turnSample.turnIntroSkipEnabled).toBe(true);
+          await turnIntroSkip.click({ force: true, noWaitAfter: true, timeout: 5_000 });
+          turnIntroDismissRequested = true;
+          state.turnIntroDismissAction = { clickedAt: new Date().toISOString(), testId: 'betrayal-turn-intro-skip', result: 'click resolved' };
+          state.turnIntroDismissProgress = { ...state.turnIntroDismissProgress, phase: 'click-resolved', resolvedAt: new Date().toISOString() };
+          await page.waitForTimeout(250);
+          continue;
+        }
+        if (actionable) {
+          returnedToHuman = true;
+          state.humanReturned = state.humanReturnCandidate;
+          state.finalState = {
+            turn: turnSample,
+            currentPlayerId: persisted.currentPlayerId,
+            controller: persisted.seatControllers?.[persisted.currentPlayerId]?.type ?? null,
+            pendingCardResolutionQueueLength: persisted.pendingCardResolutionQueueLength,
+            pendingEventChoice: persisted.pendingEventChoice,
+            pendingEventRollStart: persisted.pendingEventRollStart,
+            pendingEventRollResolution: persisted.pendingEventRollResolution,
+            pendingUi: turnSample.pendingUi,
+            endTurnEnabled: turnSample.endTurnEnabled,
+          };
+          break;
+        }
+        state.latestHumanTurnSample = state.humanReturnCandidate;
+        await page.waitForTimeout(250);
+        continue;
+      }
+
+      for (const action of uiSample.visibleConfirmationButtons) {
+        if (action.disabled || !['betrayal-discovery-continue', 'betrayal-roll-continue'].includes(action.testId)) continue;
+        const matched = await withTimeout(readMatchingPersistedLocalGameState(uiSample), 8_000, 'AI acknowledgement state match');
+        const resolution = action.pendingCardResolutionId
+          ? matched.pendingCardResolutions?.find((item) => item.id === action.pendingCardResolutionId) ?? null
+          : matched.pendingEventRollResolution;
+        if (!matched.matchesVisibleResolution || !resolution) continue;
+        const humanAcknowledgementRequired = (resolution.missingPlayerIds ?? []).includes(humanPlayerId);
+        const confirmedCountBeforeClick = Number(action.cardResolutionConfirmedCount ?? action.eventRollConfirmedCount ?? resolution.confirmedCount ?? 0);
+        const fingerprint = [
+          action.testId,
+          action.pendingCardResolutionId,
+          action.pendingCardResolutionStep,
+          action.cardResolutionConfirmedCount,
+          action.eventRollConfirmedCount,
+          action.text,
+          uiSample.discoveryPanelText,
+        ].join('|');
+        if (!humanAcknowledgementRequired || clickedActions.has(fingerprint)) continue;
+
+        const control = page.getByTestId(action.testId);
+        await expect(control).toBeVisible();
+        await expect(control).toBeEnabled();
+        state.inFlightAcknowledgement = {
+          phase: 'click-started',
+          testId: action.testId,
+          resolutionId: resolution.id,
+          confirmedCountBeforeClick,
+          startedAt: new Date().toISOString(),
+        };
+        await persistAcceptanceCheckpoint('ai-secret-passage-acknowledgement-click-started');
+        await control.click({ timeout: 5_000, noWaitAfter: true });
+        state.inFlightAcknowledgement = {
+          ...state.inFlightAcknowledgement,
+          phase: 'click-returned',
+          returnedAt: new Date().toISOString(),
+        };
+        clickedActions.add(fingerprint);
+        state.aiAcknowledgementActions.push({
+          testId: action.testId,
+          text: action.text,
+          resolutionId: resolution.id,
+          humanPlayerId,
+          visualBusyAtClick: uiSample.visualBusy,
+          eventRollConfirmedCountBeforeClick: action.eventRollConfirmedCount,
+          confirmedCountBeforeClick,
+          requiredCount: resolution.requiredCount,
+          clickedAt: new Date().toISOString(),
+        });
+        state.lastAcknowledgementProgress = {
+          phase: 'waiting-for-persisted-acknowledgement',
+          testId: action.testId,
+          resolutionId: resolution.id,
+          confirmedCountBeforeClick,
+          startedAt: new Date().toISOString(),
+        };
+        await persistAcceptanceCheckpoint('ai-secret-passage-human-required-acknowledgement');
+        await expect.poll(async () => {
+          const [afterUi, afterPersisted] = await Promise.all([
+            withTimeout(readAiConfirmationUiSample(), 5_000, 'AI acknowledgement UI refresh'),
+            withTimeout(readPersistedLocalGameState(), 5_000, 'AI acknowledgement persisted refresh'),
+          ]);
+          const currentResolution = action.pendingCardResolutionId
+            ? afterPersisted.pendingCardResolutions.find((item) => item.id === action.pendingCardResolutionId) ?? null
+            : afterPersisted.pendingEventRollResolution;
+          const missingHumanAcknowledgement = (currentResolution?.missingPlayerIds ?? []).includes(humanPlayerId);
+          const currentButton = afterUi.visibleConfirmationButtons.find((item) => item.testId === action.testId
+            && (!action.pendingCardResolutionId || item.pendingCardResolutionId === action.pendingCardResolutionId));
+          const currentConfirmedCount = Number(currentButton?.cardResolutionConfirmedCount ?? currentButton?.eventRollConfirmedCount ?? currentResolution?.confirmedCount ?? 0);
+          state.lastAcknowledgementProgress = {
+            phase: 'observed-after-click',
+            testId: action.testId,
+            resolutionId: resolution.id,
+            missingHumanAcknowledgement,
+            confirmedCountBeforeClick,
+            currentConfirmedCount,
+            currentResolutionPresent: Boolean(currentResolution),
+            sampledAt: new Date().toISOString(),
+          };
+          return !missingHumanAcknowledgement || currentConfirmedCount > confirmedCountBeforeClick;
+        }, { timeout: 12_000, intervals: [250, 500, 750] }).toBe(true);
+        state.inFlightAcknowledgement = null;
+        await persistAcceptanceCheckpoint('ai-secret-passage-acknowledgement-committed');
+      }
+
+      state.lastObserved = {
+        sampledAt: new Date().toISOString(),
+        visualBusy: uiSample.visualBusy,
+        turn: turnSample,
+        currentPlayerId: persisted.currentPlayerId,
+        pendingCardResolutionQueueLength: persisted.pendingCardResolutionQueueLength,
+        pendingEventChoice: persisted.pendingEventChoice,
+        pendingEventRollStart: persisted.pendingEventRollStart,
+        pendingEventRollResolution: persisted.pendingEventRollResolution,
+        recentRoll: persisted.recentRoll,
+        visibleConfirmationButtons: uiSample.visibleConfirmationButtons,
+      };
+      await page.waitForTimeout(250);
+    }
+
+    if (!returnedToHuman) {
+      state.status = 'FAIL';
+      state.failure = 'The AI Secret Passage knowledge check did not return control to the original human player within 75 seconds.';
+      state.finishedAt = new Date().toISOString();
+      await persistAcceptanceCheckpoint('ai-secret-passage-human-return-timeout');
+      throw new Error(state.failure);
+    }
+    expect(state.resultStage, 'The seeded AI Secret Passage knowledge check must be observed before the human turn returns.').not.toBeNull();
+    expect(state.finalState).not.toBeNull();
+    const finalPersisted = state.humanReturned.persisted;
+    const finalTurn = state.finalState.turn;
+    const pendingUi = state.finalState.pendingUi;
+    expect(finalPersisted.snapshotFound).toBe(true);
+    expect(finalPersisted.seedMatchesCurrentUrl).toBe(true);
+    expect(finalPersisted.currentPlayerId).toBe(humanPlayerId);
+    expect(state.finalState.controller).toBe('human');
+    expect(finalTurn.statusText).toContain(playerName);
+    expect(state.finalState.endTurnEnabled).toBe(true);
+    expect(finalTurn.turnIntroSkipPresent).toBe(false);
+    expect(finalTurn.actionRailVisible).toBe(true);
+    expect(finalTurn.visualBusy).toBe(false);
+    expect(finalPersisted.pendingCardResolutionQueueLength).toBe(0);
+    expect(finalPersisted.pendingEventChoice).toBeNull();
+    expect(finalPersisted.pendingEventRollStart).toBeNull();
+    expect(finalPersisted.pendingEventRollResolution).toBeNull();
+    expect(pendingUi.filter((item) => item.visible)).toEqual([]);
+    await captureBusinessEvidence('human-turn-actionable-after-ai-check', 'The AI check is resolved and the original human turn is actionable with no pending decision.');
+    state.status = 'PASS';
+    state.finishedAt = new Date().toISOString();
+    await persistAcceptanceCheckpoint('ai-secret-passage-human-turn-actionable');
+    return 'The AI Secret Passage knowledge check completed; control returned to the original human seat with an enabled end-turn action and no pending card, event, roll, or placement decisions.';
+  }, { timeoutMs: 100_000 });
   if (isLocalUiCloseoutCase) await runStep('结束玩家回合、经过 AI 并返回玩家', async () => {
     const state = {
       status: 'IN_PROGRESS',
@@ -2022,7 +2397,7 @@ const missingChunks = expectedChunks.filter((name) => !chunkNames.has(name));
 const screenshots = media.filter((item) => item.type === 'image');
 const videoPresent = media.some((item) => item.type === 'video');
 const fullFlowPassed = fatalError === null && steps.length === 7 && steps.every((step) => step.status === 'PASS') && screenshots.length >= 10 && videoPresent;
-const caseStatus = isMapReadinessCase ? mapReadinessStatus : isCharacterTurnPromptCase ? (fatalError ? 'FAIL' : diagnostics.characterTurnPrompt?.status ?? 'NOT_VERIFIED') : isPawnSelectionToggleCase ? diagnostics.pawnSelectionToggle?.status ?? 'NOT_VERIFIED' : isRoomRevealSequenceCase ? (fatalError ? 'FAIL' : diagnostics.roomRevealSequence?.status === 'PASS' ? (diagnostics.nextTurnHandoff?.status === 'READY' ? 'PASS' : 'NOT_VERIFIED') : diagnostics.roomRevealSequence?.status ?? 'NOT_VERIFIED') : isLocalUiCloseoutCase ? (fatalError ? 'FAIL' : diagnostics.localUiCloseout?.status ?? 'NOT_VERIFIED') : null;
+const caseStatus = isMapReadinessCase ? mapReadinessStatus : isCharacterTurnPromptCase ? (fatalError ? 'FAIL' : diagnostics.characterTurnPrompt?.status ?? 'NOT_VERIFIED') : isPawnSelectionToggleCase ? diagnostics.pawnSelectionToggle?.status ?? 'NOT_VERIFIED' : isRoomRevealSequenceCase ? (fatalError ? 'FAIL' : diagnostics.roomRevealSequence?.status === 'PASS' && diagnostics.nextTurnHandoff?.status === 'READY' && diagnostics.aiSecretPassageRoundTrip?.status === 'PASS' ? 'PASS' : diagnostics.roomRevealSequence?.status ?? 'IN_PROGRESS') : isLocalUiCloseoutCase ? (fatalError ? 'FAIL' : diagnostics.localUiCloseout?.status ?? 'NOT_VERIFIED') : null;
 const functionalStatus = isMapReadinessCase ? 'DIAGNOSTIC_ONLY' : isNarrowCase ? (caseStatus === 'PASS' ? 'PASS' : caseStatus === 'FAIL' ? 'FAIL' : 'NOT_VERIFIED') : fullFlowPassed ? 'PASS' : 'REVISE';
 const report = {
   schemaVersion: 1,
@@ -2057,7 +2432,7 @@ for (const item of report.media) {
 }
 if (isRoomRevealSequenceCase) {
   report.limitations = [
-    'Narrow public /local business chain: one room placement, any resulting discovery/event decisions, the resolved room and explorer state, movement consumption, and the next AI turn.',
+    'Narrow public /local business chain: one room placement and its discovery/event decisions, followed by the seeded AI Secret Passage knowledge check returning control to the original human seat.',
     'This does not establish full-game acceptance, all scenarios, complete map exploration, overall balance, animation/audio behavior, or final visual acceptance; verdict remains REVISE for independent review.',
     'Transition frames and intro presentations are intentionally not success criteria. Chromium sandbox remains enabled; no local server is started.',
   ];
