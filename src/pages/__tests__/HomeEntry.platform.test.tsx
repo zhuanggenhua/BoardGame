@@ -1,19 +1,17 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { persistHomeEntryStyle } from '../../lib/homeV2Routing';
 import { HomeEntry } from '../HomeEntry';
 
 vi.mock('../Home', () => ({
-    Home: ({ homeStyle, onHomeStyleChange }: {
+    Home: ({ homeStyle }: {
         homeStyle: 'modern' | 'classic';
-        onHomeStyleChange: (style: 'modern' | 'classic') => void;
     }) => (
         <div>
             <output data-testid="active-home-style">{homeStyle}</output>
-            <button type="button" onClick={() => onHomeStyleChange('classic')}>Choose classic</button>
         </div>
     ),
 }));
@@ -54,7 +52,7 @@ describe('HomeEntry style selection', () => {
         render(<MemoryRouter initialEntries={['/']}><HomeEntry /><Location /></MemoryRouter>);
 
         expect(screen.getByTestId('active-home-style').textContent).toBe('modern');
-        fireEvent.click(screen.getByRole('button', { name: 'Choose classic' }));
+        act(() => persistHomeEntryStyle('classic'));
 
         await waitFor(() => expect(screen.getByTestId('active-home-style').textContent).toBe('classic'));
         expect(window.localStorage.getItem('bg_home_entry_style')).toBe('classic');

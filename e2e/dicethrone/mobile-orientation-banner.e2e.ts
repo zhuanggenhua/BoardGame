@@ -15,7 +15,7 @@ test.describe('DiceThrone 移动端方向提示条', () => {
 
         await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
         await expect(banner).toBeVisible({ timeout: 15000 });
-        await expect(banner.getByText('建议旋转至横屏以获得更佳体验')).toBeVisible();
+        await expect(banner.getByText('请关闭竖屏锁定')).toBeVisible();
         await expect(closeButton).toBeVisible();
         await expect(page.locator('[data-testid="character-selection-overlay"]')).toBeVisible({ timeout: 15000 });
         await expect(page.getByText('选择你的英雄')).toBeVisible();

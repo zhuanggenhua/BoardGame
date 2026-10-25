@@ -125,6 +125,7 @@ export const ConfirmModal = ({
             }}
         >
             <div
+                data-platform-dialog="confirm"
                 className={twMerge(
                     mergedTheme.panel,
                     panelClassName

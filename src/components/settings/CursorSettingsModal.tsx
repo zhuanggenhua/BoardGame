@@ -101,21 +101,22 @@ function VariantPickerModal({
 
     return (
         <ModalBase onClose={onClose} closeOnBackdrop overlayClassName="!backdrop-blur-none !bg-black/20">
-            <div className="pointer-events-auto bg-parchment-card-bg border border-parchment-card-border rounded-lg shadow-xl w-[520px] max-w-[90vw] max-h-[70vh] flex flex-col">
+            <div data-platform-dialog="cursor-variants" className="pointer-events-auto bg-parchment-card-bg border border-parchment-card-border rounded-lg shadow-xl w-[520px] max-w-[90vw] max-h-[70vh] flex flex-col">
                 {/* 标题 */}
                 <div className="px-4 pt-4 pb-2 border-b border-parchment-card-border/30 flex items-center justify-between">
                     <span className="font-bold text-sm text-parchment-base-text">
                         {gameLabel} - {t('cursor.changeVariant')}
                     </span>
-                    <button onClick={onClose} className="text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer">
+                    <button onClick={onClose} aria-label={t('common:close')} className="platform-dialog-close text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer">
                         <X size={16} />
                     </button>
                 </div>
 
+                <div className="platform-cursor-variant-scroll"><div className="platform-cursor-variant-table">
                 {/* 表头 */}
-                <div className="px-4 pt-3 pb-1 flex items-center">
-                    <span className="w-28 shrink-0" />
-                    <div className="grid grid-cols-6 gap-4 flex-1">
+                <div className="platform-cursor-variant-heading px-4 pt-3 pb-1 flex items-center">
+                    <span className="platform-cursor-variant-name w-28 shrink-0" />
+                    <div className="platform-cursor-variant-cells grid grid-cols-6 gap-4 flex-1">
                         {stateLabels.map(({ key, label }) => (
                             <span key={key} className="text-center text-[10px] text-parchment-light-text font-bold truncate">
                                 {label}
@@ -133,20 +134,20 @@ function VariantPickerModal({
                                 key={variant.id}
                                 onClick={() => { onSelect(variant.id); onClose(); }}
                                 className={`
-                                    w-full flex items-center py-2 px-3 rounded-md transition-all cursor-pointer
+                                    platform-cursor-variant-row w-full flex items-center py-2 px-3 rounded-md transition-all cursor-pointer
                                     ${isActive
                                         ? 'bg-parchment-brown/10 border border-parchment-brown'
                                         : 'hover:bg-parchment-base-bg/50 border border-transparent'
                                     }
                                 `}
                             >
-                                <div className="w-28 shrink-0 flex items-center gap-2">
+                                <div className="platform-cursor-variant-name w-28 shrink-0 flex items-center gap-2">
                                     {isActive && <Check size={12} className="text-parchment-brown shrink-0" />}
                                     <span className="text-xs font-bold text-parchment-base-text truncate">
                                         {variant.variantLabel}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-6 gap-4 flex-1">
+                                <div className="platform-cursor-variant-cells grid grid-cols-6 gap-4 flex-1">
                                     {CURSOR_STATE_KEYS.map((key) => {
                                         const svg = variant.previewSvgs[key];
                                         if (!svg) return <div key={key} className="flex justify-center"><div className="w-7 h-7" /></div>;
@@ -161,6 +162,7 @@ function VariantPickerModal({
                         );
                     })}
                 </div>
+                </div></div>
             </div>
         </ModalBase>
     );
@@ -175,7 +177,8 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
     const { preference, updatePreference } = useCursorPreference();
     const [isRegistryReady, setIsRegistryReady] = useState(() => isCursorRegistryLoaded());
     const manifests = useMemo(() => getAllGames().map(g => ({ id: g.id, cursorTheme: g.cursorTheme })), []);
-    const defaultPerGame = useMemo(() => getDefaultThemePerGame(manifests), [manifests]);
+    // 异步注册完成后重算列表与选中主题，避免首次打开永久缓存空结果。
+    const defaultPerGame = useMemo(() => isRegistryReady ? getDefaultThemePerGame(manifests) : [], [manifests, isRegistryReady]);
 
     // pending：本地选中状态，不影响实际生效的 preference
     const [pendingThemeId, setPendingThemeId] = useState<string>(preference.cursorTheme);
@@ -185,9 +188,9 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
     const isDirty = pendingThemeId !== savedThemeId;
 
     const pendingTheme = useMemo(() => {
-        if (pendingThemeId === 'default') return null;
+        if (!isRegistryReady || pendingThemeId === 'default') return null;
         return getCursorTheme(pendingThemeId) ?? null;
-    }, [pendingThemeId]);
+    }, [pendingThemeId, isRegistryReady]);
 
     /** 获取某游戏的默认主题 ID（优先 gameVariants，回退到 manifest 配置） */
     const getGameDefaultTheme = (gameId: string): string => {
@@ -271,13 +274,14 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
     return (
         <>
             <ModalBase onClose={onClose} closeOnBackdrop={closeOnBackdrop}>
-                <div className="pointer-events-auto bg-parchment-card-bg border border-parchment-card-border rounded-lg shadow-xl w-[520px] max-w-[90vw] max-h-[80vh] flex flex-col">
+                <div data-platform-dialog="cursor" className="pointer-events-auto bg-parchment-card-bg border border-parchment-card-border rounded-lg shadow-xl w-[520px] max-w-[90vw] max-h-[80vh] flex flex-col">
                     {/* 标题栏 */}
                     <div className="px-5 pt-5 pb-3 border-b border-parchment-card-border/30 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-parchment-base-text">
                             <MousePointer2 size={18} />
                             <span className="font-bold text-sm">{t('cursor.title')}</span>
                         </div>
+                        <div className="flex items-center gap-2">
                         {/* 更换变体按钮：选中游戏光标时可用，始终占位避免布局跳动 */}
                         <button
                             onClick={() => pendingTheme && setVariantGameId(pendingTheme.gameId)}
@@ -293,6 +297,11 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
                             <RefreshCw size={14} />
                             {t('cursor.change')}
                         </button>
+                        <button type="button" onClick={onClose} aria-label={t('common:close')}
+                            className="platform-dialog-close flex items-center justify-center w-11 h-11 text-parchment-base-text cursor-pointer">
+                            <X size={18} />
+                        </button>
+                        </div>
                     </div>
 
                     {/* 光标网格：5列 */}
@@ -342,7 +351,7 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
                     </div>
 
                     {/* 底部：高对比 + 覆盖范围 + 设为当前 */}
-                    <div className="px-5 pb-5 pt-2 border-t border-parchment-card-border/30 flex items-center justify-between gap-3 text-xs">
+                    <div className="platform-cursor-footer px-5 pb-5 pt-2 border-t border-parchment-card-border/30 flex items-center justify-between gap-3 text-xs">
                         {/* 左侧：高对比 + 覆盖范围 */}
                         <div className="flex items-center gap-2">
                             <button

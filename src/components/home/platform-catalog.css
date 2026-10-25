@@ -21,13 +21,15 @@
 .platform-game-copy { position: absolute; inset: auto 0 0; display: block; padding: 32px 8px 8px; background: linear-gradient(transparent, rgb(0 0 0 / .92)); }
 .platform-game-copy strong { display: block; overflow-wrap: anywhere; }
 .platform-game-description { display: none; margin-top: 8px; line-height: 1.5; }
-.platform-game-favorite { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; color: #000; background: #fff; border: 3px solid #000; cursor: pointer; }
+.platform-game-favorite { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; color: #000; background: #fff; border: 3px solid #000; cursor: pointer; visibility: hidden; opacity: 0; pointer-events: none; }
 .platform-game-favorite[aria-pressed="true"] { background: #d5ff00; }
 .platform-game-status { position: absolute; top: 8px; left: 8px; padding: 2px 6px; background: #ffb000; color: #000; border: 2px solid #000; font-size: 12px; pointer-events: none; }
 .platform-game-open:focus-visible, .platform-game-favorite:focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
 .platform-catalog-empty { padding: 32px 8px; }
 @media (min-width: 1024px) and (max-width: 1599px) { .platform-game-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (hover: hover) {
+    .platform-game-card:hover .platform-game-favorite,
+    .platform-game-card:focus-within .platform-game-favorite { visibility: visible; opacity: 1; pointer-events: auto; }
     .platform-catalog--discover .platform-game-open:hover .platform-game-description,
     .platform-catalog--discover .platform-game-open:focus-visible .platform-game-description { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 }
@@ -38,7 +40,8 @@
     .platform-catalog-tools input, .platform-catalog-tools select { font-size: 13px; padding-inline: 6px; }
     .platform-catalog-tools select { width: 104px; flex-shrink: 0; }
     .platform-catalog-filters { grid-area: filters; width: 100%; }
-    .platform-catalog-filters > div > div { flex-wrap: nowrap; justify-content: flex-start; max-width: 100%; overflow-x: auto; padding: 0 0 4px; gap: 8px; }
+    .platform-catalog-filters > div > div { flex-wrap: nowrap; justify-content: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding: 0 0 4px; gap: 8px; }
+    .platform-catalog-filters > div > div::-webkit-scrollbar { display: none; }
     .platform-catalog-filters button { flex-shrink: 0; padding: 8px 12px; }
     .platform-catalog--library .platform-catalog-header { grid-template-columns:auto minmax(0,1fr); grid-template-areas: "title tools"; }
     .platform-catalog--library .platform-catalog-title { font-size:18px; }
@@ -47,22 +50,9 @@
     .platform-catalog--library .platform-game-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .platform-catalog--library .platform-game-copy { font-size: 12px; padding: 24px 6px 6px; }
     .platform-catalog--library .platform-game-favorite { top: 0; right: 0; }
-    .platform-game-card.is-expanded { grid-column: 1 / -1; }
-    .platform-game-card.is-expanded .platform-game-open { display: grid; grid-template-columns: minmax(88px, 30%) minmax(0, 1fr); }
-    .platform-game-card.is-expanded .platform-game-art { height: 100%; min-height: 214px; aspect-ratio: auto; }
-    .platform-game-card.is-expanded .platform-game-copy { position: static; padding: 12px; background: #111; }
-    .platform-game-card.is-expanded .platform-game-copy strong { padding-right: 44px; }
-    .platform-game-card.is-expanded .platform-game-description { display: block; margin-top: 16px; }
 }
 
-.platform-game-open-hint { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; color: #d5ff00; font-size: 14px; font-weight: 800; }
 
-@media (max-width:1023px) {
- .platform-game-card.is-expanded .platform-game-open { height:240px; }
- .platform-game-card.is-expanded .platform-game-copy { display:flex; flex-direction:column; min-height:0; }
- .platform-game-card.is-expanded .platform-game-description { min-height:0; flex:1; overflow-y:auto; overscroll-behavior:contain; margin-top:10px; }
- .platform-game-card.is-expanded .platform-game-open-hint { flex-shrink:0; margin-top:10px; }
-}
 
 @media (max-width:1023px) {
  .platform-catalog--library { display:flex; flex-direction:column; }

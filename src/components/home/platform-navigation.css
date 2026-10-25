@@ -4,7 +4,7 @@
 .platform-navigation button[aria-current="page"] { background: #d5ff00; }
 .platform-navigation button:focus-visible, .platform-menu-trigger:focus-visible, .platform-menu-close:focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
 .platform-desktop-utility { display: flex; align-items: center; gap: 12px; }
-.platform-menu-trigger { display: none; background: #000; color: #fff; padding: 8px; }
+.platform-menu-trigger { display: grid; place-items: center; background: #000; color: #fff; padding: 8px; }
 .platform-menu-dialog { border: 0; padding: 0; background: #fff; color: #111; width: min(360px, 100vw); height: var(--runtime-viewport-height, 100dvh); max-width: 100vw; max-height: none; margin: 0 0 0 auto; overflow: hidden; }
 .platform-menu-dialog::backdrop { background: rgb(0 0 0 / .5); }
 .platform-menu-content { position: relative; display: flex; flex-direction: column; gap: 24px; border-left: 3px solid #111; background: #fff; padding: 0 20px 24px; height: 100%; overflow-y: auto; overscroll-behavior: contain; }
@@ -16,6 +16,7 @@
 .platform-menu-utilities .platform-language-control { height: auto; min-height: 56px; }
 .platform-menu-utilities .platform-language-control > button::before { content: '文'; display: grid; place-items: center; width: 18px; font-size: 13px; border: 1px solid currentColor; }
 .platform-menu-utilities button:hover { background: #f4f4f4; }
+.platform-secondary-entry { min-height: 56px; padding: 12px 0; border-block: 1px solid #ddd; text-align: left; font: 700 16px/1.4 Arial, 'Microsoft YaHei', sans-serif; cursor: pointer; }
 .platform-menu-content .platform-library-drawer { gap: 12px; border-top: 0; padding-top: 0; }
 .platform-menu-content .platform-library-drawer h2 { color: #666; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
 .platform-menu-content .platform-library-drawer p { margin: 0; padding: 20px; background: #f4f4f4; color: #666; font-size: 14px; line-height: 1.7; }
@@ -23,7 +24,8 @@
 @media (max-width: 1023px) {
     .platform-navigation { position: fixed; bottom: 0; left: 0; right: 0; z-index: 45; background: #000; gap: 0; padding-bottom: env(safe-area-inset-bottom); }
     .platform-navigation button { flex: 1; min-height: 56px; color: #fff; border-color: #000; background: #000; padding: 12px 4px; }
-    .platform-navigation button[aria-current="page"] { color: #000; background: #d5ff00; }
+    .platform-navigation button[aria-current="page"] { color: #d5ff00; background: #000; }
+    .platform-navigation button[aria-current="page"]::after { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 3px; border-radius: 3px; background: currentColor; pointer-events: none; }
     .platform-desktop-utility { display: none; }
     .platform-menu-trigger { display: grid; place-items: center; }
 }

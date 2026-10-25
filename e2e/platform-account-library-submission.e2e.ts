@@ -130,7 +130,7 @@ test.beforeAll(async () => {
     }
     const mongoUri = process.env.MONGO_URI?.trim();
     const expectedDatabase = `boardgame_home_acceptance_${ISOLATION_ID}`;
-    const mongoMatch = mongoUri?.match(/^mongodb:\/\/127\.0\.0\.1:(\d+)\/([^/?]+)(?:\?.*)?$/);
+    const mongoMatch = mongoUri?.match(/^mongodb:\/\/127\.0\.0\.1:(37022)\/([^/?]+)(?:\?.*)?$/);
     if (!mongoMatch || mongoMatch[2] !== expectedDatabase) {
         throw new Error(`本 E2E 只接受 127.0.0.1 独立数据库 URI，目标库必须为 ${expectedDatabase}`);
     }
@@ -271,12 +271,13 @@ async function newPage(browser: Browser, baseURL?: string): Promise<{ context: B
     ) {
         throw new Error(`本 E2E 仅接受项目分配的本地测试入口，收到 ${parsedBaseURL.origin}`);
     }
-    const context = await browser.newContext({ baseURL: parsedBaseURL.origin, viewport: { width: 1920, height: 1080 } });
+    const mobile = process.env.PLATFORM_E2E_SUBMISSION_MOBILE === 'true';
+    const context = await browser.newContext({ baseURL: parsedBaseURL.origin, viewport: mobile ? { width: 375, height: 812 } : { width: 1920, height: 1080 }, isMobile: mobile, hasTouch: mobile });
     try {
         await context.addInitScript(() => localStorage.setItem('i18nextLng', 'zh-CN'));
         const page = await context.newPage();
         await page.goto('/');
-        await expect(page.getByRole('button', { name: '收藏：山屋惊魂' })).toBeVisible({ timeout: 15_000 });
+        await expect(page.locator('.platform-game-card[data-game-id="betrayal"] .platform-game-open')).toBeVisible({ timeout: 15_000 });
         return { context, page };
     } catch (error) {
         await context.close().catch(() => undefined);
@@ -328,12 +329,12 @@ async function readLoadedBetrayalImage(page: Page) {
 
 async function capture(page: Page, id: string, filename: string, stepId: string, uiChange: string, description: string) {
     const path = join(EVIDENCE_DIR, filename);
-    await page.screenshot({ path, fullPage: true });
+    await page.screenshot({ path, fullPage: false });
     const bytes = await readFile(path);
     const entry: Media = { id, path: filename, sha256: createHash('sha256').update(bytes).digest('hex'), behaviorStepId: stepId, uiChange, description };
     media.push(entry);
     const chain = chains.find(item => item.steps.some(step => step.id === stepId));
-    if (chain) chain.uiStates.push({ id, stepId, change: uiChange, viewport: 'desktop', sha256: entry.sha256 });
+    if (chain) chain.uiStates.push({ id, stepId, change: uiChange, viewport: page.viewportSize()!.width < 1024 ? 'mobile' : 'desktop', sha256: entry.sha256 });
     await saveRunLog();
 }
 
@@ -481,7 +482,8 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             const loginResult = await login(page, alice);
             const initialList = await readSubmissionList(page, loginResult.token);
             expect(initialList.body.items).toEqual([]);
-            await page.getByRole('button', { name: '上传' }).click();
+            await page.getByRole('button', { name: '菜单', exact: true }).click();
+            await page.getByRole('button', { name: '上传', exact: true }).click();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
             const title = `合成桌游投稿-${RUN_ID.slice(-6)}`;
             const editedTitle = `${title}-已修改`;
@@ -508,6 +510,7 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             expect(invalidUploadResponse.status()).toBe(400);
             expect(createdDraft.status).toBe('draft');
             await expect(page.getByRole('alert')).toContainText('封面不是可读取的图片');
+            await expect(page.getByAltText('投稿封面预览')).toHaveCount(0);
             chain.steps.push({ id: 'draft-and-image-error', action: '首次保存投稿草稿并上传损坏图片', before: { visible: { form: '填写初稿和损坏图片' }, authoritative: { listHttpStatus: initialList.status, submissionCount: initialList.body.items.length } }, after: { visible: { errorVisible: await page.getByRole('alert').innerText() }, authoritative: { draftHttpStatus: createResponse.status(), draftId: id, uploadHttpStatus: invalidUploadResponse.status(), status: createdDraft.status } }, assertions: [{ name: '上传错误反馈可见且草稿已创建', actual: { status: createdDraft.status, uploadStatus: invalidUploadResponse.status() }, expected: { status: 'draft', uploadStatus: 400 } }] });
             await capture(page, 'upload-error', '图片校验失败反馈.png', 'draft-and-image-error', 'error', '损坏图片被拒绝并显示错误反馈');
 
@@ -540,11 +543,21 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             expect((await sharp(storedBytes).metadata()).format).toBe('webp');
             await expect(page.getByRole('status').filter({ hasText: '待审核' }).first()).toBeVisible();
             await expect.poll(async () => page.getByAltText('投稿封面预览').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+            const mobileSubmission = process.env.PLATFORM_E2E_SUBMISSION_MOBILE === 'true';
+            if (mobileSubmission) await page.getByRole('button', { name: '工坊列表', exact: true }).click();
             await expect(page.getByRole('button', { name: new RegExp(`${editedTitle}.*待审核`) })).toBeVisible();
             const coverPreviewLoaded = await page.getByAltText('投稿封面预览').evaluate(image => (image as HTMLImageElement).naturalWidth > 0);
             const coverFileNonEmpty = storedBytes.length > 0;
             chain.steps.push({ id: 'edit-upload-submit-readback', action: '编辑草稿、上传合成封面、送审并从列表读回', before: { visible: { editedName: editedTitle }, authoritative: { listHttpStatus: beforeEditList.status, draftId: id, name: draftBeforeEdit?.name, status: draftBeforeEdit?.status } }, after: { visible: { pendingListItemVisible: true, coverPreviewLoaded }, authoritative: { updateStatus: updateResponse.status(), uploadStatus: validUploadResponse.status(), submitStatus: submitResponse.status(), listReadStatus: listReadResponse.status(), listed, storedImagePath, storedImageBytes: storedBytes.length, imageFormat: 'webp' } }, assertions: [{ name: '服务端列表读回修订内容和待审核状态', actual: { name: listed.name, status: listed.status, coverUrl: listed.coverUrl }, expected: { name: editedTitle, status: 'pending', coverUrl: uploadedCover.coverUrl } }, { name: '送审前接口仍读回草稿状态', actual: { name: draftBeforeEdit?.name, status: draftBeforeEdit?.status }, expected: { name: title, status: 'draft' } }, { name: '浏览器封面预览已加载且本地隔离存储有 WebP', actual: { previewLoaded: coverPreviewLoaded, format: 'webp', fileNonEmpty: coverFileNonEmpty }, expected: { previewLoaded: true, format: 'webp', fileNonEmpty: true } }] });
-            await capture(page, 'submission-pending-readback', '修订后待审核列表读回.png', 'edit-upload-submit-readback', 'panel', '修订投稿及真实封面进入待审核列表');
+            if (!mobileSubmission) await page.evaluate(() => window.scrollTo(0, 0));
+            await capture(page, 'submission-pending-readback', '修订后待审核列表读回.png', 'edit-upload-submit-readback', 'panel', '送审后可从工坊列表看到修订名称和待审核状态');
+            if (mobileSubmission) {
+                await page.getByRole('button', { name: '关闭工坊列表', exact: true }).click();
+                await page.evaluate(() => window.scrollTo(0, 0));
+                await capture(page, 'submission-pending-form', '手机送审后表单顶部.png', 'edit-upload-submit-readback', 'panel', '关闭工坊列表后，修订后的标题、表单与待审核状态可见');
+            }
+            await page.getByRole('button', { name: '提交审核', exact: true }).scrollIntoViewIfNeeded();
+            await capture(page, 'submission-pending-cover', '送审后封面滚动可见.png', 'edit-upload-submit-readback', 'panel', '滚动至封面后，已上传图片与提交入口完整可见');
         } finally {
             await context.close();
         }
@@ -596,8 +609,8 @@ test('收藏库山屋惊魂收藏卡片加载正式封面资源', async ({ brows
                 before: { visible: { selectedSection: 'discover' }, authoritative: { accountId: loginResult.userId, fixtureFavoriteGameIds: ['betrayal'] } },
                 after: { visible: { cardTitle, imageLoaded: asset.complete && asset.naturalWidth > 0, thumbnailCount: await thumbnails.count() }, authoritative: { image: asset.response } },
                 assertions: [
-                    { name: '正式封面来源响应和内容哈希与登记一致', actual: asset.response, expected: { urlPath: BETRAYAL_COVER_PATH, status: 200, contentType: 'image/webp', bytes: 120262, sha256: BETRAYAL_COVER_SHA256 } },
-                    { name: '收藏卡片可见且封面图像已解码', actual: { cardTitle, decoded: asset.complete && asset.naturalWidth > 0, thumbnailCount: await thumbnails.count() }, expected: { cardTitle: '山屋惊魂', decoded: true, thumbnailCountMinimum: 2 } },
+                    { name: '正式封面来源响应和内容哈希与登记一致', actual: { urlPath: asset.response.urlPath, status: asset.response.status, contentType: asset.response.contentType, bytes: asset.response.bytes, sha256: asset.response.sha256 }, expected: { urlPath: BETRAYAL_COVER_PATH, status: 200, contentType: 'image/webp', bytes: 120262, sha256: BETRAYAL_COVER_SHA256 } },
+                    { name: '收藏卡片可见且封面图像已解码', actual: { cardTitle, decoded: asset.complete && asset.naturalWidth > 0, thumbnailCountMinimumMet: await thumbnails.count() >= 2 }, expected: { cardTitle: '山屋惊魂', decoded: true, thumbnailCountMinimumMet: true } },
                 ],
             });
             await capture(page, 'betrayal-cover-load', '山屋惊魂封面加载状态.png', 'official-cover-load', 'panel', '收藏卡片的正式封面资源已成功加载');

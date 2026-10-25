@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Home } from './Home';
 import {
     HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
-    type HomeEntryStyle,
     persistHomeEntryStyle,
     resolveHomeEntryStyle,
     subscribeHomeEntryStyleChange,
@@ -50,20 +49,7 @@ export const HomeEntry = () => {
         navigate({ pathname: '/', search: next.size ? `?${next}` : '' }, { replace: true });
     }, [navigate, searchParams]);
 
-    const handleHomeStyleChange = React.useCallback((style: HomeEntryStyle) => {
-        persistHomeEntryStyle(style);
-        if (!LEGACY_HOME_QUERY_KEYS.some((key) => searchParams.has(key))) {
-            return;
-        }
-
-        const next = new URLSearchParams(searchParams);
-        for (const key of LEGACY_HOME_QUERY_KEYS) {
-            next.delete(key);
-        }
-        navigate({ pathname: '/', search: next.size ? `?${next}` : '' }, { replace: true });
-    }, [navigate, searchParams]);
-
-    return <Home homeStyle={homeStyle} onHomeStyleChange={handleHomeStyleChange} />;
+    return <Home homeStyle={homeStyle} />;
 };
 
 export default HomeEntry;

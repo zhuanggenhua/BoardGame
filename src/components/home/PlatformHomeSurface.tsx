@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
@@ -16,6 +16,7 @@ import { useGameLibrary } from './useGameLibrary';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import './platform-home.css';
 import './platform-motion.css';
+import './platform-secondary-dialogs.css';
 
 type HomeSection = 'discover' | 'library' | 'upload' | 'profile';
 interface PlatformHomeSurfaceProps {
@@ -46,6 +47,7 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
     const requestedSection = searchParams.get('section');
     const section: HomeSection = requestedSection === 'library' || requestedSection === 'upload' || requestedSection === 'profile'
         ? requestedSection : 'discover';
+    useLayoutEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [section]);
     const setSection = (next: HomeSection) => setSearchParams(current => {
         const updated = new URLSearchParams(current);
         if (next === 'discover') updated.delete('section'); else updated.set('section', next);
@@ -57,12 +59,13 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
     const favoriteIds = useMemo(() => new Set(library.gameIds), [library.gameIds]);
     const favorites = allGames.filter(game => favoriteIds.has(game.id));
     const filteredFavorites = favorites.filter(game => resolveGameDisplayName(game, t).toLocaleLowerCase().includes(libraryQuery.trim().toLocaleLowerCase()));
-    const navigation = ['discover', 'library', 'upload'].map(id => ({ id, label: t(`platform.${id}`) }));
+    const navigation = ['discover', 'library'].map(id => ({ id, label: t(`platform.${id}`) }));
     return <div className="platform-home">
         <header className="platform-home-header">
             <div className="platform-home-brand">{brand}</div>
             <PlatformNavigation items={navigation} selected={section} onSelect={id => setSection(id as HomeSection)}
                 menuLabel={t('platform.menu')} closeLabel={t('platform.closeMenu')} utility={utility} mobileUtility={mobileUtility}
+                drawerContent={close => <button type="button" className="platform-secondary-entry" onClick={() => { setSection('upload'); close(); }}>{t('platform.upload')}</button>}
  />
             <div className="platform-home-account">
                 {user ? <UserMenu variant="platform" onLogout={onLogout} onProfile={() => setSection('profile')} /> : <>

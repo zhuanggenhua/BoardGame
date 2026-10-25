@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
@@ -6,17 +6,16 @@ import {
     extractGameIdFromPlayPath,
     getGameMobileBannerKind,
     isMobileViewport,
-    isPortraitViewport,
     resolveGameMobileSupport,
     type GameMobileBannerKind,
 } from '../../shared/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import { isHomeEntryRoute } from '../../lib/homeV2Routing';
 import {
-    isStandaloneWebApp,
+    unlockScreenOrientation,
     tryLockScreenOrientation,
 } from '../../lib/webFullscreen';
 import { detectNativeMobileRuntime } from '../../lib/mobile/mobileRuntime';
+import { isHomeEntryRoute } from '../../lib/homeV2Routing';
 
 export type GameMobileEntry = Pick<
     GameManifestEntry,
@@ -34,10 +33,12 @@ const hasNativeMobileRuntime = () => detectNativeMobileRuntime();
 type ScreenOrientationPlugin = {
     ScreenOrientation: {
         lock(options: { orientation: 'landscape' | 'portrait' }): Promise<void>;
+        unlock(): Promise<void>;
     };
 };
 
 let screenOrientationPluginLoader: Promise<ScreenOrientationPlugin | null> | null = null;
+const ORIENTATION_SETTLE_TIMEOUT_MS = 1500;
 
 const loadNativeScreenOrientationPlugin = async () => {
     if (!screenOrientationPluginLoader) {
@@ -49,9 +50,10 @@ const loadNativeScreenOrientationPlugin = async () => {
     return screenOrientationPluginLoader;
 };
 
-const lockScreenByRoute = async (targetOrientation: 'landscape' | 'portrait'): Promise<boolean> => {
+const lockScreenByRoute = async (targetOrientation: 'landscape' | 'portrait', signal: AbortSignal): Promise<boolean> => {
     if (hasNativeMobileRuntime()) {
         const plugin = await loadNativeScreenOrientationPlugin();
+        if (signal.aborted) return false;
         try {
             await plugin?.ScreenOrientation.lock({ orientation: targetOrientation });
             if (plugin) {
@@ -62,7 +64,15 @@ const lockScreenByRoute = async (targetOrientation: 'landscape' | 'portrait'): P
         }
     }
 
-    return tryLockScreenOrientation(targetOrientation);
+    return signal.aborted ? false : tryLockScreenOrientation(targetOrientation);
+};
+
+const unlockScreenByRoute = async () => {
+    unlockScreenOrientation();
+    if (!hasNativeMobileRuntime()) return;
+    const plugin = await loadNativeScreenOrientationPlugin();
+    try { await plugin?.ScreenOrientation.unlock(); }
+    catch { /* 释放失败不阻止离开游戏。 */ }
 };
 
 const renderBannerVisual = (bannerKind: GameMobileBannerKind) => {
@@ -112,9 +122,9 @@ const renderBannerVisual = (bannerKind: GameMobileBannerKind) => {
 const getBannerMessageKey = (bannerKind: GameMobileBannerKind) => {
     switch (bannerKind) {
         case 'rotate-to-landscape':
-            return 'mobileOrientation.banner.rotateToLandscape';
+            return 'mobileOrientation.banner.unlockPortrait';
         case 'rotate-to-portrait':
-            return 'mobileOrientation.banner.rotateToPortrait';
+            return 'mobileOrientation.banner.unlockPortrait';
         case 'tablet-only':
             return 'mobileOrientation.banner.tabletOnly';
         case 'not-supported':
@@ -131,158 +141,78 @@ export function MobileOrientationGuard({
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
-    const [nativeAppShell, setNativeAppShell] = useState(() => hasNativeMobileRuntime());
-    const nativeAppShellRef = useRef(nativeAppShell);
-    const standaloneWebApp = isStandaloneWebApp();
-    const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
-    nativeAppShellRef.current = nativeAppShell;
-
+    const [dynamicGameConfig, setDynamicGameConfig] = useState<{ gameId: string; entry: GameMobileEntry | undefined }>();
+    const [lockResult, setLockResult] = useState<{ key: string; status: 'requesting' | 'accepted' | 'failed' } | null>(null);
     const gameId = extractGameIdFromPlayPath(location.pathname);
-    const isHomeRoute = isHomeEntryRoute(location.pathname);
     const resolvedGameConfig = gameId ? resolveGameMobileEntry(gameId) : undefined;
-    const gameConfig = resolvedGameConfig ?? dynamicGameConfig;
-    const preferredOrientation = gameId
-        ? resolveGameMobileSupport(gameConfig).preferredOrientation
-        : undefined;
-    const targetOrientation: 'landscape' | 'portrait' | null = gameId
-        ? (preferredOrientation === 'landscape' ? 'landscape' : 'portrait')
-        : isHomeRoute
-            ? 'portrait'
-            : null;
-    const homeBannerKind: GameMobileBannerKind | null = isHomeRoute && isMobileViewport(viewport.width)
-        ? (
-            !isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-portrait' : null
-        )
+    const gameConfig = resolvedGameConfig ?? (dynamicGameConfig && dynamicGameConfig.gameId === gameId ? dynamicGameConfig.entry : undefined);
+    const targetOrientation = viewport.width > 0 && (isMobileViewport(viewport.width) || hasNativeMobileRuntime())
+        ? isHomeEntryRoute(location.pathname) ? 'portrait'
+            : gameId && gameConfig ? resolveGameMobileSupport(gameConfig).preferredOrientation ?? null : null
         : null;
-    const bannerKind = homeBannerKind ?? getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
+    const attemptKey = targetOrientation ? `${location.pathname}:${targetOrientation}` : null;
+    const bannerKind = gameId ? getGameMobileBannerKind(gameConfig, viewport.width, viewport.height) : null;
+    const rotationHint = bannerKind === 'rotate-to-landscape' || bannerKind === 'rotate-to-portrait';
     const bannerKey = bannerKind ? `${location.pathname}:${bannerKind}` : null;
-    const shouldSuppressBannerInAppShell = nativeAppShell && (Boolean(gameId) || isHomeRoute);
-    const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
-        ? bannerKind
-        : null;
+    const activeBannerKind = bannerKey && dismissedBannerKey !== bannerKey
+        && (!rotationHint || (lockResult?.key === attemptKey && lockResult.status === 'failed')) ? bannerKind : null;
 
     useEffect(() => {
         if (!gameId || resolvedGameConfig || !loadGameMobileEntry) {
             setDynamicGameConfig(undefined);
             return;
         }
-
         let disposed = false;
-
-        void loadGameMobileEntry(gameId)
-            .then((nextGameConfig) => {
-                if (!disposed) {
-                    startTransition(() => {
-                        setDynamicGameConfig(nextGameConfig);
-                    });
-                }
-            })
-            .catch(() => {
-                if (!disposed) {
-                    setDynamicGameConfig(undefined);
-                }
-            });
-
-        return () => {
-            disposed = true;
-        };
+        void loadGameMobileEntry(gameId).then(entry => {
+            if (!disposed) startTransition(() => setDynamicGameConfig({ gameId, entry }));
+        }).catch(() => { if (!disposed) setDynamicGameConfig(undefined); });
+        return () => { disposed = true; };
     }, [gameId, loadGameMobileEntry, resolvedGameConfig]);
 
     useEffect(() => {
-        if (nativeAppShellRef.current) return;
-
-        let disposed = false;
-
-        const value = hasNativeMobileRuntime();
-        if (!disposed && nativeAppShellRef.current !== value) {
-            setNativeAppShell(value);
-        }
-
-        return () => {
-            disposed = true;
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!bannerKey) {
-            setDismissedBannerKey(null);
-        }
+        if (!bannerKey) setDismissedBannerKey(null);
     }, [bannerKey]);
 
+    // 首页保持竖屏，游戏遵循各自配置；只有游戏切换失败才显示方向提示。
     useEffect(() => {
-        if (typeof document === 'undefined') {
-            return;
-        }
-
-        const offsetValue = activeBannerKind
-            ? 'calc(env(safe-area-inset-top) + 3.75rem)'
-            : '0px';
-        const rootStyle = document.documentElement.style;
-        const bodyStyle = document.body?.style;
-
-        rootStyle.setProperty('--mobile-orientation-banner-offset', offsetValue);
-        bodyStyle?.setProperty('--mobile-orientation-banner-offset', offsetValue);
-
-        return () => {
-            rootStyle.setProperty('--mobile-orientation-banner-offset', '0px');
-            bodyStyle?.setProperty('--mobile-orientation-banner-offset', '0px');
+        if (!targetOrientation || !attemptKey) return;
+        const controller = new AbortController();
+        let request = 0;
+        const attempt = async () => {
+            const currentRequest = ++request;
+            setLockResult({ key: attemptKey, status: 'requesting' });
+            const success = await lockScreenByRoute(targetOrientation, controller.signal);
+            if (!controller.signal.aborted && request === currentRequest) setLockResult({ key: attemptKey, status: success ? 'accepted' : 'failed' });
         };
-    }, [activeBannerKind]);
+        const retry = () => { if (!document.hidden) void attempt(); };
+        void attempt();
+        document.addEventListener('visibilitychange', retry);
+        window.addEventListener('focus', retry);
+        window.addEventListener('orientationchange', retry);
+        return () => {
+            controller.abort();
+            document.removeEventListener('visibilitychange', retry);
+            window.removeEventListener('focus', retry);
+            window.removeEventListener('orientationchange', retry);
+            void unlockScreenByRoute();
+        };
+    }, [attemptKey, targetOrientation]);
 
+    // 部分系统会接受锁定请求但不旋转；等待系统布局稳定后，以真实视口方向判断。
     useEffect(() => {
-        if ((!nativeAppShell && !standaloneWebApp) || !targetOrientation) return;
-
-        let disposed = false;
-        const timeoutIds: number[] = [];
-
-        const lockNow = () => {
-            if (disposed) return;
-            void lockScreenByRoute(targetOrientation);
-        };
-
-        lockNow();
-
-        // 首屏进入时做多次重试，规避插件桥接尚未就绪导致的首次加锁失败
-        for (const delay of [150, 500, 1200]) {
-            const id = window.setTimeout(() => {
-                lockNow();
-            }, delay);
-            timeoutIds.push(id);
-        }
-
-        const handleVisibilityChange = () => {
-            if (document.hidden) return;
-            lockNow();
-        };
-
-        const handleFocus = () => {
-            lockNow();
-        };
-
-        const handleOrientationChange = () => {
-            lockNow();
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('focus', handleFocus);
-        window.addEventListener('orientationchange', handleOrientationChange);
-
-        return () => {
-            disposed = true;
-            for (const timeoutId of timeoutIds) {
-                window.clearTimeout(timeoutId);
-            }
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('focus', handleFocus);
-            window.removeEventListener('orientationchange', handleOrientationChange);
-        };
-    }, [nativeAppShell, standaloneWebApp, targetOrientation, location.pathname]);
+        if (!rotationHint || !attemptKey || lockResult?.key !== attemptKey || lockResult.status !== 'accepted') return;
+        const timer = window.setTimeout(() => {
+            setLockResult(current => current?.key === attemptKey && current.status === 'accepted'
+                ? { key: attemptKey, status: 'failed' } : current);
+        }, ORIENTATION_SETTLE_TIMEOUT_MS);
+        return () => window.clearTimeout(timer);
+    }, [attemptKey, rotationHint, lockResult?.key, lockResult?.status]);
 
     return (
         <>
             {activeBannerKind ? (
                 <div
-                    data-testid={gameId ? 'mobile-orientation-game-banner' : 'mobile-orientation-home-banner'}
+                    data-testid="mobile-orientation-game-banner"
                     className="fixed top-0 left-0 right-0 bg-parchment-brown/95 backdrop-blur-sm text-parchment-cream pb-3 z-[9999] shadow-lg border-b-2 border-parchment-gold/30"
                     style={{
                         paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',

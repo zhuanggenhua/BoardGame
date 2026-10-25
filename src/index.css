@@ -118,7 +118,6 @@
         --mobile-board-shell-inverse-scale: 1;
         --mobile-board-shell-inline-unit: 1vw;
         --mobile-board-shell-block-unit: 1vh;
-        --mobile-orientation-banner-offset: 0px;
         --runtime-modal-max-height: calc(
             var(--runtime-viewport-height, 100vh)
             - max(1rem, var(--safe-area-top))
@@ -1165,7 +1164,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 @media (max-width: 1023px) {
     [data-game-page][data-mobile-layout-preset="board-shell"] .mobile-board-shell {
         padding:
-            max(var(--safe-area-top), var(--mobile-orientation-banner-offset, 0px))
+            var(--safe-area-top)
             var(--safe-area-right)
             var(--safe-area-bottom)
             var(--safe-area-left);

@@ -95,8 +95,7 @@
   "mobileOrientation": {
     "closeHint": "关闭提示",
     "banner": {
-      "rotateToLandscape": "建议旋转至横屏以获得更佳体验",
-      "rotateToPortrait": "建议切换为竖屏以获得更佳体验",
+      "unlockPortrait": "请关闭竖屏锁定",
       "tabletOnly": "该游戏当前优先支持平板或电脑端",
       "notSupported": "该游戏暂未完成手机适配，建议使用电脑端"
     },

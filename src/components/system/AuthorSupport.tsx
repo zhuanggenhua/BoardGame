@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, Heart, X } from 'lucide-react';
+import { Heart, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { versionedPublicFileUrl } from '../../lib/publicFileUrl';
 import './author-support.css';
@@ -45,7 +45,7 @@ export function AuthorSupportButton() {
         <button type="button" className="author-support-trigger" aria-expanded={open} aria-controls={id}
             onFocus={() => setOpen(true)} onClick={() => { setOpen(true); setPinned(true); }}><Heart size={16} aria-hidden="true" />支持作者</button>
         {open && <section id={id} className="author-support-popover" aria-label="支持作者">
-            <button type="button" className="author-support-close" aria-label="关闭赞助说明" onClick={close}><X className="author-support-close-icon" size={18} /><ArrowLeft className="author-support-back-icon" size={20} /></button>
+            <button type="button" className="author-support-close" aria-label="关闭赞助说明" onClick={close}><X size={18} /></button>
             <h2 className="author-support-heading">支持作者</h2>
             <AuthorSupportContent />
         </section>}

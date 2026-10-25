@@ -1,0 +1,192 @@
+{
+  "goal": "正式首页现代与经典双风格入口验收",
+  "status": "in_progress",
+  "target": {
+    "object": "Home 正式首页及账户、房间、投稿入口",
+    "source": "用户当前原话及红框附件、当前源码与本轮隔离运行证据",
+    "environment": "当前 main 工作区；隔离 runtime；127.0.0.1:37022 新数据库；唯一临时 UGC 目录",
+    "acceptance": "经典首页不改；手机恢复原列表容量；介绍在标题下独立滚动、收藏仅图标、作者可点；默认/预设/上传头像；关于去重复二维码；桌面和手机完整受影响界面分别审查，行为视觉分账"
+  },
+  "acceptance_criteria": [
+    {
+      "id": "C8",
+      "description": "当轮现代详情重排、手机赞助展开、二级弹窗样式及仅变化截图交付",
+      "status": "in_progress",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/旧新职责总账.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
+      ]
+    },
+    {
+      "id": "C1",
+      "description": "访客与账户双端风格切换、刷新、跨标签与旧值迁移",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
+        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+      ],
+      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+    },
+    {
+      "id": "C2",
+      "description": "现代搜索分类详情返回；经典原大厅保持；收藏悬停/键盘、手机首次直达详情、账户隔离持久化",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
+        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+      ],
+      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+    },
+    {
+      "id": "C3",
+      "description": "双风格建房、第二上下文加入、断线重连、双端资料及经典设置持久化、教程实际挂载与配置入口",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
+        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+      ],
+      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+    },
+    {
+      "id": "C4",
+      "description": "桌面与手机投稿创建编辑上传送审、错误反馈及服务端读回",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
+        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+      ],
+      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+    },
+    {
+      "id": "C5",
+      "description": "桌面、手机及宽屏当前96张整屏图均由主代理和独立子代理逐张审查；历史高度缺证不冒称回归；经典首页组合保持",
+      "status": "in_progress",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/旧新职责总账.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
+      ]
+    },
+    {
+      "id": "C6",
+      "description": "四轮360条逐图结论与失败修正、行为视觉分账、职责总账、当前96张与诊断97份媒体的HTTP和字节来源核对",
+      "status": "in_progress",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/旧新职责总账.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
+      ]
+    },
+    {
+      "id": "C7",
+      "description": "浮球真实鼠标/浏览器触控拖拽及持久化，网页方向策略，注册找回失败反馈、重试与隔离SMTP投递",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
+        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+      ]
+    },
+    {
+      "id": "C9",
+      "description": "默认/预设/上传头像、关于去重复二维码、PC与手机完整受影响状态对照",
+      "status": "in_progress",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/旧新职责总账.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
+        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
+      ]
+    },
+    {
+      "id": "C10",
+      "description": "每个前端功能均有PC和移动端可考证来源、控件必要性与适用检查项，缺项不放行",
+      "status": "in_progress",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/reference-reacceptance-20261025.md"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "openspec/changes/refactor-home-platform-interface/ui-capacity-avatar-20261024.md",
+      "required": true
+    },
+    {
+      "path": "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
+      "required": true
+    },
+    {
+      "path": "openspec/changes/refactor-home-platform-interface/tasks.md",
+      "required": true
+    },
+    {
+      "path": "openspec/changes/add-home-style-preference/tasks.md",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/focused-pass-manifest.json",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/.e2e-image-index.json",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/index.html",
+      "required": true
+    },
+    {
+      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json",
+      "required": true
+    }
+  ],
+  "notes": [
+    "未切换分支、提交推送或部署；保留其它游戏并发修改。",
+    "旧24场景、81+3单测、56图属于历史候选；用户否决后退出当前交付，历史记录不抹除。",
+    "首轮主组合38/38，指南4/4修后重跑，双端投稿各1/1，邮件2/2；单测52/52，构建通过，lint无错误且保留2条既有warning。",
+    "79张整屏原图、39条独立行为记录严格门禁通过；主代理逐图亲读；媒体HTTP与字节哈希已核对。",
+    "未证明原生真机自动旋转、真实软键盘、安全区、外部邮箱最终收件；未录全量连续动效，未发布公网相册。",
+    "测试页Failed to fetch唯一根因未闭环；用户亲测线上正常，未称生产事故或生产修复。",
+    "用户最终验收与发布/规格归档尚未执行；本状态complete只指本地网页验收包完成。",
+    "当轮纠正：最后浏览器6/6，单测5文件13/13，构建通过，lint无错误并保留7条现存warning；本轮20图逐张核对，未重交旧79图。",
+    "光标列表首次打开缓存为空的真实缺陷已修复；对局记录仍消费演示数据，仅统一样式，不证明真实历史。",
+    "本轮未更新AI规范，未创建/切换分支、提交、推送或部署；未终止其它任务或关闭用户程序。",
+    "用户再次退回：单间房夹具不能证明列表承载，PC只交三个代表状态未获授权；旧20图整体最终资格撤回，原始行为结果保留。",
+    "历史记录（76图视觉资格已撤回）：最新续验：16条最终独立行为链按各实际跑次取证，37项相关单测、最终构建和相关lint通过；About既有warning保留。76图逐张审查、52图默认筛选、全部HTTP和字节哈希及16份原始档案核对通过。",
+    "反馈新内容断言先红后绿；滚后关闭的假失败经保留/脱离CDP会话的事件对照锁定为测试输入生命周期，完整触控链修后通过；无产品兜底或force点击。",
+    "用户全部打回：01布局与历史高度未对照，移动头像上传含拖拽文案；要求商业实际截图及主代理/Luna交叉全图重审。",
+    "全部退回后当前18条不同行为合同分次通过，连续帧认证防回归另两项重复复验；27项独立单测、相关检查和最终构建通过。",
+    "主代理和独立子代理当前96张逐图通过；原76、首轮93、认证修后95、当前96共360条记录，初判和失败未覆盖。",
+    "反馈附件追加触控补证首两次关闭失败均保留；第一次归因提前释放会话不充分，等待实际惯性滚动稳定后单次触控关闭通过。",
+    "当前查看器默认71张，诊断来源核查默认20份；全部96与97份均通过HTTP和原字节核对。查看器默认端口被系统排除范围覆盖，改用已确认可用端口，不终止其它程序。",
+    "2026-10-25：默认及预设专用按钮已去冗余；8项单测、三端3项浏览器用例及构建通过。18张新候选中裁剪态3张被独立审查退回，用户进一步否决上传入口/滑条设计，尚未放行。",
+    "用户要求所有功能分别核对PC与手机成熟网页或App参考；Checklist补状态检查，UI Notes和Refero查具体产品屏，参考产品源码不是默认前置。"
+  ],
+  "currentCorrection": "头像设备操作与明确选图入口、可见退出、六列变体、关于完整说明、反馈设备文案及附件触控可达、认证条件区重叠均完成当前修复及交叉复审",
+  "completionScope": "此前视觉总通过撤回；已有行为事实留档。当前只完成规范收敛与部分来源查证，不能宣称全首页重构完成。",
+  "userAcceptance": "用户退回无来源设计及头像上传；来源查证与重新设计中"
+}

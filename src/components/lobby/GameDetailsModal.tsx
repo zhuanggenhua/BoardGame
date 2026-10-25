@@ -1993,7 +1993,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
 
     return (
         <>
-            <GameDetailsPresentation presentation={presentation} onClose={onClose} closeOnBackdrop={closeOnBackdrop} containerClassName="p-0" skipEnterAnimation={disableEnterAnimation}>
+            <GameDetailsPresentation presentation={presentation} onClose={onClose} closeOnBackdrop={closeOnBackdrop} containerClassName="p-0 home-game-details-layer" skipEnterAnimation={disableEnterAnimation}>
                 <PlatformGameDetails presentation={presentation} rootRef={modalRef} title={gameDisplayName} description={gameDescription}
                     thumbnail={thumbnail} playerOptions={gameManifest?.playerOptions ?? []} bestPlayers={gameManifest?.bestPlayers ?? []}
                     installedVersion={shouldShowInstalledPackageVersionBadge ? installedPackageVersionLabel : undefined}
@@ -2146,7 +2146,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                     closeOnBackdrop
                     containerClassName="p-4 sm:p-8"
                 >
-                    <div
+                    <div data-platform-dialog="author"
                         data-testid="game-details-author-modal"
                         className="pointer-events-auto w-[min(92vw,24rem)] rounded-[8px] border border-parchment-card-border/30 bg-parchment-card-bg p-5 text-parchment-base-text shadow-parchment-card-hover"
                     >
@@ -2163,7 +2163,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                             <button
                                 type="button"
                                 onClick={() => setShowAuthorInfoModal(false)}
-                                className="rounded-full p-1.5 text-parchment-light-text transition-colors hover:bg-parchment-base-bg hover:text-parchment-base-text cursor-pointer"
+                                className="platform-dialog-close rounded-full p-1.5 text-parchment-light-text transition-colors hover:bg-parchment-base-bg hover:text-parchment-base-text cursor-pointer"
                                 title={t('authorInfo.close')}
                             >
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2174,7 +2174,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                         <div className="mt-4 rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/40 px-3 py-2 text-sm">
                             {t('authorInfo.game', { game: gameDisplayName })}
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-parchment-light-text">
+                        <p className="platform-author-placeholder mt-3 text-sm leading-6 text-parchment-light-text">
                             {t('authorInfo.hint')}
                         </p>
                     </div>

@@ -6,7 +6,6 @@ import { createParticle, parseColorToRgb, type Particle } from '../common/animat
 import { useToast } from '../../contexts/ToastContext';
 import { SPONSOR_API_URL } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
-import { AuthorSupportContent } from './AuthorSupport';
 
 interface AboutModalProps {
     onClose: () => void;
@@ -362,12 +361,13 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 className="bg-parchment-base-bg rounded-xl shadow-2xl w-full max-w-md overflow-hidden border-2 border-parchment-brown/30 flex flex-col max-h-[90vh]"
+                data-platform-dialog="about"
             >
                 {/* 布局规范：h-14 紧凑页眉 */}
                 <div className="relative h-14 bg-parchment-brown flex items-center justify-center overflow-hidden border-b border-parchment-gold/20 shrink-0">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-parchment-gold via-transparent to-transparent" />
                     <h2 className="relative text-lg font-bold tracking-widest text-parchment-cream drop-shadow-md">{t('hud.about.title')}</h2>
-                    <button onClick={onClose} className="absolute right-4 p-2 text-parchment-cream/60 hover:text-parchment-cream transition-colors">
+                    <button onClick={onClose} aria-label={t('common:close')} className="platform-dialog-close absolute right-4 p-2 text-parchment-cream/60 hover:text-parchment-cream transition-colors">
                         <X size={18} />
                     </button>
                 </div>
@@ -406,11 +406,10 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                     </div>
 
                     <div className="pt-4 border-t border-parchment-brown/10 space-y-4">
-                        <AuthorSupportContent />
-
                         {/* Sponsor Area - Bottom */}
                         <div
-                            className="relative rounded-xl overflow-hidden border border-parchment-gold/30 bg-parchment-brown/5 shadow-inner h-40"
+                            className="platform-about-sponsors relative rounded-xl overflow-hidden border border-parchment-gold/30 bg-parchment-brown/5 shadow-inner h-40"
+                            data-empty={sponsors.length === 0}
                             onMouseEnter={() => setIsHovered(true)}
                             onMouseLeave={() => setIsHovered(false)}
                         >

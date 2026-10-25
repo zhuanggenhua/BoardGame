@@ -37,31 +37,18 @@ describe('email service', () => {
         console.log = originalConsoleLog;
     });
 
-    it('在 production 下 SMTP 失败时返回失败而不是假成功', async () => {
-        process.env.NODE_ENV = 'production';
-        createTransportMock.mockReturnValue({
-            sendMail: vi.fn().mockRejectedValue(new Error('EAUTH 535')),
-        });
-
-        const { sendVerificationEmailWithCode } = await import('../email');
-        const result = await sendVerificationEmailWithCode('user@example.com', '123456');
-
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('邮件发送失败，请稍后重试');
-        expect(console.log).not.toHaveBeenCalled();
-    });
-
-    it('在非 production 下 SMTP 失败时保留开发 fallback', async () => {
-        process.env.NODE_ENV = 'development';
-        createTransportMock.mockReturnValue({
-            sendMail: vi.fn().mockRejectedValue(new Error('EAUTH 535')),
-        });
-
-        const { sendVerificationEmailWithCode } = await import('../email');
-        const result = await sendVerificationEmailWithCode('user@example.com', '123456');
-
-        expect(result.success).toBe(true);
-        expect(result.message).toBe('开发模式：验证码已打印到服务器终端');
-        expect(console.log).toHaveBeenCalled();
-    });
+    for (const environment of ['production', 'development', 'test']) {
+        for (const flow of ['register', 'reset']) {
+            it(environment + ' ' + flow + ' SMTP 失败必须返回失败，不能模拟成功', async () => {
+                process.env.NODE_ENV = environment;
+                createTransportMock.mockReturnValue({ sendMail: vi.fn().mockRejectedValue(new Error('EAUTH 535')) });
+                const service = await import('../email');
+                const send = flow === 'register' ? service.sendVerificationEmailWithCode : service.sendPasswordResetEmailWithCode;
+                const result = await send('user@example.invalid', '123456');
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('邮件发送失败，请稍后重试');
+                expect(console.log).not.toHaveBeenCalled();
+            });
+        }
+    }
 });

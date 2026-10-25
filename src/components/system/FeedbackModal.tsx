@@ -690,6 +690,7 @@ export const FeedbackModal = ({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 ref={panelRef}
+                data-platform-dialog="feedback"
                 className={cn(
                     'bg-parchment-base-bg rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border-2 border-parchment-brown/30',
                     isCompactLandscape && 'max-w-[40rem]',
@@ -712,7 +713,8 @@ export const FeedbackModal = ({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-parchment-cream/60 hover:text-parchment-cream hover:bg-white/10 rounded-full transition-colors"
+                        aria-label={t('common:close')}
+                        className="platform-dialog-close p-2 text-parchment-cream/60 hover:text-parchment-cream hover:bg-white/10 rounded-full transition-colors"
                     >
                         <X size={20} />
                     </button>
@@ -1049,6 +1051,28 @@ const captureFeedbackScreenshot = async (modalElement: HTMLElement | null): Prom
             y: window.scrollY,
             scrollX: window.scrollX,
             scrollY: window.scrollY,
+            onclone: async (clonedDocument) => {
+                // foreignObject 导出后的 SVG 不能再读取 blob/外部图片。
+                // 只在截图副本内嵌当前可见图片，保留页面原素材与加载状态。
+                await Promise.all([...clonedDocument.images].map(async (image) => {
+                    const rect = image.getBoundingClientRect();
+                    if (!rect.width || !rect.height || rect.right <= 0 || rect.bottom <= 0
+                        || rect.left >= viewportWidth || rect.top >= viewportHeight) return;
+                    const src = image.currentSrc || image.src;
+                    if (!src || src.startsWith('data:')) return;
+                    const response = await fetch(src, { credentials: 'same-origin' });
+                    if (!response.ok) throw new Error(`截图图片读取失败：HTTP ${response.status}`);
+                    const blob = await response.blob();
+                    image.src = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result));
+                        reader.onerror = () => reject(reader.error ?? new Error('截图图片编码失败'));
+                        reader.readAsDataURL(blob);
+                    });
+                    image.removeAttribute('srcset');
+                    await image.decode();
+                }));
+            },
         });
 
         return compressCanvas(canvas);

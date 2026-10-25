@@ -19,17 +19,16 @@ describe('真实游戏目录的发现与收藏入口', () => {
         fireEvent.change(screen.getByRole('searchbox'), { target: { value: '甲' } });
         expect(screen.queryByRole('button', { name: '乙游戏' })).toBeNull();
     });
-    it('触控发现首次点按展开，再次点按进入；收藏按钮不会进入游戏', () => {
+    it('触控首次点按直接进入详情，不出现中间预览；收藏不触发进入', () => {
         const open = vi.fn(); const favorite = vi.fn();
         render(<PlatformGameCatalog games={games} favoriteIds={new Set()} mode="discover" onOpen={open} onFavorite={favorite} />);
         fireEvent.click(screen.getByRole('button', { name: '甲游戏' }));
-        expect(open).not.toHaveBeenCalled();
-        expect(screen.getByText('查看房间')).toBeTruthy();
+        expect(open).toHaveBeenCalledOnce();
+        expect(open).toHaveBeenCalledWith('one');
+        expect(screen.queryByText('查看房间')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: '收藏：甲游戏' }));
         expect(favorite).toHaveBeenCalledWith('one', true);
-        expect(open).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: '甲游戏' }));
-        expect(open).toHaveBeenCalledWith('one');
+        expect(open).toHaveBeenCalledOnce();
     });
     it('收藏只显示实际收藏，单击进入，搜索空结果可清除恢复', () => {
         const open = vi.fn();

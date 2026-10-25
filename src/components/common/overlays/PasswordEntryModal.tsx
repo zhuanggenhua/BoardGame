@@ -50,6 +50,7 @@ export const PasswordEntryModal = ({
                 >
                     <div
                         data-testid="room-password-modal"
+                        data-platform-dialog="password"
                         className="bg-parchment-card-bg border border-parchment-card-border/50 shadow-parchment-card-hover rounded-sm w-full max-w-[20rem] sm:max-w-sm max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] overflow-hidden text-center font-serif pointer-events-auto flex flex-col"
                     >
                         <div className="flex-1 min-h-0 overflow-y-auto p-6">

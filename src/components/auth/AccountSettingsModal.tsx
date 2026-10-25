@@ -175,7 +175,7 @@ export const AccountSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Accou
     if (!user) return null;
 
     // 通用行样式
-    const rowClass = 'flex items-center justify-between py-3 px-1';
+    const rowClass = 'platform-account-row flex items-center justify-between py-3 px-1';
     const labelClass = 'flex items-center gap-2 text-xs font-bold text-parchment-light-text uppercase tracking-wider min-w-[80px]';
     const valueClass = 'text-sm text-parchment-base-text font-serif';
     const actionBtnClass = 'text-xs font-bold text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer uppercase tracking-wider';
@@ -197,6 +197,7 @@ export const AccountSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Accou
             <div
                 className="bg-parchment-card-bg pointer-events-auto w-full max-w-[420px] max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] overflow-y-auto shadow-parchment-card-hover border border-parchment-card-border/50 p-6 sm:p-8 relative rounded-sm font-serif"
                 data-testid="account-settings-modal"
+                data-platform-dialog="account"
             >
                 {/* 标题 */}
                 <div className="text-center mb-5">
@@ -330,7 +331,7 @@ export const AccountSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Accou
                             </button>
                         </div>
                     ) : (
-                        <div className="w-full mt-3 space-y-3">
+                        <div data-account-edit-password className="w-full mt-3 space-y-3">
                             <PasswordField
                                 value={currentPassword}
                                 onChange={(e) => setCurrentPassword(e.target.value)}

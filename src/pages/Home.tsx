@@ -48,7 +48,6 @@ import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { PlatformHomeSurface } from '../components/home/PlatformHomeSurface';
 import { PlatformFavoriteButton } from '../components/home/PlatformFavoriteButton';
 import { ClassicHomeSurface } from '../components/home/ClassicHomeSurface';
-import { HomeStyleSettings } from '../components/home/HomeStyleSettings';
 import { useMobileViewport } from '../hooks/ui/useMobileViewport';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
@@ -217,10 +216,9 @@ const HomeGameDetailsModalFallback = ({
 
 interface HomeProps {
     homeStyle?: HomeEntryStyle;
-    onHomeStyleChange?: (style: HomeEntryStyle) => void;
 }
 
-export const Home = ({ homeStyle = 'modern', onHomeStyleChange = () => undefined }: HomeProps) => {
+export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
     useGlobalCursor();
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [searchParams, setSearchParams] = useSearchParams();
@@ -1024,7 +1022,7 @@ export const Home = ({ homeStyle = 'modern', onHomeStyleChange = () => undefined
                         data-testid="home-active-match-leave"
                         data-action-tone={myMatchRole.playerID === '0' ? 'danger' : 'warning'}
                         className={clsx(
-                            "min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
+                            "min-h-11 min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
                             myMatchRole.playerID === '0'
                                 ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
                                 : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"
@@ -1035,7 +1033,7 @@ export const Home = ({ homeStyle = 'modern', onHomeStyleChange = () => undefined
                 )}
                 <button
                     onClick={handleReconnect}
-                    className="min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
+                    className="min-h-11 min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
                 >
                     {t('lobby:actions.reconnectEnter')}
                 </button>
@@ -1068,11 +1066,7 @@ export const Home = ({ homeStyle = 'modern', onHomeStyleChange = () => undefined
             return next;
         });
     };
-    const styleSettings = (visualStyle: HomeEntryStyle) => (
-        <HomeStyleSettings currentStyle={homeStyle} onSelectStyle={onHomeStyleChange} visualStyle={visualStyle} />
-    );
     const classicUtility = <>
-        {styleSettings('classic')}
         <AuthorSupportButton />
         <OperationGuideButton surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" />
         {user ? <UserMenu onLogout={handleLogout} /> : <div className="flex items-center gap-6">
@@ -1105,8 +1099,8 @@ export const Home = ({ homeStyle = 'modern', onHomeStyleChange = () => undefined
         ) : (
             <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
                 brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
-                utility={<>{styleSettings('modern')}<AuthorSupportButton /><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
-                mobileUtility={close => <>{styleSettings('modern')}<AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                utility={<><AuthorSupportButton /><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                mobileUtility={close => <><AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
                 games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
                 onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
                 onOpenLibraryGame={openLibraryGame}

@@ -38,8 +38,12 @@ export function PlatformGameDetails<T extends string>({ presentation = 'modal', 
             aria-label={t('common:close')} onClick={onClose}><X aria-hidden="true" size={22} /></button>
         <header data-testid="game-details-sidebar" className="platform-details-summary">
             <div className="platform-details-cover">{thumbnail}</div>
+            <div className="platform-details-copy">
             <h2 id={`${contentId}-title`} className="platform-details-title" data-testid="game-details-title" data-installed-version={installedVersion}>{title}
                     {installedVersion && <small>{installedVersion}</small>}</h2>
+            <div id={`${contentId}-description`} data-testid="game-details-description" className="platform-details-description"
+                role="region" aria-label={t('common:game_details.description', { defaultValue: '游戏介绍' })} tabIndex={0}>{description}</div>
+            </div>
                 <div data-testid="game-details-player-recommendation" className="platform-details-players">
                     {playerOptions.map(count => <span key={count} className={bestPlayers.includes(count) ? 'is-best' : undefined}
                         title={bestPlayers.includes(count) ? t('common:game_details.best_recommendation') : undefined}>{count}</span>)}
@@ -48,7 +52,6 @@ export function PlatformGameDetails<T extends string>({ presentation = 'modal', 
             {counts.length > 0 && <p className="platform-details-mobile-players">{t('common:game_details.player_count')} {countLabel}
                 {bestPlayers.length > 0 && <strong>{t('common:game_details.recommended_players')} {bestPlayers.join(' / ')}</strong>}
             </p>}
-            <p id={`${contentId}-description`} data-testid="game-details-description" className="platform-details-description">{description}</p>
             <div className="platform-details-actions"><div className="platform-details-primary">{primaryActions}</div>
             <div id={`${contentId}-secondary`} className="platform-details-secondary">{secondaryActions}</div>
             <div id={`${contentId}-author`} className="platform-details-author">{author}</div></div>

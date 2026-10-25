@@ -156,6 +156,8 @@ export const AuthModal = ({
     const isCompactHomeV2Layout = !embedded && isHomeV2Style && isCompactLandscape;
     const isClassicStandalone = !embedded && !isHomeV2Style && !isPlatformStyle;
     const shouldAutoFocusInitialField = !isHomeV2Style && !isPlatformStyle;
+    // 平台表单切换时直接占据完整高度，避免展开中的字段溢出并压到相邻输入。
+    const formSectionInitial = isPlatformStyle ? false : { opacity: 0, height: 0 };
     const homeV2FieldLabelClassName = isCompactHomeV2Layout ? homeV2PaperCompactLabelClassName : homeV2PaperLabelClassName;
     const homeV2FieldHintClassName = isCompactHomeV2Layout ? homeV2PaperCompactHintClassName : homeV2PaperHintClassName;
     const homeV2TextInputClassName = isCompactHomeV2Layout ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
@@ -894,7 +896,7 @@ export const AuthModal = ({
 
                     <div className={embedded ? 'space-y-[18px]' : 'space-y-5'}>
                         {mode === 'register' && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}>
+                            <motion.div initial={formSectionInitial} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}>
                                 <div>
                                     <label className={fieldLabelClassName}>{t('email.label.address')}</label>
                                     <div className="flex flex-wrap items-end gap-2" data-testid="auth-register-email-row">
@@ -947,7 +949,7 @@ export const AuthModal = ({
                         )}
 
                         {mode === 'reset' && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}>
+                            <motion.div initial={formSectionInitial} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}>
                                 <div>
                                     <label className={fieldLabelClassName}>{t('email.label.address')}</label>
                                     <div className="flex flex-wrap items-end gap-2" data-testid="auth-reset-email-row">
@@ -1085,7 +1087,7 @@ export const AuthModal = ({
                         )}
 
                         {mode === 'register' && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                            <motion.div initial={formSectionInitial} animate={{ opacity: 1, height: 'auto' }}>
                                 <label className={fieldLabelClassName}>{t('label.confirmPassword')}</label>
                                 <PasswordField
                                     value={confirmPassword}
@@ -1103,7 +1105,7 @@ export const AuthModal = ({
                         )}
 
                         {mode === 'reset' && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                            <motion.div initial={formSectionInitial} animate={{ opacity: 1, height: 'auto' }}>
                                 <label className={fieldLabelClassName}>{t('label.confirmPassword')}</label>
                                 <PasswordField
                                     value={resetConfirmPassword}

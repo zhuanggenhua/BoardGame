@@ -2,8 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
+import { ImagePlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ModalBase } from '../common/overlays/ModalBase';
+import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../lib/avatarPresets';
+import './avatar-update.css';
 
 interface AvatarUpdateModalProps {
     isOpen: boolean;
@@ -14,11 +17,12 @@ interface AvatarUpdateModalProps {
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-type Step = 'select' | 'crop' | 'uploading';
+type Step = 'select' | 'crop' | 'saving';
+type AvatarSource = 'default' | 'preset' | 'upload';
 
 export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUpdateModalProps) => {
     const { t } = useTranslation('auth');
-    const { uploadAvatar, user } = useAuth();
+    const { uploadAvatar, updateAvatar, user } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const previewUrlRef = useRef<string>('');
 
@@ -26,6 +30,13 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');
     const [error, setError] = useState('');
+    const currentPreset = AVATAR_PRESETS.find(preset => preset.src === user?.avatar);
+    const [source, setSource] = useState<AvatarSource>(() => currentPreset ? 'preset'
+        : user?.avatar && user.avatar !== DEFAULT_AVATAR_URL ? 'upload' : 'default');
+    const [selectedPreset, setSelectedPreset] = useState<string>(currentPreset?.src ?? AVATAR_PRESETS[0].src);
+    const currentAvatar = user?.avatar || DEFAULT_AVATAR_URL;
+    const selectedAvatar = source === 'default' ? DEFAULT_AVATAR_URL : selectedPreset;
+    const hasAvatarChange = source !== 'upload' && selectedAvatar !== currentAvatar;
 
     // 裁剪状态
     const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -102,7 +113,7 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
     const handleUpload = async () => {
         if (!selectedFile || !croppedArea) return;
 
-        setStep('uploading');
+        setStep('saving');
         setError('');
 
         try {
@@ -123,6 +134,18 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
         resetForm();
     }, [resetForm]);
 
+    const selectSource = (next: AvatarSource) => {
+        resetForm();
+        setSource(next);
+    };
+
+    const saveChoice = async (avatar: string) => {
+        if (step === 'saving') return;
+        setError(''); setStep('saving');
+        try { await updateAvatar(avatar); handleClose(); }
+        catch (cause) { setError(cause instanceof Error ? cause.message : t('avatar.error.updateFailed')); setStep('select'); }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -138,7 +161,7 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                 paddingLeft: 'max(1rem, var(--safe-area-left))',
             }}
         >
-            <div className="bg-parchment-card-bg pointer-events-auto w-full max-w-[420px] max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] overflow-y-auto shadow-parchment-card-hover border border-parchment-card-border/50 p-6 sm:p-8 relative rounded-sm font-serif">
+            <div data-platform-dialog="avatar" className="bg-parchment-card-bg pointer-events-auto w-full max-w-[420px] max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] overflow-y-auto shadow-parchment-card-hover border border-parchment-card-border/50 p-6 sm:p-8 relative rounded-sm font-serif">
                 {/* 标题 */}
                 <div className="text-center mb-5">
                     <div className="text-xs sm:text-sm text-parchment-light-text font-bold uppercase tracking-wider">
@@ -147,14 +170,29 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                     <div className="h-px w-10 bg-parchment-card-border/70 mx-auto mt-2" />
                 </div>
 
+                {step !== 'saving' && <div className="avatar-sources" role="group" aria-label={t('avatar.sourceLabel')}>
+                    {(['default', 'preset', 'upload'] as const).map(value => <button type="button" key={value}
+                        aria-pressed={source === value} onClick={() => selectSource(value)}>{t(`avatar.source.${value}`)}</button>)}
+                </div>}
+
                 {error && (
-                    <div className="bg-red-50 border border-red-100 text-red-600 text-xs px-3 py-2 mb-4 text-center rounded">
+                    <div role="alert" className="bg-red-50 border border-red-100 text-red-600 text-xs px-3 py-2 mb-4 text-center rounded">
                         {error}
                     </div>
                 )}
 
-                {/* 步骤一：选择图片 */}
-                {step === 'select' && (
+                {step === 'select' && source === 'default' && <div className="avatar-default-preview">
+                    <img src={DEFAULT_AVATAR_URL} width="112" height="112" alt={t('avatar.source.default')} />
+                </div>}
+                {step === 'select' && source === 'preset' && <div className="avatar-presets">
+                    {AVATAR_PRESETS.map(preset => <button type="button" key={preset.id} aria-label={t(preset.labelKey)}
+                        aria-pressed={selectedPreset === preset.src} onClick={() => setSelectedPreset(preset.src)}>
+                        <img src={preset.src} alt="" width="64" height="64" /><span>{t(preset.labelKey)}</span>
+                    </button>)}
+                </div>}
+
+                {/* 上传继续使用原校验、裁剪和文件保存链。 */}
+                {step === 'select' && source === 'upload' && (
                     <div className="space-y-4">
                         {/* 当前头像预览 */}
                         {user?.avatar && (
@@ -167,24 +205,17 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                             </div>
                         )}
 
-                        {/* 拖拽区域 */}
-                        <div
+                        {/* 点按唤起系统选图；桌面也保留拖放接收能力。 */}
+                        <button type="button" aria-label={t('avatar.chooseImage')}
                             onClick={() => fileInputRef.current?.click()}
                             onDrop={handleDrop}
                             onDragOver={(e) => e.preventDefault()}
-                            className="border-2 border-dashed border-parchment-card-border/50 rounded-lg p-8 text-center cursor-pointer hover:border-parchment-base-text hover:bg-parchment-base-bg/20 transition-colors"
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
+                            className="avatar-file-picker border-2 border-parchment-card-border/50 rounded-lg p-4 text-center cursor-pointer hover:border-parchment-base-text hover:bg-parchment-base-bg/20 transition-colors"
                         >
-                            <div className="text-3xl mb-2 opacity-40">📷</div>
-                            <div className="text-sm text-parchment-base-text font-bold">
-                                {t('avatar.dropzone.title')}
-                            </div>
-                            <div className="text-xs text-parchment-light-text mt-1">
-                                {t('avatar.dropzone.hint')}
-                            </div>
-                        </div>
+                            <ImagePlus size={20} aria-hidden="true" />
+                            <span className="text-sm text-parchment-base-text font-bold">{t('avatar.chooseImage')}</span>
+                        </button>
+                        <p className="avatar-file-hint text-xs text-parchment-light-text text-center">{t('avatar.dropzone.hint')}</p>
 
                         <input
                             ref={fileInputRef}
@@ -194,17 +225,16 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                             className="hidden"
                         />
 
-                        <div className="flex justify-center">
-                            <button
-                                type="button"
-                                onClick={handleClose}
-                                className="px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider border border-parchment-card-border/50 text-parchment-base-text bg-parchment-card-bg hover:bg-parchment-base-bg transition-colors rounded-[4px]"
-                            >
-                                {t('avatar.button.cancel')}
-                            </button>
-                        </div>
                     </div>
                 )}
+
+                {step === 'select' && <div className="avatar-selection-actions">
+                    {hasAvatarChange && <button type="button" className="avatar-confirm"
+                        onClick={() => void saveChoice(selectedAvatar)}>
+                        {t('avatar.button.save')}
+                    </button>}
+                    <button type="button" onClick={handleClose}>{t('avatar.button.cancel')}</button>
+                </div>}
 
                 {/* 步骤二：裁剪 */}
                 {step === 'crop' && previewUrl && (
@@ -258,7 +288,8 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                             <button
                                 type="button"
                                 onClick={handleUpload}
-                                className="px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider bg-parchment-base-text text-parchment-card-bg hover:bg-parchment-brown transition-colors rounded-[4px]"
+                                disabled={!croppedArea}
+                                className="avatar-confirm px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider bg-parchment-base-text text-parchment-card-bg hover:bg-parchment-brown transition-colors rounded-[4px]"
                             >
                                 {t('avatar.button.upload')}
                             </button>
@@ -267,11 +298,11 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                 )}
 
                 {/* 步骤三：上传中 */}
-                {step === 'uploading' && (
+                {step === 'saving' && (
                     <div className="flex flex-col items-center py-8 gap-3">
                         <div className="w-8 h-8 border-2 border-parchment-base-text/30 border-t-parchment-base-text rounded-full animate-spin" />
                         <div className="text-sm text-parchment-light-text">
-                            {t('avatar.button.uploading')}
+                            {t('avatar.button.saving')}
                         </div>
                     </div>
                 )}

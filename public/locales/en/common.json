@@ -95,8 +95,7 @@
   "mobileOrientation": {
     "closeHint": "Dismiss hint",
     "banner": {
-      "rotateToLandscape": "Rotate to landscape for a better experience",
-      "rotateToPortrait": "Switch to portrait for a better experience",
+      "unlockPortrait": "Please turn off portrait orientation lock",
       "tabletOnly": "This game currently works best on tablet or PC",
       "notSupported": "This game is not ready for phone screens yet; please use a PC"
     },

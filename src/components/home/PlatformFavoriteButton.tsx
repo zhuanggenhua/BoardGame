@@ -15,6 +15,6 @@ export function PlatformFavoriteButton({ gameId, title }: { gameId: string; titl
             toast.error(error instanceof Error ? error.message : t('platform.favoriteError'));
         })}>
         <Star size={18} aria-hidden="true" fill={favorite ? 'currentColor' : 'none'} />
-        {t(favorite ? 'platform.saved' : 'platform.save', { defaultValue: favorite ? '已收藏' : '收藏' })}
+        <span className="platform-details-favorite-label">{t(favorite ? 'platform.saved' : 'platform.save')}</span>
     </button>;
 }

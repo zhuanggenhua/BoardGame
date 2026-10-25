@@ -64,7 +64,7 @@ function SubmissionForm({ record, onSaved }: { record?: GameSubmissionRecord; on
             <label>介绍<textarea name="description" required maxLength={10000} defaultValue={record?.description} /></label>
             <label>规则文档<textarea name="rules" maxLength={50000} defaultValue={record?.rules} /></label>
             <label className="platform-cover-upload">封面
-                {preview && <img src={preview} alt="投稿封面预览" />}
+                {preview && <img src={preview} alt="投稿封面预览" onError={() => { setPreview(''); setError('封面不是可读取的图片'); }} />}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={event => {
                     const selected = event.target.files?.[0];
                     if (selected && selected.size > 10 * 1024 * 1024) {

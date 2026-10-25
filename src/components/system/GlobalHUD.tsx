@@ -7,6 +7,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
 import './global-hud.css';
 import { PlatformAudioSettings } from './PlatformAudioSettings';
+import { HomeStyleSettings } from '../home/HomeStyleSettings';
+import { isHomeEntryRoute, persistHomeEntryStyle, resolveHomeEntryStyle, subscribeHomeEntryStyleChange } from '../../lib/homeV2Routing';
 import { useHomeHudClearance } from './useHomeHudClearance';
 import { useHomeFormHudSuppression } from './useHomeFormHudSuppression';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
@@ -64,6 +66,8 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     const suppressFormFab = useHomeFormHudSuppression(location.pathname, useMobileViewport());
     const toast = useToast();
     const [displayTheme, setDisplayTheme] = useState<SystemDisplayTheme>(() => readSystemDisplayThemePreference());
+    const [homeStyle, setHomeStyle] = useState(() => resolveHomeEntryStyle());
+    useEffect(() => subscribeHomeEntryStyleChange(() => setHomeStyle(resolveHomeEntryStyle())), []);
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
@@ -220,8 +224,19 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         id: 'settings',
         icon: <Settings size={22} />,
         label: t('hud.actions.settings'),
-        mobilePanelVariant: 'sheet',
-        content: ({ closePanel }) => <PlatformAudioSettings isDark={isDark} onClose={closePanel}/>
+        content: ({ closePanel }) => {
+            const closeSettings = () => {
+                closePanel();
+                document.querySelector<HTMLButtonElement>('[data-fab-id="settings"]')?.focus();
+            };
+            return <div className="space-y-4" onKeyDown={event => {
+            if (event.key !== 'Escape') return;
+            event.preventDefault(); event.stopPropagation(); closeSettings();
+        }}>
+            {isHomeEntryRoute(location.pathname) && <HomeStyleSettings currentStyle={homeStyle} onSelectStyle={style => { persistHomeEntryStyle(style); closeSettings(); }} />}
+            <PlatformAudioSettings isDark={isDark} onClose={closeSettings}/>
+        </div>;
+        }
 
     });
 

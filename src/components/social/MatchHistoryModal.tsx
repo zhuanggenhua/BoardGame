@@ -37,6 +37,7 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 className="relative bg-parchment-card-bg w-full max-w-2xl max-h-[80vh] rounded-lg shadow-2xl overflow-hidden flex flex-col border border-parchment-card-border/30"
+                data-platform-dialog="history"
             >
                 {/* 标题区域 */}
                 <div className="flex items-center justify-between p-4 border-b border-parchment-card-border/30 bg-parchment-base-bg">
@@ -46,7 +47,8 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-full hover:bg-parchment-card-border/20 transition-colors text-parchment-base-text"
+                        aria-label={t('common:close')}
+                        className="platform-dialog-close p-1.5 rounded-full hover:bg-parchment-card-border/20 transition-colors text-parchment-base-text"
                     >
                         <X size={20} />
                     </button>

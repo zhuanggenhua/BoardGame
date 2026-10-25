@@ -5,6 +5,9 @@
 .platform-profile-identity { grid-area: identity; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; min-width: 0; }
 .platform-profile-avatar { display: grid; place-items: center; width: 120px; height: 120px; border: 4px solid #000; background: #d5ff00; font-size: 48px; font-weight: 800; overflow: hidden; box-shadow: 8px 8px #000; }
 .platform-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.platform-profile-avatar { position: relative; padding: 0; cursor: pointer; }
+.platform-profile-avatar-edit { position: absolute; right: 0; bottom: 0; display: grid; place-items: center; width: 28px; height: 28px; background: #111; color: #fff; }
+.platform-profile-avatar:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; }
 .platform-profile h1 { font-size: 32px; font-weight: 800; overflow-wrap: anywhere; }
 .platform-profile h2 { font-size: 24px; font-weight: 800; margin-bottom: 20px; border-bottom: 4px solid #000; padding-bottom: 8px; }
 .platform-profile-identity form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; min-width: 0; }

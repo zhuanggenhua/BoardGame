@@ -1,10 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import type { GameConfig } from '../../config/games.config';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
-import { useCoarsePointer } from '../../hooks/ui/useCoarsePointer';
-import { useArmedActivation } from '../../hooks/ui/useArmedActivation';
 import { resolveGameDescription, resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import './platform-catalog.css';
 
@@ -27,7 +25,6 @@ interface PlatformGameCatalogProps {
 /** Registry-backed cards. Collection data and room navigation remain caller-owned. */
 export function PlatformGameCatalog({ heading, filters, beforeGames, games, favoriteIds, mode, onOpen, onFavorite, onIntent, favoritePending = false, query: controlledQuery, onQueryChange, showSearch = true }: PlatformGameCatalogProps) {
     const { t } = useTranslation(['lobby', 'common']);
-    const coarsePointer = useCoarsePointer();
     const mobile = useMobileViewport();
     const [queries, setQueries] = useState({ discover: '', library: '' });
     const query = controlledQuery ?? queries[mode];
@@ -38,10 +35,6 @@ export function PlatformGameCatalog({ heading, filters, beforeGames, games, favo
             && resolveGameDisplayName(game, t).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
         return mode === 'library' && sort === 'name' ? [...matching].sort((a, b) => resolveGameDisplayName(a, t).localeCompare(resolveGameDisplayName(b, t))) : matching;
     }, [games, favoriteIds, mode, query, sort, t]);
-    const { isArmed, armOrActivate } = useArmedActivation<string>({
-        requireArming: coarsePointer && mode === 'discover',
-        isKeyValid: key => visibleGames.some(game => game.id === key),
-    });
     return <section className={`platform-catalog platform-catalog--${mode}`}>
         {beforeGames}
         <div className="platform-catalog-header">
@@ -62,17 +55,15 @@ export function PlatformGameCatalog({ heading, filters, beforeGames, games, favo
         <div className="platform-game-grid">
             {visibleGames.map(game => {
                 const title = resolveGameDisplayName(game, t);
-                const armed = mode === 'discover' && coarsePointer && isArmed(game.id);
                 const favorite = favoriteIds.has(game.id);
-                return <article key={game.id} className={`platform-game-card${armed ? ' is-expanded' : ''}`} data-game-id={game.id}>
+                return <article key={game.id} className="platform-game-card" data-game-id={game.id}>
                     <button type="button" className="platform-game-open" aria-label={title}
                         onMouseEnter={() => onIntent?.(game.id)} onFocus={() => onIntent?.(game.id)}
-                        onClick={() => armOrActivate(game.id, { onActivate: () => onOpen(game.id), onArm: () => onIntent?.(game.id) })}>
+                        onClick={() => onOpen(game.id)}>
                         <span className="platform-game-art">{game.thumbnail}</span>
                         <span className="platform-game-copy">
                             <strong>{title}</strong>
                             <span className="platform-game-description">{resolveGameDescription(game, t)}</span>
-                            {armed && <span className="platform-game-open-hint">{t('platform.openLobby', { defaultValue: '查看房间' })}<ArrowRight size={16} aria-hidden="true"/></span>}
                         </span>
                     </button>
                     {mode === 'discover' && <button type="button" className="platform-game-favorite" disabled={favoritePending} aria-pressed={favorite}
