@@ -158,6 +158,9 @@ export function BetrayalLatestDiscoverySurface({
     shouldShowCardFace ||
       (discovery.kind === "event" && panelVisual),
   );
+  const shouldGroupCardRollDecision = Boolean(
+    shouldRenderCardFace && shouldShowRoll && recentRoll,
+  );
   const displayedDiscoveryDetail = resolveDisplayedDiscoveryDetail(
     discovery,
     resolutionSteps,
@@ -169,6 +172,68 @@ export function BetrayalLatestDiscoverySurface({
     displayedDiscoveryDetail &&
       !visibleProcessCard &&
       !(shouldShowRoll && recentRoll),
+  );
+  const externalActionDock = shouldHideExternalActionDock ? null : (
+    <BetrayalDecisionActionDock
+      testId="betrayal-discovery-card-external-action-dock"
+      layout={shouldGroupCardRollDecision ? "inline" : "bottom"}
+      className={
+        shouldGroupCardRollDecision
+          ? "pointer-events-none relative min-h-0 justify-end bg-transparent p-0"
+          : "pointer-events-none relative mt-3 border-t-0 bg-transparent"
+      }
+    >
+      {hasPendingEventRollStart ? (
+        <button
+          type="button"
+          data-testid="betrayal-event-roll-start"
+          className={`pointer-events-auto ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
+          disabled={!canStartPendingEventRoll}
+          onClick={onRollLatestDiscoveryEvent}
+        >
+          {t("board.discovery.rollEvent")}
+        </button>
+      ) : (
+        <BetrayalConfirmButton
+          type="button"
+          data-testid="betrayal-discovery-continue"
+          data-discovery-action-position="bottom"
+          data-discovery-action-surface="card-external-dock"
+          data-pending-card-resolution-id={continueButton.pendingCardResolutionId}
+          data-pending-card-resolution-step={continueButton.pendingCardResolutionStep}
+          data-card-resolution-confirmed-count={
+            typeof continueButton.cardResolutionConfirmedCount === "number"
+              ? String(continueButton.cardResolutionConfirmedCount)
+              : undefined
+          }
+          data-card-resolution-required-count={
+            typeof continueButton.cardResolutionRequiredCount === "number"
+              ? String(continueButton.cardResolutionRequiredCount)
+              : undefined
+          }
+          data-event-roll-confirmed-count={
+            typeof continueButton.eventRollConfirmedCount === "number"
+              ? String(continueButton.eventRollConfirmedCount)
+              : undefined
+          }
+          data-event-roll-required-count={
+            typeof continueButton.eventRollRequiredCount === "number"
+              ? String(continueButton.eventRollRequiredCount)
+              : undefined
+          }
+          data-event-roll-readable={
+            typeof continueButton.eventRollReadable === "boolean"
+              ? String(continueButton.eventRollReadable)
+              : undefined
+          }
+          disabled={continueButton.disabled}
+          className={`pointer-events-auto min-w-[176px] shrink-0 ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
+          onClick={onContinue}
+        >
+          {continueButton.label}
+        </BetrayalConfirmButton>
+      )}
+    </BetrayalDecisionActionDock>
   );
 
   return (
@@ -273,21 +338,29 @@ export function BetrayalLatestDiscoverySurface({
         {shouldRenderCardFace || (shouldShowRoll && recentRoll) ? (
           <div
             data-testid="betrayal-discovery-panel-main"
-            className={`flex min-h-0 max-w-[920px] flex-row items-center justify-center gap-5 ${
-              shouldShowRoll && recentRoll
-                ? canModifyRoll
-                  ? "w-full max-w-[900px]"
-                  : "w-full max-w-[920px]"
-                : canModifyRoll
-                  ? "max-w-[780px]"
-                  : "max-w-[900px]"
+            className={`flex min-h-0 max-w-[920px] items-center justify-center ${
+              shouldGroupCardRollDecision
+                ? "w-full flex-col gap-3 xl:flex-row xl:gap-5"
+                : `flex-row gap-5 ${
+                    shouldShowRoll && recentRoll
+                      ? canModifyRoll
+                        ? "w-full max-w-[900px]"
+                        : "w-full max-w-[920px]"
+                      : canModifyRoll
+                        ? "max-w-[780px]"
+                        : "max-w-[900px]"
+                  }`
             }`}
           >
             {shouldRenderCardFace ? (
               <div
                 className={`relative shrink-0 transition-opacity duration-100 ${
                   isPossessionGainTransitionActive ? "opacity-0" : "opacity-100"
-                } w-[300px]`}
+                } ${
+                  shouldGroupCardRollDecision
+                    ? "w-[min(300px,calc(100vw-32px))] xl:w-[300px]"
+                    : "w-[300px]"
+                }`}
               >
                 {panelVisual ? (
                   <DiscoveryAtlasFrame
@@ -312,98 +385,58 @@ export function BetrayalLatestDiscoverySurface({
               </div>
             ) : null}
             {shouldShowRoll && recentRoll ? (
-              <RecentRollPanel
-                roll={recentRoll}
-                className="h-[380px] min-h-[332px] w-[560px] shrink-0"
-                diceClassName="min-h-[236px]"
-                animateRerollMotion={animateRerollMotion}
-                rerollSelection={rerollSelection}
-                deferEventDamageStage={false}
-                effectiveLocale={effectiveLocale}
-                actorLabel={rollActorLabel}
-                showSource={false}
-                showThresholds={!panelVisual || recentRoll.kind === "hauntRoll"}
-                showRollLabel
-                showOutcome={
-                  recentRoll.kind === "eventRolledDamage" ||
-                  recentRoll.kind === "eventTraitCheck" ||
-                  recentRoll.kind === "eventDiceRoll"
-                }
-                resultReadable={continueButton.eventRollReadable !== false}
-                modifierEffectLabel={modifierEffectLabel}
-                modifierEffectSources={modifierEffectSources}
-                openTable
-                compactResult={false}
-                denseResult={false}
-                denseResultPlacement="stacked"
-                actionSlot={rollModifierActionSlot}
-                floatingResultClassName=""
-                onDiceSettledChange={onDiceSettledChange}
-              />
+              <div
+                className={`flex min-w-0 flex-col items-stretch ${
+                  shouldGroupCardRollDecision
+                    ? "w-full gap-1 xl:w-[560px] xl:shrink-0"
+                    : ""
+                }`}
+              >
+                <RecentRollPanel
+                  roll={recentRoll}
+                  className={
+                    shouldGroupCardRollDecision
+                      ? "h-[360px] min-h-[236px] w-full max-w-[560px] shrink-0 xl:h-[264px]"
+                      : "h-[380px] min-h-[332px] w-[560px] shrink-0"
+                  }
+                  diceClassName={
+                    shouldGroupCardRollDecision
+                      ? "min-h-[152px] xl:min-h-[160px]"
+                      : "min-h-[236px]"
+                  }
+                  animateRerollMotion={animateRerollMotion}
+                  rerollSelection={rerollSelection}
+                  deferEventDamageStage={false}
+                  effectiveLocale={effectiveLocale}
+                  actorLabel={rollActorLabel}
+                  showSource={false}
+                  showThresholds={!panelVisual || recentRoll.kind === "hauntRoll"}
+                  showRollLabel
+                  showOutcome={
+                    recentRoll.kind === "eventRolledDamage" ||
+                    recentRoll.kind === "eventTraitCheck" ||
+                    recentRoll.kind === "eventDiceRoll"
+                  }
+                  resultReadable={continueButton.eventRollReadable !== false}
+                  modifierEffectLabel={modifierEffectLabel}
+                  modifierEffectSources={modifierEffectSources}
+                  openTable
+                  compactResult={shouldGroupCardRollDecision}
+                  denseResult={shouldGroupCardRollDecision}
+                  denseResultPlacement={
+                    shouldGroupCardRollDecision ? "floatingSide" : "stacked"
+                  }
+                  resultStageClassName={shouldGroupCardRollDecision ? "w-full" : ""}
+                  actionSlot={rollModifierActionSlot}
+                  floatingResultClassName=""
+                  onDiceSettledChange={onDiceSettledChange}
+                />
+                {shouldGroupCardRollDecision ? externalActionDock : null}
+              </div>
             ) : null}
           </div>
         ) : null}
-        {shouldHideExternalActionDock ? null : (
-          <BetrayalDecisionActionDock
-            testId="betrayal-discovery-card-external-action-dock"
-            className="pointer-events-none relative mt-3 border-t-0 bg-transparent"
-          >
-            {hasPendingEventRollStart ? (
-              <button
-                type="button"
-                data-testid="betrayal-event-roll-start"
-                className={`pointer-events-auto ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
-                disabled={!canStartPendingEventRoll}
-                onClick={onRollLatestDiscoveryEvent}
-              >
-                {t("board.discovery.rollEvent")}
-              </button>
-            ) : (
-              <BetrayalConfirmButton
-                type="button"
-                data-testid="betrayal-discovery-continue"
-                data-discovery-action-position="bottom"
-                data-discovery-action-surface="card-external-dock"
-                data-pending-card-resolution-id={
-                  continueButton.pendingCardResolutionId
-                }
-                data-pending-card-resolution-step={
-                  continueButton.pendingCardResolutionStep
-                }
-                data-card-resolution-confirmed-count={
-                  typeof continueButton.cardResolutionConfirmedCount === "number"
-                    ? String(continueButton.cardResolutionConfirmedCount)
-                    : undefined
-                }
-                data-card-resolution-required-count={
-                  typeof continueButton.cardResolutionRequiredCount === "number"
-                    ? String(continueButton.cardResolutionRequiredCount)
-                    : undefined
-                }
-                data-event-roll-confirmed-count={
-                  typeof continueButton.eventRollConfirmedCount === "number"
-                    ? String(continueButton.eventRollConfirmedCount)
-                    : undefined
-                }
-                data-event-roll-required-count={
-                  typeof continueButton.eventRollRequiredCount === "number"
-                    ? String(continueButton.eventRollRequiredCount)
-                    : undefined
-                }
-                data-event-roll-readable={
-                  typeof continueButton.eventRollReadable === "boolean"
-                    ? String(continueButton.eventRollReadable)
-                    : undefined
-                }
-                disabled={continueButton.disabled}
-                className={`pointer-events-auto min-w-[176px] shrink-0 ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
-                onClick={onContinue}
-              >
-                {continueButton.label}
-              </BetrayalConfirmButton>
-            )}
-          </BetrayalDecisionActionDock>
-        )}
+        {!shouldGroupCardRollDecision ? externalActionDock : null}
       </div>
     </div>
   );

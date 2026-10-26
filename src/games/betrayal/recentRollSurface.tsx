@@ -303,7 +303,11 @@ export function RecentRollPanel({
       shouldShowEventDamageVisibleSummary ||
       (showBreakdown && attackComparisonText),
   );
-  const actionSlotBelowResult = Boolean(actionSlot && openTable && !denseResult);
+  const actionSlotBelowResult = Boolean(
+    actionSlot &&
+      openTable &&
+      (!denseResult || denseResultPlacement === "floatingSide"),
+  );
   const resultGridColumns = actionSlotBelowResult
     ? showResultCopy
       ? "grid-cols-[minmax(0,1fr)_auto]"
@@ -593,15 +597,12 @@ export function RecentRollPanel({
     >
       {denseResult ? (
         openTable && denseResultPlacement === "floatingSide" ? (
-          <div className="relative z-10 h-full min-h-[236px] overflow-visible">
-            <div
-              className="relative h-[214px] min-h-[214px] min-w-[240px] max-w-[300px] -translate-y-16 overflow-visible"
-              style={{ width: "calc(100% - 224px)" }}
-            >
+          <div className="relative z-10 grid h-full min-h-[236px] grid-cols-1 grid-rows-[minmax(112px,1fr)_minmax(72px,1fr)] gap-x-3 gap-y-1 overflow-visible xl:grid-cols-[minmax(0,1.2fr)_minmax(220px,0.9fr)] xl:grid-rows-1 xl:gap-3">
+            <div className="relative min-h-[112px] min-w-0 overflow-visible xl:min-h-0">
               {diceStageWithPrompt}
             </div>
             <div
-              className={`pointer-events-none absolute right-0 z-10 w-[220px] ${floatingResultClassName || "top-0"}`}
+              className={`pointer-events-auto relative z-10 min-h-0 min-w-0 max-h-full overflow-y-auto xl:self-center ${floatingResultClassName}`}
             >
               {resultStage}
             </div>
