@@ -270,6 +270,7 @@
     "reactflow": "^11.11.4",
     "recharts": "^3.7.0",
     "reflect-metadata": "^0.2.2",
+    "sharp": "^0.34.5",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
@@ -329,7 +330,6 @@
     "mongodb-memory-server": "^9.3.0",
     "nodemon": "^3.1.11",
     "postcss": "^8.5.6",
-    "sharp": "^0.34.5",
     "simple-git-hooks": "^2.13.1",
     "smtp-server": "^3.21.1",
     "supertest": "^6.3.4",
@@ -341,8 +341,5 @@
     "vite": "^7.2.4",
     "vite-node": "^5.3.0",
     "vitest": "^4.0.18"
-  },
-  "optionalDependencies": {
-    "sharp": "^0.34.5"
   }
 }
