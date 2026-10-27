@@ -11,6 +11,8 @@ import { FateDominationDomain } from './domain';
 import type { FateDominationCommand, FateDominationCore, FateDominationEvent } from './domain';
 import { FATE_DOMINATION_AUDIO_CONFIG } from './audio.config';
 import { fateDominationCriticalImageResolver } from './criticalImageResolver';
+import { registerGameAiRuntime } from '../../engine/ai';
+import { fateDominationAiRuntime } from './ai';
 
 const ACTION_ALLOWLIST = [
     'SELECT_MASTER',
@@ -81,6 +83,7 @@ export const engineConfig = { ...createGameEngine<FateDominationCore, FateDomina
 }), resolveLocalRuntimeControlledPlayerId:resolveFateLocalRuntimeControlledPlayerId };
 
 registerCriticalImageResolver('fate-domination', fateDominationCriticalImageResolver);
+registerGameAiRuntime(fateDominationAiRuntime);
 
 export default engineConfig;
 export { FATE_DOMINATION_AUDIO_CONFIG as audioConfig };

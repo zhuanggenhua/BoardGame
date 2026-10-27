@@ -3,6 +3,7 @@ import { computeQidahenAttackPressure } from './attackRules';
 import {
     getQidahenBattleForceCommitments,
     updateQidahenForceCommitmentsFromOutcomes,
+    updateQidahenForceCommitmentsForCityBattle,
 } from './battleForceCommitments';
 import {
     buildQidahenBattleForceOutcomes,
@@ -65,6 +66,7 @@ import {
     isQidahenKoreaRuntimeRegionId,
 } from './regionConfig';
 import { takeCommittedSpecialTroopStacks } from './movementProfileTroopSelection';
+import { applyQidahenBattleMoraleToStacks } from './battleMorale';
 import {
     getActionRuleDisplayRegionName,
 } from './regionRuleSemantics';
@@ -141,6 +143,7 @@ const buildPostBattleSelection = (
         pendingTargetAction,
         attackerLosses,
         attackerBattleCasualtyPriority,
+        battleRolls?.attackerMorale,
     );
     const isCityRegion = isQidahenCityRuntimeRegion(targetRegion.id);
     const battleMode = pendingTargetAction.battleMode ?? (isCityRegion ? 'city' : 'field');
@@ -1242,6 +1245,10 @@ const resolvePendingBattleTargetAction = (
     const isCityRegion = dependencies.isQidahenCityRuntimeRegion(targetRegion.id);
     const cityHoldDefense = defenderHoldCity && isCityRegion
         ? (() => {
+            if (targetRegion.cityState) {
+                return { shelteredTroops: targetRegion.cityState.troops, shelteredSpecialTroops: targetRegion.cityState.specialTroops,
+                    shelteredPopulation: targetRegion.cityState.population, fieldTroops: targetRegion.troops, fieldSpecialTroops: targetRegion.specialTroops };
+            }
             const shelteredPopulation = Math.min(
                 2,
                 getQidahenEffectivePopulation(targetRegion),
@@ -1258,7 +1265,7 @@ const resolvePendingBattleTargetAction = (
             ...targetRegion,
             troops: cityHoldDefense.fieldTroops,
             specialTroops: cityHoldDefense.fieldSpecialTroops,
-            population: Math.max(0, targetRegion.population - cityHoldDefense.shelteredPopulation),
+            population: targetRegion.cityState ? targetRegion.population : Math.max(0, targetRegion.population - cityHoldDefense.shelteredPopulation),
             note: `${targetRegion.name} 守城避战，将 ${cityHoldDefense.shelteredTroops} 个部队与 ${cityHoldDefense.shelteredPopulation} 人口收入城中。`,
         }
         : targetRegion;
@@ -1410,6 +1417,7 @@ const resolvePendingBattleTargetAction = (
             battleRegionSnapshot.specialTroops,
             loss,
             defenderCasualtyPriority,
+            battleRolls?.defenderMorale,
         );
         const structuredBattleText = casualties.summary ? ` ${casualties.summary}` : '';
         const siegeAttackerResolution = resolvePendingSiegeAttackerBattleOutcome(
@@ -1490,6 +1498,7 @@ const resolvePendingBattleTargetAction = (
                 battleRegionSnapshot.specialTroops,
                 loss,
                 defenderCasualtyPriority,
+                battleRolls?.defenderMorale,
             );
             const structuredBattleText = casualties.summary ? ` ${casualties.summary}` : '';
             const genericBattleOutcome = resolvePendingGenericBattleOutcome(
@@ -1516,6 +1525,7 @@ const resolvePendingBattleTargetAction = (
                     battleRegion.specialTroops,
                     loss,
                     defenderCasualtyPriority,
+                    battleRolls?.defenderMorale,
                 ),
                 attackerCasualtyPriority,
                 attackerBattleCasualtyPriority,
@@ -1822,11 +1832,12 @@ const resolvePendingCapturedBattleFollowup = (
         pendingTargetAction,
         attackerLoss,
         attackerBattleCasualtyPriority,
+        battleRolls?.attackerMorale,
     );
-    const continuedForceAction = updateQidahenForceCommitmentsFromOutcomes(
+    const continuedForceAction = updateQidahenForceCommitmentsForCityBattle(updateQidahenForceCommitmentsFromOutcomes(
         pendingTargetAction,
         continuedForceOutcomes,
-    );
+    ));
 
     if (cityHoldDefense && cityHoldDefense.shelteredTroops + remainingTroops > 0) {
         const cityDefenderTroops = cityHoldDefense.shelteredTroops + remainingTroops;
@@ -1838,11 +1849,15 @@ const resolvePendingCapturedBattleFollowup = (
             continuedPendingTargetAction: {
                 ...continuedForceAction,
                 battleMode: 'city',
+                battleStep: 'tactics',
+                resolvedBattleRolls: undefined,
+                retreatFactionId: undefined,
+                defenderDeclaration: undefined,
                 title: `${pendingTargetAction.targetRegionName} 城战待结算`,
                 restriction: `${pendingTargetAction.restriction} · 守城避战后继续攻城`,
                 committedTroops: survivingAttackers,
                 sourceAvailableTroops: survivingAttackers,
-                attackPressure: computeQidahenAttackPressure(survivingAttackers, pendingTargetAction.battleWidth),
+                attackPressure: computeQidahenAttackPressure(survivingAttackers, continuedForceAction.battleWidth),
                 resolutionHint: `${pendingTargetAction.targetRegionName} 城外野战后仍有 ${cityDefenderTroops} 守军退回城市，攻方幸存 ${survivingAttackers} 继续攻城`,
             },
             postBattleSelection: null,
@@ -1866,11 +1881,15 @@ const resolvePendingCapturedBattleFollowup = (
             continuedPendingTargetAction: {
                 ...continuedForceAction,
                 battleMode: 'city',
+                battleStep: 'tactics',
+                resolvedBattleRolls: undefined,
+                retreatFactionId: undefined,
+                defenderDeclaration: undefined,
                 title: `${pendingTargetAction.targetRegionName} 城战待结算`,
                 restriction: `${pendingTargetAction.restriction} · 守军出城野战后继续攻城`,
                 committedTroops: survivingAttackers,
                 sourceAvailableTroops: survivingAttackers,
-                attackPressure: computeQidahenAttackPressure(survivingAttackers, pendingTargetAction.battleWidth),
+                attackPressure: computeQidahenAttackPressure(survivingAttackers, continuedForceAction.battleWidth),
                 resolutionHint: `${pendingTargetAction.targetRegionName} 守军出城野战后退入城市，攻方幸存 ${survivingAttackers} 继续攻城`,
             },
             postBattleSelection: null,
@@ -1966,6 +1985,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
         retreatLossMode,
         attackerCasualtyPriority,
         dependencies,
+        battleRolls?.attackerMorale,
     );
     return {
         region: {
@@ -2037,10 +2057,10 @@ const resolvePendingGenericBattleOutcome = (
     const defenderRetreatResolution = resolvePendingDefenderRetreatLoss(
         state,
         battleRegion,
-        battleRegionSnapshot,
+        battleRolls ? { ...battleRegionSnapshot, specialTroops: applyQidahenBattleMoraleToStacks(battleRegionSnapshot.specialTroops, battleRolls.defenderMorale) } : battleRegionSnapshot,
         captured,
         remainingTroops,
-        loss,
+        battleRolls ? 0 : loss,
         retreatLossMode,
         isCityBattle,
         isCityRegion,
@@ -2085,6 +2105,10 @@ const resolvePendingGenericBattleOutcome = (
         );
         continuedPendingTargetAction = capturedBattleFollowup.continuedPendingTargetAction;
         postBattleSelection = capturedBattleFollowup.postBattleSelection;
+        if (continuedPendingTargetAction && battleRolls) {
+            attackerForceOutcomes = buildQidahenBattleForceOutcomes(state, pendingTargetAction, attackerLoss, attackerBattleCasualtyPriority, battleRolls.attackerMorale);
+            sourceTroopLoss = attackerForceOutcomes.reduce((total, outcome) => total + outcome.attackerLosses, 0);
+        }
         if (cityHoldDefense && continuedPendingTargetAction) {
             defeatMarkerFactionId = null;
         }
@@ -2118,6 +2142,7 @@ const resolvePendingGenericBattleOutcome = (
             retreatLossMode,
             attackerCasualtyPriority,
             dependencies,
+        battleRolls?.attackerMorale,
         );
         sourceTroopLoss = attackerRetreatResolution.sourceTroopLoss;
         attackerRetreatSpecialTroops = attackerRetreatResolution.attackerRetreatSpecialTroops;
@@ -2336,11 +2361,27 @@ const resolvePendingAttackerRetreatLoss = (
         QidahenPendingTargetResolutionDependencies,
         'computeStructuredAttackerRout' | 'computeRetreatLoss'
     >,
+    morale?: QidahenBattleRolls['attackerMorale'],
 ): QidahenPendingAttackerRetreatResolution => {
     const attackerSkipsDefeatLoss = hasJinDefeatLossImmunity(
         state,
         pendingTargetAction.attackerFactionId,
     );
+    if (morale) {
+        const attackerForceOutcomes = buildQidahenBattleForceRetreatOutcomes(
+            state, pendingTargetAction, attackerLoss, attackerLoss,
+            retreatLossMode, attackerSkipsDefeatLoss, attackerCasualtyPriority, morale,
+        );
+        const sourceTroopLoss = attackerForceOutcomes.reduce((sum, force) => sum + force.attackerLosses, 0);
+        return {
+            attackerRetreatRearGuardLoss: sourceTroopLoss - attackerLoss,
+            sourceTroopLoss,
+            attackerRetreatSpecialTroops: attackerForceOutcomes.flatMap((force) => force.survivingSpecialTroops),
+            attackerRetreatEffectText: attackerSkipsDefeatLoss ? '' : retreatLossMode === 'rout' ? '，幸存部队溃败降级' : '，移除最高等级部队断后',
+            attackerRetreatSourceNoteText: '',
+            attackerForceOutcomes,
+        };
+    }
     const structuredAttackerRout = retreatLossMode === 'rout' && !attackerSkipsDefeatLoss
         ? dependencies.computeStructuredAttackerRout(
             sourceRegion,

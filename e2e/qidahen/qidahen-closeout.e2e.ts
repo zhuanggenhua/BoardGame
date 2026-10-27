@@ -1,4 +1,5 @@
-import { mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
@@ -15,36 +16,16 @@ const TUTORIAL_RUN_ID = process.env.QIDAHEN_TUTORIAL_SCREENSHOT_RUN_ID
     ?? new Date().toISOString().replace(/[:.]/g, '-');
 const TUTORIAL_DIR = `${TUTORIAL_ROOT_DIR}/${TUTORIAL_RUN_ID}`;
 const MOBILE_TUTORIAL_DIR = `${TUTORIAL_ROOT_DIR}/${TUTORIAL_RUN_ID}-mobile`;
-const TUTORIAL_ENTRY_SCREENSHOT = `${TUTORIAL_DIR}/00-唯一入门入口-直接进入胜利条件.png`;
-const TUTORIAL_ENTRY_FIRST_STEP = `${TUTORIAL_DIR}/00a-继续后-选择首个行动.png`;
-const TUTORIAL_STEP_01 = `${TUTORIAL_DIR}/01-开场-阅读三种胜利条件.png`;
-const TUTORIAL_STEP_02 = `${TUTORIAL_DIR}/02-选择首个行动-轮盘或征召.png`;
-const TUTORIAL_STEP_02A = `${TUTORIAL_DIR}/02a-轮盘三格费用与落点说明.png`;
-const TUTORIAL_STEP_02B = `${TUTORIAL_DIR}/02b-先轮盘后手牌-轮盘结算结果.png`;
-const TUTORIAL_STEP_02C = `${TUTORIAL_DIR}/02c-先轮盘后手牌-行动顺序选择.png`;
-const TUTORIAL_STEP_02D = `${TUTORIAL_DIR}/02d-轮盘后选择手牌行动.png`;
-const TUTORIAL_STEP_02E = `${TUTORIAL_DIR}/02e-两种行动完成-征召结果.png`;
-const TUTORIAL_STEP_03 = `${TUTORIAL_DIR}/03-轮盘选择-三种走法均可选择.png`;
-const TUTORIAL_STEP_03A = `${TUTORIAL_DIR}/03a-轮盘两格-选择对手抽牌.png`;
-const TUTORIAL_STEP_03B = `${TUTORIAL_DIR}/03b-轮盘两格-进入军屯并结算.png`;
-const TUTORIAL_STEP_03_ONE_GRID = `${TUTORIAL_DIR}/03c-轮盘一格-进入开垦并结算.png`;
-const TUTORIAL_STEP_03_ONE_GRID_ENTRY = `${TUTORIAL_DIR}/03c-一格开垦前-选择轮盘走法.png`;
-const TUTORIAL_STEP_03C = `${TUTORIAL_DIR}/03c-轮盘三格-进入征兵训练弃牌窗口.png`;
-const TUTORIAL_STEP_03_THREE_GRID_ENTRY = `${TUTORIAL_DIR}/03c-三格征兵训练前-选择轮盘走法.png`;
-const TUTORIAL_STEP_03E = `${TUTORIAL_DIR}/03e-征兵训练选择行动前规则译文.png`;
-const TUTORIAL_STEP_03F = `${TUTORIAL_DIR}/03f-训练目标选择与等级提示.png`;
-const TUTORIAL_STEP_03G = `${TUTORIAL_DIR}/03g-征兵训练结算结果.png`;
-const TUTORIAL_STEP_03H = `${TUTORIAL_DIR}/03h-征兵目标本土限制与候选区域.png`;
-const TUTORIAL_STEP_03I = `${TUTORIAL_DIR}/03i-额外训练规则与弃牌.png`;
-const TUTORIAL_STEP_03J = `${TUTORIAL_DIR}/03j-额外训练目标与结果.png`;
-const TUTORIAL_STEP_03K = `${TUTORIAL_DIR}/03k-征兵训练结果与轮盘结算.png`;
-const TUTORIAL_STEP_03L = `${TUTORIAL_DIR}/03l-教程退场后同局继续.png`;
-const TUTORIAL_STEP_07 = `${TUTORIAL_DIR}/07-支付1张手牌.png`;
-const TUTORIAL_STEP_08 = `${TUTORIAL_DIR}/08-选择宣府建军位置.png`;
-const TUTORIAL_STEP_09 = `${TUTORIAL_DIR}/09-选择建军方式.png`;
-const TUTORIAL_STEP_10 = `${TUTORIAL_DIR}/10-征召结果-轮盘行动待完成.png`;
-const TUTORIAL_STEP_11 = `${TUTORIAL_DIR}/11-教程结束后同局下一位玩家可操作.png`;
-const ONE_GRID_CONTINUATION = `${TUTORIAL_DIR}/03d-一格开垦后退出教程并完成下一次轮盘行动.png`;
+const BASIC_FARM_REGION = `${TUTORIAL_DIR}/00-辽东军屯地区选择.png`;
+const BASIC_WHEEL_CHOICE = `${TUTORIAL_DIR}/01-轮盘前进两格与军屯落点.png`;
+const BASIC_OPPONENT = `${TUTORIAL_DIR}/02-指定后金抽牌.png`;
+const BASIC_FARM_RESULT = `${TUTORIAL_DIR}/03-辽东军屯结果.png`;
+const BASIC_TARGET = `${TUTORIAL_DIR}/04-叶赫部真实地图目标.png`;
+const BASIC_PAYMENT = `${TUTORIAL_DIR}/05-银两支付与鸳鸯阵手牌.png`;
+const BASIC_BATTLE = `${TUTORIAL_DIR}/06-野战出兵与战术牌.png`;
+const BASIC_BATTLE_RESULT = `${TUTORIAL_DIR}/07-战后幸存部队与占领选择.png`;
+const BASIC_OCCUPIED = `${TUTORIAL_DIR}/08-叶赫部占领结果.png`;
+const BASIC_CONTINUE = `${TUTORIAL_DIR}/09-教程退出后同局继续.png`;
 const WHEEL_COST_STEP_01 = `${TUTORIAL_DIR}/13-轮盘第1步-先看走3会让两家对手摸牌.png`;
 const WHEEL_COST_STEP_02 = `${TUTORIAL_DIR}/14-轮盘第2步-看蒙古后金手牌同时增加.png`;
 const WHEEL_COST_STEP_02A = `${TUTORIAL_DIR}/14a-进攻调度规则-弃一张手牌.png`;
@@ -122,17 +103,29 @@ const KOREA_STEP_02 = `${TUTORIAL_DIR}/43-朝鲜第2步-看汉城威望已进入
 const KOREA_STEP_03 = `${TUTORIAL_DIR}/44-朝鲜第3步-看海路与船锚区域关系.png`;
 const KOREA_STEP_04 = `${TUTORIAL_DIR}/45-朝鲜第4步-点击新年维护进入耗损结算.png`;
 const KOREA_STEP_05 = `${TUTORIAL_DIR}/46-朝鲜第5步-看朝鲜耗损与山海关结果.png`;
-const MOBILE_TUTORIAL_WELCOME = `${MOBILE_TUTORIAL_DIR}/移动-00-开场-胜利条件说明.png`;
-const MOBILE_OPENING_ACTION = `${MOBILE_TUTORIAL_DIR}/移动-01-首个行动选择-轮盘或征召.png`;
-const MOBILE_HAND_INSPECT_BEFORE = `${MOBILE_TUTORIAL_DIR}/移动-02-征召支付-手牌检视前.png`;
-const MOBILE_HAND_INSPECT_OVERLAY = `${MOBILE_TUTORIAL_DIR}/移动-03-征召支付-长按手牌打开检视.png`;
-const MOBILE_HAND_INSPECT_RETURN = `${MOBILE_TUTORIAL_DIR}/移动-04-关闭检视-回到征召支付.png`;
-const DESKTOP_HAND_INSPECT_OVERLAY = `${TUTORIAL_DIR}/07a-征召支付-点击看查看牌面.png`;
+const MOBILE_RAID_PAYMENT = `${MOBILE_TUTORIAL_DIR}/移动-01-突袭支付与手牌.png`;
+const MOBILE_MAP_TARGET = `${MOBILE_TUTORIAL_DIR}/移动-00-叶赫部地图目标避开支付托盘.png`;
+const MOBILE_HAND_INSPECT = `${MOBILE_TUTORIAL_DIR}/移动-02-长按银两检视卡面.png`;
+const MOBILE_PAYMENT_SELECTED = `${MOBILE_TUTORIAL_DIR}/移动-03-检视返回后轻点银两选择支付.png`;
 const ENDGAME_SCREENSHOT = `${CLOSEOUT_DIR}/02-终局遮罩-注入胜利后显示.png`;
+
+type BehaviorSnapshot = {
+    visible: Record<string, unknown>;
+    authoritative: Record<string, unknown>;
+};
+
+type BehaviorInput = {
+    type: string;
+    target: string;
+    key?: string;
+    before: BehaviorSnapshot;
+    after: BehaviorSnapshot;
+};
 
 type HarnessWindow = Window & {
     __E2E_TEST_MODE__?: boolean;
     __BG_HIDE_DEBUG_PANEL__?: boolean;
+    __QIDAHEN_BEHAVIOR_INPUTS__?: BehaviorInput[];
     __BG_TEST_HARNESS__?: {
         state?: {
             get?: () => { core: unknown; sys: Record<string, unknown> };
@@ -145,20 +138,429 @@ type HarnessWindow = Window & {
 const QIDAHEN_TUTORIAL_CATALOG_URL = '/play/qidahen/tutorial';
 const QIDAHEN_BASIC_TUTORIAL_URL = '/play/qidahen/tutorial/basic-opening';
 
-const resetScreenshotDir = (path: string) => {
-    const targetDir = resolve(path);
-    rmSync(targetDir, { recursive: true, force: true });
-    mkdirSync(targetDir, { recursive: true });
-    const remainingFiles = readdirSync(targetDir);
-    if (remainingFiles.length > 0) {
-        throw new Error(`qidahen tutorial screenshot directory was not cleared: ${targetDir}`);
+const readMapRegionInputPoint = async (page: Page, regionId: string) => {
+    const point = await page.evaluate(async (id) => {
+        const modulePath = '/src/games/qidahen/ui/mapGraph.ts';
+        const graph = await import(modulePath);
+        return graph.getQidahenRuntimeRegionAnchorTargetPoint(id) as { x: number; y: number } | null;
+    }, regionId);
+    expect(point).not.toBeNull();
+    const content = page.getByTestId('qidahen-map-content');
+    let previousGeometry = '';
+    await expect.poll(async () => {
+        const geometry = JSON.stringify(await content.boundingBox());
+        const stable = geometry !== 'null' && geometry === previousGeometry;
+        previousGeometry = geometry;
+        return stable;
+    }, { intervals: [50, 100, 100] }).toBe(true);
+    const rect = await content.boundingBox();
+    expect(rect).not.toBeNull();
+    const size = await content.evaluate((element) => ({ width: element.offsetWidth, height: element.offsetHeight }));
+    const input = {
+        x: rect!.x + point!.x * rect!.width / size.width,
+        y: rect!.y + point!.y * rect!.height / size.height,
+    };
+    const readExposure = () => page.evaluate(() => {
+        const region = document.querySelector('[data-region-focus-shape="runtime-region-mask"]')?.getBoundingClientRect();
+        const name = document.querySelector('[data-testid="qidahen-map-region-focus-name"]')?.getBoundingClientRect();
+        if (!region || !name || name.width <= 0 || name.height <= 0) return { inViewport: false, coveredBy: ['missing-region-name'] };
+        const selectors = ['[data-testid="qidahen-player-float"]', '[data-testid="qidahen-hand-zone"]',
+            '[data-testid="qidahen-hand-interaction-tray"] > div', '[data-testid="qidahen-actions-zone"]',
+            '[data-testid="tutorial-overlay-card"]'];
+        const targets = [region, name];
+        return {
+            inViewport: targets.every(target => target.left >= 0 && target.top >= 0 && target.right <= innerWidth && target.bottom <= innerHeight),
+            coveredBy: selectors.filter(selector => Array.from(document.querySelectorAll(selector)).some(element => {
+                const box = element.getBoundingClientRect();
+                return box.width > 0 && box.height > 0 && targets.some(target => box.left < target.right && box.right > target.left
+                    && box.top < target.bottom && box.bottom > target.top);
+            })),
+        };
+    });
+    await expect.poll(readExposure, { timeout: 5000, message: `${regionId}整片地区及名称必须可见，不能只露中心点` })
+        .toEqual({ inViewport: true, coveredBy: [] });
+    expect(await page.evaluate(value => document.elementFromPoint(value.x, value.y)?.tagName, input)).toBe('CANVAS');
+    return input;
+};
+
+type BehaviorTrace = {
+    gameId: 'qidahen';
+    evidenceCategory: 'tutorial';
+    chainId: string;
+    sourceRun: string;
+    sourceRevision: string;
+    status: 'RUNNING' | 'PASS' | 'FAIL';
+    outcome: string;
+    steps: Array<Record<string, unknown>>;
+    uiStates: Array<Record<string, unknown>>;
+    skippedDuplicateScreenshots: Array<{ path: string; sha256: string }>;
+};
+
+type BehaviorTraceRecorder = {
+    trace: BehaviorTrace;
+    tracePath: string;
+    lastSnapshot: BehaviorSnapshot;
+    lastAction: string;
+};
+
+const behaviorTraceRecorders = new WeakMap<Page, BehaviorTraceRecorder>();
+const behaviorTraceScreenshotHashes = new Set<string>();
+const QIDAHEN_TUTORIAL_SOURCE_FILES = [
+    'src/games/qidahen/tutorial.ts',
+    'src/games/qidahen/tutorialSetup.ts',
+    'src/games/qidahen/Board.tsx',
+    'src/games/qidahen/QidahenBoardShell.tsx',
+    'src/games/qidahen/ui/hudLayout.ts',
+    'src/games/qidahen/ui/QidahenMapPopulationLayer.tsx',
+    'src/games/qidahen/ui/populationLayout.ts',
+    'src/games/qidahen/domain/ordinaryHandCardIdentities.ts',
+    'src/games/qidahen/domain/selectionBuilders.ts',
+    'src/games/qidahen/domain/pendingBattleCommittedTroops.ts',
+    'src/games/qidahen/domain/types.ts',
+    'src/games/qidahen/domain/battleMorale.ts',
+    'src/games/qidahen/domain/battleRollMath.ts',
+    'src/games/qidahen/domain/attackRules.ts',
+    'src/games/qidahen/domain/battleForceOutcomes.ts',
+    'src/games/qidahen/domain/battleForceCommitments.ts',
+    'src/games/qidahen/domain/pendingBattleCombatSupport.ts',
+    'src/games/qidahen/domain/pendingTargetResolution.ts',
+    'src/games/qidahen/domain/postBattleDecisionResolution.ts',
+    'src/games/qidahen/domain/pendingBattleFlow.ts',
+    'src/games/qidahen/domain/battleState.ts',
+    'src/games/qidahen/domain/pendingTargetActionBuilder.ts',
+    'src/games/qidahen/domain/previewActionReducer.ts',
+    'src/games/qidahen/domain/selectedActionFollowUp.ts',
+    'src/games/qidahen/domain/pendingTargetChoiceOptions.ts',
+    'src/games/qidahen/domain/pendingTargetChoicePayload.ts',
+    'src/games/qidahen/domain/battleInteractionBuilders.ts',
+    'src/games/qidahen/domain/interactionSystem.ts',
+    'src/games/qidahen/domain/commands.ts',
+    'src/games/qidahen/domain/resolvedCommandEventBuilders.ts',
+    'src/games/qidahen/domain/resolvedEventReducers.ts',
+    'src/games/qidahen/domain/commandEventBuilders.ts',
+    'src/games/qidahen/domain/pendingBattleStateTransition.ts',
+    'src/games/qidahen/domain/troopCompat.ts',
+    'src/games/qidahen/ui/mapGraph.ts',
+    'src/games/qidahen/ui/runtimeRegionOwnership.ts',
+    'src/games/qidahen/ui/mapRegionFocus.ts',
+    'src/games/qidahen/ui/handInteractionView.ts',
+    'src/components/game/framework/ZoomPanViewport.tsx',
+    'src/engine/mapRenderer/PixiMapSceneHost.tsx',
+    'src/games/qidahen/ui/regionMaskOverlay.ts',
+    'src/games/qidahen/data/runtime-region-graph.json',
+    'src/games/qidahen/data/region-mask.png',
+    'src/games/qidahen/data/region-mask-regions.json',
+    'src/games/qidahen/data/runtime-region-mask-regions.json',
+    'src/games/qidahen/data/region-graph.json',
+    'src/games/qidahen/data/region-authoritative-guides.json',
+    'src/contexts/TutorialContext.tsx',
+    'src/engine/pipeline.ts',
+    'src/games/qidahen/domain/actionWindowDispatch.ts',
+    'src/games/qidahen/domain/regionSelectionPreferences.ts',
+    'src/games/qidahen/domain/wheelImmediateEffect.ts',
+    'src/components/game/framework/widgets/GameHUD.tsx',
+    'src/components/tutorial/TutorialOverlay.tsx',
+    'src/games/qidahen/qidahen-board.css',
+    'src/games/qidahen/ui/QidahenHandInteractionTray.tsx',
+    'public/locales/zh-CN/game-qidahen.json',
+    'public/locales/en/game-qidahen.json',
+    'e2e/qidahen/qidahen-closeout.e2e.ts',
+];
+
+const getQidahenTutorialSourceRevision = () => {
+    const digest = createHash('sha256');
+    for (const file of QIDAHEN_TUTORIAL_SOURCE_FILES) {
+        digest.update(file);
+        digest.update(readFileSync(resolve(file)));
     }
+    return `sha256:${digest.digest('hex')}`;
+};
+
+const behaviorChainIdForTitle = (title: string): string | null => {
+    if (title.includes('唯一入门入口')) return 'basic-opening-entry';
+    if (title.includes('正式入门连续对局')) return 'basic-opening-natural-raid';
+    if (title.includes('移动横屏真实教程')) return 'basic-opening-mobile-hand-inspect';
+    return null;
+};
+
+const behaviorTraceRoot = () => resolve('evidence/qidahen/behavior-traces', TUTORIAL_RUN_ID);
+
+const writeBehaviorTrace = (recorder: BehaviorTraceRecorder) => {
+    writeFileSync(recorder.tracePath, `${JSON.stringify(recorder.trace, null, 2)}\n`, 'utf8');
+};
+
+const readBehaviorSnapshot = async (page: Page): Promise<BehaviorSnapshot> => page.evaluate(() => {
+    const testWindow = window as HarnessWindow;
+    const state = testWindow.__BG_TEST_HARNESS__?.state?.get?.();
+    const core = state?.core && typeof state.core === 'object'
+        ? state.core as Record<string, unknown>
+        : {};
+    const factions = core.factions && typeof core.factions === 'object'
+        ? core.factions as Record<string, { handCount?: number }>
+        : {};
+    const tutorialStepId = document.querySelector<HTMLElement>('[data-tutorial-step]')?.dataset.tutorialStep ?? null;
+    const tutorialCard = document.querySelector<HTMLElement>('[data-testid="tutorial-overlay-card"]');
+    const board = document.querySelector<HTMLElement>('[data-testid="qidahen-board"]');
+    const boardRect = board?.getBoundingClientRect();
+    const viewport = window.innerWidth <= 900 ? 'mobile' : 'desktop';
+    const sysTutorial = state?.sys?.tutorial as { step?: { id?: string; hiddenAutomation?: unknown } } | undefined;
+
+    return {
+        visible: {
+            boardVisible: Boolean(boardRect && boardRect.width > 0 && boardRect.height > 0),
+            path: `${window.location.pathname}${window.location.search}`,
+            tutorialStepId,
+            tutorialText: tutorialCard?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 400) ?? '',
+            viewport,
+        },
+        authoritative: {
+            harnessRegistered: Boolean(state),
+            tutorialStepId: sysTutorial?.step?.id ?? null,
+            tutorialHiddenAutomation: Boolean(sysTutorial?.step?.hiddenAutomation),
+            turnPhase: core.turnPhase ?? null,
+            currentPlayer: core.currentPlayer ?? null,
+            selectedActionId: core.selectedActionId ?? null,
+            actionWheelPosition: core.actionWheelPosition ?? null,
+            factionActionUsed: core.factionActionUsed ?? null,
+            mingHandCount: factions.ming?.handCount ?? null,
+        },
+    };
+});
+
+const startBehaviorTrace = async (page: Page, title: string) => {
+    if (process.env.QIDAHEN_CAPTURE_BEHAVIOR_TRACE !== '1') return;
+    const chainId = behaviorChainIdForTitle(title);
+    if (!chainId) return;
+    const sourceRevision = process.env.QIDAHEN_TUTORIAL_SOURCE_REVISION ?? getQidahenTutorialSourceRevision();
+
+    await page.addInitScript(() => {
+        const testWindow = window as HarnessWindow;
+        testWindow.__QIDAHEN_BEHAVIOR_INPUTS__ = [];
+        let pointerBefore: BehaviorSnapshot | null = null;
+        const describeTarget = (target: EventTarget | null) => {
+            if (!(target instanceof Element)) return '页面';
+            const control = target.closest('[data-testid], [data-tutorial-id], button, [role="button"]') ?? target;
+            const text = control.textContent?.replace(/\s+/g, ' ').trim().slice(0, 50);
+            const className = typeof control.className === 'string'
+                ? control.className.trim().split(/\s+/).filter(Boolean).slice(0, 3).join('.')
+                : '';
+            return control.getAttribute('data-testid')
+                || control.getAttribute('data-tutorial-id')
+                || control.getAttribute('aria-label')
+                || text
+                || `${control.tagName.toLowerCase()}${className ? `.${className}` : ''}`;
+        };
+        const readSnapshot = (): BehaviorSnapshot => {
+            const state = testWindow.__BG_TEST_HARNESS__?.state?.get?.();
+            const core = state?.core && typeof state.core === 'object' ? state.core as Record<string, unknown> : {};
+            const factions = core.factions && typeof core.factions === 'object'
+                ? core.factions as Record<string, { handCount?: number }>
+                : {};
+            const stepId = document.querySelector<HTMLElement>('[data-tutorial-step]')?.dataset.tutorialStep ?? null;
+            const tutorialCard = document.querySelector<HTMLElement>('[data-testid="tutorial-overlay-card"]');
+            const board = document.querySelector<HTMLElement>('[data-testid="qidahen-board"]');
+            const boardRect = board?.getBoundingClientRect();
+            const tutorial = state?.sys?.tutorial as { step?: { id?: string; hiddenAutomation?: unknown } } | undefined;
+
+            return {
+                visible: {
+                    boardVisible: Boolean(boardRect && boardRect.width > 0 && boardRect.height > 0),
+                    path: `${window.location.pathname}${window.location.search}`,
+                    tutorialStepId: stepId,
+                    tutorialText: tutorialCard?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 400) ?? '',
+                    viewport: window.innerWidth <= 900 ? 'mobile' : 'desktop',
+                },
+                authoritative: {
+                    harnessRegistered: Boolean(state),
+                    tutorialStepId: tutorial?.step?.id ?? null,
+                    tutorialHiddenAutomation: Boolean(tutorial?.step?.hiddenAutomation),
+                    turnPhase: core.turnPhase ?? null,
+                    currentPlayer: core.currentPlayer ?? null,
+                    selectedActionId: core.selectedActionId ?? null,
+                    actionWheelPosition: core.actionWheelPosition ?? null,
+                    factionActionUsed: core.factionActionUsed ?? null,
+                    mingHandCount: factions.ming?.handCount ?? null,
+                },
+            };
+        };
+        const recordAfterPaint = (type: string, target: EventTarget | null, before: BehaviorSnapshot, key?: string) => {
+            const input = { type, target: describeTarget(target), ...(key ? { key } : {}), before };
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                testWindow.__QIDAHEN_BEHAVIOR_INPUTS__?.push({ ...input, after: readSnapshot() });
+            }));
+        };
+        document.addEventListener('pointerdown', () => { pointerBefore = readSnapshot(); }, true);
+        document.addEventListener('click', (event) => {
+            const before = pointerBefore ?? readSnapshot();
+            pointerBefore = null;
+            recordAfterPaint('点击', event.target, before);
+        }, false);
+        document.addEventListener('pointerup', (event) => {
+            if (event.pointerType !== 'touch') return;
+            const before = pointerBefore ?? readSnapshot();
+            pointerBefore = null;
+            recordAfterPaint('触摸抬起', event.target, before);
+        }, false);
+        document.addEventListener('keydown', (event) => {
+            if (event.repeat || (event.key !== 'Enter' && event.key !== ' ')) return;
+            recordAfterPaint('键盘操作', event.target, readSnapshot(), event.key);
+        }, true);
+    });
+
+    const tracePath = resolve(behaviorTraceRoot(), `${chainId}.json`);
+    mkdirSync(dirname(tracePath), { recursive: true });
+    const recorder: BehaviorTraceRecorder = {
+        tracePath,
+        lastSnapshot: await readBehaviorSnapshot(page),
+        lastAction: '',
+        trace: {
+            gameId: 'qidahen',
+            evidenceCategory: 'tutorial',
+            chainId,
+            sourceRun: TUTORIAL_RUN_ID,
+            sourceRevision,
+            status: 'RUNNING',
+            outcome: '教程行为链执行中。',
+            steps: [],
+            uiStates: [],
+            skippedDuplicateScreenshots: [],
+        },
+    };
+    behaviorTraceRecorders.set(page, recorder);
+    writeBehaviorTrace(recorder);
+};
+
+const finishBehaviorTrace = (page: Page, passed: boolean) => {
+    const recorder = behaviorTraceRecorders.get(page);
+    if (!recorder) return;
+    recorder.trace.status = passed ? 'PASS' : 'FAIL';
+    recorder.trace.outcome = passed
+        ? `真实教程操作通过，记录 ${recorder.trace.steps.length} 个行为检查点与 ${recorder.trace.uiStates.length} 个独特界面状态。`
+        : '教程 E2E 未通过；本行为链不得用于最终 PASS。';
+    writeBehaviorTrace(recorder);
+};
+
+const recordBehaviorOnlyCheckpoint = async (page: Page, action: string, expectedStep: string | null, expectedBoardVisible = true) => {
+    const recorder = behaviorTraceRecorders.get(page);
+    if (!recorder) return;
+    await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+    const inputEvents = await page.evaluate(() => {
+        const host = window as HarnessWindow;
+        const events = host.__QIDAHEN_BEHAVIOR_INPUTS__ ?? [];
+        host.__QIDAHEN_BEHAVIOR_INPUTS__ = [];
+        return events.map(({ type, target, key }) => ({ type, target, ...(key ? { key } : {}) }));
+    });
+    const after = await readBehaviorSnapshot(page);
+    recorder.trace.steps.push({
+        id: `${recorder.trace.chainId}-check-${String(recorder.trace.steps.length + 1).padStart(3, '0')}`,
+        action, before: recorder.lastSnapshot, after, inputEvents,
+        assertions: [
+            { name: '当前教程步骤', actual: after.visible.tutorialStepId, expected: expectedStep },
+            { name: '棋盘可见状态', actual: after.visible.boardVisible, expected: expectedBoardVisible },
+        ],
+    });
+    recorder.lastSnapshot = after;
+    writeBehaviorTrace(recorder);
+};
+
+const captureBehaviorCheckpoint = async (page: Page, targetPath: string) => {
+    const recorder = behaviorTraceRecorders.get(page);
+    if (!recorder) return;
+    await page.evaluate(() => new Promise<void>((resolveFrame) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
+    }));
+    const events = await page.evaluate(() => {
+        const testWindow = window as HarnessWindow;
+        const inputs = testWindow.__QIDAHEN_BEHAVIOR_INPUTS__ ?? [];
+        testWindow.__QIDAHEN_BEHAVIOR_INPUTS__ = [];
+        return inputs;
+    });
+    const after = await readBehaviorSnapshot(page);
+    const fileName = targetPath.split(/[\\/]/).at(-1)?.replace(/\.png$/i, '') ?? '教程状态';
+    const assertionsFor = (snapshot: BehaviorSnapshot, prefix: string) => [
+        { name: `${prefix}-qidahen-board-visible`, actual: snapshot.visible.boardVisible, expected: true },
+        { name: `${prefix}-test-harness-state-available`, actual: snapshot.authoritative.harnessRegistered, expected: true },
+        {
+            name: `${prefix}-visible-tutorial-step-matches-authoritative-step`,
+            actual: snapshot.visible.tutorialStepId,
+            expected: snapshot.authoritative.tutorialHiddenAutomation ? null : snapshot.authoritative.tutorialStepId,
+        },
+    ];
+    for (const event of events) {
+        const id = `${recorder.trace.chainId}-input-${String(recorder.trace.steps.length + 1).padStart(3, '0')}`;
+        const action = `${event.type}${event.key ? ` ${event.key}` : ''}：${event.target}`;
+        recorder.trace.steps.push({
+            id,
+            action,
+            before: event.before,
+            after: event.after,
+            assertions: [
+                ...assertionsFor(event.after, id),
+                { name: `${id}-real-input-target-recorded`, actual: event.target.length > 0, expected: true },
+            ],
+            inputEvents: [{ type: event.type, target: event.target, ...(event.key ? { key: event.key } : {}) }],
+        });
+        recorder.lastAction = action;
+    }
+    const beforeCapture = events.at(-1)?.after ?? recorder.lastSnapshot;
+    const currentAction = events.length > 0
+        ? `记录实际输入后的稳定界面：${fileName}`
+        : recorder.lastAction
+            ? `稳定界面截图：${fileName}`
+            : `打开教程入口并确认棋盘与当前教程状态：${fileName}`;
+    const stepId = `${recorder.trace.chainId}-capture-${String(recorder.trace.steps.length + 1).padStart(3, '0')}`;
+    const stateId = `${recorder.trace.chainId}-ui-${String(recorder.trace.uiStates.length + 1).padStart(2, '0')}`;
+    recorder.trace.steps.push({
+        id: stepId,
+        action: currentAction,
+        before: beforeCapture,
+        after,
+        assertions: assertionsFor(after, stepId),
+        inputEvents: [],
+    });
+    const screenshotHash = createHash('sha256').update(readFileSync(targetPath)).digest('hex');
+    if (behaviorTraceScreenshotHashes.has(screenshotHash)) {
+        recorder.trace.skippedDuplicateScreenshots.push({ path: targetPath, sha256: screenshotHash });
+    } else {
+        behaviorTraceScreenshotHashes.add(screenshotHash);
+        const desktopOrMobile = after.visible.viewport === 'mobile' ? 'mobile' : 'desktop';
+        const change = /支付|弃牌|长按|检视/.test(fileName)
+            ? 'interaction-mode'
+            : /高亮|目标|候选|区域|走法|地图/.test(fileName)
+                ? 'target-highlight'
+                : 'panel';
+        recorder.trace.uiStates.push({
+            id: stateId,
+            stepId,
+            change,
+            viewport: desktopOrMobile,
+            sha256: screenshotHash,
+            path: targetPath,
+            reason: `玩家完成当前输入后，教程界面呈现${fileName.replace(/[-_]/g, '，')}状态。`,
+        });
+    }
+    recorder.lastSnapshot = after;
+    if (events.length > 0) recorder.lastAction = currentAction;
+    writeBehaviorTrace(recorder);
 };
 
 const saveScreenshot = async (page: Page, path: string) => {
     const targetPath = resolve(path);
     mkdirSync(dirname(targetPath), { recursive: true });
     await page.screenshot({ path: targetPath, fullPage: false, animations: 'disabled' });
+    await captureBehaviorCheckpoint(page, targetPath);
+    if (process.env.QIDAHEN_REGION_LAYOUT_DIAGNOSTIC === '1') {
+        const layout = await page.evaluate(() => {
+            const target = document.querySelector('[data-region-focus-shape="runtime-region-mask"]');
+            if (!target) return null;
+            const selectors = ['qidahen-map-layer', 'qidahen-player-float', 'qidahen-hand-row',
+                'qidahen-hand-interaction-tray', 'qidahen-actions-zone', 'qidahen-action-wheel', 'qidahen-map-viewport-controls'];
+            return { target: target.getBoundingClientRect().toJSON(), boxes: Object.fromEntries(selectors.map(id => (
+                [id, document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect().toJSON() ?? null]
+            ))) };
+        });
+        if (layout) console.info('REGION_LAYOUT', JSON.stringify(layout));
+    }
 };
 
 const expectTutorialOverlayFullyVisible = async (page: Page, stepId: string) => {
@@ -209,13 +611,40 @@ const expectTutorialOverlayNotToCover = async (
     target: Locator,
     label: string,
 ) => {
-    await expect.poll(async () => {
-        const [overlayRect, targetRect] = await Promise.all([
-            readLocatorRect(page.locator('[data-testid="tutorial-overlay-card"]')),
-            readLocatorRect(target),
-        ]);
-        return getRectOverlapArea(overlayRect, targetRect);
-    }, { message: label, timeout: 2500 }).toBeLessThanOrEqual(1);
+    let lastMeasurement: {
+        overlay: Awaited<ReturnType<typeof readLocatorRect>>;
+        target: Awaited<ReturnType<typeof readLocatorRect>>;
+        overlap: number;
+    } | null = null;
+    try {
+        await expect.poll(async () => {
+            const [overlayRect, targetRect] = await Promise.all([
+                readLocatorRect(page.locator('[data-testid="tutorial-overlay-card"]')),
+                readLocatorRect(target),
+            ]);
+            const overlap = getRectOverlapArea(overlayRect, targetRect);
+            lastMeasurement = { overlay: overlayRect, target: targetRect, overlap };
+            return overlap;
+        }, { message: label, timeout: 2500 }).toBeLessThanOrEqual(1);
+    } catch (error) {
+        const detail = lastMeasurement ? `; overlay/target geometry=${JSON.stringify(lastMeasurement)}` : '';
+        throw new Error(`${label}${detail}; ${error instanceof Error ? error.message : String(error)}`);
+    }
+};
+
+const expectMobileHandCardsFullyInsideViewport = async (page: Page) => {
+    const cards = page.locator('button[data-testid^="qidahen-hand-card-hand-"]');
+    const viewport = page.viewportSize();
+    expect(viewport, '移动手牌检查需要固定视口').not.toBeNull();
+    const count = await cards.count();
+    expect(count, '移动教程当前手牌应有可见实体卡牌').toBeGreaterThan(0);
+    for (let index = 0; index < count; index += 1) {
+        const bounds = await cards.nth(index).boundingBox();
+        expect(bounds, `移动手牌 ${index + 1} 有实际布局`).not.toBeNull();
+        expect(bounds!.y, `移动手牌 ${index + 1} 未被视口上沿裁切`).toBeGreaterThanOrEqual(0);
+        expect(bounds!.y + bounds!.height, `移动手牌 ${index + 1} 与视口底边留有间距`)
+            .toBeLessThanOrEqual(viewport!.height - 8);
+    }
 };
 
 const expectWheelRecruitTrainTargetListFullyVisible = async (
@@ -224,6 +653,7 @@ const expectWheelRecruitTrainTargetListFullyVisible = async (
     choiceTestIdPrefix: string,
 ) => {
     const panel = page.getByTestId('qidahen-wheel-recruit-train-selection');
+    const panelHeader = page.getByTestId('qidahen-wheel-recruit-train-header');
     const measurements = await panel.evaluate((element, testIdPrefix) => {
         const slot = element.parentElement;
         const choices = Array.from(element.querySelectorAll<HTMLElement>('button[data-testid]'))
@@ -233,16 +663,29 @@ const expectWheelRecruitTrainTargetListFullyVisible = async (
             const bounds = target.getBoundingClientRect();
             return { bottom: bounds.bottom, left: bounds.left, right: bounds.right, top: bounds.top };
         };
+        const panelRect = element.getBoundingClientRect();
+        const partialChoiceCount = choices.filter((choice) => {
+            const bounds = choice.getBoundingClientRect();
+            const intersectsPanel = bounds.bottom > panelRect.top && bounds.top < panelRect.bottom;
+            const fullyWithinPanel = bounds.top >= panelRect.top && bounds.bottom <= panelRect.bottom;
+            return intersectsPanel && !fullyWithinPanel;
+        }).length;
         return {
             panel: rect(element),
             slot: rect(slot),
             choiceCount: choices.length,
+            partialChoiceCount,
+            choiceLabels: choices.map((choice) => (
+                choice.querySelector<HTMLElement>(':scope > span > span:first-child')?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+            )),
+            scrollTop: element.scrollTop,
             scrollHeight: element.scrollHeight,
             clientHeight: element.clientHeight,
             viewportHeight: window.innerHeight,
         };
     }, choiceTestIdPrefix);
     const highlightRect = await readLocatorRect(page.getByTestId('tutorial-highlight-ring'));
+    const panelHeaderRect = await readLocatorRect(panelHeader);
     const discardPileRect = await readLocatorRect(page.getByTestId('qidahen-discard-anchor'));
     const scrollHint = page.getByTestId('qidahen-wheel-recruit-train-scroll-hint');
 
@@ -251,9 +694,14 @@ const expectWheelRecruitTrainTargetListFullyVisible = async (
         .toBeLessThanOrEqual(measurements.slot.bottom + 1);
     expect(measurements.panel.bottom, `${stepId} 候选面板未超出视口`)
         .toBeLessThanOrEqual(measurements.viewportHeight);
+    expect(panelHeaderRect.top, `${stepId} 列表标题未被上沿裁切`).toBeGreaterThanOrEqual(measurements.panel.top);
+    expect(panelHeaderRect.bottom, `${stepId} 列表标题保持在面板内`).toBeLessThanOrEqual(measurements.panel.bottom);
     expect(getRectOverlapArea(measurements.panel, discardPileRect), `${stepId} 候选面板不遮挡右下弃牌堆`)
         .toBeLessThanOrEqual(1);
     expect(measurements.choiceCount, `${stepId} 实际训练候选`).toBeGreaterThan(0);
+    expect(measurements.partialChoiceCount, `${stepId} 面板边缘的候选项完整可读`).toBe(0);
+    expect(new Set(measurements.choiceLabels).size, `${stepId} 训练目标标签可区分`)
+        .toBe(measurements.choiceLabels.length);
     expect(Math.abs(highlightRect.top - measurements.panel.top), `${stepId} 高亮框贴合面板顶部`)
         .toBeLessThanOrEqual(1);
     expect(Math.abs(highlightRect.bottom - measurements.panel.bottom), `${stepId} 高亮框贴合面板底部`)
@@ -272,10 +720,19 @@ const expectWheelRecruitTrainTargetListFullyVisible = async (
             ]);
             return lastChoiceRect.top >= panelRect.top && lastChoiceRect.bottom <= panelRect.bottom;
         }, { message: `${stepId} 可滚动到完整候选末项` }).toBe(true);
-        await panel.evaluate((element) => {
-            element.scrollTop = 0;
-        });
+        await panel.evaluate((element, scrollTop) => {
+            element.scrollTop = scrollTop;
+        }, measurements.scrollTop);
     }
+
+    const firstChoice = page.locator(`[data-testid^="${choiceTestIdPrefix}"]`).first();
+    await expect(firstChoice, `${stepId} 首个候选在原滚动位置完整可见`).toBeVisible();
+    const [panelRect, firstChoiceRect] = await Promise.all([
+        readLocatorRect(panel),
+        readLocatorRect(firstChoice),
+    ]);
+    expect(firstChoiceRect.top, `${stepId} 首个候选未被面板上沿裁切`).toBeGreaterThanOrEqual(panelRect.top);
+    expect(firstChoiceRect.bottom, `${stepId} 首个候选未被面板下沿裁切`).toBeLessThanOrEqual(panelRect.bottom);
 };
 
 const expectElementsNotToOverlap = async (
@@ -301,199 +758,6 @@ const readQidahenCore = async (page: Page) => (
         return snapshot.core as Record<string, unknown>;
     })
 );
-
-const completeBasicRecruitAction = async (
-    page: Page,
-    screenshots: Partial<Record<'action' | 'payment' | 'target' | 'formation' | 'result', string>> = {},
-) => {
-    await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('本回合各进行一次手牌行动和轮盘行动');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先后由你决定');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('现在选一个先做');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('弃 1 张手牌');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('费用和落点');
-    await expect(page.locator('[data-testid="tutorial-highlight-ring"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('移动端长按手牌');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('手牌上限');
-    for (const moveId of ['move-1-free', 'move-2-one-opponent', 'move-3-all-opponents']) {
-        await expect(page.getByTestId(`qidahen-wheel-move-target-${moveId}`)).toBeEnabled();
-    }
-    if (screenshots.action) {
-        const alternateAction = page.getByTestId('qidahen-action-grant-pardon');
-        await expect(alternateAction).toBeVisible();
-        await expect(alternateAction).toBeDisabled();
-        const coreBeforeBlockedAlternate = await readQidahenCore(page);
-        const alternateActionBox = await alternateAction.boundingBox();
-        expect(alternateActionBox).toBeTruthy();
-        await page.mouse.click(
-            alternateActionBox!.x + alternateActionBox!.width / 2,
-            alternateActionBox!.y + alternateActionBox!.height / 2,
-        );
-        await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible();
-        const coreAfterBlockedAlternate = await readQidahenCore(page);
-        expect({
-            selectedActionId: coreAfterBlockedAlternate.selectedActionId,
-            confirmedActionId: coreAfterBlockedAlternate.confirmedActionId,
-            factionActionUsed: coreAfterBlockedAlternate.factionActionUsed,
-            payment: coreAfterBlockedAlternate.payment,
-            selectedPaymentCardIds: coreAfterBlockedAlternate.selectedPaymentCardIds,
-        }).toEqual({
-            selectedActionId: coreBeforeBlockedAlternate.selectedActionId,
-            confirmedActionId: coreBeforeBlockedAlternate.confirmedActionId,
-            factionActionUsed: coreBeforeBlockedAlternate.factionActionUsed,
-            payment: coreBeforeBlockedAlternate.payment,
-            selectedPaymentCardIds: coreBeforeBlockedAlternate.selectedPaymentCardIds,
-        });
-
-        await page.evaluate(() => {
-            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-        });
-        const keyboardReachableActions: string[] = [];
-        for (let index = 0; index < 64; index += 1) {
-            await page.keyboard.press('Tab');
-            const actionId = await page.evaluate(() => {
-                const testId = document.activeElement instanceof HTMLElement
-                    ? document.activeElement.dataset.testid
-                    : undefined;
-                return testId?.startsWith('qidahen-action-')
-                    ? testId.slice('qidahen-action-'.length)
-                    : null;
-            });
-            if (actionId) keyboardReachableActions.push(actionId);
-            if (actionId === 'recruit') break;
-        }
-        expect(keyboardReachableActions).toContain('recruit');
-        expect(keyboardReachableActions).not.toContain('grant-pardon');
-        await expect(page.getByTestId('qidahen-action-recruit')).toBeFocused();
-    }
-    if (screenshots.action) await saveScreenshot(page, screenshots.action);
-
-    if (screenshots.action) {
-        await page.keyboard.press('Enter');
-    } else {
-        await page.getByTestId('qidahen-action-recruit').click();
-    }
-    await expect(page.locator('[data-tutorial-step="pay-recruit"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('qidahen-action-payment-panel')).toBeVisible();
-    const paymentConfirmButton = page.getByTestId('qidahen-action-payment-confirm');
-    await expect(page.getByTestId('tutorial-highlight-ring'))
-        .toHaveAttribute('data-tutorial-highlight-target', 'qidahen-action-payment-confirm');
-    await expectTutorialOverlayFullyVisible(page, 'pay-recruit');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('选牌前可点“看”查看牌面');
-    await expectTutorialOverlayNotToCover(page, paymentConfirmButton, '支付提示必须让确认按钮保持可见');
-    const mingHandBefore = (await readQidahenCore(page)).factions as Record<string, { handCount: number }>;
-    const handCountBefore = mingHandBefore.ming.handCount;
-    const selectedPaymentsBeforeInspect = (await readQidahenCore(page)).selectedPaymentCardIds;
-    if (screenshots.payment) {
-        const inspectCardButton = page.locator('button[data-testid^="qidahen-hand-card-magnify-"]').first();
-        await expect(inspectCardButton).toBeVisible();
-        await inspectCardButton.click();
-        await expect(page.locator('[data-testid="qidahen-card-magnify-overlay"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-tutorial-step="pay-recruit"]')).toBeVisible();
-        await expect(page.getByTestId('qidahen-action-payment-status')).toContainText('已选 0 / 1 张');
-        await expect(page.getByTestId('qidahen-action-payment-panel')).toBeVisible();
-        const afterInspect = await readQidahenCore(page);
-        expect((afterInspect.factions as Record<string, { handCount: number }>).ming.handCount).toBe(handCountBefore);
-        expect(afterInspect.selectedPaymentCardIds).toEqual(selectedPaymentsBeforeInspect);
-        await saveScreenshot(page, DESKTOP_HAND_INSPECT_OVERLAY);
-        await page.getByTestId('qidahen-card-magnify-overlay-close').click();
-        await expect(page.locator('[data-testid="qidahen-card-magnify-overlay"]')).toBeHidden({ timeout: 10000 });
-        await expect(page.locator('[data-tutorial-step="pay-recruit"]')).toBeVisible();
-    }
-    const paymentCard = page.locator('button[data-testid^="qidahen-hand-card-hand-"]').first();
-    await paymentCard.click();
-    await expect(page.getByTestId('qidahen-action-payment-status')).toContainText('1 / 1');
-    await expect(paymentConfirmButton).toBeEnabled();
-    if (screenshots.payment) await saveScreenshot(page, screenshots.payment);
-    await paymentConfirmButton.click();
-
-    await expect(page.locator('[data-tutorial-step="choose-recruit-target"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('qidahen-recruit-selection')).toBeVisible();
-    await expect(page.getByTestId('qidahen-map-guide-target-focus-city-region-24')).toBeVisible();
-    await expect(page.getByTestId('tutorial-highlight-ring'))
-        .toHaveAttribute('data-tutorial-highlight-target', 'qidahen-map-guide-target-focus-city-region-24');
-    await expect(page.getByTestId('qidahen-map-guide-target-focus-city-region-24')).toContainText('宣府');
-    await expectTutorialOverlayNotToCover(
-        page,
-        page.getByTestId('qidahen-map-guide-target-focus-city-region-24'),
-        '征召提示不得遮住宣府地图焦点',
-    );
-    const recruitTarget = page.getByTestId('qidahen-map-guide-hit-target-city-region-24');
-    await expect(recruitTarget).toBeVisible();
-    if (screenshots.target) await saveScreenshot(page, screenshots.target);
-    await recruitTarget.click();
-
-    await expect(page.locator('[data-tutorial-step="choose-recruit-formation"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('选择 6 支等级 2 正规军');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('川兵');
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('炮兵');
-    await expect(page.getByTestId('qidahen-recruit-choice-level-2-troops')).toBeVisible();
-    await expect(page.getByTestId('qidahen-recruit-choice-level-4-chuanbing')).toBeVisible();
-    await expect(page.getByTestId('qidahen-recruit-choice-level-1-artillery')).toBeVisible();
-    await expectTutorialOverlayNotToCover(
-        page,
-        page.getByTestId('qidahen-recruit-selection'),
-        '征召建军方式提示不得遮挡真实选项',
-    );
-    if (screenshots.formation) await saveScreenshot(page, screenshots.formation);
-    const coreBeforeRecruit = await readQidahenCore(page);
-    const xuanfuBefore = (coreBeforeRecruit.regions as Array<{ id: string; troops: number }>)
-        .find((region) => region.id === 'city-region-24');
-    await page.getByTestId('qidahen-recruit-choice-level-2-troops').click();
-
-    await expect(page.locator('[data-tutorial-step="action-result"]')).toBeVisible({ timeout: 10000 });
-    const recruitSummary = page.getByTestId('qidahen-season-summary');
-    await expect(recruitSummary).toBeVisible();
-    await expect(recruitSummary).toContainText('征召军队');
-    await expect(recruitSummary).toContainText('建立 6 个等级 2 部队');
-    await expectTutorialOverlayNotToCover(page, recruitSummary, '征召结果提示不得遮挡真实建军摘要');
-    const coreAfterRecruit = await readQidahenCore(page);
-    const xuanfuAfter = (coreAfterRecruit.regions as Array<{ id: string; troops: number }>)
-        .find((region) => region.id === 'city-region-24');
-    expect(xuanfuBefore).toBeTruthy();
-    expect(xuanfuAfter?.troops).toBe((xuanfuBefore?.troops ?? 0) + 6);
-    const mingHandAfter = (coreAfterRecruit.factions as Record<string, { handCount: number }>).ming.handCount;
-    expect(mingHandAfter).toBe(handCountBefore - 1);
-    expect((coreAfterRecruit as Record<string, unknown>).lastSeasonSummary
-        && ((coreAfterRecruit as Record<string, unknown>).lastSeasonSummary as { title?: string }).title).toBe('征召军队');
-    expect((coreAfterRecruit as Record<string, unknown>).currentPlayer).toBe('0');
-    expect(coreAfterRecruit.wheelActionUsed).toBe(false);
-    expect(coreAfterRecruit.factionActionUsed).toBe(true);
-    if (screenshots.result) await saveScreenshot(page, screenshots.result);
-
-    await page.locator('[data-testid="tutorial-next-button"]').click();
-    await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
-};
-
-const completeBasicTutorialAndProveContinuation = async (
-    page: Page,
-    screenshot?: string,
-) => {
-    await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]'))
-        .toContainText('两种行动都已完成');
-    const completedTurn = await readQidahenCore(page);
-    expect(completedTurn.currentPlayer).not.toBe('0');
-    expect(completedTurn.wheelRecruitTrainProgress).toBeNull();
-    await page.locator('[data-testid="tutorial-next-button"]').click();
-    await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveCount(0);
-    await expect(page.getByTestId('qidahen-board')).toBeVisible();
-    await page.waitForTimeout(750);
-    expect(new URL(page.url()).pathname).toContain('/tutorial/');
-
-    const nextTurnBefore = await readQidahenCore(page);
-    expect(nextTurnBefore.turnPhase).toBe('action-window');
-    expect(nextTurnBefore.wheelActionUsed).toBe(false);
-    expect(nextTurnBefore.factionActionUsed).toBe(false);
-    const nextPlayerId = nextTurnBefore.currentPlayer;
-    const wheelPositionBefore = nextTurnBefore.actionWheelPosition;
-    await page.getByTestId('qidahen-wheel-move-target-move-1-free').click();
-    const nextTurnAfter = await readQidahenCore(page);
-    expect(nextTurnAfter.currentPlayer).toBe(nextPlayerId);
-    expect(nextTurnAfter.wheelActionUsed).toBe(true);
-    expect(nextTurnAfter.actionWheelPosition).not.toBe(wheelPositionBefore);
-    if (screenshot) await saveScreenshot(page, screenshot);
-};
 
 const selectPostBattleChoice = async (page: Page, choiceId: string) => {
     const mode = choiceId.startsWith('besiege')
@@ -568,621 +832,323 @@ const dispatchTouchLongPress = async (locator: Locator, durationMs = 700) => {
         x: box.x + box.width / 2,
         y: box.y + box.height / 2,
     };
-    await locator.dispatchEvent('pointerdown', {
-        pointerType: 'touch',
-        pointerId: 1,
-        isPrimary: true,
-        buttons: 1,
-        clientX: point.x,
-        clientY: point.y,
-    });
-    await locator.page().waitForTimeout(durationMs);
-    await locator.dispatchEvent('pointerup', {
-        pointerType: 'touch',
-        pointerId: 1,
-        isPrimary: true,
-        buttons: 0,
-        clientX: point.x,
-        clientY: point.y,
-    });
+    const session = await locator.page().context().newCDPSession(locator.page());
+    try {
+        await session.send('Input.dispatchTouchEvent', {
+            type: 'touchStart', touchPoints: [{ x: point.x, y: point.y }],
+        });
+        await locator.page().waitForTimeout(durationMs);
+        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } finally {
+        await session.detach();
+    }
 };
 
 test.describe('七大恨新游戏收口', () => {
     test.describe.configure({ mode: 'serial' });
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page }, testInfo) => {
         await page.addInitScript(() => {
             (window as HarnessWindow).__BG_HIDE_DEBUG_PANEL__ = true;
         });
+        if (!testInfo.title.includes('移动横屏真实教程')) {
+            await startBehaviorTrace(page, testInfo.title);
+        }
+    });
+
+    test.afterEach(async ({ page }, testInfo) => {
+        finishBehaviorTrace(
+            page,
+            testInfo.status === 'passed' && testInfo.expectedStatus === 'passed',
+        );
     });
 
     test.beforeAll(() => {
-        resetScreenshotDir(TUTORIAL_DIR);
-        resetScreenshotDir(MOBILE_TUTORIAL_DIR);
+        mkdirSync(resolve(TUTORIAL_DIR), { recursive: true });
+        mkdirSync(resolve(MOBILE_TUTORIAL_DIR), { recursive: true });
     });
 
-    test('唯一入门入口直接进入连续教程主线', async ({ page }) => {
+    test('唯一入门入口、刷新继续、重开与退出清理', async ({ page }) => {
+        test.setTimeout(120_000);
         await setChineseLocale(page);
         await disableAudio(page);
-        await page.addInitScript(() => {
-            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
-        });
-
+        await page.addInitScript(() => { (window as HarnessWindow).__E2E_TEST_MODE__ = true; });
         await page.setViewportSize({ width: 1920, height: 1080 });
         await page.goto(QIDAHEN_TUTORIAL_CATALOG_URL, { waitUntil: 'domcontentloaded' });
-
-        await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('tutorial-catalog-stage')).toHaveCount(0);
-        await expect(page.getByTestId('debug-toggle-container')).toHaveCount(0);
-        await expect(page.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('七大恨有三种胜利条件');
-        await saveScreenshot(page, TUTORIAL_ENTRY_SCREENSHOT);
-        await page.locator('[data-testid="tutorial-next-button"]').click();
-        await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
-        await saveScreenshot(page, TUTORIAL_ENTRY_FIRST_STEP);
+        await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('辽东驻有3支明军');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('征召军队');
+        await page.getByTestId('tutorial-next-button').click();
+        await expect(page.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible();
+        const beforeRefresh = await readQidahenCore(page);
+        await recordBehaviorOnlyCheckpoint(page, '正常进入唯一入门并推进到军屯地点选择', 'select-farm-region');
+        await page.reload();
+        await page.getByRole('button', { name: '从上次继续', exact: true }).click();
+        await expect(page.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible({ timeout: 30000 });
+        expect((await readQidahenCore(page)).actionWheelPosition).toBe(beforeRefresh.actionWheelPosition);
+        await recordBehaviorOnlyCheckpoint(page, '刷新后真实点击从上次继续，恢复同一军屯地点选择', 'select-farm-region');
+        await page.reload();
+        await page.getByRole('button', { name: '重头开始', exact: true }).click();
+        await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 30000 });
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(1);
+        await recordBehaviorOnlyCheckpoint(page, '刷新后真实点击重头开始，恢复正式开局首屏', 'frontier');
+        await page.getByTestId('fab-menu').locator('button[data-fab-id]').first().click();
+        await page.getByRole('button', { name: '离开', exact: true }).click();
+        await page.getByTestId('fab-panel-exit').getByRole('button', { name: /返回大厅/ }).click();
+        await expect(page).toHaveURL(/\/$/);
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0);
+        await expect(page.getByTestId('tutorial-highlight-ring')).toHaveCount(0);
+        await expect.poll(() => page.evaluate(() => (
+            (window as unknown as { __BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?: { active?: boolean } })
+                .__BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?.active ?? null
+        ))).toBe(false);
+        await recordBehaviorOnlyCheckpoint(page, '通过退出面板返回大厅，教程提示和高亮均清理', null, false);
     });
 
-    test('教程模式会带玩家走完真实回合主路，并在关键视觉节点截图', async ({ page }) => {
-        test.setTimeout(60_000);
+    test('正式入门连续对局：军屯辽东、突袭叶赫、打出鸳鸯阵并占领', async ({ page }) => {
+        test.setTimeout(120_000);
         await setChineseLocale(page);
         await disableAudio(page);
-        await page.addInitScript(() => {
-            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
-        });
+        await page.addInitScript(() => { (window as HarnessWindow).__E2E_TEST_MODE__ = true; });
         const diagnostics = attachPageDiagnostics(page);
-
-        await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto(QIDAHEN_BASIC_TUTORIAL_URL, { waitUntil: 'domcontentloaded' });
-
-        await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('七大恨有三种胜利条件');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('控制 16 个区域');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveAttribute('data-tutorial-placement', 'center');
-        await expect(page.locator('[data-testid="tutorial-highlight-ring"]')).toHaveCount(0);
-        await expectTutorialOverlayNotToCover(
-            page,
-            page.getByTestId('qidahen-hand-zone'),
-            'welcome tutorial card must not cover the hand zone',
-        );
-        await expectTutorialOverlayNotToCover(
-            page,
-            page.getByTestId('qidahen-action-wheel'),
-            'welcome tutorial card must not cover the shared action wheel',
-        );
-        await expectTutorialOverlayNotToCover(
-            page,
-            page.getByTestId('qidahen-actions-zone'),
-            'welcome tutorial card must not cover the hand-action panel',
-        );
-        const yearCards = page.locator('[data-testid^="qidahen-year-card-slot-"]');
-        for (let index = 0; index < await yearCards.count(); index += 1) {
-            await expectTutorialOverlayNotToCover(
-                page,
-                yearCards.nth(index),
-                `welcome tutorial card must not cover year card ${index + 1}`,
-            );
-        }
-        const playerStatusPanels = page.locator('[data-testid^="qidahen-player-"]:not([data-testid="qidahen-player-float"])');
-        for (let index = 0; index < await playerStatusPanels.count(); index += 1) {
-            await expectTutorialOverlayNotToCover(
-                page,
-                playerStatusPanels.nth(index),
-                `welcome tutorial card must not cover player status panel ${index + 1}`,
-            );
-        }
-        await saveScreenshot(page, TUTORIAL_STEP_01);
-
-        await page.locator('[data-testid="tutorial-next-button"]').click();
-        await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先后由你决定');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('现在选一个先做');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('手牌上限');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('3 张手牌');
-        await expect(page.locator('[data-testid="tutorial-highlight-ring"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('本教程');
-        await expectTutorialOverlayFullyVisible(page, 'choose-opening-action');
-        const recruitActionButton = page.getByTestId('qidahen-action-recruit');
-        await expect(recruitActionButton).toBeEnabled();
-        for (const moveId of ['move-1-free', 'move-2-one-opponent', 'move-3-all-opponents']) {
-            await expect(page.getByTestId(`qidahen-wheel-move-target-${moveId}`)).toBeEnabled();
-        }
-        await expectTutorialOverlayNotToCover(page, recruitActionButton, '行动顺序提示必须保留征召按钮');
-        await expectTutorialOverlayNotToCover(page, page.getByTestId('qidahen-action-wheel'), '行动顺序提示必须保留轮盘');
-        const openingCore = await readQidahenCore(page);
-        expect(openingCore.turnPhase).toBe('action-window');
-        expect(openingCore.handLimitDiscardSelection).toBeNull();
-        expect(openingCore.factions.ming.handCount).toBe(3);
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-top-action-banner"]')).toHaveCount(0);
-        await completeBasicRecruitAction(page, {
-            action: TUTORIAL_STEP_02,
-            payment: TUTORIAL_STEP_07,
-            target: TUTORIAL_STEP_08,
-            formation: TUTORIAL_STEP_09,
-            result: TUTORIAL_STEP_10,
-        });
-
-        await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘标记由所有玩家共用');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('每位玩家只选一种走法');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('费用和落点效果见各格提示');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('征兵训练');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-top-action-banner"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-wheel-current-marker"]')).toHaveAttribute('data-wheel-current-position', 'wheel-new-year');
-        for (const moveId of ['move-1-free', 'move-2-one-opponent', 'move-3-all-opponents']) {
-            const target = page.locator(`[data-testid="qidahen-wheel-move-target-${moveId}"]`);
-            await expect(target).toBeVisible();
-            await expect(target).toHaveAttribute('aria-disabled', 'false');
-        }
-        const sectorDetails = [
-            ['move-1-free', '每个己方控制区可放置 1 人口'],
-            ['move-2-one-opponent', '抽 2 张手牌，并在己方本土建立 1 个等级 2 正规军'],
-            ['move-3-all-opponents', '每额外弃 1 张牌，可额外进行 1 次训练'],
-        ] as const;
-        for (const [moveId, expectedDetail] of sectorDetails) {
-            await page.locator(`[data-testid="qidahen-wheel-move-target-${moveId}"]`).hover();
-            await expect(page.getByTestId('qidahen-wheel-tip')).toContainText(expectedDetail);
-            if (moveId === 'move-3-all-opponents') {
-                await expectTutorialOverlayNotToCover(
-                    page,
-                    page.getByTestId('qidahen-wheel-tip'),
-                    '轮盘教程卡不得遮挡当前扇区的费用与效果说明',
-                );
-                await saveScreenshot(page, TUTORIAL_STEP_02A);
-            }
-        }
-        await expectWheelPrimaryMove(page, 'move-2-one-opponent');
-        await page.mouse.move(5, 5);
-        await expectTutorialOverlayFullyVisible(page, 'wheel-move');
-        await saveScreenshot(page, TUTORIAL_STEP_03);
-        const wheelBeforeMove = await readQidahenCore(page);
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').click();
-        await expect(page.getByTestId('qidahen-wheel-opponent-picker')).toBeVisible();
-        await expect(page.getByTestId('qidahen-wheel-opponent-jin')).toBeVisible();
-        await expect(page.locator('[data-tutorial-step="wheel-move-opponent"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]'))
-            .toContainText('所选对手抽 2 张牌。选择后金。');
-        await expect(page.getByTestId('tutorial-highlight-ring'))
-            .toHaveAttribute('data-tutorial-highlight-target', 'qidahen-wheel-opponent-picker');
-        await expect(page.getByTestId('qidahen-wheel-tip')).toHaveCount(0);
-        await saveScreenshot(page, TUTORIAL_STEP_03A);
-        await page.getByTestId('qidahen-wheel-opponent-jin').click();
-
-        await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('右侧结果显示刚才行动的实际变化');
-        await expect(page.locator('[data-testid="qidahen-season-summary"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('轮盘军屯');
-        const wheelAfterMove = await readQidahenCore(page);
-        const xuanfuBefore = (wheelBeforeMove.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-24');
-        const xuanfuAfter = (wheelAfterMove.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-24');
-        expect(wheelAfterMove.actionWheelPosition).toBe('wheel-military-farm');
-        expect(wheelAfterMove.currentPlayer).not.toBe(wheelBeforeMove.currentPlayer);
-        expect(wheelAfterMove.wheelActionUsed).toBe(false);
-        expect(wheelAfterMove.factions.ming.handCount).toBe(wheelBeforeMove.factions.ming.handCount + 2);
-        expect(wheelAfterMove.factions.jin.handCount).toBe(wheelBeforeMove.factions.jin.handCount + 2);
-        expect(xuanfuBefore).toBeTruthy();
-        expect(xuanfuAfter?.troops).toBe((xuanfuBefore?.troops ?? 0) + 1);
-        await expectTutorialOverlayNotToCover(
-            page,
-            page.locator('[data-testid="qidahen-season-summary"]'),
-            'wheel-result tutorial card must not cover the actual wheel summary',
-        );
-        await saveScreenshot(page, TUTORIAL_STEP_03B);
-        await completeBasicTutorialAndProveContinuation(page, TUTORIAL_STEP_11);
-        assertNoFatalFrontendErrors([{ label: 'qidahen-tutorial-complete', diagnostics }]);
-    });
-
-    test('基础教程的 1 格走法会进入开垦，并能继续同一局', async ({ page }) => {
-        await setChineseLocale(page);
-        await disableAudio(page);
-        await page.addInitScript(() => {
-            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
-        });
-        const diagnostics = attachPageDiagnostics(page);
-
-        await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto(QIDAHEN_BASIC_TUTORIAL_URL, { waitUntil: 'domcontentloaded' });
-        await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
-        await page.locator('[data-testid="tutorial-next-button"]').click();
-        await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
-        await completeBasicRecruitAction(page);
-        await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
-
-        const beforeMove = await readQidahenCore(page);
-        await expectWheelPrimaryMove(page, 'move-2-one-opponent');
-        await saveScreenshot(page, TUTORIAL_STEP_03_ONE_GRID_ENTRY);
-        await page.getByTestId('qidahen-wheel-move-target-move-1-free').click();
-        await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.getByTestId('qidahen-season-summary')).toContainText('轮盘开垦');
-        const afterMove = await readQidahenCore(page);
-        expect(afterMove.actionWheelPosition).toBe('wheel-reclaim');
-        const mingRegionBefore = (beforeMove.regions as Array<{ id: string; population: number }>).find((region) => region.id === 'city-region-24');
-        const mingRegionAfter = (afterMove.regions as Array<{ id: string; population: number }>).find((region) => region.id === 'city-region-24');
-        expect(mingRegionAfter?.population).toBe((mingRegionBefore?.population ?? 0) + 1);
-        await saveScreenshot(page, TUTORIAL_STEP_03_ONE_GRID);
-        await completeBasicTutorialAndProveContinuation(page, ONE_GRID_CONTINUATION);
-        assertNoFatalFrontendErrors([{ label: 'qidahen-tutorial-wheel-two-step-target', diagnostics }]);
-    });
-
-    test('玩家可先做轮盘行动，再完成同回合手牌行动', async ({ page }) => {
-        await setChineseLocale(page);
-        await disableAudio(page);
-        await page.addInitScript(() => {
-            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
-        });
-        const diagnostics = attachPageDiagnostics(page);
-
         await page.setViewportSize({ width: 1920, height: 1080 });
         await page.goto(QIDAHEN_BASIC_TUTORIAL_URL, { waitUntil: 'domcontentloaded' });
         await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 15000 });
+        const opening = await readQidahenCore(page);
+        const openingLiaodong = (opening.regions as Array<{ id: string; troops: number; population: number }>).find((region) => region.id === 'city-region-15-liaodong');
+        expect([openingLiaodong?.troops, openingLiaodong?.population]).toEqual([3, 3]);
         await page.getByTestId('tutorial-next-button').click();
-        await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
 
-        const beforeWheel = await readQidahenCore(page);
-        const xuanfuBefore = (beforeWheel.regions as Array<{ id: string; population: number }>).find((region) => (
-            region.id === 'city-region-24'
-        ));
-        await saveScreenshot(page, TUTORIAL_STEP_02C);
-        await page.getByTestId('qidahen-wheel-move-target-move-1-free').click();
+        await expect(page.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible();
+        const farmRegion = page.getByTestId('qidahen-map-region-focus-city-region-15-liaodong');
+        await expect(farmRegion).toHaveAttribute('data-region-focus-shape', 'runtime-region-mask');
+        await expect(farmRegion.getByTestId('qidahen-map-region-focus-name')).toHaveText('辽东');
+        const farmPoint = await readMapRegionInputPoint(page, 'city-region-15-liaodong');
+        await saveScreenshot(page, BASIC_FARM_REGION);
+        await page.mouse.click(farmPoint.x, farmPoint.y);
+        await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible();
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('军屯');
+        await expectWheelPrimaryMove(page, 'move-2-one-opponent');
+        await saveScreenshot(page, BASIC_WHEEL_CHOICE);
+        await page.getByTestId('qidahen-wheel-move-target-move-2-one-opponent').click();
+        await expect(page.locator('[data-tutorial-step="wheel-opponent"]')).toBeVisible();
+        await expect(page.getByTestId('qidahen-wheel-opponent-jin')).toBeVisible();
+        await expect(page.getByTestId('qidahen-wheel-opponent-picker')).toContainText('军屯建军地：辽东');
+        await saveScreenshot(page, BASIC_OPPONENT);
+        await page.getByTestId('qidahen-wheel-opponent-jin').click();
 
-        await expect(page.locator('[data-tutorial-step="wheel-first-result"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.getByTestId('qidahen-season-summary')).toContainText('轮盘开垦');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('还剩一次手牌行动');
-        await expect(page.getByTestId('tutorial-highlight-ring'))
-            .toHaveAttribute('data-tutorial-highlight-target', 'qidahen-season-summary');
-        const afterWheel = await readQidahenCore(page);
-        const xuanfuAfterWheel = (afterWheel.regions as Array<{ id: string; population: number }>).find((region) => (
-            region.id === 'city-region-24'
-        ));
-        expect(afterWheel.currentPlayer).toBe('0');
-        expect(afterWheel.wheelActionUsed).toBe(true);
-        expect(afterWheel.factionActionUsed).toBe(false);
-        expect(afterWheel.actionWheelPosition).toBe('wheel-reclaim');
-        expect(xuanfuAfterWheel?.population).toBe((xuanfuBefore?.population ?? 0) + 1);
-        await saveScreenshot(page, TUTORIAL_STEP_02B);
-
+        await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
+        const farmed = await readQidahenCore(page);
+        const farmedLiaodong = (farmed.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-15-liaodong');
+        expect(farmedLiaodong?.troops).toBe(4);
+        expect((farmed.factions as Record<string, { handCount: number }>).ming.handCount).toBe(5);
+        expect((farmed.factions as Record<string, { handCount: number }>).jin.handCount).toBe(
+            (opening.factions as Record<string, { handCount: number }>).jin.handCount + 2,
+        );
+        await saveScreenshot(page, BASIC_FARM_RESULT);
         await page.getByTestId('tutorial-next-button').click();
-        await expect(page.locator('[data-tutorial-step="pick-action-after-wheel"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('本回合还剩一次手牌行动');
-        await saveScreenshot(page, TUTORIAL_STEP_02D);
+
+        await expect(page.locator('[data-tutorial-step="choose-raid"]')).toBeVisible();
         await page.getByTestId('qidahen-action-recruit').click();
-        await expect(page.locator('[data-tutorial-step="pay-recruit-after-wheel"]')).toBeVisible({ timeout: 10000 });
-        const handBeforeRecruit = (afterWheel.factions as Record<string, { handCount: number }>).ming.handCount;
-        const recruitCard = page.locator('button[data-testid^="qidahen-hand-card-hand-"]').first();
-        await recruitCard.click();
-        const payConfirm = page.getByTestId('qidahen-action-payment-confirm');
-        await expect(payConfirm).toBeEnabled();
-        await payConfirm.click();
-        await expect(page.locator('[data-tutorial-step="choose-recruit-target-after-wheel"]')).toBeVisible({ timeout: 10000 });
-        await page.getByTestId('qidahen-map-guide-hit-target-city-region-24').click();
-        await expect(page.locator('[data-tutorial-step="choose-recruit-formation-after-wheel"]')).toBeVisible({ timeout: 10000 });
-        const xuanfuBeforeRecruit = (await readQidahenCore(page).then((core) => core.regions as Array<{ id: string; troops: number }>))
-            .find((region) => region.id === 'city-region-24');
-        await page.getByTestId('qidahen-recruit-choice-level-2-troops').click();
+        await expect(page.locator('[data-tutorial-step="choose-raid"]')).toBeVisible();
+        await expect.poll(async () => (await readQidahenCore(page)).confirmedActionId).not.toBe('recruit');
+        await page.getByTestId('qidahen-action-raid').click();
+        await expect(page.locator('[data-tutorial-step="choose-target"]')).toBeVisible();
+        await expect(page.getByTestId('qidahen-action-payment-hint')).toContainText('选择目标地区');
+        await expect(page.getByTestId('qidahen-action-payment-hint')).not.toContainText('建州');
+        expect((await readQidahenCore(page)).explicitRegionId).toBeNull();
+        const target = page.getByTestId('qidahen-map-region-focus-city-region-7');
+        await expect(target).toBeVisible();
+        await expect(target).toHaveAttribute('data-region-focus-shape', 'runtime-region-mask');
+        await expect(target.getByTestId('qidahen-map-region-focus-name')).toHaveText('叶赫部');
+        const targetPoint = await readMapRegionInputPoint(page, 'city-region-7');
+        await saveScreenshot(page, BASIC_TARGET);
+        await page.mouse.click(targetPoint.x, targetPoint.y);
+        await expect(page.locator('[data-tutorial-step="pay-raid"]')).toBeVisible();
+        const beforePayment = await readQidahenCore(page);
+        const silver = (beforePayment.handCards as Array<{ id: string; cardKind: string; faction: string }>).find((card) => card.faction === 'ming' && card.cardKind === 'silver');
+        expect(silver).toBeTruthy();
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('保留鸳鸯阵');
+        await saveScreenshot(page, BASIC_PAYMENT);
+        const preservedTactic = (beforePayment.handCards as Array<{ id: string; cardDefId: string }>).find((card) => card.cardDefId === 'qidahen-atlas05-1644-yuanyang-zhen');
+        expect(preservedTactic).toBeTruthy();
+        await page.getByTestId('qidahen-hand-card-' + preservedTactic!.id).click();
+        await expect.poll(async () => (await readQidahenCore(page)).selectedPaymentCardIds).toEqual([]);
+        await expect(page.locator('[data-tutorial-step="pay-raid"]')).toBeVisible();
+        await expect(page.getByTestId('qidahen-hand-card-' + preservedTactic!.id)).toBeVisible();
+        await page.getByTestId('qidahen-hand-card-' + silver!.id).click();
+        await expect(page.locator('[data-tutorial-step="confirm-raid-payment"]')).toBeVisible();
+        await expect(page.getByTestId('qidahen-action-payment-hint')).toContainText('叶赫部');
+        await page.getByTestId('qidahen-action-payment-confirm').click();
 
-        await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('两种行动都已完成');
-        await expect(page.getByTestId('qidahen-season-summary')).toContainText('建立 6 个等级 2 部队');
-        const afterRecruit = await readQidahenCore(page);
-        const xuanfuAfterRecruit = (afterRecruit.regions as Array<{ id: string; troops: number }>).find((region) => (
-            region.id === 'city-region-24'
-        ));
-        const handAfterRecruit = (afterRecruit.factions as Record<string, { handCount: number }>).ming.handCount;
-        expect(afterRecruit.currentPlayer).not.toBe('0');
-        expect(xuanfuAfterRecruit?.troops).toBe((xuanfuBeforeRecruit?.troops ?? 0) + 6);
-        expect(handAfterRecruit).toBe(handBeforeRecruit - 1);
-        await expect(page.getByTestId('qidahen-season-summary')).toContainText('征召军队');
-        await saveScreenshot(page, TUTORIAL_STEP_02E);
-        await completeBasicTutorialAndProveContinuation(page);
-        assertNoFatalFrontendErrors([{ label: 'qidahen-tutorial-wheel-first-branch', diagnostics }]);
+        await expect(page.locator('[data-tutorial-step="battle-open"]')).toBeVisible({ timeout: 10000 });
+        const pending = await readQidahenCore(page);
+        expect(pending.pendingTargetAction).toMatchObject({
+            actionId: 'raid', sourceRegionId: 'city-region-15-liaodong', targetRegionId: 'city-region-7',
+        });
+        await page.getByTestId('tutorial-next-button').click();
+        await expect(page.locator('[data-tutorial-step="play-tactic"]')).toBeVisible();
+        const tactic = (pending.handCards as Array<{ id: string; cardDefId: string; faction: string }>).find((card) => card.faction === 'ming' && card.cardDefId === 'qidahen-atlas05-1644-yuanyang-zhen');
+        expect(tactic).toBeTruthy();
+        await page.getByTestId('qidahen-hand-card-' + tactic!.id).click();
+        await expect(page.getByTestId('qidahen-confirm-tactic-card')).toBeVisible();
+        await page.getByTestId('qidahen-confirm-tactic-card').click();
+        await expect(page.locator('[data-tutorial-step="resolve-battle"]')).toBeVisible({ timeout: 10000 });
+        const thirdTroop = page.locator('[data-pending-committed-selectable="true"][data-pending-committed-index="3"]').first();
+        await expect(thirdTroop).toBeVisible();
+        await thirdTroop.click();
+        await expect(page.getByTestId('qidahen-raid-intent')).toContainText('本次出兵 3');
+        await saveScreenshot(page, BASIC_BATTLE);
+        await page.getByTestId('qidahen-resolve-pending-action').click();
+
+        await expect(page.locator('[data-tutorial-step="battle-result"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('qidahen-post-battle-selection')).toBeVisible();
+        await saveScreenshot(page, BASIC_BATTLE_RESULT);
+        await page.getByTestId('tutorial-next-button').click();
+        await expect(page.locator('[data-tutorial-step="occupy"]')).toBeVisible();
+        await selectPostBattleChoice(page, 'withdraw:city-region-15-liaodong');
+        await expect(page.locator('[data-tutorial-step="occupy"]')).toBeVisible();
+        await expect.poll(async () => (await readQidahenCore(page)).postBattleSelection != null).toBe(true);
+        await selectPostBattleChoice(page, 'occupy');
+        await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
+        const occupied = await readQidahenCore(page);
+        const yehe = (occupied.regions as Array<{ id: string; controller: string; troops: number }>).find((region) => region.id === 'city-region-7');
+        expect([yehe?.controller, yehe?.troops]).toEqual(['ming', 3]);
+        expect(occupied.currentPlayer).toBe('1');
+        await saveScreenshot(page, BASIC_OCCUPIED);
+        await page.getByTestId('tutorial-next-button').click();
+        await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
+        const nextTurn = await readQidahenCore(page);
+        expect(nextTurn.currentPlayer).toBe('1');
+        await page.getByTestId('qidahen-wheel-move-target-move-1-free').click();
+        const resumed = await readQidahenCore(page);
+        expect(resumed.actionWheelPosition).not.toBe(nextTurn.actionWheelPosition);
+        await saveScreenshot(page, BASIC_CONTINUE);
+        assertNoFatalFrontendErrors([{ label: 'qidahen-natural-opening', diagnostics }]);
     });
 
-    test('基础教程的 3 格走法会让对手抽牌，逐项选择训练、征兵和额外训练后继续同一局', async ({ page }) => {
-        await setChineseLocale(page);
-        await disableAudio(page);
-        await page.addInitScript(() => {
-            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
-        });
-        const diagnostics = attachPageDiagnostics(page);
-
-        await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto(QIDAHEN_BASIC_TUTORIAL_URL, { waitUntil: 'domcontentloaded' });
-        await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
-        await page.locator('[data-testid="tutorial-next-button"]').click();
-        await expect(page.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
-        await completeBasicRecruitAction(page);
-        await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
-
-        const beforeMove = await readQidahenCore(page);
-        await expect(page.getByTestId('qidahen-wheel-move-target-move-3-all-opponents')).toBeVisible();
-        await expect(page.getByTestId('qidahen-wheel-move-target-move-3-all-opponents')).toHaveAttribute('aria-disabled', 'false');
-        await saveScreenshot(page, TUTORIAL_STEP_03_THREE_GRID_ENTRY);
-        await page.getByTestId('qidahen-wheel-move-target-move-3-all-opponents').click();
-        await expect(page.locator('[data-tutorial-step="recruit-train-payment"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.getByTestId('qidahen-wheel-recruit-train-payment-panel')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征兵训练先弃 1 张手牌');
-        await expect(page.getByTestId('qidahen-wheel-tip')).toHaveCount(0);
-        await expectTutorialOverlayNotToCover(
-            page,
-            page.getByTestId('qidahen-draw-pile'),
-            '征兵训练支付提示不得遮住当前行动人的抽牌堆',
-        );
-
-        const afterMove = await readQidahenCore(page);
-        expect(afterMove.actionWheelPosition).toBe('wheel-recruit-train');
-        expect(afterMove.wheelActionUsed).toBe(true);
-        expect(afterMove.factions.mongol.handCount).toBe(beforeMove.factions.mongol.handCount + 2);
-        expect(afterMove.factions.jin.handCount).toBe(beforeMove.factions.jin.handCount + 2);
-        expect(afterMove.factions.ming.handCount).toBe(beforeMove.factions.ming.handCount);
-        const mingRegionBefore = (beforeMove.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-24');
-        const mingRegionAfter = (afterMove.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-24');
-        expect(afterMove.wheelRecruitTrainProgress).toMatchObject({ phase: 'payment', paymentPurpose: 'initial' });
-        expect(afterMove.lastSeasonSummary).toBeNull();
-        expect(mingRegionAfter?.troops).toBe(mingRegionBefore?.troops);
-        await saveScreenshot(page, TUTORIAL_STEP_03C);
-
-        const initialPaymentCard = page.locator('button[data-testid^="qidahen-hand-card-hand-"]').first();
-        await expect(initialPaymentCard).toBeVisible();
-        await initialPaymentCard.click();
-        await page.getByTestId('qidahen-wheel-recruit-train-payment-confirm').click();
-
-        await expect(page.locator('[data-tutorial-step="recruit-train-decision-0"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('直接建立 1 个等级 2 的正规军部队');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('每个部队只能各提升 1 级');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('本土');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('炮兵');
-        await saveScreenshot(page, TUTORIAL_STEP_03E);
-        await page.getByTestId('qidahen-wheel-recruit-train-choice-action%3Atrain').click();
-
-        await expect(page.locator('[data-tutorial-step="recruit-train-training-target-0"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('当前等级和目标等级');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('本土');
-        const firstTrainingTarget = page.locator('[data-testid^="qidahen-wheel-recruit-train-choice-train%3A"]').first();
-        await expect(firstTrainingTarget).toBeVisible();
-        await expectWheelRecruitTrainTargetListFullyVisible(
-            page,
-            'recruit-train-training-target-0',
-            'qidahen-wheel-recruit-train-choice-train%3A',
-        );
-        const firstTrainingTargetId = await firstTrainingTarget.getAttribute('data-testid');
-        await saveScreenshot(page, TUTORIAL_STEP_03F);
-        const beforeTraining = await readQidahenCore(page);
-        await firstTrainingTarget.click();
-        await expect(page.locator('[data-tutorial-step="recruit-train-decision-1"]')).toBeVisible();
-        const afterTraining = await readQidahenCore(page);
-        expect(afterTraining.wheelRecruitTrainProgress).toMatchObject({ phase: 'choose-action', actionsCompleted: 1 });
-        expect((afterTraining.trainedTroopPieceIdsThisTurn as string[]).length)
-            .toBeGreaterThan((beforeTraining.trainedTroopPieceIdsThisTurn as string[]).length);
-        await expect(page.getByTestId('qidahen-wheel-recruit-train-last-result')).toContainText('训练至');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('每额外弃 1 张手牌，可再训练 1 支部队');
-        const firstAvailableExtraTraining = page.getByTestId('qidahen-wheel-recruit-train-choice-extra-training');
-        await expect(firstAvailableExtraTraining).toBeVisible();
-        await expect(firstAvailableExtraTraining).toContainText('额外训练 · 弃 1 张手牌');
-        await saveScreenshot(page, TUTORIAL_STEP_03G);
-
-        await page.getByTestId('qidahen-wheel-recruit-train-choice-action%3Arecruit').click();
-        await expect(page.locator('[data-tutorial-step="recruit-train-recruit-target-1"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('正规军必须在本土（深色）区域建立');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).not.toContainText('当前等级和目标等级');
-        const recruitTargets = page.locator('[data-testid^="qidahen-wheel-recruit-train-choice-recruit%3A"]');
-        expect(await recruitTargets.count()).toBeGreaterThan(0);
-        const recruitTargetListFits = await page.getByTestId('qidahen-wheel-recruit-train-selection').evaluate((element) => (
-            element.scrollHeight <= element.clientHeight
-        ));
-        expect(recruitTargetListFits, '征兵候选区域列表应完整显示，无需滚动才能看到末项').toBe(true);
-        await saveScreenshot(page, TUTORIAL_STEP_03H);
-        await recruitTargets.first().click();
-        await expect(page.locator('[data-tutorial-step="recruit-train-decision-2"]')).toBeVisible();
-        await expect(page.getByTestId('qidahen-wheel-recruit-train-last-result'))
-            .toContainText('建立 1 个等级 2 正规军部队');
-
-        const extraTrainingChoice = page.getByTestId('qidahen-wheel-recruit-train-choice-extra-training');
-        await expect(extraTrainingChoice).toBeVisible();
-        await expect(extraTrainingChoice).toContainText('额外训练 · 弃 1 张手牌');
-        await extraTrainingChoice.click();
-        await expect(page.locator('[data-tutorial-step="recruit-train-extra-payment-2"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]'))
-            .toContainText('每额外弃 1 张手牌，可额外进行 1 次训练');
-        const mingBeforeExtra = (await readQidahenCore(page)).factions as Record<string, { handCount: number }>;
-        expect(mingBeforeExtra.ming.handCount).toBe(1);
-        await saveScreenshot(page, TUTORIAL_STEP_03I);
-        const extraPaymentCard = page.locator('button[data-testid^="qidahen-hand-card-hand-"]').first();
-        await extraPaymentCard.click();
-        await page.getByTestId('qidahen-wheel-recruit-train-payment-confirm').click();
-        await expect(page.locator('[data-tutorial-step="recruit-train-training-target-2"]')).toBeVisible();
-        const extraTrainingTarget = page.locator('[data-testid^="qidahen-wheel-recruit-train-choice-train%3A"]').first();
-        await expect(extraTrainingTarget).toBeVisible();
-        await expectWheelRecruitTrainTargetListFullyVisible(
-            page,
-            'recruit-train-training-target-2',
-            'qidahen-wheel-recruit-train-choice-train%3A',
-        );
-        const extraTrainingTargetId = await extraTrainingTarget.getAttribute('data-testid');
-        expect(extraTrainingTargetId).not.toBe(firstTrainingTargetId);
-        await saveScreenshot(page, TUTORIAL_STEP_03J);
-        await extraTrainingTarget.click();
-
-        await expect(page.locator('[data-tutorial-step="recruit-train-decision-3"]')).toBeVisible();
-        const afterExtraTraining = await readQidahenCore(page);
-        expect(afterExtraTraining.factions.ming.handCount).toBe(0);
-        expect(afterExtraTraining.wheelRecruitTrainProgress).toMatchObject({
-            phase: 'choose-action',
-            actionsCompleted: 2,
-            extraTrainingsCompleted: 1,
-        });
-        await expect(page.getByTestId('qidahen-wheel-recruit-train-choice-extra-training')).toHaveCount(0);
-        await page.getByTestId('qidahen-wheel-recruit-train-choice-finish').click();
-        await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
-        expect((await readQidahenCore(page)).wheelRecruitTrainProgress).toBeNull();
-        await expect(page.getByTestId('qidahen-season-summary')).toContainText('轮盘征兵/训练');
-        await saveScreenshot(page, TUTORIAL_STEP_03K);
-        await completeBasicTutorialAndProveContinuation(page, TUTORIAL_STEP_03L);
-        assertNoFatalFrontendErrors([{ label: 'qidahen-tutorial-wheel-three-step-branch', diagnostics }]);
-    });
-
-    test('移动横屏真实教程支持长按手牌检视，关闭后回到牌桌且不提交正式行动', async ({ browser, baseURL }) => {
+    test('移动横屏真实教程支持长按手牌检视并返回突袭支付', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(90_000);
         const touchContext = await browser.newContext({
-            baseURL,
             viewport: { width: 844, height: 390 },
+            deviceScaleFactor: 1,
+            isMobile: true,
             hasTouch: true,
-            isMobile: false,
-        });
-        await setChineseLocale(touchContext);
-        await disableAudio(touchContext);
-        await touchContext.addInitScript(() => {
-            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
-            (window as HarnessWindow).__BG_HIDE_DEBUG_PANEL__ = true;
         });
         const touchPage = await touchContext.newPage();
-        const diagnostics = attachPageDiagnostics(touchPage);
-
         try {
-            await touchPage.goto(QIDAHEN_BASIC_TUTORIAL_URL, { waitUntil: 'domcontentloaded' });
-            await expect(touchPage.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
-            await expect(touchPage.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
-            await expect(touchPage.getByTestId('debug-toggle-container')).toHaveCount(0);
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                touchPage.getByTestId('qidahen-hand-zone'),
-                'mobile welcome tutorial card must not cover the hand zone',
-            );
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                touchPage.getByTestId('qidahen-actions-zone'),
-                'mobile welcome tutorial card must not cover the hand-action panel',
-            );
-            const mobileYearCards = touchPage.locator('[data-testid^="qidahen-year-card-slot-"]');
-            for (let index = 0; index < await mobileYearCards.count(); index += 1) {
-                await expectTutorialOverlayNotToCover(
-                    touchPage,
-                    mobileYearCards.nth(index),
-                    `mobile welcome tutorial card must not cover year card ${index + 1}`,
-                );
+            await startBehaviorTrace(touchPage, testInfo.title);
+            await setChineseLocale(touchPage);
+            await disableAudio(touchPage);
+            await touchPage.addInitScript(() => {
+                (window as HarnessWindow).__E2E_TEST_MODE__ = true;
+                (window as HarnessWindow).__BG_HIDE_DEBUG_PANEL__ = true;
+            });
+            await touchPage.goto(new URL(QIDAHEN_BASIC_TUTORIAL_URL, baseURL).toString(), { waitUntil: 'domcontentloaded' });
+            await expect(touchPage.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 30000 });
+            await touchPage.getByTestId('tutorial-next-button').tap();
+            await expect(touchPage.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible();
+            await expect(touchPage.locator('[data-map-hit-testing-ready="true"]')).toBeVisible();
+            const farmRegion = touchPage.getByTestId('qidahen-map-region-focus-city-region-15-liaodong');
+            await expect(farmRegion.getByTestId('qidahen-map-region-focus-name')).toHaveText('辽东');
+            let previousFarmGeometry = '';
+            await expect.poll(async () => {
+                const rect = await farmRegion.boundingBox();
+                const geometry = JSON.stringify(rect);
+                const stable = rect != null && geometry === previousFarmGeometry;
+                previousFarmGeometry = geometry;
+                return stable;
+            }, { intervals: [50, 100, 100] }).toBe(true);
+            const tapPoint = await readMapRegionInputPoint(touchPage, 'city-region-15-liaodong');
+            expect(await touchPage.evaluate((point) => (document.elementFromPoint(point.x, point.y) as HTMLElement)?.dataset.testid, tapPoint)).not.toBe('qidahen-hand-zone');
+            await touchPage.touchscreen.tap(tapPoint.x, tapPoint.y);
+            await expect(touchPage.locator('[data-tutorial-step="wheel-move"]')).toBeVisible();
+            await touchPage.getByTestId('qidahen-wheel-move-target-move-2-one-opponent').tap();
+            await touchPage.getByTestId('qidahen-wheel-opponent-jin').tap();
+            await expect(touchPage.locator('[data-tutorial-step="wheel-result"]')).toBeVisible();
+            await touchPage.getByTestId('tutorial-next-button').tap();
+            await expect(touchPage.locator('[data-tutorial-step="choose-raid"]')).toBeVisible();
+            await touchPage.getByTestId('qidahen-action-raid').tap();
+            const target = touchPage.getByTestId('qidahen-map-region-focus-city-region-7');
+            await expect(target).toBeVisible();
+            await expect(target.getByTestId('qidahen-map-region-focus-name')).toHaveText('叶赫部');
+            const paymentPanel = touchPage.getByTestId('qidahen-action-payment-panel');
+            const playerFloat = touchPage.getByTestId('qidahen-player-float');
+            await expect.poll(async () => getRectOverlapArea(await readLocatorRect(paymentPanel), await readLocatorRect(playerFloat)), { message: '支付栏不得遮挡玩家栏' }).toBeLessThanOrEqual(1);
+            await expectTutorialOverlayNotToCover(touchPage, paymentPanel, '目标教程提示不得遮挡支付栏');
+            let previousTargetGeometry = '';
+            await expect.poll(async () => {
+                const rect = await target.boundingBox();
+                const geometry = JSON.stringify(rect);
+                const stable = rect != null && geometry === previousTargetGeometry;
+                previousTargetGeometry = geometry;
+                return stable;
+            }, { intervals: [50, 100, 100] }).toBe(true);
+            const targetPoint = await readMapRegionInputPoint(touchPage, 'city-region-7');
+            await saveScreenshot(touchPage, MOBILE_MAP_TARGET);
+            expect(await touchPage.evaluate((point) => document.elementFromPoint(point.x, point.y)?.tagName,
+                targetPoint)).toBe('CANVAS');
+            await touchPage.touchscreen.tap(targetPoint.x, targetPoint.y);
+            await expect(touchPage.locator('[data-tutorial-step="pay-raid"]')).toBeVisible();
+            await expectTutorialOverlayNotToCover(touchPage, paymentPanel, '支付教程提示不得遮挡支付栏');
+            await expectTutorialOverlayNotToCover(touchPage, touchPage.getByTestId('fab-menu'), '支付教程提示不得遮挡聊天入口');
+            const silver = ((await readQidahenCore(touchPage)).handCards as Array<{ id: string; cardKind: string; faction: string }>).find((card) => card.faction === 'ming' && card.cardKind === 'silver');
+            expect(silver).toBeTruthy();
+            const silverCard = touchPage.getByTestId('qidahen-hand-card-' + silver!.id);
+            await expectTutorialOverlayNotToCover(touchPage, silverCard, '支付教程提示不得遮挡银两');
+            await expect.poll(async () => {
+                const [cardRect, dockRect] = await Promise.all([readLocatorRect(silverCard), readLocatorRect(touchPage.getByTestId('qidahen-hand-zone'))]);
+                return cardRect.left >= dockRect.left && cardRect.right <= dockRect.right && cardRect.bottom <= 386;
+            }, { message: '银两牌应完整显示在手牌窗口和屏幕中' }).toBe(true);
+            await saveScreenshot(touchPage, MOBILE_RAID_PAYMENT);
+            const handDock = touchPage.getByTestId('qidahen-hand-zone');
+            const handOverflow = await handDock.evaluate((element) => element.scrollWidth > element.clientWidth + 1);
+            if (handOverflow) {
+                const initialScroll = await handDock.evaluate((element) => element.scrollLeft);
+                expect(initialScroll).toBeGreaterThan(0);
+                const touchSession = await touchContext.newCDPSession(touchPage);
+                const swipeHand = async (from: number, to: number) => {
+                    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ id: 1, x: from, y: 310 }] });
+                    for (let step = 1; step <= 8; step += 1) {
+                        await touchSession.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ id: 1, x: from + (to - from) * step / 8, y: 310 }] });
+                    }
+                    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+                };
+                await swipeHand(290, 440);
+                await expect.poll(() => handDock.evaluate((element) => element.scrollLeft), { message: '触屏右滑应显示前面的手牌' }).toBeLessThan(initialScroll);
+                await swipeHand(440, 290);
+                await expect.poll(async () => {
+                    const [cardRect, dockRect] = await Promise.all([readLocatorRect(silverCard), readLocatorRect(handDock)]);
+                    return cardRect.left >= dockRect.left && cardRect.right <= dockRect.right;
+                }, { message: '触屏左滑后银两应重新完整显示' }).toBe(true);
+                await touchSession.detach();
+            } else {
+                const visibleCards = handDock.locator('button[data-testid^="qidahen-hand-card-"]');
+                const dockRect = await readLocatorRect(handDock);
+                for (const card of await visibleCards.all()) {
+                    const cardRect = await readLocatorRect(card);
+                    expect(cardRect.left >= dockRect.left && cardRect.right <= dockRect.right).toBe(true);
+                }
             }
-            const mobilePlayerStatusPanels = touchPage.locator('[data-testid^="qidahen-player-"]:not([data-testid="qidahen-player-float"])');
-            for (let index = 0; index < await mobilePlayerStatusPanels.count(); index += 1) {
-                await expectTutorialOverlayNotToCover(
-                    touchPage,
-                    mobilePlayerStatusPanels.nth(index),
-                    `mobile welcome tutorial card must not cover player status panel ${index + 1}`,
-                );
-            }
-            await touchPage.screenshot({ path: resolve(MOBILE_TUTORIAL_WELCOME), fullPage: false });
-
-            await touchPage.locator('[data-testid="tutorial-next-button"]').click();
-            await expect(touchPage.locator('[data-tutorial-step="choose-opening-action"]')).toBeVisible({ timeout: 10000 });
-            await expect(touchPage.locator('[data-testid="tutorial-highlight-ring"]')).toHaveCount(0);
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征召军队');
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先后由你决定');
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]'))
-                .not.toContainText('长按手牌');
-            const mobileActionWheel = touchPage.getByTestId('qidahen-action-wheel');
-            const mobileActionZone = touchPage.getByTestId('qidahen-actions-zone');
-            const mobileRecruitAction = touchPage.getByTestId('qidahen-action-recruit');
-            const mobileHandZone = touchPage.getByTestId('qidahen-hand-zone');
-            const mobileFabMenu = touchPage.getByTestId('fab-menu');
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                mobileActionWheel,
-                'mobile action tutorial must keep the wheel visible',
-            );
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                mobileHandZone,
-                'mobile action tutorial must keep the hand visible',
-            );
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                mobileActionZone,
-                'mobile action tutorial must keep the hand-action list visible',
-            );
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                mobileRecruitAction,
-                'mobile action tutorial must keep the highlighted recruit action visible',
-            );
-            await expectTutorialOverlayNotToCover(
-                touchPage,
-                mobileFabMenu,
-                'mobile action tutorial must keep the chat menu control visible and its label unobstructed',
-            );
-            for (let index = 0; index < await mobileYearCards.count(); index += 1) {
-                await expectTutorialOverlayNotToCover(
-                    touchPage,
-                    mobileYearCards.nth(index),
-                    `mobile action tutorial must not cover year card ${index + 1}`,
-                );
-            }
-            for (let index = 0; index < await mobilePlayerStatusPanels.count(); index += 1) {
-                await expectTutorialOverlayNotToCover(
-                    touchPage,
-                    mobilePlayerStatusPanels.nth(index),
-                    `mobile action tutorial must not cover player status panel ${index + 1}`,
-                );
-            }
-
-            await touchPage.screenshot({ path: resolve(MOBILE_OPENING_ACTION), fullPage: false });
-            await mobileRecruitAction.click();
-            await expect(touchPage.locator('[data-tutorial-step="pay-recruit"]')).toBeVisible({ timeout: 10000 });
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('征召军队需弃 1 张手牌');
-            await expect(touchPage.locator('[data-testid="tutorial-overlay-card"]')).toContainText('移动端长按');
-            await expect(touchPage.getByTestId('qidahen-action-payment-panel')).toBeVisible();
-            await expectTutorialOverlayFullyVisible(touchPage, 'pay-recruit');
-            const mobilePaymentConfirm = touchPage.getByTestId('qidahen-action-payment-confirm');
-            await expect(touchPage.getByTestId('tutorial-highlight-ring'))
-                .toHaveAttribute('data-tutorial-highlight-target', 'qidahen-action-payment-confirm');
-            await expectTutorialOverlayNotToCover(touchPage, mobilePaymentConfirm, '移动端征召支付提示必须让确认按钮可见');
-
-            const touchHandCard = touchPage.locator('button[data-testid^="qidahen-hand-card-hand-"]').first();
-            await expect(touchHandCard).toBeVisible({ timeout: 10000 });
-            await expect(touchHandCard).toHaveAttribute('data-qidahen-hand-card-touch-inspect', 'long-press');
-            await touchPage.screenshot({ path: resolve(MOBILE_HAND_INSPECT_BEFORE), fullPage: false });
-
-            const beforeLongPress = await readQidahenCore(touchPage);
-            expect(beforeLongPress.turnPhase).toBe('action-window');
-            expect(beforeLongPress.factionActionUsed).toBe(false);
-            const handCountBeforeLongPress = (beforeLongPress.factions as Record<string, { handCount: number }>).ming.handCount;
-            const selectedPaymentsBeforeLongPress = beforeLongPress.selectedPaymentCardIds;
-
-            await dispatchTouchLongPress(touchHandCard);
-            await expect(touchPage.locator('[data-testid="qidahen-card-magnify-overlay"]')).toBeVisible({ timeout: 10000 });
-            await expect(touchPage.locator('[data-testid="qidahen-card-magnify-content"]')).toBeVisible();
-            await expect(touchPage.locator('[data-tutorial-step="pay-recruit"]')).toBeVisible();
-            await expect(touchPage.getByTestId('qidahen-action-payment-panel')).toBeVisible();
-            await expect(touchPage.getByTestId('qidahen-action-payment-status')).toContainText('已选 0 / 1 张');
-            const magnifiedCardBounds = await touchPage.getByTestId('qidahen-card-magnify-content').boundingBox();
-            expect(magnifiedCardBounds?.height).toBeGreaterThanOrEqual(350);
-            const afterLongPress = await readQidahenCore(touchPage);
-            expect(afterLongPress.turnPhase).toBe('action-window');
-            expect(afterLongPress.factionActionUsed).toBe(false);
-            expect((afterLongPress.factions as Record<string, { handCount: number }>).ming.handCount).toBe(handCountBeforeLongPress);
-            expect(afterLongPress.selectedPaymentCardIds).toEqual(selectedPaymentsBeforeLongPress);
-            await touchPage.screenshot({ path: resolve(MOBILE_HAND_INSPECT_OVERLAY), fullPage: false });
-
-            await touchPage.getByTestId('qidahen-card-magnify-overlay-close').click();
-            await expect(touchPage.locator('[data-testid="qidahen-card-magnify-overlay"]')).toBeHidden({ timeout: 10000 });
-            await expect(touchPage.locator('[data-tutorial-step="pay-recruit"]')).toBeVisible();
-            await expect(touchPage.locator('[data-testid="qidahen-hand-zone"]')).toBeVisible();
-            await expectTutorialOverlayNotToCover(touchPage, touchHandCard, '支付提示不得遮住可查看的手牌');
-            await expectTutorialOverlayNotToCover(touchPage, mobilePaymentConfirm, '支付提示不得遮住确认按钮');
-            const afterClose = await readQidahenCore(touchPage);
-            expect(afterClose.turnPhase).toBe(beforeLongPress.turnPhase);
-            expect(afterClose.factionActionUsed).toBe(beforeLongPress.factionActionUsed);
-            expect(afterClose.confirmedActionId).toBe(beforeLongPress.confirmedActionId);
-            expect((afterClose.factions as Record<string, { handCount: number }>).ming.handCount).toBe(handCountBeforeLongPress);
-            expect(afterClose.selectedPaymentCardIds).toEqual(selectedPaymentsBeforeLongPress);
-            await expect(touchPage.getByTestId('qidahen-action-payment-status')).toContainText('已选 0 / 1 张');
-            await touchPage.screenshot({ path: resolve(MOBILE_HAND_INSPECT_RETURN), fullPage: false });
-            assertNoFatalFrontendErrors([{ label: 'qidahen-mobile-hand-inspect', diagnostics }]);
+            await dispatchTouchLongPress(touchPage.getByTestId('qidahen-hand-card-' + silver!.id));
+            await expect(touchPage.getByTestId('qidahen-card-magnify-overlay')).toBeVisible({ timeout: 10000 });
+            await saveScreenshot(touchPage, MOBILE_HAND_INSPECT);
+            await touchPage.getByTestId('qidahen-card-magnify-overlay-close').tap();
+            await expect(touchPage.locator('[data-tutorial-step="pay-raid"]')).toBeVisible();
+            await recordBehaviorOnlyCheckpoint(touchPage, '关闭卡面检视后回到原突袭支付，未消耗手牌', 'pay-raid');
+            await touchPage.getByTestId('qidahen-hand-card-' + silver!.id).tap();
+            await expect(touchPage.locator('[data-tutorial-step="confirm-raid-payment"]')).toBeVisible();
+            expect((await readQidahenCore(touchPage)).selectedPaymentCardIds).toEqual([silver!.id]);
+            await saveScreenshot(touchPage, MOBILE_PAYMENT_SELECTED);
+            finishBehaviorTrace(touchPage, true);
+        } catch (error) {
+            finishBehaviorTrace(touchPage, false);
+            throw error;
         } finally {
-            await touchContext.close();
+            if (!touchPage.isClosed()) await touchContext.close();
         }
     });
 
@@ -1343,10 +1309,9 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveCount(0, { timeout: 10000 });
         await expect(page).toHaveURL(/\/\?game=qidahen(?:&|$)/, { timeout: 10000 });
-        const qidahenLobbyEntry = page.locator('a[href="/?game=qidahen"]');
-        await expect(qidahenLobbyEntry).toBeVisible();
         const visibleGameDetailsModal = page.locator('[data-testid="game-details-modal-root"]:visible').first();
         await expect(visibleGameDetailsModal).toBeVisible({ timeout: 10000 });
+        await expect(visibleGameDetailsModal).toContainText('七大恨');
         const openCreateRoomButton = visibleGameDetailsModal.locator('[data-testid="game-details-open-create-room"]:visible').first();
         await expect(openCreateRoomButton).toBeVisible();
         await openCreateRoomButton.click();
@@ -1445,6 +1410,7 @@ test.describe('七大恨新游戏收口', () => {
     });
 
     test('轮盘征兵训练教程会让玩家支付、选择两种行动、加付训练并继续对局', async ({ page }) => {
+        test.setTimeout(60_000);
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {
@@ -1566,6 +1532,10 @@ test.describe('七大恨新游戏收口', () => {
         await saveScreenshot(page, WHEEL_RECRUIT_TRAIN_HOMELAND_RULE);
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="choose-recruit-target"]')).toBeVisible({ timeout: 10000 });
+        const recruitTargetTutorialText = page.locator('[data-testid="tutorial-overlay-card"]');
+        await expect(recruitTargetTutorialText).toContainText('在候选区域中选择一个本土区域。');
+        await expect(recruitTargetTutorialText).not.toContainText('正规军必须通过征兵行动建立');
+        await expect(recruitTargetTutorialText).not.toContainText('选择高亮的区域');
         const recruitTarget = page.locator('[data-testid^="qidahen-wheel-recruit-train-choice-recruit%3A"]').first();
         await expect(recruitTarget).toBeVisible();
         await saveScreenshot(page, WHEEL_RECRUIT_TRAIN_RECRUIT_TARGET);
@@ -1832,6 +1802,7 @@ test.describe('七大恨新游戏收口', () => {
     });
 
     test('进攻与野战教程会从真实突袭作战入口支付后进入战斗与战后处理', async ({ page }) => {
+        test.setTimeout(60_000);
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {

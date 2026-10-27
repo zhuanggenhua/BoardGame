@@ -235,8 +235,8 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         return {
             ...state,
             pendingAttack: state.pendingAttack
-                ? updatePendingAttackSettlementStage(state.pendingAttack, 'postDamagePending')
-                : state.pendingAttack,
+                ? updatePendingAttackSettlementStage(state.pendingAttack, 'postDamagePending') ?? null
+                : state.pendingAttack ?? null,
             lastEffectSourceByPlayerId: sourceAbilityId
                 ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
                 : state.lastEffectSourceByPlayerId,
@@ -273,6 +273,13 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     if (shieldsConsumed.length > 0) {
         event.payload.shieldsConsumed = shieldsConsumed;
     }
+    const mainAttackShieldPreventions = isCurrentAttackDamage
+        && typeof event.payload.attackDamageBeforePercent === 'number'
+        && state.pendingAttack?.damageResolved !== true
+        && state.pendingAttack?.mainAttackShieldPreventions === undefined
+        && shieldsConsumed.length > 0
+        ? shieldsConsumed.map(({ reductionPercent, absorbed }) => ({ reductionPercent, absorbed }))
+        : undefined;
 
     const hpBefore = target.resources[RESOURCE_IDS.HP] ?? 0;
     let newResources = target.resources;
@@ -309,6 +316,13 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         pendingAttack = updatePendingAttackSettlementStage({
             ...pendingAttack,
             resolvedDamage: (pendingAttack.resolvedDamage ?? 0) + netHpLoss,
+            ...(mainAttackShieldPreventions ? { mainAttackShieldPreventions } : {}),
+            ...(typeof event.payload.attackDamageBeforePercent === 'number'
+                ? {
+                    attackDamageBeforePercent: (pendingAttack.attackDamageBeforePercent ?? 0)
+                        + event.payload.attackDamageBeforePercent,
+                }
+                : {}),
         }, nextStage)!;
     }
 
@@ -516,6 +530,10 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
             pendingAttack: {
                 ...state.pendingAttack,
                 bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + amount,
+                ...(event.payload.applyToResolvedAttack
+                    && typeof state.pendingAttack.attackDamageBeforePercent === 'number'
+                    ? { attackDamageBeforePercent: state.pendingAttack.attackDamageBeforePercent + amount }
+                    : {}),
                 attackModifierBonusDamage: sourceCardId
                     ? (state.pendingAttack.attackModifierBonusDamage ?? 0) + amount
                     : state.pendingAttack.attackModifierBonusDamage,
@@ -651,7 +669,7 @@ export const handleAttackMadeUndefendable = (
         pendingAttack: updatePendingAttackSettlementStage(
             { ...state.pendingAttack, isDefendable: false },
             nextStage,
-        ),
+        ) ?? state.pendingAttack ?? null,
     };
 };
 
@@ -957,16 +975,54 @@ export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { 
     state,
     event
 ) => {
-    const pendingAttack = state.pendingAttack
-        ? updatePendingAttackSettlementStage(
+    const pendingDamage = state.pendingDamage;
+    const currentAttack = state.pendingAttack;
+    const closesMainAttack = Boolean(
+        pendingDamage
+        && currentAttack
+        && pendingDamage.sourcePlayerId === currentAttack.attackerId
+        && pendingDamage.targetPlayerId === currentAttack.defenderId
+        && (
+            pendingDamage.damageScope === 'attack'
+            // 有些攻击技能把命中伤害标为 direct；来源技能仍可证明它属于当前攻击，
+            // 关闭响应后必须从已结算的攻击阶段继续，避免再次执行同一伤害。
+            || (
+                pendingDamage.sourceAbilityId !== undefined
+                && pendingDamage.sourceAbilityId === currentAttack.sourceAbilityId
+            )
+        )
+    );
+    const currentPendingAttack = state.pendingAttack ?? null;
+    const pendingAttack = currentPendingAttack
+        ? closesMainAttack
+            ? updatePendingAttackSettlementStage(
             {
-                ...state.pendingAttack,
+                ...currentPendingAttack,
                 damageResolved: true,
                 tokenResponseFullyEvaded: event.payload.fullyEvaded === true,
+                tokenResponseProtectUses: pendingDamage?.tokenUsageTotals?.[TOKEN_IDS.PROTECT] ?? 0,
+                tokenResponseDazzleHalfDamage: pendingDamage?.modifiers?.some(modifier => (
+                    modifier.sourceId === STATUS_IDS.DAZZLE
+                    && modifier.value === -50
+                )) === true,
+                ...(pendingDamage?.shieldsConsumed && pendingDamage.shieldsConsumed.length > 0
+                    ? {
+                        mainAttackShieldPreventions: pendingDamage.shieldsConsumed.map(({
+                            reductionPercent,
+                            absorbed,
+                        }) => ({ reductionPercent, absorbed })),
+                    }
+                    : {}),
+                ...(event.payload.fullyEvaded !== true
+                    && pendingDamage?.currentDamage === 0
+                    && typeof pendingDamage.attackDamageBeforePercent === 'number'
+                    ? { attackDamageBeforePercent: pendingDamage.attackDamageBeforePercent }
+                    : {}),
             },
             'postDamagePending',
-        )
-        : state.pendingAttack;
+        ) ?? null
+            : currentPendingAttack
+        : null;
     const suppressNextBonusDiceReplaySourceAbilityId = event.payload.fullyEvaded === true
         && event.payload.sourceAbilityId
         ? event.payload.sourceAbilityId
@@ -979,6 +1035,9 @@ export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { 
         suppressNextBonusDiceReplaySourceAbilityId,
     };
     return nextState.currentRollContext?.kind === 'evasion'
-        ? clearCurrentRollContext(nextState, nextState.currentRollContext.id)
+        ? clearCurrentRollContext(
+            { ...nextState, pendingAttack: nextState.pendingAttack ?? null },
+            nextState.currentRollContext.id,
+        )
         : nextState;
 };

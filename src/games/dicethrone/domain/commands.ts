@@ -97,6 +97,11 @@ export interface AdvancePhaseCommand extends Command<'ADVANCE_PHASE'> {
     payload: Record<string, never>;
 }
 
+/** 花费即视感结束当前进攻投掷子阶段，由FlowSystem进入新的进攻投掷。 */
+export interface UseDejaVuCommand extends Command<'USE_DEJA_VU'> {
+    payload: Record<string, never>;
+}
+
 /** 选择角色命令 */
 export interface SelectCharacterCommand extends Command<'SELECT_CHARACTER'> {
     payload: {
@@ -267,6 +272,8 @@ export interface RerollBonusDieCommand extends Command<'REROLL_BONUS_DIE'> {
     payload: {
         /** 要重掷的骰子索引（0-based） */
         dieIndex: number;
+        /** 整组重掷时的完整选择，dieIndex 为其中第一颗。 */
+        dieIndices?: number[];
     };
 }
 
@@ -301,6 +308,7 @@ export interface GrantTokensCommand extends Command<'GRANT_TOKENS'> {
 
 /** 所有 DiceThrone 命令 */
 export type DiceThroneCommand =
+    | UseDejaVuCommand
     | RollDiceCommand
     | ToggleDieLockCommand
     | ConfirmRollCommand

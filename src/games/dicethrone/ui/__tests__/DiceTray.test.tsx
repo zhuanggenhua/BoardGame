@@ -42,11 +42,12 @@ const twoDice: Die[] = [
 function createModifyInteraction(
     mode: 'adjust' | 'any' | 'set' | 'copy' = 'adjust',
     selectCount = 1,
+    allowedValues?: [number, ...number[]],
 ): InteractionDescriptor<MultistepChoiceData<DiceModifyStep, DiceModifyResult>> {
     const dieModifyConfig = mode === 'adjust'
         ? { mode: 'adjust' as const, adjustRange: { min: -1, max: 1 } }
         : mode === 'set'
-            ? { mode: 'set' as const, targetValue: 6 }
+            ? (allowedValues ? { mode: 'set' as const, allowedValues } : { mode: 'set' as const, targetValue: 6 })
             : { mode };
 
     return {
@@ -271,6 +272,23 @@ describe('DiceTray', () => {
         fireEvent.click(screen.getByTestId('die-adjust-decrement-1'));
         expect(step).toHaveBeenNthCalledWith(1, { action: 'setAny', dieId: 0, newValue: 5 });
         expect(step).toHaveBeenNthCalledWith(2, { action: 'setAny', dieId: 1, newValue: 5 });
+    });
+
+    it('原卡固定4/5直接选择目标值，未选值不能点骰且不存在加减', () => {
+        const step = vi.fn();
+        const interaction = createModifyInteraction('set', 1, [4, 5]);
+        const tray = (targetValue?: number) => <DiceTray dice={twoDice} rollCount={1} onToggleLock={vi.fn()} currentPhase="offensiveRoll" canInteract isRolling={false}
+            interaction={interaction} multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0, targetValue }, step)} />;
+        const { rerender } = render(tray());
+        expect(screen.queryByTestId('die-adjust-increment-0')).toBeNull();
+        expect(screen.queryByTestId('die-target-value-6')).toBeNull();
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'false');
+        fireEvent.click(screen.getByTestId('die-target-value-5'));
+        expect(step).toHaveBeenLastCalledWith({ action: 'chooseValue', value: 5 });
+        rerender(tray(5));
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'true');
+        fireEvent.click(screen.getByTestId('die-button-0'));
+        expect(step).toHaveBeenLastCalledWith({ action: 'select', dieId: 0, dieValue: 1 });
     });
 
     it('响应选骰直接点击右侧骰子本体', () => {

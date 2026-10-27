@@ -93,6 +93,7 @@ const buildPendingTargetActionFromWheelDispatchChoice = (
     targetRegionName: candidate.targetRegionName,
     targetRuntimeRegionId: candidate.targetRuntimeRegionId,
     defenderFactionId: candidate.defenderFactionId,
+    battleStep: candidate.defenderFactionId === 'neutral' ? 'tactics' : 'defender-declaration',
     defenderLabel: candidate.defenderLabel,
     restriction: selection.restriction,
     battleWidth: candidate.battleWidth,

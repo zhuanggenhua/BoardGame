@@ -1,22 +1,17 @@
 import { motion } from 'framer-motion';
-import { X, Trophy, Calendar, Clock } from 'lucide-react';
+import { X, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
+import { MatchHistoryList } from './MatchHistoryList';
 
 interface MatchHistoryModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// 模拟数据
-const MOCK_HISTORY = [
-    { id: '1', gameKey: 'tictactoe', result: 'win', opponent: 'Alice', date: '2024-03-10', duration: '5m' },
-    { id: '2', gameKey: 'chess', result: 'loss', opponent: 'Bob', date: '2024-03-09', duration: '25m' },
-    { id: '3', gameKey: 'gomoku', result: 'draw', opponent: 'Charlie', date: '2024-03-08', duration: '12m' },
-];
-
 export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) => {
-    const { t } = useTranslation(['social', 'common']);
+    useAuthModalSession(isOpen, onClose);
+    const { t } = useTranslation(['lobby', 'social', 'common']);
 
     if (!isOpen) return null;
 
@@ -56,43 +51,7 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
 
                 {/* 内容区域 */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                    {MOCK_HISTORY.length === 0 ? (
-                        <div className="text-center text-parchment-light-text py-12 italic">
-                            {t('social:matchHistory.empty')}
-                        </div>
-                    ) : (
-                        MOCK_HISTORY.map(match => (
-                            <div key={match.id} className="bg-white border border-parchment-card-border/20 rounded p-4 flex items-center justify-between shadow-sm">
-                                <div className="flex items-center gap-4">
-                                    <div className={clsx(
-                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold text-white",
-                                        match.result === 'win' ? "bg-green-500" : match.result === 'loss' ? "bg-red-500" : "bg-gray-400"
-                                    )}>
-                                        {t(`social:matchHistory.resultShort.${match.result}`)}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-parchment-base-text">{t(`social:matchHistory.games.${match.gameKey}`)}</div>
-                                        <div className="text-xs text-parchment-light-text flex items-center gap-2">
-                                            <span>{t('social:matchHistory.vs', { name: match.opponent })}</span>
-                                            <span className="w-1 h-1 rounded-full bg-parchment-light-text" />
-                                            <span className="flex items-center gap-1"><Calendar size={10} /> {match.date}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className={clsx(
-                                        "font-bold text-sm uppercase tracking-wider",
-                                        match.result === 'win' ? "text-green-600" : match.result === 'loss' ? "text-red-500" : "text-gray-500"
-                                    )}>
-                                        {t(`social:matchHistory.result.${match.result}`)}
-                                    </div>
-                                    <div className="text-xs text-parchment-light-text flex items-center justify-end gap-1 mt-1">
-                                        <Clock size={10} /> {match.duration}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                    <MatchHistoryList />
                 </div>
             </motion.div>
         </div>

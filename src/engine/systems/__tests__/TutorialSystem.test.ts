@@ -41,6 +41,38 @@ const createTestState = (): MatchState<TestCore> => ({
 describe('TutorialSystem', () => {
     const system = createTutorialSystem<TestCore>();
 
+    it('RESTART_STEP: 合法偏离练习后恢复当前完整检查点及随机游标，不跳到其它节点', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const state = createTestState();
+        state.core.value = 7;
+        state.sys.phase = 'choose';
+        const result = sys.beforeCommand?.({ state, command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest: { id: 'restart-current', steps: [{ id: 'choose', content: 'choose', requireAction: true }] } } },
+            events: [], random: { ...mockRandom, getCursor: () => 19 }, playerIds: ['0', '1'] });
+        const changed = structuredClone(result!.state!);
+        changed.core.value = 99;
+        changed.sys.phase = 'after-branch';
+        changed.sys.turnNumber = 42;
+        const restored = sys.beforeCommand?.({ state: changed, command: { type: TUTORIAL_COMMANDS.RESTART_STEP, playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0', '1'] });
+        expect(restored?.state?.core.value).toBe(7);
+        expect(restored?.state?.sys.phase).toBe('choose');
+        expect(restored?.state?.sys.turnNumber).toBe(1);
+        expect(restored?.state?.sys.tutorial.step?.id).toBe('choose');
+        expect(restored?.state?.sys.undo.restoredRandomCursor).toBe(19);
+        expect(restored?.state?.sys.undo.rollbackRevision).toBe(1);
+        expect(changed.core.value).toBe(99);
+    });
+
+    it('RESTART_STEP: 非教程或未消费自动动作时拒绝重启，保留待执行状态', () => {
+        for (const active of [false, true]) {
+            const state = createTestState();
+            state.sys.tutorial.active = active;
+            if (active) state.sys.tutorial.aiActions = [{ commandType: 'AI_ACTION' }];
+            const result = system.beforeCommand?.({ state, command: { type: TUTORIAL_COMMANDS.RESTART_STEP, playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0'] });
+            expect(result?.error).toBe(TUTORIAL_ERRORS.STEP_LOCKED);
+            expect(result?.state).toBeUndefined();
+        }
+    });
+
     it('START: manifest 无效时阻止并返回错误', () => {
         const state = createTestState();
         const command: Command = {

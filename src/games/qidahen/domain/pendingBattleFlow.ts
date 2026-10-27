@@ -34,6 +34,10 @@ import {
     advanceQidahenDefeatInDetailResolution,
 } from './defeatInDetail';
 import { buildQidahenFeignedRetreatSelection } from './feignedRetreatSelection';
+import { getDefenderCavalryEvasion, takePreferredCityGarrison } from './pendingBattleCombatSupport';
+import { subtractSpecialTroopStacks, mergeSpecialTroopStackGroupsAsPieces } from './troopCompat';
+import { getQidahenEffectivePopulation } from './populationRules';
+import { updateQidahenForceCommitmentsForCityBattle } from './battleForceCommitments';
 import type {
     QidahenBattleRolls,
     QidahenCasualtyPriority,
@@ -144,11 +148,77 @@ export const resolveQidahenPendingActionFromPayload = (
     if (!currentPendingTargetAction) {
         return state;
     }
-    const pendingTargetAction = dependencies.applyRequestedCommittedTroops(
+    const pendingTargetAction = currentPendingTargetAction.resolvedBattleRolls ? currentPendingTargetAction : dependencies.applyRequestedCommittedTroops(
         state,
         currentPendingTargetAction,
         payload.committedTroops,
     );
+    if (pendingTargetAction.battleStep === 'defender-declaration') {
+        let declaredState = state;
+        const target = state.regions.find((region) => region.id === pendingTargetAction.targetRuntimeRegionId && !region.isLogicalRegion);
+        let battleMode = pendingTargetAction.battleMode;
+        let holdCity = payload.defenderHoldCity;
+        let declarationLog = '';
+        if (target && payload.defenderCavalryEvasion) {
+            const evasion = getDefenderCavalryEvasion(state, target, pendingTargetAction, payload.defenderCavalryEvasionRegionId);
+            if (evasion) {
+                declarationLog = `守方骑兵避战 ${evasion.troops}，撤至 ${evasion.retreatRegion.name}。`;
+                declaredState = { ...state, regions: state.regions.map((region) => region.id === target.id
+                    ? { ...region, troops: region.troops - evasion.troops, specialTroops: subtractSpecialTroopStacks(region.specialTroops, evasion.specialTroops) }
+                    : region.id === evasion.retreatRegion.id
+                        ? { ...region, troops: region.troops + evasion.troops, specialTroops: mergeSpecialTroopStackGroupsAsPieces(region.specialTroops, evasion.specialTroops) }
+                        : region) };
+            }
+        }
+        if (target && payload.defenderHoldCity) {
+            const defense = takePreferredCityGarrison(target, 2);
+            const shelteredPopulation = Math.min(2, getQidahenEffectivePopulation(target));
+            declaredState = { ...state, regions: state.regions.map((region) => region.id !== target.id ? region : {
+                ...region, troops: defense.fieldTroops, specialTroops: defense.fieldSpecialTroops,
+                population: Math.max(0, region.population - shelteredPopulation),
+                cityState: { troops: defense.shelteredTroops, specialTroops: defense.shelteredSpecialTroops, population: shelteredPopulation },
+            }) };
+            battleMode = defense.fieldTroops > 0 ? 'field' : 'city';
+            holdCity = defense.fieldTroops > 0;
+        } else if (payload.defenderSortieBattle) {
+            battleMode = 'field';
+        }
+        const declaredPending: QidahenPendingTargetAction = {
+            ...(battleMode === 'city' ? updateQidahenForceCommitmentsForCityBattle(pendingTargetAction) : pendingTargetAction),
+            battleStep: 'tactics', battleMode,
+            ...(payload.defenderHoldCity && battleMode === 'city' ? { title: `${pendingTargetAction.targetRegionName} 城战待结算` } : {}),
+            defenderDeclaration: { defenderSortieBattle: payload.defenderSortieBattle, defenderHoldCity: holdCity },
+        };
+        const remainingTarget = declaredState.regions.find((region) => region.id === pendingTargetAction.targetRuntimeRegionId);
+        if (payload.defenderCavalryEvasion && remainingTarget?.troops === 0) {
+            const resolved = resolveQidahenPendingActionFromPayload(declaredState, {
+                playerId: state.factions[pendingTargetAction.attackerFactionId].playerId,
+                pendingTargetAction: declaredPending,
+            }, timestamp, dependencies);
+            return { ...resolved, lastSeasonSummary: resolved.lastSeasonSummary
+                ? { ...resolved.lastSeasonSummary, lines: [declarationLog, ...resolved.lastSeasonSummary.lines] } : null };
+        }
+        return {
+            ...declaredState, pendingTargetAction: declaredPending,
+        };
+    }
+    payload = { ...payload, ...pendingTargetAction.defenderDeclaration };
+    if (pendingTargetAction.battleStep === 'tactics' && !pendingTargetAction.resolvedBattleRolls && payload.battleRolls) {
+        const attackerWins = payload.battleRolls.attackerMorale.survivingCombatTroops > payload.battleRolls.defenderMorale.survivingCombatTroops;
+        const loserSurvivors = attackerWins
+            ? payload.battleRolls.defenderMorale.survivingCombatTroops : payload.battleRolls.attackerMorale.survivingCombatTroops;
+        const loserFaction = attackerWins ? pendingTargetAction.defenderFactionId : pendingTargetAction.attackerFactionId;
+        if (loserSurvivors > 0 && loserFaction !== 'neutral' && !payload.battleRolls.cityBattle) {
+            return {
+                ...state,
+                pendingTargetAction: {
+                    ...pendingTargetAction, battleStep: 'retreat',
+                    resolvedBattleRolls: payload.battleRolls, retreatFactionId: loserFaction,
+                },
+            };
+        }
+    }
+
     const feignedRetreatSelection = buildQidahenFeignedRetreatSelection(
         state,
         pendingTargetAction,
@@ -193,7 +263,7 @@ export const resolveQidahenPendingActionFromPayload = (
     );
     return applyPendingActionResolutionToBattleFlowState(
         state,
-        payload.playerId,
+        state.factions[pendingTargetAction.attackerFactionId].playerId,
         pendingTargetAction,
         orderedResolution,
         timestamp,
@@ -203,7 +273,7 @@ export const resolveQidahenPendingActionFromPayload = (
 
 export const resolveQidahenPendingTargetInteractionChoice = (
     state: QidahenCore,
-    _choiceId: string,
+    choiceId: string,
     value: unknown,
     timestamp: number,
     random: RandomFn,
@@ -220,24 +290,35 @@ export const resolveQidahenPendingTargetInteractionChoice = (
         advanceTurnIfReady: advanceQidahenTurnIfReady,
     },
 ): QidahenCore => {
-    const payload = normalizePendingTargetInteractionPayload(value);
+    const requestedPayload = normalizePendingTargetInteractionPayload(value);
     const currentPendingTargetAction = getQidahenInteractionSelectionStateForCore(
         interactionPendingTargetAction,
         state,
         getQidahenPendingTargetActionForCore,
     );
-    const pendingTargetAction = currentPendingTargetAction
+    const pendingTargetAction = currentPendingTargetAction?.resolvedBattleRolls
+        ? currentPendingTargetAction
+        : currentPendingTargetAction
         ? dependencies.applyRequestedCommittedTroops(
             state,
             currentPendingTargetAction,
-            payload.committedTroops,
+            requestedPayload.committedTroops,
         )
         : null;
+
+    const payload = { ...requestedPayload, ...pendingTargetAction?.defenderDeclaration };
+    const battleRolls = pendingTargetAction?.resolvedBattleRolls ?? (pendingTargetAction && pendingTargetAction.battleStep !== 'defender-declaration'
+        ? dependencies.createStructuredBattleRolls(state, pendingTargetAction, random, {
+            defenderSortieBattle: payload.defenderSortieBattle === true,
+            defenderHoldCity: payload.defenderHoldCity === true,
+            defenderCavalryEvasion: payload.defenderCavalryEvasion === true,
+            attackerCavalryPlunder: payload.attackerCavalryPlunder === true,
+        }) : null);
 
     return resolveQidahenPendingActionFromPayload(state, {
         playerId: state.currentPlayer,
         pendingTargetAction,
-        committedTroops: payload.committedTroops,
+        committedTroops: pendingTargetAction?.resolvedBattleRolls ? undefined : payload.committedTroops,
         retreatLossMode: payload.retreatLossMode,
         defenderSortieBattle: payload.defenderSortieBattle,
         defenderHoldCity: payload.defenderHoldCity,
@@ -247,14 +328,7 @@ export const resolveQidahenPendingTargetInteractionChoice = (
         attackerCavalryPlunderSource: payload.attackerCavalryPlunderSource,
         attackerCasualtyPriority: payload.attackerCasualtyPriority,
         defenderCasualtyPriority: payload.defenderCasualtyPriority,
-        battleRolls: pendingTargetAction
-            ? dependencies.createStructuredBattleRolls(state, pendingTargetAction, random, {
-                defenderSortieBattle: payload.defenderSortieBattle === true,
-                defenderHoldCity: payload.defenderHoldCity === true,
-                defenderCavalryEvasion: payload.defenderCavalryEvasion === true,
-                attackerCavalryPlunder: payload.attackerCavalryPlunder === true,
-            })
-            : null,
+        battleRolls,
     }, timestamp, dependencies);
 };
 

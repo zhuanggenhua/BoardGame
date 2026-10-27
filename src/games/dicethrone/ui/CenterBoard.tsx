@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
@@ -40,6 +41,7 @@ export interface CenterBoardProps {
     playerTokens?: Record<string, number>;
     nyraPlayer?: HeroState;
     nyraDamageResponse?: NyraDamageResponse;
+    preparedSpells?: AbilityCard[];
 }
 
 export const CenterBoard = ({
@@ -65,6 +67,7 @@ export const CenterBoard = ({
     playerTokens,
     nyraPlayer,
     nyraDamageResponse,
+    preparedSpells,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
     const showTouchMagnifyButton = useCoarsePointer();
@@ -159,6 +162,40 @@ export const CenterBoard = ({
                     damageResponse={nyraDamageResponse}
                     variant="boardBadge"
                 />
+            </div>
+        );
+    };
+
+    const renderPreparedSpells = () => {
+        if (characterId !== 'doctor_strange' || !preparedSpells?.length) return null;
+        return (
+            <div
+                className="absolute z-30 flex flex-col overflow-hidden rounded-md border border-amber-200/45 bg-slate-950/85 p-[1.5%] shadow-xl"
+                style={{ left: '0.6%', top: '60%', width: '15.5%', height: '38.2%' }}
+                data-prepared-spell-zone="public"
+                data-player-panel-slot="vishanti-book-prepared-spells"
+                onClick={event => event.stopPropagation()}
+            >
+                <span className="mb-[2%] truncate text-center font-semibold leading-tight text-amber-100" style={{ fontSize: 'clamp(6px, 0.78vw, 12px)' }}>
+                    {t('doctorStrange.preparedSpells', { count: preparedSpells.length })}
+                </span>
+                <div className="flex min-h-0 flex-1 items-start gap-[3%] overflow-x-auto overflow-y-hidden">
+                    {preparedSpells.map(card => (
+                        <button
+                            key={card.id}
+                            type="button"
+                            className="h-full min-w-0 shrink-0 overflow-hidden rounded-sm border border-white/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                            style={{ width: '46%', aspectRatio: '669 / 1086' }}
+                            aria-label={t(card.name, { defaultValue: card.name })}
+                            data-prepared-spell-card={card.id}
+                            data-board-magnify-ignore="true"
+                            onClick={() => onMagnifyCard(card)}
+                        >
+                            <CardPreview previewRef={card.previewRef} locale={locale} alt={t(card.name, { defaultValue: card.name })}
+                                className="h-full w-full" style={{ aspectRatio: '669 / 1086' }} />
+                        </button>
+                    ))}
+                </div>
             </div>
         );
     };
@@ -353,6 +390,7 @@ export const CenterBoard = ({
                                 onMagnifyCard={onMagnifyCard}
                                 playerTokens={playerTokens}
                             />
+                            {renderPreparedSpells()}
                             {renderNyraBoardBadge()}
                         </motion.div>
                     )}

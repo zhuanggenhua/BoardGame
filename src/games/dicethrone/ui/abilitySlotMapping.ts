@@ -15,6 +15,16 @@ export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] 
 };
 
 const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>> = {
+    doctor_strange: {
+        fist: ['strange-omen'], chi: ['strange-cosmic-awareness'], sky: ['strange-book-of-vishanti'],
+        lotus: ['strange-astral-incursion'], combo: ['strange-mystic-bolt'], lightning: ['strange-wand-of-watoomb'],
+        calm: ['strange-binding'], meditate: ['strange-cloak-of-levitation'], ultimate: ['strange-all-seeing-eye'],
+    },
+    thor: {
+        fist: ['thor-hammer'], chi: ['thor-mighty-summon'], sky: ['thor-odinforce'], lotus: ['thor-chain-lightning'],
+        combo: ['thor-thunder-strike'], lightning: ['thor-bottled-lightning'], calm: ['thor-power-of-thunder'],
+        meditate: ['thor-thunder-wheel'], ultimate: ['thor-for-asgard'],
+    },
     // 旧六角色新版面板坐标复用 v2，但每个物理槽上的技能标题仍来自各自旧面板底图。
     // 点击、高亮和升级牌覆盖都必须按底图物理槽位录入，不能退回共享槽位语义。
     monk: {

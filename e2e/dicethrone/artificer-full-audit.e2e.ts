@@ -3977,6 +3977,70 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await game.screenshot('artificer-workshop-build-shock-bot-after-click', testInfo);
     });
 
+    test('工坊应可在真实主阶段连续制造三类机器人', async ({ page, game }, testInfo) => {
+        await setupArtificerMainHandScene(game, [], { synth: 6 });
+
+        const readBotState = async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const tokens = artificer?.tokens ?? {};
+            const botStates = artificer?.artificerBotState ?? {};
+            return {
+                synth: tokens[TOKEN_IDS.SYNTH] ?? 0,
+                nanobot: {
+                    count: tokens[TOKEN_IDS.NANOBOT] ?? 0,
+                    built: botStates[TOKEN_IDS.NANOBOT]?.built ?? false,
+                },
+                shockBot: {
+                    count: tokens[TOKEN_IDS.SHOCK_BOT] ?? 0,
+                    built: botStates[TOKEN_IDS.SHOCK_BOT]?.built ?? false,
+                },
+                healBot: {
+                    count: tokens[TOKEN_IDS.HEAL_BOT] ?? 0,
+                    built: botStates[TOKEN_IDS.HEAL_BOT]?.built ?? false,
+                },
+            };
+        };
+
+        await expect.poll(readBotState).toEqual({
+            synth: 6,
+            nanobot: { count: 0, built: false },
+            shockBot: { count: 0, built: false },
+            healBot: { count: 0, built: false },
+        });
+        await game.screenshot('artificer-workshop-three-bots-before-build', testInfo);
+
+        const builds = [
+            { actionIndex: 3, label: /制造纳米|Nano Bot/i, key: 'nanobot' as const },
+            { actionIndex: 4, label: /制造电能|Shock Bot/i, key: 'shockBot' as const },
+            { actionIndex: 5, label: /制造治疗|Heal Bot/i, key: 'healBot' as const },
+        ];
+
+        for (const [buildIndex, build] of builds.entries()) {
+            const button = page.getByTestId(`passive-action-artificer-workshop-${build.actionIndex}`);
+            await expect(button).toBeVisible({ timeout: 10000 });
+            await expect(button).toContainText(build.label);
+            await button.click();
+
+            const expectedSynth = 6 - (buildIndex + 1) * 2;
+            await expect.poll(readBotState, { timeout: 10000 }).toMatchObject({
+                synth: expectedSynth,
+                [build.key]: { count: 1, built: true },
+            });
+        }
+
+        await expect.poll(readBotState).toEqual({
+            synth: 0,
+            nanobot: { count: 1, built: true },
+            shockBot: { count: 1, built: true },
+            healBot: { count: 1, built: true },
+        });
+        for (const tokenId of [TOKEN_IDS.NANOBOT, TOKEN_IDS.SHOCK_BOT, TOKEN_IDS.HEAL_BOT]) {
+            await expect(page.getByTestId(`dt-player-0-token-${tokenId}`)).toBeVisible({ timeout: 10000 });
+        }
+        await game.screenshot('artificer-workshop-three-bots-after-build', testInfo);
+    });
+
     test('工坊应可在真实主阶段通过按钮把基础电能机器人升级为高级机器人', async ({ page, game }, testInfo) => {
         await setupArtificerMainHandScene(game, [], { synth: 3 });
         await seedArtificerBuiltShockBot(page);

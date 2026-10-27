@@ -143,7 +143,7 @@ export const HOLY_RADIANCE_2: AbilityDef = {
 };
 
 export const DIVINE_PURIFICATION_2: AbilityDef = {
-    ...replaceable('divine-purification', 'divine-purification-2', 'divine-purification-2', { type: 'diceSet', faces: { [FACE.CROSS]: 2, [FACE.SHIELD]: 1 } }, [custom('tianshi-divine-purification', abilityEffectText('divine-purification-2', 'resolve'), 'preDefense', { damage: 6, heal: 5 })]),
+    ...replaceable('divine-purification', 'divine-purification-2', 'divine-purification-2', { type: 'diceSet', faces: { [FACE.CROSS]: 2, [FACE.SHIELD]: 1 } }, [custom('tianshi-divine-purification', abilityEffectText('divine-purification-2', 'resolve'), 'preDefense', { damage: 6, heal: 5 })], { tags: ['unblockable'] }),
 };
 
 export const DIVINE_PUNISHMENT_2: AbilityDef = {
@@ -263,7 +263,7 @@ export const TIANSHI_ABILITIES: AbilityDef[] = [
         grantToken(TOKEN_IDS.FLIGHT, 1, abilityEffectText('holy-radiance', 'gainFlight')),
         damage(6, abilityEffectText('holy-radiance', 'damage6')),
     ]),
-    replaceable('divine-purification', 'divine-purification', 'divine-purification', { type: 'diceSet', faces: { [FACE.CROSS]: 2, [FACE.SHIELD]: 1 } }, [custom('tianshi-divine-purification', abilityEffectText('divine-purification', 'resolve'), 'preDefense', { damage: 5, heal: 4 })]),
+    replaceable('divine-purification', 'divine-purification', 'divine-purification', { type: 'diceSet', faces: { [FACE.CROSS]: 2, [FACE.SHIELD]: 1 } }, [custom('tianshi-divine-purification', abilityEffectText('divine-purification', 'resolve'), 'preDefense', { damage: 5, heal: 4 })], { tags: ['unblockable'] }),
     replaceable('divine-punishment', 'divine-punishment', 'divine-punishment', { type: 'allSymbolsPresent', symbols: [FACE.BLADE, FACE.WING, FACE.CROSS, FACE.SHIELD] }, [custom('tianshi-divine-punishment', abilityEffectText('divine-punishment', 'resolve'), 'preDefense', { damagePerBlade: 2 })]),
     replaceable('triumphant-return', 'triumphant-return', 'triumphant-return', { type: 'smallStraight' }, [
         damage(6, abilityEffectText('triumphant-return', 'damage6')),

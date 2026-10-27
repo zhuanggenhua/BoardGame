@@ -50,6 +50,7 @@ import type {
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
+import { createDoctorStrangeSpellSystem } from './domain/doctorStrange/system';
 import { canAdvancePhase, getNextPhase, getRollerId, getActiveDice } from './domain/rules';
 import { isCurrentBonusRollSettlement, resolveCurrentRollContext } from './domain/rollContext';
 import { findPlayerAbility } from './domain/abilityLookup';
@@ -87,6 +88,7 @@ const ACTION_LOG_ALLOWLIST = [
     'UNDO_SELL_CARD',
     // 注意：阶段推进属于明确的规则行为，允许撤回 + 记录。
     'ADVANCE_PHASE',
+    'USE_DEJA_VU',
     'SELECT_ABILITY',
     'USE_TOKEN',
     'SKIP_TOKEN_RESPONSE',
@@ -116,6 +118,7 @@ const UNDO_ALLOWLIST = [
     'SELL_CARD',
     'SELECT_ABILITY',
     'ADVANCE_PHASE',
+    'USE_DEJA_VU',
 ] as const;
 
 const DT_NS = 'game-dicethrone';
@@ -1400,7 +1403,7 @@ const systems = [
         formatEntry: formatDiceThroneActionEntry,
     }),
     createUndoSystem({
-        maxSnapshots: 3,
+        maxSnapshots: 10,
         // 只对白名单命令做撤回快照，避免 UI/系统行为导致“一进局就可撤回”。
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
     }),
@@ -1427,7 +1430,7 @@ const systems = [
             'RESOLVE_INTERACTION',
         ],
         
-        responderExemptCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'USE_PASSIVE_ABILITY'],
+        responderExemptCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'USE_PASSIVE_ABILITY', 'USE_DEJA_VU'],
         allowNonResponderCommand: ({ state, command, currentWindow }) => {
             const matchState = state as MatchState<DiceThroneCore>;
             const currentInteraction = matchState.sys.interaction?.current as {
@@ -1541,6 +1544,7 @@ const systems = [
     }),
     createTutorialSystem(),
     createDiceThroneEventSystem(),
+    createDoctorStrangeSpellSystem(),
     createTimingOpportunitySystem(DiceThroneDomain, createDiceThroneTimingOpportunitySystemConfig()),
     createCheatSystem<DiceThroneCore>(diceThroneCheatModifier),
 ];
@@ -1566,6 +1570,7 @@ const COMMAND_TYPES = [
     'PLAY_UPGRADE_CARD',
     // 选择与阶段
     'RESOLVE_CHOICE',
+    'USE_DEJA_VU',
     // 卡牌交互（骰子修改、状态移除/转移）
     'MODIFY_DIE',
     'REROLL_DIE',

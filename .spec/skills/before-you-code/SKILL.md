@@ -35,7 +35,8 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 4. 从 [知识导航](../../knowledge/README.md) 选择直接相关的标准和项目 workflow。
 5. 阅读所选 workflow 的 `SKILL.md`；只在它明确指向时继续读 references/ 分卷。
 6. 阅读会被改动的关键源文件、接口和现有测试。
-7. 小/中任务直接在已锁定范围内继续；大任务先锁定产品任务入口或 AI 规范结构入口，不在上下文不足时试改。
+7. 按 [`改动必要性检查`](../../knowledge/standards/conversation-handoff-target-lock.md#改动必要性检查) 核对拟改项，再实施；交付前回到同一检查反查实际 diff。
+8. 小/中任务直接在已锁定范围内继续；大任务先锁定产品任务入口或 AI 规范结构入口，不在上下文不足时试改。
 
 ## 边界
 

@@ -108,7 +108,7 @@ export function createInitialSystemState(
         decisionEpoch: 0,
         undo: {
             snapshots: [],
-            maxSnapshots: 50,
+            maxSnapshots: 10,
         },
         interaction: {
             queue: [],
@@ -706,6 +706,8 @@ export function executePipeline<
 
     // 辅助：将 sequence 模式的 cursor 写回 sys.tutorial.randomPolicy.cursor
     const persistRandomCursor = (s: MatchState<TCore>): MatchState<TCore> => {
+        // 完整检查点已恢复自己的教程随机游标；不能再用本条命令开始时的游标覆盖它。
+        if (s.sys.undo.rollbackRevision !== state.sys.undo.rollbackRevision) return s;
         const getCursor = (effectiveRandom as TutorialRandomFn)._getCursor;
         if (!getCursor || !s.sys.tutorial?.randomPolicy) return s;
         const newCursor = getCursor();

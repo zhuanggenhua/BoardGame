@@ -212,11 +212,19 @@ interface QidahenBattleRollStage {
     defenderDamage: number;
 }
 
+export interface QidahenBattleMoraleResult {
+    remainingLevels: Record<string, number>;
+    destroyedTroops: number;
+    survivingCombatTroops: number;
+}
+
 export interface QidahenBattleRolls {
     cityBattle: boolean;
     stages: QidahenBattleRollStage[];
     attackerDamage: number;
     defenderDamage: number;
+    attackerMorale: QidahenBattleMoraleResult;
+    defenderMorale: QidahenBattleMoraleResult;
     summary: string;
 }
 
@@ -388,6 +396,15 @@ export interface QidahenWheelRecruitTrainChoice {
 }
 
 export interface QidahenPendingTargetAction {
+    battleStep?: 'defender-declaration' | 'tactics' | 'retreat';
+    resolvedBattleRolls?: QidahenBattleRolls;
+    retreatFactionId?: QidahenFactionId;
+    defenderDeclaration?: {
+        defenderSortieBattle?: boolean;
+        defenderHoldCity?: boolean;
+        defenderCavalryEvasion?: boolean;
+        defenderCavalryEvasionRegionId?: string;
+    };
     actionId: 'raid' | 'marriage-subjugation' | 'wheel-dispatch' | 'drive-tiger';
     battleMode?: QidahenBattleMode;
     targetKind?: 'region' | 'siege-attacker' | 'siege-reinforce';
@@ -1312,6 +1329,8 @@ export type QidahenCommand =
     | ExecuteWheelMoveCommand
     | SelectPaymentCardCommand
     | ConfirmWheelDispatchPaymentCommand
+    | ConfirmWheelRecruitTrainPaymentCommand
+    | ResolveWheelRecruitTrainChoiceCommand
     | SelectHandLimitDiscardCardCommand
     | SelectSunYuanhuaTechCardCommand
     | SelectGaoDiDispatchCardCommand

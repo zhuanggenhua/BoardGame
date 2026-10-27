@@ -64,7 +64,7 @@ import {
 } from './rules';
 import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
-import { getPassiveActionTokenCosts, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
+import { getPlayerPassiveAbilities, getPassiveActionTokenCosts, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
@@ -73,6 +73,7 @@ import { getCustomActionHandler } from './effects';
 import { getGameMode, isDiceThroneAiSeat } from './utils';
 import { canReceiveTransferredStatus, canRemoveStatusFromPlayer, canTransferStatus, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
+import { canUseDejaVuCore } from './doctorStrange/rules';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { isPendingDamageResponseBonusSettlement } from './damageSummary';
 import { getUsableActiveRollToken } from './activeRollTokens';
@@ -1151,6 +1152,10 @@ const validateModifyDie = (
     if (cmd.payload.newValue < 1 || cmd.payload.newValue > 6) {
         return fail('invalid_die_value');
     }
+    const allowedValues = pendingInteraction?.dieModifyConfig?.allowedValues;
+    if (Array.isArray(allowedValues) && !allowedValues.includes(cmd.payload.newValue)) {
+        return fail('invalid_die_value');
+    }
     return ok();
 };
 
@@ -1635,6 +1640,12 @@ const validateRerollBonusDie = (
     }
     // 检查骰子索引是否有效
     const dieIndex = cmd.payload.dieIndex;
+    const indices = cmd.payload.dieIndices ?? [dieIndex];
+    if (!Array.isArray(indices) || (!state.pendingBonusDiceSettlement.groupReroll && indices.length !== 1)
+        || indices.length === 0 || indices[0] !== dieIndex || new Set(indices).size !== indices.length
+        || indices.some(index => !Number.isInteger(index) || !findCurrentRollDie(state, index))) {
+        return fail('invalid_die_index');
+    }
     const die = findCurrentRollDie(state, dieIndex)?.die;
     if (!die) {
         return fail('invalid_die_index');
@@ -1709,7 +1720,7 @@ const validateUsePassiveAbility = (
         }
     }
 
-    const passives = player.passiveAbilities ?? [];
+    const passives = getPlayerPassiveAbilities(state, playerId);
     const passive = passives.find(p => p.id === cmd.payload.passiveId);
     if (!passive) return fail('passive_not_found');
 
@@ -1819,6 +1830,13 @@ export const validateCommand = (
     }
 
     const playerId = command.playerId;
+    // 终极已开始执行前置效果后，直到完整结算仅攻击者可以行动。
+    if (state.pendingAttack?.isUltimate && state.pendingAttack.preDefenseResolved
+        && playerId !== state.pendingAttack.attackerId) return fail('ultimate_resolving');
+    if (isCommandType(command, 'USE_DEJA_VU')) {
+        return canUseDejaVuCore(state, phase, playerId, currentResponseWindow?.windowType ?? responseWindowType, Boolean(pendingInteraction))
+            ? ok() : fail('deja_vu_unavailable');
+    }
     if (isCommandType(command, 'ROLL_DICE')) return validateRollDice(state, command, playerId, phase);
     if (isCommandType(command, 'TOGGLE_DIE_LOCK')) return validateToggleDieLock(state, command, playerId, phase);
     if (isCommandType(command, 'CONFIRM_ROLL')) return validateConfirmRoll(state, command, playerId, phase);

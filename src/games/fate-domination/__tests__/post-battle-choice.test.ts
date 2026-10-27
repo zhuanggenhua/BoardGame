@@ -1,3 +1,4 @@
+import { buildFateAiLegalActions } from '../ai';
 import { expect, it } from 'vitest';
 import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
 import { FateDominationDomain } from '../domain';
@@ -34,7 +35,7 @@ it('平局两位胜者各自恢复或不恢复，最后一人明确选择后才�
     expect(game.state.core.battleResolution?.step).toBe('after-battle');
     let choice = game.state.sys.interaction.current!;
     expect(choice.playerId).toBe('0');
-    expect((choice.data as {ai:{status:string}}).ai.status).toBe('unsupported');
+    expect((choice.data as {ai:{status:string;adapterId:string}}).ai).toMatchObject({status:'adapter',adapterId:'fate-post-battle'});
     expect(game.state.core.players['0'].locationId).toBe('miyama');
     game.apply({ type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { interactionId: choice.id, optionId: 'restore' } });
     expect(game.state.core.players['0'].commandSpells).toBe(3);
@@ -103,4 +104,18 @@ it('权威选择上下文损坏时拒绝，不从诊断摘要回退恢复',()=>{
  delete (choice.data as Record<string,unknown>).fateContext;
  const result=game.run({type:'SYS_INTERACTION_RESPOND',playerId:choice.playerId,payload:{interactionId:choice.id,optionId:'restore'}});
  expect(result.success).toBe(false);expect(result.state.sys.interaction.current?.id).toBe(choice.id);expect(result.state.core.players['0'].commandSpells).toBe(2);
+});
+
+it('战后AI枚举当前恢复与放弃，逐席重新计算，外席不会抢答', () => {
+    const game = battleFixture();
+    for (const playerId of ['0', '1']) {
+        expect(game.state.sys.interaction.current?.playerId).toBe(playerId);
+        expect(buildFateAiLegalActions({ state: game.state, playerId: playerId === '0' ? '1' : '0' })).toEqual([]);
+        const actions = buildFateAiLegalActions({ state: game.state, playerId });
+        expect(actions.map(action => (action.commands[0].payload as { optionId: string }).optionId).sort()).toEqual(['decline', 'restore']);
+        for (const action of actions) expect(game.run({ ...action.commands[0], playerId }).success).toBe(true);
+        game.apply({ ...actions[0].commands[0], playerId });
+    }
+    expect(game.state.core.round).toBe(2);
+    expect(game.state.sys.interaction.current).toBeUndefined();
 });

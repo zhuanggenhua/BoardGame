@@ -25,6 +25,8 @@ import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
+import { reduceDoctorStrangeEvent } from './doctorStrange/reducer';
+import { DOCTOR_STRANGE_TOKEN } from '../heroes/doctor_strange/constants';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
 import {
@@ -584,6 +586,8 @@ const handleStatusApplied: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
             [targetId]: {
                 ...target,
                 statusEffects: { ...target.statusEffects, [statusId]: cappedNewTotal },
+                ...(statusId === DOCTOR_STRANGE_TOKEN.CRIMSON_BANDS && cappedNewTotal > (target.statusEffects[statusId] ?? 0)
+                    ? { crimsonBandsReceivedTurn: state.turnNumber } : {}),
             },
         },
         pendingAttack: nextPendingAttack,
@@ -1001,6 +1005,7 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         taijiGainedThisTurn: undefined, // 清除太极本回合获得量追踪
         treantSpiritSpentThisTurn: undefined,
         passiveActionUsedThisTurn: undefined,
+        mjolnirThrowsThisTurn: undefined,
         vampireLordBloodPowerEndTurnPending: undefined,
         offensiveRollAttemptsThisTurn: undefined,
         offensiveRollAttackMadeThisTurn: undefined,
@@ -1644,16 +1649,20 @@ const handleBonusDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     // 更新 pendingBonusDiceSettlement
     let pendingBonusDiceSettlement = state.pendingBonusDiceSettlement;
     if (state.pendingBonusDiceSettlement) {
-        const updatedSettlement = updatePendingBonusSettlementDie(state, dieIndex, newValue, {
-            ...effectParams,
-            value: newValue,
-            index: dieIndex,
-        });
-        const newDice = getPendingBonusSettlementDice(updatedSettlement).map(d =>
-            d.index === dieIndex ? { ...d, face: newFace } : d);
+        let updatedState = state;
+        for (const result of event.payload.dice ?? [{ dieIndex, newValue, newFace }]) {
+            const updated = updatePendingBonusSettlementDie(updatedState, result.dieIndex, result.newValue, {
+                ...effectParams, value: result.newValue, index: result.dieIndex,
+            });
+            if (!updated) continue;
+            updatedState = { ...updatedState, pendingBonusDiceSettlement: {
+                ...updated, dice: getPendingBonusSettlementDice(updated).map(d =>
+                    d.index === result.dieIndex ? { ...d, face: result.newFace } : d),
+            } };
+        }
+        const updatedSettlement = updatedState.pendingBonusDiceSettlement!;
         pendingBonusDiceSettlement = {
             ...updatedSettlement,
-            dice: newDice,
             rerollCount: state.pendingBonusDiceSettlement.rerollCount + 1,
             lastRerolledDieIndex: dieIndex,
         };
@@ -1807,6 +1816,8 @@ export const reduce = (
     state: DiceThroneCore,
     event: DiceThroneEvent
 ): DiceThroneCore => {
+    const spellState = reduceDoctorStrangeEvent(state, event);
+    if (spellState !== undefined) return spellState;
     switch (event.type) {
         case 'DICE_ROLLED':
             return handleDiceRolled(state, event);
@@ -1923,6 +1934,13 @@ export const reduce = (
             return handleExtraAttackTriggered(state, event);
         case 'CHARACTER_SELECTED':
             return handleCharacterSelected(state, event);
+        // 同伴步骤的续链由领域事件系统消费，不复制为core中的等待状态。
+        case 'THOR_MJOLNIR_STEP_COMPLETED':
+        case 'THOR_MJOLNIR_RESOLVED':
+            return state;
+        case 'THOR_MJOLNIR_THROWN':
+            return { ...state, mjolnirThrowsThisTurn: { ...state.mjolnirThrowsThisTurn,
+                [event.payload.playerId]: (state.mjolnirThrowsThisTurn?.[event.payload.playerId] ?? 0) + 1 } };
         case 'HERO_INITIALIZED':
             return handleHeroInitialized(state, event);
         case 'PLAYER_BOARD_FACE_CHANGED':

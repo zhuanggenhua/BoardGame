@@ -192,6 +192,9 @@ export const GameHUD = ({
     const isLocal = mode === 'local';
     const isTutorial = mode === 'tutorial';
     const isQidahenTutorial = _gameId === 'qidahen' && isTutorial;
+    const isQidahenTutorialLandscape = isQidahenTutorial
+        && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH
+        && viewportWidth > viewportHeight;
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
@@ -217,7 +220,9 @@ export const GameHUD = ({
     const fabMenuStorageKey = _gameId === 'mage-wars'
         ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
         : isQidahenTutorial
-            ? 'game_hud_fab_position:qidahen:tutorial:v1'
+            ? (isQidahenTutorialLandscape
+                ? 'game_hud_fab_position:qidahen:tutorial:landscape:v2'
+                : 'game_hud_fab_position:qidahen:tutorial:v1')
         : isTicTacToePortraitMobile
             ? 'game_hud_fab_position:tictactoe:portrait:v1'
         : isBetrayalGame
@@ -1004,6 +1009,8 @@ export const GameHUD = ({
                 position={fabMenuPosition}
                 initialOffset={_gameId === 'mage-wars'
                     ? resolveMageWarsGameHudFabInitialOffset(viewportHeight)
+                    : isQidahenTutorialLandscape
+                        ? { top: -48 }
                     : isTicTacToePortraitMobile
                         // 放在标题与棋盘之间的空档，避免闭合态悬浮球压住棋盘格。
                         ? { top: Math.max(0, Math.min(64, viewportHeight * 0.075)) }

@@ -1,92 +1,57 @@
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-player-float'] {
-    left: 8px !important;
-    right: 8px !important;
-    top: 6px !important;
-    width: auto !important;
-    gap: 4px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] > div {
+    display: grid;
+    width: min(560px, calc(100vw - 16px)) !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    border-width: 1px;
+    padding: 2px 8px;
+    gap: 0 4px;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-player-'] {
-    height: 54px !important;
-    padding-inline: 7px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] {
+    bottom: calc(var(--qidahen-hand-height) + var(--qidahen-hand-accessory-height) + 15px) !important;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-armaments-'],
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-character-markers-'] {
-    display: none !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] > div > div:first-child {
+    display: contents;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-action-wheel'] {
-    left: 8px !important;
-    top: 66px !important;
-    width: 176px !important;
-    height: 176px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] > div > div:first-child > div {
+    margin-top: 0;
+    line-height: 14px;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-chronology-zone'],
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-korea-zone'] {
-    display: none !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] > div > div:first-child > div:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    line-height: 20px;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-actions-zone'] {
-    left: auto !important;
-    right: 8px !important;
-    top: 66px !important;
-    width: 268px !important;
-    height: calc(100% - 236px) !important;
-    min-height: 132px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] [data-testid='qidahen-action-payment-status'] {
+    grid-column: 1;
+    grid-row: 2;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-actions-zone'] button {
-    min-height: 44px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] [data-testid='qidahen-action-payment-selected-cards'] {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: right;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-bottom-dock'] {
-    bottom: 0 !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] [data-testid='qidahen-action-payment-hint'] {
+    grid-column: 1 / -1;
+    grid-row: 3;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-draw-anchor'] {
-    left: 2px !important;
-    bottom: 0 !important;
-    transform: scale(0.35);
-    transform-origin: bottom left;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] > div > div:last-child {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    width: auto;
+    flex-wrap: nowrap;
 }
 
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-discard-anchor'] {
-    left: 70px !important;
-    right: auto !important;
-    bottom: 0 !important;
-    transform: scale(0.35);
-    transform-origin: bottom left;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-hand-zone'] {
-    scrollbar-width: thin;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-hand-interaction-tray'] {
-    bottom: 168px !important;
-    padding-inline: 8px;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-action-payment-panel'],
-[data-qidahen-layout-mode='mobile-landscape'] [data-ui-anchor='bottom-hand'] {
-    width: min(680px, calc(100vw - 200px)) !important;
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-map-viewport-controls'] {
-    left: 190px !important;
-    top: 66px !important;
-    bottom: auto !important;
-    transform: scale(var(--qidahen-scene-inverse-scale, 1));
-    transform-origin: top left;
-}
-
-[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-map-viewport-controls'] button {
-    min-width: 45px !important;
-    height: 45px !important;
+[data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] button {
+    min-height: 44px;
 }
 
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-map-guide-hit-target-'] {
@@ -579,4 +544,18 @@
     font-size: 15px;
     font-weight: 900;
     color: #66503a;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-qidahen-deck-label] {
+    left: 4px;
+    right: 4px;
+    padding-inline: 0;
+    text-align: center;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-hand-interaction-tray'] .text-\[11px\],
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-character-markers-'] {
+    font-size: 12px;
 }

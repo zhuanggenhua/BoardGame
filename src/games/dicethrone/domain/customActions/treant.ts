@@ -68,7 +68,9 @@ const WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
     4: 'treant-wild-growth-2-cultivate-4-resolve',
     5: 'treant-wild-growth-2-cultivate-5-resolve',
 };
-const WILD_GROWTH_SOURCE_IDS = ['wild-growth'] as const;
+const WILD_GROWTH_2_PLANTING_CHOICE_ID = 'treant-wild-growth-2-planting-cultivate-resolve';
+const WILD_GROWTH_SOURCE_IDS = ['wild-growth', 'wild-growth-2-main'] as const;
+const WILD_GROWTH_2_PLANTING_SOURCE_IDS = ['wild-growth-2-planting'] as const;
 const WILD_GROWTH_2_MAIN_SOURCE_IDS = ['wild-growth-2-main', 'wild-roar', 'wild-roar-2-main'] as const;
 const SHATTERING_FIST_SOURCE_IDS = ['shattering-fist-3', 'shattering-fist-4', 'shattering-fist-5'] as const;
 const NATURE_TOUCH_SOURCE_IDS = ['nature-touch', 'nature-touch-2-main'] as const;
@@ -82,13 +84,11 @@ const HARVEST_SOURCE_IDS = ['treant-card-harvest'] as const;
 const DOWNPOUR_SOURCE_IDS = ['treant-card-downpour'] as const;
 const CARD_CULTIVATE_SOURCE_IDS = [
     'treant-card-cultivate',
-    'treant-card-planting',
     'treant-card-soulfire',
     'treant-card-mother-tree',
 ] as const;
 const CARD_CULTIVATE_ALLOWED_AMOUNTS_BY_SOURCE: Record<(typeof CARD_CULTIVATE_SOURCE_IDS)[number], readonly number[]> = {
     'treant-card-cultivate': [3],
-    'treant-card-planting': [3],
     'treant-card-soulfire': [1, 2, 3],
     'treant-card-mother-tree': [4],
 };
@@ -451,7 +451,7 @@ function getCurrentCardCultivateAmount(
     sourceAbilityId: string | undefined,
     customId?: string,
 ): number | undefined {
-    if (sourceAbilityId === 'treant-card-cultivate' || sourceAbilityId === 'treant-card-planting') {
+    if (sourceAbilityId === 'treant-card-cultivate') {
         return 3;
     }
 
@@ -942,8 +942,12 @@ function handleForestAwakensChoice(ctx: CustomActionContext): DiceThroneEvent[] 
     } as ChoiceRequestedEvent];
 }
 
-function handleTendCare2Cultivate(ctx: CustomActionContext): DiceThroneEvent[] {
-    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 6);
+function handleCultivateOnlyAbilityVariant(
+    ctx: CustomActionContext,
+    amount: number,
+    choiceId: string,
+): DiceThroneEvent[] {
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), amount);
     if (outcomes.length === 0) {
         return [closeoutNonAttackVariant(ctx.attackerId, ctx.timestamp)];
     }
@@ -960,11 +964,19 @@ function handleTendCare2Cultivate(ctx: CustomActionContext): DiceThroneEvent[] {
             playerId: ctx.attackerId,
             sourceAbilityId: ctx.sourceAbilityId,
             titleKey: 'choices.treantCultivate.title',
-            options: buildGenericCultivateChoices(ctx, 6, TEND_CARE_2_CULTIVATE_CHOICE_ID),
+            options: buildGenericCultivateChoices(ctx, amount, choiceId),
         },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp: ctx.timestamp,
     } as ChoiceRequestedEvent];
+}
+
+function handleTendCare2Cultivate(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleCultivateOnlyAbilityVariant(ctx, 6, TEND_CARE_2_CULTIVATE_CHOICE_ID);
+}
+
+function handleWildGrowth2Planting(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleCultivateOnlyAbilityVariant(ctx, 3, WILD_GROWTH_2_PLANTING_CHOICE_ID);
 }
 
 function handleNatureTouch2Mercy(ctx: CustomActionContext): DiceThroneEvent[] {
@@ -2335,6 +2347,7 @@ registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[4], resolveCardCu
 registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[3], resolveTendCareChoice(3));
 registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[4], resolveTendCareChoice(4));
 registerChoiceEffectHandler(TEND_CARE_2_CULTIVATE_CHOICE_ID, resolveCultivateOnlyChoice(TEND_CARE_2_CULTIVATE_SOURCE_IDS, 6, { closeout: true }));
+registerChoiceEffectHandler(WILD_GROWTH_2_PLANTING_CHOICE_ID, resolveCultivateOnlyChoice(WILD_GROWTH_2_PLANTING_SOURCE_IDS, 3, { closeout: true }));
 registerChoiceEffectHandler(NATURE_TOUCH_2_MERCY_CHOICE_ID, resolveCultivateOnlyChoice(NATURE_TOUCH_2_MERCY_SOURCE_IDS, 1, { closeout: true }));
 registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[1], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 1));
 registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[2], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 2));
@@ -2376,6 +2389,10 @@ export function registerTreantCustomActions(): void {
         requiresInteraction: true,
     });
     registerCustomActionHandler('treant-tend-care-2-cultivate', handleTendCare2Cultivate, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-wild-growth-2-planting', handleWildGrowth2Planting, {
         categories: ['choice', 'token'],
         requiresInteraction: true,
     });

@@ -1,4 +1,5 @@
 import {
+    isQidahenLogicalRuleRegionId,
     isQidahenKoreaRuntimeRegionId,
     resolveQidahenPrimaryRuntimeRegionId,
 } from './regionConfig';
@@ -153,7 +154,11 @@ export const buildRecruitSelectionFromRegionSemantics = (
     if (!targetRegion) {
         return null;
     }
-    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, regionSemantics.displayAnchorRegionId);
+    const isSelectedRuntimeRegion = !isQidahenLogicalRuleRegionId(regionSemantics.targetRegionId)
+        && selectedRuntimeRegion?.id === targetRegion.id;
+    const targetRegionName = isSelectedRuntimeRegion
+        ? targetRegion.name
+        : getPreferredLogicalRegionDisplayName(targetRegion, regionSemantics.displayAnchorRegionId);
     const choices: QidahenRecruitSelection['choices'] = [
         {
             id: 'level-2-troops',

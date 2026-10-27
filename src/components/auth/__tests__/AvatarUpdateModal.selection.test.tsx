@@ -11,15 +11,33 @@ vi.mock('react-easy-crop', () => ({ default: () => null }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => {
     const labels: Record<string, string> = {
         'avatar.source.default': '默认', 'avatar.source.preset': '预设', 'avatar.source.upload': '自行上传',
+        'avatar.sourceLabel': '头像来源', 'avatar.title': '设置头像', 'avatar.chooseImage': '选择图片',
         'avatar.useDefault': '使用默认头像', 'avatar.usePreset': '使用所选头像', 'avatar.presets.dice': '骰子',
         'avatar.button.save': '保存', 'avatar.button.cancel': '取消', 'avatar.presets.planet': '星球',
+        'avatar.button.upload': '上传头像', 'avatar.button.reselect': '重新选择', 'avatar.button.cancelCrop': '取消裁剪',
+        'avatar.cropTitle': '调整头像', 'avatar.cropHint.desktop': '拖动照片调整位置，滚轮或滑块缩放',
+        'avatar.cropHint.touch': '拖动照片调整位置，双指缩放；滑块精调',
+        'avatar.choosePreset': '选择预设头像', 'common:close': '关闭', 'common:back': '返回',
     };
     return labels[key] ?? key;
 } }) }));
 beforeEach(() => { vi.clearAllMocks(); auth.user.avatar = '/assets/avatars/old.webp'; auth.updateAvatar.mockResolvedValue({}); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); delete document.documentElement.dataset.homeEntryStyle; vi.unstubAllGlobals(); });
 
 describe('统一头像选择', () => {
+    it('现代头像从来源直接选图，关闭使用叉号且不提交', () => {
+        document.documentElement.dataset.homeEntryStyle = 'modern';
+        const close = vi.fn(); const { container } = render(<AvatarUpdateModal isOpen onClose={close} />);
+        const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+        const choose = vi.spyOn(input, 'click');
+        fireEvent.click(screen.getByRole('button', { name: '上传头像', exact: true }));
+        expect(choose).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('group', { name: '头像来源' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '取消', exact: true })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: '关闭', exact: true }));
+        expect(close).toHaveBeenCalledOnce();
+        expect(auth.updateAvatar).not.toHaveBeenCalled();
+    });
     it.each([undefined, '', '/avatars/default.svg'])('当前默认头像为%s时没有重复提交操作', avatar => {
         auth.user.avatar = avatar;
         render(<AvatarUpdateModal isOpen onClose={() => {}} />);
@@ -73,5 +91,56 @@ describe('统一头像选择', () => {
         fireEvent.click(screen.getByRole('button', { name: '取消', exact: true }));
         expect(auth.updateAvatar).not.toHaveBeenCalled();
         expect(close).toHaveBeenCalledTimes(1);
+    });
+
+    it('现代预设包括默认，未改选择不显示保存，返回不提交', () => {
+        document.documentElement.dataset.homeEntryStyle = 'modern';
+        auth.user.avatar = '/avatars/default.svg';
+        render(<AvatarUpdateModal isOpen onClose={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: '选择预设头像', exact: true }));
+        expect(screen.getByRole('button', { name: '默认', exact: true })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: '保存', exact: true })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: '星球', exact: true }));
+        expect(screen.getByRole('button', { name: '保存', exact: true })).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: '返回', exact: true }));
+        expect(screen.getByRole('button', { name: '上传头像', exact: true })).toBeTruthy();
+        expect(auth.updateAvatar).not.toHaveBeenCalled();
+    });
+
+    it('现代裁剪叉号退出不保存，重新选择直接唤起文件选择器', () => {
+        document.documentElement.dataset.homeEntryStyle = 'modern';
+        vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:avatar-test'), revokeObjectURL: vi.fn() });
+        const close=vi.fn(); const { container }=render(<AvatarUpdateModal isOpen onClose={close} />);
+        const input=container.querySelector<HTMLInputElement>('input[type="file"]')!;
+        fireEvent.change(input,{target:{files:[new File(['avatar'],'avatar.png',{type:'image/png'})]}});
+        expect(screen.getByText('调整头像')).toBeTruthy();
+        expect(screen.queryByRole('group', {name:'头像来源'})).toBeNull();
+        const pick=vi.spyOn(input,'click');
+        fireEvent.click(screen.getByRole('button',{name:'重新选择',exact:true}));
+        expect(pick).toHaveBeenCalledOnce();
+        expect(screen.getByText('调整头像')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button',{name:'关闭',exact:true}));
+        expect(close).toHaveBeenCalledOnce();
+        expect(auth.updateAvatar).not.toHaveBeenCalled();
+        expect(auth.uploadAvatar).not.toHaveBeenCalled();
+    });
+
+    it('经典头像上传与裁剪保留原来源栏和入口文案', () => {
+        document.documentElement.dataset.homeEntryStyle = 'classic';
+        vi.stubGlobal('URL', {
+            createObjectURL: vi.fn(() => 'blob:avatar-classic'),
+            revokeObjectURL: vi.fn(),
+        });
+        const { container } = render(<AvatarUpdateModal isOpen onClose={() => {}} />);
+        const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+
+        fireEvent.click(screen.getByRole('button', { name: '自行上传', exact: true }));
+        expect(screen.getByRole('button', { name: '选择图片', exact: true })).toBeTruthy();
+        fireEvent.change(input, { target: { files: [new File(['avatar'], 'avatar.png', { type: 'image/png' })] } });
+
+        expect(screen.getByText('设置头像')).toBeTruthy();
+        expect(screen.getByRole('group', { name: '头像来源', exact: true })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: '取消裁剪', exact: true })).toBeNull();
+        expect(screen.queryByText('拖动照片调整位置，双指缩放；滑块精调')).toBeNull();
     });
 });

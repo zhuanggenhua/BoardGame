@@ -14,7 +14,7 @@ import {
     markImageLoaded,
     onImageReady,
 } from '../../../core';
-import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
+import { InfoTooltip, type InfoTooltipPosition } from '../../../components/common/overlays/InfoTooltip';
 import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 import { resolveI18nList } from './utils';
 
@@ -936,6 +936,8 @@ export const TokenBadge = ({
     onClick,
     clickable = false,
     suppressTooltip = false,
+    tooltipPosition,
+    tooltipPlacementBoundarySelector,
     dataTestId,
 }: {
     tokenId: string;
@@ -951,6 +953,8 @@ export const TokenBadge = ({
     clickable?: boolean;
     /** 需要持续露出临近操作条时，避免 hover 说明遮住该操作。 */
     suppressTooltip?: boolean;
+    tooltipPosition?: InfoTooltipPosition;
+    tooltipPlacementBoundarySelector?: string;
     dataTestId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
@@ -1047,7 +1051,8 @@ export const TokenBadge = ({
                     title={`${info.name}${maxAmount != null && maxAmount > 1 ? ` ${amount}/${maxAmount}` : amount > 1 ? ` ×${amount}` : ''}`}
                     content={info.description}
                     isVisible={isHovered}
-                    position="right"
+                    position={tooltipPosition}
+                    placementBoundarySelector={tooltipPlacementBoundarySelector}
                 />
             )}
         </div>
@@ -1070,6 +1075,8 @@ export const TokensContainer = ({
     tokenDefinitions,
     tokenStackLimits,
     suppressTooltips = false,
+    tooltipPosition,
+    tooltipPlacementBoundarySelector,
     testIdPrefix,
 }: {
     tokens: Record<string, number>;
@@ -1091,6 +1098,8 @@ export const TokensContainer = ({
     tokenStackLimits?: Record<string, number>;
     /** 当前临近操作条需要保持可读时，收起 Token 的 hover 说明。 */
     suppressTooltips?: boolean;
+    tooltipPosition?: InfoTooltipPosition;
+    tooltipPlacementBoundarySelector?: string;
     /** E2E 可见性断言前缀，例如 dt-player-0-token */
     testIdPrefix?: string;
 }) => {
@@ -1131,6 +1140,8 @@ export const TokensContainer = ({
                         onClick={isClickable ? () => onTokenClick?.(tokenId) : undefined}
                         clickable={isClickable}
                         suppressTooltip={suppressTooltips}
+                        tooltipPosition={tooltipPosition}
+                        tooltipPlacementBoundarySelector={tooltipPlacementBoundarySelector}
                         dataTestId={testIdPrefix ? `${testIdPrefix}-${tokenId}` : undefined}
                     />
                 );

@@ -15,22 +15,22 @@
 .fd-runtime-avatar .fd-runtime-servant-avatar { position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; border: 2px solid #7cb4bb; border-radius: 50%; object-fit: cover; object-position: 50% 18%; background: #111a17; }
 .fd-runtime-seat.is-current .fd-runtime-master-avatar { box-shadow: 0 0 0 3px #e4c46e80; }
 .fd-runtime-seat.is-selected .fd-runtime-master-avatar { border-color: #fff0b8; }
-.fd-runtime-seat-summary { min-width: 0; flex: 1; text-align: left; min-height: 48px; padding: 7px 6px; background: linear-gradient(90deg,#111a17ed,#111a1790 80%,transparent); text-shadow: 0 1px 3px #000; }
-.fd-runtime-opponent-drawer { position: absolute; right: calc(100% + 12px); top: 0; width: 316px; max-height: 100%; overflow-y: auto; pointer-events: auto; padding: 14px; background: #111a17f5; box-shadow: 0 12px 30px #0008; border-top: 2px solid #b89b58; }
-.fd-runtime-opponent-drawer header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.fd-runtime-opponent-drawer header strong { display: block; font-size: 16px; margin-bottom: 6px; }
-.fd-runtime-opponent-drawer header span { color: #c9bd9c; font-size: 12px; }
-.fd-runtime-opponent-drawer header button { min-width: 36px; min-height: 36px; display: grid; place-items: center; }
-.fd-runtime-public-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.fd-runtime-public-cards button { width: 138px; aspect-ratio: 148/214; }
-.fd-runtime-public-cards button > img { width: 100%; height: 100%; object-fit: contain; }
-.fd-runtime-public-cards p { margin: 16px 0; color: #b6b49f; font-size: 13px; }
-.fd-runtime-setup { position: absolute; left: 50%; top: 45%; transform: translate(-50%,-50%); width: 420px; z-index: 18; padding: 28px; background: #111a17f5; border: 1px solid #a58a4b; box-shadow: 0 20px 60px #0009; }
-.fd-runtime-setup h2 { font-size: 22px; margin: 0 0 8px; }.fd-runtime-setup p { font-size: 13px; color: #bfb99f; }
-.fd-runtime-setup label { display: grid; gap: 8px; margin-top: 18px; font-size: 13px; }
-.fd-runtime-setup select { min-height: 44px; background: #202a23; border: 1px solid #8b805e; padding: 8px; }
-.fd-runtime-setup > button { min-height: 44px; margin-top: 18px; color: #e8ce8d; text-decoration: underline; }
-.fd-runtime-inspection { position: fixed; left: 16px; top: 90px; transform:none; z-index: 10000; width: min(310px, 34vw, calc((100dvh - 96px) * 148 / 214)); max-height: calc(100dvh - 96px); display: flex; flex-direction: column; padding: 4px; background: #111a17; border: 2px solid #d5b96b; box-shadow: 0 12px 42px #000b; color:#f0e7d0; font-size:14px; }
+.fd-runtime-seat-summary { min-width: 0; flex: 1; display:flex; flex-direction:column; gap:3px; text-align: left; min-height: 48px; padding: 7px 6px; background: linear-gradient(90deg,#111a17ed,#111a1790 80%,transparent); text-shadow: 0 1px 3px #000; }
+.fd-runtime-seat-summary > b { display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; width:100%; font-size:13px; white-space:nowrap; }
+.fd-runtime-seat-summary .fd-seat-name { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.fd-runtime-seat-summary .fd-seat-power { flex-shrink:0; color:#f4d77b; font-size:19px; font-variant-numeric:tabular-nums; }
+.fd-runtime-seat-summary .fd-seat-power small { margin-right:3px; font-size:10px; font-weight:400; }
+.fd-runtime-seat-summary > b > i { flex-shrink:0; }
+.fd-runtime-seat-summary > span { display:block; font-size:11px; white-space:nowrap; color:#ded4b9; }
+/* 对方出牌直接平铺；离开后的宽限时间由席位交互负责。 */
+.fd-runtime-opponent-cards { position:fixed; pointer-events:auto; max-height:180px; overflow:auto; scrollbar-width:thin; }
+.fd-runtime-public-cards { display:flex; flex-wrap:nowrap; gap:8px; width:max-content; max-width:100%; padding:4px; }
+.fd-runtime-public-cards button, .fd-runtime-public-cards .fd-hidden-played-card { flex:0 0 112px; width:112px; aspect-ratio:148/214; padding:0; border:0; background:transparent; }
+.fd-runtime-public-cards button { cursor:zoom-in; transition:transform .15s ease; }
+.fd-runtime-public-cards button:hover, .fd-runtime-public-cards button:focus-visible { transform:translateY(-3px); }
+.fd-runtime-public-cards button > img, .fd-runtime-public-cards .fd-hidden-played-card > img { width:100%; height:100%; object-fit:contain; }
+.fd-runtime-public-cards p { margin:8px; color:#ede3ca; font-size:13px; text-shadow:0 1px 4px #000,0 0 8px #000; }
+.fd-runtime-inspection { position: fixed; left: 16px; top: 90px; transform:none; z-index: 1; width: min(310px, 34vw, calc((100dvh - 96px) * 148 / 214)); max-height: calc(100dvh - 96px); display: flex; flex-direction: column; padding: 4px; background: #111a17; border: 2px solid #d5b96b; box-shadow: 0 12px 42px #000b; color:#f0e7d0; font-size:14px; }
 .fd-inspection-card-face { display:flex; flex:0 1 auto; align-items:center; justify-content:center; width:100%; min-width:0; min-height:0; overflow:hidden; }
 .fd-inspection-card-face > img { display:block; width:100%; max-height:calc(100dvh - 104px); object-fit:contain; }
 .fd-inspection-card-face > [data-card-atlas-frame="true"] { width:100%; max-width:100%; max-height:calc(100dvh - 104px); flex-shrink:1; }
@@ -54,7 +54,8 @@
 .fd-self-identity strong { display:block; font-size:14px; }
 .fd-self-identity small { display:block; margin-top:8px; font-size:12px; line-height:1.4; color:#d9cca7; white-space:normal; overflow-wrap:anywhere; }
 .fd-self-pile-info { position:absolute; left:calc(100% + 12px); top:0; white-space:nowrap; z-index:30; background:#111a17f5; padding:10px; font-size:12px; }
-.fd-phase-control { position:absolute; right:var(--fd-hud-inline); bottom:calc(var(--fd-hand-card-width,120px) * 214 / 148 - 28px + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:126px; }
+/* 技能上方的推进槽向内避让全局离开按钮，保留两者独立的点击区域。 */
+.fd-phase-control { position:absolute; right:calc(var(--fd-hud-inline) + 64px); bottom:calc(var(--fd-hand-card-width,120px) * 214 / 148 + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:126px; }
 .fd-phase-control .fd-runtime-primary { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; width:79px; height:79px; border-radius:50%; border:3px solid #eed38a; background:#b9635b; box-shadow:0 4px 18px #0009; color:#f5efe5; font-size:15px; font-weight:800; }
 .fd-phase-control .fd-runtime-primary:disabled { filter:grayscale(.7); opacity:.5; cursor:not-allowed; }
 @media(max-width:1100px) {
@@ -70,10 +71,10 @@
 .fd-phase-copy { text-align:right; text-shadow:0 2px 7px #000; }
 .fd-phase-copy small { display:block; color:#b9ad8b; font-size:10px; }
 .fd-phase-copy b { display:block; margin-top:3px; font-size:15px; font-weight:500; }
-.fd-inspection-backdrop { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; background:#050707d9; }
-.fd-inspection-hover { position:fixed; inset:0; z-index:10000; pointer-events:none; }
+.fd-inspection-backdrop { position:fixed; inset:0; z-index:1; display:grid; place-items:center; background:#050707d9; }
+.fd-inspection-hover { position:fixed; inset:0; z-index:1; pointer-events:none; }
 .fd-inspection-hover .fd-runtime-inspection { pointer-events:none; }
-.fd-inspection-backdrop .fd-runtime-inspection.is-pinned { position:relative; top:auto; right:auto; left:auto; transform:none; width:min(480px,75vw,calc((100dvh - 64px) * 148 / 214)); height:calc(100dvh - 64px); max-height:calc(100dvh - 64px); padding:0; border:0; background:transparent; box-shadow:none; overflow:visible; }
+.fd-inspection-backdrop .fd-runtime-inspection.is-pinned { position:relative; top:auto; right:auto; left:auto; transform:none; width:min(480px,75vw,calc((100dvh - 64px) * 148 / 214)); height:auto; aspect-ratio:148 / 214; max-height:calc(100dvh - 64px); padding:0; border:0; background:transparent; box-shadow:none; overflow:visible; }
 .fd-runtime-inspection.is-pinned .fd-inspection-card-face { width:100%; height:100%; }
 .fd-runtime-inspection.is-pinned .fd-inspection-card-face > img,
 .fd-runtime-inspection.is-pinned .fd-inspection-card-face > [data-card-atlas-frame="true"] { width:100%; height:100%; max-width:100%; max-height:100%; object-fit:contain; }
@@ -118,4 +119,8 @@
 }
 
 /* Setup completion belongs directly after the identity choices, with one action owner. */
-.fd-runtime-setup .fd-phase-control { position:static; width:100%; margin-top:24px; flex-direction:row; justify-content:flex-end; align-items:center; }
+
+.fd-eliminated-status { display:inline-block; margin-left:8px; padding:3px 7px; border:1px solid #ff6868; border-radius:4px; background:#9b171f; color:#fff0f0; font:700 12px/1.4 sans-serif; white-space:nowrap; }
+
+/* 淘汰贴在头像本体，仍能辨认原御主与隐藏从者。 */
+.fd-avatar-elimination { position:absolute; z-index:2; left:-3px; top:27px; width:76px; height:3px; background:#ed4d59; transform:rotate(-39deg); pointer-events:none; }

@@ -9,6 +9,7 @@ import { DICETHRONE_COMMANDS } from '../domain/ids';
 
 export type DiceThroneMoveMap = {
     advancePhase: () => void;
+    useDejaVu: () => void;
     rollDice: () => void;
     toggleDieLock: (id: number) => void;
     confirmRoll: () => void;
@@ -37,7 +38,7 @@ export type DiceThroneMoveMap = {
     // 击倒移除
     payToRemoveKnockdown: () => void;
     // 奖励骰重掷
-    rerollBonusDie: (dieIndex: number) => void;
+    rerollBonusDie: (dieIndex: number, dieIndices?: number[]) => void;
     confirmBonusDice: () => void;
     skipBonusDiceReroll: () => void;
     // 被动能力（如教皇税）
@@ -60,6 +61,7 @@ export const resolveMoves = (
     dispatch: (type: string, payload?: unknown) => void,
 ): DiceThroneMoveMap => ({
     advancePhase: () => dispatch('ADVANCE_PHASE', {}),
+    useDejaVu: () => dispatch('USE_DEJA_VU', {}),
     rollDice: () => dispatch('ROLL_DICE', {}),
     toggleDieLock: (id) => dispatch('TOGGLE_DIE_LOCK', { dieId: id }),
     confirmRoll: () => dispatch('CONFIRM_ROLL', {}),
@@ -94,7 +96,7 @@ export const resolveMoves = (
     // 击倒移除
     payToRemoveKnockdown: () => dispatch(DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN, {}),
     // 奖励骰重掷
-    rerollBonusDie: (dieIndex) => dispatch('REROLL_BONUS_DIE', { dieIndex }),
+    rerollBonusDie: (dieIndex, dieIndices) => dispatch('REROLL_BONUS_DIE', { dieIndex, dieIndices }),
     confirmBonusDice: () => dispatch('CONFIRM_ROLL', {}),
     skipBonusDiceReroll: () => dispatch('SKIP_BONUS_DICE_REROLL', {}),
     // 被动能力

@@ -9,11 +9,13 @@ import './post-battle-choice.css';
 interface Props {
     interaction: InteractionDescriptor<SimpleChoiceData>;
     viewerId: string | null;
+    rollbackRevision?: number;
     onConfirm: (interactionId: string, optionId: string) => void;
 }
-export function FatePostBattleChoice({ interaction, viewerId, onConfirm }: Props) {
+export function FatePostBattleChoice({ interaction, viewerId, onConfirm, rollbackRevision = 0 }: Props) {
     const [selection, setSelection] = useState<{ interactionId: string; optionId: string } | null>(null);
     const firstButton = useRef<HTMLButtonElement>(null);
+    useEffect(() => setSelection(null), [interaction.id, rollbackRevision]);
     const selected = selection?.interactionId === interaction.id ? selection.optionId : null;
     const source = FATE_EVENTS.find(card => card.id === 'fuyuki_E12')!;
     useEffect(() => {
@@ -23,7 +25,7 @@ export function FatePostBattleChoice({ interaction, viewerId, onConfirm }: Props
     }, [interaction.id, viewerId]);
     if (viewerId !== interaction.playerId) return null;
     return <ModalBase closeOnBackdrop={false} overlayClassName="!bg-black/75">
-        <section className="fd-post-battle-choice" role="dialog" aria-modal="true" aria-label="战后恢复令咒" onKeyDown={event => {
+        <section data-tutorial-id="fate-post-battle" className="fd-post-battle-choice" role="dialog" aria-modal="true" aria-label="战后恢复令咒" onKeyDown={event => {
             if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); }
             if (event.key === 'Tab') {
                 const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])');

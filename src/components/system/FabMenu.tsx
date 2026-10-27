@@ -41,8 +41,6 @@ export type FabMenuPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'to
 
 interface FabMenuProps {
     className?: string;
-    /** Bottom UI exclusion region in viewport CSS pixels; zero preserves the shared default. */
-    bottomClearance?: number;
     items: FabAction[];
     position?: FabMenuPosition;
     initialOffset?: { left?: number; top?: number };
@@ -138,7 +136,6 @@ export const areFabAnchorRectsEqual = (left: FabAnchorRect | null, right: FabAnc
 
 export const FabMenu = ({
     className = '',
-    bottomClearance = 0,
     items,
     position: initialPosition = 'bottom-right',
     initialOffset,
@@ -163,7 +160,7 @@ export const FabMenu = ({
     const layoutSafeAreaInsets: SafeAreaInsets = {
         top: safeAreaInsets.top / layoutScale,
         right: safeAreaInsets.right / layoutScale,
-        bottom: Math.max(safeAreaInsets.bottom, bottomClearance) / layoutScale,
+        bottom: safeAreaInsets.bottom / layoutScale,
         left: safeAreaInsets.left / layoutScale,
     };
     const shellBounds = useMemo(() => (
@@ -246,13 +243,13 @@ export const FabMenu = ({
         const maxLeft = allowOverflow
             ? Math.max(minLeft, layoutBounds.right - edgePeekSize)
             : Math.max(minLeft, layoutBounds.right - resolvedButtonSize - edgePadding - layoutInsets.right);
-        const maxTop = allowOverflow && bottomClearance === 0
+        const maxTop = allowOverflow
             ? Math.max(minTop, layoutBounds.bottom - edgePeekSize)
             : Math.max(minTop, layoutBounds.bottom - resolvedButtonSize - edgePadding - layoutInsets.bottom);        return {
             left: Math.min(Math.max(target.left, minLeft), maxLeft),
             top: Math.min(Math.max(target.top, minTop), maxTop),
         };
-    }, [bottomClearance, dockedButtonSize, edgePadding, edgePeekSize, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top, layoutInsets.bottom, layoutInsets.left, layoutInsets.right, layoutInsets.top, layoutViewportHeight, layoutViewportWidth]);
+    }, [dockedButtonSize, edgePadding, edgePeekSize, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top, layoutInsets.bottom, layoutInsets.left, layoutInsets.right, layoutInsets.top, layoutViewportHeight, layoutViewportWidth]);
     const getAlignmentForPosition = useCallback((target: FabPosition, resolvedButtonSize = dockedButtonSize): FabAlignment => {
         const centerY = (layoutBounds.top + layoutBounds.bottom) / 2;
         const centerX = (layoutBounds.left + layoutBounds.right) / 2;
@@ -303,10 +300,10 @@ export const FabMenu = ({
                     clampPosition,
                     resolvedButtonSize: dockedButtonSize,
                 });
-                if (resolved.shouldPersist && bottomClearance === 0) {
+                if (resolved.shouldPersist) {
                     writeLocalStorageItem(storageKey, JSON.stringify(resolved.percent));
                 }
-                if (resolved.clearLegacyOffset && bottomClearance === 0) {
+                if (resolved.clearLegacyOffset) {
                     removeLocalStorageItem(legacyOffsetStorageKey);
                 }
                 setFabPosition(resolved.position);
@@ -317,16 +314,15 @@ export const FabMenu = ({
         });
 
         return () => window.cancelAnimationFrame(frameId);
-    }, [bottomClearance, clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, layoutViewportHeight, layoutViewportWidth, legacyOffsetStorageKey, normalizePosition, storageKey]);
+    }, [clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, layoutViewportHeight, layoutViewportWidth, legacyOffsetStorageKey, normalizePosition, storageKey]);
 
     const handleDragEnd = (_: any, info: any) => {
         if (!fabPosition || layoutViewportWidth <= 0 || layoutViewportHeight <= 0) return;
         setIsDragging(false);
-        const normalized = normalizePosition({
+        const next = normalizePosition({
             left: fabPosition.left + (info.offset.x / layoutScale),
             top: fabPosition.top + (info.offset.y / layoutScale),
         });
-        const next = bottomClearance > 0 ? clampPosition(normalized, { allowOverflow: false }) : normalized;
         flushSync(() => {
             setFabPosition(next);
             setLiveDragOffset({ x: 0, y: 0 });

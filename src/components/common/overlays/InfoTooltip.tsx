@@ -2,11 +2,15 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useResolvedOverlayTooltipZIndex } from './overlayLayer';
 
+export type InfoTooltipPosition = 'right' | 'left' | 'top' | 'bottom';
+
 interface InfoTooltipProps {
     title: React.ReactNode;
     content: React.ReactNode[];
     isVisible: boolean;
-    position?: 'right' | 'left';
+    position?: InfoTooltipPosition;
+    /** 以宿主组的外边界排布说明，避免遮住同组的其它状态。 */
+    placementBoundarySelector?: string;
     className?: string; // 额外样式
     /** 自定义 z-index，弹窗内使用时传入 UI_Z_INDEX.modalTooltip */
     zIndex?: number;
@@ -21,6 +25,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
     content,
     isVisible,
     position = 'right',
+    placementBoundarySelector,
     className = '',
     zIndex,
 }) => {
@@ -30,7 +35,8 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
     const [layout, setLayout] = React.useState<{
         top: number;
         left: number;
-        side: 'right' | 'left';
+        arrowOffset: number;
+        side: InfoTooltipPosition;
     } | null>(null);
 
     React.useLayoutEffect(() => {
@@ -45,30 +51,60 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
             if (!tooltip || !anchor) return;
 
             const anchorRect = anchor.getBoundingClientRect();
+            const placementBoundary = placementBoundarySelector ? anchor.closest(placementBoundarySelector) : anchor;
+            if (!placementBoundary) throw new Error(`Tooltip placement boundary not found: ${placementBoundarySelector}`);
+            const placementRect = placementBoundary.getBoundingClientRect();
             const tooltipRect = tooltip.getBoundingClientRect();
             const viewportPadding = 12;
             const gap = 10;
             const preferredSide = position;
             const fitsOnPreferredSide = preferredSide === 'right'
-                ? anchorRect.right + gap + tooltipRect.width <= window.innerWidth - viewportPadding
-                : anchorRect.left - gap - tooltipRect.width >= viewportPadding;
-            const side: 'right' | 'left' = fitsOnPreferredSide
+                ? placementRect.right + gap + tooltipRect.width <= window.innerWidth - viewportPadding
+                : preferredSide === 'left'
+                    ? placementRect.left - gap - tooltipRect.width >= viewportPadding
+                    : preferredSide === 'top'
+                        ? placementRect.top - gap - tooltipRect.height >= viewportPadding
+                        : placementRect.bottom + gap + tooltipRect.height <= window.innerHeight - viewportPadding;
+            const oppositeSide: InfoTooltipPosition = preferredSide === 'right'
+                ? 'left'
+                : preferredSide === 'left'
+                    ? 'right'
+                    : preferredSide === 'top' ? 'bottom' : 'top';
+            const side = fitsOnPreferredSide
                 ? preferredSide
-                : preferredSide === 'right' ? 'left' : 'right';
+                : oppositeSide;
 
             const preferredLeft = side === 'right'
-                ? anchorRect.right + gap
-                : anchorRect.left - gap - tooltipRect.width;
+                ? placementRect.right + gap
+                : side === 'left'
+                    ? placementRect.left - gap - tooltipRect.width
+                    : anchorRect.left + (anchorRect.width - tooltipRect.width) / 2;
             const left = Math.min(
                 Math.max(preferredLeft, viewportPadding),
                 Math.max(viewportPadding, window.innerWidth - tooltipRect.width - viewportPadding),
             );
+            const preferredTop = side === 'top'
+                ? placementRect.top - gap - tooltipRect.height
+                : side === 'bottom'
+                    ? placementRect.bottom + gap
+                    : anchorRect.top;
             const top = Math.min(
-                Math.max(anchorRect.top, viewportPadding),
+                Math.max(preferredTop, viewportPadding),
                 Math.max(viewportPadding, window.innerHeight - tooltipRect.height - viewportPadding),
             );
 
-            setLayout({ top, left, side });
+            setLayout({
+                top,
+                left,
+                side,
+                arrowOffset: Math.max(
+                    6,
+                    Math.min(
+                        anchorRect.left + anchorRect.width / 2 - left,
+                        tooltipRect.width - 6,
+                    ),
+                ),
+            });
         };
 
         updateLayout();
@@ -78,7 +114,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
             window.removeEventListener('resize', updateLayout);
             window.removeEventListener('scroll', updateLayout, true);
         };
-    }, [isVisible, position]);
+    }, [isVisible, position, placementBoundarySelector]);
 
     if (!isVisible || typeof document === 'undefined') return null;
 
@@ -110,13 +146,24 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 >
                     {/* 箭头 */}
                     <div
-                        className={`
-                    absolute top-[clamp(8px,0.6vw,12px)] w-[clamp(8px,0.6vw,12px)] h-[clamp(8px,0.6vw,12px)] bg-slate-900
-                    border-l border-b border-amber-500/30 transform rotate-45
-                    ${(layout?.side ?? position) === 'right'
-                        ? '-left-[0.35vw]'
-                        : '-right-[0.35vw] border-r border-t border-l-0 border-b-0'}
-                        `}
+                        data-tooltip-arrow="true"
+                        className={`absolute w-[clamp(8px,0.6vw,12px)] h-[clamp(8px,0.6vw,12px)] bg-slate-900 border-amber-500/30 transform rotate-45 ${
+                            (layout?.side ?? position) === 'right'
+                                ? 'top-[clamp(8px,0.6vw,12px)] -left-[0.35vw] border-l border-b'
+                                : (layout?.side ?? position) === 'left'
+                                    ? 'top-[clamp(8px,0.6vw,12px)] -right-[0.35vw] border-r border-t border-l-0 border-b-0'
+                                    : (layout?.side ?? position) === 'top'
+                                        ? '-bottom-[0.35vw] border-r border-b'
+                                        : '-top-[0.35vw] border-l border-t'
+                        }`}
+                        style={
+                            (layout?.side ?? position) === 'top' || (layout?.side ?? position) === 'bottom'
+                                ? {
+                                    left: layout ? `${layout.arrowOffset}px` : '50%',
+                                    transform: 'translateX(-50%) rotate(45deg)',
+                                }
+                                : undefined
+                        }
                     />
 
                     {/* 标题为空时不占位，避免无职责的空标题栏挤压正文。 */}

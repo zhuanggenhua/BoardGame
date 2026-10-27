@@ -1544,3 +1544,52 @@ describe('useSyncedModalStackEntry', () => {
         expect(onResolve).toHaveBeenCalledWith('option-0');
     });
 });
+
+
+describe('通用候选弹窗的素材与权限', () => {
+    it('单张卡牌候选在收窄后的弹窗中居中显示', () => {
+        const onResolve = vi.fn();
+        render(<MemoryRouter><ModalStackProvider><ChoiceModal
+            choice={{ title: 'common.confirm', options: [
+                { id: 'card-0', label: 'cards.thor-worthy.name', previewRef: { type: 'atlas', atlasId: 'dicethrone:thor', index: 27 } },
+            ] }} canResolve onResolve={onResolve}
+        /></ModalStackProvider></MemoryRouter>);
+
+        const cardOption = screen.getByRole('button', { name: 'cards.thor-worthy.name' });
+        expect(cardOption).toHaveClass('w-40');
+        expect(cardOption.parentElement).toHaveClass('flex', 'flex-wrap', 'justify-center');
+        expect(cardOption.closest('.max-w-xl')).not.toBeNull();
+
+        fireEvent.click(cardOption);
+        expect(onResolve).toHaveBeenCalledWith('card-0');
+    });
+
+    it('卡牌候选显示卡图，显式跳过选项保持为独立候选', () => {
+        const onResolve = vi.fn();
+        render(<MemoryRouter><ModalStackProvider><ChoiceModal
+            choice={{ title: 'common.confirm', options: [
+                { id: 'card-0', label: 'cards.thor-worthy.name', previewRef: { type: 'atlas', atlasId: 'dicethrone:thor', index: 27 } },
+                { id: 'skip', label: 'tokenResponse.skip' },
+            ] }} canResolve onResolve={onResolve}
+        /></ModalStackProvider></MemoryRouter>);
+        expect(screen.getByTestId('mock-card-preview')).toHaveAttribute('data-preview-index', '27');
+        fireEvent.click(screen.getByRole('button', { name: 'cards.thor-worthy.name' }));
+        expect(onResolve).toHaveBeenLastCalledWith('card-0');
+        fireEvent.click(screen.getByRole('button', { name: 'tokenResponse.skip' }));
+        expect(onResolve).toHaveBeenLastCalledWith('skip');
+    });
+});
+
+describe('索尔掷锤目标权限', () => {
+    it('飞掷候选呈现目标英雄头像与玩家名，无操作权时不响应', () => {
+        const onResolve = vi.fn();
+        render(<MemoryRouter><ModalStackProvider><ChoiceModal
+            choice={{ title: 'choices.thor.hammerTitle', options: [{ id: 'target-1', label: 'characters.monk', targetPlayerId: '1' }] }}
+            players={{ '1': { characterId: 'monk' } as HeroState }} playerNames={{ '1': '目标玩家' }}
+            canResolve={false} onResolve={onResolve}
+        /></ModalStackProvider></MemoryRouter>);
+        expect(document.querySelector('[data-choice-target-player="1"]')).toBeTruthy();
+        const button = screen.getByRole('button', { name: /目标玩家/ });
+        expect(button).toBeDisabled();fireEvent.click(button);expect(onResolve).not.toHaveBeenCalled();
+    });
+});

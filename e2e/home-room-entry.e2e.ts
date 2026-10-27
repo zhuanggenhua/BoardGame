@@ -11,6 +11,9 @@ for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as
             const page = await host.newPage();
             await initHome(page);
             if (style === 'classic') await switchStyle(page, style);
+            const homeFab = page.getByTestId('fab-menu');
+            await expect.poll(() => homeFab.evaluate(node => node.style.top)).not.toBe('0px');
+            const homeFabAnchor = await homeFab.evaluate(node => ({left:node.style.left,top:node.style.top}));
             await openGame(page, style, 'tictactoe', '井字棋', mobile);
             await page.getByRole('button', { name: '创建房间', exact: true }).click();
             await page.getByTestId('create-room-name-input').fill(`首页验收-${style}`);
@@ -46,12 +49,32 @@ for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as
             // 回首页只能通过正式入口恢复已有房间，验证首页重连操作。
             await page.goto('/');
             await expect(page.getByTestId('home-active-match-banner')).toBeVisible();
+            await expect(homeFab).toBeVisible();
+            await expect.poll(() => homeFab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(homeFabAnchor);
             if (mobile) {
+                if (style === 'modern') {
+                    const direction=await page.getByTestId('home-active-match-card').evaluate(node=>getComputedStyle(node).flexDirection);
+                    expect(direction).toBe('row');
+                }
                 const sizes = await page.getByTestId('home-active-match-actions').getByRole('button').evaluateAll(buttons => buttons.map(button => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })));
                 expect(sizes.length).toBe(2);
                 for (const size of sizes) { expect(size.width).toBeGreaterThanOrEqual(44); expect(size.height).toBeGreaterThanOrEqual(44); }
             }
             await capture(page, `${label}-首页已有房间`);
+            // 用户允许跨层覆盖；球挡住目标时按真实玩家路径拖开球，不改变产品布局或强点。
+            const reconnect=page.getByRole('button', { name: '重连进入', exact: true });
+            const coveredByFab=await reconnect.evaluate(node=>{
+                const r=node.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+                return Boolean(top?.closest('[data-testid="fab-menu"]'));
+            });
+            if(mobile && coveredByFab){
+                const ball=(await homeFab.locator('button').first().boundingBox())!;
+                const start={x:ball.x+ball.width/2,y:ball.y+ball.height/2};
+                const touch=await host.newCDPSession(page);
+                await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1,radiusX:8,radiusY:8,force:1}]});
+                for(let i=1;i<=12;i++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:start.x+(68-start.x)*i/12,y:start.y+(270-start.y)*i/12,radiusX:8,radiusY:8,force:1}]});
+                await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+            }
             await page.getByRole('button', { name: '重连进入', exact: true }).click();
             await expect(page).toHaveURL(new RegExp(`/match/${matchID}`));
             await expect(page.locator('[data-tutorial-id="cell-1"] svg')).toBeVisible();

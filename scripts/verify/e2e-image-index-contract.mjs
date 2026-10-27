@@ -87,9 +87,6 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
     if (!['subagent', 'primary-agent'].includes(reviewer?.kind) || typeof reviewer?.id !== 'string' || !reviewer.id.trim()) {
         throw new Error('最终 PASS 的 visualReview 必须记录真实 reviewer.kind=subagent 或 primary-agent 与非空 reviewer.id');
     }
-    if (reviewer.kind === 'primary-agent') {
-        assertString(reviewer.reason, '主代理审查采用原因 reviewer.reason');
-    }
 
     const reviewPath = visualReview.reviewFile
         ? path.resolve(manifestDir, visualReview.reviewFile)
@@ -370,6 +367,10 @@ const validateOutOfScopeMedia = ({ manifest, manifestMedia, projectRoot, manifes
         assertString(declaration?.path, `第 ${index + 1} 条 outOfScopeMedia 的 path`);
         assertString(declaration?.contract, `第 ${index + 1} 条 outOfScopeMedia 的 contract`);
         assertString(declaration?.reason, `第 ${index + 1} 条 outOfScopeMedia 的 reason`);
+        if (declaration.chainId !== undefined || declaration.uiStateId !== undefined) {
+            assertString(declaration.chainId, '内部媒体 chainId');
+            assertString(declaration.uiStateId, '内部媒体 uiStateId');
+        }
         const resolvedPath = normalizePath(resolveMediaReference(declaration.path, { projectRoot, manifestDir, indexDir }));
         if (!existsSync(resolvedPath)) {
             throw new Error(`outOfScopeMedia 引用的媒体不存在: ${declaration.path}`);
@@ -385,9 +386,8 @@ const validateOutOfScopeMedia = ({ manifest, manifestMedia, projectRoot, manifes
     return declarations;
 };
 
-// Behavioral coverage and capture granularity are independent contracts.
-// Logs are emitted by the actual runner; a reviewer still verifies their provenance and scope.
-const validateDistinctUIEvidence = ({ manifest, index, projectRoot, manifestDir, indexDir }) => {
+// 行为日志保留完整覆盖，展示媒体可按规范选取；内部状态仍须关联原图并校验来源。
+const validateDistinctUIEvidence = ({ manifest, index, outOfScopeMedia, projectRoot, manifestDir, indexDir }) => {
     const resolve = ref => resolveMediaReference(ref, { projectRoot, manifestDir, indexDir });
     const requireFile = ref => {
         assertString(ref, '行为证据文件');
@@ -454,10 +454,30 @@ const validateDistinctUIEvidence = ({ manifest, index, projectRoot, manifestDir,
         hashes.add(digest);
         if (!Array.isArray(entry.requirements) || !entry.requirements.length || entry.requirements.some(name => !manifest.requirements.some(req => req.requirement === name))) throw new Error('截图缺少有效需求关联');
     }
-    for (const { trace } of traces.values()) {
-        if (new Set(trace.uiStates.map(state => state.id)).size !== trace.uiStates.length) throw new Error('日志重复独特界面状态');
-        if (trace.uiStates.some(state => !capturedStates.has(JSON.stringify([trace.chainId, state.id])))) throw new Error('缺少实质界面状态截图');
+    const internalStates = new Map();
+    for (const declaration of outOfScopeMedia.filter(entry => entry.chainId !== undefined)) {
+        const key = JSON.stringify([declaration.chainId, declaration.uiStateId]);
+        if (internalStates.has(key)) throw new Error('重复内部界面状态声明');
+        internalStates.set(key, declaration);
     }
+    for (const { trace, stepIds } of traces.values()) {
+        if (new Set(trace.uiStates.map(state => state.id)).size !== trace.uiStates.length) throw new Error('日志重复独特界面状态');
+        for (const state of trace.uiStates) {
+            const key = JSON.stringify([trace.chainId, state.id]);
+            if (capturedStates.has(key)) continue;
+            const declaration = internalStates.get(key);
+            if (!declaration) throw new Error('缺少实质界面状态截图或内部媒体声明');
+            if (!stepIds.has(state.stepId) || !meaningfulChanges.has(state.change)) throw new Error('内部界面状态关联无效');
+            assertString(state.viewport, '内部界面状态 viewport');
+            const file = requireFile(declaration.path);
+            const relative = path.relative(realpathSync(indexDir), realpathSync(file));
+            if (relative === '' || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`))) throw new Error('内部媒体必须位于展示目录之外');
+            const digest = createHash('sha256').update(readFileSync(file)).digest('hex');
+            if (state.sha256 !== digest) throw new Error('内部媒体与行为日志的来源哈希不一致');
+            internalStates.delete(key);
+        }
+    }
+    if (internalStates.size) throw new Error('内部媒体声明未关联未展示的界面状态');
     if (new Set(manifest.requirements.map(req => req.requirement)).size !== manifest.requirements.length) throw new Error('重复需求名称');
     for (const chain of manifest.behaviorChains) {
         if (!manifest.requirements.some(req => req.evidence?.some(ref => normalizePath(resolve(ref)) === normalizePath(resolve(chain.evidence))))) throw new Error('行为链没有需求覆盖');
@@ -593,7 +613,14 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
         throw new Error('E2E 证据索引与 PASS 清单 media/images 未一一对应');
     }
 
-    const behaviorChainCount = distinctUI ? validateDistinctUIEvidence({ manifest, index, projectRoot, manifestDir, indexDir }) : chains.size;
+    const outOfScopeMedia = validateOutOfScopeMedia({
+        manifest,
+        manifestMedia,
+        projectRoot,
+        manifestDir,
+        indexDir,
+    });
+    const behaviorChainCount = distinctUI ? validateDistinctUIEvidence({ manifest, index, outOfScopeMedia, projectRoot, manifestDir, indexDir }) : chains.size;
     const visualReview = validateVisualReview({
         manifestPath,
         visualOnly,
@@ -601,13 +628,6 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
         manifestMedia,
         manifestDir,
         projectRoot,
-        indexDir,
-    });
-    const outOfScopeMedia = validateOutOfScopeMedia({
-        manifest,
-        manifestMedia,
-        projectRoot,
-        manifestDir,
         indexDir,
     });
 

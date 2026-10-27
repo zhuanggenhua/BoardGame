@@ -108,6 +108,128 @@ describe('InfoTooltip layer context', () => {
         }
     });
 
+    it('请求向上展开时将提示放在锚点上方且箭头对准锚点', () => {
+        const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+        const originalInnerWidth = window.innerWidth;
+        const originalInnerHeight = window.innerHeight;
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1440 });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 900 });
+        HTMLElement.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('tooltip-anchor')) {
+                return {
+                    x: 40,
+                    y: 520,
+                    top: 520,
+                    right: 80,
+                    bottom: 560,
+                    left: 40,
+                    width: 40,
+                    height: 40,
+                    toJSON: () => ({}),
+                } as DOMRect;
+            }
+            if (this.getAttribute('data-testid') === 'info-tooltip') {
+                return {
+                    x: 0,
+                    y: 0,
+                    top: 0,
+                    right: 340,
+                    bottom: 100,
+                    left: 0,
+                    width: 340,
+                    height: 100,
+                    toJSON: () => ({}),
+                } as DOMRect;
+            }
+            return originalGetBoundingClientRect.call(this);
+        };
+
+        try {
+            render(
+                <div className="tooltip-anchor">
+                    <InfoTooltip
+                        title="标题"
+                        content={['说明']}
+                        isVisible
+                        position="top"
+                    />
+                </div>,
+            );
+
+            const tooltip = screen.getByTestId('info-tooltip');
+            expect(tooltip).toHaveAttribute('data-tooltip-placement', 'top');
+            expect(tooltip).toHaveStyle({ left: '12px', top: '410px' });
+            expect(tooltip.querySelector('[data-tooltip-arrow="true"]')).toHaveStyle({
+                left: '48px',
+                transform: 'translateX(-50%) rotate(45deg)',
+            });
+        } finally {
+            HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+            Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
+            Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+        }
+    });
+
+    it('锚点上方空间不足时向下展开', () => {
+        const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+        const originalInnerWidth = window.innerWidth;
+        const originalInnerHeight = window.innerHeight;
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 812 });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 375 });
+        HTMLElement.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('tooltip-anchor')) {
+                return {
+                    x: 40,
+                    y: 20,
+                    top: 20,
+                    right: 80,
+                    bottom: 60,
+                    left: 40,
+                    width: 40,
+                    height: 40,
+                    toJSON: () => ({}),
+                } as DOMRect;
+            }
+            if (this.getAttribute('data-testid') === 'info-tooltip') {
+                return {
+                    x: 0,
+                    y: 0,
+                    top: 0,
+                    right: 240,
+                    bottom: 100,
+                    left: 0,
+                    width: 240,
+                    height: 100,
+                    toJSON: () => ({}),
+                } as DOMRect;
+            }
+            return originalGetBoundingClientRect.call(this);
+        };
+
+        try {
+            render(
+                <div className="tooltip-anchor">
+                    <InfoTooltip
+                        title="标题"
+                        content={['说明']}
+                        isVisible
+                        position="top"
+                    />
+                </div>,
+            );
+
+            const tooltip = screen.getByTestId('info-tooltip');
+            expect(tooltip).toHaveAttribute('data-tooltip-placement', 'bottom');
+            expect(tooltip).toHaveStyle({ left: '12px', top: '70px' });
+        } finally {
+            HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+            Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
+            Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+        }
+    });
+
     it('无标题时不渲染空标题栏', () => {
         render(
             <div className="tooltip-anchor">

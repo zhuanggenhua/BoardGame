@@ -16,8 +16,10 @@ const hasImplementationInProgressBadge = (characterId: string) => (
 );
 
 describe('DiceThrone 角色目录生命周期状态合同', () => {
-    it('已完成 closeout 的近批新英雄不应继续保留 implementation_in_progress 徽标', () => {
-        for (const characterId of ['gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'artificer']) {
+    it('已完成 closeout 的英雄不应继续保留 implementation_in_progress 徽标', () => {
+        for (const characterId of [
+            'gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'artificer', 'doctor_strange',
+        ]) {
             expect(
                 hasImplementationInProgressBadge(characterId),
                 `${characterId} 不应继续保留 implementation_in_progress`,
@@ -46,5 +48,19 @@ describe('DiceThrone 角色目录生命周期状态合同', () => {
             variant: 'disabled-overlay',
         });
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).toContain('vampire_lord');
+    });
+
+    it('索尔完整玩法已实施但未获真人完成态确认时保持实施中并可见', () => {
+        const thor = DICETHRONE_CHARACTER_CATALOG.find((character) => character.id === 'thor');
+
+        expect(thor?.setupOptionStatus).toBe('in_progress');
+        expect(thor?.setupOptionStatusReason).toContain('真人完成态确认前');
+        expect(getImplementationInProgressBadge('thor')).toMatchObject({
+            id: 'implementation_in_progress',
+            labelKey: 'common:status_tags.under_construction',
+            tone: 'warning',
+            variant: 'disabled-overlay',
+        });
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).toContain('thor');
     });
 });

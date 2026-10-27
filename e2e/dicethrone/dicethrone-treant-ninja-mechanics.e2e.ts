@@ -1425,6 +1425,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             { cardId: 'upgrade-nature-touch-2', abilityId: 'nature-touch', cpBefore: 5, cpAfter: 3, level: 2 },
             { cardId: 'upgrade-vengeful-vines-2', abilityId: 'vengeful-vines', cpBefore: 5, cpAfter: 3, level: 2 },
             { cardId: 'upgrade-wild-growth-2', abilityId: 'wild-growth', cpBefore: 5, cpAfter: 3, level: 2 },
+            { cardId: 'upgrade-wild-roar-2', abilityId: 'wild-roar', cpBefore: 5, cpAfter: 3, level: 2 },
             { cardId: 'upgrade-shattering-fist-2', abilityId: 'shattering-fist', cpBefore: 5, cpAfter: 4, level: 2 },
         ];
 
@@ -1598,37 +1599,16 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             }, { timeout: 10000 }).toEqual({ cp: 3, seedling: 0, sapling: 2, divine: 0, handCount: 0 });
             await screenshot(match.hostPage, testName, '05-downpour-after-resolve.png');
 
-            await prepareMainAction('treant-card-planting', { cp: 5, seedling: 0, sapling: 0, divine: 0 });
-            await screenshot(match.hostPage, testName, '06-planting-before-drag.png');
-            await dragHandCardToPlay(match.hostPage, 'treant-card-planting');
-            await expect(match.hostPage.getByText(/选择养成后的树灵/)).toBeVisible({ timeout: 10000 });
-            await screenshot(match.hostPage, testName, '07-planting-choice-modal.png');
-            await match.hostPage.getByRole('button', { name: '结算后：幼种 3' }).click();
-            await expect(match.hostPage.getByText(/选择养成后的树灵/)).toBeHidden({ timeout: 10000 });
-            await expect.poll(async () => {
-                const core = await readHarnessCoreState(match.hostPage);
-                const p0 = asRecord(asRecordMap(core.players)['0']);
-                const resources = asRecord(p0.resources) as Record<string, number>;
-                const tokens = asRecord(p0.tokens) as Record<string, number>;
-                const hand = Array.isArray(p0.hand) ? p0.hand : [];
-                return {
-                    cp: resources[RESOURCE_IDS.CP],
-                    seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
-                    handCount: hand.length,
-                };
-            }, { timeout: 10000 }).toEqual({ cp: 4, seedling: 3, handCount: 0 });
-            await screenshot(match.hostPage, testName, '08-planting-after-resolve.png');
-
             await prepareMainAction('treant-card-mother-tree', { cp: 5, seedling: 0, sapling: 0, divine: 0 }, [6]);
-            await screenshot(match.hostPage, testName, '09-mother-tree-spirit-before-drag.png');
+            await screenshot(match.hostPage, testName, '06-mother-tree-spirit-before-drag.png');
             await dragHandCardToPlay(match.hostPage, 'treant-card-mother-tree');
             await screenshotCardSpotlightIfVisible(
                 match.hostPage,
                 testName,
-                '10-mother-tree-spirit-card-spotlight-without-central-dice.png',
+                '07-mother-tree-spirit-card-spotlight-without-central-dice.png',
             );
             await expect(match.hostPage.getByText('母树：选择养成后的树灵')).toBeVisible({ timeout: 10000 });
-            await screenshot(match.hostPage, testName, '10-mother-tree-spirit-choice-modal.png');
+            await screenshot(match.hostPage, testName, '07-mother-tree-spirit-choice-modal.png');
             await match.hostPage.getByRole('button', { name: '结算后：幼种 2，木苗 1' }).click();
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);
@@ -1641,18 +1621,18 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     handCount: hand.length,
                 };
             }, { timeout: 10000 }).toEqual({ seedling: 2, sapling: 1, handCount: 0 });
-            await screenshot(match.hostPage, testName, '11-mother-tree-spirit-after-resolve.png');
+            await screenshot(match.hostPage, testName, '08-mother-tree-spirit-after-resolve.png');
 
             await prepareMainAction('treant-card-mother-tree', { cp: 5, seedling: 0, sapling: 0, divine: 0 }, [1]);
             const beforeNonSpirit = await readHarnessCoreState(match.hostPage);
             const p0Before = asRecord(asRecordMap(beforeNonSpirit.players)['0']);
             const deckBefore = Array.isArray(p0Before.deck) ? p0Before.deck.length : 0;
-            await screenshot(match.hostPage, testName, '12-mother-tree-non-spirit-before-drag.png');
+            await screenshot(match.hostPage, testName, '09-mother-tree-non-spirit-before-drag.png');
             await dragHandCardToPlay(match.hostPage, 'treant-card-mother-tree');
             await screenshotCardSpotlightIfVisible(
                 match.hostPage,
                 testName,
-                '13-mother-tree-non-spirit-card-spotlight-without-central-dice.png',
+                '10-mother-tree-non-spirit-card-spotlight-without-central-dice.png',
             );
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);
@@ -1664,7 +1644,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     deckDelta: deckBefore - deck.length,
                 };
             }, { timeout: 10000 }).toEqual({ handCount: 1, deckDelta: 1 });
-            await screenshot(match.hostPage, testName, '14-mother-tree-non-spirit-after-draw.png');
+            await screenshot(match.hostPage, testName, '11-mother-tree-non-spirit-after-draw.png');
         } finally {
             await closeMatchContexts(match);
         }

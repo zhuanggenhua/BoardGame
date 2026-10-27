@@ -134,6 +134,73 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         expect(result2.finalState.sys.interaction?.current).toBeDefined();
     });
 
+    it('“我又行了”只允许在进攻投掷阶段打出', () => {
+        const offensiveRunner = createRunner(createQueuedRandom([1, 1, 1, 4, 5]), false);
+        const offensiveRoll = offensiveRunner.run({
+            name: '进攻方持有“我又行了”并完成首次投掷',
+            setup: createSetupWithHand(['card-i-can-again'], {
+                playerId: '0',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['1'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+            ],
+        });
+
+        const offensiveAttempt = offensiveRunner.run({
+            name: '进攻投掷阶段打出“我又行了”',
+            setup: () => offensiveRoll.finalState,
+            commands: [cmd('PLAY_CARD', '0', { cardId: 'card-i-can-again' })],
+        });
+
+        expect(offensiveAttempt.finalState.core.players['0'].hand.map((card) => card.id)).not.toContain('card-i-can-again');
+        expect(offensiveAttempt.finalState.sys.interaction?.current).toBeDefined();
+
+        const defensiveRunner = createRunner(createQueuedRandom([
+            1, 1, 1, 4, 5, // 进攻方投骰
+            3, 3, 3, 3, 3, // 防御方投骰
+        ]), false);
+        const defensiveRoll = defensiveRunner.run({
+            name: '防御方持有“我又行了”并完成防御投掷',
+            setup: createSetupWithHand(['card-i-can-again'], {
+                playerId: '1',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['0'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-3' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+            ],
+        });
+
+        expect(defensiveRoll.finalState.sys.phase).toBe('defensiveRoll');
+        expect(defensiveRoll.finalState.core.rollCount).toBe(1);
+        const defensiveResources = defensiveRoll.finalState.core.players['1'].resources;
+        const defensiveAttempt = defensiveRunner.run({
+            name: '防御投掷阶段拒绝打出进攻专属的“我又行了”',
+            setup: () => defensiveRoll.finalState,
+            commands: [cmd('PLAY_CARD', '1', { cardId: 'card-i-can-again' })],
+        });
+
+        expect(defensiveAttempt.finalState.core.players['1'].hand.map((card) => card.id)).toContain('card-i-can-again');
+        expect(defensiveAttempt.finalState.core.players['1'].resources).toEqual(defensiveResources);
+        expect(defensiveAttempt.finalState.sys.interaction?.current).toBeFalsy();
+    });
+
     it('“就这？”不是红色即时牌：进攻掷骰阶段和非防御掷骰者都不能打出', () => {
         const offensiveRandom = createQueuedRandom([
             1, 1, 1, 4, 5, // 进攻方投骰

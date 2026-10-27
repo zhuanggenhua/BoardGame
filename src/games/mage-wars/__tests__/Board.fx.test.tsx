@@ -1713,9 +1713,9 @@ describe('MageWarsBoard FX wiring', () => {
             ctx: { cell: { row: 1, col: 1 }, intensity: 'normal' },
             params: {
                 targetObjectId: 'mwobj-healed-cat',
-                healingAmount: 3,
-                actualHealing: 2,
-                diceResults: [2],
+                healingAmount: 4,
+                actualHealing: 3,
+                diceResults: [2, 2],
             },
         };
 
@@ -1732,8 +1732,8 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-healing-impact')).not.toBeNull();
             expect(screen.getByTestId('mage-wars-fx-healing-impact').getAttribute('data-target-anchor-id')).toBe('mwobj-healed-cat');
             expect(screen.queryByTestId('mage-wars-fx-healing-burst')).not.toBeNull();
-            expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('2');
-            expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+2');
+            expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('3');
+            expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+3');
             const attackDice = screen.getByTestId('mage-wars-fx-attack-dice');
             expect(attackDice.getAttribute('data-placement')).toBe('screen-center');
             expect(attackDice.getAttribute('data-overlay-layer')).toBe('screen');
@@ -1742,13 +1742,13 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mage-wars-fx-attack-dice-title')).toHaveTextContent('治疗');
             const healSummary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
             expect(healSummary).toHaveAttribute('data-contrast', 'opaque');
-            expect(healSummary).toHaveTextContent('+2');
+            expect(healSummary.textContent).toBe('4');
             expect(healSummary.className).not.toMatch(/text-emerald-300|text-red-400/);
             expect((healSummary as HTMLElement).style.opacity).toBe('1');
             expect((healSummary as HTMLElement).style.color).toBe('rgb(74, 222, 128)');
             expect(attackDice.getAttribute('data-visible-duration-ms')).toBe(String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs));
             const attackDieFaces = attackDice.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]');
-            expect(attackDieFaces).toHaveLength(1);
+            expect(attackDieFaces).toHaveLength(2);
             expect(attackDieFaces[0]?.querySelector('[data-settled-face-kind]')).toHaveAttribute('data-settled-face-kind', 'hit2');
             expect(attackDieFaces[0]?.querySelector('.mage-wars-attack-die-pose')).toBeNull();
             const cube = attackDieFaces[0]?.querySelector('[data-die-renderer="css-d6"]');
@@ -1855,6 +1855,39 @@ describe('MageWarsBoard FX wiring', () => {
             resetFxFrameClockForTests();
             vi.useRealTimers();
         }
+    });
+
+    it('starts and ends force-push travel at the actual field-card positions', () => {
+        const sourceBox = { left: 27, top: 37, width: 7, height: 12 };
+        const targetBox = { left: 52, top: 40, width: 7, height: 12 };
+        const sourceSnapshot = anchorSnapshot('mwobj-push-target', 'entity', sourceBox);
+        const targetSnapshot = anchorSnapshot('mwobj-push-target', 'entity', targetBox);
+        const event: FxEvent = {
+            id: 'fx-push-card-positions',
+            cue: 'mage-wars.spell.push',
+            ctx: { cell: { row: 1, col: 2 }, intensity: 'normal' },
+            params: {
+                source: { row: 1, col: 1 },
+                targetObjectId: 'mwobj-push-target',
+                sourceSnapshot,
+                targetSnapshot,
+            },
+        };
+
+        renderFxRenderer(
+            <SpellPushRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={vi.fn()}
+                onComplete={vi.fn()}
+            />,
+        );
+
+        const slide = screen.getByTestId('mage-wars-fx-push-slide');
+        expect(Number(slide.getAttribute('data-from-left'))).toBe(sourceBox.left);
+        expect(Number(slide.getAttribute('data-from-top'))).toBe(sourceBox.top);
+        expect(Number(slide.getAttribute('data-to-left'))).toBe(targetBox.left);
+        expect(Number(slide.getAttribute('data-to-top'))).toBe(targetBox.top);
     });
 
     it('keeps force-push travel on source and target cells when snapshots already sit on the destination', () => {

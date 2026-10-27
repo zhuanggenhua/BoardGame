@@ -1362,7 +1362,7 @@ describe('mage-wars mage equipment', () => {
             name: '丛林灰狼',
             typeLine: '生物 / 动物',
             life: 8,
-            damage: 5,
+            damage: 3,
         });
         const cast = runCommand({
             core: withArenaObject(planned.state.core, animal),
@@ -1395,9 +1395,9 @@ describe('mage-wars mage equipment', () => {
                 payload: expect.objectContaining({
                     sourceAbilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
                     spellCardId: beastStaffId,
-                    diceResults: [3, 3],
-                    healing: 6,
-                    actualHealing: 5,
+                    diceResults: [2, 2],
+                    healing: 4,
+                    actualHealing: 3,
                 }),
             }),
         ]));
@@ -1405,6 +1405,27 @@ describe('mage-wars mage equipment', () => {
         expect(healed.state.core.objects[equipment!.id].abilityUseRoundNumbers).toMatchObject({
             [MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF]: cast.state.core.turnNumber,
         });
+        const blank = runCommand({
+            core: cast.state.core,
+            sys: { ...cast.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+            playerId: '0',
+            payload: {
+                objectId: equipment!.id,
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+                manaCost: 2,
+                targetObjectId: animal.id,
+                mode: 'heal',
+            },
+        }, { ...fixedRandom, d: () => 1 });
+        expect(blank.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
+                payload: expect.objectContaining({ diceResults: [0, 0], healing: 0, actualHealing: 0 }),
+            }),
+        ]));
+        expect(blank.state.core.objects[animal.id].damage).toBe(3);
     });
 
     it('rejects Beast Staff for the wrong mage, a distant target, or a second use in the same round', () => {

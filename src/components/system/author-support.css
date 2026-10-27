@@ -19,10 +19,8 @@
 .author-support-heading { margin: -26px 32px 20px 0; font-size: 18px; font-weight: 800; line-height: 1.5; }
 html[data-home-entry-style="modern"] .author-support-note { display: none; }
 html[data-home-entry-style="modern"] .author-support-codes { margin-top: 16px; }
-@media (max-width: 1023px) {
  .platform-menu-content .author-support-popover { position: relative; width: 100%; max-width: none; margin: 8px 0 16px; padding: 54px 14px 18px; border: 2px solid #111; box-shadow: 4px 4px #d5ff00; }
  .platform-menu-content .author-support-close { top: 4px; right: 4px; }
  .platform-menu-content .author-support-heading { margin: -36px 36px 16px 0; font-size: 18px; }
  .platform-menu-content .author-support-description { font-size: 14px; line-height: 1.7; }
  .platform-menu-content .author-support-codes { gap: 12px; }
-}

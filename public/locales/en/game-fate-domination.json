@@ -86,6 +86,7 @@
     "alreadyDeployed": "You have already deployed this round",
     "unknownLocation": "Unknown location",
     "locationFull": "Location is full",
+    "invalidDeploymentSlot": "Choose an unoccupied deployment space with the highest remaining bonus",
     "staleCard": "The card is no longer in your hand",
     "invalidAttackSelection": "The attack selection is invalid or out of date. Please select again.",
     "cardAlreadySelected": "This card is already selected",

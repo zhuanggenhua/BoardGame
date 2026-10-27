@@ -16,6 +16,7 @@ import { STATUS_IDS } from './ids';
 import type {
     DiceThroneCore,
     DiceThroneEvent,
+    DamageBreakdown,
     DamageDealtEvent,
     HealAppliedEvent,
     StatusRemovedEvent,
@@ -61,6 +62,28 @@ export interface EffectContext {
     /** 当前效果的现实伤害来源。卡牌上下文显式标为 card，其余技能默认 ability。 */
     damageOrigin?: DamageOrigin;
 }
+
+const getAttackDamageBeforePercent = (breakdown: DamageBreakdown): number | undefined => {
+    const percentIndex = breakdown.steps.findIndex(step => (
+        step.type === 'percent'
+        && (step.sourceId === STATUS_IDS.DAZZLE || step.sourceId === 'spider-sense')
+    ));
+
+    let damage = breakdown.base.value;
+    const stepsBeforePercent = percentIndex < 0
+        ? breakdown.steps
+        : breakdown.steps.slice(0, percentIndex);
+    for (const step of stepsBeforePercent) {
+        if (step.type === 'flat') {
+            damage += step.value;
+        } else if (step.type === 'percent') {
+            damage *= 1 + step.value / 100;
+        } else {
+            return undefined;
+        }
+    }
+    return damage;
+};
 
 // ============================================================================
 // Custom Action 处理器注册表
@@ -626,6 +649,9 @@ function resolveEffectAction(
                     additionalModifiers,
                 });
                 const result = calc.resolve();
+                const attackDamageBeforePercent = isCurrentAttackDamage
+                    ? getAttackDamageBeforePercent(result.breakdown)
+                    : undefined;
 
                 // 收集 PassiveTrigger 产生的副作用事件（removeStatus / custom handler）
                 events.push(...result.sideEffectEvents);
@@ -664,6 +690,9 @@ function resolveEffectAction(
                                 sourceAbilityId,
                                 damageScope: resolvedDamageScope,
                                 damageOrigin: resolvedDamageOrigin,
+                                ...(typeof attackDamageBeforePercent === 'number'
+                                    ? { attackDamageBeforePercent }
+                                    : {}),
                                 ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
                                 ...(action.unblockable ? { unblockable: true } : {}),
                             },
@@ -692,6 +721,9 @@ function resolveEffectAction(
                         sourceAbilityId,
                         damageScope: resolvedDamageScope,
                         damageOrigin: resolvedDamageOrigin,
+                        ...(typeof attackDamageBeforePercent === 'number'
+                            ? { attackDamageBeforePercent }
+                            : {}),
                         ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
                         breakdown: result.breakdown,
                         ...(action.unblockable ? { unblockable: true } : {}),
@@ -934,6 +966,7 @@ function resolveEffectAction(
                                 .reduce((sum, value) => sum + value, 0)
                             : undefined;
                         if (isCurrentAttackDamage && typeof currentAttackPercent === 'number') {
+                            dmgPayload.attackDamageBeforePercent = dmgPayload.amount;
                             const multiplier = Math.max(0, 1 + currentAttackPercent / 100);
                             dmgPayload.amount = Math.ceil(dmgPayload.amount * multiplier);
                             dmgPayload.actualDamage = Math.min(

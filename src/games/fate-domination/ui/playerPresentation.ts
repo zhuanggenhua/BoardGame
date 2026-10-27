@@ -17,7 +17,7 @@ export function projectFatePlayer(core: FateDominationCore, playerId: string, vi
         servant: servantVisible ? FATE_SERVANT_BY_ID[player.servantId] : undefined,
         servantVisible,
         servantClass: visibleFateServantClass(core, playerId, viewerId),
-        location: player.locationId ? core.battlefield[player.locationId].label : '未部署',
+        location: player.eliminated ? '已淘汰' : player.locationId ? core.battlefield[player.locationId].label : '未部署',
         handCount: player.publicView?.handCount ?? hand.available.length + hand.staged.length,
         deckCount: player.publicView?.deckCount ?? player.deck.length,
         discardCount: player.publicView?.discardCount ?? player.discard.length,

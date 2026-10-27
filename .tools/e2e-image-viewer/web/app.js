@@ -20,6 +20,9 @@ const indexPanel = document.querySelector("#indexPanel");
 const toggleIndexButton = document.querySelector("#toggleIndex");
 const indexMeta = document.querySelector("#indexMeta");
 const indexList = document.querySelector("#indexList");
+const indexSearch = document.querySelector("#indexSearch");
+const clearIndexSearchButton = document.querySelector("#clearIndexSearch");
+const indexResizeHandle = document.querySelector("#indexResizeHandle");
 const empty = document.querySelector("#empty");
 const imageDetail = document.querySelector("#imageDetail");
 const imageDetailTitle = document.querySelector("#imageDetailTitle");
@@ -43,10 +46,17 @@ const MAX_RENDER_TILES = 480;
 const DRAG_THRESHOLD = 4;
 const FOCUS_SCALE = 0.72;
 const INDEX_COLLAPSED_STORAGE_KEY = "boardgame:e2e-image-viewer:index-collapsed";
+const INDEX_WIDTH_STORAGE_KEY = "boardgame:e2e-image-viewer:index-width";
+const INDEX_MIN_WIDTH = 140;
+const INDEX_MAX_WIDTH = 600;
+const VIEWPORT_MIN_WIDTH = 180;
 
 let items = [];
 let positionedItems = [];
 let selectedPath = "";
+let indexMatchedCount = 0;
+let indexWidth = 360;
+let indexResizeState = null;
 let transform = { x: 64, y: 48, scale: 0.72 };
 let boardSize = { width: 1, height: 1 };
 let dragState = null;
@@ -107,6 +117,45 @@ const writeIndexCollapsed = (collapsed) => {
   } catch {
     // localStorage 不可用时仍允许本次页面内收起。
   }
+};
+
+const readIndexWidth = () => {
+  try {
+    const storedWidth = Number(window.localStorage.getItem(INDEX_WIDTH_STORAGE_KEY));
+    return Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeIndexWidth = (width) => {
+  try {
+    window.localStorage.setItem(INDEX_WIDTH_STORAGE_KEY, String(Math.round(width)));
+  } catch {
+    // localStorage 不可用时仍允许本次页面内调整宽度。
+  }
+};
+
+const getIndexWidthBounds = () => {
+  const max = Math.max(INDEX_MIN_WIDTH, Math.min(INDEX_MAX_WIDTH, window.innerWidth - VIEWPORT_MIN_WIDTH));
+  return { min: Math.min(INDEX_MIN_WIDTH, max), max };
+};
+
+const applyIndexWidth = (width, { persist = false } = {}) => {
+  const { min, max } = getIndexWidthBounds();
+  indexWidth = Math.round(clamp(width, min, max));
+  indexPanel.style.setProperty("--index-panel-width", `${indexWidth}px`);
+  indexResizeHandle.setAttribute("aria-valuemin", String(min));
+  indexResizeHandle.setAttribute("aria-valuemax", String(max));
+  indexResizeHandle.setAttribute("aria-valuenow", String(indexWidth));
+  indexResizeHandle.setAttribute("aria-valuetext", `${indexWidth} 像素`);
+  if (persist) writeIndexWidth(indexWidth);
+};
+
+const initializeIndexWidth = () => {
+  const storedWidth = readIndexWidth();
+  const defaultWidth = Number.parseFloat(getComputedStyle(indexPanel).flexBasis) || 360;
+  applyIndexWidth(storedWidth ?? defaultWidth);
 };
 
 const applyIndexCollapsed = (collapsed) => {
@@ -467,13 +516,34 @@ const focusItem = (item) => {
   centerItem(item);
 };
 
-const renderIndex = (indexMatchedCount = 0) => {
-  indexList.textContent = "";
-  indexMeta.textContent = indexMatchedCount > 0
-    ? `${items.length} 张 · ${indexMatchedCount} 条中文说明`
-    : `${items.length} 张 · 未找到中文索引`;
+const renderIndex = () => {
+  const searchTerm = indexSearch.value.trim().toLocaleLowerCase();
+  const visibleItems = searchTerm
+    ? items.filter((item) => [item.displayTitle || item.relativePath, displayDescription(item), item.relativePath]
+      .some((value) => value.toLocaleLowerCase().includes(searchTerm)))
+    : items;
 
-  for (const item of items) {
+  indexList.textContent = "";
+  clearIndexSearchButton.hidden = searchTerm.length === 0;
+  if (searchTerm) {
+    indexMeta.textContent = `${visibleItems.length} / ${items.length} 张匹配`;
+  } else if (indexMatchedCount > 0) {
+    indexMeta.textContent = `${items.length} 张 · ${indexMatchedCount} 条中文说明`;
+  } else {
+    indexMeta.textContent = `${items.length} 张 · 未找到中文索引`;
+  }
+
+  if (searchTerm && visibleItems.length === 0) {
+    const noResults = document.createElement("p");
+    noResults.className = "index-empty";
+    noResults.setAttribute("role", "status");
+    noResults.textContent = "没有匹配的截图";
+    indexList.append(noResults);
+    updateIndexSelection();
+    return;
+  }
+
+  for (const item of visibleItems) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "index-item";
@@ -686,7 +756,8 @@ const loadDirectory = async ({ preserveView = true } = {}) => {
     }
   }
   renderBoard();
-  renderIndex(payload.indexMatchedCount ?? 0);
+  indexMatchedCount = payload.indexMatchedCount ?? 0;
+  renderIndex();
   if (!preserveView || previousSignature.length === 0) {
     resetView({ rerender: false });
   } else {
@@ -768,7 +839,70 @@ const stopDetailDrag = (event) => {
 imageDetailViewport.addEventListener("pointerup", stopDetailDrag);
 imageDetailViewport.addEventListener("pointercancel", stopDetailDrag);
 
+initializeIndexWidth();
 applyIndexCollapsed(readIndexCollapsed());
+
+indexSearch.addEventListener("input", renderIndex);
+clearIndexSearchButton.addEventListener("click", () => {
+  indexSearch.value = "";
+  renderIndex();
+  indexSearch.focus();
+});
+indexSearch.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !indexSearch.value) return;
+  event.preventDefault();
+  indexSearch.value = "";
+  renderIndex();
+});
+
+indexResizeHandle.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0 || indexCollapsed) return;
+  event.preventDefault();
+  indexResizeState = { pointerId: event.pointerId, startX: event.clientX, startWidth: indexWidth };
+  indexPanel.classList.add("resizing");
+  indexResizeHandle.classList.add("dragging");
+  indexResizeHandle.setPointerCapture(event.pointerId);
+});
+
+indexResizeHandle.addEventListener("pointermove", (event) => {
+  if (!indexResizeState || event.pointerId !== indexResizeState.pointerId) return;
+  event.preventDefault();
+  applyIndexWidth(indexResizeState.startWidth + event.clientX - indexResizeState.startX);
+  scheduleVisibleRender();
+});
+
+const finishIndexResize = (event) => {
+  if (!indexResizeState || event.pointerId !== indexResizeState.pointerId) return;
+  if (indexResizeHandle.hasPointerCapture(event.pointerId)) {
+    indexResizeHandle.releasePointerCapture(event.pointerId);
+  }
+  indexResizeState = null;
+  indexPanel.classList.remove("resizing");
+  indexResizeHandle.classList.remove("dragging");
+  writeIndexWidth(indexWidth);
+  window.requestAnimationFrame(() => {
+    renderBoard();
+    applyTransform();
+  });
+};
+
+indexResizeHandle.addEventListener("pointerup", finishIndexResize);
+indexResizeHandle.addEventListener("pointercancel", finishIndexResize);
+indexResizeHandle.addEventListener("keydown", (event) => {
+  const { min, max } = getIndexWidthBounds();
+  const step = event.shiftKey ? 48 : 16;
+  let nextWidth = indexWidth;
+  if (event.key === "ArrowLeft") nextWidth -= step;
+  else if (event.key === "ArrowRight") nextWidth += step;
+  else if (event.key === "Home") nextWidth = min;
+  else if (event.key === "End") nextWidth = max;
+  else return;
+
+  event.preventDefault();
+  applyIndexWidth(nextWidth, { persist: true });
+  renderBoard();
+  applyTransform();
+});
 
 toggleIndexButton.addEventListener("click", () => {
   applyIndexCollapsed(!indexCollapsed);
@@ -867,6 +1001,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("resize", () => {
+  applyIndexWidth(indexWidth);
   renderBoard();
   applyTransform();
   if (detailItem) fitDetailMedia();

@@ -1,0 +1,14 @@
+[Unit]
+Description=BoardGame weekly asset backup from server primary to R2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+Environment=TZ=Asia/Shanghai
+ExecStart=/home/admin/storage/assets/control/backup-server-assets.sh
+TimeoutStartSec=6d
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

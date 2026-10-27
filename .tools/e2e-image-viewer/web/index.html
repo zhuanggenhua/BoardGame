@@ -32,12 +32,18 @@
           <div class="index-header">
             <div class="index-title">
               <strong>截图索引</strong>
-              <span id="indexMeta">读取中...</span>
+              <span id="indexMeta" aria-live="polite">读取中...</span>
             </div>
             <button id="toggleIndex" class="index-toggle" type="button" aria-expanded="true" aria-label="收起截图索引" title="收起截图索引">&lt;</button>
           </div>
+          <div class="index-search">
+            <label class="visually-hidden" for="indexSearch">搜索标题、说明或文件名</label>
+            <input id="indexSearch" type="text" placeholder="搜索标题、说明或文件名" autocomplete="off" />
+            <button id="clearIndexSearch" class="index-search-clear" type="button" aria-label="清除搜索" title="清除搜索" hidden>×</button>
+          </div>
           <div id="indexList" class="index-list"></div>
         </aside>
+        <div id="indexResizeHandle" class="index-resize-handle" role="separator" aria-orientation="vertical" aria-label="调整截图索引宽度" aria-valuemin="140" aria-valuemax="600" aria-valuenow="360" tabindex="0" title="拖动调整侧栏宽度，也可用方向键微调"></div>
         <section id="viewport" class="viewport" aria-label="E2E 图片画布">
           <div id="empty" class="empty">正在读取截图目录...</div>
           <div id="board" class="board"></div>

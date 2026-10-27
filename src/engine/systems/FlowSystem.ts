@@ -84,6 +84,8 @@ export interface PhaseEnterResult {
 }
 
 export interface FlowHooks<TCore = unknown> {
+    /** 游戏显式声明的阶段转换命令；其权限、目的阶段与边界副作用仍由同一组hooks裁定。 */
+    advanceCommandTypes?: readonly string[];
     /** 初始阶段 */
     initialPhase: string;
 
@@ -333,7 +335,7 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
         setup: (): Partial<{ phase: string }> => ({ phase: hooks.initialPhase }),
 
         beforeCommand: ({ state, command, random, playerIds }): HookResult<TCore> | void => {
-            if (command.type !== FLOW_COMMANDS.ADVANCE_PHASE) return;
+            if (command.type !== FLOW_COMMANDS.ADVANCE_PHASE && !hooks.advanceCommandTypes?.includes(command.type)) return;
             if (state.sys.gameover) {
                 return { halt: true, error: 'game_over' };
             }

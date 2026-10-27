@@ -1,3 +1,5 @@
+import {assertFateHandCardsUnclipped} from './handVisibility';
+import {chooseFateIdentity} from './identitySelection';
 import {createHash} from 'node:crypto';
 import {mkdir, writeFile} from 'node:fs/promises';
 import {existsSync, readFileSync} from 'node:fs';
@@ -25,6 +27,7 @@ type HarnessWindow=Window&{__BG_TEST_HARNESS__?:{
 }};
 
 const SOURCE_FILES=[
+    'src/hooks/ui/useTouchLongPress.ts',
     'e2e/fate-domination/hand-layout-real-board.e2e.ts',
     'src/games/fate-domination/Board.tsx',
     'src/games/fate-domination/manifest.ts',
@@ -38,11 +41,16 @@ const SOURCE_FILES=[
     'src/games/fate-domination/ui/FateMapSurface.tsx',
     'src/games/fate-domination/ui/tableCameraLayout.ts',
     'src/games/fate-domination/ui/runtime-table.css',
+    'src/games/fate-domination/ui/FatePlayerRail.tsx',
+    'src/games/fate-domination/ui/FatePlayerDetail.tsx',
+    'src/games/fate-domination/ui/player-detail.css',
     'src/games/fate-domination/__tests__/Board.runtime.test.tsx',
     'public/assets/i18n/zh-CN/fate-domination/assets-manifest.json',
 ];
 const GAME_ID='fate-domination';
-const CHAIN_ID='fate-inline-play-area-restoration';
+// 定向重采只影响媒体；完整交互与原断言仍全部运行。
+const CAPTURE_STATES=new Set((process.env.FATE_CAPTURE_STATES??'').split(',').filter(Boolean));
+const CHAIN_ID=CAPTURE_STATES.size ? 'fate-inline-play-area-targeted-recapture' : 'fate-inline-play-area-restoration';
 const DESKTOP_NORMAL_CHAIN_ID='fate-desktop-narrow-resting-state';
 const TOUCH_NORMAL_CHAIN_ID='fate-touch-inspection-close-and-continue';
 const cardAssetManifest=JSON.parse(readFileSync('public/assets/i18n/zh-CN/fate-domination/assets-manifest.json','utf8'));
@@ -141,6 +149,7 @@ async function snapshot(page:Page):Promise<Snapshot>{
             attackHandCardCenterHit:centerHits(document.querySelector('[data-testid="fate-domination-hand"] [data-card-zone="hand"]')),
             skillHandCardCenterHit:centerHits(document.querySelector('.fd-skill-cards [data-card-zone="skill"]')),
             phaseControlCenterHit:centerHits(document.querySelector('.fd-phase-control .fd-runtime-primary')),
+            phaseControlCenterTarget:(()=>{const element=document.querySelector('.fd-phase-control .fd-runtime-primary');if(!element)return null;const r=element.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,400)??null;})(),
             ridingControls:rect('[data-testid="fate-riding-controls"]'),
             powerFont:getComputedStyle(document.querySelector<HTMLElement>('.fd-play-power')!).fontSize,
             redundantHandHints:document.querySelectorAll('.fd-hand-scroll-hint,.fd-runtime-zone-label').length,
@@ -206,6 +215,7 @@ function loadedPlayedCardArt(snapshot:Snapshot){
 
 test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立',async({page,context,browser,baseURL},testInfo)=>{
     test.setTimeout(300000);
+    page.setDefaultTimeout(15000);
     await initContext(context,{skipImageGate:false});
     const diagnostics={...attachPageDiagnostics(page),page};
     const pageImageResponses:Array<{url:string;status:number;ok:boolean;contentType:string|null}> = [];
@@ -232,6 +242,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     const reviewFailures:string[]=[];
     const measuredEvidence:Record<string,unknown>={};
     const capture=async(name:string,stepId:string,reason:string,viewport='desktop',capturePage:Page=page,chainId=CHAIN_ID)=>{
+        if(CAPTURE_STATES.size && !CAPTURE_STATES.has(stepId))return;
         const imagePath=getEvidenceScreenshotPathInDirectory(run.stagingDir,`${name}.png`,{requireChineseName:true});
         await mkdir(path.dirname(imagePath),{recursive:true});
         await capturePage.screenshot({path:imagePath,fullPage:false,animations:'disabled'});
@@ -245,8 +256,8 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
         return harness?.state?.isRegistered?.()===true&&harness?.command?.isRegistered?.()===true;
     },undefined,{timeout:20000});
     await expect(page.getByTestId('fate-domination-board')).toBeVisible({timeout:20000});
-    await page.getByRole('region',{name:'选择御主与从者'}).locator('select').nth(0).selectOption('m_waver');
-    await page.getByRole('region',{name:'选择御主与从者'}).locator('select').nth(1).selectOption('servant-rider');
+    await chooseFateIdentity(page,'master','m_waver');
+    await chooseFateIdentity(page,'servant','servant-rider');
     await page.getByTestId('fate-domination-primary-action').click();
     await waitForState(page,state=>state.core.phase==='preparation'&&state.core.currentPlayerId==='1','本人确认角色后进入下一席准备');
     await dispatch(page,'ADVANCE_PHASE','1');
@@ -254,6 +265,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await dispatch(page,'ADVANCE_PHASE','2');
     await waitForState(page,state=>state.core.phase==='outpost'&&state.core.currentPlayerId==='0','进入前哨阶段');
     await page.getByTestId('fate-domination-location-workshop').click();
+    await page.getByRole('button',{name:'确认部署至魔术工房',exact:true}).click();
     await waitForState(page,state=>state.core.players['0'].locationId==='workshop','本人部署在魔术工房');
     await page.getByRole('button',{name:/查看玩家\s*1详情/}).click();
     await expect(page.getByRole('dialog',{name:'韦伯·维尔维特详情'})).toBeVisible();
@@ -436,7 +448,15 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     const first=page.getByTestId('fate-played-cards').locator('[data-card-id]').first();
     const last=page.getByTestId('fate-played-cards').locator('[data-card-id]').last();
     await first.focus();
-    for(let index=1;index<20;index++)await page.keyboard.press('Tab');
+    const focusTrace:unknown[]=[];
+    for(let index=1;index<20;index++){
+        await page.keyboard.press('Tab');
+        focusTrace.push(await page.evaluate(()=>({active:(document.activeElement as HTMLElement)?.dataset.cardId,
+            cards:Array.from(document.querySelectorAll('[data-testid="fate-played-cards"] [data-card-id]')).map(card=>({id:(card as HTMLElement).dataset.cardId,tabIndex:(card as HTMLElement).tabIndex})),
+        })));
+    }
+    await writeFile(testInfo.outputPath('dense-keyboard-focus.json'),JSON.stringify(focusTrace,null,2));
+    await testInfo.attach('dense-keyboard-focus.json',{body:Buffer.from(JSON.stringify(focusTrace,null,2)),contentType:'application/json'});
     await expect(last).toBeFocused();
     await expect.poll(async()=>(await snapshot(page)).visible.rowScroll&&((await snapshot(page)).visible.rowScroll as any).scrollLeft).toBeGreaterThan(0);
     const denseScrolled=await snapshot(page);
@@ -458,19 +478,23 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     ]});
 
     const denseState=await readState(page);
+    await page.mouse.click(8,8);
+    await expect(page.locator('.fd-inspection-hover')).toHaveCount(0);
     const beforeEmptyHand=await snapshot(page);
     await patchState(page,{core:{players:{'0':{hand:[],selectedAttackIds:[],activeAttackIds:[],activeSkills:[],normalAttackPlayed:true}}}});
     await waitForState(page,state=>state.core.players['0'].hand.length===0&&state.core.players['0'].activeAttackIds.length===0,'空攻击手牌状态仅用于布局几何复核');
     const emptyHand=await snapshot(page);
     reviewHudClearance(emptyHand,reviewFailures,'empty-attack-hand');
-    reviewCheck(reviewFailures,'empty-hand-row-keeps-stable-bounds',Math.abs((emptyHand.visible as any).playedRow.left-(dense.visible as any).playedRow.left)<1
-        &&Math.abs((emptyHand.visible as any).playedRow.right-(dense.visible as any).playedRow.right)<1,
-        {empty:(emptyHand.visible as any).playedRow,dense:(dense.visible as any).playedRow},'same inline rail bounds regardless of empty hand');
+    reviewCheck(reviewFailures,'empty-hand-row-shrinks-within-hud-rails',(emptyHand.visible as any).playedRow.width<=(dense.visible as any).playedRow.width
+        &&(emptyHand.visible as any).playedRow.left>=(emptyHand.visible as any).selfDock.right+12
+        &&(emptyHand.visible as any).playedRow.right<=(emptyHand.visible as any).phaseControl.left-12,
+        {empty:(emptyHand.visible as any).playedRow,dense:(dense.visible as any).playedRow},'empty content may shrink; it must not expand across either HUD rail');
     await capture('空攻击手牌仍留在独立攻击区','empty-attack-hand','布局代表态：空攻击手牌时攻击区宽度仍被HUD两侧轨道约束，不扩到本人HUD或操作区。');
     steps.push({id:'empty-attack-hand',action:'以布局起点注入空攻击手牌代表态并测量同一出牌区与HUD边界',before:beforeEmptyHand,after:emptyHand,assertions:[
         assertion('empty-attack-hand-row-stays-between-hud-rails',((emptyHand.visible as any).playedRow.left>=(emptyHand.visible as any).selfDock.right+12
             &&(emptyHand.visible as any).playedRow.right<=(emptyHand.visible as any).phaseControl.left-12),true),
-        assertion('empty-hand-does-not-expand-inline-row',Math.round((emptyHand.visible as any).playedRow.width),Math.round((dense.visible as any).playedRow.width)),
+        assertion('empty-hand-does-not-expand-inline-row',(emptyHand.visible as any).playedRow.width<=(dense.visible as any).playedRow.width,true),
+        assertion('empty-hand-row-does-not-block-map',await page.getByTestId('fate-played-cards').evaluate(element=>getComputedStyle(element).pointerEvents),'none'),
     ]});
     await patchState(page,{core:{players:{'0':{
         hand:denseState.core.players['0'].hand,deck:denseState.core.players['0'].deck,
@@ -569,6 +593,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await page.mouse.move(8,8);
     await expect(page.locator('.fd-inspection-hover')).toHaveCount(0);
     await expect(page.getByRole('dialog',{name:/卡牌检视/})).toHaveCount(0);
+    await expect.poll(async()=>(await snapshot(page)).visible.phaseControlCenterHit).toBe(true);
     const desktopNormal=await snapshot(page);
     reviewNormalBoardVisibility(desktopNormal,reviewFailures,'desktop-narrow-normal',false);
     reviewHudClearance(desktopNormal,reviewFailures,'desktop-narrow-normal');
@@ -587,19 +612,70 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
         assertion('both-hand-zones-have-live-hit-centers',Boolean((desktopNormal.visible as any).attackHandCardCenterHit&&(desktopNormal.visible as any).skillHandCardCenterHit),true),
     ]});
 
-    const desktopSeatSummaries=page.locator('.fd-runtime-seat-summary');
-    await expect(desktopSeatSummaries).toHaveCount(2);
-    for(let index=0;index<2;index++){
-        const summary=desktopSeatSummaries.nth(index);
-        const opponentName=(await summary.locator('.fd-seat-name').textContent())?.trim();
-        if(!opponentName)throw new Error(`窄桌面第${index+1}个对手席位没有可见姓名`);
-        await summary.click();
-        await expect(page.getByLabel(`${opponentName}已打出`)).toBeVisible();
-        await page.getByRole('button',{name:'收起已打出卡牌'}).click();
-    }
+    // 公开出牌的布局代表态：只使用本局真实实例，不声称这是自然规则推进。
+    const publicFixture=await readState(page);
+    const peer=publicFixture.core.players['1'];
+    expect(peer.hand.length).toBeGreaterThanOrEqual(2);
+    await patchState(page,{core:{players:{'1':{...peer,activeAttackIds:peer.hand.slice(0,2).map((card:any)=>card.id),faceDownAttackIds:[peer.hand[1].id],isRevealed:true}}}});
+    const peerAvatar=page.locator('.fd-runtime-player-rail .fd-runtime-avatar').first();
+    const peerName=(await peerAvatar.getAttribute('aria-label'))!.replace(/^查看|详情$/g,'');
+    const beforeRow=await snapshot(page);
+    await peerAvatar.hover();
+    const peerRow=page.getByLabel(`${peerName}已打出`);
+    await expect(peerRow).toBeVisible();
+    await expect(peerRow.getByAltText('暗置攻击牌')).toBeVisible();
+    const rowStyle=await peerRow.evaluate(element=>({background:getComputedStyle(element).backgroundColor,border:getComputedStyle(element).borderTopWidth,wrap:getComputedStyle(element.querySelector('.fd-runtime-public-cards')!).flexWrap}));
+    expect(rowStyle).toEqual({background:'rgba(0, 0, 0, 0)',border:'0px',wrap:'nowrap'});
+    await page.mouse.move(8,8);
+    await page.waitForTimeout(1000);
+    await expect(peerRow).toBeVisible();
+    await peerRow.hover();
+    await page.waitForTimeout(2700);
+    await expect(peerRow).toBeVisible();
+    const afterRow=await snapshot(page);
+    await capture('头像悬浮单排公开牌与暗置牌背','desktop-opponent-cards-open','真实头像悬浮展开一排已打出牌，无外框；移开一秒再移入，超过收起时间仍可点牌。','desktop-narrow',page,DESKTOP_NORMAL_CHAIN_ID);
+    steps.push({id:'desktop-opponent-cards-open',chainId:DESKTOP_NORMAL_CHAIN_ID,action:'悬浮头像、跨越间隙移入牌排并停留超过2.5秒',before:beforeRow,after:afterRow,assertions:[assertion('cards-visible-after-pointer-transfer',await peerRow.isVisible(),true),assertion('single-row-without-panel-frame',rowStyle,{background:'rgba(0, 0, 0, 0)',border:'0px',wrap:'nowrap'})]});
+    const publicCard=peerRow.getByRole('button').first();
+    await publicCard.click();
+    await expect(page.locator('.fd-runtime-inspection.is-pinned')).toBeVisible();
+    const inspectedRow=await snapshot(page);
+    await capture('从对方悬浮牌排点击放大卡图','desktop-opponent-card-inspection','玩家将指针移入头像旁的牌排后，点击公开牌本体打开正式完整卡面。','desktop-narrow',page,DESKTOP_NORMAL_CHAIN_ID);
+    steps.push({id:'desktop-opponent-card-inspection',chainId:DESKTOP_NORMAL_CHAIN_ID,action:'点击悬浮牌排中的公开牌',before:afterRow,after:inspectedRow,assertions:[assertion('public-card-inspection-visible',await page.locator('.fd-runtime-inspection.is-pinned').isVisible(),true)]});
+    await page.locator('.fd-runtime-inspection.is-pinned button').click();
+    await peerRow.hover();
+    await page.mouse.move(8,8);
+    await expect(peerRow).toBeHidden({timeout:4000});
+    const beforeDetail=await snapshot(page);
+    await peerAvatar.click();
+    await expect(page.getByRole('dialog',{name:/详情/})).toBeVisible();
+    const afterDetail=await snapshot(page);
+    await capture('窄桌面对手身份详情打开','desktop-player-detail-open','对手详情打开时已揭示身份素材、公开资源与关闭入口均可辨。','desktop-narrow',page,DESKTOP_NORMAL_CHAIN_ID);
+    steps.push({id:'desktop-player-detail-open',chainId:DESKTOP_NORMAL_CHAIN_ID,action:'从对手头像打开身份详情',before:beforeDetail,after:afterDetail,assertions:[assertion('player-detail-dialog-visible',await page.getByRole('dialog',{name:/详情/}).isVisible(),true)]});
+    await page.getByRole('button',{name:'切换到玩家1 韦伯·维尔维特'}).click();
+    const detailMetrics=await page.locator('.fd-player-detail-skills').evaluate(element=>{
+        const cards=Array.from(element.querySelectorAll('button')).map(card=>card.getBoundingClientRect());
+        return {gaps:cards.slice(1).map((card,index)=>Math.round(card.left-cards[index].right)),widths:cards.map(card=>Math.round(card.width))};
+    });
+    expect(detailMetrics.gaps.every(gap=>gap>=10&&gap<=14)).toBe(true);
+    await capture('玩家详情两排紧凑牌距','desktop-self-detail-compact','从详情内切换到本人，身份与技能保持两排；相邻技能牌实际间距约12像素，右侧保留能力说明。','desktop-narrow',page,DESKTOP_NORMAL_CHAIN_ID);
+    steps.push({id:'desktop-self-detail-compact',chainId:DESKTOP_NORMAL_CHAIN_ID,action:'在正式详情弹窗中切换到本人并检查两排卡牌间距',before:afterDetail,after:await snapshot(page),assertions:[assertion('compact-real-card-gaps',detailMetrics.gaps.every(gap=>gap>=10&&gap<=14),true)]});
+    await page.getByRole('button',{name:'关闭玩家详情',exact:true}).click();
+    const eliminatedFixture=await readState(page);
+    await patchState(page,{core:{players:{'1':{...eliminatedFixture.core.players['1'],eliminated:true,locationId:null}}}});
+    await peerAvatar.click();
+    const eliminatedLabel=page.getByRole('dialog').getByText('已淘汰',{exact:true});
+    await expect(eliminatedLabel).toBeVisible();
+    expect(await eliminatedLabel.evaluate(element=>getComputedStyle(element).backgroundColor)).toBe('rgb(155, 23, 31)');
+    await capture('淘汰玩家详情红色状态','desktop-eliminated-detail','详情布局代表态：玩家详情的已淘汰文字使用红色状态标记，不再显示未部署。','desktop-narrow',page,DESKTOP_NORMAL_CHAIN_ID);
+    steps.push({id:'desktop-eliminated-detail',chainId:DESKTOP_NORMAL_CHAIN_ID,action:'打开淘汰详情代表态，核对红色状态与原卡牌布局',before:await snapshot(page),after:await snapshot(page),assertions:[assertion('eliminated-red-visible',await eliminatedLabel.isVisible(),true)]});
+    await page.getByRole('button',{name:'关闭玩家详情',exact:true}).click();
     await page.mouse.move(8,8);
     await expect(page.locator('.fd-inspection-hover')).toHaveCount(0);
 
+    const finalState=await readState(page);
+    // 桌面场景已完成取证，释放其纹理后再建立独立触控场景。
+    await assertNoFatalFrontendErrors([{label:'fate-inline-play-area-restoration',diagnostics}]);
+    await page.close();
     const touchContext=await browser.newContext({viewport:{width:936,height:432},screen:{width:936,height:432},isMobile:true,hasTouch:true,deviceScaleFactor:1});
     try{
         await initContext(touchContext,{skipImageGate:false});
@@ -611,8 +687,8 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
             return harness?.state?.isRegistered?.()===true&&harness?.command?.isRegistered?.()===true;
         },undefined,{timeout:20000});
         await expect(touchPage.getByTestId('fate-domination-board')).toBeVisible({timeout:20000});
-        await touchPage.getByRole('region',{name:'选择御主与从者'}).locator('select').nth(0).selectOption('m_waver');
-        await touchPage.getByRole('region',{name:'选择御主与从者'}).locator('select').nth(1).selectOption('servant-rider');
+        await chooseFateIdentity(touchPage,'master','m_waver');
+        await chooseFateIdentity(touchPage,'servant','servant-rider');
         await touchPage.getByTestId('fate-domination-primary-action').tap();
         await waitForState(touchPage,state=>state.core.phase==='preparation'&&state.core.currentPlayerId==='1','触屏牌桌本人确认角色后转至下一席准备');
         await dispatch(touchPage,'ADVANCE_PHASE','1');
@@ -620,6 +696,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
         await dispatch(touchPage,'ADVANCE_PHASE','2');
         await waitForState(touchPage,state=>state.core.phase==='outpost'&&state.core.currentPlayerId==='0','触屏牌桌进入前哨阶段');
         await touchPage.getByTestId('fate-domination-location-workshop').tap();
+        await touchPage.getByRole('button',{name:'确认部署至魔术工房',exact:true}).tap();
         await waitForState(touchPage,state=>state.core.players['0'].locationId==='workshop','触屏玩家本人部署在魔术工房');
         await touchPage.getByTestId('fate-domination-primary-action').tap();
         await waitForState(touchPage,state=>state.core.phase==='outpost'&&state.core.currentPlayerId==='1','触屏玩家本人结束前哨阶段');
@@ -631,6 +708,29 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
         await waitForState(touchPage,state=>state.core.phase==='action'&&state.core.currentPlayerId==='0','触屏牌桌本人进入行动阶段');
 
         const touchStart=await readState(touchPage);
+        const touchBeforeLongPress=await snapshot(touchPage);
+        const longPressCard=touchPage.getByTestId('fate-domination-hand').locator('[data-card-zone="hand"]').first();
+        await longPressCard.scrollIntoViewIfNeeded();
+        await assertFateHandCardsUnclipped(touchPage);
+        const longPressBox=await longPressCard.boundingBox();expect(longPressBox).toBeTruthy();
+        const touchPoint={x:longPressBox!.x+longPressBox!.width/2,y:longPressBox!.y+longPressBox!.height/2};
+        const hit=await touchPage.evaluate(point=>({id:document.elementFromPoint(point.x,point.y)?.closest('[data-card-id]')?.getAttribute('data-card-id'),scale:visualViewport?.scale,offset:visualViewport?.offsetTop}),touchPoint);
+        expect(hit.id,JSON.stringify({hit,touchPoint,longPressBox})).toBe(await longPressCard.getAttribute('data-card-id'));
+        const touchSession=await touchPage.context().newCDPSession(touchPage);
+        await touchPage.evaluate(()=>{(window as any).__fateTouchAudit=[];for(const name of ['pointerdown','pointerup','pointercancel','contextmenu'])document.addEventListener(name,event=>(window as any).__fateTouchAudit.push({type:event.type,pointerType:(event as PointerEvent).pointerType,target:(event.target as HTMLElement).closest('[data-card-id]')?.getAttribute('data-card-id')}),true);});
+        await touchSession.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touchPoint]});
+        await touchPage.waitForTimeout(650);
+        await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchSession.detach();
+        await expect(touchPage.getByTestId('fate-runtime-inspection'),JSON.stringify(await touchPage.evaluate(()=>(window as any).__fateTouchAudit))).toBeVisible();
+        expect((await readState(touchPage)).core).toEqual(touchStart.core);
+        steps.push({id:'touch-hand-longpress',chainId:TOUCH_NORMAL_CHAIN_ID,action:'原生触控长按手牌、抬手后完整检视保持打开，权威状态不变',before:touchBeforeLongPress,after:await snapshot(touchPage),assertions:[
+            assertion('longpress-release-keeps-inspection-open',await touchPage.getByTestId('fate-runtime-inspection').isVisible(),true),
+            assertion('longpress-does-not-select-or-pay',(await readState(touchPage)).core,touchStart.core),
+        ]});
+        await touchPage.getByTestId('fate-inspection-close').tap();
+        expect((await readState(touchPage)).core).toEqual(touchStart.core);
+        await assertFateHandCardsUnclipped(touchPage);
+
         const nonAbilityAttackIds=touchStart.core.players['0'].hand
             .filter((card:any)=>!['cardPreparation','cardSurveil','cardluck'].includes(card.definitionId))
             .filter((card:any)=>Boolean(FATE_ATTACK_BY_ID[card.definitionId]))
@@ -707,8 +807,14 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     }
 
     expect(reviewFailures,`review evidence mismatches:\n${reviewFailures.join('\n')}`).toEqual([]);
-    await assertNoFatalFrontendErrors([{label:'fate-inline-play-area-restoration',diagnostics}]);
+    if(CAPTURE_STATES.size)expect(screenshots.map(item=>item.stepId).sort()).toEqual([...CAPTURE_STATES].sort());
     const revision=sourceRevision();
+    const behaviorStepForState:Record<string,string>={
+        'empty-play-area':'stage-real-card','staged-card-in-place':'stage-real-card',
+        'riding-choice-controls':'open-riding-choice','twenty-inline-played-cards':'dense-direct-card-zone',
+        'narrow-landscape-density':'narrow-viewport','desktop-narrow-normal':'desktop-narrow-resting-state',
+        'touch-normal-after-inspection':'touch-inspection-close-normal','touch-continued-action':'touch-continue-action-after-close',
+    };
     const media=[];
     const chainSteps=new Map<string,number>();
     for(let index=0;index<screenshots.length;index++){
@@ -717,7 +823,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
         const chainId=item.chainId;
         const chainStep=(chainSteps.get(chainId)??0)+1;
         chainSteps.set(chainId,chainStep);
-        const uiChange=item.stepId==='touch-inspection-open'||item.stepId==='mobile-card-inspection'?'panel'
+        const uiChange=item.stepId==='touch-inspection-open'||item.stepId==='mobile-card-inspection'||item.stepId==='desktop-opponent-drawer-open'||item.stepId==='desktop-player-detail-open'?'panel'
             :item.stepId==='staged-card-in-place'||item.stepId==='riding-choice-controls'?'interaction-mode'
             :item.stepId==='touch-continue-action-after-close'?'interaction-mode':'layout';
         const requirements=chainId===TOUCH_NORMAL_CHAIN_ID
@@ -725,11 +831,17 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
             :chainId===DESKTOP_NORMAL_CHAIN_ID
                 ?['1366×768桌面指针离开卡牌后没有残留检视层','本人HUD、全部对手席位、两类手牌和主动作各自可见可达']
                 :['Fate攻击手牌与已打出实例位于同一直接牌区','地图相机不随HUD及出牌数量变化'];
-        media.push({path:path.relative(process.cwd(),finalPath).replace(/\\/g,'/'),chainId,chainStep:String(chainStep).padStart(2,'0'),stage:'独特界面态',role:'main-flow',viewport:item.viewport,transition:item.reason,description:item.name,uiStateId:item.stepId,uiChange,uiChangeReason:item.reason,behaviorStepId:item.stepId,sourceRevision:revision,requirements});
+        media.push({path:path.relative(process.cwd(),finalPath).replace(/\\/g,'/'),chainId,chainStep:String(chainStep).padStart(2,'0'),stage:'独特界面态',role:'main-flow',viewport:item.viewport,transition:item.reason,description:item.name,uiStateId:item.stepId,uiChange,uiChangeReason:item.reason,behaviorStepId:behaviorStepForState[item.stepId]??item.stepId,sourceRevision:revision,requirements});
     }
-    const finalState=await readState(page);
     const chains=[CHAIN_ID,DESKTOP_NORMAL_CHAIN_ID,TOUCH_NORMAL_CHAIN_ID].map(id=>({id,steps:steps.filter(step=>(step.chainId??CHAIN_ID)===id).map(step=>step.id)}));
     const trace={gameId:GAME_ID,evidenceCategory:'independent',chainId:CHAIN_ID,chains,sourceRun:run.runId,sourceRevision:revision,status:'PASS',outcome:'真实 Board 的行动手牌经正常准备/部署阶段进入行动；手牌本体选择后在上方原牌区暂选，卡牌本体撤回并返回手牌；真实普通攻击批次激活伊斯坎达尔骑乘，打开并取消骑乘选择后继续；密集代表态继续在原区浏览。独立桌面窄视口在指针离牌、检视关闭后核验全部席位和两类手牌；另一个同源真实 hasTouch/isMobile 上下文以真实准备、部署、基础攻击进入触屏检视，关闭后仍无悬停残留并继续提交结束行动。地图相机不随HUD、骑乘模式、出牌数量或检视窗口改变。密集状态使用真实卡牌定义，其中超过本局剩余卡数的实例由测试夹具补齐，不代表自然对局或游戏数量上限。',fixtureBoundary:{kind:'representative-layout-fixture-after-real-board-setup',ruleBehaviorClaim:false,cardDefinitionsAreReal:true,liveGameCardCount:allCards.length,layoutOnlyInstanceCount:denseCards.filter((item:any)=>item.id.startsWith('layout-fixture-attack-')).length,instanceIds:finalState.core.players['0'].activeAttackIds},measurements:measuredEvidence,reviewFailures,steps,uiStates:screenshots.map(item=>({id:item.stepId,stepId:item.stepId,chainId:item.chainId,change:item.stepId==='staged-card-in-place'||item.stepId==='riding-choice-controls'?'interaction-mode':item.stepId==='touch-inspection-open'||item.stepId==='mobile-card-inspection'?'panel':item.stepId==='touch-continue-action-after-close'?'interaction-mode':'layout',viewport:item.viewport,sha256:createHash('sha256').update(readFileSync(item.path)).digest('hex')}))};
     await writeFile(path.join(run.stagingDir,'fate-inline-play-area-restoration.json'),`${JSON.stringify(trace,null,2)}\n`,'utf8');
+    for(const chain of chains){
+        const chainMedia=media.filter(item=>item.chainId===chain.id);
+        const chainTrace={...trace,chainId:chain.id,steps:steps.filter(step=>(step.chainId??CHAIN_ID)===chain.id),
+            uiStates:chainMedia.map(item=>({id:item.uiStateId,stepId:item.behaviorStepId,change:item.uiChange,viewport:item.viewport,
+                sha256:createHash('sha256').update(readFileSync(screenshots.find(shot=>shot.stepId===item.uiStateId)!.path)).digest('hex')}))};
+        await writeFile(path.join(run.stagingDir,`${chain.id}.trace.json`),`${JSON.stringify(chainTrace,null,2)}\n`,'utf8');
+    }
     await promoteEvidenceScreenshotRun(run,{gameId:GAME_ID,evidenceCategory:'independent',capturePolicy:'distinct-ui-state',media});
 });

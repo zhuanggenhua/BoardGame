@@ -3820,6 +3820,15 @@
         }
       }
     },
+    "en/splendor/compressed/picture": {
+      "variants": {
+        "webp": {
+          "sha256": "cde6991e84698e22a2ed34e6ff88d3e9a56347f4b41380f37dbdaa4453a66458",
+          "bytes": 404004,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/cards/back-event": {
       "variants": {
         "png": {
@@ -5179,6 +5188,96 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92": {
+      "variants": {
+        "webp": {
+          "sha256": "fa5e92f43cb9b3461cf955d347dde9b3f0e8e4a5e6fe57346c689814d688d707",
+          "bytes": 42232,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc1842549310182005639809347EDD838C02BDBD328B19A0E4109A23D0E5C": {
+      "variants": {
+        "webp": {
+          "sha256": "530e4db9d14b3b2de059379379be443bc3d02e5d43f203d1c8b93a8b743bc55a",
+          "bytes": 41590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820059573B63D75D14CC4B00164909AF53B667598F2B7FB9": {
+      "variants": {
+        "webp": {
+          "sha256": "2756dfdc13fb85cf60797018d540b165d68276a3360a06423d0802dfa740faaa",
+          "bytes": 41898,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084": {
+      "variants": {
+        "webp": {
+          "sha256": "81103e0494a1b0cdab8abb8543fe3be471b865f2af2c8ce4eaaecc03ead58b09",
+          "bytes": 40214,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200610455963F811E1050949F60D543AAC3B3C5629AF986": {
+      "variants": {
+        "webp": {
+          "sha256": "0f5cd507aa60e43f9953182f82c23aca7a29defd29bb2e979b1f545d69331c68",
+          "bytes": 31096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820062522F3CCC3E36EA81E73A60117C0C76B0AF89BE31D0": {
+      "variants": {
+        "webp": {
+          "sha256": "9b162922073979ff63e6c02268eeb6f19be3229c56ea48760b1760d7b2937940",
+          "bytes": 35386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200705071552C929FC70CBA75EFEAE873B8A027E6510A60": {
+      "variants": {
+        "webp": {
+          "sha256": "b8afe8cb4274ffba5b7e4902334670cddda845e0c8d9186f7a7a5259de63c590",
+          "bytes": 35760,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820071214B70CAE6075AEE1070830AD79EDF55B44EE2998E": {
+      "variants": {
+        "webp": {
+          "sha256": "bf43c1ace0eefb6a3b956adda5ed3e0754e9dd943917be14a7a2d078d464e91d",
+          "bytes": 37642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc184254931018200719894AED1A44BD5ACB8C2C46CB2BAF5E89FD82E37B8": {
+      "variants": {
+        "webp": {
+          "sha256": "909116c35eeb8189bdd2a93b2c6dff62cf4ab95179aed6c45c889e778c75bf47",
+          "bytes": 35076,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/httpssteamusercontentaakamaihdnetugc18425493101820073198B1C899FC54A12B01B46328B8645965EF84820A5": {
+      "variants": {
+        "webp": {
+          "sha256": "d0ab9558d9a32271b2c62736dbe0b31a4de78118baaf2178265256ca60c9c693",
+          "bytes": 38350,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/explorers/compressed/isa-valencia": {
       "variants": {
         "webp": {
@@ -5283,6 +5382,96 @@
         "png": {
           "sha256": "5f58e352a277e24984e459c59c8c40cf657ee9b0b46b8e4926b14de3685ea655",
           "bytes": 163121,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92": {
+      "variants": {
+        "png": {
+          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
+          "bytes": 182697,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc1842549310182005639809347EDD838C02BDBD328B19A0E4109A23D0E5C": {
+      "variants": {
+        "png": {
+          "sha256": "7e209e71b4e83913ec7cb0e3b2c7f9fc5fe773dc33d4ec38c5f2704aa7c42871",
+          "bytes": 179148,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820059573B63D75D14CC4B00164909AF53B667598F2B7FB9": {
+      "variants": {
+        "png": {
+          "sha256": "b55d77fd9fedabf0c4bb349d3a47087e249601967c70b2605d9ae7d70e09d74d",
+          "bytes": 181155,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084": {
+      "variants": {
+        "png": {
+          "sha256": "ea8107afca3938d5eaeb1f19b5069cc3c2f057a064b295571c744b23df986c65",
+          "bytes": 176084,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200610455963F811E1050949F60D543AAC3B3C5629AF986": {
+      "variants": {
+        "png": {
+          "sha256": "4b4ed6879a712d014b5fca806fc0c9da0314e831aa1e4291a39c98ec467f2db9",
+          "bytes": 141511,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820062522F3CCC3E36EA81E73A60117C0C76B0AF89BE31D0": {
+      "variants": {
+        "png": {
+          "sha256": "d73c17a2f6c5501d7b79ecbc437e9e616ab0e26c534fa67531d00b7929b177df",
+          "bytes": 160634,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200705071552C929FC70CBA75EFEAE873B8A027E6510A60": {
+      "variants": {
+        "png": {
+          "sha256": "5f58e352a277e24984e459c59c8c40cf657ee9b0b46b8e4926b14de3685ea655",
+          "bytes": 163121,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820071214B70CAE6075AEE1070830AD79EDF55B44EE2998E": {
+      "variants": {
+        "png": {
+          "sha256": "e3e0bdad15b0ee7b3c7790c87ee972498d92bc8c21e53d06409949719aa7c2d2",
+          "bytes": 173984,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc184254931018200719894AED1A44BD5ACB8C2C46CB2BAF5E89FD82E37B8": {
+      "variants": {
+        "png": {
+          "sha256": "6d81a0f09e6a882d01d34cb29447de714996046a91c5a25e2fbc2f8d6aedfd2f",
+          "bytes": 163003,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/httpssteamusercontentaakamaihdnetugc18425493101820073198B1C899FC54A12B01B46328B8645965EF84820A5": {
+      "variants": {
+        "png": {
+          "sha256": "01ae314b17d9e4171f383157d25035754259ca291a9a6148e3f5ff204011bd7f",
+          "bytes": 172547,
           "mime": "image/png"
         }
       }
@@ -6754,12 +6943,84 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/artificial/面板": {
+      "variants": {
+        "png": {
+          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
+          "bytes": 10727881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
+          "bytes": 14880819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/提示卡": {
+      "variants": {
+        "png": {
+          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
+          "bytes": 3714935,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
+          "bytes": 104021,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/artificial/ability-cards": {
       "variants": {
         "png": {
           "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
           "bytes": 14880819,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/面板": {
+      "variants": {
+        "webp": {
+          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
+          "bytes": 442528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
+          "bytes": 380930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/提示卡": {
+      "variants": {
+        "webp": {
+          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
+          "bytes": 324350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
+          "bytes": 15502,
+          "mime": "image/webp"
         }
       }
     },
@@ -6808,42 +7069,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/artificial/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
-          "bytes": 380930,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/提示卡": {
-      "variants": {
-        "webp": {
-          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
-          "bytes": 324350,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/面板": {
-      "variants": {
-        "webp": {
-          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
-          "bytes": 442528,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
-          "bytes": 15502,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/artificial/dice": {
       "variants": {
         "jpg": {
@@ -6868,104 +7093,10 @@
           "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
           "bytes": 720,
           "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/合成器": {
-      "variants": {
-        "webp": {
-          "sha256": "55db363e3b599a16227fe689dd7ffcafb1d4e91f7e9d5c193f2e265cb4faa4f2",
-          "bytes": 9976,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/治疗机器人1次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "f4ff713f18fe8b98dbfbb88d907ea57348dc09518f712e30c875b74e99b25391",
-          "bytes": 45174,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/治疗机器人2次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "757f0170e677b6cd82549c234a3a5743e589f683444a4eab2fbcba6ec7ef1ad3",
-          "bytes": 47180,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人1次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "12fa98ff47d30a62f3e8a9ae28ff347fb47a6ac6c0a25095556a0ba72207b15e",
-          "bytes": 57152,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人2次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "96aaf1ff1f33f98722805474182ca97c157d95d00628e52334ffe2a3b44d65ef",
-          "bytes": 57936,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人1次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "f8d0f56105cb7fe1c8a0a8d4a9ca7a708ebf106a9fdffe97d860fcee021094ad",
-          "bytes": 49818,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人2次使用机会": {
-      "variants": {
-        "webp": {
-          "sha256": "6e1c87ab0de626fe35b9d8f05709660fdd92ca1b0877b9831f8931a123dcb433",
-          "bytes": 52470,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/compressed/纳米爆蛋": {
-      "variants": {
-        "webp": {
-          "sha256": "b5d3be4460c7a52732be63687d76593a37eb556d6d877bad6969b027a6c87999",
-          "bytes": 6026,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/合成器": {
-      "variants": {
+        },
         "png": {
-          "sha256": "223f1d98be8696ec4a5b64ad16df7856d667f11363678b692ca3a28a54ec6af5",
-          "bytes": 89335,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/治疗机器人1次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "642549b3ae84377948940170625ebca832f74d35a29122b7d750566fd3b1888a",
-          "bytes": 310633,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/status/治疗机器人2次使用机会": {
-      "variants": {
-        "png": {
-          "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
-          "bytes": 306226,
+          "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
+          "bytes": 637977,
           "mime": "image/png"
         }
       }
@@ -6988,6 +7119,24 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/artificial/status/合成器": {
+      "variants": {
+        "png": {
+          "sha256": "223f1d98be8696ec4a5b64ad16df7856d667f11363678b692ca3a28a54ec6af5",
+          "bytes": 89335,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米爆蛋": {
+      "variants": {
+        "png": {
+          "sha256": "17e2c1b4eb96083dc94e4655a0e451786a464cca24b88eb4730cf80fa748f855",
+          "bytes": 64853,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/artificial/status/纳米机器人1次使用机会": {
       "variants": {
         "png": {
@@ -7006,12 +7155,93 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/artificial/status/纳米爆蛋": {
+    "zh-CN/dicethrone/images/artificial/status/治疗机器人1次使用机会": {
       "variants": {
         "png": {
-          "sha256": "17e2c1b4eb96083dc94e4655a0e451786a464cca24b88eb4730cf80fa748f855",
-          "bytes": 64853,
+          "sha256": "642549b3ae84377948940170625ebca832f74d35a29122b7d750566fd3b1888a",
+          "bytes": 310633,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/治疗机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
+          "bytes": 306226,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "12fa98ff47d30a62f3e8a9ae28ff347fb47a6ac6c0a25095556a0ba72207b15e",
+          "bytes": 57152,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "96aaf1ff1f33f98722805474182ca97c157d95d00628e52334ffe2a3b44d65ef",
+          "bytes": 57936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/合成器": {
+      "variants": {
+        "webp": {
+          "sha256": "55db363e3b599a16227fe689dd7ffcafb1d4e91f7e9d5c193f2e265cb4faa4f2",
+          "bytes": 9976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米爆蛋": {
+      "variants": {
+        "webp": {
+          "sha256": "b5d3be4460c7a52732be63687d76593a37eb556d6d877bad6969b027a6c87999",
+          "bytes": 6026,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f8d0f56105cb7fe1c8a0a8d4a9ca7a708ebf106a9fdffe97d860fcee021094ad",
+          "bytes": 49818,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "6e1c87ab0de626fe35b9d8f05709660fdd92ca1b0877b9831f8931a123dcb433",
+          "bytes": 52470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/治疗机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f4ff713f18fe8b98dbfbb88d907ea57348dc09518f712e30c875b74e99b25391",
+          "bytes": 45174,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/治疗机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "757f0170e677b6cd82549c234a3a5743e589f683444a4eab2fbcba6ec7ef1ad3",
+          "bytes": 47180,
+          "mime": "image/webp"
         }
       }
     },
@@ -7021,42 +7251,6 @@
           "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
           "bytes": 3714935,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/手牌": {
-      "variants": {
-        "png": {
-          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
-          "bytes": 14880819,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/提示卡": {
-      "variants": {
-        "png": {
-          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
-          "bytes": 3714935,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/面板": {
-      "variants": {
-        "png": {
-          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
-          "bytes": 10727881,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/artificial/骰子": {
-      "variants": {
-        "jpg": {
-          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
-          "bytes": 104021,
-          "mime": "image/jpeg"
         }
       }
     },
@@ -7126,8 +7320,8 @@
     "zh-CN/dicethrone/images/barbarian/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "36bbc17b260847ec6297251ceb2d6a0ca1fa2942e03d72fda7107d2d6139e5c7",
-          "bytes": 361,
+          "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
+          "bytes": 387,
           "mime": "application/json"
         }
       }
@@ -7137,6 +7331,546 @@
         "png": {
           "sha256": "70bc1216c4e1d1487df1acbc2f59291a8c2ad07296e53407604a1cccc7cffbf1",
           "bytes": 8997558,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "d3471dce72dcbab0ccb1a47b89773a06be610c71de0608b66653265e8d3fc520",
+          "bytes": 5032672,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "3fcf77775d80bbe6bdbb19fd518e85880a3e6d8f9223a87dda59b650f538a783",
+          "bytes": 46288297,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/combat-points-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "0b53485202409b88b43a02db93f6f20f781e88e21ad4ab4fe4733394d2f7b8cc",
+          "bytes": 198204,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "d0256b2c049a3c408f1397e052bef0af83b8733094ce0122c6ed12c7cf7af325",
+          "bytes": 917282,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "3bc557376ec50bb7c336da5b4579a7f7c9e2ec300e843f2b3ce73e61b76dbc73",
+          "bytes": 5756128,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "2632f4aedbb75577eba564a9750d057ba1690a494d8b5441daa6519f32e2aa53",
+          "bytes": 59386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "b7b8113402d186b4f7920511e895c66501fed624e05e56d5a5813d60b80ab89e",
+          "bytes": 59824,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "65321ed992ddd04510a2783af8e68803372f85f6b26edf33e3be59d2b3325414",
+          "bytes": 52160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "c7d38c9b225cb2d1c970d1cc65200d6687c07307922170cbbfe9d5fa205c0583",
+          "bytes": 1512932,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "5231d31c938940b9c8da9ffd00cf4051c8ea8e90e7284e7ab36632e43d8f1b57",
+          "bytes": 1468104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "b08448c37a9b0b5a9f5f099dc9948337c7ea650ff64ab472c8249452bf9e4685",
+          "bytes": 318825,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/health-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "65f0a29c4b607f3d93be6b2e10ed15746ae3cd9b9bad6725659410b149a26560",
+          "bytes": 170184,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "c160d5a4a00f248b5cabf8d3ce8e7d7e1493b6217246ec3ee45c0eb07b0d996f",
+          "bytes": 8584826,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/status/动能": {
+      "variants": {
+        "png": {
+          "sha256": "c2489f05373b3af53a3e00d132f958d9c2cda46fb7edc704499c5f13a4039768",
+          "bytes": 286650,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/status/振金战甲": {
+      "variants": {
+        "png": {
+          "sha256": "da452483726e069ade0b0cca69abe7c41019f5cea84fb3e0982eca8af2bfc876",
+          "bytes": 157155,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/status/compressed/动能": {
+      "variants": {
+        "webp": {
+          "sha256": "c1c2ee0eb22cd2c96a3668622d007e6741034f0a94b7f43fe043a537190629bd",
+          "bytes": 61152,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/status/compressed/振金战甲": {
+      "variants": {
+        "webp": {
+          "sha256": "728eb2e09fb2b854c53990d73abdf5fb501ef7e253501d7c8313a67eec9893b1",
+          "bytes": 27122,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_panther/tip": {
+      "variants": {
+        "png": {
+          "sha256": "9b23289ec8c6703847ed3b05728df5421a53935d74af2d79c3d7379f1689e3b7",
+          "bytes": 7168411,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "368df6107579e27ee4ade499cd27d1f91654c51adda99fab4afbefdd6e680d27",
+          "bytes": 4133991,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "318a47a9fcd85cc0a97e848dd7c45871da8b9e7fe588158a14ec9cf8fdfd9719",
+          "bytes": 47985396,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/combat-points-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "44edc8d9284f571b06f4e5d580bab406deedac26934e90a2e34d20180a5bce04",
+          "bytes": 224380,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "f8c1e59503558ec699c3d22f8f76609a23a41357b015f082826dbb28839245b3",
+          "bytes": 766960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "3d3d01f2a44f3b4a9e48e949343fae49f847527652db9d24801f404936b36a3d",
+          "bytes": 6133388,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "4c4bfad1d8a0a1e76fbfab661aea965fb1c02495f01ec7836477c36baa408198",
+          "bytes": 55344,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "9713a5069c2899fa64c6ea3ed0f91425a2ad04995a6bad1f3d2beda0504bf4b9",
+          "bytes": 51928,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "c2943ca251be5422a9967ebf0e0f45c5a6d4295052b64be9d39476c735ac867f",
+          "bytes": 34644,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "b04ff64579c4df4d51a17889a83eb9e7baf1a1a96c53461950f6e8051799a173",
+          "bytes": 2228012,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "88800c050d74fc9025d7f3477aed59e8e4c5022c988e8120b73e02b0c2235194",
+          "bytes": 1130676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "996774833d93498a7011eef7a9ec23b2e31bbf33574e8fe669cf146f9802d22d",
+          "bytes": 263931,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/health-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "04a709055966bd63414cacb78bcef8f38269d68ef2e681c61d83115d54994f71",
+          "bytes": 119493,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "29f6ee477e75e1b3cb9f937f4b91b9bc99add82d931507813745755a356e03c0",
+          "bytes": 11818918,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/定时炸弹": {
+      "variants": {
+        "png": {
+          "sha256": "9ad164ab44fea8449dd53426d5dfd06dfdd9c104bbb4dc0bb8f4dfeff8e79b14",
+          "bytes": 299040,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/敏捷": {
+      "variants": {
+        "png": {
+          "sha256": "337e583f2491d735f2970a099ba83416b3366ba79fa36ce98d11fdd4d265269c",
+          "bytes": 129500,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/隐秘行动": {
+      "variants": {
+        "png": {
+          "sha256": "b1143897b405675e6f52ecb74a91b767939b5ae24f78196092d4ba184dca641f",
+          "bytes": 71780,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/compressed/定时炸弹": {
+      "variants": {
+        "webp": {
+          "sha256": "7d6c8b23e1d2d3d7ecdb772a8c67800ce03f428cab0e8813fc5bc757030cb715",
+          "bytes": 39800,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/compressed/敏捷": {
+      "variants": {
+        "webp": {
+          "sha256": "f648f938df7831797cf8dd53bf1b6c425a82e0c91a1a921d712e4d2df2800f87",
+          "bytes": 45976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/compressed/隐秘行动": {
+      "variants": {
+        "webp": {
+          "sha256": "84edea9340e5d21b579e97145f8c06a4f88978b806fdb7759decff28c7573a25",
+          "bytes": 43310,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/compressed/Time Bomb": {
+      "variants": {
+        "webp": {
+          "sha256": "39c0713271cb19d827ee9e2047c4752240998d3a2f2e0727a8080b359cb07c99",
+          "bytes": 34952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/status/Time Bomb": {
+      "variants": {
+        "png": {
+          "sha256": "ab72bb2674f092265760b75c4105e5d771362485d48c420d73c2d187c4f61d6b",
+          "bytes": 271831,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/black_widow/tip": {
+      "variants": {
+        "png": {
+          "sha256": "53dc54b6ffca11d87f448070a3d621d1fa741c5ec8de3b1bc5904d4242454284",
+          "bytes": 6108420,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "88023f94277c555876a4d720052deed455713d43be301f5f115f3a53f203e3b8",
+          "bytes": 4939828,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "f2346a216c99925692bea6b8b811480204a6c2d44e7dab55e10469dd46a19d09",
+          "bytes": 46783367,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/combat-points-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "070613cbcb637b0e0cbe3e1b506afacdca4df53f6b660c1713022c1fd7cdd7f5",
+          "bytes": 267299,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "2aa4ad7167ac3104fd7416b7c15609cce70ab1193ecb8354149b4b5388d10f63",
+          "bytes": 906318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "ca5998b59fb1eb5acb2dd1b946db8957bdae23c79a2248acdeab4a3912a5a798",
+          "bytes": 6148520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "cb7ccf4cf00ac0e7050718a3f0b1b1397553739e49d181a5d5109bd42f70a70f",
+          "bytes": 73992,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "c4e7492ca367c7f991a02cecb3133ee6724f03b97f8e291aef241016d6e3fbc1",
+          "bytes": 36722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "f077c66430f39f153ef6011e7f80228215e6b1f6515f74654c19c781cf77a430",
+          "bytes": 56226,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "3dbbc1d52915e9dfdfff173634a6d18a8aa48725e0d360f5bd48633f5fce00d1",
+          "bytes": 2154508,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "3203af0ae34f9172ae97443edb52df1f752dd02567c37c09beec8355f722600f",
+          "bytes": 826670,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/dice": {
+      "variants": {
+        "png": {
+          "sha256": "2cea78a6b60156885b1b096d41e93fa6d1c08c3c78cf598fdfd190cdd663965b",
+          "bytes": 46259,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/health-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "faaaed1e2424c11cd43044b3e8cd0df2dff196b7053fd2671356e5ae73c27514",
+          "bytes": 190805,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "1a058a510f98ba8335d55759ee397b70dee0acb6fefd2da512790545406a2a7f",
+          "bytes": 11169581,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/status/光辉": {
+      "variants": {
+        "png": {
+          "sha256": "ec1aecb48ee9535229f1415c06384863ef2aac7406780252946a45a44c4c819a",
+          "bytes": 629510,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/status/宇宙光束": {
+      "variants": {
+        "png": {
+          "sha256": "73f3d029dcc303c3265f1c5139f319380fc8a63bf7c4ff22b5dff7369eca3f8a",
+          "bytes": 84855,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/status/宇宙光耀": {
+      "variants": {
+        "png": {
+          "sha256": "7c1e3b748e4d29ef8bff619b1c8d96f00203a94c29b4d1cb17fe8c1f26ecea6e",
+          "bytes": 461399,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/status/compressed/光辉": {
+      "variants": {
+        "webp": {
+          "sha256": "961f5861ed68fb108e3b2704f19e846020449baaf5d60edc124ed5446c7de670",
+          "bytes": 140420,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/status/compressed/宇宙光束": {
+      "variants": {
+        "webp": {
+          "sha256": "59976a5bd2debcec47031d7c3e06129bbc0efc5d98c89f4e4d2832fa52ebb0dd",
+          "bytes": 33336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/status/compressed/宇宙光耀": {
+      "variants": {
+        "webp": {
+          "sha256": "cd9162249c637bf3afe8b726a1c7d34c54393b9c31406c6deb0b49c5c75e4f0a",
+          "bytes": 65366,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/captain_marvel/tip": {
+      "variants": {
+        "png": {
+          "sha256": "6bd8a4e24763bbf149d9b957c716c1cea321fd782ca2e59086368018682d3a08",
+          "bytes": 4631318,
           "mime": "image/png"
         }
       }
@@ -7195,12 +7929,102 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/cursed/人类面板": {
+      "variants": {
+        "png": {
+          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
+          "bytes": 9335738,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
+          "bytes": 16513454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
+          "bytes": 1541631,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
+          "bytes": 120704,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
+          "bytes": 9948505,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/cursed/ability-cards": {
       "variants": {
         "png": {
           "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
           "bytes": 16513454,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/人类面板": {
+      "variants": {
+        "webp": {
+          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
+          "bytes": 338966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
+          "bytes": 402186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
+          "bytes": 334460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
+          "bytes": 18542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
+          "bytes": 377108,
+          "mime": "image/webp"
         }
       }
     },
@@ -7258,51 +8082,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/compressed/人类面板": {
-      "variants": {
-        "webp": {
-          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
-          "bytes": 338966,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
-          "bytes": 402186,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/提示板": {
-      "variants": {
-        "webp": {
-          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
-          "bytes": 334460,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/玩家面板": {
-      "variants": {
-        "webp": {
-          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
-          "bytes": 377108,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
-          "bytes": 18542,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/cursed/dice": {
       "variants": {
         "jpg": {
@@ -7336,50 +8115,10 @@
           "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
           "bytes": 604,
           "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/compressed/休战": {
-      "variants": {
-        "webp": {
-          "sha256": "f6166c3e7750c80b4998ed8d132831e96b89c66b0124ff30d031e992a6a61156",
-          "bytes": 5350,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/compressed/凋零": {
-      "variants": {
-        "webp": {
-          "sha256": "bb8c259642f136eef1ccec63c7a37c68626f75adada662624e03e96bc3edfed7",
-          "bytes": 8754,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/compressed/炸药": {
-      "variants": {
-        "webp": {
-          "sha256": "1badeb9c191635a2ad4c30ecd3ef72d1abcf64c4a7477451ef71cd73bf49caf7",
-          "bytes": 10170,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币": {
-      "variants": {
-        "webp": {
-          "sha256": "c05e23cf7dea065102dec2b9107148f50271d3b606aacd5006c6bb912d651cc4",
-          "bytes": 11300,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/status/休战": {
-      "variants": {
+        },
         "png": {
-          "sha256": "51aac7cb57d742e84d0f08b9827fbfc309b5e6a1c37cae8013cfc1db04d8921d",
-          "bytes": 40862,
+          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
+          "bytes": 317204,
           "mime": "image/png"
         }
       }
@@ -7389,6 +8128,15 @@
         "png": {
           "sha256": "9f786ba6cb8ae1b6c90bec0f76dd86a99c0e60875618e77e7141764334577d06",
           "bytes": 64632,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/休战": {
+      "variants": {
+        "png": {
+          "sha256": "51aac7cb57d742e84d0f08b9827fbfc309b5e6a1c37cae8013cfc1db04d8921d",
+          "bytes": 40862,
           "mime": "image/png"
         }
       }
@@ -7411,6 +8159,42 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/cursed/status/compressed/凋零": {
+      "variants": {
+        "webp": {
+          "sha256": "bb8c259642f136eef1ccec63c7a37c68626f75adada662624e03e96bc3edfed7",
+          "bytes": 8754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/休战": {
+      "variants": {
+        "webp": {
+          "sha256": "f6166c3e7750c80b4998ed8d132831e96b89c66b0124ff30d031e992a6a61156",
+          "bytes": 5350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/炸药": {
+      "variants": {
+        "webp": {
+          "sha256": "1badeb9c191635a2ad4c30ecd3ef72d1abcf64c4a7477451ef71cd73bf49caf7",
+          "bytes": 10170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币": {
+      "variants": {
+        "webp": {
+          "sha256": "c05e23cf7dea065102dec2b9107148f50271d3b606aacd5006c6bb912d651cc4",
+          "bytes": 11300,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/cursed/tip": {
       "variants": {
         "jpg": {
@@ -7420,48 +8204,206 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/人类面板": {
+    "zh-CN/dicethrone/images/doctor_strange/官方qa": {
       "variants": {
         "png": {
-          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
-          "bytes": 9335738,
+          "sha256": "b36f5fd6ab388642b2f19622ae25e6dc9bf8a0d79a42bfcc315c4c51ba92a37a",
+          "bytes": 5204008,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/手牌": {
+    "zh-CN/dicethrone/images/doctor_strange/ability-cards": {
       "variants": {
         "png": {
-          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
-          "bytes": 16513454,
+          "sha256": "996539ae0d6fbf123146d23e5fe1f2467d73a8b85677059a00137fb0b91b9767",
+          "bytes": 40965832,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/提示板": {
-      "variants": {
-        "jpg": {
-          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
-          "bytes": 1541631,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/cursed/玩家面板": {
+    "zh-CN/dicethrone/images/doctor_strange/combat-points-tracker": {
       "variants": {
         "png": {
-          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
-          "bytes": 9948505,
+          "sha256": "12a9e12deb00486550e2d6fefada86027a28e7366f343306f2cbeb37f03d591d",
+          "bytes": 370676,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/骰子": {
+    "zh-CN/dicethrone/images/doctor_strange/compressed/官方qa": {
       "variants": {
-        "jpg": {
-          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
-          "bytes": 120704,
-          "mime": "image/jpeg"
+        "webp": {
+          "sha256": "33ff05fb1d26cf3e34beec945405d6cb5ca955a02be9b124445a7417a4ac9a60",
+          "bytes": 970584,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "ce284634e4d5a57583e0460b3b25b209bc26d34c10fd9e5affffd02c08cc6df0",
+          "bytes": 5480868,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "ec5c549be3e0da8a5174ff27a5a2aba0f937e66c9ccac361fd9a050ef4d69de0",
+          "bytes": 79354,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "b96aa411a9be98c60f4b95e30551a4d884cb57c982ad39687115991e61135753",
+          "bytes": 34216,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "234c03031003c49ba825d51102a9ef0d5b7fb462e5ebae00c75d05b442c13228",
+          "bytes": 64788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "904d08d279011e4c32010cfd714277cc9ac591c6ecfc2570b65b18b27ef5ea3e",
+          "bytes": 1851812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "36477faa810218f348545ea95ca498b867ef97fdb48d36fb7598cd3524742cd7",
+          "bytes": 57286,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "f3b2a5a83e13088e8c62da359680c23e17ddc1fb58ef621a92bbf0ac5a06d4f5",
+          "bytes": 1016038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/dice": {
+      "variants": {
+        "png": {
+          "sha256": "b944291b3ff5b8b5c7ddf2c8c6ba18617eb460d262cd0b858173886ba41b1d5d",
+          "bytes": 52465,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/health-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "f8934dc111dca149716b17bb530e74fa96d9495652f4968e8e473e162cea2883",
+          "bytes": 290742,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "c5f916793e5bc4208fc09fd8674b40ca11db4c235ca4bcfa048e81c846b8cee1",
+          "bytes": 9532091,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "ebe056fc914d03c3c7702ff478f8f83b158b80b7c07ab3f976f74ecb2d2f501d",
+          "bytes": 538,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "e1c89da38757c6283ff00382bc4eb8c3a4e868fc02fc90eaca8768da86dce415",
+          "bytes": 262485,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status/既视感": {
+      "variants": {
+        "png": {
+          "sha256": "eeb4cbde35bc7bb465504c211a16c0e0a79be1588cbfb9163921b69ad6b15291",
+          "bytes": 51920,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status/深红系带": {
+      "variants": {
+        "png": {
+          "sha256": "dc97c1fcdc68a59ca10b3e791e45cd6b743d05df699a969a9aed684cf3918080",
+          "bytes": 60385,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status/预感": {
+      "variants": {
+        "png": {
+          "sha256": "6d9cd192b525e819e9fa735d826bacea21eb7d7eb422a6c6312779b6d3d06237",
+          "bytes": 139587,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status/compressed/既视感": {
+      "variants": {
+        "webp": {
+          "sha256": "c88c2e974175ddcb66a38661d9221856c77220e39d8f6cf39ef631aefb4b39e7",
+          "bytes": 7262,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status/compressed/深红系带": {
+      "variants": {
+        "webp": {
+          "sha256": "40e4d5080d49d4dd4fd786cb229e8c60489fb37ec3af68386f3745fb5278730d",
+          "bytes": 11884,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/status/compressed/预感": {
+      "variants": {
+        "webp": {
+          "sha256": "d89d796dd69dadda840c88b39ca0b05c43258789228a0a122027f648f840585d",
+          "bytes": 31258,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/doctor_strange/tip": {
+      "variants": {
+        "png": {
+          "sha256": "4b1afbae699089320059e7b43aa5f968f1e567a1d7e478910d48a8f7a4db3861",
+          "bytes": 5512222,
+          "mime": "image/png"
         }
       }
     },
@@ -8026,9 +8968,207 @@
     "zh-CN/dicethrone/images/gunslinger/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "916e0ceda6e0c117593082f64e38e94591085faa89bc52dd231964686e501866",
-          "bytes": 707,
+          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
+          "bytes": 738,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/废弃娃娃牌堆": {
+      "variants": {
+        "png": {
+          "sha256": "dcb4269aa24117fccb11a99765e3ebae915006ba53de55b95347b7847c09db85",
+          "bytes": 12175159,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/废弃娃娃牌堆-预览": {
+      "variants": {
+        "png": {
+          "sha256": "0741ccb8cc7373850c01842a0f90270496494de82c2912c1a95394d245a44055",
+          "bytes": 1082866,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "23b354ac41e0bfe0ad921dc5e045887aafee68894b948cf40348acc24903e262",
+          "bytes": 5913873,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "6ed2904ac74d5aadbed5a79ebe12c4ff9f4f88641458df4fbef3efcfc34a8ec8",
+          "bytes": 47454163,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/combat-points-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "e26200b56f20773a24b0510fa2fff25005bc2d5083269353138ab197456842c3",
+          "bytes": 206520,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/废弃娃娃牌堆": {
+      "variants": {
+        "webp": {
+          "sha256": "98049f70e13e0fc45638783f31544a27db2f6aeaf965d9758000c9643040ad3e",
+          "bytes": 1271682,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/废弃娃娃牌堆-预览": {
+      "variants": {
+        "webp": {
+          "sha256": "3b12aafa5bb2baf9b3579089a662e18f46162652b25ab1b22e82db394aa6d0a6",
+          "bytes": 116118,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "f13edfd6ceaf8b1ebf7d2eb937bb381fcb1fe3dcdeceed95681ad350caca11c8",
+          "bytes": 908400,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "2faea5947e5ca604688928ff9d65de00d2a53a291c1186ee85f0e07a71fbb6bf",
+          "bytes": 6320266,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "381463155d3f25e15f3da734bc22f0695d1f63ece6d32a636f615fab24602847",
+          "bytes": 160162,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "4e6863600a9ee2bee175fb5c66905fc47f6c31c167e057b1c1f71039a9a5e501",
+          "bytes": 39336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "4c919dfec4de93a04f44b813105b2b4460de93d6d795df32731319c84a29163b",
+          "bytes": 177772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "07530f586e0fed049112118092938c84ebc54efd28b0b062f64add347658429e",
+          "bytes": 1696246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "d8141f77360e116d221623f311d4898aa2315f08aa0d91cc3119829538890d1a",
+          "bytes": 944892,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "41634c9bb1992fe3f3a321ae2284c9e1b91a7cc6be91f317899befec0b4ceb25",
+          "bytes": 225378,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/health-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "d540927f52e411fefd264c048227f23259bf1aff357deb693e6260ade9ffbbe4",
+          "bytes": 248078,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "62f179e11bd9149c1334579323de84e6467b3025b39b316622b2a078744d23b4",
+          "bytes": 9388105,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/status/礼物": {
+      "variants": {
+        "png": {
+          "sha256": "ee30422cf8948d94f5600407a87df9a18342b3c8f63218c663d23118ed82f1ea",
+          "bytes": 55957,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/status/煤块": {
+      "variants": {
+        "png": {
+          "sha256": "7b6730f45601a96427512886b670634c4dca450a39a83ba37ddf39887d1a2ecf",
+          "bytes": 44596,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/status/compressed/礼物": {
+      "variants": {
+        "webp": {
+          "sha256": "58774faa5144a0534994bec5672b43b8a7794e9b26bc9af7c1aeb45e90b9c936",
+          "bytes": 8738,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/status/compressed/煤块": {
+      "variants": {
+        "webp": {
+          "sha256": "fc34d0ace324d435c475a6c3a1eb4c5674d7c8c29717a66cc063378dcdcd0913",
+          "bytes": 8706,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/krampus/tip": {
+      "variants": {
+        "png": {
+          "sha256": "b1d3c20e49c497a4f61a8f4848d42afc7c620b0a595b5f5e9cc28998a87e5ba7",
+          "bytes": 6952793,
+          "mime": "image/png"
         }
       }
     },
@@ -8143,8 +9283,8 @@
     "zh-CN/dicethrone/images/lieren/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "4b789841176e01e16e3fb821ca2683fd63ac6e0c29ebed89ddfae3fec30f96b2",
-          "bytes": 545,
+          "sha256": "888c4441d144593c66242a20168dff2f285500ad280f95eb91d1fa6b038a30aa",
+          "bytes": 575,
           "mime": "application/json"
         },
         "png": {
@@ -8156,9 +9296,230 @@
     },
     "zh-CN/dicethrone/images/lieren/tip": {
       "variants": {
+        "jpg": {
+          "sha256": "b9005884ea62ac6bbc1d1cbe3734a375d48874e5348333182028b12c94502b96",
+          "bytes": 1481068,
+          "mime": "image/jpeg"
+        },
         "png": {
           "sha256": "f6740ef7cc40315f744aef09b61d590f0e6a30082764a7f64478a2bb946d9146",
           "bytes": 3990639,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "a14eb86c801af64035206f393f6487d9347073c54042b70ef8a32e87a01b8eaf",
+          "bytes": 4605496,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/幻象卡牌": {
+      "variants": {
+        "png": {
+          "sha256": "55401ad0a23a387713982f6bdb8b173ef8bb197f894ec3223c2926c0f5dd5af4",
+          "bytes": 6534295,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/幻象卡牌-预览": {
+      "variants": {
+        "png": {
+          "sha256": "3fcf9cf7f86a23d6e404c2461a63d966403a0b835956b08ee61b90a9f8a8997d",
+          "bytes": 1097675,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "fced4f04b1a4f8bc65f98485b1ab772ce61b652e6261a092cbbd3d6f7fe07d62",
+          "bytes": 45738233,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/combat-points-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "575be12ac2ff3025054a3d612954cf06ce7d2e7b10035207e092d2c37b94ffa5",
+          "bytes": 373953,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "451358aa1c86a30b7a91ab7753bb0451483be1dc3b79bc4b94f87c749922313c",
+          "bytes": 967040,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/幻象卡牌": {
+      "variants": {
+        "webp": {
+          "sha256": "caa19108a8de6f5ef76f22dc9f6d2a05d05d8541579762d4b16eb0fa076f8a31",
+          "bytes": 862608,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/幻象卡牌-预览": {
+      "variants": {
+        "webp": {
+          "sha256": "46643fb11a686a0013ccfd0f985939963b20fa90aa71318dde8f0e5dcbad7a0f",
+          "bytes": 143110,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eb87577a3319cb042a865642a3e1eef549d39387c72b7b8c155dc5b431155295",
+          "bytes": 5829800,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "31aeb4d34625a38623ce4274aea50256942ee0fc869cf4f855798bdb68e541f4",
+          "bytes": 74714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "3590c499ddfc5c59843a3aced85fd18139ba3e5293dc97c9e32bbd35cf2389c2",
+          "bytes": 28320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "a7fcd389d3e5d530931b2ead7f871f76122fa92f805d443425802689764d469a",
+          "bytes": 62678,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "4020839ec434553ecf50695b10fa9e124ecf6814572301c4451ead2215995c19",
+          "bytes": 2526126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "55240e613f7860adabdcd947db7803f92fe55f57982927310dd54a15fbeb83d7",
+          "bytes": 974152,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/dice": {
+      "variants": {
+        "png": {
+          "sha256": "b58708c6fee80b212dfc16f5019f289f30dece70838ef7cb8921545cc5499081",
+          "bytes": 46384,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/health-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "9aab143107d63d1a0d073e3d2f9d6ba6d8b6f847afe161341b60b12aa2293ca4",
+          "bytes": 266268,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "aa18e34d22c0f1828622a13762ab46c1310141ebea0c5b2717498154d1d4a8d9",
+          "bytes": 12661095,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/status/封印": {
+      "variants": {
+        "png": {
+          "sha256": "d4ab0ad35aabd9ce3de685b438af01b8a3fad3a902ac91735e23cfa2a8c719a5",
+          "bytes": 21855,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/status/诡计多端": {
+      "variants": {
+        "png": {
+          "sha256": "af2ec3b44f8ef6317a9f512d0e677afa8b9da25afbd72b6f6eceb5c6ac2dd31d",
+          "bytes": 78140,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/status/幻象": {
+      "variants": {
+        "png": {
+          "sha256": "8b15325dc65cea3ffeb06dd324dcdad5167ac4eff0d173d61bdab73bd4409f13",
+          "bytes": 62224,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/status/compressed/封印": {
+      "variants": {
+        "webp": {
+          "sha256": "650b43247304c95acf54cdb6e4547246fcd673a94484438cb27a5dd524f7101b",
+          "bytes": 4532,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/status/compressed/诡计多端": {
+      "variants": {
+        "webp": {
+          "sha256": "be6bd5139d550d297e5cca9b1f3b296dde3e7c2185059be44cd02d871a4c3bd9",
+          "bytes": 19744,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/status/compressed/幻象": {
+      "variants": {
+        "webp": {
+          "sha256": "8bb79e100f6c361c2951e24fc65625758cbb5feb6b5f50568912f2bed5547400",
+          "bytes": 9956,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/loki/tip": {
+      "variants": {
+        "png": {
+          "sha256": "af48b2b0c5569a61a8f0d116c9eebca034b624e44c3ab237d836c646178ee800",
+          "bytes": 5273091,
           "mime": "image/png"
         }
       }
@@ -8229,8 +9590,8 @@
     "zh-CN/dicethrone/images/monk/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "11d5b018dd98a57106f0e7c808c06c0da3602e534ce5362f16fff7c5d13c8c9e",
-          "bytes": 598,
+          "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
+          "bytes": 640,
           "mime": "application/json"
         }
       }
@@ -8301,8 +9662,8 @@
     "zh-CN/dicethrone/images/moon_elf/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "9832304c059dadad3dced7df56f40d09e2512ca30dc7dad43cf3e28baf0f4420",
-          "bytes": 600,
+          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
+          "bytes": 642,
           "mime": "application/json"
         }
       }
@@ -8313,6 +9674,51 @@
           "sha256": "ef441060123206505e5c17748f99aacb6513a4e900ca4f6cb2bb114f5046e934",
           "bytes": 2158372,
           "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/慢性中毒": {
+      "variants": {
+        "png": {
+          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
+          "bytes": 49098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/忍术icon": {
+      "variants": {
+        "png": {
+          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
+          "bytes": 34564,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
+          "bytes": 9404983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
+          "bytes": 10431472,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/烟雾弹icon": {
+      "variants": {
+        "png": {
+          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
+          "bytes": 42841,
+          "mime": "image/png"
         }
       }
     },
@@ -8382,54 +9788,9 @@
     "zh-CN/dicethrone/images/ninja/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "b1992667583f03be602728c8363d90a710c0e95ffad702b5a21cedfb45a61798",
-          "bytes": 491,
+          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
+          "bytes": 526,
           "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/忍术icon": {
-      "variants": {
-        "png": {
-          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
-          "bytes": 34564,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/慢性中毒": {
-      "variants": {
-        "png": {
-          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
-          "bytes": 49098,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/提示板": {
-      "variants": {
-        "png": {
-          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
-          "bytes": 9404983,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/烟雾弹icon": {
-      "variants": {
-        "png": {
-          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
-          "bytes": 42841,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/ninja/玩家面板": {
-      "variants": {
-        "png": {
-          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
-          "bytes": 10431472,
-          "mime": "image/png"
         }
       }
     },
@@ -8490,8 +9851,8 @@
     "zh-CN/dicethrone/images/paladin/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "df4b84cf2b153e001a37fea46e0508883e7c549ce56d70a087306e6cc2d7d389",
-          "bytes": 746,
+          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
+          "bytes": 797,
           "mime": "application/json"
         }
       }
@@ -8571,8 +9932,8 @@
     "zh-CN/dicethrone/images/pyromancer/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "fe29a5a728c3699e852ecd9ca51d68fe5587b3dc26dc22656892a990485bda23",
-          "bytes": 622,
+          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
+          "bytes": 664,
           "mime": "application/json"
         }
       }
@@ -9126,20 +10487,20 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/samurai/icons/compressed/反击": {
-      "variants": {
-        "webp": {
-          "sha256": "5a718638ae7475abe32c4dd20db190040988f6b016c3f49e2dee1c5350323348",
-          "bytes": 3884,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/samurai/icons/compressed/耻辱": {
       "variants": {
         "webp": {
           "sha256": "db44f98a983c0b719187825194dec6251c75ad071d170bb11f69dfb0acb7a6d9",
           "bytes": 4010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/icons/compressed/反击": {
+      "variants": {
+        "webp": {
+          "sha256": "5a718638ae7475abe32c4dd20db190040988f6b016c3f49e2dee1c5350323348",
+          "bytes": 3884,
           "mime": "image/webp"
         }
       }
@@ -9156,9 +10517,387 @@
     "zh-CN/dicethrone/images/samurai/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "27bcc2b3272757e989340cb8ca74c5f04495e5445c6fa635d1606910bd9033e2",
-          "bytes": 591,
+          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
+          "bytes": 627,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "5366444d16ddb3735854e293e94f12d2453e3d48451b32bdb2ac27af158cfe93",
+          "bytes": 5256791,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "22fe60fba8b4d0380422a49f5369bb3de202fc027a3ba8704b7af3acddd608be",
+          "bytes": 47380090,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/combat-points-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "2dc84fc21c76910bc799f45b2a8017bc0ffefd0fdb6be49dd3b8ab98dcf75106",
+          "bytes": 175094,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "2197f348fd63ada679ff8a64fd627671fe8ddf3f6a5ee0074392d74de7bb58eb",
+          "bytes": 815024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "5429c756291cb13525e0d97c8d080c1fc5526c02ee486a9e3f771fd128260ef8",
+          "bytes": 6242130,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "ceab9571c20feea86a3f42b916169f807fb140b64726109048356b649023e8cf",
+          "bytes": 80192,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "f8fad51cdcdf2c171c39733f568eac2b614ae804f373a894ebd39ae01ffdb4ac",
+          "bytes": 33772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "5bec672b7c12f5e92c043c4cf558a7a33caf016e0c78678e7057dfe8016e9e6a",
+          "bytes": 150638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "e8aa43a03f13c6e7cb2c6f01cba12094429e5964861eadf34d5062b2405c48de",
+          "bytes": 1966544,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "c6ef34f83690cc41880f599c8834d768a864855082748bc44f5bac77f42f92bd",
+          "bytes": 601864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "a3bcc0b58637f449f8d532e30dc1ce1f5e629b80e6621f944f1381f5af766d7f",
+          "bytes": 198934,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/health-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "71913fc17f126c8f5850fdb5c17435dcaa89b6bda72f7535c07285eee22899cc",
+          "bytes": 238904,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "59d49ce52582d4cbbc46b1f6552d3549718e471581a8a022f403867202fe55be",
+          "bytes": 10622707,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/status/蛋酒": {
+      "variants": {
+        "png": {
+          "sha256": "9ff581c1a75ed18a2991226a588480e696b921b81610436aedc377b41ec9cae3",
+          "bytes": 40035,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/status/圣诞铃铛": {
+      "variants": {
+        "png": {
+          "sha256": "15e37f207a9ae8bef0887eb2a76fc9f4072f224e3494364a499db009d93252b4",
+          "bytes": 29407,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/status/compressed/蛋酒": {
+      "variants": {
+        "webp": {
+          "sha256": "fc19a0f49ab0d903fddbf81bcb814dc5f64656c7e97ace2d18444baadfccb441",
+          "bytes": 5732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/status/compressed/圣诞铃铛": {
+      "variants": {
+        "webp": {
+          "sha256": "312108db507128f5a4bccca69c92b273c76ce7c66a368d0c1c3e2806e2747f49",
+          "bytes": 4648,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/santa/tip": {
+      "variants": {
+        "png": {
+          "sha256": "37a544f0cbc204aec266c70f3b306d32e70744c856a4422361e66e320a15f783",
+          "bytes": 4337822,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "2d23a8148e70947a4be2c5455d9b794524afbc1f86393a1f9163c764ab099726",
+          "bytes": 3964716,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "c35edb7936b75ffd25afdec54910cfe9659a59ffa36a755b04caa79d0425cd18",
+          "bytes": 45212300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/combat-points-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "d7f6f077c08e335c94cbcda29e2e2473c010c70851b7654c5cfcf88cc783ee45",
+          "bytes": 311728,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "dc4d67ca25c8059d42533b348de00b402276b4d0a2a0b4c24bccc1279956c0cd",
+          "bytes": 725196,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "4693fe0d93b1de792100f7da7a50bdceb1de1cabbba82d5c8164d6f0af761d56",
+          "bytes": 5666076,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "c8e60b5704102e646d2def8bd409c158073fdfbc10dac275bd8df5e8f7a4120e",
+          "bytes": 66936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "b077eeade134ea35db049734edffd2587fb5b05df409fc5b0b65cb5c1c2be229",
+          "bytes": 33708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/dice-numbered-reference": {
+      "variants": {
+        "webp": {
+          "sha256": "701e1c4458acd82d7649d88ab19c6536f79c5291aea50849a28f4710886c3939",
+          "bytes": 612728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "b4b1d28475846d1c1d80c90aeb6206936a9b303d6e22ebd490b7af03a92e09cb",
+          "bytes": 50590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "562a1d66c589416fa700fa424ff9f7e8b138823890dc51c6ccb2a3d8fbb1e106",
+          "bytes": 1588956,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "4f27b400a9fae21f6ce3d13ca97c20563bd0a71e538df7f21fa033f1f10e2a0c",
+          "bytes": 976418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/dice": {
+      "variants": {
+        "png": {
+          "sha256": "23c9a12f89a4e29e978fa040468d62359d6bf4a76f7cf2a5b73cd25258da8a3b",
+          "bytes": 61949,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/dice-numbered-reference": {
+      "variants": {
+        "jpg": {
+          "sha256": "914949cb1218608c2062a0c6381dcd85846961621ce7aa2b016291e074eb9bb0",
+          "bytes": 385945,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/health-tracker": {
+      "variants": {
+        "png": {
+          "sha256": "ffe458ff62485ad466a1f71e70ed83192f6a902e44f2857c78a856c4a9e25f7c",
+          "bytes": 257188,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "4077652e12afbf1d4f6558e2436f2b533813fffba658de07732b75e9af80e147",
+          "bytes": 8460929,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/爆裂": {
+      "variants": {
+        "png": {
+          "sha256": "d07928b7cda3fe5e2c3c24100c7dba2de2eb9ebf403d0191684e550b322eb937",
+          "bytes": 64542,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/操控概率": {
+      "variants": {
+        "png": {
+          "sha256": "521ea5e7211a64c4f5ca345d47ac32742686429a991b5548a5ef4cd5fcf47251",
+          "bytes": 50525,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/扭曲现实": {
+      "variants": {
+        "png": {
+          "sha256": "a238b5c6ea52a3d46598adb0f5d9bfb8b965e25defb6e386089103a2672c85a1",
+          "bytes": 39173,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/终极魔法": {
+      "variants": {
+        "png": {
+          "sha256": "0fc5380630b4ee2230466bc8d245156e3dd6b58717a9a04385bcfe01f74ed60f",
+          "bytes": 59858,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/compressed/爆裂": {
+      "variants": {
+        "webp": {
+          "sha256": "3437fe53df5a7a5c64aa9ffb9d90b90ad9b41b4a661bb4cc0384e661349ce27e",
+          "bytes": 13478,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/compressed/操控概率": {
+      "variants": {
+        "webp": {
+          "sha256": "4e47b41df13ea30d6ad83c51b0ff748582ab6f9d242573c404cafe868b76409e",
+          "bytes": 7522,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/compressed/扭曲现实": {
+      "variants": {
+        "webp": {
+          "sha256": "f4211ae24b97adbe498902b17397f3ad531a1ce960bcbbd10e9977e158e2190c",
+          "bytes": 5998,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/status/compressed/终极魔法": {
+      "variants": {
+        "webp": {
+          "sha256": "572029353fd016e1bb391d30b22e73d977044232a50c0e1d5a0d7490250dc895",
+          "bytes": 9914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/scarlet_witch/tip": {
+      "variants": {
+        "png": {
+          "sha256": "a67ebfd93450bd4ced1f1422bfb388db4d5f99b64b9aeb36c4ffe4362ea53d39",
+          "bytes": 5390140,
+          "mime": "image/png"
         }
       }
     },
@@ -9219,8 +10958,8 @@
     "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "71c0a9986f14472771418316349054828e0218e16893c166ce8faf98fb1ecb62",
-          "bytes": 487,
+          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
+          "bytes": 521,
           "mime": "application/json"
         }
       }
@@ -9230,6 +10969,263 @@
         "png": {
           "sha256": "24eee5d2515fb1c183289cb9cdabc22c5ad62388cb6b965aa386ebe2a98f2d43",
           "bytes": 9059653,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/官方qa": {
+      "variants": {
+        "png": {
+          "sha256": "607aa90bca1752b3cb8e260ea646e8c0222c275ccbf2d30d9d02faf5ce1ac95c",
+          "bytes": 5737305,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "5bc13e50ad327440c71f0a8ed13dbbfc37806d14f86eeaabd4337ca60cc6b498",
+          "bytes": 46645117,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/combat-points-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "a570a226c493077ff65e52bf20c6c873d4065ba8b63a25cdc1687c1c25d913ce",
+          "bytes": 215663,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "3966b8d86974fb360f6424a8b78f6ff08d91a7c826acd91c5db9d32561040031",
+          "bytes": 1066438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "f788d2a31184ce28154f91187c43d3e39aabd8c93ccc527216a7689ec9ea258b",
+          "bytes": 5697612,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/combat-points-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "e546868de6d9a410c5fe384c30396977b6eb521c1b3f21d7e3d679603f8ba7c4",
+          "bytes": 72694,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "fd570ff8513991df8882050594c629f9806f39b11cdfe87bf70214d11a401bce",
+          "bytes": 52514,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/health-tracker": {
+      "variants": {
+        "webp": {
+          "sha256": "b6fe7246d308d91730436e8e3a2aa6ee4a3faf37cc433f826b3ba26f2d4f1406",
+          "bytes": 57050,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "2a192bf3c670bff4092795a2a1f0baf4169d58cb3197afc2144a9e95f19d9812",
+          "bytes": 2210036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/portrait": {
+      "variants": {
+        "webp": {
+          "sha256": "8821d3b266e1da96928f51e248f3fcff91b2752e104ce58476fc08eefe4df0a4",
+          "bytes": 194472,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "47c821952e2e91c20cb465844e1e3539b7747d59e96441a3c8301a1e4e9e7a67",
+          "bytes": 233066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "5a170182ddf73318fe68e8033fbb7622e3465768af0ad8332584af29c0ff950e",
+          "bytes": 1026300,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/dice": {
+      "variants": {
+        "png": {
+          "sha256": "5f59643608816c568a37d742c401b6973707ad69a030bf4ae161f2adb6ab3a58",
+          "bytes": 163736,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/health-tracker": {
+      "variants": {
+        "jpg": {
+          "sha256": "8e93cbf8c0e7fd82a7a5dbbc05dc68e9f6da79446bb854243c6f8c7bdabec087",
+          "bytes": 139421,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "e47ad2cdfc04e730d29dd6b5db98001811d548d7907d7b87c1c7ee337f1801da",
+          "bytes": 11363030,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/portrait": {
+      "variants": {
+        "png": {
+          "sha256": "108cc57618216c12537aa1c9fb7df20bda1615acb87d5fb3658fdef6a65ddb79",
+          "bytes": 1356767,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "48eaeefed37911e61e77b0d9ed9a959789ee84581e0af417b555d09fd87d945f",
+          "bytes": 1183,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "32cb16a066b9d38a04140276028c30f55231aa11bec83864908d0ae2afb5d75a",
+          "bytes": 1081765,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status/姆乔尔尼尔": {
+      "variants": {
+        "png": {
+          "sha256": "12cb56d4608a17a3cfb54a97c95beca09ac9e47ea682db4d76e244907c0c027f",
+          "bytes": 861927,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status/破防": {
+      "variants": {
+        "png": {
+          "sha256": "a9e434ceb9035217308e66cd76640205df7426f59b90d466beaf9c5dba6a1898",
+          "bytes": 70450,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status/驭电": {
+      "variants": {
+        "png": {
+          "sha256": "e338cfa0282baa285ff9208d4cb7acfc7c62a0e2d1efb50486ce18b17ecacd41",
+          "bytes": 58613,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status/compressed/姆乔尔尼尔": {
+      "variants": {
+        "webp": {
+          "sha256": "a8577c7ce1c206b9596d9d556ce06367f6703f36d9d35928004631a1bbb1b1d6",
+          "bytes": 204138,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status/compressed/破防": {
+      "variants": {
+        "webp": {
+          "sha256": "21531827e79b103586a29e81273c3383f3ec88917a315749d3ceb6977fe1a6ef",
+          "bytes": 14642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/status/compressed/驭电": {
+      "variants": {
+        "webp": {
+          "sha256": "c1c1870ea2d2551af1b9800e1dc4cdac521800b6da54fbb2e81ed03d603e431c",
+          "bytes": 12056,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/thor/tip": {
+      "variants": {
+        "png": {
+          "sha256": "b0c535d8d5a357a143227cf93ca9d759b97fd5aaa8bcbd6cd7910b013b58ba89",
+          "bytes": 5785273,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/飞行": {
+      "variants": {
+        "png": {
+          "sha256": "d6917ba0ad9e929cf13f8bd65797e82d449599ffef75016daa5cff8abdf80daa",
+          "bytes": 68756,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/神圣降临 ": {
+      "variants": {
+        "png": {
+          "sha256": "ae30332db891f3589b325778bfd9e5aa7ff43185dfc8448250bf6f1ed75e1dbf",
+          "bytes": 101236,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/神圣祝福": {
+      "variants": {
+        "png": {
+          "sha256": "ac9418b6d3495e3092a29024cf05866887c8ee9e3c3a414887112c39f6354453",
+          "bytes": 162242,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/炫光": {
+      "variants": {
+        "png": {
+          "sha256": "77b40b01d8cf405454fefa139660735eea538dbd8cb689eb14b99f01ed96651f",
+          "bytes": 112218,
           "mime": "image/png"
         }
       }
@@ -9249,6 +11245,42 @@
           "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
           "bytes": 14654587,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/飞行": {
+      "variants": {
+        "webp": {
+          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
+          "bytes": 15206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣降临 ": {
+      "variants": {
+        "webp": {
+          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
+          "bytes": 17874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣祝福": {
+      "variants": {
+        "webp": {
+          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
+          "bytes": 29734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/炫光": {
+      "variants": {
+        "webp": {
+          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
+          "bytes": 22126,
+          "mime": "image/webp"
         }
       }
     },
@@ -9306,42 +11338,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/tianshi/compressed/炫光": {
-      "variants": {
-        "webp": {
-          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
-          "bytes": 22126,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/神圣祝福": {
-      "variants": {
-        "webp": {
-          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
-          "bytes": 29734,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/神圣降临 ": {
-      "variants": {
-        "webp": {
-          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
-          "bytes": 17874,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/tianshi/compressed/飞行": {
-      "variants": {
-        "webp": {
-          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
-          "bytes": 15206,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/tianshi/dice": {
       "variants": {
         "png": {
@@ -9366,6 +11362,11 @@
           "sha256": "f081694215d3a8656801f3aa90b2eb228ee225c2777f5ca3f4d0f5d60157bea6",
           "bytes": 612,
           "mime": "application/json"
+        },
+        "png": {
+          "sha256": "dcdb39a70056badef9b068fe5be38a94693bb71ff770cb19456120af493976ec",
+          "bytes": 407076,
+          "mime": "image/png"
         }
       }
     },
@@ -9378,38 +11379,56 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/tianshi/炫光": {
+    "zh-CN/dicethrone/images/treant/木苗树灵": {
       "variants": {
         "png": {
-          "sha256": "77b40b01d8cf405454fefa139660735eea538dbd8cb689eb14b99f01ed96651f",
-          "bytes": 112218,
+          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
+          "bytes": 69810,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/tianshi/神圣祝福": {
+    "zh-CN/dicethrone/images/treant/神性树灵": {
       "variants": {
         "png": {
-          "sha256": "ac9418b6d3495e3092a29024cf05866887c8ee9e3c3a414887112c39f6354453",
-          "bytes": 162242,
+          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
+          "bytes": 63315,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/tianshi/神圣降临 ": {
+    "zh-CN/dicethrone/images/treant/生命源泉": {
       "variants": {
         "png": {
-          "sha256": "ae30332db891f3589b325778bfd9e5aa7ff43185dfc8448250bf6f1ed75e1dbf",
-          "bytes": 101236,
+          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
+          "bytes": 64314,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/tianshi/飞行": {
+    "zh-CN/dicethrone/images/treant/提示板": {
       "variants": {
         "png": {
-          "sha256": "d6917ba0ad9e929cf13f8bd65797e82d449599ffef75016daa5cff8abdf80daa",
-          "bytes": 68756,
+          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
+          "bytes": 9228891,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
+          "bytes": 12598188,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/幼种树灵": {
+      "variants": {
+        "png": {
+          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
+          "bytes": 50153,
           "mime": "image/png"
         }
       }
@@ -9480,62 +11499,71 @@
     "zh-CN/dicethrone/images/treant/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "0e5795f1fb8614a160506240bf5168b6f1b8ed472603d2b609118de33e0b6f13",
-          "bytes": 738,
+          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
+          "bytes": 789,
           "mime": "application/json"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/幼种树灵": {
+    "zh-CN/dicethrone/images/xixuegui/催眠": {
       "variants": {
         "png": {
-          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
-          "bytes": 50153,
+          "sha256": "d893d8264ca9e8ae7308f49425f366c4a530eb995f13bfe75f89f690dc02e856",
+          "bytes": 36231,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/提示板": {
+    "zh-CN/dicethrone/images/xixuegui/规则qa": {
+      "variants": {
+        "jpg": {
+          "sha256": "c17d65d9aa5ae46a11cd56e3eba8bb902584d104239747970e0c0697bb98ffa7",
+          "bytes": 1210474,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/流血": {
       "variants": {
         "png": {
-          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
-          "bytes": 9228891,
+          "sha256": "7842163861532481c0f09a406a950638250198fb65736fe10e19d54c35a63632",
+          "bytes": 34260,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/木苗树灵": {
+    "zh-CN/dicethrone/images/xixuegui/骰子": {
       "variants": {
         "png": {
-          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
-          "bytes": 69810,
+          "sha256": "d2902fec2997528762aad309b1a10db2b85613149d9cec7a8792d32927885934",
+          "bytes": 43175,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/玩家面板": {
+    "zh-CN/dicethrone/images/xixuegui/玩家面板": {
       "variants": {
         "png": {
-          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
-          "bytes": 12598188,
+          "sha256": "b5a14951ab5ffd52b974bfa6f8b2bfab0e0664072e3007a1b0cbfa6ea094e4e5",
+          "bytes": 10012700,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/生命源泉": {
+    "zh-CN/dicethrone/images/xixuegui/玩家提示卡": {
       "variants": {
-        "png": {
-          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
-          "bytes": 64314,
-          "mime": "image/png"
+        "jpg": {
+          "sha256": "ee612b30442c32024dd464ba5728b2e393ec6e74ea79dad808df415848f32f65",
+          "bytes": 1296222,
+          "mime": "image/jpeg"
         }
       }
     },
-    "zh-CN/dicethrone/images/treant/神性树灵": {
+    "zh-CN/dicethrone/images/xixuegui/鲜血之力": {
       "variants": {
         "png": {
-          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
-          "bytes": 63315,
+          "sha256": "569ea0fae2591b1731859885b43dce5ae88b53b41b26a3e046ca828d7d13982b",
+          "bytes": 65893,
           "mime": "image/png"
         }
       }
@@ -9627,6 +11655,11 @@
           "sha256": "5d1e7db203b740b8e62ac38b0bec831aa7fe490396bf96c60e3d9964eb10a171",
           "bytes": 690,
           "mime": "application/json"
+        },
+        "png": {
+          "sha256": "35c78486104a978df31c70e387d0253182bfeb8b3f4c7eeacec0337fd9d2e715",
+          "bytes": 179406,
+          "mime": "image/png"
         }
       }
     },
@@ -9639,65 +11672,38 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/催眠": {
+    "zh-CN/dicethrone/images/zhanshujia/手牌": {
       "variants": {
         "png": {
-          "sha256": "d893d8264ca9e8ae7308f49425f366c4a530eb995f13bfe75f89f690dc02e856",
-          "bytes": 36231,
+          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
+          "bytes": 14961151,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/流血": {
-      "variants": {
-        "png": {
-          "sha256": "7842163861532481c0f09a406a950638250198fb65736fe10e19d54c35a63632",
-          "bytes": 34260,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/xixuegui/玩家提示卡": {
+    "zh-CN/dicethrone/images/zhanshujia/提示板": {
       "variants": {
         "jpg": {
-          "sha256": "ee612b30442c32024dd464ba5728b2e393ec6e74ea79dad808df415848f32f65",
-          "bytes": 1296222,
+          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
+          "bytes": 1354426,
           "mime": "image/jpeg"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/玩家面板": {
+    "zh-CN/dicethrone/images/zhanshujia/骰子": {
       "variants": {
         "png": {
-          "sha256": "b5a14951ab5ffd52b974bfa6f8b2bfab0e0664072e3007a1b0cbfa6ea094e4e5",
-          "bytes": 10012700,
+          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
+          "bytes": 57745,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/xixuegui/规则qa": {
-      "variants": {
-        "jpg": {
-          "sha256": "c17d65d9aa5ae46a11cd56e3eba8bb902584d104239747970e0c0697bb98ffa7",
-          "bytes": 1210474,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/xixuegui/骰子": {
+    "zh-CN/dicethrone/images/zhanshujia/玩家面板": {
       "variants": {
         "png": {
-          "sha256": "d2902fec2997528762aad309b1a10db2b85613149d9cec7a8792d32927885934",
-          "bytes": 43175,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/xixuegui/鲜血之力": {
-      "variants": {
-        "png": {
-          "sha256": "569ea0fae2591b1731859885b43dce5ae88b53b41b26a3e046ca828d7d13982b",
-          "bytes": 65893,
+          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
+          "bytes": 9871576,
           "mime": "image/png"
         }
       }
@@ -9708,6 +11714,42 @@
           "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
           "bytes": 14961151,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
+          "bytes": 372752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
+          "bytes": 262658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
+          "bytes": 17972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
+          "bytes": 375712,
+          "mime": "image/webp"
         }
       }
     },
@@ -9756,42 +11798,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
-          "bytes": 372752,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/提示板": {
-      "variants": {
-        "webp": {
-          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
-          "bytes": 262658,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/玩家面板": {
-      "variants": {
-        "webp": {
-          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
-          "bytes": 375712,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
-          "bytes": 17972,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/zhanshujia/dice": {
       "variants": {
         "png": {
@@ -9816,32 +11822,10 @@
           "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
           "bytes": 370,
           "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势": {
-      "variants": {
-        "webp": {
-          "sha256": "7f580d391764df39183b2aa0183cdb7e82d25b19b2c1089f1fdc14f7673ca472",
-          "bytes": 11332,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/status/compressed/紧缚": {
-      "variants": {
-        "webp": {
-          "sha256": "5782a864984f2b5e308dd456c8ac676b6b267317bd2a9de189b0afe71aaba377",
-          "bytes": 8876,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/status/战术优势": {
-      "variants": {
+        },
         "png": {
-          "sha256": "0763e121bd7742d11b0124845314184e2c97ef636d7bb6cfe405b60937b2a999",
-          "bytes": 100459,
+          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
+          "bytes": 135997,
           "mime": "image/png"
         }
       }
@@ -9855,6 +11839,33 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/zhanshujia/status/战术优势": {
+      "variants": {
+        "png": {
+          "sha256": "0763e121bd7742d11b0124845314184e2c97ef636d7bb6cfe405b60937b2a999",
+          "bytes": 100459,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/compressed/紧缚": {
+      "variants": {
+        "webp": {
+          "sha256": "5782a864984f2b5e308dd456c8ac676b6b267317bd2a9de189b0afe71aaba377",
+          "bytes": 8876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势": {
+      "variants": {
+        "webp": {
+          "sha256": "7f580d391764df39183b2aa0183cdb7e82d25b19b2c1089f1fdc14f7673ca472",
+          "bytes": 11332,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/zhanshujia/tip": {
       "variants": {
         "jpg": {
@@ -9864,38 +11875,74 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/手牌": {
+    "zh-CN/dicethrone/images/zhizhuxia/官方qa": {
       "variants": {
         "png": {
-          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
-          "bytes": 14961151,
+          "sha256": "f31da27ccf2b230bf899432e61709597f402687b7d6ae3029cb77dae148b3713",
+          "bytes": 4930743,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/提示板": {
-      "variants": {
-        "jpg": {
-          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
-          "bytes": 1354426,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhanshujia/玩家面板": {
+    "zh-CN/dicethrone/images/zhizhuxia/连击": {
       "variants": {
         "png": {
-          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
-          "bytes": 9871576,
+          "sha256": "3a1888f1d9aa4a7837067629bfe6278550d3006c2d88a2b8910f0a3dee163506",
+          "bytes": 131562,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/骰子": {
+    "zh-CN/dicethrone/images/zhizhuxia/落网": {
       "variants": {
         "png": {
-          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
-          "bytes": 57745,
+          "sha256": "2f85cd3ba723f11dff2d17b8575bd7bd1459813aa9016e0417113dd1535d9bba",
+          "bytes": 409636,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "bb8cd0ca990f224aaa1c825614bf9afb8338c25035032e7b308d20af2582049a",
+          "bytes": 44735909,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/提示卡": {
+      "variants": {
+        "png": {
+          "sha256": "8b1fa00a9bd7173d277e1d9621098926696e48ff63fa1fb0f5d9565991db8f3c",
+          "bytes": 4264382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/骰子": {
+      "variants": {
+        "png": {
+          "sha256": "39b4d3a25d548ed317001eac47f8b2822a445fa860e97885d528fea7593e546d",
+          "bytes": 49208,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "b14400ad05d0bcfb6101d7a15686194c023953e9a21c0f846644940bb903f4bd",
+          "bytes": 10077624,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/隐形": {
+      "variants": {
+        "png": {
+          "sha256": "2aa169a707551766a1f04ff3bc83894b6c4a0f58914284d4497cebc0871d8b74",
+          "bytes": 73054,
           "mime": "image/png"
         }
       }
@@ -9906,6 +11953,78 @@
           "sha256": "bb8cd0ca990f224aaa1c825614bf9afb8338c25035032e7b308d20af2582049a",
           "bytes": 44735909,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/官方qa": {
+      "variants": {
+        "webp": {
+          "sha256": "5f684e0788b74e4f28d97ffdfb63e633c2ed87ed2dd40fd5e3ab6e1485d3e0b5",
+          "bytes": 919198,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/连击": {
+      "variants": {
+        "webp": {
+          "sha256": "e1de4f628eb5cca0feb9f8819c32dced5ecc94d008a788ad464994f118dcfe95",
+          "bytes": 29356,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/落网": {
+      "variants": {
+        "webp": {
+          "sha256": "eae55ba70d34d8737b3bdec6b767b38ffc88665f84a19e38c1e42dbbf8f107c1",
+          "bytes": 88078,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "768cd5c1c4ae83cde5e282b7c45341ad1c8391b224a91c7f6411616ada83a48c",
+          "bytes": 5647260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/提示卡": {
+      "variants": {
+        "webp": {
+          "sha256": "5cba98c0a8db038cdc9d1ccfd5738ce54e67263fecd8497c8eed369397a264dd",
+          "bytes": 802612,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "2f65b03677d272398c0c14f1ee58c0590832c7fd831d8bfa5d253803e3689974",
+          "bytes": 33490,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "9b7107e9b105d5e9f2e0a2a52c1b1080ed4126f15a4623c77c68fca1bef49cfe",
+          "bytes": 1868268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhizhuxia/compressed/隐形": {
+      "variants": {
+        "webp": {
+          "sha256": "77f354e6078ab889fb71c362be622a742ddfecaf645231a2f8c81b26c189a5bb",
+          "bytes": 10202,
+          "mime": "image/webp"
         }
       }
     },
@@ -9972,78 +12091,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/官方qa": {
-      "variants": {
-        "webp": {
-          "sha256": "5f684e0788b74e4f28d97ffdfb63e633c2ed87ed2dd40fd5e3ab6e1485d3e0b5",
-          "bytes": 919198,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/手牌": {
-      "variants": {
-        "webp": {
-          "sha256": "768cd5c1c4ae83cde5e282b7c45341ad1c8391b224a91c7f6411616ada83a48c",
-          "bytes": 5647260,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/提示卡": {
-      "variants": {
-        "webp": {
-          "sha256": "5cba98c0a8db038cdc9d1ccfd5738ce54e67263fecd8497c8eed369397a264dd",
-          "bytes": 802612,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/玩家面板": {
-      "variants": {
-        "webp": {
-          "sha256": "9b7107e9b105d5e9f2e0a2a52c1b1080ed4126f15a4623c77c68fca1bef49cfe",
-          "bytes": 1868268,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/落网": {
-      "variants": {
-        "webp": {
-          "sha256": "eae55ba70d34d8737b3bdec6b767b38ffc88665f84a19e38c1e42dbbf8f107c1",
-          "bytes": 88078,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/连击": {
-      "variants": {
-        "webp": {
-          "sha256": "e1de4f628eb5cca0feb9f8819c32dced5ecc94d008a788ad464994f118dcfe95",
-          "bytes": 29356,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/隐形": {
-      "variants": {
-        "webp": {
-          "sha256": "77f354e6078ab889fb71c362be622a742ddfecaf645231a2f8c81b26c189a5bb",
-          "bytes": 10202,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/compressed/骰子": {
-      "variants": {
-        "webp": {
-          "sha256": "2f65b03677d272398c0c14f1ee58c0590832c7fd831d8bfa5d253803e3689974",
-          "bytes": 33490,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/zhizhuxia/dice": {
       "variants": {
         "png": {
@@ -10065,9 +12112,14 @@
     "zh-CN/dicethrone/images/zhizhuxia/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "631cc4fa8cbee5f41675777393c2aea15fe1ee2c2e13370210da90a4fef76719",
-          "bytes": 457,
+          "sha256": "f84df5a9e0a40d77c8291c65ade6c836ba92d9c1093ad85999aacc5a08f685f0",
+          "bytes": 469,
           "mime": "application/json"
+        },
+        "png": {
+          "sha256": "26e280333ff3abece5ef975e547d044df46467f9a35ab246af5bc9a81718850c",
+          "bytes": 101523,
+          "mime": "image/png"
         }
       }
     },
@@ -10076,78 +12128,6 @@
         "png": {
           "sha256": "c42e21f4412effe2c21076a5d5d7c55f4ecc523463ea9a4841cbad264a729018",
           "bytes": 1183485,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/官方qa": {
-      "variants": {
-        "png": {
-          "sha256": "f31da27ccf2b230bf899432e61709597f402687b7d6ae3029cb77dae148b3713",
-          "bytes": 4930743,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/手牌": {
-      "variants": {
-        "png": {
-          "sha256": "bb8cd0ca990f224aaa1c825614bf9afb8338c25035032e7b308d20af2582049a",
-          "bytes": 44735909,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/提示卡": {
-      "variants": {
-        "png": {
-          "sha256": "8b1fa00a9bd7173d277e1d9621098926696e48ff63fa1fb0f5d9565991db8f3c",
-          "bytes": 4264382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/玩家面板": {
-      "variants": {
-        "png": {
-          "sha256": "b14400ad05d0bcfb6101d7a15686194c023953e9a21c0f846644940bb903f4bd",
-          "bytes": 10077624,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/落网": {
-      "variants": {
-        "png": {
-          "sha256": "2f85cd3ba723f11dff2d17b8575bd7bd1459813aa9016e0417113dd1535d9bba",
-          "bytes": 409636,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/连击": {
-      "variants": {
-        "png": {
-          "sha256": "3a1888f1d9aa4a7837067629bfe6278550d3006c2d88a2b8910f0a3dee163506",
-          "bytes": 131562,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/隐形": {
-      "variants": {
-        "png": {
-          "sha256": "2aa169a707551766a1f04ff3bc83894b6c4a0f58914284d4497cebc0871d8b74",
-          "bytes": 73054,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/zhizhuxia/骰子": {
-      "variants": {
-        "png": {
-          "sha256": "39b4d3a25d548ed317001eac47f8b2822a445fa860e97885d528fea7593e546d",
-          "bytes": 49208,
           "mime": "image/png"
         }
       }
@@ -11970,6 +13950,42 @@
         }
       }
     },
+    "zh-CN/fate-domination/cards/compressed/attack-magic-high": {
+      "variants": {
+        "webp": {
+          "sha256": "f8e15949cc04ea85cbbcf4c9a44f51e729123076061daa79c4a81db2ef2d2e79",
+          "bytes": 82978,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-magic-low": {
+      "variants": {
+        "webp": {
+          "sha256": "c0ad8f58898efd6725bff20f3e7a4a47730171ece9001b33eb49f9cceb4b49e2",
+          "bytes": 52700,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-magic-mid": {
+      "variants": {
+        "webp": {
+          "sha256": "da708dd9f698a4296eea8d7f5e67dbab552aa03e9b3c243bb69df48fa01bcc1b",
+          "bytes": 77704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-magic-super": {
+      "variants": {
+        "webp": {
+          "sha256": "82b0d4bf0247352345222f2ffb9aaf945840503d22bae5a4a7b0a0c9dbd553e2",
+          "bytes": 79720,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/fate-domination/cards/compressed/attack-strength-high": {
       "variants": {
         "webp": {
@@ -11993,6 +14009,15 @@
         "webp": {
           "sha256": "c36da14f16a2dee9b03e103b4d9630024cd98c17de22bd0a691ee5681676e0a1",
           "bytes": 26870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/attack-strength-super": {
+      "variants": {
+        "webp": {
+          "sha256": "2045e8a8f06464333ce681b07b1cf3715c01ef4baf4a8a90911b24d71efe2324",
+          "bytes": 32350,
           "mime": "image/webp"
         }
       }
@@ -12047,6 +14072,69 @@
         "webp": {
           "sha256": "f71926d401b7d21412deef6ee358af19a92611a2a8af981b2a975a9531bdcb85",
           "bytes": 155846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-fumble": {
+      "variants": {
+        "webp": {
+          "sha256": "0e41a0c57ad1a5d2d57c000749d327eb814cbadafe457487cc7a110977effd87",
+          "bytes": 18454,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-instant-move": {
+      "variants": {
+        "webp": {
+          "sha256": "a792a3b644cffe8ac31ced5a4073fbacb0c188d1484fad2b79b59652bce48262",
+          "bytes": 20132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-luck": {
+      "variants": {
+        "webp": {
+          "sha256": "ec1cc65eba1636d8597cbed92b93d28c796c1817810a7a33abf683b3c14ce33b",
+          "bytes": 60470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-moment": {
+      "variants": {
+        "webp": {
+          "sha256": "aa28623d96bd36055aecc29ddbd0791b9d564f5230a7127023a061470b166788",
+          "bytes": 23314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-preparation": {
+      "variants": {
+        "webp": {
+          "sha256": "3a01888393eca1b0f3943b678ece99aa5afbda9ce1efc5655247909aef882e9c",
+          "bytes": 93414,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-surveil": {
+      "variants": {
+        "webp": {
+          "sha256": "42ed35955c320c5339ff7359737fa6bddd49c41acdc10bc29dc3eeac5da90b2a",
+          "bytes": 49870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/cards/compressed/skill-unknown": {
+      "variants": {
+        "webp": {
+          "sha256": "a82513a71384b78111bf54fba149ede01b36520700eb8c33c23871865e8f1362",
+          "bytes": 21772,
           "mime": "image/webp"
         }
       }
@@ -12222,6 +14310,924 @@
         }
       }
     },
+    "zh-CN/fate-domination/master-components/m_iliya/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "a21a5897fc1ef4c5453c95be95ff7d6c31abad4cc8119641b7bef0b7b36b73b7",
+          "bytes": 338731,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_iliya/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "163ffc8f57447e592855851bb67a8cca8122c61cc024813dac9322e42af8f5aa",
+          "bytes": 72290,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_iliya/compressed/dress-of-heaven": {
+      "variants": {
+        "webp": {
+          "sha256": "b513f30f724a514529606848b143429b0f868e02043366d4cdb5fe2d3b0990dd",
+          "bytes": 75566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_iliya/compressed/third-magic": {
+      "variants": {
+        "webp": {
+          "sha256": "56ef0c3b6b4b0d573f69d0ebc7dedfcf9236d5ef1e2729ca26faba9ee093bd53",
+          "bytes": 100652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_iliya/dress-of-heaven": {
+      "variants": {
+        "png": {
+          "sha256": "d89df419deb22b8b741b81b6f4f5f1df13ec3cdbf0f7e5d85d21e3b2418d3867",
+          "bytes": 446390,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_iliya/third-magic": {
+      "variants": {
+        "png": {
+          "sha256": "2bfc9be9ce5b55868e391946c1c1e8b2b1ce3a48fdef90df2fea237123ca1c97",
+          "bytes": 558066,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/collapse": {
+      "variants": {
+        "png": {
+          "sha256": "63b10d8bd00df29770198762377aa3a5de34f9736c110e96952360e39245ab95",
+          "bytes": 568429,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "43ffdece04beeb490a9a837ba582e6c38c4a00a0e7e411f9904c7fb85a6fb094",
+          "bytes": 233759,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/compressed/collapse": {
+      "variants": {
+        "webp": {
+          "sha256": "054cdac1caf7ecfcc60e319dbd283ee4464254c08673bed4a78c8dd57f531086",
+          "bytes": 119434,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "f44528f2a9b8209375c14a09d5cc6b7c7733bf62dcd5dc9bbe27b7ae02fb3cbe",
+          "bytes": 45876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/compressed/human-reactor": {
+      "variants": {
+        "webp": {
+          "sha256": "dc622336b2c90a42690f56047816165b261a55776d207c62013d746dbe255270",
+          "bytes": 121528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/compressed/nemesis": {
+      "variants": {
+        "webp": {
+          "sha256": "07628c3304dd2442295ca4096c7b92654995aa9c6c3862810c1924095505bf08",
+          "bytes": 140608,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/human-reactor": {
+      "variants": {
+        "png": {
+          "sha256": "df65bba18f0a4eb9eac30b88ed657d0e75aa3391ee62ae1f06fedb271362d5c9",
+          "bytes": 608909,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kariya/nemesis": {
+      "variants": {
+        "png": {
+          "sha256": "5dab0b8e7a0f4f2608fa60dde44bef2fea04694efbadfb27761ca123a2510fce",
+          "bytes": 635239,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "edb299ce7d73a025916d455feb755d5c65c5fd18c3f112180f3e81ff3ca06f6b",
+          "bytes": 312561,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "350f98817f910534d0c11421735b141bc39a53ebee1ad79dd1b36eadbf306436",
+          "bytes": 56248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/compressed/fluid-dynamics": {
+      "variants": {
+        "webp": {
+          "sha256": "8ada78619df5e455e33929db2d7272618885a8f5badd21a35a265d2dd8a12340",
+          "bytes": 100916,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/compressed/mercury-boil": {
+      "variants": {
+        "webp": {
+          "sha256": "4616f8cef5794c8fd3a9661a3333f8ff222f25b31bc3bd342b453b49a868f71f",
+          "bytes": 108436,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/compressed/mercury-cleave": {
+      "variants": {
+        "webp": {
+          "sha256": "f0a08fa8f0e48d222c8aab538facec2950bac6395074e9676b3738017a977293",
+          "bytes": 109626,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/compressed/mercury-track": {
+      "variants": {
+        "webp": {
+          "sha256": "a9f23e6cb7992fbcdca41a55b7c6153f6daf68ee2f1af80dafe43a6837c91fcc",
+          "bytes": 107520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/fluid-dynamics": {
+      "variants": {
+        "png": {
+          "sha256": "5225e52bb96b50f3b1c967d3ee2b4308b7565246edb93ce7eef533d95aee5c43",
+          "bytes": 554857,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/mercury-boil": {
+      "variants": {
+        "png": {
+          "sha256": "d1f7d34d6cb05b4fe6f6f7f40f027857eca7d3107111fbe5613c50bbd0d47ca6",
+          "bytes": 579308,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/mercury-cleave": {
+      "variants": {
+        "png": {
+          "sha256": "27f899a69f7df7699ef685cfb809fa4e545df796d1c579bf82ef86b8f945ab6a",
+          "bytes": 564744,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kayneth/mercury-track": {
+      "variants": {
+        "png": {
+          "sha256": "3b8ff42a3419ff9de2e897445aecadcdac0485ec258fb3c434fbeec98ed5acbd",
+          "bytes": 581037,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "5f2feab62904d105e8922b91282fe6c8e69700ed145b4ceb0888ce9089543d7c",
+          "bytes": 286411,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "d7175f563ba38dc3f6b273d3e365f5bca2a6b65ad8b9e824da890e1c0d77be10",
+          "bytes": 47666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/compressed/evil-protector": {
+      "variants": {
+        "webp": {
+          "sha256": "f98e097a6abdcd3e5317bbcba8a4ddc8b3467884d01e931da9c1ec71aa8a9a03",
+          "bytes": 69046,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/compressed/executor": {
+      "variants": {
+        "webp": {
+          "sha256": "c9df6d8f4fea93f7904c119db3b9c8eb31efd30032d6f5a112dc34bd89bad04d",
+          "bytes": 68268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/compressed/supervisor": {
+      "variants": {
+        "webp": {
+          "sha256": "adb464ddb2d335d7358fc6387d25ccd34ac79e9af8fc48431b4b47c44dff3ac2",
+          "bytes": 84566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/evil-protector": {
+      "variants": {
+        "png": {
+          "sha256": "74c29b7e986052ec9cf75c0722b0e2c79a60fac705f79cc6569c71d2e83b91e0",
+          "bytes": 444562,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/executor": {
+      "variants": {
+        "png": {
+          "sha256": "d91c19549ac4a376f063e0987a5c5bfe0c6080967e4c44e5f9c6a7938efa4b9c",
+          "bytes": 466457,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kirei/supervisor": {
+      "variants": {
+        "png": {
+          "sha256": "e56035eb85b0959285862ad5f62439040a34726040568bf06ca445c539f94594",
+          "bytes": 505218,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kiritsugu/cold-blooded": {
+      "variants": {
+        "png": {
+          "sha256": "49a65383d8db3a3c55e1b66843feb37dc6692c200cbed4712be5dc5350bb8ce6",
+          "bytes": 473077,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kiritsugu/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "40c91ad9df42c121f89b78242fd5180b711cc5816b2cd6d4f5bfafc6c336ac1c",
+          "bytes": 280629,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kiritsugu/compressed/cold-blooded": {
+      "variants": {
+        "webp": {
+          "sha256": "2a49e322bcab39141dc3529bb8c1d9cf6b9a077354ac2ee159cd9f812f8add02",
+          "bytes": 75482,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kiritsugu/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "9464e1e8ebb06062937a933f788566ba30dc32c41b3626ab76397b32d10c880c",
+          "bytes": 40888,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kiritsugu/compressed/origin-bullet": {
+      "variants": {
+        "webp": {
+          "sha256": "c9a93095589ce077402952956cb5ece3928092a69b9ce5e8be66a92636ff6fcd",
+          "bytes": 107204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_kiritsugu/origin-bullet": {
+      "variants": {
+        "png": {
+          "sha256": "0f019003143964dea4bfecb4d4c229b6ffeebb325634b5de5d259dde34778359",
+          "bytes": 562158,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "d039ab45cd144a9f4d060125c837983b10812db1b3845c7ee9f4dbdd53096285",
+          "bytes": 286794,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "48072235b17962c3b786e0490adf17b76ce3aae2b4ebf03473a3ff9747acce0d",
+          "bytes": 46284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/compressed/gandr-shot": {
+      "variants": {
+        "webp": {
+          "sha256": "c28beb3b3ea769f395b259221c8859a9cd28d55ddc2f4ad25a6b893c458dceb2",
+          "bytes": 108094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/compressed/gems": {
+      "variants": {
+        "webp": {
+          "sha256": "1b9667e505fa83a5222c2c2d1fc84b690a6fcb5e4e8966e87e09fbff7fdfdf20",
+          "bytes": 95288,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/compressed/gems-back": {
+      "variants": {
+        "webp": {
+          "sha256": "5690894d81c3b48e36ff7c9a2637e7c0a156d7cfff30e4f13391d9cf4229cd29",
+          "bytes": 75708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/compressed/jewel-sword": {
+      "variants": {
+        "webp": {
+          "sha256": "e2e1ac9d08e43935061658ab4f88daaa025be4f017e2a9994de08aba24b36d73",
+          "bytes": 124620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/gandr-shot": {
+      "variants": {
+        "png": {
+          "sha256": "58bee71c443cbdb5cc08b3ed44f80f8f2bd5097fddc2832a33de19fc1688569a",
+          "bytes": 592507,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/gems": {
+      "variants": {
+        "png": {
+          "sha256": "da4756ced223996db9ccf1a21bce891ed95f799ca60bc9071ad8c85838fc37a1",
+          "bytes": 542544,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/gems-back": {
+      "variants": {
+        "png": {
+          "sha256": "d9a048509af36ea8b63972bb2627216edca706215213cf69006c527f83336306",
+          "bytes": 527100,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_rin/jewel-sword": {
+      "variants": {
+        "png": {
+          "sha256": "0fb0409a9a4eeea3c44a97234f637423082cb00e10747329c82bf2d44c5a9419",
+          "bytes": 609373,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/art-of-death": {
+      "variants": {
+        "png": {
+          "sha256": "71920445546a65fdac48a31dfdeb31e446c48a929bc1d3e75cd20f67a77d14a4",
+          "bytes": 691285,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/art-of-death-back": {
+      "variants": {
+        "png": {
+          "sha256": "9ef6a8faca99bdb81e9b3a71aac733c23472095f3921356272a170c846bbd292",
+          "bytes": 742820,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "bfa8d073a89de6ec845ee245f19a3dfa270689d12220ad549678bae775038f9d",
+          "bytes": 298853,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/compressed/art-of-death": {
+      "variants": {
+        "webp": {
+          "sha256": "c4bae6e4cca1e41f60fa056fd60967175f4e2235457357c0fc49bf65706451d9",
+          "bytes": 161070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/compressed/art-of-death-back": {
+      "variants": {
+        "webp": {
+          "sha256": "590b2c30d9e55721efbb69a2901cc4731778b490b243c4e9b2f01d00a895e7ea",
+          "bytes": 159430,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "745a166bfbafda2b2271e71c980a2c615a663cfa7d7f86e4a212a9dbe60ab37f",
+          "bytes": 46844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/compressed/defile": {
+      "variants": {
+        "webp": {
+          "sha256": "3b980b73e81ade65f4e0b7187e1f97334150e0ae5dbf731567f1cff5cbd6ca5e",
+          "bytes": 149410,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_ryuunosuke/defile": {
+      "variants": {
+        "png": {
+          "sha256": "1ff3e7fc26a4671afdcc037c15046b325fc2b21a8c78b1cf6fc952e09a38adb9",
+          "bytes": 645941,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/black-mud": {
+      "variants": {
+        "png": {
+          "sha256": "cd60ffac8d300e464f020463efc83d7ae5c5630de15b1418f700399bf6309cd8",
+          "bytes": 548706,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "8dbdf099c41245b5e1675de6b19e0d9cf484e6e86d80fe2ca92113dfb09b2ae0",
+          "bytes": 232199,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/compressed/black-mud": {
+      "variants": {
+        "webp": {
+          "sha256": "a396eab1b04611803f423db68d0930e903494d8bf49e7553776b2a3b40237999",
+          "bytes": 102456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "a3bd2631c07de0ace01d22d280693167d37a8b39a7efdea58374ed0f3adc373e",
+          "bytes": 43790,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/compressed/corrosion": {
+      "variants": {
+        "webp": {
+          "sha256": "52285e5c1d9f8c9d2c65c26ebd401a794ed0017dd36c1abedf15cb9d312e2509",
+          "bytes": 95624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/compressed/corrupted-grail": {
+      "variants": {
+        "webp": {
+          "sha256": "9cbad36e52e1ea85a6b18a2d87a1d2366d8063b7c28cfcb99d0332f64efbe77e",
+          "bytes": 80432,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/corrosion": {
+      "variants": {
+        "png": {
+          "sha256": "6c941190d8fe0ac2ef79562f7799d9dd5c476d5518beac46e11d33daced8ffd3",
+          "bytes": 500940,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_sakura/corrupted-grail": {
+      "variants": {
+        "png": {
+          "sha256": "bf8fe39a6eefcab584be7afe1a010051b60565a18e2a50d01caa50e47ea20135",
+          "bytes": 491742,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/borrowed-book-with-sakura": {
+      "variants": {
+        "png": {
+          "sha256": "60d3bd7f71692a4d805d321e9a7f5c617c0ce990b1710f18d4f75e910345f681",
+          "bytes": 624119,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/borrowed-book-without-sakura": {
+      "variants": {
+        "png": {
+          "sha256": "39401fa88bb91fd3bcbfe759308cf2496352db7a77c6557c6fce2bcf1a2c0e98",
+          "bytes": 531092,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "1647fafc0dd0224f3b5451e04a8aa90b2a7b916a1abffdcf0e5ce1a5c7304321",
+          "bytes": 295015,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/compressed/borrowed-book-with-sakura": {
+      "variants": {
+        "webp": {
+          "sha256": "1353abb637ad7f92518203e7391ffc5de1243168311081291e0660d82c8f3b8d",
+          "bytes": 131054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/compressed/borrowed-book-without-sakura": {
+      "variants": {
+        "webp": {
+          "sha256": "486a8b9ed2ee08d8904dac7375678917de2ff595f4604e7bd1279a45353474ad",
+          "bytes": 91714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "0d4163d1b087804031b27318ab0c5f6ac03f72071bdbff0a09b354b397e9750c",
+          "bytes": 47076,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/compressed/grail-core": {
+      "variants": {
+        "webp": {
+          "sha256": "2c07be52113638d9caaeb3348ea30b8a7dbd80bd40a2dbad65a328a4d7fb17cd",
+          "bytes": 93254,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shinji/grail-core": {
+      "variants": {
+        "png": {
+          "sha256": "3cf557e92ff8e6abbd7f212b10eafaf5eae3b7bde1facd1c86467e6f9675b45b",
+          "bytes": 512098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shirou_emiya/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "0f48ea4325924501d040e3ebc49a3119bc6b499c9026e38e64225d019a9bebea",
+          "bytes": 273840,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shirou_emiya/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "6bf5a3450882dab46f4e62bd1de1038f8c8fa617fb53dac913e108abce606975",
+          "bytes": 43264,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shirou_emiya/compressed/golden-sword": {
+      "variants": {
+        "webp": {
+          "sha256": "756a57e3bcbdc46f6384366a894ac9071967696ef5070eb8eb6307dcd15aba7c",
+          "bytes": 144156,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shirou_emiya/compressed/kanshou-bakuya": {
+      "variants": {
+        "webp": {
+          "sha256": "716d05fc149b2c0888db1718be882421cb227d5efde066dfb3a0b9b3d0d8f005",
+          "bytes": 112694,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shirou_emiya/golden-sword": {
+      "variants": {
+        "png": {
+          "sha256": "bbe1e3426d5a91c6e3a3cb8c079a2797871ecdeaac7f465e693091dee529bf6d",
+          "bytes": 621690,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_shirou_emiya/kanshou-bakuya": {
+      "variants": {
+        "png": {
+          "sha256": "ed6ec6696f309bf35dc7f15af25eb220ab0ec9b69cc91b550ba441b9bb9294b0",
+          "bytes": 571746,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "e8b48727f6c1a8b230b736b2da4ec1036bc37d216629917eac67f87bd5048334",
+          "bytes": 281361,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "24646f2fe61fc863e983b83782b0dba3839eb220cbc1a3e44fc1f580a2ec4b87",
+          "bytes": 51498,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/fireball": {
+      "variants": {
+        "webp": {
+          "sha256": "96b21d1d35095a700e70e25ce7cf18a9d15378a4e2013ec5686506c141523487",
+          "bytes": 112600,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/gem": {
+      "variants": {
+        "webp": {
+          "sha256": "ffabd313bc33852a708c52e98d949c2c1042c4f65bd39f7f4b25aa4d80a535c6",
+          "bytes": 82094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/gentleman-command": {
+      "variants": {
+        "webp": {
+          "sha256": "7fad7abc5d59c895925d17dde7bd56c1bd497a1c0d79fe62f478bd3c30f1cab6",
+          "bytes": 84598,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/grimoire": {
+      "variants": {
+        "webp": {
+          "sha256": "e7a227b2eedf67b04d661af3a789a9752feda5fc3fc269f2bb1ba0d9f3140290",
+          "bytes": 127382,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/mana-meter": {
+      "variants": {
+        "webp": {
+          "sha256": "3b0aba2b9c5c62ea487cfb78f080e194cb56787a1fdeb0cddc71d79546f2f589",
+          "bytes": 111486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/compressed/mercury-sword": {
+      "variants": {
+        "webp": {
+          "sha256": "189e8ae1d766a9f6fa0b2bdae55a0d5b2bb0520d41f0e6e2565149a3405b513b",
+          "bytes": 86362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/fireball": {
+      "variants": {
+        "png": {
+          "sha256": "c6237bfb39af67583e730d3fbd2b8867a1b9b5600d91d37d40fb691fe211333c",
+          "bytes": 536619,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/gem": {
+      "variants": {
+        "png": {
+          "sha256": "74948f2201ec22a775fb92a7ef73d02f0b063a99873fbb449997eddd573871e7",
+          "bytes": 503611,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/gentleman-command": {
+      "variants": {
+        "png": {
+          "sha256": "b28d90adb8073b85e16cf5ece2008a43ea0705ce50f07edfedc9fc6cfc9d1532",
+          "bytes": 497570,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/grimoire": {
+      "variants": {
+        "png": {
+          "sha256": "9d14ea48f232159e1627061eb8f639a0ea007ed636a6767ee28255421de10974",
+          "bytes": 625337,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/mana-meter": {
+      "variants": {
+        "png": {
+          "sha256": "37dadc35e5aa1c2ebd17eb761d3373d141fa9d32a2728ee0d846594d7db2e137",
+          "bytes": 573673,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_tokiomi/mercury-sword": {
+      "variants": {
+        "png": {
+          "sha256": "1576294a5bd1d4ad0241bd1125b5c49683d2839c0dfe334d71d910f5317ec517",
+          "bytes": 521268,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_waver/case-files": {
+      "variants": {
+        "png": {
+          "sha256": "ac3f9b00d8a9cf3543d14da16e029b429a291d62df477dbfe1fcbfe2bcedbacd",
+          "bytes": 568860,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_waver/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "0eaa0af67bfb89d0211cc88a27d4629621e49a84bd8a5b5c329493b1a160db00",
+          "bytes": 250459,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_waver/compressed/case-files": {
+      "variants": {
+        "webp": {
+          "sha256": "9dcf9ef619de45161e03243627a545549024a60091b782d61aed37472bae96b1",
+          "bytes": 113654,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_waver/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "8fd8df12330a00ad8d46026f6dc06eac64746dd0003500f9ee806383e3ffa14a",
+          "bytes": 47848,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_zouken/compressed/creator": {
+      "variants": {
+        "webp": {
+          "sha256": "d9c6c6bd1d32a6e0fec0f054b80163bf72eec376add249309e79bf2f1e458938",
+          "bytes": 107294,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_zouken/compressed/five-hundred-years": {
+      "variants": {
+        "webp": {
+          "sha256": "aa1083c0a0c0cc3c99f96258f76dc1e1191d64672edee3e3ea94856875225283",
+          "bytes": 121116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_zouken/compressed/mastermind": {
+      "variants": {
+        "webp": {
+          "sha256": "4627687286485c7652de3fb4ec351e16c48506b9d0047b4eee8e153d5f26fcfd",
+          "bytes": 77346,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_zouken/creator": {
+      "variants": {
+        "png": {
+          "sha256": "ffc7230aa8586e732b8c591e1622e3e804cc179b59496f1b6fdfcebc115cc5df",
+          "bytes": 590134,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_zouken/five-hundred-years": {
+      "variants": {
+        "png": {
+          "sha256": "b016b05487d5da0cb090df100cd1b15d895a2d368924170b77172ab0931e73f6",
+          "bytes": 590495,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fate-domination/master-components/m_zouken/mastermind": {
+      "variants": {
+        "png": {
+          "sha256": "94ac33efc65720206130d4c9ee8b90141214cccbb877cb985554c9e4f4d9d555",
+          "bytes": 481105,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/fate-domination/masters/compressed/emiya-shirou": {
       "variants": {
         "webp": {
@@ -12344,6 +15350,15 @@
         "webp": {
           "sha256": "9c4933ce2b234ef6d8abc3360d644c41b0fe2f268c0a398f2c9c13c1fd0e7eac",
           "bytes": 115826,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/masters/compressed/master-slot-b": {
+      "variants": {
+        "webp": {
+          "sha256": "0675d9717ab2c6bc4eda8e7ffc9eca6f6ad5250a9ac9016d0e90de6c5aabb6ca",
+          "bytes": 109762,
           "mime": "image/webp"
         }
       }
@@ -12591,6 +15606,42 @@
         }
       }
     },
+    "zh-CN/fate-domination/servants/compressed/saber": {
+      "variants": {
+        "webp": {
+          "sha256": "d3482030d69d988f332f3379636de3822a981ad3f079b7e88ec2f9e6388101f7",
+          "bytes": 473940,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/saber-skill-1": {
+      "variants": {
+        "webp": {
+          "sha256": "6d876d2d56f460098f2c92489c397ed2dc6c6d51e040a3b21a8047b9aeeead7f",
+          "bytes": 420090,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/saber-skill-2": {
+      "variants": {
+        "webp": {
+          "sha256": "b335deb8866d2bfe959fe1a80da1cca74ddab14ee63ed08b70791a9e8edb42d3",
+          "bytes": 545458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/saber-skill-3": {
+      "variants": {
+        "webp": {
+          "sha256": "e91c5c0d2d1baa086658571fbddea18f83abaa6491580c8a576c75911cba0330",
+          "bytes": 336542,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/fate-domination/servants/compressed/servant-archer": {
       "variants": {
         "webp": {
@@ -12713,6 +15764,15 @@
         "webp": {
           "sha256": "8b864999aff795710d0973547bdaf1982b756c56590ac89e33c4eee0039b3574",
           "bytes": 103150,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fate-domination/servants/compressed/unlocked-pending": {
+      "variants": {
+        "webp": {
+          "sha256": "97636a6fa2f06ada1df63f471d1569d31e26d93ecbc8f661566eadb44130d428",
+          "bytes": 171492,
           "mime": "image/webp"
         }
       }
@@ -17321,6 +20381,150 @@
         "webp": {
           "sha256": "1ae0270532e40348e0a2a03ae6cd576b082c28fcf0488d696c68030a03d829b4",
           "bytes": 71064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/black": {
+      "variants": {
+        "webp": {
+          "sha256": "ae79945bcb7b45291ff38c338f9e7dafe71db4f0874f48e52f05711165385588",
+          "bytes": 39924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/blue": {
+      "variants": {
+        "webp": {
+          "sha256": "d1acd06d6bfdb2e40bfb567c823cde8c7a539d5dbf6b3017d0527f0662133c44",
+          "bytes": 47240,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/board-desk": {
+      "variants": {
+        "webp": {
+          "sha256": "f3a2a64fef3a764d5c63b94f8b545441c2150069a6507bfb56a66d1ec9d21373",
+          "bytes": 807626,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/gold": {
+      "variants": {
+        "webp": {
+          "sha256": "654fa8399a394d83b3762d7bd60ceb73dd104dfdcf20ced210422aae1532bbd7",
+          "bytes": 62864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/green": {
+      "variants": {
+        "webp": {
+          "sha256": "80deecb664c9bb7468953b67248078954c199ce6a1d7bb8a1902c96626e974a9",
+          "bytes": 52934,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/l1": {
+      "variants": {
+        "webp": {
+          "sha256": "f2732467ceb8ef4d996cbf2fa720708f9683c6b082d7149ced581f560310a7a9",
+          "bytes": 24990,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/l2": {
+      "variants": {
+        "webp": {
+          "sha256": "fb61727da2809c4f8d3b9e128880f3dd4e92913890db1f3267374ea955dc8010",
+          "bytes": 32534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/l3": {
+      "variants": {
+        "webp": {
+          "sha256": "5759fb321949a5e6f8c2c4267c124d81064faef6befe12961eb2516190db2309",
+          "bytes": 20692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/level-1-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d848b8f893db4f8c038b37120033ecc07033ae8e032b5563706c3c350792d97f",
+          "bytes": 742778,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/level-2-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "f9ab63ac304878ce4da57fc1fb584d6be6f91c415e41e7ddcf75472a76e47f0a",
+          "bytes": 594638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/level-3-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "df3dd3fafc197267469f1341f321c6743ca3d39ac81cdf41fcd62bc9acc794ed",
+          "bytes": 510124,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/nobles": {
+      "variants": {
+        "webp": {
+          "sha256": "bebc30f626a542a72f3e9ff8e8141a38618a1909ee8a75ab561cdd9b03927ed2",
+          "bytes": 357512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/picture": {
+      "variants": {
+        "webp": {
+          "sha256": "c5900fb16508b77d87c3faf96ce67f669c538f67eb57d7fdbd0d7f0a6217032d",
+          "bytes": 304122,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/red": {
+      "variants": {
+        "webp": {
+          "sha256": "304879a6f7d5d83ecf6877ea1735669ac37b432d9b6cf3fbe0f7667f369759cf",
+          "bytes": 49780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/tmp": {
+      "variants": {
+        "webp": {
+          "sha256": "d7093675d3d4832a540da7176452cac8f970e8169d5611b6ad195a4a88db898b",
+          "bytes": 581492,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/splendor/compressed/white": {
+      "variants": {
+        "webp": {
+          "sha256": "390ca4b37b0158bb215137df912f30e14e41fd15555a3174bb7f32f33fcb390d",
+          "bytes": 61776,
           "mime": "image/webp"
         }
       }

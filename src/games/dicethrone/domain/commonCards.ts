@@ -165,7 +165,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-i-can-again', 'description'),
-        playCondition: { requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
+        playCondition: { phase: 'offensiveRoll', requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: cardEffectText('card-i-can-again', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {

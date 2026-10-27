@@ -446,11 +446,11 @@ function CursorCard({
             <div className="w-10 h-10 flex items-center justify-center">
                 <SvgPreviewIcon svg={previewSvg} size={32} label={label} />
             </div>
-            <span className="text-[10px] font-bold text-parchment-base-text leading-tight text-center truncate w-full">
+            <span className="platform-cursor-label text-[10px] font-bold text-parchment-base-text leading-tight text-center truncate w-full">
                 {label}
             </span>
             {subtitle && (
-                <span className="text-[9px] text-parchment-light-text leading-tight text-center truncate w-full -mt-1">
+                <span className="platform-cursor-label text-[9px] text-parchment-light-text leading-tight text-center truncate w-full -mt-1">
                     {subtitle}
                 </span>
             )}

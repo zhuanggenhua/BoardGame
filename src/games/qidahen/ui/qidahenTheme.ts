@@ -1,0 +1,72 @@
+export const UI_STYLE = {
+    paper: '#e6d3a8',
+    paperLight: '#f3e7c4',
+    paperWash: 'rgba(244,233,202,0.92)',
+    cardField: '#efe0ba',
+    paperDeep: '#c8ae72',
+    paperEdge: '#9a7d4f',
+    ink: '#2a1f15',
+    mutedInk: '#66503a',
+    bronze: '#5f472d',
+    bronzeSoft: '#a88957',
+    bronzeFaint: 'rgba(95,71,45,0.34)',
+    bronzeDark: '#342417',
+    mapInk: '#20150d',
+    mapInkSoft: 'rgba(32,21,13,0.76)',
+    mapGold: '#d2b775',
+    mapIvory: '#ead7a7',
+    cinnabar: '#9f3426',
+    cinnabarGlow: 'rgba(159,52,38,0.18)',
+    oldGold: '#9f7d42',
+    soot: '#1f1812',
+    shadow: 'rgba(56,35,15,0.24)',
+    shadowSoft: 'rgba(56,35,15,0.14)',
+} as const;
+
+export const UI_SURFACE = {
+    paper: [
+        `linear-gradient(180deg, rgba(255,247,224,0.95) 0%, ${UI_STYLE.paperWash} 34%, rgba(224,205,158,0.96) 100%)`,
+        'radial-gradient(circle at 20% 18%, rgba(255,251,240,0.48), transparent 34%)',
+        'radial-gradient(circle at 82% 88%, rgba(134,100,55,0.14), transparent 42%)',
+    ].join(', '),
+    paperQuiet: [
+        'linear-gradient(180deg, rgba(248,239,211,0.94) 0%, rgba(230,211,168,0.92) 100%)',
+        'radial-gradient(circle at 18% 16%, rgba(255,250,235,0.45), transparent 34%)',
+    ].join(', '),
+    paperPressed: 'linear-gradient(180deg, rgba(226,205,157,0.98) 0%, rgba(194,167,110,0.98) 100%)',
+    panelShadow: '0 3px 0 rgba(58,37,17,0.24), 0 14px 24px rgba(56,35,15,0.14)',
+    softShadow: '0 8px 18px rgba(56,35,15,0.14)',
+    hardShadow: '0 4px 0 rgba(58,37,17,0.22), 0 12px 20px rgba(58,37,17,0.18)',
+    inkInset: 'inset 0 0 0 1px rgba(255,245,218,0.52), inset 0 -2px 0 rgba(77,56,32,0.12), inset 0 1px 0 rgba(93,67,39,0.08)',
+    inkLine: 'inset 0 0 0 1px rgba(49,35,21,0.18)',
+    mapPanel: [
+        'linear-gradient(180deg, rgba(56,39,24,0.88) 0%, rgba(28,20,13,0.82) 100%)',
+        'radial-gradient(circle at 16% 12%, rgba(231,197,126,0.16), transparent 36%)',
+    ].join(', '),
+    mapPanelSelected: [
+        'linear-gradient(180deg, rgba(142,53,38,0.9) 0%, rgba(69,32,22,0.88) 100%)',
+        'radial-gradient(circle at 15% 12%, rgba(238,198,127,0.18), transparent 38%)',
+    ].join(', '),
+    mapOpenPanel: [
+        'linear-gradient(180deg, rgba(255,246,220,0.92) 0%, rgba(236,210,153,0.86) 100%)',
+        'radial-gradient(circle at 18% 14%, rgba(255,252,236,0.38), transparent 38%)',
+    ].join(', '),
+    mapOpenPanelSelected: [
+        'linear-gradient(180deg, rgba(245,201,142,0.9) 0%, rgba(224,151,99,0.82) 100%)',
+        'radial-gradient(circle at 16% 12%, rgba(255,238,186,0.34), transparent 38%)',
+    ].join(', '),
+    mapPanelShadow: '0 2px 0 rgba(7,5,3,0.7), 0 10px 18px rgba(22,14,8,0.32)',
+    mapPanelInset: 'inset 0 0 0 1px rgba(232,200,133,0.2), inset 0 -2px 0 rgba(0,0,0,0.2)',
+    mapOpenPanelShadow: '0 3px 8px rgba(56,35,15,0.1), inset 0 0 0 1px rgba(255,250,232,0.62), inset 0 -1px 0 rgba(95,71,45,0.1)',
+    bookPaper: [
+        'linear-gradient(90deg, rgba(174,129,73,0.22) 0%, transparent 7%, transparent 93%, rgba(112,78,38,0.18) 100%)',
+        'linear-gradient(180deg, rgba(255,248,224,0.98) 0%, rgba(237,218,174,0.98) 56%, rgba(217,190,132,0.98) 100%)',
+        'radial-gradient(circle at 18% 14%, rgba(255,255,242,0.55), transparent 32%)',
+    ].join(', '),
+    bookPage: [
+        'linear-gradient(180deg, rgba(255,250,232,0.96) 0%, rgba(236,218,176,0.94) 100%)',
+        'radial-gradient(circle at 16% 12%, rgba(255,255,245,0.42), transparent 36%)',
+    ].join(', '),
+    cutCorner: 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)',
+    smallCutCorner: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
+} as const;

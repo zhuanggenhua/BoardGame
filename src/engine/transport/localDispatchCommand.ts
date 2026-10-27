@@ -25,19 +25,6 @@ function resolveSystemPlayerId(commandType: string, state: MatchState<unknown>):
     return undefined;
 }
 
-function withNoSnapshotFlag(payload: unknown): unknown {
-    const payloadRecord = payload && typeof payload === 'object' && !Array.isArray(payload)
-        ? payload as Record<string, unknown>
-        : null;
-    if (payloadRecord?._noSnapshot === true) {
-        return payload;
-    }
-    return {
-        ...(payloadRecord ?? {}),
-        _noSnapshot: true,
-    };
-}
-
 export function buildLocalDispatchCommand(args: {
     commandType: string;
     payload: unknown;
@@ -69,17 +56,15 @@ export function buildLocalDispatchCommand(args: {
         tutorialPlayerId: meta.tutorialOverrideId ?? resolvedPlayerId,
         isTutorialAiCommand: meta.isTutorialAiCommand,
     });
-    const finalPayload = meta.isTutorialAiCommand
-        ? withNoSnapshotFlag(tutorialInjectedPayload)
-        : tutorialInjectedPayload;
 
     return {
         command: {
             type: commandType,
             playerId: resolvedPlayerId,
-            payload: finalPayload,
+            payload: tutorialInjectedPayload,
             timestamp: Date.now(),
             skipValidation: true,
+            ...(meta.isTutorialAiCommand ? { skipUndoSnapshot: true } : {}),
         },
         resolvedPlayerId,
         tutorialOverrideId: meta.tutorialOverrideId,

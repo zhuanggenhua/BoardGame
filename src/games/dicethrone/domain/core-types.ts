@@ -6,6 +6,7 @@
 import type { PlayerId } from '../../../engine/types';
 import type { AiSeatController, AiSetupOptionStatus } from '../../../engine/ai/types';
 import type { CardPreviewRef } from '../../../core';
+import type { CharacterBadgeDef } from '../../../core/ui/CharacterSelection.types';
 import type { AbilityDef, AbilityEffect } from './combat';
 import type { ResourcePool } from './resourceSystem';
 import type { DamageOrigin, TokenDef, TokenState } from './tokenTypes';
@@ -31,6 +32,13 @@ export type TurnPhase =
     | 'discard';
 
 export type DieFace =
+    | 'thor_hammer'
+    | 'thor_worthy'
+    | 'thor_thunder'
+    | 'strange-mandala'
+    | 'strange-book'
+    | 'strange-cloak'
+    | 'strange-amulet'
     | 'fist'
     | 'web'
     | 'spider'
@@ -89,6 +97,7 @@ export type DieFace =
 // ============================================================================
 
 export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
+    'doctor_strange',
     'monk',
     'barbarian',
     'pyromancer',
@@ -106,6 +115,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'lieren',
     'vampire_lord',
     'zhizhuxia',
+    'thor',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -118,12 +128,12 @@ export interface CharacterDefinition {
     setupOptionStatus?: AiSetupOptionStatus;
     /** 状态原因；会透传给共享 AI 过滤诊断。 */
     setupOptionStatusReason?: string;
-    badges?: import('../../../core/ui').CharacterBadgeDef[];
+    badges?: CharacterBadgeDef[];
     /** 是否存在需要在选角与对局中展示的运行时提示卡。默认 true。 */
     hasTipBoard?: boolean;
 }
 
-const DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE: import('../../../core/ui').CharacterBadgeDef = {
+const DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE: CharacterBadgeDef = {
     id: 'implementation_in_progress',
     labelKey: 'common:status_tags.under_construction',
     tone: 'warning',
@@ -143,7 +153,9 @@ function withDerivedCharacterBadges(character: CharacterDefinition): CharacterDe
     };
 }
 
-export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
+export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = ([
+    { id: 'doctor_strange', nameKey: 'characters.doctor_strange' },
+    { id: 'thor', nameKey: 'characters.thor', setupOptionStatus: 'in_progress', setupOptionStatusReason: '索尔完整玩法已实施，真人完成态确认前保持实施中' },
     { id: 'monk', nameKey: 'characters.monk' },
     { id: 'barbarian', nameKey: 'characters.barbarian' },
     { id: 'pyromancer', nameKey: 'characters.pyromancer' },
@@ -175,7 +187,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
         setupOptionStatus: 'in_progress',
         setupOptionStatusReason: '专属卡牌已录入；规则、资源链和真实入口仍在审计中',
     },
-].map(withDerivedCharacterBadges);
+] satisfies CharacterDefinition[]).map(withDerivedCharacterBadges);
 
 export function isDiceThroneCharacterVisibleInPlayerCatalog(character: CharacterDefinition): boolean {
     return character.setupOptionStatus !== 'hidden';
@@ -234,6 +246,10 @@ export interface Die {
  * 用于限制卡牌在特定情况下才能打出
  */
 export interface CardPlayCondition {
+    /** 索尔“风暴来袭”：本回合已飞掷同伴的次数门槛。 */
+    requireMjolnirThrowsThisTurn?: number;
+    /** 必须是即将使本玩家降至0生命的攻击伤害。 */
+    requireLethalAttack?: boolean;
     /** 必须在指定阶段（更细粒度，区分进攻/防御） */
     phase?: 'offensiveRoll' | 'targetingRoll' | 'defensiveRoll';
     /** 必须是自己的回合（activePlayer） */
@@ -242,6 +258,8 @@ export interface CardPlayCondition {
     requireOpponentTurn?: boolean;
     /** 必须是当前投掷方（rollerId）——防御阶段为防御方，进攻阶段为进攻方 */
     requireIsRoller?: boolean;
+    /** 必须是当前投掷方或其队友；用于可由队友代为选择当前骰区的牌。 */
+    requireIsRollerOrTeammate?: boolean;
     /** 必须不是当前投掷方（用于响应对手骰面确认，如"抬一手"） */
     requireIsNotRoller?: boolean;
     /** 必须已经投掷过（rollCount > 0） */
@@ -269,6 +287,8 @@ export interface CardPlayCondition {
     requireAnyStatusOnBoard?: boolean;
     /** 必须存在待结算伤害，并满足指定的伤害响应角色/时机 */
     pendingDamage?: {
+        /** 必须已有待结算伤害，不允许用防御投掷阶段作为前置使用时机。 */
+        requireCommittedDamage?: boolean;
         role?: 'source' | 'target' | 'responder';
         responseType?: 'beforeDamageDealt' | 'beforeDamageReceived';
     };
@@ -284,7 +304,9 @@ export interface AbilityCard {
     id: string;
     /** @deprecated 使用 i18n 字段代替，此字段由构建脚本自动生成 */
     name: string;
-    type: 'upgrade' | 'action';
+    type: 'upgrade' | 'action' | 'spell';
+    /** 法术是同一张物理卡的准备/施放双面语义；费用0仅供通用卡结构，不能当行动牌直接打出。 */
+    spell?: { index: number; starting?: boolean; destination: 'hand' | 'discard' };
     cpCost: number;
     timing: 'main' | 'roll' | 'instant';
     /** 卡牌音效 key（用于卡牌级别音效） */
@@ -349,6 +371,8 @@ export interface PendingAttack {
      * 这些卡会在主攻击 defenderId 最终确定后按出牌顺序补结算，避免额外弹出二次选人交互。
      */
     deferredAttackModifierCardIds?: string[];
+    /** 奇异博士依赖主攻击目标的前置操作；多人模式选定 defenderId 后、攻击结算前恢复。 */
+    deferredDoctorStrangeOperations?: Array<{ sourceId: string; operation: string; values?: number[] }>;
     extraRoll?: {
         value?: number;
         resolved?: boolean;
@@ -357,8 +381,19 @@ export interface PendingAttack {
     damageResolved?: boolean;
     /** 最近一次 Token 伤害响应是否完全免除了本次攻击伤害。 */
     tokenResponseFullyEvaded?: boolean;
+    /** 主攻击的 Token 响应中消耗的守护数量，供同次攻击后置增伤沿用减伤。 */
+    tokenResponseProtectUses?: number;
+    /** 主攻击的 Token 响应是否同时受眩光半伤影响；与守护合并时完全免伤。 */
+    tokenResponseDazzleHalfDamage?: boolean;
+    /** 主攻击已提交的伤害护盾消费，用于后置增伤按整次攻击重算减伤差额。 */
+    mainAttackShieldPreventions?: Array<{
+        reductionPercent?: number;
+        absorbed: number;
+    }>;
     /** 本次攻击对防御方造成的净掉血累计值（用于 postDamage/onHit 与 lastResolvedAttackDamage） */
     resolvedDamage?: number;
+    /** 本次攻击百分比修正前的累计伤害；用于后置攻击增伤计算整次攻击的舍入差额。 */
+    attackDamageBeforePercent?: number;
     /** 本次攻击期间实际新增到防御方身上的状态层数（供二级防御移除本次投掷已施加的状态） */
     statusEffectsAppliedThisAttack?: Record<string, number>;
     /** 蜘蛛侠“落网”已在本次普通攻击进入防御前触发并被消费。 */
@@ -451,6 +486,13 @@ export type CardInteractionType =
     | 'selectHandCard'
     | 'selectDeckCard';
 
+/** 改骰操作语义；固定结果与任意编辑不能互相替代。 */
+export type DieModifyConfig =
+    | { mode: 'set'; targetValue: number; allowedValues?: never; adjustRange?: never }
+    | { mode: 'set'; targetValue?: never; allowedValues: [number, ...number[]]; adjustRange?: never }
+    | { mode: 'adjust'; adjustRange: { min: number; max: number }; targetValue?: never; allowedValues?: never }
+    | { mode: 'copy' | 'any'; targetValue?: never; allowedValues?: never; adjustRange?: never };
+
 /** 待处理的卡牌交互 */
 export interface InteractionDescriptor {
     id: string;
@@ -464,12 +506,10 @@ export interface InteractionDescriptor {
     selected: string[];
     /** 为 true 时，重掷骰子不触发技能重选（用于保留已选攻击） */
     skipAbilityReselection?: boolean;
+    /** 允许玩家在选择手牌弃置前取消这项可选成本。 */
+    allowCancel?: boolean;
     targetPlayerIds?: PlayerId[];
-    dieModifyConfig?: {
-        mode: 'set' | 'adjust' | 'copy' | 'any';
-        targetValue?: number;
-        adjustRange?: { min: number; max: number };
-    };
+    dieModifyConfig?: DieModifyConfig;
     transferConfig?: {
         sourcePlayerId?: PlayerId;
         statusId?: string;
@@ -498,7 +538,7 @@ export interface InteractionDescriptor {
         targetPlayerId?: PlayerId;
         targetPlayerIds?: PlayerId[];
     }>;
-    /** 选定玩家后继续执行的 custom action（用于 2v2 下的定向卡牌效果） */
+    /** 选择对象或弃牌提交后继续执行的 custom action；只在选择通过校验并完成时运行。 */
     resolveCustomActionId?: string;
     /** 当前被操作的骰池归属玩家 */
     diceOwnerId?: PlayerId;
@@ -569,6 +609,8 @@ export interface DamageShield {
  * 待处理的伤害（等待 Token 响应）
  */
 export interface PendingDamage {
+    /** 本笔独立伤害响应完全收口后恢复的领域步骤，由同一伤害事务持有。 */
+    deferredResolutionEvents?: import('./events').DiceThroneEvent[];
     /** 唯一 ID */
     id: string;
     /** 伤害来源玩家 */
@@ -579,6 +621,8 @@ export interface PendingDamage {
     originalDamage: number;
     /** 当前伤害值（经过 Token 修改后） */
     currentDamage: number;
+    /** 百分比攻击修正前的本次攻击累计伤害，响应窗口结束后继续保存到攻击账本。 */
+    attackDamageBeforePercent?: number;
     /** 来源技能 ID */
     sourceAbilityId?: string;
     /** 伤害范围（attack=攻击伤害，direct=直接伤害） */
@@ -699,6 +743,8 @@ export interface PendingBonusDiceSettlement {
     lastRerolledDieIndex?: number;
     /** 最大可重掷次数（不填表示无限制） */
     maxRerollCount?: number;
+    /** 一次投掷尝试可选择多颗奖励骰；整个子集只消费一次重掷次数。 */
+    groupReroll?: boolean;
     /** 重掷特写文案 key（用于 UI） */
     rerollEffectKey?: string;
     /** 结算阈值（如 12，用于判断是否触发额外效果） */
@@ -883,6 +929,13 @@ export interface HeroState {
     hand: AbilityCard[];
     deck: AbilityCard[];
     discard: AbilityCard[];
+    /** 公开的真实法术准备区；卡牌不能同时属于手牌/牌库/弃牌。 */
+    preparedSpells?: AbilityCard[];
+    /** 本回合通过维山帝之书准备手牌的回合号，效果授予准备不消耗该次数。 */
+    spellPreparedTurn?: number;
+    /** 系带在本人下一次进攻开始时启用；记录现实状态持续期，非UI影子状态。 */
+    crimsonBandsActiveTurn?: number;
+    crimsonBandsReceivedTurn?: number;
     /** 被动状态效果（如击倒） */
     statusEffects: Record<string, number>;
     /** 可消耗道具（太极、闪避、净化） */
@@ -937,6 +990,8 @@ export interface PendingSeatSwapRequest {
  * DiceThrone 核心状态（领域层）
  */
 export interface DiceThroneCore {
+    /** 来自实际飞掷事实；每个回合重置，召回不增加。 */
+    mjolnirThrowsThisTurn?: Record<PlayerId, number>;
     players: Record<PlayerId, HeroState>;
     /** 2v2 模式下的环桌座位顺序，用于分队与回合顺序推导 */
     seatingOrder?: PlayerId[];

@@ -142,7 +142,15 @@ function resolveAllowedDieIdsForDiceInteraction(
 // ============================================================================
 
 /** 将1颗骰子改至6 */
-function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieTo6(ctx: CustomActionContext): DiceThroneEvent[] {
+    return buildModifyDieSetInteraction(ctx, { targetValue: 6 });
+}
+
+/** 固定结果改骰共用选择、提示、取消与自动提交链。 */
+export function buildModifyDieSetInteraction(
+    { attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext,
+    target: { targetValue: number; allowedValues?: never } | { targetValue?: never; allowedValues: [number, ...number[]] },
+): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -151,7 +159,7 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, st
         titleKey: 'interaction.selectDieToModify',
         selectCount: 1,
         selected: [],
-        dieModifyConfig: { mode: 'set', targetValue: 6 },
+        dieModifyConfig: { mode: 'set', ...target },
         diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
@@ -192,8 +200,10 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp, action, s
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
-/** 改变任意1颗骰子的数值 */
-function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext): DiceThroneEvent[] {
+/** 构建任意改一颗骰子的既有交互。 */
+export function buildModifyDieAny1Interaction(
+    { attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext,
+): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -208,6 +218,11 @@ function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, s
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
+}
+
+/** 改变任意1颗骰子的数值 */
+function handleModifyDieAny1(ctx: CustomActionContext): DiceThroneEvent[] {
+    return buildModifyDieAny1Interaction(ctx);
 }
 
 /** 改变任意2颗骰子的数值 */

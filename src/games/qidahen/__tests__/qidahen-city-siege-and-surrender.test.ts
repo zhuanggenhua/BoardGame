@@ -3,9 +3,26 @@ import { describe, expect, it } from 'vitest';import { QidahenDomain } from '../
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';
 import { buildPendingTargetChoiceOptions } from '../domain/pendingTargetChoiceOptions';import type { QidahenCore } from '../domain/types';
+import { getExplicitRaidTargetAction } from '../domain/pendingTargetActionBuilder';
 import { random, apply, getWheelDispatchSelection, setRegionCavalry } from './helpers/paymentSelectionHarness';
 
 describe('七大恨城战、围城与诱降', () => {
+it('明确选择己方被围城作为突袭解围目标', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-24') return { ...region, controller: 'ming', controlLabel: '大明', troops: 4, specialTroops: [] };
+            if (region.id === 'city-region-25') return {
+                ...region, controller: 'ming', controlLabel: '大明', troops: 0, population: 2, specialTroops: [],
+                siegeState: { attackerFactionId: 'jin', attackerTroops: 2, attackerSpecialTroops: [], sourceRegionId: 'city-region-20' },
+                cityState: { troops: 0, population: 2, specialTroops: [] },
+            };
+            return region;
+        });
+        expect(getExplicitRaidTargetAction({ ...core, explicitRegionId: 'city-region-25' }, 'ming')).toMatchObject({
+            targetRuntimeRegionId: 'city-region-25', targetKind: 'siege-attacker',
+        });
+    });
 it('城市目标被攻击前会提供守城宣告入口，进入城战后不再重复提供', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const pendingTargetAction = {

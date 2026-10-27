@@ -7,6 +7,7 @@ import { ADMIN_API_URL } from '../../config/server';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 type ModalViewportCssVars = {
     '--modal-active-viewport-height': string;
@@ -78,6 +79,7 @@ const formatFeedbackTime = (value: string) => {
 };
 
 export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const { token } = useAuth();
     const { success, error } = useToast();
     const { t } = useTranslation(['auth', 'admin']);

@@ -28,6 +28,7 @@ const HAND_CARD_WIDTH_UNITS = 12;
 const HAND_CARD_GAP_UNITS = 7;
 const HAND_CARD_SIDE_OFFSET_UNITS = HAND_CARD_WIDTH_UNITS / 2;
 const HAND_CARD_Y_OFFSET_UNITS = 0.8;
+const HAND_CARD_ROTATION_STEP_DEGREES = 5;
 const HAND_CARD_ANCHOR_Y_UNITS = 6;
 const HAND_CARD_HOVER_LIFT_UNITS = 3.1;
 const HAND_AREA_HEIGHT_UNITS = 22;
@@ -451,8 +452,18 @@ export const HandArea = ({
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
     const hasRespondableCards = (respondableCardIds?.size ?? 0) > 0;
+    const visibleFanBottomOffset = preserveCardVisibility
+        ? Math.max(0, ...handEntries.map(({ index }) => {
+            const offset = Math.abs(index - centerIndex);
+            const angle = offset * HAND_CARD_ROTATION_STEP_DEGREES * Math.PI / 180;
+            // 扇形牌面绕中心旋转，完整可见态同时补偿下移与旋转后的底边。
+            return offset * HAND_CARD_Y_OFFSET_UNITS
+                + HAND_CARD_WIDTH_UNITS / 2 * Math.abs(Math.sin(angle))
+                + HAND_CARD_WIDTH_UNITS / HAND_CARD_ASPECT_RATIO / 2 * (Math.abs(Math.cos(angle)) - 1);
+        }))
+        : 0;
     const handCardBottomOffset = buildBoardShellInlineUnitValue(
-        preserveCardVisibility ? 0 : (hasRespondableCards ? 0.75 : (isCoarsePointer ? 0 : -2)),
+        preserveCardVisibility ? visibleFanBottomOffset : (hasRespondableCards ? 0.75 : (isCoarsePointer ? 0 : -2)),
     );
 
     const clearAnimationTimers = React.useCallback(() => {
@@ -561,8 +572,8 @@ export const HandArea = ({
                         targetType: 'discard',
                     }));
                 }
-            } else {
-                // 普通卡牌飞向弃牌堆
+            } else if (card.type !== 'spell') {
+                // 法术进入准备区；普通行动牌飞向弃牌堆。
                 setFlyingOutCard(createFlyingOutCard({
                     card,
                     cardKey,
@@ -925,7 +936,7 @@ export const HandArea = ({
                         if (!isVisible) return null;
 
                         const offset = i - centerIndex;
-                        const rotation = offset * 5;
+                        const rotation = offset * HAND_CARD_ROTATION_STEP_DEGREES;
                         const isDragging = draggingCardKey === cardKey;
                         const isDealing = dealingCardKey === cardKey;
                         const isFlipped = flippedCardKeys.has(cardKey);
@@ -1096,7 +1107,9 @@ export const HandArea = ({
                                                         borderRadius: buildBoardShellInlineUnitValue(0.8),
                                                     }}
                                                 />
-                                                <HandCardCostBadge cost={card.cpCost} affordable={canAffordCard} />
+                                                {card.type !== 'spell' && (
+                                                    <HandCardCostBadge cost={card.cpCost} affordable={canAffordCard} />
+                                                )}
                                             </div>
                                             <div
                                                 data-card-face="back"

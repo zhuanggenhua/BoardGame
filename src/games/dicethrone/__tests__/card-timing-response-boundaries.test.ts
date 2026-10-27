@@ -115,6 +115,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-me-too',
             'card-play-six',
             'card-surprise',
+            'card-thor-worthy',
             'card-unexpected',
             'card-worthy-of-me',
         ]);
@@ -131,7 +132,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
         const state = prepareState();
         state.core.players['0'].tokens = {};
 
-        expect(unrestrictedInstantActions).toHaveLength(24);
+        expect(unrestrictedInstantActions).toHaveLength(27);
         for (const card of unrestrictedInstantActions) {
             expect(
                 checkPlayCard(state.core, '1', card, 'main1'),
@@ -151,6 +152,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-bye-bye',
             'card-flick',
             'card-next-time',
+            'card-thor-storm-brewing',
             'card-zhanshujia-tactical-retreat',
             'card-zhizhuxia-invisible-punch',
             'card-zhizhuxia-wishful-thinking',
@@ -198,16 +200,22 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             originalDamage: 10,
             currentDamage: 10,
             responseType: 'beforeDamageReceived',
+            damageScope: 'attack',
             responderId: '1',
             isFullyEvaded: false,
         } as typeof state.core.pendingDamage;
         state.core.players['1'].tokens[TOKEN_IDS.INVISIBLE] = 1;
+        state.core.players['1'].tokens[TOKEN_IDS.ELECTROKINESIS] = 2;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 5;
         state.core.lastResolvedAttackDamage = 10;
 
         expect(beforeDamageResponseCards.map((card) => card.id).sort()).toEqual([
             'card-next-time',
             'ninja-card-escape',
             'card-artificer-mechanical-strike',
+            'card-thor-impenetrable',
+            'card-thor-undaunted',
+            'card-strange-shield-of-seraphim',
             'card-zhizhuxia-invisible-punch',
             'card-zhizhuxia-wishful-thinking',
             'upgrade-artificer-shock-bot-2',
@@ -215,7 +223,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
 
         for (const card of beforeDamageResponseCards) {
             expect(
-                checkPlayCard(state.core, '1', card, 'main2'),
+                checkPlayCard(state.core, '1', card, card.timing === 'roll' ? 'defensiveRoll' : 'main2'),
                 `${card.id} 应继续在受伤前的待结算伤害中可用`,
             ).toEqual({ ok: true });
             expect(

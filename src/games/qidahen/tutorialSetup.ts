@@ -33,7 +33,9 @@ export type QidahenTutorialEntryKind =
 
 export type QidahenTutorialFirstDecision =
     | 'check-hand-limit'
+    | 'choose-action-order'
     | 'choose-wheel-move'
+    | 'choose-region'
     | 'choose-hand-action'
     | 'choose-dispatch-target'
     | 'resolve-pending-battle'
@@ -77,7 +79,7 @@ const NATURAL_OPENING_CONTRACT: QidahenTutorialSetupContract = {
     formalEntryPhase: 'action-window',
     currentActorFaction: 'ming',
     precedingAtoms: ['setup-complete'],
-    firstRealDecision: 'choose-hand-action',
+    firstRealDecision: 'choose-region',
     injectedDifferences: [],
     scope: 'mainline',
 };
@@ -177,7 +179,6 @@ const createFormalOpeningCore = (initialCore: QidahenCore): QidahenCore => {
     core.wheelActionUsed = false;
     core.factionActionUsed = false;
     core.selectedWheelMoveId = 'move-1-free';
-    core.selectedRegionId = 'city-region-24';
     return core;
 };
 
@@ -194,6 +195,9 @@ const validateTutorialSetupContract = (
         errors.push(`当前行动人 ${currentActorFaction} != ${contract.currentActorFaction}`);
     }
     switch (contract.firstRealDecision) {
+        case 'choose-action-order':
+            if (core.wheelActionUsed || core.factionActionUsed) errors.push('首个真实决策是行动顺序时，两种行动都不得已用');
+            break;
         case 'choose-wheel-move':
             if (core.wheelActionUsed) errors.push('首个真实决策是轮盘时，轮盘不得已用');
             break;
@@ -316,6 +320,7 @@ void createFieldBattlePendingAction;
 
 const createSiegeDefenderChoicePendingAction = (): QidahenPendingTargetAction => ({
     actionId: 'raid',
+    battleStep: 'defender-declaration',
     battleMode: 'field',
     title: '山海关 守城宣告',
     attackerFactionId: 'ming',
@@ -533,6 +538,7 @@ const createCavalryPlunderTutorialPendingAction = (): QidahenPendingTargetAction
 
 const createCavalryEvasionTutorialPendingAction = (): QidahenPendingTargetAction => ({
     actionId: 'raid',
+    battleStep: 'defender-declaration',
     battleMode: 'field',
     title: '骑兵避战待结算',
     attackerFactionId: 'ming',

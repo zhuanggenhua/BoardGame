@@ -18,12 +18,18 @@ const dtViewportInlineUnit = (multiplier: number) =>
     `calc(var(--mobile-board-shell-inline-unit, 1vw) * var(--mobile-board-shell-scale, 1) * ${multiplier})`;
 const dtViewportBlockUnit = (multiplier: number) =>
     `calc(var(--mobile-board-shell-block-unit, 1vh) * var(--mobile-board-shell-scale, 1) * ${multiplier})`;
+const HAND_DISCARD_HINT_TOP_UNITS = 5.6;
 
 export interface GameHintsProps {
     /** 是否处于弃牌模式 */
     isDiscardMode: boolean;
     /** 必须弃牌数量 */
     mustDiscardCount: number;
+
+    /** 从当前可见手牌中选择弃牌时的提示与取消入口。 */
+    handDiscardPrompt?: {
+        onCancel?: () => void;
+    };
 
     /** 是否为骰子交互 */
     isDiceInteraction: boolean;
@@ -86,6 +92,51 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount 
                         </span>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const HandDiscardHint: React.FC<{
+    onCancel?: () => void;
+}> = ({ onCancel }) => {
+    const { t } = useTranslation('game-dicethrone');
+
+    return (
+        <div
+            data-testid="dicethrone-hand-discard-hint"
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+            style={{
+                zIndex: UI_Z_INDEX.hint,
+                top: dtViewportInlineUnit(HAND_DISCARD_HINT_TOP_UNITS),
+                left: '50%',
+                transform: 'translateX(-50%)',
+            }}
+        >
+            <div
+                className="flex items-center rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-900/95 to-orange-900/95 backdrop-blur-sm"
+                style={{
+                    gap: dtViewportInlineUnit(1),
+                    paddingInline: dtViewportInlineUnit(1.4),
+                    paddingBlock: dtViewportInlineUnit(0.7),
+                    boxShadow: `0 0 ${dtViewportInlineUnit(2)} rgba(239,68,68,0.4)`,
+                }}
+            >
+                <Trash2 className="shrink-0 text-red-200" style={{ width: dtViewportInlineUnit(1.5), height: dtViewportInlineUnit(1.5) }} />
+                <span className="whitespace-nowrap text-red-100 font-black" style={{ fontSize: dtViewportInlineUnit(0.95) }}>
+                    {t('interaction.selectHandCardToDiscard')}
+                </span>
+                {onCancel && (
+                    <button
+                        type="button"
+                        data-testid="dicethrone-hand-discard-cancel"
+                        onClick={onCancel}
+                        className="pointer-events-auto rounded-lg border border-red-200/70 bg-black/30 px-3 py-2 text-white font-bold hover:bg-black/50"
+                        style={{ minHeight: 44, fontSize: dtViewportInlineUnit(0.85) }}
+                    >
+                        {t('common.cancel')}
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -311,6 +362,7 @@ const PassiveRerollHint: React.FC = () => {
 export const GameHints: React.FC<GameHintsProps> = ({
     isDiscardMode,
     mustDiscardCount,
+    handDiscardPrompt,
     isDiceInteraction,
     isInteractionOwner,
     pendingInteraction,
@@ -324,6 +376,12 @@ export const GameHints: React.FC<GameHintsProps> = ({
             {/* 弃牌阶段提示 Banner */}
             {isDiscardMode && (
                 <DiscardHint mustDiscardCount={mustDiscardCount} />
+            )}
+
+            {handDiscardPrompt && (
+                <HandDiscardHint
+                    onCancel={handDiscardPrompt.onCancel}
+                />
             )}
 
             {/* 骰子交互提示（画面顶部中央） */}

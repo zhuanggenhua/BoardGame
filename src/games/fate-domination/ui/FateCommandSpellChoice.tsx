@@ -21,7 +21,7 @@ export function FateCommandSpellChoice({core,playerId,isLegal,onConfirm,onClose,
  const targets=FATE_LOCATION_ORDER.filter(targetLocationId=>isLegal({effect:'move',targetLocationId}));
  const payload=effect ? {effect} : null;
  return <ModalBase onClose={onClose} overlayClassName="!bg-black/75">
-  <section className="fd-runtime-seal-choice" role="dialog" aria-modal="true" aria-label="使用令咒">
+  <section data-tutorial-id="fate-seal-choice" className="fd-runtime-seal-choice" role="dialog" aria-modal="true" aria-label="使用令咒">
    <header><div><h2>使用令咒</h2><p>剩余 {core.players[playerId].commandSpells} 枚 · 本次消耗 1 枚</p></div><button type="button" aria-label="关闭令咒选择" onClick={onClose}><X size={22}/></button></header>
    <div className="fd-runtime-seal-options">{OPTIONS.map(option=><button key={option.id} type="button" aria-pressed={effect===option.id}
     disabled={option.id==='move'?targets.length===0:!isLegal({effect:option.id})} onClick={()=>{if(option.id==='move')onChooseMove();else setEffect(option.id);}}>

@@ -8,6 +8,9 @@
 
 import type { GameEvent, RandomFn } from '../../../engine/types';
 import type { FlowHooks, PhaseExitResult } from '../../../engine';
+import { canUseDejaVu } from './doctorStrange/rules';
+import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
+import { DOCTOR_STRANGE_TOKEN as STRANGE_TOKEN } from '../heroes/doctor_strange/constants';
 import type {
     DiceThroneCore,
     TurnPhase,
@@ -155,6 +158,8 @@ const isSkirmishLeader = (state: DiceThroneCore, playerId: PlayerId): boolean =>
 
 const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'CHOICE_REQUESTED'
+    || event.type === 'STRANGE_OPERATION_REQUESTED'
+    || event.type === 'TOKEN_RESPONSE_REQUESTED'
     || event.type === 'DEFENDER_SELECTION_REQUESTED'
     || event.type === 'COMPARE_ROLL_REQUESTED'
     || event.type === 'INTERACTION_REQUESTED';
@@ -1499,8 +1504,11 @@ function resolveTianshiDivineArrivalUpkeepEvents(
 
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
     initialPhase: 'setup',
+    advanceCommandTypes: ['USE_DEJA_VU'],
 
-    canAdvance: ({ state }) => {
+    canAdvance: ({ state, command }) => {
+        if (command.type === 'USE_DEJA_VU') return canUseDejaVu(state, command.playerId)
+            ? { ok: true } : { ok: false, error: 'deja_vu_unavailable' };
         const phase = state.sys.phase as TurnPhase;
         const ok = canAdvancePhase(state.core, phase);
         
@@ -1515,7 +1523,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             : state.core.activePlayerId;
     },
 
-    getNextPhase: ({ state }) => getNextPhase(state.core, state.sys.phase as TurnPhase),
+    getNextPhase: ({ state, command }) => command.type === 'USE_DEJA_VU' ? 'offensiveRoll' : getNextPhase(state.core, state.sys.phase as TurnPhase),
 
     getActivePlayerId: ({ state, from, to, exitEvents }) => {
         // 特殊处理：discard 阶段退出后切换回合，此时需要返回下一位玩家
@@ -1546,6 +1554,26 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         const core = state.core;
         const events: GameEvent[] = [];
         const timestamp = typeof command.timestamp === 'number' ? command.timestamp : 0;
+
+        if (command.type === 'USE_DEJA_VU') {
+            // 只结束进攻子阶段；完整投掷流程仍在进行，不消费刺藤/紧缚/休战等状态。
+            events.push({ type: 'TOKEN_CONSUMED', payload: { playerId: command.playerId,
+                tokenId: STRANGE_TOKEN.DEJA_VU, amount: 1,
+                newTotal: (core.players[command.playerId].tokens[STRANGE_TOKEN.DEJA_VU] ?? 0) - 1,
+                sourceAbilityId: STRANGE_TOKEN.DEJA_VU }, timestamp, sourceCommandType: command.type });
+            for (const statusId of [STATUS_IDS.BLINDED, STATUS_IDS.DAZZLE]) {
+                const stacks = core.players[command.playerId].statusEffects[statusId] ?? 0;
+                if (stacks > 0) events.push({ type: 'STATUS_REMOVED', payload: { targetId: command.playerId, statusId, stacks }, timestamp, sourceCommandType: command.type });
+            }
+            const currentWindow = state.sys.responseWindow?.current;
+            if (currentWindow) events.push({
+                type: RESPONSE_WINDOW_EVENTS.CLOSED,
+                payload: { windowId: currentWindow.id, allPassed: false, endedByDejaVu: true },
+                timestamp,
+                sourceCommandType: command.type,
+            });
+            return { events, overrideNextPhase: 'offensiveRoll' };
+        }
 
         // ========== upkeep 阶段退出：检查脑震荡状态 ==========
         if (from === 'upkeep' && to === 'income') {
@@ -2071,6 +2099,32 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             }
 
             if (!targetingCore.pendingAttack.defenderId) {
+                return { events, halt: true };
+            }
+
+            const deferredDoctorStrangeOperations = targetingCore.pendingAttack.deferredDoctorStrangeOperations ?? [];
+            if (deferredDoctorStrangeOperations.length > 0) {
+                const resolvedDefenderId = targetingCore.pendingAttack.defenderId;
+                events.push({
+                    type: 'PENDING_ATTACK_UPDATED',
+                    payload: { attackerId, patch: { deferredDoctorStrangeOperations: [] } },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+                deferredDoctorStrangeOperations.forEach((operation, index) => {
+                    events.push({
+                        type: 'STRANGE_OPERATION_REQUESTED',
+                        payload: {
+                            playerId: attackerId,
+                            targetId: resolvedDefenderId,
+                            sourceId: operation.sourceId,
+                            operation: operation.operation,
+                            ...(operation.values ? { values: operation.values } : {}),
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + (index + 1) * 0.001,
+                    } as DiceThroneEvent);
+                });
                 return { events, halt: true };
             }
 
@@ -2604,6 +2658,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 || e.type === 'TOKEN_RESPONSE_CLOSED'
                 || e.type === 'DEFENDER_SELECTION_RESOLVED'
                 || e.type === 'COMPARE_ROLL_SETTLED'
+                || e.type === 'STRANGE_OPERATION_RESOLVED'
+                || e.type === 'THOR_MJOLNIR_RESOLVED'
             );
             const resolvedOffensiveRollEndChoice = resolvedOffensiveRollEndTokenChoiceThisRound(events);
             const resolvedTreantDivinePreventDebuffChoice = resolvedTreantDivinePreventDebuffChoiceThisRound(events);
@@ -2917,6 +2973,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         // ========== 进入 offensiveRoll 阶段：检查缠绕状态 ==========
         if (
             to === 'offensiveRoll'
+            && command.type !== 'USE_DEJA_VU'
             && core.extraAttackInProgress?.sourceStatusId !== 'war-monger'
         ) {
             const player = core.players[core.activePlayerId];
@@ -2974,9 +3031,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 events.push(cpEvent);
 
                 // 抽牌（牌库为空则洗弃牌堆）
-                events.push(
-                    ...buildDrawEvents(phaseEnterCore, activeId, 1, random, command.type, timestamp)
-                );
+                if ((player.tokens[STRANGE_TOKEN.PREMONITION] ?? 0) > 0) {
+                    events.push({ type: 'STRANGE_OPERATION_REQUESTED', payload: { playerId: activeId, operation: 'income', sourceId: 'strange-income' }, timestamp, sourceCommandType: command.type });
+                } else events.push(...buildDrawEvents(phaseEnterCore, activeId, 1, random, command.type, timestamp));
             }
         }
 

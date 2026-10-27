@@ -10,7 +10,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotDir, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { getGameServerBaseURL } from '../helpers/common';
-import { getMatchState, injectMatchState } from '../helpers/state-injection';
+import { getMatchState, injectMatchState, patchMatchState } from '../helpers/state-injection';
 import '../../src/games/dicethrone/domain';
 import {
     closeDebugPanelIfOpen,
@@ -309,6 +309,24 @@ const applyOnlineMatchState = async (
     return receipt;
 };
 
+const applyOnlineMatchPatch = async (
+    matchId: string,
+    page: Page,
+    patch: JsonRecord,
+) => {
+    const receipt = await patchMatchState(
+        matchId,
+        patch as unknown as Parameters<typeof patchMatchState>[1],
+        page,
+    );
+    await page.evaluate(() => {
+        window.dispatchEvent(new Event('focus'));
+        window.dispatchEvent(new Event('online'));
+    });
+    await page.waitForTimeout(1000);
+    return receipt;
+};
+
 const waitForSelectedHeroes = async (page: Page) => {
     await expect.poll(async () => page.evaluate(() => {
         const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
@@ -452,10 +470,12 @@ const waitForHandCardVisualReady = async (page: Page, cardId: string) => {
         const card = handArea.querySelector(`[data-card-id="${expectedCardId}"]`);
         if (!card) return false;
         const atlasFrame = card.querySelector('[data-card-atlas-frame="true"]') as HTMLElement | null;
+        const atlasImage = atlasFrame?.querySelector('[data-card-atlas-img="true"]') as HTMLImageElement | null;
         return card.getAttribute('data-is-flipped') === 'true'
             && atlasFrame != null
             && !atlasFrame.classList.contains('atlas-shimmer')
-            && atlasFrame.style.backgroundImage.includes('url(');
+            && atlasImage?.complete === true
+            && atlasImage.naturalWidth > 0;
     }, cardId, { timeout: 60000, polling: 200 });
     await page.waitForTimeout(500);
 };
@@ -1740,39 +1760,30 @@ const setupCrowsNestScenario = async (
     crowsNestCard: JsonRecord,
     targetCards: JsonRecord[],
 ) => {
-    await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
-        const root = asRecord(state.G ?? state);
-        const core = asRecord(root.core);
-        const sys = asRecord(root.sys);
-        const players = asRecordMap(core.players);
-        const host = asRecord(players['0']);
-        const guest = asRecord(players['1']);
-        const guestResources = asRecord(guest.resources);
-
-        players['0'] = {
-            ...host,
-            hand: targetCards,
-            discard: [],
-        };
-        players['1'] = {
-            ...guest,
-            hand: [crowsNestCard],
-            resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
-        };
-
-        root.core = {
-            ...core,
-            players,
+    // Repeated branch attempts accumulate match history. Patch only the
+    // scenario fields so this fixture does not resend the full state each time.
+    await applyOnlineMatchPatch(match.matchId, match.guestPage, {
+        core: {
+            players: {
+                '0': { hand: targetCards, discard: [] },
+                '1': {
+                    hand: [crowsNestCard],
+                    discard: [],
+                    resources: { [RESOURCE_IDS.CP]: 5 },
+                },
+            },
             activePlayerId: '1',
             phase: 'main1',
-        };
-        root.sys = {
-            ...sys,
+            pendingAttack: null,
+            pendingBonusDiceSettlement: null,
+            pendingDamage: null,
+        },
+        sys: {
             phase: 'main1',
             currentPlayerIndex: 1,
-            interaction: { current: undefined, queue: [] },
-        };
-        return state;
+            interaction: { current: null, queue: [] },
+            responseWindow: { current: null },
+        },
     });
 };
 
@@ -5914,14 +5925,32 @@ const playCrowsNestUntilBranch = async (
         await dismissCardSpotlightIfPresent(match.hostPage);
         await dismissCardSpotlightIfPresent(match.guestPage);
 
-        await dispatchDiceThroneCommand(match.guestPage, {
-            type: 'PLAY_CARD',
-            playerId: '1',
-            payload: { cardId: CROWS_NEST_CARD_ID },
+        await waitForHandCardVisualReady(match.guestPage, CROWS_NEST_CARD_ID);
+        await dragHandCardToPlay(match.guestPage, CROWS_NEST_CARD_ID);
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, {
+            diceCount: 1,
+            sourceAbilityId: CROWS_NEST_CARD_ID,
         });
 
-        const branch = await waitForCrowsNestBranch(match.matchId, match.guestPage);
-        if (branch === targetBranch) {
+        const coreWithSettlement = await readServerCore(match.matchId, match.guestPage);
+        const settlement = asRecord(coreWithSettlement.pendingBonusDiceSettlement);
+        const dice = Array.isArray(settlement.dice) ? settlement.dice as JsonRecord[] : [];
+        const rolledFace = asRecord(dice[0]).face;
+        const rolledBranch: CrowsNestBranch | null = rolledFace === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS
+            ? 'view'
+            : rolledFace === CURSED_PIRATE_DICE_FACE_IDS.LOOT
+                ? 'loot'
+                : rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL
+                    ? 'skull'
+                    : null;
+
+        await settleBonusDiceOnPage(match, match.guestPage, { sourceAbilityId: CROWS_NEST_CARD_ID });
+
+        if (rolledBranch === targetBranch) {
+            const branch = await waitForCrowsNestBranch(match.matchId, match.guestPage);
+            if (branch !== targetBranch) {
+                throw new Error(`瞭望台奖励骰显示 ${targetBranch}，实际进入 ${branch}`);
+            }
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
             return;
@@ -5932,7 +5961,7 @@ const playCrowsNestUntilBranch = async (
 };
 
 test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
-    test('参考链：真实手牌卡牌选择应显示卡本体且不复制牌名', async ({ browser }, testInfo) => {
+    test('真实入口中单张 selectHandCard 应复用手牌区弃牌交互', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupNewHeroMatch(browser, baseURL);
@@ -5989,20 +6018,19 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 return state;
             });
 
-            const choiceModal = match.hostPage.locator('#modal-root');
-            const option = match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`);
-            await expect(choiceModal).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(option).toBeVisible({ timeout: 10000 });
-            await expect(option).toHaveAttribute('aria-label', /作战室/);
-            await expect(option.locator(`[data-testid="dt-card-choice-preview-${HAND_SELECTION_CARD_ID}"]`)).toBeVisible();
-            await expect(option).not.toContainText('作战室');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-reference-dicethrone-hand-card-choice');
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HAND_SELECTION_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
+            await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-reference-dicethrone-hand-area-discard-choice');
 
-            await option.click();
-            await choiceModal.getByRole('button', { name: /确认|Confirm/i }).click();
+            await discardedHandCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
-            await expect(choiceModal).toBeHidden({ timeout: 10000 });
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-reference-dicethrone-hand-card-resolved');
+            await expect(discardedHandCard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-reference-dicethrone-hand-area-discarded');
         } finally {
             await cleanupDTMatch(match);
         }
@@ -6430,7 +6458,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(goFishApplyOpponentButton).toBeVisible({ timeout: 10000 });
             await expect(goFishSkipButton).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '159-guest-go-fish-skip-choice');
-            await goFishSkipButton.click({ force: true });
+            await goFishSkipButton.click();
             await expect(goFishSkipModal).toBeHidden({ timeout: 10000 });
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.POWDER_KEG, 0);
             await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.POWDER_KEG, 0);
@@ -6485,12 +6513,14 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 return state;
             });
 
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toBeVisible({ timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toHaveAttribute('aria-label', /作战室/);
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HAND_SELECTION_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-host-select-hand-card-choice');
-            await match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            await discardedHandCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '12-host-select-hand-card-discarded');
 
@@ -6512,12 +6542,30 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await saveEvidenceScreenshot(match.guestPage, testInfo, '14-guest-crows-nest-confirmed-hand-unchanged');
 
             await playCrowsNestUntilBranch(match, crowsNestCard, crowsNestTargetCards, 'loot');
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toHaveAttribute('aria-label', /作战室/, { timeout: 10000 });
+            const lootDiscardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const lootDiscardCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HAND_SELECTION_CARD_ID}"]`);
+            await expect(lootDiscardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(lootDiscardCard).toBeVisible({ timeout: 10000 });
+            await waitForHandCardVisualReady(match.hostPage, HAND_SELECTION_CARD_ID);
+            await match.hostPage.waitForTimeout(400);
+            const lootCandidateGeometry = await match.hostPage.locator('[data-testid="hand-area"] [data-testid="hand-card-visual"]').evaluateAll(cards => ({
+                viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY },
+                cards: cards.map(card => {
+                    const rect = card.getBoundingClientRect();
+                    const style = getComputedStyle(card);
+                    return { id: card.closest('[data-card-id]')?.getAttribute('data-card-id'), top: rect.top, bottom: rect.bottom, transform: style.transform, transformOrigin: style.transformOrigin };
+                }),
+            }));
+            await saveEvidenceJson(testInfo, '15-host-crows-nest-loot-discard-geometry', lootCandidateGeometry);
+            for (const candidate of lootCandidateGeometry.cards) {
+                expect(candidate.top).toBeGreaterThanOrEqual(0);
+                expect(candidate.bottom).toBeLessThanOrEqual(lootCandidateGeometry.viewport.height + 1);
+            }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '15-host-crows-nest-loot-discard-choice');
 
-            await match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            await lootDiscardCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
             await waitForHandIds(match.matchId, match.hostPage, '0', [STRATEGIC_DEFENSE_CARD_ID]);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '16-host-crows-nest-loot-discarded');
@@ -6528,35 +6576,24 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '17-host-crows-nest-skull-random-discarded');
 
             const warRoomCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], HOST_CARD_ID);
-            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
-                const root = asRecord(state.G ?? state);
-                const core = asRecord(root.core);
-                const sys = asRecord(root.sys);
-                const players = asRecordMap(core.players);
-                const host = asRecord(players['0']);
-                const hostResources = asRecord(host.resources);
-
-                players['0'] = {
-                    ...host,
-                    hand: [warRoomCard],
-                    discard: [],
-                    tokens: {},
-                    resources: { ...hostResources, [RESOURCE_IDS.CP]: 5 },
-                };
-
-                root.core = {
-                    ...core,
-                    players,
+            await applyOnlineMatchPatch(match.matchId, match.hostPage, {
+                core: {
+                    players: {
+                        '0': {
+                            hand: [warRoomCard],
+                            discard: [],
+                            tokens: {},
+                            resources: { [RESOURCE_IDS.CP]: 5 },
+                        },
+                    },
                     activePlayerId: '0',
                     phase: 'main1',
-                };
-                root.sys = {
-                    ...sys,
+                },
+                sys: {
                     phase: 'main1',
                     currentPlayerIndex: 0,
-                    interaction: { current: undefined, queue: [] },
-                };
-                return state;
+                    interaction: { current: null, queue: [] },
+                },
             });
 
             await dispatchDiceThroneCommand(match.hostPage, {
@@ -8482,15 +8519,24 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(advanceButton).toBeEnabled({ timeout: 10000 });
             await advanceButton.click();
 
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${DEEP_SEA_DIVE_TARGET_CARD_ID}`)).toHaveAttribute('aria-label', /战略防御/, { timeout: 10000 });
+            const hostAttackShowcase = match.hostPage.getByTestId('attack-showcase-overlay');
+            await expect(hostAttackShowcase).toBeVisible({ timeout: 10000 });
+            await hostAttackShowcase.getByRole('button', { name: /开始防御|继续/i }).click();
+            await expect(hostAttackShowcase).toBeHidden({ timeout: 5000 });
+
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${DEEP_SEA_DIVE_TARGET_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
+            await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.CP, 4);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.CP, 6);
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '25-host-deep-sea-dive-discard-choice');
 
-            await match.hostPage.getByTestId(`dt-hand-card-option-${DEEP_SEA_DIVE_TARGET_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            await discardedHandCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', DEEP_SEA_DIVE_TARGET_CARD_ID);
             await waitForHandCount(match.matchId, match.hostPage, '0', 0);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '26-host-deep-sea-dive-discarded');
@@ -10236,16 +10282,26 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             const guestModal = match.guestPage.locator('#modal-root');
             await expect(guestModal).toContainText('走跳板：选择结算方式', { timeout: 10000 });
-            await expect(guestModal.getByRole('button', { name: /^偷取 1CP$/ })).toBeVisible({ timeout: 10000 });
+            await expect(guestModal.getByRole('button', { name: /^偷取 1 CP$/ })).toBeVisible({ timeout: 10000 });
             await expect(guestModal.getByRole('button', { name: /^令对手选择弃掉 1 张牌$/ })).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '122-guest-human-walk-the-plank-choice');
 
             await guestModal.getByRole('button', { name: /^令对手选择弃掉 1 张牌$/ }).click();
 
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`)).toHaveAttribute('aria-label', /战略防御/, { timeout: 10000 });
-            await match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            const hostAttackShowcase = match.hostPage.getByTestId('attack-showcase-overlay');
+            await expect(hostAttackShowcase).toBeVisible({ timeout: 10000 });
+            await hostAttackShowcase.getByRole('button', { name: /开始防御|继续/i }).click();
+            await expect(hostAttackShowcase).toBeHidden({ timeout: 5000 });
+
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${WALK_THE_PLANK_TARGET_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
+            await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '123-host-human-walk-the-plank-discard-choice');
+            await discardedHandCard.click();
 
             await waitForDiscardContains(match.matchId, match.hostPage, '0', WALK_THE_PLANK_TARGET_CARD_ID);
             await waitForHandCount(match.matchId, match.hostPage, '0', 0);

@@ -26,7 +26,9 @@ import { TIANSHI_ABILITIES, TIANSHI_TOKENS, TIANSHI_INITIAL_TOKENS, TIANSHI_INIT
 import { LIEREN_ABILITIES, LIEREN_TOKENS, LIEREN_INITIAL_TOKENS, LIEREN_INITIAL_STATUS_EFFECTS, getLierenStartingDeck } from '../heroes/lieren';
 import { VAMPIRE_LORD_ABILITIES, VAMPIRE_LORD_TOKENS, VAMPIRE_LORD_INITIAL_TOKENS, VAMPIRE_LORD_INITIAL_STATUS_EFFECTS, VAMPIRE_LORD_PASSIVE_ABILITIES, getVampireLordStartingDeck } from '../heroes/vampire_lord';
 import { ZHIZHUXIA_ABILITIES, ZHIZHUXIA_TOKENS, ZHIZHUXIA_INITIAL_TOKENS, ZHIZHUXIA_INITIAL_STATUS_EFFECTS, ZHIZHUXIA_PASSIVE_ABILITIES, getZhizhuxiaStartingDeck } from '../heroes/zhizhuxia';
+import { THOR_ABILITIES, THOR_TOKENS, THOR_INITIAL_TOKENS, THOR_PASSIVE_ABILITIES, getThorStartingDeck } from '../heroes/thor';
 import { createDie } from '../../../engine/primitives';
+import { DOCTOR_STRANGE_ABILITIES, DOCTOR_STRANGE_TOKENS, DOCTOR_STRANGE_INITIAL_TOKENS, DOCTOR_STRANGE_INITIAL_STATUS_EFFECTS, DOCTOR_STRANGE_ATLAS, getDoctorStrangeStartingDeck } from '../heroes/doctor_strange';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
@@ -122,6 +124,20 @@ const BARBARIAN_DATA: CharacterData = {
 };
 
 export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = {
+    doctor_strange: {
+        id: 'doctor_strange', abilities: DOCTOR_STRANGE_ABILITIES, tokens: DOCTOR_STRANGE_TOKENS,
+        initialTokens: DOCTOR_STRANGE_INITIAL_TOKENS, initialStatusEffects: DOCTOR_STRANGE_INITIAL_STATUS_EFFECTS,
+        diceDefinitionId: 'doctor_strange-dice', getStartingDeck: getDoctorStrangeStartingDeck,
+        initialAbilityLevels: Object.fromEntries(DOCTOR_STRANGE_ABILITIES.map(ability => [ability.id, 1])),
+        statusAtlasId: DOCTOR_STRANGE_ATLAS.STATUS, statusAtlasPath: 'dicethrone/images/doctor_strange/status-icons-atlas.json',
+    },
+    thor: {
+        id: 'thor', abilities: THOR_ABILITIES, tokens: THOR_TOKENS, initialTokens: THOR_INITIAL_TOKENS,
+        diceDefinitionId: 'thor-dice', getStartingDeck: getThorStartingDeck,
+        initialAbilityLevels: Object.fromEntries(THOR_ABILITIES.map(ability => [ability.id, 1])),
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.THOR,
+        statusAtlasPath: 'dicethrone/images/thor/status-icons-atlas.json', passiveAbilities: THOR_PASSIVE_ABILITIES,
+    },
     monk: {
         id: 'monk',
         abilities: MONK_ABILITIES,
@@ -537,6 +553,8 @@ export function initHeroState(
         deck = data.getStartingDeck(random);
     }
 
+    const preparedSpells = deck.filter(card => card.spell?.starting);
+    deck = deck.filter(card => !card.spell?.starting);
     const startingHand = deck.splice(0, 4);
 
     // 创建初始资源池
@@ -554,6 +572,7 @@ export function initHeroState(
         hand: startingHand,
         deck,
         discard: [],
+        ...(preparedSpells.length ? { preparedSpells } : {}),
         statusEffects: {
             [STATUS_IDS.KNOCKDOWN]: 0,
             ...(data.initialStatusEffects ?? {}),

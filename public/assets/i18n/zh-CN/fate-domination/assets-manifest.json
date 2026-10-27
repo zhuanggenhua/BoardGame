@@ -373,6 +373,924 @@
         }
       }
     },
+    "master-components/m_iliya/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "a21a5897fc1ef4c5453c95be95ff7d6c31abad4cc8119641b7bef0b7b36b73b7",
+          "bytes": 338731,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_iliya/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "163ffc8f57447e592855851bb67a8cca8122c61cc024813dac9322e42af8f5aa",
+          "bytes": 72290,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_iliya/compressed/dress-of-heaven": {
+      "variants": {
+        "webp": {
+          "sha256": "b513f30f724a514529606848b143429b0f868e02043366d4cdb5fe2d3b0990dd",
+          "bytes": 75566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_iliya/compressed/third-magic": {
+      "variants": {
+        "webp": {
+          "sha256": "56ef0c3b6b4b0d573f69d0ebc7dedfcf9236d5ef1e2729ca26faba9ee093bd53",
+          "bytes": 100652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_iliya/dress-of-heaven": {
+      "variants": {
+        "png": {
+          "sha256": "d89df419deb22b8b741b81b6f4f5f1df13ec3cdbf0f7e5d85d21e3b2418d3867",
+          "bytes": 446390,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_iliya/third-magic": {
+      "variants": {
+        "png": {
+          "sha256": "2bfc9be9ce5b55868e391946c1c1e8b2b1ce3a48fdef90df2fea237123ca1c97",
+          "bytes": 558066,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kariya/collapse": {
+      "variants": {
+        "png": {
+          "sha256": "63b10d8bd00df29770198762377aa3a5de34f9736c110e96952360e39245ab95",
+          "bytes": 568429,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kariya/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "43ffdece04beeb490a9a837ba582e6c38c4a00a0e7e411f9904c7fb85a6fb094",
+          "bytes": 233759,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kariya/compressed/collapse": {
+      "variants": {
+        "webp": {
+          "sha256": "054cdac1caf7ecfcc60e319dbd283ee4464254c08673bed4a78c8dd57f531086",
+          "bytes": 119434,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kariya/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "f44528f2a9b8209375c14a09d5cc6b7c7733bf62dcd5dc9bbe27b7ae02fb3cbe",
+          "bytes": 45876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kariya/compressed/human-reactor": {
+      "variants": {
+        "webp": {
+          "sha256": "dc622336b2c90a42690f56047816165b261a55776d207c62013d746dbe255270",
+          "bytes": 121528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kariya/compressed/nemesis": {
+      "variants": {
+        "webp": {
+          "sha256": "07628c3304dd2442295ca4096c7b92654995aa9c6c3862810c1924095505bf08",
+          "bytes": 140608,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kariya/human-reactor": {
+      "variants": {
+        "png": {
+          "sha256": "df65bba18f0a4eb9eac30b88ed657d0e75aa3391ee62ae1f06fedb271362d5c9",
+          "bytes": 608909,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kariya/nemesis": {
+      "variants": {
+        "png": {
+          "sha256": "5dab0b8e7a0f4f2608fa60dde44bef2fea04694efbadfb27761ca123a2510fce",
+          "bytes": 635239,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kayneth/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "edb299ce7d73a025916d455feb755d5c65c5fd18c3f112180f3e81ff3ca06f6b",
+          "bytes": 312561,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kayneth/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "350f98817f910534d0c11421735b141bc39a53ebee1ad79dd1b36eadbf306436",
+          "bytes": 56248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kayneth/compressed/fluid-dynamics": {
+      "variants": {
+        "webp": {
+          "sha256": "8ada78619df5e455e33929db2d7272618885a8f5badd21a35a265d2dd8a12340",
+          "bytes": 100916,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kayneth/compressed/mercury-boil": {
+      "variants": {
+        "webp": {
+          "sha256": "4616f8cef5794c8fd3a9661a3333f8ff222f25b31bc3bd342b453b49a868f71f",
+          "bytes": 108436,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kayneth/compressed/mercury-cleave": {
+      "variants": {
+        "webp": {
+          "sha256": "f0a08fa8f0e48d222c8aab538facec2950bac6395074e9676b3738017a977293",
+          "bytes": 109626,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kayneth/compressed/mercury-track": {
+      "variants": {
+        "webp": {
+          "sha256": "a9f23e6cb7992fbcdca41a55b7c6153f6daf68ee2f1af80dafe43a6837c91fcc",
+          "bytes": 107520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kayneth/fluid-dynamics": {
+      "variants": {
+        "png": {
+          "sha256": "5225e52bb96b50f3b1c967d3ee2b4308b7565246edb93ce7eef533d95aee5c43",
+          "bytes": 554857,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kayneth/mercury-boil": {
+      "variants": {
+        "png": {
+          "sha256": "d1f7d34d6cb05b4fe6f6f7f40f027857eca7d3107111fbe5613c50bbd0d47ca6",
+          "bytes": 579308,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kayneth/mercury-cleave": {
+      "variants": {
+        "png": {
+          "sha256": "27f899a69f7df7699ef685cfb809fa4e545df796d1c579bf82ef86b8f945ab6a",
+          "bytes": 564744,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kayneth/mercury-track": {
+      "variants": {
+        "png": {
+          "sha256": "3b8ff42a3419ff9de2e897445aecadcdac0485ec258fb3c434fbeec98ed5acbd",
+          "bytes": 581037,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kirei/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "5f2feab62904d105e8922b91282fe6c8e69700ed145b4ceb0888ce9089543d7c",
+          "bytes": 286411,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kirei/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "d7175f563ba38dc3f6b273d3e365f5bca2a6b65ad8b9e824da890e1c0d77be10",
+          "bytes": 47666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kirei/compressed/evil-protector": {
+      "variants": {
+        "webp": {
+          "sha256": "f98e097a6abdcd3e5317bbcba8a4ddc8b3467884d01e931da9c1ec71aa8a9a03",
+          "bytes": 69046,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kirei/compressed/executor": {
+      "variants": {
+        "webp": {
+          "sha256": "c9df6d8f4fea93f7904c119db3b9c8eb31efd30032d6f5a112dc34bd89bad04d",
+          "bytes": 68268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kirei/compressed/supervisor": {
+      "variants": {
+        "webp": {
+          "sha256": "adb464ddb2d335d7358fc6387d25ccd34ac79e9af8fc48431b4b47c44dff3ac2",
+          "bytes": 84566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kirei/evil-protector": {
+      "variants": {
+        "png": {
+          "sha256": "74c29b7e986052ec9cf75c0722b0e2c79a60fac705f79cc6569c71d2e83b91e0",
+          "bytes": 444562,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kirei/executor": {
+      "variants": {
+        "png": {
+          "sha256": "d91c19549ac4a376f063e0987a5c5bfe0c6080967e4c44e5f9c6a7938efa4b9c",
+          "bytes": 466457,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kirei/supervisor": {
+      "variants": {
+        "png": {
+          "sha256": "e56035eb85b0959285862ad5f62439040a34726040568bf06ca445c539f94594",
+          "bytes": 505218,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kiritsugu/cold-blooded": {
+      "variants": {
+        "png": {
+          "sha256": "49a65383d8db3a3c55e1b66843feb37dc6692c200cbed4712be5dc5350bb8ce6",
+          "bytes": 473077,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kiritsugu/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "40c91ad9df42c121f89b78242fd5180b711cc5816b2cd6d4f5bfafc6c336ac1c",
+          "bytes": 280629,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_kiritsugu/compressed/cold-blooded": {
+      "variants": {
+        "webp": {
+          "sha256": "2a49e322bcab39141dc3529bb8c1d9cf6b9a077354ac2ee159cd9f812f8add02",
+          "bytes": 75482,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kiritsugu/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "9464e1e8ebb06062937a933f788566ba30dc32c41b3626ab76397b32d10c880c",
+          "bytes": 40888,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kiritsugu/compressed/origin-bullet": {
+      "variants": {
+        "webp": {
+          "sha256": "c9a93095589ce077402952956cb5ece3928092a69b9ce5e8be66a92636ff6fcd",
+          "bytes": 107204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_kiritsugu/origin-bullet": {
+      "variants": {
+        "png": {
+          "sha256": "0f019003143964dea4bfecb4d4c229b6ffeebb325634b5de5d259dde34778359",
+          "bytes": 562158,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_rin/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "d039ab45cd144a9f4d060125c837983b10812db1b3845c7ee9f4dbdd53096285",
+          "bytes": 286794,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_rin/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "48072235b17962c3b786e0490adf17b76ce3aae2b4ebf03473a3ff9747acce0d",
+          "bytes": 46284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_rin/compressed/gandr-shot": {
+      "variants": {
+        "webp": {
+          "sha256": "c28beb3b3ea769f395b259221c8859a9cd28d55ddc2f4ad25a6b893c458dceb2",
+          "bytes": 108094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_rin/compressed/gems": {
+      "variants": {
+        "webp": {
+          "sha256": "1b9667e505fa83a5222c2c2d1fc84b690a6fcb5e4e8966e87e09fbff7fdfdf20",
+          "bytes": 95288,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_rin/compressed/gems-back": {
+      "variants": {
+        "webp": {
+          "sha256": "5690894d81c3b48e36ff7c9a2637e7c0a156d7cfff30e4f13391d9cf4229cd29",
+          "bytes": 75708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_rin/compressed/jewel-sword": {
+      "variants": {
+        "webp": {
+          "sha256": "e2e1ac9d08e43935061658ab4f88daaa025be4f017e2a9994de08aba24b36d73",
+          "bytes": 124620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_rin/gandr-shot": {
+      "variants": {
+        "png": {
+          "sha256": "58bee71c443cbdb5cc08b3ed44f80f8f2bd5097fddc2832a33de19fc1688569a",
+          "bytes": 592507,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_rin/gems": {
+      "variants": {
+        "png": {
+          "sha256": "da4756ced223996db9ccf1a21bce891ed95f799ca60bc9071ad8c85838fc37a1",
+          "bytes": 542544,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_rin/gems-back": {
+      "variants": {
+        "png": {
+          "sha256": "d9a048509af36ea8b63972bb2627216edca706215213cf69006c527f83336306",
+          "bytes": 527100,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_rin/jewel-sword": {
+      "variants": {
+        "png": {
+          "sha256": "0fb0409a9a4eeea3c44a97234f637423082cb00e10747329c82bf2d44c5a9419",
+          "bytes": 609373,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/art-of-death": {
+      "variants": {
+        "png": {
+          "sha256": "71920445546a65fdac48a31dfdeb31e446c48a929bc1d3e75cd20f67a77d14a4",
+          "bytes": 691285,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/art-of-death-back": {
+      "variants": {
+        "png": {
+          "sha256": "9ef6a8faca99bdb81e9b3a71aac733c23472095f3921356272a170c846bbd292",
+          "bytes": 742820,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "bfa8d073a89de6ec845ee245f19a3dfa270689d12220ad549678bae775038f9d",
+          "bytes": 298853,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/compressed/art-of-death": {
+      "variants": {
+        "webp": {
+          "sha256": "c4bae6e4cca1e41f60fa056fd60967175f4e2235457357c0fc49bf65706451d9",
+          "bytes": 161070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/compressed/art-of-death-back": {
+      "variants": {
+        "webp": {
+          "sha256": "590b2c30d9e55721efbb69a2901cc4731778b490b243c4e9b2f01d00a895e7ea",
+          "bytes": 159430,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "745a166bfbafda2b2271e71c980a2c615a663cfa7d7f86e4a212a9dbe60ab37f",
+          "bytes": 46844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/compressed/defile": {
+      "variants": {
+        "webp": {
+          "sha256": "3b980b73e81ade65f4e0b7187e1f97334150e0ae5dbf731567f1cff5cbd6ca5e",
+          "bytes": 149410,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_ryuunosuke/defile": {
+      "variants": {
+        "png": {
+          "sha256": "1ff3e7fc26a4671afdcc037c15046b325fc2b21a8c78b1cf6fc952e09a38adb9",
+          "bytes": 645941,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_sakura/black-mud": {
+      "variants": {
+        "png": {
+          "sha256": "cd60ffac8d300e464f020463efc83d7ae5c5630de15b1418f700399bf6309cd8",
+          "bytes": 548706,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_sakura/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "8dbdf099c41245b5e1675de6b19e0d9cf484e6e86d80fe2ca92113dfb09b2ae0",
+          "bytes": 232199,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_sakura/compressed/black-mud": {
+      "variants": {
+        "webp": {
+          "sha256": "a396eab1b04611803f423db68d0930e903494d8bf49e7553776b2a3b40237999",
+          "bytes": 102456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_sakura/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "a3bd2631c07de0ace01d22d280693167d37a8b39a7efdea58374ed0f3adc373e",
+          "bytes": 43790,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_sakura/compressed/corrosion": {
+      "variants": {
+        "webp": {
+          "sha256": "52285e5c1d9f8c9d2c65c26ebd401a794ed0017dd36c1abedf15cb9d312e2509",
+          "bytes": 95624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_sakura/compressed/corrupted-grail": {
+      "variants": {
+        "webp": {
+          "sha256": "9cbad36e52e1ea85a6b18a2d87a1d2366d8063b7c28cfcb99d0332f64efbe77e",
+          "bytes": 80432,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_sakura/corrosion": {
+      "variants": {
+        "png": {
+          "sha256": "6c941190d8fe0ac2ef79562f7799d9dd5c476d5518beac46e11d33daced8ffd3",
+          "bytes": 500940,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_sakura/corrupted-grail": {
+      "variants": {
+        "png": {
+          "sha256": "bf8fe39a6eefcab584be7afe1a010051b60565a18e2a50d01caa50e47ea20135",
+          "bytes": 491742,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shinji/borrowed-book-with-sakura": {
+      "variants": {
+        "png": {
+          "sha256": "60d3bd7f71692a4d805d321e9a7f5c617c0ce990b1710f18d4f75e910345f681",
+          "bytes": 624119,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shinji/borrowed-book-without-sakura": {
+      "variants": {
+        "png": {
+          "sha256": "39401fa88bb91fd3bcbfe759308cf2496352db7a77c6557c6fce2bcf1a2c0e98",
+          "bytes": 531092,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shinji/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "1647fafc0dd0224f3b5451e04a8aa90b2a7b916a1abffdcf0e5ce1a5c7304321",
+          "bytes": 295015,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shinji/compressed/borrowed-book-with-sakura": {
+      "variants": {
+        "webp": {
+          "sha256": "1353abb637ad7f92518203e7391ffc5de1243168311081291e0660d82c8f3b8d",
+          "bytes": 131054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shinji/compressed/borrowed-book-without-sakura": {
+      "variants": {
+        "webp": {
+          "sha256": "486a8b9ed2ee08d8904dac7375678917de2ff595f4604e7bd1279a45353474ad",
+          "bytes": 91714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shinji/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "0d4163d1b087804031b27318ab0c5f6ac03f72071bdbff0a09b354b397e9750c",
+          "bytes": 47076,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shinji/compressed/grail-core": {
+      "variants": {
+        "webp": {
+          "sha256": "2c07be52113638d9caaeb3348ea30b8a7dbd80bd40a2dbad65a328a4d7fb17cd",
+          "bytes": 93254,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shinji/grail-core": {
+      "variants": {
+        "png": {
+          "sha256": "3cf557e92ff8e6abbd7f212b10eafaf5eae3b7bde1facd1c86467e6f9675b45b",
+          "bytes": 512098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shirou_emiya/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "0f48ea4325924501d040e3ebc49a3119bc6b499c9026e38e64225d019a9bebea",
+          "bytes": 273840,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shirou_emiya/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "6bf5a3450882dab46f4e62bd1de1038f8c8fa617fb53dac913e108abce606975",
+          "bytes": 43264,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shirou_emiya/compressed/golden-sword": {
+      "variants": {
+        "webp": {
+          "sha256": "756a57e3bcbdc46f6384366a894ac9071967696ef5070eb8eb6307dcd15aba7c",
+          "bytes": 144156,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shirou_emiya/compressed/kanshou-bakuya": {
+      "variants": {
+        "webp": {
+          "sha256": "716d05fc149b2c0888db1718be882421cb227d5efde066dfb3a0b9b3d0d8f005",
+          "bytes": 112694,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_shirou_emiya/golden-sword": {
+      "variants": {
+        "png": {
+          "sha256": "bbe1e3426d5a91c6e3a3cb8c079a2797871ecdeaac7f465e693091dee529bf6d",
+          "bytes": 621690,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_shirou_emiya/kanshou-bakuya": {
+      "variants": {
+        "png": {
+          "sha256": "ed6ec6696f309bf35dc7f15af25eb220ab0ec9b69cc91b550ba441b9bb9294b0",
+          "bytes": 571746,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "e8b48727f6c1a8b230b736b2da4ec1036bc37d216629917eac67f87bd5048334",
+          "bytes": 281361,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "24646f2fe61fc863e983b83782b0dba3839eb220cbc1a3e44fc1f580a2ec4b87",
+          "bytes": 51498,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/fireball": {
+      "variants": {
+        "webp": {
+          "sha256": "96b21d1d35095a700e70e25ce7cf18a9d15378a4e2013ec5686506c141523487",
+          "bytes": 112600,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/gem": {
+      "variants": {
+        "webp": {
+          "sha256": "ffabd313bc33852a708c52e98d949c2c1042c4f65bd39f7f4b25aa4d80a535c6",
+          "bytes": 82094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/gentleman-command": {
+      "variants": {
+        "webp": {
+          "sha256": "7fad7abc5d59c895925d17dde7bd56c1bd497a1c0d79fe62f478bd3c30f1cab6",
+          "bytes": 84598,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/grimoire": {
+      "variants": {
+        "webp": {
+          "sha256": "e7a227b2eedf67b04d661af3a789a9752feda5fc3fc269f2bb1ba0d9f3140290",
+          "bytes": 127382,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/mana-meter": {
+      "variants": {
+        "webp": {
+          "sha256": "3b0aba2b9c5c62ea487cfb78f080e194cb56787a1fdeb0cddc71d79546f2f589",
+          "bytes": 111486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/compressed/mercury-sword": {
+      "variants": {
+        "webp": {
+          "sha256": "189e8ae1d766a9f6fa0b2bdae55a0d5b2bb0520d41f0e6e2565149a3405b513b",
+          "bytes": 86362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_tokiomi/fireball": {
+      "variants": {
+        "png": {
+          "sha256": "c6237bfb39af67583e730d3fbd2b8867a1b9b5600d91d37d40fb691fe211333c",
+          "bytes": 536619,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/gem": {
+      "variants": {
+        "png": {
+          "sha256": "74948f2201ec22a775fb92a7ef73d02f0b063a99873fbb449997eddd573871e7",
+          "bytes": 503611,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/gentleman-command": {
+      "variants": {
+        "png": {
+          "sha256": "b28d90adb8073b85e16cf5ece2008a43ea0705ce50f07edfedc9fc6cfc9d1532",
+          "bytes": 497570,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/grimoire": {
+      "variants": {
+        "png": {
+          "sha256": "9d14ea48f232159e1627061eb8f639a0ea007ed636a6767ee28255421de10974",
+          "bytes": 625337,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/mana-meter": {
+      "variants": {
+        "png": {
+          "sha256": "37dadc35e5aa1c2ebd17eb761d3373d141fa9d32a2728ee0d846594d7db2e137",
+          "bytes": 573673,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_tokiomi/mercury-sword": {
+      "variants": {
+        "png": {
+          "sha256": "1576294a5bd1d4ad0241bd1125b5c49683d2839c0dfe334d71d910f5317ec517",
+          "bytes": 521268,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_waver/case-files": {
+      "variants": {
+        "png": {
+          "sha256": "ac3f9b00d8a9cf3543d14da16e029b429a291d62df477dbfe1fcbfe2bcedbacd",
+          "bytes": 568860,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_waver/command-seal": {
+      "variants": {
+        "png": {
+          "sha256": "0eaa0af67bfb89d0211cc88a27d4629621e49a84bd8a5b5c329493b1a160db00",
+          "bytes": 250459,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_waver/compressed/case-files": {
+      "variants": {
+        "webp": {
+          "sha256": "9dcf9ef619de45161e03243627a545549024a60091b782d61aed37472bae96b1",
+          "bytes": 113654,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_waver/compressed/command-seal": {
+      "variants": {
+        "webp": {
+          "sha256": "8fd8df12330a00ad8d46026f6dc06eac64746dd0003500f9ee806383e3ffa14a",
+          "bytes": 47848,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_zouken/compressed/creator": {
+      "variants": {
+        "webp": {
+          "sha256": "d9c6c6bd1d32a6e0fec0f054b80163bf72eec376add249309e79bf2f1e458938",
+          "bytes": 107294,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_zouken/compressed/five-hundred-years": {
+      "variants": {
+        "webp": {
+          "sha256": "aa1083c0a0c0cc3c99f96258f76dc1e1191d64672edee3e3ea94856875225283",
+          "bytes": 121116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_zouken/compressed/mastermind": {
+      "variants": {
+        "webp": {
+          "sha256": "4627687286485c7652de3fb4ec351e16c48506b9d0047b4eee8e153d5f26fcfd",
+          "bytes": 77346,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "master-components/m_zouken/creator": {
+      "variants": {
+        "png": {
+          "sha256": "ffc7230aa8586e732b8c591e1622e3e804cc179b59496f1b6fdfcebc115cc5df",
+          "bytes": 590134,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_zouken/five-hundred-years": {
+      "variants": {
+        "png": {
+          "sha256": "b016b05487d5da0cb090df100cd1b15d895a2d368924170b77172ab0931e73f6",
+          "bytes": 590495,
+          "mime": "image/png"
+        }
+      }
+    },
+    "master-components/m_zouken/mastermind": {
+      "variants": {
+        "png": {
+          "sha256": "94ac33efc65720206130d4c9ee8b90141214cccbb877cb985554c9e4f4d9d555",
+          "bytes": 481105,
+          "mime": "image/png"
+        }
+      }
+    },
     "masters/compressed/emiya-shirou": {
       "variants": {
         "webp": {

@@ -435,6 +435,27 @@ describe('TutorialContext', () => {
         });
     });
 
+    it('回退重做后恢复未来AI步骤的执行资格，同步同一步仍不会重复派发', async () => {
+        const manifest=makeSingleRuntimeActionManifest();
+        const dispatched:string[]=[];
+        const {result}=renderHook(()=>useTutorial(),{wrapper});
+        act(()=>{
+            const generation=result.current.bindDispatch(type=>{dispatched.push(type);});
+            result.current.startTutorial(manifest);
+            syncTutorialStep(result.current.syncTutorialState,manifest,1,'first-visit');
+            result.current.notifyBoardMounted(generation);
+        });
+        await runNextTutorialTimer();
+        expect(dispatched.filter(type=>type==='AI_ONLY')).toHaveLength(1);
+        act(()=>syncTutorialStep(result.current.syncTutorialState,manifest,1,'same-step-resync'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(type=>type==='AI_ONLY')).toHaveLength(1);
+        act(()=>syncTutorialStep(result.current.syncTutorialState,manifest,0,'rewind'));
+        act(()=>syncTutorialStep(result.current.syncTutorialState,manifest,1,'redo'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(type=>type==='AI_ONLY')).toHaveLength(2);
+    });
+
     it('显式要求等待 Board 同步的多条教程 AI 动作会等到同步后再继续', async () => {
         const manifest = makeExplicitWaitMultiActionManifest();
         const dispatched: Array<{ type: string; payload?: unknown }> = [];

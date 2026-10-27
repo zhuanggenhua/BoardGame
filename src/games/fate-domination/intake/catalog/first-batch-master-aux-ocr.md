@@ -151,7 +151,7 @@
 
 ## 卫宫士郎
 
-### 卫宫士郎 / 力量
+### 卫宫士郎 / 干将·莫邪
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_231030_087.png
 - CHM 页：卫宫士郎.htm
@@ -187,7 +187,7 @@
 - TTS 对照：本条不写 TTS 英文效果；如有冲突统一回写差异表。
 - 与 demo-data：待逐项对照；本轮以 CHM 中文图面为准。
 
-### 卫宫士郎 / 米
+### 卫宫士郎 / 必胜黄金之剑
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_231039_063.png
 - CHM 页：卫宫士郎.htm
@@ -210,10 +210,11 @@
 
 ## 雨生龙之介
 
-### 雨生龙之介 / 死亡之美
+### 雨生龙之介 / 死亡之美（死之艺术牌背）
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_185906_190.png
 - CHM 页：雨生龙之介.htm
+- 图面角色（2026-10-25 复核）：死之艺术的牌背，不是另一张技能/能力。中文原图仅有牌背标题；本地 TTS `Art of Death` / CardID 137400 的 BackURL 指向同图。原 OCR partial 保留，不据此补写效果。
 - 类别：技能/附属
 - precision: authority-summary
 - 原文（OCR 逐行，未对低置信字符做猜补）：
@@ -256,7 +257,7 @@
 - TTS 对照：本条不写 TTS 英文效果；如有冲突统一回写差异表。
 - 与 demo-data：待逐项对照；本轮以 CHM 中文图面为准。
 
-### 雨生龙之介 / 特殊
+### 雨生龙之介 / 渎神者
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_185834_446.png
 - CHM 页：雨生龙之介.htm
@@ -277,7 +278,7 @@
 
 ## 远坂时臣
 
-### 远坂时臣 / Magic
+### 远坂时臣 / 火炎弹
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214500_536.png
 - CHM 页：远坂时臣.htm
@@ -766,7 +767,7 @@
 
 ## 卫宫切嗣
 
-### 卫宫切嗣 / Agility
+### 卫宫切嗣 / 起源弹
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215428_559.png
 - CHM 页：卫宫切嗣.htm
@@ -842,6 +843,7 @@
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191823_075.png
 - CHM 页：远坂凛.htm
+- 图面角色（2026-10-25 复核）：宝石牌背，与本页有三项行动的宝石正面属于同一对象，不是第十一枚宝石或新能力。本地 TTS `Gems` 牌堆的 BackURL 指向同图；十张数量以中文御主身份原卡为准。
 - 类别：附属/道具或令咒
 - precision: authority-summary
 - 原文（OCR 逐行，未对低置信字符做猜补）：
@@ -851,7 +853,7 @@
 - TTS 对照：本条不写 TTS 英文效果；如有冲突统一回写差异表。
 - 与 demo-data：待逐项对照；本轮以 CHM 中文图面为准。
 
-### 远坂凛 / Magic
+### 远坂凛 / 阴炁弹
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191828_124.png
 - CHM 页：远坂凛.htm
@@ -887,7 +889,7 @@
 - TTS 对照：本条不写 TTS 英文效果；如有冲突统一回写差异表。
 - 与 demo-data：待逐项对照；本轮以 CHM 中文图面为准。
 
-### 远坂凛 / 魔術
+### 远坂凛 / 宝石剑泽尔里奇
 
 - 图片：temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191839_829.png
 - CHM 页：远坂凛.htm

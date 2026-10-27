@@ -100,6 +100,7 @@ export const SHADOW_THIEF_ABILITIES: AbilityDef[] = [
         type: 'offensive',
         description: abilityText('shadow-dance', 'description'),
         sfxKey: SHADOW_THIEF_SFX_SHADOW,
+        tags: ['unblockable'], // 卡面标注真实伤害；按能力标签跳过防御阶段
         trigger: { type: 'diceSet', faces: { [FACE.SHADOW]: 3 } },
         effects: [
             { description: abilityText('shadow-dance', 'description'), action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-shadow-dance-roll' }, timing: 'withDamage' },

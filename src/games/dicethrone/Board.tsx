@@ -20,6 +20,7 @@ import {
     getUpgradeTargetAbilityId,
     isNyraCompanionActive,
 } from './domain/rules';
+import { canUseDejaVu } from './domain/doctorStrange/rules';
 import { useTranslation } from 'react-i18next';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { DiceThroneDebugConfig } from './debug-config';
@@ -1199,23 +1200,26 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         && (player.companion?.hp ?? 0) < (player.companion?.maxHp ?? 0);
 
     const activeRollTokenIds = React.useMemo(() => {
-        if (isSpectator || G.pendingDamage || (currentPhase !== 'offensiveRoll' && currentPhase !== 'defensiveRoll')) {
-            return [];
-        }
+        const canUseDejaVuNow = !isSpectator && canUseDejaVu(rawG, rootPid);
+        if (isSpectator || G.pendingDamage || (currentPhase !== 'offensiveRoll' && currentPhase !== 'defensiveRoll')) return canUseDejaVuNow ? [TOKEN_IDS.DEJA_VU] : [];
         if (isResponseWindowOpen) {
-            if (currentResponseWindow?.windowType !== 'afterRollConfirmed') return [];
-            if (currentResponderId !== rootPid && !isDirectDiceActor) return [];
+            if (currentResponseWindow?.windowType !== 'afterRollConfirmed') return canUseDejaVuNow ? [TOKEN_IDS.DEJA_VU] : [];
+            if (currentResponderId !== rootPid && !isDirectDiceActor && !canUseDejaVuNow) return [];
         }
 
         const responseWindowType = currentResponseWindow?.windowType === 'afterRollConfirmed'
             ? currentResponseWindow.windowType
             : undefined;
-        return getUsableActiveRollTokens(G, rootPid, currentPhase, { responseWindowType })
-            .map(entry => entry.tokenId);
-    }, [G, currentPhase, currentResponderId, currentResponseWindow, isDirectDiceActor, isResponseWindowOpen, isSpectator, rootPid]);
+        return [...getUsableActiveRollTokens(G, rootPid, currentPhase, { responseWindowType })
+            .map(entry => entry.tokenId), ...(canUseDejaVuNow ? [TOKEN_IDS.DEJA_VU] : [])];
+    }, [G, rawG, currentPhase, currentResponderId, currentResponseWindow, isDirectDiceActor, isResponseWindowOpen, isSpectator, rootPid]);
 
     const handleActiveRollTokenClick = React.useCallback((tokenId: string) => {
         if (!activeRollTokenIds.includes(tokenId)) return;
+        if (tokenId === TOKEN_IDS.DEJA_VU) {
+            engineMoves.useDejaVu();
+            return;
+        }
         const responseWindowType = currentResponseWindow?.windowType === 'afterRollConfirmed'
             ? currentResponseWindow.windowType
             : undefined;
@@ -1507,6 +1511,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         && requiresManualBonusDiceSettlement
         && canRerollBonusDiceSettlement(rightTrayBonusDiceSettlement, player.tokens)
     );
+    const [bonusRerollSelection, setBonusRerollSelection] = React.useState<number[]>([]);
+    React.useEffect(() => setBonusRerollSelection([]), [rightTrayBonusDiceSettlement?.id, rightTrayBonusDiceSettlement?.rerollCount]);
     const completeRightTrayBonusDiceSettlement = React.useCallback(() => {
         if (!isRightTrayBonusDiceSettlementActive || !rightTrayBonusDiceSettlement) {
             return;
@@ -1517,8 +1523,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (!canRerollBonusDiceFromRightTray) {
             return;
         }
-        engineMoves.rerollBonusDie(dieIndex);
-    }, [canRerollBonusDiceFromRightTray, engineMoves]);
+        if (rightTrayBonusDiceSettlement?.groupReroll) {
+            setBonusRerollSelection(indices => indices.includes(dieIndex) ? indices.filter(index => index !== dieIndex) : [...indices, dieIndex]);
+        } else engineMoves.rerollBonusDie(dieIndex);
+    }, [canRerollBonusDiceFromRightTray, engineMoves, rightTrayBonusDiceSettlement?.groupReroll]);
     const isReplayOnlyRollContextActive = shouldUseReplayOnlyRollContextAsActiveSurface({
         replayOnlyRollDice,
         isCurrentPhaseMainRollPhase,
@@ -1531,7 +1539,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             || canConfirmTokenEvasionFromRightTray
         );
     // 状态效果/玩家交互配置
-    const isStatusInteraction = pendingInteraction && (
+    // 单张当前手牌弃置直接沿用 HandArea；复数候选仍保留牌池确认流程。
+    const isHandAreaDiscardInteraction = Boolean(
+        pendingInteraction?.type === 'selectHandCard'
+        && (pendingInteraction.selectCount ?? 1) === 1
+        && pendingInteraction.titleKey === 'interaction.selectHandCardToDiscard'
+        && pendingInteraction.playerId === rootPid
+        && canOperateView
+    );
+    const isStatusInteraction = pendingInteraction && !isHandAreaDiscardInteraction && (
         pendingInteraction.type === 'selectStatus' ||
         pendingInteraction.type === 'selectPlayer' ||
         pendingInteraction.type === 'selectTargetStatus' ||
@@ -1731,9 +1747,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 }}
                 locale={locale}
                 statusIconAtlas={statusIconAtlas}
+                players={G.players}
+                playerNames={playerNames}
             />
         ),
-    }), [activeResolutionFrameId, canResolveChoice, choice, dispatch, locale, statusIconAtlas, sysInteraction]);
+    }), [G.players, activeResolutionFrameId, canResolveChoice, choice, dispatch, locale, playerNames, statusIconAtlas, sysInteraction]);
 
     const defenderChoiceModalEntry = React.useMemo(() => ({
         owner: defenderChoice ? {
@@ -2120,7 +2138,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     return (
         <UndoProvider value={{ G: rawG, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             <div
-                className="relative w-full h-full overflow-hidden font-sans select-none text-slate-200"
+                className="relative w-full h-full overflow-clip font-sans select-none text-slate-200"
                 data-testid="dicethrone-board-root"
             >
                 {!isSpectator && (
@@ -2306,6 +2324,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
+                        preparedSpells={viewPlayer.preparedSpells}
                         nyraPlayer={viewPlayer.characterId === 'lieren' ? viewPlayer : undefined}
                         nyraDamageResponse={nyraDamageResponse}
                     />
@@ -2387,6 +2406,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         )}
                         isBonusDiceSettlement={isRightTrayBonusDiceSettlementActive || canConfirmTokenEvasionFromRightTray}
                         canRerollBonusDice={canRerollBonusDiceFromRightTray}
+                        groupBonusReroll={rightTrayBonusDiceSettlement?.groupReroll && canRerollBonusDiceFromRightTray ? {
+                            kind: 'selectSubset',
+                            selectedIds: bonusRerollSelection,
+                            onSubmit: () => {
+                                if (bonusRerollSelection.length) engineMoves.rerollBonusDie(bonusRerollSelection[0], bonusRerollSelection);
+                            },
+                        } : undefined}
                         onRerollBonusDice={isRightTrayBonusDiceSettlementActive
                             ? handleRerollBonusDiceFromRightTray
                             : undefined}
@@ -2425,7 +2451,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 {/* HandArea：图集已同步注册，始终可渲染 */}
                 {(() => {
                     const mustDiscardCount = Math.max(0, handOwner.hand.length - HAND_LIMIT);
-                    const isDiscardMode = currentPhase === 'discard' && mustDiscardCount > 0 && canOperateView;
+                    const isMandatoryDiscardMode = currentPhase === 'discard' && mustDiscardCount > 0 && canOperateView;
+                    const isDiscardMode = isMandatoryDiscardMode || isHandAreaDiscardInteraction;
                     return (
                         <>
                             {!isHandHidden && (
@@ -2436,8 +2463,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             )}
                             {/* 游戏提示统一组件 */}
                             <GameHints
-                                isDiscardMode={isDiscardMode}
+                                isDiscardMode={isMandatoryDiscardMode}
                                 mustDiscardCount={mustDiscardCount}
+                                handDiscardPrompt={isHandAreaDiscardInteraction && pendingInteraction ? {
+                                    onCancel: pendingInteraction.allowCancel ? handleCancelInteraction : undefined,
+                                } : undefined}
                                 isDiceInteraction={!!isDiceInteraction}
                                 isInteractionOwner={isInteractionOwner}
                                 pendingInteraction={pendingInteraction}
@@ -2507,6 +2537,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 onSellButtonChange={setSellButtonVisible}
                                 isDiscardMode={isDiscardMode}
                                 onDiscardCard={(cardId) => {
+                                    if (isHandAreaDiscardInteraction && pendingInteraction) {
+                                        engineMoves.resolveInteraction([], [cardId], pendingInteraction.id);
+                                        return;
+                                    }
                                     if (shouldBlockTutorialAction('discard-pile', cardId)) return;
                                     // 超限处理按弃牌阶段规则出售，每张获得 1 CP。
                                     engineMoves.sellCard(cardId);

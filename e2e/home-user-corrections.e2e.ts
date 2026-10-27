@@ -102,10 +102,8 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 360, height: 702 }
             await expect(page.getByTestId('fab-sheet-settings')).toHaveCount(0);
             await expect(page.getByRole('radiogroup', { name: '首页风格' })).toBeVisible();
             await capture(page, `纠正-${viewport.width}-浮球设置悬浮窗`);
-            await page.locator('.platform-settings-close').scrollIntoViewIfNeeded();
-            await expect(page.locator('.platform-settings-close')).toBeInViewport();
-            await capture(page, `纠正-${viewport.width}-设置滚动至关闭`);
-            await page.locator('.platform-settings-close').tap();
+            await expect(page.locator('.platform-settings-close')).toHaveCount(0);
+            await page.locator('[data-fab-id="settings"]').tap();
             await expect(page.getByTestId('fab-panel-settings')).toHaveCount(0);
             await settings(page);
             await page.keyboard.press('Escape');

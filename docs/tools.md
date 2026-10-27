@@ -71,4 +71,4 @@
 - `assets:download` 默认按明确游戏下载；无目标、`--list` 和共享测试不得扩大成全站镜像。
 - 临时裁图、OCR、截图、探针输出和下载样本放 `temp/` 或 `tmp/`，不要放仓库根目录。
 - 项目脚本默认在仓库根目录执行。
-- 带 `--dir`、`--paths`、`--no-open` 等参数的本地查看器统一调用 `node scripts/verify/open-verified-image.mjs`；目录查看、PASS 校验、焦点和媒体筛选不再分成多个项目入口。
+- 带 `--dir`、`--paths`、`--no-open` 等参数的本地查看器统一调用 `node scripts/verify/open-verified-image.mjs`；目录查看、PASS 校验、焦点和媒体筛选不再分成多个项目入口。 用户点名参考或诊断原图时使用同一入口的 `--dir <目录> --source-review --no-open`；合同见 [原图核查](../.spec/knowledge/standards/e2e-verification.md#用户点名原图核查)。

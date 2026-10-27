@@ -10,6 +10,7 @@ import type { PlayerId, MatchState, ResponseWindowState } from '../../../engine/
 import { asSimpleChoice, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import type { HeroState, Die, TurnPhase, PendingAttack, PendingDefenderChoice } from '../types';
 import type { DiceThroneCore } from '../domain';
+import type { ChoiceRequestedEvent } from '../domain/events';
 import { getAvailableAbilityIds, getDefensiveAbilityIds, canAdvancePhase as canAdvancePhaseDomain } from '../domain/rules';
 
 // ============================================================================
@@ -206,7 +207,7 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
     hasChoice: boolean;
     playerId: PlayerId | undefined;
     title: string | undefined;
-    options: Array<{ id: string; label: string; labelParams?: Record<string, string | number>; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean }>;
+    options: Array<{ id: string; label: string; labelParams?: Record<string, string | number>; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean; previewRef?: ChoiceRequestedEvent['payload']['options'][number]['previewRef']; targetPlayerId?: PlayerId; dicePreview?: ChoiceRequestedEvent['payload']['options'][number]['dicePreview'] }>;
     sourceAbilityId?: string;
     /** slider 模式配置（存在时渲染滑动条） */
     slider?: SliderConfig;
@@ -220,7 +221,7 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
                 playerId: prompt.playerId,
                 title: prompt.title,
                 options: prompt.options.map(opt => {
-                    const rawValue = opt.value as { statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean } | undefined;
+                    const rawValue = opt.value as ChoiceRequestedEvent['payload']['options'][number] | undefined;
                     return {
                         id: opt.id,
                         label: opt.label,
@@ -229,6 +230,9 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
                         tokenId: rawValue?.tokenId,
                         customId: rawValue?.customId,
                         value: rawValue?.value,
+                        previewRef: rawValue?.previewRef,
+                        dicePreview: rawValue?.dicePreview,
+                        targetPlayerId: rawValue?.targetPlayerId,
                         disabled: opt.disabled ?? rawValue?.disabled,
                     };
                 }),

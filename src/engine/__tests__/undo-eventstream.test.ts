@@ -329,6 +329,41 @@ describe('撤回后 EventStream 行为', () => {
     expect(state.sys.undo.rollbackRevision).toBe(1);
   });
 
+  it('一次批准只恢复最近一个快照，不会一次跨过多步', () => {
+    const multiSnapshotSystems = [
+      createEventStreamSystem<TestCore>(),
+      createUndoSystem<TestCore>({
+        maxSnapshots: 10,
+        requireApproval: true,
+        requiredApprovals: 1,
+        snapshotCommandAllowlist: ['INCREMENT'],
+      }),
+    ];
+    let state: MatchState<TestCore> = {
+      core: testDomain.setup(),
+      sys: createInitialSystemState(playerIds, multiSnapshotSystems, 'test-match'),
+    };
+    state = execWithSystems(state, { type: 'INCREMENT', playerId: '0', payload: {} }, multiSnapshotSystems).state;
+    state = execWithSystems(state, { type: 'INCREMENT', playerId: '0', payload: {} }, multiSnapshotSystems).state;
+    expect(state.core.counter).toBe(2);
+    expect(state.sys.undo.snapshots).toHaveLength(2);
+
+    state = execWithSystems(state, {
+      type: UNDO_COMMANDS.REQUEST_UNDO,
+      playerId: '0',
+      payload: {},
+    }, multiSnapshotSystems).state;
+    state = execWithSystems(state, {
+      type: UNDO_COMMANDS.APPROVE_UNDO,
+      playerId: '1',
+      payload: {},
+    }, multiSnapshotSystems).state;
+
+    expect(state.core.counter).toBe(1);
+    expect(state.sys.undo.snapshots).toHaveLength(1);
+    expect(state.sys.undo.rollbackRevision).toBe(1);
+  });
+
   it('拒绝或取消撤回请求不会递增 rollbackRevision', () => {
     let state = makeState();
     state = exec(state, { type: 'INCREMENT', playerId: '0', payload: {} }).state;

@@ -1,14 +1,70 @@
-/* Short spatial entry; interaction remains available throughout. */
-@keyframes platform-panel-enter {
-    from { opacity: .45; transform: translate3d(14px, 0, 0); }
-    to { opacity: 1; transform: translate3d(0, 0, 0); }
+/* 只扩展现代首页的反馈词汇；高频导航不做整页入场，键盘路径保持即时响应。 */
+.platform-home, .platform-menu-dialog, html[data-home-entry-style="modern"] {
+ --platform-ease-out: cubic-bezier(.23, 1, .32, 1);
+ --platform-ease-drawer: cubic-bezier(.32, .72, 0, 1);
 }
 .platform-navigation button { position: relative; isolation: isolate; transition: color 120ms, background-color 120ms; }
-.platform-game-open, .platform-game-favorite, .platform-catalog-filters button { transition: transform 120ms ease-out, background-color 120ms ease-out; }
-.platform-game-open:active, .platform-game-favorite:active, .platform-catalog-filters button:active { transform: translateY(2px); }
-.platform-menu-dialog[open] .platform-menu-content, .author-support-popover { animation: platform-panel-enter 180ms cubic-bezier(.16, 1, .3, 1) both; }
+.platform-game-surface { transform-origin: center; transition: transform 180ms var(--platform-ease-out), box-shadow 180ms var(--platform-ease-out); }
+.platform-game-card:hover, .platform-game-card:focus-within { z-index: 2; }
+.platform-game-favorite, .platform-catalog-filters button, .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
+html[data-home-entry-style="modern"] .platform-details-primary button,
+html[data-home-entry-style="modern"] .platform-details-secondary button,
+html[data-home-entry-style="modern"] .author-support-trigger {
+ transition: transform 160ms var(--platform-ease-out), box-shadow 160ms var(--platform-ease-out), background-color 160ms, color 160ms;
+}
+.platform-game-favorite:active:not(:focus-visible), .platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible),
+.platform-menu-trigger:active:not(:focus-visible), .platform-menu-close:active:not(:focus-visible),
+html[data-home-entry-style="modern"] .platform-details-primary button:active:not(:focus-visible),
+html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible),
+html[data-home-entry-style="modern"] .author-support-trigger:active:not(:focus-visible) { transform: translateY(2px) scale(.97); box-shadow: none; }
+.platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: scale(.98); }
+.platform-game-card[data-pressed] .platform-game-surface { transform: scale(.96); }
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+ .platform-game-card:hover .platform-game-surface { transform: translateY(-6px) scale(1.05); box-shadow: 0 0 0 3px #d5ff00, 7px 10px 0 #000; }
+ .platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: translateY(-1px) scale(1.01); box-shadow: 0 0 0 3px #d5ff00, 2px 3px 0 #000; }
+ .platform-catalog-filters button:hover { background: #d5ff00; transform: translate(-2px, -2px); box-shadow: 4px 4px #000; }
+ .platform-navigation button:hover, .platform-menu-trigger:hover, .platform-menu-close:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px #ff008a; }
+ html[data-home-entry-style="modern"] .platform-details-primary button:enabled:hover,
+ html[data-home-entry-style="modern"] .platform-details-secondary button:enabled:hover { transform: translate(-2px, -3px); box-shadow: 7px 8px #000; }
+ html[data-home-entry-style="modern"] .author-support-trigger:hover { transform: translateY(-3px) scale(1.04); }
+ .platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible), .platform-menu-trigger:active:not(:focus-visible),
+ html[data-home-entry-style="modern"] .platform-details-primary button:active:not(:focus-visible),
+ html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible) { transform: translateY(2px) scale(.97); box-shadow: 1px 1px #000; }
+}
+.platform-menu-dialog {
+ opacity: 0;
+ transform: translateX(100%);
+ transition: transform 220ms var(--platform-ease-drawer), opacity 160ms var(--platform-ease-out), display 220ms allow-discrete, overlay 220ms allow-discrete;
+}
+.platform-menu-dialog[open] { opacity: 1; transform: translateX(0); }
+.platform-menu-dialog::backdrop { opacity: 0; transition: opacity 160ms var(--platform-ease-out), display 220ms allow-discrete, overlay 220ms allow-discrete; }
+.platform-menu-dialog[open]::backdrop { opacity: 1; }
+@starting-style {
+ .platform-menu-dialog[open] { opacity: 0; transform: translateX(100%); }
+ .platform-menu-dialog[open]::backdrop { opacity: 0; }
+}
+@media (min-width: 1024px) {
+ .platform-menu-dialog { transform: translateY(-8px) scale(.96); transform-origin: top right; transition: transform 160ms var(--platform-ease-out), opacity 160ms var(--platform-ease-out), display 160ms allow-discrete, overlay 160ms allow-discrete; }
+ .platform-menu-dialog[open] { transform: translateY(0) scale(1); }
+ @starting-style { .platform-menu-dialog[open] { opacity: 0; transform: translateY(-8px) scale(.96); } }
+}
+.platform-menu-dialog[data-motion="instant"], .platform-menu-dialog[data-motion="instant"]::backdrop { transition: none; }
+@media (max-width: 1023px) {
+ .platform-navigation button::after { transition: transform 140ms var(--platform-ease-out), opacity 120ms; }
+ .platform-navigation:has(button:focus-visible) button::after { transition: none; }
+}
+html[data-home-entry-style="modern"] .author-support-popover { opacity:1; transform:scale(1); transform-origin:top right; transition:opacity 160ms cubic-bezier(.23, 1, .32, 1), transform 160ms cubic-bezier(.23, 1, .32, 1); }
+@starting-style { html[data-home-entry-style="modern"] .author-support-popover { opacity:0; transform:translateY(-8px) scale(.95); } }
+html[data-home-entry-style="modern"] .author-support:has(.author-support-trigger:focus-visible) .author-support-popover { transition:none; }
 @media (prefers-reduced-motion: reduce) {
- .platform-navigation button, .platform-game-open, .platform-game-favorite, .platform-catalog-filters button { transition: none; }
- .platform-menu-dialog[open] .platform-menu-content, .author-support-popover { animation: none; }
- .platform-game-open:active, .platform-game-favorite:active, .platform-catalog-filters button:active { transform: none; }
+ .platform-game-surface, .platform-game-open, .platform-game-favorite, .platform-catalog-filters button,
+ .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
+ html[data-home-entry-style="modern"] .platform-details-primary button,
+ html[data-home-entry-style="modern"] .platform-details-secondary button,
+ html[data-home-entry-style="modern"] .author-support-trigger { transform: none !important; }
+ .platform-menu-dialog, .platform-menu-dialog[open] { transform: none; transition: opacity 120ms var(--platform-ease-out), display 120ms allow-discrete, overlay 120ms allow-discrete; }
+ @starting-style { .platform-menu-dialog[open] { opacity: 0; transform: none; } }
+ .platform-navigation button::after { transform: none; }
+ html[data-home-entry-style="modern"] .author-support-popover { transform:none; transition:opacity 120ms; }
+ @starting-style { html[data-home-entry-style="modern"] .author-support-popover { opacity:0; transform:none; } }
 }

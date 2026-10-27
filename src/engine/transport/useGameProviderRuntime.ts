@@ -66,23 +66,14 @@ function canDeferCommandWaitingForPreviousStep(type: string): boolean {
 }
 
 function resolveExpectedStateIDForSingleCommand(args: {
-    serialized: boolean;
-    sendAfterOptimisticPending: boolean;
     lastStateID: number | null;
-    pendingCount: number;
+    precedingPendingCount: number;
 }): number | undefined {
     if (typeof args.lastStateID !== 'number') {
         return undefined;
     }
-    if (args.sendAfterOptimisticPending) {
-        return args.lastStateID + Math.max(0, args.pendingCount);
-    }
-    if (args.serialized) {
-        return args.lastStateID + Math.max(0, args.pendingCount - 1);
-    }
-    return args.pendingCount > 0
-        ? args.lastStateID + args.pendingCount
-        : undefined;
+    // 前置版本只包括本次派发前已有的命令；当前命令尚未由服务端执行。
+    return args.lastStateID + args.precedingPendingCount;
 }
 
 type DeferredCommand = {
@@ -514,6 +505,7 @@ export function useGameProviderRuntime(args: {
             && canSendWhileOptimisticPending(type, pendingCompanionCommandTypes),
         );
         const serialized = shouldSerializeCommand(type);
+        const precedingPendingCount = engine?.getPendingCommandCount?.() ?? 0;
         let shouldSend = true;
         let wasPredicted = false;
         if (engine && !sendWithoutPrediction) {
@@ -545,13 +537,10 @@ export function useGameProviderRuntime(args: {
         if (batcher && !sendWithoutPrediction) {
             sent = batcher.enqueue(type, payload);
         } else {
-            const pendingCount = engine?.getPendingCommandCount?.() ?? 0;
             const lastStateID = client.lastReceivedStateID;
             const expectedStateID = resolveExpectedStateIDForSingleCommand({
-                serialized,
-                sendAfterOptimisticPending: sendWithoutPrediction,
                 lastStateID,
-                pendingCount,
+                precedingPendingCount,
             });
             sent = expectedStateID === undefined
                 ? client.sendCommand(type, payload)

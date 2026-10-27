@@ -9,6 +9,20 @@ import { MatchRecord, type MatchRecordDocument } from '../admin/schemas/match-re
 @UseGuards(JwtAuthGuard)
 export class UserGameActivityController {
     constructor(@InjectModel(MatchRecord.name) private readonly records: Model<MatchRecordDocument>) {}
+    @Get('matches')
+    async matches(@CurrentUser() user: { userId: string }) {
+        const ownerKey = `user:${user.userId}`;
+        const records = await this.records.find({ 'players.ownerKey': ownerKey, endedAt: { $ne: null } })
+            .select('matchID gameName endedAt players').sort({ endedAt: -1 }).limit(50).lean();
+        return records.map(record => {
+            const own = record.players.find(player => player.ownerKey === ownerKey)!;
+            const result = own.result === 'win' || own.result === 'loss' || own.result === 'draw'
+                ? own.result : 'completed';
+            // 只返回展示需要的个人结果；不暴露ownerKey、其它玩家标识或完整操作日志。
+            return { id: record.matchID, gameId: record.gameName, endedAt: record.endedAt, result,
+                opponents: record.players.filter(player => player.id !== own.id).map(player => player.name).filter(Boolean) };
+        });
+    }
     @Get('activity')
     async activity(@CurrentUser() user: { userId: string }) {
         // Name matching can mix unrelated accounts; only the recorded owner identifies a player.

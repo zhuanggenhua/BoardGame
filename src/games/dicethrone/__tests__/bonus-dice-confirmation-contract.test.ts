@@ -125,6 +125,14 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
             'powder-keg-upkeep',
             'blinded-check',
             'tianshi-dazzle-check',
+            'thor-odinforce-settle',
+            'thor-chain-settle',
+            'thor-guard-break-settle',
+            'thor-undaunted-settle',
+            'strange-astral',
+            'strange-shield',
+            'strange-tendrils',
+            'thor-bifrost-settle',
         ];
 
         expect(getRegisteredBonusDiceSettlementIds()).toEqual(new Set(expectedSettlementIds));

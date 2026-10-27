@@ -91,10 +91,10 @@ describe('外部游戏投稿 HTTP 与本地持久化', () => {
         await api().post(`${endpoint}/submit`).auth(alice.token, { type: 'bearer' }).expect(400);
         const uploaded = await api().post(`${endpoint}/cover`).auth(alice.token, { type: 'bearer' })
             .attach('file', cover, { filename: 'cover.png', contentType: 'image/png' }).expect(201);
-        const file = join(storageRoot, 'ugc', alice.id, `submission-${id}`, 'cover.webp');
+        const file = join(storageRoot, 'ugc', alice.id, `submission-${id}`, uploaded.body.coverUrl.split('/').at(-1));
         const bytes = await readFile(file);
         expect((await sharp(bytes).metadata()).format).toBe('webp');
-        expect(uploaded.body.coverUrl).toMatch(new RegExp(`/submission-${id}/cover\\.webp\\?v=[a-f0-9]{16}$`));
+        expect(uploaded.body.coverUrl).toMatch(new RegExp(`/submission-${id}/cover-[a-f0-9]{16}\\.webp$`));
         await api().post(`${endpoint}/submit`).auth(alice.token, { type: 'bearer' }).expect(201);
         const list = await api().get('/ugc/submissions').auth(alice.token, { type: 'bearer' }).expect(200);
         expect(list.body.items).toHaveLength(1);
@@ -125,7 +125,7 @@ describe('外部游戏投稿 HTTP 与本地持久化', () => {
         await api().post(endpoint).auth(owner.token, { type: 'bearer' })
             .attach('file', cover, { filename: 'valid.png', contentType: 'image/png' }).expect(201);
         const before = await submissions.findOne({ submissionId: id }).lean();
-        const path = join(storageRoot, 'ugc', owner.id, `submission-${id}`, 'cover.webp');
+        const path = join(storageRoot, 'ugc', owner.id, `submission-${id}`, before!.coverUrl.split('/').at(-1)!);
         const bytes = await readFile(path);
         await api().post(endpoint).auth(owner.token, { type: 'bearer' }).expect(400);
         await api().post(endpoint).auth(owner.token, { type: 'bearer' })

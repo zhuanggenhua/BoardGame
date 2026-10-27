@@ -56,17 +56,21 @@
     },
     "matchHistory": {
         "title": "对局记录",
+        "loading": "正在加载对局记录…",
+        "loadFailed": "对局记录加载失败，请重试。",
         "empty": "暂无对局记录",
         "vs": "对战 {{name}}",
         "result": {
             "win": "胜利",
             "loss": "失败",
-            "draw": "平局"
+            "draw": "平局",
+            "completed": "已结束"
         },
         "resultShort": {
             "win": "胜",
             "loss": "负",
-            "draw": "平"
+            "draw": "平",
+            "completed": "终"
         },
         "games": {
             "tictactoe": "井字棋",

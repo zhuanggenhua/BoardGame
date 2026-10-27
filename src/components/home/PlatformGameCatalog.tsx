@@ -1,11 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Star } from 'lucide-react';
-import type { GameConfig } from '../../config/games.config';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
-import { resolveGameDescription, resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import { PlatformGameCard, type PlatformCatalogGame } from './PlatformGameCard';
 import './platform-catalog.css';
 
+export type { PlatformCatalogGame } from './PlatformGameCard';
 interface PlatformGameCatalogProps {
     heading?: ReactNode;
     query?: string;
@@ -13,7 +13,7 @@ interface PlatformGameCatalogProps {
     showSearch?: boolean;
     filters?: ReactNode;
     beforeGames?: ReactNode;
-    games: readonly GameConfig[];
+    games: readonly PlatformCatalogGame[];
     favoriteIds: ReadonlySet<string>;
     mode: 'discover' | 'library';
     onOpen: (id: string) => void;
@@ -53,27 +53,9 @@ export function PlatformGameCatalog({ heading, filters, beforeGames, games, favo
         </div>
         </div>
         <div className="platform-game-grid">
-            {visibleGames.map(game => {
-                const title = resolveGameDisplayName(game, t);
-                const favorite = favoriteIds.has(game.id);
-                return <article key={game.id} className="platform-game-card" data-game-id={game.id}>
-                    <button type="button" className="platform-game-open" aria-label={title}
-                        onMouseEnter={() => onIntent?.(game.id)} onFocus={() => onIntent?.(game.id)}
-                        onClick={() => onOpen(game.id)}>
-                        <span className="platform-game-art">{game.thumbnail}</span>
-                        <span className="platform-game-copy">
-                            <strong>{title}</strong>
-                            <span className="platform-game-description">{resolveGameDescription(game, t)}</span>
-                        </span>
-                    </button>
-                    {mode === 'discover' && <button type="button" className="platform-game-favorite" disabled={favoritePending} aria-pressed={favorite}
-                        aria-label={t(favorite ? 'platform.removeFavorite' : 'platform.addFavorite', { game: title, defaultValue: favorite ? `移出收藏：${title}` : `收藏：${title}` })}
-                        onClick={() => onFavorite(game.id, !favorite)}>
-                        <Star aria-hidden="true" size={20} fill={favorite ? 'currentColor' : 'none'} />
-                    </button>}
-                    {game.statusTag && <span className="platform-game-status">{t(`common:status_tags.${game.statusTag}`)}</span>}
-                </article>;
-            })}
+            {visibleGames.map(game => <PlatformGameCard key={game.id} game={game} mode={mode}
+                favorite={favoriteIds.has(game.id)} favoritePending={favoritePending}
+                onOpen={onOpen} onFavorite={onFavorite} onIntent={onIntent} />)}
         </div>
         {!visibleGames.length && <p className="platform-catalog-empty" role="status">{t(query || mode === 'discover' ? 'platform.noSearchResults' : 'platform.emptyLibrary', {
             defaultValue: query || mode === 'discover' ? '没有找到匹配的游戏' : '还没有收藏游戏，去发现页点星标添加',

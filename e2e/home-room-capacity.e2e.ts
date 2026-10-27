@@ -77,11 +77,18 @@ test('正式详情常态与多房间容量在手机和PC保持原承载', async 
                             for (let swipe = 0; swipe < 12 && !(await last.evaluate(node => { const r = node.getBoundingClientRect(); const p = node.parentElement!.getBoundingClientRect(); return r.top >= p.top && r.bottom <= p.bottom; })); swipe++) {
                                 const x = box.x + box.width * .4;
                                 const start = box.y + box.height * .85, end = box.y + box.height * .15;
-                                await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: start }] });
-                                for (let step = 1; step <= 6; step++) await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: start + (end - start) * step / 6 }] });
+                                const finger=(y:number)=>({id:1,x,y,radiusX:8,radiusY:8,force:1});
+                                await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [finger(start)] });
+                                for (let step = 1; step <= 18; step++) {
+                                    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [finger(start + (end - start) * step / 18)] });
+                                    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>resolve())));
+                                }
+                                for(let frame=0;frame<10;frame++){
+                                    await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[finger(end)]});
+                                    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>resolve())));
+                                }
                                 await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
                             }
-                            await touch.detach();
                         } else {
                             await page.mouse.move(metrics.roomWindow.x + metrics.roomWindow.width / 2, metrics.roomWindow.y + metrics.roomWindow.height / 2);
                             await page.mouse.wheel(0, 1500);

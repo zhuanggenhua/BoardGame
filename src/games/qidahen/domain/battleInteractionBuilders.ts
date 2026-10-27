@@ -25,6 +25,7 @@ import {
 } from './pendingTargetChoiceOptions';
 import type { QidahenCore } from './types';
 import { getQidahenTroopKindLabel } from './troopStacks';
+import { getQidahenPendingBattleActingFaction } from './battleState';
 
 function buildQidahenFeignedRetreatInteraction(
     state: MatchState<QidahenCore>,
@@ -126,8 +127,8 @@ function buildQidahenPendingTargetInteraction(
     }));
 
     const interaction = createQidahenChoiceRequestInteraction({
-        requestId: `qidahen-pending-target-${pendingTargetAction.actionId}-${pendingTargetAction.targetRuntimeRegionId}`,
-        playerId: state.core.factions[pendingTargetAction.attackerFactionId]?.playerId ?? state.core.currentPlayer,
+        requestId: `qidahen-pending-target-${pendingTargetAction.actionId}-${pendingTargetAction.targetRuntimeRegionId}-${pendingTargetAction.battleStep ?? 'tactics'}`,
+        playerId: state.core.factions[getQidahenPendingBattleActingFaction(pendingTargetAction)]?.playerId ?? state.core.currentPlayer,
         title: `${pendingTargetAction.title} · ${pendingTargetAction.targetRegionName}`,
         sourceId: QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID,
         candidates,

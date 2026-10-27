@@ -127,6 +127,7 @@ export type {
     QidahenScenarioId,
     QidahenWheelDispatchSelection,
     QidahenWheelMoveChoice,
+    QidahenWheelRecruitTrainChoice,
 } from './types';
 export {
     getQidahenDiplomacySelectionForCore,

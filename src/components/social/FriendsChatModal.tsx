@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { FRIENDS_CHAT_DETAIL_CONTENT_CLASS } from './layoutContracts';
 import { SYSTEM_NOTIFICATION_ID } from './constants';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 type ModalViewportCssVars = {
     '--modal-active-viewport-height': string;
@@ -27,6 +28,7 @@ interface FriendsChatModalProps {
 }
 
 export const FriendsChatModal = ({ isOpen, onClose, inviteData, initialFriendId }: FriendsChatModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const [selectedFriendId, setSelectedFriendId] = useState<string | null>(initialFriendId ?? null);
     const { t } = useTranslation(['social']);
 

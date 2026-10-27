@@ -1,3 +1,4 @@
+import { consumeRestoredRandomCursor } from './restoredRandomCursor';
 import type { MatchState, RandomFn } from '../types';
 import type { StoredMatchState } from './storage';
 
@@ -45,15 +46,15 @@ export async function commitAuthoritativeCommandSuccess(
     match.stateID += 1;
     match.lastCommandPlayerId = args.playerId;
 
-    const restoredRandomCursor = resolveRestoredRandomCursor(match.state);
-    if (typeof restoredRandomCursor === 'number') {
+    const consumed = consumeRestoredRandomCursor(match.state, restoredRandomCursor => {
         const rebuilt = args.createTrackedRandom(match.randomSeed, restoredRandomCursor);
         match.random = rebuilt.random;
         match.getRandomCursor = rebuilt.getCursor;
         args.logRandomCursorRestored?.(restoredRandomCursor);
         match.lastBroadcastedViews.clear();
-        match.state = clearRestoredRandomCursorSignal(match.state);
-    }
+    });
+    match.state = consumed.state;
+    const restoredRandomCursor = consumed.restoredCursor;
 
     const result: CommitAuthoritativeCommandSuccessResult = {
         committed: false,
@@ -77,26 +78,5 @@ export async function commitAuthoritativeCommandSuccess(
     return {
         ...result,
         committed: true,
-    };
-}
-
-function resolveRestoredRandomCursor(state: MatchState<unknown>): number | null {
-    const restoredCursor = (state.sys?.undo as { restoredRandomCursor?: number } | undefined)
-        ?.restoredRandomCursor;
-    return typeof restoredCursor === 'number' && restoredCursor >= 0
-        ? restoredCursor
-        : null;
-}
-
-function clearRestoredRandomCursorSignal(state: MatchState<unknown>): MatchState<unknown> {
-    return {
-        ...state,
-        sys: {
-            ...state.sys,
-            undo: {
-                ...state.sys.undo,
-                restoredRandomCursor: undefined,
-            },
-        },
     };
 }

@@ -10,6 +10,7 @@ import type {
     DieFace,
     DiceThroneRollContext,
     SelectableCharacterId,
+    CharacterId,
     InteractionDescriptor,
     PendingDefenderChoice,
     PendingDamage,
@@ -21,6 +22,7 @@ import type {
     DamageOrigin,
 } from './core-types';
 import type { AbilityDef } from './combat';
+import type { DoctorStrangeEvent } from './doctorStrange/types';
 
 // ============================================================================
 // 音频事件常量（面向百游戏 + 适宜 AI）
@@ -68,6 +70,10 @@ const ABILITY_ACTIVATE_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcan
  * - 'silent': 静默事件（状态同步/内部更新），无音效
  */
 export const DT_EVENTS = defineEvents({
+  THOR_MJOLNIR_STEP_COMPLETED: 'silent',
+  THOR_MJOLNIR_THROWN: 'silent',
+  THOR_MJOLNIR_RESOLVED: 'silent',
+  STRANGE_OPERATION_RESOLVED: 'silent',
   // ========== UI 交互（本地播放）==========
   CHARACTER_SELECTED: 'ui',      // 选择角色（UI 层播放）
   PLAYER_READY: 'ui',            // 玩家准备（UI 层播放）
@@ -331,6 +337,8 @@ export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
         modifiers?: DamageModifier[];
         /** 伤害计算明细（新管线格式，优先使用）*/
         breakdown?: DamageBreakdown;
+        /** 本次攻击百分比修正生效前的累计伤害，用于 postDamage 攻击修正按总量与舍入计算差额。 */
+        attackDamageBeforePercent?: number;
         /** 是否为不可防御伤害（只跳过防御技能；普通不可防御仍可被卡牌/状态效果避免） */
         unblockable?: boolean;
         /** 伤害范围（attack=攻击伤害，direct=直接伤害） */
@@ -409,6 +417,24 @@ export interface TokenGrantedEvent extends GameEvent<'TOKEN_GRANTED'> {
         newTotal: number;
         sourceAbilityId?: string;
     };
+}
+
+/** 独立伤害及合法响应结算后恢复同伴序列；不承载第二份位置状态。 */
+export interface ThorMjolnirStepCompletedEvent extends GameEvent<'THOR_MJOLNIR_STEP_COMPLETED'> {
+    payload: {
+        playerId: PlayerId;
+        sourceAbilityId: string;
+        remaining: number;
+        params: Record<string, string | number | boolean>;
+    };
+}
+
+export interface ThorMjolnirThrownEvent extends GameEvent<'THOR_MJOLNIR_THROWN'> {
+    payload: { playerId: PlayerId; targetId: PlayerId };
+}
+/** 移动序列的全部奖励已提交，可以恢复父攻击。 */
+export interface ThorMjolnirResolvedEvent extends GameEvent<'THOR_MJOLNIR_RESOLVED'> {
+    payload: { playerId: PlayerId; sourceAbilityId: string };
 }
 
 /** Token 消耗事件 */
@@ -584,6 +610,8 @@ export interface BonusDamageAddedEvent extends GameEvent<'BONUS_DAMAGE_ADDED'> {
         playerId: PlayerId;
         amount: number;
         sourceCardId?: string;
+        /** 攻击伤害已提交后追加的修正；共享事件系统需将增量落入同一次攻击的正式伤害。 */
+        applyToResolvedAttack?: boolean;
     };
 }
 
@@ -724,6 +752,10 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             customId?: string;
             /** 选项显示文案 key（i18n）。若不提供，将根据 statusId/tokenId 自动推导 */
             labelKey?: string;
+            /** 候选卡牌的正式预览；仅用于展示，结算仍消费 value/customId。 */
+            previewRef?: CardPreviewRef;
+            /** 效果骰候选本体；只显示已投出的结果，结算仍由选项 value 负责。 */
+            dicePreview?: { characterId: CharacterId; dice: Array<{ index: number; value: number }> };
             /** labelKey 对应的插值参数 */
             labelParams?: Record<string, string | number>;
             /** true 时仅展示，不允许点击 */
@@ -978,6 +1010,8 @@ export interface BonusDiceRerollRequestedEvent extends GameEvent<'BONUS_DICE_RER
 /** 奖励骰重掷事件（单颗重掷） */
 export interface BonusDieRerolledEvent extends GameEvent<'BONUS_DIE_REROLLED'> {
     payload: {
+        /** 同一次投掷尝试中的全部结果；单颗模式保持原字段。 */
+        dice?: Array<{ dieIndex: number; newValue: number; newFace: DieFace }>;
         /** 重掷的骰子索引 */
         dieIndex: number;
         /** 旧点数 */
@@ -1063,6 +1097,7 @@ export interface ExtraAttackTriggeredEvent extends GameEvent<'EXTRA_ATTACK_TRIGG
 
 /** 所有 DiceThrone 事件 */
 export type DiceThroneEvent =
+    | DoctorStrangeEvent
     | DiceRolledEvent
     | BonusDieRolledEvent
     | DieLockToggledEvent
@@ -1084,6 +1119,9 @@ export type DiceThroneEvent =
     | StatusAppliedEvent
     | StatusRemovedEvent
     | TokenGrantedEvent
+    | ThorMjolnirStepCompletedEvent
+    | ThorMjolnirThrownEvent
+    | ThorMjolnirResolvedEvent
     | TokenConsumedEvent
     | TokenLimitChangedEvent
     | DamageShieldGrantedEvent

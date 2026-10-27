@@ -56,17 +56,21 @@
     },
     "matchHistory": {
         "title": "Match History",
+        "loading": "Loading match history…",
+        "loadFailed": "Could not load match history. Please retry.",
         "empty": "No match history found.",
         "vs": "vs {{name}}",
         "result": {
             "win": "Win",
             "loss": "Loss",
-            "draw": "Draw"
+            "draw": "Draw",
+            "completed": "Finished"
         },
         "resultShort": {
             "win": "W",
             "loss": "L",
-            "draw": "D"
+            "draw": "D",
+            "completed": "F"
         },
         "games": {
             "tictactoe": "Tic-Tac-Toe",

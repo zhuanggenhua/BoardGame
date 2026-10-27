@@ -165,6 +165,12 @@ export function executeCardCommand(
                 break;
             }
 
+            if (card.type === 'spell') {
+                events.push({ type: 'STRANGE_OPERATION_REQUESTED', payload: { playerId: actingPlayerId,
+                    operation: 'prepare-card', sourceId: card.id }, sourceCommandType: command.type, timestamp });
+                break;
+            }
+
             const responseWindowEvent = !(card.type === 'upgrade' && upgradeTargetAbilityId)
                 && !matchState.sys?.responseWindow?.current
                 ? buildAfterCardPlayedWindowEvent(

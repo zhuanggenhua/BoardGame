@@ -7,6 +7,7 @@ import { AvatarUpdateModal } from './AvatarUpdateModal';
 import { EmailBindModal } from './EmailBindModal';
 import { User, Image, Mail, Lock, Pencil, Check, X } from 'lucide-react';
 import { PasswordField } from '../common/PasswordField';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 interface AccountSettingsModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface AccountSettingsModalProps {
 }
 
 export const AccountSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: AccountSettingsModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const { t } = useTranslation('auth');
     const { user, updateUsername, changePassword } = useAuth();
     const { openModal, closeModal } = useModalStack();

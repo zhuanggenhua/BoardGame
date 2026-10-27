@@ -635,6 +635,19 @@ describe('modifyDie 严格超限回归', () => {
         ]);
     });
 
+    it('固定4或5只选择一次目标骰，不允许借任意编辑越权修改第二颗', () => {
+        const config = { mode: 'set' as const, allowedValues: [4, 5] as [number, number] };
+        let result = { modifications: {}, modCount: 0, totalAdjustment: 0 };
+
+        result = diceModifyReducer(result, { action: 'chooseValue', value: 4 }, config, 1);
+        result = diceModifyReducer(result, { action: 'select', dieId: 0, dieValue: 1 }, config, 1);
+        result = diceModifyReducer(result, { action: 'setAny', dieId: 1, newValue: 5 }, config, 1);
+        expect(result.modifications).toEqual({ 0: 4 });
+        expect(diceModifyToCommands(result, 1)).toEqual([
+            { type: 'MODIFY_DIE', payload: { dieId: 0, newValue: 4 } },
+        ]);
+    });
+
     it('card-me-too 本地 copy 模式重复点同一源骰不得提前形成两步', () => {
         let result = { modifications: {}, modCount: 0, totalAdjustment: 0 };
 

@@ -5,7 +5,7 @@ import {
 } from './battleState';
 import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState';
 import { getQidahenEffectivePopulation } from './populationRules';
-import { isQidahenCityRuntimeRegion } from './regionConfig';
+import { isQidahenCityRuntimeRegion, resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import type { QidahenCore, QidahenFactionId } from './types';
 
 export const isRegionUnderSiege = (
@@ -119,6 +119,16 @@ export const getPreferredSelectedRegionIdForFaction = (
         ?? getPreferredControlledRuntimeRegion(state, factionId);
     return preferred?.id ?? state.selectedRegionId;
 };
+
+export const getQidahenRegularTroopPlacementTarget = (
+    state: QidahenCore,
+    factionId: QidahenFactionId,
+): QidahenCore['regions'][number] | null => (
+    state.regions.find((region) => !region.isLogicalRegion
+        && region.id === resolveQidahenPrimaryRuntimeRegionId(state.selectedRegionId)
+        && canPlaceRegularTroopsInRegion(region, factionId))
+    ?? getPreferredRegularTroopPlacementRegion(state, factionId)
+);
 
 export const getPreferredActionWindowSelectedRegionIdForFaction = (
     state: QidahenCore,

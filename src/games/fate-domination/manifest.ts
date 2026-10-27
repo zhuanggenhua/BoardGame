@@ -12,7 +12,7 @@ const entry: GameManifestEntry = {
     icon: 'FD',
     thumbnailPath: 'fate-domination/thumbnails/cover',
     cursorTheme: 'fate-domination-table',
-    allowLocalMode: false,
+    allowLocalMode: true,
     playerOptions: [3, 4, 5, 6, 7],
     bestPlayers: [3, 4],
     tags: ['card_driven', 'tabletop', 'prototype'],
@@ -22,8 +22,10 @@ const entry: GameManifestEntry = {
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {
         capture: true,
-        localAi: false,
+        localAi: true,
         remoteAi: false,
+        manualSetupSelection: true,
+        defaultLocalAiSeats: 'all-opponents',
     },
 };
 

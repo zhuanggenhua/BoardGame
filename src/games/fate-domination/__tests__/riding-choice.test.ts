@@ -6,6 +6,7 @@ import { FateDominationDomain } from '../domain';
 import type { FateDominationCore } from '../domain';
 import { emptyFateBattleResult } from '../domain/battleAwards';
 import { engineConfig } from '../game';
+import { buildFateAiLegalActions } from '../ai';
 import type { Command, MatchState } from '../../../engine/types';
 
 const playerIds = ['0', '1', '2'];
@@ -433,4 +434,20 @@ it('非本人和旁观者看不到骑乘候选或抽到的牌', () => {
     }
     const owner = applyPlayerViewToState(engineConfig, game.state, '0') as MatchState<FateDominationCore>;
     expect(owner.sys.interaction.current?.id).toBe(game.state.sys.interaction.current?.id);
+});
+
+it('骑乘AI保留0至3张与取消，实付过滤并全部通过正式管线，外席不能响应', () => {
+    const game = ridingGame('riding-ai-candidates');
+    game.useRiding();
+    const visible = applyPlayerViewToState(engineConfig, game.state, '0');
+    const actions = buildFateAiLegalActions({ state: visible, playerId: '0' });
+    const responses = actions.filter(action => action.commands[0].type === 'SYS_INTERACTION_RESPOND');
+    expect(new Set(responses.map(action => (action.commands[0].payload as { optionIds: string[] }).optionIds.length))).toEqual(new Set([0, 1, 2, 3]));
+    expect(actions.some(action => action.commands[0].type === 'SYS_INTERACTION_CANCEL')).toBe(true);
+    for (const action of actions) {
+        const result = game.run({ ...action.commands[0], playerId: '0' });
+        expect(result.success, action.label).toBe(true);
+    }
+    expect(buildFateAiLegalActions({ state: game.state, playerId: '1' })).toEqual([]);
+    expect(game.state.core.players['0'].normalAttackPlayed).toBe(false);
 });

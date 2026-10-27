@@ -2,11 +2,13 @@ import React, { useMemo } from 'react';
 import type { CSSProperties, RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HeartCrack, MousePointerClick } from 'lucide-react';
-import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
+import type { AbilityCard, Die, TurnPhase } from '../types';
+import type { PlayerId } from '../../../engine/types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceSelectResult } from '../domain/systems';
 import { DiceActions, DiceTray } from './DiceTray';
+import { getDiceInteractionHint, getDiceInteractionMeta, type GroupBonusReroll } from './diceInteractionContract';
 import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
@@ -18,42 +20,9 @@ import {
     buildBoardShellInlineUnitValue,
 } from '../../../shared/runtimeLayoutUnits';
 
-type SidebarDiceMeta = {
-    dtType?: 'modifyDie' | 'selectDie';
-    selectCount?: number;
-    diceOwnerId?: PlayerId;
-    targetOpponentDice?: boolean;
-    allowRepeatedDieSelection?: boolean;
-    dieModifyConfig?: {
-        mode?: 'set' | 'adjust' | 'copy' | 'any';
-        targetValue?: number;
-    };
-};
-
 type DamageSummary = {
     currentDamage: number;
     originalDamage?: number;
-};
-
-const getSidebarDiceMeta = (interaction?: InteractionDescriptor): SidebarDiceMeta | undefined => {
-    if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
-    const meta = (interaction.data as { meta?: SidebarDiceMeta } | undefined)?.meta;
-    if (!meta?.dtType) return undefined;
-    return meta;
-};
-
-const getCompletedDiceStepCount = (interaction?: InteractionDescriptor, meta?: SidebarDiceMeta): number => {
-    if (!interaction || interaction.kind !== 'multistep-choice') return 0;
-    const data = interaction.data as { completedSteps?: unknown; completedDieIds?: unknown } | undefined;
-    if (typeof data?.completedSteps === 'number' && Number.isFinite(data.completedSteps)) {
-        return Math.max(0, Math.floor(data.completedSteps));
-    }
-    if (!Array.isArray(data?.completedDieIds)) return 0;
-    const completedDieIds = data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number');
-    if (meta?.dtType === 'selectDie' && meta.allowRepeatedDieSelection === true) {
-        return completedDieIds.length;
-    }
-    return Array.from(new Set(completedDieIds)).length;
 };
 
 export const RightSidebar = ({
@@ -91,6 +60,7 @@ export const RightSidebar = ({
     isBonusDiceSettlement = false,
     canRerollBonusDice = false,
     onRerollBonusDice,
+    groupBonusReroll,
     activeModifiers,
     attackModifierBonusDamage,
     damageSummary,
@@ -132,6 +102,7 @@ export const RightSidebar = ({
     isBonusDiceSettlement?: boolean;
     canRerollBonusDice?: boolean;
     onRerollBonusDice?: (dieIndex: number) => void;
+    groupBonusReroll?: GroupBonusReroll;
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     damageSummary?: DamageSummary;
@@ -139,7 +110,7 @@ export const RightSidebar = ({
     rootPlayerId: PlayerId;
     teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
-    const isDiceMultistep = Boolean(getSidebarDiceMeta(interaction));
+    const isDiceMultistep = Boolean(getDiceInteractionMeta(interaction));
 
     const { t } = useTranslation('game-dicethrone');
     const sidebarFrameStyle: CSSProperties = {
@@ -178,7 +149,9 @@ export const RightSidebar = ({
     };
     const hintContainerStyle: CSSProperties = {
         zIndex: UI_Z_INDEX.hint,
-        marginRight: buildBoardShellInlineUnitValue(0.6),
+        marginBottom: buildBoardShellInlineUnitValue(0.6),
+        right: 0,
+        bottom: '100%',
         maxWidth: 'calc(100vw - 1rem)',
         overflow: 'visible',
     };
@@ -231,59 +204,9 @@ export const RightSidebar = ({
             label: t('dice.bonusRollOwner', { owner: ownerName }),
         };
     }, [dice, isBonusDiceSettlement, t]);
-    const interactionHint = useMemo(() => {
-        if (!isDiceMultistep || !interaction) return null;
-        const dtMeta = getSidebarDiceMeta(interaction);
-        if (!dtMeta) return null;
-
-        const isModifyMode = dtMeta.dtType === 'modifyDie';
-        const isSelectMode = dtMeta.dtType === 'selectDie';
-        const config = isModifyMode ? dtMeta.dieModifyConfig : undefined;
-        const mode = config?.mode;
-
-        const modifyResult = multistepInteraction?.result as DiceModifyResult | undefined;
-        const selectResult = multistepInteraction?.result as DiceSelectResult | undefined;
-        const modCount = modifyResult?.modCount ?? 0;
-        const selectCount = selectResult?.selectedDiceIds?.length ?? 0;
-        const completedCount = getCompletedDiceStepCount(interaction, dtMeta);
-        const currentCount = completedCount + (isSelectMode ? selectCount : modCount);
-        const maxCount = dtMeta.selectCount ?? 1;
-
-        if (isModifyMode && mode === 'copy') {
-            if (currentCount === 0) return t('interaction.hint_copy_step1');
-            if (currentCount === 1) {
-                const sourceValue = Object.values(modifyResult?.modifications ?? {})[0];
-                return t('interaction.hint_copy_step2', { value: sourceValue });
-            }
-            return t('interaction.hint_done');
-        }
-        if (isModifyMode && mode === 'set') {
-            if (currentCount >= maxCount) return t('interaction.hint_done');
-            return t('interaction.hint_set', { value: config?.targetValue ?? '?' });
-        }
-        if (isModifyMode && mode === 'adjust') return t('interaction.hint_adjust');
-        if (isModifyMode && mode === 'any') {
-            if (currentCount >= maxCount) return t('interaction.hint_done');
-            return t('interaction.hint_any');
-        }
-        if (isSelectMode) {
-            if (currentCount >= maxCount) return t('interaction.hint_done');
-            let key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
-            if (dtMeta.diceOwnerId) {
-                const ownerTeamId = teamIdByPlayerId?.[dtMeta.diceOwnerId];
-                const rootTeamId = teamIdByPlayerId?.[rootPlayerId];
-                if (dtMeta.diceOwnerId === rootPlayerId) {
-                    key = 'interaction.hint_select';
-                } else if (ownerTeamId && rootTeamId && ownerTeamId === rootTeamId) {
-                    key = 'interaction.hint_select_ally';
-                } else {
-                    key = 'interaction.hint_select_opponent';
-                }
-            }
-            return t(key, { current: currentCount, max: maxCount });
-        }
-        return null;
-    }, [interaction, isDiceMultistep, multistepInteraction?.result, rootPlayerId, t, teamIdByPlayerId]);
+    const interactionHint = getDiceInteractionHint({
+        interaction, result: multistepInteraction?.result ?? undefined, groupBonusReroll, rootPlayerId, teamIdByPlayerId,
+    });
 
     return (
         <div
@@ -334,9 +257,9 @@ export const RightSidebar = ({
                             <CurrentTotalDamageBadge summary={damageSummary} />
                         </div>
                     )}
-                    {isDiceMultistep && interactionHint && (
+                    {interactionHint && (
                         <div
-                            className="absolute right-full top-1/2 -translate-y-1/2 z-10 pointer-events-none"
+                            className="absolute z-10 pointer-events-none"
                             style={hintContainerStyle}
                         >
                             <div
@@ -349,7 +272,7 @@ export const RightSidebar = ({
                                     className="min-w-0 overflow-wrap-anywhere break-words text-amber-200 font-medium leading-snug"
                                     style={hintTextStyle}
                                 >
-                                    {interactionHint}
+                                    {t(interactionHint.key, interactionHint.params)}
                                 </span>
                             </div>
                         </div>
@@ -363,7 +286,6 @@ export const RightSidebar = ({
                         }}
                         currentPhase={currentPhase}
                         canInteract={canInteractDice}
-                        isResponseWindowOpen={isResponseWindowOpen}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
                         rerollAnimationSeq={rerollAnimationSeq}
@@ -374,6 +296,7 @@ export const RightSidebar = ({
                         bonusDiceReroll={onRerollBonusDice ? {
                             canReroll: canRerollBonusDice,
                             onReroll: onRerollBonusDice,
+                            selectedIds: groupBonusReroll?.selectedIds,
                         } : undefined}
                     />
                 </div>
@@ -395,6 +318,7 @@ export const RightSidebar = ({
                         interaction={isDiceMultistep ? interaction : undefined}
                         multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
                         isBonusDiceSettlement={isBonusDiceSettlement}
+                        groupBonusReroll={groupBonusReroll}
                     />
                     </div>
                 )}

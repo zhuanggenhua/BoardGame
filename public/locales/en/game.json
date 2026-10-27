@@ -170,7 +170,7 @@
       "typeLabel": "Type",
       "severityLabel": "Priority",
       "contentLabel": "Description",
-      "contentPlaceholder": "Describe the issue or suggestion...\nA screenshot is captured automatically; you can also paste one (Ctrl+V)",
+      "contentPlaceholder": "Describe the issue or suggestion...",
       "pasteHint": "A screenshot will be captured automatically; you can also paste one",
       "imageAlt": "Feedback screenshot",
       "deleteImage": "Delete image",
@@ -231,9 +231,9 @@
       "platform": {
         "title": "Home controls",
         "browseTitle": "Find games and view rooms",
-        "browseBody": "Search in Discover. On mobile, tap a cover to expand its description, then tap View rooms to open the game details.",
+        "browseBody": "Search in Discover. Select a game cover to open its details, browse rooms, or create a room.",
         "favoriteTitle": "Organize your library with stars",
-        "favoriteBody": "Use the star on a game cover to add or remove favorites. Your library shows saved games and their updates.",
+        "favoriteBody": "On desktop, hover over a game card and select its star to add or remove a favorite. On mobile, use Favorite in the game details. Your library shows saved games and their updates.",
         "settingsTitle": "The bottom-right gear opens quick settings",
         "settingsBody": "Open the gear for display mode, fullscreen, About and feedback. On mobile, author support, language and this guide are in the top menu.",
         "gameImages": "Inspecting cards and in-game controls"

@@ -43,6 +43,16 @@ const readRootComputedStyle = () => {
     return window.getComputedStyle(document.documentElement);
 };
 
+/** 桌面壳层用 vw/vh，等比壳层用 px；读取时保留长度单位的含义。 */
+const readCssLengthInPixels = (value: string | null | undefined) => {
+    const match = value?.trim().match(/^(\d+(?:\.\d+)?)(px|vw|vh)$/);
+    if (!match) return undefined;
+    const amount = Number(match[1]);
+    if (match[2] === 'px') return amount;
+    if (typeof window === 'undefined') return undefined;
+    return amount * (match[2] === 'vw' ? window.innerWidth : window.innerHeight) / 100;
+};
+
 export const readBoardShellScaleValue = (fallback = 1) => {
     const parsed = parseCssNumber(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-scale'));
     return parsed && parsed > 0 ? parsed : fallback;
@@ -72,7 +82,7 @@ export const readBoardShellCanvasSizeValue = () => {
 };
 
 export const readBoardShellInlineUnitPixelValue = () => {
-    const parsed = parseCssNumber(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-inline-unit'));
+    const parsed = readCssLengthInPixels(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-inline-unit'));
     if (parsed && parsed > 0) {
         return parsed;
     }
@@ -83,7 +93,7 @@ export const readBoardShellInlineUnitPixelValue = () => {
 };
 
 export const readBoardShellBlockUnitPixelValue = () => {
-    const parsed = parseCssNumber(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-block-unit'));
+    const parsed = readCssLengthInPixels(readRootComputedStyle()?.getPropertyValue('--mobile-board-shell-block-unit'));
     if (parsed && parsed > 0) {
         return parsed;
     }

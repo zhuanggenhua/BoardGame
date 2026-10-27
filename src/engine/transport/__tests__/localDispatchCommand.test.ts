@@ -108,7 +108,7 @@ describe('buildLocalDispatchCommand', () => {
         });
     });
 
-    it('教程 AI 命令应自动附带 _noSnapshot，避免占用撤回次数', () => {
+    it('教程 AI 的撤回元数据放在命令层，保持领域payload原样', () => {
         const result = buildLocalDispatchCommand({
             commandType: 'ROLL_DICE',
             payload: {
@@ -122,9 +122,9 @@ describe('buildLocalDispatchCommand', () => {
 
         expect(result.resolvedPlayerId).toBe('1');
         expect(result.command.playerId).toBe('1');
+        expect(result.command.skipUndoSnapshot).toBe(true);
         expect(result.command.payload).toEqual({
             keepIds: [0, 1],
-            _noSnapshot: true,
         });
     });
 
@@ -146,7 +146,6 @@ describe('buildLocalDispatchCommand', () => {
         expect(result.tutorialOverrideId).toBe('1');
         expect(result.command.payload).toEqual({
             characterId: 'monk',
-            _noSnapshot: true,
         });
     });
 });

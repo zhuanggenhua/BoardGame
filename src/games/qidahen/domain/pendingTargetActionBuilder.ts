@@ -73,6 +73,18 @@ export const getMarriageSubjugationBlockedReason = (
     return null;
 };
 
+/** 预览中的突袭必须由本次明确选择的地区决定，不能把己方军源推算为其他目标。 */
+export const getExplicitRaidTargetAction = (
+    state: QidahenCore,
+    attackerFactionId: QidahenFactionId,
+): QidahenPendingTargetAction | null => {
+    const regionId = state.explicitRegionId;
+    if (!regionId) return null;
+    const region = state.regions.find((candidate) => candidate.id === regionId);
+    const result = buildPendingTargetAction(state, attackerFactionId, 'raid', region, regionId);
+    return result?.targetRuntimeRegionId === resolveQidahenPrimaryRuntimeRegionId(regionId) ? result : null;
+};
+
 export const buildPendingTargetAction = (
     state: QidahenCore,
     attackerFactionId: QidahenFactionId,
@@ -220,6 +232,10 @@ export const buildPendingTargetAction = (
         actionId,
         battleMode,
         targetKind,
+        ...(actionId === 'raid' ? {
+            battleStep: defenderFactionId !== 'neutral' && targetRuntimeRegion.troops > 0
+                ? 'defender-declaration' as const : 'tactics' as const,
+        } : {}),
         title: actionId === 'raid' ? '突袭待结算' : '联姻待结算',
         attackerFactionId,
         sourceRegionId: sourceRegion.id,

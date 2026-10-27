@@ -1,5 +1,6 @@
 .fd-runtime-table {
     --fd-hand-card-width: 120px;
+    --fd-hand-floor: max(8px, env(safe-area-inset-bottom));
 }
 .fd-runtime-hand-grid {
     --fd-hand-hud-clearance: 146px;
@@ -7,8 +8,8 @@
     z-index: 20;
     left: calc(var(--fd-hud-inline) + var(--fd-hand-hud-clearance));
     right: var(--fd-hud-inline);
-    /* The 120×174 hand card is recessed by roughly one sixth of its height. */
-    bottom: -28px;
+    /* 费用、威力与规则必须在静息态完整可见，卡牌贴底而不越出视口。 */
+    bottom: var(--fd-hand-floor);
     display: flex;
     align-items: flex-end;
     justify-content: stretch;
@@ -46,18 +47,27 @@
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    width: 100%;
+    /* 静息态仅占实际牌宽，避免透明排拦住地图点位；溢出时仍在父区内滚动。 */
+    width: max-content;
     max-width: 100%;
     min-width: 0;
     min-height: 34px;
+    /* 横向滚动末端为描边和小数像素舍入保留可见边距。 */
+    box-sizing: border-box;
+    padding: 16px 6px 8px;
     pointer-events: auto;
+}
+
+/* 没有可交互卡牌的排不占用地图命中区域；有牌时保留横向浏览。 */
+.fd-runtime-card-row:not(:has(.fd-runtime-card)) {
+    pointer-events: none;
 }
 
 .fd-runtime-card {
     position: relative;
     flex: 0 0 var(--fd-hand-card-width);
     width: var(--fd-hand-card-width);
-    aspect-ratio: 148 / 214;
+    display: block;
     padding: 0;
     overflow: visible;
     border: 0;
@@ -66,12 +76,16 @@
     cursor: pointer;
     pointer-events: auto;
     box-shadow: none;
+    touch-action:pan-x;
+    user-select:none;
+    -webkit-touch-callout:none;
 }
 
-.fd-runtime-card > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.fd-runtime-card > img { display: block; width: 100%; height: auto; object-fit: contain; }
 .fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); z-index: 3; }
-.fd-runtime-card:focus-visible { outline: 2px solid #e3ca7b; outline-offset: 4px; }
-.fd-runtime-card.is-staged { outline: 2px solid #f5dc91; outline-offset: 2px; }
+.fd-runtime-table .fd-runtime-card:focus-visible { outline: 2px solid #dcc68c; outline-offset: 2px; }
+.fd-runtime-card.is-available { outline: 1px solid #b8cba4; outline-offset: 1px; }
+.fd-runtime-card.is-staged { outline: 2px solid #dcc68c; outline-offset: 1px; }
 .fd-runtime-card[aria-disabled="true"] { cursor: default; }
 
 .fd-runtime-play-area {
@@ -80,7 +94,7 @@
     grid-template-columns: max-content minmax(0, 1fr);
     align-items: end;
     gap: 12px;
-    width: max-content;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     pointer-events: none;
@@ -93,6 +107,8 @@
     gap: 4px;
     width: max-content;
     max-width: 100%;
+    min-width: 160px;
+    box-sizing: border-box;
     padding: 8px 10px;
     border-left: 3px solid #c7a74e;
     background: rgb(9 12 13 / .82);
@@ -103,7 +119,7 @@
 }
 
 .fd-play-power { color: #f5dc91; font-size: 18px; font-weight: 800; line-height: 1.35; }
-.fd-played-cards { justify-content: safe center; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
+.fd-played-cards.fd-hand-parallel { justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
 .fd-hand-parallel { justify-content: safe center; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
 .fd-hand-parallel > .fd-runtime-card { transition: translate .18s ease, filter .18s ease; }
 .fd-hand-parallel > .fd-runtime-card:hover,
@@ -115,7 +131,7 @@
 .fd-hand-mode { align-self: flex-end; padding: 3px 8px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 14px; pointer-events: auto; }
 .fd-hand-mode[aria-pressed="true"] { background: #d2dccb; color: #14221b; }
 .fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
-.fd-runtime-card.is-riding-selected { outline: 2px solid #f5dc91; outline-offset: 3px; filter: drop-shadow(0 3px 8px #e3ca7b99); }
+.fd-runtime-card.is-riding-selected { outline: 2px solid #dcc68c; outline-offset: 1px; }
 
 .fd-riding-controls {
     display: flex;
@@ -145,7 +161,7 @@
     .fd-skill-hand-zone { max-width: 36vw; }
     .fd-runtime-card-row { gap: 6px; }
     .fd-runtime-play-area { gap: 8px; }
-    .fd-play-summary { padding-inline: 6px; font-size: 13px; }
+    .fd-play-summary { min-width: 144px; padding-inline: 6px; font-size: 13px; }
     .fd-play-power { font-size: 16px; }
     .fd-riding-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0; font-size: 13px; }
     .fd-riding-status { grid-column: 1 / -1; }
@@ -153,8 +169,11 @@
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
-    .fd-runtime-hand-grid { bottom: -28px; }
+    .fd-runtime-hand-grid { bottom: var(--fd-hand-floor); }
 }
+
+/* 推进与技能共享实际承载，不再从另一处猜测卡高。 */
+.fd-skill-hand-zone > .fd-phase-control { bottom:calc(100% + 8px); right:64px; pointer-events:auto; }
 
 @media (prefers-reduced-motion: reduce) {
     .fd-hand-parallel > .fd-runtime-card { transition: none; }

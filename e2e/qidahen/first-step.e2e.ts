@@ -333,8 +333,6 @@ const previewActionPayment = async (
 ) => {
     const button = page.getByRole('button', { name: actionLabel });
     await button.click();
-    await expect(button).toBeVisible();
-    await button.click();
     await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
     await expect(page.locator('[data-testid="qidahen-action-payment-confirm"]')).toBeDisabled();
 };
@@ -991,14 +989,27 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const beforeCancelState = await readRequiredQidahenHarnessState(page);
         await previewActionPayment(page, /征召军队/);
         await page.locator('[data-testid^="qidahen-hand-card-"]').first().click();
-        await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('已选 1 张');
+        await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('已选 1 / 1 张');
+        await waitForAtlasFrames(page, '[data-testid^="qidahen-hand-card-"] [data-card-atlas-frame]');
         await saveScreenshot(page, ACTION_PAYMENT_DISCARD_SELECTION_SCREENSHOT);
+        await page.setViewportSize({ width: 932, height: 430 });
+        await expect(page.getByTestId('qidahen-action-payment-confirm')).toBeVisible();
+        await expect(page.getByTestId('qidahen-action-payment-cancel')).toBeVisible();
+        const selectedPaymentCard = page.locator('[data-qidahen-hand-card-selected="true"]').first();
+        await selectedPaymentCard.hover();
+        await expect.poll(async () => {
+            const tray = await page.getByTestId('qidahen-action-payment-panel').boundingBox();
+            const card = await selectedPaymentCard.boundingBox();
+            return tray && card ? card.y - (tray.y + tray.height) : -1;
+        }).toBeGreaterThanOrEqual(8);
+        await saveScreenshot(page, 'test-results/evidence-screenshots/_shared/qidahen-势力行动弃牌选择/02-征召军队-手机横屏弃牌选择交互.png');
+        await page.setViewportSize({ width: 1920, height: 1080 });
         await page.locator('[data-testid="qidahen-action-payment-cancel"]').click();
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toHaveCount(0);
 
         await previewActionPayment(page, /征召军队/);
-        await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('已选 0 张');
+        await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('已选 0 / 1 张');
         await page.locator('[data-testid="qidahen-action-payment-cancel"]').click();
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toHaveCount(0);
 

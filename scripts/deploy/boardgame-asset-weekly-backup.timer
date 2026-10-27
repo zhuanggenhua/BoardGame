@@ -1,0 +1,10 @@
+[Unit]
+Description=BoardGame assets backup every Sunday at 03:00 China time
+
+[Timer]
+OnCalendar=Sun *-*-* 03:00:00 Asia/Shanghai
+Persistent=true
+Unit=boardgame-asset-weekly-backup.service
+
+[Install]
+WantedBy=timers.target

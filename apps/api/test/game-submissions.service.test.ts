@@ -4,10 +4,12 @@ const storage = vi.hoisted(() => ({ upload: vi.fn() }));
 vi.mock('../../../src/server/storage/UGCStorageService', () => ({ createUGCStorageService: () => storage }));
 import { GameSubmissionsService } from '../src/modules/ugc/game-submissions.service';
 import type { GameSubmissionDocument } from '../src/modules/ugc/schemas/game-submission.schema';
+import type { ExternalGamesService } from '../src/modules/ugc/external-games.service';
 const draft = { name: ' 测试游戏 ', description: '游戏介绍', url: 'https://example.com/game', category: 'card', minPlayers: 2, maxPlayers: 4, author: '作者', rules: '规则' };
 const createService = () => {
-    const model = { create: vi.fn(async data => data), findOne: vi.fn() };
-    return { model, service: new GameSubmissionsService(model as unknown as Model<GameSubmissionDocument>) };
+    const model = { create: vi.fn(async data => data), findOne: vi.fn(), findOneAndUpdate: vi.fn() };
+    const games = { assertSubmissionEditable: vi.fn() } as unknown as ExternalGamesService;
+    return { model, service: new GameSubmissionsService(model as unknown as Model<GameSubmissionDocument>, games) };
 };
 beforeEach(() => vi.clearAllMocks());
 describe('外部游戏投稿持久化', () => {
@@ -34,7 +36,7 @@ describe('外部游戏投稿持久化', () => {
         await expect(service.submit('owner', 'id')).rejects.toThrow('封面');
         expect(record.save).not.toHaveBeenCalled();
         record.coverUrl = 'https://example.com/cover.webp';
-        await service.submit('owner', 'id');
-        expect(record.status).toBe('pending'); expect(record.save).toHaveBeenCalledTimes(1);
+        model.findOneAndUpdate.mockResolvedValue({ ...record, status: 'pending' });
+        expect((await service.submit('owner', 'id')).status).toBe('pending');
     });
 });

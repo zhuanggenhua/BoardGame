@@ -100,7 +100,10 @@ export const isPendingDamageResponseBonusSettlement = (
     const isFlightDefense = settlement.attackerId === pendingDamage.responderId
         && settlement.targetId === pendingDamage.targetPlayerId
         && settlement.dice.every(die => die.effectKey === 'bonusDie.effect.tianshi.flight');
-    return isSneakAttack || isFlightDefense;
+    const isUndaunted = settlement.customResolutionId === 'thor-undaunted-settle'
+        && settlement.attackerId === pendingDamage.responderId
+        && settlement.targetId === pendingDamage.targetPlayerId;
+    return isSneakAttack || isFlightDefense || isUndaunted;
 };
 
 export const isPendingDamageBonusSettlement = (

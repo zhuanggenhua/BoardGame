@@ -98,7 +98,7 @@
       "confirmTacticCard": "Play Tactic Card",
       "cancelTacticCard": "Cancel",
       "raidPaymentTarget": "Target: {{targetRegionName}} · {{resolutionHint}}",
-      "raidPaymentInvalidTarget": "This region cannot raid. Choose a highlighted legal target on the map.",
+      "raidPaymentInvalidTarget": "Choose a target region on the map.",
       "wheelDispatchPaymentTitle": "Attack Dispatch · Discard",
       "wheelDispatchPaymentStatus": "Discard {{required}} · Selected {{selected}}"
     },
@@ -162,6 +162,7 @@
       "centerBottom": "el",
       "currentMarker": "Current position of the action wheel marker",
       "chooseOpponent": "Choose one opponent to draw cards",
+      "militaryFarmTarget": "Military Farm placement: {{region}}",
       "sectors": {
         "reclaim": {
           "name": "Reclaim",
@@ -210,6 +211,9 @@
       "infantry": "Infantry",
       "trainingTarget": "{{regionName}} · {{unit}} {{level}} → {{targetLevel}}",
       "trainingTargetDetail": "Choose this troop to train it by 1 level.",
+      "fieldUnit": "Field unit",
+      "cityUnit": "City unit",
+      "duplicateTarget": "Target {{index}}",
       "khanTitle": "Khan's Edict · Recruit / Train",
       "title": "Recruit / Train",
       "progress": "Completed {{completed}} / 4 actions; extra trainings {{extra}}",
@@ -472,6 +476,8 @@
   },
   "battle": {
     "pendingTargetChoice": {
+      "fight": "Start battle",
+      "defenderFight": "Stand and fight",
       "rearGuard": "Rear guard resolution",
       "rout": "Rout resolution",
       "cavalryPlunderAttacker": "Cavalry plunder own deck",
@@ -483,27 +489,23 @@
   "tutorial": {
     "basic": {
       "title": "Qidahen Basics",
-    "description": "From the formal opening, complete one hand action, choose one wheel route, resolve its actual landing, and continue the same match.",
+    "description": "From Ming's formal opening, farm troops, raid, occupy, and continue the same match.",
       "steps": {
-        "welcome": "Three victory conditions: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige.",
-      "chooseOpeningAction": "This turn, you take one hand action and one wheel action, in either order. Choose which to do first: Recruit Army on the right or a wheel move.",
-      "wheelMove": "All players share the wheel marker. Each player chooses one move per turn; the cost and landing effect appear on each sector. Choose 1, 2, or 3 spaces.",
-      "wheelMoveOpponent": "The selected opponent draws 2 cards. Choose Jin.",
-      "wheelResult": "The result panel shows the actual change from your last action. Both actions this turn are complete.",
-      "wheelFirstResult": "The wheel action is complete. One hand action remains this turn; next, Recruit Army.",
-      "recruitTrainPayment": "Recruit / Train first requires discarding 1 hand card. Select 1 card and confirm.",
-      "recruitTrainActionRule": "- Recruit action: directly create 1 level-2 regular troop.\n- Train action: raise a troop by 1 level; each troop may be raised only 1 level per turn.\n\nChoose Recruit or Train.",
-      "recruitTrainExtraDecision": "The right panel shows the result. Each additional discarded hand card allows 1 more troop to be trained; you can also Recruit, Train, or finish. Choose what to do next.",
-      "recruitTrainExtraPayment": "Each additional discarded hand card allows 1 extra Train action. Select 1 card and confirm payment.",
-      "recruitTrainRecruitTargetRule": "Regular troops must be established in homeland (dark-colored) regions. Choose a highlighted region on the right.",
-      "recruitTrainTrainingTargetRule": "Choose a trainable troop on the right; each candidate shows its current and target level.",
-      "recruitTrainContinue": "The right panel shows the latest Recruit or Train result. Continue recruiting or training, or finish Recruit / Train.",
-      "recruitTrainFinalFinish": "The Recruit / Train action limit is reached. Click Finish Recruit / Train to end the wheel action.",
-      "pickActionAfterWheel": "The wheel action is complete; one hand action remains this turn. Now take Recruit Army: select it on the right.",
-          "payCards": "Recruit Army requires discarding 1 hand card. Tap View to inspect a card on desktop or press and hold it on mobile, then select 1 card and confirm payment.",
-          "chooseRecruitTarget": "Click the highlighted Xuanfu region. Regular troops must be established in homeland (dark-colored) regions.",
-      "chooseRecruitFormation": "The available formations are listed on the right. Choose 6 level-2 regular troops to establish in Xuanfu.",
-      "actionResult": "Recruit has resolved; the result panel shows the troops established. The wheel action is still available; choose one route next."
+      "frontier": "Ming has three troops in Liaodong. Attack the neighboring Mongol-held Yehe region this turn to gain control of it. Neither the wheel action nor the hand action has been used.",
+      "selectFarmRegion": "Regular troops may only be established in homeland (dark) regions. Select Liaodong as the placement region for this Military Farm action.",
+      "wheelMove": "Choose an opponent to draw two cards and move the wheel two spaces. At Military Farm, draw two cards and establish one level-2 regular troop. Move two spaces.",
+      "wheelOpponent": "The Mongols hold Yehe. Choose Jin to draw two cards, then move the wheel to Military Farm.",
+      "wheelResult": "Military Farm established one level-2 regular troop in Liaodong, and Ming drew two cards. Liaodong now has four Ming troops to attack Yehe.",
+      "chooseTarget": "Yehe borders Liaodong and has a Mongol garrison. Select Yehe on the map as the target of this raid.",
+      "chooseRaid": "Raid: discard one hand card to attack, without dispatching. Select Raid.",
+      "payRaid": "Discard Silver to pay for this raid and keep Mandarin Duck Formation for the battle. To inspect a card, select View on desktop or press and hold on touch screens.",
+      "confirmRaidPayment": "Confirm discarding the selected Silver card.",
+      "battleOpen": "Both sides reveal their troops. The uppermost pips show level: level 1 rolls a d6, level 2 a d8, and level 3 a d10. In field battles artillery ignores boundary limits; other troops use the battle width. The plains boundary between Liaodong and Yehe has width 3.",
+      "playTactic": "Mandarin Duck Formation cannot be used during siege attack or defense; it raises your infantry die level by one in battle. This is a field battle. Play the tactic card.",
+      "resolveBattle": "Select three Liaodong troops on the map, leave one to hold Liaodong, then click Start battle. Resolve artillery, cavalry, then infantry, with both sides acting simultaneously in each stage. Every three points deals one damage. The highest-level infantry or cavalry loses levels; remove it only at level zero.",
+      "battleResult": "The side with more surviving troops wins, excluding artillery; ties favor the defender. Check the dice and survivors, then decide how to occupy Yehe.",
+      "occupy": "After winning, the attacker may occupy or withdraw without changing control. Choose to occupy Yehe.",
+      "finish": "Ming now controls Yehe. Supremacy victory requires at least 16 controlled regions outside Korea at New Year. The tutorial ends here; continue this match."
       }
     },
     "attackAndBattle": {
@@ -513,7 +515,7 @@
         "overview": "Now enter Ming's hand action.",
         "actionOverview": "The right side lists Ming's four same-level faction actions: Raid, Recruit, Grant Pardon, and Drive Tiger. Choose 1 each turn.",
         "chooseAction": "Now choose Raid. Rule: discard 1 hand card to make an attack; dispatch is not allowed.",
-        "payRaid": "Now select 1 hand card and confirm payment.",
+        "payRaid": "Select Chahar on the map, then select 1 hand card and confirm payment.",
         "borderWidth": "The attack moves from Keshiketeng into Chahar. Read battle width 3.",
         "battleOpen": "Entering an enemy region starts a field battle. Reveal both sides, then open the tactic window.",
         "tacticWindow": "Click Cavalry Charge, then click Play Tactic Card to confirm.",

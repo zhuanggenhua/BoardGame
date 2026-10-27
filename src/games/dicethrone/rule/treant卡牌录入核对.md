@@ -17,10 +17,16 @@
 ## 2026-06-05 当前结论
 
 - 树精升级卡的**图槽、卡牌对象、`replaceAbility(targetAbilityId=基础技能ID)` 这一层仍然是对的**。
-- 2026-07-03 反馈复核后，本句对 `upgrade-wild-growth-2` 已失效：该卡图实际是 `野性怒吼 II`，应替换 `wild-roar`，不是替换 `wild-growth`。证据裁图为 `tmp/image-check/crops/treant_wild_roar_2_large_straight_card.jpg`；原来把 12345 大顺子反馈归到 `野蛮生长 II` 是对象定位错误。
+- 2026-10-25 反馈复核修正了 2026-07-03/04 的不完整映射：卡槽 29 是 `野性怒吼 II`，卡槽 31 是 `野蛮生长 II`。之前只复核卡槽 29，却把旧运行时 ID `upgrade-wild-growth-2` 当成卡槽 29 的对象，漏掉卡槽 31；现已将卡槽 29 命名为 `upgrade-wild-roar-2`，并将卡槽 31 恢复为 `upgrade-wild-growth-2`。
 - 截至 2026-06-04，`细心呵护 II / 培育`、`自然之触 II / 自然之怜`、`复仇枝蔓 II / 苦痛根系` 都已经补齐同卡双分支与对象级 direct closeout `L3`。本句旧版曾把 `乱花迷眼` 归到 `野蛮生长 II`，2026-07-04 已按正式卡图改为归属 `野性怒吼 II`。
 - 截至 2026-06-05，`扎根 II`、`破碎之拳 II`、`破碎之拳 III` 也已经补到技能本体对象级 `L3`；其中 `扎根 II` 的防御收口态和 `破碎之拳 III` 的攻击快照条件判定，已继续补到关键 `L4` 子句。
-- 当前主问题不再是“升级卡接上了错误技能定义”，而是旧卡牌核对文档若不回写，会继续把后续审计误导成“这些升级技能还没实现”。
+- 本次遗漏的审计原因已经定位：旧升级矩阵不是从整张图集逐槽枚举，而是沿用运行时代码里的既有 ID 分类；卡槽 31 被旧代码归为种植动作，因而没有进入升级卡核对矩阵。代码、测试和文档复用同一个错误映射，形成了相互印证但并不独立的证据链。
+
+## 2026-10-25 反馈对象修正
+
+- 依据玩家反馈原图和完整图集 `public/assets/i18n/zh-CN/dicethrone/images/treant/compressed/ability-cards.webp`：卡槽 31 是 `野蛮生长 II`。上排为 `2 树枝 + 3 树叶`，造成 `4` 伤害；可移除至多 `2` 个树灵，每移除 `1` 个增加 `4` 伤害；可弃掉生命源泉使攻击不可防御。下排为 `1 树枝 + 2 树叶`，养成 `3` 个树灵。
+- 卡槽 29 是 `野性怒吼 II`，保留原有大顺子与 `乱花迷眼` 规则，但使用独立对象 ID `upgrade-wild-roar-2`。
+- `treant-card-planting` 不是卡槽 31 的独立动作卡；实际卡牌对象是 `upgrade-wild-growth-2`。
 
 ## 升级卡矩阵
 
@@ -31,8 +37,9 @@
 | 21 | `upgrade-shattering-fist-3` | 破碎之拳 III | `shattering-fist` | `SHATTERING_FIST_3` 当前主路线与卡图一致；技能本体对象级 `L3` 已补齐，关键“攻击快照 vs 当前活跃骰” `L4` 也已锁定 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
 | 25 | `upgrade-nature-touch-2` | 自然之触 II | `nature-touch` | `NATURE_TOUCH_2` 当前已按主路线 + `自然之怜` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
 | 28 | `upgrade-vengeful-vines-2` | 复仇枝蔓 II | `vengeful-vines` | `VENGEFUL_VINES_2` 当前已按主路线 + `苦痛根系` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
-| 29 | `upgrade-wild-growth-2` | 野性怒吼 II | `wild-roar` | `WILD_ROAR_2` 当前已按正式卡图改为 `wild-roar-2-main` + `wild-roar-2-dazzle` 双分支：上半区大顺子造成 `8` 伤害并投掷 `5` 骰；下半区 `乱花迷眼` 为 `2 树枝 + 2 树灵`，施加刺藤并造成 `4` 点不可防御伤害 | **2026-07-04 回图复核确认：旧“野蛮生长 II / wild-growth / 乱花迷眼”归属错误，现已改为升级野性怒吼并补齐乱花迷眼分支** |
+| 29 | `upgrade-wild-roar-2` | 野性怒吼 II | `wild-roar` | `WILD_ROAR_2` 当前已按正式卡图改为 `wild-roar-2-main` + `wild-roar-2-dazzle` 双分支：上半区大顺子造成 `8` 伤害并投掷 `5` 骰；下半区 `乱花迷眼` 为 `2 树枝 + 2 树灵`，施加刺藤并造成 `4` 点不可防御伤害 | **卡槽 29 对象已独立命名；原 `upgrade-wild-growth-2` 映射为对象 ID 错误** |
 | 30 | `upgrade-shattering-fist-2` | 破碎之拳 II | `shattering-fist` | `SHATTERING_FIST_2` 当前主路线与卡图一致；技能本体对象级 direct closeout `L3` 已补齐 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
+| 31 | `upgrade-wild-growth-2` | 野蛮生长 II | `wild-growth` | `WILD_GROWTH_2` 上排为 `2 树枝 + 3 树叶`、`4` 伤害、可移除至多 `2` 个树灵并各加 `4` 伤害、可弃生命源泉使攻击不可防御；下排为 `1 树枝 + 2 树叶`、养成 `3` 个树灵 | **升级卡对象和双分支已按原图修正；此前漏审卡槽 31** |
 
 ## 结构裁定
 
@@ -40,7 +47,8 @@
   - `upgrade-tend-care-2`
   - `upgrade-nature-touch-2`
   - `upgrade-vengeful-vines-2`
-- `upgrade-wild-growth-2` 同样是复合升级结构；2026-07-04 复核后确认它是 `野性怒吼 II`，应升级 `wild-roar`，上半区为 `大顺子` 主路线，下半区为 `乱花迷眼`。
+- `upgrade-wild-growth-2` 是卡槽 31 的 `野蛮生长 II`，升级 `wild-growth` 并包含卡面上的攻击与种植两个分支。
+- 卡槽 29 的 `野性怒吼 II` 使用独立 ID `upgrade-wild-roar-2`，升级 `wild-roar`。
 
 ## 关联证据
 

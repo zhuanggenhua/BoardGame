@@ -209,14 +209,6 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             await capture(page, `${label}-好友弹窗`);
             await page.keyboard.press('Escape'); await expect(social).toHaveCount(0);
 
-            await openUserMenu(page); await activate(page.getByRole('button', { name: '对局记录', exact: true }));
-            const history = page.locator('[data-platform-dialog="history"]');
-            await modernDialog(history);
-            // 本轮只验原入口的表面样式，不将既有演示数据宣称为真实对局记录。
-            await capture(page, `${label}-对局记录样式`);
-            await activate(history.locator('.platform-dialog-close'));
-            await expect(history).toHaveCount(0);
-
             await openUserMenu(page); await activate(page.getByTestId('user-menu-my-feedback'));
             const feedbackList = page.getByTestId('my-feedback-modal');
             await modernDialog(feedbackList);
@@ -262,6 +254,8 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             expect(coverRect).not.toBeNull();
             await activate(fab.locator('[data-fab-id="feedback"]'));
             const feedback = page.locator('[data-platform-dialog="feedback"]');
+            const feedbackCloseEvents: string[] = [];
+            await page.exposeFunction('__homeFeedbackInput', (type: string) => { feedbackCloseEvents.push(type); });
             await expect(feedback.locator('textarea')).not.toHaveAttribute('placeholder', /Ctrl\+V/);
             // 自动截屏会暂时隐藏弹窗本身；等待真实预览，避免在中间态抢读布局或采图。
             await expect(page.getByTestId('feedback-image-preview')).toBeVisible({ timeout: 20_000 });
@@ -283,22 +277,32 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             await modernDialog(feedback);
             await expect(feedback.locator('.platform-dialog-close')).toHaveCSS('color', 'rgb(255, 255, 255)');
             await capture(page, `${label}-反馈表单`);
+            await feedback.locator('.platform-dialog-close').evaluate(button => {
+                for (const type of ['touchstart','touchend','click']) button.addEventListener(type, () => {
+                    void (window as unknown as { __homeFeedbackInput: (type:string) => Promise<void> }).__homeFeedbackInput(type);
+                }, { capture:true });
+            });
             if (mobile) {
                 const preview = page.getByTestId('feedback-image-preview');
                 await expect(preview.locator('button')).toHaveCSS('opacity', '1');
                 const content = feedback.locator('div.overflow-y-auto').first();
+                await expect.poll(()=>content.evaluate(node=>node.scrollHeight-node.clientHeight)).toBeGreaterThan(0);
                 const box = await content.boundingBox();
                 expect(box).not.toBeNull();
-                // 手势会话随本测试的 context.close 释放；滚后提前 detach 会丢失后续触摸生成的 click。
                 const touch = await context.newCDPSession(page);
-                const x = box!.x + box!.width * .4;
+                const x = box!.x + 12;
                 const start = box!.y + box!.height * .8, end = box!.y + box!.height * .25;
-                await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: start }] });
-                for (let step = 1; step <= 6; step++) {
-                    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: start + (end - start) * step / 6 }] });
-                    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+                const finger=(y:number)=>({id:1,x,y,radiusX:8,radiusY:8,force:1});
+                await touch.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[finger(start)] });
+                for (let step=1;step<=18;step++) {
+                    await touch.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[finger(start+(end-start)*step/18)] });
+                    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>resolve())));
                 }
-                await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+                for (let frame=0;frame<10;frame++) {
+                    await touch.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[finger(end)] });
+                    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>resolve())));
+                }
+                await touch.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] });
                 await expect.poll(() => content.evaluate(node => node.scrollTop)).toBeGreaterThan(0);
                 // 等实际惯性滚动停止，再进行下一个手势，避免首个点按只用于终止滚动。
                 await content.evaluate(async node => {
@@ -316,9 +320,25 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
                 })).toBe(true);
                 await capture(page, `${label}-反馈附件滚动`);
                 await record('手机反馈附件承载', { visibleDeleteWithoutHover: true, realTouchScrolled: true, completePreviewInsideScrollWindow: true });
+                const closeButton = feedback.locator('.platform-dialog-close');
+                expect(await closeButton.evaluate(node => {
+                    const r=node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));
+                })).toBe(true);
+            }
+            if (!mobile) {
+                const preview = page.getByTestId('feedback-image-preview');
+                const remove = preview.locator('button');
+                await preview.hover(); await expect(remove).toHaveCSS('opacity','1');
+                await page.mouse.move(1,1);
+                await feedback.locator('textarea').focus(); await page.keyboard.press('Tab');
+                await expect(remove).toBeFocused(); await expect(remove).toHaveCSS('opacity','1');
+                if(label==='桌面') await capture(page,'桌面-反馈附件键盘操作');
+                await page.keyboard.press('Enter'); await expect(preview).toHaveCount(0);
+                await record(`${label}-反馈附件删除`,{hoverRevealed:true,tabRevealed:true,enterDeleted:true});
             }
             await activate(feedback.locator('.platform-dialog-close'));
-            await expect(feedback).toHaveCount(0);
+            try { await expect(feedback).toHaveCount(0); }
+            finally { await record(`${label}-反馈关闭输入`, { events:feedbackCloseEvents, closed:await feedback.count()===0 }); }
             await activate(fab.locator('button').first());
 
             // 同一正式入口切经典，仅核对样式隔离，不拍重复旧图。

@@ -97,6 +97,9 @@ export const applyRequestedCommittedTroops = (
     return {
         ...updateQidahenPrimaryForceCommittedTroops(pendingTargetAction, committedTroops),
         attackPressure,
-        resolutionHint: `${pendingTargetAction.resolutionHint} · 实出${committedTroops}/战力${attackPressure}`,
+        resolutionHint: pendingTargetAction.resolutionHint.replace(
+            `出兵${pendingTargetAction.committedTroops}/战力${pendingTargetAction.attackPressure}`,
+            `出兵${committedTroops}/战力${attackPressure}`,
+        ),
     };
 };

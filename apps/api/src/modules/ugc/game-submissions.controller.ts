@@ -28,4 +28,6 @@ export class GameSubmissionsController {
     }
     @Post(':id/submit')
     submit(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.submissions.submit(user.userId, id); }
+    @Post(':id/withdraw')
+    withdraw(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.submissions.withdraw(user.userId, id); }
 }

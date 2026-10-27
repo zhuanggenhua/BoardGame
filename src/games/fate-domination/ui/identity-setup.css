@@ -1,0 +1,31 @@
+.fd-identity-setup { position:absolute; inset:0; z-index:18; display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:24px; padding:36px 48px 32px; color:#f0e7d0; background:radial-gradient(ellipse at 76% 45%,#26352d 0,transparent 58%),#101813; }
+.fd-identity-heading { border-bottom:1px solid #a58a4b55; padding-bottom:18px; }
+.fd-identity-heading small { font-size:11px; letter-spacing:.22em; color:#b5a67c; }
+.fd-identity-heading h1 { margin:6px 0 0; font-size:30px; font-weight:500; letter-spacing:.12em; }
+.fd-identity-workspace { min-height:0; display:grid; grid-template-columns:clamp(210px,18vw,320px) minmax(0,1fr) minmax(0,1.15fr); gap:28px; padding-right:64px; }
+.fd-identity-roster { display:flex; flex-direction:column; min-height:0; }
+.fd-identity-roster nav { display:flex; gap:28px; margin-bottom:18px; border-bottom:1px solid #a58a4b33; }
+.fd-identity-roster [role=tab] { min-height:44px; padding:0 4px 10px; font-size:20px; color:#b3b4a5; border-bottom:2px solid transparent; }
+.fd-identity-roster [role=tab][aria-selected=true] { color:#ffe5a0; border-bottom-color:#e1bd63; }
+.fd-identity-candidates { min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-content:start; gap:12px; padding:6px 8px 10px 4px; scrollbar-width:thin; }
+.fd-identity-candidate { position:relative; display:flex; flex-direction:column; min-width:0; padding:0; background:none; opacity:.68; transition:opacity 120ms,transform 120ms; text-align:center; }
+/* 候选只裁取角色美术供辨认，完整规则始终由当前阅读区的原卡承担。 */
+.fd-identity-candidate img { width:100%; aspect-ratio:1; object-fit:cover; object-position:50% 0; }
+.fd-identity-candidate span { width:100%; min-height:40px; padding-top:7px; font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
+.fd-identity-candidate:hover,.fd-identity-candidate[aria-pressed=true] { opacity:1; transform:translateY(-3px); filter:drop-shadow(0 3px 8px #e1bd6380); }
+.fd-identity-candidate:disabled { opacity:.2; cursor:not-allowed; filter:grayscale(1); transform:none; }
+.fd-identity-reader { min-height:0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.fd-identity-reader-art { flex:1; min-height:0; min-width:0; width:100%; display:flex; padding:0; background:none; cursor:zoom-in; }
+.fd-identity-reader-art img { width:100%; height:100%; object-fit:contain; }
+.fd-identity-flip { min-height:40px; padding:6px 18px; border:1px solid #a58a4b88; font-size:14px; }
+.fd-identity-references { min-height:0; min-width:0; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); align-content:start; gap:18px; padding:4px 8px 12px 4px; scrollbar-width:thin; }
+.fd-identity-reference { min-width:0; padding:0; background:none; text-align:left; }
+.fd-identity-reference > span { display:block; min-height:22px; font-size:12px; color:#c9ba94; }
+.fd-identity-reference img { display:block; width:100%; aspect-ratio:148/214; object-fit:contain; }
+.fd-identity-reference:hover img,.fd-identity-reference[aria-pressed=true] img { filter:drop-shadow(0 2px 6px #e1bd6380); }
+.fd-identity-footer { display:flex; justify-content:space-between; align-items:center; gap:20px; padding-top:18px; border-top:1px solid #a58a4b55; }
+.fd-identity-party { display:flex; flex-wrap:wrap; gap:8px 24px; min-width:0; font-size:13px; color:#b5a67c; }
+.fd-identity-party b { margin-left:8px; color:#f0e7d0; font-weight:500; font-size:15px; }
+.fd-identity-confirm { display:flex; align-items:center; justify-content:center; gap:18px; min-height:52px; min-width:180px; padding:8px 24px; background:#cfb576; color:#121916; font-size:17px; white-space:nowrap; }
+.fd-identity-confirm:disabled { opacity:.35; cursor:not-allowed; }
+@media(max-width:1100px),(max-height:650px) { .fd-identity-setup { padding:20px 28px; gap:14px; }.fd-identity-heading { padding-bottom:12px; }.fd-identity-heading h1 { font-size:24px; }.fd-identity-workspace { gap:18px; grid-template-columns:180px minmax(0,1fr) minmax(0,1fr); }.fd-identity-candidates { gap:8px; }.fd-identity-candidate span { font-size:12px; }.fd-identity-roster nav { margin-bottom:8px; gap:20px; }.fd-identity-roster [role=tab] { font-size:17px; }.fd-identity-references { grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:12px; }.fd-identity-footer { padding-top:12px; }.fd-identity-confirm { min-height:48px; min-width:148px; font-size:15px; } }

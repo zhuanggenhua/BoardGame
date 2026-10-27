@@ -60,6 +60,8 @@ export function useTouchLongPress<TKey extends string | number, TPayload>({
         if (!enabled || event.pointerType !== pointerType) return;
 
         clearLongPressState();
+        // 新的真实触控已开始，不再消费上一手势可能落在检视遮罩上的兼容点击。
+        lastLongPressRef.current = null;
         stateRef.current = {
             key,
             startX: event.clientX,

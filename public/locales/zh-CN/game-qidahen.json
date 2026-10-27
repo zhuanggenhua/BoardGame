@@ -98,7 +98,7 @@
       "confirmTacticCard": "打出战术牌",
       "cancelTacticCard": "取消",
       "raidPaymentTarget": "目标：{{targetRegionName}} · {{resolutionHint}}",
-      "raidPaymentInvalidTarget": "当前地区不能发动突袭，请在地图上选择高亮的合法目标",
+      "raidPaymentInvalidTarget": "在地图上选择目标地区",
       "wheelDispatchPaymentTitle": "进攻调度 · 弃牌",
       "wheelDispatchPaymentStatus": "需弃 {{required}} 张 · 已选 {{selected}} 张"
     },
@@ -162,6 +162,7 @@
       "centerBottom": "动",
       "currentMarker": "轮盘行动标记当前位置",
       "chooseOpponent": "选择一名对手抽牌",
+      "militaryFarmTarget": "军屯建军地：{{region}}",
       "sectors": {
         "reclaim": {
           "name": "开垦",
@@ -210,6 +211,9 @@
       "infantry": "步兵",
       "trainingTarget": "{{regionName}} · {{unit}} {{level}}级 → {{targetLevel}}级",
       "trainingTargetDetail": "选择这支部队训练 1 级。",
+      "fieldUnit": "野战部队",
+      "cityUnit": "城内部队",
+      "duplicateTarget": "目标 {{index}}",
       "khanTitle": "大汗令箭 · 征兵训练",
       "title": "征兵训练",
       "progress": "已完成 {{completed}} / 4 次；额外训练 {{extra}} 次",
@@ -472,6 +476,8 @@
   },
   "battle": {
     "pendingTargetChoice": {
+      "fight": "开始战斗",
+      "defenderFight": "应战",
       "rearGuard": "断后",
       "rout": "溃退",
       "cavalryPlunderAttacker": "抽己方牌堆",
@@ -483,27 +489,23 @@
   "tutorial": {
     "basic": {
       "title": "七大恨入门",
-    "description": "从正式开局完成一项手牌行动，再选择一种轮盘走法并处理真实落点，随后继续同一局。",
+    "description": "从大明正式开局，完成军屯、突袭与战后占领，再继续同一局。",
       "steps": {
-        "welcome": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。",
-      "chooseOpeningAction": "本回合各进行一次手牌行动和轮盘行动，先后由你决定。现在选一个先做：右侧的“征召军队”，或轮盘走法。",
-      "wheelMove": "轮盘标记由所有玩家共用。本回合每位玩家只选一种走法；费用和落点效果见各格提示。选择 1、2、3 格之一。",
-      "wheelMoveOpponent": "所选对手抽 2 张牌。选择后金。",
-      "wheelResult": "右侧结果显示刚才行动的实际变化。本回合的两种行动都已完成。",
-      "wheelFirstResult": "轮盘行动已完成。本回合还剩一次手牌行动；接下来进行征召军队。",
-      "recruitTrainPayment": "征兵训练先弃 1 张手牌。选择 1 张并确认。",
-      "recruitTrainActionRule": "- 征兵行动：直接建立 1 个等级 2 的正规军部队。\n- 训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。\n\n选择征兵或训练。",
-      "recruitTrainExtraDecision": "右侧显示刚才的结果。每额外弃 1 张手牌，可再训练 1 支部队；也可以继续征兵、训练或结束。选择下一步。",
-      "recruitTrainExtraPayment": "每额外弃 1 张手牌，可额外进行 1 次训练。选择 1 张手牌并确认支付。",
-      "recruitTrainRecruitTargetRule": "正规军必须在本土（深色）区域建立。选择右侧高亮的区域。",
-      "recruitTrainTrainingTargetRule": "选择右侧一支可训练部队；候选项显示当前等级和目标等级。",
-      "recruitTrainContinue": "右侧显示本次征兵或训练结果。继续征兵或训练，或结束征兵训练。",
-      "recruitTrainFinalFinish": "征兵训练已达到次数上限。点击“完成征兵训练”结束轮盘行动。",
-      "pickActionAfterWheel": "轮盘行动已完成，本回合还剩一次手牌行动。现在进行征召军队：点击右侧“征召军队”。",
-          "payCards": "征召军队需弃 1 张手牌。选牌前可点“看”查看牌面，移动端长按；选 1 张并确认支付。",
-          "chooseRecruitTarget": "点击高亮的宣府。正规军必须在本土（深色）区域建立。",
-      "chooseRecruitFormation": "右侧列出这次可选的建军方式。选择 6 支等级 2 正规军，建立在宣府。",
-      "actionResult": "征召军队已结算，右侧显示实际建军结果。轮盘行动还未执行；接下来选择一种走法。"
+      "frontier": "辽东驻有3支明军，邻近的叶赫部由蒙古控制。这回合从辽东进攻叶赫部，争取区域控制权；轮盘和手牌行动都尚未使用。",
+      "selectFarmRegion": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。",
+      "wheelMove": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。",
+      "wheelOpponent": "叶赫部由蒙古控制。本次指定后金抽2张牌，随后轮盘进入军屯。",
+      "wheelResult": "军屯已在辽东建立1支等级2的正规军，大明也抽了2张牌。辽东现在有4支明军，可以从这里进攻叶赫部。",
+      "chooseTarget": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。",
+      "chooseRaid": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。",
+      "payRaid": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。",
+      "confirmRaidPayment": "确认弃掉选中的银两。",
+      "battleOpen": "双方公开部队，最上方的点数表示等级。1级掷6面骰，2级掷8面骰，3级掷10面骰。野战时炮兵不受边界限制，其他部队按战场宽度投入；辽东与叶赫部之间是平原边界，宽度为3。",
+      "playTactic": "鸳鸯阵：不能在攻城、守城时使用；战斗中我方步兵骰子等级+1。现在是野战，打出这张战术牌。",
+      "resolveBattle": "在地图上选择辽东的3支部队参战，留1支驻守辽东，再点「开始战斗」。野战按炮兵、骑兵、步兵顺序，同阶段双方同时结算；每3点造成1损伤。损伤由最高等级的步骑兵承受，降低等级，归零才移除。",
+      "battleResult": "剩余部队数较多的一方获胜，不计算炮兵；相同则守方获胜。查看本次掷骰与幸存部队，再处理叶赫部的占领。",
+      "occupy": "攻方获胜后可以占领，也可以撤回而不改变控制权。这次选择占领叶赫部。",
+      "finish": "叶赫部已由大明控制。霸权胜利要在新年时控制至少16个非朝鲜区域。教程提示到此结束；继续这局对战。"
       }
     },
     "attackAndBattle": {
@@ -513,7 +515,7 @@
         "overview": "现在进入大明手牌行动。",
         "actionOverview": "右侧列出大明的四个同层势力行动：突袭作战、征召军队、赐印招安、驱虎吞狼。每回合从中选择 1 项。",
         "chooseAction": "现在选择「突袭作战」。规则：弃 1 张手牌，执行进攻行动，不能执行调度。",
-        "payRaid": "现在选择 1 张手牌并确认支付。",
+        "payRaid": "在地图上选择察哈尔部，然后选择 1 张手牌并确认支付。",
         "borderWidth": "进攻从克什克腾部进入察哈尔部。查看战场宽度 3。",
         "battleOpen": "部队进入敌方区域后进入野战。双方公开部队，再进入战术牌时机。",
         "tacticWindow": "点击「骑兵冲锋」，再点击「打出战术牌」确认。",

@@ -17,6 +17,7 @@ interface UseUrlModalOptions {
         closeOnEsc?: boolean;
         lockScroll?: boolean;
         zIndex?: number;
+        animateExit?: boolean;
     } | null;
 }
 
@@ -145,6 +146,7 @@ export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlMod
             closeOnBackdrop: config.closeOnBackdrop ?? true,
             closeOnEsc: config.closeOnEsc ?? true,
             lockScroll: config.lockScroll ?? true,
+            animateExit: config.animateExit,
             zIndex: config.zIndex,
             onClose: () => handleModalClose(modalId),
             render: config.render,
@@ -192,6 +194,7 @@ export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlMod
             closeOnBackdrop: config.closeOnBackdrop ?? true,
             closeOnEsc: config.closeOnEsc ?? true,
             lockScroll: config.lockScroll ?? true,
+            animateExit: config.animateExit,
             zIndex: config.zIndex,
             onClose: () => handleModalClose(modalId),
             render: config.render,

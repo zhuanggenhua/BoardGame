@@ -219,7 +219,7 @@ export interface FateDominationCore {
 
 export type SelectMasterCommand = Command<'SELECT_MASTER', { masterId: string }>;
 export type SelectServantCommand = Command<'SELECT_SERVANT', { servantId: string }>;
-export type DeployMasterCommand = Command<'DEPLOY_MASTER', { locationId: LocationId }>;
+export type DeployMasterCommand = Command<'DEPLOY_MASTER', { locationId: LocationId; deploymentSlot?:number|null }>;
 export type SelectAttackCardCommand = Command<'SELECT_ATTACK_CARD', { cardId: string; faceDown?: boolean }>;
 export type ConfirmAttackCommand = Command<'CONFIRM_ATTACK', {
     /** Omitted together only for legacy replay clients. New clients submit one complete local draft. */

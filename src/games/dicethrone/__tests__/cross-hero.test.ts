@@ -1694,7 +1694,9 @@ describe('cross hero battles', () => {
                 name: 'gunslinger upgraded fan-the-hammer pistol-whip skips protect response',
                 setup: () => responseResult.finalState,
                 commands: [
-                    cmd('SKIP_TOKEN_RESPONSE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '1', {
+                        pendingDamageId: responseResult.finalState.core.pendingDamage?.id,
+                    }),
                 ],
                 expect: {
                     turnPhase: 'main2',

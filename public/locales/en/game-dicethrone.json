@@ -644,6 +644,42 @@
       "description": [
         "Positive status effect, stack limit 1. Force an opponent to reroll 1 die: a player with this token may spend 1 Mesmerize to roll 1 die. On 5-6, they may force an opponent to reroll any 1 die."
       ]
+    },
+    "guard_break": {
+      "name": "Guard Break",
+      "description": [
+        "At the end of your offensive roll, spend 1 Guard Break and roll 1 die. On 4 or 5, the attack becomes undefendable. The token is spent even on failure. You may spend additional tokens one at a time."
+      ]
+    },
+    "electrokinesis": {
+      "name": "Electrokinesis",
+      "description": [
+        "Stack limit 4. During your own main phase, spend 4 Electrokinesis to draw 1 card, once per turn. Abilities that add your current Electrokinesis to damage do not spend it."
+      ]
+    },
+    "mjolnir": {
+      "name": "Mjolnir",
+      "description": [
+        "Unique Companion, initially held by Thor. It cannot be removed or transferred as a status effect. Throw it to an opponent for 1 isolated undefendable damage; Retrieve it to gain 1 Electrokinesis. At any legal time, discard 1 card to Throw or Retrieve. Automatically Retrieve it when its holder is defeated."
+      ]
+    },
+    "crimson-bands": {
+      "name": "Crimson Bands",
+      "description": [
+        "The bearer cannot play cards during their next complete roll phase. Remove this token when that phase ends."
+      ]
+    },
+    "premonition": {
+      "name": "Premonition",
+      "description": [
+        "During Income, once per turn, you may spend 1 to draw 2 cards or spend 3 to draw 3 instead of drawing 1. Then return 1 card drawn this way to the top or bottom of your deck."
+      ]
+    },
+    "deja-vu": {
+      "name": "Déjà Vu",
+      "description": [
+        "During your Offensive Roll Phase, before activating an ability, spend this token to end that phase and begin a new Offensive Roll Phase."
+      ]
     }
   },
   "actionLog": {
@@ -796,7 +832,8 @@
     "tianshi": "Seraph",
     "lieren": "Huntress",
     "vampire_lord": "Vampire Lord",
-    "zhizhuxia": "Spider-Man"
+    "zhizhuxia": "Spider-Man",
+    "thor": "Thor"
   },
   "characters": {
     "monk": "Monk",
@@ -815,17 +852,33 @@
     "tianshi": "Seraph",
     "lieren": "Huntress",
     "vampire_lord": "Vampire Lord",
-    "zhizhuxia": "Spider-Man"
+    "zhizhuxia": "Spider-Man",
+    "thor": "Thor",
+    "doctor_strange": "Doctor Strange"
   },
   "config": {
     "dice": {
-      "barbarian": { "name": "Barbarian Dice" },
-      "pyromancer": { "name": "Pyromancer Dice" },
-      "monk": { "name": "Monk Dice" },
-      "moonElf": { "name": "Moon Elf Dice" },
-      "paladin": { "name": "Paladin Dice" },
-      "gunslinger": { "name": "Gunslinger Dice" },
-      "samurai": { "name": "Samurai Dice" },
+      "barbarian": {
+        "name": "Barbarian Dice"
+      },
+      "pyromancer": {
+        "name": "Pyromancer Dice"
+      },
+      "monk": {
+        "name": "Monk Dice"
+      },
+      "moonElf": {
+        "name": "Moon Elf Dice"
+      },
+      "paladin": {
+        "name": "Paladin Dice"
+      },
+      "gunslinger": {
+        "name": "Gunslinger Dice"
+      },
+      "samurai": {
+        "name": "Samurai Dice"
+      },
       "shadowThief": {
         "name": "Shadow Thief Dice",
         "face": {
@@ -835,11 +888,21 @@
           "shadow": "Shadow Face"
         }
       },
-      "treant": { "name": "Treant Dice" },
-      "ninja": { "name": "Ninja Dice" },
-      "zhanshujia": { "name": "Tactician Dice" },
-      "artificer": { "name": "Artificer Dice" },
-      "tianshi": { "name": "Seraph Dice" },
+      "treant": {
+        "name": "Treant Dice"
+      },
+      "ninja": {
+        "name": "Ninja Dice"
+      },
+      "zhanshujia": {
+        "name": "Tactician Dice"
+      },
+      "artificer": {
+        "name": "Artificer Dice"
+      },
+      "tianshi": {
+        "name": "Seraph Dice"
+      },
       "lieren": {
         "name": "Huntress Dice",
         "face": {
@@ -864,11 +927,21 @@
           "web": "Web Face",
           "spider": "Spider Face"
         }
+      },
+      "thor": {
+        "name": "Thor Dice"
+      },
+      "doctor_strange": {
+        "name": "Doctor Strange Dice"
       }
     },
     "resources": {
-      "cp": { "name": "CP" },
-      "hp": { "name": "HP" }
+      "cp": {
+        "name": "CP"
+      },
+      "hp": {
+        "name": "HP"
+      }
     }
   },
   "imageAlt": {
@@ -1012,8 +1085,16 @@
       "mesmerize": "Mesmerize",
       "blood_drop": "Blood Drop",
       "web": "Web",
-      "spider": "Spider"
-    }
+      "spider": "Spider",
+      "thor_hammer": "Hammer",
+      "thor_worthy": "Worthy",
+      "thor_thunder": "Thunder",
+      "strange-mandala": "Mandala",
+      "strange-book": "Book",
+      "strange-cloak": "Cloak",
+      "strange-amulet": "Amulet"
+    },
+    "rerollSelectedGroup": "Reroll selected ({{count}})"
   },
   "bonusDie": {
     "title": "Bonus Roll",
@@ -1122,23 +1203,23 @@
       "morePleaseRoll.otherContribution": "Non-sword face: no extra damage",
       "holyLight": "Holy Light",
       "holyDefense": "Holy Defense",
-      "holyLight2.sword": "Sword: gain 1 Crit",
-      "holyLight2.helm": "Helm: gain 1 Protect",
-      "holyLight2.heart": "Heart: draw 1 card",
-      "holyLight2.pray": "Pray: gain 2 CP",
+      "holyLight2.sword": "Sword: Gain 1 Crit",
+      "holyLight2.helm": "Helm: Gain 1 Protect",
+      "holyLight2.heart": "Heart: Draw 1 Card",
+      "holyLight2.pray": "Pray: Gain 2 CP",
       "godsGrace": "God's Grace",
-      "godsGrace.pray": "Pray: gain 4 CP",
-      "godsGrace.other": "Otherwise: draw 1 card",
+      "godsGrace.pray": "Pray: Gain 4 CP",
+      "godsGrace.other": "Draw 1 card",
       "divineFavor": "Divine Favor",
-      "divineFavor.sword": "Sword: draw 2 cards",
-      "divineFavor.helm": "Helm: heal 3",
-      "divineFavor.heart": "Heart: heal 4",
-      "divineFavor.pray": "Pray: gain 3 CP",
+      "divineFavor.sword": "Sword: Draw 2 Cards",
+      "divineFavor.helm": "Helm: Heal 3",
+      "divineFavor.heart": "Heart: Heal 4",
+      "divineFavor.pray": "Pray: Gain 3 CP",
       "absolution": "Absolution",
-      "absolution.sword": "Sword: deal 3 damage",
-      "absolution.helm": "Helm: prevent 3 damage",
-      "absolution.heart": "Heart: prevent 5 damage",
-      "absolution.pray": "Pray: prevent 2 damage and gain 2 CP",
+      "absolution.sword": "Sword: +3 Damage",
+      "absolution.helm": "Helm: Shield 3",
+      "absolution.heart": "Heart: Shield 5",
+      "absolution.pray": "Pray: Shield 2 + 2 CP",
       "pyrohotstreak2.1": "2 Damage",
       "pyrohotstreak2.2": "2 Damage",
       "pyrohotstreak2.3": "2 Damage",
@@ -1194,27 +1275,12 @@
       "magma": "Magma: Inflict Burn",
       "fiery_soul": "Fiery Soul: Gain 2 Fire Mastery",
       "meteor": "Meteor: Inflict Knockdown",
-      "holyLight2.sword": "Sword: Gain 1 Crit",
-      "holyLight2.helm": "Helm: Gain 1 Protect",
-      "holyLight2.heart": "Heart: Draw 1 Card",
-      "holyLight2.pray": "Pray: Gain 2 CP",
-      "divineFavor.sword": "Sword: Draw 2 Cards",
-      "divineFavor.helm": "Helm: Heal 3",
-      "divineFavor.heart": "Heart: Heal 4",
-      "divineFavor.pray": "Pray: Gain 3 CP",
-      "absolution.sword": "Sword: +3 Damage",
-      "absolution.helm": "Helm: Shield 3",
-      "absolution.heart": "Heart: Shield 5",
-      "absolution.pray": "Pray: Shield 2 + 2 CP",
-      "godsGrace.pray": "Pray: Gain 4 CP",
-      "infernalEmbrace.meteor": "Meteor: gain Fire Mastery to the cap",
       "samuraiBackStrikeDie": "Back Strike Roll: {{value}} (deal {{damage}} to the original attacker)",
       "samuraiRighteousnessKatana": "Katana: +2 damage",
       "samuraiRighteousnessHelm": "Helm: inflict 2 Shame on your opponent",
       "samuraiRighteousnessRisingSun": "Rising Sun: gain 1 Back Strike",
       "samuraiMasamune.die": "Masamune: this die contributes to the Masamune result",
       "samuraiMasamune.result": "{{katanaCount}} Katana: +{{katanaCount}} damage; {{shameCount}} Helm: inflict {{shameCount}} Shame; {{retributionCount}} Rising Sun: gain {{retributionCount}} Back Strike (extra gains are ignored if you are at the stack limit)",
-      "godsGrace.other": "Draw 1 card",
       "totalDamageContribution": "This die's {{value}} counts toward the final damage",
       "totalDamageContributionThreshold": "This die's {{value}} counts toward the final damage; reaching the threshold also triggers the extra effect",
       "treantLifeSap": "Life Sap: rolled {{value}}, healing {{heal}}.",
@@ -1304,7 +1370,10 @@
       "tianshi.angelicCloak": "Angelic Cloak: counterattack or prevent damage based on the die face",
       "tianshi.holyStrike": "Holy Strike: each Blade adds +1 attack damage; Holy Pendant inflicts Dazzle",
       "tianshi.angelicTactics": "Angelic Tactics: Blade +3 damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival",
-      "tianshi.supremeHoliness": "Supreme Holiness: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card"
+      "tianshi.supremeHoliness": "Supreme Holiness: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card",
+      "thor": {
+        "die": "Value {{value}}"
+      }
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "selectToRerollFree": "Click a die to reroll for free",
@@ -1416,7 +1485,13 @@
     "passive_not_found": "Passive ability not found",
     "action_not_found": "Action not found",
     "target_die_required": "A target die is required",
-    "die_is_locked": "This die is locked"
+    "die_is_locked": "This die is locked",
+    "requireMjolnirThrowsThisTurn": "Throw Mjolnir at least twice this turn first",
+    "requireLethalAttack": "Requires incoming lethal attack damage",
+    "ultimate_resolving": "Opponents cannot act while an ultimate is resolving",
+    "crimsonBandsBlocksCards": "Crimson Bands are active; no cards may be played during this complete roll phase",
+    "spellPreparationUnavailable": "You may prepare one spell from your hand once per turn during either of your Main Phases",
+    "deja_vu_unavailable": "Déjà Vu cannot be used at this time"
   },
   "actions": {
     "resolveAttack": "Resolve Attack",
@@ -1486,6 +1561,10 @@
       "helm": "Helm",
       "pray": "Pray",
       "katana": "Katana",
+      "strange-book": "Book",
+      "strange-amulet": "Amulet",
+      "strange-mandala": "Mandala",
+      "strange-cloak": "Cloak",
       "rising_sun": "Rising Sun",
       "branch": "Branch",
       "leaf": "Leaf",
@@ -1516,7 +1595,10 @@
       "mesmerize": "Mesmerize",
       "blood_drop": "Blood Drop",
       "spider": "Spider",
-      "web": "Web"
+      "web": "Web",
+      "thor_hammer": "Hammer",
+      "thor_worthy": "Worthy",
+      "thor_thunder": "Thunder"
     },
     "trigger": {
       "generic": "variant condition",
@@ -1629,55 +1711,55 @@
       "accept": "Gain Cursed Coin",
       "decline": "Decline"
     },
-      "cursedPirateCurseCard": {
-        "title": "Curse Card: choose the resolution",
-        "draw1": "Draw 1 card",
-        "damage2Draw2": "Receive 2 damage and draw 2 cards",
-        "damage4Draw3": "Receive 4 damage and draw 3 cards"
-      },
-      "cursedPirateRansomDie": {
-        "title": "Ransom: choose one opponent die",
-        "choose": "Die {{die}} (currently {{value}})"
-      },
-      "cursedPirateRansomResolve": {
-        "title": "Ransom: pay 2 CP?",
-        "pay": "Pay 2 CP to your opponent",
-        "reroll": "Do not pay; reroll die {{die}} (currently {{value}})"
-      },
-      "cursedPirateCrowsNestView": {
-        "title": "Crow's Nest: check the hand",
-        "confirm": "Checked {{player}}'s hand: {{cards}}"
-      },
-      "mercilessCursePowderKeg": {
-        "title": "Choose up to two opponents to gain Powder Keg",
-        "apply": "Apply to {{targets}}",
-        "skip": "Do not apply Powder Keg"
-      },
-      "cursedPirateGoFish": {
-        "title": "Choose up to three opponents to gain Powder Keg",
-        "apply": "Apply to {{targets}}",
-        "skip": "Do not apply Powder Keg"
-      },
-      "cursedPirateSip": {
-        "title": "Sip: choose whether to roll instead",
-        "acceptPowderKeg": "Gain Powder Keg",
-        "rollInstead": "Do not gain Powder Keg; roll 1 die instead"
-      },
-      "cursedPirateHumanWalkThePlank": {
-        "title": "Walk the Plank: choose the resolution",
-        "stealCp": "Steal 1 CP",
-        "discardCard": "Make the opponent choose and discard 1 card"
-      },
-      "cursedPirateHumanRemoveCoins": {
-        "title": "Shiver Me Timbers: remove any number of Cursed Coins",
-        "keep": "Do not remove any",
-        "remove": "Remove {{count}} Cursed Coin(s)"
-      },
-      "powderKegTransfer": {
-        "title": "Powder Keg: choose who receives it",
-        "give": "Give to {{target}}"
-      },
-      "critOrAccuracy": "Choose to gain Crit or Accuracy",
+    "cursedPirateCurseCard": {
+      "title": "Curse Card: choose the resolution",
+      "draw1": "Draw 1 card",
+      "damage2Draw2": "Receive 2 damage and draw 2 cards",
+      "damage4Draw3": "Receive 4 damage and draw 3 cards"
+    },
+    "cursedPirateRansomDie": {
+      "title": "Ransom: choose one opponent die",
+      "choose": "Die {{die}} (currently {{value}})"
+    },
+    "cursedPirateRansomResolve": {
+      "title": "Ransom: pay 2 CP?",
+      "pay": "Pay 2 CP to your opponent",
+      "reroll": "Do not pay; reroll die {{die}} (currently {{value}})"
+    },
+    "cursedPirateCrowsNestView": {
+      "title": "Crow's Nest: check the hand",
+      "confirm": "Checked {{player}}'s hand: {{cards}}"
+    },
+    "mercilessCursePowderKeg": {
+      "title": "Choose up to two opponents to gain Powder Keg",
+      "apply": "Apply to {{targets}}",
+      "skip": "Do not apply Powder Keg"
+    },
+    "cursedPirateGoFish": {
+      "title": "Choose up to three opponents to gain Powder Keg",
+      "apply": "Apply to {{targets}}",
+      "skip": "Do not apply Powder Keg"
+    },
+    "cursedPirateSip": {
+      "title": "Sip: choose whether to roll instead",
+      "acceptPowderKeg": "Gain Powder Keg",
+      "rollInstead": "Do not gain Powder Keg; roll 1 die instead"
+    },
+    "cursedPirateHumanWalkThePlank": {
+      "title": "Walk the Plank: choose the resolution",
+      "stealCp": "Steal 1 CP",
+      "discardCard": "Make the opponent choose and discard 1 card"
+    },
+    "cursedPirateHumanRemoveCoins": {
+      "title": "Shiver Me Timbers: remove any number of Cursed Coins",
+      "keep": "Do not remove any",
+      "remove": "Remove {{count}} Cursed Coin(s)"
+    },
+    "powderKegTransfer": {
+      "title": "Powder Keg: choose who receives it",
+      "give": "Give to {{target}}"
+    },
+    "critOrAccuracy": "Choose to gain Crit or Accuracy",
     "ninjaNinjutsu": {
       "title": "Ninjutsu 6 result",
       "bonusDamage": "+2 damage",
@@ -1819,15 +1901,46 @@
     },
     "tianshi": {
       "player": "{{player}}",
-      "divinePurification": { "title": "Divine Purification: choose a player" },
-      "gospelArrival": { "title": "Gospel Arrival: choose an opponent to Dazzle" },
-      "divineCommand": { "title": "Divine Command: choose an opponent to take 4 undefendable damage" },
-      "divineProtection": { "title": "Divine Protection: choose a player to gain 2 Purify and 2 Flight" },
-      "takeoff": { "title": "Takeoff: choose a player to gain Flight; the opponent takes 3 undefendable damage" },
-      "divineArbitrationDazzle": { "title": "Divine Arbitration: choose a player to gain Dazzle" },
-      "divineArbitrationFlight": { "title": "Divine Arbitration: choose a player to gain 2 Flight" },
-      "divineArbitrationPurify": { "title": "Divine Arbitration: choose a player to gain Purify" },
-      "ascension": { "title": "Ascension: choose a player to gain Flight" }
+      "divinePurification": {
+        "title": "Divine Purification: choose a player"
+      },
+      "gospelArrival": {
+        "title": "Gospel Arrival: choose an opponent to Dazzle"
+      },
+      "divineCommand": {
+        "title": "Divine Command: choose an opponent to take 4 undefendable damage"
+      },
+      "divineProtection": {
+        "title": "Divine Protection: choose a player to gain 2 Purify and 2 Flight"
+      },
+      "takeoff": {
+        "title": "Takeoff: choose a player to gain Flight; the opponent takes 3 undefendable damage"
+      },
+      "divineArbitrationDazzle": {
+        "title": "Divine Arbitration: choose a player to gain Dazzle"
+      },
+      "divineArbitrationFlight": {
+        "title": "Divine Arbitration: choose a player to gain 2 Flight"
+      },
+      "divineArbitrationPurify": {
+        "title": "Divine Arbitration: choose a player to gain Purify"
+      },
+      "ascension": {
+        "title": "Ascension: choose a player to gain Flight"
+      }
+    },
+    "thor": {
+      "throwTo": "Throw to player {{player}}",
+      "retrieve": "Retrieve Mjolnir",
+      "stop": "Stop moving",
+      "hammerTitle": "Throw or Retrieve Mjolnir",
+      "discardTitle": "Choose a card to discard",
+      "dicePair": "Choose dice {{first}} and {{second}}: {{damage}} damage",
+      "chainTitle": "Choose two effect dice",
+      "collateralTitle": "Choose collateral damage target",
+      "target": "Player {{player}}",
+      "worthyTitle": "Choose a die value",
+      "value": "Set to {{value}}"
     }
   },
   "common": {
@@ -1869,16 +1982,20 @@
     "targetingRollSelectTarget": "Select this attack's target",
     "targetingRollOpponentDecidesTarget": "The opponent decides who takes this attack",
     "targetingRollPlayerOption": "{{player}}",
-      "selectHandCardToDiscard": "Select 1 card from your hand to discard",
-      "selectDeckCardToAddToHand": "Choose {{count}} card(s) from your deck to add to your hand",
-      "cardPoolSearchPlaceholder": "Search card name or keyword",
-      "cardPoolSearchClear": "Clear search",
-      "cardPoolFilterResultCount": "Showing {{visible}} / {{total}}",
-      "cardPoolSearchEmpty": "No matching cards",
-      "selectStatusToTransfer": "Select a status effect to transfer",
+    "selectHandCardToDiscard": "Select 1 card from your hand to discard",
+    "selectDeckCardToAddToHand": "Choose {{count}} card(s) from your deck to add to your hand",
+    "cardPoolSearchPlaceholder": "Search card name or keyword",
+    "cardPoolSearchClear": "Clear search",
+    "cardPoolFilterResultCount": "Showing {{visible}} / {{total}}",
+    "cardPoolSearchEmpty": "No matching cards",
+    "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",
     "hint_copy_step2": "Select target die to set to {{value}}",
     "hint_done": "Done",
+    "hint_choose_value": "Choose the target value",
+    "set_value": "Set to {{value}}",
+    "hint_group_reroll": "Select dice to reroll together, or confirm to keep these results",
+    "hint_group_reroll_selected": "{{count}} dice selected. Reroll, or confirm to keep these results",
     "hint_set": "Select die to set to {{value}}",
     "hint_adjust": "Select die to adjust",
     "hint_any": "Select die to modify",
@@ -2126,7 +2243,11 @@
     },
     "piercing-attack": {
       "name": "Piercing Attack",
-      "description": "1 each of Dagger+Bag+Card+Shadow: Gain 1 CP, Sneak Attack, draw 1, inflict Poison"
+      "description": "1 each of Dagger+Bag+Card+Shadow: Gain 1 CP, Sneak Attack, draw 1, inflict Poison",
+      "effects": {
+        "draw1": "Draw 1 card",
+        "poison": "Inflict Poison"
+      }
     },
     "shadow-dance-2": {
       "name": "Shadow Dance II",
@@ -2151,14 +2272,6 @@
     "fearless-riposte-2": {
       "name": "Fearless Riposte II",
       "description": "Defensive phase (5 dice): Deal 2× Dagger count damage; if Dagger+Shadow, inflict Poison"
-    },
-    "piercing-attack": {
-      "name": "Piercing Attack",
-      "description": "1 each of Dagger+Bag+Card+Shadow: Gain 1 CP, Sneak Attack, draw 1, inflict Poison",
-      "effects": {
-        "draw1": "Draw 1 card",
-        "poison": "Inflict Poison"
-      }
     },
     "righteous-combat": {
       "name": "Righteous Combat",
@@ -3506,18 +3619,11 @@
     },
     "wild-growth-2": {
       "name": "Wild Growth II",
-      "description": "2 Branch + 3 Leaf: deal 4 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage.",
+      "description": "2 Branch + 3 Leaf: deal 4 damage. You may remove up to 2 Spirits; each removed Spirit adds 4 damage. You may discard Life Sap to make this attack undefendable. Planting (1 Branch + 2 Leaf): cultivate 3 Spirits.",
       "effects": {
-        "roll5BranchLeafSpirit": "Deal 4 damage and roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
-        "damage4": "Deal 4 damage."
-      }
-    },
-    "wild-growth-2-dazzle": {
-      "name": "Dazzle Bloom",
-      "description": "2 Branch + 2 Spirit: inflict Thorn and deal 4 undefendable damage.",
-      "effects": {
-        "inflictThorn": "Inflict Thorn.",
-        "damage4Unblockable": "Deal 4 undefendable damage."
+        "removeUpTo2SpiritsForDamageAndSpendLifeSap": "You may remove up to 2 Spirits to increase damage, and you may discard Life Sap to make this attack undefendable.",
+        "damage4": "Deal 4 damage.",
+        "cultivate3": "Cultivate 3 Spirits."
       }
     },
     "wild-roar": {
@@ -4442,17 +4548,30 @@
     "holy-blade": {
       "name": "Holy Blade",
       "description": "3/4/5 Blade faces: deal 5/6/7 damage.",
-      "effects": { "damage5": "Deal 5 damage", "damage6": "Deal 6 damage", "damage7": "Deal 7 damage" }
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage",
+        "damage7": "Deal 7 damage"
+      }
     },
     "holy-blade-2": {
       "name": "Holy Blade II",
       "description": "3/4/5 Blade faces: deal 6/7/8 damage.",
-      "effects": { "damage6": "Deal 6 damage", "damage7": "Deal 7 damage", "damage8": "Deal 8 damage" }
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "damage7": "Deal 7 damage",
+        "damage8": "Deal 8 damage"
+      }
     },
     "holy-blade-3": {
       "name": "Holy Blade III",
       "description": "3/4/5 Blade faces: deal 5/7/9 damage; if 4 dice show the same number, inflict Dazzle on an opponent.",
-      "effects": { "damage5": "Deal 5 damage", "damage7": "Deal 7 damage", "damage9": "Deal 9 damage", "dazzleIfFourKind": "If 4 dice show the same number, inflict 1 Dazzle on an opponent" }
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "damage7": "Deal 7 damage",
+        "damage9": "Deal 9 damage",
+        "dazzleIfFourKind": "If 4 dice show the same number, inflict 1 Dazzle on an opponent"
+      }
     },
     "cherub": {
       "name": "Cherub",
@@ -4465,12 +4584,18 @@
     "holy-radiance": {
       "name": "Holy Radiance",
       "description": "3 Blade + 1 Wing: gain 1 Flight and deal 6 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "damage6": "Deal 6 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "damage6": "Deal 6 damage"
+      }
     },
     "holy-radiance-2": {
       "name": "Holy Radiance II",
       "description": "3 Blade + 1 Wing: gain 1 Flight and deal 7 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "damage7": "Deal 7 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "damage7": "Deal 7 damage"
+      }
     },
     "takeoff": {
       "name": "Takeoff",
@@ -4479,22 +4604,30 @@
     "divine-purification": {
       "name": "Divine Purification",
       "description": "2 Cross + 1 Holy Pendant: choose a player; deal 5 undefendable damage to an opponent or heal yourself for 4, then optionally remove 1 removable status.",
-      "effects": { "resolve": "Choose a player: deal 5 undefendable damage to an opponent or heal yourself for 4, then choose 1 removable status to remove." }
+      "effects": {
+        "resolve": "Choose a player: deal 5 undefendable damage to an opponent or heal yourself for 4, then choose 1 removable status to remove."
+      }
     },
     "divine-purification-2": {
       "name": "Divine Purification II",
       "description": "2 Cross + 1 Holy Pendant: choose a player; deal 6 undefendable damage to an opponent or heal yourself for 5, then optionally remove 1 removable status.",
-      "effects": { "resolve": "Choose a player: deal 6 undefendable damage to an opponent or heal yourself for 5, then choose 1 removable status to remove." }
+      "effects": {
+        "resolve": "Choose a player: deal 6 undefendable damage to an opponent or heal yourself for 5, then choose 1 removable status to remove."
+      }
     },
     "divine-punishment": {
       "name": "Divine Punishment",
       "description": "At least 1 Blade, Wing, Cross and Holy Pendant: each Blade deals 2 damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle.",
-      "effects": { "resolve": "Each Blade deals 2 damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle." }
+      "effects": {
+        "resolve": "Each Blade deals 2 damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle."
+      }
     },
     "divine-punishment-2": {
       "name": "Divine Punishment II",
-       "description": "At least 1 Blade, Wing, Cross and Holy Pendant: each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle.",
-       "effects": { "resolve": "Each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle." }
+      "description": "At least 1 Blade, Wing, Cross and Holy Pendant: each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle.",
+      "effects": {
+        "resolve": "Each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle."
+      }
     },
     "divine-command": {
       "name": "Divine Command",
@@ -4503,22 +4636,38 @@
     "triumphant-return": {
       "name": "Triumphant Return",
       "description": "Small Straight: deal 6 damage, then roll 1 bonus die.",
-      "effects": { "damage6": "Deal 6 damage", "roll": "Roll 1 bonus die: Blade +1 damage, Wing +2, Cross +3, Holy Pendant makes the attack undefendable" }
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "roll": "Roll 1 bonus die: Blade +1 damage, Wing +2, Cross +3, Holy Pendant makes the attack undefendable"
+      }
     },
     "triumphant-return-2": {
       "name": "Triumphant Return II",
       "description": "Small Straight: deal 8 damage, then roll 1 bonus die.",
-      "effects": { "damage8": "Deal 8 damage", "roll": "Roll 1 bonus die: Blade +1 damage, Wing +2, Cross +3, Holy Pendant makes the attack undefendable" }
+      "effects": {
+        "damage8": "Deal 8 damage",
+        "roll": "Roll 1 bonus die: Blade +1 damage, Wing +2, Cross +3, Holy Pendant makes the attack undefendable"
+      }
     },
     "supreme-power": {
       "name": "Supreme Power",
       "description": "4 Holy Pendants: gain Flight and Divine Arrival, inflict Dazzle, then deal 8 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "dazzle": "Inflict 1 Dazzle on the opponent", "damage8": "Deal 8 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "gainDivineArrival": "Gain 1 Divine Arrival",
+        "dazzle": "Inflict 1 Dazzle on the opponent",
+        "damage8": "Deal 8 damage"
+      }
     },
     "supreme-power-2": {
       "name": "Supreme Power II",
       "description": "4 Holy Pendants: gain Flight and Divine Arrival, inflict Dazzle, then deal 10 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "dazzle": "Inflict 1 Dazzle on the opponent", "damage10": "Deal 10 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "gainDivineArrival": "Gain 1 Divine Arrival",
+        "dazzle": "Inflict 1 Dazzle on the opponent",
+        "damage10": "Deal 10 damage"
+      }
     },
     "gospel-arrival": {
       "name": "Gospel Arrival",
@@ -4527,12 +4676,20 @@
     "archangel-resolve": {
       "name": "Archangel Resolve",
       "description": "Large Straight: gain Flight, inflict Dazzle, then deal 8 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "dazzle": "Inflict 1 Dazzle on the opponent", "damage8": "Deal 8 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "dazzle": "Inflict 1 Dazzle on the opponent",
+        "damage8": "Deal 8 damage"
+      }
     },
     "archangel-resolve-2": {
       "name": "Archangel Resolve II",
       "description": "Large Straight: gain Flight, inflict Dazzle, then deal 9 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "dazzle": "Inflict 1 Dazzle on the opponent", "damage9": "Deal 9 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "dazzle": "Inflict 1 Dazzle on the opponent",
+        "damage9": "Deal 9 damage"
+      }
     },
     "divine-protection": {
       "name": "Divine Protection",
@@ -4541,107 +4698,806 @@
     "angelic-cloak": {
       "name": "Angelic Cloak",
       "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3.",
-      "effects": { "resolve": "Resolve the defensive die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3." }
+      "effects": {
+        "resolve": "Resolve the defensive die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3."
+      }
     },
     "angelic-cloak-2": {
       "name": "Angelic Cloak II",
       "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once.",
-      "effects": { "resolve": "Resolve the defensive die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once." }
+      "effects": {
+        "resolve": "Resolve the defensive die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once."
+      }
     },
     "angelic-cloak-3": {
       "name": "Angelic Cloak III",
       "description": "Defensive roll 1 die: Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once.",
-      "effects": { "resolve": "Resolve the defensive die: Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once." }
+      "effects": {
+        "resolve": "Resolve the defensive die: Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once."
+      }
     },
     "heavenly-severing": {
       "name": "Heavenly Severing",
       "description": "5 Holy Pendants: gain Flight, Divine Arrival and Blessing of Divinity, then deal 13 damage.",
-      "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "gainBlessing": "Gain 1 Blessing of Divinity", "damage13": "Deal 13 damage" }
+      "effects": {
+        "gainFlight": "Gain 1 Flight",
+        "gainDivineArrival": "Gain 1 Divine Arrival",
+        "gainBlessing": "Gain 1 Blessing of Divinity",
+        "damage13": "Deal 13 damage"
+      }
     },
-    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "effects": { "upgrade": "Upgrade Supreme Power to level II.", "secondary": "Gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent." } },
-    "upgrade-tianshi-divine-punishment-2-divine-command": { "effects": { "upgrade": "Upgrade Divine Punishment to level II.", "secondary": "Heal 1, then deal 4 undefendable damage to an opponent." } },
-    "upgrade-tianshi-divine-purification-2": { "effects": { "upgrade": "Upgrade Divine Purification to level II." } },
-    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "effects": { "upgrade": "Upgrade Archangel Resolve to level II.", "secondary": "Choose a player to gain 2 Purify and 2 Flight." } },
-    "upgrade-tianshi-angelic-cloak-3": { "effects": { "upgrade": "Upgrade Angelic Cloak to level III." } },
-    "upgrade-tianshi-angelic-cloak-2": { "effects": { "upgrade": "Upgrade Angelic Cloak to level II." } },
-    "upgrade-tianshi-triumphant-return-2": { "effects": { "upgrade": "Upgrade Triumphant Return to level II." } },
-    "upgrade-tianshi-holy-radiance-2-takeoff": { "effects": { "upgrade": "Upgrade Holy Radiance to level II.", "secondary": "Choose a player to gain Flight; then the opponent takes 3 undefendable damage." } },
-    "upgrade-tianshi-holy-blade-3-cherub-2": { "effects": { "upgrade": "Upgrade Holy Blade to level III.", "secondary": "Gain Flight, Purify and Divine Arrival." } },
-     "upgrade-tianshi-holy-blade-2-cherub": { "effects": { "upgrade": "Upgrade Holy Blade to level II.", "secondary": "Gain Flight and Divine Arrival." } },
-     "card-tianshi-holy-strike": { "effects": { "resolve": "Roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent." } },
-    "card-tianshi-angelic-tactics": { "effects": { "resolve": "Roll 1 bonus die: Blade adds +3 attack damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival." } },
-     "card-tianshi-divine-arbitration": { "effects": { "resolve": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." } },
-    "card-tianshi-supreme-holiness": { "effects": { "resolve": "Roll 1 bonus die: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card." } },
-    "card-tianshi-ascension": { "effects": { "resolve": "Choose a player to gain Flight." } },
-    "wild-force": { "name": "Wild Force", "description": "3/4/5 Spears: deal 3/4/5 damage.", "effects": { "damage3": "Deal 3 damage", "damage4": "Deal 4 damage", "damage5": "Deal 5 damage" } },
-    "wild-force-2": { "name": "Wild Force II", "description": "3/4/5 Spears: deal 4/5/6 damage; if at least 4 dice show the same number, inflict Bleed.", "effects": { "damage4": "Deal 4 damage", "bleedIfFourKind": "If at least 4 dice show the same number, inflict 1 Bleed", "damage5": "Deal 5 damage", "damage6": "Deal 6 damage" } },
-    "savage-force": { "name": "Savage Force", "description": "3 Claws + 1 Sabertooth: deal 4 damage and roll 1 bonus die.", "effects": { "damage4": "Deal 4 damage", "bonusDie": "Roll 1 bonus die and resolve the Huntress die face" } },
-    "savage-force-2": { "name": "Savage Force II", "description": "3 Claws + 1 Sabertooth: deal 5 damage and roll 1 bonus die.", "effects": { "damage5": "Deal 5 damage", "bonusDie": "Roll 1 bonus die and resolve the Huntress die face" } },
-    "savage-force-2-hunting": { "name": "Hunting", "description": "2 Claws + 1 Sabertooth: inflict 1 Bleed and deal 3 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage3": "Deal 3 damage" } },
-    "brutal-strike": { "name": "Brutal Strike", "description": "Small Straight: inflict 1 Bleed and deal 4 damage; Large Straight: inflict 2 Bleed and deal 7 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage4": "Deal 4 damage", "bleed2": "Inflict 2 Bleed", "damage7": "Deal 7 damage" } },
-    "brutal-strike-2": { "name": "Brutal Strike II", "description": "Small Straight: inflict 1 Bleed and deal 5 damage; Large Straight: inflict 2 Bleed and deal 8 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage5": "Deal 5 damage", "bleed2": "Inflict 2 Bleed", "damage8": "Deal 8 damage" } },
-    "beast-force": { "name": "Beast Force", "description": "4 Sabertooths: heal Nyra 1, then deal 5 undefendable damage.", "effects": { "healNyra1": "Heal Nyra 1", "unblockable5": "Deal 5 undefendable damage" } },
-    "beast-force-2": { "name": "Beast Force II", "description": "4 Sabertooths: heal Nyra 1, then deal 6 undefendable damage.", "effects": { "healNyra1": "Heal Nyra 1", "unblockable6": "Deal 6 undefendable damage" } },
-    "beast-force-2-fierce-gaze": { "name": "Fierce Gaze", "description": "3 Sabertooths: heal Nyra 1 and inflict 2 Bleed.", "effects": { "healNyra1": "Heal Nyra 1", "bleed2": "Inflict 2 Bleed" } },
-    "life-revival": { "name": "Life Revival", "description": "2 Nyra's Bond: gain Nyra's Bond and heal Nyra 3.", "effects": { "nyrasBondAndHeal": "Gain Nyra's Bond and heal Nyra 3" } },
-    "life-revival-2": { "name": "Life Revival II", "description": "2 Nyra's Bond: gain Nyra's Bond and heal Nyra 2.", "effects": { "nyrasBondAndHeal": "Gain Nyra's Bond and heal Nyra 2" } },
-    "beast-instinct": { "name": "Beast Instinct", "description": "3 Spears + 1 Nyra's Bond: gain Nyra's Bond and deal 2 undefendable damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "unblockable2": "Deal 2 undefendable damage" } },
-    "beast-instinct-2": { "name": "Beast Instinct II", "description": "3 Spears + 1 Nyra's Bond: gain Nyra's Bond and deal 3 undefendable damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "unblockable3": "Deal 3 undefendable damage" } },
-    "beast-instinct-2-swipe": { "name": "Swipe", "description": "3 Claws: inflict 1 Bleed.", "effects": { "bleed1": "Inflict 1 Bleed" } },
-    "hunt-ambush": { "name": "Hunt Ambush", "description": "2 Spears + 2 Claws + 1 Nyra's Bond: heal Nyra 1 and deal 5 damage.", "effects": { "healNyra1": "Heal Nyra 1", "damage5": "Deal 5 damage" } },
-    "hunt-ambush-2": { "name": "Hunt Ambush II", "description": "2 Spears + 2 Claws + 1 Nyra's Bond: heal Nyra 1 and deal 6 damage.", "effects": { "healNyra1": "Heal Nyra 1", "damage6": "Deal 6 damage" } },
-    "hunt-ambush-2-cutthroat": { "name": "Cutthroat", "description": "1 Spear + 1 Claw + 1 Sabertooth: inflict 2 Bleed.", "effects": { "bleed2": "Inflict 2 Bleed" } },
-    "kindred-bond": { "name": "Kindred Bond", "description": "Defensive roll 3 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
-    "kindred-bond-2": { "name": "Kindred Bond II", "description": "Defensive roll 4 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
-    "kindred-bond-3": { "name": "Kindred Bond III", "description": "Defensive roll 4 dice: each Spear and Sabertooth deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
-    "jungle-fury": { "name": "Jungle Fury!", "description": "5 Sabertooths: gain Nyra's Bond, inflict 2 Bleed, and deal 12 damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "bleed2": "Inflict 2 Bleed", "damage12": "Deal 12 damage" } },
-    "bloodthirsty-claws": { "name": "Bloodthirsty Claws", "description": "3/4/5 Claws: deal 3/5/7 damage. If you rolled 4 of a kind, gain 1 Blood Power.", "effects": { "damage3": "Deal 3 damage", "damage5": "Deal 5 damage", "damage7": "Deal 7 damage", "gainBloodPowerIfFourKind": "If you rolled 4 of a kind, gain 1 Blood Power" } },
-    "bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "3/4/5 Claws: deal 3/5/7 damage. If you rolled 3 of a kind, gain 1 Blood Power.", "effects": { "damage3": "Deal 3 damage", "damage5": "Deal 5 damage", "damage7": "Deal 7 damage", "gainBloodPowerIfThreeKind": "If you rolled 3 of a kind, gain 1 Blood Power" } },
-    "bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "3/4/5 Claws: deal 4/6/8 damage. If you rolled 3 of a kind, gain 1 Blood Power.", "effects": { "damage4": "Deal 4 damage", "damage6": "Deal 6 damage", "damage8": "Deal 8 damage", "gainBloodPowerIfThreeKind": "If you rolled 3 of a kind, gain 1 Blood Power" } },
-    "mesmerize-power": { "name": "Mesmerize Power", "description": "3 Mesmerize: gain 1 CP, gain 1 Mesmerize, and deal 4 undefendable damage.", "effects": { "gainCp": "Gain 1 CP", "gainMesmerize": "Gain 1 Mesmerize", "damage4Unblockable": "Deal 4 undefendable damage" } },
-    "mesmerize-power-2": { "name": "Mesmerize Power II", "description": "3 Mesmerize: gain 1 CP, gain 1 Mesmerize, and deal 5 undefendable damage.", "effects": { "gainCp": "Gain 1 CP", "gainMesmerize": "Gain 1 Mesmerize", "damage5Unblockable": "Deal 5 undefendable damage" } },
-    "mesmerize-power-2-soul-gaze": { "name": "Soul Gaze", "description": "1 Claw + 2 Mesmerize: gain 1 Mesmerize and inflict 2 Bleed on the opponent.", "effects": { "gainMesmerize": "Gain 1 Mesmerize", "bleed2": "Inflict 2 Bleed" } },
-    "blood-feast": { "name": "Blood Feast", "description": "3 Mesmerize + 1 Blood Drop: heal 2 and gain 3 Blood Power.", "effects": { "heal2": "Heal 2", "gainBloodPower": "Gain 3 Blood Power" } },
-    "blood-feast-2": { "name": "Blood Feast II", "description": "3 Mesmerize + 1 Blood Drop: heal 3 and gain 3 Blood Power.", "effects": { "heal3": "Heal 3", "gainBloodPower": "Gain 3 Blood Power" } },
-    "blood-feast-2-dressed-to-kill": { "name": "Dressed to Kill", "description": "1 Claw + 1 Mesmerize + 2 Blood Drops: gain 2 Blood Power and draw 1 card.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "draw1": "Draw 1 card" } },
-    "rend-claws": { "name": "Rend Claws", "description": "3 Claws + 2 Blood Drops: deal 6 damage and roll 3 dice. Each Claw adds +1 damage; if you roll Mesmerize, draw 1 card; if you roll a Blood Drop, gain 1 Blood Power.", "effects": { "roll3": "Roll 3 dice and resolve their bonuses", "damage6": "Deal 6 damage" } },
-    "rend-claws-2": { "name": "Rend Claws II", "description": "3 Claws + 2 Blood Drops: deal 6 damage and roll 5 dice. Each Claw adds +1 damage; if you roll Mesmerize, draw 1 card; if you roll a Blood Drop, gain 1 Blood Power.", "effects": { "roll5": "Roll 5 dice and resolve their bonuses", "damage6": "Deal 6 damage" } },
-    "blood-possessed": { "name": "Blood Possessed", "description": "Small Straight: deal 7 damage and roll 1 die. On Claw, inflict Bleed on the opponent; on Mesmerize or Blood Drop, gain Mesmerize.", "effects": { "damage7": "Deal 7 damage", "roll1": "Roll 1 die and resolve its bonus" } },
-    "blood-possessed-2": { "name": "Blood Possessed II", "description": "Small Straight: deal 8 damage and choose one: inflict Bleed or gain Mesmerize.", "effects": { "damage8": "Deal 8 damage", "choice": "Choose to inflict Bleed or gain Mesmerize" } },
-    "blood-possessed-2-blood-addiction": { "name": "Blood Addiction", "description": "2 Claws + 1 Blood Drop: gain 2 Blood Power.", "effects": { "gainBloodPower": "Gain 2 Blood Power" } },
-    "blood-thirst": { "name": "Blood Thirst", "description": "4 Blood Drops: gain 2 Blood Power, then deal 5 undefendable damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage5Unblockable": "Deal 5 undefendable damage" } },
-    "blood-thirst-2": { "name": "Blood Thirst II", "description": "4 Blood Drops: gain 3 Blood Power, then deal 6 undefendable damage.", "effects": { "gainBloodPower": "Gain 3 Blood Power", "damage6Unblockable": "Deal 6 undefendable damage" } },
-    "blood-thirst-2-blood-river": { "name": "Blood River", "description": "3 Blood Drops: inflict 2 Bleed and deal 2 collateral damage to all opponents.", "effects": { "bleed2": "Inflict 2 Bleed", "collateral2": "Deal 2 collateral damage to all opponents" } },
-    "blood-magic": { "name": "Blood Magic", "description": "Large Straight: gain 1 Blood Power, inflict Bleed, and deal 8 damage. You may spend 1 Mesmerize to make this attack undefendable.", "effects": { "gainBloodPower": "Gain 1 Blood Power", "bleed1": "Inflict 1 Bleed", "spendMesmerizeChoice": "May spend Mesmerize to make this attack undefendable", "damage8": "Deal 8 damage" } },
-    "blood-magic-2": { "name": "Blood Magic II", "description": "Large Straight: gain 1 Blood Power, inflict Bleed, then deal 8 undefendable damage.", "effects": { "gainBloodPower": "Gain 1 Blood Power", "bleed1": "Inflict 1 Bleed", "damage8Unblockable": "Deal 8 undefendable damage" } },
-    "blood-magic-2-flayed": { "name": "Flayed", "description": "2 Claws + 2 Blood Drops: deal 5 undefendable damage.", "effects": { "damage5Unblockable": "Deal 5 undefendable damage" } },
-    "undying": { "name": "Undying", "description": "Defensive roll 3 dice: if you roll 2 Claws, inflict Bleed; if you roll 2 Mesmerize, gain 1 Blood Power; for each Blood Drop, steal 1 health.", "effects": { "resolveDefense": "Resolve Bleed, Blood Power, and health steal from the defense dice" } },
-    "undying-2": { "name": "Undying II", "description": "Defensive roll 4 dice: if you roll 2 Claws, inflict Bleed; if you roll 2 Mesmerize, gain 1 Blood Power; for each Blood Drop, steal 1 health.", "effects": { "resolveDefense": "Resolve Bleed, Blood Power, and health steal from the defense dice" } },
-    "bloody-slaughter": { "name": "Bloody Slaughter!", "description": "5 Blood Drops: search your draw pile for 1 card, add it to your hand, shuffle your draw pile, gain 2 Blood Power, then deal 10 damage.", "effects": { "searchDeckCard": "Search your draw pile for 1 card, add it to your hand, then shuffle your draw pile", "gainBloodPower": "Gain 2 Blood Power", "damage10": "Deal 10 damage" } },
-    "heavy-punch": { "name": "Heavy Punch", "description": "3/4/5 Fist faces: deal 4/5/6 damage.", "effects": { "damage4": "Deal 4 damage", "damage5": "Deal 5 damage", "damage6": "Deal 6 damage" } },
-    "combo-strike": { "name": "Combo Strike", "description": "2 Fists + 2 Spiders: deal 5 damage and gain 1 Combo.", "effects": { "damage5": "Deal 5 damage", "gainCombo": "Gain 1 Combo" } },
-    "trap": { "name": "Trap", "description": "Small Straight: deal 5 damage, then inflict Webbed. Large Straight: draw 1 card, deal 8 damage, then inflict Webbed.", "effects": { "damage5": "Deal 5 damage", "draw1": "Draw 1 card", "damage8": "Deal 8 damage", "applyWebbed": "Inflict Webbed" } },
-    "venom-punch": { "name": "Venom Punch", "description": "4 Spiders: gain Invisible and deal 7 undefendable damage.", "effects": { "gainInvisible": "Gain 1 Invisible", "damage7Unblockable": "Deal 7 undefendable damage" } },
-    "wall-crawl": { "name": "Wall Crawl", "description": "1 Fist + 3 Webs: gain Invisible and deal 7 damage.", "effects": { "gainInvisible": "Gain 1 Invisible", "damage7": "Deal 7 damage" } },
-    "spider-reflex": { "name": "Spider Reflex", "description": "1 Fist + 2 Webs + 1 Spider: roll 2 bonus dice and deal their total; if the total is 5 or less, gain Combo.", "effects": { "roll2AndDealSum": "Roll 2 bonus dice and deal their total; if the total is 5 or less, gain Combo" } },
-    "counter": { "name": "Counter", "description": "Defensive roll 3 Fists: deal 3 damage.", "effects": { "damage3": "Deal 3 damage" } },
-    "spider-sense": { "name": "Spider Sense", "description": "Defensive roll 2 Webs: if a Spider is rolled, halve incoming damage, rounded up. You may discard Invisible for 1 additional defensive roll.", "effects": { "preventHalfOnSpider": "If a Spider is rolled, halve incoming damage, rounded up; discard Invisible for 1 additional defensive roll" } },
-    "ultimate-spider": { "name": "Venom Shockwave", "description": "5 Spiders: gain Invisible, inflict Webbed, and deal 13 undefendable damage.", "effects": { "gainInvisible": "Gain 1 Invisible", "applyWebbed": "Inflict Webbed", "damage13": "Deal 13 undefendable damage" } },
-    "card-zhizhuxia-milkshake": { "effects": { "heal3": "Heal 3 health" } },
-    "card-zhizhuxia-wallet-arrival": { "effects": { "gain2CP": "Gain 2 CP" } },
-    "card-zhizhuxia-spider-launcher": { "effects": { "applyWebbed": "Inflict Webbed" } },
-    "card-zhizhuxia-praise": { "effects": { "roll1": "Roll 1 die and resolve its face effect" } },
-    "card-zhizhuxia-flying-escape": { "effects": { "acceptWeb": "Allow Spider Sense to treat Web as a success face" } },
-    "card-zhizhuxia-ambush": { "effects": { "discardInvisibleAndAdd3": "Spend 1 Invisible; add 3 damage to this attack" } },
-    "card-zhizhuxia-invisible-punch": { "effects": { "counter3": "If Spider Sense succeeds, deal 3 direct damage" } },
-    "card-zhizhuxia-wishful-thinking": { "effects": { "prevent3": "Spend 1 Invisible and gain a 3-damage shield" } },
-    "card-zhizhuxia-oh-no": { "effects": { "gainInvisible": "Gain 1 Invisible" } },
-    "card-zhizhuxia-radioactive-blood": { "effects": { "gainCombo": "Gain 1 Combo" } },
-    "card-zhizhuxia-head-tingle": { "effects": { "roll1": "Roll 1 die and resolve its face effect" } },
-    "heavy-punch-2": { "name": "Heavy Punch II", "description": "3/4/5 Fists: deal 5/6/7 damage; if at least 4 dice show the same number, gain 1 Combo.", "effects": { "damage5": "Deal 5 damage", "damage6": "Deal 6 damage", "damage7": "Deal 7 damage", "gainComboIfFourOfAKind": "If at least 4 dice show the same number, gain 1 Combo" } },
-    "combo-strike-2": { "name": "Combo Strike II", "description": "2 Webs + 2 Spiders: deal 6 damage and gain 1 Combo.", "effects": { "damage6": "Deal 6 damage", "gainCombo": "Gain 1 Combo" } },
-    "trap-2": { "name": "Trap II", "description": "Small Straight: deal 6 damage, then inflict Webbed. Large Straight: draw 1 card, deal 9 damage, then inflict Webbed.", "effects": { "damage6": "Deal 6 damage", "draw1": "Draw 1 card", "damage9": "Deal 9 damage", "applyWebbed": "Inflict Webbed" } },
-    "venom-punch-2": { "name": "Venom Punch II", "description": "4 Spiders: gain Invisible and deal 8 undefendable damage.", "effects": { "gainInvisible": "Gain 1 Invisible", "damage8Unblockable": "Deal 8 undefendable damage" } }
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": {
+      "effects": {
+        "upgrade": "Upgrade Supreme Power to level II.",
+        "secondary": "Gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent."
+      }
+    },
+    "upgrade-tianshi-divine-punishment-2-divine-command": {
+      "effects": {
+        "upgrade": "Upgrade Divine Punishment to level II.",
+        "secondary": "Heal 1, then deal 4 undefendable damage to an opponent."
+      }
+    },
+    "upgrade-tianshi-divine-purification-2": {
+      "effects": {
+        "upgrade": "Upgrade Divine Purification to level II."
+      }
+    },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": {
+      "effects": {
+        "upgrade": "Upgrade Archangel Resolve to level II.",
+        "secondary": "Choose a player to gain 2 Purify and 2 Flight."
+      }
+    },
+    "upgrade-tianshi-angelic-cloak-3": {
+      "effects": {
+        "upgrade": "Upgrade Angelic Cloak to level III."
+      }
+    },
+    "upgrade-tianshi-angelic-cloak-2": {
+      "effects": {
+        "upgrade": "Upgrade Angelic Cloak to level II."
+      }
+    },
+    "upgrade-tianshi-triumphant-return-2": {
+      "effects": {
+        "upgrade": "Upgrade Triumphant Return to level II."
+      }
+    },
+    "upgrade-tianshi-holy-radiance-2-takeoff": {
+      "effects": {
+        "upgrade": "Upgrade Holy Radiance to level II.",
+        "secondary": "Choose a player to gain Flight; then the opponent takes 3 undefendable damage."
+      }
+    },
+    "upgrade-tianshi-holy-blade-3-cherub-2": {
+      "effects": {
+        "upgrade": "Upgrade Holy Blade to level III.",
+        "secondary": "Gain Flight, Purify and Divine Arrival."
+      }
+    },
+    "upgrade-tianshi-holy-blade-2-cherub": {
+      "effects": {
+        "upgrade": "Upgrade Holy Blade to level II.",
+        "secondary": "Gain Flight and Divine Arrival."
+      }
+    },
+    "card-tianshi-holy-strike": {
+      "effects": {
+        "resolve": "Roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent."
+      }
+    },
+    "card-tianshi-angelic-tactics": {
+      "effects": {
+        "resolve": "Roll 1 bonus die: Blade adds +3 attack damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival."
+      }
+    },
+    "card-tianshi-divine-arbitration": {
+      "effects": {
+        "resolve": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify."
+      }
+    },
+    "card-tianshi-supreme-holiness": {
+      "effects": {
+        "resolve": "Roll 1 bonus die: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card."
+      }
+    },
+    "card-tianshi-ascension": {
+      "effects": {
+        "resolve": "Choose a player to gain Flight."
+      }
+    },
+    "wild-force": {
+      "name": "Wild Force",
+      "description": "3/4/5 Spears: deal 3/4/5 damage.",
+      "effects": {
+        "damage3": "Deal 3 damage",
+        "damage4": "Deal 4 damage",
+        "damage5": "Deal 5 damage"
+      }
+    },
+    "wild-force-2": {
+      "name": "Wild Force II",
+      "description": "3/4/5 Spears: deal 4/5/6 damage; if at least 4 dice show the same number, inflict Bleed.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "bleedIfFourKind": "If at least 4 dice show the same number, inflict 1 Bleed",
+        "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "savage-force": {
+      "name": "Savage Force",
+      "description": "3 Claws + 1 Sabertooth: deal 4 damage and roll 1 bonus die.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "bonusDie": "Roll 1 bonus die and resolve the Huntress die face"
+      }
+    },
+    "savage-force-2": {
+      "name": "Savage Force II",
+      "description": "3 Claws + 1 Sabertooth: deal 5 damage and roll 1 bonus die.",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "bonusDie": "Roll 1 bonus die and resolve the Huntress die face"
+      }
+    },
+    "savage-force-2-hunting": {
+      "name": "Hunting",
+      "description": "2 Claws + 1 Sabertooth: inflict 1 Bleed and deal 3 damage.",
+      "effects": {
+        "bleed1": "Inflict 1 Bleed",
+        "damage3": "Deal 3 damage"
+      }
+    },
+    "brutal-strike": {
+      "name": "Brutal Strike",
+      "description": "Small Straight: inflict 1 Bleed and deal 4 damage; Large Straight: inflict 2 Bleed and deal 7 damage.",
+      "effects": {
+        "bleed1": "Inflict 1 Bleed",
+        "damage4": "Deal 4 damage",
+        "bleed2": "Inflict 2 Bleed",
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "brutal-strike-2": {
+      "name": "Brutal Strike II",
+      "description": "Small Straight: inflict 1 Bleed and deal 5 damage; Large Straight: inflict 2 Bleed and deal 8 damage.",
+      "effects": {
+        "bleed1": "Inflict 1 Bleed",
+        "damage5": "Deal 5 damage",
+        "bleed2": "Inflict 2 Bleed",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "beast-force": {
+      "name": "Beast Force",
+      "description": "4 Sabertooths: heal Nyra 1, then deal 5 undefendable damage.",
+      "effects": {
+        "healNyra1": "Heal Nyra 1",
+        "unblockable5": "Deal 5 undefendable damage"
+      }
+    },
+    "beast-force-2": {
+      "name": "Beast Force II",
+      "description": "4 Sabertooths: heal Nyra 1, then deal 6 undefendable damage.",
+      "effects": {
+        "healNyra1": "Heal Nyra 1",
+        "unblockable6": "Deal 6 undefendable damage"
+      }
+    },
+    "beast-force-2-fierce-gaze": {
+      "name": "Fierce Gaze",
+      "description": "3 Sabertooths: heal Nyra 1 and inflict 2 Bleed.",
+      "effects": {
+        "healNyra1": "Heal Nyra 1",
+        "bleed2": "Inflict 2 Bleed"
+      }
+    },
+    "life-revival": {
+      "name": "Life Revival",
+      "description": "2 Nyra's Bond: gain Nyra's Bond and heal Nyra 3.",
+      "effects": {
+        "nyrasBondAndHeal": "Gain Nyra's Bond and heal Nyra 3"
+      }
+    },
+    "life-revival-2": {
+      "name": "Life Revival II",
+      "description": "2 Nyra's Bond: gain Nyra's Bond and heal Nyra 2.",
+      "effects": {
+        "nyrasBondAndHeal": "Gain Nyra's Bond and heal Nyra 2"
+      }
+    },
+    "beast-instinct": {
+      "name": "Beast Instinct",
+      "description": "3 Spears + 1 Nyra's Bond: gain Nyra's Bond and deal 2 undefendable damage.",
+      "effects": {
+        "gainNyrasBond": "Gain Nyra's Bond",
+        "unblockable2": "Deal 2 undefendable damage"
+      }
+    },
+    "beast-instinct-2": {
+      "name": "Beast Instinct II",
+      "description": "3 Spears + 1 Nyra's Bond: gain Nyra's Bond and deal 3 undefendable damage.",
+      "effects": {
+        "gainNyrasBond": "Gain Nyra's Bond",
+        "unblockable3": "Deal 3 undefendable damage"
+      }
+    },
+    "beast-instinct-2-swipe": {
+      "name": "Swipe",
+      "description": "3 Claws: inflict 1 Bleed.",
+      "effects": {
+        "bleed1": "Inflict 1 Bleed"
+      }
+    },
+    "hunt-ambush": {
+      "name": "Hunt Ambush",
+      "description": "2 Spears + 2 Claws + 1 Nyra's Bond: heal Nyra 1 and deal 5 damage.",
+      "effects": {
+        "healNyra1": "Heal Nyra 1",
+        "damage5": "Deal 5 damage"
+      }
+    },
+    "hunt-ambush-2": {
+      "name": "Hunt Ambush II",
+      "description": "2 Spears + 2 Claws + 1 Nyra's Bond: heal Nyra 1 and deal 6 damage.",
+      "effects": {
+        "healNyra1": "Heal Nyra 1",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "hunt-ambush-2-cutthroat": {
+      "name": "Cutthroat",
+      "description": "1 Spear + 1 Claw + 1 Sabertooth: inflict 2 Bleed.",
+      "effects": {
+        "bleed2": "Inflict 2 Bleed"
+      }
+    },
+    "kindred-bond": {
+      "name": "Kindred Bond",
+      "description": "Defensive roll 3 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.",
+      "effects": {
+        "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice"
+      }
+    },
+    "kindred-bond-2": {
+      "name": "Kindred Bond II",
+      "description": "Defensive roll 4 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.",
+      "effects": {
+        "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice"
+      }
+    },
+    "kindred-bond-3": {
+      "name": "Kindred Bond III",
+      "description": "Defensive roll 4 dice: each Spear and Sabertooth deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.",
+      "effects": {
+        "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice"
+      }
+    },
+    "jungle-fury": {
+      "name": "Jungle Fury!",
+      "description": "5 Sabertooths: gain Nyra's Bond, inflict 2 Bleed, and deal 12 damage.",
+      "effects": {
+        "gainNyrasBond": "Gain Nyra's Bond",
+        "bleed2": "Inflict 2 Bleed",
+        "damage12": "Deal 12 damage"
+      }
+    },
+    "bloodthirsty-claws": {
+      "name": "Bloodthirsty Claws",
+      "description": "3/4/5 Claws: deal 3/5/7 damage. If you rolled 4 of a kind, gain 1 Blood Power.",
+      "effects": {
+        "damage3": "Deal 3 damage",
+        "damage5": "Deal 5 damage",
+        "damage7": "Deal 7 damage",
+        "gainBloodPowerIfFourKind": "If you rolled 4 of a kind, gain 1 Blood Power"
+      }
+    },
+    "bloodthirsty-claws-2": {
+      "name": "Bloodthirsty Claws II",
+      "description": "3/4/5 Claws: deal 3/5/7 damage. If you rolled 3 of a kind, gain 1 Blood Power.",
+      "effects": {
+        "damage3": "Deal 3 damage",
+        "damage5": "Deal 5 damage",
+        "damage7": "Deal 7 damage",
+        "gainBloodPowerIfThreeKind": "If you rolled 3 of a kind, gain 1 Blood Power"
+      }
+    },
+    "bloodthirsty-claws-3": {
+      "name": "Bloodthirsty Claws III",
+      "description": "3/4/5 Claws: deal 4/6/8 damage. If you rolled 3 of a kind, gain 1 Blood Power.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage6": "Deal 6 damage",
+        "damage8": "Deal 8 damage",
+        "gainBloodPowerIfThreeKind": "If you rolled 3 of a kind, gain 1 Blood Power"
+      }
+    },
+    "mesmerize-power": {
+      "name": "Mesmerize Power",
+      "description": "3 Mesmerize: gain 1 CP, gain 1 Mesmerize, and deal 4 undefendable damage.",
+      "effects": {
+        "gainCp": "Gain 1 CP",
+        "gainMesmerize": "Gain 1 Mesmerize",
+        "damage4Unblockable": "Deal 4 undefendable damage"
+      }
+    },
+    "mesmerize-power-2": {
+      "name": "Mesmerize Power II",
+      "description": "3 Mesmerize: gain 1 CP, gain 1 Mesmerize, and deal 5 undefendable damage.",
+      "effects": {
+        "gainCp": "Gain 1 CP",
+        "gainMesmerize": "Gain 1 Mesmerize",
+        "damage5Unblockable": "Deal 5 undefendable damage"
+      }
+    },
+    "mesmerize-power-2-soul-gaze": {
+      "name": "Soul Gaze",
+      "description": "1 Claw + 2 Mesmerize: gain 1 Mesmerize and inflict 2 Bleed on the opponent.",
+      "effects": {
+        "gainMesmerize": "Gain 1 Mesmerize",
+        "bleed2": "Inflict 2 Bleed"
+      }
+    },
+    "blood-feast": {
+      "name": "Blood Feast",
+      "description": "3 Mesmerize + 1 Blood Drop: heal 2 and gain 3 Blood Power.",
+      "effects": {
+        "heal2": "Heal 2",
+        "gainBloodPower": "Gain 3 Blood Power"
+      }
+    },
+    "blood-feast-2": {
+      "name": "Blood Feast II",
+      "description": "3 Mesmerize + 1 Blood Drop: heal 3 and gain 3 Blood Power.",
+      "effects": {
+        "heal3": "Heal 3",
+        "gainBloodPower": "Gain 3 Blood Power"
+      }
+    },
+    "blood-feast-2-dressed-to-kill": {
+      "name": "Dressed to Kill",
+      "description": "1 Claw + 1 Mesmerize + 2 Blood Drops: gain 2 Blood Power and draw 1 card.",
+      "effects": {
+        "gainBloodPower": "Gain 2 Blood Power",
+        "draw1": "Draw 1 card"
+      }
+    },
+    "rend-claws": {
+      "name": "Rend Claws",
+      "description": "3 Claws + 2 Blood Drops: deal 6 damage and roll 3 dice. Each Claw adds +1 damage; if you roll Mesmerize, draw 1 card; if you roll a Blood Drop, gain 1 Blood Power.",
+      "effects": {
+        "roll3": "Roll 3 dice and resolve their bonuses",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "rend-claws-2": {
+      "name": "Rend Claws II",
+      "description": "3 Claws + 2 Blood Drops: deal 6 damage and roll 5 dice. Each Claw adds +1 damage; if you roll Mesmerize, draw 1 card; if you roll a Blood Drop, gain 1 Blood Power.",
+      "effects": {
+        "roll5": "Roll 5 dice and resolve their bonuses",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "blood-possessed": {
+      "name": "Blood Possessed",
+      "description": "Small Straight: deal 7 damage and roll 1 die. On Claw, inflict Bleed on the opponent; on Mesmerize or Blood Drop, gain Mesmerize.",
+      "effects": {
+        "damage7": "Deal 7 damage",
+        "roll1": "Roll 1 die and resolve its bonus"
+      }
+    },
+    "blood-possessed-2": {
+      "name": "Blood Possessed II",
+      "description": "Small Straight: deal 8 damage and choose one: inflict Bleed or gain Mesmerize.",
+      "effects": {
+        "damage8": "Deal 8 damage",
+        "choice": "Choose to inflict Bleed or gain Mesmerize"
+      }
+    },
+    "blood-possessed-2-blood-addiction": {
+      "name": "Blood Addiction",
+      "description": "2 Claws + 1 Blood Drop: gain 2 Blood Power.",
+      "effects": {
+        "gainBloodPower": "Gain 2 Blood Power"
+      }
+    },
+    "blood-thirst": {
+      "name": "Blood Thirst",
+      "description": "4 Blood Drops: gain 2 Blood Power, then deal 5 undefendable damage.",
+      "effects": {
+        "gainBloodPower": "Gain 2 Blood Power",
+        "damage5Unblockable": "Deal 5 undefendable damage"
+      }
+    },
+    "blood-thirst-2": {
+      "name": "Blood Thirst II",
+      "description": "4 Blood Drops: gain 3 Blood Power, then deal 6 undefendable damage.",
+      "effects": {
+        "gainBloodPower": "Gain 3 Blood Power",
+        "damage6Unblockable": "Deal 6 undefendable damage"
+      }
+    },
+    "blood-thirst-2-blood-river": {
+      "name": "Blood River",
+      "description": "3 Blood Drops: inflict 2 Bleed and deal 2 collateral damage to all opponents.",
+      "effects": {
+        "bleed2": "Inflict 2 Bleed",
+        "collateral2": "Deal 2 collateral damage to all opponents"
+      }
+    },
+    "blood-magic": {
+      "name": "Blood Magic",
+      "description": "Large Straight: gain 1 Blood Power, inflict Bleed, and deal 8 damage. You may spend 1 Mesmerize to make this attack undefendable.",
+      "effects": {
+        "gainBloodPower": "Gain 1 Blood Power",
+        "bleed1": "Inflict 1 Bleed",
+        "spendMesmerizeChoice": "May spend Mesmerize to make this attack undefendable",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "blood-magic-2": {
+      "name": "Blood Magic II",
+      "description": "Large Straight: gain 1 Blood Power, inflict Bleed, then deal 8 undefendable damage.",
+      "effects": {
+        "gainBloodPower": "Gain 1 Blood Power",
+        "bleed1": "Inflict 1 Bleed",
+        "damage8Unblockable": "Deal 8 undefendable damage"
+      }
+    },
+    "blood-magic-2-flayed": {
+      "name": "Flayed",
+      "description": "2 Claws + 2 Blood Drops: deal 5 undefendable damage.",
+      "effects": {
+        "damage5Unblockable": "Deal 5 undefendable damage"
+      }
+    },
+    "undying": {
+      "name": "Undying",
+      "description": "Defensive roll 3 dice: if you roll 2 Claws, inflict Bleed; if you roll 2 Mesmerize, gain 1 Blood Power; for each Blood Drop, steal 1 health.",
+      "effects": {
+        "resolveDefense": "Resolve Bleed, Blood Power, and health steal from the defense dice"
+      }
+    },
+    "undying-2": {
+      "name": "Undying II",
+      "description": "Defensive roll 4 dice: if you roll 2 Claws, inflict Bleed; if you roll 2 Mesmerize, gain 1 Blood Power; for each Blood Drop, steal 1 health.",
+      "effects": {
+        "resolveDefense": "Resolve Bleed, Blood Power, and health steal from the defense dice"
+      }
+    },
+    "bloody-slaughter": {
+      "name": "Bloody Slaughter!",
+      "description": "5 Blood Drops: search your draw pile for 1 card, add it to your hand, shuffle your draw pile, gain 2 Blood Power, then deal 10 damage.",
+      "effects": {
+        "searchDeckCard": "Search your draw pile for 1 card, add it to your hand, then shuffle your draw pile",
+        "gainBloodPower": "Gain 2 Blood Power",
+        "damage10": "Deal 10 damage"
+      }
+    },
+    "heavy-punch": {
+      "name": "Heavy Punch",
+      "description": "3/4/5 Fist faces: deal 4/5/6 damage.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "combo-strike": {
+      "name": "Combo Strike",
+      "description": "2 Fists + 2 Spiders: deal 5 damage and gain 1 Combo.",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "gainCombo": "Gain 1 Combo"
+      }
+    },
+    "trap": {
+      "name": "Trap",
+      "description": "Small Straight: deal 5 damage, then inflict Webbed. Large Straight: draw 1 card, deal 8 damage, then inflict Webbed.",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "draw1": "Draw 1 card",
+        "damage8": "Deal 8 damage",
+        "applyWebbed": "Inflict Webbed"
+      }
+    },
+    "venom-punch": {
+      "name": "Venom Punch",
+      "description": "4 Spiders: gain Invisible and deal 7 undefendable damage.",
+      "effects": {
+        "gainInvisible": "Gain 1 Invisible",
+        "damage7Unblockable": "Deal 7 undefendable damage"
+      }
+    },
+    "wall-crawl": {
+      "name": "Wall Crawl",
+      "description": "1 Fist + 3 Webs: gain Invisible and deal 7 damage.",
+      "effects": {
+        "gainInvisible": "Gain 1 Invisible",
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "spider-reflex": {
+      "name": "Spider Reflex",
+      "description": "1 Fist + 2 Webs + 1 Spider: roll 2 bonus dice and deal their total; if the total is 5 or less, gain Combo.",
+      "effects": {
+        "roll2AndDealSum": "Roll 2 bonus dice and deal their total; if the total is 5 or less, gain Combo"
+      }
+    },
+    "counter": {
+      "name": "Counter",
+      "description": "Defensive roll 3 Fists: deal 3 damage.",
+      "effects": {
+        "damage3": "Deal 3 damage"
+      }
+    },
+    "spider-sense": {
+      "name": "Spider Sense",
+      "description": "Defensive roll 2 Webs: if a Spider is rolled, halve incoming damage, rounded up. You may discard Invisible for 1 additional defensive roll.",
+      "effects": {
+        "preventHalfOnSpider": "If a Spider is rolled, halve incoming damage, rounded up; discard Invisible for 1 additional defensive roll"
+      }
+    },
+    "ultimate-spider": {
+      "name": "Venom Shockwave",
+      "description": "5 Spiders: gain Invisible, inflict Webbed, and deal 13 undefendable damage.",
+      "effects": {
+        "gainInvisible": "Gain 1 Invisible",
+        "applyWebbed": "Inflict Webbed",
+        "damage13": "Deal 13 undefendable damage"
+      }
+    },
+    "card-zhizhuxia-milkshake": {
+      "effects": {
+        "heal3": "Heal 3 health"
+      }
+    },
+    "card-zhizhuxia-wallet-arrival": {
+      "effects": {
+        "gain2CP": "Gain 2 CP"
+      }
+    },
+    "card-zhizhuxia-spider-launcher": {
+      "effects": {
+        "applyWebbed": "Inflict Webbed"
+      }
+    },
+    "card-zhizhuxia-praise": {
+      "effects": {
+        "roll1": "Roll 1 die and resolve its face effect"
+      }
+    },
+    "card-zhizhuxia-flying-escape": {
+      "effects": {
+        "acceptWeb": "Allow Spider Sense to treat Web as a success face"
+      }
+    },
+    "card-zhizhuxia-ambush": {
+      "effects": {
+        "discardInvisibleAndAdd3": "Spend 1 Invisible; add 3 damage to this attack"
+      }
+    },
+    "card-zhizhuxia-invisible-punch": {
+      "effects": {
+        "counter3": "If Spider Sense succeeds, deal 3 direct damage"
+      }
+    },
+    "card-zhizhuxia-wishful-thinking": {
+      "effects": {
+        "prevent3": "Spend 1 Invisible and gain a 3-damage shield"
+      }
+    },
+    "card-zhizhuxia-oh-no": {
+      "effects": {
+        "gainInvisible": "Gain 1 Invisible"
+      }
+    },
+    "card-zhizhuxia-radioactive-blood": {
+      "effects": {
+        "gainCombo": "Gain 1 Combo"
+      }
+    },
+    "card-zhizhuxia-head-tingle": {
+      "effects": {
+        "roll1": "Roll 1 die and resolve its face effect"
+      }
+    },
+    "heavy-punch-2": {
+      "name": "Heavy Punch II",
+      "description": "3/4/5 Fists: deal 5/6/7 damage; if at least 4 dice show the same number, gain 1 Combo.",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage",
+        "damage7": "Deal 7 damage",
+        "gainComboIfFourOfAKind": "If at least 4 dice show the same number, gain 1 Combo"
+      }
+    },
+    "combo-strike-2": {
+      "name": "Combo Strike II",
+      "description": "2 Webs + 2 Spiders: deal 6 damage and gain 1 Combo.",
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "gainCombo": "Gain 1 Combo"
+      }
+    },
+    "trap-2": {
+      "name": "Trap II",
+      "description": "Small Straight: deal 6 damage, then inflict Webbed. Large Straight: draw 1 card, deal 9 damage, then inflict Webbed.",
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "draw1": "Draw 1 card",
+        "damage9": "Deal 9 damage",
+        "applyWebbed": "Inflict Webbed"
+      }
+    },
+    "venom-punch-2": {
+      "name": "Venom Punch II",
+      "description": "4 Spiders: gain Invisible and deal 8 undefendable damage.",
+      "effects": {
+        "gainInvisible": "Gain 1 Invisible",
+        "damage8Unblockable": "Deal 8 undefendable damage"
+      }
+    },
+    "thor-mighty-summon-primary": {"name": "Mighty Summon II", "description": "Gain 2 Guard Break and heal 3. If you have Mjolnir, gain 3 Electrokinesis; otherwise retrieve it and deal 4 collateral damage to its former holder."},
+    "thor-power-of-thunder-primary": {"name": "Power of Thunder II", "description": "Throw or retrieve Mjolnir, gain 2 Electrokinesis, and deal 12 damage."},
+    "thor-bottled-lightning-primary": {"name": "Bottled Lightning II", "description": "Throw or retrieve Mjolnir up to 3 times. Gain 2 Guard Break, then deal 8 damage plus 1 per current Electrokinesis."},
+    "thor-hammer": {
+      "name": "Hammer Strike",
+      "description": "3/4/5 Hammers: deal 4/5/7 damage and Throw Mjolnir."
+    },
+    "thor-mighty-summon": {
+      "name": "Mighty Summon",
+      "description": "Gain 2 Guard Break and heal 2. If holding Mjolnir, gain 3 Electrokinesis; otherwise Retrieve it and deal 3 collateral damage to its former holder."
+    },
+    "thor-odinforce": {
+      "name": "Odinforce",
+      "description": "Deal 5 damage and roll 5 effect dice. At least 2 Hammers: Throw or Retrieve once; at least 2 Worthy: gain 1 CP; gain 1 Electrokinesis per Thunder. Add your final Electrokinesis to this attack without spending it."
+    },
+    "thor-chain-lightning": {
+      "name": "Chain Lightning",
+      "description": "Roll 3 effect dice and choose 2; deal their total as attack damage. Deal 2 collateral damage to an opponent of your choice, who may also be the attack target."
+    },
+    "thor-thunder-strike": {
+      "name": "Thunder Strike",
+      "description": "Small straight: deal 7 damage. If the attack target holds Mjolnir, add 2 damage; otherwise gain 1 Electrokinesis."
+    },
+    "thor-bottled-lightning": {
+      "name": "Bottled Lightning",
+      "description": "Throw or Retrieve up to 2 times and gain 2 Guard Break. Deal 7 damage plus your current Electrokinesis without spending it."
+    },
+    "thor-power-of-thunder": {
+      "name": "Power of Thunder",
+      "description": "Large straight: Throw or Retrieve once, gain 2 Electrokinesis, and deal 10 damage."
+    },
+    "thor-thunder-wheel": {
+      "name": "Thunder Wheel",
+      "description": "Roll 3 defense dice. At least 2 Hammers: Throw or Retrieve once; prevent 2 damage per Worthy; at least 1 Thunder: gain 1 Electrokinesis."
+    },
+    "thor-for-asgard": {
+      "name": "For Asgard!",
+      "description": "Gain 1 Guard Break, Throw or Retrieve up to 4 times, and deal 14 ultimate damage. Opponents cannot act throughout this ultimate."
+    },
+    "thor-hammer-2": {
+      "name": "Hammer Strike II",
+      "description": "3/4/5 Hammers: deal 5/6/7 damage and Throw or Retrieve. With at least 4 identical values, gain 1 Electrokinesis."
+    },
+    "thor-hammer-3": {
+      "name": "Hammer Strike III",
+      "description": "3/4/5 Hammers: deal 5/6/8 damage and Throw or Retrieve. With at least 3 identical values, gain 1 Electrokinesis."
+    },
+    "thor-mighty-summon-2": {
+      "name": "Mighty Summon II / Flash and Thunder",
+      "description": "Gain 2 Guard Break and heal 3. If holding Mjolnir, gain 3 Electrokinesis; otherwise Retrieve it and deal 4 collateral damage to its former holder. Flash and Thunder (2 Hammers and 2 Thunder): gain 2 Electrokinesis and deal 6 damage."
+    },
+    "thor-chain-lightning-2": {
+      "name": "Chain Lightning II",
+      "description": "Roll 4 effect dice and choose 2; deal their total as attack damage. Deal 3 collateral damage to an opponent of your choice."
+    },
+    "thor-odinforce-2": {
+      "name": "Odinforce II",
+      "description": "Deal 6 damage and roll 5 effect dice. You may reroll any number of these dice together once. From the final results: gain 1 Electrokinesis per Thunder, gain 1 CP for at least 2 Worthy, and Throw or Retrieve once for at least 2 Hammers. Add your final Electrokinesis to the attack."
+    },
+    "thor-thunder-strike-2": {
+      "name": "Thunder Strike II",
+      "description": "Small straight: Throw or Retrieve once, gain 1 Electrokinesis, and deal 9 damage."
+    },
+    "thor-power-of-thunder-2": {
+      "name": "Power of Thunder II / Asgardian Might",
+      "description": "Large straight: Throw or Retrieve once, gain 2 Electrokinesis, and deal 12 damage. Asgardian Might (3 Worthy): heal 4."
+    },
+    "thor-bottled-lightning-2": {
+      "name": "Bottled Lightning II / Hammer Chain",
+      "description": "4 Thunder: Throw or Retrieve up to 3 times, gain 2 Guard Break, and deal 8 damage plus current Electrokinesis. Hammer Chain (3 Thunder): Throw or Retrieve up to 6 times."
+    },
+    "thor-thunder-wheel-2": {
+      "name": "Thunder Wheel II",
+      "description": "Roll 4 defense dice. Throw or Retrieve once per pair of Hammers, prevent 2 damage per Worthy, and gain 1 Electrokinesis per Thunder."
+    },
+    "thor-flash-and-thunder": {
+      "name": "Flash and Thunder",
+      "description": "Gain 2 Electrokinesis and deal 6 damage."
+    },
+    "thor-asgardian-might": {
+      "name": "Asgardian Might",
+      "description": "Heal 4."
+    },
+    "thor-hammer-chain": {
+      "name": "Hammer Chain",
+      "description": "Throw or Retrieve up to 6 times."
+    },
+    "thor-effects": {
+      "description": "Resolve Thor’s ability effect"
+    },
+    "thor-hammer-4": {
+      "name": "Hammer Strike",
+      "description": "3/4/5 Hammers: deal 4/5/7 damage and Throw Mjolnir."
+    },
+    "thor-hammer-5": {
+      "name": "Hammer Strike",
+      "description": "3/4/5 Hammers: deal 4/5/7 damage and Throw Mjolnir."
+    },
+    "thor-hammer-2-3": {
+      "name": "Hammer Strike II",
+      "description": "3/4/5 Hammers: deal 5/6/7 damage and Throw or Retrieve. With at least 4 identical values, gain 1 Electrokinesis."
+    },
+    "thor-hammer-2-4": {
+      "name": "Hammer Strike II",
+      "description": "3/4/5 Hammers: deal 5/6/7 damage and Throw or Retrieve. With at least 4 identical values, gain 1 Electrokinesis."
+    },
+    "thor-hammer-2-5": {
+      "name": "Hammer Strike II",
+      "description": "3/4/5 Hammers: deal 5/6/7 damage and Throw or Retrieve. With at least 4 identical values, gain 1 Electrokinesis."
+    },
+    "thor-hammer-3-3": {
+      "name": "Hammer Strike",
+      "description": "3/4/5 Hammers: deal 4/5/7 damage and Throw Mjolnir."
+    },
+    "thor-hammer-3-4": {
+      "name": "Hammer Strike",
+      "description": "3/4/5 Hammers: deal 4/5/7 damage and Throw Mjolnir."
+    },
+    "thor-hammer-3-5": {
+      "name": "Hammer Strike",
+      "description": "3/4/5 Hammers: deal 4/5/7 damage and Throw Mjolnir."
+    },
+    "strange-omen": {
+      "name": "Omen",
+      "description": "Gain 1 Déjà Vu. Deal 8 attack damage."
+    },
+    "strange-cosmic-awareness": {
+      "name": "Cosmic Awareness",
+      "description": "Draw 1 card, gain 1 Déjà Vu and 2 Premonition. Prepare 1 spell from your discard pile."
+    },
+    "strange-book-of-vishanti": {
+      "name": "Book of the Vishanti",
+      "description": "At setup, place Flames of Faltine here without resolving its Preparation effect. Once per turn in either Main Phase, you may prepare 1 spell from your hand."
+    },
+    "strange-astral-incursion": {
+      "name": "Astral Incursion",
+      "description": "Deal 6 attack damage and roll 2 dice. Resolve each die separately: Mandala adds 3 attack damage; Book gains 1 Premonition; Cloak applies 1 Crimson Bands; Amulet casts 1 spell."
+    },
+    "strange-mystic-bolt": {
+      "name": "Mystic Bolt",
+      "description": "Small Straight: deal 6 attack damage, then cast 1 spell. Large Straight: deal 9 attack damage, then cast 1 spell."
+    },
+    "strange-wand-of-watoomb": {
+      "name": "Wand of Watoomb",
+      "description": "Apply 1 Crimson Bands and deal 5 undefendable attack damage. Prepare 1 spell from your discard pile, then cast up to 2 spells."
+    },
+    "strange-binding": {
+      "name": "Binding",
+      "description": "Apply 1 Crimson Bands. Deal 9 attack damage."
+    },
+    "strange-cloak-of-levitation": {
+      "name": "Cloak of Levitation",
+      "description": "Roll 2 defense dice. Mandala deals 1 direct damage; Book gains 1 Premonition; Cloak prevents 2 damage; Amulet deals 3 direct damage."
+    },
+    "strange-all-seeing-eye": {
+      "name": "All-Seeing Eye",
+      "description": "Look at the top 5 cards of your deck. Prepare up to 2 spells among them and put the rest back on top in any order. Then deal 10 undefendable attack damage, followed by casting up to 2 spells. Neither player may play cards until this ability finishes."
+    }
   },
   "companion": {
     "nyra": {
@@ -4696,21 +5552,99 @@
         "modifyDieTo6": "Set 1 die to 6"
       }
     },
-    "upgrade-zhizhuxia-heavy-punch-2": { "name": "Heavy Punch II", "description": "Upgrade your Heavy Punch. 3/4/5 Fists deal 5/6/7 damage; if at least 4 dice show the same number, gain 1 Combo." },
-    "upgrade-zhizhuxia-combo-strike-2": { "name": "Combo Strike II", "description": "Upgrade your Combo Strike. 2 Webs + 2 Spiders: deal 6 damage and gain 1 Combo." },
-    "upgrade-zhizhuxia-trap-2": { "name": "Trap II", "description": "Upgrade your Trap. Small Straight deals 6 damage and inflicts Webbed; Large Straight draws 1 card, deals 9 damage, then inflicts Webbed." },
-    "upgrade-zhizhuxia-venom-punch-2": { "name": "Venom Punch II", "description": "Upgrade your Venom Punch. 4 Spiders: gain Invisible and deal 8 undefendable damage." },
-    "card-zhizhuxia-milkshake": { "name": "I Love Milkshake!", "description": "Heal 3 health.", "effects": { "heal3": "Heal 3 health" } },
-    "card-zhizhuxia-wallet-arrival": { "name": "Wallet Arrival!", "description": "Gain 2 CP.", "effects": { "gain2CP": "Gain 2 CP" } },
-    "card-zhizhuxia-spider-launcher": { "name": "Spider Launcher!", "description": "Inflict Webbed on 1 opponent.", "effects": { "applyWebbed": "Inflict Webbed" } },
-    "card-zhizhuxia-praise": { "name": "Awesome!", "description": "Roll 1 die: Fist gains Invisible, Web inflicts Webbed on the target, and Spider gains Combo.", "effects": { "roll1": "Roll 1 die and resolve its face effect" } },
-    "card-zhizhuxia-flying-escape": { "name": "Flying Escape!", "description": "During a defensive roll, allow Spider Sense to treat Web as a success face.", "effects": { "acceptWeb": "Allow Spider Sense to treat Web as a success face" } },
-    "card-zhizhuxia-ambush": { "name": "Ambush!", "description": "Spend 1 Invisible to add 3 damage to this attack.", "effects": { "discardInvisibleAndAdd3": "Spend 1 Invisible; add 3 damage to this attack" } },
-    "card-zhizhuxia-invisible-punch": { "name": "Invisible Punch!", "description": "If Spider Sense succeeds, deal 3 direct damage.", "effects": { "counter3": "If Spider Sense succeeds, deal 3 direct damage" } },
-    "card-zhizhuxia-wishful-thinking": { "name": "Wishful Thinking!", "description": "Spend 1 Invisible to gain a 3-damage shield.", "effects": { "prevent3": "Spend 1 Invisible and gain a 3-damage shield" } },
-    "card-zhizhuxia-oh-no": { "name": "Oh No!", "description": "Gain 1 Invisible.", "effects": { "gainInvisible": "Gain 1 Invisible" } },
-    "card-zhizhuxia-radioactive-blood": { "name": "Radioactive Blood!", "description": "Gain 1 Combo.", "effects": { "gainCombo": "Gain 1 Combo" } },
-    "card-zhizhuxia-head-tingle": { "name": "Head Tingle!", "description": "Roll 1 die: if Spider, gain Combo and Invisible; otherwise draw 1 card.", "effects": { "roll1": "Roll 1 die and resolve its face effect" } },
+    "upgrade-zhizhuxia-heavy-punch-2": {
+      "name": "Heavy Punch II",
+      "description": "Upgrade your Heavy Punch. 3/4/5 Fists deal 5/6/7 damage; if at least 4 dice show the same number, gain 1 Combo."
+    },
+    "upgrade-zhizhuxia-combo-strike-2": {
+      "name": "Combo Strike II",
+      "description": "Upgrade your Combo Strike. 2 Webs + 2 Spiders: deal 6 damage and gain 1 Combo."
+    },
+    "upgrade-zhizhuxia-trap-2": {
+      "name": "Trap II",
+      "description": "Upgrade your Trap. Small Straight deals 6 damage and inflicts Webbed; Large Straight draws 1 card, deals 9 damage, then inflicts Webbed."
+    },
+    "upgrade-zhizhuxia-venom-punch-2": {
+      "name": "Venom Punch II",
+      "description": "Upgrade your Venom Punch. 4 Spiders: gain Invisible and deal 8 undefendable damage."
+    },
+    "card-zhizhuxia-milkshake": {
+      "name": "I Love Milkshake!",
+      "description": "Heal 3 health.",
+      "effects": {
+        "heal3": "Heal 3 health"
+      }
+    },
+    "card-zhizhuxia-wallet-arrival": {
+      "name": "Wallet Arrival!",
+      "description": "Gain 2 CP.",
+      "effects": {
+        "gain2CP": "Gain 2 CP"
+      }
+    },
+    "card-zhizhuxia-spider-launcher": {
+      "name": "Spider Launcher!",
+      "description": "Inflict Webbed on 1 opponent.",
+      "effects": {
+        "applyWebbed": "Inflict Webbed"
+      }
+    },
+    "card-zhizhuxia-praise": {
+      "name": "Awesome!",
+      "description": "Roll 1 die: Fist gains Invisible, Web inflicts Webbed on the target, and Spider gains Combo.",
+      "effects": {
+        "roll1": "Roll 1 die and resolve its face effect"
+      }
+    },
+    "card-zhizhuxia-flying-escape": {
+      "name": "Flying Escape!",
+      "description": "During a defensive roll, allow Spider Sense to treat Web as a success face.",
+      "effects": {
+        "acceptWeb": "Allow Spider Sense to treat Web as a success face"
+      }
+    },
+    "card-zhizhuxia-ambush": {
+      "name": "Ambush!",
+      "description": "Spend 1 Invisible to add 3 damage to this attack.",
+      "effects": {
+        "discardInvisibleAndAdd3": "Spend 1 Invisible; add 3 damage to this attack"
+      }
+    },
+    "card-zhizhuxia-invisible-punch": {
+      "name": "Invisible Punch!",
+      "description": "If Spider Sense succeeds, deal 3 direct damage.",
+      "effects": {
+        "counter3": "If Spider Sense succeeds, deal 3 direct damage"
+      }
+    },
+    "card-zhizhuxia-wishful-thinking": {
+      "name": "Wishful Thinking!",
+      "description": "Spend 1 Invisible to gain a 3-damage shield.",
+      "effects": {
+        "prevent3": "Spend 1 Invisible and gain a 3-damage shield"
+      }
+    },
+    "card-zhizhuxia-oh-no": {
+      "name": "Oh No!",
+      "description": "Gain 1 Invisible.",
+      "effects": {
+        "gainInvisible": "Gain 1 Invisible"
+      }
+    },
+    "card-zhizhuxia-radioactive-blood": {
+      "name": "Radioactive Blood!",
+      "description": "Gain 1 Combo.",
+      "effects": {
+        "gainCombo": "Gain 1 Combo"
+      }
+    },
+    "card-zhizhuxia-head-tingle": {
+      "name": "Head Tingle!",
+      "description": "Roll 1 die: if Spider, gain Combo and Invisible; otherwise draw 1 card.",
+      "effects": {
+        "roll1": "Roll 1 die and resolve its face effect"
+      }
+    },
     "upgrade-revolver-2": {
       "name": "Revolver II",
       "description": "Upgrade your Revolver. 3/4/5 bullets deal 4/5/6 damage. If at least 4 dice show the same number, also inflict Knockdown."
@@ -5649,8 +6583,12 @@
       "description": "Upgrade Vengeful Vines: small straight; apply Thorn; deal 8 damage."
     },
     "upgrade-wild-growth-2": {
+      "name": "Wild Growth II",
+      "description": "Upgrade Wild Growth: 2 Branch + 3 Leaf deal 4 damage; you may remove up to 2 Spirits, each adding 4 damage; you may discard Life Sap to make the attack undefendable. Planting (1 Branch + 2 Leaf): cultivate 3 Spirits."
+    },
+    "upgrade-wild-roar-2": {
       "name": "Wild Roar II",
-      "description": "Upgrade Wild Roar: Large Straight deals 8 damage, then roll 5 dice; each Branch +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage."
+      "description": "Upgrade Wild Roar: Large Straight deals 8 damage and rolls 5 dice; each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage."
     },
     "upgrade-shattering-fist-2": {
       "name": "Shattering Fist II",
@@ -5720,52 +6658,310 @@
       "name": "Dojo!",
       "description": "Roll 1 die. If you roll Mask, gain Smoke Bomb and 2 Ninjutsu. Otherwise, draw 1."
     },
-     "card-tianshi-holy-strike": { "name": "Holy Strike!", "description": "Attack modifier: roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent." },
-    "card-tianshi-angelic-tactics": { "name": "Angelic Tactics!", "description": "Attack modifier: roll 1 bonus die; Blade adds +3 attack damage, Wing gains Flight, Cross gains Purify, and Holy Pendant gains Divine Arrival." },
-    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "name": "Supreme Power II / Gospel Arrival", "description": "Top: Supreme Power II. Bottom: gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent." },
-    "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "Divine Punishment II / Divine Command", "description": "Top: Divine Punishment II. Bottom: heal 1, then deal 4 undefendable damage to an opponent." },
-    "upgrade-tianshi-divine-purification-2": { "name": "Divine Purification II", "description": "Upgrade Divine Purification: increase the damage to 6 and the self-heal to 5." },
-    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "Archangel Resolve II / Divine Protection", "description": "Top: Archangel Resolve II. Bottom: choose a player to gain 2 Purify and 2 Flight." },
-    "upgrade-tianshi-angelic-cloak-3": { "name": "Angelic Cloak III", "description": "Defensive roll 1 die; Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once." },
-    "upgrade-tianshi-angelic-cloak-2": { "name": "Angelic Cloak II", "description": "Defensive roll 1 die; Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once." },
-    "upgrade-tianshi-triumphant-return-2": { "name": "Triumphant Return II", "description": "Small Straight deals 8 damage; bonus die: Blade +1, Wing +2, Cross +3, Holy Pendant makes the attack undefendable." },
-    "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "Holy Radiance II / Takeoff", "description": "Top: Holy Radiance II. Bottom: choose 1 player to gain Flight. The opponent takes 3 undefendable damage." },
-     "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "Holy Blade III / Cherub II", "description": "Top: Holy Blade III. Bottom: gain Flight, Purify and Divine Arrival." },
-     "card-tianshi-divine-arbitration": { "name": "Divine Arbitration!", "description": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." },
-    "card-tianshi-supreme-holiness": { "name": "Supreme Holiness!", "description": "Roll 1 bonus die; Holy Pendant gains 2 Flight and 2 Purify, otherwise draw 1 card." },
-    "card-tianshi-ascension": { "name": "Ascension!", "description": "Choose a player to gain Flight." },
-     "upgrade-tianshi-holy-blade-2-cherub": { "name": "Holy Blade II / Cherub", "description": "Top: Holy Blade II. Bottom: gain Flight and Divine Arrival." },
-    "card-lieren-primitive-roar": { "name": "Primitive Roar!", "description": "Roll 1 die; on Sabertooth, heal Nyra 4. Otherwise draw 1 card." },
-    "card-lieren-regroup": { "name": "Regroup!", "description": "Gain Nyra's Bond." },
-    "card-lieren-opportunistic-strike": { "name": "Opportunistic Strike!", "description": "Attack modifier: roll 1 bonus die; Spear +1 damage, Claw +2 damage, Nyra's Bond heals Nyra 1, Sabertooth +3 damage." },
-    "card-lieren-pounce": { "name": "Pounce!", "description": "Attack modifier: roll 5 bonus dice; each Spear adds +1 attack damage; if any Claw is rolled, inflict 1 Bleed." },
-    "card-lieren-savage-claw": { "name": "Savage Claw!", "description": "Choose 1 player and roll 1 die; Claw or Sabertooth inflicts 2 Bleed, otherwise inflict 1 Bleed." },
-    "card-lieren-bloodline": { "name": "Bloodline!", "description": "Roll 3 dice; heal Nyra 1, then heal 1 for each Nyra's Bond and 2 for each Sabertooth." },
-    "upgrade-lieren-kindred-bond-3": { "name": "Kindred Bond III", "description": "Upgrade Kindred Bond to level III." },
-    "upgrade-lieren-kindred-bond-2": { "name": "Kindred Bond II", "description": "Upgrade Kindred Bond to level II." },
-    "upgrade-lieren-beast-force-2": { "name": "Beast Force II / Fierce Gaze", "description": "Upgrade Beast Force and add the Fierce Gaze branch." },
-    "upgrade-lieren-brutal-strike-2": { "name": "Brutal Strike II", "description": "Upgrade Brutal Strike to level II." },
-    "upgrade-lieren-hunt-ambush-2": { "name": "Hunt Ambush II / Cutthroat", "description": "Upgrade Hunt Ambush and add the Cutthroat branch." },
-    "upgrade-lieren-beast-instinct-2": { "name": "Beast Instinct II / Swipe", "description": "Upgrade Beast Instinct and add the Swipe branch." },
-    "upgrade-lieren-life-revival-2": { "name": "Life Revival II", "description": "Upgrade Life Revival to level II." },
-    "upgrade-lieren-savage-force-2": { "name": "Savage Force II / Hunting", "description": "Upgrade Savage Force and add the Hunting branch." },
-    "upgrade-lieren-wild-force-2": { "name": "Wild Force II", "description": "Upgrade Wild Force to level II." },
-    "card-vampire-lord-blood-surge": { "name": "Blood Surge!", "description": "Roll 1 die: if you roll a Blood Drop, gain 3 Blood Power; otherwise draw 1 card." },
-    "card-vampire-lord-blood-from-above": { "name": "Blood from Above!", "description": "Roll 1 die and gain half its value, rounded up, as Blood Power." },
-    "card-vampire-lord-total-demise": { "name": "Total Demise!", "description": "Attack modifier: roll 5 dice; add +1 attack damage for each Claw. If at least 3 damage was added, inflict 1 Bleed." },
-    "card-vampire-lord-boiling-blood": { "name": "Boiling Blood!", "description": "Attack modifier: add +1 attack damage. Also add +1 more attack damage for each Bleed on the attacked opponent." },
-    "card-vampire-lord-gushing-blood": { "name": "Gushing Blood!", "description": "Gain 1 Blood Power and 1 CP." },
-    "upgrade-vampire-lord-undying-2": { "name": "Undying II", "description": "Upgrade Undying to level II." },
-    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "Blood Thirst II / Blood River", "description": "Upgrade Blood Thirst to level II and keep the lower Blood River section as a variant of the upgraded ability." },
-    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "Blood Magic II / Flayed", "description": "Upgrade Blood Magic to level II and keep the lower Flayed section as a variant of the upgraded ability." },
-    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "Blood Possessed II / Blood Addiction", "description": "Upgrade Blood Possessed to level II and keep the lower Blood Addiction section as a variant of the upgraded ability." },
-    "upgrade-vampire-lord-rend-claws-2": { "name": "Rend Claws II", "description": "Upgrade Rend Claws to level II." },
-    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "Blood Feast II / Dressed to Kill", "description": "Upgrade Blood Feast to level II and keep the lower Dressed to Kill section as a variant of the upgraded ability." },
-    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "Mesmerize Power II / Soul Gaze", "description": "Upgrade Mesmerize Power to level II and keep the lower Soul Gaze section as a variant of the upgraded ability." },
-    "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "Upgrade Bloodthirsty Claws to level III." },
-    "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "Upgrade Bloodthirsty Claws to level II." },
-    "card-vampire-lord-drink-up": { "name": "Drink Up!", "description": "Spend up to 2 Blood Power. Then gain 2 CP for each Blood Power spent." },
-    "card-vampire-lord-bloodstone": { "name": "Bloodstone!", "description": "Gain 1 Mesmerize and 2 Blood Power. Inflict 1 Bleed on an opponent." }
+    "card-tianshi-holy-strike": {
+      "name": "Holy Strike!",
+      "description": "Attack modifier: roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent."
+    },
+    "card-tianshi-angelic-tactics": {
+      "name": "Angelic Tactics!",
+      "description": "Attack modifier: roll 1 bonus die; Blade adds +3 attack damage, Wing gains Flight, Cross gains Purify, and Holy Pendant gains Divine Arrival."
+    },
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": {
+      "name": "Supreme Power II / Gospel Arrival",
+      "description": "Top: Supreme Power II. Bottom: gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent."
+    },
+    "upgrade-tianshi-divine-punishment-2-divine-command": {
+      "name": "Divine Punishment II / Divine Command",
+      "description": "Top: Divine Punishment II. Bottom: heal 1, then deal 4 undefendable damage to an opponent."
+    },
+    "upgrade-tianshi-divine-purification-2": {
+      "name": "Divine Purification II",
+      "description": "Upgrade Divine Purification: increase the damage to 6 and the self-heal to 5."
+    },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": {
+      "name": "Archangel Resolve II / Divine Protection",
+      "description": "Top: Archangel Resolve II. Bottom: choose a player to gain 2 Purify and 2 Flight."
+    },
+    "upgrade-tianshi-angelic-cloak-3": {
+      "name": "Angelic Cloak III",
+      "description": "Defensive roll 1 die; Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once."
+    },
+    "upgrade-tianshi-angelic-cloak-2": {
+      "name": "Angelic Cloak II",
+      "description": "Defensive roll 1 die; Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once."
+    },
+    "upgrade-tianshi-triumphant-return-2": {
+      "name": "Triumphant Return II",
+      "description": "Small Straight deals 8 damage; bonus die: Blade +1, Wing +2, Cross +3, Holy Pendant makes the attack undefendable."
+    },
+    "upgrade-tianshi-holy-radiance-2-takeoff": {
+      "name": "Holy Radiance II / Takeoff",
+      "description": "Top: Holy Radiance II. Bottom: choose 1 player to gain Flight. The opponent takes 3 undefendable damage."
+    },
+    "upgrade-tianshi-holy-blade-3-cherub-2": {
+      "name": "Holy Blade III / Cherub II",
+      "description": "Top: Holy Blade III. Bottom: gain Flight, Purify and Divine Arrival."
+    },
+    "card-tianshi-divine-arbitration": {
+      "name": "Divine Arbitration!",
+      "description": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify."
+    },
+    "card-tianshi-supreme-holiness": {
+      "name": "Supreme Holiness!",
+      "description": "Roll 1 bonus die; Holy Pendant gains 2 Flight and 2 Purify, otherwise draw 1 card."
+    },
+    "card-tianshi-ascension": {
+      "name": "Ascension!",
+      "description": "Choose a player to gain Flight."
+    },
+    "upgrade-tianshi-holy-blade-2-cherub": {
+      "name": "Holy Blade II / Cherub",
+      "description": "Top: Holy Blade II. Bottom: gain Flight and Divine Arrival."
+    },
+    "card-lieren-primitive-roar": {
+      "name": "Primitive Roar!",
+      "description": "Roll 1 die; on Sabertooth, heal Nyra 4. Otherwise draw 1 card."
+    },
+    "card-lieren-regroup": {
+      "name": "Regroup!",
+      "description": "Gain Nyra's Bond."
+    },
+    "card-lieren-opportunistic-strike": {
+      "name": "Opportunistic Strike!",
+      "description": "Attack modifier: roll 1 bonus die; Spear +1 damage, Claw +2 damage, Nyra's Bond heals Nyra 1, Sabertooth +3 damage."
+    },
+    "card-lieren-pounce": {
+      "name": "Pounce!",
+      "description": "Attack modifier: roll 5 bonus dice; each Spear adds +1 attack damage; if any Claw is rolled, inflict 1 Bleed."
+    },
+    "card-lieren-savage-claw": {
+      "name": "Savage Claw!",
+      "description": "Choose 1 player and roll 1 die; Claw or Sabertooth inflicts 2 Bleed, otherwise inflict 1 Bleed."
+    },
+    "card-lieren-bloodline": {
+      "name": "Bloodline!",
+      "description": "Roll 3 dice; heal Nyra 1, then heal 1 for each Nyra's Bond and 2 for each Sabertooth."
+    },
+    "upgrade-lieren-kindred-bond-3": {
+      "name": "Kindred Bond III",
+      "description": "Upgrade Kindred Bond to level III."
+    },
+    "upgrade-lieren-kindred-bond-2": {
+      "name": "Kindred Bond II",
+      "description": "Upgrade Kindred Bond to level II."
+    },
+    "upgrade-lieren-beast-force-2": {
+      "name": "Beast Force II / Fierce Gaze",
+      "description": "Upgrade Beast Force and add the Fierce Gaze branch."
+    },
+    "upgrade-lieren-brutal-strike-2": {
+      "name": "Brutal Strike II",
+      "description": "Upgrade Brutal Strike to level II."
+    },
+    "upgrade-lieren-hunt-ambush-2": {
+      "name": "Hunt Ambush II / Cutthroat",
+      "description": "Upgrade Hunt Ambush and add the Cutthroat branch."
+    },
+    "upgrade-lieren-beast-instinct-2": {
+      "name": "Beast Instinct II / Swipe",
+      "description": "Upgrade Beast Instinct and add the Swipe branch."
+    },
+    "upgrade-lieren-life-revival-2": {
+      "name": "Life Revival II",
+      "description": "Upgrade Life Revival to level II."
+    },
+    "upgrade-lieren-savage-force-2": {
+      "name": "Savage Force II / Hunting",
+      "description": "Upgrade Savage Force and add the Hunting branch."
+    },
+    "upgrade-lieren-wild-force-2": {
+      "name": "Wild Force II",
+      "description": "Upgrade Wild Force to level II."
+    },
+    "card-vampire-lord-blood-surge": {
+      "name": "Blood Surge!",
+      "description": "Roll 1 die: if you roll a Blood Drop, gain 3 Blood Power; otherwise draw 1 card."
+    },
+    "card-vampire-lord-blood-from-above": {
+      "name": "Blood from Above!",
+      "description": "Roll 1 die and gain half its value, rounded up, as Blood Power."
+    },
+    "card-vampire-lord-total-demise": {
+      "name": "Total Demise!",
+      "description": "Attack modifier: roll 5 dice; add +1 attack damage for each Claw. If at least 3 damage was added, inflict 1 Bleed."
+    },
+    "card-vampire-lord-boiling-blood": {
+      "name": "Boiling Blood!",
+      "description": "Attack modifier: add +1 attack damage. Also add +1 more attack damage for each Bleed on the attacked opponent."
+    },
+    "card-vampire-lord-gushing-blood": {
+      "name": "Gushing Blood!",
+      "description": "Gain 1 Blood Power and 1 CP."
+    },
+    "upgrade-vampire-lord-undying-2": {
+      "name": "Undying II",
+      "description": "Upgrade Undying to level II."
+    },
+    "upgrade-vampire-lord-blood-thirst-2-blood-river": {
+      "name": "Blood Thirst II / Blood River",
+      "description": "Upgrade Blood Thirst to level II and keep the lower Blood River section as a variant of the upgraded ability."
+    },
+    "upgrade-vampire-lord-blood-magic-2-flayed": {
+      "name": "Blood Magic II / Flayed",
+      "description": "Upgrade Blood Magic to level II and keep the lower Flayed section as a variant of the upgraded ability."
+    },
+    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": {
+      "name": "Blood Possessed II / Blood Addiction",
+      "description": "Upgrade Blood Possessed to level II and keep the lower Blood Addiction section as a variant of the upgraded ability."
+    },
+    "upgrade-vampire-lord-rend-claws-2": {
+      "name": "Rend Claws II",
+      "description": "Upgrade Rend Claws to level II."
+    },
+    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": {
+      "name": "Blood Feast II / Dressed to Kill",
+      "description": "Upgrade Blood Feast to level II and keep the lower Dressed to Kill section as a variant of the upgraded ability."
+    },
+    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": {
+      "name": "Mesmerize Power II / Soul Gaze",
+      "description": "Upgrade Mesmerize Power to level II and keep the lower Soul Gaze section as a variant of the upgraded ability."
+    },
+    "upgrade-vampire-lord-bloodthirsty-claws-3": {
+      "name": "Bloodthirsty Claws III",
+      "description": "Upgrade Bloodthirsty Claws to level III."
+    },
+    "upgrade-vampire-lord-bloodthirsty-claws-2": {
+      "name": "Bloodthirsty Claws II",
+      "description": "Upgrade Bloodthirsty Claws to level II."
+    },
+    "card-vampire-lord-drink-up": {
+      "name": "Drink Up!",
+      "description": "Spend up to 2 Blood Power. Then gain 2 CP for each Blood Power spent."
+    },
+    "card-vampire-lord-bloodstone": {
+      "name": "Bloodstone!",
+      "description": "Gain 1 Mesmerize and 2 Blood Power. Inflict 1 Bleed on an opponent."
+    },
+    "card-thor-worthy": {
+      "name": "Worthy!",
+      "description": "Change one of your dice to 4 or 5."
+    },
+    "card-thor-impenetrable": {
+      "name": "Impenetrable!",
+      "description": "Spend 2 Electrokinesis in addition to the CP cost to prevent all incoming damage to you."
+    },
+    "card-thor-undaunted": {
+      "name": "Undaunted!",
+      "description": "After being attacked, if the incoming attack damage would defeat you, roll 1 die. On Worthy, prevent enough damage to remain at 1 health."
+    },
+    "card-thor-hammer-time": {
+      "name": "Hammer Time!",
+      "description": "Retrieve Mjolnir and gain 1 CP and 1 Electrokinesis. The Electrokinesis from a successful Retrieve is gained simultaneously."
+    },
+    "card-thor-thunderous": {
+      "name": "Thunderous!",
+      "description": "Draw 1 card and gain 2 Electrokinesis."
+    },
+    "card-thor-storm-brewing": {
+      "name": "Storm Brewing!",
+      "description": "Playable only after you have Thrown Mjolnir at least twice this turn. Draw 1 card and gain 1 CP, 1 Guard Break, and 1 Electrokinesis."
+    },
+    "card-thor-bifrost": {
+      "name": "Bifrost!",
+      "description": "Promo card. Roll 1 die: on Thunder, draw 1 card and gain 1 Guard Break and 2 Electrokinesis; otherwise draw 1 card."
+    },
+    "upgrade-thor-hammer-2": {
+      "name": "Hammer Strike II",
+      "description": "3/4/5 Hammers: deal 5/6/7 damage and Throw or Retrieve. With at least 4 identical values, gain 1 Electrokinesis."
+    },
+    "upgrade-thor-hammer-3": {
+      "name": "Hammer Strike III",
+      "description": "3/4/5 Hammers: deal 5/6/8 damage and Throw or Retrieve. With at least 3 identical values, gain 1 Electrokinesis."
+    },
+    "upgrade-thor-mighty-summon-2": {
+      "name": "Mighty Summon II / Flash and Thunder",
+      "description": "Gain 2 Guard Break and heal 3. If holding Mjolnir, gain 3 Electrokinesis; otherwise Retrieve it and deal 4 collateral damage to its former holder. Flash and Thunder (2 Hammers and 2 Thunder): gain 2 Electrokinesis and deal 6 damage."
+    },
+    "upgrade-thor-chain-lightning-2": {
+      "name": "Chain Lightning II",
+      "description": "Roll 4 effect dice and choose 2; deal their total as attack damage. Deal 3 collateral damage to an opponent of your choice."
+    },
+    "upgrade-thor-odinforce-2": {
+      "name": "Odinforce II",
+      "description": "Deal 6 damage and roll 5 effect dice. You may reroll any number of these dice together once. From the final results: gain 1 Electrokinesis per Thunder, gain 1 CP for at least 2 Worthy, and Throw or Retrieve once for at least 2 Hammers. Add your final Electrokinesis to the attack."
+    },
+    "upgrade-thor-thunder-strike-2": {
+      "name": "Thunder Strike II",
+      "description": "Small straight: Throw or Retrieve once, gain 1 Electrokinesis, and deal 9 damage."
+    },
+    "upgrade-thor-power-of-thunder-2": {
+      "name": "Power of Thunder II / Asgardian Might",
+      "description": "Large straight: Throw or Retrieve once, gain 2 Electrokinesis, and deal 12 damage. Asgardian Might (3 Worthy): heal 4."
+    },
+    "upgrade-thor-bottled-lightning-2": {
+      "name": "Bottled Lightning II / Hammer Chain",
+      "description": "4 Thunder: Throw or Retrieve up to 3 times, gain 2 Guard Break, and deal 8 damage plus current Electrokinesis. Hammer Chain (3 Thunder): Throw or Retrieve up to 6 times."
+    },
+    "upgrade-thor-thunder-wheel-2": {
+      "name": "Thunder Wheel II",
+      "description": "Roll 4 defense dice. Throw or Retrieve once per pair of Hammers, prevent 2 damage per Worthy, and gain 1 Electrokinesis per Thunder."
+    },
+    "spell-flames-of-faltine": {
+      "name": "Flames of Faltine",
+      "description": "Prepare: Deal 1 undefendable damage to an opponent from a separate source. Cast: Add 1 damage to this attack, then return this card to your hand."
+    },
+    "spell-rings-of-raggadorr": {
+      "name": "Rings of Raggadorr",
+      "description": "Prepare: Gain 1 Premonition. Cast: Cast up to 2 different spells from your discard pile, then discard this card."
+    },
+    "spell-vapors-of-valtorr": {
+      "name": "Vapors of Valtorr",
+      "description": "Prepare: Heal any hero 1. Cast: Gain 3 Premonition, then discard this card."
+    },
+    "spell-bolts-of-balthakk": {
+      "name": "Bolts of Balthakk",
+      "description": "Prepare: Gain 1 CP. Cast: Deal 3 undefendable damage to an opponent from a separate source, then discard this card."
+    },
+    "spell-winds-of-watoomb": {
+      "name": "Winds of Watoomb",
+      "description": "Prepare: You may remove 1 status effect from a player. Cast: Prepare 1 spell from your discard pile, then discard this card."
+    },
+    "spell-mists-of-morpheus": {
+      "name": "Mists of Morpheus",
+      "description": "Prepare: Give 1 player 1 Déjà Vu. Cast: Heal any hero 3, then discard this card."
+    },
+    "spell-crimson-bands-of-cyttorak": {
+      "name": "Crimson Bands of Cyttorak",
+      "description": "Prepare: Apply 1 Crimson Bands to an opponent. Cast: Make this attack undefendable, then discard this card."
+    },
+    "spell-fangs-of-farallah": {
+      "name": "Fangs of Farallah",
+      "description": "Prepare: An opponent loses 1 CP. Cast: Add 3 damage to this attack, then discard this card."
+    },
+    "spell-images-of-ikonn": {
+      "name": "Images of Ikonn",
+      "description": "Prepare: No effect. Cast: Add 1 damage to this attack for each card in your hand, up to 4, then discard this card."
+    },
+    "card-strange-see-the-future": {
+      "name": "See the Future!",
+      "description": "Gain 2 Premonition."
+    },
+    "card-strange-icy-tendrils": {
+      "name": "Icy Tendrils!",
+      "description": "Roll 2 dice: Mandala adds 1 damage to this attack; Book casts 1 spell; Cloak adds 2 damage to this attack; Amulet applies 1 Crimson Bands."
+    },
+    "card-strange-shield-of-seraphim": {
+      "name": "Shield of the Seraphim!",
+      "description": "Only playable after you are attacked. Roll 2 dice: Mandala prevents 1 damage; Book prevents 2; Cloak prevents 3; Amulet gains 1 Premonition."
+    },
+    "card-strange-cast-away": {
+      "name": "Cast Away!",
+      "description": "Cast 1 spell."
+    },
+    "card-strange-time-loop": {
+      "name": "Time Loop!",
+      "description": "Give 1 player 1 Déjà Vu."
+    }
   },
   "passive": {
     "tithes": {
@@ -5790,75 +6986,84 @@
       "free": "Free"
     },
     "selectDieHint": "Click a die to reroll",
-  "treantSeedling": {
-    "name": "Seedling Spirit",
-    "rerollShort": "Reroll",
-    "reroll": "Spend Seedling to reroll"
-  },
-  "treantSapling": {
-    "name": "Sapling Spirit",
-    "healCpShort": "Heal+CP",
-    "healCp": "Heal 1 and gain 1 CP",
-    "drawShort": "Draw",
-    "draw": "Spend Sapling and 1 CP to draw 1"
-  },
-  "treantLifeSap": {
-    "name": "Life Sap",
-    "rollHealShort": "Heal",
-    "rollHeal": "Roll to heal half"
-  },
-  "zhanshujiaTacticalAdvantage": {
-    "name": "Tactical Advantage",
-    "cpShort": "+1 CP",
-    "cp": "Spend 1 Tactical Advantage to gain 1 CP",
-    "rerollShort": "Reroll",
-    "reroll": "Spend 1 Tactical Advantage to reroll 1 of your dice",
-    "drawShort": "Draw",
-    "draw": "Spend 3 Tactical Advantage to draw 1 card",
-    "targetedShort": "Targeted",
-    "targeted": "Spend 3 Tactical Advantage to inflict 1 Targeted on the opponent",
-    "protectShort": "Protect",
-    "protect": "Spend 4 Tactical Advantage to gain 1 Protect",
-    "transferShort": "Transfer",
-    "transfer": "Spend 4 Tactical Advantage to transfer 1 status effect"
-  },
-  "vampireLordBloodPower": {
-    "name": "Blood Power",
-    "attackBonusShort": "+3 Damage",
-    "attackBonus": "With at least 1 Blood Power, spend 1 Blood Power to add 3 damage to this attack; each effect can be activated once per turn",
-    "removeStatusShort": "Remove Status",
-    "removeStatus": "With at least 2 Blood Power, spend 2 Blood Power to choose 1 player and remove 1 status effect; activate only during the Main Phase, once per effect per turn",
-    "drawShort": "Draw 2",
-    "draw": "With at least 3 Blood Power, spend 3 Blood Power to draw 2 cards; each effect can be activated once per turn",
-    "healShort": "Blood Heal",
-    "heal": "With at least 4 Blood Power, spend 4 Blood Power to heal equal to the damage successfully dealt by your most recent successful attack this turn; activate only during your Main Phase 2, once per effect per turn"
-  },
-  "vampireLordMesmerize": {
-    "name": "Mesmerize",
-    "useShort": "Use Mesmerize",
-    "use": "Force an opponent to reroll 1 die: a player with this token may spend 1 Mesmerize to roll 1 die. On 5-6, they may force an opponent to reroll any 1 die"
-  },
-  "zhizhuxiaCombo": {
-    "name": "Combo",
-    "useShort": "Use Combo",
-    "use": "After this attack deals damage, spend 1 Combo to make one additional attack; each effect may be activated once per turn"
-  },
-  "artificerWorkshop": {
-    "buildNanobotShort": "Build Nano",
-    "buildNanobot": "Spend 2 Synth to build 1 Nanobot use",
-    "buildShockBotShort": "Build Shock",
-    "buildShockBot": "Spend 2 Synth to build 1 Shock Bot use",
-    "buildHealBotShort": "Build Heal",
-    "buildHealBot": "Spend 2 Synth to build 1 Heal Bot use",
-    "upgradeNanobotShort": "Upgrade Nano",
-    "upgradeNanobot": "Spend 3 Synth to upgrade Nanobot to 2 uses",
-    "upgradeShockBotShort": "Upgrade Shock",
-    "upgradeShockBot": "Spend 3 Synth to upgrade Shock Bot to 2 uses",
-    "upgradeHealBotShort": "Upgrade Heal",
-    "upgradeHealBot": "Spend 3 Synth to upgrade Heal Bot to 2 uses",
-    "activateNanobotAdvancedShort": "Use Nano+",
-    "activateNanobotAdvanced": "Spend 1 Synth and 1 advanced Nanobot use to detonate all Nanobombs"
-  }
+    "treantSeedling": {
+      "name": "Seedling Spirit",
+      "rerollShort": "Reroll",
+      "reroll": "Spend Seedling to reroll"
+    },
+    "treantSapling": {
+      "name": "Sapling Spirit",
+      "healCpShort": "Heal+CP",
+      "healCp": "Heal 1 and gain 1 CP",
+      "drawShort": "Draw",
+      "draw": "Spend Sapling and 1 CP to draw 1"
+    },
+    "treantLifeSap": {
+      "name": "Life Sap",
+      "rollHealShort": "Heal",
+      "rollHeal": "Roll to heal half"
+    },
+    "zhanshujiaTacticalAdvantage": {
+      "name": "Tactical Advantage",
+      "cpShort": "+1 CP",
+      "cp": "Spend 1 Tactical Advantage to gain 1 CP",
+      "rerollShort": "Reroll",
+      "reroll": "Spend 1 Tactical Advantage to reroll 1 of your dice",
+      "drawShort": "Draw",
+      "draw": "Spend 3 Tactical Advantage to draw 1 card",
+      "targetedShort": "Targeted",
+      "targeted": "Spend 3 Tactical Advantage to inflict 1 Targeted on the opponent",
+      "protectShort": "Protect",
+      "protect": "Spend 4 Tactical Advantage to gain 1 Protect",
+      "transferShort": "Transfer",
+      "transfer": "Spend 4 Tactical Advantage to transfer 1 status effect"
+    },
+    "vampireLordBloodPower": {
+      "name": "Blood Power",
+      "attackBonusShort": "+3 Damage",
+      "attackBonus": "With at least 1 Blood Power, spend 1 Blood Power to add 3 damage to this attack; each effect can be activated once per turn",
+      "removeStatusShort": "Remove Status",
+      "removeStatus": "With at least 2 Blood Power, spend 2 Blood Power to choose 1 player and remove 1 status effect; activate only during the Main Phase, once per effect per turn",
+      "drawShort": "Draw 2",
+      "draw": "With at least 3 Blood Power, spend 3 Blood Power to draw 2 cards; each effect can be activated once per turn",
+      "healShort": "Blood Heal",
+      "heal": "With at least 4 Blood Power, spend 4 Blood Power to heal equal to the damage successfully dealt by your most recent successful attack this turn; activate only during your Main Phase 2, once per effect per turn"
+    },
+    "vampireLordMesmerize": {
+      "name": "Mesmerize",
+      "useShort": "Use Mesmerize",
+      "use": "Force an opponent to reroll 1 die: a player with this token may spend 1 Mesmerize to roll 1 die. On 5-6, they may force an opponent to reroll any 1 die"
+    },
+    "zhizhuxiaCombo": {
+      "name": "Combo",
+      "useShort": "Use Combo",
+      "use": "After this attack deals damage, spend 1 Combo to make one additional attack; each effect may be activated once per turn"
+    },
+    "artificerWorkshop": {
+      "buildNanobotShort": "Build Nano",
+      "buildNanobot": "Spend 2 Synth to build 1 Nanobot use",
+      "buildShockBotShort": "Build Shock",
+      "buildShockBot": "Spend 2 Synth to build 1 Shock Bot use",
+      "buildHealBotShort": "Build Heal",
+      "buildHealBot": "Spend 2 Synth to build 1 Heal Bot use",
+      "upgradeNanobotShort": "Upgrade Nano",
+      "upgradeNanobot": "Spend 3 Synth to upgrade Nanobot to 2 uses",
+      "upgradeShockBotShort": "Upgrade Shock",
+      "upgradeShockBot": "Spend 3 Synth to upgrade Shock Bot to 2 uses",
+      "upgradeHealBotShort": "Upgrade Heal",
+      "upgradeHealBot": "Spend 3 Synth to upgrade Heal Bot to 2 uses",
+      "activateNanobotAdvancedShort": "Use Nano+",
+      "activateNanobotAdvanced": "Spend 1 Synth and 1 advanced Nanobot use to detonate all Nanobombs"
+    },
+    "thor": {
+      "name": "Mjolnir",
+      "throw": "Discard to Throw",
+      "retrieve": "Discard to Retrieve",
+      "throwDescription": "Discard 1 card to Throw Mjolnir to an opponent.",
+      "retrieveDescription": "Discard 1 card to Retrieve Mjolnir and gain 1 Electrokinesis.",
+      "draw": "Spend 4 Electrokinesis to draw 1",
+      "drawDescription": "During your own main phase, once per turn."
+    }
   },
   "debug": {
     "testingTools": "Testing Tools",
@@ -6006,5 +7211,52 @@
   "endgame": {
     "ariaHero": "Hero: {{hero}}",
     "ariaPanel": "Game Over Panel"
+  },
+  "doctorStrange": {
+    "skip": "Skip",
+    "cast": "Choose a spell to cast",
+    "prepare": "Choose a spell to prepare",
+    "target": "Choose this player",
+    "removeStatus": "Remove status: {{status}}",
+    "removeStatusTitle": "Choose a status to remove",
+    "incomeNormal": "Do not spend Premonition: draw 1 card",
+    "income1": "Spend 1 Premonition: draw 2 cards",
+    "income3": "Spend 3 Premonition: draw 3 cards",
+    "premonition": "Choose an Income effect",
+    "returnCard": "Choose a card to return to your deck",
+    "returnPosition": "Put it on top or bottom?",
+    "top": "Top of deck",
+    "bottom": "Bottom of deck",
+    "orderNext": "Choose the next card for the top of your deck",
+    "bonusDie": "Doctor Strange bonus die",
+    "preparedSpells": "Book of the Vishanti ({{count}})",
+    "privateChoice": "Private choice",
+    "effects": {
+      "attack": "Doctor Strange attack damage",
+      "damage": "Separate damage",
+      "heal": "Healing",
+      "cp": "Combat Points",
+      "bonus": "Attack damage modifier",
+      "prevent": "Prevent damage",
+      "unblockable": "Undefendable",
+      "crimson-bands": "Crimson Bands",
+      "premonition": "Premonition",
+      "deja-vu": "Déjà Vu",
+      "omen": "Omen",
+      "awareness": "Cosmic Awareness",
+      "binding": "Binding",
+      "wand": "Wand of Watoomb",
+      "wand-after-damage": "After damage: prepare 1 spell from your discard pile, then cast up to 2 spells",
+      "cast-one": "Cast a spell",
+      "premonition-two": "See the Future",
+      "grant-deja-vu": "Time Loop",
+      "ultimate": "All-Seeing Eye",
+      "ultimate-cast": "All-Seeing Eye: cast spells after damage",
+      "income": "Premonition Income",
+      "astral": "Astral Incursion",
+      "tendrils": "Icy Tendrils",
+      "shield": "Shield of the Seraphim",
+      "defense": "Cloak of Levitation"
+    }
   }
 }

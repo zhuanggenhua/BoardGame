@@ -43,7 +43,7 @@ const normalizeBonusDiceFollowupEvents = (
     state: DiceThroneCore,
     settlement: NonNullable<DiceThroneCore['pendingBonusDiceSettlement']>,
     events: DiceThroneEvent[],
-): DiceThroneEvent[] => events.flatMap((event) => {
+): DiceThroneEvent[] => events.flatMap<DiceThroneEvent>((event): DiceThroneEvent[] => {
     if (event.type !== 'DAMAGE_DEALT') {
         return [event];
     }
@@ -865,7 +865,7 @@ export function executeTokenCommand(
         }
 
         case 'REROLL_BONUS_DIE': {
-            const { dieIndex } = command.payload as { dieIndex: number };
+            const { dieIndex, dieIndices } = command.payload as { dieIndex: number; dieIndices?: number[] };
             const playerId = command.playerId;
             const settlement = state.pendingBonusDiceSettlement;
             const currentRollContext = resolveCurrentRollContext(state, phase);
@@ -883,6 +883,13 @@ export function executeTokenCommand(
             // 重掷骰子
             const newValue = rollDieValue(random);
             const newFace = getPlayerDieFace(state, settlement.attackerId, newValue) ?? '';
+            const groupResults = settlement.groupReroll ? [
+                { dieIndex, newValue, newFace },
+                ...(dieIndices ?? [dieIndex]).slice(1).map(index => {
+                    const value = rollDieValue(random);
+                    return { dieIndex: index, newValue: value, newFace: getPlayerDieFace(state, settlement.attackerId, value) ?? '' };
+                }),
+            ] : undefined;
             
             // 发出 BONUS_DIE_REROLLED 事件（包含 UI 展示字段，避免 reducer 从 core 派生）
             const rerollEffectKey = settlement.rerollEffectKey ?? 'bonusDie.effect.thunderStrike2Reroll';
@@ -893,6 +900,7 @@ export function executeTokenCommand(
             events.push({
                 type: 'BONUS_DIE_REROLLED',
                 payload: {
+                    dice: groupResults,
                     dieIndex,
                     oldValue: currentDie.value,
                     newValue,

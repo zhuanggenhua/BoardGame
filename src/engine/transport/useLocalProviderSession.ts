@@ -59,21 +59,24 @@ export function useLocalProviderSession(args: {
     const persistedSnapshot = persistedSnapshotResult?.snapshot ?? null;
     const rejectedPersistedSnapshotSeed = persistedSnapshotResult?.rejectedSeed ?? null;
 
-    const [initialRandom] = useState<LocalProviderRandom>(() =>
-        createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0),
-    );
-    const randomRef = useRef<LocalProviderRandom>(initialRandom);
-
-    const [state, setState] = useState<MatchState<unknown>>(() =>
-        createInitialLocalProviderState({
-            config,
-            persistedState: persistedSnapshot?.state,
-            aiSeatIds,
-            initialRandom,
-            setupData,
-            setupPlayerIds,
-        }),
-    );
+    // 初始状态和已消费的随机源必须一起创建。StrictMode重跑初始化时，
+    // 每次使用独立随机源，避免被丢弃的setup继续推进保留下来的游标。
+    const [initialSession] = useState(() => {
+        const random = createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0);
+        return {
+            random,
+            state: createInitialLocalProviderState({
+                config,
+                persistedState: persistedSnapshot?.state,
+                aiSeatIds,
+                initialRandom: random,
+                setupData,
+                setupPlayerIds,
+            }),
+        };
+    });
+    const randomRef = useRef<LocalProviderRandom>(initialSession.random);
+    const [state, setState] = useState<MatchState<unknown>>(initialSession.state);
     const stateRef = useRef(state);
 
     useEffect(() => {

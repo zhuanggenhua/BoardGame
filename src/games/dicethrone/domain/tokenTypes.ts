@@ -10,6 +10,7 @@
  * Token 类型/分类
  */
 export type TokenCategory =
+    | 'companion'     // 独一同伴的位置标记，不属于可移除/转移的状态
     | 'buff'          // 正面效果
     | 'debuff'        // 负面效果（脑震荡、眩晕、击倒等）
     | 'consumable';   // 可消耗道具（太极、闪避、净化等）
@@ -62,7 +63,7 @@ export type TokenUseEffectType =
     | 'custom';               // 只消耗 Token 并交给 customActionId 处理
 
 /** 伤害的现实来源，用于区分技能区、手牌、Token/状态和系统伤害。 */
-export type DamageOrigin = 'ability' | 'card' | 'token' | 'status' | 'system';
+export type DamageOrigin = 'ability' | 'card' | 'token' | 'status' | 'companion' | 'system';
 
 /**
  * Token 使用效果

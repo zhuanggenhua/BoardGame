@@ -180,13 +180,14 @@ describe('diceThroneCriticalImageResolver', () => {
             barbarian: { width: 2048, height: 1260 },
             monk: { width: 2048, height: 1260 },
             moon_elf: { width: 2048, height: 1260 },
-            paladin: { width: 2048, height: 1250 },
+            paladin: { width: 4005, height: 2476 },
             pyromancer: { width: 2048, height: 1260 },
             shadow_thief: { width: 2048, height: 1260 },
             tianshi: { width: 3643, height: 2234 },
             lieren: { width: 3632, height: 2234 },
             vampire_lord: { width: 3627, height: 2234 },
             zhizhuxia: { width: 1800, height: 1089 },
+            thor: { width: 3576, height: 2157 },
         } as const;
 
         for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {

@@ -50,6 +50,7 @@ import { PlatformFavoriteButton } from '../components/home/PlatformFavoriteButto
 import { ClassicHomeSurface } from '../components/home/ClassicHomeSurface';
 import { useMobileViewport } from '../hooks/ui/useMobileViewport';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
+import { PlatformGameDetailsFallback } from '../components/home/PlatformGameDetailsFallback';
 import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
 import { HomeModalErrorBoundary } from './HomeModalErrorBoundary';
 import { requireLazyModuleExport } from '../lib/lazyModuleExport';
@@ -355,11 +356,12 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
             const game = getGameById(gameId);
             if (!game) return null;
             return {
+                animateExit: homeStyle === 'modern',
                 render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => {
                     const GameDetailsModalComponent = loadedGameDetailsModalRef.current ?? LazyGameDetailsModal;
                     return (
                         <HomeModalErrorBoundary resetKey={game.id}>
-                            <Suspense fallback={<HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
+                            <Suspense fallback={homeStyle === 'modern' ? <PlatformGameDetailsFallback onClose={close} closeOnBackdrop={closeOnBackdrop} /> : <HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
                                 <GameDetailsModalComponent
                                 isOpen
                                 onClose={close}
@@ -369,7 +371,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                                 thumbnail={game.thumbnail}
                                 favoriteControl={<PlatformFavoriteButton gameId={game.id} title={game.titleKey} />}
                                 closeOnBackdrop={closeOnBackdrop}
-                                disableEnterAnimation
+                                disableEnterAnimation={homeStyle !== 'modern'}
                                 onNavigate={() => gameModalNavigateAwayBridgeRef.current()}
                                 />
                             </Suspense>
@@ -377,7 +379,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                     );
                 },
             };
-        }, []),
+        }, [homeStyle]),
     });
     const activeGameModalId = gameUrlModal.paramValue;
 
@@ -1099,8 +1101,12 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         ) : (
             <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
                 brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
-                utility={<><AuthorSupportButton /><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
-                mobileUtility={close => <><AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                utility={<>
+                    <span data-platform-utility-id="support" data-platform-utility-priority="1"><AuthorSupportButton /></span>
+                    <span data-platform-utility-id="guide" data-platform-utility-priority="0"><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /></span>
+                    <span data-platform-utility-id="language" data-platform-utility-priority="2"><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></span>
+                </>}
+                mobileUtility={(close, included) => <>{(!included || included.has('support')) && <AuthorSupportButton />}{(!included || included.has('guide')) && <OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" />}{(!included || included.has('language')) && <LanguageSwitcher visualStyle="platform" className="platform-language-control" />}</>}
                 games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
                 onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
                 onOpenLibraryGame={openLibraryGame}
@@ -1115,6 +1121,6 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                 activeMatch={activeMatchCard}
             />
         )}
-        <HomeVersionFooter positionClassName={homeStyle === 'modern' ? 'platform-home-version' : undefined} />
+        <HomeVersionFooter theme={homeStyle === 'modern' ? 'platform' : 'classic'} positionClassName={homeStyle === 'modern' ? 'platform-home-version' : undefined} />
     </>;
 };

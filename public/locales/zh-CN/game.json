@@ -170,7 +170,7 @@
       "typeLabel": "类型",
       "severityLabel": "优先级",
       "contentLabel": "描述",
-      "contentPlaceholder": "请描述问题或建议…\n提交时会自动截图，也可粘贴补充截图 (Ctrl+V)",
+      "contentPlaceholder": "请描述问题或建议…",
       "pasteHint": "提交反馈时会自动截图，也支持粘贴补充截图",
       "imageAlt": "反馈截图",
       "deleteImage": "删除图片",
@@ -231,9 +231,9 @@
       "platform": {
         "title": "首页操作",
         "browseTitle": "找到游戏，查看房间",
-        "browseBody": "在发现页搜索游戏。手机上先点封面展开介绍，再点“查看房间”进入游戏详情。",
+        "browseBody": "在发现页搜索游戏。点击游戏封面直接进入详情，查看房间或创建房间。",
         "favoriteTitle": "用星标整理收藏",
-        "favoriteBody": "点击封面右上角星标添加或移除收藏，在收藏库查看游戏与更新。",
+        "favoriteBody": "桌面悬停卡片时，点击右上角星标添加或移除收藏；手机进入游戏详情后点击收藏。在收藏库查看游戏与更新。",
         "settingsTitle": "右下角齿轮是快捷设置",
         "settingsBody": "点击齿轮展开显示模式、全屏、关于和反馈等入口；手机上的支持作者、语言与操作指南在顶部菜单中。",
         "gameImages": "对局里的看牌与快捷操作"

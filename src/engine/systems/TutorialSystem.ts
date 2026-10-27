@@ -28,6 +28,7 @@ export const TUTORIAL_COMMANDS = {
     BIND_MANIFEST: 'SYS_TUTORIAL_BIND_MANIFEST',
     NEXT: 'SYS_TUTORIAL_NEXT',
     PREVIOUS: 'SYS_TUTORIAL_PREVIOUS',
+    RESTART_STEP: 'SYS_TUTORIAL_RESTART_STEP',
     CLOSE: 'SYS_TUTORIAL_CLOSE',
     AI_CONSUMED: 'SYS_TUTORIAL_AI_CONSUMED',
     ANIMATION_COMPLETE: 'SYS_TUTORIAL_ANIMATION_COMPLETE',
@@ -134,6 +135,8 @@ const snapshotTutorialState = <TCore>(state: MatchState<TCore>): MatchState<TCor
             },
             tutorial: {
                 ...tutorial,
+                // 课程定义由外层运行态唯一持有，检查点只保存节点运行态。
+                steps: [],
                 checkpoints: undefined,
             },
         },
@@ -145,7 +148,7 @@ const appendTutorialCheckpoint = <TCore>(
     randomCursor?: number,
 ): MatchState<TCore> => {
     const tutorial = state.sys.tutorial;
-    if (!tutorial.active || !tutorial.step) return state;
+    if (!tutorial.active || !tutorial.step || isHiddenTutorialAutomationStep(tutorial.step)) return state;
 
     const checkpoints = (tutorial.checkpoints ?? [])
         .filter((checkpoint) => checkpoint.stepIndex < tutorial.stepIndex);
@@ -164,12 +167,15 @@ const appendTutorialCheckpoint = <TCore>(
 
 const restoreTutorialCheckpoint = <TCore>(
     state: MatchState<TCore>,
+    currentStep = false,
 ): MatchState<TCore> | undefined => {
     const tutorial = state.sys.tutorial;
     const checkpoints = tutorial.checkpoints ?? [];
-    const currentPosition = checkpoints.findIndex((checkpoint) => checkpoint.stepIndex === tutorial.stepIndex);
-    if (currentPosition < 0) return undefined;
-    const previousCheckpoints = checkpoints.slice(0, currentPosition);
+    // 旧快照/状态预置缺当前可见节点时，交给既有manifest回退路径。
+    if (!checkpoints.some(checkpoint => checkpoint.stepIndex === tutorial.stepIndex)
+        && (currentStep || !isHiddenTutorialAutomationStep(tutorial.step))) return undefined;
+    const previousCheckpoints = checkpoints.filter(checkpoint => currentStep
+        ? checkpoint.stepIndex <= tutorial.stepIndex : checkpoint.stepIndex < tutorial.stepIndex);
     const checkpoint = previousCheckpoints[previousCheckpoints.length - 1];
     if (!checkpoint) return undefined;
 
@@ -189,6 +195,7 @@ const restoreTutorialCheckpoint = <TCore>(
             undo: restoredUndo,
             tutorial: {
                 ...restored.sys.tutorial,
+                steps: tutorial.steps,
                 checkpoints: previousCheckpoints,
             },
         },
@@ -651,6 +658,12 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                     random.getCursor?.(),
                 );
                 return { ...result, halt: true };
+            }
+
+            if (command.type === TUTORIAL_COMMANDS.RESTART_STEP) {
+                if (!state.sys.tutorial.active || hasPendingAiActions(state.sys.tutorial)) return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
+                const restored = restoreTutorialCheckpoint(state, true);
+                return { halt: true, state: restored ?? state };
             }
 
             if (command.type === TUTORIAL_COMMANDS.PREVIOUS) {

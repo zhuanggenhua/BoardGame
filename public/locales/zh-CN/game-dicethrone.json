@@ -644,6 +644,42 @@
       "description": [
         "正面状态效果，堆叠上限：1。强迫一名对手重掷 1 颗骰子：拥有该指示物的玩家可以花费 1 个催眠并投掷 1 颗骰子。如果投出 5-6，你可以强迫对手重掷任意 1 颗骰子。"
       ]
+    },
+    "guard_break": {
+      "name": "破防",
+      "description": [
+        "进攻投掷阶段结束时可花费1破防并投掷1骰。4或5使本次攻击不可防御。失败仍消耗。每次攻击可以逐次花费多个破防。"
+      ]
+    },
+    "electrokinesis": {
+      "name": "驭电",
+      "description": [
+        "上限4。持有者可在自己的主要阶段花费4驭电抽1张牌，每回合一次。能力按当前驭电增加伤害时不会消耗驭电。"
+      ]
+    },
+    "mjolnir": {
+      "name": "姆乔尔尼尔",
+      "description": [
+        "独一同伴，初始由索尔持有，不能被移除或作为状态转移。飞掷至一名对手并独立造成1不可防御伤害；召回时获得1驭电。任何合法时机可弃1张手牌执行一次飞掷或召回。持有者败北时自动召回。"
+      ]
+    },
+    "crimson-bands": {
+      "name": "深红系带",
+      "description": [
+        "拥有此标记的玩家不能在其下一个完整投掷阶段打出卡牌；该阶段结束时移除此标记。"
+      ]
+    },
+    "premonition": {
+      "name": "预感",
+      "description": [
+        "在收入阶段，你可以每回合仅一次花费预感：花费1枚抽2张，或花费3枚抽3张，以替代普通的抽1张。然后将本次抽到的1张牌放回牌库顶或底。"
+      ]
+    },
+    "deja-vu": {
+      "name": "即视感",
+      "description": [
+        "在自己的进攻投掷阶段、激活能力前，花费此标记结束当前进攻投掷阶段并开始新的进攻投掷阶段。"
+      ]
     }
   },
   "actionLog": {
@@ -796,7 +832,8 @@
     "tianshi": "炽天使",
     "lieren": "女猎手",
     "vampire_lord": "吸血鬼领主",
-    "zhizhuxia": "蜘蛛侠"
+    "zhizhuxia": "蜘蛛侠",
+    "thor": "索尔"
   },
   "characters": {
     "monk": "武僧",
@@ -815,7 +852,9 @@
     "tianshi": "炽天使",
     "lieren": "女猎手",
     "vampire_lord": "吸血鬼领主",
-    "zhizhuxia": "蜘蛛侠"
+    "zhizhuxia": "蜘蛛侠",
+    "thor": "索尔",
+    "doctor_strange": "奇异博士"
   },
   "companion": {
     "nyra": {
@@ -909,6 +948,12 @@
           "web": "蛛网面",
           "spider": "蜘蛛面"
         }
+      },
+      "thor": {
+        "name": "索尔骰子"
+      },
+      "doctor_strange": {
+        "name": "奇异博士骰子"
       }
     },
     "resources": {
@@ -1093,11 +1138,19 @@
       "nyras_bond": "魂之羁绊",
       "sabertooth": "剑齿虎",
       "mesmerize": "催眠",
-    "blood_drop": "血滴",
-    "web": "蛛网",
-    "spider": "蜘蛛"
-  }
-},
+      "blood_drop": "血滴",
+      "web": "蛛网",
+      "spider": "蜘蛛",
+      "thor_hammer": "神锤",
+      "thor_worthy": "当之无愧",
+      "thor_thunder": "雷电",
+      "strange-mandala": "曼荼罗",
+      "strange-book": "魔法书",
+      "strange-cloak": "斗篷",
+      "strange-amulet": "护身符"
+    },
+    "rerollSelectedGroup": "重掷所选（{{count}}）"
+  },
   "bonusDie": {
     "title": "额外投掷",
     "confirm": "确认",
@@ -1372,7 +1425,10 @@
       "tianshi.angelicCloak": "天使斗篷：根据骰面反击或抵挡伤害",
       "tianshi.holyStrike": "圣击：每个炽炎剑使本次攻击伤害 +1；圣洁吊坠施加眩光",
       "tianshi.angelicTactics": "天使战术：炽炎剑 +3 伤害；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临",
-      "tianshi.supremeHoliness": "至高圣洁：圣洁吊坠获得 2 飞行和 2 净化，否则抽 1 张牌"
+      "tianshi.supremeHoliness": "至高圣洁：圣洁吊坠获得 2 飞行和 2 净化，否则抽 1 张牌",
+      "thor": {
+        "die": "点数 {{value}}"
+      }
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "selectToRerollFree": "点击骰子免费重掷一次",
@@ -1484,7 +1540,13 @@
     "passive_not_found": "被动技能不存在",
     "action_not_found": "动作不存在",
     "target_die_required": "需要指定目标骰子",
-    "die_is_locked": "该骰子已被锁定"
+    "die_is_locked": "该骰子已被锁定",
+    "requireMjolnirThrowsThisTurn": "本回合需要至少飞掷姆乔尔尼尔2次",
+    "requireLethalAttack": "只能在即将受到致命攻击伤害时打出",
+    "ultimate_resolving": "终极能力结算期间，对手不能行动",
+    "crimsonBandsBlocksCards": "深红系带生效中，本次完整投掷阶段不能打出卡牌",
+    "spellPreparationUnavailable": "只能在自己的主要阶段、每回合一次从手牌准备法术",
+    "deja_vu_unavailable": "当前时机不能使用即视感"
   },
   "actions": {
     "resolveAttack": "结算攻击",
@@ -1554,6 +1616,10 @@
       "helm": "头盔",
       "pray": "祈祷",
       "katana": "武士刀",
+      "strange-book": "魔法书",
+      "strange-amulet": "护身符",
+      "strange-mandala": "曼荼罗",
+      "strange-cloak": "斗篷",
       "rising_sun": "旭日",
       "branch": "树枝",
       "leaf": "树叶",
@@ -1584,7 +1650,10 @@
       "mesmerize": "催眠",
       "blood_drop": "血滴",
       "spider": "蜘蛛",
-      "web": "蛛网"
+      "web": "蛛网",
+      "thor_hammer": "神锤",
+      "thor_worthy": "当之无愧",
+      "thor_thunder": "雷电"
     },
     "trigger": {
       "generic": "变体条件",
@@ -1887,15 +1956,46 @@
     },
     "tianshi": {
       "player": "{{player}}",
-      "divinePurification": { "title": "神圣净化：选择一名玩家" },
-      "gospelArrival": { "title": "福音临世：选择一名对手施加眩光" },
-      "divineCommand": { "title": "神圣指令：选择一名对手承受 4 点不可防御伤害" },
-      "divineProtection": { "title": "神之庇佑：选择一名玩家获得 2 净化和 2 飞行" },
-      "takeoff": { "title": "起飞：选择一名玩家获得飞行；对手承受 3 点不可防御伤害" },
-      "divineArbitrationDazzle": { "title": "神圣裁决：选择一名玩家获得眩光" },
-      "divineArbitrationFlight": { "title": "神圣裁决：选择一名玩家获得 2 个飞行" },
-      "divineArbitrationPurify": { "title": "神圣裁决：选择一名玩家获得净化" },
-      "ascension": { "title": "飞升：选择一名玩家获得飞行" }
+      "divinePurification": {
+        "title": "神圣净化：选择一名玩家"
+      },
+      "gospelArrival": {
+        "title": "福音临世：选择一名对手施加眩光"
+      },
+      "divineCommand": {
+        "title": "神圣指令：选择一名对手承受 4 点不可防御伤害"
+      },
+      "divineProtection": {
+        "title": "神之庇佑：选择一名玩家获得 2 净化和 2 飞行"
+      },
+      "takeoff": {
+        "title": "起飞：选择一名玩家获得飞行；对手承受 3 点不可防御伤害"
+      },
+      "divineArbitrationDazzle": {
+        "title": "神圣裁决：选择一名玩家获得眩光"
+      },
+      "divineArbitrationFlight": {
+        "title": "神圣裁决：选择一名玩家获得 2 个飞行"
+      },
+      "divineArbitrationPurify": {
+        "title": "神圣裁决：选择一名玩家获得净化"
+      },
+      "ascension": {
+        "title": "飞升：选择一名玩家获得飞行"
+      }
+    },
+    "thor": {
+      "throwTo": "飞掷至玩家 {{player}}",
+      "retrieve": "召回姆乔尔尼尔",
+      "stop": "停止移动",
+      "hammerTitle": "飞掷或召回姆乔尔尼尔",
+      "discardTitle": "选择弃置的手牌",
+      "dicePair": "选择第{{first}}、{{second}}颗：{{damage}}伤害",
+      "chainTitle": "选择两颗效果骰",
+      "collateralTitle": "选择附属伤害目标",
+      "target": "玩家 {{player}}",
+      "worthyTitle": "选择骰子点数",
+      "value": "改为 {{value}}"
     }
   },
   "common": {
@@ -1947,6 +2047,10 @@
     "hint_copy_step1": "选择要复制的源骰子",
     "hint_copy_step2": "选择要设为{{value}}的目标骰子",
     "hint_done": "完成",
+    "hint_choose_value": "选择目标点数",
+    "set_value": "设为{{value}}",
+    "hint_group_reroll": "选择要一起重掷的骰子，或确认保留当前结果",
+    "hint_group_reroll_selected": "已选择{{count}}颗骰子，点击重掷；也可确认保留当前结果",
     "hint_set": "选择要设为{{value}}的骰子",
     "hint_adjust": "选择要调整的骰子",
     "hint_any": "选择要修改的骰子",
@@ -2653,7 +2757,7 @@
     },
     "shadow-dance": {
       "name": "暗影之舞",
-      "description": "3 暗影触发：投掷 1 骰，造成一半伤害，并获得潜行和伏击。",
+      "description": "3 暗影触发：投掷 1 骰，造成骰值一半的真实伤害（向上取整），并获得潜行和伏击。",
       "effects": {
         "gainSneak": "获得 1 个潜行标记",
         "gainSneakAttack": "获得 1 个伏击标记"
@@ -3584,18 +3688,11 @@
     },
     "wild-growth-2": {
       "name": "野蛮生长 II",
-      "description": "2 树枝 + 3 树叶：造成 4 点伤害并投掷 5 骰；每个树枝 +1 伤害；若投出树叶，获得生命源泉；每个树灵养成 1 次树灵。乱花迷眼（2 树枝 + 2 树灵）：施加刺藤并造成 4 点不可防御伤害。",
+      "description": "2 树枝 + 3 树叶：造成 4 点伤害。你可以移除至多 2 个树灵，每移除 1 个树灵，增加 4 点伤害；你可以弃掉生命源泉，使此次攻击变为不可防御。种植（1 树枝 + 2 树叶）：养成 3 树灵。",
       "effects": {
-        "roll5BranchLeafSpirit": "造成 4 点伤害并投掷 5 骰；每个树枝 +1 伤害；若投出树叶，获得生命源泉；每个树灵养成 1 次树灵。",
-        "damage4": "造成 4 点伤害。"
-      }
-    },
-    "wild-growth-2-dazzle": {
-      "name": "乱花迷眼",
-      "description": "2 树枝 + 2 树灵：施加刺藤并造成 4 点不可防御伤害。",
-      "effects": {
-        "inflictThorn": "对手获得 1 个刺藤。",
-        "damage4Unblockable": "造成 4 点不可防御伤害。"
+        "removeUpTo2SpiritsForDamageAndSpendLifeSap": "你可以移除至多 2 个树灵，每移除 1 个树灵，增加 4 点伤害；你可以弃掉生命源泉，使此次攻击变为不可防御。",
+        "damage4": "造成 4 点伤害。",
+        "cultivate3": "养成 3 树灵。"
       }
     },
     "wild-roar": {
@@ -4538,17 +4635,30 @@
     "holy-blade": {
       "name": "圣刃",
       "description": "3/4/5 个炽炎剑：造成 5/6/7 点伤害。",
-      "effects": { "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害", "damage7": "造成 7 点伤害" }
+      "effects": {
+        "damage5": "造成 5 点伤害",
+        "damage6": "造成 6 点伤害",
+        "damage7": "造成 7 点伤害"
+      }
     },
     "holy-blade-2": {
       "name": "圣刃 II",
       "description": "3/4/5 个炽炎剑：造成 6/7/8 点伤害。",
-      "effects": { "damage6": "造成 6 点伤害", "damage7": "造成 7 点伤害", "damage8": "造成 8 点伤害" }
+      "effects": {
+        "damage6": "造成 6 点伤害",
+        "damage7": "造成 7 点伤害",
+        "damage8": "造成 8 点伤害"
+      }
     },
     "holy-blade-3": {
       "name": "圣刃 III",
       "description": "3/4/5 个炽炎剑：造成 5/7/9 点伤害；若投出 4 个相同数字，对一名对手施加眩光。",
-      "effects": { "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "damage9": "造成 9 点伤害", "dazzleIfFourKind": "若投出 4 个相同数字，对一名对手施加 1 层眩光" }
+      "effects": {
+        "damage5": "造成 5 点伤害",
+        "damage7": "造成 7 点伤害",
+        "damage9": "造成 9 点伤害",
+        "dazzleIfFourKind": "若投出 4 个相同数字，对一名对手施加 1 层眩光"
+      }
     },
     "cherub": {
       "name": "智天使",
@@ -4561,12 +4671,18 @@
     "holy-radiance": {
       "name": "圣洁光辉",
       "description": "3 个炽炎剑 + 1 个双翼：获得 1 个飞行并造成 6 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "damage6": "造成 6 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "damage6": "造成 6 点伤害"
+      }
     },
     "holy-radiance-2": {
       "name": "圣洁光辉 II",
       "description": "3 个炽炎剑 + 1 个双翼：获得 1 个飞行并造成 7 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "damage7": "造成 7 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "damage7": "造成 7 点伤害"
+      }
     },
     "takeoff": {
       "name": "起飞",
@@ -4575,22 +4691,30 @@
     "divine-purification": {
       "name": "神圣净化",
       "description": "2 个十字 + 1 个圣洁吊坠：选择一名玩家；对手受到 5 点不可防御伤害，自己治疗 4 点；之后可移除 1 个可移除状态。",
-      "effects": { "resolve": "选择一名玩家：对手受到 5 点不可防御伤害，自己治疗 4 点；之后选择移除 1 个可移除状态。" }
+      "effects": {
+        "resolve": "选择一名玩家：对手受到 5 点不可防御伤害，自己治疗 4 点；之后选择移除 1 个可移除状态。"
+      }
     },
     "divine-purification-2": {
       "name": "神圣净化 II",
       "description": "2 个十字 + 1 个圣洁吊坠：选择一名玩家；对手受到 6 点不可防御伤害，自己治疗 5 点；之后可移除 1 个可移除状态。",
-      "effects": { "resolve": "选择一名玩家：对手受到 6 点不可防御伤害，自己治疗 5 点；之后选择移除 1 个可移除状态。" }
+      "effects": {
+        "resolve": "选择一名玩家：对手受到 6 点不可防御伤害，自己治疗 5 点；之后选择移除 1 个可移除状态。"
+      }
     },
     "divine-punishment": {
       "name": "神圣惩戒",
       "description": "至少各有 1 个炽炎剑、双翼、十字和圣洁吊坠：每个炽炎剑造成 2 点伤害，双翼获得飞行，十字获得净化，圣洁吊坠施加眩光。",
-      "effects": { "resolve": "每个炽炎剑造成 2 点伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。" }
+      "effects": {
+        "resolve": "每个炽炎剑造成 2 点伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。"
+      }
     },
     "divine-punishment-2": {
       "name": "神圣惩戒 II",
-       "description": "至少各有 1 个炽炎剑、双翼、十字和圣洁吊坠：每个炽炎剑造成 2 点不可防御伤害，双翼获得飞行，十字获得净化，圣洁吊坠施加眩光。",
-       "effects": { "resolve": "每个炽炎剑造成 2 点不可防御伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。" }
+      "description": "至少各有 1 个炽炎剑、双翼、十字和圣洁吊坠：每个炽炎剑造成 2 点不可防御伤害，双翼获得飞行，十字获得净化，圣洁吊坠施加眩光。",
+      "effects": {
+        "resolve": "每个炽炎剑造成 2 点不可防御伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。"
+      }
     },
     "divine-command": {
       "name": "神圣指令",
@@ -4599,22 +4723,38 @@
     "triumphant-return": {
       "name": "凯旋归来",
       "description": "小顺子：造成 6 点伤害，然后投 1 个奖励骰。",
-      "effects": { "damage6": "造成 6 点伤害", "roll": "投 1 个奖励骰：炽炎剑 +1 伤害、双翼 +2 伤害、十字 +3 伤害、圣洁吊坠使攻击不可防御" }
+      "effects": {
+        "damage6": "造成 6 点伤害",
+        "roll": "投 1 个奖励骰：炽炎剑 +1 伤害、双翼 +2 伤害、十字 +3 伤害、圣洁吊坠使攻击不可防御"
+      }
     },
     "triumphant-return-2": {
       "name": "凯旋归来 II",
       "description": "小顺子：造成 8 点伤害，然后投 1 个奖励骰。",
-      "effects": { "damage8": "造成 8 点伤害", "roll": "投 1 个奖励骰：炽炎剑 +1 伤害、双翼 +2 伤害、十字 +3 伤害、圣洁吊坠使攻击不可防御" }
+      "effects": {
+        "damage8": "造成 8 点伤害",
+        "roll": "投 1 个奖励骰：炽炎剑 +1 伤害、双翼 +2 伤害、十字 +3 伤害、圣洁吊坠使攻击不可防御"
+      }
     },
     "supreme-power": {
       "name": "无上之力",
       "description": "4 个圣洁吊坠：获得飞行、神圣降临并施加眩光，造成 8 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "dazzle": "对手获得 1 个眩光", "damage8": "造成 8 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "gainDivineArrival": "获得 1 个神圣降临",
+        "dazzle": "对手获得 1 个眩光",
+        "damage8": "造成 8 点伤害"
+      }
     },
     "supreme-power-2": {
       "name": "无上之力 II",
       "description": "4 个圣洁吊坠：获得飞行、神圣降临并施加眩光，造成 10 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "dazzle": "对手获得 1 个眩光", "damage10": "造成 10 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "gainDivineArrival": "获得 1 个神圣降临",
+        "dazzle": "对手获得 1 个眩光",
+        "damage10": "造成 10 点伤害"
+      }
     },
     "gospel-arrival": {
       "name": "福音临世",
@@ -4623,12 +4763,20 @@
     "archangel-resolve": {
       "name": "天使长之志",
       "description": "大顺子：获得飞行，对手获得眩光，造成 8 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "dazzle": "对手获得 1 个眩光", "damage8": "造成 8 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "dazzle": "对手获得 1 个眩光",
+        "damage8": "造成 8 点伤害"
+      }
     },
     "archangel-resolve-2": {
       "name": "天使长之志 II",
       "description": "大顺子：获得飞行，对手获得眩光，造成 9 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "dazzle": "对手获得 1 个眩光", "damage9": "造成 9 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "dazzle": "对手获得 1 个眩光",
+        "damage9": "造成 9 点伤害"
+      }
     },
     "divine-protection": {
       "name": "神之庇佑",
@@ -4637,107 +4785,806 @@
     "angelic-cloak": {
       "name": "天使斗篷",
       "description": "防御投掷 1 骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3。",
-      "effects": { "resolve": "根据防御骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3。" }
+      "effects": {
+        "resolve": "根据防御骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3。"
+      }
     },
     "angelic-cloak-2": {
       "name": "天使斗篷 II",
       "description": "防御投掷 1 骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。",
-      "effects": { "resolve": "根据防御骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" }
+      "effects": {
+        "resolve": "根据防御骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。"
+      }
     },
     "angelic-cloak-3": {
       "name": "天使斗篷 III",
       "description": "防御投掷 1 骰：炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。",
-      "effects": { "resolve": "根据防御骰：炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" }
+      "effects": {
+        "resolve": "根据防御骰：炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。"
+      }
     },
     "heavenly-severing": {
       "name": "天堂断腕斩",
       "description": "5 个圣洁吊坠：获得飞行、神圣降临和神圣祝福，造成 13 点伤害。",
-      "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "gainBlessing": "获得 1 个神圣祝福", "damage13": "造成 13 点伤害" }
+      "effects": {
+        "gainFlight": "获得 1 个飞行",
+        "gainDivineArrival": "获得 1 个神圣降临",
+        "gainBlessing": "获得 1 个神圣祝福",
+        "damage13": "造成 13 点伤害"
+      }
     },
-    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "effects": { "upgrade": "将无上之力升级为 II 级。", "secondary": "获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。" } },
-    "upgrade-tianshi-divine-punishment-2-divine-command": { "effects": { "upgrade": "将神圣惩戒升级为 II 级。", "secondary": "治疗 1 点，并对一名对手造成 4 点不可防御伤害。" } },
-    "upgrade-tianshi-divine-purification-2": { "effects": { "upgrade": "将神圣净化升级为 II 级。" } },
-    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "effects": { "upgrade": "将天使长之志升级为 II 级。", "secondary": "选择一名玩家获得 2 个净化和 2 个飞行。" } },
-    "upgrade-tianshi-angelic-cloak-3": { "effects": { "upgrade": "将天使斗篷升级为 III 级。" } },
-    "upgrade-tianshi-angelic-cloak-2": { "effects": { "upgrade": "将天使斗篷升级为 II 级。" } },
-    "upgrade-tianshi-triumphant-return-2": { "effects": { "upgrade": "将凯旋归来升级为 II 级。" } },
-    "upgrade-tianshi-holy-radiance-2-takeoff": { "effects": { "upgrade": "将圣洁光辉升级为 II 级。", "secondary": "选择一名玩家获得飞行；然后对手承受 3 点不可防御伤害。" } },
-    "upgrade-tianshi-holy-blade-3-cherub-2": { "effects": { "upgrade": "将圣刃升级为 III 级。", "secondary": "获得飞行、净化和神圣降临。" } },
-     "upgrade-tianshi-holy-blade-2-cherub": { "effects": { "upgrade": "将圣刃升级为 II 级。", "secondary": "获得飞行和神圣降临。" } },
-     "card-tianshi-holy-strike": { "effects": { "resolve": "投 5 个奖励骰；每个炽炎剑使本次攻击伤害 +1，圣洁吊坠使对手获得眩光。" } },
-    "card-tianshi-angelic-tactics": { "effects": { "resolve": "投 1 个奖励骰：炽炎剑使本次攻击伤害 +3；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临。" } },
-     "card-tianshi-divine-arbitration": { "effects": { "resolve": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" } },
-    "card-tianshi-supreme-holiness": { "effects": { "resolve": "投 1 个奖励骰：圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" } },
-    "card-tianshi-ascension": { "effects": { "resolve": "选择一名玩家获得飞行。" } },
-    "wild-force": { "name": "野性之力", "description": "3/4/5 个长矛：造成 3/4/5 点伤害。", "effects": { "damage3": "造成 3 点伤害", "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害" } },
-    "wild-force-2": { "name": "野性之力 II", "description": "3/4/5 个长矛：造成 4/5/6 点伤害；若至少有 4 个相同数字，施加流血。", "effects": { "damage4": "造成 4 点伤害", "bleedIfFourKind": "若至少有 4 个相同数字，施加 1 层流血", "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害" } },
-    "savage-force": { "name": "蛮荒之力", "description": "3 个利爪 + 1 个剑齿虎：造成 4 点伤害并投 1 个奖励骰。", "effects": { "damage4": "造成 4 点伤害", "bonusDie": "投 1 个奖励骰并按女猎手骰面结算" } },
-    "savage-force-2": { "name": "蛮荒之力 II", "description": "3 个利爪 + 1 个剑齿虎：造成 5 点伤害并投 1 个奖励骰。", "effects": { "damage5": "造成 5 点伤害", "bonusDie": "投 1 个奖励骰并按女猎手骰面结算" } },
-    "savage-force-2-hunting": { "name": "狩猎", "description": "2 个利爪 + 1 个剑齿虎：施加 1 层流血并造成 3 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage3": "造成 3 点伤害" } },
-    "brutal-strike": { "name": "猛击之力", "description": "小顺子：施加 1 层流血并造成 4 点伤害；大顺子：施加 2 层流血并造成 7 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage4": "造成 4 点伤害", "bleed2": "施加 2 层流血", "damage7": "造成 7 点伤害" } },
-    "brutal-strike-2": { "name": "猛击之力 II", "description": "小顺子：施加 1 层流血并造成 5 点伤害；大顺子：施加 2 层流血并造成 8 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage5": "造成 5 点伤害", "bleed2": "施加 2 层流血", "damage8": "造成 8 点伤害" } },
-    "beast-force": { "name": "巨兽之力", "description": "4 个剑齿虎：治疗妮拉 1，造成 5 点不可防御伤害。", "effects": { "healNyra1": "治疗妮拉 1", "unblockable5": "造成 5 点不可防御伤害" } },
-    "beast-force-2": { "name": "巨兽之力 II", "description": "4 个剑齿虎：治疗妮拉 1，造成 6 点不可防御伤害。", "effects": { "healNyra1": "治疗妮拉 1", "unblockable6": "造成 6 点不可防御伤害" } },
-    "beast-force-2-fierce-gaze": { "name": "凶狠注视", "description": "3 个剑齿虎：治疗妮拉 1，并施加 2 层流血。", "effects": { "healNyra1": "治疗妮拉 1", "bleed2": "施加 2 层流血" } },
-    "life-revival": { "name": "生命复苏", "description": "2 个魂之羁绊：获得妮拉之系并治疗妮拉 3。", "effects": { "nyrasBondAndHeal": "获得妮拉之系并治疗妮拉 3" } },
-    "life-revival-2": { "name": "生命复苏 II", "description": "2 个魂之羁绊：获得妮拉之系并治疗妮拉 2。", "effects": { "nyrasBondAndHeal": "获得妮拉之系并治疗妮拉 2" } },
-    "beast-instinct": { "name": "野兽本能", "description": "3 个长矛 + 1 个魂之羁绊：获得妮拉之系并造成 2 点不可防御伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "unblockable2": "造成 2 点不可防御伤害" } },
-    "beast-instinct-2": { "name": "野兽本能 II", "description": "3 个长矛 + 1 个魂之羁绊：获得妮拉之系并造成 3 点不可防御伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "unblockable3": "造成 3 点不可防御伤害" } },
-    "beast-instinct-2-swipe": { "name": "挥爪", "description": "3 个利爪：施加 1 层流血。", "effects": { "bleed1": "施加 1 层流血" } },
-    "hunt-ambush": { "name": "追猎潜袭", "description": "2 个长矛 + 2 个利爪 + 1 个魂之羁绊：治疗妮拉 1 并造成 5 点伤害。", "effects": { "healNyra1": "治疗妮拉 1", "damage5": "造成 5 点伤害" } },
-    "hunt-ambush-2": { "name": "追猎潜袭 II", "description": "2 个长矛 + 2 个利爪 + 1 个魂之羁绊：治疗妮拉 1 并造成 6 点伤害。", "effects": { "healNyra1": "治疗妮拉 1", "damage6": "造成 6 点伤害" } },
-    "hunt-ambush-2-cutthroat": { "name": "割喉", "description": "1 个长矛 + 1 个利爪 + 1 个剑齿虎：施加 2 层流血。", "effects": { "bleed2": "施加 2 层流血" } },
-    "kindred-bond": { "name": "情同骨肉", "description": "防御投掷 3 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
-    "kindred-bond-2": { "name": "情同骨肉 II", "description": "防御投掷 4 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
-    "kindred-bond-3": { "name": "情同骨肉 III", "description": "防御投掷 4 骰；长矛和剑齿虎各造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
-    "jungle-fury": { "name": "丛林狂怒！", "description": "5 个剑齿虎：获得妮拉之系，施加 2 层流血，造成 12 点伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } },
-    "bloodthirsty-claws": { "name": "嗜血之爪", "description": "3/4/5 个利爪：造成 3/5/7 点伤害。若投出 4 个相同数字，获得 1 个鲜血之力。", "effects": { "damage3": "造成 3 点伤害", "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "gainBloodPowerIfFourKind": "若投出 4 个相同数字，获得 1 个鲜血之力" } },
-    "bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "3/4/5 个利爪：造成 3/5/7 点伤害。若投出 3 个相同数字，获得 1 个鲜血之力。", "effects": { "damage3": "造成 3 点伤害", "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "gainBloodPowerIfThreeKind": "若投出 3 个相同数字，获得 1 个鲜血之力" } },
-    "bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "3/4/5 个利爪：造成 4/6/8 点伤害。若投出 3 个相同数字，获得 1 个鲜血之力。", "effects": { "damage4": "造成 4 点伤害", "damage6": "造成 6 点伤害", "damage8": "造成 8 点伤害", "gainBloodPowerIfThreeKind": "若投出 3 个相同数字，获得 1 个鲜血之力" } },
-    "mesmerize-power": { "name": "魅惑之力", "description": "3 个催眠：获得 1 CP，获得 1 个催眠，并造成 4 点不可防御伤害。", "effects": { "gainCp": "获得 1 CP", "gainMesmerize": "获得 1 个催眠", "damage4Unblockable": "造成 4 点不可防御伤害" } },
-    "mesmerize-power-2": { "name": "魅惑之力 II", "description": "3 个催眠：获得 1 CP，获得 1 个催眠，并造成 5 点不可防御伤害。", "effects": { "gainCp": "获得 1 CP", "gainMesmerize": "获得 1 个催眠", "damage5Unblockable": "造成 5 点不可防御伤害" } },
-    "mesmerize-power-2-soul-gaze": { "name": "摄魂术", "description": "1 个利爪 + 2 个催眠：获得 1 个催眠，并对对手施加 2 层流血。", "effects": { "gainMesmerize": "获得 1 个催眠", "bleed2": "施加 2 层流血" } },
-    "blood-feast": { "name": "鲜血盛宴", "description": "3 个催眠 + 1 个血滴：治疗 2 点并获得 3 个鲜血之力。", "effects": { "heal2": "治疗 2 点", "gainBloodPower": "获得 3 个鲜血之力" } },
-    "blood-feast-2": { "name": "鲜血盛宴 II", "description": "3 个催眠 + 1 个血滴：治疗 3 点并获得 3 个鲜血之力。", "effects": { "heal3": "治疗 3 点", "gainBloodPower": "获得 3 个鲜血之力" } },
-    "blood-feast-2-dressed-to-kill": { "name": "盛装出席", "description": "1 个利爪 + 1 个催眠 + 2 个血滴：获得 2 个鲜血之力并抽 1 张牌。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "draw1": "抽 1 张牌" } },
-    "rend-claws": { "name": "撕裂之爪", "description": "3 个利爪 + 2 个血滴：造成 6 点伤害并投 3 骰。每个利爪 +1 伤害；若投出催眠，抽 1 张牌；若投出血滴，获得 1 个鲜血之力。", "effects": { "roll3": "投 3 骰并按结果结算奖励", "damage6": "造成 6 点伤害" } },
-    "rend-claws-2": { "name": "撕裂之爪 II", "description": "3 个利爪 + 2 个血滴：造成 6 点伤害并投 5 骰。每个利爪 +1 伤害；若投出催眠，抽 1 张牌；若投出血滴，获得 1 个鲜血之力。", "effects": { "roll5": "投 5 骰并按结果结算奖励", "damage6": "造成 6 点伤害" } },
-    "blood-possessed": { "name": "魔血附身", "description": "小顺子：造成 7 点伤害并投 1 骰。若为利爪，对手获得流血；若为催眠或血滴，获得催眠。", "effects": { "damage7": "造成 7 点伤害", "roll1": "投 1 骰并按结果结算奖励" } },
-    "blood-possessed-2": { "name": "魔血附身 II", "description": "小顺子：造成 8 点伤害，并选择以下其一：施加流血或获得催眠。", "effects": { "damage8": "造成 8 点伤害", "choice": "选择施加流血或获得催眠" } },
-    "blood-possessed-2-blood-addiction": { "name": "嗜血成性", "description": "2 个利爪 + 1 个血滴：获得 2 个鲜血之力。", "effects": { "gainBloodPower": "获得 2 个鲜血之力" } },
-    "blood-thirst": { "name": "血之渴望", "description": "4 个血滴：获得 2 个鲜血之力，然后造成 5 点不可防御伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage5Unblockable": "造成 5 点不可防御伤害" } },
-    "blood-thirst-2": { "name": "血之渴望 II", "description": "4 个血滴：获得 3 个鲜血之力，然后造成 6 点不可防御伤害。", "effects": { "gainBloodPower": "获得 3 个鲜血之力", "damage6Unblockable": "造成 6 点不可防御伤害" } },
-    "blood-thirst-2-blood-river": { "name": "血流成河", "description": "3 个血滴：施加 2 层流血，并对所有对手造成 2 点附属伤害。", "effects": { "bleed2": "施加 2 层流血", "collateral2": "对所有对手造成 2 点附属伤害" } },
-    "blood-magic": { "name": "鲜血魔法", "description": "大顺子：获得 1 个鲜血之力，施加流血，并造成 8 点伤害。你可以花费 1 个催眠使本次攻击伤害变为不可防御。", "effects": { "gainBloodPower": "获得 1 个鲜血之力", "bleed1": "施加 1 层流血", "spendMesmerizeChoice": "可花费催眠使本次攻击不可防御", "damage8": "造成 8 点伤害" } },
-    "blood-magic-2": { "name": "鲜血魔法 II", "description": "大顺子：获得 1 个鲜血之力，施加流血，然后造成 8 点不可防御伤害。", "effects": { "gainBloodPower": "获得 1 个鲜血之力", "bleed1": "施加 1 层流血", "damage8Unblockable": "造成 8 点不可防御伤害" } },
-    "blood-magic-2-flayed": { "name": "皮开肉绽", "description": "2 个利爪 + 2 个血滴：造成 5 点不可防御伤害。", "effects": { "damage5Unblockable": "造成 5 点不可防御伤害" } },
-    "undying": { "name": "不死之身", "description": "防御投掷 3 骰：若投出 2 个利爪，施加流血；若投出 2 个催眠，获得 1 个鲜血之力；每个血滴偷取 1 点生命值。", "effects": { "resolveDefense": "按防御骰结算流血、鲜血之力和偷取生命" } },
-    "undying-2": { "name": "不死之身 II", "description": "防御投掷 4 骰：若投出 2 个利爪，施加流血；若投出 2 个催眠，获得 1 个鲜血之力；每个血滴偷取 1 点生命值。", "effects": { "resolveDefense": "按防御骰结算流血、鲜血之力和偷取生命" } },
-    "bloody-slaughter": { "name": "血色杀戮！", "description": "5 个血滴：从抽牌堆搜 1 张牌加入手牌并洗混抽牌堆，获得 2 个鲜血之力，然后造成 10 点伤害。", "effects": { "searchDeckCard": "从抽牌堆选择 1 张牌加入手牌，并洗混抽牌堆", "gainBloodPower": "获得 2 个鲜血之力", "damage10": "造成 10 点伤害" } },
-    "heavy-punch": { "name": "重拳", "description": "3/4/5 个拳：造成 4/5/6 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害" } },
-    "combo-strike": { "name": "连连连连击", "description": "2 个拳 + 2 个蜘蛛：造成 5 点伤害，并获得 1 个连击。", "effects": { "damage5": "造成 5 点伤害", "gainCombo": "获得 1 个连击" } },
-    "trap": { "name": "诱捕", "description": "小顺子：造成 5 点伤害并施加落网；大顺子：抽 1 张牌，造成 8 点伤害并施加落网。", "effects": { "damage5": "造成 5 点伤害", "draw1": "抽 1 张牌", "damage8": "造成 8 点伤害", "applyWebbed": "施加落网" } },
-    "venom-punch": { "name": "毒液重拳", "description": "4 个蜘蛛：获得隐形，造成 7 点不可防御伤害。", "effects": { "gainInvisible": "获得 1 个隐形", "damage7Unblockable": "造成 7 点不可防御伤害" } },
-    "wall-crawl": { "name": "墙上爬行", "description": "1 个拳 + 3 个蛛网：获得隐形，造成 7 点伤害。", "effects": { "gainInvisible": "获得 1 个隐形", "damage7": "造成 7 点伤害" } },
-    "spider-reflex": { "name": "蜘蛛反射", "description": "1 个拳 + 2 个蛛网 + 1 个蜘蛛：投 2 个奖励骰，造成点数总和伤害；总和不超过 5 时获得连击。", "effects": { "roll2AndDealSum": "投 2 个奖励骰并造成点数总和伤害；总和不超过 5 时获得连击" } },
-    "counter": { "name": "反击", "description": "防御投掷 3 个拳：造成 3 点伤害。", "effects": { "damage3": "造成 3 点伤害" } },
-    "spider-sense": { "name": "蜘蛛感应", "description": "防御投掷 2 个蛛网：若投出蜘蛛，受到的伤害减半并向上取整。可弃置隐形进行 1 次额外防御投骰。", "effects": { "preventHalfOnSpider": "若投出蜘蛛，受到的伤害减半并向上取整；可弃置隐形额外防御投骰" } },
-    "ultimate-spider": { "name": "毒液冲击波", "description": "5 个蜘蛛：获得隐形，施加落网，造成 13 点不可防御伤害。", "effects": { "gainInvisible": "获得 1 个隐形", "applyWebbed": "施加落网", "damage13": "造成 13 点不可防御伤害" } },
-    "card-zhizhuxia-milkshake": { "effects": { "heal3": "治疗 3 点生命" } },
-    "card-zhizhuxia-wallet-arrival": { "effects": { "gain2CP": "获得 2 点气" } },
-    "card-zhizhuxia-spider-launcher": { "effects": { "applyWebbed": "施加落网" } },
-    "card-zhizhuxia-praise": { "effects": { "roll1": "投掷 1 骰并按骰面结算效果" } },
-    "card-zhizhuxia-flying-escape": { "effects": { "acceptWeb": "允许蜘蛛感应将蛛网视为成功面" } },
-    "card-zhizhuxia-ambush": { "effects": { "discardInvisibleAndAdd3": "消耗 1 个隐形，本次攻击伤害 +3" } },
-    "card-zhizhuxia-invisible-punch": { "effects": { "counter3": "蜘蛛感应成功时造成 3 点直接伤害" } },
-    "card-zhizhuxia-wishful-thinking": { "effects": { "prevent3": "消耗 1 个隐形并获得 3 点伤害护盾" } },
-    "card-zhizhuxia-oh-no": { "effects": { "gainInvisible": "获得 1 个隐形" } },
-    "card-zhizhuxia-radioactive-blood": { "effects": { "gainCombo": "获得 1 个连击" } },
-    "card-zhizhuxia-head-tingle": { "effects": { "roll1": "投掷 1 骰并按骰面结算效果" } },
-    "heavy-punch-2": { "name": "重拳 II", "description": "3/4/5 个拳：造成 5/6/7 点伤害；若至少 4 颗骰子数字相同，获得 1 个连击。", "effects": { "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害", "damage7": "造成 7 点伤害", "gainComboIfFourOfAKind": "若至少 4 颗骰子数字相同，获得 1 个连击" } },
-    "combo-strike-2": { "name": "连连连击 II", "description": "2 个蛛网 + 2 个蜘蛛：造成 6 点伤害，并获得 1 个连击。", "effects": { "damage6": "造成 6 点伤害", "gainCombo": "获得 1 个连击" } },
-    "trap-2": { "name": "诱捕 II", "description": "小顺子：造成 6 点伤害并施加落网；大顺子：抽 1 张牌，造成 9 点伤害并施加落网。", "effects": { "damage6": "造成 6 点伤害", "draw1": "抽 1 张牌", "damage9": "造成 9 点伤害", "applyWebbed": "施加落网" } },
-    "venom-punch-2": { "name": "毒液重拳 II", "description": "4 个蜘蛛：获得隐形，造成 8 点不可防御伤害。", "effects": { "gainInvisible": "获得 1 个隐形", "damage8Unblockable": "造成 8 点不可防御伤害" } }
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": {
+      "effects": {
+        "upgrade": "将无上之力升级为 II 级。",
+        "secondary": "获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。"
+      }
+    },
+    "upgrade-tianshi-divine-punishment-2-divine-command": {
+      "effects": {
+        "upgrade": "将神圣惩戒升级为 II 级。",
+        "secondary": "治疗 1 点，并对一名对手造成 4 点不可防御伤害。"
+      }
+    },
+    "upgrade-tianshi-divine-purification-2": {
+      "effects": {
+        "upgrade": "将神圣净化升级为 II 级。"
+      }
+    },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": {
+      "effects": {
+        "upgrade": "将天使长之志升级为 II 级。",
+        "secondary": "选择一名玩家获得 2 个净化和 2 个飞行。"
+      }
+    },
+    "upgrade-tianshi-angelic-cloak-3": {
+      "effects": {
+        "upgrade": "将天使斗篷升级为 III 级。"
+      }
+    },
+    "upgrade-tianshi-angelic-cloak-2": {
+      "effects": {
+        "upgrade": "将天使斗篷升级为 II 级。"
+      }
+    },
+    "upgrade-tianshi-triumphant-return-2": {
+      "effects": {
+        "upgrade": "将凯旋归来升级为 II 级。"
+      }
+    },
+    "upgrade-tianshi-holy-radiance-2-takeoff": {
+      "effects": {
+        "upgrade": "将圣洁光辉升级为 II 级。",
+        "secondary": "选择一名玩家获得飞行；然后对手承受 3 点不可防御伤害。"
+      }
+    },
+    "upgrade-tianshi-holy-blade-3-cherub-2": {
+      "effects": {
+        "upgrade": "将圣刃升级为 III 级。",
+        "secondary": "获得飞行、净化和神圣降临。"
+      }
+    },
+    "upgrade-tianshi-holy-blade-2-cherub": {
+      "effects": {
+        "upgrade": "将圣刃升级为 II 级。",
+        "secondary": "获得飞行和神圣降临。"
+      }
+    },
+    "card-tianshi-holy-strike": {
+      "effects": {
+        "resolve": "投 5 个奖励骰；每个炽炎剑使本次攻击伤害 +1，圣洁吊坠使对手获得眩光。"
+      }
+    },
+    "card-tianshi-angelic-tactics": {
+      "effects": {
+        "resolve": "投 1 个奖励骰：炽炎剑使本次攻击伤害 +3；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临。"
+      }
+    },
+    "card-tianshi-divine-arbitration": {
+      "effects": {
+        "resolve": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。"
+      }
+    },
+    "card-tianshi-supreme-holiness": {
+      "effects": {
+        "resolve": "投 1 个奖励骰：圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。"
+      }
+    },
+    "card-tianshi-ascension": {
+      "effects": {
+        "resolve": "选择一名玩家获得飞行。"
+      }
+    },
+    "wild-force": {
+      "name": "野性之力",
+      "description": "3/4/5 个长矛：造成 3/4/5 点伤害。",
+      "effects": {
+        "damage3": "造成 3 点伤害",
+        "damage4": "造成 4 点伤害",
+        "damage5": "造成 5 点伤害"
+      }
+    },
+    "wild-force-2": {
+      "name": "野性之力 II",
+      "description": "3/4/5 个长矛：造成 4/5/6 点伤害；若至少有 4 个相同数字，施加流血。",
+      "effects": {
+        "damage4": "造成 4 点伤害",
+        "bleedIfFourKind": "若至少有 4 个相同数字，施加 1 层流血",
+        "damage5": "造成 5 点伤害",
+        "damage6": "造成 6 点伤害"
+      }
+    },
+    "savage-force": {
+      "name": "蛮荒之力",
+      "description": "3 个利爪 + 1 个剑齿虎：造成 4 点伤害并投 1 个奖励骰。",
+      "effects": {
+        "damage4": "造成 4 点伤害",
+        "bonusDie": "投 1 个奖励骰并按女猎手骰面结算"
+      }
+    },
+    "savage-force-2": {
+      "name": "蛮荒之力 II",
+      "description": "3 个利爪 + 1 个剑齿虎：造成 5 点伤害并投 1 个奖励骰。",
+      "effects": {
+        "damage5": "造成 5 点伤害",
+        "bonusDie": "投 1 个奖励骰并按女猎手骰面结算"
+      }
+    },
+    "savage-force-2-hunting": {
+      "name": "狩猎",
+      "description": "2 个利爪 + 1 个剑齿虎：施加 1 层流血并造成 3 点伤害。",
+      "effects": {
+        "bleed1": "施加 1 层流血",
+        "damage3": "造成 3 点伤害"
+      }
+    },
+    "brutal-strike": {
+      "name": "猛击之力",
+      "description": "小顺子：施加 1 层流血并造成 4 点伤害；大顺子：施加 2 层流血并造成 7 点伤害。",
+      "effects": {
+        "bleed1": "施加 1 层流血",
+        "damage4": "造成 4 点伤害",
+        "bleed2": "施加 2 层流血",
+        "damage7": "造成 7 点伤害"
+      }
+    },
+    "brutal-strike-2": {
+      "name": "猛击之力 II",
+      "description": "小顺子：施加 1 层流血并造成 5 点伤害；大顺子：施加 2 层流血并造成 8 点伤害。",
+      "effects": {
+        "bleed1": "施加 1 层流血",
+        "damage5": "造成 5 点伤害",
+        "bleed2": "施加 2 层流血",
+        "damage8": "造成 8 点伤害"
+      }
+    },
+    "beast-force": {
+      "name": "巨兽之力",
+      "description": "4 个剑齿虎：治疗妮拉 1，造成 5 点不可防御伤害。",
+      "effects": {
+        "healNyra1": "治疗妮拉 1",
+        "unblockable5": "造成 5 点不可防御伤害"
+      }
+    },
+    "beast-force-2": {
+      "name": "巨兽之力 II",
+      "description": "4 个剑齿虎：治疗妮拉 1，造成 6 点不可防御伤害。",
+      "effects": {
+        "healNyra1": "治疗妮拉 1",
+        "unblockable6": "造成 6 点不可防御伤害"
+      }
+    },
+    "beast-force-2-fierce-gaze": {
+      "name": "凶狠注视",
+      "description": "3 个剑齿虎：治疗妮拉 1，并施加 2 层流血。",
+      "effects": {
+        "healNyra1": "治疗妮拉 1",
+        "bleed2": "施加 2 层流血"
+      }
+    },
+    "life-revival": {
+      "name": "生命复苏",
+      "description": "2 个魂之羁绊：获得妮拉之系并治疗妮拉 3。",
+      "effects": {
+        "nyrasBondAndHeal": "获得妮拉之系并治疗妮拉 3"
+      }
+    },
+    "life-revival-2": {
+      "name": "生命复苏 II",
+      "description": "2 个魂之羁绊：获得妮拉之系并治疗妮拉 2。",
+      "effects": {
+        "nyrasBondAndHeal": "获得妮拉之系并治疗妮拉 2"
+      }
+    },
+    "beast-instinct": {
+      "name": "野兽本能",
+      "description": "3 个长矛 + 1 个魂之羁绊：获得妮拉之系并造成 2 点不可防御伤害。",
+      "effects": {
+        "gainNyrasBond": "获得妮拉之系",
+        "unblockable2": "造成 2 点不可防御伤害"
+      }
+    },
+    "beast-instinct-2": {
+      "name": "野兽本能 II",
+      "description": "3 个长矛 + 1 个魂之羁绊：获得妮拉之系并造成 3 点不可防御伤害。",
+      "effects": {
+        "gainNyrasBond": "获得妮拉之系",
+        "unblockable3": "造成 3 点不可防御伤害"
+      }
+    },
+    "beast-instinct-2-swipe": {
+      "name": "挥爪",
+      "description": "3 个利爪：施加 1 层流血。",
+      "effects": {
+        "bleed1": "施加 1 层流血"
+      }
+    },
+    "hunt-ambush": {
+      "name": "追猎潜袭",
+      "description": "2 个长矛 + 2 个利爪 + 1 个魂之羁绊：治疗妮拉 1 并造成 5 点伤害。",
+      "effects": {
+        "healNyra1": "治疗妮拉 1",
+        "damage5": "造成 5 点伤害"
+      }
+    },
+    "hunt-ambush-2": {
+      "name": "追猎潜袭 II",
+      "description": "2 个长矛 + 2 个利爪 + 1 个魂之羁绊：治疗妮拉 1 并造成 6 点伤害。",
+      "effects": {
+        "healNyra1": "治疗妮拉 1",
+        "damage6": "造成 6 点伤害"
+      }
+    },
+    "hunt-ambush-2-cutthroat": {
+      "name": "割喉",
+      "description": "1 个长矛 + 1 个利爪 + 1 个剑齿虎：施加 2 层流血。",
+      "effects": {
+        "bleed2": "施加 2 层流血"
+      }
+    },
+    "kindred-bond": {
+      "name": "情同骨肉",
+      "description": "防御投掷 3 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。",
+      "effects": {
+        "blockedDefense": "按防御骰结算妮拉治疗与反击"
+      }
+    },
+    "kindred-bond-2": {
+      "name": "情同骨肉 II",
+      "description": "防御投掷 4 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。",
+      "effects": {
+        "blockedDefense": "按防御骰结算妮拉治疗与反击"
+      }
+    },
+    "kindred-bond-3": {
+      "name": "情同骨肉 III",
+      "description": "防御投掷 4 骰；长矛和剑齿虎各造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。",
+      "effects": {
+        "blockedDefense": "按防御骰结算妮拉治疗与反击"
+      }
+    },
+    "jungle-fury": {
+      "name": "丛林狂怒！",
+      "description": "5 个剑齿虎：获得妮拉之系，施加 2 层流血，造成 12 点伤害。",
+      "effects": {
+        "gainNyrasBond": "获得妮拉之系",
+        "bleed2": "施加 2 层流血",
+        "damage12": "造成 12 点伤害"
+      }
+    },
+    "bloodthirsty-claws": {
+      "name": "嗜血之爪",
+      "description": "3/4/5 个利爪：造成 3/5/7 点伤害。若投出 4 个相同数字，获得 1 个鲜血之力。",
+      "effects": {
+        "damage3": "造成 3 点伤害",
+        "damage5": "造成 5 点伤害",
+        "damage7": "造成 7 点伤害",
+        "gainBloodPowerIfFourKind": "若投出 4 个相同数字，获得 1 个鲜血之力"
+      }
+    },
+    "bloodthirsty-claws-2": {
+      "name": "嗜血之爪 II",
+      "description": "3/4/5 个利爪：造成 3/5/7 点伤害。若投出 3 个相同数字，获得 1 个鲜血之力。",
+      "effects": {
+        "damage3": "造成 3 点伤害",
+        "damage5": "造成 5 点伤害",
+        "damage7": "造成 7 点伤害",
+        "gainBloodPowerIfThreeKind": "若投出 3 个相同数字，获得 1 个鲜血之力"
+      }
+    },
+    "bloodthirsty-claws-3": {
+      "name": "嗜血之爪 III",
+      "description": "3/4/5 个利爪：造成 4/6/8 点伤害。若投出 3 个相同数字，获得 1 个鲜血之力。",
+      "effects": {
+        "damage4": "造成 4 点伤害",
+        "damage6": "造成 6 点伤害",
+        "damage8": "造成 8 点伤害",
+        "gainBloodPowerIfThreeKind": "若投出 3 个相同数字，获得 1 个鲜血之力"
+      }
+    },
+    "mesmerize-power": {
+      "name": "魅惑之力",
+      "description": "3 个催眠：获得 1 CP，获得 1 个催眠，并造成 4 点不可防御伤害。",
+      "effects": {
+        "gainCp": "获得 1 CP",
+        "gainMesmerize": "获得 1 个催眠",
+        "damage4Unblockable": "造成 4 点不可防御伤害"
+      }
+    },
+    "mesmerize-power-2": {
+      "name": "魅惑之力 II",
+      "description": "3 个催眠：获得 1 CP，获得 1 个催眠，并造成 5 点不可防御伤害。",
+      "effects": {
+        "gainCp": "获得 1 CP",
+        "gainMesmerize": "获得 1 个催眠",
+        "damage5Unblockable": "造成 5 点不可防御伤害"
+      }
+    },
+    "mesmerize-power-2-soul-gaze": {
+      "name": "摄魂术",
+      "description": "1 个利爪 + 2 个催眠：获得 1 个催眠，并对对手施加 2 层流血。",
+      "effects": {
+        "gainMesmerize": "获得 1 个催眠",
+        "bleed2": "施加 2 层流血"
+      }
+    },
+    "blood-feast": {
+      "name": "鲜血盛宴",
+      "description": "3 个催眠 + 1 个血滴：治疗 2 点并获得 3 个鲜血之力。",
+      "effects": {
+        "heal2": "治疗 2 点",
+        "gainBloodPower": "获得 3 个鲜血之力"
+      }
+    },
+    "blood-feast-2": {
+      "name": "鲜血盛宴 II",
+      "description": "3 个催眠 + 1 个血滴：治疗 3 点并获得 3 个鲜血之力。",
+      "effects": {
+        "heal3": "治疗 3 点",
+        "gainBloodPower": "获得 3 个鲜血之力"
+      }
+    },
+    "blood-feast-2-dressed-to-kill": {
+      "name": "盛装出席",
+      "description": "1 个利爪 + 1 个催眠 + 2 个血滴：获得 2 个鲜血之力并抽 1 张牌。",
+      "effects": {
+        "gainBloodPower": "获得 2 个鲜血之力",
+        "draw1": "抽 1 张牌"
+      }
+    },
+    "rend-claws": {
+      "name": "撕裂之爪",
+      "description": "3 个利爪 + 2 个血滴：造成 6 点伤害并投 3 骰。每个利爪 +1 伤害；若投出催眠，抽 1 张牌；若投出血滴，获得 1 个鲜血之力。",
+      "effects": {
+        "roll3": "投 3 骰并按结果结算奖励",
+        "damage6": "造成 6 点伤害"
+      }
+    },
+    "rend-claws-2": {
+      "name": "撕裂之爪 II",
+      "description": "3 个利爪 + 2 个血滴：造成 6 点伤害并投 5 骰。每个利爪 +1 伤害；若投出催眠，抽 1 张牌；若投出血滴，获得 1 个鲜血之力。",
+      "effects": {
+        "roll5": "投 5 骰并按结果结算奖励",
+        "damage6": "造成 6 点伤害"
+      }
+    },
+    "blood-possessed": {
+      "name": "魔血附身",
+      "description": "小顺子：造成 7 点伤害并投 1 骰。若为利爪，对手获得流血；若为催眠或血滴，获得催眠。",
+      "effects": {
+        "damage7": "造成 7 点伤害",
+        "roll1": "投 1 骰并按结果结算奖励"
+      }
+    },
+    "blood-possessed-2": {
+      "name": "魔血附身 II",
+      "description": "小顺子：造成 8 点伤害，并选择以下其一：施加流血或获得催眠。",
+      "effects": {
+        "damage8": "造成 8 点伤害",
+        "choice": "选择施加流血或获得催眠"
+      }
+    },
+    "blood-possessed-2-blood-addiction": {
+      "name": "嗜血成性",
+      "description": "2 个利爪 + 1 个血滴：获得 2 个鲜血之力。",
+      "effects": {
+        "gainBloodPower": "获得 2 个鲜血之力"
+      }
+    },
+    "blood-thirst": {
+      "name": "血之渴望",
+      "description": "4 个血滴：获得 2 个鲜血之力，然后造成 5 点不可防御伤害。",
+      "effects": {
+        "gainBloodPower": "获得 2 个鲜血之力",
+        "damage5Unblockable": "造成 5 点不可防御伤害"
+      }
+    },
+    "blood-thirst-2": {
+      "name": "血之渴望 II",
+      "description": "4 个血滴：获得 3 个鲜血之力，然后造成 6 点不可防御伤害。",
+      "effects": {
+        "gainBloodPower": "获得 3 个鲜血之力",
+        "damage6Unblockable": "造成 6 点不可防御伤害"
+      }
+    },
+    "blood-thirst-2-blood-river": {
+      "name": "血流成河",
+      "description": "3 个血滴：施加 2 层流血，并对所有对手造成 2 点附属伤害。",
+      "effects": {
+        "bleed2": "施加 2 层流血",
+        "collateral2": "对所有对手造成 2 点附属伤害"
+      }
+    },
+    "blood-magic": {
+      "name": "鲜血魔法",
+      "description": "大顺子：获得 1 个鲜血之力，施加流血，并造成 8 点伤害。你可以花费 1 个催眠使本次攻击伤害变为不可防御。",
+      "effects": {
+        "gainBloodPower": "获得 1 个鲜血之力",
+        "bleed1": "施加 1 层流血",
+        "spendMesmerizeChoice": "可花费催眠使本次攻击不可防御",
+        "damage8": "造成 8 点伤害"
+      }
+    },
+    "blood-magic-2": {
+      "name": "鲜血魔法 II",
+      "description": "大顺子：获得 1 个鲜血之力，施加流血，然后造成 8 点不可防御伤害。",
+      "effects": {
+        "gainBloodPower": "获得 1 个鲜血之力",
+        "bleed1": "施加 1 层流血",
+        "damage8Unblockable": "造成 8 点不可防御伤害"
+      }
+    },
+    "blood-magic-2-flayed": {
+      "name": "皮开肉绽",
+      "description": "2 个利爪 + 2 个血滴：造成 5 点不可防御伤害。",
+      "effects": {
+        "damage5Unblockable": "造成 5 点不可防御伤害"
+      }
+    },
+    "undying": {
+      "name": "不死之身",
+      "description": "防御投掷 3 骰：若投出 2 个利爪，施加流血；若投出 2 个催眠，获得 1 个鲜血之力；每个血滴偷取 1 点生命值。",
+      "effects": {
+        "resolveDefense": "按防御骰结算流血、鲜血之力和偷取生命"
+      }
+    },
+    "undying-2": {
+      "name": "不死之身 II",
+      "description": "防御投掷 4 骰：若投出 2 个利爪，施加流血；若投出 2 个催眠，获得 1 个鲜血之力；每个血滴偷取 1 点生命值。",
+      "effects": {
+        "resolveDefense": "按防御骰结算流血、鲜血之力和偷取生命"
+      }
+    },
+    "bloody-slaughter": {
+      "name": "血色杀戮！",
+      "description": "5 个血滴：从抽牌堆搜 1 张牌加入手牌并洗混抽牌堆，获得 2 个鲜血之力，然后造成 10 点伤害。",
+      "effects": {
+        "searchDeckCard": "从抽牌堆选择 1 张牌加入手牌，并洗混抽牌堆",
+        "gainBloodPower": "获得 2 个鲜血之力",
+        "damage10": "造成 10 点伤害"
+      }
+    },
+    "heavy-punch": {
+      "name": "重拳",
+      "description": "3/4/5 个拳：造成 4/5/6 点伤害。",
+      "effects": {
+        "damage4": "造成 4 点伤害",
+        "damage5": "造成 5 点伤害",
+        "damage6": "造成 6 点伤害"
+      }
+    },
+    "combo-strike": {
+      "name": "连连连连击",
+      "description": "2 个拳 + 2 个蜘蛛：造成 5 点伤害，并获得 1 个连击。",
+      "effects": {
+        "damage5": "造成 5 点伤害",
+        "gainCombo": "获得 1 个连击"
+      }
+    },
+    "trap": {
+      "name": "诱捕",
+      "description": "小顺子：造成 5 点伤害并施加落网；大顺子：抽 1 张牌，造成 8 点伤害并施加落网。",
+      "effects": {
+        "damage5": "造成 5 点伤害",
+        "draw1": "抽 1 张牌",
+        "damage8": "造成 8 点伤害",
+        "applyWebbed": "施加落网"
+      }
+    },
+    "venom-punch": {
+      "name": "毒液重拳",
+      "description": "4 个蜘蛛：获得隐形，造成 7 点不可防御伤害。",
+      "effects": {
+        "gainInvisible": "获得 1 个隐形",
+        "damage7Unblockable": "造成 7 点不可防御伤害"
+      }
+    },
+    "wall-crawl": {
+      "name": "墙上爬行",
+      "description": "1 个拳 + 3 个蛛网：获得隐形，造成 7 点伤害。",
+      "effects": {
+        "gainInvisible": "获得 1 个隐形",
+        "damage7": "造成 7 点伤害"
+      }
+    },
+    "spider-reflex": {
+      "name": "蜘蛛反射",
+      "description": "1 个拳 + 2 个蛛网 + 1 个蜘蛛：投 2 个奖励骰，造成点数总和伤害；总和不超过 5 时获得连击。",
+      "effects": {
+        "roll2AndDealSum": "投 2 个奖励骰并造成点数总和伤害；总和不超过 5 时获得连击"
+      }
+    },
+    "counter": {
+      "name": "反击",
+      "description": "防御投掷 3 个拳：造成 3 点伤害。",
+      "effects": {
+        "damage3": "造成 3 点伤害"
+      }
+    },
+    "spider-sense": {
+      "name": "蜘蛛感应",
+      "description": "防御投掷 2 个蛛网：若投出蜘蛛，受到的伤害减半并向上取整。可弃置隐形进行 1 次额外防御投骰。",
+      "effects": {
+        "preventHalfOnSpider": "若投出蜘蛛，受到的伤害减半并向上取整；可弃置隐形额外防御投骰"
+      }
+    },
+    "ultimate-spider": {
+      "name": "毒液冲击波",
+      "description": "5 个蜘蛛：获得隐形，施加落网，造成 13 点不可防御伤害。",
+      "effects": {
+        "gainInvisible": "获得 1 个隐形",
+        "applyWebbed": "施加落网",
+        "damage13": "造成 13 点不可防御伤害"
+      }
+    },
+    "card-zhizhuxia-milkshake": {
+      "effects": {
+        "heal3": "治疗 3 点生命"
+      }
+    },
+    "card-zhizhuxia-wallet-arrival": {
+      "effects": {
+        "gain2CP": "获得 2 点气"
+      }
+    },
+    "card-zhizhuxia-spider-launcher": {
+      "effects": {
+        "applyWebbed": "施加落网"
+      }
+    },
+    "card-zhizhuxia-praise": {
+      "effects": {
+        "roll1": "投掷 1 骰并按骰面结算效果"
+      }
+    },
+    "card-zhizhuxia-flying-escape": {
+      "effects": {
+        "acceptWeb": "允许蜘蛛感应将蛛网视为成功面"
+      }
+    },
+    "card-zhizhuxia-ambush": {
+      "effects": {
+        "discardInvisibleAndAdd3": "消耗 1 个隐形，本次攻击伤害 +3"
+      }
+    },
+    "card-zhizhuxia-invisible-punch": {
+      "effects": {
+        "counter3": "蜘蛛感应成功时造成 3 点直接伤害"
+      }
+    },
+    "card-zhizhuxia-wishful-thinking": {
+      "effects": {
+        "prevent3": "消耗 1 个隐形并获得 3 点伤害护盾"
+      }
+    },
+    "card-zhizhuxia-oh-no": {
+      "effects": {
+        "gainInvisible": "获得 1 个隐形"
+      }
+    },
+    "card-zhizhuxia-radioactive-blood": {
+      "effects": {
+        "gainCombo": "获得 1 个连击"
+      }
+    },
+    "card-zhizhuxia-head-tingle": {
+      "effects": {
+        "roll1": "投掷 1 骰并按骰面结算效果"
+      }
+    },
+    "heavy-punch-2": {
+      "name": "重拳 II",
+      "description": "3/4/5 个拳：造成 5/6/7 点伤害；若至少 4 颗骰子数字相同，获得 1 个连击。",
+      "effects": {
+        "damage5": "造成 5 点伤害",
+        "damage6": "造成 6 点伤害",
+        "damage7": "造成 7 点伤害",
+        "gainComboIfFourOfAKind": "若至少 4 颗骰子数字相同，获得 1 个连击"
+      }
+    },
+    "combo-strike-2": {
+      "name": "连连连击 II",
+      "description": "2 个蛛网 + 2 个蜘蛛：造成 6 点伤害，并获得 1 个连击。",
+      "effects": {
+        "damage6": "造成 6 点伤害",
+        "gainCombo": "获得 1 个连击"
+      }
+    },
+    "trap-2": {
+      "name": "诱捕 II",
+      "description": "小顺子：造成 6 点伤害并施加落网；大顺子：抽 1 张牌，造成 9 点伤害并施加落网。",
+      "effects": {
+        "damage6": "造成 6 点伤害",
+        "draw1": "抽 1 张牌",
+        "damage9": "造成 9 点伤害",
+        "applyWebbed": "施加落网"
+      }
+    },
+    "venom-punch-2": {
+      "name": "毒液重拳 II",
+      "description": "4 个蜘蛛：获得隐形，造成 8 点不可防御伤害。",
+      "effects": {
+        "gainInvisible": "获得 1 个隐形",
+        "damage8Unblockable": "造成 8 点不可防御伤害"
+      }
+    },
+    "thor-mighty-summon-primary": {"name": "驭雷策电 II", "description": "获得2破防并治疗3。持有神锤时获得3驭电；否则召回神锤并对原持有者造成4附属伤害。"},
+    "thor-power-of-thunder-primary": {"name": "雷霆之力 II", "description": "飞掷或召回神锤，获得2驭电并造成12伤害。"},
+    "thor-bottled-lightning-primary": {"name": "瓶中闪电 II", "description": "至多飞掷或召回3次，获得2破防，然后造成8伤害；每枚当前驭电增加1伤害。"},
+    "thor-hammer": {
+      "name": "雷神之锤",
+      "description": "3/4/5神锤：造成4/5/7伤害，并飞掷姆乔尔尼尔。"
+    },
+    "thor-mighty-summon": {
+      "name": "驭雷策电",
+      "description": "获得2破防，治疗2。持有姆乔尔尼尔时获得3驭电；否则召回，并对原持有者造成3附属伤害。"
+    },
+    "thor-odinforce": {
+      "name": "奥丁之力",
+      "description": "造成5伤害并投掷5颗效果骰。至少2神锤：飞掷或召回一次；至少2当之无愧：获得1CP；每雷电获得1驭电。最后按当前驭电增加伤害，不消耗驭电。"
+    },
+    "thor-chain-lightning": {
+      "name": "连锁闪电",
+      "description": "投掷3颗效果骰，选择其中2颗，以点数之和造成伤害。另选一名对手造成2附属伤害，可以与攻击目标相同。"
+    },
+    "thor-thunder-strike": {
+      "name": "雷轰电掣",
+      "description": "小顺子：造成7伤害。攻击目标持有姆乔尔尼尔时增加2伤害；否则获得1驭电。"
+    },
+    "thor-bottled-lightning": {
+      "name": "瓶中闪电",
+      "description": "至多飞掷或召回2次，获得2破防。造成7伤害，并按当前驭电增加伤害，不消耗驭电。"
+    },
+    "thor-power-of-thunder": {
+      "name": "雷霆之力",
+      "description": "大顺子：飞掷或召回一次，获得2驭电，造成10伤害。"
+    },
+    "thor-thunder-wheel": {
+      "name": "雷电之轮",
+      "description": "防御投掷3颗骰。至少2神锤：飞掷或召回一次；每当之无愧防止2伤害；至少1雷电：获得1驭电。"
+    },
+    "thor-for-asgard": {
+      "name": "为了阿斯加德",
+      "description": "获得1破防，至多飞掷或召回4次，造成14终极伤害。终极结算全过程中对手不能行动。"
+    },
+    "thor-hammer-2": {
+      "name": "雷神之锤 II",
+      "description": "3/4/5神锤：造成5/6/7伤害，并飞掷或召回。至少4颗相同数字时获得1驭电。"
+    },
+    "thor-hammer-3": {
+      "name": "雷神之锤 III",
+      "description": "3/4/5神锤：造成5/6/8伤害，并飞掷或召回。至少3颗相同数字时获得1驭电。"
+    },
+    "thor-mighty-summon-2": {
+      "name": "驭雷策电 II／电闪雷鸣",
+      "description": "获得2破防，治疗3。持锤获得3驭电；否则召回，并对原持有者造成4附属伤害。副技能电闪雷鸣：2神锤2雷电，获得2驭电并造成6伤害。"
+    },
+    "thor-chain-lightning-2": {
+      "name": "连锁闪电 II",
+      "description": "投掷4颗效果骰并选择其中2颗，以点数之和造成伤害。另选一名对手造成3附属伤害。"
+    },
+    "thor-odinforce-2": {
+      "name": "奥丁之力 II",
+      "description": "造成6伤害并投掷5颗效果骰。可以任选数量的骰子一起重掷一次。最终每雷电获得1驭电，至少2当之无愧获得1CP，至少2神锤飞掷或召回一次；按最终当前驭电增加伤害。"
+    },
+    "thor-thunder-strike-2": {
+      "name": "雷轰电掣 II",
+      "description": "小顺子：飞掷或召回一次，获得1驭电，造成9伤害。"
+    },
+    "thor-power-of-thunder-2": {
+      "name": "雷霆之力 II／阿斯加德神力",
+      "description": "大顺子：飞掷或召回一次，获得2驭电，造成12伤害。副技能阿斯加德神力：3当之无愧，治疗4。"
+    },
+    "thor-bottled-lightning-2": {
+      "name": "瓶中闪电 II／连锁锤击",
+      "description": "4雷电：至多飞掷或召回3次，获得2破防，造成8加当前驭电的伤害。副技能连锁锤击：3雷电，至多飞掷或召回6次。"
+    },
+    "thor-thunder-wheel-2": {
+      "name": "雷电之轮 II",
+      "description": "防御投掷4颗骰。每组2神锤飞掷或召回一次；每当之无愧防止2伤害；每雷电获得1驭电。"
+    },
+    "thor-flash-and-thunder": {
+      "name": "电闪雷鸣",
+      "description": "获得2驭电，造成6伤害。"
+    },
+    "thor-asgardian-might": {
+      "name": "阿斯加德神力",
+      "description": "治疗4。"
+    },
+    "thor-hammer-chain": {
+      "name": "连锁锤击！",
+      "description": "至多飞掷或召回6次。"
+    },
+    "thor-effects": {
+      "description": "结算索尔能力效果"
+    },
+    "thor-hammer-4": {
+      "name": "雷神之锤",
+      "description": "3/4/5神锤：造成4/5/7伤害，并飞掷妙尔尼尔。"
+    },
+    "thor-hammer-5": {
+      "name": "雷神之锤",
+      "description": "3/4/5神锤：造成4/5/7伤害，并飞掷妙尔尼尔。"
+    },
+    "thor-hammer-2-3": {
+      "name": "雷神之锤 II",
+      "description": "3/4/5神锤：造成5/6/7伤害，并飞掷或召回。至少4颗相同数字时获得1驭电。"
+    },
+    "thor-hammer-2-4": {
+      "name": "雷神之锤 II",
+      "description": "3/4/5神锤：造成5/6/7伤害，并飞掷或召回。至少4颗相同数字时获得1驭电。"
+    },
+    "thor-hammer-2-5": {
+      "name": "雷神之锤 II",
+      "description": "3/4/5神锤：造成5/6/7伤害，并飞掷或召回。至少4颗相同数字时获得1驭电。"
+    },
+    "thor-hammer-3-3": {
+      "name": "雷神之锤",
+      "description": "3/4/5神锤：造成4/5/7伤害，并飞掷妙尔尼尔。"
+    },
+    "thor-hammer-3-4": {
+      "name": "雷神之锤",
+      "description": "3/4/5神锤：造成4/5/7伤害，并飞掷妙尔尼尔。"
+    },
+    "thor-hammer-3-5": {
+      "name": "雷神之锤",
+      "description": "3/4/5神锤：造成4/5/7伤害，并飞掷妙尔尼尔。"
+    },
+    "strange-omen": {
+      "name": "预兆",
+      "description": "获得1即视感。造成8点攻击伤害。"
+    },
+    "strange-cosmic-awareness": {
+      "name": "宇宙感知",
+      "description": "抽1张牌，获得1即视感和2预感。从弃牌堆准备1个法术。"
+    },
+    "strange-book-of-vishanti": {
+      "name": "维山帝之书",
+      "description": "开局时将法尔特之焰放置在此处，不触发其准备效果。每回合的任一主要阶段，你可以从手牌准备1个法术，限一次。"
+    },
+    "strange-astral-incursion": {
+      "name": "星际侵入",
+      "description": "造成6点攻击伤害并投掷2骰。每颗骰子分别结算：曼荼罗增加3点攻击伤害；魔法书获得1预感；斗篷施加1深红系带；护身符施放1个法术。"
+    },
+    "strange-mystic-bolt": {
+      "name": "秘术雷击",
+      "description": "小顺子：造成6点攻击伤害，然后施放1个法术。大顺子：造成9点攻击伤害，然后施放1个法术。"
+    },
+    "strange-wand-of-watoomb": {
+      "name": "瓦图姆魔杖",
+      "description": "施加1深红系带，造成5点不可防御攻击伤害。从弃牌堆准备1个法术，然后至多施放2个法术。"
+    },
+    "strange-binding": {
+      "name": "束缚术",
+      "description": "施加1深红系带。造成9点攻击伤害。"
+    },
+    "strange-cloak-of-levitation": {
+      "name": "悬浮斗篷",
+      "description": "防御投掷2骰。曼荼罗造成1点直接伤害；魔法书获得1预感；斗篷防止2点伤害；护身符造成3点直接伤害。"
+    },
+    "strange-all-seeing-eye": {
+      "name": "全知之眼",
+      "description": "查看牌库顶的5张牌。准备其中至多2个法术，并将其余牌按顺序放回牌库顶。然后造成10点不可防御攻击伤害，再至多施放2个法术。此能力完成前，你和对手都不能打出卡牌。"
+    }
   },
   "cards": {
     "card-energetic": {
@@ -4791,21 +5638,99 @@
         "modifyDieTo6": "将 1 颗骰子改为 6"
       }
     },
-    "upgrade-zhizhuxia-heavy-punch-2": { "name": "重拳 II", "description": "升级你的重拳。3/4/5 个拳分别造成 5/6/7 点伤害；若至少 4 颗骰子数字相同，获得 1 个连击。" },
-    "upgrade-zhizhuxia-combo-strike-2": { "name": "连连连击 II", "description": "升级你的连击打击。2 个蛛网 + 2 个蜘蛛：造成 6 点伤害，并获得 1 个连击。" },
-    "upgrade-zhizhuxia-trap-2": { "name": "诱捕 II", "description": "升级你的诱捕。小顺子造成 6 点伤害并施加落网；大顺子抽 1 张牌，造成 9 点伤害并施加落网。" },
-    "upgrade-zhizhuxia-venom-punch-2": { "name": "毒液重拳 II", "description": "升级你的毒液重拳。4 个蜘蛛：获得隐形，造成 8 点不可防御伤害。" },
-    "card-zhizhuxia-milkshake": { "name": "我爱奶昔！", "description": "治疗 3 点生命。", "effects": { "heal3": "治疗 3 点生命" } },
-    "card-zhizhuxia-wallet-arrival": { "name": "钱包到账！", "description": "获得 2 点气。", "effects": { "gain2CP": "获得 2 点气" } },
-    "card-zhizhuxia-spider-launcher": { "name": "蜘蛛发射器！", "description": "对 1 名对手施加落网。", "effects": { "applyWebbed": "施加落网" } },
-    "card-zhizhuxia-praise": { "name": "赞爆！", "description": "投掷 1 骰：拳获得隐形，蛛网对目标施加落网，蜘蛛获得连击。", "effects": { "roll1": "投掷 1 骰并按骰面结算效果" } },
-    "card-zhizhuxia-flying-escape": { "name": "飞荡脱身！", "description": "在防御投掷中，允许蜘蛛感应将蛛网视为成功面。", "effects": { "acceptWeb": "允许蜘蛛感应将蛛网视为成功面" } },
-    "card-zhizhuxia-ambush": { "name": "奇袭！", "description": "消耗 1 个隐形，使本次攻击伤害 +3。", "effects": { "discardInvisibleAndAdd3": "消耗 1 个隐形，本次攻击伤害 +3" } },
-    "card-zhizhuxia-invisible-punch": { "name": "隐形重拳！", "description": "若蜘蛛感应成功，造成 3 点直接伤害。", "effects": { "counter3": "蜘蛛感应成功时造成 3 点直接伤害" } },
-    "card-zhizhuxia-wishful-thinking": { "name": "想的美！", "description": "消耗 1 个隐形，获得 3 点伤害护盾。", "effects": { "prevent3": "消耗 1 个隐形并获得 3 点伤害护盾" } },
-    "card-zhizhuxia-oh-no": { "name": "啊呀！", "description": "获得 1 个隐形。", "effects": { "gainInvisible": "获得 1 个隐形" } },
-    "card-zhizhuxia-radioactive-blood": { "name": "放射性血液！", "description": "获得 1 个连击。", "effects": { "gainCombo": "获得 1 个连击" } },
-    "card-zhizhuxia-head-tingle": { "name": "头皮发麻！", "description": "投掷 1 骰：若投出蜘蛛，获得连击和隐形；否则抽 1 张牌。", "effects": { "roll1": "投掷 1 骰并按骰面结算效果" } },
+    "upgrade-zhizhuxia-heavy-punch-2": {
+      "name": "重拳 II",
+      "description": "升级你的重拳。3/4/5 个拳分别造成 5/6/7 点伤害；若至少 4 颗骰子数字相同，获得 1 个连击。"
+    },
+    "upgrade-zhizhuxia-combo-strike-2": {
+      "name": "连连连击 II",
+      "description": "升级你的连击打击。2 个蛛网 + 2 个蜘蛛：造成 6 点伤害，并获得 1 个连击。"
+    },
+    "upgrade-zhizhuxia-trap-2": {
+      "name": "诱捕 II",
+      "description": "升级你的诱捕。小顺子造成 6 点伤害并施加落网；大顺子抽 1 张牌，造成 9 点伤害并施加落网。"
+    },
+    "upgrade-zhizhuxia-venom-punch-2": {
+      "name": "毒液重拳 II",
+      "description": "升级你的毒液重拳。4 个蜘蛛：获得隐形，造成 8 点不可防御伤害。"
+    },
+    "card-zhizhuxia-milkshake": {
+      "name": "我爱奶昔！",
+      "description": "治疗 3 点生命。",
+      "effects": {
+        "heal3": "治疗 3 点生命"
+      }
+    },
+    "card-zhizhuxia-wallet-arrival": {
+      "name": "钱包到账！",
+      "description": "获得 2 点气。",
+      "effects": {
+        "gain2CP": "获得 2 点气"
+      }
+    },
+    "card-zhizhuxia-spider-launcher": {
+      "name": "蜘蛛发射器！",
+      "description": "对 1 名对手施加落网。",
+      "effects": {
+        "applyWebbed": "施加落网"
+      }
+    },
+    "card-zhizhuxia-praise": {
+      "name": "赞爆！",
+      "description": "投掷 1 骰：拳获得隐形，蛛网对目标施加落网，蜘蛛获得连击。",
+      "effects": {
+        "roll1": "投掷 1 骰并按骰面结算效果"
+      }
+    },
+    "card-zhizhuxia-flying-escape": {
+      "name": "飞荡脱身！",
+      "description": "在防御投掷中，允许蜘蛛感应将蛛网视为成功面。",
+      "effects": {
+        "acceptWeb": "允许蜘蛛感应将蛛网视为成功面"
+      }
+    },
+    "card-zhizhuxia-ambush": {
+      "name": "奇袭！",
+      "description": "消耗 1 个隐形，使本次攻击伤害 +3。",
+      "effects": {
+        "discardInvisibleAndAdd3": "消耗 1 个隐形，本次攻击伤害 +3"
+      }
+    },
+    "card-zhizhuxia-invisible-punch": {
+      "name": "隐形重拳！",
+      "description": "若蜘蛛感应成功，造成 3 点直接伤害。",
+      "effects": {
+        "counter3": "蜘蛛感应成功时造成 3 点直接伤害"
+      }
+    },
+    "card-zhizhuxia-wishful-thinking": {
+      "name": "想的美！",
+      "description": "消耗 1 个隐形，获得 3 点伤害护盾。",
+      "effects": {
+        "prevent3": "消耗 1 个隐形并获得 3 点伤害护盾"
+      }
+    },
+    "card-zhizhuxia-oh-no": {
+      "name": "啊呀！",
+      "description": "获得 1 个隐形。",
+      "effects": {
+        "gainInvisible": "获得 1 个隐形"
+      }
+    },
+    "card-zhizhuxia-radioactive-blood": {
+      "name": "放射性血液！",
+      "description": "获得 1 个连击。",
+      "effects": {
+        "gainCombo": "获得 1 个连击"
+      }
+    },
+    "card-zhizhuxia-head-tingle": {
+      "name": "头皮发麻！",
+      "description": "投掷 1 骰：若投出蜘蛛，获得连击和隐形；否则抽 1 张牌。",
+      "effects": {
+        "roll1": "投掷 1 骰并按骰面结算效果"
+      }
+    },
     "upgrade-revolver-2": {
       "name": "左轮手枪 II",
       "description": "升级你的左轮手枪。3/4/5 个子弹分别造成 4/5/6 点伤害。若至少有 4 颗骰子数字相同，则施加击倒。"
@@ -5723,17 +6648,21 @@
       "name": "复仇枝蔓 II",
       "description": "升级复仇枝蔓：小顺子时施加刺藤并造成 8 点伤害。苦痛根系（3 树叶）：每有 1 个树灵，造成 1 点真实伤害。"
     },
-    "upgrade-wild-growth-2": {
+    "upgrade-wild-roar-2": {
       "name": "野性怒吼 II",
       "description": "升级野性怒吼：大顺子时造成 8 点伤害并投掷 5 骰；每个树枝 +1 伤害；若投出树叶，获得生命源泉；每个树灵养成 1 次树灵。乱花迷眼（2 树枝 + 2 树灵）：施加刺藤并造成 4 点不可防御伤害。"
+    },
+    "upgrade-wild-growth-2": {
+      "name": "野蛮生长 II",
+      "description": "升级野蛮生长：2 树枝 + 3 树叶造成 4 点伤害；可移除至多 2 个树灵，每个 +4 点伤害；可弃掉生命源泉使攻击不可防御。种植（1 树枝 + 2 树叶）：养成 3 树灵。"
+    },
+    "treant-card-planting": {
+      "name": "种植",
+      "description": "养成 3 个树灵。"
     },
     "upgrade-shattering-fist-2": {
       "name": "破碎之拳 II",
       "description": "升级破碎之拳：3/4/5 树枝造成 5/6/7 伤害，并施加刺藤。"
-    },
-    "treant-card-planting": {
-      "name": "种植",
-      "description": "养成 3 树灵。"
     },
     "ninja-card-training": {
       "name": "训练！",
@@ -5794,53 +6723,311 @@
     "ninja-card-dojo": {
       "name": "道场！",
       "description": "投掷 1 骰；如果掷出面具，则获得烟雾弹和 2 忍术。否则抽 1 张牌。"
+    },
+    "card-tianshi-holy-strike": {
+      "name": "圣击！",
+      "description": "攻击修正：投 5 个奖励骰；每个炽炎剑使本次攻击伤害 +1，圣洁吊坠使对手获得眩光。"
+    },
+    "card-tianshi-angelic-tactics": {
+      "name": "天使战术！",
+      "description": "攻击修正：投 1 个奖励骰；炽炎剑使本次攻击伤害 +3，双翼获得飞行，十字获得净化，圣洁吊坠获得神圣降临。"
+    },
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": {
+      "name": "无上之力 II / 福音临世",
+      "description": "上区：无上之力 II；下区：获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。"
+    },
+    "upgrade-tianshi-divine-punishment-2-divine-command": {
+      "name": "神圣惩戒 II / 神圣指令",
+      "description": "上区：神圣惩戒 II；下区：治疗 1 点，并对一名对手造成 4 点不可防御伤害。"
+    },
+    "upgrade-tianshi-divine-purification-2": {
+      "name": "神圣净化 II",
+      "description": "升级神圣净化：对手伤害提升至 6 点，自己治疗提升至 5 点。"
+    },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": {
+      "name": "天使长之志 II / 神之庇佑",
+      "description": "上区：天使长之志 II；下区：选择一名玩家获得 2 个净化和 2 个飞行。"
+    },
+    "upgrade-tianshi-angelic-cloak-3": {
+      "name": "天使斗篷 III",
+      "description": "防御投掷 1 骰；炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。"
+    },
+    "upgrade-tianshi-angelic-cloak-2": {
+      "name": "天使斗篷 II",
+      "description": "防御投掷 1 骰；炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。"
+    },
+    "upgrade-tianshi-triumphant-return-2": {
+      "name": "凯旋归来 II",
+      "description": "小顺子造成 8 点伤害；奖励骰：炽炎剑 +1、双翼 +2、十字 +3、圣洁吊坠使攻击不可防御。"
+    },
+    "upgrade-tianshi-holy-radiance-2-takeoff": {
+      "name": "圣洁光辉 II / 起飞",
+      "description": "上区：圣洁光辉 II；下区：选择 1 名玩家获得飞行。对手承受 3 点不可防御伤害。"
+    },
+    "upgrade-tianshi-holy-blade-3-cherub-2": {
+      "name": "圣刃 III / 智天使 II",
+      "description": "上区：圣刃 III；下区：获得飞行、净化和神圣降临。"
+    },
+    "card-tianshi-divine-arbitration": {
+      "name": "神圣裁决！",
+      "description": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。"
+    },
+    "card-tianshi-supreme-holiness": {
+      "name": "至高圣洁！",
+      "description": "投 1 个奖励骰；圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。"
+    },
+    "card-tianshi-ascension": {
+      "name": "飞升！",
+      "description": "选择一名玩家获得飞行。"
+    },
+    "upgrade-tianshi-holy-blade-2-cherub": {
+      "name": "圣刃 II / 智天使",
+      "description": "上区：圣刃 II；下区：获得飞行和神圣降临。"
+    },
+    "card-lieren-primitive-roar": {
+      "name": "原始咆哮！",
+      "description": "投 1 骰；若投出剑齿虎，治疗妮拉 4。否则抽 1 张牌。"
+    },
+    "card-lieren-regroup": {
+      "name": "重整旗鼓！",
+      "description": "获得妮拉之系。"
+    },
+    "card-lieren-opportunistic-strike": {
+      "name": "伺机待发！",
+      "description": "攻击修正：投 1 个奖励骰；长矛 +1 伤害，利爪 +2 伤害，魂之羁绊治疗妮拉 1，剑齿虎 +3 伤害。"
+    },
+    "card-lieren-pounce": {
+      "name": "飞扑！",
+      "description": "攻击修正：投 5 个奖励骰；每个长矛使本次攻击伤害 +1；若投出利爪，施加 1 层流血。"
+    },
+    "card-lieren-savage-claw": {
+      "name": "野蛮爪击！",
+      "description": "指定 1 名玩家并投 1 骰；利爪或剑齿虎施加 2 层流血，否则施加 1 层流血。"
+    },
+    "card-lieren-bloodline": {
+      "name": "血脉相承！",
+      "description": "投 3 骰；治疗妮拉 1，每个魂之羁绊额外治疗 1，每个剑齿虎额外治疗 2。"
+    },
+    "upgrade-lieren-kindred-bond-3": {
+      "name": "情同骨肉 III",
+      "description": "升级情同骨肉至 III 级。"
+    },
+    "upgrade-lieren-kindred-bond-2": {
+      "name": "情同骨肉 II",
+      "description": "升级情同骨肉至 II 级。"
+    },
+    "upgrade-lieren-beast-force-2": {
+      "name": "巨兽之力 II / 凶狠注视",
+      "description": "升级巨兽之力，并加入凶狠注视分支。"
+    },
+    "upgrade-lieren-brutal-strike-2": {
+      "name": "猛击之力 II",
+      "description": "升级猛击之力至 II 级。"
+    },
+    "upgrade-lieren-hunt-ambush-2": {
+      "name": "追猎潜袭 II / 割喉",
+      "description": "升级追猎潜袭，并加入割喉分支。"
+    },
+    "upgrade-lieren-beast-instinct-2": {
+      "name": "野兽本能 II / 挥爪",
+      "description": "升级野兽本能，并加入挥爪分支。"
+    },
+    "upgrade-lieren-life-revival-2": {
+      "name": "生命复苏 II",
+      "description": "升级生命复苏至 II 级。"
+    },
+    "upgrade-lieren-savage-force-2": {
+      "name": "蛮荒之力 II / 狩猎",
+      "description": "升级蛮荒之力，并加入狩猎分支。"
+    },
+    "upgrade-lieren-wild-force-2": {
+      "name": "野性之力 II",
+      "description": "升级野性之力至 II 级。"
+    },
+    "card-vampire-lord-blood-surge": {
+      "name": "血潮汹涌！",
+      "description": "投掷 1 颗骰子：如果掷出血滴，获得 3 个鲜血之力；否则抽 1 张牌。"
+    },
+    "card-vampire-lord-blood-from-above": {
+      "name": "血从天降！",
+      "description": "投掷 1 颗骰子，获得该骰值向上取整一半的鲜血之力。"
+    },
+    "card-vampire-lord-total-demise": {
+      "name": "死无全尸！",
+      "description": "攻击修正：投掷 5 颗骰子；每掷出 1 个利爪，本次攻击伤害 +1；如果至少增加 3 点伤害，施加 1 层流血。"
+    },
+    "card-vampire-lord-boiling-blood": {
+      "name": "沸血之力！",
+      "description": "攻击修正：本次攻击伤害 +1；此外，被攻击对手每有 1 层流血，本次攻击伤害再 +1。"
+    },
+    "card-vampire-lord-gushing-blood": {
+      "name": "血流如注！",
+      "description": "获得 1 个鲜血之力和 1 CP。"
+    },
+    "upgrade-vampire-lord-undying-2": {
+      "name": "不死之身 II",
+      "description": "升级不死之身至 II 级。"
+    },
+    "upgrade-vampire-lord-blood-thirst-2-blood-river": {
+      "name": "血之渴望 II / 血流成河",
+      "description": "升级血之渴望至 II 级，并保留卡面下区“血流成河”作为同一升级后的可选技能变体。"
+    },
+    "upgrade-vampire-lord-blood-magic-2-flayed": {
+      "name": "鲜血魔法 II / 皮开肉绽",
+      "description": "升级鲜血魔法至 II 级，并保留卡面下区“皮开肉绽”作为同一升级后的可选技能变体。"
+    },
+    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": {
+      "name": "魔血附身 II / 嗜血成性",
+      "description": "升级魔血附身至 II 级，并保留卡面下区“嗜血成性”作为同一升级后的可选技能变体。"
+    },
+    "upgrade-vampire-lord-rend-claws-2": {
+      "name": "撕裂之爪 II",
+      "description": "升级撕裂之爪至 II 级。"
+    },
+    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": {
+      "name": "鲜血盛宴 II / 盛装出席",
+      "description": "升级鲜血盛宴至 II 级，并保留卡面下区“盛装出席”作为同一升级后的可选技能变体。"
+    },
+    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": {
+      "name": "魅惑之力 II / 摄魂术",
+      "description": "升级魅惑之力至 II 级，并保留卡面下区“摄魂术”作为同一升级后的可选技能变体。"
+    },
+    "upgrade-vampire-lord-bloodthirsty-claws-3": {
+      "name": "嗜血之爪 III",
+      "description": "升级嗜血之爪至 III 级。"
+    },
+    "upgrade-vampire-lord-bloodthirsty-claws-2": {
+      "name": "嗜血之爪 II",
+      "description": "升级嗜血之爪至 II 级。"
+    },
+    "card-vampire-lord-drink-up": {
+      "name": "饮血如酒！",
+      "description": "花费至多 2 个鲜血之力；然后每花费 1 个鲜血之力，获得 2 CP。"
+    },
+    "card-vampire-lord-bloodstone": {
+      "name": "血石！",
+      "description": "获得 1 个催眠和 2 个鲜血之力；对一名对手施加 1 层流血。"
+    },
+    "card-thor-worthy": {
+      "name": "当之无愧！",
+      "description": "将你的一颗骰子改为4或5。"
+    },
+    "card-thor-impenetrable": {
+      "name": "无懈可击！",
+      "description": "额外弃置2驭电，防止你即将受到的所有伤害。"
+    },
+    "card-thor-undaunted": {
+      "name": "不屈的意志！",
+      "description": "被攻击后，若即将受到的攻击伤害足以击败你，投掷1骰。结果为当之无愧时，防止足够伤害，使你剩余1生命。"
+    },
+    "card-thor-hammer-time": {
+      "name": "挥锤时刻！",
+      "description": "召回姆乔尔尼尔，获得1CP与1驭电；成功召回另获得的1驭电同时结算。"
+    },
+    "card-thor-thunderous": {
+      "name": "雷霆万钧！",
+      "description": "抽1张牌，获得2驭电。"
+    },
+    "card-thor-storm-brewing": {
+      "name": "风暴来袭！",
+      "description": "本回合至少飞掷过姆乔尔尼尔2次才能打出。抽1张牌，获得1CP、1破防与1驭电。"
+    },
+    "card-thor-bifrost": {
+      "name": "彩虹桥！",
+      "description": "推广卡。投掷1骰：雷电时抽1张牌、获得1破防与2驭电；否则抽1张牌。"
+    },
+    "upgrade-thor-hammer-2": {
+      "name": "雷神之锤 II",
+      "description": "3/4/5神锤：造成5/6/7伤害，并飞掷或召回。至少4颗相同数字时获得1驭电。"
+    },
+    "upgrade-thor-hammer-3": {
+      "name": "雷神之锤 III",
+      "description": "3/4/5神锤：造成5/6/8伤害，并飞掷或召回。至少3颗相同数字时获得1驭电。"
+    },
+    "upgrade-thor-mighty-summon-2": {
+      "name": "驭雷策电 II／电闪雷鸣",
+      "description": "获得2破防，治疗3。持锤获得3驭电；否则召回，并对原持有者造成4附属伤害。副技能电闪雷鸣：2神锤2雷电，获得2驭电并造成6伤害。"
+    },
+    "upgrade-thor-chain-lightning-2": {
+      "name": "连锁闪电 II",
+      "description": "投掷4颗效果骰并选择其中2颗，以点数之和造成伤害。另选一名对手造成3附属伤害。"
+    },
+    "upgrade-thor-odinforce-2": {
+      "name": "奥丁之力 II",
+      "description": "造成6伤害并投掷5颗效果骰。可以任选数量的骰子一起重掷一次。最终每雷电获得1驭电，至少2当之无愧获得1CP，至少2神锤飞掷或召回一次；按最终当前驭电增加伤害。"
+    },
+    "upgrade-thor-thunder-strike-2": {
+      "name": "雷轰电掣 II",
+      "description": "小顺子：飞掷或召回一次，获得1驭电，造成9伤害。"
+    },
+    "upgrade-thor-power-of-thunder-2": {
+      "name": "雷霆之力 II／阿斯加德神力",
+      "description": "大顺子：飞掷或召回一次，获得2驭电，造成12伤害。副技能阿斯加德神力：3当之无愧，治疗4。"
+    },
+    "upgrade-thor-bottled-lightning-2": {
+      "name": "瓶中闪电 II／连锁锤击",
+      "description": "4雷电：至多飞掷或召回3次，获得2破防，造成8加当前驭电的伤害。副技能连锁锤击：3雷电，至多飞掷或召回6次。"
+    },
+    "upgrade-thor-thunder-wheel-2": {
+      "name": "雷电之轮 II",
+      "description": "防御投掷4颗骰。每组2神锤飞掷或召回一次；每当之无愧防止2伤害；每雷电获得1驭电。"
+    },
+    "spell-flames-of-faltine": {
+      "name": "法尔特之焰",
+      "description": "准备：对1名对手造成1点独立的不可防御伤害。施放：本次攻击增加1点伤害，然后将此牌放回手牌。"
+    },
+    "spell-rings-of-raggadorr": {
+      "name": "罗格达之戒",
+      "description": "准备：获得1预感。施放：至多施放弃牌堆中的2个不同法术，然后弃置此牌。"
+    },
+    "spell-vapors-of-valtorr": {
+      "name": "瓦尔托尔之汽",
+      "description": "准备：治疗任意1名英雄1点。施放：获得3预感，然后弃置此牌。"
+    },
+    "spell-bolts-of-balthakk": {
+      "name": "博萨特之雷",
+      "description": "准备：获得1CP。施放：对1名对手造成3点独立的不可防御伤害，然后弃置此牌。"
+    },
+    "spell-winds-of-watoomb": {
+      "name": "瓦图姆之风",
+      "description": "准备：你可以从1名玩家身上移除1个状态效果。施放：从弃牌堆准备1个法术，然后弃置此牌。"
+    },
+    "spell-mists-of-morpheus": {
+      "name": "墨菲斯之雾",
+      "description": "准备：1名玩家获得1即视感。施放：治疗任意1名英雄3点，然后弃置此牌。"
+    },
+    "spell-crimson-bands-of-cyttorak": {
+      "name": "克拉坎之链",
+      "description": "准备：对1名对手施加1深红系带。施放：将本次攻击变为不可防御，然后弃置此牌。"
+    },
+    "spell-fangs-of-farallah": {
+      "name": "法瑞拉之牙",
+      "description": "准备：1名对手失去1CP。施放：本次攻击增加3点伤害，然后弃置此牌。"
+    },
+    "spell-images-of-ikonn": {
+      "name": "艾坎之形",
+      "description": "准备：无。施放：你的手牌每有1张，本次攻击增加1点伤害，至多增加4点，然后弃置此牌。"
+    },
+    "card-strange-see-the-future": {
+      "name": "洞悉未来！",
+      "description": "获得2预感。"
+    },
+    "card-strange-icy-tendrils": {
+      "name": "寒冰藤蔓！",
+      "description": "投掷2骰：曼荼罗使本次攻击增加1点伤害；魔法书施放1个法术；斗篷使本次攻击增加2点伤害；护身符施加1深红系带。"
+    },
+    "card-strange-shield-of-seraphim": {
+      "name": "塞拉芬之盾！",
+      "description": "只能在被攻击后打出。投掷2骰：曼荼罗防止1点伤害；魔法书防止2点伤害；斗篷防止3点伤害；护身符获得1预感。"
+    },
+    "card-strange-cast-away": {
+      "name": "移星换斗！",
+      "description": "施放1个法术。"
+    },
+    "card-strange-time-loop": {
+      "name": "时间循环！",
+      "description": "1名玩家获得1即视感。"
     }
-    ,"card-tianshi-holy-strike": { "name": "圣击！", "description": "攻击修正：投 5 个奖励骰；每个炽炎剑使本次攻击伤害 +1，圣洁吊坠使对手获得眩光。" },
-    "card-tianshi-angelic-tactics": { "name": "天使战术！", "description": "攻击修正：投 1 个奖励骰；炽炎剑使本次攻击伤害 +3，双翼获得飞行，十字获得净化，圣洁吊坠获得神圣降临。" },
-    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "name": "无上之力 II / 福音临世", "description": "上区：无上之力 II；下区：获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。" },
-    "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "神圣惩戒 II / 神圣指令", "description": "上区：神圣惩戒 II；下区：治疗 1 点，并对一名对手造成 4 点不可防御伤害。" },
-    "upgrade-tianshi-divine-purification-2": { "name": "神圣净化 II", "description": "升级神圣净化：对手伤害提升至 6 点，自己治疗提升至 5 点。" },
-    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "天使长之志 II / 神之庇佑", "description": "上区：天使长之志 II；下区：选择一名玩家获得 2 个净化和 2 个飞行。" },
-    "upgrade-tianshi-angelic-cloak-3": { "name": "天使斗篷 III", "description": "防御投掷 1 骰；炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" },
-    "upgrade-tianshi-angelic-cloak-2": { "name": "天使斗篷 II", "description": "防御投掷 1 骰；炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" },
-    "upgrade-tianshi-triumphant-return-2": { "name": "凯旋归来 II", "description": "小顺子造成 8 点伤害；奖励骰：炽炎剑 +1、双翼 +2、十字 +3、圣洁吊坠使攻击不可防御。" },
-    "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "圣洁光辉 II / 起飞", "description": "上区：圣洁光辉 II；下区：选择 1 名玩家获得飞行。对手承受 3 点不可防御伤害。" },
-    "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "圣刃 III / 智天使 II", "description": "上区：圣刃 III；下区：获得飞行、净化和神圣降临。" },
-    "card-tianshi-divine-arbitration": { "name": "神圣裁决！", "description": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" },
-    "card-tianshi-supreme-holiness": { "name": "至高圣洁！", "description": "投 1 个奖励骰；圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" },
-    "card-tianshi-ascension": { "name": "飞升！", "description": "选择一名玩家获得飞行。" },
-    "upgrade-tianshi-holy-blade-2-cherub": { "name": "圣刃 II / 智天使", "description": "上区：圣刃 II；下区：获得飞行和神圣降临。" },
-    "card-lieren-primitive-roar": { "name": "原始咆哮！", "description": "投 1 骰；若投出剑齿虎，治疗妮拉 4。否则抽 1 张牌。" },
-    "card-lieren-regroup": { "name": "重整旗鼓！", "description": "获得妮拉之系。" },
-    "card-lieren-opportunistic-strike": { "name": "伺机待发！", "description": "攻击修正：投 1 个奖励骰；长矛 +1 伤害，利爪 +2 伤害，魂之羁绊治疗妮拉 1，剑齿虎 +3 伤害。" },
-    "card-lieren-pounce": { "name": "飞扑！", "description": "攻击修正：投 5 个奖励骰；每个长矛使本次攻击伤害 +1；若投出利爪，施加 1 层流血。" },
-    "card-lieren-savage-claw": { "name": "野蛮爪击！", "description": "指定 1 名玩家并投 1 骰；利爪或剑齿虎施加 2 层流血，否则施加 1 层流血。" },
-    "card-lieren-bloodline": { "name": "血脉相承！", "description": "投 3 骰；治疗妮拉 1，每个魂之羁绊额外治疗 1，每个剑齿虎额外治疗 2。" },
-    "upgrade-lieren-kindred-bond-3": { "name": "情同骨肉 III", "description": "升级情同骨肉至 III 级。" },
-    "upgrade-lieren-kindred-bond-2": { "name": "情同骨肉 II", "description": "升级情同骨肉至 II 级。" },
-    "upgrade-lieren-beast-force-2": { "name": "巨兽之力 II / 凶狠注视", "description": "升级巨兽之力，并加入凶狠注视分支。" },
-    "upgrade-lieren-brutal-strike-2": { "name": "猛击之力 II", "description": "升级猛击之力至 II 级。" },
-    "upgrade-lieren-hunt-ambush-2": { "name": "追猎潜袭 II / 割喉", "description": "升级追猎潜袭，并加入割喉分支。" },
-    "upgrade-lieren-beast-instinct-2": { "name": "野兽本能 II / 挥爪", "description": "升级野兽本能，并加入挥爪分支。" },
-    "upgrade-lieren-life-revival-2": { "name": "生命复苏 II", "description": "升级生命复苏至 II 级。" },
-    "upgrade-lieren-savage-force-2": { "name": "蛮荒之力 II / 狩猎", "description": "升级蛮荒之力，并加入狩猎分支。" },
-    "upgrade-lieren-wild-force-2": { "name": "野性之力 II", "description": "升级野性之力至 II 级。" },
-    "card-vampire-lord-blood-surge": { "name": "血潮汹涌！", "description": "投掷 1 颗骰子：如果掷出血滴，获得 3 个鲜血之力；否则抽 1 张牌。" },
-    "card-vampire-lord-blood-from-above": { "name": "血从天降！", "description": "投掷 1 颗骰子，获得该骰值向上取整一半的鲜血之力。" },
-    "card-vampire-lord-total-demise": { "name": "死无全尸！", "description": "攻击修正：投掷 5 颗骰子；每掷出 1 个利爪，本次攻击伤害 +1；如果至少增加 3 点伤害，施加 1 层流血。" },
-    "card-vampire-lord-boiling-blood": { "name": "沸血之力！", "description": "攻击修正：本次攻击伤害 +1；此外，被攻击对手每有 1 层流血，本次攻击伤害再 +1。" },
-    "card-vampire-lord-gushing-blood": { "name": "血流如注！", "description": "获得 1 个鲜血之力和 1 CP。" },
-    "upgrade-vampire-lord-undying-2": { "name": "不死之身 II", "description": "升级不死之身至 II 级。" },
-    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "血之渴望 II / 血流成河", "description": "升级血之渴望至 II 级，并保留卡面下区“血流成河”作为同一升级后的可选技能变体。" },
-    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "鲜血魔法 II / 皮开肉绽", "description": "升级鲜血魔法至 II 级，并保留卡面下区“皮开肉绽”作为同一升级后的可选技能变体。" },
-    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "魔血附身 II / 嗜血成性", "description": "升级魔血附身至 II 级，并保留卡面下区“嗜血成性”作为同一升级后的可选技能变体。" },
-    "upgrade-vampire-lord-rend-claws-2": { "name": "撕裂之爪 II", "description": "升级撕裂之爪至 II 级。" },
-    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "鲜血盛宴 II / 盛装出席", "description": "升级鲜血盛宴至 II 级，并保留卡面下区“盛装出席”作为同一升级后的可选技能变体。" },
-    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "魅惑之力 II / 摄魂术", "description": "升级魅惑之力至 II 级，并保留卡面下区“摄魂术”作为同一升级后的可选技能变体。" },
-    "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "升级嗜血之爪至 III 级。" },
-    "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "升级嗜血之爪至 II 级。" },
-    "card-vampire-lord-drink-up": { "name": "饮血如酒！", "description": "花费至多 2 个鲜血之力；然后每花费 1 个鲜血之力，获得 2 CP。" },
-    "card-vampire-lord-bloodstone": { "name": "血石！", "description": "获得 1 个催眠和 2 个鲜血之力；对一名对手施加 1 层流血。" }
   },
   "passive": {
     "tithes": {
@@ -5933,6 +7120,15 @@
       "upgradeHealBot": "花费 3 合成器将治疗机器人升级为 2 次使用机会",
       "activateNanobotAdvancedShort": "激活纳米",
       "activateNanobotAdvanced": "花费 1 合成器并消耗 1 个高级纳米机器人，引爆所有纳米爆弹"
+    },
+    "thor": {
+      "name": "姆乔尔尼尔",
+      "throw": "弃牌飞掷",
+      "retrieve": "弃牌召回",
+      "throwDescription": "弃置1张手牌，将姆乔尔尼尔飞掷至一名对手。",
+      "retrieveDescription": "弃置1张手牌，召回姆乔尔尼尔并获得1驭电。",
+      "draw": "花4驭电抽1牌",
+      "drawDescription": "自己的主要阶段，每回合一次。"
     }
   },
   "debug": {
@@ -6047,5 +7243,52 @@
   "endgame": {
     "ariaHero": "英雄：{{hero}}",
     "ariaPanel": "游戏结束面板"
+  },
+  "doctorStrange": {
+    "skip": "跳过",
+    "cast": "选择要施放的法术",
+    "prepare": "选择要准备的法术",
+    "target": "选择这名玩家",
+    "removeStatus": "移除状态：{{status}}",
+    "removeStatusTitle": "选择要移除的状态",
+    "incomeNormal": "不使用预感：抽1张牌",
+    "income1": "花费1预感：抽2张牌",
+    "income3": "花费3预感：抽3张牌",
+    "premonition": "选择收入阶段效果",
+    "returnCard": "选择放回牌库的牌",
+    "returnPosition": "放在牌库顶还是底？",
+    "top": "牌库顶",
+    "bottom": "牌库底",
+    "orderNext": "选择放回牌库顶的下一张牌",
+    "bonusDie": "奇异博士奖励骰",
+    "preparedSpells": "维山帝之书（{{count}}）",
+    "privateChoice": "私有选择",
+    "effects": {
+      "attack": "奇异博士攻击伤害",
+      "damage": "独立伤害",
+      "heal": "治疗",
+      "cp": "战斗点数",
+      "bonus": "攻击伤害修正",
+      "prevent": "防止伤害",
+      "unblockable": "不可防御",
+      "crimson-bands": "深红系带",
+      "premonition": "预感",
+      "deja-vu": "即视感",
+      "omen": "预兆",
+      "awareness": "宇宙感知",
+      "binding": "束缚术",
+      "wand": "瓦图姆魔杖",
+      "wand-after-damage": "伤害后：从弃牌堆准备1个法术，然后可施放至多2个法术",
+      "cast-one": "施放法术",
+      "premonition-two": "洞悉未来",
+      "grant-deja-vu": "时间循环",
+      "ultimate": "全知之眼",
+      "ultimate-cast": "全知之眼：伤害后施放法术",
+      "income": "预感收入",
+      "astral": "星际侵入",
+      "tendrils": "寒冰藤蔓",
+      "shield": "塞拉芬之盾",
+      "defense": "悬浮斗篷"
+    }
   }
 }

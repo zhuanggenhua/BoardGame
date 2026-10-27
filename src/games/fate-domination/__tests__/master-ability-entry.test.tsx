@@ -35,6 +35,7 @@ it('本人详情发动战略部署，使用部署所得魔力抽牌，对手详�
     const props = { G: live, dispatch, playerID: '0', isMultiplayer: true, matchData: [] };
     const view = render(<FateDominationBoard {...(props as never)}/>);
     fireEvent.click(screen.getByRole('button', { name: '查看玩家 1详情' }));
+    expect(screen.getByRole('dialog')).not.toHaveTextContent('当前威力');
     const ability = screen.getByRole('button', { name: '发动战略部署' });
     const count = live.core.players['0'].hand.length;
     const mana = live.core.players['0'].mana;
@@ -73,9 +74,28 @@ it('监督者从本人详情进入目标选择，取消不扣费，选中后确�
     begin();
     fireEvent.click(screen.getByRole('button', { name: '地点recon' }));
     expect(dispatch).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: '确认移动' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认移动至侦察' }));
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('PLAY_SKILL', {
         skillId: state.core.players['0'].skills.find(skill => skill.name === '监督者')!.id,
         targetLocationId: 'recon',
     });
+});
+
+
+it('淘汰标记来自权威玩家状态，本人、对手席位和详情不会混作未部署', () => {
+    const {state} = setup('m_waver');
+    state.core.players['0'].eliminated = true;
+    state.core.players['0'].locationId = null;
+    state.core.players['1'].eliminated = true;
+    state.core.players['1'].locationId = null;
+    state.core.currentPlayerId = '2';
+    render(<FateDominationBoard {...({G: state, dispatch: vi.fn(), playerID: '0', isMultiplayer: true, matchData: []} as never)}/>);
+    const self=screen.getByLabelText('本人席位'),peers=screen.getByLabelText('玩家席位');
+    expect(self.querySelector('.fd-runtime-avatar > .fd-avatar-elimination')).toBeTruthy();
+    expect(self.querySelector('[aria-description="已淘汰，观战中"]')).toBeTruthy();
+    expect(peers.querySelector('[aria-description="已淘汰"] > .fd-avatar-elimination')).toBeTruthy();
+    expect(screen.getByTestId('fate-domination-primary-action')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', {name: '查看玩家 2详情'}));
+    expect(within(screen.getByRole('dialog')).getByText('已淘汰')).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).queryByText('未部署')).toBeNull();
 });

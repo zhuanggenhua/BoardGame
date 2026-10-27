@@ -73,6 +73,12 @@ export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
 // ============================================================================
 
 export const TOKEN_IDS = {
+    /** 奇异博士：结束当前进攻投掷并重新开始。 */
+    DEJA_VU: 'deja-vu',
+    /** 索尔：破防、驭电与唯一同伴位置指示物。 */
+    GUARD_BREAK: 'guard_break',
+    ELECTROKINESIS: 'electrokinesis',
+    MJOLNIR: 'mjolnir',
     /** 太极 */
     TAIJI: 'taiji',
 
@@ -215,6 +221,12 @@ export const PYROMANCER_DICE_FACE_IDS = {
 } as const;
 
 export type PyromancerDiceFaceId = (typeof PYROMANCER_DICE_FACE_IDS)[keyof typeof PYROMANCER_DICE_FACE_IDS];
+
+export const THOR_DICE_FACE_IDS = {
+    HAMMER: 'thor_hammer',
+    WORTHY: 'thor_worthy',
+    THUNDER: 'thor_thunder',
+} as const;
 
 // ============================================================================
 // 骰面 ID（月精灵）
@@ -390,6 +402,7 @@ export type PaladinDiceFaceId = (typeof PALADIN_DICE_FACE_IDS)[keyof typeof PALA
 // ============================================================================
 
 export const DICETHRONE_COMMANDS = {
+    USE_DEJA_VU: 'USE_DEJA_VU',
     PAY_TO_REMOVE_KNOCKDOWN: 'PAY_TO_REMOVE_KNOCKDOWN',
     SELECT_DEFENDER_TARGET: 'SELECT_DEFENDER_TARGET',
     SELECT_CHARACTER: 'SELECT_CHARACTER',
@@ -408,6 +421,8 @@ export type PayToRemoveKnockdownCommandType = typeof DICETHRONE_COMMANDS.PAY_TO_
 // ============================================================================
 
 export const DICETHRONE_CARD_ATLAS_IDS = {
+    DOCTOR_STRANGE: 'dicethrone:doctor_strange-cards',
+    THOR: 'dicethrone:thor-cards',
     MONK: 'dicethrone:monk-cards',
     BARBARIAN: 'dicethrone:barbarian-cards',
     PYROMANCER: 'dicethrone:pyromancer-cards',
@@ -433,6 +448,8 @@ export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
 } as const;
 
 export const DICETHRONE_STATUS_ATLAS_IDS = {
+    DOCTOR_STRANGE: 'dicethrone:doctor_strange-status',
+    THOR: 'dicethrone:thor-status',
     MONK: 'dicethrone:monk-status',
     BARBARIAN: 'dicethrone:barbarian-status',
     PYROMANCER: 'dicethrone:pyromancer-status',

@@ -1,88 +1,120 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { listGameSubmissions, saveGameSubmission, submitGameSubmission, uploadSubmissionCover, type GameSubmissionDraft, type GameSubmissionRecord } from '../../api/game-submissions';
+import { listGameSubmissions, saveGameSubmission, submitGameSubmission, uploadSubmissionCover, withdrawGameSubmission, type GameSubmissionDraft, type GameSubmissionRecord } from '../../api/game-submissions';
+import { updateOwnedGame, uploadOwnedCover } from '../../api/external-games';
+import type { ExternalGame } from '../../shared/externalGames';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import './platform-upload.css';
 
-const statusLabels = { draft: '草稿', pending: '待审核', approved: '已通过', rejected: '需修改' };
+const statusLabelKeys = {
+    draft: 'platform.uploadWorkspace.status.draft',
+    pending: 'platform.uploadWorkspace.status.pending',
+    approved: 'platform.uploadWorkspace.status.approved',
+    rejected: 'platform.uploadWorkspace.status.rejected',
+} as const;
 
-function SubmissionForm({ record, onSaved }: { record?: GameSubmissionRecord; onSaved: (id: string) => void }) {
+export function GameSubmissionForm({ record, ownedGame, onSaved, headerAction }: { record?: GameSubmissionRecord; ownedGame?: ExternalGame; onSaved: (id: string) => void; headerAction?: ReactNode }) {
     const { token, user } = useAuth();
+    const { t } = useTranslation(['lobby', 'common']);
     const [draftId, setDraftId] = useState(record?.submissionId);
-    const [url, setUrl] = useState(record?.url ?? '');
+    const source = ownedGame ?? record;
+    const [url, setUrl] = useState(source?.url ?? '');
     const [file, setFile] = useState<File>();
-    const [preview, setPreview] = useState(record?.coverUrl ?? '');
+    const [preview, setPreview] = useState(source?.coverUrl ?? '');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     useEffect(() => {
-        if (!file) { setPreview(record?.coverUrl ?? ''); return; }
+        if (!file) { setPreview(source?.coverUrl ?? ''); return; }
         const objectUrl = URL.createObjectURL(file); setPreview(objectUrl);
         return () => URL.revokeObjectURL(objectUrl);
-    }, [file, record?.coverUrl]);
+    }, [file, source?.coverUrl]);
     let validUrl = false;
     try { const parsed = new URL(url); validUrl = ['http:', 'https:'].includes(parsed.protocol) && Boolean(parsed.hostname) && !parsed.username && !parsed.password; } catch { /* Empty or incomplete input is an editable form state. */ }
     return <form className="platform-upload-form" onSubmit={async event => {
         event.preventDefault();
         if (!token || busy) return;
+        const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ?? 'submit';
         const form = new FormData(event.currentTarget);
+        const minPlayers = form.get('minPlayers') ? Number(form.get('minPlayers')) : undefined;
+        const maxPlayers = form.get('maxPlayers') ? Number(form.get('maxPlayers')) : undefined;
+        const authorProfileUrl = String(form.get('authorProfileUrl') ?? '').trim();
         const data: GameSubmissionDraft = {
             name: String(form.get('name') ?? '').trim(), url: url.trim(), category: String(form.get('category')),
-            minPlayers: Number(form.get('minPlayers')), maxPlayers: Number(form.get('maxPlayers')),
+            minPlayers, maxPlayers, ...(authorProfileUrl ? { authorProfileUrl } : {}),
             author: String(form.get('author') ?? '').trim(), description: String(form.get('description') ?? '').trim(), rules: String(form.get('rules') ?? '').trim(),
             ...(form.get('durationMinutes') ? { durationMinutes: Number(form.get('durationMinutes')) } : {}),
         };
-        if (!validUrl || data.minPlayers > data.maxPlayers) { setError('请检查游戏链接与人数范围'); return; }
-        if (!file && !record?.coverUrl) { setError('请选择封面图片'); return; }
+        if (!validUrl || ((minPlayers == null) !== (maxPlayers == null)) || (minPlayers != null && maxPlayers != null && minPlayers > maxPlayers)) { setError(t('platform.uploadWorkspace.invalidSubmission')); return; }
+        if (!ownedGame && action === 'submit' && !file && !record?.coverUrl) { setError(t('platform.uploadWorkspace.coverRequired')); return; }
         setBusy(true); setError('');
         try {
-            const saved = await saveGameSubmission(token, data, draftId);
-            setDraftId(saved.submissionId);
-            if (file) await uploadSubmissionCover(token, saved.submissionId, file);
-            await submitGameSubmission(token, saved.submissionId);
-            onSaved(saved.submissionId);
-        } catch (cause) { setError(cause instanceof Error ? cause.message : '提交失败，请重试'); }
+            if (ownedGame) {
+                await updateOwnedGame(token, ownedGame.gameId, { ...data, published: form.get('published') === 'on' });
+                if (file) await uploadOwnedCover(token, ownedGame.gameId, file);
+                onSaved(ownedGame.gameId);
+            } else {
+                const saved = await saveGameSubmission(token, data, draftId);
+                setDraftId(saved.submissionId);
+                if (file) await uploadSubmissionCover(token, saved.submissionId, file);
+                if (action === 'submit') await submitGameSubmission(token, saved.submissionId);
+                onSaved(saved.submissionId);
+            }
+        } catch (cause) { setError(cause instanceof Error ? cause.message : t('platform.uploadWorkspace.submitFailed')); }
         finally { setBusy(false); }
     }}>
-        <h2>{record ? record.name : '上传新游戏'}</h2>
-        <p>提交游戏链接、介绍、封面和规则。审核通过后展示，不替代官方游戏实现。</p>
-        {record && <p role="status">{statusLabels[record.status]}{record.reviewComment ? ` · ${record.reviewComment}` : ''}</p>}
-        <div className="platform-upload-fields">
-            <label>游戏名称<input name="name" required maxLength={100} defaultValue={record?.name} /></label>
-            <label>游戏链接<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-describedby="submission-url-check" />
-                <small id="submission-url-check">{!url ? '填写可访问的游戏链接' : validUrl ? '链接格式有效；尚未验证网站运行情况' : '请填写完整的 http 或 https 链接'}</small>
+        <header className="platform-upload-form-heading"><h2>{source ? source.name : t('platform.uploadWorkspace.title')}</h2>{headerAction}</header>
+        <p>{ownedGame ? '编辑你的作品资料，保存后公开页面会同步更新。' : t('platform.uploadWorkspace.description')}</p>
+        {record && <p role="status">{t(statusLabelKeys[record.status])}{record.reviewComment ? ` · ${record.reviewComment}` : ''}</p>}
+        {record?.status === 'pending' && <p>审核期间资料已锁定。需要修改时可撤回投稿。</p>}
+        <fieldset disabled={record?.status === 'pending' || busy} className="platform-upload-fields">
+            <label>{t('platform.uploadWorkspace.gameName')}<input name="name" required maxLength={100} defaultValue={source?.name} /></label>
+            <label>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
+                <small id="submission-url-check">{!url ? t('platform.uploadWorkspace.urlEmptyHint') : validUrl ? t('platform.uploadWorkspace.urlValid') : t('platform.uploadWorkspace.urlInvalid')}</small>
             </label>
-            <label>类别<select name="category" defaultValue={record?.category ?? 'card'}>
-                <option value="card">卡牌</option><option value="dice">骰子</option><option value="abstract">抽象</option><option value="wargame">战棋</option><option value="casual">休闲</option><option value="tools">工具</option>
+            <label>{t('platform.uploadWorkspace.category')}<select name="category" defaultValue={source?.category ?? 'card'}>
+                <option value="uncategorized">暂不分类</option>
+                <option value="card">{t('common:category.card')}</option><option value="dice">{t('common:category.dice')}</option><option value="abstract">{t('common:category.abstract')}</option><option value="wargame">{t('common:category.wargame')}</option><option value="casual">{t('common:category.casual')}</option><option value="tools">{t('common:category.tools')}</option>
             </select></label>
-            <fieldset><legend>人数</legend><div className="platform-player-range">
-                <select name="minPlayers" aria-label="最少人数" defaultValue={record?.minPlayers ?? 2}>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
-                <span>至</span><select name="maxPlayers" aria-label="最多人数" defaultValue={record?.maxPlayers ?? 4}>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
+            <fieldset><legend>{t('platform.uploadWorkspace.players')}</legend><div className="platform-player-range">
+                <select name="minPlayers" aria-label={t('platform.uploadWorkspace.minPlayers')} defaultValue={source ? source.minPlayers ?? '' : 2}><option value="">未填写</option>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
+                <span>{t('platform.uploadWorkspace.rangeSeparator')}</span><select name="maxPlayers" aria-label={t('platform.uploadWorkspace.maxPlayers')} defaultValue={source ? source.maxPlayers ?? '' : 4}><option value="">未填写</option>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
             </div></fieldset>
-            <label>估计时长（分钟）<input name="durationMinutes" type="number" min={1} max={1440} defaultValue={record?.durationMinutes} /></label>
-            <label>作者<input name="author" maxLength={100} defaultValue={record?.author ?? user?.username} /></label>
-            <label>介绍<textarea name="description" required maxLength={10000} defaultValue={record?.description} /></label>
-            <label>规则文档<textarea name="rules" maxLength={50000} defaultValue={record?.rules} /></label>
-            <label className="platform-cover-upload">封面
-                {preview && <img src={preview} alt="投稿封面预览" onError={() => { setPreview(''); setError('封面不是可读取的图片'); }} />}
+            <label>{t('platform.uploadWorkspace.duration')}<input name="durationMinutes" type="number" min={1} max={1440} defaultValue={source?.durationMinutes} /></label>
+            <label>{t('platform.uploadWorkspace.author')}<input name="author" maxLength={100} defaultValue={source?.author ?? user?.username} /></label>
+            <label>作者主页<input name="authorProfileUrl" type="url" maxLength={2048} defaultValue={source?.authorProfileUrl} placeholder="https://" /></label>
+            <label>{t('platform.uploadWorkspace.introduction')}<textarea name="description" aria-label={t('platform.uploadWorkspace.introduction')} required maxLength={10000} defaultValue={source?.description} /></label>
+            <label>{t('platform.uploadWorkspace.rules')}<textarea name="rules" aria-label={t('platform.uploadWorkspace.rules')} maxLength={50000} defaultValue={source?.rules} /></label>
+            <label className="platform-cover-upload">{t('platform.uploadWorkspace.cover')}
+                {preview && <img src={preview} alt={t('platform.uploadWorkspace.coverPreviewAlt')} onError={() => { setPreview(''); setError(t('platform.uploadWorkspace.coverUnreadable')); }} />}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={event => {
                     const selected = event.target.files?.[0];
                     if (selected && selected.size > 10 * 1024 * 1024) {
-                        setFile(undefined); event.currentTarget.value = ''; setError('封面不能超过 10 MB'); return;
+                        setFile(undefined); event.currentTarget.value = ''; setError(t('platform.uploadWorkspace.coverTooLarge')); return;
                     }
                     setError(''); setFile(selected);
                 }} />
             </label>
-        </div>
+            {ownedGame && <label><input type="checkbox" name="published" defaultChecked={ownedGame.published} /> 在发现页公开展示</label>}
+        </fieldset>
         {error && <p role="alert">{error}</p>}
-        <button className="platform-submit" type="submit" disabled={busy}>{busy ? '正在提交…' : '提交审核'}</button>
+        {record?.status === 'pending' ? <button type="button" disabled={busy} onClick={async () => {
+            if (!token) return; setBusy(true); setError('');
+            try { await withdrawGameSubmission(token, record.submissionId); onSaved(record.submissionId); }
+            catch (cause) { setError(cause instanceof Error ? cause.message : '撤回失败'); } finally { setBusy(false); }
+        }}>撤回投稿</button> : <div className="platform-upload-actions">
+            {!ownedGame && <button type="submit" value="draft" disabled={busy}>保存草稿</button>}
+            <button className="platform-submit" type="submit" value="submit" disabled={busy}>{busy ? t('platform.uploadWorkspace.submitting') : ownedGame ? '保存作品' : t('platform.uploadWorkspace.submit')}</button>
+        </div>}
     </form>;
 }
 
-export function PlatformUploadWorkspace({ onLogin }: { onLogin: () => void }) {
+export function PlatformUploadWorkspace({ onLogin, initialSubmissionId, onBack }: { onLogin: () => void; initialSubmissionId?: string; onBack?: () => void }) {
     const { token, user } = useAuth();
+    const { t } = useTranslation(['lobby', 'common']);
     const client = useQueryClient();
-    const [selectedId, setSelectedId] = useState<string>();
+    const [selectedId, setSelectedId] = useState<string | undefined>(initialSubmissionId);
     const [showList, setShowList] = useState(false);
     const listDialog = useRef<HTMLDialogElement>(null);
     useDocumentScrollLock(Boolean(user) && showList);
@@ -93,26 +125,29 @@ export function PlatformUploadWorkspace({ onLogin }: { onLogin: () => void }) {
     }, [showList]);
     const queryKey = ['game-submissions', user?.id] as const;
     const records = useQuery({ queryKey, queryFn: () => listGameSubmissions(token!), enabled: Boolean(token && user) });
-    if (!user) return <section className="platform-upload-login"><h2>上传新游戏</h2><p>登录后可以保存投稿并查看审核结果。</p><button type="button" onClick={onLogin}>登录</button></section>;
+    if (!user) return <section className="platform-upload-login"><h2>{t('platform.uploadWorkspace.title')}</h2><p>{t('platform.uploadWorkspace.loginPrompt')}</p><button type="button" onClick={onLogin}>{t('platform.profile.login')}</button></section>;
     const selected = records.data?.items.find(record => record.submissionId === selectedId);
     const listContent = <>
-        <button type="button" onClick={() => { setSelectedId(undefined); setShowList(false); }}>上传新游戏</button>
+        <button type="button" onClick={() => { setSelectedId(undefined); setShowList(false); }}>{t('platform.uploadWorkspace.title')}</button>
         {records.data?.items.map(record => <button key={record.submissionId} type="button" aria-current={record.submissionId === selectedId ? 'page' : undefined}
-            onClick={() => { setSelectedId(record.submissionId); setShowList(false); }}>{record.name}<small>{statusLabels[record.status]}</small></button>)}
-        {records.isPending && <p role="status">正在加载投稿…</p>}
-        {records.isSuccess && records.data.items.length === 0 && <p className="platform-upload-empty" role="status">还没有投稿，填写新游戏资料后可提交审核。</p>}
-        {records.error && <p role="alert">加载投稿失败<button type="button" onClick={() => void records.refetch()}>重试</button></p>}
+            onClick={() => { setSelectedId(record.submissionId); setShowList(false); }}>{record.name}<small>{t(statusLabelKeys[record.status])}</small></button>)}
+        {records.isPending && <p role="status">{t('platform.uploadWorkspace.loading')}</p>}
+        {records.isSuccess && records.data.items.length === 0 && <p className="platform-upload-empty" role="status">{t('platform.uploadWorkspace.empty')}</p>}
+        {records.error && <p role="alert">{t('platform.uploadWorkspace.loadFailed')}<button type="button" onClick={() => void records.refetch()}>{t('platform.retry')}</button></p>}
     </>;
     return <section className="platform-upload-workspace">
-        <button className="platform-upload-list-toggle" type="button" aria-expanded={showList} onClick={() => setShowList(true)}>工坊列表</button>
         <aside className="platform-upload-list">{listContent}</aside>
-        <dialog ref={listDialog} className="platform-upload-drawer" aria-label="工坊列表" onCancel={() => setShowList(false)} onClose={() => setShowList(false)} onClick={event => {
+        <dialog ref={listDialog} className="platform-upload-drawer" aria-label={t('platform.uploadWorkspace.list')} onCancel={() => setShowList(false)} onClose={() => setShowList(false)} onClick={event => {
             if (event.target === event.currentTarget) setShowList(false);
         }}>
-            {showList && <div className="platform-upload-drawer-panel"><header><h2>工坊列表</h2><button type="button" aria-label="关闭工坊列表" onClick={() => setShowList(false)}>×</button></header>{listContent}</div>}
+            {showList && <div className="platform-upload-drawer-panel"><header><h2>{t('platform.uploadWorkspace.list')}</h2><button type="button" aria-label={t('platform.uploadWorkspace.closeList')} onClick={() => setShowList(false)}>×</button></header>{listContent}</div>}
         </dialog>
-        <SubmissionForm key={selected?.submissionId ?? 'new'} record={selected} onSaved={id => {
+        <div>{onBack && <button type="button" className="platform-upload-back" onClick={onBack}>← 返回我的投稿</button>}
+        {selectedId && !selected && records.isPending ? <p role="status">正在加载投稿…</p>
+            : selectedId && !selected && records.isSuccess ? <p role="alert">没有找到这份投稿。<button type="button" onClick={() => setSelectedId(undefined)}>返回新投稿</button></p>
+            : <GameSubmissionForm key={selected?.submissionId ?? 'new'} record={selected} onSaved={id => {
             setSelectedId(id); void client.invalidateQueries({ queryKey });
-        }} />
+        }} headerAction={<button className="platform-upload-list-toggle" type="button" aria-expanded={showList} onClick={() => setShowList(true)}>{t('platform.uploadWorkspace.list')}</button>} />}
+        </div>
     </section>;
 }

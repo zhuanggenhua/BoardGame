@@ -113,11 +113,15 @@ input:focus-visible {
   background: #10141b;
   border-right: 1px solid #2a303a;
   display: flex;
-  flex: 0 0 360px;
+  flex: 0 0 var(--index-panel-width, 360px);
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
   transition: flex-basis 150ms ease;
+}
+
+.index-panel.resizing {
+  transition: none;
 }
 
 .index-panel.collapsed {
@@ -166,11 +170,95 @@ input:focus-visible {
 }
 
 .index-panel.collapsed .index-title,
+.index-panel.collapsed .index-search,
 .index-panel.collapsed .index-list {
   display: none;
 }
 
+.index-search {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  padding: 9px 8px 1px;
+}
+
+.index-search input {
+  background: #171c25;
+  border: 1px solid #364152;
+  border-radius: 5px;
+  color: #eef2f7;
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  min-height: 34px;
+  min-width: 0;
+  padding: 7px 9px;
+}
+
+.index-search input::placeholder {
+  color: #8995a7;
+}
+
+.index-search-clear {
+  flex: 0 0 32px;
+  font-size: 16px;
+  line-height: 1;
+  min-height: 32px;
+  padding: 3px;
+}
+
+.index-empty {
+  color: #8c98aa;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 12px 8px;
+}
+
+.index-resize-handle {
+  cursor: col-resize;
+  flex: 0 0 8px;
+  margin-left: -4px;
+  margin-right: -4px;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  z-index: 2;
+}
+
+.index-resize-handle::after {
+  background: #2a303a;
+  content: "";
+  inset: 0 auto 0 3px;
+  position: absolute;
+  width: 1px;
+}
+
+.index-resize-handle:hover::after,
+.index-resize-handle:focus-visible::after,
+.index-resize-handle.dragging::after {
+  background: #66d9ef;
+  width: 2px;
+}
+
+.index-resize-handle:focus-visible {
+  outline: 2px solid #66d9ef;
+  outline-offset: -2px;
+}
+
+.index-panel.collapsed + .index-resize-handle {
+  display: none;
+}
+
+.index-panel.resizing,
+.index-panel.resizing * {
+  cursor: col-resize;
+  user-select: none;
+}
+
 .index-list {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 8px;
   scrollbar-color: #465063 transparent;
@@ -226,6 +314,11 @@ input:focus-visible {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
+}
+
+.index-item[data-path$=".gif" i] .index-item-title,
+.tile[data-path$=".gif" i] .tile-label {
+  color: #fcd34d;
 }
 
 .index-item-description {
@@ -503,7 +596,7 @@ input:focus-visible {
 
   .index-panel {
     border-right: 1px solid #2a303a;
-    flex: 0 0 280px;
+    flex: 0 0 var(--index-panel-width, 280px);
   }
 
   .index-panel.collapsed {

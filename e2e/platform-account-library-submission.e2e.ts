@@ -384,6 +384,7 @@ test('账户收藏写入服务端、刷新保留且账户互相隔离', async ({
             chain.steps.push({ id: 'alice-header-stable', action: 'Verify the first account identity and notification control after fonts and transitions settle.', before: { visible: { account: alice.username } }, after: { visible: aliceHeader }, assertions: [{ name: 'account control exposes the authenticated account label', actual: aliceHeader.accountLabel, expected: alice.username }, { name: 'notification control remains visible', actual: aliceHeader.notificationsVisible, expected: true }] });
             await capture(first.page, 'alice-header-stable', 'account-header-alice.png', 'alice-header-stable', 'header', '账户甲登录后的首页顶栏稳定态');
             const favorite = first.page.getByRole('button', { name: '收藏：山屋惊魂' });
+            await first.page.locator('[data-game-id="betrayal"] .platform-game-open').hover();
             const favoritePressedBefore = await favorite.getAttribute('aria-pressed');
             expect(favoritePressedBefore).toBe('false');
             const saveResponsePromise = first.page.waitForResponse(response => response.url().includes('/auth/user-settings/library') && response.request().method() === 'PUT');
@@ -538,7 +539,7 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             expect(submitted).toMatchObject({ submissionId: id, name: editedTitle, description: '修订后的介绍已保存到投稿', status: 'pending', coverUrl: uploadedCover.coverUrl });
             const listed = list.items.find((item: { submissionId: string }) => item.submissionId === id);
             expect(listed).toMatchObject({ submissionId: id, name: editedTitle, description: '修订后的介绍已保存到投稿', status: 'pending', coverUrl: uploadedCover.coverUrl });
-            const storedImagePath = join(process.env.UGC_LOCAL_PATH!, 'ugc', alice.id, `submission-${id}`, 'cover.webp');
+            const storedImagePath = join(process.env.UGC_LOCAL_PATH!, 'ugc', alice.id, `submission-${id}`, uploadedCover.coverUrl.split('/').at(-1));
             const storedBytes = await readFile(storedImagePath);
             expect((await sharp(storedBytes).metadata()).format).toBe('webp');
             await expect(page.getByRole('status').filter({ hasText: '待审核' }).first()).toBeVisible();

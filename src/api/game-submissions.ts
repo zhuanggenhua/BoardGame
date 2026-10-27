@@ -4,10 +4,11 @@ export interface GameSubmissionDraft {
     name: string;
     url: string;
     category: string;
-    minPlayers: number;
-    maxPlayers: number;
+    minPlayers?: number;
+    maxPlayers?: number;
     durationMinutes?: number;
     author: string;
+    authorProfileUrl?: string;
     description: string;
     rules: string;
 }
@@ -16,6 +17,8 @@ export interface GameSubmissionRecord extends GameSubmissionDraft {
     coverUrl: string;
     status: 'draft' | 'pending' | 'approved' | 'rejected';
     reviewComment: string;
+    gameId?: string;
+    reviewRevision?: string;
     updatedAt: string;
 }
 async function request<T>(token: string, path: string, method = 'GET', data?: GameSubmissionDraft | FormData): Promise<T> {
@@ -35,6 +38,7 @@ async function request<T>(token: string, path: string, method = 'GET', data?: Ga
 export const listGameSubmissions = (token: string) => request<{ items: GameSubmissionRecord[] }>(token, '');
 export const saveGameSubmission = (token: string, data: GameSubmissionDraft, id?: string) => request<GameSubmissionRecord>(token, id ? `/${encodeURIComponent(id)}` : '', id ? 'PUT' : 'POST', data);
 export const submitGameSubmission = (token: string, id: string) => request<GameSubmissionRecord>(token, `/${encodeURIComponent(id)}/submit`, 'POST');
+export const withdrawGameSubmission = (token: string, id: string) => request<GameSubmissionRecord>(token, `/${encodeURIComponent(id)}/withdraw`, 'POST');
 export const uploadSubmissionCover = (token: string, id: string, file: File) => {
     const form = new FormData(); form.append('file', file);
     return request<{ coverUrl: string }>(token, `/${encodeURIComponent(id)}/cover`, 'POST', form);

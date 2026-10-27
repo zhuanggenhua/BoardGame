@@ -88,7 +88,7 @@ function AttackDiceFeedback({
             ? 'diceResult.rangedAttack'
             : 'diceResult.meleeAttack';
     const resultText = kind === 'heal'
-        ? t('diceResult.healed', { count: resultAmount })
+        ? String(resultAmount)
         : resultAmount > 0
             ? t('diceResult.damage', { count: resultAmount })
             : t('diceResult.miss');
@@ -259,10 +259,20 @@ function resolveEntitySlideBox(
     cell: FxCellCoord | undefined,
     sizeRef: FxAnchorSnapshot | null | undefined,
     getCellPosition: FxRendererProps['getCellPosition'],
+    positionRef?: FxAnchorSnapshot | null,
 ): FxBox | null {
-    // 起终点必须跟格子走。快照盒会在棋子已经落到目标格后被采到，再用它当 from 就会瞬移。
     if (!cell) return null;
     const cellBox = getCellPosition(cell.row, cell.col);
+    if (positionRef?.box) {
+        const { box } = positionRef;
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        if (centerX >= cellBox.left && centerX <= cellBox.left + cellBox.width
+            && centerY >= cellBox.top && centerY <= cellBox.top + cellBox.height) {
+            return box;
+        }
+    }
+    // 快照可能已落在另一格；沿用原有的格子位置以避免将目标格误当起点。
     if (sizeRef?.box) return centerEntityBoxInCell(cellBox, sizeRef.box);
     return cellBox;
 }
@@ -536,8 +546,8 @@ function MageWarsEntitySlide({
     mageId?: string;
 }) {
     const sizeRef = sourceSnapshot ?? targetSnapshot;
-    const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition);
-    const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition);
+    const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition, kind === 'push' ? sourceSnapshot : null);
+    const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition, kind === 'push' ? targetSnapshot : null);
     const fromLeft = fromBox?.left;
     const fromTop = fromBox?.top;
     const fromWidth = fromBox?.width;
@@ -1151,13 +1161,14 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
                 hostTestId="mage-wars-fx-healing-impact"
                 burstTestId="mage-wars-fx-healing-burst"
                 numberTestId="mage-wars-fx-healing-number"
+                numberClassName="-mt-16 text-emerald-100 drop-shadow-[0_0_12px_rgba(16,185,129,0.82)]"
             />
             {hasDice ? (
                 <AttackDiceFeedback
                     diceResults={diceResults}
                     visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
                     kind="heal"
-                    resultAmount={amount}
+                    resultAmount={diceResults.reduce((sum, result) => sum + result, 0)}
                 />
             ) : null}
         </>

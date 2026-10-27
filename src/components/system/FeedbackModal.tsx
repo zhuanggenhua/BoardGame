@@ -900,7 +900,7 @@ export const FeedbackModal = ({
                                 <button
                                     type="button"
                                     onClick={clearImage}
-                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-md hover:bg-red-600"
                                     title={t('hud.feedback.deleteImage')}
                                 >
                                     <Trash2 size={14} />

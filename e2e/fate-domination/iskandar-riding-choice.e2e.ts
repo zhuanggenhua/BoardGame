@@ -1,4 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
+import {chooseFateIdentity} from './identitySelection';
+import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -107,7 +108,7 @@ async function patchOwnMana(page: Page, mana: number) {
     }, mana);
 }
 
-/** Arrange one official strength card into the hand as a legal, deterministic scenario fixture. */
+/** 交换本局手牌与牌库中的正式实例，构造明确标注的费用/数量场景。 */
 async function ensureDefinitionInHandScenario(page: Page, definitionId: string) {
     return page.evaluate(async requestedDefinitionId => {
         const harness = (window as TestHarnessWindow).__BG_TEST_HARNESS__;
@@ -117,7 +118,7 @@ async function ensureDefinitionInHandScenario(page: Page, definitionId: string) 
             return { moved: false, cardId: player.hand.find((card: any) => card.definitionId === requestedDefinitionId).id };
         }
         const deckIndex = player.deck.findIndex((card: any) => card.definitionId === requestedDefinitionId);
-        const handIndex = player.hand.findIndex((card: any) => card.definitionId !== requestedDefinitionId);
+        const handIndex = player.hand.findIndex((card: any) => card.definitionId !== requestedDefinitionId && !player.activeAttackIds.includes(card.id));
         if (deckIndex < 0 || handIndex < 0) throw new Error(`合法场景牌区中无法找到可置入手牌的 ${requestedDefinitionId}`);
         const hand = [...player.hand];
         const deck = [...player.deck];
@@ -127,6 +128,7 @@ async function ensureDefinitionInHandScenario(page: Page, definitionId: string) 
         deck[deckIndex] = returned;
         const allIds = [...hand, ...deck].map((card: any) => card.id);
         if (new Set(allIds).size !== allIds.length) throw new Error('场景牌区夹具产生重复卡牌实例');
+        if (player.activeAttackIds.some((id:string)=>!hand.some((card:any)=>card.id===id))) throw new Error('费用夹具不可移走已打出的普通攻击实例');
         await harness.state.patch({ core: { players: { '0': { hand, deck } } } });
         return { moved: true, cardId: inserted.id, returnedCardId: returned.id, deckIndex };
     }, definitionId);
@@ -252,8 +254,8 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
     await expect(page.getByTestId('fate-domination-board')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('region', { name: '选择御主与从者' })).toBeVisible();
     const identitySetup = page.getByRole('region', { name: '选择御主与从者' });
-    await identitySetup.locator('select').nth(0).selectOption('m_waver');
-    await identitySetup.locator('select').nth(1).selectOption('servant-rider');
+    await chooseFateIdentity(page,'master','m_waver');
+    await chooseFateIdentity(page,'servant','servant-rider');
     await page.getByTestId('fate-domination-primary-action').click();
     await waitForState(page, state => state.core.phase === 'preparation' && state.core.currentPlayerId === '1', '等待韦伯完成准备后转到下一席');
 
@@ -264,6 +266,8 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
     await waitForState(page, state => state.core.currentPlayerId === '0' && state.core.phase === 'outpost', '等待前哨阶段开始');
 
     await page.getByTestId('fate-domination-location-workshop').click();
+    expect((await readState(page)).core.players['0'].locationId).toBeNull();
+    await page.getByTestId('fate-domination-primary-action').click();
     await waitForState(page, state => state.core.players['0'].locationId === 'workshop', '等待韦伯部署工房');
     await page.getByRole('button', { name: /查看玩家\s*1详情/ }).click();
     await expect(page.getByRole('dialog', { name: '韦伯·维尔维特详情' })).toBeVisible();
@@ -353,6 +357,7 @@ async function finalizeCapturedEvidence(
     await mkdir(traceDir, { recursive: true });
     const tracePath = path.join(traceDir, `${chainId}.json`);
     await writeFile(tracePath, `${JSON.stringify(trace, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(captured.run.stagingDir, `${chainId}.trace.json`), `${JSON.stringify(trace, null, 2)}\n`, 'utf8');
     await promoteEvidenceScreenshotRun(captured.run, {
         gameId: GAME_ID,
         evidenceCategory: EVIDENCE_CATEGORY,
@@ -385,46 +390,25 @@ async function finalizeCapturedEvidence(
     return { runId: captured.run.runId, revision, tracePath, screenshotPath: path.relative(process.cwd(), promotedImagePath).replace(/\\/g, '/'), screenshotSha };
 }
 
-async function finalizeBehaviorOnlyEvidence(
-    chainId: string,
-    steps: TraceStep[],
-    outcome: string,
-) {
-    const revision = sourceRevision();
-    const runId = `${Date.now()}-${process.pid}-${randomUUID()}`;
-    const trace = {
-        gameId: GAME_ID,
-        evidenceCategory: EVIDENCE_CATEGORY,
-        chainId,
-        sourceRun: runId,
-        sourceRevision: revision,
-        status: 'PASS',
-        outcome,
-        steps,
-        uiStates: [],
-    };
-    const traceDir = path.join(OUTPUT_DIR, 'behavior');
-    await mkdir(traceDir, { recursive: true });
-    const tracePath = path.join(traceDir, `${chainId}.json`);
-    await writeFile(tracePath, `${JSON.stringify(trace, null, 2)}\n`, 'utf8');
-    return { runId, revision, tracePath };
-}
-
 test.describe('伊斯坎达尔骑乘独立交互链', () => {
     test('骑乘选择取消后可重开并确认零张', async ({ page, context, baseURL }, testInfo) => {
         test.setTimeout(180000);
         await initContext(context, { skipImageGate: false });
         const diagnostics = attachPageDiagnostics(page, 'fate-riding-zero-cancel');
         await prepareRidingAction(page, baseURL, 'iskandar-riding-ui-0');
+        const beforeFixture = await snapshot(page);
+        const feeFixture = await ensureDefinitionInHandScenario(page, 'cardSurveil');
         const beforeOpen = await snapshot(page);
         await openRidingChoice(page);
         const openState = await snapshot(page);
         expect(openState.authoritative.interactionSourceId).toBe('fate:riding-choice');
         const captured = await captureUniqueState(page, testInfo, '骑乘选择打开');
-        const steps: TraceStep[] = [step('open-choice', '在已激活的骑乘技能上点击发动', beforeOpen, openState, [assertion('choice-visible', openState.visible.choiceVisible, true), assertion('riding-interaction-open', openState.authoritative.interactionSourceId, 'fate:riding-choice')])];
+        const steps: TraceStep[] = [
+            step('arrange-fee-card-fixture', '明确牌区代表态：交换本局真实实例保证一张费用牌，不代表自然抽牌', beforeFixture, beforeOpen, [assertion('official-fee-card-in-hand', (beforeOpen.authoritative.handIds as string[]).includes(feeFixture.cardId), true), assertion('hand-count-preserved', (beforeOpen.authoritative.handIds as string[]).length, (beforeFixture.authoritative.handIds as string[]).length)]),
+            step('open-choice', '在已激活的骑乘技能上点击发动', beforeOpen, openState, [assertion('choice-visible', openState.visible.choiceVisible, true), assertion('riding-interaction-open', openState.authoritative.interactionSourceId, 'fate:riding-choice')])];
 
         const candidateId = openState.authoritative.handIds && (await readState(page)).sys.interaction.current.data.options.find((option: any) => option.id.includes('Surveil'))?.id;
-        if (typeof candidateId !== 'string') throw new Error('种子1没有费用手牌 Surveil');
+        if (typeof candidateId !== 'string') throw new Error('正式实例费用场景没有可选的 Surveil');
         const beforeStage = await snapshot(page);
         await page.locator(`[data-card-id="${candidateId}"]`).click();
         await expect(page.locator(`[data-card-id="${candidateId}"]`)).toHaveAttribute('aria-pressed', 'true');
@@ -492,6 +476,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         await initContext(context, { skipImageGate: false });
         const diagnostics = attachPageDiagnostics(page, 'fate-riding-one-card');
         await prepareRidingAction(page, baseURL, 'iskandar-riding-ui-0');
+        const beforeFixture = await snapshot(page);
+        const feeFixture = await ensureDefinitionInHandScenario(page, 'cardSurveil');
         const beforeOpen = await snapshot(page);
         await openRidingChoice(page);
         const state = await readState(page);
@@ -514,7 +500,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         const afterEligibilityChecks = await snapshot(page);
         expect(afterEligibilityChecks.visible.selectedCards).toEqual([]);
         const paidId = state.core.players['0'].hand.find((card: any) => card.definitionId === 'cardSurveil')?.id;
-        if (!paidId || !candidates.includes(paidId)) throw new Error('种子1没有可选的 Surveil 费用牌');
+        if (!paidId || !candidates.includes(paidId)) throw new Error('正式实例费用场景没有可选的 Surveil');
         const printedCost = FATE_ATTACK_BY_ID.cardSurveil.manaCost;
         const beforeSelect = await snapshot(page);
         await page.locator(`[data-card-id="${paidId}"]`).click();
@@ -537,6 +523,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         const expectedRidingCostAccessibleLabel = `坐骑召唤 · 已选 1 张（最多 3 张）· 实付 ${printedCost} / ${beforeSelect.authoritative.mana} 魔力 · 本次选牌固定明置`;
         const expectedHighPowerObservations = highPowerIds.map((id: string) => ({ id, ariaDisabled: 'true', selected: false }));
         const steps = [
+            step('arrange-fee-card-fixture', '明确牌区代表态：交换本局真实实例保证一张费用牌，不代表自然抽牌', beforeFixture, beforeOpen, [assertion('official-fee-card-in-hand', (beforeOpen.authoritative.handIds as string[]).includes(feeFixture.cardId), true), assertion('hand-count-preserved', (beforeOpen.authoritative.handIds as string[]).length, (beforeFixture.authoritative.handIds as string[]).length)]),
             step('open-choice', '发动骑乘并检查高威力牌不能选', beforeOpen, afterEligibilityChecks, [
                 assertion('choice-visible', afterEligibilityChecks.visible.choiceVisible, true),
                 assertion('riding-interaction-open', opened.authoritative.interactionSourceId, 'fate:riding-choice'),
@@ -636,6 +623,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         const diagnostics = attachPageDiagnostics(page, 'fate-riding-unaffordable');
         await prepareRidingAction(page, baseURL, 'iskandar-riding-ui-0');
         const beforeInjection = await snapshot(page);
+        const feeFixture = await ensureDefinitionInHandScenario(page, 'cardSurveil');
         await patchOwnMana(page, 0);
         await waitForState(page, state => state.core.players['0'].mana === 0, '仅在常规攻击已结算后构造本人低魔力代表态');
         const beforeOpen = await snapshot(page);
@@ -643,7 +631,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         const open = await readState(page);
         const openSnapshot = await snapshot(page);
         const paidId = open.core.players['0'].hand.find((card: any) => card.definitionId === 'cardSurveil')?.id;
-        if (!paidId) throw new Error('种子1没有 Surveil 费用牌');
+        if (!paidId) throw new Error('正式实例费用场景缺少 Surveil');
         const candidate = page.locator(`[data-card-id="${paidId}"]`);
         await expect(candidate).toHaveAttribute('aria-disabled', 'true');
         const beforeAttempt = await snapshot(page);
@@ -652,6 +640,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         const afterAttempt = await snapshot(page);
         expect(afterAttempt.authoritative.mana).toBe(0);
         expect(afterAttempt.authoritative.activeAttackIds).toEqual(beforeOpen.authoritative.activeAttackIds);
+        const captured = await captureUniqueState(page, testInfo, '骑乘费用不足且候选不可选');
         const beforeCancel = afterAttempt;
         await page.getByTestId('fate-riding-cancel').click();
         await expect(page.getByTestId('fate-riding-controls')).toHaveCount(0);
@@ -660,7 +649,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         expect(afterCancel.authoritative.mana).toBe(0);
         expect(afterCancel.authoritative.activeAttackIds).toEqual(beforeInjection.authoritative.activeAttackIds);
         const steps = [
-            step('settle-low-resource-precondition', '常规攻击结算后用测试注入置零本人魔力', beforeInjection, beforeOpen, [
+            step('settle-low-resource-precondition', '明确代表态：常规攻击后交换本局费用牌实例并置零本人魔力，不代表自然抽牌', beforeInjection, beforeOpen, [
+                assertion('official-fee-card-in-hand', (beforeOpen.authoritative.handIds as string[]).includes(feeFixture.cardId), true),
                 assertion('mana-injected-to-zero', beforeOpen.authoritative.mana, 0),
             ]),
             step('open-low-resource-choice', '在低魔力状态打开骑乘选牌', beforeOpen, openSnapshot, [
@@ -682,7 +672,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
                 assertion('cancel-clears-frame', afterCancel.authoritative.activeFrameId, null),
             ]),
         ];
-        await finalizeBehaviorOnlyEvidence('iskandar-riding-unaffordable', steps, '在已结算攻击后的低魔力代表态中，费用牌的 aria-disabled 阻止选择；尝试不改牌区或魔力，取消后骑乘仍未消费。');
+        await finalizeCapturedEvidence(testInfo, captured, 'iskandar-riding-unaffordable', steps, 'riding-unaffordable', 'reject-unaffordable-card', '骑乘费用不足拒绝', '在已结算攻击后的低魔力代表态中，费用牌阻止选择；尝试不改牌区或魔力，取消后骑乘仍未消费。');
         await assertNoFatalFrontendErrors([{ label: 'fate-riding-unaffordable', diagnostics }]);
     });
 });

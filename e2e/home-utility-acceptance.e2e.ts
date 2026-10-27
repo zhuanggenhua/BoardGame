@@ -88,6 +88,15 @@ for (const mobile of [false, true]) {
             if (style === 'modern') await capture(page, `${mobile ? '手机' : '桌面'}-好友入口`);
             await page.keyboard.press('Escape'); await expect(modal).toHaveCount(0);
             await record(`${mobile ? '手机' : '桌面'}-${style}-通知好友`, { notificationsOpened: true, friendsOpened: true, escapeClosed: true, boundary: '仅验证入口与收起，不发送好友申请或消息' });
+            // 同一浏览器另一标签退出后，个人会话窗口必须由原弹窗栈关闭。
+            await page.getByTestId('user-menu-trigger').click();
+            await page.getByTestId('user-menu-friends-chat').click();
+            const otherTab = await context.newPage(); await otherTab.goto('/');
+            await otherTab.getByTestId('user-menu-trigger').click();
+            await otherTab.locator('[data-user-menu-panel] > button').last().click();
+            await expect(modal).toHaveCount(0);
+            expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden');
+            await record(`${mobile ? '手机' : '桌面'}-${style}-会话身份切换`, { crossTabLogoutClosed: true, scrollLockReleased: true });
         } finally { await context.close(); }
     });
 }

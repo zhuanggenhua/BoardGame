@@ -7,7 +7,7 @@ import { getRuntimeImageCandidateUrls } from '../../../core/AssetLoader';
 import type { FateDominationCore, LocationId } from '../domain/types';
 import './map-surface.css';
 import { fateTokenAsset } from './identityArtwork';
-import {nextFateDeploymentSlot} from '../domain/deployment';
+import {legalFateDeploymentSlots,nextFateDeploymentSlot} from '../domain/deployment';
 const WIDTH = 1927, HEIGHT = 1179;
 // Printed E movement-cost/arrow rectangles, measured on the original Fuyuki board.
 const MOVEMENT_EXITS: Partial<Record<LocationId, {x:number;y:number;w:number;h:number}>> = {
@@ -44,13 +44,14 @@ interface Props {
     moving?: boolean;
     movementOrigin?: LocationId | null;
     selectedLocation?: LocationId | null;
+    selectedDeploymentSlot?: number | null;
     onPawn?: () => void;
     legalLocations: readonly LocationId[];
-    onLocation: (id: LocationId) => void;
+    onLocation: (id: LocationId, slot?:number|null) => void;
     onInspect: (assetPath: string, name: string) => void;
 }
 /** Shared Pixi camera owns world transforms. Accessible controls consume that displayed pose. */
-export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, onInspect, movablePlayerId, moving, onPawn, movementOrigin, selectedLocation }: Props) {
+export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, onInspect, movablePlayerId, moving, onPawn, movementOrigin, selectedLocation, selectedDeploymentSlot }: Props) {
     const canInspectHiddenShinto=canViewFateHiddenShinto(core,viewerId);
     const [host, setHost] = React.useState<HTMLDivElement | null>(null);
     const overlay = React.useRef<HTMLDivElement>(null);
@@ -99,16 +100,21 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
         { id: 'board', textureUrls: getRuntimeImageCandidateUrls('fate-domination/board/fuyuki-city', locale), x: 0, y: 0, width: WIDTH, height: HEIGHT },
         ...cards.map(card => ({ id: card.id, textureUrls: getRuntimeImageCandidateUrls(card.assetPath, locale), x: card.x, y: card.y, width: card.w, height: card.h, imageFit: 'contain' as const })),
     ], [cards, locale]);
-    return <div className="fd-runtime-map" ref={setHost}>
+    return <div className="fd-runtime-map" data-tutorial-id="fate-map" ref={setHost}>
         <PixiMapSceneHost inputElement={host} sprites={sprites} mapWidth={WIDTH} mapHeight={HEIGHT} viewport={pose} onViewportChange={setPose} onDisplayViewportChange={project} minimumZoom={.25} maximumZoom={2.5} interactive regionSelectionEnabled={false} canvasTestId="fate-pixi-map-canvas" ariaLabel="冬木市地图，可拖动和缩放"/>
         <div ref={overlay} className="fd-runtime-map-overlay" style={{ width: WIDTH, height: HEIGHT, transform: `translate(${pose.panX}px, ${pose.panY}px) scale(${pose.zoom})` }}>
             {movementOrigin && !moving && MOVEMENT_EXITS[movementOrigin] && <button type="button" className="fd-runtime-movement-exit" aria-label={`从${core.battlefield[movementOrigin].label}开始常规移动`} onClick={onPawn} style={{left:MOVEMENT_EXITS[movementOrigin]!.x,top:MOVEMENT_EXITS[movementOrigin]!.y,width:MOVEMENT_EXITS[movementOrigin]!.w,height:MOVEMENT_EXITS[movementOrigin]!.h}}/>}
             {Object.entries(ROOMS).map(([key, rect]) => {
             const id = key as LocationId;
             const nextSlot = core.phase === 'outpost' ? nextFateDeploymentSlot(core,id) : null;
-            const hit = nextSlot !== null ? DEPLOYMENT_SLOTS[id]?.[nextSlot] ?? rect : rect;
+            const legalSlots = core.phase === 'outpost' ? legalFateDeploymentSlots(core,id) : [];
+            const deployment = core.phase === 'outpost';
+            const slots = deployment ? DEPLOYMENT_SLOTS[id] : undefined;
             return <React.Fragment key={id}>
-                    {legalLocations.includes(id) && <button type="button" className="fd-runtime-location" aria-pressed={selectedLocation === id} style={{ left: hit.x, top: hit.y, width: hit.w, height: hit.h }} data-testid={`fate-domination-location-${id}`} aria-label={`选择${core.battlefield[id].label}`} onClick={() => onLocation(id)}></button>}
+                    {legalLocations.includes(id) && (slots && nextSlot !== null ? slots.map((slot,index) => <React.Fragment key={index}>
+                        {index===nextSlot && <span aria-hidden="true" data-tutorial-id={`fate-deployment-${id}`} style={{position:'absolute',left:slot.x,top:slot.y,width:slot.w,height:slot.h}}/>}
+                        <button type="button" className="fd-runtime-location fd-runtime-deployment-slot" disabled={!legalSlots.includes(index)} aria-pressed={index === selectedDeploymentSlot && selectedLocation === id} style={{left:slot.pawnX-44,top:slot.pawnY-44,width:88,height:88}} data-testid={index === nextSlot ? `fate-domination-location-${id}` : `fate-domination-slot-${id}-${index}`} aria-label={`部署到${core.battlefield[id].label}第${index+1}点位`} onClick={() => onLocation(id,index)}/></React.Fragment>)
+                        : <button type="button" className={`fd-runtime-location${deployment ? ' fd-runtime-deployment-slot' : ''}`} aria-pressed={selectedLocation === id} style={deployment ? {left:rect.x+705,top:rect.y+46,width:88,height:88} : { left: rect.x, top: rect.y, width: rect.w, height: rect.h }} data-tutorial-id={deployment ? `fate-deployment-${id}` : undefined} data-testid={`fate-domination-location-${id}`} aria-label={`选择${core.battlefield[id].label}`} onClick={() => deployment ? onLocation(id,null) : onLocation(id)}/>) }
                     {core.battlefield[id].playerIds.map(playerId => {
                         const slot = core.players[playerId].deploymentSlot;
                         const anchor = slot !== null ? DEPLOYMENT_SLOTS[id]?.[slot] : undefined;
@@ -116,7 +122,9 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
                         const freeIndex = unbonused.indexOf(playerId);
                         const pawnX = anchor?.pawnX ?? (id === 'recon' ? rect.pawnX : 1150 - (Math.max(0,freeIndex) % 2) * 90);
                         const pawnY = anchor?.pawnY ?? (id === 'recon' ? rect.pawnY : rect.y + 90 + Math.floor(Math.max(0,freeIndex) / 2) * 90);
-                        return <button type="button" key={playerId} className="fd-runtime-pawn" disabled={playerId !== movablePlayerId} aria-pressed={playerId === movablePlayerId && moving} onClick={onPawn} style={{ left: pawnX, top: pawnY }} aria-label={`玩家${Number(playerId) + 1}位于${core.battlefield[id].label}`}><OptimizedImage src={fateTokenAsset(core.players[playerId].masterId)} alt={`玩家${Number(playerId)+1}棋子`} /></button>; })}
+                        return <React.Fragment key={playerId}>
+                            {anchor && <span aria-hidden="true" data-tutorial-id={`fate-pawn-${playerId}`} style={{position:'absolute',left:anchor.x,top:anchor.y,width:anchor.w,height:anchor.h}}/>}
+                            <button type="button" data-tutorial-id={!anchor?`fate-pawn-${playerId}`:undefined} className="fd-runtime-pawn" disabled={playerId !== movablePlayerId} aria-pressed={playerId === movablePlayerId && moving} onClick={onPawn} style={{ left: pawnX, top: pawnY }} aria-label={`玩家${Number(playerId) + 1}位于${core.battlefield[id].label}`}><OptimizedImage src={fateTokenAsset(core.players[playerId].masterId)} alt={`玩家${Number(playerId)+1}棋子`} /></button></React.Fragment>; })}
                 </React.Fragment>;
         })}
             <span className="fd-event-deck-count fd-situation-deck-count" style={{left:285,top:324}}>{core.situationDeckCount}</span>

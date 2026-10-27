@@ -13,7 +13,7 @@ export function useFateMovementInteraction(state:MatchState<FateDominationCore>,
  const [intent,setIntent]=useState<FateMovementIntent|null>(null);
  const [target,setTarget]=useState<LocationId|null>(null);
  const cancel=()=>{setIntent(null);setTarget(null);};
- useEffect(cancel,[playerId,state.core.currentPlayerId,state.core.phase]);
+ useEffect(cancel,[playerId,state.core.currentPlayerId,state.core.phase,state.sys.tutorial.active ? `${state.sys.tutorial.step?.id}:${state.sys.undo.rollbackRevision}` : undefined]);
  const legalTargets=(candidate:FateMovementIntent)=>playerId?FATE_LOCATION_ORDER.filter(id=>validate(state,movementCommand(candidate,playerId,id)).valid):[];
  const begin=(candidate:FateMovementIntent)=>{if(legalTargets(candidate).length){setIntent(candidate);setTarget(null);}};
  const targets=intent?legalTargets(intent):[];

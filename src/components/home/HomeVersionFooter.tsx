@@ -14,7 +14,7 @@ const IDLE_OTA_ACTIVITY_STATE: AndroidLiveUpdateActivityState = {
     phase: 'idle',
 };
 
-type HomeVersionFooterTheme = 'classic' | 'book';
+type HomeVersionFooterTheme = 'classic' | 'book' | 'platform';
 type HomeVersionFooterAlign = 'left' | 'right';
 
 type HomeVersionFooterProps = {
@@ -39,6 +39,12 @@ const FOOTER_THEME_CLASS_MAP: Record<HomeVersionFooterTheme, {
     activeIcon: string;
     mismatchIcon: string;
 }> = {
+    platform: {
+        baseText: 'text-neutral-700', mutedText: 'text-neutral-600', subduedText: 'text-neutral-600',
+        disabledText: 'text-neutral-600', disabledIcon: 'text-neutral-500', idleIcon: 'text-neutral-600',
+        mismatchText: 'text-red-800', mismatchSecondary: 'text-red-700', activeText: 'text-amber-800',
+        activeIcon: 'text-amber-800', mismatchIcon: 'text-red-700',
+    },
     classic: {
         baseText: 'text-parchment-light-text/80',
         mutedText: 'text-parchment-light-text/60',
@@ -119,6 +125,7 @@ export function HomeVersionFooter({
                     setOtaSnapshot({
                         enabled: false,
                         manifestUrl: '',
+                        manifestUrls: [],
                         channel: 'stable',
                         nativeAndroid: true,
                         updaterLoaded: false,

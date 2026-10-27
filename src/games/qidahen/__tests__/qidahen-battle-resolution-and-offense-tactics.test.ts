@@ -130,18 +130,27 @@ it('结构化川兵会按兵种阶段掷骰结算战斗损伤，而不是只按�
             playerId: '0',
             payload: { actionId: 'raid' },
         });
-        const resolved = apply(pending, {
+        const declared = apply(pending, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const fought = apply(declared, {
             type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
             playerId: '0',
             payload: {},
         });
-
+        const resolved = fought.pendingTargetAction?.battleStep === 'retreat' ? apply(fought, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '2',
+            payload: { retreatLossMode: 'rear-guard' },
+        }) : fought;
         expect(resolved.turnPhase).toBe('post-battle-decision');
         expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-14',
-            survivingTroops: 2,
-            attackerLosses: 4,
+            survivingTroops: 6,
+            attackerLosses: 0,
         });
         expect(resolved.actionLog[0]?.text).toContain('战斗掷骰（野战）');
         expect(resolved.actionLog[0]?.text).toContain('攻方造成 4 损伤，守方造成 4 损伤');
@@ -711,7 +720,7 @@ it('步骑联合打出后会让本次野战攻方步兵和骑兵掷骰等级 +1'
         ]));
     });
 
-it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
+it('鸳鸯阵打出后会让本次野战攻方步兵掷骰等级 +1', () => {
         const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         setFactionCharactersInPlay(core, 'jin', []);
         core.pendingTargetAction = {
@@ -726,7 +735,7 @@ it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
             targetRuntimeRegionId: 'city-region-14',
             defenderFactionId: 'jin',
             defenderLabel: '后金',
-            restriction: '测试 · 鸟真超哈',
+            restriction: '测试 · 鸳鸯阵',
             battleWidth: 3,
             boundaryUnitCap: null,
             sourceAvailableTroops: 2,
@@ -742,12 +751,12 @@ it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
             {
                 ...mingCard!,
                 id: 'test-wuzhen-chaoha-card',
-                label: '鸟真超哈',
+                label: '鸳鸯阵',
                 status: 'payable',
                 cardKind: 'tactic',
                 armamentId: null,
-                cardDefId: 'qidahen-atlas05-1644-wuzhen-chaoha',
-                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1644-wuzhen-chaoha'],
+                cardDefId: 'qidahen-atlas05-1644-yuanyang-zhen',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1644-yuanyang-zhen'],
             },
         ];
         core.regions = core.regions.map((region) => {
@@ -807,14 +816,14 @@ it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
 
         expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
             expect.objectContaining({
-                sourceCardDefId: 'qidahen-atlas05-1644-wuzhen-chaoha',
-                label: '鸟真超哈',
+                sourceCardDefId: 'qidahen-atlas05-1644-yuanyang-zhen',
+                label: '鸳鸯阵',
                 side: 'attacker',
                 troopKind: 'infantry',
                 levelBonus: 1,
             }),
         ]);
-        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('鸟真超哈：本次野战中攻方步兵骰子等级 +1');
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('鸳鸯阵：本次野战中攻方步兵骰子等级 +1');
         expect(resolved.actionLog[0]?.text).toContain('步兵 攻4/4=8/守4->5=5');
         expect(resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry')?.attackerRolls)
             .toEqual(expect.arrayContaining([
@@ -830,7 +839,7 @@ it.each([
         { factionName: '大明', factionId: 'ming' as const, playerId: '0', defenderFactionId: 'jin' as const },
         { factionName: '蒙古', factionId: 'mongol' as const, playerId: '1', defenderFactionId: 'ming' as const },
         { factionName: '后金', factionId: 'jin' as const, playerId: '2', defenderFactionId: 'mongol' as const },
-    ])('$factionName 正式打出鸟真超哈会获得相同的野战步兵等级修正', ({
+    ])('$factionName 正式打出鸳鸯阵会获得相同的野战步兵等级修正', ({
         factionId,
         playerId,
         defenderFactionId,
@@ -848,7 +857,7 @@ it.each([
             targetRuntimeRegionId: 'city-region-14',
             defenderFactionId,
             defenderLabel: defenderFactionId,
-            restriction: '测试 · 鸟真超哈三势力同效',
+            restriction: '测试 · 鸳鸯阵三势力同效',
             battleWidth: 3,
             boundaryUnitCap: null,
             sourceAvailableTroops: 2,
@@ -863,13 +872,13 @@ it.each([
         core.handCards = [{
             ...factionCard!,
             id: `test-wuzhen-chaoha-${factionId}`,
-            label: '鸟真超哈',
+            label: '鸳鸯阵',
             status: 'payable',
             cardKind: 'tactic',
             armamentId: null,
-            cardDefId: 'qidahen-atlas05-1644-wuzhen-chaoha',
+            cardDefId: 'qidahen-atlas05-1644-yuanyang-zhen',
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
-                'qidahen-atlas05-1644-wuzhen-chaoha'
+                'qidahen-atlas05-1644-yuanyang-zhen'
             ],
         }];
 
@@ -881,7 +890,7 @@ it.each([
 
         expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
             expect.objectContaining({
-                sourceCardDefId: 'qidahen-atlas05-1644-wuzhen-chaoha',
+                sourceCardDefId: 'qidahen-atlas05-1644-yuanyang-zhen',
                 side: 'attacker',
                 troopKind: 'infantry',
                 levelBonus: 1,
@@ -1035,8 +1044,9 @@ it('乌真超哈特殊牌正式打出后会让 1 个攻方步兵提前在炮兵�
         expect(infantryStage?.attackerRolls).toEqual([
             expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
         ]);
+        // 炮兵阶段的 1 损伤先降低守方 Lv2 步兵士气，后续步兵阶段改掷 d6。
         expect(infantryStage?.defenderRolls).toEqual([
-            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+            expect.objectContaining({ troopKind: 'infantry', level: 1, dieSides: 6 }),
         ]);
     });
 
@@ -1671,8 +1681,8 @@ it('骑马步兵只把攻方参战附兵视为步兵，并承接步兵战术与�
         ]);
         expect(infantryStage?.attackerRolls).toHaveLength(2);
         expect(infantryStage?.attackerRolls).toEqual([
-            expect.objectContaining({ troopKind: 'infantry', level: 4, dieSides: 12 }),
-            expect.objectContaining({ troopKind: 'infantry', level: 4, dieSides: 12 }),
+            expect.objectContaining({ troopKind: 'infantry', level: 3, dieSides: 10 }),
+            expect.objectContaining({ troopKind: 'infantry', level: 3, dieSides: 10 }),
         ]);
         expect(infantryStage?.defenderRolls).toEqual([]);
     });
@@ -1896,7 +1906,7 @@ it('乌真超哈特殊牌战斗掷骰层底座会让一个步兵提前在炮兵�
         ]);
         expect(infantryStage?.defenderRolls).toHaveLength(1);
         expect(infantryStage?.defenderRolls).toEqual([
-            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+            expect.objectContaining({ troopKind: 'infantry', level: 1, dieSides: 6 }),
         ]);
         expect(resolved.actionLog[0]?.text).toContain('炮兵 攻4=4/守-=0');
         expect(resolved.actionLog[0]?.text).toContain('步兵 攻4=4/守');

@@ -17,10 +17,12 @@ import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
 import { LIEREN_CARDS } from '../heroes/lieren/cards';
 import { VAMPIRE_LORD_CARDS } from '../heroes/vampire_lord/cards';
 import { ZHIZHUXIA_CARDS } from '../heroes/zhizhuxia/cards';
+import { THOR_CARDS } from '../heroes/thor/cards';
 import type { HeroState } from '../domain/types';
 import { getSlotBaseAbilityIdForCharacter } from './abilitySlotMapping';
 
 export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
+    thor: THOR_CARDS,
     monk: MONK_CARDS,
     barbarian: BARBARIAN_CARDS,
     pyromancer: PYROMANCER_CARDS,

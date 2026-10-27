@@ -290,10 +290,14 @@ export const resolvePostBattleDecision = (
             }
             if (choice.mode === 'withdraw' && withdrawRegionId === region.id) {
                 for (const outcome of sourceOutcomes) {
-                    sourceActionRegion = dependencies.applyCasualtyPriorityToRegion({
+                    sourceActionRegion = dependencies.applyCommittedTroopRemovalToRegion({
                         ...sourceActionRegion,
-                        troops: Math.max(0, sourceActionRegion.troops - outcome.attackerLosses),
-                    }, outcome.attackerLosses, outcome.movementProfileId, selection.attackerBattleCasualtyPriority ?? selection.attackerCasualtyPriority);
+                        troops: Math.max(0, sourceActionRegion.troops - outcome.committedTroops),
+                    }, outcome.committedTroops, outcome.movementProfileId, outcome.selectedSpecialPieceIds);
+                    sourceActionRegion = addSpecialTroopStacksToRegion({
+                        ...sourceActionRegion,
+                        troops: sourceActionRegion.troops + outcome.survivingTroops,
+                    }, outcome.survivingSpecialTroops);
                 }
                 const incomingOutcomes = forceOutcomes.filter((outcome) => outcome.sourceRegionId !== region.id);
                 const incomingTroops = incomingOutcomes.reduce((total, outcome) => total + outcome.survivingTroops, 0);

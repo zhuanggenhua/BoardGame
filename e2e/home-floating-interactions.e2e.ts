@@ -1,7 +1,7 @@
-import { test, expect, initHome, settings, capture, record } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, settings, capture, record } from './helpers/homeAcceptance';
 
 for (const mobile of [false, true]) {
-    test(`${mobile ? '手机触控' : '桌面鼠标'}浮球拖拽、刷新保留和设置仍可操作`, async ({ browser }, info) => {
+    test(`${mobile ? '手机触控' : '桌面鼠标'}浮球拖拽、刷新保留和设置仍可操作`, async ({ browser, accounts }, info) => {
         const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: mobile ? { width: 375, height: 812 } : { width: 1920, height: 1080 }, isMobile: mobile, hasTouch: mobile });
         try {
             const page = await context.newPage(); await initHome(page);
@@ -32,6 +32,24 @@ for (const mobile of [false, true]) {
             await capture(page, `${mobile ? '手机' : '桌面'}-拖拽刷新后设置仍可用`);
             await page.keyboard.press('Escape');
             await expect(page.getByTestId('fab-panel-settings')).toHaveCount(0);
+            await login(page, accounts.alice);
+            const anchor = await fab.evaluate(node => ({ left:node.style.left, top:node.style.top }));
+            await page.getByTestId('user-menu-trigger').click();
+            await page.getByTestId('user-menu-profile').click();
+            await page.getByRole('button', {name:'编辑个人资料',exact:true}).click();
+            await expect(fab).toBeVisible();
+            expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);
+            await settings(page);
+            await page.keyboard.press('Escape');
+            await page.getByRole('button',{name:'菜单',exact:true}).click();
+            await page.locator('.platform-secondary-entry').click();
+            await expect(page.locator('.platform-upload-form')).toBeVisible();
+            await expect(fab).toBeVisible();
+            expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);
+            await settings(page);
+            await capture(page,`${mobile?'手机':'桌面'}-投稿保留原浮窗设置`);
+            await page.keyboard.press('Escape');
+            expect(await page.evaluate(key => localStorage.getItem(key),key)).toBe(saved);
             await record(`${mobile ? '手机' : '桌面'}-浮球拖拽`, { input: mobile ? '浏览器真实触控事件' : '真实鼠标拖拽', key, before, saved, reloadPersisted: true, settingsOperable: true });
         } finally { await context.close(); }
     });

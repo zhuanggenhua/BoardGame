@@ -11,6 +11,7 @@ import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOw
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey, getOwnerType as resolveOwnerType } from '../../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
 import { ModalBase } from '../common/overlays/ModalBase';
+import { HomeGameDetailsPresentation as GameDetailsPresentation } from '../home/HomeGameDetailsPresentation';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useToast } from '../../contexts/ToastContext';
 import { GAME_SERVER_URL } from '../../config/server';
@@ -116,11 +117,6 @@ const formatInstalledPackageVersionForTitle = (value: string | undefined): strin
 
     return normalized.length > 8 ? `${normalized.slice(0, 8)}…` : normalized;
 };
-
-const GameDetailsPresentation = ({ presentation, children, ...modalProps }: {
-    presentation: 'modal' | 'inline'; children: ReactNode;
-    onClose: () => void; closeOnBackdrop?: boolean; containerClassName: string; skipEnterAnimation?: boolean;
-}) => presentation === 'inline' ? <>{children}</> : <ModalBase {...modalProps}>{children}</ModalBase>;
 
 export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate, disableEnterAnimation }: GameDetailsModalProps) => {
     const navigate = useNavigate();

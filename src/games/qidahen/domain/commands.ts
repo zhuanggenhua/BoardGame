@@ -32,6 +32,7 @@ import {
     isQidahenWheelRecruitTrainPaymentPending,
 } from './wheelRecruitTrain';
 import { getCurrentFactionId } from './factionTurnAccessors';
+import { getExplicitRaidTargetAction } from './pendingTargetActionBuilder';
 import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
 import {
     isQidahenCityRuntimeRegion,
@@ -41,8 +42,9 @@ import {
     countCompatTroopsByKind,
     expandSpecialTroopStacksToCompatPieces,
 } from './troopCompat';
-import { getPendingActionSourceForceSnapshot } from './battleState';
+import { getPendingActionSourceForceSnapshot, getQidahenPendingBattleActingFaction } from './battleState';
 import { takeCommittedSpecialTroopStacks } from './movementProfileTroopSelection';
+import { isQidahenBattleCasualtyOrderValid } from './pendingTargetChoicePayload';
 import {
     buildQidahenPincerAdvanceSelection,
     QIDAHEN_PINCER_ADVANCE_CARD_DEF_ID,
@@ -176,7 +178,7 @@ const getPendingTargetActionCommandSeat = (state: MatchState<QidahenCore>, curre
     if (!pendingTargetAction) {
         return null;
     }
-    return state.core.factions[pendingTargetAction.attackerFactionId]?.playerId ?? null;
+    return state.core.factions[getQidahenPendingBattleActingFaction(pendingTargetAction)]?.playerId ?? null;
 };
 
 const getPostBattleDecisionCommandSeat = (state: MatchState<QidahenCore>, currentInteraction: InteractionDescriptor | undefined): string | null => {
@@ -286,6 +288,7 @@ export const isQidahenTacticCardPlayableForPendingBattle = (
     side: 'attacker' | 'defender',
 ): boolean => {
     const rulesSummary = card.rulesSummary ?? '';
+    if (pendingTargetAction.battleStep === 'defender-declaration' || pendingTargetAction.battleStep === 'retreat') return false;
     if (side === 'defender') {
         return (
             pendingTargetAction.battleMode === 'city'
@@ -741,6 +744,9 @@ export function validate(
             if (state.core.confirmedActionId == null) {
                 return { valid: false, error: 'unknownAction' };
             }
+            if (state.core.confirmedActionId === 'raid' && !getExplicitRaidTargetAction(state.core, getCurrentFactionId(state.core))) {
+                return { valid: false, error: 'unknownRegion' };
+            }
             if (wouldRepeatLastFactionAction(state.core, state.core.confirmedActionId)) {
                 return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
             }
@@ -769,6 +775,10 @@ export function validate(
             if (!action) {
                 return { valid: false, error: 'unknownAction' };
             }
+            if (action.id === 'raid' && state.core.confirmedActionId === 'raid'
+                && !getExplicitRaidTargetAction(state.core, getCurrentFactionId(state.core))) {
+                return { valid: false, error: 'unknownRegion' };
+            }
             if (wouldRepeatLastFactionAction(state.core, command.payload.actionId)) {
                 return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
             }
@@ -782,6 +792,9 @@ export function validate(
                 : { valid: false, error: 'paymentIncomplete' };
         }
         case QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION:
+            if (!isQidahenBattleCasualtyOrderValid(command.payload)) {
+                return { valid: false, error: 'invalidCasualtyPriority' };
+            }
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }

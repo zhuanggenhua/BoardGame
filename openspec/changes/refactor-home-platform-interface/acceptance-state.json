@@ -11,60 +11,57 @@
     {
       "id": "C8",
       "description": "当轮现代详情重排、手机赞助展开、二级弹窗样式及仅变化截图交付",
-      "status": "in_progress",
+      "status": "pass",
       "evidence": [
-        "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
-        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
-        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/旧新职责总账.json",
-        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
-        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
-        "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
-      ]
+        "openspec/changes/refactor-home-platform-interface/full-reaudit-20261025.md",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/_history/20261026-旧二十八图/逐图结论与返工原因.json"
+      ],
+      "verificationFreshness": "仅当前直接覆盖的变化状态通过，不复活旧图整体资格。"
     },
     {
       "id": "C1",
       "description": "访客与账户双端风格切换、刷新、跨标签与旧值迁移",
       "status": "pass",
       "evidence": [
-        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
-        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+        "openspec/changes/refactor-home-platform-interface/full-reaudit-20261025.md",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/_history/20261026-旧二十八图/行为结果.json"
       ],
-      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+      "verificationFreshness": "2026-10-26当前隔离浏览器分组复验，详情见重审；行为通过不代替视觉。"
     },
     {
       "id": "C2",
       "description": "现代搜索分类详情返回；经典原大厅保持；收藏悬停/键盘、手机首次直达详情、账户隔离持久化",
       "status": "pass",
       "evidence": [
-        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
-        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+        "openspec/changes/refactor-home-platform-interface/full-reaudit-20261025.md",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/_history/20261026-旧二十八图/行为结果.json"
       ],
-      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+      "verificationFreshness": "2026-10-26当前隔离浏览器分组复验，详情见重审；行为通过不代替视觉。"
     },
     {
       "id": "C3",
       "description": "双风格建房、第二上下文加入、断线重连、双端资料及经典设置持久化、教程实际挂载与配置入口",
       "status": "pass",
       "evidence": [
-        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
-        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+        "openspec/changes/refactor-home-platform-interface/full-reaudit-20261025.md",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/_history/20261026-旧二十八图/行为结果.json"
       ],
-      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+      "verificationFreshness": "2026-10-26当前隔离浏览器分组复验，详情见重审；行为通过不代替视觉。"
     },
     {
       "id": "C4",
       "description": "桌面与手机投稿创建编辑上传送审、错误反馈及服务端读回",
       "status": "pass",
       "evidence": [
-        "openspec/changes/refactor-home-platform-interface/acceptance-20261024.md",
-        "test-results/evidence-screenshots/home/正式首页验收-20261024/行为结果.json"
+        "openspec/changes/refactor-home-platform-interface/full-reaudit-20261025.md",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/_history/20261026-旧二十八图/行为结果.json"
       ],
-      "verificationFreshness": "保留初始实际运行的历史通过；本轮未全量重跑，不由当前截图越权证明"
+      "verificationFreshness": "2026-10-26当前隔离浏览器分组复验，详情见重审；行为通过不代替视觉。"
     },
     {
       "id": "C5",
       "description": "桌面、手机及宽屏当前96张整屏图均由主代理和独立子代理逐张审查；历史高度缺证不冒称回归；经典首页组合保持",
-      "status": "in_progress",
+      "status": "superseded",
       "evidence": [
         "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
@@ -72,12 +69,13 @@
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
-      ]
+      ],
+      "verificationFreshness": "旧96图资格保持撤回；原图与过程保留。用户要求只交变化，当前23图另列C11，不以旧数量继续收集重复图片。"
     },
     {
       "id": "C6",
       "description": "四轮360条逐图结论与失败修正、行为视觉分账、职责总账、当前96张与诊断97份媒体的HTTP和字节来源核对",
-      "status": "in_progress",
+      "status": "superseded",
       "evidence": [
         "openspec/changes/refactor-home-platform-interface/ui-cross-reacceptance-20261024.md",
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
@@ -85,7 +83,8 @@
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
         "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json"
-      ]
+      ],
+      "verificationFreshness": "旧96图资格保持撤回；原图与过程保留。用户要求只交变化，当前23图另列C11，不以旧数量继续收集重复图片。"
     },
     {
       "id": "C7",
@@ -116,6 +115,19 @@
       "evidence": [
         "openspec/changes/refactor-home-platform-interface/reference-reacceptance-20261025.md"
       ]
+    },
+    {
+      "id": "C11",
+      "description": "用户本次指定纠正，18张变化整屏图双审和当前范围行为通过，用户验收待定",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-home-platform-interface/user-corrections-20261026.md",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/行为结果.json",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/逐图结论与返工原因.json",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/focused-pass-manifest.json",
+        "test-results/evidence-screenshots/home/首页全部重审-20261026/验证日志/查看器HTTP与来源核对.json"
+      ],
+      "verificationFreshness": "三个实际跑次，核心20+真实历史2，追加头像3为子集；不替代全仓质量或范围外全量复跑。"
     }
   ],
   "artifacts": [
@@ -136,31 +148,31 @@
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/行为结果.json",
+      "path": "openspec/changes/refactor-home-platform-interface/full-reaudit-20261025.md",
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/逐图视觉审查.json",
+      "path": "test-results/evidence-screenshots/home/首页全部重审-20261026/行为结果.json",
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/focused-pass-manifest.json",
+      "path": "test-results/evidence-screenshots/home/首页全部重审-20261026/逐图结论与返工原因.json",
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/.e2e-image-index.json",
+      "path": "test-results/evidence-screenshots/home/首页全部重审-20261026/.e2e-image-index.json",
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/交付信息.json",
+      "path": "test-results/evidence-screenshots/home/首页全部重审-20261026/focused-pass-manifest.json",
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/index.html",
+      "path": "test-results/evidence-screenshots/home/首页全部重审-20261026/index.html",
       "required": true
     },
     {
-      "path": "test-results/evidence-screenshots/home/首页全量交叉复审-20261024/验证日志/查看器HTTP与来源核对.json",
+      "path": "test-results/evidence-screenshots/home/首页全部重审-20261026/交付信息.json",
       "required": true
     }
   ],
@@ -184,9 +196,21 @@
     "反馈附件追加触控补证首两次关闭失败均保留；第一次归因提前释放会话不充分，等待实际惯性滚动稳定后单次触控关闭通过。",
     "当前查看器默认71张，诊断来源核查默认20份；全部96与97份均通过HTTP和原字节核对。查看器默认端口被系统排除范围覆盖，改用已确认可用端口，不终止其它程序。",
     "2026-10-25：默认及预设专用按钮已去冗余；8项单测、三端3项浏览器用例及构建通过。18张新候选中裁剪态3张被独立审查退回，用户进一步否决上传入口/滑条设计，尚未放行。",
-    "用户要求所有功能分别核对PC与手机成熟网页或App参考；Checklist补状态检查，UI Notes和Refero查具体产品屏，参考产品源码不是默认前置。"
+    "用户要求所有功能分别核对PC与手机成熟网页或App参考；Checklist补状态检查，UI Notes和Refero查具体产品屏，参考产品源码不是默认前置。",
+    "2026-10-25本轮：相关8文件25项单测通过，相关lint0错误9warning；各浏览器合同按分跑次记录。空白封面与冷入口证据初态问题均保留真实失败并修正，严格23图清单和HTTP原字节核验通过。",
+    "重构前检查点经当轮明确授权仅一次跳钩子保存；后续重构未提交、推送、部署，没有动经典组合或其它游戏工作。",
+    "2026-10-26全部重审：历史notes为过程记录，不覆盖currentCorrection。对局真实数据已接入并通过真实对局归档；旧96和23图资格仍撤回。全仓类型4872诊断未通过。"
   ],
-  "currentCorrection": "头像设备操作与明确选图入口、可见退出、六列变体、关于完整说明、反馈设备文案及附件触控可达、认证条件区重叠均完成当前修复及交叉复审",
-  "completionScope": "此前视觉总通过撤回；已有行为事实留档。当前只完成规范收敛与部分来源查证，不能宣称全首页重构完成。",
-  "userAcceptance": "用户退回无来源设计及头像上传；来源查证与重新设计中"
+  "currentCorrection": "本次指定纠正完成：设置去额外关闭、现代房间紧凑横排、头像padding修复、头像来源直达选图及统一叉号、动态回到上方、现代历史并个人中心。核心20+历史2、单测26、18图双审与严格门禁通过。",
+  "completionScope": "仅本次退回范围修正及变化图交付；原生、完整商业来源、外部收件、全仓类型与部署未被本轮关闭。",
+  "userAcceptance": "本次18图待用户验收；此前范围外反馈无问题的结论保留",
+  "checkpoint": {
+    "commit": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+    "noVerifyAuthorized": true,
+    "refactorCommitted": false,
+    "pushed": false,
+    "deployed": false
+  },
+  "currentEvidenceDirectory": "test-results/evidence-screenshots/home/首页全部重审-20261026",
+  "currentViewer": "http://127.0.0.1:19687/?key=a8aca8e58c08"
 }

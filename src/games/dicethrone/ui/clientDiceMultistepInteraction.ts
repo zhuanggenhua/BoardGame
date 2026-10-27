@@ -8,9 +8,15 @@ import {
     type DiceModifyStep,
     type DiceSelectResult,
     type DiceSelectStep,
-} from '../domain/systems';
+} from '../domain/diceInteraction';
 
 type DiceModifyConfig = Parameters<typeof diceModifyReducer>[2];
+type ClientDiceInteractionData = MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult> & {
+    completedSteps?: number;
+    completedDieIds?: number[];
+    allowedDieIds?: number[];
+    allowRepeatedDieSelection?: boolean;
+};
 
 const readFiniteNumber = (value: unknown): number | undefined => (
     typeof value === 'number' && Number.isFinite(value) ? value : undefined
@@ -22,10 +28,10 @@ const readNumberList = (value: unknown): number[] => (
 
 export function rebuildClientDiceMultistepInteraction(
     interaction: InteractionDescriptor | undefined,
-): InteractionDescriptor<MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>> | undefined {
+): InteractionDescriptor<ClientDiceInteractionData> | undefined {
     if (interaction?.kind !== 'multistep-choice') return undefined;
 
-    const originalData = (interaction.data ?? {}) as Record<string, unknown>;
+    const originalData = (interaction.data ?? {}) as ClientDiceInteractionData;
     const meta = originalData.meta as Record<string, unknown> | undefined;
     if (!meta) return undefined;
 
@@ -50,8 +56,8 @@ export function rebuildClientDiceMultistepInteraction(
                     ?? { modifications: {}, modCount: 0, totalAdjustment: 0 },
                 localReducer: (current: unknown, step: unknown) =>
                     diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, remainingSelectCount),
-                toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, remainingSelectCount),
-                getCompletedSteps: (result: DiceModifyResult) => completedCount + result.modCount,
+                toCommands: result => diceModifyToCommands(result as DiceModifyResult, remainingSelectCount),
+                getCompletedSteps: result => completedCount + (result as DiceModifyResult).modCount,
                 maxSteps: autoConfirmSteps,
                 minSteps: isManualConfirmMode
                     ? (Number(originalData.minSteps) || 1)
@@ -82,15 +88,15 @@ export function rebuildClientDiceMultistepInteraction(
                 initialResult: { selectedDiceIds: [] } as DiceSelectResult,
                 localReducer: (current: unknown, step: unknown) =>
                     diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, remainingSelectCount, allowRepeatedDieSelection),
-                toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, remainingSelectCount),
-                getCompletedSteps: (result: DiceSelectResult) => completedCount + result.selectedDiceIds.length,
+                toCommands: result => diceSelectToCommands(result as DiceSelectResult, remainingSelectCount),
+                getCompletedSteps: result => completedCount + (result as DiceSelectResult).selectedDiceIds.length,
                 maxSteps: isRepeatedReroll
                     ? (readFiniteNumber(originalData.maxSteps) ?? selectCount)
                     : readFiniteNumber(originalData.maxSteps),
                 minSteps: originalData.minSteps ?? 1,
                 confirmationMode: isRepeatedReroll ? 'submitBatch' : originalData.confirmationMode,
                 shouldResolveOnConfirm: isRepeatedReroll
-                    ? (result: DiceSelectResult) => result.selectedDiceIds.length === 0
+                    ? result => (result as DiceSelectResult).selectedDiceIds.length === 0
                     : undefined,
                 allowedDieIds: originalData.allowedDieIds,
                 completedDieIds,

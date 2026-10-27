@@ -1,0 +1,72 @@
+{
+  "frames": {
+    "guard_break": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "sourceSize": {
+        "w": 400,
+        "h": 400
+      }
+    },
+    "electrokinesis": {
+      "frame": {
+        "x": 400,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "sourceSize": {
+        "w": 400,
+        "h": 400
+      }
+    },
+    "mjolnir": {
+      "frame": {
+        "x": 800,
+        "y": 0,
+        "w": 1249,
+        "h": 1492
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 1249,
+        "h": 1492
+      },
+      "sourceSize": {
+        "w": 1249,
+        "h": 1492
+      }
+    }
+  },
+  "meta": {
+    "image": "compressed/status-icons-atlas.webp",
+    "size": {
+      "w": 2049,
+      "h": 1492
+    },
+    "scale": "1"
+  }
+}

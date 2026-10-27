@@ -53,8 +53,9 @@ import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './domain/passiveAbility';
-import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
+import { areTeammates, canOwnerRerollPendingBonusDiceSettlement, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
+import { canUseDejaVuCore } from './domain/doctorStrange/rules';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
 import { canReceiveTransferredStatus, canRemoveStatusFromPlayer, canTransferStatus } from './domain/statusRemoval';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
@@ -202,6 +203,7 @@ type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
         dieModifyConfig?: {
             mode?: 'set' | 'adjust' | 'copy' | 'any';
             targetValue?: number;
+            allowedValues?: number[];
         };
         diceOwnerId?: PlayerId;
         targetOpponentDice?: boolean;
@@ -331,6 +333,31 @@ const appendAction = (
     const isValid = commandSpecs.every((command) => isCommandValid(state, playerId, command.type, command.payload));
     if (!isValid) return;
     actions.push(action);
+};
+
+const appendDejaVuAction = (
+    actions: AiLegalAction[],
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): void => {
+    const responseWindowType = state.sys.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
+    if (!canUseDejaVuCore(
+        state.core,
+        phase,
+        playerId,
+        responseWindowType,
+        Boolean(state.sys.interaction?.current),
+        Boolean(state.sys.gameover),
+    )) return;
+
+    appendAction(actions, state, playerId, {
+        actionId: createAiLegalActionId('tactical', 'deja-vu'),
+        kind: 'use-deja-vu',
+        label: '使用即视感重开进攻投掷',
+        commands: [{ type: 'USE_DEJA_VU', payload: {} }],
+        metadata: withAiActionStrategyTags({}, ['dice-setup']),
+    });
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => (
@@ -2347,9 +2374,13 @@ const buildInteractionActions = (
 
         const selections = enumerateArrayCombinations(selectableDice, minSelectionCount, selectCount);
         const actions = selections.flatMap((selection) => {
-            const valueAssignments = mode === 'any'
+            const valueAssignments = mode === 'set' && meta.dieModifyConfig?.allowedValues?.length
+                ? enumeratePerItemValueAssignments(selection, () => meta.dieModifyConfig!.allowedValues!)
+                : mode === 'any'
                 ? enumeratePerItemValueAssignments(selection, (die) =>
-                    [1, 2, 3, 4, 5, 6].filter((value) => value !== die.value))
+                    (meta.dieModifyConfig?.allowedValues?.length
+                        ? meta.dieModifyConfig.allowedValues
+                        : [1, 2, 3, 4, 5, 6]).filter((value) => value !== die.value))
                 : mode === 'adjust'
                     ? enumeratePerItemValueAssignments(selection, (die) =>
                         [die.value - 1, die.value + 1].filter((value) => value >= 1 && value <= 6))
@@ -2532,6 +2563,8 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
         && !isCurrentResponder
         && isDirectDiceInterferenceActor(state.core, responseWindow, playerId);
 
+    appendDejaVuAction(actions, state, playerId, phase);
+
     if (responseWindow && !isCurrentResponder && !canDirectInterfere && !hasPendingTokenResponse) {
         return actions;
     }
@@ -2671,7 +2704,19 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
     const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
     if (!settlement || settlement.attackerId !== playerId || !isCurrentBonusRollSettlement(state.core, settlement)) return actions;
 
-    if (settlement.displayOnly === true) {
+    if (settlement.groupReroll && canOwnerRerollPendingBonusDiceSettlement(state.core, settlement)) {
+        const dice = getPendingBonusSettlementDice(settlement);
+        for (let mask = 1; mask < (1 << dice.length); mask++) {
+            const indices = dice.filter((_, index) => mask & (1 << index)).map(die => die.index);
+            appendAction(actions, state, playerId, {
+                actionId: createAiLegalActionId('bonus-die', 'group-reroll', mask),
+                kind: 'bonus-die-reroll', label: `重掷奖励骰 ${indices.join(',')}`,
+                commands: [{ type: 'REROLL_BONUS_DIE', payload: { dieIndex: indices[0], dieIndices: indices } }],
+                metadata: withAiActionStrategyTags({}, ['dice-setup']),
+            });
+        }
+    }
+    if (settlement.displayOnly === true || settlement.groupReroll) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('bonus-die', 'confirm'),
             kind: 'confirm-roll',
@@ -3201,11 +3246,13 @@ export function buildDiceThroneAiLegalActions(args: {
         return [];
     }
 
-    return [
+    const actions = [
         ...buildPurifyActions(state, args.playerId),
         ...buildPassiveActions(state, args.playerId, phase),
         ...buildPhaseActions(state, args.playerId, phase),
     ];
+    appendDejaVuAction(actions, state, args.playerId, phase);
+    return actions;
 }
 
 const getContextPhase = (context: AiDecisionContext): TurnPhase => {
@@ -3657,11 +3704,19 @@ const interactionValueScorer: LocalAiActionScorer = {
             ? currentInteraction.data as DiceInteractionData | undefined
             : undefined;
         const currentDice = getAiActiveDice(state, phase);
-        const targetOpponentDice = currentInteraction?.kind === 'multistep-choice'
+        const targetForeignDice = currentInteraction?.kind === 'multistep-choice'
             && (!interactionId || currentInteraction.id === interactionId)
             && currentInteractionData?.meta?.targetOpponentDice === true;
-        const scoreForTargetValue = (value: number) => (targetOpponentDice ? (7 - value) : value);
-        const scoreForDieValue = (value: number) => (targetOpponentDice ? value : (7 - value));
+        const targetDiceOwnerId = targetForeignDice
+            ? (typeof currentInteractionData?.meta?.diceOwnerId === 'string'
+                ? currentInteractionData.meta.diceOwnerId
+                : getRollerId(state.core, phase))
+            : undefined;
+        const isEnemyDiceTarget = targetForeignDice
+            && !!targetDiceOwnerId
+            && !areTeammates(state.core, context.playerId, targetDiceOwnerId);
+        const scoreForTargetValue = (value: number) => (isEnemyDiceTarget ? (7 - value) : value);
+        const scoreForDieValue = (value: number) => (isEnemyDiceTarget ? value : (7 - value));
 
         if (action.kind === 'interaction-multistep') {
             const dieIds = Array.isArray(action.metadata?.dieIds)
@@ -3684,7 +3739,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                         : currentDice.find((item) => item.id === dieId) ?? null;
                     if (!die) return sum;
                     const delta = value - die.value;
-                    const normalized = targetOpponentDice ? -delta : delta;
+                    const normalized = isEnemyDiceTarget ? -delta : delta;
                     return sum + normalized * 12;
                 }, 0);
             };
@@ -3695,11 +3750,12 @@ const interactionValueScorer: LocalAiActionScorer = {
                         state,
                         context.playerId,
                         phase,
-                        targetOpponentDice,
+                        isEnemyDiceTarget,
                         buildProjectedDice(
                             currentDice,
                             dieIds.map((currentDieId, index) => ({ dieId: currentDieId, newValue: newValues[index] })),
                         ),
+                        targetDiceOwnerId,
                     )
                     : null;
                 const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
@@ -3711,10 +3767,10 @@ const interactionValueScorer: LocalAiActionScorer = {
                             + deltaScore
                             + (projection?.score ?? 0),
                     reason: projection && projection.planDelta > 0
-                        ? (targetOpponentDice
+                        ? (isEnemyDiceTarget
                             ? `优先把对手从 ${projection.currentPlanId ?? '当前技能线'} 拉离，目标点数 ${newValues.join(', ')}`
                             : `优先把骰面调整到更接近 ${projection.projectedPlanId ?? '目标技能'} 的路线`)
-                        : (targetOpponentDice
+                        : (isEnemyDiceTarget
                             ? `优先让对手骰面更低，目标点数 ${newValues.join(', ')}`
                             : `优先完成更多骰子调整，累计目标点数 ${newValues.join(', ')}`),
                 };
@@ -3726,8 +3782,9 @@ const interactionValueScorer: LocalAiActionScorer = {
                         state,
                         context.playerId,
                         phase,
-                        targetOpponentDice,
+                        isEnemyDiceTarget,
                         buildProjectedDice(currentDice, [{ dieId, newValue }]),
+                        targetDiceOwnerId,
                     )
                     : null;
                 const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
@@ -3736,10 +3793,10 @@ const interactionValueScorer: LocalAiActionScorer = {
                         ? (projection?.score ?? 0) + 14
                         : scoreForTargetValue(newValue) * 18 + deltaScore + (projection?.score ?? 0),
                     reason: projection && projection.planDelta > 0
-                        ? (targetOpponentDice
+                        ? (isEnemyDiceTarget
                             ? `优先把对手从 ${projection.currentPlanId ?? '当前技能线'} 拉开`
                             : `优先把骰子改到更接近 ${projection.projectedPlanId ?? '目标技能'} 的值`)
-                        : (targetOpponentDice
+                        : (isEnemyDiceTarget
                             ? `优先把对手骰面压到更低点数 ${newValue}`
                             : `优先把骰子调整到更高点数 ${newValue}`),
                 };
@@ -3757,16 +3814,17 @@ const interactionValueScorer: LocalAiActionScorer = {
                                 state,
                                 context.playerId,
                                 phase,
-                                targetOpponentDice,
+                                isEnemyDiceTarget,
                                 currentDice.filter((die) => dieIds.includes(die.id)),
+                                targetDiceOwnerId,
                             )?.score ?? 0)
                             : 0
                     ),
                     reason: currentInteractionData?.meta?.dtType === 'selectDie'
-                        ? (targetOpponentDice
+                        ? (isEnemyDiceTarget
                             ? `优先重掷最能打断对手技能线的骰子 ${dieIds.join(', ')}`
                             : `优先重掷最能改善当前技能线的骰子 ${dieIds.join(', ')}`)
-                        : (targetOpponentDice
+                        : (isEnemyDiceTarget
                             ? `优先处理对手高点骰子 ${dieIds.join(', ')}`
                             : `优先一次处理更多低点骰子 ${dieIds.join(', ')}`),
                 };
@@ -3776,7 +3834,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                 if (die) {
                     return {
                         score: scoreForDieValue(die.value) * 12,
-                        reason: targetOpponentDice
+                        reason: isEnemyDiceTarget
                             ? `优先重掷对手高点骰子 ${die.value}`
                             : `优先重掷较低点数的骰子 ${die.value}`,
                     };
@@ -4875,8 +4933,9 @@ const getDicePlanAnchorPlayerId = (
     playerId: PlayerId,
     phase: TurnPhase,
     targetOpponentDice: boolean,
+    targetDiceOwnerId?: PlayerId,
 ): PlayerId => {
-    return targetOpponentDice ? getRollerId(state.core, phase) : playerId;
+    return targetDiceOwnerId ?? (targetOpponentDice ? getRollerId(state.core, phase) : playerId);
 };
 
 const evaluateDiceProjection = (
@@ -4885,9 +4944,10 @@ const evaluateDiceProjection = (
     phase: TurnPhase,
     targetOpponentDice: boolean,
     projectedDice: DiceThroneCore['dice'],
+    targetDiceOwnerId?: PlayerId,
 ): DiceProjectionSummary => {
     const currentDice = getAiActiveDice(state, phase);
-    const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice);
+    const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice, targetDiceOwnerId);
     const useConfirmedOpponentThreat = targetOpponentDice
         && state.core.rollConfirmed
         && state.sys.responseWindow?.current?.windowType === 'afterRollConfirmed';
@@ -5026,6 +5086,7 @@ const evaluateExpectedRerollSelection = (
     phase: TurnPhase,
     targetOpponentDice: boolean,
     selectedDice: DiceThroneCore['dice'],
+    targetDiceOwnerId?: PlayerId,
 ): DiceProjectionSummary | null => {
     if (selectedDice.length === 0) return null;
     const outcomeCount = 6 ** selectedDice.length;
@@ -5048,7 +5109,7 @@ const evaluateExpectedRerollSelection = (
             dieId: die.id,
             newValue: outcomeValues[index],
         })));
-        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice);
+        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice, targetDiceOwnerId);
         totals.score += summary.score;
         totals.rawDelta += summary.rawDelta;
         totals.planDelta += summary.planDelta;

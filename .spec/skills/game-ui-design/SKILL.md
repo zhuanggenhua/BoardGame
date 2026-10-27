@@ -17,7 +17,7 @@ description: "游戏 UI 设计流程与验收入口。用于游戏 HUD、棋盘/
 6. 开局配置（剧本 / 场景 + 阵营 / 角色）先读 [`ui-ux`](../../knowledge/standards/ui-ux.md)「开局配置默认同页」与 `references/layout-interaction-patterns.md`「开局配置」；小基数且存在依赖过滤时默认同页，送稿前必须有成熟参考对照表，禁止凭空拆成整页 Wizard。
 7. 送设计稿、截图或实现验收前，读 `references/quality-gates.md`，并回到上位 [`ui-ux`](../../knowledge/standards/ui-ux.md) 与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 对照通用门禁。
 8. 若用户明确指定 Open Design，走 Open Design artifact 设计稿；不得改走图片模型生图。若用户要求位图视觉稿，则按项目位图设计交付规则执行。当前工作稿指针与用户可见截图身份见 [`boardgame-ui-imagegen`](../boardgame-ui-imagegen/SKILL.md)「当前工作稿身份」。
-9. 教程与 UI 同时变更，或用户连续指出同类教程 / UI 问题时，先回到 [`tutorial-design`](../../knowledge/standards/tutorial-design.md) 的教程-UI 联合过账与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 的整族审查，再继续实现；本 skill 不复制这两处正文。
+9. 教程与 UI 同时变更，或用户连续指出同类教程 / UI 问题时，先回到 [`tutorial-design · 六、行为与图面分别验收`](../../knowledge/standards/tutorial-design.md#六行为与图面分别验收) 与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 的整族审查，再继续实现；本 skill 不复制这两处正文。
 
 ## 核心流程
 

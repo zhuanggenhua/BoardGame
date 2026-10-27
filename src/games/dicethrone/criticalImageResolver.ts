@@ -14,6 +14,8 @@ const CHARACTER_ASSET_TYPES = [
 type AssetTag = 'selection' | 'gameplay';
 
 const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
+    doctor_strange: 'doctor_strange',
+    thor: 'thor',
     monk: 'monk',
     barbarian: 'barbarian',
     pyromancer: 'pyromancer',

@@ -109,7 +109,9 @@ const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./p
 const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
 const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
+const ExternalGamePage = React.lazy(() => import('./pages/ExternalGamePage'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
+const CreatorReview = React.lazy(() => import('./pages/admin/CreatorReview'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
 const UserDetailPage = React.lazy(() => import('./pages/admin/UserDetail'));
 const GameChangelogsPage = React.lazy(() => import('./pages/admin/GameChangelogs'));
@@ -277,6 +279,7 @@ const AppContent = () => {
                         </React.Suspense>
                       )}
                     />
+                    <Route path="/external/:gameId" element={<React.Suspense fallback={playRouteFallback}><ExternalGamePage /></React.Suspense>} />
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(
@@ -383,6 +386,7 @@ const AppContent = () => {
                         element={<AdminDashboard />}
                       />
                       <Route path="users" element={renderAdminOnly(<UsersPage />)} />
+                      <Route path="creator-review" element={renderAdminOnly(<CreatorReview />)} />
                       <Route path="users/:id" element={renderAdminOnly(<UserDetailPage />)} />
                       <Route
                         path="matches"

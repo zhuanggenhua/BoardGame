@@ -39,6 +39,7 @@ export enum CommandCategory {
  * 新增命令时必须在此处添加分类，否则会导致运行时错误。
  */
 export const COMMAND_CATEGORIES: Record<string, CommandCategory> = {
+    'USE_DEJA_VU': CommandCategory.TACTICAL,
     // ============================================================================
     // 回合流程控制（PHASE_CONTROL）
     // 这些命令控制游戏的回合流程，不应该在响应窗口期间允许

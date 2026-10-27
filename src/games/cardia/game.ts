@@ -76,7 +76,7 @@ export const systems = [
         formatEntry: formatCardiaActionEntry,
     }),
     createUndoSystem<CardiaCore>({
-        maxSnapshots: 3,
+        maxSnapshots: 10,
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
     }),
     createInteractionSystem(),

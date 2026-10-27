@@ -70,6 +70,8 @@ export const DICETHRONE_ABILITY_SLOT_LAYOUTS: Record<DiceThronePlayerBoardLayout
 export const DEFAULT_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = DICETHRONE_ABILITY_SLOT_LAYOUTS.v2;
 
 export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimensions> = {
+    doctor_strange: { width: 3568, height: 2179 },
+    thor: { width: 3576, height: 2157 },
     barbarian: { width: 2048, height: 1260 },
     gunslinger: { width: 2048, height: 1254 },
     monk: { width: 2048, height: 1260 },
@@ -90,6 +92,8 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
+    doctor_strange: 'v2',
+    thor: 'v2',
     monk: 'v2',
     barbarian: 'v2',
     pyromancer: 'v2',

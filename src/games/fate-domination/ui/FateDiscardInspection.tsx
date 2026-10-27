@@ -11,7 +11,7 @@ export function FateDiscardInspection({cards,onClose,onInspect}:{cards:readonly 
  const closeRef=useRef<HTMLButtonElement>(null);
  useEffect(()=>{const previous=document.activeElement as HTMLElement|null;closeRef.current?.focus();return()=>previous?.focus();},[]);
  return <ModalBase onClose={onClose} overlayClassName="!bg-black/75">
-  <section className="fd-discard-inspection" role="dialog" aria-modal="true" aria-label="自己的弃牌堆" onKeyDown={event=>{
+  <section data-tutorial-id="fate-discard" className="fd-discard-inspection" role="dialog" aria-modal="true" aria-label="自己的弃牌堆" onKeyDown={event=>{
     if(event.key==='Escape'){event.stopPropagation();onClose();}
     if(event.key==='Tab'){
       const buttons=event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])');

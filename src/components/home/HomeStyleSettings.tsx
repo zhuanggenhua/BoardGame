@@ -24,7 +24,7 @@ export function HomeStyleSettings({ currentStyle, onSelectStyle }: HomeStyleSett
             {(['modern', 'classic'] as const).map(style => <button key={style} type="button" role="radio"
                 aria-checked={currentStyle === style} tabIndex={currentStyle === style ? 0 : -1}
                 data-testid={'home-style-' + style} onClick={() => onSelectStyle(style)}>
-                {t('homeAppearance.' + style, { defaultValue: style === 'modern' ? '现代' : '经典' })}
+                {style === 'modern' ? t('homeAppearance.modern', { defaultValue: '现代' }) : t('homeAppearance.classic', { defaultValue: '经典' })}
             </button>)}
         </div>
     </div>;

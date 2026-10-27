@@ -3,14 +3,30 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import {
     buildQidahenRuntimeRegionIdByPixel,
+    getQidahenRuntimeRegionBounds,
     resolveQidahenRuntimeRegionEntryPoint,
     resolveQidahenSharedPrintedRegionAnchors,
 } from '../ui/runtimeRegionOwnership';
 import { getQidahenRuntimeRegionIdsForPrintedRegionId, QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from '../ui/mapGraph';
+import { buildRegionOwnershipOverlayPixels } from '../ui/regionMaskOverlay';
 
 const REGION_MASK_PATH = resolve(process.cwd(), 'src/games/qidahen/data/region-mask.png');
 
 describe('qidahen runtime region ownership', () => {
+    it('地区提示沿真实命中像素保留凹口，不把包围盒或相邻地区涂成目标', () => {
+        const ownership = [
+            'a', 'a', null, null,
+            'a', 'b', null, null,
+            'a', 'a', null, null,
+        ];
+        expect(getQidahenRuntimeRegionBounds(ownership, 4, 3, ['a'])).toEqual({ left: 0, top: 0, width: 2, height: 3 });
+        expect(getQidahenRuntimeRegionBounds(ownership, 4, 3, ['missing'])).toBeNull();
+        const pixels = buildRegionOwnershipOverlayPixels(ownership, 4, 3, new Map([['a', 'tutorialPrimary']]));
+        ownership.forEach((owner, index) => {
+            expect(pixels[index * 4 + 3] > 0).toBe(owner === 'a');
+        });
+    });
+
     it('共享印刷区会生成独立的运行时锚点，而不是继续共用同一个中心点', async () => {
         const { data, info } = await sharp(REGION_MASK_PATH).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
         const printedRegionIdByPixel: Array<string | null> = new Array(info.width * info.height).fill(null);

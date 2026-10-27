@@ -16,6 +16,8 @@ import lierenAtlasConfigData from '../../../assets/atlas-configs/dicethrone/abil
 import vampireLordAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-vampire_lord.atlas.json';
 import zhizhuxiaAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-zhizhuxia.atlas.json';
 import paladinAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-paladin.atlas.json';
+import thorAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-thor.atlas.json';
+import doctorStrangeAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-doctor_strange.atlas.json';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -55,8 +57,11 @@ const LIEREN_CARD_ATLAS_CONFIG = parseAtlasConfig(lierenAtlasConfigData, 'abilit
 const VAMPIRE_LORD_CARD_ATLAS_CONFIG = parseAtlasConfig(vampireLordAtlasConfigData, 'ability-cards-vampire_lord.atlas.json');
 const ZHIZHUXIA_CARD_ATLAS_CONFIG = parseAtlasConfig(zhizhuxiaAtlasConfigData, 'ability-cards-zhizhuxia.atlas.json');
 const PALADIN_CARD_ATLAS_CONFIG = parseAtlasConfig(paladinAtlasConfigData, 'ability-cards-paladin.atlas.json');
+const DOCTOR_STRANGE_CARD_ATLAS_CONFIG = parseAtlasConfig(doctorStrangeAtlasConfigData, 'ability-cards-doctor_strange.atlas.json');
 
 const getHeroAtlasConfig = (charId: string) => {
+    if (charId === 'doctor_strange') return DOCTOR_STRANGE_CARD_ATLAS_CONFIG;
+    if (charId === 'thor') return parseAtlasConfig(thorAtlasConfigData, 'ability-cards-thor.atlas.json');
     if (charId === 'paladin') return PALADIN_CARD_ATLAS_CONFIG;
     if (charId === 'gunslinger') return GUNSLINGER_CARD_ATLAS_CONFIG;
     if (charId === 'samurai') return SAMURAI_CARD_ATLAS_CONFIG;

@@ -9,9 +9,6 @@ import './global-hud.css';
 import { PlatformAudioSettings } from './PlatformAudioSettings';
 import { HomeStyleSettings } from '../home/HomeStyleSettings';
 import { isHomeEntryRoute, persistHomeEntryStyle, resolveHomeEntryStyle, subscribeHomeEntryStyleChange } from '../../lib/homeV2Routing';
-import { useHomeHudClearance } from './useHomeHudClearance';
-import { useHomeFormHudSuppression } from './useHomeFormHudSuppression';
-import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw, Moon, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import type { AndroidLiveUpdateActivityState } from '../../lib/mobile/androidLiveUpdates';
@@ -62,8 +59,6 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     const { openModal, closeModal, closeByNamespace } = useModalStack();
     const { user } = useAuth();
     const location = useLocation();
-    const homeHudClearance = useHomeHudClearance(location.pathname);
-    const suppressFormFab = useHomeFormHudSuppression(location.pathname, useMobileViewport());
     const toast = useToast();
     const [displayTheme, setDisplayTheme] = useState<SystemDisplayTheme>(() => readSystemDisplayThemePreference());
     const [homeStyle, setHomeStyle] = useState(() => resolveHomeEntryStyle());
@@ -234,7 +229,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
             event.preventDefault(); event.stopPropagation(); closeSettings();
         }}>
             {isHomeEntryRoute(location.pathname) && <HomeStyleSettings currentStyle={homeStyle} onSelectStyle={style => { persistHomeEntryStyle(style); closeSettings(); }} />}
-            <PlatformAudioSettings isDark={isDark} onClose={closeSettings}/>
+            <PlatformAudioSettings isDark={isDark}/>
         </div>;
         }
 
@@ -331,15 +326,14 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
 
     return (
         <>
-            {!suppressFormFab && <FabMenu
-                className="platform-global-fab"
-                bottomClearance={homeHudClearance}
+            <FabMenu
+                className={homeStyle === 'modern' && isHomeEntryRoute(location.pathname) ? 'platform-global-fab' : undefined}
                 key={`global-hud-${location.pathname}`}
                 isDark={isDark}
                 items={items}
                 position="bottom-right"
                 zIndex={GLOBAL_HUD_FAB_Z_INDEX}
-            />}
+            />
 
             {showAbout && (
                 <Suspense fallback={null}>

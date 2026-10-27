@@ -5,10 +5,3 @@
 .platform-global-fab [data-fab-id]:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; border-radius: 16px; }
 .platform-global-fab [data-fab-id] { transition-duration: 120ms; }
 @media (prefers-reduced-motion: reduce) { .platform-global-fab [data-fab-id], .platform-global-fab [data-fab-visual-id] { transition: none; } }
-
-@media (max-width:1023px) {
- body:has(.platform-upload-workspace) .platform-global-fab,
- body:has(.platform-profile-identity form) .platform-global-fab { display:none; }
-}
-.platform-settings-close { display:none; }
-@media(max-width:1023px) { .platform-settings-close { display:block; min-height:44px; } }

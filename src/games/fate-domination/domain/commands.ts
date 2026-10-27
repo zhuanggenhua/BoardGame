@@ -1,4 +1,5 @@
 import { fateKireiForm, resolveFateAbilitySource, fateAbilityUsageKey } from './abilitySource';
+import { legalFateDeploymentSlots } from './deployment';
 import { fateLateClimax, fateNoblePhantasmsForbidden } from './environmentRules';
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANT_BY_ID } from '../data';
@@ -66,6 +67,7 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             const location = core.battlefield[command.payload.locationId];
             const capacity=command.payload.locationId==='workshop'&&fateLateClimax(core.situation)?1:location.capacity;
             if (capacity !== null && location.playerIds.length >= capacity) return fail('locationFull');
+            if (command.payload.deploymentSlot !== undefined && !legalFateDeploymentSlots(core, command.payload.locationId).includes(command.payload.deploymentSlot)) return fail('invalidDeploymentSlot');
             return ok();
         }
         case 'MOVE_PLAYER': {

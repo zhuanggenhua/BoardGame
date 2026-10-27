@@ -389,7 +389,7 @@ const buildQidahenPendingActionResolvedEvent = (
         state.core,
         state.sys.interaction?.current,
     );
-    const pendingTargetAction = currentPendingTargetAction
+    const pendingTargetAction = currentPendingTargetAction?.resolvedBattleRolls ? currentPendingTargetAction : currentPendingTargetAction
         ? dependencies.applyRequestedCommittedTroops(
             state.core,
             currentPendingTargetAction,
@@ -402,7 +402,7 @@ const buildQidahenPendingActionResolvedEvent = (
         payload: {
             playerId: command.playerId,
             pendingTargetAction,
-            committedTroops: command.payload.committedTroops,
+            committedTroops: pendingTargetAction?.resolvedBattleRolls ? undefined : command.payload.committedTroops,
             retreatLossMode: command.payload.retreatLossMode,
             defenderSortieBattle: command.payload.defenderSortieBattle,
             defenderHoldCity: command.payload.defenderHoldCity,
@@ -412,14 +412,14 @@ const buildQidahenPendingActionResolvedEvent = (
             attackerCavalryPlunderSource: command.payload.attackerCavalryPlunderSource,
             attackerCasualtyPriority: command.payload.attackerCasualtyPriority,
             defenderCasualtyPriority: command.payload.defenderCasualtyPriority,
-            battleRolls: pendingTargetAction
+            battleRolls: pendingTargetAction?.resolvedBattleRolls ?? (pendingTargetAction && pendingTargetAction.battleStep !== 'defender-declaration'
                 ? dependencies.createStructuredBattleRolls(state.core, pendingTargetAction, random, {
-                    defenderSortieBattle: command.payload.defenderSortieBattle === true,
-                    defenderHoldCity: command.payload.defenderHoldCity === true,
+                    defenderSortieBattle: (pendingTargetAction.defenderDeclaration?.defenderSortieBattle ?? command.payload.defenderSortieBattle) === true,
+                    defenderHoldCity: (pendingTargetAction.defenderDeclaration?.defenderHoldCity ?? command.payload.defenderHoldCity) === true,
                     defenderCavalryEvasion: command.payload.defenderCavalryEvasion === true,
                     attackerCavalryPlunder: command.payload.attackerCavalryPlunder === true,
                 })
-                : null,
+                : null),
         },
         sourceCommandType: command.type,
         timestamp,

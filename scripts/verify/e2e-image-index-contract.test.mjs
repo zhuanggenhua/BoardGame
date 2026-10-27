@@ -235,10 +235,10 @@ test('用户点名特写后允许 auxiliary-detail 辅证', () => {
     assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
 });
 
-test('主代理真实审查允许明确记录采用原因，仍检查全量证据', () => {
+test('记录主代理真实审查身份，按相同标准检查全量证据', () => {
     const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
     const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
-    manifest.visualReview.reviewer = { kind: 'primary-agent', id: 'root-reviewer', reason: '用户明确要求主代理亲自验收' };
+    manifest.visualReview.reviewer = { kind: 'primary-agent', id: 'root-reviewer' };
     assert.doesNotThrow(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }));
     const reviewPath = path.join(fixture.root, 'evidence', '.visual-review.json');
     const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
@@ -247,15 +247,13 @@ test('主代理真实审查允许明确记录采用原因，仍检查全量证�
     assert.throws(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }), /必须覆盖全部媒体/);
 });
 
-test('审查者未知类型、缺失身份或主代理缺采用原因均拒绝', () => {
+test('审查者未知类型或缺失身份均拒绝', () => {
     const fixture = makeFixture({ descriptions: ['前态目标对象可见', '真实交互窗口在中态可见', '结果对象在后态稳定可见'] });
     const manifest = JSON.parse(readFileSync(fixture.manifestPath, 'utf8'));
     for (const reviewer of [
         { kind: 'robot', id: 'reviewer' },
         { kind: 'subagent', id: ' ' },
         { kind: 'primary-agent', id: '', reason: '用户要求' },
-        { kind: 'primary-agent', id: 'root-reviewer' },
-        { kind: 'primary-agent', id: 'root-reviewer', reason: ' ' },
     ]) {
         manifest.visualReview.reviewer = reviewer;
         assert.throws(() => validateE2EImageIndex({ manifest, manifestPath: fixture.manifestPath, projectRoot: fixture.root }), /reviewer|采用原因/);
@@ -317,7 +315,10 @@ test('重构必须逐项对照旧新画面且不可把原观察改成模板好�
     baseline.requirements[0].before=[wrongBefore];writeFileSync(bp,JSON.stringify(baseline));assert.throws(run,/原基线/);
     baseline.requirements[0].before=[before];writeFileSync(bp,JSON.stringify(baseline));assert.doesNotThrow(run);
     baseline.requirements[0].independentReviewFile=bp;writeFileSync(bp,JSON.stringify(baseline));assert.throws(run,/原基线.*自身/);
-    const selfLink=path.join(f.root,'baseline-link.json');symlinkSync(bp,selfLink);
+    // 目录 junction 在 Windows 无需文件符号链接权限，仍验证 realpath 指向自身的拒绝条件。
+    const linkedDirectory=path.join(f.root,'baseline-link');
+    symlinkSync(dir,linkedDirectory,process.platform==='win32'?'junction':'dir');
+    const selfLink=path.join(linkedDirectory,path.basename(bp));
     baseline.requirements[0].independentReviewFile=selfLink;writeFileSync(bp,JSON.stringify(baseline));assert.throws(run,/原基线.*自身/);
     baseline.requirements[0].independentReviewFile=originalBaselinePath;writeFileSync(bp,JSON.stringify(baseline));
     originalBaseline.requirements[0].before=[{path:wrongBefore,sha256:createHash('sha256').update('old-frame').digest('hex')}];
@@ -374,6 +375,35 @@ test('独特界面策略以一张实质变化图和完整行为日志验收，�
     const f = makeDistinctFixture();
     assert.equal(f.validate().capturePolicy, 'distinct-ui-state');
 });
+
+const makeInternalEvidenceFixture = () => {
+    const f = makeDistinctFixture();
+    const internalPath = path.join(f.root, 'internal-short-window.jpg');
+    writeFileSync(internalPath, 'internal-layout-frame');
+    f.trace.uiStates.push({ id: 'short-window', stepId: 'select', change: 'layout', viewport: 'desktop-short', sha256: createHash('sha256').update(readFileSync(internalPath)).digest('hex') });
+    f.manifest.outOfScopeMedia = [{ path: internalPath, contract: '内部短窗布局检查', reason: '同构布局压力证据不进入用户展示组', chainId: f.trace.chainId, uiStateId: 'short-window' }];
+    f.save();
+    return f;
+};
+
+test('完整原始日志保留内部状态，展示组只包含所选媒体', () => {
+    const f = makeInternalEvidenceFixture();
+    const originalTrace = readFileSync(path.join(f.dir, 'behavior.json'), 'utf8');
+    const result = f.validate();
+    assert.equal(result.mediaCount, 1);
+    assert.equal(result.outOfScopeMediaCount, 1);
+    assert.equal(readFileSync(path.join(f.dir, 'behavior.json'), 'utf8'), originalTrace);
+    assert.equal(JSON.parse(originalTrace).uiStates.length, 2);
+});
+
+for (const [name, mutate, pattern] of [
+    ['未登记的内部状态', f => { delete f.manifest.outOfScopeMedia; }, /缺少实质/],
+    ['借用其它链的内部图声明', f => { f.manifest.outOfScopeMedia[0].chainId = 'other-chain'; }, /缺少实质/],
+    ['内部原图内容被替换', f => { writeFileSync(f.manifest.outOfScopeMedia[0].path, 'replaced-frame'); }, /哈希/],
+    ['内部状态关联不存在的动作', f => { f.trace.uiStates[1].stepId = 'missing-step'; }, /状态关联/],
+    ['未说明不展示原因', f => { delete f.manifest.outOfScopeMedia[0].reason; }, /reason/],
+]) test(`展示选图拒绝${name}`, () => { const f = makeInternalEvidenceFixture(); mutate(f); f.save(); assert.throws(f.validate, pattern); });
+
 for (const [name, mutate, pattern] of [
     ['步骤倒序', f => { f.trace.steps.reverse(); }, /顺序/],
     ['空快照', f => { f.trace.steps[0].before = {}; }, /前后状态/],

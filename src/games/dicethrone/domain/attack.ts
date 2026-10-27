@@ -126,6 +126,8 @@ const buildZhizhuxiaWebbedTriggerEvents = (
 
 const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'CHOICE_REQUESTED'
+    || event.type === 'STRANGE_OPERATION_REQUESTED'
+    || event.type === 'TOKEN_RESPONSE_REQUESTED'
     || event.type === 'COMPARE_ROLL_REQUESTED'
     || event.type === 'INTERACTION_REQUESTED';
 

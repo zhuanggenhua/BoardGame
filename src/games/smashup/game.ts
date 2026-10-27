@@ -52,7 +52,7 @@ const systems: EngineSystem<SmashUpCore>[] = [
         commandAllowlist: ACTION_ALLOWLIST,
         formatEntry: formatSmashUpActionEntry,
     }),
-    createUndoSystem({ maxSnapshots: 3, snapshotCommandAllowlist: UNDO_ALLOWLIST }),
+    createUndoSystem({ maxSnapshots: 10, snapshotCommandAllowlist: UNDO_ALLOWLIST }),
     createInteractionSystem(),
     createSimpleChoiceSystem(),
     createMultistepChoiceSystem(),

@@ -1228,7 +1228,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             '坚守不屈',
             '拒马',
             '链炮阵',
-            '鸟真超哈',
+            '鸳鸯阵',
             '诈败诱敌',
         ]));
         const fieldState = buildBattleState('field');

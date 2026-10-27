@@ -27,6 +27,7 @@ import { CHARACTER_DATA_MAP } from './characters';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { getCurrentRollDice, getCurrentRollOwnerId, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { canRerollBonusDiceSettlement } from './bonusDiceSettlement';
+import { canPrepareSpell, isCrimsonBandsBlocking } from './doctorStrange/rules';
 import { hasUsableDiceRerollPassiveAction, hasUsableResponseWindowPassiveAction } from './passiveAbility';
 import { hasUsableActiveRollToken } from './activeRollTokens';
 import {
@@ -837,6 +838,8 @@ export type CardPlayCheckResult =
 
 /** 卡牌打出失败原因（用于国际化 key，必须与 i18n 保持一致） */
 export const CARD_PLAY_FAIL_REASONS = [
+    'crimsonBandsBlocksCards',
+    'spellPreparationUnavailable',
     'playerNotFound',
     'upgradeCardCannotPlay',
     'upgradeCardSkipLevel',
@@ -861,6 +864,8 @@ export const CARD_PLAY_FAIL_REASONS = [
     'requireRollConfirmed',
     'requireNotRollConfirmed',
     'requireMinDamageDealt',
+    'requireMjolnirThrowsThisTurn',
+    'requireLethalAttack',
     'requireTokenStacks',
     'noStatusOnBoard',
     'rollContextLocked',
@@ -1089,7 +1094,7 @@ const checkStandardCardPlay = (
         return { ok: false, reason: 'notEnoughCp' };
     }
 
-    if (card.timing === 'roll' && hasAnyDiceEffect(card)) {
+    if (card.timing === 'roll' && hasExistingDiceToolEffect(card)) {
         const diceEffectTarget = getDiceEffectTarget(card);
         if (diceEffectTarget === 'self' && playerId !== getRollerId(state, phase)) {
             return { ok: false, reason: 'requireIsRoller' };
@@ -1145,6 +1150,10 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireIsRoller && playerId !== getRollerId(state, phase)) {
+            return { ok: false, reason: 'requireIsRoller' };
+        }
+
+        if (cond.requireIsRollerOrTeammate && !areTeammates(state, playerId, getRollerId(state, phase))) {
             return { ok: false, reason: 'requireIsRoller' };
         }
 
@@ -1207,6 +1216,13 @@ const checkStandardCardPlay = (
             }
         }
 
+        if (cond.requireMjolnirThrowsThisTurn !== undefined && (state.mjolnirThrowsThisTurn?.[playerId] ?? 0) < cond.requireMjolnirThrowsThisTurn) {
+            return { ok: false, reason: 'requireMjolnirThrowsThisTurn' };
+        }
+        if (cond.requireLethalAttack && (!state.pendingDamage || state.pendingDamage.targetPlayerId !== playerId
+            || state.pendingDamage.damageScope !== 'attack' || state.pendingDamage.currentDamage < (state.players[playerId].resources[RESOURCE_IDS.HP] ?? 0))) {
+            return { ok: false, reason: 'requireLethalAttack' };
+        }
         if (cond.requireTokenStacks) {
             const { tokenId, min } = cond.requireTokenStacks;
             const requiredStacks = Math.max(0, Math.trunc(min));
@@ -1230,7 +1246,8 @@ const checkStandardCardPlay = (
             }
         }
 
-        if (cond.pendingDamage && !matchesPendingDamagePlayCondition(state, playerId, cond.pendingDamage, phase)) {
+        if (cond.pendingDamage && ((cond.pendingDamage.requireCommittedDamage && !state.pendingDamage)
+            || !matchesPendingDamagePlayCondition(state, playerId, cond.pendingDamage, phase))) {
             return { ok: false, reason: 'requirePendingDamage' };
         }
     }
@@ -1369,6 +1386,9 @@ export const checkPlayCard = (
     phase: TurnPhase,
     responseWindowType?: DtResponseWindowType,
 ): CardPlayCheckResult => {
+    if (isCrimsonBandsBlocking(state, playerId, phase)) return { ok: false, reason: 'crimsonBandsBlocksCards' };
+    if (card.type === 'spell') return canPrepareSpell(state, playerId, phase) && !responseWindowType
+        ? { ok: true } : { ok: false, reason: 'spellPreparationUnavailable' };
     const effectiveResponseWindowType = responseWindowType
         ?? resolveBonusDiceCardPlayResponseWindowType(state, playerId, card, phase);
 
@@ -1390,6 +1410,7 @@ export const checkPlayCard = (
 /** 升级卡打出失败原因 */
 export type UpgradeCardPlayFailReason =
     | 'playerNotFound'
+    | 'crimsonBandsBlocksCards'
     | 'notUpgradeCard'
     | 'wrongPhaseForUpgrade'
     | 'upgradeCardCannotPlay'     // 升级卡缺少 replaceAbility 效果
@@ -1413,6 +1434,7 @@ export const checkPlayUpgradeCard = (
     targetAbilityId: string,
     phase: TurnPhase
 ): UpgradeCardPlayCheckResult => {
+    if (isCrimsonBandsBlocking(state, playerId, phase)) return { ok: false, reason: 'crimsonBandsBlocksCards' };
     const player = state.players[playerId];
     if (!player) return { ok: false, reason: 'playerNotFound' };
     
@@ -1632,6 +1654,7 @@ const EXISTING_DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
     'reroll-opponent-die-1',
     'reroll-die-2',
     'reroll-die-5',
+    'thor-worthy',
 ]);
 
 /**

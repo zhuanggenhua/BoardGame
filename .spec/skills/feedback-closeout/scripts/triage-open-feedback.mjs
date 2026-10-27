@@ -113,6 +113,17 @@ async function fetchList(baseUrl, token, status, limit) {
     return items;
 }
 
+async function fetchDetail(baseUrl, token, id) {
+    const url = `${baseUrl}/admin-api/feedback/${encodeURIComponent(id)}`;
+    const response = await fetch(url, {
+        headers: buildHeaders(token),
+    });
+    if (!response.ok) {
+        throw new Error(`请求详情失败 ${response.status} ${response.statusText}: ${url}`);
+    }
+    return response.json();
+}
+
 function extractText(content) {
     if (typeof content !== 'string') {
         return '';
@@ -244,7 +255,25 @@ function buildDedupeKey(item) {
     const content = normalizeInline(extractText(item.content));
     const errorSignature = buildErrorSignature(item);
     const actionLog = normalizeInline(item?.actionLog || '').slice(0, 160);
-    const textSignature = errorSignature || `${content}|${actionLog}`;
+    const baseTextSignature = errorSignature || `${content}|${actionLog}`;
+    const proposals = [
+        ...(Array.isArray(item?.configProposals) ? item.configProposals : []),
+        ...(item?.configProposal ? [item.configProposal] : []),
+    ];
+    const proposalSignature = proposals
+        .map((proposal) => JSON.stringify([
+            proposal?.gameId || gameId,
+            proposal?.objectId || '',
+            proposal?.objectType || '',
+            proposal?.fieldPath || '',
+            proposal?.currentValue ?? null,
+            proposal?.suggestedValue ?? null,
+        ]))
+        .sort()
+        .join('|');
+    const textSignature = proposalSignature
+        ? `${baseTextSignature}|config-proposal:${proposalSignature}`
+        : baseTextSignature;
 
     return crypto
         .createHash('sha1')
@@ -401,6 +430,18 @@ async function main() {
         const items = await fetchList(baseUrl, options.token, status, options.limit);
         fetchedByStatus[status] = items.length;
         merged.push(...items);
+    }
+
+    for (let index = 0; index < merged.length; index += 1) {
+        const item = merged[index];
+        if (item.type !== 'suggestion' || item.configProposal || item.configProposals?.length) {
+            continue;
+        }
+        const detail = await fetchDetail(baseUrl, options.token, item._id);
+        merged[index] = {
+            ...item,
+            configProposal: detail.configProposal,
+        };
     }
 
     const dedupeMap = new Map();

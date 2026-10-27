@@ -27,6 +27,7 @@ it('平台账户入口有独立头像和可访问名称，紧凑样式不丢失�
   expect(screen.getByRole('button', { name: 'social:menu.notifications' })).toBeTruthy();
   fireEvent.click(trigger);
   expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  expect(screen.queryByTestId('user-menu-history')).toBeNull();
   fireEvent.click(screen.getByTestId('user-menu-profile'));
   expect(profile).toHaveBeenCalledOnce();
   expect(trigger.getAttribute('aria-expanded')).toBe('false');
@@ -36,4 +37,10 @@ it('非平台调用保留原有触发样式，不被首页适配替换', async (
   await act(async () => {});
   expect(container.querySelector('.user-menu--platform')).toBeNull();
   expect(screen.getByTestId('user-menu-trigger')).toBeTruthy();
+});
+it('经典菜单仍保留原对局记录入口', async () => {
+  render(<MemoryRouter><UserMenu onLogout={() => {}} /></MemoryRouter>);
+  await act(async () => {});
+  fireEvent.click(screen.getByTestId('user-menu-trigger'));
+  expect(screen.getByTestId('user-menu-history')).toBeTruthy();
 });

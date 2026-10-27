@@ -59,7 +59,7 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
         }
         case 'SELECT_MASTER': return [{ type: 'MASTER_SELECTED', payload: { playerId: command.playerId, masterId: command.payload.masterId }, ...meta }];
         case 'SELECT_SERVANT': { const servant = FATE_SERVANT_BY_ID[command.payload.servantId]; return [{ type: 'SERVANT_SELECTED', payload: { playerId: command.playerId, servantId: servant.id }, ...meta }]; }
-        case 'DEPLOY_MASTER': { const deploymentSlot = nextFateDeploymentSlot(core, command.payload.locationId); return [{ type: 'MASTER_DEPLOYED', payload: { playerId: command.playerId, locationId: command.payload.locationId, deploymentSlot, manaGain: fateDeploymentManaGain(command.payload.locationId, deploymentSlot) }, ...meta }]; }
+        case 'DEPLOY_MASTER': { const deploymentSlot = command.payload.deploymentSlot === undefined ? nextFateDeploymentSlot(core, command.payload.locationId) : command.payload.deploymentSlot; return [{ type: 'MASTER_DEPLOYED', payload: { playerId: command.playerId, locationId: command.payload.locationId, deploymentSlot, manaGain: fateDeploymentManaGain(command.payload.locationId, deploymentSlot) }, ...meta }]; }
         case 'MOVE_PLAYER': {
             const from = core.players[command.playerId].locationId!;
             const resolution = resolveFateMovement(core, command.playerId, command.payload.locationId, 'normal');

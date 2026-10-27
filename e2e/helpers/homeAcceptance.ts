@@ -29,7 +29,7 @@ export const evidenceDir = join(process.cwd(), 'test-results/evidence-screenshot
 const sourcePaths = ['src/pages/Home.tsx', 'src/pages/HomeEntry.tsx', 'src/components/home/ClassicHomeSurface.tsx', 'src/components/home/HomeStyleSettings.tsx', 'src/components/home/home-style-settings.css', 'src/components/home/PlatformHomeSurface.tsx', 'src/lib/homeV2Routing.ts', 'src/engine/transport/useGameProviderRuntime.ts', 'e2e/helpers/homeAcceptance.ts', 'e2e/home-style-preference.e2e.ts', 'e2e/home-catalog-acceptance.e2e.ts', 'e2e/home-room-entry.e2e.ts', 'e2e/home-profile-routes.e2e.ts'];
 sourcePaths.push('src/components/system/AuthorSupport.tsx', 'src/components/system/author-support.css', 'src/components/home/platform-catalog.css', 'e2e/home-user-corrections.e2e.ts', 'src/components/home/PlatformUploadWorkspace.tsx', 'src/components/home/PlatformGameCatalog.tsx', 'e2e/home-utility-acceptance.e2e.ts');
 sourcePaths.push('src/components/system/GlobalHUD.tsx', 'src/components/system/PlatformAudioSettings.tsx', 'src/components/system/global-hud.css', 'src/components/common/media/OptimizedImage.tsx', 'src/components/lobby/GameDetailsModal.tsx', 'src/components/home/PlatformGameDetails.tsx', 'src/components/home/platform-details.css', 'src/components/home/PlatformNavigation.tsx', 'src/components/home/platform-navigation.css');
-sourcePaths.push('src/components/home/platform-home.css', 'src/components/system/FabMenu.tsx', 'src/components/system/useHomeHudClearance.ts', 'e2e/home-cover-lifecycle.e2e.ts', 'scripts/infra/run-home-acceptance.mjs');
+sourcePaths.push('src/components/home/platform-home.css', 'src/components/system/FabMenu.tsx', 'e2e/home-cover-lifecycle.e2e.ts', 'scripts/infra/run-home-acceptance.mjs');
 sourcePaths.push('e2e/home-mobile-entry.e2e.ts');
 sourcePaths.push('e2e/home-floating-interactions.e2e.ts');
 sourcePaths.push('src/components/home/platform-motion.css');
@@ -42,9 +42,18 @@ sourcePaths.push('src/components/social/MatchHistoryModal.tsx');
 sourcePaths.push('e2e/home-room-capacity.e2e.ts');
 sourcePaths.push('e2e/home-avatar-selection.e2e.ts', 'src/lib/avatarPresets.ts', 'src/components/auth/avatar-update.css', 'src/components/home/PlatformProfile.tsx', 'src/components/home/platform-profile.css', 'public/locales/zh-CN/auth.json', 'public/locales/en/auth.json');
 sourcePaths.push(...readdirSync('public/avatars').filter(name => name.endsWith('.svg')).map(name => `public/avatars/${name}`));
+sourcePaths.push('src/components/home/PlatformGameDetailsFallback.tsx', 'src/components/home/HomeVersionFooter.tsx', 'src/components/layout/CategoryPills.tsx', 'src/components/home/platform-upload.css', 'e2e/home-modern-layout.e2e.ts', 'public/locales/zh-CN/lobby.json', 'public/locales/en/lobby.json');
+sourcePaths.push('src/components/system/ModalStackRoot.tsx');
+sourcePaths.push('e2e/home-feedback-touch.e2e.ts', 'e2e/home-library-news-layout.e2e.ts');
+sourcePaths.push('src/components/social/MatchHistoryModal.tsx', 'apps/api/src/modules/auth/user-game-activity.controller.ts', 'public/locales/zh-CN/social.json', 'public/locales/en/social.json', 'e2e/home-match-history.e2e.ts');
+sourcePaths.push('src/hooks/ui/useAuthModalSession.ts');
+sourcePaths.push('src/components/social/MatchHistoryList.tsx', 'src/components/social/UserMenu.tsx', 'src/components/system/PlatformAudioSettings.tsx');
 const sourceHash = createHash('sha256');
+sourcePaths.push('src/components/home/PlatformNavigation.tsx', 'src/components/home/platform-navigation.css', 'src/components/home/platform-home.css', 'src/components/home/platform-motion.css', 'src/components/home/HomeGameDetailsPresentation.tsx', 'src/components/common/overlays/ModalBase.tsx', 'e2e/home-motion.e2e.ts');
+sourcePaths.push('src/components/system/ModalStackRoot.tsx', 'src/contexts/ModalStackContext.tsx', 'src/hooks/routing/useUrlModal.ts');
+sourcePaths.push('src/components/home/PlatformGameCard.tsx', 'e2e/home-steam-hover.e2e.ts');
 for (const path of sourcePaths) sourceHash.update(path).update(readFileSync(path));
-const sourceRevision = `${execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()}:${sourceHash.digest('hex')}`;
+export const sourceRevision = `${execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()}:${sourceHash.digest('hex')}`;
 type Snapshot = { url: string; style: string | null; headings: string[] };
 type CapturedState = { id: string; path: string; sha256: string; viewport: string; snapshot: Snapshot };
 const runs = new Map<string, { initial?: Snapshot; states: CapturedState[]; results: Record<string, unknown> }>();
@@ -116,6 +125,10 @@ async function flushRun(info: TestInfo) {
     }, null, 2));
 }
 
+export async function beginHomeEvidence(page: Page) {
+    currentRun().initial ??= await snapshot(page);
+}
+
 export async function initHome(page: Page) {
     await page.context().addInitScript(() => localStorage.setItem('i18nextLng', 'zh-CN'));
     await page.goto('/');
@@ -160,12 +173,26 @@ export async function openGame(page: Page, style: 'modern' | 'classic', id: stri
 }
 
 export async function capture(page: Page, name: string) {
+    if (process.env.PLATFORM_E2E_CAPTURE_MODE === 'behavior-only') return;
     await mkdir(evidenceDir, { recursive: true });
     await page.evaluate(async () => { await document.fonts.ready; });
     await expect.poll(() => page.locator('img').evaluateAll(images => images.filter(image => {
         const rect = image.getBoundingClientRect();
         return rect.bottom > 0 && rect.top < innerHeight && rect.width > 0 && rect.height > 0;
     }).every(image => (image as HTMLImageElement).complete)), { timeout: 15_000 }).toBe(true);
+    // complete 也可能是破图或刚解码的透明帧；目录验收必须等到实际封面显示。
+    await expect.poll(() => page.locator('.platform-game-card img').evaluateAll(images => images.filter(image => {
+        const rect = image.getBoundingClientRect();
+        return rect.bottom > 0 && rect.top < innerHeight && rect.width > 0 && rect.height > 0;
+    }).every(image => (image as HTMLImageElement).naturalWidth > 0 && getComputedStyle(image).opacity === '1')), {timeout:25_000}).toBe(true);
+    // CSS动画快进不会结束Framer的JS弹簧；头像必须等到真实入场完成再取证。
+    await expect.poll(() => page.locator('[data-platform-dialog="avatar"]').evaluateAll(nodes => nodes.every(node => {
+        for(let current: Element | null=node; current && current!==document.body; current=current.parentElement){
+            const style=getComputedStyle(current);
+            if(style.opacity!=='1' || !['none','matrix(1, 0, 0, 1, 0, 0)'].includes(style.transform))return false;
+        }
+        return true;
+    })),{timeout:10_000}).toBe(true);
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     const path = join(evidenceDir, `${name}.png`);
     const bytes = await page.screenshot({ path, fullPage: false, animations: 'disabled' });

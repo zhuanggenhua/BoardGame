@@ -16,8 +16,10 @@ import { registerTianshiCustomActions } from './tianshi';
 import { registerLierenCustomActions } from './lieren';
 import { registerVampireLordCustomActions } from './vampire_lord';
 import { registerZhizhuxiaCustomActions } from './zhizhuxia';
+import { registerThorCustomActions } from './thor';
 
 let initialized = false;
+import { registerDoctorStrangeCustomActions } from './doctor_strange';
 
 /**
  * 初始化所有 Custom Action 处理器。
@@ -29,6 +31,7 @@ export function initializeCustomActions(): void {
     }
 
     registerCommonCustomActions();
+    registerDoctorStrangeCustomActions();
     registerArtificerCustomActions();
     registerMonkCustomActions();
     registerBarbarianCustomActions();
@@ -46,6 +49,7 @@ export function initializeCustomActions(): void {
     registerLierenCustomActions();
     registerVampireLordCustomActions();
     registerZhizhuxiaCustomActions();
+    registerThorCustomActions();
 
     initialized = true;
 }

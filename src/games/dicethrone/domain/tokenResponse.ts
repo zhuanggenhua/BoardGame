@@ -185,7 +185,7 @@ export function getUsableTokensForOffensiveRollEnd(
         if (def.id === TOKEN_IDS.CRIT && expectedDamage < 5) return false;
 
         // 精准门控：攻击已经不可防御时，精准无意义
-        if (def.id === TOKEN_IDS.ACCURACY && isAlreadyUnblockable) return false;
+        if ((def.id === TOKEN_IDS.ACCURACY || def.id === TOKEN_IDS.GUARD_BREAK) && isAlreadyUnblockable) return false;
         
         return true;
     });
@@ -505,6 +505,9 @@ export function maybeCreateDamageResponseEvent(params: {
             isUltimateDamage: state.pendingAttack?.isUltimate === true,
         },
     );
+    if (typeof dmgPayload.attackDamageBeforePercent === 'number') {
+        pendingDamage.attackDamageBeforePercent = dmgPayload.attackDamageBeforePercent;
+    }
     return createTokenResponseRequestedEvent(pendingDamage, timestamp);
 }
 
@@ -894,11 +897,13 @@ function getRetributionReflectionAmount(
         ?.filter(modifier => modifier.sourceId === TOKEN_IDS.PROTECT && modifier.type === 'token' && modifier.value < 0)
         .reduce((sum, modifier) => sum + Math.abs(modifier.value), 0) ?? 0;
     const damageBeforeProtect = Math.max(0, pendingDamage.currentDamage + protectPrevented);
-    const damageAfterFixedPrevention = estimateDamageAfterExistingShields(
-        state,
-        pendingDamage.targetPlayerId,
-        damageBeforeProtect,
-    );
+    const damageAfterFixedPrevention = pendingDamage.preventionCommitted
+        ? damageBeforeProtect
+        : estimateDamageAfterExistingShields(
+            state,
+            pendingDamage.targetPlayerId,
+            damageBeforeProtect,
+        );
     return Math.ceil(damageAfterFixedPrevention / 2);
 }
 
@@ -951,6 +956,9 @@ export function finalizeTokenResponse(
                 sourcePlayerId: pendingDamage.sourcePlayerId,
                 damageScope: pendingDamage.damageScope,
                 damageOrigin: pendingDamage.damageOrigin,
+                ...(typeof pendingDamage.attackDamageBeforePercent === 'number'
+                    ? { attackDamageBeforePercent: pendingDamage.attackDamageBeforePercent }
+                    : {}),
                 ...(pendingDamage.unblockable ? { unblockable: true } : {}),
                 ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
                 modifiers: pendingDamage.modifiers,
@@ -998,16 +1006,18 @@ export function finalizeTokenResponse(
             allowAttackerBoost: deferredDamage.damageScope === 'attack',
         });
         if (followupResponseEvent) {
+            followupResponseEvent.payload.pendingDamage.deferredResolutionEvents = pendingDamage.deferredResolutionEvents;
             const remainingDeferredDamages = deferredDamages.slice(i + 1);
             if (remainingDeferredDamages.length > 0) {
                 followupResponseEvent.payload.pendingDamage.deferredDamageEvents = remainingDeferredDamages;
             }
             events.push(followupResponseEvent);
-            break;
+            return events;
         }
         events.push(damageEvent);
     }
     
+    events.push(...(pendingDamage.deferredResolutionEvents ?? []));
     return events;
 }
 

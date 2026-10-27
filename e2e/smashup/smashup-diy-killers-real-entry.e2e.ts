@@ -1229,8 +1229,35 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     });
     await game.screenshot('17-杀人狂-爪子手套真实附着', testInfo);
 
-    await expect(page.locator('[data-attached-action-uid="glove-card"]')).toBeVisible({ timeout: 10000 });
-    await page.locator('[data-attached-action-uid="glove-card"]').click({ force: true });
+    const attachedGlove = page.locator('[data-attached-action-uid="glove-card"]');
+    await page.locator('[data-minion-uid="freddy-card"]').hover();
+    await expect(attachedGlove).toBeVisible({ timeout: 10000 });
+    const attachedHitSamples = await attachedGlove.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const fractions = Array.from({ length: 9 }, (_, index) => (index + 1) / 10);
+      return fractions.flatMap(xFraction => fractions.map(yFraction => {
+        const x = rect.left + rect.width * xFraction;
+        const y = rect.top + rect.height * yFraction;
+        const frontmost = document.elementFromPoint(x, y);
+        return {
+          x,
+          y,
+          uid: frontmost?.closest('[data-attached-action-uid]')?.getAttribute('data-attached-action-uid') ?? null,
+        };
+      }));
+    });
+    const attachedHitPoint = attachedHitSamples.find(sample => sample.uid === 'glove-card');
+    if (!attachedHitPoint) {
+      throw new Error(`爪子手套附着卡没有可真实命中的前景区域；hit samples=${JSON.stringify(attachedHitSamples)}`);
+    }
+    await page.mouse.move(attachedHitPoint.x, attachedHitPoint.y);
+    await page.waitForTimeout(200);
+    const attachedHitTarget = await page.evaluate(({ x, y }) => {
+      const frontmost = document.elementFromPoint(x, y);
+      return frontmost?.closest('[data-attached-action-uid]')?.getAttribute('data-attached-action-uid') ?? null;
+    }, attachedHitPoint);
+    expect(attachedHitTarget).toBe('glove-card');
+    await page.mouse.click(attachedHitPoint.x, attachedHitPoint.y);
     await game.waitForInteraction('diy_killers_clawed_glove', 10000);
     const promptState = await game.getState();
     const promptOptions = (promptState.sys?.interaction?.current?.data?.options ?? []) as Array<{

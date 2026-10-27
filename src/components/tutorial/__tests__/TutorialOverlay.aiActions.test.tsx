@@ -6,6 +6,7 @@ import type { TutorialStepSnapshot } from '../../../engine/types';
 const useTutorialMock = vi.hoisted(() => vi.fn());
 const preloadKeysMock = vi.hoisted(() => vi.fn());
 const playSoundMock = vi.hoisted(() => vi.fn());
+const viewportMock = vi.hoisted(() => ({ width: 1280, height: 720, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } }));
 
 vi.mock('../../../contexts/TutorialContext', () => ({
     useTutorial: useTutorialMock,
@@ -28,11 +29,7 @@ vi.mock('../../common/media/OptimizedImage', () => ({
 }));
 
 vi.mock('../../../hooks/ui/useRuntimeViewport', () => ({
-    useRuntimeViewport: () => ({
-        width: 1280,
-        height: 720,
-        safeArea: { top: 0, right: 0, bottom: 0, left: 0 },
-    }),
+    useRuntimeViewport: () => viewportMock,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -78,6 +75,48 @@ describe('TutorialOverlay aiActions visibility', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+        viewportMock.width = 1280;
+        viewportMock.height = 720;
+    });
+
+    it.each([
+        { name: '默认紧凑提示保留竖排', width: undefined, visual: undefined, row: false },
+        { name: '显式宽条并列正文与返回', width: 760, visual: undefined, row: true },
+        { name: '含阅读图片时保留竖排', width: 760, visual: { src: 'reference.webp', alt: '当前卡面' }, row: false },
+    ])('$name，均保留真实回退且不增加下一步', ({ width, visual, row }) => {
+        viewportMock.width = 844;
+        viewportMock.height = 390;
+        const { previousStep } = renderWithStep({ id: 'compact-controls', content: '当前规则',
+            requireAction: true, hideActionHint: true, compactTooltipWidth: width, visual }, { stepIndex: 1 });
+        expect(screen.getByTestId('tutorial-overlay-content').textContent).toBe('当前规则');
+        expect(screen.getByTestId('tutorial-overlay-card').classList.contains('flex-row')).toBe(row);
+        expect(screen.getByTestId('tutorial-overlay-card').classList.contains('flex-col')).toBe(!row);
+        expect(screen.queryByTestId('tutorial-action-hint')).toBeNull();
+        expect(screen.queryByTestId('tutorial-next-button')).toBeNull();
+        fireEvent.click(screen.getByTestId('tutorial-previous-button'));
+        expect(previousStep).toHaveBeenCalledOnce();
+    });
+
+    it('紧凑宽条等待作者AI时仍禁用返回，不改变命令推进', () => {
+        viewportMock.width = 844;
+        viewportMock.height = 390;
+        const { previousStep } = renderWithStep({ id: 'compact-await-ai', content: '等待守方', requireAction: true,
+            hideActionHint: true, compactTooltipWidth: 760, aiActions: [{ commandType: 'OTHER_PLAYER_CONFIRM' }] }, { stepIndex: 1 });
+        expect((screen.getByTestId('tutorial-previous-button') as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.click(screen.getByTestId('tutorial-previous-button'));
+        expect(previousStep).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('tutorial-next-button')).toBeNull();
+    });
+
+    it('默认保留操作状态，显式关闭时只隐藏重复状态并保留真实回退', () => {
+        renderWithStep({id:'default',content:'规则',requireAction:true});
+        expect(screen.getByTestId('tutorial-action-hint')).toBeTruthy();
+        cleanup();
+        const {previousStep}=renderWithStep({id:'native-controls',content:'规则',requireAction:true,hideActionHint:true},{stepIndex:1});
+        expect(screen.queryByTestId('tutorial-action-hint')).toBeNull();
+        fireEvent.click(screen.getByTestId('tutorial-previous-button'));
+        expect(previousStep).toHaveBeenCalledOnce();
+        expect(screen.queryByTestId('tutorial-next-button')).toBeNull();
     });
 
     it('显示带 aiActions 但仍需要当前玩家操作的教程步骤', () => {

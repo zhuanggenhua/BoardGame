@@ -210,7 +210,7 @@ export const getBonusFaceLabel = (
     return face ? (t(`dice.face.${face}`) as string) : (t('bonusDie.title') as string);
 };
 
-type PortraitAtlasId = 'legacy' | 'new';
+type PortraitAtlasId = 'legacy' | 'new' | 'thor' | 'doctor_strange';
 
 type PortraitAtlas = {
     imagePath: string;
@@ -232,6 +232,8 @@ type PortraitBinding = {
 
 // @atlas-contract Each runtime hero has one explicit atlas and cell. Do not infer a cell from a nearby hero.
 const PORTRAIT_ATLASES: Record<PortraitAtlasId, PortraitAtlas> = {
+    thor: { imagePath: 'dicethrone/images/thor/portrait', imageW: 700, imageH: 850, deckX: 0, deckY: 0, deckW: 700, deckH: 850, cols: 1, rows: 1 },
+    doctor_strange: { imagePath: ASSETS.PLAYER_BOARD('doctor_strange'), imageW: 3568, imageH: 2179, deckX: 1370, deckY: 0, deckW: 840, deckH: 840, cols: 1, rows: 1 },
     legacy: {
         imagePath: ASSETS.AVATAR,
         imageW: 3950,
@@ -257,6 +259,8 @@ const PORTRAIT_ATLASES: Record<PortraitAtlasId, PortraitAtlas> = {
 };
 
 export const CHARACTER_PORTRAIT_BINDINGS: Partial<Record<HeroState['characterId'], PortraitBinding>> = {
+    doctor_strange: { atlasId: 'doctor_strange', row: 0, col: 0 },
+    thor: { atlasId: 'thor', row: 0, col: 0 },
     lieren: { atlasId: 'new', row: 2, col: 0 },
     gunslinger: { atlasId: 'legacy', row: 0, col: 1 },
     treant: { atlasId: 'new', row: 2, col: 1 },
@@ -287,8 +291,8 @@ const buildPortraitAtlasStyle = (
     const row = Math.floor(safeIndex / atlas.cols);
     const x = atlas.deckX + col * cellW;
     const y = atlas.deckY + row * cellH;
-    const xPos = (x / (atlas.imageW - cellW)) * 100;
-    const yPos = (y / (atlas.imageH - cellH)) * 100;
+    const xPos = (x / Math.max(1, atlas.imageW - cellW)) * 100;
+    const yPos = (y / Math.max(1, atlas.imageH - cellH)) * 100;
 
     return {
         backgroundImage: buildLocalizedImageSet(atlas.imagePath, locale),

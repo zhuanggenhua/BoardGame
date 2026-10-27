@@ -3,35 +3,14 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Check } from 'lucide-react';
 import { GameButton } from './components/GameButton';
-import type { Die, PlayerId, TurnPhase } from '../types';
+import type { Die, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
 import { Dice2D } from './Dice2D';
+import { getDiceInteractionMeta, getCompletedDiceStepCount, type GroupBonusReroll } from './diceInteractionContract';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
-
-interface DtDiceModifyMeta {
-    dtType: 'modifyDie';
-    dieModifyConfig?: {
-        mode: 'set' | 'adjust' | 'copy' | 'any';
-        targetValue?: number;
-        adjustRange?: { min: number; max: number };
-    };
-    selectCount: number;
-    diceOwnerId?: PlayerId;
-    targetOpponentDice: boolean;
-}
-
-interface DtDiceSelectMeta {
-    dtType: 'selectDie';
-    selectCount: number;
-    diceOwnerId?: PlayerId;
-    targetOpponentDice: boolean;
-    allowRepeatedDieSelection?: boolean;
-}
-
-type DtDiceMeta = DtDiceModifyMeta | DtDiceSelectMeta;
 
 const INTERACTION_CONFIRM_CLICK_SUPPRESS_MS = 350;
 const dtUnit = buildBoardShellInlineUnitValue;
@@ -112,27 +91,6 @@ const DESKTOP_DICE_ACTION_TOKENS = {
     } satisfies React.CSSProperties,
 };
 
-function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
-    if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
-    const meta = (interaction.data as { meta?: DtDiceMeta } | undefined)?.meta;
-    if (!meta?.dtType) return undefined;
-    return meta;
-}
-
-function getCompletedDiceStepCount(interaction?: InteractionDescriptor, meta?: DtDiceMeta): number {
-    if (!interaction || interaction.kind !== 'multistep-choice') return 0;
-    const data = interaction.data as { completedSteps?: unknown; completedDieIds?: unknown } | undefined;
-    if (typeof data?.completedSteps === 'number' && Number.isFinite(data.completedSteps)) {
-        return Math.max(0, Math.floor(data.completedSteps));
-    }
-    if (!Array.isArray(data?.completedDieIds)) return 0;
-    const completedDieIds = data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number');
-    if (meta?.dtType === 'selectDie' && meta.allowRepeatedDieSelection === true) {
-        return completedDieIds.length;
-    }
-    return Array.from(new Set(completedDieIds)).length;
-}
-
 export const DiceTray = ({
     dice,
     rollCount,
@@ -162,6 +120,7 @@ export const DiceTray = ({
     bonusDiceReroll?: {
         canReroll: boolean;
         onReroll: (dieIndex: number) => void;
+        selectedIds?: number[];
     };
 }) => {
     const { t } = useTranslation('game-dicethrone');
@@ -188,7 +147,7 @@ export const DiceTray = ({
         selectedBadgeIconClassName,
     } = DESKTOP_DICE_TRAY_TOKENS;
 
-    const dtMeta = getDtMeta(interaction);
+    const dtMeta = getDiceInteractionMeta(interaction);
     const isInteractionMode = Boolean(dtMeta);
     const isModifyMode = dtMeta?.dtType === 'modifyDie';
     const isSelectMode = dtMeta?.dtType === 'selectDie';
@@ -197,6 +156,7 @@ export const DiceTray = ({
     const diceOwnerId = dtMeta?.diceOwnerId;
     const isAnyMode = dieModifyConfig?.mode === 'any';
     const isAdjustMode = dieModifyConfig?.mode === 'adjust';
+    const fixedTargetValues = dieModifyConfig?.mode === 'set' ? dieModifyConfig.allowedValues : undefined;
     const isBonusRerollMode = Boolean(bonusDiceReroll);
     const canRerollBonusDie = bonusDiceReroll?.canReroll === true;
     const adjustRange = dieModifyConfig?.adjustRange ?? { min: -1, max: 1 };
@@ -207,6 +167,8 @@ export const DiceTray = ({
     };
 
     const modifyResult = (isModifyMode && multistepInteraction?.result) as DiceModifyResult | null | undefined;
+    const targetValue = dieModifyConfig?.targetValue ?? modifyResult?.targetValue;
+    const needsTargetValue = Boolean(fixedTargetValues && targetValue === undefined);
     const selectResult = (isSelectMode && multistepInteraction?.result) as DiceSelectResult | null | undefined;
     const totalAdjustment = modifyResult?.totalAdjustment ?? 0;
     const canAdjustDown = isAdjustMode && totalAdjustment > adjustRange.min;
@@ -281,7 +243,7 @@ export const DiceTray = ({
                 const die = dice.find((candidate) => candidate.id === dieId);
                 if (!die) return;
                 const alreadySelected = isSelected(dieId);
-                if (alreadySelected || canSelectMore) {
+                if (!needsTargetValue && (alreadySelected || canSelectMore)) {
                     multistepInteraction.step({ action: 'select', dieId, dieValue: die.value } as DiceModifyStep);
                 }
             }
@@ -330,8 +292,22 @@ export const DiceTray = ({
             <div className={shadowClassName} />
 
             <div className={trayInnerClassName} style={trayInnerStyle}>
+                {fixedTargetValues && (
+                    <div className="flex justify-center" style={{ gap: dtUnit(0.35) }} role="group" aria-label={t('interaction.hint_choose_value')}>
+                        {fixedTargetValues.map(value => (
+                            <button key={value} type="button" data-testid={`die-target-value-${value}`}
+                                aria-label={t('interaction.set_value', { value })} aria-pressed={targetValue === value}
+                                disabled={!canInteract}
+                                className={clsx('rounded font-black border', targetValue === value ? 'bg-amber-500 text-slate-950 border-amber-200' : 'bg-slate-800 text-amber-100 border-amber-500/60')}
+                                style={{ width: dtUnit(2.1), height: dtUnit(2.1), fontSize: dtUnit(1.15) }}
+                                onClick={() => multistepInteraction?.step({ action: 'chooseValue', value } as DiceModifyStep)}>
+                                {value}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 {dice.map((die) => {
-                    const selected = isSelected(die.id);
+                    const selected = bonusDiceReroll?.selectedIds?.includes(die.id) ?? isSelected(die.id);
                     const isModified = isModifyMode && die.id in (modifyResult?.modifications ?? {});
                     const canModifyDie = canInteractWithDie(die);
                     const showAdjustButtons = isInteractionMode && isAdjustMode && canModifyDie;
@@ -341,7 +317,7 @@ export const DiceTray = ({
                     const isReadOnlyDisplayDie = !isInteractionMode
                         && Boolean(die.displayOnly)
                         && !isBonusRerollMode;
-                    const canClickInteractionDie = isAnyMode
+                    const canClickInteractionDie = isAnyMode || needsTargetValue
                         ? false
                         : !isInactiveDie && (
                             allowRepeatedDieSelection
@@ -466,6 +442,7 @@ export const DiceActions = ({
     interaction,
     multistepInteraction,
     isBonusDiceSettlement = false,
+    groupBonusReroll,
 }: {
     rollCount: number;
     rollLimit: number;
@@ -481,12 +458,15 @@ export const DiceActions = ({
     interaction?: InteractionDescriptor;
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
     isBonusDiceSettlement?: boolean;
+    groupBonusReroll?: GroupBonusReroll;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const actionTokens = DESKTOP_DICE_ACTION_TOKENS;
     const isRollPhase = currentPhase === 'offensiveRoll' || currentPhase === 'targetingRoll' || currentPhase === 'defensiveRoll';
-    const dtMeta = getDtMeta(interaction);
+    const dtMeta = getDiceInteractionMeta(interaction);
     const isInteractionMode = Boolean(dtMeta);
+    const hasSelectedGroupBonusDice = (groupBonusReroll?.selectedIds.length ?? 0) > 0;
+    const showGroupBonusRerollAction = isBonusDiceSettlement && Boolean(groupBonusReroll) && hasSelectedGroupBonusDice;
 
     const MIN_ROLL_ANIMATION_MS = 800;
     const rollStartTimeRef = useRef<number>(0);
@@ -521,6 +501,10 @@ export const DiceActions = ({
     }, []);
 
     const handleRollClick = () => {
+        if (showGroupBonusRerollAction) {
+            groupBonusReroll?.onSubmit();
+            return;
+        }
         if (isInteractionMode) {
             multistepInteraction?.cancel();
             return;
@@ -562,10 +546,14 @@ export const DiceActions = ({
         return <div className={actionTokens.dotsContainerClassName} style={actionTokens.dotsContainerStyle}>{dots}</div>;
     };
 
-    const leftDisabled = isInteractionMode
+    const leftDisabled = showGroupBonusRerollAction
+        ? !canInteract
+        : isInteractionMode
         ? false
         : (!isRollPhase || !canInteract || isResponseWindowOpen || rollConfirmed || rollCount >= rollLimit);
-    const leftVariant = isInteractionMode
+    const leftVariant = showGroupBonusRerollAction
+        ? (canInteract ? 'primary' as const : 'secondary' as const)
+        : isInteractionMode
         ? 'secondary' as const
         : (isRollPhase && canInteract && !isResponseWindowOpen && !rollConfirmed && rollCount < rollLimit ? 'primary' as const : 'secondary' as const);
     const rightDisabled = isBonusDiceSettlement
@@ -585,10 +573,12 @@ export const DiceActions = ({
 
     return (
         <div
-            className={isBonusDiceSettlement ? `${actionTokens.containerClassName} grid-cols-1` : actionTokens.containerClassName}
+            className={isBonusDiceSettlement
+                ? `${actionTokens.containerClassName} ${showGroupBonusRerollAction ? 'grid-cols-2' : 'grid-cols-1'}`
+                : actionTokens.containerClassName}
             style={actionTokens.containerStyle}
         >
-            {!isBonusDiceSettlement && (
+            {(!isBonusDiceSettlement || showGroupBonusRerollAction) && (
             <GameButton
                 onClick={handleRollClick}
                 disabled={leftDisabled}
@@ -601,8 +591,15 @@ export const DiceActions = ({
                 )}
                 style={actionTokens.buttonStyle}
                 data-tutorial-id={isInteractionMode ? undefined : 'dice-roll-button'}
+                aria-label={showGroupBonusRerollAction
+                    ? t('dice.rerollSelectedGroup', { count: groupBonusReroll?.selectedIds.length ?? 0 })
+                    : undefined}
             >
-                {isInteractionMode ? (
+                {showGroupBonusRerollAction ? (
+                    <span className="flex-1 truncate text-center font-black" style={actionTokens.rollTextStyle}>
+                        {t('dice.reroll_action')}
+                    </span>
+                ) : isInteractionMode ? (
                     <span className="flex-1 text-center font-black" style={actionTokens.interactionTextStyle}>{t('common.cancel')}</span>
                 ) : (
                     <>

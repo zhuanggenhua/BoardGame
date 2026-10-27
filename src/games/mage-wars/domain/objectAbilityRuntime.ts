@@ -822,7 +822,8 @@ function executeBeastStaff(ctx: MageWarsObjectAbilityContext): AbilityResult<Mag
         };
     }
 
-    const diceResults = rollD3(ctx.random, source.trait.healingDiceCount);
+    // 治疗不区分普通与致命骰面；六面骰的治疗点数为 0、1、2，各占两面。
+    const diceResults = rollD3(ctx.random, source.trait.healingDiceCount).map(result => result - 1);
     const healing = diceResults.reduce((total, result) => total + result, 0);
     return {
         events: [abilityEvent, {

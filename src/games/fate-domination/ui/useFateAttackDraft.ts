@@ -20,7 +20,7 @@ export function useFateAttackDraft(
         && !player.eliminated && !player.normalAttackPlayed && !authoritative.sys.gameover
         && !interaction.current && !interaction.queue.length);
     const scope=JSON.stringify([playerId,core.currentPlayerId,core.round,core.phase,eligible,
-        interaction.current?.id,interaction.queue[0]?.id]);
+        interaction.current?.id,interaction.queue[0]?.id,authoritative.sys.tutorial.active ? `${authoritative.sys.tutorial.step?.id}:${authoritative.sys.undo.rollbackRevision}` : undefined]);
     const legacy:FateAttackSelection=eligible && player
         ? {cardIds:player.selectedAttackIds,faceDownIds:player.selectedFaceDownIds??[]}:EMPTY;
     const [draft,setDraft]=useState<Draft>(()=>({scope,selection:legacy}));

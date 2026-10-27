@@ -19,6 +19,38 @@ export interface QidahenRuntimeRegionPoint {
     y: number;
 }
 
+export interface QidahenRuntimeRegionBounds {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+}
+
+/** 从正式命中像素派生地区范围，仅供标注定位；边界仍由同一像素归属绘制。 */
+export const getQidahenRuntimeRegionBounds = (
+    regionIdByPixel: readonly (string | null)[],
+    width: number,
+    height: number,
+    regionIds: readonly string[],
+): QidahenRuntimeRegionBounds | null => {
+    const wanted = new Set(regionIds);
+    let left = width;
+    let top = height;
+    let right = -1;
+    let bottom = -1;
+    for (let index = 0; index < regionIdByPixel.length; index += 1) {
+        const owner = regionIdByPixel[index];
+        if (!owner || !wanted.has(owner)) continue;
+        const x = index % width;
+        const y = Math.floor(index / width);
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+        top = Math.min(top, y);
+        bottom = Math.max(bottom, y);
+    }
+    return right < 0 ? null : { left, top, width: right - left + 1, height: bottom - top + 1 };
+};
+
 const EMPTY_OWNER = -1;
 
 const projectPointIntoMask = (

@@ -33,7 +33,9 @@ it('改选从者不抽牌；首次完成准备发牌后清理旧撤销快照',()
  let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,'local:summon-barrier')};
  state.sys.undo={...state.sys.undo,snapshots:[state],snapshotCursors:[0]};
  const result=executePipeline({domain:FateDominationDomain,systems:engineConfig.systems},state,{type:'SELECT_SERVANT',playerId:'0',payload:{servantId:'servant-archer'}},random,ids);
- expect(result.success).toBe(true);expect(result.state.core.players['0'].hand).toHaveLength(0);expect(result.state.sys.undo.snapshots).toHaveLength(1);
+ expect(result.success).toBe(true);expect(result.state.core.players['0'].hand).toHaveLength(0);
+ // 共享撤回已支持多步：改选身份保留既有快照并产生自己的撤回点，发牌后须全部清空。
+ expect(result.state.sys.undo.snapshots).toHaveLength(state.sys.undo.snapshots.length+1);
  const prepared=executePipeline({domain:FateDominationDomain,systems:engineConfig.systems},result.state,{type:'ADVANCE_PHASE',playerId:'0',payload:{}},random,ids);
  expect(prepared.success).toBe(true);expect(prepared.state.core.players['0'].hand).toHaveLength(3);expect(prepared.state.sys.undo.snapshots).toEqual([]);expect(prepared.state.sys.undo.snapshotCursors??[]).toEqual([]);
 });

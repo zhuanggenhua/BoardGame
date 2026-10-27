@@ -2,7 +2,8 @@ import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState'
 import { getQidahenBattleForceCommitments } from './battleForceCommitments';
 import { getRegionSiegeAttackerForceSnapshot } from './battleState';
 import { takeCommittedSpecialTroopStacks } from './movementProfileTroopSelection';
-import { applyRoutDamageToSpecialStacks } from './pendingBattleCombatSupport';
+import { applyRoutDamageToSpecialStacks, pruneUnsupportedRetreatArtillery } from './pendingBattleCombatSupport';
+import { applyQidahenBattleMoraleToStacks } from './battleMorale';
 import {
     collapseCompatPiecesToSpecialTroopStacks,
     expandSpecialTroopStacksToCompatPieces,
@@ -12,6 +13,7 @@ import {
 import type {
     QidahenBattleCasualtyPriority,
     QidahenBattleForceOutcome,
+    QidahenBattleMoraleResult,
     QidahenCore,
     QidahenPendingTargetAction,
     QidahenRetreatLossMode,
@@ -22,6 +24,7 @@ export const buildQidahenBattleForceOutcomes = (
     pendingTargetAction: QidahenPendingTargetAction,
     attackerLosses: number,
     casualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
+    morale?: QidahenBattleMoraleResult,
 ): QidahenBattleForceOutcome[] => {
     const positionedRegion = pendingTargetAction.attackerPositionRegionId
         ? state.regions.find((region) => (
@@ -85,7 +88,9 @@ export const buildQidahenBattleForceOutcomes = (
     const casualtyCandidates = casualtyPriority === 'artillery-first'
         ? allSpecialPieces
         : allSpecialPieces.filter((piece) => piece.troopKind !== 'artillery');
-    const removedSpecialPieceIds = new Set(
+    const removedSpecialPieceIds = morale ? new Set(
+        allSpecialPieces.filter((piece) => morale.remainingLevels[piece.originalPieceId] === 0).map((piece) => piece.id),
+    ) : new Set(
         sortCompatPiecesForRemoval(casualtyCandidates, casualtyPriority)
             .slice(0, Math.max(0, attackerLosses))
             .map((piece) => piece.id),
@@ -94,6 +99,24 @@ export const buildQidahenBattleForceOutcomes = (
     let remainingGenericLosses = Math.max(0, attackerLosses - removedSpecialTroops);
 
     return committedForces.map(({ commitment, taggedSpecialPieces }) => {
+        if (morale) {
+            const originalPieces = taggedSpecialPieces.map((piece) => ({ ...piece, id: piece.originalPieceId }));
+            const survivingSpecialTroops = applyQidahenBattleMoraleToStacks(
+                collapseCompatPiecesToSpecialTroopStacks(originalPieces), morale,
+            );
+            const specialLosses = originalPieces.length - getSpecialTroopCount({ specialTroops: survivingSpecialTroops });
+            const genericTroops = Math.max(0, commitment.committedTroops - originalPieces.length);
+            const genericLosses = Math.min(genericTroops, Math.max(0, remainingGenericLosses));
+            remainingGenericLosses -= genericLosses;
+            return {
+                ...commitment,
+                selectedSpecialPieceIds: originalPieces.map((piece) => piece.id),
+                selectedGenericTroops: genericTroops,
+                attackerLosses: specialLosses + genericLosses,
+                survivingTroops: commitment.committedTroops - specialLosses - genericLosses,
+                survivingSpecialTroops,
+            };
+        }
         const specialLosses = taggedSpecialPieces.filter((piece) => removedSpecialPieceIds.has(piece.id)).length;
         const committedGenericTroops = Math.max(0, commitment.committedTroops - taggedSpecialPieces.length);
         const genericLosses = Math.min(committedGenericTroops, remainingGenericLosses);
@@ -124,7 +147,36 @@ export const buildQidahenBattleForceRetreatOutcomes = (
     retreatLossMode: QidahenRetreatLossMode,
     skipsDefeatLoss: boolean,
     casualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
+    morale?: QidahenBattleMoraleResult,
 ): QidahenBattleForceOutcome[] => {
+    if (morale) {
+        const pruneRetreatForce = (outcome: QidahenBattleForceOutcome): QidahenBattleForceOutcome => {
+            const surviving = pruneUnsupportedRetreatArtillery(outcome.survivingSpecialTroops, outcome.survivingTroops);
+            return { ...outcome, attackerLosses: outcome.attackerLosses + outcome.survivingTroops - surviving.troops,
+                survivingTroops: surviving.troops, survivingSpecialTroops: surviving.specialTroops };
+        };
+        const outcomes = buildQidahenBattleForceOutcomes(state, pendingTargetAction, battleLosses, casualtyPriority, morale);
+        if (skipsDefeatLoss) return outcomes.map(pruneRetreatForce);
+        if (retreatLossMode === 'rout') {
+            return outcomes.map((outcome) => {
+                const rout = applyRoutDamageToSpecialStacks(outcome.survivingSpecialTroops);
+                const genericLoss = Math.max(0, outcome.survivingTroops - getSpecialTroopCount({ specialTroops: outcome.survivingSpecialTroops }));
+                const loss = rout.removedTroops + genericLoss;
+                return { ...outcome, attackerLosses: outcome.attackerLosses + loss, survivingTroops: outcome.survivingTroops - loss, survivingSpecialTroops: rout.specialTroops };
+            }).map(pruneRetreatForce);
+        }
+        const candidates = outcomes.flatMap((outcome, forceIndex) => expandSpecialTroopStacksToCompatPieces(outcome.survivingSpecialTroops)
+            .filter((piece) => piece.troopKind !== 'artillery').map((piece) => ({ ...piece, forceIndex })));
+        const rearGuardPiece = sortCompatPiecesForRemoval(candidates, 'highest-level')[0];
+        const rearGuard = candidates.find((piece) => piece.id === rearGuardPiece?.id);
+        const genericForceIndex = outcomes.findIndex((outcome) => outcome.survivingTroops > getSpecialTroopCount({ specialTroops: outcome.survivingSpecialTroops }));
+        return outcomes.map((outcome, forceIndex) => {
+            const losesSpecial = rearGuard?.forceIndex === forceIndex;
+            const loss = losesSpecial || (!rearGuard && genericForceIndex === forceIndex) ? 1 : 0;
+            return { ...outcome, attackerLosses: outcome.attackerLosses + loss, survivingTroops: outcome.survivingTroops - loss,
+                survivingSpecialTroops: losesSpecial ? collapseCompatPiecesToSpecialTroopStacks(expandSpecialTroopStacksToCompatPieces(outcome.survivingSpecialTroops).filter((piece) => piece.id !== rearGuard.id)) : outcome.survivingSpecialTroops };
+        }).map(pruneRetreatForce);
+    }
     if (retreatLossMode !== 'rout' || skipsDefeatLoss) {
         return buildQidahenBattleForceOutcomes(
             state,

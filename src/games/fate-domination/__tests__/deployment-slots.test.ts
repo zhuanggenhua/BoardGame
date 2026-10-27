@@ -3,9 +3,24 @@ import {createReplayAdapter} from '../../../engine/adapter';
 import {FateDominationDomain} from '../domain';
 import {calculateFatePower} from '../domain/power';
 import type {FateDominationCommand,LocationId} from '../domain';
-const adapter=createReplayAdapter(FateDominationDomain,'printed-deployment-slots');
+const freshAdapter=()=>createReplayAdapter(FateDominationDomain,'printed-deployment-slots');
 const deploy=(locationId:LocationId,playerId:string):FateDominationCommand=>({type:'DEPLOY_MASTER',playerId,payload:{locationId},timestamp:1});
+it('工房同值空位均可明确选择，不能选已占点位、跳过更高收益或提交非法序号',()=>{
+ const adapter=freshAdapter();
+ let state=adapter.setup(['0','1','2']);state.core.phase='outpost';
+ const explicit=(playerId:string,deploymentSlot:number|null):FateDominationCommand=>({type:'DEPLOY_MASTER',playerId,payload:{locationId:'workshop',deploymentSlot},timestamp:1});
+ expect(FateDominationDomain.validate(state,explicit('0',3)).valid).toBe(false);
+ state=adapter.execute(state,explicit('0',0)).state;state.core.currentPlayerId='1';
+ const before=state.core.players['1'].mana;
+ for(const slot of [1,2,3])expect(FateDominationDomain.validate(state,explicit('1',slot)).valid).toBe(true);
+ for(const slot of [0,-1,4,1.5,null,NaN])expect(FateDominationDomain.validate(state,explicit('1',slot)).valid).toBe(false);
+ state=adapter.execute(state,explicit('1',3)).state;
+ expect(state.core.players['1'].deploymentSlot).toBe(3);
+ expect(state.core.players['1'].mana-before).toBe(1);
+ state.core.currentPlayerId='2';expect(FateDominationDomain.validate(state,explicit('2',3)).valid).toBe(false);
+});
 it('工房按四个印刷席位依次给二一一一魔力',()=>{
+ const adapter=freshAdapter();
  let state=adapter.setup(['0','1','2','3']);state.core.phase='outpost';
  const before=state.core.playerIds.map(id=>state.core.players[id].mana);
  for(const id of state.core.playerIds){state.core.currentPlayerId=id;state=adapter.execute(state,deploy('workshop',id)).state;}
@@ -13,6 +28,7 @@ it('工房按四个印刷席位依次给二一一一魔力',()=>{
  expect(state.core.playerIds.map(id=>state.core.players[id].deploymentSlot)).toEqual([0,1,2,3]);
 });
 it('战场仅两个部署者占三一地利，第三人无地利且不额外获得魔力',()=>{
+ const adapter=freshAdapter();
  let state=adapter.setup(['0','1','2']);state.core.phase='outpost';
  const before=state.core.playerIds.map(id=>state.core.players[id].mana);
  for(const id of state.core.playerIds){state.core.currentPlayerId=id;state=adapter.execute(state,deploy('miyama',id)).state;}
@@ -20,6 +36,7 @@ it('战场仅两个部署者占三一地利，第三人无地利且不额外获�
  expect(state.core.playerIds.map(id=>state.core.players[id].mana)).toEqual(before);
 });
 it('离开地利后效果移动回来也不重新获得部署地利',()=>{
+ const adapter=freshAdapter();
  let state=adapter.setup(['0','1','2']);state.core.phase='outpost';
  // Isolate deployment terrain from randomly drawn movement-lock events.
  state.core.currentEvents={miyama:[],shinto:[]};

@@ -1,10 +1,12 @@
 import React from 'react';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './mapRegions';
+import { buildQidahenPopulationSites, layoutQidahenPopulation, QIDAHEN_POPULATION_SIZE } from './populationLayout';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from './mapGraph';
 
-const POPULATION_OFFSET_PX = { x: 20, y: 22 };
-const CUBE_SIZE = 26;
-
-const clampMapCoordinate = (value: number): number => Math.max(0.02, Math.min(0.98, value));
+const geometry = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map(region => ({
+    id: region.id, x: region.center!.x / QIDAHEN_MAP_WIDTH, y: region.center!.y / QIDAHEN_MAP_HEIGHT,
+    isLogicalRegion: false, population: 0,
+}));
 
 export type QidahenMapPopulationRegion = {
     id: string;
@@ -14,20 +16,30 @@ export type QidahenMapPopulationRegion = {
     isLogicalRegion: boolean;
 };
 
-const getPopulationPoint = (region: QidahenMapPopulationRegion) => ({
-    x: clampMapCoordinate(region.x + POPULATION_OFFSET_PX.x / QIDAHEN_MAP_WIDTH),
-    y: clampMapCoordinate(region.y + POPULATION_OFFSET_PX.y / QIDAHEN_MAP_HEIGHT),
-});
-
 export const QidahenMapPopulationLayer: React.FC<{
     regions: readonly QidahenMapPopulationRegion[];
-}> = ({ regions }) => (
+    ownership: readonly (string | null)[] | null;
+    tokens: readonly { x: number; y: number; size?: number }[];
+}> = ({ regions, ownership, tokens }) => {
+    const sites = React.useMemo(() => ownership
+        ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, geometry)
+        : new Map(), [ownership]);
+    const placements = React.useMemo(() => layoutQidahenPopulation(
+        sites, regions, tokens, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT,
+    ), [sites, regions, tokens]);
+    const regionById = new Map(regions.map(region => [region.id, region]));
+    return (
     <>
-        {regions.map((region) => {
-            if (region.isLogicalRegion || region.population <= 0) {
-                return null;
-            }
-            const point = getPopulationPoint(region);
+        <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${QIDAHEN_MAP_WIDTH} ${QIDAHEN_MAP_HEIGHT}`} aria-hidden="true" style={{ zIndex: 13 }}>
+            {placements.filter(placement => placement.callout).map(({ regionId, point, anchor }) => (
+                <g key={regionId} stroke="#1a1208" strokeWidth={2}>
+                    <path d={`M ${anchor.x} ${anchor.y} L ${point.x} ${point.y}`} />
+                    <circle cx={anchor.x} cy={anchor.y} r={3} fill="#ffe566" />
+                </g>
+            ))}
+        </svg>
+        {placements.map(({ regionId, point, anchor, callout }) => {
+            const region = regionById.get(regionId)!;
             return (
                 <div
                     key={region.id}
@@ -35,12 +47,15 @@ export const QidahenMapPopulationLayer: React.FC<{
                     data-testid={`qidahen-map-population-${region.id}`}
                     data-qidahen-map-population="true"
                     data-population={String(region.population)}
+                    data-population-placement={callout ? 'callout' : 'interior'}
+                    data-population-anchor-x={anchor.x}
+                    data-population-anchor-y={anchor.y}
                     aria-label={`人口 ${region.population}`}
                     style={{
-                        left: point.x * QIDAHEN_MAP_WIDTH,
-                        top: point.y * QIDAHEN_MAP_HEIGHT,
-                        width: CUBE_SIZE,
-                        height: CUBE_SIZE,
+                        left: point.x,
+                        top: point.y,
+                        width: QIDAHEN_POPULATION_SIZE,
+                        height: QIDAHEN_POPULATION_SIZE,
                         transform: 'translate(-50%, -50%)',
                         border: '2.5px solid #1a1208',
                         borderRadius: 3,
@@ -57,4 +72,5 @@ export const QidahenMapPopulationLayer: React.FC<{
             );
         })}
     </>
-);
+    );
+};

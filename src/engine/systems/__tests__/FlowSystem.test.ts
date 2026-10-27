@@ -363,6 +363,32 @@ describe('FlowSystem', () => {
         expect(autoContinueChecked).toBe(false);
     });
 
+    it('撤回恢复随机数游标时，不触发阶段自动推进', () => {
+        let autoContinueChecked = false;
+        const system = createFlowSystem<TestCore>({
+            hooks: buildHooks({
+                onAutoContinueCheck: () => {
+                    autoContinueChecked = true;
+                    return { autoContinue: true, playerId: '0' };
+                },
+            }),
+        });
+        const state = createTestState('phase1', {
+            undo: { snapshots: [], maxSnapshots: 50, restoredRandomCursor: 12 },
+        });
+
+        const result = system.afterEvents?.({
+            state,
+            command: { type: 'noop', playerId: '0', payload: {} },
+            events: [{ type: 'DOMAIN_EVENT', payload: {}, timestamp: 1 }],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result).toBeUndefined();
+        expect(autoContinueChecked).toBe(false);
+    });
+
     it('当前 afterEvents 轮没有待落地事件时，保留原 autoContinue 行为', () => {
         const system = createFlowSystem<TestCore>({
             hooks: buildHooks({

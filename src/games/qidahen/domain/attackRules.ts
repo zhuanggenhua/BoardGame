@@ -198,8 +198,8 @@ export const computeQidahenStructuredBattleCasualties = ({
     const committedBattleTroops = Math.max(0, committedTroops - committedArtilleryTroops);
     if (battleRolls) {
         return {
-            defenderLoss: Math.max(0, Math.min(effectiveDefenderTroops, battleRolls.attackerDamage)),
-            attackerLoss: Math.max(0, Math.min(committedBattleTroops, battleRolls.defenderDamage)),
+            defenderLoss: battleRolls.defenderMorale.destroyedTroops,
+            attackerLoss: battleRolls.attackerMorale.destroyedTroops,
             summary: battleRolls.summary,
         };
     }

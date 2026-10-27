@@ -202,7 +202,7 @@ export async function startSingleWorkerRuntime(options = {}) {
   const gameServerEnv = {
     ...runtimeEnv,
     NODE_ENV: 'test',
-    USE_PERSISTENT_STORAGE: 'false',
+    USE_PERSISTENT_STORAGE: env.USE_PERSISTENT_STORAGE === 'true' ? 'true' : 'false',
   };
 
   const gameServer = useTsxRuntime

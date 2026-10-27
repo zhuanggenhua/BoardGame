@@ -32,7 +32,7 @@ export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillB
     }, []);
     const visibleSkills = projectFateSkillCards(view.player,viewerId).map((card,index)=>({name:card?.name??`暗置技能 ${index+1}`,assetPath:card?.assetPath??skillBack}));
     return <ModalBase onClose={onClose} overlayClassName="!bg-black/75" containerClassName="p-0">
-        <section className="fd-player-detail" role="dialog" aria-modal="true" aria-label={`${view.master?.name ?? '玩家'}详情`} onKeyDown={event => { if (event.key === 'Escape') {
+        <section data-tutorial-id="fate-detail" className="fd-player-detail" role="dialog" aria-modal="true" aria-label={`${view.master?.name ?? '玩家'}详情`} onKeyDown={event => { if (event.key === 'Escape') {
         event.stopPropagation();
         onClose();
     } else if (event.key === 'Tab') {
@@ -52,7 +52,7 @@ export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillB
                 })}</nav>
                 <button ref={ref} className="fd-player-detail-close" type="button" aria-label="关闭玩家详情" onClick={onClose}><X size={22}/></button>
             </header>
-            <div className="fd-player-detail-stats"><span>魔力 <b>{view.player.mana}</b></span><span>令咒 <b>{view.player.commandSpells}</b></span><span>当前威力 <b>{view.power}</b></span><span>战果 <b>{view.player.victoryPoints}</b></span><span>{view.location}</span>{!view.servantVisible && view.servantClass && <span aria-label="已知职阶">职阶 <b>{view.servantClass}</b></span>}</div>
+            <div className="fd-player-detail-stats"><span>魔力 <b>{view.player.mana}</b></span><span>令咒 <b>{view.player.commandSpells}</b></span><span>战果 <b>{view.player.victoryPoints}</b></span><span className={view.player.eliminated ? 'fd-eliminated-status' : undefined}>{view.location}</span>{!view.servantVisible && view.servantClass && <span aria-label="已知职阶">职阶 <b>{view.servantClass}</b></span>}</div>
             <div className="fd-player-detail-content">
                 <div className="fd-player-detail-identity">
                     <button type="button" className="fd-detail-art" aria-label="检视御主能力" onClick={() => view.master && onInspect(view.master.assetPath, view.master.name)}>

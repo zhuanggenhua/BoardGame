@@ -6,6 +6,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { ARCHIVE_DIRECTORY_NAMES, assertUserVisibleMediaDirectory, FORBIDDEN_CROP_DIRECTORY_NAMES, mediaPathContainsForbiddenCropDirectory, validateE2EImageIndex } from './e2e-image-index-contract.mjs';
+import { validateRequestedSourceReview } from './source-review-contract.mjs';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
@@ -42,6 +43,7 @@ const usage = () => {
   --port <端口>     目录模式指定网页查看器端口
   --reopen          目录模式强制重新打开浏览器
   --no-open         只注册目录并输出 VIEWER_URL，不打开浏览器
+  --source-review   仅配合 --dir 核查用户点名原图；校验来源，不声明产品 PASS
   --verbose         输出逐张媒体和查看器诊断信息
   --viewer <web|system|pureref>  指定查看器；默认 web。pureref 只保留为显式旧通道
   --web             等同于 --viewer web
@@ -147,6 +149,7 @@ const parseArgs = (argv) => {
         confirmedPass: false,
         forceReopen: false,
         noOpen: false,
+        sourceReview: false,
         verbose: false,
         passManifest: null,
         help: false,
@@ -176,6 +179,10 @@ const parseArgs = (argv) => {
         }
         if (current === '--no-open') {
             parsed.noOpen = true;
+            continue;
+        }
+        if (current === '--source-review') {
+            parsed.sourceReview = true;
             continue;
         }
         if (current === '--verbose') {
@@ -802,7 +809,13 @@ const main = () => {
         assertUserVisibleMediaDirectory(directory);
         const media = collectMedia(directory);
         if (media.length === 0) throw new Error('拒绝打开：目录内没有可验收媒体');
-        const manifest = validatePassManifest(path.join(directory, 'focused-pass-manifest.json'), media, 'web');
+        const manifest = parsed.sourceReview
+            ? path.join(directory, 'source-review-manifest.json')
+            : validatePassManifest(path.join(directory, 'focused-pass-manifest.json'), media, 'web');
+        if (parsed.sourceReview) {
+            validateRequestedSourceReview({ manifestPath: manifest, imagePaths: media });
+            console.log('DISPLAY_MODE=source-review; PRODUCT_ACCEPTANCE=not-claimed');
+        }
         if (parsed.dryRun) {
             printCompactOutput({ mediaCount: media.length, mediaDirectory: directory, passManifest: manifest, dryRun: true, verbose: parsed.verbose });
             return;
@@ -811,6 +824,7 @@ const main = () => {
         return;
     }
 
+    if (parsed.sourceReview) throw new Error('--source-review 必须与 --dir 一起使用');
     if (!parsed.path && parsed.paths.length === 0 && !parsed.latest) {
         usage();
         throw new Error('必须提供 --path、--paths 或 --latest');

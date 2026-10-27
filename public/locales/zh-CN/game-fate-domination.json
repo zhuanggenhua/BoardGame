@@ -8,7 +8,7 @@
   "round": "回合",
   "phases": {
     "preparation": "准备",
-    "outpost": "部署",
+    "outpost": "前哨",
     "action": "行动",
     "battle": "战斗",
     "complete": "结束"
@@ -86,6 +86,7 @@
     "alreadyDeployed": "本轮已经部署",
     "unknownLocation": "未知地点",
     "locationFull": "地点已满",
+    "invalidDeploymentSlot": "该点位不可部署，请选择未占用的最高收益点位",
     "staleCard": "卡牌已不在当前手牌",
     "invalidAttackSelection": "出牌选择已失效，请重新选择",
     "cardAlreadySelected": "这张牌已选中",

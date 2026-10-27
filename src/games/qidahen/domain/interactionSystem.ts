@@ -1,5 +1,7 @@
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
-import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID } from './interactionSources';
+import { isQidahenBattleCasualtyOrderValid } from './pendingTargetChoicePayload';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import {
     readQidahenResolvedPayload,
@@ -51,6 +53,17 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
         id: 'qidahen-interaction-bridge',
         name: '七大恨交互桥接',
         priority: 22,
+
+        beforeCommand: ({ state, command }) => {
+            if (command.type !== INTERACTION_COMMANDS.RESPOND) return;
+            const current = state.sys.interaction?.current;
+            const data = current?.data as { sourceId?: string } | undefined;
+            if (data?.sourceId !== QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID) return;
+            const payload = command.payload as { mergedValue?: unknown };
+            if (!isQidahenBattleCasualtyOrderValid(payload.mergedValue)) {
+                return { halt: true, error: 'invalidCasualtyPriority' };
+            }
+        },
 
         afterEvents: ({ state, events, random }): HookResult<QidahenCore> | void => {
             let nextState = state;

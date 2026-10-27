@@ -3,6 +3,7 @@ import type {
     QidahenBattleForceOutcome,
     QidahenPendingTargetAction,
 } from './types';
+import { expandSpecialTroopStacksToCompatPieces, getSpecialTroopCount } from './troopCompat';
 
 export const createQidahenBattleForceCommitment = (
     input: Omit<QidahenBattleForceCommitment, 'id'> & { id?: string },
@@ -75,6 +76,8 @@ export const updateQidahenForceCommitmentsFromOutcomes = (
             battleWidth: outcome.battleWidth,
             boundaryUnitCap: outcome.boundaryUnitCap,
             attackBoundaryType: outcome.attackBoundaryType,
+            selectedSpecialPieceIds: expandSpecialTroopStacksToCompatPieces(outcome.survivingSpecialTroops).map((piece) => piece.id),
+            selectedGenericTroops: Math.max(0, outcome.survivingTroops - getSpecialTroopCount({ specialTroops: outcome.survivingSpecialTroops })),
         }));
     const primaryCommitment = nextCommitments[0];
     const committedTroops = nextCommitments.reduce(
@@ -91,4 +94,16 @@ export const updateQidahenForceCommitmentsFromOutcomes = (
         movementProfileId: primaryCommitment?.movementProfileId ?? pendingTargetAction.movementProfileId,
         forceCommitments: nextCommitments,
     };
+};
+
+// 正式规则p5：每条攻城战线宽度为1，多条战线相加；仍保留各来源的真实参战集合。
+export const updateQidahenForceCommitmentsForCityBattle = (
+    pending: QidahenPendingTargetAction,
+): QidahenPendingTargetAction => {
+    const forceCommitments = getQidahenBattleForceCommitments(pending).map((force) => ({
+        ...force, battleWidth: 1, attackBoundaryType: 'city' as const,
+    }));
+    const battleWidth = Math.max(1, forceCommitments.length);
+    return { ...pending, battleMode: 'city', battleWidth, attackBoundaryType: 'city', forceCommitments,
+        attackPressure: Math.min(pending.committedTroops, battleWidth) };
 };

@@ -5,7 +5,7 @@ import { GameHints } from '../GameHints';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) => key,
+        t: (key: string) => key === 'common.cancel' ? '取消' : key,
     }),
 }));
 
@@ -25,6 +25,21 @@ const baseProps = {
 };
 
 describe('GameHints', () => {
+    it('可取消的手牌弃置提示使用本地化取消按钮并调用取消动作', () => {
+        const onCancel = vi.fn();
+        render(
+            <GameHints
+                {...baseProps}
+                handDiscardPrompt={{ onCancel }}
+            />,
+        );
+
+        expect(screen.getByTestId('dicethrone-hand-discard-hint')).toHaveTextContent('interaction.selectHandCardToDiscard');
+        const cancelButton = screen.getByRole('button', { name: '取消' });
+        fireEvent.click(cancelButton);
+        expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+
     it('响应窗口没有跳过操作时仍渲染状态提示但不渲染让过按钮', () => {
         render(
             <GameHints

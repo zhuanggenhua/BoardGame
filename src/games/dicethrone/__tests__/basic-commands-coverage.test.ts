@@ -2696,7 +2696,7 @@ describe('AI legal actions', () => {
     });
 
     it('targetOpponentDice 的 set 交互应优先压低高点骰子', async () => {
-        const state = createInitializedState(['0', '1'], fixedRandom);
+        const state = createHeroMatchup('monk', 'thor')(['0', '1'], fixedRandom);
         state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
             ...die,
             id: index,
@@ -2800,6 +2800,38 @@ describe('AI legal actions', () => {
         expect(modifyCommand).toBeDefined();
         expect((modifyCommand?.payload as { dieId: number; newValue: number }).dieId).toBe(0);
         expect((modifyCommand?.payload as { dieId: number; newValue: number }).newValue).not.toBe(6);
+    });
+
+    it('AI 对固定目标值4或5的改骰只生成规则允许的点数', async () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 3][index]!,
+        }));
+        injectPendingInteraction(state, {
+            id: 'ai-thor-worthy-values',
+            playerId: '0',
+            sourceCardId: 'card-thor-worthy',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToChange',
+            selectCount: 1,
+            selected: [],
+            dieModifyConfig: { mode: 'set', allowedValues: [4, 5] },
+            diceOwnerId: '0',
+            targetOpponentDice: false,
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: { '0': { type: 'local-ai' } },
+        });
+        const modifyCommand = resolution?.action.commands.find((command) => command.type === 'MODIFY_DIE');
+
+        expect(modifyCommand).toBeDefined();
+        expect([4, 5]).toContain((modifyCommand?.payload as { newValue: number }).newValue);
     });
 
     it('targetOpponentDice 的 adjust 交互应生成向下调整方案，而不是只能 +1', async () => {
@@ -3258,6 +3290,12 @@ describe('AI legal actions', () => {
         const random = createQueuedRandom([1, 1, 1, 1, 1, 2]);
         let state = createNoResponseSetup()(playerIds as unknown as string[], random);
 
+        for (const player of Object.values(state.core.players)) {
+            player.hand = [];
+            player.deck = [];
+            player.discard = [];
+        }
+
         const setupCommands: CommandInput[] = [
             ...advanceTo('offensiveRoll', '0'),
             cmd('ROLL_DICE', '0'),
@@ -3274,7 +3312,7 @@ describe('AI legal actions', () => {
                 random,
                 [...playerIds],
             );
-            expect(result.success).toBe(true);
+            expect(result.success, `${input.type} ${input.playerId} ${JSON.stringify(input.payload)}: ${result.error ?? 'unknown error'}`).toBe(true);
             state = result.state as MatchState<DiceThroneCore>;
         }
 

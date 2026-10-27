@@ -1,4 +1,4 @@
-import type { GameEvent, RandomFn } from '../../../engine/types';
+import type { Command, MatchState, GameEvent, RandomFn } from '../../../engine/types';
 import type { Opportunity, TimingPoint } from '../../../engine/TimingOpportunity';
 import { createSimpleChoiceFromTimingOpportunity } from '../../../engine/systems/TimingOpportunitySystem';
 import type { EngineSystem } from '../../../engine/systems/types';
@@ -12,7 +12,8 @@ export const FATE_SEAL_RESTORE_CHOICE = 'fate:post-battle-seal';
 export function isFatePostBattleChoice(interaction:InteractionDescriptor|undefined):interaction is InteractionDescriptor<SimpleChoiceData> {
     return interaction?.kind==='simple-choice' && record(interaction.data).sourceId===FATE_SEAL_RESTORE_CHOICE;
 }
-const AI_UNSUPPORTED = { status: 'unsupported' as const, reason: 'Fate 尚未接入自动玩家；候选合同仅供真人选择。' };
+const AI_SUPPORT = { status: 'game-policy' as const, policyId: 'baseline', reason: 'Fate AI 使用当前交互的恢复或放弃选项及正式战后权限校验。' };
+const INTERACTION_AI_SUPPORT = { status: 'adapter' as const, adapterId: 'fate-post-battle', reason: AI_SUPPORT.reason };
 interface ChoiceContext { round: number; frameId: string; recipient: string }
 export interface FatePostBattleChoiceData extends SimpleChoiceData { fateContext: ChoiceContext }
 const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -49,7 +50,7 @@ export function fatePostBattleOpportunities(event: FatePostBattleStartedEvent, t
         choice: {
             ownerFrameId: event.payload.frameId, kind: 'choose-option', selection: { min: 1, max: 1 }, skipPolicy: 'forbidden',
             candidates: [{ id: 'restore', label: '恢复一枚令咒', value: 'restore' }, { id: 'decline', label: '不恢复', value: 'decline' }],
-            resolution: { type: 'interaction-response' }, ai: AI_UNSUPPORTED,
+            resolution: { type: 'interaction-response' }, ai: AI_SUPPORT,
             metadata: { round: event.payload.round, frameId: event.payload.frameId, recipient },
         },
     }));
@@ -62,20 +63,15 @@ export function createFatePostBattleInteraction(opportunity: Opportunity):Intera
     });
     const fateContext=parseChoiceContext(opportunity.choice?.metadata);
     if(!fateContext)throw new Error('Fate post-battle opportunity is missing its rule context');
-    return {...interaction,data:{...interaction.data,ai:AI_UNSUPPORTED,fateContext}};
+    return {...interaction,ai:INTERACTION_AI_SUPPORT,data:{...interaction.data,ai:INTERACTION_AI_SUPPORT,fateContext}};
 }
 
-/** Guard precedes Undo. Handler follows SimpleChoice and Timing, but precedes ResolutionFrame. */
-export function createFatePostBattleChoiceSystems(): EngineSystem<FateDominationCore>[] {
-    return [{
-        id: 'fate-post-battle-choice-guard', name: 'Fate 战后选择权限', priority: 9,
-        beforeCommand: ({ state, command }) => {
-            if (state.core.battleResolution?.step !== 'after-battle') return;
+export function isValidFatePostBattleResponse(state: MatchState<FateDominationCore>, command: Command) {
             const current = state.sys.interaction.current;
             const context = choiceContext(current?.data);
             const payload = record(command.payload);
             const data = current?.data as SimpleChoiceData | undefined;
-            const valid = command.type === 'SYS_INTERACTION_RESPOND' && current?.kind === 'simple-choice' && context
+            return command.type === 'SYS_INTERACTION_RESPOND' && current?.kind === 'simple-choice' && context
                 && matchesBattle(state.core, context) && current.resolutionFrameId === context.frameId
                 && state.sys.resolution?.activeFrameId === context.frameId && context.recipient === current.playerId
                 && command.playerId === current.playerId && payload.interactionId === current.id
@@ -83,6 +79,16 @@ export function createFatePostBattleChoiceSystems(): EngineSystem<FateDomination
                 && (payload.optionId === 'restore' || payload.optionId === 'decline')
                 && data?.options.some(option => option.id === payload.optionId && !option.disabled)
                 && (payload.optionId !== 'restore' || canRestoreSeal(state.core, command.playerId));
+}
+
+/** Guard precedes Undo. Handler follows SimpleChoice and Timing, but precedes ResolutionFrame. */
+export function createFatePostBattleChoiceSystems(): EngineSystem<FateDominationCore>[] {
+    return [{
+        id: 'fate-post-battle-choice-guard', name: 'Fate 战后选择权限', priority: 9,
+        beforeCommand: ({ state, command }) => {
+            if (state.sys.tutorial.active && command.type.startsWith('SYS_TUTORIAL_')) return;
+            if (state.core.battleResolution?.step !== 'after-battle') return;
+            const valid = isValidFatePostBattleResponse(state, command);
             if (!valid) return { halt: true, error: '请由当前玩家确认战后选择，不能取消或绕过结算。' };
         },
     }, {

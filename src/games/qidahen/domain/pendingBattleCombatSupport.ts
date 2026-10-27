@@ -4,6 +4,7 @@ import {
     isRegionControlledByFaction,
     isRegionFriendlyToFaction,
 } from './battleState';
+import { applyQidahenBattleMoraleToStacks } from './battleMorale';
 import { getQidahenEffectivePopulation } from './populationRules';
 import { isQidahenCityRuntimeRegion } from './regionConfig';
 import {
@@ -23,6 +24,7 @@ import {
 } from './movementProfileTroopSelection';
 import type {
     QidahenBattleCasualtyPriority,
+    QidahenBattleMoraleResult,
     QidahenCasualtyPriority,
     QidahenCore,
     QidahenFactionId,
@@ -76,7 +78,9 @@ export const applyCasualtiesToSpecialStacks = (
     stacks: QidahenSpecialTroopStack[],
     troopLoss: number,
     casualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
+    morale?: QidahenBattleMoraleResult,
 ): QidahenSpecialTroopStack[] => {
+    if (morale) return applyQidahenBattleMoraleToStacks(stacks, morale);
     const allPieces = expandSpecialTroopStacksToCompatPieces(stacks);
     const casualtyCandidates = casualtyPriority === 'artillery-first'
         ? allPieces

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { ModalBase } from '../common/overlays/ModalBase';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 interface EmailBindModalProps {
     isOpen: boolean;
@@ -10,6 +11,7 @@ interface EmailBindModalProps {
 }
 
 export const EmailBindModal = ({ isOpen, onClose, closeOnBackdrop }: EmailBindModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const { user, sendEmailCode, verifyEmail } = useAuth();
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');

@@ -37,7 +37,7 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_HEALTH, INITIAL_CP } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
 import { validateCommand } from '../domain/commandValidation';
-import { processTokenUsage, shouldOpenTokenResponse, getUsableTokensForTiming, finalizeTokenResponse } from '../domain/tokenResponse';
+import { processTokenUsage, shouldOpenTokenResponse, getUsableTokensForTiming, finalizeTokenResponse, maybeCreateDamageResponseEvent } from '../domain/tokenResponse';
 import { initializeCustomActions } from '../domain/customActions';
 import { reduce } from '../domain/reducer';
 import { buildBonusDiceSettlementEvents, executeTokenCommand } from '../domain/executeTokens';
@@ -1898,6 +1898,85 @@ describe('神罚 (Retribution) 反弹伤害集成测试', () => {
         expect(result.success).toBe(true);
         expect(result.damageModifier).toBe(0); // 不减伤
         expect(result.extra?.reflectDamage).toBe(5); // ceil(10/2) = 5
+    });
+
+    it('护盾已从本次伤害扣除后，神罚不应再估算同一面护盾', () => {
+        const match = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        let state = match.core;
+        state.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            isDefendable: true,
+            damage: 10,
+        };
+        state.players['0'].resources[RESOURCE_IDS.HP] = 50;
+        state.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.players['1'].tokens[TOKEN_IDS.RETRIBUTION] = 1;
+        state.players['1'].damageShields = [
+            { value: 4, sourceId: 'precommitted-shield', preventStatus: false },
+        ];
+
+        const responseEvent = maybeCreateDamageResponseEvent({
+            state,
+            attackerId: '0',
+            sourceAbilityId: 'test-attack',
+            timestamp: 1,
+            damageEvent: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '1',
+                    amount: 10,
+                    actualDamage: 10,
+                    sourceAbilityId: 'test-attack',
+                    sourcePlayerId: '0',
+                    damageScope: 'attack',
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: 1,
+            },
+        });
+
+        expect(responseEvent?.payload.pendingDamage).toMatchObject({
+            originalDamage: 10,
+            currentDamage: 6,
+            preventionCommitted: true,
+            shieldsConsumed: [expect.objectContaining({ sourceId: 'precommitted-shield', absorbed: 4 })],
+        });
+        state = reduce(state, responseEvent!);
+
+        const useEvents = executeTokenCommand(
+            state,
+            {
+                type: 'USE_TOKEN',
+                playerId: '1',
+                payload: { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+            } as any,
+            fixedRandom,
+            2,
+            'defensiveRoll',
+        );
+        state = applyEvents(state, useEvents, reduce);
+
+        const closeEvents = executeTokenCommand(
+            state,
+            { type: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: {} } as any,
+            fixedRandom,
+            3,
+            'defensiveRoll',
+        );
+        const damageEvents = closeEvents.filter((event) => event.type === 'DAMAGE_DEALT');
+        expect(damageEvents).toContainEqual(expect.objectContaining({
+            payload: expect.objectContaining({ targetId: '1', amount: 10, actualDamage: 6 }),
+        }));
+        expect(damageEvents).toContainEqual(expect.objectContaining({
+            payload: expect.objectContaining({ targetId: '0', amount: 3, actualDamage: 3 }),
+        }));
+
+        state = applyEvents(state, closeEvents, reduce);
+        expect(state.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
+        expect(state.players['0'].resources[RESOURCE_IDS.HP]).toBe(47);
+        expect(state.players['1'].damageShields).toEqual([]);
     });
 
     it('神罚反弹伤害向上取整（奇数伤害）', () => {

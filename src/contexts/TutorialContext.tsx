@@ -147,6 +147,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const aiTimerRef = useRef<number | undefined>(undefined);
     const aiExecutionGenerationRef = useRef(0);
     const latestTutorialStepIdRef = useRef<string | null>(null);
+    const latestTutorialStepIndexRef = useRef(-1);
     const boardSyncVersionRef = useRef(0);
     const toast = useToast();
     const toastRef = useRef(toast);
@@ -284,6 +285,11 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         boardSyncVersionRef.current += 1;
         const normalized = normalizeTutorialState(nextTutorial);
+        // 回退已由正式教程状态恢复；未来步骤必须允许重做，同步同一步仍由原记录防重。
+        if (normalized.active && normalized.stepIndex < latestTutorialStepIndexRef.current) {
+            executedAiStepsRef.current.clear();
+        }
+        latestTutorialStepIndexRef.current = normalized.active ? normalized.stepIndex : -1;
         const nextStepId = normalized.active ? (normalized.step?.id ?? null) : null;
         if (!normalized.active || latestTutorialStepIdRef.current !== nextStepId) {
             aiExecutionGenerationRef.current += 1;

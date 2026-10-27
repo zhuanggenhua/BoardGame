@@ -27,7 +27,8 @@ const VERIFIED_SPECIAL_BASIC_TYPES: Record<string, string> = {
     cardSurveil: '疾行',
     cardluck: '幸运',
 };
-const AI_UNSUPPORTED = { status: 'unsupported' as const, reason: 'Fate 尚未接入自动玩家；骑乘选择由当前玩家完成。' };
+const AI_SUPPORT = { status: 'game-policy' as const, policyId: 'baseline', reason: 'Fate AI 按正式骑乘权限与费用校验枚举0至3张及取消。' };
+const INTERACTION_AI_SUPPORT = { status: 'adapter' as const, adapterId: 'fate-riding', reason: AI_SUPPORT.reason };
 
 export interface FateRidingChoiceContext {
     playerId: string;
@@ -226,7 +227,7 @@ export function fateRidingChoiceOpportunities(
                     commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId } }],
                 },
                 resolution: { type: 'interaction-response' },
-                ai: AI_UNSUPPORTED,
+                ai: AI_SUPPORT,
                 metadata: lifecycle,
             },
         },
@@ -282,8 +283,8 @@ export function createFateRidingInteraction(opportunity: Opportunity): Interacti
     if (!context) throw new Error('Fate Riding opportunity is missing its rule context');
     return {
         ...interaction,
-        ai: AI_UNSUPPORTED,
-        data: { ...interaction.data, ai: AI_UNSUPPORTED, fateContext: context },
+        ai: INTERACTION_AI_SUPPORT,
+        data: { ...interaction.data, ai: INTERACTION_AI_SUPPORT, fateContext: context },
     };
 }
 
@@ -303,10 +304,9 @@ function matchingQueuedRidingChoice(state: MatchState<FateDominationCore>) {
     return state.sys.interaction.queue.find(interaction => isFateRidingChoice(interaction));
 }
 
-export function createFateRidingChoiceSystems(): EngineSystem<FateDominationCore>[] {
-    return [{
-        id: 'fate-riding-choice-guard', name: 'Fate 骑乘选择权限', priority: 9,
-        beforeCommand: ({ state, command }) => {
+export function validateFateRidingChoiceCommand(state: MatchState<FateDominationCore>, command: Command) {
+            if (state.sys.tutorial.active && command.type.startsWith('SYS_TUTORIAL_')) return;
+
             const current = isCurrentRidingChoice(state);
             if (!current) {
                 if (!matchingQueuedRidingChoice(state)) return;
@@ -328,7 +328,12 @@ export function createFateRidingChoiceSystems(): EngineSystem<FateDominationCore
                 && payload.interactionId === interaction.id && exactPayloadKeys(payload, ['interactionId', 'optionIds'])
                 && validRidingSelection(state.core, context, payload.optionIds, data);
             if (!valid) return { halt: true, error: '骑乘选择包含无效、重复、过期或无法支付的手牌。' };
-        },
+}
+
+export function createFateRidingChoiceSystems(): EngineSystem<FateDominationCore>[] {
+    return [{
+        id: 'fate-riding-choice-guard', name: 'Fate 骑乘选择权限', priority: 9,
+        beforeCommand: ({ state, command }) => validateFateRidingChoiceCommand(state, command),
     }, {
         id: 'fate-riding-choice-resolution', name: 'Fate 骑乘选择结算', priority: 32,
         beforeCommand: ({ state, command }) => {

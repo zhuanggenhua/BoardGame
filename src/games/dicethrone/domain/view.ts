@@ -11,11 +11,13 @@ import { areTeammates } from './rules';
 /**
  * 隐藏卡牌内容（只保留 id 用于数量统计）
  */
-const hideCardContent = (card: AbilityCard): AbilityCard => ({
-    ...card,
+const hideCardContent = (_card: AbilityCard, index: number): AbilityCard => ({
+    id: `hidden-card-${index}`,
     name: '???',
+    type: 'action',
+    cpCost: 0,
+    timing: 'instant',
     description: '???',
-    previewRef: undefined,
 });
 
 /**
@@ -45,6 +47,7 @@ const filterPlayerView = (
         ...normalized,
         hand: normalized.hand.map(hideCardContent),
         deck: normalized.deck.map(hideCardContent),
+        initialDeckCardIds: undefined,
         // 弃牌堆公开可见
         discard: normalized.discard,
     };

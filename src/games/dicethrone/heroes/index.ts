@@ -32,10 +32,13 @@ import { VAMPIRE_LORD_CARDS, getVampireLordStartingDeck } from './vampire_lord/c
 import { VAMPIRE_LORD_ABILITIES } from './vampire_lord/abilities';
 import { ZHIZHUXIA_CARDS, getZhizhuxiaStartingDeck } from './zhizhuxia/cards';
 import { ZHIZHUXIA_ABILITIES } from './zhizhuxia/abilities';
+import { THOR_CARDS, getThorStartingDeck } from './thor/cards';
+import { THOR_ABILITIES } from './thor/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
 import type { HeroState } from '../domain/types';
 import type { RandomFn } from '../../../engine/types';
+import { DOCTOR_STRANGE_CARDS, DOCTOR_STRANGE_ABILITIES, getDoctorStrangeStartingDeck } from './doctor_strange';
 
 export interface HeroData {
     cards: AbilityCard[];
@@ -45,6 +48,8 @@ export interface HeroData {
 }
 
 export const HEROES_DATA: Record<string, HeroData> = {
+    doctor_strange: { cards: DOCTOR_STRANGE_CARDS, abilities: DOCTOR_STRANGE_ABILITIES, getStartingDeck: getDoctorStrangeStartingDeck },
+    thor: { cards: THOR_CARDS, abilities: THOR_ABILITIES, getStartingDeck: getThorStartingDeck },
     monk: {
         cards: MONK_CARDS,
         abilities: MONK_ABILITIES,

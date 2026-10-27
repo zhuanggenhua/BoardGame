@@ -1,26 +1,15 @@
 import type { MatchState, TutorialCollection, TutorialManifest } from '../../engine/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { QIDAHEN_COMMANDS } from './domain/commands';
-import { QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID } from './domain/interactionSources';
 import {
-    getQidahenWheelRecruitTrainChoices,
-    QIDAHEN_WHEEL_RECRUIT_TRAIN_BASE_ACTION_LIMIT,
-} from './domain/wheelRecruitTrain';
+    QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
+    QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID,
+    QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID,
+} from './domain/interactionSources';
+import { getQidahenWheelRecruitTrainChoices } from './domain/wheelRecruitTrain';
 import type { QidahenCore } from './domain/types';
 
 export const QIDAHEN_DEFAULT_TUTORIAL_ID = 'basic-opening';
-const QIDAHEN_BASIC_OPENING_HAND_COUNT = 3;
-const QIDAHEN_BASIC_REQUIRED_HAND_ACTION_PAYMENT = 1;
-const QIDAHEN_BASIC_INITIAL_RECRUIT_TRAIN_PAYMENT = 1;
-const QIDAHEN_BASIC_EXTRA_TRAINING_PAYMENT_LIMIT = Math.max(
-    0,
-    QIDAHEN_BASIC_OPENING_HAND_COUNT
-        - QIDAHEN_BASIC_REQUIRED_HAND_ACTION_PAYMENT
-        - QIDAHEN_BASIC_INITIAL_RECRUIT_TRAIN_PAYMENT,
-);
-const QIDAHEN_BASIC_RECRUIT_TRAIN_DECISION_LIMIT =
-    QIDAHEN_WHEEL_RECRUIT_TRAIN_BASE_ACTION_LIMIT + QIDAHEN_BASIC_EXTRA_TRAINING_PAYMENT_LIMIT;
-
 const asCore = (state: MatchState<unknown>): QidahenCore => state.core as QidahenCore;
 
 const QIDAHEN_MAP_RESULT_STEP_FOCUS = {
@@ -38,6 +27,10 @@ const QIDAHEN_SEASON_SUMMARY_STEP_FOCUS = {
 };
 
 const QIDAHEN_PAYMENT_STEP_FOCUS = {
+    hideActionHint: true,
+    tooltipOffsetY: -6,
+    compactTooltipWidth: 760,
+    compactAvoidOverlapSelectors: ['[data-testid="qidahen-hand-zone"]', '[data-testid="qidahen-action-payment-panel"]'],
     avoidOverlapSelectors: [
         '[data-testid="qidahen-action-payment-panel"]',
         '[data-testid="qidahen-draw-pile"]',
@@ -79,171 +72,6 @@ const QIDAHEN_MAP_INFO_STEP_FOCUS = {
 
 const QIDAHEN_WHEEL_HOVER_STEP_FOCUS = {
     avoidOverlapSelectors: ['[data-testid="qidahen-wheel-tip"]'],
-};
-
-const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
-    const core = asCore(state);
-    const recruitTrainProgress = core.wheelRecruitTrainProgress;
-    const recruitTrainStep = /^recruit-train-(decision|extra-payment|recruit-target|training-target)-(\d+)$/.exec(step.id);
-    if (recruitTrainStep) {
-        const [, stepKind, indexText] = recruitTrainStep;
-        const progress = recruitTrainProgress;
-        const iteration = Number(indexText);
-        const completedActions = (progress?.actionsCompleted ?? 0)
-            + (progress?.extraTrainingsCompleted ?? 0);
-        if (!progress || completedActions !== iteration) return false;
-        if (stepKind === 'decision') return progress.phase === 'choose-action';
-        if (stepKind === 'extra-payment') {
-            return progress.phase === 'payment' && progress.paymentPurpose === 'extra';
-        }
-        if (stepKind === 'recruit-target') return progress.phase === 'choose-recruit-target';
-        return progress.phase === 'choose-training-target' || progress.phase === 'extra-training-target';
-    }
-    if (step.id === 'recruit-train-decision-final') {
-        const completedActions = (recruitTrainProgress?.actionsCompleted ?? 0)
-            + (recruitTrainProgress?.extraTrainingsCompleted ?? 0);
-        return recruitTrainProgress?.phase === 'choose-action'
-            && completedActions === QIDAHEN_BASIC_RECRUIT_TRAIN_DECISION_LIMIT;
-    }
-    switch (step.id) {
-        case 'choose-opening-action':
-            return core.turnPhase === 'action-window'
-                && core.handLimitDiscardSelection == null
-                && core.wheelActionUsed === false
-                && core.factionActionUsed === false;
-        case 'pick-action-after-wheel':
-            return core.turnPhase === 'action-window'
-                && core.wheelActionUsed === true
-                && core.factionActionUsed === false;
-        case 'wheel-move':
-            return core.wheelActionUsed === false
-                && core.factionActionUsed === true;
-        case 'wheel-move-opponent':
-            return core.wheelActionUsed === false
-                && core.selectedWheelMoveId === 'move-2-one-opponent';
-        case 'wheel-result':
-            return core.currentPlayer !== '0'
-                && core.turnPhase === 'action-window'
-                && (Boolean(core.lastSeasonSummary?.title.startsWith('轮盘'))
-                    || core.lastSeasonSummary?.title === '征召军队')
-                && core.wheelRecruitTrainProgress == null;
-        case 'continue-game':
-            return core.currentPlayer !== '0'
-                && core.turnPhase === 'action-window'
-                && core.lastSeasonSummary?.title.startsWith('轮盘') === true
-                && core.wheelRecruitTrainProgress == null;
-        case 'wheel-first-result':
-            return core.currentPlayer === '0'
-                && core.turnPhase === 'action-window'
-                && core.wheelActionUsed === true
-                && core.factionActionUsed === false
-                && Boolean(core.lastSeasonSummary?.title.startsWith('轮盘'))
-                && core.wheelRecruitTrainProgress == null;
-        case 'recruit-train-payment':
-            return core.wheelRecruitTrainProgress?.phase === 'payment'
-                && core.wheelRecruitTrainProgress.paymentPurpose === 'initial';
-        case 'pay-recruit':
-            return core.turnPhase === 'action-window'
-                && core.wheelActionUsed === false
-                && core.selectedActionId === 'recruit'
-                && core.payment.required === 1;
-        case 'pay-recruit-after-wheel':
-            return core.turnPhase === 'action-window'
-                && core.wheelActionUsed === true
-                && core.selectedActionId === 'recruit'
-                && core.payment.required === 1;
-        case 'choose-recruit-target':
-            return core.turnPhase === 'recruit-choice'
-                && core.confirmedActionId === 'recruit'
-                && core.recruitSelection != null
-                && core.explicitRegionId !== core.recruitSelection.targetRegionId;
-        case 'choose-recruit-formation':
-            return core.turnPhase === 'recruit-choice'
-                && core.confirmedActionId === 'recruit'
-                && core.recruitSelection != null
-                && core.explicitRegionId === core.recruitSelection.targetRegionId;
-        case 'choose-recruit-target-after-wheel':
-            return core.turnPhase === 'recruit-choice'
-                && core.wheelActionUsed === true
-                && core.confirmedActionId === 'recruit'
-                && core.recruitSelection != null
-                && core.explicitRegionId !== core.recruitSelection.targetRegionId;
-        case 'choose-recruit-formation-after-wheel':
-            return core.turnPhase === 'recruit-choice'
-                && core.wheelActionUsed === true
-                && core.confirmedActionId === 'recruit'
-                && core.recruitSelection != null
-                && core.explicitRegionId === core.recruitSelection.targetRegionId;
-        case 'action-result':
-            return core.lastSeasonSummary?.title === '征召军队'
-                && core.wheelActionUsed === false
-                && core.factionActionUsed === true;
-        default:
-            return true;
-    }
-};
-
-const buildBasicRecruitTrainSteps = (): NonNullable<TutorialManifest['steps']> => {
-    const steps: NonNullable<TutorialManifest['steps']> = [];
-    for (let iteration = 0; iteration < QIDAHEN_BASIC_RECRUIT_TRAIN_DECISION_LIMIT; iteration += 1) {
-        steps.push(
-            {
-                id: `recruit-train-decision-${iteration}`,
-                content: iteration === 0
-                    ? 'game-qidahen:tutorial.basic.steps.recruitTrainActionRule'
-                    : iteration === 1
-                        ? 'game-qidahen:tutorial.basic.steps.recruitTrainExtraDecision'
-                        : 'game-qidahen:tutorial.basic.steps.recruitTrainContinue',
-                highlightTarget: 'qidahen-wheel-recruit-train-selection',
-                position: 'left',
-                requireAction: true,
-                allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE],
-                advanceOnEvents: [
-                    { type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED', match: { choiceId: 'action:recruit' } },
-                    { type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED', match: { choiceId: 'action:train' } },
-                    { type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED', match: { choiceId: 'extra-training' } },
-                ],
-            },
-            {
-                id: `recruit-train-extra-payment-${iteration}`,
-                content: 'game-qidahen:tutorial.basic.steps.recruitTrainExtraPayment',
-                highlightTarget: 'qidahen-wheel-recruit-train-payment-panel',
-                position: 'left',
-                ...QIDAHEN_PAYMENT_STEP_FOCUS,
-                requireAction: true,
-                allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT],
-                advanceOnEvents: [{ type: 'WHEEL_RECRUIT_TRAIN_PAYMENT_RESOLVED' }],
-            },
-            {
-                id: `recruit-train-recruit-target-${iteration}`,
-                content: 'game-qidahen:tutorial.basic.steps.recruitTrainRecruitTargetRule',
-                highlightTarget: 'qidahen-wheel-recruit-train-selection',
-                position: 'left',
-                requireAction: true,
-                allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE],
-                advanceOnEvents: [{ type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED' }],
-            },
-            {
-                id: `recruit-train-training-target-${iteration}`,
-                content: 'game-qidahen:tutorial.basic.steps.recruitTrainTrainingTargetRule',
-                highlightTarget: 'qidahen-wheel-recruit-train-selection',
-                position: 'left',
-                requireAction: true,
-                allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE],
-                advanceOnEvents: [{ type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED' }],
-            },
-        );
-    }
-    steps.push({
-        id: 'recruit-train-decision-final',
-        content: 'game-qidahen:tutorial.basic.steps.recruitTrainFinalFinish',
-        highlightTarget: 'qidahen-wheel-recruit-train-selection',
-        position: 'left',
-        requireAction: true,
-        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE],
-        advanceOnEvents: [{ type: 'WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED', match: { choiceId: 'finish' } }],
-    });
-    return steps;
 };
 
 const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
@@ -702,123 +530,63 @@ const koreaSpecialStepValidator = (state: MatchState<unknown>, step: { id: strin
     }
 };
 
+const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    if (step.id === 'action-branch-recovery') {
+        return core.confirmedActionId !== 'raid';
+    }
+    if (step.id === 'payment-branch-recovery') {
+        const selectedCards = core.handCards.filter((card) => core.selectedPaymentCardIds.includes(card.id));
+        return selectedCards.length !== 1 || selectedCards[0]?.cardKind !== 'silver';
+    }
+    if (step.id === 'occupation-branch-recovery') {
+        return core.regions.find((region) => region.id === 'city-region-7')?.controller !== 'ming';
+    }
+    if (step.id === 'battle-branch-recovery') {
+        return core.postBattleSelection == null;
+    }
+    return true;
+};
+
 const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
     id: QIDAHEN_DEFAULT_TUTORIAL_ID,
-    revision: 8,
-    stayOnMatchAfterCompletion: true,
+    revision: 15,
     stepValidator: basicOpeningStepValidator,
-    steps: [
+    numPlayers: 3,
+    randomPolicy: { mode: 'sequence', values: [1, 1, 4, 4, 4] },
+    stayOnMatchAfterCompletion: true,
+    steps: ([
         {
-            id: 'welcome',
-            content: 'game-qidahen:tutorial.basic.steps.welcome',
-            // 胜利条件没有单一对应的当前 UI 对象，不借无关控件作定位点。
-            position: 'center',
-            targetlessPlacement: 'center',
-            avoidOverlapSelectors: [
-                '[data-testid^="qidahen-player-"]:not([data-testid="qidahen-player-float"])',
-                '[data-testid="qidahen-action-wheel"]',
-                '[data-testid="qidahen-actions-zone"]',
-                '[data-testid="qidahen-hand-zone"]',
-                '[data-testid^="qidahen-year-card-slot-"]',
-            ],
-            compactAvoidOverlapSelectors: [
-                '[data-testid^="qidahen-player-"]:not([data-testid="qidahen-player-float"])',
-                '[data-testid="qidahen-action-wheel"]',
-                '[data-testid="qidahen-actions-zone"]',
-                '[data-testid="qidahen-hand-zone"]',
-                '[data-testid^="qidahen-year-card-slot-"]',
-            ],
-            requireAction: false,
-            showMask: false,
+            id: 'frontier',
+            content: 'game-qidahen:tutorial.basic.steps.frontier',
+            highlightTarget: 'qidahen-map-layer',
+            position: 'right',
+            infoStep: true,
+        },
+        {
+            id: 'select-farm-region',
+            content: 'game-qidahen:tutorial.basic.steps.selectFarmRegion',
+            highlightTarget: 'qidahen-map-region-focus-city-region-15-liaodong',
             highlightFrame: 'none',
-        },
-        {
-            id: 'choose-opening-action',
-            content: 'game-qidahen:tutorial.basic.steps.chooseOpeningAction',
-            position: 'center',
-            targetlessPlacement: 'center',
-            avoidOverlapSelectors: [
-                '[data-testid^="qidahen-player-"]:not([data-testid="qidahen-player-float"])',
-                '[data-testid="qidahen-action-wheel"]',
-                '[data-testid="qidahen-actions-zone"]',
-                '[data-testid="qidahen-hand-zone"]',
-                '[data-testid^="qidahen-year-card-slot-"]',
-            ],
-            compactAvoidOverlapSelectors: [
-                '[data-testid^="qidahen-player-"]:not([data-testid="qidahen-player-float"])',
-                '[data-testid^="qidahen-year-card-slot-"]',
-                '[data-testid="qidahen-action-wheel"]',
-                '[data-testid="qidahen-actions-zone"]',
-                '[data-testid="qidahen-hand-zone"]',
-                '[data-testid="fab-menu"]',
-            ],
-            tooltipMaxWidth: 360,
-            requireAction: true,
-            showMask: false,
-            highlightFrame: 'none',
-            allowedCommands: [
-                QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
-                QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE,
-                QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
-            ],
-            advanceOnEvents: [
-                { type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'recruit' } },
-                { type: 'WHEEL_MOVE_SELECTED' },
-                { type: 'WHEEL_MOVE_EXECUTED' },
-            ],
-        },
-        {
-            id: 'pay-recruit',
-            content: 'game-qidahen:tutorial.basic.steps.payCards',
-            highlightTarget: 'qidahen-action-payment-confirm',
-            position: 'top',
-            ...QIDAHEN_PAYMENT_STEP_FOCUS,
-            tooltipMaxWidth: 520,
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
-            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'recruit' } }],
-        },
-        {
-            id: 'choose-recruit-target',
-            content: 'game-qidahen:tutorial.basic.steps.chooseRecruitTarget',
-            highlightTarget: 'qidahen-map-guide-target-focus-city-region-24',
-            position: 'left',
+            avoidOverlapSelectors: ['[data-testid="qidahen-map-region-focus-name"]'],
+            position: 'right',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-24' } }],
-        },
-        {
-            id: 'choose-recruit-formation',
-            content: 'game-qidahen:tutorial.basic.steps.chooseRecruitFormation',
-            highlightTarget: 'qidahen-recruit-selection',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE],
-            advanceOnEvents: [{ type: 'RECRUIT_CHOICE_RESOLVED' }],
-        },
-        {
-            id: 'action-result',
-            content: 'game-qidahen:tutorial.basic.steps.actionResult',
-            ...QIDAHEN_SEASON_SUMMARY_STEP_FOCUS,
-            infoStep: true,
-            showMask: true,
+            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-15-liaodong' } }],
         },
         {
             id: 'wheel-move',
             content: 'game-qidahen:tutorial.basic.steps.wheelMove',
-            highlightTarget: 'qidahen-action-wheel',
+            highlightTarget: 'qidahen-wheel-move-move-2-one-opponent',
             position: 'right',
             ...QIDAHEN_WHEEL_HOVER_STEP_FOCUS,
             requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
-            advanceOnEvents: [
-                { type: 'WHEEL_MOVE_SELECTED', match: { moveId: 'move-2-one-opponent' } },
-                { type: 'WHEEL_MOVE_EXECUTED' },
-            ],
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_SELECTED', match: { moveId: 'move-2-one-opponent' } }],
         },
         {
-            id: 'wheel-move-opponent',
-            content: 'game-qidahen:tutorial.basic.steps.wheelMoveOpponent',
+            id: 'wheel-opponent',
+            content: 'game-qidahen:tutorial.basic.steps.wheelOpponent',
             highlightTarget: 'qidahen-wheel-opponent-picker',
             position: 'left',
             requireAction: true,
@@ -826,71 +594,149 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-2-one-opponent' } }],
         },
         {
-            id: 'recruit-train-payment',
-            content: 'game-qidahen:tutorial.basic.steps.recruitTrainPayment',
-            highlightTarget: 'qidahen-wheel-recruit-train-payment-panel',
-            position: 'left',
-            ...QIDAHEN_PAYMENT_STEP_FOCUS,
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT],
-            advanceOnEvents: [{ type: 'WHEEL_RECRUIT_TRAIN_PAYMENT_RESOLVED' }],
-        },
-        ...buildBasicRecruitTrainSteps(),
-        {
-            id: 'wheel-first-result',
-            content: 'game-qidahen:tutorial.basic.steps.wheelFirstResult',
-            ...QIDAHEN_SEASON_SUMMARY_STEP_FOCUS,
-            infoStep: true,
-        },
-        {
-            id: 'pick-action-after-wheel',
-            content: 'game-qidahen:tutorial.basic.steps.pickActionAfterWheel',
-            highlightTarget: 'qidahen-action-recruit',
-            position: 'left',
-            tooltipMaxWidth: 300,
-            requireAction: true,
-            showMask: true,
-            allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
-            advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'recruit' } }],
-        },
-        {
-            id: 'pay-recruit-after-wheel',
-            content: 'game-qidahen:tutorial.basic.steps.payCards',
-            highlightTarget: 'qidahen-action-payment-confirm',
-            position: 'top',
-            ...QIDAHEN_PAYMENT_STEP_FOCUS,
-            tooltipMaxWidth: 520,
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
-            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'recruit' } }],
-        },
-        {
-            id: 'choose-recruit-target-after-wheel',
-            content: 'game-qidahen:tutorial.basic.steps.chooseRecruitTarget',
-            highlightTarget: 'qidahen-map-guide-target-focus-city-region-24',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-24' } }],
-        },
-        {
-            id: 'choose-recruit-formation-after-wheel',
-            content: 'game-qidahen:tutorial.basic.steps.chooseRecruitFormation',
-            highlightTarget: 'qidahen-recruit-selection',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE],
-            advanceOnEvents: [{ type: 'RECRUIT_CHOICE_RESOLVED' }],
-        },
-        {
             id: 'wheel-result',
             content: 'game-qidahen:tutorial.basic.steps.wheelResult',
             ...QIDAHEN_SEASON_SUMMARY_STEP_FOCUS,
+            avoidOverlapSelectors: [
+                ...QIDAHEN_SEASON_SUMMARY_STEP_FOCUS.avoidOverlapSelectors,
+                '[data-testid="qidahen-hand-row"]',
+                '[data-testid="fab-menu"]',
+            ],
             infoStep: true,
         },
-    ],
+        {
+            id: 'choose-raid',
+            content: 'game-qidahen:tutorial.basic.steps.chooseRaid',
+            highlightTarget: 'qidahen-action-raid',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
+            advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED' }],
+        },
+        {
+            id: 'action-branch-recovery', content: '',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
+            hiddenAutomation: {
+                kind: 'branch-recovery', recoveryStepId: 'choose-raid',
+                reason: '本回合从辽东突袭叶赫，恢复行动选择前完整检查点，由玩家重新选择突袭。',
+            },
+        },
+        {
+            id: 'choose-target',
+            content: 'game-qidahen:tutorial.basic.steps.chooseTarget',
+            highlightTarget: 'qidahen-map-region-focus-city-region-7',
+            highlightFrame: 'none',
+            avoidOverlapSelectors: ['[data-testid="qidahen-map-region-focus-name"]', '[data-testid="qidahen-action-payment-panel"]'],
+            position: 'right',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-7' } }],
+        },
+        {
+            id: 'pay-raid',
+            content: 'game-qidahen:tutorial.basic.steps.payRaid',
+            highlightTarget: 'qidahen-hand-zone',
+            position: 'top',
+            ...QIDAHEN_PAYMENT_STEP_FOCUS,
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD],
+            advanceOnEvents: [{ type: 'PAYMENT_CARD_SELECTED' }],
+        },
+        {
+            id: 'payment-branch-recovery', content: '',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
+            hiddenAutomation: {
+                kind: 'branch-recovery', recoveryStepId: 'pay-raid',
+                reason: '弃掉战术牌会使本课后续战术操作失去来源；恢复支付前完整检查点，由玩家重新选择银两。',
+            },
+        },
+        {
+            id: 'confirm-raid-payment',
+            content: 'game-qidahen:tutorial.basic.steps.confirmRaidPayment',
+            highlightTarget: 'qidahen-action-payment-confirm',
+            position: 'top',
+            ...QIDAHEN_PAYMENT_STEP_FOCUS,
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
+            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'raid' } }],
+        },
+        {
+            id: 'battle-open',
+            content: 'game-qidahen:tutorial.basic.steps.battleOpen',
+            highlightTarget: 'qidahen-raid-intent',
+            position: 'left',
+            infoStep: true,
+            aiActions: [{ commandType: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'defender-fight' } }],
+            autoAdvanceAfterAi: false,
+        },
+        {
+            id: 'play-tactic',
+            content: 'game-qidahen:tutorial.basic.steps.playTactic',
+            highlightTarget: 'qidahen-atlas05-1644-yuanyang-zhen',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
+            advanceOnEvents: [{ type: 'TACTIC_CARD_PLAYED' }],
+        },
+        {
+            id: 'resolve-battle',
+            content: 'game-qidahen:tutorial.basic.steps.resolveBattle',
+            highlightTarget: 'qidahen-resolve-pending-action',
+            position: 'left',
+            avoidOverlapSelectors: ['[data-pending-committed-selectable="true"]'],
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION, INTERACTION_COMMANDS.RESPOND],
+            advanceOnEvents: [
+                { type: 'PENDING_ACTION_RESOLVED' },
+                { type: 'SYS_INTERACTION_RESOLVED', match: { sourceId: QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID } },
+            ],
+        },
+        {
+            id: 'battle-branch-recovery', content: '',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
+            hiddenAutomation: {
+                kind: 'branch-recovery', recoveryStepId: 'resolve-battle',
+                reason: '本课以3支部队从辽东进攻叶赫；其他出兵数产生了未教学的败军退却，恢复结算前完整检查点重新选兵。',
+            },
+        },
+        {
+            id: 'battle-result',
+            content: 'game-qidahen:tutorial.basic.steps.battleResult',
+            highlightTarget: 'qidahen-post-battle-selection',
+            position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'occupy',
+            content: 'game-qidahen:tutorial.basic.steps.occupy',
+            highlightTarget: 'qidahen-post-battle-selection',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION, INTERACTION_COMMANDS.RESPOND],
+            advanceOnEvents: [
+                { type: 'POST_BATTLE_DECISION_RESOLVED' },
+                { type: 'SYS_INTERACTION_RESOLVED', match: { sourceId: QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID } },
+            ],
+        },
+        {
+            id: 'occupation-branch-recovery', content: '',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
+            hiddenAutomation: {
+                kind: 'branch-recovery', recoveryStepId: 'occupy',
+                reason: '撤回是正式合法选择；本课演示占领后的控制区变化，恢复战后选择前完整检查点再由玩家占领。',
+            },
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.basic.steps.finish',
+            ...QIDAHEN_MAP_RESULT_STEP_FOCUS,
+            infoStep: true,
+        },
+    ] satisfies TutorialManifest['steps']).map((step: TutorialManifest['steps'][number]) => ({
+        ...step,
+        avoidOverlapSelectors: [...new Set(['[data-testid="qidahen-player-float"]', '[data-testid="fab-menu"]', ...(step.avoidOverlapSelectors ?? [])])],
+    })),
 };
-
 const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
     id: 'attack-and-battle',
     stepValidator: attackAndBattleStepValidator,
@@ -926,7 +772,7 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             position: 'top',
             ...QIDAHEN_PAYMENT_STEP_FOCUS,
             requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
             advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'raid' } }],
         },
         {
@@ -942,6 +788,8 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             highlightTarget: 'qidahen-raid-intent',
             position: 'left',
             infoStep: true,
+            aiActions: [{ commandType: INTERACTION_COMMANDS.RESPOND, playerId: '2', payload: { optionId: 'defender-fight' } }],
+            autoAdvanceAfterAi: false,
         },
         {
             id: 'tactic-window',

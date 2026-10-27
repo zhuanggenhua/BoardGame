@@ -125,7 +125,7 @@ it('剧本一开局正式手牌会消费 atlas05 通过验收的普通手牌身�
         );
         expect(factionHandCards(core, 'ming').map((card) => card.cardDefId)).toEqual([
             'qidahen-atlas05-1631-northeast-army',
-            'qidahen-atlas05-1644-wuzhen-chaoha',
+            'qidahen-atlas05-1644-yuanyang-zhen',
             'qidahen-atlas05-1643-silver',
         ]);
         expect(factionHandCards(core, 'ming')[0]?.previewRef.index).toBeGreaterThanOrEqual(31);
@@ -382,8 +382,8 @@ it('atlas05 普通手牌真相表只解析通过验收的事件、军备、战�
         const promotedWuzhenChaohaCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(44);
         expect(promotedWuzhenChaohaCard).toMatchObject({
             cardKind: 'tactic',
-            cardDefId: 'qidahen-atlas05-1644-wuzhen-chaoha',
-            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1644-wuzhen-chaoha'],
+            cardDefId: 'qidahen-atlas05-1644-yuanyang-zhen',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1644-yuanyang-zhen'],
         });
 
         const promotedWarChariotFormationCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(45);
@@ -826,7 +826,7 @@ it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件入�
                 continue;
             }
 
-            expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+            expect(executed.handCards.some((card) => card.id === sourceCard.id), identity.cardDefId).toBe(false);
             expect(executed.discardPileCount).toBe(core.discardPileCount + (doesNotEnterDiscardPile ? 0 : 1));
             expect(executed.factions.ming.discardPileCount).toBe(
                 core.factions.ming.discardPileCount + (doesNotEnterDiscardPile ? 0 : 1),

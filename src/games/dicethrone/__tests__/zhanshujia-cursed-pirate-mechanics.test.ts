@@ -2962,6 +2962,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(discardInteraction?.type).toBe('selectHandCard');
         expect(discardInteraction?.playerId).toBe('1');
         expect(discardInteraction?.targetPlayerIds).toEqual(['1']);
+        expect(discardInteraction?.allowCancel).toBeUndefined();
 
         const resolveEvents = execute({
             ...dive,
@@ -3060,6 +3061,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const discardPrompt = getCardInteractionPrompt(advanced.state, 'deep-sea-dive');
         expect(discardPrompt.type).toBe('selectHandCard');
         expect(discardPrompt.playerId).toBe('1');
+        expect(discardPrompt.allowCancel).toBeUndefined();
 
         const discarded = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },

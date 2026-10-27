@@ -5,6 +5,7 @@
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { commitEventWithTimingOpportunities } from '../../../engine/TimingOpportunity';
 import { registerDiceDefinition } from './diceRegistry';
+import { doctorStrangeDiceDefinition } from '../heroes/doctor_strange/diceConfig';
 import { resourceSystem } from './resourceSystem';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, CharacterId, TurnPhase, InteractionDescriptor, DtResponseWindowType, SeatControllerKind, PendingDefenderChoice } from './types';
 import { INITIAL_HEALTH } from './types';
@@ -42,12 +43,14 @@ import { tianshiDiceDefinition } from '../heroes/tianshi/diceConfig';
 import { lierenDiceDefinition } from '../heroes/lieren/diceConfig';
 import { vampireLordDiceDefinition } from '../heroes/vampire_lord/diceConfig';
 import { zhizhuxiaDiceDefinition } from '../heroes/zhizhuxia/diceConfig';
+import { thorDiceDefinition } from '../heroes/thor/diceConfig';
 
 // 注册 DiceThrone 游戏特定条件（骰子组合、顺子等）
 registerDiceThroneConditions();
 
 // 注册 角色 骰子与资源定义
 registerDiceDefinition(monkDiceDefinition);
+registerDiceDefinition(doctorStrangeDiceDefinition);
 registerDiceDefinition(barbarianDiceDefinition);
 registerDiceDefinition(pyromancerDiceDefinition);
 registerDiceDefinition(moonElfDiceDefinition);
@@ -64,6 +67,7 @@ registerDiceDefinition(tianshiDiceDefinition);
 registerDiceDefinition(lierenDiceDefinition);
 registerDiceDefinition(vampireLordDiceDefinition);
 registerDiceDefinition(zhizhuxiaDiceDefinition);
+registerDiceDefinition(thorDiceDefinition);
 monkResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 barbarianResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 pyromancerResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));

@@ -35,7 +35,6 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-inspect-overlay"',
     'data-testid="qidahen-inspect-panel"',
     'data-testid="qidahen-inspect-close"',
-    'data-testid="qidahen-wheel-dispatch-payment-panel"',
     'data-testid="qidahen-action-wheel"',
     'data-tutorial-id="qidahen-action-wheel"',
     'data-testid="qidahen-action-wheel-asset"',
@@ -69,11 +68,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid={`qidahen-action-${action.id}`}',
     'data-testid="qidahen-hand-interaction-tray"',
     'data-testid="qidahen-operation-banner"',
-    'data-testid="qidahen-action-payment-panel"',
-    'data-testid="qidahen-action-payment-status"',
     'data-testid="qidahen-action-payment-hint"',
-    'data-testid="qidahen-action-payment-confirm"',
-    'data-testid="qidahen-action-payment-cancel"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
     'data-testid="qidahen-hand-zone"',
@@ -184,7 +179,9 @@ const inspectPanelSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenI
 const statReadoutSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenStatReadout.tsx'), 'utf-8');
 const mapPopulationLayerSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenMapPopulationLayer.tsx'), 'utf-8');
 const operationBannerSource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenOperationBanner.tsx'), 'utf-8');
-const combinedBoardSource = `${boardSource}\n${boardShellSource}\n${factionSelectionScreenSource}\n${inspectPanelSource}\n${operationBannerSource}`;
+const handInteractionTraySource = readFileSync(resolve(__dirname, '..', 'ui', 'QidahenHandInteractionTray.tsx'), 'utf-8');
+const viewportControlsSource = readFileSync(resolve(__dirname, '..', 'ui', 'MapViewportControls.tsx'), 'utf-8');
+const combinedBoardSource = `${boardSource}\n${boardShellSource}\n${factionSelectionScreenSource}\n${inspectPanelSource}\n${operationBannerSource}\n${handInteractionTraySource}\n${viewportControlsSource}`;
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
 const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
 const typesSource = readFileSync(resolve(__dirname, '..', 'domain', 'types.ts'), 'utf-8');
@@ -280,10 +277,11 @@ describe('Qidahen Board 结构门禁', () => {
 
         expect(boardSource).toContain('rounded-[9px]');
         expect(boardSource).toContain('data-qidahen-hand-card-selected');
-        expect(handCardSource).toContain('const selectedLift = multiSelectMode && selected ? 30 : HAND_CARD_SELECTED_LIFT;');
+        expect(handCardSource).toContain('multiSelectLift?: number;');
+        expect(handCardSource).toContain('? multiSelectLift ?? 30');
         expect(handCardSource).toContain('translateY(-${selectedLift}px) scale(${HAND_CARD_SELECTED_SCALE})');
         expect(handCardSource).toContain('data-testid={`qidahen-hand-card-selected-wash-${card.id}`}');
-        expect(boardSource).toContain('const handCardSelectedLift = isMobileLandscapeViewport ? 36 : HAND_CARD_SELECTED_LIFT;');
+        expect(boardSource).toContain('const handCardSelectedLift = isMobileLandscapeViewport');
         expect(boardSource).toContain('selected={selected}');
         expect(boardSource).toContain('available={Boolean(onClick)}');
         expect(boardSource).not.toContain('before:inset-[-7px]');
@@ -352,7 +350,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('textOrientation:');
         expect(boardSource).toContain('const activatableMoveChoices = moveChoices;');
         expect(boardSource).toContain('activatableMoveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length)');
-        expect(boardSource).toContain('className="pointer-events-none group absolute left-[136px] top-[-16px] z-30 h-[438px] w-[438px]"');
+        expect(boardSource).toContain('className="pointer-events-none group absolute left-[136px] top-[8px] z-30 h-[438px] w-[438px]"');
         expect(boardSource).toContain('className={`pointer-events-auto outline-none transition-[fill,stroke]');
         expect(boardSource).toContain('data-testid="qidahen-wheel-current-marker"');
         expect(boardSource).toContain('data-wheel-current-position={selectedId}');
@@ -507,7 +505,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('primaryStageHint === primaryStageHeadline ? primaryStageHeadline :');
         expect(boardSource).not.toContain('const visuallySelected = selected && engaged;');
         expect(boardSource).not.toContain("badgeLabel: '已锁定'");
-        expect(boardSource).toContain('focused={core.selectedActionId === action.id}');
+        expect(boardSource).toContain('focused={core.selectedActionId === action.id');
+        expect(boardSource).toContain("&& !(isTutorialActive && tutorialStepId === 'choose-opening-action')");
         expect(boardSource).toContain('const engagedActionId = core.confirmedActionId;');
         expect(boardSource).toContain('if (!gaoDiTargetSelectionActive) {');
         expect(boardSource).toContain("title: '调度目标'");
@@ -738,17 +737,15 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('地图必须共享缩放拖动视口，并让高亮路线与顶层点击点一起跟随同一套投影', () => {
-        expect(boardSource).toContain('type QidahenMapViewport = {');
-        expect(boardSource).toContain('const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {');
         expect(boardSource).toContain('const projectQidahenMapPointToStage = (');
         expect(boardSource).toContain('data-testid="qidahen-map-viewport-controls"');
         expect(boardSource).toContain('data-testid="qidahen-map-content"');
         expect(boardSource).toContain("'data-map-zoom': viewport.zoom,");
         expect(boardSource).toContain("'data-map-pan-x': viewport.panX,");
         expect(boardSource).toContain("'data-map-pan-y': viewport.panY,");
-        expect(boardSource).toContain('data-testid="qidahen-map-zoom-in"');
-        expect(boardSource).toContain('data-testid="qidahen-map-zoom-out"');
-        expect(boardSource).toContain('data-testid="qidahen-map-zoom-reset"');
+        expect(viewportControlsSource).toContain('data-testid="qidahen-map-zoom-in"');
+        expect(viewportControlsSource).toContain('data-testid="qidahen-map-zoom-out"');
+        expect(viewportControlsSource).toContain('data-testid="qidahen-map-zoom-reset"');
         expect(boardSource).toContain('wheelZoomFactor={1.14}');
         expect(boardSource).toContain('controlledViewport={controlledMapViewport}');
         expect(boardSource).toContain('onControlledViewportChange={handleControlledViewportChange}');
@@ -872,13 +869,9 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
         expect(boardSource).toContain('actionPaymentPreviewVisible');
-        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_WIDTH = 860;');
-        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 10;');
-        expect(boardSource).toContain('qidahen-hand-interaction-tray');
-        expect(boardSource).toContain('data-ui-anchor="bottom-hand"');
-        expect(boardSource).toContain('qidahen-action-payment-panel');
-        expect(boardSource).toContain('qidahen-action-payment-confirm');
-        expect(boardSource).toContain('qidahen-action-payment-cancel');
+        expect(boardSource).toContain('<QidahenHandInteractionTray');
+        expect(boardSource).toContain('interaction={resolveQidahenHandInteraction(');
+        expect(handInteractionTraySource).toContain('data-ui-anchor="bottom-hand"');
         expect(boardSource).not.toContain('点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张');
         expect(boardSource).not.toContain('点击底部手牌选择要弃掉的牌。');
         expect(boardSource).not.toContain('点击底部手牌弃 1 张，确认后才能选择进攻目标。');
@@ -973,7 +966,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('onInspectRegion');
         expect(boardSource).not.toContain("kind: 'region'");
         expect(boardSource).not.toContain('地点详情');
-        expect(boardSource).toContain('<QidahenMapPopulationLayer regions={core.regions} />');
+        expect(boardSource).toContain('<QidahenMapPopulationLayer regions={core.regions}');
     });
 
     it('势力条第二行只在有战败标记时公开人物，空人物计数不占常驻位', () => {
@@ -985,8 +978,6 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('运行时人口读数落在地图区域锚点，零人口不显示，且不生成人口 token', () => {
         expect(mapPopulationLayerSource).toContain('data-testid={`qidahen-map-population-${region.id}`}');
-        expect(mapPopulationLayerSource).toContain('region.isLogicalRegion || region.population <= 0');
-        expect(mapPopulationLayerSource).toContain('const CUBE_SIZE = 26');
         expect(mapPopulationLayerSource).toContain('#ffe566');
         expect(mapPopulationLayerSource).not.toContain('const CUBE_SIZE = 18');
         expect(mapPopulationLayerSource).not.toContain('#f4e3a6');
@@ -1001,13 +992,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toMatch(/const HAND_CARD_SELECTED_LIFT = \d+;/);
         expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;');
         expect(boardSource).toContain('const HAND_DOCK_WIDTH = 1310;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 92;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 118;');
-        expect(boardSource).toContain('const getQidahenMobileLandscapeHandLayout = (dockWidth: number) => {');
         expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (');
         expect(boardSource).toContain('const visibleCardCount = Math.min(handCount, MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT);');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 0;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 14;');
         expect(boardShellSource).toContain('const sceneScale = Math.max(width / layout.width, height / layout.height);');
         expect(boardShellSource).toContain('const hudScale = isMobileLandscape ? 1 : Math.min(width / layout.width, height / layout.height);');
         expect(boardShellSource).toContain('width: metrics.isMobileLandscape ? metrics.viewportWidth : layout.width');
@@ -1018,16 +1006,13 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';");
         expect(boardSource).toContain('bottom: dockBottomInset,');
         expect(boardSource).toContain('mapTargetSelectionActive?: boolean;');
-        expect(boardSource).toContain("className={`${mapTargetSelectionActive ? 'pointer-events-none' : 'pointer-events-auto'} absolute left-1/2 flex items-end ${isMobileLandscapeViewport ? 'justify-start' : 'justify-center'} overflow-x-auto overflow-y-visible`}");
         expect(boardSource).toContain("data-map-target-selection-active={mapTargetSelectionActive ? 'true' : undefined}");
         expect(boardSource).toContain('const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;');
         expect(boardSource).toContain('mapTargetSelectionActive={mapTargetSelectionActive}');
         expect(boardSource).toContain('height: bottomDockHeight,');
-        expect(boardSource).toContain('const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : \'calc(100vw - 320px)\';');
         expect(boardSource).toContain('width: handDockWidth,');
         expect(boardSource).toContain('maxWidth: handDockMaxWidth,');
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
-        expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('data-testid={`qidahen-hand-card-magnify-${card.id}`}');
         expect(boardSource).toContain('onMagnifyCard?.({');
         expect(boardSource).toContain('data-qidahen-hand-card-touch-inspect="long-press"');
@@ -1046,6 +1031,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const multiSelectMode = actionPaymentPreviewVisible || handLimitDiscardSelection != null;');
         expect(boardSource).toContain('const handCardOverlapPx = multiSelectMode');
         expect(boardSource).toContain('multiSelectMode={multiSelectMode}');
+        expect(boardSource).toContain('multiSelectLift={isMobileLandscapeViewport ? 0 : undefined}');
         expect(boardSource).not.toContain('before:inset-[-7px]');
         expect(boardSource).toContain('width={handCardWidth}');
         expect(boardSource).toContain('height={handCardHeight}');

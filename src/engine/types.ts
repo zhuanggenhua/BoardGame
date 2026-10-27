@@ -32,6 +32,8 @@ export interface Command<TType extends string = string, TPayload = unknown> {
     timestamp?: number;
     /** 本地同屏可跳过领域校验（由适配层注入） */
     skipValidation?: boolean;
+    /** 本地自动执行不单独建立普通撤回点；属于引擎元数据，不进入领域 payload。 */
+    skipUndoSnapshot?: boolean;
 }
 
 /**
@@ -402,6 +404,8 @@ export interface TutorialStepSnapshot {
     content: string;
     /** 仅保留教程状态推进，不渲染重复文字浮层；适用于地图结果动画等自解释反馈。 */
     hideOverlay?: boolean;
+    /** 正式控件已承接操作时，不再显示浮层底部的重复操作状态；默认保留。 */
+    hideActionHint?: boolean;
     /** 可选的教程内参考图，用于首次讲清卡面、图标或帮助卡读法。 */
     visual?: TutorialStepVisual;
     highlightTarget?: string;
@@ -417,6 +421,8 @@ export interface TutorialStepSnapshot {
      * beside a protected reading surface without covering it.
      */
     tooltipMaxWidth?: number;
+    /** Fixed width for this step in compact layouts, before the compact scale is applied. */
+    compactTooltipWidth?: number;
     /** Optional vertical nudge applied after placement, in CSS pixels. */
     tooltipOffsetY?: number;
     /** Center a targetless card in the viewport instead of pinning it to an edge. */

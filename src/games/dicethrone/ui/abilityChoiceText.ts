@@ -131,9 +131,9 @@ export function getAbilityChoiceText(
         };
     }
 
-    const variantNameKey = `abilities.${abilityId}.name`;
-    const variantDescriptionKey = `abilities.${abilityId}.description`;
-    const reusesParentDescriptionKey = match.ability.description === variantDescriptionKey;
+    const variantNameKey = match.variant.name ?? `abilities.${abilityId}.name`;
+    const variantDescriptionKey = match.variant.description ?? `abilities.${abilityId}.description`;
+    const reusesParentDescriptionKey = !match.variant.description && match.ability.description === variantDescriptionKey;
     const parentDescription =
         match.ability.description && !reusesParentDescriptionKey
             ? resolver.t(match.ability.description)

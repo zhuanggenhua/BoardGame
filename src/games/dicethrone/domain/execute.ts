@@ -675,6 +675,11 @@ export function execute(
             break;
         }
 
+        case 'USE_DEJA_VU': {
+            // 流程系统通过 FlowHooks 消耗 Token 并重启 offensiveRoll。
+            break;
+        }
+
         case 'MODIFY_DIE': {
             const { dieId, newValue } = command.payload as { dieId: number; newValue: number };
             const currentRollContext = resolveCurrentRollContext(state, phase);
@@ -956,6 +961,10 @@ export function execute(
                 const player = state.players[interaction.playerId];
                 if (!player) break;
 
+                const resolveCustomActionId = interaction.resolveCustomActionId;
+                const continuation = resolveCustomActionId ? getCustomActionHandler(resolveCustomActionId) : undefined;
+                if (resolveCustomActionId && !continuation) break;
+
                 const handCardIds = new Set(player.hand.map(card => card.id));
                 const resolvedCardIds = Array.from(new Set(selectedCardIds.filter(cardId => handCardIds.has(cardId))))
                     .slice(0, interaction.selectCount ?? 1);
@@ -972,6 +981,7 @@ export function execute(
                 }
 
                 if (resolvedCardIds.length > 0) {
+                    const completionTimestamp = timestamp + resolvedCardIds.length + 1;
                     events.push({
                         type: 'INTERACTION_COMPLETED',
                         payload: {
@@ -981,6 +991,32 @@ export function execute(
                         sourceCommandType: command.type,
                         timestamp: timestamp + resolvedCardIds.length + 1,
                     } as DiceThroneEvent);
+                    if (continuation && resolveCustomActionId) {
+                        const sourceAbilityId = interaction.sourceCardId;
+                        const customTimestamp = completionTimestamp + 1;
+                        const opponentId = getDefaultOpponentId(state, interaction.playerId) ?? interaction.playerId;
+                        events.push(...continuation({
+                            ctx: {
+                                attackerId: interaction.playerId,
+                                defenderId: opponentId,
+                                sourceAbilityId,
+                                state,
+                                damageDealt: 0,
+                                timestamp: customTimestamp,
+                            },
+                            targetId: opponentId,
+                            attackerId: interaction.playerId,
+                            sourceAbilityId,
+                            state,
+                            timestamp: customTimestamp,
+                            random,
+                            action: {
+                                type: 'custom',
+                                target: 'self',
+                                customActionId: resolveCustomActionId,
+                            },
+                        }).filter(event => event !== undefined));
+                    }
                 }
                 break;
             }

@@ -368,16 +368,19 @@ export const UserMenu = ({ onLogout, onProfile, variant = 'classic', triggerTest
                             <div className="mx-2 my-1 h-px bg-[#8b633e]/18" />
                         </>
                     ) : null}
-                    {/* 对战历史 */}
-                    <button
-                        onClick={handleOpenHistory}
-                        className={isBookVariant
-                            ? 'w-full rounded px-4 py-2.5 text-left cursor-pointer text-[#3c2819] font-bold text-xs hover:bg-[rgba(120,84,48,0.12)] flex items-center gap-3 transition-colors'
-                            : 'w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors'}
-                    >
-                        <History size={16} />
-                        {t('social:menu.matchHistory')}
-                    </button>
+                    {!isPlatformVariant && <>
+                        {/* 现代版历史入口统一放在个人中心；经典入口保留。 */}
+                        <button
+                            onClick={handleOpenHistory}
+                            data-testid="user-menu-history"
+                            className={isBookVariant
+                                ? 'w-full rounded px-4 py-2.5 text-left cursor-pointer text-[#3c2819] font-bold text-xs hover:bg-[rgba(120,84,48,0.12)] flex items-center gap-3 transition-colors'
+                                : 'w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors'}
+                        >
+                            <History size={16} />
+                            {t('social:menu.matchHistory')}
+                        </button>
+                    </>}
 
                     {/* 好友与聊天 */}
                     <button

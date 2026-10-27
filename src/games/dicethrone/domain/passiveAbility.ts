@@ -13,6 +13,7 @@ import type { PlayerId } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneRollContext, Die, DtResponseWindowType, TurnPhase } from './core-types';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
+import { ELECTROKINESIS_PASSIVE } from '../heroes/thor/passiveAbilities';
 import { resolveCurrentRollContext } from './rollContext';
 import { isPlayerAllowedToPassiveRerollCurrentRoll } from './rollContextPolicy';
 
@@ -47,6 +48,8 @@ export interface PassiveTriggerDef {
 
 /** 单个被动动作定义 */
 export interface PassiveActionDef {
+    /** 弃牌型动作至少需要的真实手牌数；实际支付由正式选择结算。 */
+    requiresHandCards?: number;
     /** 动作类型 */
     type: PassiveActionType;
     /** 短按钮文案 i18n key；长描述仍放 descriptionKey / 提示板 */
@@ -132,7 +135,10 @@ export function getPlayerPassiveAbilities(
     playerId: PlayerId
 ): PassiveAbilityDef[] {
     const player = state.players[playerId];
-    return player?.passiveAbilities ?? [];
+    const passives = player?.passiveAbilities ?? [];
+    return player && (player.characterId === 'thor' || (player.tokens[TOKEN_IDS.ELECTROKINESIS] ?? 0) > 0)
+        ? [...passives, ELECTROKINESIS_PASSIVE]
+        : passives;
 }
 
 const TREANT_TREE_SPIRIT_TOKEN_IDS = new Set<string>([
@@ -245,6 +251,7 @@ export function isPassiveActionUsable(
     // CP 检查
     const player = state.players[playerId];
     if (!player) return false;
+    if (action.requiresHandCards && player.hand.length < action.requiresHandCards) return false;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
     if (

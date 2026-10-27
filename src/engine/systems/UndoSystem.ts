@@ -117,7 +117,7 @@ export function setUndoAiSeatIds<TCore>(
     const normalizedSeatIds = normalizeAiSeatIds(aiSeatIds);
     const undoState = (state.sys.undo ?? {
         snapshots: [],
-        maxSnapshots: 1,
+        maxSnapshots: 10,
     }) as UndoState & { aiSeatIds?: PlayerId[] };
     const previousSeatIds = normalizeAiSeatIds(undoState.aiSeatIds);
     if (
@@ -173,7 +173,7 @@ export function createUndoSystem<TCore>(
     config: UndoSystemConfig = {}
 ): EngineSystem<TCore> {
     const {
-        maxSnapshots = 1,
+        maxSnapshots = 10,
         requireApproval = true,
         requiredApprovals = 1,
         // 由具体游戏提供：哪些“领域命令”会产生可撤回快照。
@@ -256,7 +256,7 @@ export function createUndoSystem<TCore>(
             // 通用标记：payload._noSnapshot === true 时跳过快照
             // 用于「移动后触发的技能」等场景与前一个命令共享同一个撤回点
             const pl = command.payload as Record<string, unknown> | undefined;
-            if (pl?._noSnapshot === true) {
+            if (command.skipUndoSnapshot === true || pl?._noSnapshot === true) {
                 return;
             }
 

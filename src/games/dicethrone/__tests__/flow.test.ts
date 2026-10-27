@@ -79,7 +79,9 @@ function createInitializedStateWithCharacters(
         sys: createInitialSystemState(playerIds, testSystems, undefined),
     };
 
-    const allCharacterIds = DICETHRONE_CHARACTER_CATALOG.map((item) => item.id);
+    const allCharacterIds = DICETHRONE_CHARACTER_CATALOG
+        .filter((item) => item.setupOptionStatus === undefined)
+        .map((item) => item.id);
     const usedCharacterIds = new Set<string>();
     const setupCharacters: Record<PlayerId, string> = {} as Record<PlayerId, string>;
 

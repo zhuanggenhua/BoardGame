@@ -10,10 +10,14 @@ export class GameSubmission {
     @Prop({ type: String, required: true }) name!: string;
     @Prop({ type: String, required: true }) url!: string;
     @Prop({ type: String, required: true }) category!: string;
-    @Prop({ type: Number, required: true }) minPlayers!: number;
-    @Prop({ type: Number, required: true }) maxPlayers!: number;
+    @Prop({ type: Number }) minPlayers?: number;
+    @Prop({ type: Number }) maxPlayers?: number;
     @Prop({ type: Number }) durationMinutes?: number;
     @Prop({ type: String, default: '' }) author!: string;
+    @Prop({ type: String, default: '' }) authorProfileUrl!: string;
+    @Prop({ type: String }) gameId?: string;
+    @Prop({ type: String }) reviewRevision?: string;
+    @Prop({ type: String }) reviewerId?: string;
     @Prop({ type: String, default: '' }) description!: string;
     @Prop({ type: String, default: '' }) rules!: string;
     @Prop({ type: String, default: '' }) coverUrl!: string;

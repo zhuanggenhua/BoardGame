@@ -19,6 +19,28 @@ const preparedBoardState = (seed: string, playerIds = ['0', '1', '2']) => {
     expect(state.core.phase).toBe('outpost');
     return state;
 };
+it('本人确认准备后不再用选角弹窗遮住前哨之前的牌桌与他席准备', () => {
+    const adapter=createReplayAdapter(FateDominationDomain,'confirmed-identity-ui');
+    let state=adapter.setup(['0','1','2']);
+    state=adapter.execute(state,{type:'ADVANCE_PHASE',playerId:'0',payload:{}}).state;
+    expect(state.core.phase).toBe('preparation');
+    render(<FateDominationBoard {...({G:state,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+    expect(screen.queryByRole('region',{name:'选择御主与从者'})).toBeNull();
+});
+it('部署先选择、可取消或改选，确认前不发领域命令，确认后只提交一次',()=>{
+    const state=preparedBoardState('deployment-choice-ui');
+    const dispatch=vi.fn();
+    render(<FateDominationBoard {...({G:state,dispatch,playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+    fireEvent.click(screen.getByRole('button',{name:'地点workshop'}));
+    expect(dispatch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button',{name:'取消部署'}));
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(screen.getByRole('button',{name:'选择部署点位'}).hasAttribute('disabled')).toBe(true);
+    fireEvent.click(screen.getByRole('button',{name:'地点miyama'}));
+    fireEvent.click(screen.getByRole('button',{name:'地点workshop'}));
+    fireEvent.click(screen.getByRole('button',{name:'确认部署至魔术工房'}));
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('DEPLOY_MASTER',{locationId:'workshop'});
+});
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: vi.fn(), registerReset: vi.fn() }) }));
 vi.mock('../../../contexts/ToastContext', () => ({useToast: () => ({warning:vi.fn()})}));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key === 'commands.passAction' ? '结束行动' : key, i18n: { language: 'zh-CN' } }) }));
@@ -42,7 +64,7 @@ it('正式对局使用新手牌与地图表面，选中席位展开出牌，头�
     const seatAvatar=screen.getByRole('button',{name:'查看玩家 2详情'});
     expect(seatAvatar.querySelector('img')?.getAttribute('src')).toBe(fateTokenAsset(G.core.players['1'].masterId));
     expect(seatAvatar.querySelectorAll('img')).toHaveLength(2);
-    fireEvent.pointerEnter(seatAvatar.closest('section')!);
+    fireEvent.pointerEnter(seatAvatar);
     expect(screen.getByLabelText('玩家 2已打出')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '查看玩家 2详情' }));
     expect(screen.getByTestId('detail').textContent).toContain('1');
@@ -51,13 +73,13 @@ it('正式对局使用新手牌与地图表面，选中席位展开出牌，头�
     expect(screen.getByTestId('fate-play-area').querySelector(`[data-card-id="${G.core.players['0'].hand[0].id}"]`)).toBeTruthy();
 });
 
-it('首轮已完成准备的玩家只读显示角色选择，未准备的玩家仍可自行选择', () => {
+it('首轮已完成准备的玩家收起选角弹窗，未准备的玩家仍可自行选择', () => {
  const G=createReplayAdapter(FateDominationDomain,'setup-identity-lock-ui').setup(['0','1','2']);
  G.core.phase='preparation';G.core.round=1;G.core.currentPlayerId='0';G.core.phaseCompletedPlayerIds=['0'];
  const dispatch=vi.fn();
  const base={G,dispatch,isMultiplayer:true,matchData:[]};
  const {rerender}=render(<FateDominationBoard {...({...base,playerID:'0'} as never)}/>);
- expect(screen.getByTestId('fate-identity-confirmed').textContent).toContain('角色选择已确认');
+ expect(screen.queryByRole('region',{name:'选择御主与从者'})).toBeNull();
  expect(screen.queryByLabelText('御主')).toBeNull();
  expect(screen.queryByLabelText('从者')).toBeNull();
 
@@ -65,9 +87,10 @@ it('首轮已完成准备的玩家只读显示角色选择，未准备的玩家�
  rerender(<FateDominationBoard {...({...base,playerID:'1'} as never)}/>);
  expect(G.core.currentPlayerId).toBe('0');
  expect(screen.queryByTestId('fate-identity-confirmed')).toBeNull();
- expect(screen.getByLabelText('御主')).toBeTruthy();
- expect(screen.getByLabelText('从者')).toBeTruthy();
- fireEvent.change(screen.getByLabelText('御主'),{target:{value:FATE_MASTERS[0].id}});
+ expect(screen.getByRole('tab',{name:'御主'})).toBeTruthy();
+ expect(screen.getByRole('tab',{name:'从者'})).toBeTruthy();
+ expect(screen.queryByRole('combobox')).toBeNull();
+ fireEvent.click(screen.getByTestId(`fate-setup-master-${FATE_MASTERS[0].id}`));
  expect(dispatch).toHaveBeenCalledWith('SELECT_MASTER',{masterId:FATE_MASTERS[0].id});
 });
 
@@ -192,14 +215,25 @@ it('检视大图先消费退出键，回到原详情按钮，再次退出才关�
  fireEvent.keyDown(source,{key:'Escape'});expect(screen.queryByTestId('detail')).toBeNull();
  expect(screen.getByLabelText('玩家 2已打出')).toBeTruthy();
 });
+it('来自原牌长按的抬手兼容点击不关闭新检视，重新按遮罩仍能关闭',()=>{
+ const G=preparedBoardState('inspect-opening-gesture',['0','1','2']);
+ render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+ fireEvent.click(screen.getByRole('button',{name:'查看玩家 2详情'}));
+ fireEvent.click(screen.getByRole('button',{name:'检视测试卡'}));
+ const backdrop=screen.getByRole('dialog',{name:'测试卡卡牌检视'});
+ fireEvent.pointerUp(backdrop);fireEvent.click(backdrop);
+ expect(screen.getByRole('button',{name:'关闭测试卡大图'})).toBeTruthy();
+ fireEvent.pointerDown(backdrop);fireEvent.pointerUp(backdrop);fireEvent.click(backdrop);
+ expect(screen.queryByRole('button',{name:'关闭测试卡大图'})).toBeNull();
+});
 it('展开出牌不移动席位列表，收起后保留完整席位入口', () => {
  const G=preparedBoardState('seat-drawer', ['0','1','2','3','4','5','6']);
  render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
- fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}).closest('section')!);
+ fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}));
  const drawer=screen.getByLabelText('玩家 2已打出');
  expect(drawer.closest('.fd-runtime-seat')).toBeNull();
  expect(document.querySelectorAll('.fd-runtime-seat-list .fd-runtime-seat')).toHaveLength(6);
- fireEvent.click(screen.getByRole('button',{name:'收起已打出卡牌'}));
+ fireEvent.keyDown(screen.getByLabelText('玩家 2已打出'),{key:'Escape'});
  expect(screen.queryByLabelText('玩家 2已打出')).toBeNull();
  expect(document.querySelectorAll('.fd-runtime-seat-list .fd-runtime-seat')).toHaveLength(6);
 });
@@ -211,9 +245,9 @@ it('保留本人席位和唯一右下阶段入口，抽屉不重复姓名或展�
  expect(screen.getByTestId('fate-domination-primary-action').closest('.fd-phase-control')).toBeTruthy();
  expect(screen.queryByRole('button',{name:'移动',exact:true})).toBeNull();
  expect(screen.queryByText('查看御主与从者')).toBeNull();
- fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}).closest('section')!);
+ fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}));
  const drawer=screen.getByLabelText('玩家 2已打出');
- expect(drawer.textContent).toContain('合计威力');expect(drawer.textContent).not.toContain('玩家 2');
+ expect(drawer.querySelector('header')).toBeNull();expect(drawer.textContent).not.toContain('合计威力');expect(drawer.textContent).not.toContain('玩家 2');
  expect(document.querySelectorAll('.fd-phase-control button')).toHaveLength(1);
 });
 it('选中一张攻击时不能由阶段入口静默结束，清空选择才恢复结束行动', () => {
@@ -228,7 +262,7 @@ it('本地行动权切换后不把新的本人保留在对手抽屉', () => {
  const G=preparedBoardState('hotseat-selection', ['0','1','2']);G.core.phase='action';
  const props={G,dispatch:vi.fn(),isMultiplayer:false,matchData:[]};
  const {rerender}=render(<FateDominationBoard {...(props as never)}/>);
- fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}).closest('section')!);
+ fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}));
  expect(screen.getByLabelText('玩家 2已打出')).toBeTruthy();
  const next=structuredClone(G);next.core.currentPlayerId='1';rerender(<FateDominationBoard {...({...props,G:next} as never)}/>);
  expect(screen.queryByLabelText('玩家 2已打出')).toBeNull();
@@ -328,7 +362,7 @@ it('令咒移动在地图选目的地，确认前不消耗，取消不提交',()
  expect(dispatch).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'地点workshop'}));
  expect(dispatch).not.toHaveBeenCalled();
- fireEvent.click(screen.getByRole('button',{name:'确认移动',exact:true}));
+ fireEvent.click(screen.getByRole('button',{name:'确认移动至魔术工房',exact:true}));
  expect(dispatch).toHaveBeenCalledExactlyOnceWith('USE_COMMAND_SPELL',{effect:'move',targetLocationId:'workshop'});
 });
 it('已激活移动技能在地图选择合法目标，确认才提交技能目标',()=>{
@@ -340,7 +374,7 @@ it('已激活移动技能在地图选择合法目标，确认才提交技能目�
  expect(screen.queryByRole('button',{name:'地点workshop'})).toBeNull();
  expect(dispatch).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'地点recon'}));
- fireEvent.click(screen.getByRole('button',{name:'确认移动',exact:true}));
+ fireEvent.click(screen.getByRole('button',{name:'确认移动至侦察',exact:true}));
  expect(dispatch).toHaveBeenCalledExactlyOnceWith('PLAY_SKILL',{skillId:'sc_cu_2',targetLocationId:'recon'});
 });
 
@@ -443,4 +477,20 @@ it('普通选牌与撤回只预览本地，确认一次提交完整草稿，断�
  expect(card('draft-a').dataset.cardZone).toBe('hand');
  expect(card('draft-b').dataset.cardZone).toBe('hand');
  expect(dispatch).toHaveBeenCalledTimes(2);
+});
+
+
+it('首轮选角与后续准备均保留右侧技能和唯一推进区，准备阶段不能选攻击', () => {
+ const G=preparedBoardState('preparation-always-visible');G.core.phase='preparation';G.core.round=2;
+ const dispatch=vi.fn();const props={G,dispatch,playerID:'0',isMultiplayer:true,matchData:[]};
+ const view=render(<FateDominationBoard {...(props as never)}/>);
+ expect(screen.getByLabelText('技能牌').querySelectorAll('[data-card-zone="skill"]').length).toBeGreaterThan(0);
+ const card=screen.getByTestId('fate-domination-hand').querySelector('button')!;
+ expect(card.getAttribute('aria-disabled')).toBe('true');fireEvent.click(card);
+ expect(dispatch).not.toHaveBeenCalled();
+ const initial=createReplayAdapter(FateDominationDomain,'initial-always-visible').setup(['0','1','2']);
+ view.rerender(<FateDominationBoard {...({...props,G:initial} as never)}/>);
+ expect(screen.getByLabelText('御主关联组件')).toBeTruthy();
+ expect(screen.getAllByTestId('fate-domination-primary-action')).toHaveLength(1);
+ expect(screen.getByTestId('fate-domination-primary-action').closest('.fd-runtime-setup')).toBeNull();
 });

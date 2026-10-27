@@ -40,7 +40,7 @@ html[data-home-entry-style="modern"] .platform-author-placeholder { display: non
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child { text-align: left; padding-right: 40px; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:first-child { color: #111; font-size: 24px; font-weight: 800; letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:last-child { display: none; }
-html[data-home-entry-style="modern"] :is([data-platform-dialog="email"], [data-platform-dialog="avatar"]) > div:first-child > div:first-child { color: #111; font-size: 24px; font-weight: 800; letter-spacing: 0; }
+html[data-home-entry-style="modern"] [data-platform-dialog="email"] > div:first-child > div:first-child { color: #111; font-size: 24px; font-weight: 800; letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="confirm"] > div:first-child { color: #111; font-size: 22px; letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="confirm"] > div:last-child > button:last-child { border: 2px solid #111; border-radius: 0; background: #d5ff00; color: #111; }
 html[data-home-entry-style="modern"] [data-platform-dialog="social"] > button { z-index: 30; top: 8px; right: 8px; background: #fff; }
@@ -55,6 +55,9 @@ html[data-home-entry-style="modern"] .platform-account-row button { flex-shrink:
 html[data-home-entry-style="modern"] .platform-account-row [data-account-edit-password] { grid-column: 1 / -1; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:last-child button { width: 100%; border: 2px solid #111; border-radius: 0; background: #f3f3f3; font-size: 14px; }
 .platform-cursor-variant-scroll, .platform-cursor-variant-table { display: contents; }
+html[data-home-entry-style="modern"] .platform-cursor-label { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+html[data-home-entry-style="modern"] .platform-history-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+html[data-home-entry-style="modern"] .platform-history-error > button { min-height: 44px; padding: 8px 12px; border: 2px solid #111; background: #d5ff00; font-weight: 700; text-decoration: none; cursor: pointer; }
 html[data-home-entry-style="modern"] .platform-cursor-variant-scroll { display: block; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 html[data-home-entry-style="modern"] .platform-cursor-variant-table { display: block; min-width: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="about"] p.truncate { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }

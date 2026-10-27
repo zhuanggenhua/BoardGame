@@ -287,7 +287,12 @@ export const TutorialOverlay: React.FC = () => {
           safeArea,
         );
         // 显式宽度限制在触屏布局同样生效，才能把提示放进真实候选之间的空位。
-        if (currentStep.tooltipMaxWidth) {
+        if (currentStep.compactTooltipWidth) {
+          compactPanel.panelWidth = Math.min(
+            currentStep.compactTooltipWidth,
+            Math.floor((viewportWidth - safeArea.left - safeArea.right - compactPanel.edgeInset * 2) / compactPanel.panelScale),
+          );
+        } else if (currentStep.tooltipMaxWidth) {
           compactPanel.panelWidth = Math.min(compactPanel.panelWidth, currentStep.tooltipMaxWidth);
         }
         const scaledWidth = compactPanel.panelWidth * compactPanel.panelScale;
@@ -533,9 +538,25 @@ export const TutorialOverlay: React.FC = () => {
           explicitVerticalCandidate ??
           rankedCompactCandidates[0]?.candidate ??
           compactCandidates[0];
+        const compactOffsetY = currentStep.tooltipOffsetY ?? 0;
+        const chosenCompactStyle = chosenCompactCandidate.style;
+        const offsetCompactStyle = compactOffsetY === 0
+          ? chosenCompactStyle
+          : typeof chosenCompactStyle.top === 'number'
+            ? {
+                ...chosenCompactStyle,
+                top: clampNumber(
+                  chosenCompactStyle.top + compactOffsetY,
+                  safeArea.top + compactPanel.edgeInset,
+                  viewportHeight - safeArea.bottom - compactPanel.edgeInset - estimatedHeight,
+                ),
+              }
+            : typeof chosenCompactStyle.bottom === 'number'
+              ? { ...chosenCompactStyle, bottom: Math.max(0, chosenCompactStyle.bottom - compactOffsetY) }
+              : chosenCompactStyle;
 
         commitTooltipLayout({
-          style: chosenCompactCandidate.style,
+          style: offsetCompactStyle,
           arrowClass: "hidden",
           placement: chosenCompactCandidate.placement,
         });
@@ -733,7 +754,7 @@ export const TutorialOverlay: React.FC = () => {
       const placementCandidates = placementOrder
         .flatMap((placement, index) => {
           // 沿目标同一侧滑动避让散布的保护区，不能把所有保护区合成一堵横跨牌桌的墙。
-          const offsets = protectedRegionRects.flatMap(bounds =>
+          const offsets = protectedRegionRects.flatMap<{ left?: number; top?: number }>(bounds =>
             placement === 'top' || placement === 'bottom'
               ? [{ left: bounds.left - actualTooltipWidth - protectedGap }, { left: bounds.right + protectedGap }]
               : [{ top: bounds.top - tooltipHeight - protectedGap }, { top: bounds.bottom + protectedGap }]);
@@ -919,6 +940,7 @@ export const TutorialOverlay: React.FC = () => {
     : undefined;
   const showHighlightFrame = currentStep.highlightFrame !== "none";
   const currentVisual = currentStep.visual;
+  const isCompactActionStrip = isCompactTutorialLayout && currentStep.requireAction && currentStep.hideActionHint && Boolean(currentStep.compactTooltipWidth) && !currentVisual;
   const visualAlt = currentVisual ? t(currentVisual.alt) : undefined;
   const visualCaption = currentVisual?.caption
     ? t(currentVisual.caption)
@@ -1003,7 +1025,7 @@ export const TutorialOverlay: React.FC = () => {
         <div
           data-testid="tutorial-overlay-card"
           data-tutorial-placement={tooltipStyles.placement}
-          className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${currentStep.requireAction || isBottomConfirmStep ? "pointer-events-none" : "pointer-events-auto"} ${
+          className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex ${isCompactActionStrip ? "flex-row items-center gap-3" : "flex-col"} ${currentStep.requireAction || isBottomConfirmStep ? "pointer-events-none" : "pointer-events-auto"} ${
             isBottomConfirmStep
               ? "w-[min(320px,calc(100vw-2rem))]"
               : isCompactTutorialLayout
@@ -1031,7 +1053,7 @@ export const TutorialOverlay: React.FC = () => {
               isBottomConfirmStep
                 ? "mb-2 max-h-[92px] rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] leading-[1.45] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
                 : isCompactTutorialLayout
-                  ? "mb-1 text-left text-[15px] leading-[1.55]"
+                  ? `${isCompactActionStrip ? "mb-0" : "mb-1"} text-left text-[15px] leading-[1.55]`
                   : hasStepVisual
                     ? "mb-3 text-left text-sm leading-relaxed"
                     : "mb-4 text-left text-lg leading-relaxed"
@@ -1097,8 +1119,8 @@ export const TutorialOverlay: React.FC = () => {
             </div>
           )}
 
-          {currentStep.requireAction && (
-            <div className="flex w-full items-stretch gap-2">
+          {currentStep.requireAction && (canGoPrevious || !currentStep.hideActionHint) && (
+            <div className={`flex ${isCompactActionStrip ? "w-auto shrink-0" : "w-full"} items-stretch gap-2`}>
               {canGoPrevious ? (
                 <button
                   data-testid="tutorial-previous-button"
@@ -1109,13 +1131,13 @@ export const TutorialOverlay: React.FC = () => {
                   {t("overlay.previous")}
                 </button>
               ) : null}
-              <div
+              {!currentStep.hideActionHint && <div
                 data-testid="tutorial-action-hint"
                 className={`flex items-center gap-2 font-bold text-[#8c7b64] bg-[#f3f0e6]/50 border border-[#e5e0d0]/50 justify-center italic ${canGoPrevious ? "flex-1" : "w-full"} ${isCompactTutorialLayout ? "text-[11px] rounded-lg p-2" : "text-sm p-2"}`}
               >
                 <span className="animate-pulse w-2 h-2 rounded-full bg-[#c0a080]"></span>
                 {t("overlay.clickToContinue")}
-              </div>
+              </div>}
             </div>
           )}
         </div>
