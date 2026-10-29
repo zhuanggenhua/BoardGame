@@ -1,4 +1,5 @@
 import { EndgameOverlay, type EndgameOverlayProps } from '../../../components/game/framework/widgets/EndgameOverlay';
+import { useTranslation } from 'react-i18next';
 import type { GameOverResult } from '../../../engine/types';
 import './endgame.css';
 
@@ -8,16 +9,17 @@ interface Props extends Omit<EndgameOverlayProps, 'result' | 'renderContent'> {
 }
 
 function FateResult({ result, nameFor }: { result: GameOverResult; nameFor: Props['nameFor'] }) {
+    const { t } = useTranslation('game-fate-domination');
     const winners = result.winners ?? (result.winner !== undefined ? [result.winner] : []);
-    const title = result.draw ? '平局' : winners.length
-        ? `${winners.map(nameFor).join('、')}赢得圣杯战争`
-        : '所有御主败北';
-    return <section className="fd-endgame-results" aria-label="圣杯战争结果">
+    const title = result.draw ? t('ui.endgame.draw') : winners.length
+        ? t('ui.endgame.winners', { names: winners.map(nameFor).join(t('ui.endgame.nameSeparator')) })
+        : t('ui.endgame.allMastersDefeated');
+    return <section className="fd-endgame-results" aria-label={t('ui.endgame.results')}>
         <h2>{title}</h2>
-        <ol aria-label="最终战果">
+        <ol aria-label={t('ui.endgame.finalScores')}>
             {Object.entries(result.scores ?? {}).sort((a, b) => b[1] - a[1]).map(([id, score]) =>
                 <li key={id} data-winner={winners.includes(id) || undefined}>
-                    <span>{nameFor(id)}</span><strong aria-label={`${nameFor(id)}战果`}>{score}</strong>
+                    <span>{nameFor(id)}</span><strong aria-label={t('ui.endgame.playerScore', { name: nameFor(id) })}>{score}</strong>
                 </li>)}
         </ol>
     </section>;

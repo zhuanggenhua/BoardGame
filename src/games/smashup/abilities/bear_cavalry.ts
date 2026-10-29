@@ -2189,7 +2189,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         const base = state.core.bases[toBase];
         if (!base) return { state, events };
 
-        const suppressOptions: Array<{ id: string; label: string; value: BearRidesYouPodSuppressTarget; displayMode?: 'card' | 'button' }> = [];
+        const suppressOptions: Array<{ id: string; label: string; labelKey?: string; value: BearRidesYouPodSuppressTarget; displayMode?: 'card' | 'button' }> = [];
         const baseDef = getBaseDef(base.defId);
         suppressOptions.push({
             id: 'base',
@@ -2244,7 +2244,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             });
         }
 
-        suppressOptions.push({ id: 'skip', label: '跳过（不压制）', value: { kind: 'skip' }, displayMode: 'button' });
+        suppressOptions.push({ id: 'skip', label: '跳过（不压制）', labelKey: 'ui.bear_cavalry_bear_rides_you_pod_skip_suppress_option', value: { kind: 'skip' }, displayMode: 'button' });
 
         const next = createSimpleChoice(
             `bear_cavalry_bear_rides_you_pod_choose_suppress_${timestamp}`,

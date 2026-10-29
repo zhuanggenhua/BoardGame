@@ -23,6 +23,7 @@ export function AuthorSupportContent() {
 }
 
 export function AuthorSupportButton() {
+    const { t } = useTranslation('game');
     const id = useId();
     const root = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
@@ -43,10 +44,10 @@ export function AuthorSupportButton() {
         onBlur={event => { if (!pinned && !event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
         onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
         <button type="button" className="author-support-trigger" aria-expanded={open} aria-controls={id}
-            onFocus={() => setOpen(true)} onClick={() => { setOpen(true); setPinned(true); }}><Heart size={16} aria-hidden="true" />支持作者</button>
-        {open && <section id={id} className="author-support-popover" aria-label="支持作者">
-            <button type="button" className="author-support-close" aria-label="关闭赞助说明" onClick={close}><X size={18} /></button>
-            <h2 className="author-support-heading">支持作者</h2>
+            onFocus={() => setOpen(true)} onClick={() => { setOpen(true); setPinned(true); }}><Heart size={16} aria-hidden="true" />{t('hud.about.supportAuthor')}</button>
+        {open && <section id={id} className="author-support-popover" aria-label={t('hud.about.supportAuthor')}>
+            <button type="button" className="author-support-close" aria-label={t('hud.about.closeSupport')} onClick={close}><X size={18} /></button>
+            <h2 className="author-support-heading">{t('hud.about.supportAuthor')}</h2>
             <AuthorSupportContent />
         </section>}
     </div>;

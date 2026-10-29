@@ -49,7 +49,10 @@ export function fatePostBattleOpportunities(event: FatePostBattleStartedEvent, t
         metadata: { priority: -index },
         choice: {
             ownerFrameId: event.payload.frameId, kind: 'choose-option', selection: { min: 1, max: 1 }, skipPolicy: 'forbidden',
-            candidates: [{ id: 'restore', label: '恢复一枚令咒', value: 'restore' }, { id: 'decline', label: '不恢复', value: 'decline' }],
+            candidates: [
+                { id: 'restore', label: '恢复一枚令咒', labelKey: 'ui.postBattleChoice.restore', value: 'restore' },
+                { id: 'decline', label: '不恢复', labelKey: 'ui.postBattleChoice.decline', value: 'decline' },
+            ],
             resolution: { type: 'interaction-response' }, ai: AI_SUPPORT,
             metadata: { round: event.payload.round, frameId: event.payload.frameId, recipient },
         },
@@ -59,7 +62,7 @@ export function fatePostBattleOpportunities(event: FatePostBattleStartedEvent, t
 export function createFatePostBattleInteraction(opportunity: Opportunity):InteractionDescriptor<FatePostBattleChoiceData>|undefined {
     if (opportunity.sourceRef.id !== FATE_SEAL_RESTORE_CHOICE) return undefined;
     const interaction = createSimpleChoiceFromTimingOpportunity(opportunity, {
-        title: '战后恢复令咒', targetType: 'generic', autoResolveIfSingle: false, responseValidationMode: 'snapshot',
+        title: '战后恢复令咒', titleKey: 'ui.postBattleChoice.title', targetType: 'generic', autoResolveIfSingle: false, responseValidationMode: 'snapshot',
     });
     const fateContext=parseChoiceContext(opportunity.choice?.metadata);
     if(!fateContext)throw new Error('Fate post-battle opportunity is missing its rule context');

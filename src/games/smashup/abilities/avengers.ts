@@ -1173,6 +1173,9 @@ const modularSourcePromptProgram = createPromptProgram<AvengersPromptContext & {
             label: source.actionDefId
                 ? getCardDef(source.actionDefId)?.name ?? source.actionDefId
                 : source.kind === 'base' ? '基地行动' : '随从附加行动',
+            labelKey: source.actionDefId ? undefined : source.kind === 'base'
+                ? 'ui.avengers_modular_tech_source_base_action_option'
+                : 'ui.avengers_modular_tech_source_minion_action_option',
             value: source,
             displayMode: 'card' as const,
         })),

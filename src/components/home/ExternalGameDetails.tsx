@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getExternalGame } from '../../api/external-games';
@@ -20,6 +21,7 @@ interface ExternalGameDetailsProps {
 
 /** 外站目录复用原生详情抽屉；开始游玩才进入试玩页，不走建房。 */
 export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, presentation = 'modal' }: ExternalGameDetailsProps) {
+    const { t } = useTranslation('lobby');
     const navigate = useNavigate();
     const { user } = useAuth();
     const [tab, setTab] = useState<'about'>('about');
@@ -33,26 +35,26 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
     };
     const thumbnail = item?.coverUrl
         ? <img src={item.coverUrl} alt="" />
-        : <span className="platform-external-art"><small>外部游戏</small></span>;
+        : <span className="platform-external-art"><small>{t('platform.externalGamePage.externalGame')}</small></span>;
     return <HomeGameDetailsPresentation presentation={presentation} onClose={onClose} closeOnBackdrop={closeOnBackdrop} containerClassName="p-0 home-game-details-layer">
-        {game.isPending || !item ? <div className="platform-game-details" role="status">正在加载游戏…</div>
-            : game.isError ? <div className="platform-game-details" role="alert">游戏加载失败：{game.error instanceof Error ? game.error.message : '请重试'}
-                <button type="button" onClick={onClose}>关闭</button></div>
+        {game.isPending || !item ? <div className="platform-game-details" role="status">{t('platform.externalGamePage.loading')}</div>
+            : game.isError ? <div className="platform-game-details" role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}
+                <button type="button" onClick={onClose}>{t('common:close')}</button></div>
             : <PlatformGameDetails presentation={presentation} title={item.name} description={<ExternalGameText text={item.description} />}
                 thumbnail={thumbnail} playerOptions={playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
-                onClose={onClose} tabs={[{ id: 'about' as const, label: '介绍' }]} selectedTab={tab} onTab={setTab}
+                onClose={onClose} tabs={[{ id: 'about' as const, label: t('platform.externalGamePage.about') }]} selectedTab={tab} onTab={setTab}
                 primaryActions={embed?.canEmbed
-                    ? <button type="button" data-testid="external-game-play" onClick={startPlay}>开始游玩</button>
-                    : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer">前往原网站 ↗</a>}
+                    ? <button type="button" data-testid="external-game-play" onClick={startPlay}>{t('platform.externalGamePage.start')}</button>
+                    : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}
                 secondaryActions={<>
-                    {embed?.canEmbed && <a href={item.url} target="_blank" rel="noopener noreferrer">前往原网站 ↗</a>}
+                    {embed?.canEmbed && <a href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}
                     <PlatformFavoriteButton gameId={item.gameId} title={item.name} />
                 </>}
                 author={<ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
                     isOwner={Boolean(user && item.ownerUserId === user.id)} onManageWorks={() => navigate('/?section=profile&tab=works')} />}>
-                {embed?.restricted && <p className="platform-details-notice" role="status">{item.embedReason || '游戏网站暂不允许在本站内嵌。你仍可前往原网站游玩。'}</p>}
-                {embed && !embed.safeHttps && <p className="platform-details-notice">当前网页不能内嵌不安全的 HTTP 网站，请前往原网站。</p>}
-                {embed?.sameOrigin && <p className="platform-details-notice">该网址无法作为外部游戏内嵌，请联系管理员核对。</p>}
+                {embed?.restricted && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
+                {embed && !embed.safeHttps && <p className="platform-details-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
+                {embed?.sameOrigin && <p className="platform-details-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
                 {item.rules && <p><ExternalGameText text={item.rules} /></p>}
             </PlatformGameDetails>}
     </HomeGameDetailsPresentation>;

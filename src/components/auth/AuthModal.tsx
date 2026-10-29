@@ -864,12 +864,12 @@ export const AuthModal = ({
 
             {isPlatformStyle ? (
                 <header className="platform-auth-header">
-                    <div><span className="platform-auth-brand">易桌游</span><h2>{modalTitle}</h2></div>
-                    <button type="button" className="platform-auth-close" aria-label="关闭登录窗口" onClick={onClose}><X size={22} /></button>
-                    {mode !== 'reset' ? <nav className="platform-auth-tabs" aria-label="账户入口">
+                    <div><span className="platform-auth-brand">{t('platform.brand')}</span><h2>{modalTitle}</h2></div>
+                    <button type="button" className="platform-auth-close" aria-label={t('platform.closeLoginDialog')} onClick={onClose}><X size={22} /></button>
+                    {mode !== 'reset' ? <nav className="platform-auth-tabs" aria-label={t('platform.accountEntry')}>
                         <button type="button" aria-current={mode === 'login' ? 'page' : undefined} onClick={() => switchMode('login')}>{t('menu.login')}</button>
                         <button type="button" aria-current={mode === 'register' ? 'page' : undefined} onClick={() => switchMode('register')}>{t('menu.register')}</button>
-                    </nav> : <button type="button" className="platform-auth-back" onClick={() => switchMode('login')}>返回登录</button>}
+                    </nav> : <button type="button" className="platform-auth-back" onClick={() => switchMode('login')}>{t('platform.backToLogin')}</button>}
                 </header>
             ) : showTitle ? (
                 <div className={clsx('shrink-0 text-center', embedded ? 'px-0 pb-3 pt-0' : 'px-6 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-10')}>

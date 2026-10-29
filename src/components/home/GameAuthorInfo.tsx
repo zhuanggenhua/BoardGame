@@ -80,10 +80,10 @@ export function ExternalGameAuthor({ author, authorProfileUrl, gameId, gameName,
             ? <CreatorClaimPanel token={token} userId={user.id} gameId={gameId} gameName={gameName} profileUrl={authorProfileUrl} onClose={() => setClaimOpen(false)} />
             : <section className="creator-claim-overlay" data-testid="creator-claim-panel" style={{ zIndex: UI_Z_INDEX.modalContent }}>
                 <div className="creator-claim-sheet">
-                    <button type="button" className="platform-upload-back" onClick={() => setClaimOpen(false)}>← 返回游戏详情</button>
+                    <button type="button" className="platform-upload-back" onClick={() => setClaimOpen(false)}>← {t('platform.creatorCenter.claim.backToGame')}</button>
                     <section className="platform-upload-login">
-                        <h2>申请认领</h2>
-                        <p>请先登录后再申请认领这款游戏。登录入口在页面顶部。</p>
+                        <h2>{t('platform.creatorCenter.claim.title')}</h2>
+                        <p>{t('platform.creatorCenter.claim.loginPrompt')}</p>
                     </section>
                 </div>
             </section>)

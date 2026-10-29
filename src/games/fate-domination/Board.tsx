@@ -166,14 +166,24 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
             ? { type: 'RESOLVE_LOCATION', playerId: actorId ?? '', payload: { locationId: nextLocation } }
             : { type: 'ADVANCE_PHASE', playerId: actorId ?? '', payload: {} };
     const primary = movement.command ?? deployment.command ?? phasePrimary;
-    const primaryLabel = movement.intent ? (movement.target ? `确认移动至${core.battlefield[movement.target].label}` : '选择移动目标') : core.phase === 'action' ? (actor?.selectedAttackIds.length ? '确认攻击' : actor && !actor.normalAttackPlayed && hasLegalFateNormalPlay(core,actor.id) ? '选择两张攻击' : '结束行动') : core.phase === 'preparation' ? '完成准备' : core.phase === 'outpost' ? (deployment.target ? `确认部署至${core.battlefield[deployment.target].label}` : !actor?.locationId ? '选择部署点位' : '结束我的前哨阶段') : primary.type === 'RESOLVE_LOCATION' && nextLocation ? `结算${core.battlefield[nextLocation].label}` : core.phase === 'battle' ? (core.battleResolution?.step === 'after-battle' ? '等待战后选择' : core.battleResolution ? '完成战斗结算' : '结束我的战斗阶段') : '继续';
+    const primaryLabel = movement.intent
+        ? movement.target ? t('ui.board.confirmMoveTo', { location: core.battlefield[movement.target].label }) : t('ui.board.selectMoveTarget')
+        : core.phase === 'action'
+            ? actor?.selectedAttackIds.length ? t('ui.board.confirmAttack') : actor && !actor.normalAttackPlayed && hasLegalFateNormalPlay(core, actor.id) ? t('ui.board.selectTwoAttacks') : t('ui.board.endAction')
+            : core.phase === 'preparation' ? t('ui.board.finishPreparation')
+                : core.phase === 'outpost'
+                    ? deployment.target ? t('ui.board.confirmDeploymentTo', { location: core.battlefield[deployment.target].label }) : !actor?.locationId ? t('ui.board.selectDeploymentSpace') : t('ui.board.endOutpost')
+                    : primary.type === 'RESOLVE_LOCATION' && nextLocation ? t('ui.board.resolveLocation', { location: core.battlefield[nextLocation].label })
+                        : core.phase === 'battle'
+                            ? core.battleResolution?.step === 'after-battle' ? t('ui.board.waitPostBattleChoice') : core.battleResolution ? t('ui.board.finishBattleResolution') : t('ui.board.endBattle')
+                            : t('ui.board.continue');
     const primaryEnabled = Boolean((!isMultiplayer || isConnected!==false) && !interactionBlocked && (!movement.intent || movement.command) && actorId && current && core.phase !== 'complete' && (primary.type==='CONFIRM_ATTACK' ? attackDraft.canConfirm : validate(attackDraft.state, primary).valid));
     const selectingIdentity = !G.sys.tutorial.active && core.phase === 'preparation' && core.round === 1 && Boolean(actor) && !(actorId && (core.phaseCompletedPlayerIds ?? []).includes(actorId));
     const phaseControl = (
-<section className="fd-phase-control" aria-label="回合操作" data-tutorial-id="fate-phase">
-    {movement.intent && <button type="button" className="fd-movement-cancel" aria-label="取消移动" onClick={movement.cancel}><X size={20}/></button>}
-    {deployment.target && <button type="button" className="fd-movement-cancel" aria-label="取消部署" onClick={deployment.cancel}><X size={20}/></button>}
-    <div className="fd-phase-copy"><small>{current ? '你的回合' : nameFor(core.currentPlayerId)}</small><b>{primaryLabel}</b></div>
+<section className="fd-phase-control" aria-label={t('ui.board.turnActions')} data-tutorial-id="fate-phase">
+    {movement.intent && <button type="button" className="fd-movement-cancel" aria-label={t('ui.board.cancelMovement')} onClick={movement.cancel}><X size={20}/></button>}
+    {deployment.target && <button type="button" className="fd-movement-cancel" aria-label={t('ui.board.cancelDeployment')} onClick={deployment.cancel}><X size={20}/></button>}
+    <div className="fd-phase-copy"><small>{current ? t('ui.board.yourTurn') : nameFor(core.currentPlayerId)}</small><b>{primaryLabel}</b></div>
     <button type="button" aria-label={primaryLabel} className="fd-runtime-primary" data-testid="fate-domination-primary-action" disabled={!primaryEnabled} onClick={() => {if(primary.type==='CONFIRM_ATTACK')attackDraft.confirm();else send(primary.type, primary.payload);if(movement.intent)movement.cancel();}}>
      <b>{t(`phases.${core.phase}`)}</b><ArrowRight className="board-shell-fixed-icon" size={18}/>
     </button>
@@ -187,7 +197,7 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     onInspect={(asset,name) => inspect(asset,name,true,'detail')} onConfirm={()=>send('ADVANCE_PHASE',{})} confirmEnabled={primaryEnabled}/>
     : <>
    <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} movablePlayerId={!interactionBlocked && movement.normalAvailable ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} selectedLocation={movement.target ?? deployment.target} selectedDeploymentSlot={deployment.slot} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else movement.begin({kind:'normal'});}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={(id,slot) => { if(interactionBlocked)return; if(movement.intent) movement.select(id); else deployment.select(id,slot); }}/>
-   <header className="fd-runtime-top"><div><small>FATE / DOMINATION</small><h1>命运支配</h1></div><div className="fd-runtime-round">第 {core.round} 回合 <span>{t(`phases.${core.phase}`)}</span></div></header>
+   <header className="fd-runtime-top"><div><small>{t('brand')}</small><h1>{t('title')}</h1></div><div className="fd-runtime-round">{t('ui.board.roundNumber', { round: core.round })} <span>{t(`phases.${core.phase}`)}</span></div></header>
    <FatePlayerRail core={core} viewerId={actorId} selectedId={selectedSeat} nameFor={nameFor} onSelect={setSelectedSeat} onDetail={id => { setInspection(null); setDetail(id); setSelectedSeat(id); }} onInspect={(asset,name) => inspect(asset,name,true,'opponent')}/>
    {actor && actorId && <FateSelfDock core={core} playerId={actorId} name={nameFor(actorId)} canActivateAbility={id=>abilityAvailable(actorId,id)} onActivateAbility={activateAbility} onAbilityTipChange={setMasterAbilityTip} pileInfo={pile && (pile === 'deck' || !actor.discard.length) ? `${pile === 'deck' ? '抽牌堆' : '弃牌堆'}剩余 ${actor[pile].length} 张` : undefined} sealEnabled={!interactionBlocked && current && core.phase === 'action' && actor.commandSpells > 0} onDetail={() => {setInspection(null);setDetail(actorId);}} onSeal={() => {if(interactionBlocked)return;setInspection(null);setUsingSeal(true);}} onPile={value => {setInspection(null);setPile(previous => previous === value ? null : value);}}/>}
    {pile === 'discard' && actor && actor.discard.length > 0 && <FateDiscardInspection cards={actor.discard} onClose={()=>setPile(null)} onInspect={(asset,name) => inspect(asset,name,true,'discard')}/>}

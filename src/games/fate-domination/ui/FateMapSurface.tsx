@@ -8,6 +8,7 @@ import type { FateDominationCore, LocationId } from '../domain/types';
 import './map-surface.css';
 import { fateTokenAsset } from './identityArtwork';
 import {legalFateDeploymentSlots,nextFateDeploymentSlot} from '../domain/deployment';
+import {useTranslation} from 'react-i18next';
 const WIDTH = 1927, HEIGHT = 1179;
 // Printed E movement-cost/arrow rectangles, measured on the original Fuyuki board.
 const MOVEMENT_EXITS: Partial<Record<LocationId, {x:number;y:number;w:number;h:number}>> = {
@@ -61,6 +62,7 @@ interface Props {
 }
 /** Shared Pixi camera owns world transforms. Accessible controls consume that displayed pose. */
 export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, onInspect, movablePlayerId, moving, onPawn, movementOrigin, selectedLocation, selectedDeploymentSlot }: Props) {
+    const { t } = useTranslation('game-fate-domination');
     const canInspectHiddenShinto=canViewFateHiddenShinto(core,viewerId);
     const [host, setHost] = React.useState<HTMLDivElement | null>(null);
     const overlay = React.useRef<HTMLDivElement>(null);
@@ -141,6 +143,6 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             <span className="fd-event-deck-count" style={{left: 285, top: 704}}>{core.eventDeckCount}</span>
             {cards.map(card => <button key={card.id} type="button" className="fd-runtime-map-card-hit" style={{ left: card.x, top: card.y, width: card.w, height: card.h }} aria-label={`检视${card.name}`} onClick={() => onInspect(card.assetPath, card.name)}/>)}
         </div>
-        <div className="fd-runtime-camera-controls"><span>{Math.round(pose.zoom * 100)}%</span><button type="button" onClick={reset}>复位</button></div>
+        <div className="fd-runtime-camera-controls"><span>{Math.round(pose.zoom * 100)}%</span><button type="button" onClick={reset}>{t('ui.map.reset')}</button></div>
     </div>;
 }

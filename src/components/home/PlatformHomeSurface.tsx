@@ -73,7 +73,7 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
     const externalGames = external.data?.items ?? [];
     const externalCards: PlatformCatalogGame[] = externalGames.map(game => ({
         id: game.gameId, titleKey: game.name, descriptionKey: game.description,
-        thumbnail: game.coverUrl ? <img src={game.coverUrl} alt="" /> : <span className="platform-external-art"><small>外部游戏</small></span>,
+        thumbnail: game.coverUrl ? <img src={game.coverUrl} alt="" /> : <span className="platform-external-art"><small>{t('platform.externalGamePage.externalGame')}</small></span>,
     }));
     const favorites = allGames.filter(game => favoriteIds.has(game.id));
     const allCards = [...allGames, ...externalCards];
@@ -127,7 +127,7 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
                   {section === 'library' && libraryDetails}
                   <div hidden={section === 'library' && Boolean(libraryDetails)}>
                     {library.error && <p role="alert">{t('platform.librarySyncError')} <button type="button" onClick={() => void library.retry()}>{t('platform.retry')}</button></p>}
-                    {external.isError && <p role="alert">外部游戏目录读取失败。<button type="button" onClick={() => void external.refetch()}>重试</button></p>}
+                    {external.isError && <p role="alert">{t('platform.externalGamePage.directoryLoadFailed')} <button type="button" onClick={() => void external.refetch()}>{t('platform.retry')}</button></p>}
                     {section === 'library' && library.isLoading ? <p role="status">{t('platform.loadingLibrary')}</p> : <PlatformGameCatalog
                         heading={t(`platform.${section}`)}
                         query={section === 'library' ? libraryQuery : discoverQuery}

@@ -55,16 +55,20 @@ export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', subm
             </form> : <div><h1>{user.username}</h1><p>{t('platform.profile.online')}</p></div>}
             {error && <p role="alert">{error}</p>}
         </header>
-        <nav className="platform-profile-tabs" aria-label="个人中心分区">
-            {[['overview', '概览'], ['submissions', '我的投稿'], ['works', '我的作品']].map(([id, label]) => <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTabChange(id)}>{label}</button>)}
+        <nav className="platform-profile-tabs" aria-label={t('platform.profile.sections')}>
+            {[
+                ['overview', t('platform.profile.overview')],
+                ['submissions', t('platform.profile.submissions')],
+                ['works', t('platform.profile.works')],
+            ].map(([id, label]) => <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTabChange(id)}>{label}</button>)}
         </nav>
         <section className="platform-profile-feed" data-testid="profile-plays">
             {activeTab === 'overview' && <><h2>{t('social:matchHistory.title')}</h2><MatchHistoryList />
-                <div className="platform-external-history"><h2>外部游戏</h2>
-                    {history.isPending && <p role="status">正在加载游玩记录…</p>}
-                    {history.isError && <p role="alert">游玩记录读取失败。<button onClick={() => void history.refetch()}>重试</button></p>}
-                    {history.isSuccess && !history.data?.items?.length && <p>还没有外部游戏游玩记录。</p>}
-                    {history.data?.items?.map(item => <button type="button" className="platform-external-history-row" key={item.gameId} onClick={() => onOpenGame(item.gameId)}><strong>{item.name}</strong><span>前台停留约 {Math.floor(item.seconds / 60)} 分钟</span></button>)}
+                <div className="platform-external-history"><h2>{t('platform.profile.externalHistory')}</h2>
+                    {history.isPending && <p role="status">{t('platform.profile.loadingExternalHistory')}</p>}
+                    {history.isError && <p role="alert">{t('platform.profile.externalHistoryLoadFailed')} <button onClick={() => void history.refetch()}>{t('platform.retry')}</button></p>}
+                    {history.isSuccess && !history.data?.items?.length && <p>{t('platform.profile.noExternalHistory')}</p>}
+                    {history.data?.items?.map(item => <button type="button" className="platform-external-history-row" key={item.gameId} onClick={() => onOpenGame(item.gameId)}><strong>{item.name}</strong><span>{t('platform.profile.foregroundPlayTime', { minutes: Math.floor(item.seconds / 60) })}</span></button>)}
                 </div></>}
             {activeTab === 'submissions' && token && <MySubmissions token={token} userId={user.id} onOpen={onOpenSubmission} filter={submissionFilter} onFilterChange={onSubmissionFilterChange} />}
             {activeTab === 'works' && token && <MyWorks token={token} userId={user.id} onOpenGame={onOpenGame} />}
@@ -72,7 +76,7 @@ export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', subm
         <aside className="platform-profile-stats" data-testid="profile-rail">
             {!editing && <button type="button" onClick={() => setEditing(true)}>{t('platform.profile.editProfile')}</button>}
             {activity.isError && <p role="alert">{t('platform.profile.activityLoadFailed')} <button type="button" onClick={() => void activity.refetch()}>{t('platform.retry')}</button></p>}
-            <dl><div><dt>外链时长（估算）</dt><dd>{typeof history.data?.totalSeconds === 'number' ? `${Math.floor(history.data.totalSeconds / 60)} 分钟` : '—'}</dd></div><div><dt>{t('platform.profile.plays')}</dt><dd>{activity.data?.totalPlays ?? '—'}</dd></div><div><dt>{t('platform.profile.favorites')}</dt><dd>{favoriteCount}</dd></div></dl>
+            <dl><div><dt>{t('platform.profile.externalLinkTime')}</dt><dd>{typeof history.data?.totalSeconds === 'number' ? t('platform.profile.minutes', { minutes: Math.floor(history.data.totalSeconds / 60) }) : '—'}</dd></div><div><dt>{t('platform.profile.plays')}</dt><dd>{activity.data?.totalPlays ?? '—'}</dd></div><div><dt>{t('platform.profile.favorites')}</dt><dd>{favoriteCount}</dd></div></dl>
         </aside>
       </section>
     </div>;

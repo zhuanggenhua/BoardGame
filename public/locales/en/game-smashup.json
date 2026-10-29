@@ -1535,6 +1535,8 @@
     "avengers_modular_tech_destination_minion_title": "Modular Tech: choose the equipment's new minion",
     "avengers_modular_tech_source_fallback_option": "Ongoing action",
     "avengers_modular_tech_source_title": "Modular Tech: choose equipment or a base artifact to move",
+    "avengers_modular_tech_source_base_action_option": "Base action",
+    "avengers_modular_tech_source_minion_action_option": "Minion attachment action",
     "avengers_strategize_order_first_title": "Strategize: choose the first card for the top of your deck",
     "avengers_strategize_order_second_title": "Strategize: choose the second card for the top of your deck",
     "shield_reassignment_title": "Reassignment: choose up to two of your minions at other bases to move to the target base",
@@ -1918,6 +1920,7 @@
     "playerLabel": "P{{playerId}}",
     "baseIndex": "Base {{index}}",
     "baseUnknown": "Unknown Base",
+    "ability_not_implemented": "Ability not yet implemented",
     "limitType": {
       "minion": "Minion",
       "action": "Action"

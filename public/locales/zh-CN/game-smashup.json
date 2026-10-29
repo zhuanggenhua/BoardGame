@@ -1492,6 +1492,8 @@
     "avengers_modular_tech_destination_minion_title": "模块化技术：选择装备的新角色",
     "avengers_modular_tech_source_fallback_option": "持续行动",
     "avengers_modular_tech_source_title": "模块化技术：选择要移动的装备或基地神器",
+    "avengers_modular_tech_source_base_action_option": "基地行动",
+    "avengers_modular_tech_source_minion_action_option": "随从附加行动",
     "avengers_strategize_order_first_title": "战略部署：选择牌库顶第一张牌",
     "avengers_strategize_order_second_title": "战略部署：选择牌库顶第二张牌",
     "shield_reassignment_title": "调任：选择至多两个你的其他基地角色移动到目标基地",
@@ -1875,6 +1877,7 @@
     "playerLabel": "玩家{{playerId}}",
     "baseIndex": "基地{{index}}",
     "baseUnknown": "未知基地",
+    "ability_not_implemented": "功能尚未实现",
     "limitType": {
       "minion": "随从",
       "action": "战术"
