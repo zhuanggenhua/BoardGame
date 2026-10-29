@@ -1,43 +1,53 @@
 import { test, expect, initHome, capture, record } from './helpers/homeAcceptance';
 
-test('桌面封面悬浮突出并在卡片内展开原简介，不产生额外窗口', async ({ page }) => {
-    await page.setViewportSize({ width: 1920, height: 1080 });
+test('桌面封面悬浮显示标题和游戏信息，移开后恢复', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
     await initHome(page);
+    await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
+    await expect(page.locator('.platform-navigation > button')).toHaveText(['发现', '收藏库', '上传']);
     const cards = page.locator('.platform-game-card');
     const first = cards.first();
-    const baseline = await cards.evaluateAll(nodes => nodes.map(node => {
-        const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
+    const cardLayout = () => cards.evaluateAll(nodes => nodes.map(node => {
+        const r = node.getBoundingClientRect(); return { x: r.x, y: r.y + window.scrollY, width: r.width, height: r.height };
     }));
-    for (const index of [0, 5]) {
+    const veilOpacity = (card: ReturnType<typeof cards.nth>) => card.locator('.platform-game-veil').evaluate(node => getComputedStyle(node).opacity);
+    const baseline = await cardLayout();
+    for (const index of [0, 3]) {
         const card = cards.nth(index);
         const button = card.locator('.platform-game-open');
         await button.hover();
-        const description = card.locator('.platform-game-description');
-        await expect(description).toHaveCSS('opacity', '1');
-        await expect(description).not.toBeEmpty();
-        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeGreaterThan(1.04);
-        const bounds = await description.boundingBox();
-        const host = await card.boundingBox();
-        expect(bounds!.x).toBeGreaterThanOrEqual(host!.x - host!.width * .03);
-        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(host!.x + host!.width * 1.03);
-        await expect(page.locator('.platform-game-hover-preview')).toHaveCount(0);
-        await expect(card.locator('.platform-game-favorite')).toBeVisible();
-        if (index === 0) await capture(page, '修复-桌面-卡片内悬浮');
-        await expect.poll(() => cards.evaluateAll(nodes => nodes.map(node => {
-            const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
-        }))).toEqual(baseline);
+        await expect(card.locator('.platform-game-hover-preview')).toHaveCount(0);
+        await expect(card.locator('.platform-game-description')).toHaveCount(0);
+        await expect.poll(() => veilOpacity(card)).toBe('1');
+        await expect(card.locator('.platform-game-veil strong')).not.toBeEmpty();
+        await expect(card.locator('.platform-game-veil p, .platform-game-veil small').first()).toBeVisible();
+        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeLessThanOrEqual(1.001);
+        const favorite = card.locator('.platform-game-favorite');
+        await expect(favorite).toBeVisible();
+        await expect(favorite).toContainText('收藏');
+        if (index === 0) {
+            await favorite.hover();
+            await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(213, 255, 0)');
+            await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).transform)).toBe('none');
+            expect(await favorite.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe('rgb(255, 0, 138)');
+            await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+            await favorite.hover();
+            await capture(page, '修复-桌面-收藏按钮悬浮反馈');
+            await page.mouse.move(1, 1);
+        }
+        await expect.poll(cardLayout).toEqual(baseline);
         await page.mouse.move(1, 1);
-        await expect(description).toHaveCSS('opacity', '0');
+        await expect.poll(() => veilOpacity(card)).toBe('0');
     }
     await page.getByRole('searchbox', { name: '搜索游戏' }).filter({ visible: true }).focus();
     await page.keyboard.press('Tab');
     await expect(first.locator('.platform-game-open')).toBeFocused();
-    await expect(first.locator('.platform-game-description')).toHaveCSS('opacity', '1');
-    await expect(page.locator('.platform-game-hover-preview')).toHaveCount(0);
+    await expect.poll(() => veilOpacity(first)).toBe('1');
+    await expect(page.locator('.platform-game-description')).toHaveCount(0);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await first.locator('.platform-game-open').hover();
     await expect(first.locator('.platform-game-surface')).toHaveCSS('transform', 'none');
-    await record('桌面悬浮合同', { scaleOverFourPercent: true, descriptionWithinCard: true, noExtraWindow: true, gridUnchanged: true, reducedMotion: true });
+    await record('桌面悬浮合同', { coverScale: false, onCardVeil: true, sidePreview: false, gridUnchanged: true, reducedMotion: true, labeledFavorite: true });
 });
 
 test('手机直接触控详情，不出现桌面侧边悬浮层', async ({ browser }, info) => {
@@ -63,11 +73,14 @@ test('手机直接触控详情，不出现桌面侧边悬浮层', async ({ brows
             await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
         } finally { await touch.detach(); }
         await expect(page.getByTestId('game-details-modal-root')).toBeVisible();
+        await expect(card.locator('.platform-game-favorite')).toHaveCount(0);
+        await expect(page.locator('.platform-game-hover-preview')).toHaveCount(0);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
+        await expect(page.getByTestId('game-details-modal-root').getByRole('button', { name: /收藏：/ })).toBeVisible();
         await page.getByTestId('game-details-close-button').tap();
         await expect(page.getByTestId('game-details-modal-root')).toHaveCount(0);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
         await expect.poll(scale).toBeGreaterThan(.999);
-        await record('手机触控合同', { directDetails: true, noHoverPreview: true, heldPressVisible: true, cancelRestoresWithoutOpening: true, releaseRestores: true });
+        await record('手机触控合同', { directDetails: true, noHoverPreview: true, heldPressVisible: true, cancelRestoresWithoutOpening: true, releaseRestores: true, favoriteInDetails: true });
     } finally { await context.close(); }
 });

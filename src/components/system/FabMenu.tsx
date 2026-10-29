@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { PulseGlow } from '../common/animations/PulseGlow';
-import { UI_Z_INDEX } from '../../core';
+import { getHudPortalRoot, UI_Z_INDEX } from '../../core';
 import { OverlayLayerProvider } from '../common/overlays/OverlayLayerContext';
 import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../shared/mobileSupport';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
@@ -396,7 +396,11 @@ export const FabMenu = ({
                 setActiveItemId(item.id);
             }
         } else {
-            if (item.onClick) item.onClick();
+            if (item.onClick) {
+                setIsOpen(false);
+                setActiveItemId(null);
+                item.onClick();
+            }
         }
     };
 
@@ -561,7 +565,7 @@ export const FabMenu = ({
     // 波纹/辉光颜色跟随"选中态"同色系，避免不明显
     const glowColor = isDark ? 'rgba(0, 243, 255, 0.55)' : 'rgba(140, 123, 100, 0.85)';
 
-    return (
+    const fabMenu = (
         <motion.div
             ref={containerRef}
             className={`fixed font-sans ${className}`}
@@ -579,8 +583,10 @@ export const FabMenu = ({
                 y: dragY,
                 zIndex: layerZIndex.root,
                 touchAction: 'none',
+                pointerEvents: 'auto',
             }}
             data-testid="fab-menu"
+            data-feedback-exclude="true"
             data-fab-position={initialPosition}
             data-fab-storage-key={storageKey}
             data-hud-placement={hudPlacement}
@@ -643,6 +649,35 @@ export const FabMenu = ({
             />
         </motion.div>
     );
+
+    if (hudPlacement === 'in-shell') {
+        const portalRoot = getHudPortalRoot();
+        if (portalRoot) {
+            return createPortal(
+                <div
+                    className="fixed"
+                    data-feedback-exclude="true"
+                    data-testid="fab-menu-shell-portal"
+                    style={{
+                        left: layoutOrigin.x,
+                        top: layoutOrigin.y,
+                        width: boardShellCanvasSize.width ?? layoutViewportWidth,
+                        height: boardShellCanvasSize.height ?? layoutViewportHeight,
+                        transform: `scale(${layoutScale})`,
+                        transformOrigin: 'top left',
+                        // Above the game/endgame overlays, but below regular dialogs.
+                        zIndex: UI_Z_INDEX.globalHudFab,
+                        pointerEvents: 'none',
+                    }}
+                >
+                    {fabMenu}
+                </div>,
+                portalRoot,
+            );
+        }
+    }
+
+    return fabMenu;
 };
 
 const SatelliteList = ({

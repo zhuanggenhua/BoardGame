@@ -14,19 +14,14 @@
 .platform-menu-utilities { display: flex; flex-direction: column; gap: 0; }
 .platform-menu-utilities > button, .platform-menu-utilities .author-support-trigger, .platform-menu-utilities .platform-language-control > button { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 12px 0; color: #111; font: 700 16px/1.4 Arial, 'Microsoft YaHei', sans-serif; border-bottom: 1px solid #ddd; }
 .platform-menu-utilities .platform-language-control { height: auto; min-height: 56px; }
-.platform-menu-utilities .platform-language-control > button::before { content: '文'; display: grid; place-items: center; width: 18px; font-size: 13px; border: 1px solid currentColor; }
+.platform-menu-utilities .platform-language-control > button { justify-content: flex-start; }
 .platform-menu-utilities button:hover { background: #f4f4f4; }
-.platform-secondary-entry { min-height: 56px; padding: 12px 0; border-block: 1px solid #ddd; text-align: left; font: 700 16px/1.4 Arial, 'Microsoft YaHei', sans-serif; cursor: pointer; }
+.platform-secondary-entry { display: flex; align-items: center; width: 100%; min-height: 56px; padding: 12px 0; border: 0; border-bottom: 1px solid #ddd; background: transparent; color: #111; text-align: left; font: 700 16px/1.4 Arial, 'Microsoft YaHei', sans-serif; cursor: pointer; }
+.platform-secondary-entry:hover { background: #f4f4f4; }
 .platform-menu-content .platform-library-drawer { gap: 12px; border-top: 0; padding-top: 0; }
 .platform-menu-content .platform-library-drawer h2 { color: #666; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
 .platform-menu-content .platform-library-drawer p { margin: 0; padding: 20px; background: #f4f4f4; color: #666; font-size: 14px; line-height: 1.7; }
 .platform-menu-content .platform-library-drawer button { border: 0; border-bottom: 1px solid #ddd; padding: 12px 0; font-size: 15px; }
-@media (min-width: 1024px) {
-    .platform-menu-dialog { inset: 64px 24px auto auto; margin: 0; width: 260px; height: auto; max-height: calc(100dvh - 80px); border: 3px solid #000; box-shadow: 6px 6px #d5ff00; }
-    .platform-menu-dialog::backdrop { background: transparent; }
-    .platform-menu-content { height: auto; max-height: calc(100dvh - 86px); border: 0; padding: 8px 16px; gap: 0; }
-    .platform-menu-header { display: none; }
-}
 @media (max-width: 1023px) {
     .platform-navigation { position: fixed; bottom: 0; left: 0; right: 0; width:100%; z-index: 45; background: #000; gap: 0; padding-bottom: env(safe-area-inset-bottom); }
     .platform-navigation button { flex: 1; min-height: 56px; color: #fff; border-color: #000; background: #000; padding: 12px 4px; }
@@ -34,13 +29,37 @@
     .platform-navigation button::after { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 3px; border-radius: 3px; background: currentColor; pointer-events: none; opacity: 0; transform: scaleX(.6); }
     .platform-navigation button[aria-current="page"]::after { opacity: 1; transform: scaleX(1); }
     .platform-desktop-utility { display: none; }
-    .platform-menu-trigger { display: grid; place-items: center; }
 }
 
-.platform-desktop-utility :is([data-platform-utility-priority] > button, .platform-language-control > button) { color: #fff; opacity: 1; }
-.platform-desktop-utility :is([data-platform-utility-priority] > button, .platform-language-control > button):hover { color: #d5ff00; }
+.platform-desktop-utility :is(.author-support-trigger, [data-testid="home-operation-guide-entry"], .platform-language-control > button) { color: #fff; opacity: 1; }
+.platform-desktop-utility :is(.author-support-trigger, [data-testid="home-operation-guide-entry"], .platform-language-control > button):hover { color: #d5ff00; }
+
+@media (min-width: 1024px) {
+    .platform-menu-trigger { display: none; }
+}
+@media (min-width: 1024px) and (max-width: 1199px) {
+    .platform-navigation { gap: 4px; }
+    .platform-navigation button { padding-inline: 8px; font-size: 13px; }
+    .platform-desktop-utility { gap: 4px; }
+    .platform-desktop-utility .author-support-trigger {
+        gap: 4px;
+        padding-inline: 4px;
+        font-size: 11px;
+        letter-spacing: normal;
+    }
+    .platform-desktop-utility [data-testid="home-operation-guide-entry"] {
+        gap: 4px;
+        padding-inline: 4px;
+        font-size: 11px;
+        letter-spacing: normal;
+    }
+    .platform-desktop-utility .platform-language-control > button {
+        font-size: 11px;
+        letter-spacing: normal;
+    }
+}
 
 .platform-menu-utilities .platform-language-control { flex-direction: column; align-items: stretch; }
-.platform-menu-utilities .platform-language-control > div { position: static; margin: 8px 0; width: 100%; background: #f4f4f4; border: 1px solid #ccc; border-radius: 0; box-shadow: none; }
-.platform-menu-utilities .platform-language-control > div > button { min-height: 48px; font-family: Arial, 'Microsoft YaHei', sans-serif; color: #111; font-size: 14px; }
-.platform-menu-utilities .platform-language-control > div > div { display: none; }
+.platform-menu-utilities .platform-language-control .platform-language-menu {
+    position: static; margin: 8px 0; width: 100%; box-shadow: none;
+}

@@ -5,31 +5,32 @@
 }
 .platform-navigation button { position: relative; isolation: isolate; transition: color 120ms, background-color 120ms; }
 .platform-game-surface { transform-origin: center; transition: transform 180ms var(--platform-ease-out), box-shadow 180ms var(--platform-ease-out); }
-.platform-game-card:hover, .platform-game-card:focus-within { z-index: 2; }
-.platform-game-favorite, .platform-catalog-filters button, .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
+.platform-game-favorite { transition: background-color 160ms, color 160ms, opacity 120ms ease; }
+.platform-catalog-filters button, .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
 html[data-home-entry-style="modern"] .platform-details-primary button,
 html[data-home-entry-style="modern"] .platform-details-secondary button,
 html[data-home-entry-style="modern"] .author-support-trigger {
- transition: transform 160ms var(--platform-ease-out), box-shadow 160ms var(--platform-ease-out), background-color 160ms, color 160ms;
+ transition: transform 160ms var(--platform-ease-out), box-shadow 160ms var(--platform-ease-out), background-color 160ms, color 160ms, opacity 120ms ease;
 }
-.platform-game-favorite:active:not(:focus-visible), .platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible),
+.platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible),
 .platform-menu-trigger:active:not(:focus-visible), .platform-menu-close:active:not(:focus-visible),
 html[data-home-entry-style="modern"] .platform-details-primary button:active:not(:focus-visible),
-html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible),
+html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible):not(.platform-details-favorite),
 html[data-home-entry-style="modern"] .author-support-trigger:active:not(:focus-visible) { transform: translateY(2px) scale(.97); box-shadow: none; }
 .platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: scale(.98); }
 .platform-game-card[data-pressed] .platform-game-surface { transform: scale(.96); }
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
- .platform-game-card:hover .platform-game-surface { transform: translateY(-6px) scale(1.05); box-shadow: 0 0 0 3px #d5ff00, 7px 10px 0 #000; }
+ .platform-game-card:hover .platform-game-surface { transform: none; box-shadow: none; }
  .platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: translateY(-1px) scale(1.01); box-shadow: 0 0 0 3px #d5ff00, 2px 3px 0 #000; }
  .platform-catalog-filters button:hover { background: #d5ff00; transform: translate(-2px, -2px); box-shadow: 4px 4px #000; }
- .platform-navigation button:hover, .platform-menu-trigger:hover, .platform-menu-close:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px #ff008a; }
+ .platform-navigation button:hover, .platform-menu-close:hover, .platform-menu-trigger:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px #ff008a; }
  html[data-home-entry-style="modern"] .platform-details-primary button:enabled:hover,
- html[data-home-entry-style="modern"] .platform-details-secondary button:enabled:hover { transform: translate(-2px, -3px); box-shadow: 7px 8px #000; }
+ html[data-home-entry-style="modern"] .platform-details-secondary button:enabled:hover:not(.platform-details-favorite) { transform: translate(-2px, -3px); box-shadow: 7px 8px #000; }
+ html[data-home-entry-style="modern"] .platform-details-favorite:hover { background: #d5ff00; transform: none; box-shadow: none; }
  html[data-home-entry-style="modern"] .author-support-trigger:hover { transform: translateY(-3px) scale(1.04); }
  .platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible), .platform-menu-trigger:active:not(:focus-visible),
  html[data-home-entry-style="modern"] .platform-details-primary button:active:not(:focus-visible),
- html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible) { transform: translateY(2px) scale(.97); box-shadow: 1px 1px #000; }
+ html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible):not(.platform-details-favorite) { transform: translateY(2px) scale(.97); box-shadow: 1px 1px #000; }
 }
 .platform-menu-dialog {
  opacity: 0;
@@ -57,7 +58,7 @@ html[data-home-entry-style="modern"] .author-support-popover { opacity:1; transf
 @starting-style { html[data-home-entry-style="modern"] .author-support-popover { opacity:0; transform:translateY(-8px) scale(.95); } }
 html[data-home-entry-style="modern"] .author-support:has(.author-support-trigger:focus-visible) .author-support-popover { transition:none; }
 @media (prefers-reduced-motion: reduce) {
- .platform-game-surface, .platform-game-open, .platform-game-favorite, .platform-catalog-filters button,
+ .platform-game-surface, .platform-game-open, .platform-catalog-filters button,
  .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
  html[data-home-entry-style="modern"] .platform-details-primary button,
  html[data-home-entry-style="modern"] .platform-details-secondary button,

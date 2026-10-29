@@ -26,9 +26,9 @@ describe('真实游戏目录的发现与收藏入口', () => {
         expect(open).toHaveBeenCalledOnce();
         expect(open).toHaveBeenCalledWith('one');
         expect(screen.queryByText('查看房间')).toBeNull();
-        fireEvent.click(screen.getByRole('button', { name: '收藏：甲游戏' }));
-        expect(favorite).toHaveBeenCalledWith('one', true);
-        expect(open).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('button', { name: '收藏：甲游戏' })).toBeNull();
+        expect(document.querySelector('.platform-game-hover-preview')).toBeNull();
+        expect(favorite).not.toHaveBeenCalled();
     });
     it('收藏只显示实际收藏，单击进入，搜索空结果可清除恢复', () => {
         const open = vi.fn();

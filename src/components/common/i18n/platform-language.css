@@ -1,9 +1,47 @@
-[data-language-style="platform"] > div {
- border: 2px solid #111; border-radius: 0; background: white; padding: 0;
- box-shadow: 4px 4px 0 #dfff00; min-width: 160px;
+[data-language-style="platform"] > button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
-[data-language-style="platform"] > div > div { display: none; }
-[data-language-style="platform"] > div > button {
- min-height: 44px; color: #111; font-family: Arial,"Microsoft YaHei",sans-serif; font-size: 14px;
+[data-language-style="platform"] > button svg {
+    flex-shrink: 0;
+    transition: transform 160ms;
 }
-[data-language-style="platform"] > div > button:hover { background: #dfff00; }
+[data-language-style="platform"] > button[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+[data-language-style="platform"] .platform-language-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 160px;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #111;
+    border: 3px solid #111;
+    box-shadow: 4px 4px 0 #d5ff00;
+}
+[data-language-style="platform"] .platform-language-menu button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 16px;
+    border: 0;
+    background: #fff;
+    color: #111;
+    font: 700 14px/1.4 Arial, 'Microsoft YaHei', sans-serif;
+    text-align: left;
+    cursor: pointer;
+}
+[data-language-style="platform"] .platform-language-menu button[aria-pressed="true"],
+[data-language-style="platform"] .platform-language-menu button:hover {
+    background: #d5ff00;
+}
+[data-language-style="platform"] .platform-language-menu button:focus-visible {
+    outline: 3px solid #ff008a;
+    outline-offset: -3px;
+}

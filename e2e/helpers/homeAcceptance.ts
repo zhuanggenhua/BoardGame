@@ -52,6 +52,7 @@ const sourceHash = createHash('sha256');
 sourcePaths.push('src/components/home/PlatformNavigation.tsx', 'src/components/home/platform-navigation.css', 'src/components/home/platform-home.css', 'src/components/home/platform-motion.css', 'src/components/home/HomeGameDetailsPresentation.tsx', 'src/components/common/overlays/ModalBase.tsx', 'e2e/home-motion.e2e.ts');
 sourcePaths.push('src/components/system/ModalStackRoot.tsx', 'src/contexts/ModalStackContext.tsx', 'src/hooks/routing/useUrlModal.ts');
 sourcePaths.push('src/components/home/PlatformGameCard.tsx', 'e2e/home-steam-hover.e2e.ts');
+sourcePaths.push('src/components/common/i18n/LanguageSwitcher.tsx', 'src/components/common/i18n/platform-language.css');
 for (const path of sourcePaths) sourceHash.update(path).update(readFileSync(path));
 export const sourceRevision = `${execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()}:${sourceHash.digest('hex')}`;
 type Snapshot = { url: string; style: string | null; headings: string[] };
@@ -162,6 +163,22 @@ export async function switchStyle(page: Page, style: 'modern' | 'classic', keybo
     if (keyboard) { await option.focus(); await page.keyboard.press('Enter'); }
     else await option.click();
     await expect(page.locator('html')).toHaveAttribute('data-home-entry-style', style);
+}
+
+export async function openHomeUpload(page: Page, touch = false) {
+    const mobile = await page.evaluate(() => matchMedia('(max-width: 1023px)').matches);
+    if (mobile) {
+        const menuTrigger = page.getByRole('button', { name: '菜单', exact: true });
+        if (!await page.getByRole('dialog', { name: '菜单' }).isVisible().catch(() => false)) {
+            if (touch) await menuTrigger.tap();
+            else await menuTrigger.click();
+        }
+        const upload = page.getByRole('dialog', { name: '菜单' }).getByRole('button', { name: /^(上传|Upload)$/ });
+        if (touch) await upload.tap(); else await upload.click();
+        return;
+    }
+    const upload = page.locator('.platform-navigation').getByRole('button', { name: /^(上传|Upload)$/ });
+    if (touch) await upload.tap(); else await upload.click();
 }
 
 export async function openGame(page: Page, style: 'modern' | 'classic', id: string, title: string, touch = false) {

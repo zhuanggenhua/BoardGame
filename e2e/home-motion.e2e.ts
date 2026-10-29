@@ -1,4 +1,4 @@
-import { test, expect, initHome, login, openGame, switchStyle, evidenceDir, runId, sourceRevision, capture, record } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, openGame, openHomeUpload, switchStyle, evidenceDir, runId, sourceRevision, capture, record } from './helpers/homeAcceptance';
 import type { BrowserContext, Locator, Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -14,7 +14,7 @@ const snapshot = (page: Page) => page.evaluate(() => ({
     headings: [...document.querySelectorAll('h1,h2')].map(node => node.textContent?.trim()).filter(Boolean),
 }));
 
-test('PC工具按真实空间收纳，中英文与登录前后不拦截导航', async ({ browser, accounts }, info) => {
+test('PC工具保持顶栏直达，中英文与登录前后不重复收纳', async ({ browser, accounts }, info) => {
     info.setTimeout(120_000);
     const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: 1440, height: 900 } });
     try {
@@ -35,40 +35,75 @@ test('PC工具按真实空间收纳，中英文与登录前后不拦截导航', 
                 await page.evaluate(() => document.fonts.ready);
                 for (const width of [1024, 1280, 1366, 1440, 1920]) {
                     await page.setViewportSize({ width, height: 900 });
-                    const measure = () => page.locator('.platform-header-actions').evaluate(group => {
-                        const children = [...group.children] as HTMLElement[];
-                        const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
-                        const tools = group.querySelector('.platform-desktop-utility')!;
-                        const items = [...tools.children] as HTMLElement[];
-                        const others = children.filter(child => child !== tools);
-                        const budget = group.clientWidth - others.reduce((sum, child) => sum + child.getBoundingClientRect().width, 0) - gap * others.length;
-                        const toolGap = Number.parseFloat(getComputedStyle(tools).columnGap) || 0;
-                        const visible = items.filter(item => getComputedStyle(item).visibility !== 'hidden');
-                        const hidden = items.filter(item => getComputedStyle(item).visibility === 'hidden');
-                        const used = visible.reduce((sum, item) => sum + item.getBoundingClientRect().width, 0) + Math.max(0, visible.length - 1) * toolGap;
-                        const hiddenCouldFit = hidden.some(item => item.getBoundingClientRect().width + (visible.length ? toolGap : 0) <= budget - used + 1);
-                        const guide = tools.querySelector('[data-testid="home-operation-guide-entry"]')!.parentElement!;
-                        const guideFits = guide.getBoundingClientRect().width <= budget + 1;
-                        const guideVisible = getComputedStyle(guide).visibility !== 'hidden';
-                        const collapsed = group.hasAttribute('data-utilities-collapsed');
-                        return { correct: used <= Math.max(0, budget) + 1 && !hiddenCouldFit && (!guideFits || guideVisible), collapsed, visible: visible.length, total: items.length, guideFits, guideVisible, budget, used, available: group.clientWidth };
-                    });
-                    await expect.poll(async () => (await measure()).correct).toBe(true);
-                    const metrics = await measure();
+                    await page.mouse.move(0, 0);
+                    await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
+                    await expect(page.locator('.platform-menu-dialog[open]')).toHaveCount(0);
+                    await expect(page.locator('.platform-desktop-utility [data-overflow]')).toHaveCount(0);
                     const tools = page.locator('.platform-desktop-utility');
-                    if (metrics.guideFits) await expect(tools.getByTestId('home-operation-guide-entry')).toBeVisible();
-                    else await expect(tools.getByTestId('home-operation-guide-entry')).toBeHidden();
-                    const navigation = page.locator('.platform-navigation button').first();
-                    expect(await navigation.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
-                    await navigation.click();
-                    await record(`工具宽度-${authenticated}-${language}-${width}`, metrics);
+                    await expect(tools.getByTestId('home-operation-guide-entry')).toBeVisible();
+                    await expect(tools.locator('.author-support-trigger')).toBeVisible();
+                    await expect(tools.locator('[data-language-style="platform"] > button')).toBeVisible();
+                    await expect(page.locator('.platform-upload-desktop-entry')).toHaveCount(0);
+                    const navigationGroup = page.locator('.platform-navigation');
+                    await expect(navigationGroup.locator(':scope > button')).toHaveCount(3);
+                    const navGeometry = await navigationGroup.evaluate(node => {
+                        const buttons = [...node.querySelectorAll(':scope > button')];
+                        const buttonRects = buttons.map(button => {
+                            const rect = button.getBoundingClientRect();
+                            return { label: button.textContent?.trim(), x: rect.x, y: rect.y, right: rect.right };
+                        });
+                        const rect = node.getBoundingClientRect();
+                        return { left: rect.left, right: rect.right, center: rect.left + rect.width / 2,
+                            viewportWidth: document.documentElement.clientWidth, buttons: buttonRects };
+                    });
+                    expect(navGeometry.buttons.map(button => button.label)).toEqual(language === 'en' ? ['Discover', 'Library', 'Upload'] : ['发现', '收藏库', '上传']);
+                    expect(navGeometry.buttons[1].x).toBeGreaterThanOrEqual(navGeometry.buttons[0].right);
+                    expect(Math.abs(navGeometry.buttons[1].y - navGeometry.buttons[0].y)).toBeLessThanOrEqual(0.5);
+                    expect(Math.abs(navGeometry.center - navGeometry.viewportWidth / 2)).toBeLessThanOrEqual(2);
+                    const metrics = await page.evaluate(() => {
+                        const header = document.querySelector('.platform-home-header')!.getBoundingClientRect();
+                        const actions = document.querySelector('.platform-header-actions')!.getBoundingClientRect();
+                        const navigation = document.querySelector('.platform-navigation')!.getBoundingClientRect();
+                        return { headerBottom: header.bottom, actionLeft: actions.left, actionRight: actions.right,
+                            navRight: navigation.right, viewportWidth: document.documentElement.clientWidth };
+                    });
+                    expect(metrics.actionLeft).toBeGreaterThanOrEqual(0);
+                    expect(metrics.actionRight).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+                    expect(metrics.navRight).toBeLessThanOrEqual(metrics.actionLeft + 1);
+                    const navigationHitTargets = await page.locator('.platform-navigation button').evaluateAll(nodes => nodes.map(node => {
+                        const r = node.getBoundingClientRect();
+                        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+                        const box = (selector: string) => {
+                            const element = document.querySelector(selector);
+                            if (!element) return null;
+                            const rect = element.getBoundingClientRect();
+                            return { x: rect.x, y: rect.y, right: rect.right, width: rect.width, height: rect.height };
+                        };
+                        const children = (selector: string) => [...(document.querySelector(selector)?.children ?? [])].map(element => {
+                            const rect = element.getBoundingClientRect();
+                            const style = getComputedStyle(element);
+                            return { className: (element as HTMLElement).className, text: element.textContent?.trim(),
+                                x: rect.x, right: rect.right, width: rect.width, position: style.position, transform: style.transform };
+                        });
+                        return { label: node.textContent?.trim(), inside: Boolean(hit && node.contains(hit)), width: document.documentElement.clientWidth,
+                            rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+                            hit: hit ? { tag: hit.tagName, className: (hit as HTMLElement).className } : null,
+                            navigation: box('.platform-navigation'), actions: box('.platform-header-actions'),
+                            utility: box('.platform-desktop-utility'), brand: box('.platform-home-brand'),
+                            actionChildren: children('.platform-header-actions'), utilityChildren: children('.platform-desktop-utility') };
+                    }));
+                    for (const hitTarget of navigationHitTargets) {
+                        expect(hitTarget.inside, `PC导航中心被遮挡: ${JSON.stringify(hitTarget)}`).toBe(true);
+                    }
+                    await page.locator('.platform-navigation button').first().click();
+                    await record(`顶栏工具-${authenticated}-${language}-${width}`, metrics);
                 }
             }
         }
     } finally { await context.close(); }
 });
 
-test('PC更多菜单只收纳未显示的工具，上传入口保持二级', async ({ browser, accounts }, info) => {
+test('桌面上传在收藏库右侧，手机从菜单进入', async ({ browser, accounts }, info) => {
     const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: 1920, height: 900 } });
     try {
         const page = await context.newPage();
@@ -77,49 +112,42 @@ test('PC更多菜单只收纳未显示的工具，上传入口保持二级', asy
             if (authenticated) await login(page, accounts.alice);
             for (const width of [1920, 1280, 1024]) {
                 await page.setViewportSize({ width, height: 900 });
-                const trigger = page.getByRole('button', { name: '更多', exact: true });
-                await expect(trigger).toBeVisible();
-                await expect(page.getByRole('button', { name: '菜单', exact: true })).toHaveCount(0);
-                await trigger.click();
-                const menu = page.getByRole('dialog', { name: '更多' });
-                await expect(menu).toBeVisible();
-                await expect(menu.getByRole('button', { name: '上传', exact: true })).toBeVisible();
-                for (const [id, selector] of [['support', '.author-support-trigger'], ['guide', '[data-testid="home-operation-guide-entry"]'], ['language', '[data-language-style="platform"] > button']]) {
-                    const top = page.locator(`[data-platform-utility-id="${id}"]`);
-                    const overflow = await top.evaluate(node => node.hasAttribute('data-overflow'));
-                    await expect(menu.locator(selector)).toHaveCount(overflow ? 1 : 0);
-                    if (!overflow) await expect(top).toBeVisible();
+                await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
+                await expect(page.locator('.platform-menu-dialog[open]')).toHaveCount(0);
+                await expect(page.locator('.platform-navigation > button')).toHaveCount(3);
+                await expect(page.locator('.platform-navigation > button').nth(0)).toHaveText('发现');
+                await expect(page.locator('.platform-navigation > button').nth(1)).toHaveText('收藏库');
+                await expect(page.locator('.platform-navigation > button').nth(2)).toHaveText('上传');
+                if (width === 1024) {
+                    await openHomeUpload(page);
+                    if (authenticated) await expect(page.locator('.platform-upload-workspace')).toBeVisible();
+                    else await expect(page.locator('.platform-upload-login')).toBeVisible();
+                    await page.getByRole('button', { name: '发现', exact: true }).click();
+                    await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
                 }
-                const bounds = await menu.boundingBox();
-                expect(bounds!.height).toBeLessThan(500);
-                if (!authenticated && width === 1920) await capture(page, '修复-桌面-更多菜单');
-                if (authenticated && width === 1024) {
-                    const support = menu.locator('.author-support-trigger');
-                    await expect(support).toBeVisible();
-                    await support.click();
-                    const content = menu.getByRole('region', { name: '支持作者' });
-                    await expect(content).toBeVisible();
-                    await expect.poll(() => content.locator('img').evaluateAll(images => images.length === 2 && images.every(image => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
-                    const supportBounds = await content.boundingBox();
-                    const menuBounds = await menu.boundingBox();
-                    expect(supportBounds!.x).toBeGreaterThanOrEqual(menuBounds!.x);
-                    expect(supportBounds!.x + supportBounds!.width).toBeLessThanOrEqual(menuBounds!.x + menuBounds!.width);
-                    await capture(page, '修复-桌面-收纳后的支持作者');
-                    await content.getByRole('button', { name: '关闭赞助说明' }).click();
-                    const guide = menu.getByTestId('home-operation-guide-entry');
-                    await guide.click();
-                    await expect(page.getByTestId('operation-guide-modal')).toBeVisible();
-                    await expect(menu).toBeHidden();
-                    await page.getByTestId('operation-guide-close').click();
-                    continue;
-                }
-                await page.keyboard.press('Escape');
-                await expect(menu).toBeHidden();
-                await expect(trigger).toBeFocused();
             }
         }
-        await record('桌面更多入口', { guestAndUser: true, noDuplicatedTools: true, uploadSecondary: true, keyboardReturn: true });
+        await record('桌面上传入口', { guestAndUser: true, desktopNavUpload: true, noDesktopMenu: true, uploadLoads: true });
     } finally { await context.close(); }
+
+    const mobileContext = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+    try {
+        const mobilePage = await mobileContext.newPage();
+        await initHome(mobilePage);
+        await expect(mobilePage.locator('.platform-upload-desktop-entry')).toHaveCount(0);
+        await expect(mobilePage.getByRole('navigation', { name: '菜单' }).getByRole('button', { name: '上传', exact: true })).toHaveCount(0);
+        const trigger = mobilePage.getByRole('button', { name: '菜单', exact: true });
+        await expect(trigger).toBeVisible();
+        await trigger.tap();
+        const menu = mobilePage.getByRole('dialog', { name: '菜单' });
+        const upload = menu.getByRole('button', { name: '上传', exact: true });
+        await expect(upload).toBeVisible();
+        await upload.tap();
+        await capture(mobilePage, '修复-手机-上传从菜单进入');
+        await expect(menu).toBeHidden();
+        await expect(mobilePage.locator('.platform-upload-login')).toBeVisible();
+        await record('手机上传入口', { hamburgerUpload: true, uploadLoads: true, drawerHasUpload: true });
+    } finally { await mobileContext.close(); }
 });
 
 for (const mobile of [false, true]) {
@@ -194,19 +222,28 @@ for (const mobile of [false, true]) {
             });
             await pauseForViewing();
             if (!mobile) {
-                await step('卡片悬浮', '逐张悬停封面，观察突出与卡片内简介，再移开恢复', async () => {
+                await step('卡片悬浮', '逐张悬停封面，观察封面上的介绍叠层，卡片尺寸保持不变', async () => {
                     for (const index of [0, 5]) {
                         const card = page.locator('.platform-game-card').nth(index);
                         await card.locator('.platform-game-open').hover();
-                        await expect(card.locator('.platform-game-description')).toHaveCSS('opacity', '1');
-                        await expect(page.locator('.platform-game-hover-preview')).toHaveCount(0);
-                        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeGreaterThan(1.04);
+                        await expect(card.locator('.platform-game-hover-preview')).toHaveCount(0);
+                        await expect.poll(() => card.locator('.platform-game-veil').evaluate(node => getComputedStyle(node).opacity)).toBe('1');
+                        await expect(card.locator('.platform-game-description')).toHaveCount(0);
+                        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeLessThanOrEqual(1.001);
+                        if (index === 0) {
+                            const favorite = card.locator('.platform-game-favorite');
+                            await expect(favorite).toHaveText('');
+                            await favorite.hover();
+                            await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(213, 255, 0)');
+                            await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).transform)).toBe('none');
+                            expect(await favorite.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe('rgb(255, 0, 138)');
+                        }
                         await pauseForViewing();
                         await page.mouse.move(1, 1);
-                        await expect(card.locator('.platform-game-description')).toHaveCSS('opacity', '0');
+                        await expect.poll(() => card.locator('.platform-game-veil').evaluate(node => getComputedStyle(node).opacity)).toBe('0');
                         await pauseForViewing();
                     }
-                    return { desktopScaleAndDescription: true, descriptionClosed: true };
+                    return { desktopScale: false, onCardVeil: true, favoriteHoverFeedback: true, previewClosed: true };
                 });
                 await step('按钮反馈', '悬停分类按钮后移开，观察抬起和硬阴影恢复', async () => {
                     const filter = page.getByRole('button', { name: '卡牌', exact: true });
@@ -243,14 +280,58 @@ for (const mobile of [false, true]) {
                 await expect(page.getByTestId('operation-guide-modal')).toHaveCount(0);
                 return { guideOpened: true, guideClosed: true, desktopToolsDirect: mobile || await page.locator('.platform-desktop-utility').isVisible() };
             });
-            await step('菜单进退', '打开和关闭菜单，观察同侧进退场', async () => {
-                const trigger = page.getByRole('button', { name: mobile ? '菜单' : '更多', exact: true });
-                if (mobile) await trigger.tap(); else await trigger.click();
-                await expect(page.locator('.platform-menu-dialog')).toBeVisible();
+            await step('上传入口', '桌面导航打开上传，手机从菜单进入上传', async () => {
+                if (mobile) {
+                    await expect(page.getByRole('navigation', { name: '菜单' }).getByRole('button', { name: '上传', exact: true })).toHaveCount(0);
+                    await page.getByRole('button', { name: '菜单', exact: true }).tap();
+                    const menu = page.getByRole('dialog', { name: '菜单' });
+                    const upload = menu.getByRole('button', { name: '上传', exact: true });
+                    await expect(upload).toBeVisible();
+                    await upload.tap();
+                    await expect(menu).toBeHidden();
+                    const author = page.locator('.platform-upload-form input[name="author"]');
+                    await expect(author).toBeVisible();
+                    const tabBar = page.locator('.platform-navigation');
+                    const beforeScroll = await author.boundingBox();
+                    const tabBarBounds = await tabBar.boundingBox();
+                    if (!beforeScroll || !tabBarBounds) throw new Error('手机投稿表单或固定导航没有实际画面位置');
+                    if (beforeScroll.y + beforeScroll.height > tabBarBounds.y) {
+                        const touch = await context.newCDPSession(page);
+                        const x = Math.round(page.viewportSize()!.width / 2);
+                        const startY = Math.min(tabBarBounds.y - 12, beforeScroll.y - 16);
+                        const endY = Math.max(180, startY - 340);
+                        try {
+                            await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: startY }] });
+                            for (const fraction of [0.25, 0.5, 0.75, 1]) {
+                                await page.waitForTimeout(35);
+                                await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: startY + (endY - startY) * fraction }] });
+                            }
+                            await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+                        } finally { await touch.detach(); }
+                    }
+                    await expect.poll(async () => {
+                        const field = await author.boundingBox();
+                        const nav = await tabBar.boundingBox();
+                        return Boolean(field && nav && field.y + field.height <= nav.y);
+                    }).toBe(true);
+                    await author.tap();
+                    await expect(author).toBeFocused();
+                    await author.fill('');
+                    await page.keyboard.type('验收作者');
+                    await expect(author).toHaveValue('验收作者');
+                    await pauseForViewing();
+                } else {
+                    await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
+                    await expect(page.locator('.platform-menu-dialog[open]')).toHaveCount(0);
+                    await openHomeUpload(page);
+                }
+                await expect(page.locator('.platform-upload-workspace')).toBeVisible();
                 await pauseForViewing();
-                if (mobile) await page.getByRole('button', { name: '关闭菜单' }).tap(); else await page.keyboard.press('Escape');
-                await expect(page.locator('.platform-menu-dialog')).toBeHidden();
-                return { menuOpened: true, menuClosed: true };
+                await activate(page.getByRole('button', { name: '发现', exact: true }));
+                await expect(page.locator('.platform-upload-workspace')).toHaveCount(0);
+                return mobile
+                    ? { uploadOpened: true, mobileUploadFromMenu: true, drawerClosed: true, authorFieldScrollsAboveTabBar: true, authorFieldAcceptsTyping: true, returnedToDiscover: true }
+                    : { uploadOpened: true, desktopHasMenu: await page.locator('.platform-menu-trigger').count() === 0, navUpload: true, returnedToDiscover: true };
             });
             await step('卡片与详情', '从正式卡片打开井字棋详情', async () => {
                 const card = page.locator('[data-game-id="tictactoe"] .platform-game-open');
@@ -293,16 +374,17 @@ for (const mobile of [false, true]) {
             await video.saveAs(rawVideo);
             await writeFile(join(stageDir, `${label}-录制元数据.json`), JSON.stringify({ label, viewport, rawVideo, clipStart, clipEnd, checkpoints,
                 chainId: `home-motion-${mobile ? 'mobile' : 'desktop'}`, gameId: 'home', evidenceCategory: 'independent', sourceRun: runId, sourceRevision,
-                status: 'PASS', outcome: '指南、菜单、详情、收藏和返回均从正式入口完成', steps, uiStates: [],
+                status: 'PASS', outcome: '指南、收藏按钮悬浮反馈、详情和桌面导航或手机菜单上传均从正式入口完成', steps, uiStates: [],
                 rawSha256: createHash('sha256').update(readFileSync(rawVideo)).digest('hex') }, null, 2));
             await record(`${label}-录屏行为`, { steps: steps.length, viewport, clipStart, clipEnd, rawVideo });
         } finally { await context.close(); }
     });
 }
 
-test('减少动态效果、键盘快速开关与经典入口保留', async ({ page }) => {
+test('手机菜单键盘与减少动态正常，经典入口保留', async ({ page }) => {
     await initHome(page);
-    const trigger = page.getByRole('button', { name: '更多', exact: true });
+    await page.setViewportSize({ width: 375, height: 812 });
+    const trigger = page.getByRole('button', { name: '菜单', exact: true });
     await trigger.focus(); await page.keyboard.press('Enter');
     await expect(page.locator('.platform-menu-dialog')).toHaveAttribute('data-motion', 'instant');
     await page.keyboard.press('Escape');
@@ -317,6 +399,8 @@ test('减少动态效果、键盘快速开关与经典入口保留', async ({ pa
     await trigger.click();
     expect(await page.locator('.platform-menu-dialog').evaluate(node => getComputedStyle(node).transform)).toBe('none');
     await page.keyboard.press('Escape');
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
     await switchStyle(page, 'classic');
     await expect(page.getByTestId('classic-home-surface')).toBeVisible();
     await expect(page.locator('.platform-navigation')).toHaveCount(0);

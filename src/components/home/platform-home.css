@@ -2,7 +2,12 @@
 .platform-home-header { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 20px; min-height: 64px; padding: 8px 24px; background: #000; color: #fff; }
 .platform-home-brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 24px; font-weight: 800; }
 .platform-home-brand svg { width: 40px; height: 40px; flex-shrink: 0; color: #d5ff00; opacity: 1; }
-@media (min-width:1024px) { .platform-home-header .platform-navigation { justify-self: center; } }
+@media (min-width:1024px) {
+    .platform-home-header { grid-template-areas: "brand navigation actions"; }
+    .platform-home-brand { grid-area: brand; }
+    .platform-home-header .platform-navigation { grid-area: navigation; justify-self: center; }
+    .platform-header-actions { grid-area: actions; }
+}
 .platform-header-actions { display: flex; justify-self: end; align-items: center; gap: 12px; }
 .platform-home-account { display: flex; align-items: center; gap: 12px; }
 .platform-home-account > button { min-height: 44px; border: 2px solid #fff; padding: 8px; }
@@ -24,7 +29,26 @@
 .platform-active-match [data-testid="home-active-match-card"] { border: 4px solid #d5ff00; border-radius: 0; background: #000; color: #fff; box-shadow: 7px 7px #ff008a; }
 .platform-active-match button { border-radius: 0; min-height: 44px; }
 .platform-active-match [data-testid="home-active-match-actions"] button:last-child { background: #d5ff00; border-color: #d5ff00; color: #000; }
-@media (max-width: 1599px) and (min-width: 1024px) { .platform-home-main--library { grid-template-columns: 240px minmax(0, 1fr); } .platform-home-header { gap: 12px; padding-inline: 16px; } }
+@media (max-width: 1599px) and (min-width: 1024px) {
+    .platform-home-main--library { grid-template-columns: 240px minmax(0, 1fr); }
+    .platform-home-header { gap: 12px; padding-inline: 16px; }
+}
+@media (max-width: 1199px) and (min-width: 1024px) {
+    .platform-home-header { gap: 8px; padding-inline: 12px; }
+    .platform-home-brand { gap: 6px; font-size: 20px; }
+    .platform-home-brand svg { width: 32px; height: 32px; }
+    .platform-header-actions { gap: 6px; }
+    .platform-home-account { gap: 4px; }
+    .platform-home-account > button { padding: 6px; font-size: 12px; }
+}
+@media (max-width: 1639px) and (min-width: 1024px) {
+    .user-menu--platform { gap: 4px; }
+    .user-menu--platform .platform-account-name,
+    .user-menu--platform .platform-account-points,
+    .user-menu--platform .platform-account-notifications > span:not(.platform-account-dot) { display: none; }
+    .user-menu--platform .platform-account-trigger,
+    .user-menu--platform .platform-account-notifications { width: 44px; padding: 6px; gap: 0; }
+}
 @media (max-width: 1023px) {
     .platform-home { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
     .platform-home-header { display: flex; min-height: 56px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; gap: 8px; }
@@ -88,8 +112,7 @@
     .platform-header-actions { position:relative; width:100%; min-width:0; justify-content:flex-end; }
     .platform-desktop-utility { flex-shrink:0; width:max-content; }
     .platform-desktop-utility > * { display:flex; align-items:center; flex-shrink:0; width:max-content; }
-    .platform-header-actions > .platform-home-account, .platform-menu-trigger { flex-shrink:0; }
-    .platform-desktop-utility > [data-overflow], .platform-desktop-utility[data-empty] { position:absolute; visibility:hidden; pointer-events:none; }
+    .platform-header-actions > .platform-home-account { flex-shrink:0; }
 }
 @media (min-width:1024px) {
     .platform-home:has(.platform-profile-backdrop) ~ .platform-home-version > span.text-neutral-700,

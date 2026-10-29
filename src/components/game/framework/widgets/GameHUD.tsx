@@ -33,6 +33,7 @@ import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { matchSocket, type MatchEmoteEvent } from '../../../../services/matchSocket';
 import type { EmoteDefinition } from '../../../../shared/emotes';
+import { startFeedbackScreenshotCache } from '../../../../lib/feedback/feedbackScreenshot';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';
 import { useOptionalSocial } from '../../../../contexts/SocialContext';
@@ -191,6 +192,12 @@ export const GameHUD = ({
     const isOnline = mode === 'online';
     const isLocal = mode === 'local';
     const isTutorial = mode === 'tutorial';
+    const feedbackScreenshotContext = useMemo(() => ({
+        gameId: _gameId,
+        matchId,
+        mode: mode === 'test' ? 'local' : mode,
+    }), [_gameId, matchId, mode]);
+    useEffect(() => startFeedbackScreenshotCache(feedbackScreenshotContext), [feedbackScreenshotContext]);
     const isQidahenTutorial = _gameId === 'qidahen' && isTutorial;
     const isQidahenTutorialLandscape = isQidahenTutorial
         && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH

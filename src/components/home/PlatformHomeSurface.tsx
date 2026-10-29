@@ -97,13 +97,16 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
             }
         } catch { /* 列表仍可浏览；只放弃不可用的本次滚动位置。 */ }
     }, [external.isPending, location.pathname, location.search]);
-    const navigation = ['discover', 'library'].map(id => ({ id, label: t(`platform.${id}`) }));
+    const navigation = (mobile ? ['discover', 'library'] : ['discover', 'library', 'upload']).map(id => ({ id, label: t(`platform.${id}`) }));
     return <div className="platform-home">
         <header className="platform-home-header">
             <div className="platform-home-brand">{brand}</div>
             <PlatformNavigation items={navigation} selected={section} onSelect={id => setSection(id as HomeSection)}
-                menuLabel={t('platform.menu')} moreLabel={t('platform.more')} closeLabel={t('platform.closeMenu')} utility={utility} mobileUtility={mobileUtility}
-                drawerContent={close => <button type="button" className="platform-secondary-entry" onClick={() => { setSection('upload'); close(); }}>{t('platform.upload')}</button>}
+                menuLabel={t('platform.menu')} closeLabel={t('platform.closeMenu')} utility={utility} mobileUtility={mobileUtility}
+                drawerContent={close => <button type="button" className="platform-secondary-entry" onClick={() => {
+                    setSection('upload');
+                    close();
+                }}>{t('platform.upload')}</button>}
                 account={<div className="platform-home-account">
                 {user ? <UserMenu variant="platform" onLogout={onLogout} onProfile={() => setSection('profile')} /> : <>
                     <button type="button" onClick={onLogin}>{t('auth:menu.login')}</button>

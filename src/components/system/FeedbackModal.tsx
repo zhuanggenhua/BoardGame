@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -23,6 +23,10 @@ import { getCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackCo
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import {
+    captureCurrentFeedbackScreenshot,
+    compressFeedbackImage,
+} from '../../lib/feedback/feedbackScreenshot';
 
 const FEEDBACK_MODAL_DEBUG = true;
 const FEEDBACK_DRAFT_STORAGE_PREFIX = 'feedback-modal:draft:v1';
@@ -106,14 +110,14 @@ interface FeedbackDraft {
     severity: FeedbackSeverity;
     contactInfo: string;
     pastedImage: string | null;
-    imageSource?: 'auto' | 'pasted' | null;
+    imageSource?: 'auto' | 'screenshot' | 'pasted' | null;
     attachLog: boolean;
     attachState: boolean;
     gameName: string;
 }
 
-type FeedbackImageSource = 'auto' | 'pasted' | null;
-type FeedbackAutoScreenshotStatus = 'idle' | 'capturing' | 'ready' | 'failed';
+type FeedbackImageSource = 'screenshot' | 'pasted' | null;
+type FeedbackScreenshotStatus = 'idle' | 'capturing' | 'ready' | 'failed';
 
 const FEEDBACK_TYPE_LABEL_KEYS: Record<FeedbackType, string> = {
     [FeedbackType.BUG]: 'hud.feedback.type.bug',
@@ -200,15 +204,20 @@ const readFeedbackDraft = (storageKey: string): FeedbackDraft | null => {
         const parsed = JSON.parse(raw) as Partial<FeedbackDraft> | null;
         if (!parsed || typeof parsed !== 'object') return null;
 
+        const isLegacyAutoScreenshot = parsed.imageSource === 'auto';
         return {
             content: typeof parsed.content === 'string' ? parsed.content : '',
             type: isFeedbackType(parsed.type) ? parsed.type : FeedbackType.BUG,
             severity: isFeedbackSeverity(parsed.severity) ? parsed.severity : FeedbackSeverity.LOW,
             contactInfo: typeof parsed.contactInfo === 'string' ? parsed.contactInfo : '',
-            pastedImage: typeof parsed.pastedImage === 'string' ? parsed.pastedImage : null,
-            imageSource: parsed.imageSource === 'auto' || parsed.imageSource === 'pasted'
-                ? parsed.imageSource
-                : (typeof parsed.pastedImage === 'string' ? 'pasted' : null),
+            pastedImage: !isLegacyAutoScreenshot && typeof parsed.pastedImage === 'string'
+                ? parsed.pastedImage
+                : null,
+            imageSource: isLegacyAutoScreenshot
+                ? null
+                : parsed.imageSource === 'screenshot' || parsed.imageSource === 'pasted'
+                    ? parsed.imageSource
+                    : (typeof parsed.pastedImage === 'string' ? 'pasted' : null),
             attachLog: typeof parsed.attachLog === 'boolean' ? parsed.attachLog : false,
             attachState: typeof parsed.attachState === 'boolean' ? parsed.attachState : false,
             gameName: typeof parsed.gameName === 'string' ? parsed.gameName : '',
@@ -256,8 +265,6 @@ export const FeedbackModal = ({
     const backdropRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
-    const autoScreenshotPromiseRef = useRef<Promise<string | null> | null>(null);
-    const autoScreenshotStartedRef = useRef(false);
     const pastedImageRef = useRef<string | null>(null);
     const draftPersistenceDisabledRef = useRef(false);
     const portalRoot = useMemo(() => {
@@ -318,24 +325,30 @@ export const FeedbackModal = ({
     const [contactInfo, setContactInfo] = useState(() => initialDraft?.contactInfo ?? '');
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(() => initialDraft?.pastedImage ?? null);
-    const [imageSource, setImageSource] = useState<FeedbackImageSource>(() => (
-        initialDraft?.imageSource
-        ?? (initialDraft?.pastedImage ? 'pasted' : null)
-    ));
-    const [autoScreenshotStatus, setAutoScreenshotStatus] = useState<FeedbackAutoScreenshotStatus>(
+    const [imageSource, setImageSource] = useState<FeedbackImageSource>(() => {
+        const draftSource = initialDraft?.imageSource;
+        if (draftSource === 'screenshot' || draftSource === 'pasted') return draftSource;
+        return initialDraft?.pastedImage ? 'pasted' : null;
+    });
+    const [screenshotStatus, setScreenshotStatus] = useState<FeedbackScreenshotStatus>(
         initialDraft?.pastedImage ? 'ready' : 'idle',
     );
     const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!resolvedActionLogText);
     const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!resolvedStateSnapshot);
     const [isCompactLandscape, setIsCompactLandscape] = useState(false);
     const [gameName, setGameName] = useState(() => initialDraft?.gameName ?? runtimeContext?.gameId ?? autoGameId);
+    const feedbackScreenshotContext = useMemo(() => ({
+        gameId: runtimeContext?.gameId ?? autoGameId ?? undefined,
+        matchId: runtimeContext?.matchId,
+        mode: runtimeContext?.mode,
+    }), [autoGameId, runtimeContext?.gameId, runtimeContext?.matchId, runtimeContext?.mode]);
     const shouldShowGameSelector = !runtimeContext?.gameId;
     const requiresTextContent = hasConfigProposal;
     const canSubmit = !submitting
         && !IS_DEV_API_DISABLED
         && (requiresTextContent
             ? Boolean(content.trim())
-            : Boolean(content.trim() || pastedImage || autoScreenshotStatus === 'capturing'));
+            : Boolean(content.trim() || pastedImage));
     const fieldLabelClassName = cn(
         'font-bold text-parchment-light-text uppercase tracking-wider',
         isCompactLandscape ? 'text-[11px]' : 'text-xs',
@@ -438,49 +451,6 @@ export const FeedbackModal = ({
         });
     }, [attachLog, attachState, contactInfo, content, draftStorageKey, gameName, imageSource, pastedImage, severity, type]);
 
-    useEffect(() => {
-        if (autoScreenshotStartedRef.current) {
-            return undefined;
-        }
-        if (typeof window === 'undefined' || typeof document === 'undefined' || pastedImage) {
-            autoScreenshotStartedRef.current = true;
-            if (pastedImage) {
-                setAutoScreenshotStatus('ready');
-            }
-            return undefined;
-        }
-
-        autoScreenshotStartedRef.current = true;
-        setAutoScreenshotStatus('capturing');
-        const capturePromise = captureFeedbackScreenshot(
-            document.querySelector<HTMLElement>('[data-testid="feedback-modal"]'),
-        )
-            .then((dataUrl) => {
-                if (!dataUrl) {
-                    setAutoScreenshotStatus('failed');
-                    return null;
-                }
-
-                if (!pastedImageRef.current) {
-                    pastedImageRef.current = dataUrl;
-                    setPastedImage(dataUrl);
-                    setImageSource('auto');
-                }
-                setAutoScreenshotStatus('ready');
-                return dataUrl;
-            })
-            .catch((captureError) => {
-                debugFeedbackModalEvent('auto-screenshot-failed', {
-                    message: captureError instanceof Error ? captureError.message : String(captureError),
-                });
-                setAutoScreenshotStatus('failed');
-                return null;
-            });
-
-        autoScreenshotPromiseRef.current = capturePromise;
-        return undefined;
-    }, [pastedImage]);
-
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) {
             onClose();
@@ -494,7 +464,7 @@ export const FeedbackModal = ({
                 e.preventDefault();
                 const blob = item.getAsFile();
                 if (blob) {
-                    compressImage(blob).then((dataUrl) => {
+                    compressFeedbackImage(blob).then((dataUrl) => {
                         pastedImageRef.current = dataUrl;
                         setPastedImage(dataUrl);
                         setImageSource('pasted');
@@ -509,14 +479,32 @@ export const FeedbackModal = ({
         pastedImageRef.current = null;
         setPastedImage(null);
         setImageSource(null);
-        setAutoScreenshotStatus('failed');
+        setScreenshotStatus('idle');
+    };
+
+    const handleCaptureScreenshot = async () => {
+        if (!isInGame || screenshotStatus === 'capturing') return;
+
+        setScreenshotStatus('capturing');
+        try {
+            const dataUrl = await captureCurrentFeedbackScreenshot(feedbackScreenshotContext);
+            if (!dataUrl) throw new Error(t('hud.feedback.screenshotFailed'));
+
+            pastedImageRef.current = dataUrl;
+            setPastedImage(dataUrl);
+            setImageSource('screenshot');
+            setScreenshotStatus('ready');
+        } catch (captureError) {
+            setScreenshotStatus('failed');
+            error(captureError instanceof Error ? captureError.message : t('hud.feedback.screenshotFailed'));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (requiresTextContent
             ? !content.trim()
-            : (!content.trim() && !pastedImage && autoScreenshotStatus !== 'capturing')) return;
+            : (!content.trim() && !pastedImage)) return;
 
         if (IS_DEV_API_DISABLED) {
             return;
@@ -524,12 +512,9 @@ export const FeedbackModal = ({
 
         setSubmitting(true);
         try {
-            let attachedImage = pastedImageRef.current ?? pastedImage;
-            if (!attachedImage && autoScreenshotPromiseRef.current) {
-                attachedImage = await autoScreenshotPromiseRef.current;
-            }
+            const attachedImage = pastedImageRef.current ?? pastedImage;
             if (!requiresTextContent && !content.trim() && !attachedImage) {
-                error(t('hud.feedback.autoScreenshot.failed'));
+                error(t('hud.feedback.screenshotFailed'));
                 return;
             }
 
@@ -874,16 +859,33 @@ export const FeedbackModal = ({
                                     data-testid="feedback-auto-screenshot-status"
                                 >
                                     <ImageIcon size={12} />
-                                    <span>
-                                        {autoScreenshotStatus === 'capturing'
-                                            ? t('hud.feedback.autoScreenshot.pending')
-                                            : autoScreenshotStatus === 'failed'
-                                                ? t('hud.feedback.autoScreenshot.failed')
-                                                : t('hud.feedback.pasteHint')}
-                                    </span>
+                                    <span>{t('hud.feedback.pasteHint')}</span>
                                 </div>
                             )}
                         </div>
+                        {isInGame && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => void handleCaptureScreenshot()}
+                                    disabled={screenshotStatus === 'capturing'}
+                                    className="inline-flex min-h-9 items-center gap-2 rounded-md border border-parchment-brown/25 bg-parchment-card-bg px-3 py-1.5 text-xs font-bold text-parchment-base-text transition-colors hover:bg-parchment-gold/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-parchment-gold disabled:cursor-wait disabled:opacity-60"
+                                    data-testid="feedback-capture-screenshot"
+                                >
+                                    {screenshotStatus === 'capturing'
+                                        ? <Loader2 size={14} className="animate-spin" />
+                                        : <Camera size={14} />}
+                                    {screenshotStatus === 'capturing'
+                                        ? t('hud.feedback.screenshotCapturing')
+                                        : t('hud.feedback.screenshotButton')}
+                                </button>
+                                {screenshotStatus === 'failed' && (
+                                    <span role="status" className="text-xs text-red-700">
+                                        {t('hud.feedback.screenshotFailed')}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Image Preview */}
@@ -906,9 +908,7 @@ export const FeedbackModal = ({
                                     <Trash2 size={14} />
                                 </button>
                                 <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-[10px] rounded backdrop-blur-sm">
-                                    {imageSource === 'auto'
-                                        ? t('hud.feedback.autoScreenshot.added')
-                                        : t('hud.feedback.imageAdded')}
+                                    {t('hud.feedback.imageAdded')}
                                 </div>
                             </motion.div>
                         )}
@@ -988,157 +988,3 @@ export const FeedbackModal = ({
 
     return portalRoot ? createPortal(modal, portalRoot) : modal;
 };
-
-
-// 图片压缩工具
-
-/** 最大 base64 体积约 500KB（压缩后） */
-const MAX_WIDTH = 1280;
-const MAX_HEIGHT = 960;
-const JPEG_QUALITY = 0.7;
-
-type Html2CanvasFn = typeof import('html2canvas').default;
-
-let html2CanvasLoader: Promise<Html2CanvasFn> | null = null;
-
-const loadHtml2Canvas = async (): Promise<Html2CanvasFn> => {
-    if (!html2CanvasLoader) {
-        html2CanvasLoader = import('html2canvas')
-            .then((module) => module.default)
-            .catch((error) => {
-                html2CanvasLoader = null;
-                throw error;
-            });
-    }
-
-    return html2CanvasLoader;
-};
-
-const captureFeedbackScreenshot = async (modalElement: HTMLElement | null): Promise<string | null> => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-        return null;
-    }
-
-    const html2canvas = await loadHtml2Canvas();
-    const target = document.querySelector<HTMLElement>('[data-game-page="true"]') ?? document.body;
-    if (!target) {
-        return null;
-    }
-
-    const previousDisplay = modalElement?.style.display;
-    const previousVisibility = modalElement?.style.visibility;
-    if (modalElement) {
-        modalElement.style.display = 'none';
-        modalElement.style.visibility = 'hidden';
-    }
-
-    try {
-        await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
-        const viewportWidth = Math.max(1, Math.round(window.innerWidth || target.clientWidth || 1));
-        const viewportHeight = Math.max(1, Math.round(window.innerHeight || target.clientHeight || 1));
-        const canvas = await html2canvas(target, {
-            backgroundColor: null,
-            // Tailwind v4 emits oklab colors; Chromium's native foreignObject
-            // renderer preserves those styles without html2canvas color parsing.
-            foreignObjectRendering: true,
-            useCORS: true,
-            logging: false,
-            width: viewportWidth,
-            height: viewportHeight,
-            windowWidth: viewportWidth,
-            windowHeight: viewportHeight,
-            x: window.scrollX,
-            y: window.scrollY,
-            scrollX: window.scrollX,
-            scrollY: window.scrollY,
-            onclone: async (clonedDocument) => {
-                // foreignObject 导出后的 SVG 不能再读取 blob/外部图片。
-                // 只在截图副本内嵌当前可见图片，保留页面原素材与加载状态。
-                await Promise.all([...clonedDocument.images].map(async (image) => {
-                    const rect = image.getBoundingClientRect();
-                    if (!rect.width || !rect.height || rect.right <= 0 || rect.bottom <= 0
-                        || rect.left >= viewportWidth || rect.top >= viewportHeight) return;
-                    const src = image.currentSrc || image.src;
-                    if (!src || src.startsWith('data:')) return;
-                    const response = await fetch(src, { credentials: 'same-origin' });
-                    if (!response.ok) throw new Error(`截图图片读取失败：HTTP ${response.status}`);
-                    const blob = await response.blob();
-                    image.src = await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(String(reader.result));
-                        reader.onerror = () => reject(reader.error ?? new Error('截图图片编码失败'));
-                        reader.readAsDataURL(blob);
-                    });
-                    image.removeAttribute('srcset');
-                    await image.decode();
-                }));
-            },
-        });
-
-        return compressCanvas(canvas);
-    } finally {
-        if (modalElement) {
-            modalElement.style.display = previousDisplay ?? '';
-            modalElement.style.visibility = previousVisibility ?? '';
-        }
-    }
-};
-
-function compressImage(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-            URL.revokeObjectURL(url);
-            let { width, height } = img;
-
-            // 等比缩放
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                width = Math.round(width * ratio);
-                height = Math.round(height * ratio);
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                reject(new Error('Canvas not available'));
-                return;
-            }
-            ctx.drawImage(img, 0, 0, width, height);
-
-            resolve(compressCanvas(canvas));
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('Image load failed'));
-        };
-        img.src = url;
-    });
-}
-
-function compressCanvas(sourceCanvas: HTMLCanvasElement): string {
-    let { width, height } = sourceCanvas;
-    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-        width = Math.max(1, Math.round(width * ratio));
-        height = Math.max(1, Math.round(height * ratio));
-    }
-
-    if (width === sourceCanvas.width && height === sourceCanvas.height) {
-        return sourceCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
-    }
-
-    const compressedCanvas = document.createElement('canvas');
-    compressedCanvas.width = width;
-    compressedCanvas.height = height;
-    const context = compressedCanvas.getContext('2d');
-    if (!context) {
-        return sourceCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
-    }
-
-    context.drawImage(sourceCanvas, 0, 0, width, height);
-    return compressedCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
-}
