@@ -32,6 +32,7 @@ import {
 import { normalizeReceivedStateForGame } from './stateNormalization';
 import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
 import { onAppVisible } from '../../lib/mobile/appVisibility';
+import { registerFeedbackReplayCapture } from '../../lib/feedback/feedbackReplayBridge';
 import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
 import type { GameClientContextValue } from './reactContext';
 import { useOptionalToast } from '../../contexts/useOptionalToast';
@@ -86,6 +87,7 @@ export function useGameProviderRuntime(args: {
     matchId: string;
     playerId: string | null;
     credentials?: string;
+    adminToken?: string | null;
     onError?: (error: string) => void;
     onConnectionChange?: (connected: boolean) => void;
     onStateReady?: () => void;
@@ -100,6 +102,7 @@ export function useGameProviderRuntime(args: {
         matchId,
         playerId,
         credentials,
+        adminToken,
         onError,
         onConnectionChange,
         onStateReady,
@@ -112,7 +115,10 @@ export function useGameProviderRuntime(args: {
     const [state, setState] = useState<MatchState<unknown> | null>(null);
     const [matchPlayers, setMatchPlayers] = useState<MatchPlayerInfo[]>([]);
     const [isConnected, setIsConnected] = useState(false);
+    const [adminDebugAvailable, setAdminDebugAvailable] = useState(false);
     const clientRef = useRef<GameTransportClient | null>(null);
+    const adminTokenRef = useRef<string | null>(adminToken ?? null);
+    adminTokenRef.current = adminToken ?? null;
     const optimisticEngineRef = useRef<OptimisticEngineType | null>(null);
     const batcherRef = useRef<CommandBatcher | null>(null);
     const batchSeqRef = useRef(0);
@@ -329,6 +335,7 @@ export function useGameProviderRuntime(args: {
             matchID: matchId,
             playerID: playerId,
             credentials,
+            getAdminDebugToken: () => adminTokenRef.current,
             onStateUpdate: (newState, players, meta, randomMeta) => {
                 const normalizedAuthoritativeState = normalizeReceivedStateForGame(
                     engineConfigRef.current,
@@ -418,6 +425,7 @@ export function useGameProviderRuntime(args: {
                 recoverFromRejectedCommand(error);
                 onErrorRef.current?.(error);
             },
+            onAdminDebugAccessChange: setAdminDebugAvailable,
             onPlayerConnectionChange: (connectionPlayerId, connected) => {
                 setMatchPlayers((previous) => previous.map((player) => {
                     if (String(player.id) !== String(connectionPlayerId)) {
@@ -436,13 +444,22 @@ export function useGameProviderRuntime(args: {
 
         clientRef.current = client;
         client.connect();
+        const unregisterFeedbackCapture = playerId
+            ? registerFeedbackReplayCapture(matchId, playerId, request => client.captureFeedbackReplay(request))
+            : undefined;
 
         return () => {
             hasReportedStateReadyRef.current = false;
+            unregisterFeedbackCapture?.();
             client.disconnect();
             clientRef.current = null;
         };
     }, [clearDeferredSerializedCommand, credentials, flushDeferredSerializedCommand, matchId, playerId, recoverFromRejectedCommand, resetOptimisticProviderRuntime, server]);
+
+    useEffect(() => {
+        if (!adminToken) setAdminDebugAvailable(false);
+        clientRef.current?.requestAdminDebugAccess();
+    }, [adminToken]);
 
     useEffect(() => {
         return onAppVisible(() => {
@@ -557,6 +574,11 @@ export function useGameProviderRuntime(args: {
         return sent;
     }, [deferCommandWaitingForPreviousStep, isSpectator, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
 
+    const adminDebugDispatch = useCallback((type: string, payload: unknown): boolean => {
+        if (!adminDebugAvailable) return false;
+        return clientRef.current?.sendAdminDebugCommand(type, payload) ?? false;
+    }, [adminDebugAvailable]);
+
     useEffect(() => {
         dispatchRef.current = dispatch;
     }, [dispatch]);
@@ -604,6 +626,8 @@ export function useGameProviderRuntime(args: {
     const value = useMemo<GameClientContextValue>(() => ({
         state,
         dispatch,
+        adminDebugAvailable,
+        adminDebugDispatch,
         requestManualSetupSelection,
         requestForceEndAiPhase,
         playerId,
@@ -613,7 +637,7 @@ export function useGameProviderRuntime(args: {
         isMultiplayer: true,
         sendUiEvent,
         subscribeUiEvent,
-    }), [dispatch, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
+    }), [adminDebugAvailable, adminDebugDispatch, dispatch, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
 
     return {
         rollbackSignal,

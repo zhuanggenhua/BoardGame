@@ -1,4 +1,4 @@
-import { test, expect, initHome, capture, record, settings } from './helpers/homeAcceptance';
+import { test, expect, initHome, capture, record, settings, openHomeUpload } from './helpers/homeAcceptance';
 
 test.use({ trace: 'retain-on-failure' });
 
@@ -90,7 +90,8 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 360, height: 702 }
             await expect(page.getByRole('region', { name: '支持作者' })).toBeVisible();
             await capture(page, `纠正-${viewport.width}-手机支持作者`);
             await page.getByRole('button', { name: '关闭赞助说明', exact: true }).tap();
-            await page.getByRole('button', { name: '上传', exact: true }).tap();
+            await page.getByRole('button', { name: '关闭菜单', exact: true }).tap();
+            await openHomeUpload(page, true);
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeInViewport();
             await capture(page, `纠正-${viewport.width}-二级上传`);

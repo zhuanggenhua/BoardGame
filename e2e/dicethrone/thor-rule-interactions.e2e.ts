@@ -2,7 +2,7 @@ import type { Page, TestInfo } from '@playwright/test';
 import { test, expect, type GameTestContext } from '../framework';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { closeDebugPanelIfOpen, dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
-import { shot } from '../helpers/dicethroneThorEvidence';
+import { expectDiceHintSurface, shot } from '../helpers/dicethroneThorEvidence';
 import { THOR_CARDS } from '../../src/games/dicethrone/heroes/thor/cards';
 
 // 独立预期：原玩家板/提示板、slot18–33卡图与FAQ；逐对象表见当前Thor审计的独立规则预期表。
@@ -73,7 +73,8 @@ for (const upgraded of [false, true]) test(`索尔奥丁${upgraded ? '二级空�
     await expect.poll(async () => (await game.getState()).core.pendingBonusDiceSettlement?.dice.length).toBe(5);
     await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
     if (upgraded) await expect(page.getByTestId('dice-interaction-hint')).toContainText('确认保留当前结果');
-    else await expect(page.getByTestId('dice-interaction-hint')).toHaveCount(0);
+    else await expect(page.getByTestId('dice-interaction-hint')).toHaveText('确认效果骰结果并继续结算');
+    await expectDiceHintSurface(page, 'dice-tray');
     await shot(page, info, '02-五颗效果骰与原确认保留结果');
     await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
     await expect.poll(async () => { const s = await game.getState(); return { phase: s.sys.phase, electro: s.core.players['0'].tokens.electrokinesis, cp: s.core.players['0'].resources.cp, reroll: s.core.pendingBonusDiceSettlement ?? null }; }).toEqual({ phase: 'defensiveRoll', electro: 3, cp: upgraded ? 9 : 11, reroll: null });
@@ -84,6 +85,7 @@ test('索尔连锁二级四颗效果骰保留六个组合选择', async ({ page,
     test.setTimeout(120000);
     await attack(page, game, info, { dice: [1, 1, 1, 6, 6], slot: 'lotus', upgrade: 'upgrade-thor-chain-lightning-2', bonus: [1, 2, 4, 6] });
     await expect.poll(async () => (await game.getState()).core.pendingBonusDiceSettlement?.dice.length).toBe(4);
+    await expectDiceHintSurface(page, 'dice-tray');
     await shot(page, info, '02-四颗效果骰先由原骰盘确认');
     await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
     await expect(page.locator('[data-option-id]')).toHaveCount(6);
@@ -159,25 +161,37 @@ for (const input of [
     { cardId: 'card-thor-undaunted', effectRoll: 1, finalHp: 0 },
 ]) test(`索尔${input.cardId === 'card-thor-impenetrable' ? '无懈可击' : '不屈意志'}响应后生命${input.finalHp}`, async ({ page, game }, info) => {
     test.setTimeout(120000);
-    await scene(page, game, info, { gameId: 'dicethrone', phase: 'defensiveRoll', currentPlayer: '1',
-        randomQueue: [6, 6, 6, input.effectRoll].map(v => (v - .5) / 6),
+    const pendingDamageId = 'thor-lethal-attack-response';
+    await scene(page, game, info, { gameId: 'dicethrone', phase: 'defensiveRoll', currentPlayer: '0',
+        randomQueue: [(input.effectRoll - .5) / 6],
         player0: { hand: [input.cardId], resources: { hp: 5, cp: 5 }, tokens: { electrokinesis: 2 } }, player1: { hand: [], resources: { hp: 50, cp: 2 } },
-        extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true, rollCount: 0, rollConfirmed: false, dice: [], pendingAttack: { attackerId: '1', defenderId: '0', sourceAbilityId: 'fist-technique-5', damage: 8, bonusDamage: 0, isDefendable: true, preDefenseResolved: true, offensiveRollEndTokenResolved: true } } });
-    await page.getByRole('button', { name: '开始防御', exact: true }).click();
-    await page.locator('[data-ability-slot="meditate"][data-can-click="true"]').first().click();
-    await page.locator('[data-tutorial-id="dice-roll-button"]').click();
-    await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
-    await page.locator('[data-tutorial-id="advance-phase-button"]').click();
-    await expect.poll(async () => (await game.getState()).core.pendingDamage?.targetPlayerId).toBe('0');
-    await shot(page, info, '01-八伤致死攻击进入原受伤响应窗口');
+        sys: {
+            interaction: { current: { id: `dt-token-response-${pendingDamageId}`, kind: 'dt:token-response', playerId: '0', data: { pendingDamageId } }, queue: [] },
+        },
+        extra: {
+            selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true, rollCount: 0, rollConfirmed: false, dice: [],
+            pendingAttack: { attackerId: '1', defenderId: '0', sourceAbilityId: 'fist-technique-5', damage: 8, bonusDamage: 0, isDefendable: false, preDefenseResolved: true, offensiveRollEndTokenResolved: true, settlementStage: 'preDamage' },
+            pendingDamage: { id: pendingDamageId, sourcePlayerId: '1', targetPlayerId: '0', originalDamage: 8, currentDamage: 8, sourceAbilityId: 'fist-technique-5', damageScope: 'attack', responseType: 'beforeDamageReceived', responderId: '0', isFullyEvaded: false },
+        },
+    });
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return { pending: state.core.pendingDamage?.id, hp: state.core.players['0'].resources.hp, damage: state.core.pendingDamage?.currentDamage };
+    }).toEqual({ pending: pendingDamageId, hp: 5, damage: 8 });
+    await shot(page, info, '01-代表态：索尔5血、即将承受8点攻击伤害，处于受伤响应');
     await dragDiceThroneHandCardToPlay(page, input.cardId);
     if (input.cardId === 'card-thor-undaunted') {
         await expect.poll(async () => (await game.getState()).core.pendingBonusDiceSettlement?.dice[0].value).toBe(input.effectRoll);
         await shot(page, info, '02-不屈效果骰在原骰盘待玩家确认');
         await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
     }
-    const skip = page.getByRole('button', { name: '跳过', exact: true });
-    if (await skip.isVisible()) await skip.click();
+    const expectedRemainingDamage = input.cardId === 'card-thor-impenetrable'
+        ? 0
+        : input.effectRoll === 4 ? 4 : 8;
+    await expect.poll(async () => (await game.getState()).core.pendingDamage?.currentDamage).toBe(expectedRemainingDamage);
+    const responsePass = page.getByTestId('dicethrone-response-pass-button');
+    if (await responsePass.isVisible()) await responsePass.click();
+    await expect.poll(async () => (await game.getState()).core.pendingDamage).toBeUndefined();
     await expect.poll(async () => (await game.getState()).core.players['0'].resources.hp).toBe(input.finalHp);
     await expect.poll(async () => (await game.getState()).core.players['0'].resources.cp).toBe(3);
     await shot(page, info, '03-原伤害事务完成且生命与牌费正确');

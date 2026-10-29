@@ -15,12 +15,12 @@ interface UseCardiaEventAnimationsConfig {
     eventStreamEntries: EventStreamEntry[];
     animations: CardiaEventAnimations;
     toast: { warning: (message: string) => void };
-    t: (key: string, fallback?: string) => string;
+    noValidTargetMessage: string;
     cardRefs: React.MutableRefObject<Map<string, HTMLElement>>;
 }
 
 export function useCardiaEventAnimations(config: UseCardiaEventAnimationsConfig): void {
-    const { eventStreamEntries, animations, toast, t, cardRefs } = config;
+    const { eventStreamEntries, animations, toast, noValidTargetMessage, cardRefs } = config;
     const { consumeNew } = useEventStreamCursor({ entries: eventStreamEntries });
 
     useEffect(() => {
@@ -39,7 +39,7 @@ export function useCardiaEventAnimations(config: UseCardiaEventAnimationsConfig)
             if (event.type === CARDIA_EVENTS.ABILITY_NO_VALID_TARGET.type) {
                 const payload = event.payload as { reason?: string } | undefined;
                 if (payload?.reason === 'no_markers') {
-                    toast.warning(t('ability.noValidTarget.noMarkers', '场上没有带有修正标记或持续标记的卡牌'));
+                    toast.warning(noValidTargetMessage);
                 }
             }
 
@@ -68,5 +68,5 @@ export function useCardiaEventAnimations(config: UseCardiaEventAnimationsConfig)
                 }
             }
         });
-    }, [animations, cardRefs, consumeNew, eventStreamEntries, t, toast]);
+    }, [animations, cardRefs, consumeNew, eventStreamEntries, noValidTargetMessage, toast]);
 }

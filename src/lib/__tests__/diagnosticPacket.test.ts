@@ -22,6 +22,32 @@ const state = {
 } as any;
 
 describe('FeedbackDiagnosticPacket', () => {
+    it('联网投影剥离撤回快照时不能误报完整可重放', () => {
+        const projected = { ...state, sys: { ...state.sys, undo: { snapshots: [], snapshotCount: 3 } } };
+        const packet = buildFeedbackDiagnosticPacket({
+            state: projected, before: projected, after: projected, source: 'user',
+            roomId: 'room-1', requestId: 'request-1', stateId: 12, stateRevision: 3,
+            randomCursor: 17, clientContext: { matchId: 'match-1' },
+        });
+        expect(packet.replayability).toBe('partial');
+        expect(packet.missingFields).toContain('undo.snapshots');
+    });
+    it('缺少随机游标或决策序号时不能标记为完整可复现', () => {
+        const args = {
+            state, before: state, after: state, source: 'client-auto' as const,
+            roomId: 'room-1', requestId: 'request-1', stateId: 12, stateRevision: 3,
+            clientContext: { matchId: 'match-1' },
+        };
+        const withoutRandom = buildFeedbackDiagnosticPacket(args);
+        expect(withoutRandom.replayability).toBe('partial');
+        expect(withoutRandom.missingFields).toContain('randomCursor');
+
+        const withoutEpoch = buildFeedbackDiagnosticPacket({
+            ...args, state: { ...state, sys: { ...state.sys, decisionEpoch: undefined } }, randomCursor: 0,
+        });
+        expect(withoutEpoch.replayability).toBe('partial');
+        expect(withoutEpoch.missingFields).toContain('correlation.decisionEpoch');
+    });
     it('缺少原始关联和前后状态时明确降级为 partial 并列出缺失字段', () => {
         const packet = buildFeedbackDiagnosticPacket({
             state,

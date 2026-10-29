@@ -20,7 +20,7 @@ html[data-home-entry-style="modern"] .author-support-trigger:active:not(:focus-v
 .platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: scale(.98); }
 .platform-game-card[data-pressed] .platform-game-surface { transform: scale(.96); }
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
- .platform-game-card:hover .platform-game-surface { transform: none; box-shadow: none; }
+ .platform-game-card:hover .platform-game-surface { transform: translateY(-6px) scale(1.05); box-shadow: 0 0 0 3px #d5ff00, 7px 10px 0 #000; }
  .platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: translateY(-1px) scale(1.01); box-shadow: 0 0 0 3px #d5ff00, 2px 3px 0 #000; }
  .platform-catalog-filters button:hover { background: #d5ff00; transform: translate(-2px, -2px); box-shadow: 4px 4px #000; }
  .platform-navigation button:hover, .platform-menu-close:hover, .platform-menu-trigger:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px #ff008a; }

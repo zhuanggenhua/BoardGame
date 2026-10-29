@@ -42,7 +42,7 @@ const custom = (customActionId: string, description: string, timing: EffectTimin
     timing,
 });
 
-const replaceable = (id: string, nameId: string, descriptionId: string, trigger: AbilityDef['trigger'], effects: AbilityEffect[], opts?: Pick<AbilityDef, 'type' | 'tags'>): AbilityDef => ({
+const replaceable = (id: string, nameId: string, descriptionId: string, trigger: AbilityDef['trigger'], effects: AbilityEffect[], opts?: Partial<Pick<AbilityDef, 'type' | 'tags'>>): AbilityDef => ({
     id,
     name: abilityText(nameId, 'name'),
     type: opts?.type ?? 'offensive',

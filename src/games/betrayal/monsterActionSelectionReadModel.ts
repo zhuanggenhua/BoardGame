@@ -153,7 +153,7 @@ export function resolveBetrayalMonsterActionSelectionReadModel({
   const helpingHandsTrollHandMoveEntries =
     isHelpingHandsMonsterTurnController
       ? helpingHandsMonsterTurnStatus.trollHandIds
-          .map((monsterId) => {
+          .map((monsterId): BetrayalHelpingHandsTrollHandMoveEntry | null => {
             const monster =
               core.monsters.find((candidate) => candidate.id === monsterId) ??
               null;
@@ -292,7 +292,7 @@ export function resolveBetrayalMonsterActionSelectionReadModel({
   const monsterAttackSlots = monsterActionPanel.slots.filter(
     (slot): slot is BetrayalMonsterActionSlot & { monsterId: string } =>
       slot.kind === "attack" &&
-      Boolean(slot.monsterId) &&
+      slot.monsterId !== null &&
       slot.enabled &&
       (phantomPhotographerAttackMonsterIds.has(slot.monsterId) ||
         slot.monsterId === "jack-spirit" ||

@@ -355,7 +355,7 @@ function queueWilBasePrompt(
         defId,
         ownerId,
     };
-    interaction.data.optionsGenerator = (latestState) => latestState.core.bases.map((base, baseIndex) => ({
+    interaction.data.optionsGenerator = (latestState) => (latestState.core as SmashUpCore).bases.map((base, baseIndex) => ({
         id: `base-${baseIndex}`,
         label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
         value: { baseIndex },

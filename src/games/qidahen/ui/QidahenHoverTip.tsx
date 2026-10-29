@@ -19,13 +19,16 @@ const TIP_SKIN = {
     titleColor: '#f6d5a8',
 } as const;
 
-export type QidahenHoverTipPlacement = 'left' | 'right';
+export type QidahenHoverTipPlacement = 'left' | 'right' | 'above' | 'below';
 
-interface QidahenHoverTipProps {
+interface QidahenHoverTipProps extends React.HTMLAttributes<HTMLDivElement> {
     open: boolean;
     anchor: Element | null;
     placement?: QidahenHoverTipPlacement;
     testId?: string;
+    variant?: 'tooltip' | 'panel';
+    width?: number;
+    gap?: number;
     onClick?: () => void;
     onPointerEnter?: () => void;
     onPointerLeave?: () => void;
@@ -39,10 +42,14 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     anchor,
     placement = 'right',
     testId,
+    variant = 'tooltip',
+    width = TIP_WIDTH,
+    gap = ANCHOR_GAP,
     onClick,
     onPointerEnter,
     onPointerLeave,
     children,
+    ...attributes
 }) => {
     const tipRef = useRef<HTMLDivElement>(null);
     const resolvedZIndex = Math.max(UI_Z_INDEX.tooltip, useResolvedOverlayTooltipZIndex());
@@ -59,24 +66,24 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
 
         const anchorRect = anchor.getBoundingClientRect();
         const tooltipRect = node.getBoundingClientRect();
-        const tooltipWidth = tooltipRect.width || TIP_WIDTH;
+        const tooltipWidth = tooltipRect.width || width;
         const tooltipHeight = tooltipRect.height || 120;
         const { innerWidth, innerHeight } = window;
+        const vertical = placement === 'above' || placement === 'below';
         const fitsOnPreferredSide = placement === 'right'
-            ? anchorRect.right + ANCHOR_GAP + tooltipWidth <= innerWidth - VIEWPORT_PADDING
-            : anchorRect.left - ANCHOR_GAP - tooltipWidth >= VIEWPORT_PADDING;
-        const side: QidahenHoverTipPlacement = fitsOnPreferredSide
-            ? placement
-            : placement === 'right' ? 'left' : 'right';
-        const preferredLeft = side === 'right'
-            ? anchorRect.right + ANCHOR_GAP
-            : anchorRect.left - ANCHOR_GAP - tooltipWidth;
+            ? anchorRect.right + gap + tooltipWidth <= innerWidth - VIEWPORT_PADDING
+            : anchorRect.left - gap - tooltipWidth >= VIEWPORT_PADDING;
+        const side = fitsOnPreferredSide ? placement : placement === 'right' ? 'left' : 'right';
+        const preferredLeft = vertical ? anchorRect.left + anchorRect.width / 2 - tooltipWidth / 2
+            : side === 'right' ? anchorRect.right + gap : anchorRect.left - gap - tooltipWidth;
         const left = clamp(
             preferredLeft,
             VIEWPORT_PADDING,
             Math.max(VIEWPORT_PADDING, innerWidth - tooltipWidth - VIEWPORT_PADDING),
         );
-        const rawTop = anchorRect.top + anchorRect.height / 2 - tooltipHeight / 2;
+        const rawTop = placement === 'above' ? anchorRect.top - tooltipHeight - gap
+            : placement === 'below' ? anchorRect.bottom + gap
+            : anchorRect.top + anchorRect.height / 2 - tooltipHeight / 2;
         const top = clamp(
             rawTop,
             VIEWPORT_PADDING,
@@ -85,7 +92,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
         node.style.left = `${left}px`;
         node.style.top = `${top}px`;
         node.style.visibility = 'visible';
-    }, [open, anchor, placement]);
+    }, [open, anchor, placement, gap, width]);
 
     useLayoutEffect(() => {
         updateLayout();
@@ -107,10 +114,11 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
 
     return createPortal(
         <div
+            {...attributes}
             ref={tipRef}
-            className={`${onClick ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} fixed border-[3px] px-3 py-2 text-[11px] font-black leading-5 tracking-normal`}
+            className={`${variant === 'panel' ? 'pointer-events-auto' : onClick ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} fixed [--spacing:4px] ${variant === 'tooltip' ? 'border-[3px] px-3 py-2' : ''} text-[14px] font-black leading-6 tracking-normal`}
             data-testid={testId}
-            role={onClick ? 'button' : 'tooltip'}
+            role={attributes.role ?? (variant === 'panel' ? 'group' : onClick ? 'button' : 'tooltip')}
             tabIndex={onClick ? 0 : undefined}
             onClick={onClick}
             onPointerEnter={onPointerEnter}
@@ -124,12 +132,12 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
             style={{
                 left: -9999,
                 top: -9999,
-                width: TIP_WIDTH,
+                width: `min(${width}px, calc(100vw - 16px))`,
                 zIndex: resolvedZIndex,
-                borderColor: TIP_SKIN.borderColor,
-                background: TIP_SKIN.background,
+                borderColor: variant === 'tooltip' ? TIP_SKIN.borderColor : undefined,
+                background: variant === 'tooltip' ? TIP_SKIN.background : undefined,
                 color: TIP_SKIN.color,
-                boxShadow: TIP_SKIN.boxShadow,
+                boxShadow: variant === 'tooltip' ? TIP_SKIN.boxShadow : undefined,
                 borderRadius: 3,
                 textShadow: 'none',
                 whiteSpace: 'normal',
@@ -149,11 +157,11 @@ export const QidahenHoverTipBody: React.FC<{
     detail: string;
 }> = ({ header, cost, title, detail }) => (
     <>
-        <span className="flex items-center justify-between gap-3 text-[10px] tracking-[0.08em]" style={{ color: TIP_SKIN.headerColor }}>
+        <span className="flex items-center justify-between gap-3 text-[12px] tracking-[0.08em]" style={{ color: TIP_SKIN.headerColor }}>
             <span>{header}</span>
             {cost ? (
                 <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-black"
+                    className="rounded-full px-2 py-0.5 text-[12px] font-black"
                     style={{
                         background: 'rgba(210,183,117,0.14)',
                         color: TIP_SKIN.headerColor,
@@ -164,7 +172,7 @@ export const QidahenHoverTipBody: React.FC<{
                 </span>
             ) : null}
         </span>
-        <span className="mt-1 block text-[13px]" style={{ color: TIP_SKIN.titleColor }}>{title}</span>
+        <span className="mt-1 block text-[16px]" style={{ color: TIP_SKIN.titleColor }}>{title}</span>
         <span className="mt-1 block">{detail}</span>
     </>
 );

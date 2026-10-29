@@ -183,6 +183,8 @@ abilityExecutorRegistry.register(ABILITY_IDS.MESSENGER, (ctx: CardiaAbilityConte
             interaction,
         };
     }
+
+    if (!ctx.selectedCardId) return { events: [] };
     
     // 玩家选择了场上卡牌
     return {
@@ -388,6 +390,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.LIBRARIAN, (ctx: CardiaAbilityConte
     if (ctx.selectedModifierValue === undefined) {
         const interaction = createModifierSelectionInteraction(
             `${ctx.abilityId}_${ctx.timestamp}`,
+            ctx.abilityId,
             ctx.playerId,
             '选择修正值',
             '为你下一张打出的牌添加+2或-2影响力',
@@ -574,7 +577,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.MERCENARY_SWORDSMAN, (ctx: CardiaAb
                 payload: {
                     playerId: ctx.playerId,
                     cardIds: [currentCard.uid],
-                    from: 'field',
+                    from: 'field' as const,
                 },
                 timestamp: ctx.timestamp,
             },
@@ -583,7 +586,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.MERCENARY_SWORDSMAN, (ctx: CardiaAb
                 payload: {
                     playerId: ctx.opponentId,
                     cardIds: [oppositeCard.uid],
-                    from: 'field',
+                    from: 'field' as const,
                 },
                 timestamp: ctx.timestamp,
             }] : []),

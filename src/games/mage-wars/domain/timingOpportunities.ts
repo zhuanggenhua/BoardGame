@@ -1,6 +1,7 @@
 import type { ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import { queueInteraction } from '../../../engine/systems/InteractionSystem';
+import type { CreateSimpleChoiceFromChoiceRequestOptions } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
 import {
     getActiveResolutionFrame,
@@ -412,6 +413,20 @@ string | undefined {
     return target.targetPlayerId ?? target.targetObjectId;
 }
 
+function buildMageWarsChoiceTitleParams(
+    metadata: Record<string, unknown> | undefined,
+    keys: readonly string[],
+): Record<string, string | number> {
+    const params: Record<string, string | number> = {};
+    for (const key of keys) {
+        const value = metadata?.[key];
+        if (typeof value === 'string' || typeof value === 'number') {
+            params[key] = value;
+        }
+    }
+    return params;
+}
+
 function createDirectDamageResolutionEvents(
     state: MatchState<MageWarsCore>,
     target: MageWarsDirectDamageTarget,
@@ -420,6 +435,7 @@ function createDirectDamageResolutionEvents(
 ): MageWarsDirectDamageResolution | null {
     const targetId = resolveDirectDamageTargetId(target);
     if (!targetId || target.amount <= 0) return null;
+    const eventTimestamp = timestamp ?? 0;
 
     const targetPlayer = target.targetPlayerId ? state.core.players[target.targetPlayerId] : undefined;
     const targetObject = target.targetObjectId ? state.core.objects[target.targetObjectId] : undefined;
@@ -435,7 +451,7 @@ function createDirectDamageResolutionEvents(
         autoCollectStatus: false,
         autoCollectBonusDamage: false,
         damageScope: 'direct',
-        timestamp: timestamp ?? 0,
+        timestamp: eventTimestamp,
     }).toEvents() as MageWarsEvent[];
 
     const damageAmount = damageEvents.reduce((total, event) => {
@@ -458,7 +474,7 @@ function createDirectDamageResolutionEvents(
                     sourceAbilityId: target.sourceAbilityId,
                 },
                 sourceCommandType,
-                timestamp,
+                timestamp: eventTimestamp,
             }],
         };
     }
@@ -475,7 +491,7 @@ function createDirectDamageResolutionEvents(
                 winnerId: getOpponentId(state.core, targetPlayer.id),
             },
             sourceCommandType,
-            timestamp,
+            timestamp: eventTimestamp,
         }],
     };
 }
@@ -3514,15 +3530,13 @@ export function discoverMageWarsTimingOpportunities(
 export function createMageWarsTimingOpportunitySystemConfig():
 TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore> {
     return {
-        choiceRequestOptions: (opportunity) => {
+        choiceRequestOptions: (opportunity): CreateSimpleChoiceFromChoiceRequestOptions<MageWarsTimingOpportunityChoiceValue> | null | undefined => {
             const kind = opportunity.metadata?.mageWarsTimingOpportunity;
             if (kind === MAGE_WARS_TIMING_OPPORTUNITY_KINDS.BATTLE_FURY) {
                 return {
                     title: 'interaction.battleFury.title',
                     titleKey: 'interaction.battleFury.title',
-                    titleParams: {
-                        attackerObjectId: opportunity.metadata?.attackerObjectId,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['attackerObjectId']),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };
@@ -3531,10 +3545,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.fearHelmet.title',
                     titleKey: 'interaction.fearHelmet.title',
-                    titleParams: {
-                        attackerObjectId: opportunity.metadata?.attackerObjectId,
-                        targetPlayerId: opportunity.metadata?.targetPlayerId,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['attackerObjectId', 'targetPlayerId']),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };
@@ -3543,10 +3554,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.counterstrike.title',
                     titleKey: 'interaction.counterstrike.title',
-                    titleParams: {
-                        attackerObjectId: opportunity.metadata?.attackerObjectId,
-                        defenderObjectId: opportunity.metadata?.defenderObjectId,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['attackerObjectId', 'defenderObjectId']),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };
@@ -3555,9 +3563,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.battleFury.title',
                     titleKey: 'interaction.battleFury.title',
-                    titleParams: {
-                        attackerObjectId: opportunity.metadata?.attackerObjectId,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['attackerObjectId']),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };
@@ -3566,20 +3572,12 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.defense.title',
                     titleKey: 'interaction.defense.title',
-                    titleParams: {
-                        ...(typeof opportunity.metadata?.attackerObjectId === 'string'
-                            ? { attackerObjectId: opportunity.metadata.attackerObjectId }
-                            : {}),
-                        ...(typeof opportunity.metadata?.defenderObjectId === 'string'
-                            ? { defenderObjectId: opportunity.metadata.defenderObjectId }
-                            : {}),
-                        ...(typeof opportunity.metadata?.attackerId === 'string'
-                            ? { attackerId: opportunity.metadata.attackerId }
-                            : {}),
-                        ...(typeof opportunity.metadata?.defenderId === 'string'
-                            ? { defenderId: opportunity.metadata.defenderId }
-                            : {}),
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, [
+                        'attackerObjectId',
+                        'defenderObjectId',
+                        'attackerId',
+                        'defenderId',
+                    ]),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };
@@ -3627,10 +3625,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.upkeep.title',
                     titleKey: 'interaction.upkeep.title',
-                    titleParams: {
-                        targetObjectId: opportunity.metadata?.targetObjectId,
-                        amount: opportunity.metadata?.amount,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['targetObjectId', 'amount']),
                     targetType: 'button',
                     autoResolveIfSingle: true,
                 };
@@ -3639,10 +3634,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.upkeepEquipmentDirectDamage.title',
                     titleKey: 'interaction.upkeepEquipmentDirectDamage.title',
-                    titleParams: {
-                        targetObjectId: opportunity.metadata?.targetObjectId,
-                        amount: opportunity.metadata?.amount,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['targetObjectId', 'amount']),
                     targetType: 'button',
                     autoResolveIfSingle: true,
                 };
@@ -3651,11 +3643,11 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.upkeepHealTransfer.title',
                     titleKey: 'interaction.upkeepHealTransfer.title',
-                    titleParams: {
-                        targetObjectId: opportunity.metadata?.targetObjectId,
-                        maxHealing: opportunity.metadata?.maxHealing,
-                        availableHealing: opportunity.metadata?.availableHealing,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, [
+                        'targetObjectId',
+                        'maxHealing',
+                        'availableHealing',
+                    ]),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };
@@ -3664,10 +3656,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.teleportTrap.title',
                     titleKey: 'interaction.teleportTrap.title',
-                    titleParams: {
-                        sourceObjectId: opportunity.metadata?.sourceObjectId,
-                        targetObjectId: opportunity.metadata?.targetObjectId,
-                    },
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['sourceObjectId', 'targetObjectId']),
                     targetType: 'button',
                     autoResolveIfSingle: false,
                 };

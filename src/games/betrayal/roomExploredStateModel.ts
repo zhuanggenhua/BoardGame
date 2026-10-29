@@ -33,16 +33,11 @@ import type {
 import type { BetrayalEvent } from './events';
 import { buildHauntRollThresholds } from './hauntProgress';
 import {
-    cloneDustRuntimeState,
-    cloneHelpingHandsRuntimeState,
-    cloneMagicCameraRuntimeState,
-    cloneUponReflectionRuntimeState,
     createUponReflectionRuntimeState,
 } from './hauntRuntimeSetupModel';
 import { resolveHumanAcknowledgementPlayerIds } from './acknowledgementReadModel';
 import { resolveHauntRevealResolutionForTrigger } from './hauntSetupModel';
 import {
-    cloneHauntTraitorResolution,
     resolveHauntFirstPlayerResolutionForTrigger,
     resolveHauntTraitorResolutionForTrigger,
 } from './hauntTraitorResolutionModel';
@@ -293,6 +288,7 @@ export function applyBetrayalRoomExploredState(
         // 雕像仍消耗这次事件牌堆顺序，但不结算事件效果。
     } else if (
         event.payload.deckKind === 'event'
+        && event.payload.eventEffect
         && eventEffectNeedsPendingEventChoice(event.payload.eventEffect)
     ) {
         if (
@@ -342,12 +338,6 @@ export function applyBetrayalRoomExploredState(
                 effect: event.payload.eventEffect,
                 nextPendingEventChoice: event.payload.nextPendingEventChoice,
                 hauntRevealResolution: event.payload.hauntRevealResolution,
-                hauntTraitorResolution: event.payload.hauntTraitorResolution,
-                dustSetup: event.payload.dustSetup,
-                magicCameraSetup: event.payload.magicCameraSetup,
-                helpingHandsSetup: event.payload.helpingHandsSetup,
-                uponReflectionSetup: event.payload.uponReflectionSetup,
-                hauntRoll: event.payload.hauntRoll,
             }),
             deathPrevention: event.payload.deathPrevention
                 ? {
@@ -358,26 +348,9 @@ export function applyBetrayalRoomExploredState(
                 }
                 : undefined,
             hauntTriggered: event.payload.hauntTriggered,
-            hauntCardNumber: event.payload.hauntCardNumber,
-            hauntTriggerLabel: event.payload.hauntTriggerLabel,
-            hauntTraitorPlayerId: event.payload.hauntTraitorPlayerId,
             hauntRevealResolution: event.payload.hauntRevealResolution
                 ? { ...event.payload.hauntRevealResolution }
                 : undefined,
-            hauntTraitorResolution: event.payload.hauntTraitorResolution
-                ? cloneHauntTraitorResolution(event.payload.hauntTraitorResolution) ?? undefined
-                : undefined,
-            dustSetup: event.payload.dustSetup ? cloneDustRuntimeState(event.payload.dustSetup) : undefined,
-            magicCameraSetup: event.payload.magicCameraSetup
-                ? cloneMagicCameraRuntimeState(event.payload.magicCameraSetup)
-                : undefined,
-            helpingHandsSetup: event.payload.helpingHandsSetup
-                ? cloneHelpingHandsRuntimeState(event.payload.helpingHandsSetup)
-                : undefined,
-            uponReflectionSetup: event.payload.uponReflectionSetup
-                ? cloneUponReflectionRuntimeState(event.payload.uponReflectionSetup)
-                : undefined,
-            hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
         };
         core.turnEndedByDiscovery = true;
     } else if (!core.turnEndedByDiscovery && event.payload.deckKind === 'event' && event.payload.eventEffect) {
@@ -394,13 +367,6 @@ export function applyBetrayalRoomExploredState(
             core.possessionOrderByKind = {
                 ...core.possessionOrderByKind,
                 omen: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
-            };
-            core.scenarioRuntime = {
-                ...core.scenarioRuntime,
-                mummyForcedOmenSearch: {
-                    ...event.payload.mummyForcedOmenSearch,
-                    shuffledOmenDeck: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
-                },
             };
         }
     }

@@ -66,15 +66,13 @@ describe('七大恨入门正式局面行动链', () => {
         expectStep('frontier');
         state = dispatch(state, TUTORIAL_COMMANDS.NEXT, { reason: 'manual' });
         expectStep('select-farm-region');
-        state = dispatch(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-15-liaodong' });
+        state = dispatch(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-15' });
         expectStep('wheel-move');
         state = dispatch(state, QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, { moveId: 'move-2-one-opponent' });
         expectStep('wheel-opponent');
         state = dispatch(state, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE, {
             moveId: 'move-2-one-opponent', opponentFactionId: 'jin',
         });
-        expectStep('wheel-result');
-        state = dispatch(state, TUTORIAL_COMMANDS.NEXT, { reason: 'manual' });
         expectStep('choose-raid');
         state = dispatch(state, QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId: 'raid' });
         expectStep('choose-target');
@@ -84,7 +82,7 @@ describe('七大恨入门正式局面行动链', () => {
         const paidWithoutTarget = { ...state, core: { ...state.core, selectedPaymentCardIds: [silverBeforeTarget.id] } };
         expect(QidahenDomain.validate(paidWithoutTarget, { type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION, playerId: '0', payload: {} })).toEqual({ valid: false, error: 'unknownRegion' });
         expect(QidahenDomain.validate(paidWithoutTarget, { type: QIDAHEN_COMMANDS.EXECUTE_ACTION, playerId: '0', payload: { actionId: 'raid' } })).toEqual({ valid: false, error: 'unknownRegion' });
-        expect(getExplicitRaidTargetAction({ ...paidWithoutTarget.core, explicitRegionId: 'city-region-15-liaodong' }, 'ming')).toBeNull();
+        expect(getExplicitRaidTargetAction({ ...paidWithoutTarget.core, explicitRegionId: 'city-region-15' }, 'ming')).toBeNull();
         state = dispatch(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-7' });
         expectStep('pay-raid');
         expect(getExplicitRaidTargetAction(state.core, 'ming')).toMatchObject({ targetRegionId: 'city-region-7' });
@@ -133,16 +131,16 @@ describe('七大恨入门正式局面行动链', () => {
             mergedValue: {
                 attackerCasualtyPriority: 'highest-level',
                 defenderCasualtyPriority: 'highest-level',
-                committedTroops: 3,
+                committedTroops: 4,
             },
         });
         state = dispatch(state, battleCommand.type, battleCommand.payload);
         expectStep('battle-result');
         const battleRolls = state.core.postBattleSelection?.battleRolls;
         expect(battleRolls?.attackerMorale.destroyedTroops).toBe(0);
-        expect(battleRolls?.stages.find((stage) => stage.phase === 'cavalry')?.defenderDamage).toBe(1);
+        expect(battleRolls?.stages.find((stage) => stage.phase === 'infantry')?.attackerRolls).toEqual([expect.objectContaining({ dieSides: 10, raw: 9 })]);
         expect(state.core.postBattleSelection?.forceOutcomes?.flatMap((force) => force.survivingSpecialTroops)
-            .filter((stack) => stack.troopKind === 'infantry').every((stack) => stack.level === 1)).toBe(true);
+            .filter((stack) => stack.troopKind === 'infantry').every((stack) => stack.level === 2)).toBe(true);
         state = dispatch(state, TUTORIAL_COMMANDS.NEXT, { reason: 'manual' });
         expectStep('occupy');
         const occupy = state.core.postBattleSelection!.choices.find((choice) => choice.mode === 'occupy')!;
@@ -155,21 +153,21 @@ describe('七大恨入门正式局面行动链', () => {
         expect(state.core.currentPlayer).toBe('1');
     });
 
-    it.each(['occupy', 'withdraw'] as const)('真实开局先军屯辽东，再突袭叶赫部，战后选择%s保留实际等级与部队身份', (decision) => {
+    it.each(['occupy', 'withdraw'] as const)('真实开局先军屯辽北，再突袭叶赫部，战后选择%s保留实际等级与部队身份', (decision) => {
         const setup = buildQidahenTutorialSetupData('basic-opening', true)!;
         let cursor = 0;
-        const battleRandom: RandomFn = { ...random, d: (max) => Math.min(max, [1, 1, 4, 4, 4][cursor++] ?? 4) };
+        const battleRandom: RandomFn = { ...random, d: (max) => Math.min(max, [1, 1, 1, 1, 9][cursor++] ?? 4) };
         const dispatchBattle = (state: MatchState<QidahenCore>, type: string, payload: unknown, playerId = '0') =>
             dispatch(state, type, payload, playerId, battleRandom);
         let state: MatchState<QidahenCore> = {
             core: QidahenDomain.setup(playerIds, random, setup.setupData),
             sys: createInitialSystemState(playerIds, systems, 'qidahen-natural-raid'),
         };
-        state = dispatchBattle(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-15-liaodong' });
+        state = dispatchBattle(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-15' });
         state = dispatchBattle(state, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE, {
             moveId: 'move-2-one-opponent', opponentFactionId: 'jin',
         });
-        expect(state.core.regions.find((region) => region.id === 'city-region-15-liaodong')?.troops).toBe(4);
+        expect(state.core.regions.find((region) => region.id === 'city-region-15')?.troops).toBe(4);
         state = dispatchBattle(state, QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId: 'raid' });
         state = dispatchBattle(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-7' });
         const silver = state.core.handCards.find((card) => (
@@ -180,7 +178,7 @@ describe('七大恨入门正式局面行动链', () => {
         state = dispatchBattle(state, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION, {});
         expect(state.core.pendingTargetAction).toMatchObject({
             actionId: 'raid',
-            sourceRegionId: 'city-region-15-liaodong',
+            sourceRegionId: 'city-region-15',
             targetRegionId: 'city-region-7',
         });
         const declaration = createRespondToPromptCommand(state, { playerId: '1', optionId: 'defender-fight' });
@@ -194,21 +192,27 @@ describe('七大恨入门正式局面行动链', () => {
             retreatLossMode: 'rear-guard',
             attackerCasualtyPriority: 'highest-level',
             defenderCasualtyPriority: 'highest-level',
-            committedTroops: 3,
+            committedTroops: 4,
         });
         expect(state.core.lastSeasonSummary?.title).toContain('战');
         expect(state.core.postBattleSelection).toBeTruthy();
+        expect(state.core.postBattleSelection?.battleRolls?.stages.find(stage => stage.phase === 'infantry')?.attackerRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 3, dieSides: 10, raw: 9 }),
+        ]);
         expect(state.core.postBattleSelection?.choices.map((choice) => choice.mode)).toContain('occupy');
-        const occupy = state.core.postBattleSelection!.choices.find((choice) => choice.mode === decision && (decision === 'occupy' || choice.regionId === 'city-region-15-liaodong'))!;
+        const occupy = state.core.postBattleSelection!.choices.find((choice) => choice.mode === decision && (decision === 'occupy' || choice.regionId === 'city-region-15'))!;
         expect(getPromptOptions(state).map((option) => option.id)).toContain(occupy.id);
         const command = createRespondToPromptCommand(state, { playerId: '0', optionId: occupy.id });
         state = dispatchBattle(state, command.type, command.payload);
-        const liaodong = state.core.regions.find((region) => region.id === 'city-region-15-liaodong');
+        const liaodong = state.core.regions.find((region) => region.id === 'city-region-15');
         const yehe = state.core.regions.find((region) => region.id === 'city-region-7');
-        expect([liaodong?.troops, liaodong?.population]).toEqual([decision === 'occupy' ? 1 : 4, 3]);
-        expect([yehe?.troops, yehe?.population, yehe?.controller]).toEqual([decision === 'occupy' ? 3 : 0, 2, decision === 'occupy' ? 'ming' : 'mongol']);
-        expect(liaodong?.specialTroops.every((stack) => stack.level === 1)).toBe(true);
-        expect(yehe?.specialTroops.every((stack) => stack.level === 1)).toBe(true);
+        expect([liaodong?.troops, liaodong?.population]).toEqual([decision === 'occupy' ? 0 : 4, 3]);
+        expect([yehe?.troops, yehe?.population, yehe?.controller]).toEqual([decision === 'occupy' ? 4 : 0, 2, decision === 'occupy' ? 'ming' : 'mongol']);
+        const survivors = (decision === 'occupy' ? yehe : liaodong)!.specialTroops;
+        expect(expandSpecialTroopStacksToCompatPieces(survivors).map(piece => [piece.troopKind, piece.level]).sort()).toEqual([
+            ['artillery', 1], ['cavalry', 1], ['cavalry', 1], ['infantry', 2],
+        ]);
+
         expect(state.core.factions.ming.handCount).toBe(4);
         expect(state.core.currentPlayer).toBe('1');
     });
@@ -221,19 +225,19 @@ describe('七大恨入门正式局面行动链', () => {
             core,
             sys: createInitialSystemState(playerIds, systems, 'qidahen-natural-opening'),
         };
-        const xuanfuBefore = core.regions.find((region) => region.id === 'city-region-24')!;
+        const xuanfuBefore = core.regions.find((region) => region.id === 'xuan-fu')!;
         const shuntianBefore = core.regions.find((region) => region.id === 'city-region-28')!;
         expect([xuanfuBefore.troops, xuanfuBefore.population]).toEqual([1, 2]);
         expect([shuntianBefore.troops, shuntianBefore.population]).toEqual([3, 5]);
 
-        state = dispatch(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-24' });
+        state = dispatch(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'xuan-fu' });
         state = dispatch(state, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE, {
             moveId: 'move-2-one-opponent', opponentFactionId: 'jin',
         });
         expect(state.core.actionWheelPosition).toBe('wheel-military-farm');
         expect(state.core.currentPlayer).toBe('0');
         expect(state.core.factionActionUsed).toBe(false);
-        expect(state.core.regions.find((region) => region.id === 'city-region-24')?.troops).toBe(2);
+        expect(state.core.regions.find((region) => region.id === 'xuan-fu')?.troops).toBe(2);
 
         state = dispatch(state, QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-28' });
         state = dispatch(state, QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId: 'recruit' });
@@ -250,9 +254,9 @@ describe('七大恨入门正式局面行动链', () => {
         expect(state.core.currentPlayer).not.toBe('0');
     });
     it.each([
-        { name: '守方', dice: [1, 1, 4, 1, 2], committed: 3, playerId: '1', mode: 'rout', survivors: 3 },
+        { name: '守方', dice: [1, 1, 4], committed: 3, playerId: '1', mode: 'rout', survivors: 3 },
         { name: '攻方', dice: [4, 1], committed: 1, playerId: '0', mode: 'rout', survivors: 3 },
-        { name: '炮兵断后', dice: [1, 1, 4, 1], committed: 2, playerId: '0', mode: 'rear-guard', survivors: 2 },
+        { name: '断后使最后步骑兵消灭，炮兵随之移除', dice: [1, 1, 1, 8], committed: 4, playerId: '0', mode: 'rear-guard', survivors: 0 },
     ])('$name在战后撤退时消费实际幸存部队，保留同一骰果与未参战部队', (scenario) => {
         const setup = buildQidahenTutorialSetupData('basic-opening', true)!;
         let cursor = 0;
@@ -271,9 +275,9 @@ describe('七大恨入门正式局面行动链', () => {
             const cmd = createRespondToPromptCommand(state, { optionId, playerId, mergedValue });
             act(cmd.type, cmd.payload, playerId);
         };
-        act(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-15-liaodong' });
+        act(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-15' });
         act(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE, { moveId: 'move-2-one-opponent', opponentFactionId: 'jin' });
-        const before = state.core.regions.find((region) => region.id === 'city-region-15-liaodong')!;
+        const before = state.core.regions.find((region) => region.id === 'city-region-15')!;
         act(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId: 'raid' });
         act(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: 'city-region-7' });
         const silver = state.core.handCards.find((card) => card.faction === 'ming' && card.cardKind === 'silver')!;

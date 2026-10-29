@@ -6,7 +6,7 @@ export const EXTERNAL_GAME_SEEDS = [{
     category: 'uncategorized',
     author: '鸢一桑',
     authorProfileUrl: 'https://space.bilibili.com/31976469',
-    description: '作者：鸢一桑。作者 B 站主页：https://space.bilibili.com/31976469 。游戏网站：https://yuanyigames.top/ 。',
+    description: '独立网页游戏。作者 B 站主页：https://space.bilibili.com/31976469',
     rules: '', coverUrl: '', published: true,
     embedStatus: 'blocked' as const,
     embedReason: '游戏网站返回 X-Frame-Options: DENY，暂时不允许在本站嵌入。你可以前往原网站游玩。',

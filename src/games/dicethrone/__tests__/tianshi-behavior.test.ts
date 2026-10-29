@@ -283,6 +283,35 @@ describe('炽天使领域行为', () => {
         expect(eventTypes).not.toContain('BONUS_DIE_ROLLED');
     });
 
+    it('圣洁光辉获得飞行后须在对手防御前保留进攻阶段使用机会', () => {
+        let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
+        const run = (type: string, values: number[], payload: Record<string, unknown> = {}) => {
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems }, state,
+                command(type, '0', payload), createQueuedRandom(values), playerIds,
+            );
+            expect(result.success).toBe(true);
+            if (result.success) state = result.state;
+            return result.events;
+        };
+        run('ADVANCE_PHASE', [1]);
+        run('ROLL_DICE', [3, 5, 3, 3, 4]);
+        run('CONFIRM_ROLL', [1]);
+        run('SELECT_ABILITY', [1], { abilityId: 'holy-radiance' });
+        run('ADVANCE_PHASE', [1]);
+
+        expect(state.core.players['0'].tokens[TOKEN_IDS.FLIGHT]).toBe(1);
+        expect(state.sys.phase).toBe('offensiveRoll');
+        expect(state.core.pendingAttack?.defenseResolved).not.toBe(true);
+
+        run('USE_TOKEN', [6, 1], { tokenId: TOKEN_IDS.FLIGHT, amount: 1 });
+        expect(state.core.pendingBonusDiceSettlement).toBeDefined();
+        const settled = run('SKIP_BONUS_DICE_REROLL', [1]);
+        expect(settled.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        expect(state.sys.phase).not.toBe('defensiveRoll');
+        expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBeLessThan(50);
+    });
+
     it('圣洁光辉选定后不应自动跳过进攻阶段，显式推进后进入防御并结算伤害', () => {
         let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
         const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
@@ -352,6 +381,14 @@ describe('炽天使领域行为', () => {
         expect(advanceToDefense.success).toBe(true);
         if (!advanceToDefense.success) return;
         state = advanceToDefense.state;
+        expect(state.sys.phase).toBe('offensiveRoll');
+        const skipFlight = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), playerIds,
+        );
+        expect(skipFlight.success).toBe(true);
+        if (!skipFlight.success) return;
+        state = skipFlight.state;
         expect(state.sys.phase).toBe('defensiveRoll');
         expect(state.core.pendingAttack).toMatchObject({
             attackerId: '0',

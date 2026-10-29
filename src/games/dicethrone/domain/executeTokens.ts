@@ -24,7 +24,7 @@ import {
     processTokenUsage,
     finalizeTokenResponse,
     hasDefensiveTokens,
-    hasBeforeDamageReceivedCard,
+    hasBeforeDamageReceivedCardForTarget,
     createTokenResponseRequestedEvent,
     getUsableTokenAmountForTiming,
     maybeCreateDamageResponseEvent,
@@ -38,6 +38,7 @@ import { findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollCon
 import { rollDieValue } from './reroll';
 import type { DiceThroneTokenResponseChoiceCommandSource } from './tokenResponseChoiceContract';
 import { getUsableActiveRollToken } from './activeRollTokens';
+import { applyCurrentAttackDamageModifiers } from './attackDamageModifiers';
 
 const normalizeBonusDiceFollowupEvents = (
     state: DiceThroneCore,
@@ -50,7 +51,7 @@ const normalizeBonusDiceFollowupEvents = (
 
     // 奖励骰处理器产生的伤害仍属于当前临时骰的来源玩家；
     // 统一补齐归属，避免 ActionLog、响应窗口和攻击归账各自猜来源。
-    const damageEvent = event.payload.sourcePlayerId
+    const attributedEvent = event.payload.sourcePlayerId
         ? event
         : {
             ...event,
@@ -60,8 +61,9 @@ const normalizeBonusDiceFollowupEvents = (
             },
         };
 
-    const damageScope = damageEvent.payload.damageScope
+    const damageScope = attributedEvent.payload.damageScope
         ?? (state.pendingAttack ? 'attack' : 'direct');
+    const damageEvent = applyCurrentAttackDamageModifiers(state, attributedEvent, settlement.attackerId);
     const responseEvent = maybeCreateDamageResponseEvent({
         state,
         damageEvent,
@@ -455,13 +457,14 @@ export function executeTokenCommand(
                 );
                 events.push(...tokenEvents);
 
-                if (result.success && tokenDef.activeUse.customActionId) {
+                const activeUse = tokenDef.activeUse;
+                if (result.success && activeUse?.customActionId) {
                     const targetId = activeRollToken.requiresOpponentRollDice
                         ? activeRollToken.currentRollContext.ownerPlayerId
                         : phase === 'defensiveRoll'
                             ? pendingAttack!.attackerId
                             : (pendingAttack!.defenderId ?? pendingAttack!.attackerId);
-                    const handler = getCustomActionHandler(tokenDef.activeUse.customActionId);
+                    const handler = getCustomActionHandler(activeUse.customActionId);
                     if (handler) {
                         events.push(...handler({
                             ctx: {
@@ -481,7 +484,7 @@ export function executeTokenCommand(
                             action: {
                                 type: 'custom',
                                 target: 'self',
-                                customActionId: tokenDef.activeUse.customActionId,
+                                customActionId: activeUse.customActionId,
                                 params: { phase },
                             },
                         }));
@@ -738,7 +741,7 @@ export function executeTokenCommand(
                     pendingDamage.damageScope,
                     undefined,
                     pendingDamage.unblockable,
-                ) || hasBeforeDamageReceivedCard(state, pendingDamage.targetPlayerId) || hasNyraRedirect;
+                ) || hasBeforeDamageReceivedCardForTarget(state, pendingDamage.targetPlayerId) || hasNyraRedirect;
                 if (hasDefenderResponse) {
                     // 切换到防御方响应
                     const newPendingDamage: PendingDamage = applyExistingDamagePreventionToPendingDamage(state, {
@@ -747,7 +750,7 @@ export function executeTokenCommand(
                         responderId: pendingDamage.targetPlayerId,
                     }, {
                         bypassShields: pendingDamage.unblockable,
-                        isUltimateDamage: state.pendingAttack?.isUltimate === true,
+                        isUltimateDamage: false,
                     });
                     const tokenResponseEvent = createTokenResponseRequestedEvent(newPendingDamage, timestamp);
                     events.push(tokenResponseEvent);

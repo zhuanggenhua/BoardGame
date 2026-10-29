@@ -4,7 +4,8 @@
  * 主题：消灭低力量随从获取+1力量指示物
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter, addOngoingCardCounter,
@@ -31,6 +32,8 @@ import { matchesDefId } from '../domain/utils';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { buildBuryCardEvents } from '../domain/bury';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
@@ -678,7 +681,7 @@ function createCullTheWeakCardInteraction(
 // 声明式 runtime prompt 程序
 // ============================================================================
 
-const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinionPromptContext>({
     sourceId: 'vampire_heavy_drinker',
     buildInteraction: (context) => {
         const targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
@@ -752,7 +755,7 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
     },
 });
 
-const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinionPromptContext>({
     sourceId: 'vampire_nightstalker',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -811,7 +814,7 @@ const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinion
     },
 });
 
-const vampireDinnerDateTargetPromptProgram = createPromptProgram<VampireBaseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireDinnerDateTargetPromptProgram = createPromptProgram<VampireBaseMinionPromptContext>({
     sourceId: 'vampire_dinner_date_target',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -861,7 +864,7 @@ const vampireDinnerDateTargetPromptProgram = createPromptProgram<VampireBaseMini
     },
 });
 
-const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_dinner_date',
     buildInteraction: (context) => {
         const ownMinions = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -905,16 +908,15 @@ const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext,
         if (!hasDestroyTargets) return { events };
         return {
             events,
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 minionUid: selected.minionUid,
                 baseIndex: selected.baseIndex,
-            }),
-            nextProgram: vampireDinnerDateTargetPromptProgram,
+            }), vampireDinnerDateTargetPromptProgram),
         };
     },
 });
 
-const vampireBigGulpPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireBigGulpPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_big_gulp',
     buildInteraction: (context) => {
         const targets = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -965,7 +967,7 @@ const vampireBigGulpPromptProgram = createPromptProgram<VampirePromptContext, Sm
     },
 });
 
-const vampireCullTheWeakChooseCardPromptProgram = createPromptProgram<VampireBaseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCullTheWeakChooseCardPromptProgram: AbilityProgram<VampireBaseMinionPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<VampireBaseMinionPromptContext>({
     sourceId: 'vampire_cull_the_weak_choose_card',
     buildInteraction: (context) => createCullTheWeakCardInteraction(
         context.matchState,
@@ -993,16 +995,15 @@ const vampireCullTheWeakChooseCardPromptProgram = createPromptProgram<VampireBas
 
         return {
             events,
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 minionUid: context.minionUid,
                 baseIndex: context.baseIndex,
-            }),
-            nextProgram: vampireCullTheWeakChooseCardPromptProgram,
+            }), vampireCullTheWeakChooseCardPromptProgram),
         };
     },
 });
 
-const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_cull_the_weak',
     buildInteraction: (context) => {
         const ownMinions = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -1039,16 +1040,15 @@ const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext
         if (minionCards.length === 0) return { events: [] };
         return {
             events: [],
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 minionUid: selected.minionUid,
                 baseIndex: selected.baseIndex,
-            }),
-            nextProgram: vampireCullTheWeakChooseCardPromptProgram,
+            }), vampireCullTheWeakChooseCardPromptProgram),
         };
     },
 });
 
-const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDuskPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDuskPromptContext>({
     sourceId: 'vampire_crack_of_dusk_base',
     buildInteraction: (context) => createSimpleChoice(
         `vampire_crack_of_dusk_base_${context.now}`,
@@ -1091,7 +1091,7 @@ const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDu
     },
 });
 
-const vampireCrackOfDuskPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCrackOfDuskPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_crack_of_dusk',
     buildInteraction: (context) => {
         const discard = context.matchState.core.players[context.playerId]?.discard ?? [];
@@ -1123,16 +1123,15 @@ const vampireCrackOfDuskPromptProgram = createPromptProgram<VampirePromptContext
         if (!stillInDiscard) return { events: [] };
         return {
             events: [],
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
-            }),
-            nextProgram: vampireCrackOfDuskBasePromptProgram,
+            }), vampireCrackOfDuskBasePromptProgram),
         };
     },
 });
 
-const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountPodAddCounterPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountPodAddCounterPromptContext>({
     sourceId: 'vampire_the_count_pod_add_counter',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.targetBaseIndex];
@@ -1170,7 +1169,7 @@ const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountP
     },
 });
 
-const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPlayPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPlayPromptContext>({
     sourceId: 'vampire_buffet_pod_play',
     buildInteraction: (context) => createSimpleChoice(
         `vampire_buffet_pod_${context.playerId}_${context.now}`,
@@ -1200,7 +1199,7 @@ const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPl
     },
 });
 
-const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMadMonsterPartyPodPlayPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMadMonsterPartyPodPlayPromptContext>({
     sourceId: 'vampire_mad_monster_party_pod_play',
     buildInteraction: (context) => createSimpleChoice(
         `vampire_mad_monster_party_pod_${context.playerId}_${context.now}`,
@@ -1236,7 +1235,7 @@ const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMa
     },
 });
 
-const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFledglingPodBuryBasePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFledglingPodBuryBasePromptContext>({
     sourceId: 'vampire_fledgling_vampire_pod_bury_base',
     buildInteraction: (context) => createSimpleChoice(
         `vampire_fledgling_vampire_pod_bury_base_${context.now}`,
@@ -1272,7 +1271,7 @@ const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFled
     },
 });
 
-const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_fledgling_vampire_pod_bury_source',
     buildInteraction: (context) => {
         const player = context.matchState.core.players[context.playerId];
@@ -1318,17 +1317,16 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
         ].find(card => card.uid === selected.cardUid);
         return {
             events: [],
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 cardUid: selected.cardUid,
                 fromDiscard: !!selected.fromDiscard,
                 trueOwnerId: (selectedCard?.owner as PlayerId | undefined) ?? context.playerId,
-            }),
-            nextProgram: vampireFledglingPodBuryBasePromptProgram,
+            }), vampireFledglingPodBuryBasePromptProgram),
         };
     },
 });
 
-const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMinionPromptContext>({
     sourceId: 'vampire_heavy_drinker_pod',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -1418,7 +1416,7 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
     },
 });
 
-const vampireCountPodTalentPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCountPodTalentPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_the_count_pod_talent',
     buildInteraction: (context) => {
         const targets = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -1465,7 +1463,7 @@ const vampireCountPodTalentPromptProgram = createPromptProgram<VampirePromptCont
     },
 });
 
-const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_big_gulp_pod',
     buildInteraction: (context) => {
         const targets = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -1512,7 +1510,7 @@ const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext,
     },
 });
 
-const vampireCullTheWeakPodDeckPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCullTheWeakPodDeckPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_cull_the_weak_pod_deck',
     buildInteraction: (context) => {
         const cards = (context.matchState.core.players[context.playerId]?.deck ?? [])
@@ -1555,15 +1553,14 @@ const vampireCullTheWeakPodDeckPromptProgram = createPromptProgram<VampirePrompt
         if (selectedUids.length === 0) return { events: [] };
         return {
             events: [],
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 discardUids: selectedUids,
-            }),
-            nextProgram: vampireCullTheWeakPodPromptProgram,
+            }), vampireCullTheWeakPodPromptProgram),
         };
     },
 });
 
-const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWeakPodPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWeakPodPromptContext>({
     sourceId: 'vampire_cull_the_weak_pod',
     buildInteraction: (context) => {
         const minions = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -1619,7 +1616,7 @@ const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWea
     },
 });
 
-const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackOfDuskPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackOfDuskPromptContext>({
     sourceId: 'vampire_crack_of_dusk_pod_base',
     buildInteraction: (context) => createSimpleChoice(
         `vampire_crack_of_dusk_pod_base_${context.now}`,
@@ -1663,7 +1660,7 @@ const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackO
     },
 });
 
-const vampireCrackOfDuskPodPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireCrackOfDuskPodPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_crack_of_dusk_pod',
     buildInteraction: (context) => {
         const discard = context.matchState.core.players[context.playerId]?.discard ?? [];
@@ -1695,16 +1692,15 @@ const vampireCrackOfDuskPodPromptProgram = createPromptProgram<VampirePromptCont
         if (!stillInDiscard) return { events: [] };
         return {
             events: [],
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
-            }),
-            nextProgram: vampireCrackOfDuskPodBasePromptProgram,
+            }), vampireCrackOfDuskPodBasePromptProgram),
         };
     },
 });
 
-const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDatePodPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDatePodPromptContext>({
     sourceId: 'vampire_dinner_date_pod',
     buildInteraction: (context) => {
         const ownMinions = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -1772,7 +1768,7 @@ const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDateP
     },
 });
 
-const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireWolfPactPodMinionTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireWolfPactPodMinionTargetPromptContext>({
     sourceId: 'vampire_wolf_pact_pod_minion_target',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.wolfBaseIndex];
@@ -1808,7 +1804,7 @@ const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireW
     },
 });
 
-const vampireWolfPactPodMinionPromptProgram = createPromptProgram<VampireWolfPactPodMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vampireWolfPactPodMinionPromptProgram = createPromptProgram<VampireWolfPactPodMinionPromptContext>({
     sourceId: 'vampire_wolf_pact_pod_minion',
     buildInteraction: (context) => createSimpleChoice(
         `vampire_wolf_pact_pod_minion_${context.now}`,
@@ -1851,15 +1847,14 @@ const vampireWolfPactPodMinionPromptProgram = createPromptProgram<VampireWolfPac
         if (!powerEvent) return { events: [] };
         return {
             events: [powerEvent],
-            context: createVampirePromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVampirePromptContext(state, context.playerId, timestamp, {
                 wolfBaseIndex: context.wolfBaseIndex,
-            }),
-            nextProgram: vampireWolfPactPodMinionTargetPromptProgram,
+            }), vampireWolfPactPodMinionTargetPromptProgram),
         };
     },
 });
 
-const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptContext>({
     sourceId: 'vampire_wolf_pact_pod_action',
     buildInteraction: (context) => {
         const player = context.matchState.core.players[context.playerId];

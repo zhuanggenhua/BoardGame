@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { gunzipSync } from 'node:zlib';
 import type { MatchState } from '../../types';
 import { OnlineAiCircuitBreaker } from '../onlineAiCircuitBreaker';
 import {
@@ -21,6 +22,8 @@ const createMatch = (): OnlineAiCircuitFailureMatch => ({
     gameId: 'test-game',
     state: createState(),
     stateID: 8,
+    randomSeed: 'test-seed',
+    getRandomCursor: () => 7,
     engineConfig: { gameId: 'test-game' },
     commandQueue: [
         {
@@ -85,6 +88,10 @@ describe('OnlineAiCircuitFailureCoordinator', () => {
         }));
 
         const report = vi.mocked(hooks.reportRecoveryFeedback).mock.calls[0]?.[0];
+        const archive = JSON.parse(gunzipSync(Buffer.from(report!.privateReplay!, 'base64')).toString());
+        expect(archive.stateId).toBe(8);
+        expect(archive.randomCursor).toBe(7);
+        expect(archive.state.core.activePlayerId).toBe('1');
         const parsedSnapshot = JSON.parse(report?.stateSnapshot ?? '{}') as {
             command?: { payload?: { cardUid?: string } };
             clientTransport?: { stateID?: number };

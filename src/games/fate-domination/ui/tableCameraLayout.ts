@@ -1,5 +1,5 @@
 import type { MapViewportState } from '../../../engine/mapRenderer';
-/** Initial/reset camera fits the viewport. HUD layers float over the board without changing its pose. */
+/** 默认视野按完整视口适配；浮动操作区不改变棋盘构图。 */
 export function fitFateTableCamera(width:number,height:number,mapWidth:number,mapHeight:number):MapViewportState {
     const zoom=Math.max(.25,Math.min(2.5,width/mapWidth,height/mapHeight));
     return {zoom,panX:(width-mapWidth*zoom)/2,panY:(height-mapHeight*zoom)/2};

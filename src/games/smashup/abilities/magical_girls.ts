@@ -472,12 +472,16 @@ function lunarCaptain(ctx: AbilityContext): AbilityResult {
         `magical_girls_lunar_captain_${ctx.now}`,
         ctx.playerId,
         '月球骑长：选择你弃牌堆中力量不高于你这里随从数量的随从',
-        candidates.map((card, index) => ({
-            id: `card-${index}`,
-            label: `${cardLabel(card.defId)}（力量 ${getCardDef(card.defId)?.type === 'minion' ? getCardDef(card.defId)?.power : '?' }）`,
-            value: { cardUid: card.uid, defId: card.defId, ownerId: ctx.playerId },
-            displayCard: { defId: card.defId, cardUid: card.uid },
-        })),
+        candidates.map((card, index) => {
+            const cardDef = getCardDef(card.defId);
+            const power = cardDef?.type === 'minion' ? cardDef.power ?? 0 : '?';
+            return {
+                id: `card-${index}`,
+                label: `${cardLabel(card.defId)}（力量 ${power}）`,
+                value: { cardUid: card.uid, defId: card.defId, ownerId: ctx.playerId },
+                displayCard: { defId: card.defId, cardUid: card.uid },
+            };
+        }),
         {
             sourceId: 'magical_girls_lunar_captain',
             titleKey: 'ui.magical_girls_lunar_captain_title',

@@ -1,4 +1,5 @@
-import { MAGE_WARS_MAX_PREPARED_SPELLS, type MageWarsPhase } from '../domain';
+import { MAGE_WARS_MAX_PREPARED_SPELLS } from '../domain';
+import type { MageWarsPhase } from '../domain/core-types';
 
 export type MageWarsTurnMainActionMode = 'plan-spells' | 'advance-phase';
 

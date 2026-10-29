@@ -1,5 +1,6 @@
 import type { AiSeatController } from '../ai';
 import logger from '../../../server/logger.js';
+import { capturePrivateFeedbackReplay } from './feedbackPrivateReplay';
 import type { OnlineAiCircuitSnapshot, OnlineAiCircuitSource } from './onlineAiCircuitBreaker';
 import type { ForceEndTurnStalledAiResolution } from './onlineAiRecovery';
 import {
@@ -83,6 +84,19 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
         repeatedAttempt: OnlineAiRepeatedRecoveryAttempt | undefined;
         seatControllers: Record<string, AiSeatController>;
     }): Promise<OnlineAiRepeatedRecoveryUnblockResult> {
+        // 解卡命令会替换权威状态。诊断必须引用执行前的状态与版本，
+        // 否则上报的是下一名玩家的新交互，无法定位原卡点。
+        const beforeMatch = {
+            ...args.match,
+            state: args.match.state,
+            stateID: args.match.stateID,
+        } as TMatch;
+        const privateReplay = capturePrivateFeedbackReplay(beforeMatch);
+        const beforeCorrelation = resolveTransportFeedbackCorrelation({
+            matchId: beforeMatch.matchID,
+            state: beforeMatch.state,
+            stateId: beforeMatch.stateID,
+        });
         return tryForceUnblockRepeatedOnlineAiRecovery({
             match: args.match,
             candidate: args.candidate,
@@ -145,20 +159,18 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
                         reason: payload.reason,
                         trackerKey: args.trackerKey,
                         progressMarker: args.progressMarker,
-                        ...resolveTransportFeedbackCorrelation({
-                            matchId: args.match.matchID,
-                            state: args.match.state,
-                            stateId: args.match.stateID,
-                        }),
+                        privateReplay: privateReplay.data,
+                        privateReplayError: privateReplay.error,
+                        ...beforeCorrelation,
                         stateSnapshot: await this.hooks.buildRecoveryStateSnapshot({
-                            match: args.match,
+                            match: beforeMatch,
                             candidate: args.candidate,
                             trackerKey: args.trackerKey,
                             progressMarker: args.progressMarker,
                             failureReason: 'repeated_recovery_force_unblocked',
                         }),
                         actionLog: this.hooks.buildRecoveryActionLog({
-                            match: args.match,
+                            match: beforeMatch,
                             candidate: args.candidate,
                             trackerKey: args.trackerKey,
                             progressMarker: args.progressMarker,
@@ -211,6 +223,7 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
             marker: args.progressMarker,
         });
 
+        const privateReplay = capturePrivateFeedbackReplay(args.match);
         await this.hooks.reportRecoveryFeedback({
             matchId: args.match.matchID,
             gameId: args.match.gameId,
@@ -221,6 +234,8 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
             reason,
             trackerKey: args.trackerKey,
             progressMarker: args.progressMarker,
+            privateReplay: privateReplay.data,
+            privateReplayError: privateReplay.error,
             ...resolveTransportFeedbackCorrelation({
                 matchId: args.match.matchID,
                 state: args.match.state,

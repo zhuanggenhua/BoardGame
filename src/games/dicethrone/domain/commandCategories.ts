@@ -12,25 +12,26 @@
 /**
  * 命令分类
  */
-export enum CommandCategory {
+export const CommandCategory = {
     /** 回合流程控制（不应该在响应窗口期间允许） */
-    PHASE_CONTROL = 'phase_control',
+    PHASE_CONTROL: 'phase_control',
     
     /** 战略决策（不应该在响应窗口期间允许） */
-    STRATEGIC = 'strategic',
+    STRATEGIC: 'strategic',
     
     /** 战术响应（应该在响应窗口期间允许） */
-    TACTICAL = 'tactical',
+    TACTICAL: 'tactical',
     
     /** UI 交互（应该在响应窗口期间允许） */
-    UI_INTERACTION = 'ui_interaction',
+    UI_INTERACTION: 'ui_interaction',
     
     /** 状态管理（应该在响应窗口期间允许） */
-    STATE_MANAGEMENT = 'state_management',
+    STATE_MANAGEMENT: 'state_management',
     
     /** 系统命令（总是允许，由引擎自动处理） */
-    SYSTEM = 'system',
-}
+    SYSTEM: 'system',
+} as const;
+export type CommandCategory = typeof CommandCategory[keyof typeof CommandCategory];
 
 /**
  * 命令分类映射表

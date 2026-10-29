@@ -3,7 +3,7 @@
  */
 
 import type { RandomFn, PlayerId, MatchState } from '../../../engine/types';
-import type { CardiaCore } from './core-types';
+import type { CardiaCore, CardInstance } from './core-types';
 import type { CardiaCommand } from './commands';
 import type { CardiaEvent } from './events';
 import { CARDIA_COMMANDS } from './commands';
@@ -153,7 +153,7 @@ function executePlayCard(
         });
         
         // 根据效果类型执行相应操作
-        if (effect.effectType === 'modifyInfluence') {
+        if (effect.effectType === 'modifyInfluence' && typeof effect.value === 'number' && Number.isFinite(effect.value)) {
             console.log('[Cardia] executePlayCard: PLACING modifier token', {
                 cardId: card.uid,
                 value: effect.value,
@@ -192,8 +192,16 @@ function executePlayCard(
     
     if (opponent.hasPlayed && opponent.currentCard) {
         // 双方都已打出卡牌，解析遭遇战
+        const pendingModifierTokens = events.flatMap((event) => (
+            event.type === CARDIA_EVENTS.MODIFIER_TOKEN_PLACED.type
+                ? [event.payload]
+                : []
+        ));
+        const encounterCore = pendingModifierTokens.length > 0
+            ? { ...core, modifierTokens: [...core.modifierTokens, ...pendingModifierTokens] }
+            : core;
         const encounterEvents = resolveEncounter(
-            core,
+            encounterCore,
             playerId,
             card,
             opponentId,
@@ -201,7 +209,67 @@ function executePlayCard(
             slotIndex,
             _random
         );
-        events.push(...encounterEvents);
+
+        // 勒索者的条件在对手下张牌揭示时结算，因此插入 ENCOUNTER_RESOLVED 之后。
+        const revealedTargetEffects = core.delayedEffects.filter(effect => (
+            effect.condition === 'onOpponentPlayCard'
+            && (effect.targetPlayerId === playerId || effect.targetPlayerId === opponentId)
+        ));
+        const extortionistEvents: CardiaEvent[] = [];
+        for (const effect of revealedTargetEffects) {
+            const targetPlayerId = effect.targetPlayerId;
+            if (!targetPlayerId) continue;
+            const targetCard = targetPlayerId === playerId ? card : opponent.currentCard;
+            const targetPlayer = core.players[targetPlayerId];
+            if (!targetPlayer) continue;
+
+            extortionistEvents.push({
+                type: CARDIA_EVENTS.DELAYED_EFFECT_TRIGGERED.type,
+                timestamp,
+                payload: {
+                    effectType: effect.effectType,
+                    targetCardId: targetCard.uid,
+                    sourceAbilityId: effect.sourceAbilityId,
+                    sourcePlayerId: effect.sourcePlayerId,
+                    effectId: effect.effectId,
+                },
+            });
+
+            if (!effect.requiredFaction || targetCard.faction === effect.requiredFaction) continue;
+
+            const availableCards = targetPlayer.hand.filter(candidate => candidate.uid !== targetCard.uid);
+            const cardsToDiscard: string[] = [];
+            const discardPool = [...availableCards];
+            const discardCount = Math.min(effect.value ?? 2, discardPool.length);
+            for (let index = 0; index < discardCount; index += 1) {
+                const randomIndex = Math.floor(_random.random() * discardPool.length);
+                cardsToDiscard.push(discardPool.splice(randomIndex, 1)[0].uid);
+            }
+            if (cardsToDiscard.length > 0) {
+                extortionistEvents.push({
+                    type: CARDIA_EVENTS.CARDS_DISCARDED.type,
+                    timestamp,
+                    payload: {
+                        playerId: targetPlayerId,
+                        cardIds: cardsToDiscard,
+                        from: 'hand',
+                    },
+                });
+            }
+        }
+
+        const revealEventIndex = encounterEvents.findIndex(
+            event => event.type === CARDIA_EVENTS.ENCOUNTER_RESOLVED.type,
+        );
+        if (revealEventIndex >= 0) {
+            events.push(
+                ...encounterEvents.slice(0, revealEventIndex + 1),
+                ...extortionistEvents,
+                ...encounterEvents.slice(revealEventIndex + 1),
+            );
+        } else {
+            events.push(...encounterEvents, ...extortionistEvents);
+        }
     }
     
     return events;
@@ -369,7 +437,7 @@ function executeActivateAbility(
     const player = core.players[playerId];
     
     // 查找卡牌（可能在 playedCards 或 currentCard 中）
-    let card = player.playedCards.find(c => c.uid === sourceCardUid);
+    let card: CardInstance | undefined = player.playedCards.find(c => c.uid === sourceCardUid);
     if (!card && player.currentCard?.uid === sourceCardUid) {
         card = player.currentCard;
     }
@@ -691,7 +759,8 @@ export function recalculateEncounterState(
         player1Influence: newPlayer1Influence,
         player2Id: player2Card.ownerId,
         player2Influence: newPlayer2Influence,
-        encounterIndex: player1Card.encounterIndex,
+        // encounterHistory 使用 0-based 数组索引；规则能力记录的是从 1 开始的遭遇序号。
+        encounterIndex: encounterIndex + 1,
     }).winner;
 
     // 5. 如果遭遇结果改变，发射事件并移动印戒

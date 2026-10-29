@@ -21,8 +21,4 @@
 .fd-detail-seal-card { position:absolute; width:70px; height:98px; object-fit:contain; }
 .fd-detail-ability-copy { min-height:0; overflow-y:auto; font-size:13px; line-height:1.65; }
 .fd-detail-ability-copy p { margin:0 0 10px; }.fd-detail-ability-copy strong { color:#ebd28c; }
-.fd-detail-ability-action { display:block; min-height:44px; margin-top:6px; padding:6px 16px; border:1px solid #8a7952; color:#ebd28c; white-space:nowrap; }
-.fd-detail-ability-action:hover:not(:disabled), .fd-detail-ability-action:focus-visible { background:#dcc383; color:#141714; }
-.fd-detail-ability-action:active:not(:disabled) { transform:translateY(1px); }
-.fd-detail-ability-action:disabled { opacity:.4; cursor:not-allowed; }
 @media(max-height:650px) { .fd-player-detail-frame { padding:12px 18px; gap:8px; }.fd-player-detail-header { padding-bottom:8px; }.fd-player-detail-content { gap:10px; }.fd-detail-seals { height:82px; }.fd-detail-seal-card { width:50px; height:70px; } }

@@ -1,7 +1,7 @@
 import { useTutorialBridge } from '../../contexts/TutorialContext';
 import { FateTutorialUiBridge, type FateInspectionSource } from './ui/FateTutorialUiBridge';
 import { fateTutorialAllows, fateTutorialExpected } from './ui/tutorialContract';
-import { presentFateTutorial } from './ui/tutorialPresentation';
+import { fateTutorialAbilitySource, presentFateTutorial } from './ui/tutorialPresentation';
 import { FateIdentitySetup } from './ui/FateIdentitySetup';
 import { UI_Z_INDEX } from '../../core/ui/zIndex';
 import { useFateDeploymentInteraction } from './ui/useFateDeploymentInteraction';
@@ -70,6 +70,7 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
     const publicCardsOpen=Boolean(selectedSeat && selectedSeat!==actorId && core.players[selectedSeat]);
     const [detail, setDetail] = useState<string | null>(null);
+    const [masterAbilityTip,setMasterAbilityTip]=useState(false);
     const [inspection, setInspection] = useState<Inspection | null>(null);
     const [inspectionPosition, setInspectionPosition] = useState<React.CSSProperties>({left:16,top:90});
     const movement = useFateMovementInteraction(attackDraft.state, actorId);
@@ -78,11 +79,11 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     const [pile, setPile] = useState<'deck' | 'discard' | null>(null);
     const [ridingSelectionCount,setRidingSelectionCount]=useState(0);
     const tutorialDisplay = React.useMemo(() => presentFateTutorial(G.sys.tutorial, {
-        inspection: inspection?.pinned ? inspection : null, detail, viewerId:actorId, detailEliminated: Boolean(detail && core.players[detail]?.eliminated), seal: usingSeal, discard: pile === 'discard' && Boolean(actor?.discard.length),
+        inspection: inspection?.pinned ? inspection : null, detail, masterAbilityTip, viewerId:actorId, detailEliminated: Boolean(detail && core.players[detail]?.eliminated), seal: usingSeal, discard: pile === 'discard' && Boolean(actor?.discard.length), deck: pile === 'deck',
         movement: Boolean(movement.intent), movementTarget: Boolean(movement.target), postBattle:Boolean(postBattleChoice), attackStaged:Boolean(actor?.selectedAttackIds.length), ridingSelectionCount, publicCards:publicCardsOpen,
         identity: core.phase === 'preparation' && core.round === 1 && Boolean(actorId && !(core.phaseCompletedPlayerIds ?? []).includes(actorId)),
-    }), [G.sys.tutorial, inspection, detail, core.players, usingSeal, pile, actor?.discard.length, actor?.selectedAttackIds.length, movement.intent, movement.target, postBattleChoice, ridingSelectionCount, publicCardsOpen, core.phase, core.round, actorId, core.phaseCompletedPlayerIds]);
-    useTutorialBridge(tutorialDisplay, dispatch as (type: string, payload?: unknown) => void, `${G.sys.eventStream.nextId}:${G.sys.undo.rollbackRevision ?? 0}:${tutorialDisplay.step?.highlightTarget}:${tutorialDisplay.step?.content}`);
+    }), [G.sys.tutorial, inspection, detail, masterAbilityTip, core.players, usingSeal, pile, actor?.discard.length, actor?.selectedAttackIds.length, movement.intent, movement.target, postBattleChoice, ridingSelectionCount, publicCardsOpen, core.phase, core.round, actorId, core.phaseCompletedPlayerIds]);
+    useTutorialBridge(tutorialDisplay, dispatch as (type: string, payload?: unknown) => void, `${G.sys.eventStream.nextId}:${G.sys.undo.rollbackRevision ?? 0}:${tutorialDisplay.step?.highlightTarget}:${tutorialDisplay.step?.content}`, undefined, G);
     React.useEffect(() => { setUsingSeal(false); setInspection(null); setDetail(null); setPile(null); if (G.sys.tutorial.active) setSelectedSeat(null); }, [actorId, core.currentPlayerId, core.phase, G.sys.interaction.current?.id, G.sys.tutorial.active ? `${G.sys.tutorial.step?.id}:${G.sys.undo.rollbackRevision}` : undefined]);
     const inspectionSource = React.useRef<HTMLElement | null>(null);
     const inspectionBackdropPress = React.useRef(false);
@@ -188,9 +189,9 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
    <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} movablePlayerId={!interactionBlocked && movement.normalAvailable ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} selectedLocation={movement.target ?? deployment.target} selectedDeploymentSlot={deployment.slot} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else movement.begin({kind:'normal'});}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={(id,slot) => { if(interactionBlocked)return; if(movement.intent) movement.select(id); else deployment.select(id,slot); }}/>
    <header className="fd-runtime-top"><div><small>FATE / DOMINATION</small><h1>命运支配</h1></div><div className="fd-runtime-round">第 {core.round} 回合 <span>{t(`phases.${core.phase}`)}</span></div></header>
    <FatePlayerRail core={core} viewerId={actorId} selectedId={selectedSeat} nameFor={nameFor} onSelect={setSelectedSeat} onDetail={id => { setInspection(null); setDetail(id); setSelectedSeat(id); }} onInspect={(asset,name) => inspect(asset,name,true,'opponent')}/>
-   {actor && actorId && <FateSelfDock core={core} playerId={actorId} name={nameFor(actorId)} pileInfo={pile && (pile === 'deck' || !actor.discard.length) ? `${pile === 'deck' ? '抽牌堆' : '弃牌堆'}剩余 ${actor[pile].length} 张` : undefined} sealEnabled={!interactionBlocked && current && core.phase === 'action' && actor.commandSpells > 0} onDetail={() => {setInspection(null);setDetail(actorId);}} onSeal={() => {if(interactionBlocked)return;setInspection(null);setUsingSeal(true);}} onPile={value => {setInspection(null);setPile(previous => previous === value ? null : value);}}/>}
+   {actor && actorId && <FateSelfDock core={core} playerId={actorId} name={nameFor(actorId)} canActivateAbility={id=>abilityAvailable(actorId,id)} onActivateAbility={activateAbility} onAbilityTipChange={setMasterAbilityTip} pileInfo={pile && (pile === 'deck' || !actor.discard.length) ? `${pile === 'deck' ? '抽牌堆' : '弃牌堆'}剩余 ${actor[pile].length} 张` : undefined} sealEnabled={!interactionBlocked && current && core.phase === 'action' && actor.commandSpells > 0} onDetail={() => {setInspection(null);setDetail(actorId);}} onSeal={() => {if(interactionBlocked)return;setInspection(null);setUsingSeal(true);}} onPile={value => {setInspection(null);setPile(previous => previous === value ? null : value);}}/>}
    {pile === 'discard' && actor && actor.discard.length > 0 && <FateDiscardInspection cards={actor.discard} onClose={()=>setPile(null)} onInspect={(asset,name) => inspect(asset,name,true,'discard')}/>}
-   {actor && <FateHandSurface phaseControl={phaseControl} rollbackRevision={G.sys.undo.rollbackRevision} player={actor} power={visibleFatePower(core, actor.id, actorId, [...new Set([...actor.activeAttackIds, ...actor.selectedAttackIds])])} skills={skillCards(actorId!)} canSelect={attackDraft.eligible} canSelectCard={attackDraft.canSelect} onSelect={(cardId,faceDown) => {movement.cancel();attackDraft.toggle(cardId,faceDown);}} canPlayAbility={sourceId=>abilityAvailable(actor.id,sourceId)} onPlaySkill={activateAbility} onInspect={(asset, name, pinned = false) => inspect(asset, name, pinned)} onDismissHoverInspection={dismissHoverInspection} shouldSuppressFocusPreview={() => suppressRestoredFocusPreview.current} ridingChoice={ridingChoice ? {
+   {actor && <FateHandSurface requestedCardId={fateTutorialAbilitySource(G.sys.tutorial)} rollbackRevision={G.sys.undo.rollbackRevision} player={actor} power={visibleFatePower(core, actor.id, actorId, [...new Set([...actor.activeAttackIds, ...actor.selectedAttackIds])])} skills={skillCards(actorId!)} canSelect={attackDraft.eligible} canSelectCard={attackDraft.canSelect} onSelect={(cardId,faceDown) => {movement.cancel();attackDraft.toggle(cardId,faceDown);}} canPlayAbility={sourceId=>abilityAvailable(actor.id,sourceId)} onPlaySkill={activateAbility} onInspect={(asset, name, pinned = false) => inspect(asset, name, pinned)} onDismissHoverInspection={dismissHoverInspection} shouldSuppressFocusPreview={() => suppressRestoredFocusPreview.current} ridingChoice={ridingChoice ? {
        interactionId: ridingChoice.id,
        round: core.round,
        candidateIds: ridingChoice.data.options.map(option => option.id),
@@ -199,9 +200,9 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
        onSelectionCountChange:setRidingSelectionCount,
    } : undefined}/>}
    {G.sys.tutorial.active && <FateTutorialUiBridge detail={detail} viewerId={actorId} inspection={Boolean(inspection?.pinned)} inspectionSource={inspection?.source ?? null} publicCards={publicCardsOpen} pile={pile} discardCount={actor?.discard.length ?? 0} seal={usingSeal} movement={Boolean(movement.intent)} movementTarget={Boolean(movement.target)} rollbackRevision={G.sys.undo.rollbackRevision ?? 0}/>}
-   {!actor && phaseControl}
+   {!selectingIdentity && phaseControl}
    {postBattleChoice && <FatePostBattleChoice rollbackRevision={G.sys.undo.rollbackRevision} interaction={postBattleChoice} viewerId={actorId} onConfirm={(interactionId,optionId)=>send('SYS_INTERACTION_RESPOND',{interactionId,optionId})}/>}
-   {detail && <FatePlayerDetail core={core} playerId={detail} viewerId={actorId} servantBack="fate-domination/backs/servant" skillBack="fate-domination/backs/skill" onPlayer={setDetail} onClose={() => { setDetail(null); setInspection(null); }} onInspect={(asset,name) => inspect(asset,name,true,'detail')} canActivateAbility={id => abilityAvailable(detail,id)} onActivateAbility={activateAbility}/>}
+   {detail && <FatePlayerDetail core={core} playerId={detail} viewerId={actorId} servantBack="fate-domination/backs/servant" skillBack="fate-domination/backs/skill" onPlayer={setDetail} onClose={() => { setDetail(null); setInspection(null); }} onInspect={(asset,name) => inspect(asset,name,true,'detail')}/>}
    {usingSeal && actorId && <FateCommandSpellChoice core={core} playerId={actorId}
     isLegal={payload => !interactionBlocked && validate(attackDraft.state, {type: 'USE_COMMAND_SPELL', playerId: actorId, payload}).valid}
     onChooseMove={() => {if(interactionBlocked)return;setUsingSeal(false);movement.begin({kind:'seal'});}} onClose={() => setUsingSeal(false)} onConfirm={payload => {if(interactionBlocked)return;send('USE_COMMAND_SPELL',payload);setUsingSeal(false);}}/>}

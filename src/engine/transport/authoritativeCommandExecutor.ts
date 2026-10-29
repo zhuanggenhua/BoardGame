@@ -60,7 +60,11 @@ export type AuthoritativeCommandExecutionResult =
  * report feedback. Those remain the room runtime's write responsibilities.
  */
 export class AuthoritativeCommandExecutor {
-    constructor(private readonly now: () => number = () => Date.now()) {}
+    private readonly now: () => number;
+
+    constructor(now: () => number = () => Date.now()) {
+        this.now = now;
+    }
 
     execute(args: AuthoritativeCommandRequest): AuthoritativeCommandExecutionResult {
         const startTime = this.now();

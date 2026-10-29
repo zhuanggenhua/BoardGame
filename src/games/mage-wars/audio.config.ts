@@ -1,5 +1,6 @@
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig } from '../../lib/audio/types';
-import type { MageWarsCore, MageWarsPhase } from './domain';
+import type { MageWarsCore } from './domain';
+import type { MageWarsPhase } from './domain/core-types';
 import { MAGE_WARS_EVENTS } from './domain/events';
 
 export const MAGE_WARS_BGM_NORMAL_KEY =

@@ -72,6 +72,7 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
             for (const event of events) {
                 if (
                     event.type === 'PENDING_ACTION_RESOLVED'
+                    || event.type === 'TACTIC_CARD_PLAYED'
                     || event.type === 'POST_BATTLE_DECISION_RESOLVED'
                     || event.type === 'WUZHEN_CHAOHA_RESOLVED'
                 ) {

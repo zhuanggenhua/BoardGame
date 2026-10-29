@@ -140,8 +140,8 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'roll',
         description: cardText('card-just-this', 'description'),
-        playCondition: { phase: 'defensiveRoll', requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: cardEffectText('card-just-this', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
+        playCondition: { phase: 'defensiveRoll', requireDiceExists: true, requireHasRolled: true },
+        effects: [{ description: cardEffectText('card-just-this', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'select', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {
         id: 'card-give-hand',
@@ -165,8 +165,8 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-i-can-again', 'description'),
-        playCondition: { phase: 'offensiveRoll', requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: cardEffectText('card-i-can-again', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
+        playCondition: { phase: 'offensiveRoll', requireDiceExists: true, requireHasRolled: true },
+        effects: [{ description: cardEffectText('card-i-can-again', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'select', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {
         id: 'card-me-too',
@@ -195,8 +195,8 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-worthy-of-me', 'description'),
-        playCondition: { requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: cardEffectText('card-worthy-of-me', 'rerollUpTo2Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-2' }, timing: 'immediate' }],
+        playCondition: { requireIsRollerOrTeammate: true, requireDiceExists: true, requireHasRolled: true },
+        effects: [{ description: cardEffectText('card-worthy-of-me', 'rerollUpTo2Dice'), action: { type: 'custom', target: 'select', customActionId: 'reroll-die-2' }, timing: 'immediate' }],
     },
     {
         id: 'card-unexpected',
@@ -213,15 +213,14 @@ export const COMMON_CARDS: AbilityCard[] = [
         name: cardText('card-next-time', 'name'),
         type: 'action',
         cpCost: 1,
-        timing: 'instant',
+        timing: 'roll',
         description: cardText('card-next-time', 'description'),
         playCondition: {
             pendingDamage: {
-                role: 'target',
                 responseType: 'beforeDamageReceived',
             },
         },
-        effects: [{ description: cardEffectText('card-next-time', 'prevent6Damage'), action: { type: 'grantDamageShield', target: 'self', value: 6 }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-next-time', 'prevent6Damage'), action: { type: 'grantDamageShield', target: 'self', pendingDamageTarget: true, value: 6 }, timing: 'immediate' }],
     },
     {
         id: 'card-boss-generous',

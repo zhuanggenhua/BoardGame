@@ -14,7 +14,7 @@ import { getPortraitStyle } from './assets';
 import { Dice2D } from './Dice2D';
 import type { ChoiceRequestedEvent } from '../domain/events';
 
-interface ChoiceOption {
+export interface ChoiceOption {
     id: string;
     label: string;
     labelParams?: Record<string, string | number>;
@@ -26,6 +26,10 @@ interface ChoiceOption {
     previewRef?: CardPreviewRef;
     dicePreview?: ChoiceRequestedEvent['payload']['options'][number]['dicePreview'];
     targetPlayerId?: string;
+    choiceKind?: 'card' | 'player' | 'status' | 'skip';
+    cardId?: string;
+    cardSourceZone?: 'hand' | 'deck' | 'discard' | 'preparedSpells';
+    candidateStatusId?: string;
 }
 
 /** slider 配置（从领域层透传） */

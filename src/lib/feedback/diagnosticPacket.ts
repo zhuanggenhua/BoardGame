@@ -131,6 +131,7 @@ const collectMissingFields = (args: {
     roomId?: string;
     stateId?: number;
     stateRevision?: number;
+    randomCursor?: number;
     snapshots: FeedbackDiagnosticPacket['snapshots'];
 }): string[] => {
     const missing: string[] = [];
@@ -139,9 +140,16 @@ const collectMissingFields = (args: {
     if (!args.requestId) missing.push('correlation.requestId');
     if (args.stateId === undefined) missing.push('correlation.stateId');
     if (args.stateRevision === undefined) missing.push('correlation.stateRevision');
+    if (typeof args.state?.sys?.decisionEpoch !== 'number') missing.push('correlation.decisionEpoch');
+    if (args.randomCursor === undefined) missing.push('randomCursor');
     if (!args.state) missing.push('snapshots.at');
     if (!args.snapshots.before) missing.push('snapshots.before');
     if (!args.snapshots.after) missing.push('snapshots.after');
+    const undo = args.state?.sys?.undo as { snapshots?: unknown[]; snapshotCount?: number } | undefined;
+    if (typeof undo?.snapshotCount === 'number'
+        && undo.snapshotCount > (Array.isArray(undo.snapshots) ? undo.snapshots.length : 0)) {
+        missing.push('undo.snapshots');
+    }
     return missing;
 };
 
@@ -183,6 +191,7 @@ export function buildFeedbackDiagnosticPacket(args: {
         roomId: args.roomId,
         stateId,
         stateRevision,
+        randomCursor: args.randomCursor,
         snapshots,
     });
     const collectionStatus = args.collectionErrors?.length

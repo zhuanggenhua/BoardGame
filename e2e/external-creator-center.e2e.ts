@@ -9,7 +9,7 @@ const sourceFiles = ['e2e/external-creator-center.e2e.ts', 'src/shared/externalG
     'src/components/home/PlatformProfile.tsx', 'src/components/home/PlatformUploadWorkspace.tsx', 'src/components/home/CreatorCenter.tsx',
     'src/components/home/platform-profile.css', 'src/components/home/creator-center.css', 'src/components/home/platform-upload.css',
     'src/components/home/platform-catalog.css', 'src/components/external/useExternalPlay.ts', 'src/components/external/ExternalGameText.tsx',
-    'src/pages/ExternalGamePage.tsx', 'src/pages/external-game-page.css', 'src/pages/admin/CreatorReview.tsx', 'src/pages/admin/creator-review.css',
+    'src/pages/ExternalGamePage.tsx', 'src/pages/external-game-page.css', 'src/components/home/ExternalGameDetails.tsx', 'src/components/home/GameAuthorInfo.tsx', 'src/pages/admin/CreatorReview.tsx', 'src/pages/admin/creator-review.css',
     'src/pages/admin/components/AdminLayout.tsx', 'src/App.tsx', 'apps/api/src/modules/ugc/external-games.service.ts',
     'apps/api/src/modules/ugc/creator-claims.service.ts', 'apps/api/src/modules/ugc/external-play.service.ts',
     'apps/api/src/modules/ugc/game-submissions.service.ts', 'apps/api/src/modules/ugc/external-game-seeds.ts',
@@ -57,12 +57,20 @@ for (const mobile of [false, true]) {
             await expect(page.getByRole('link', { name: /space.bilibili.com\/31976469/ })).toBeVisible();
             await expect(page.getByRole('button', { name: '开始游玩' })).toHaveCount(0);
             await capture(page, `${tag}-外站详情与嵌入受限`);
-            await page.getByRole('button', { name: '我是作者，申请认领' }).click();
-            await expect(page.getByRole('heading', { name: '作者认证' })).toBeVisible();
-            await expect(page.getByLabel('选择游戏')).toHaveValue('external-yuanyi-games');
-            await capture(page, `${tag}-从游戏申请作者认证`);
-            await page.goBack();
-            await page.getByRole('button', { name: '← 返回' }).click();
+            await page.getByTestId('game-details-author-button-mobile').click();
+            await expect(page.getByTestId('game-details-author-modal')).toBeVisible();
+            await expect(page.getByRole('link', { name: '打开作者主页' })).toHaveAttribute('href', 'https://space.bilibili.com/31976469');
+            await expect(page.getByRole('button', { name: '申请认领' })).toBeVisible();
+            await capture(page, `${tag}-作者信息`);
+            await page.getByRole('button', { name: '申请认领' }).click();
+            await expect(page.getByTestId('creator-claim-panel')).toBeVisible();
+            await expect(page.getByRole('heading', { name: '申请认领' })).toBeVisible();
+            await expect(page.getByText('当前游戏：山中小屋')).toBeVisible();
+            await expect(page.getByLabel('选择游戏')).toHaveCount(0);
+            await capture(page, `${tag}-从作者菜单申请认领`);
+            await page.getByRole('button', { name: '返回游戏详情' }).click();
+            await expect(page.getByTestId('game-details-modal-root')).toBeVisible();
+            await page.getByTestId('game-details-close-button').click();
             await expect(page.getByRole('searchbox', { name: '搜索游戏' }).first()).toHaveValue('山中小屋');
 
             await page.getByTestId('user-menu-trigger').click(); await page.getByTestId('user-menu-profile').click();
@@ -106,27 +114,27 @@ for (const mobile of [false, true]) {
             expect(gameId).toMatch(/^external-/);
 
             await page.getByRole('button', { name: '← 返回我的投稿' }).click();
-            await page.getByRole('button', { name: '作者认证', exact: true }).click();
-            await expect(page.getByRole('heading', { name: '作者认证' })).toBeVisible();
-            await expect(page.getByRole('option', { name: `${title} · 测试作者` })).toHaveCount(1);
-            await page.getByLabel('选择游戏').selectOption(gameId);
+            await page.goto(`/?game=${encodeURIComponent(gameId)}`);
+            await expect(page.getByRole('heading', { name: title })).toBeVisible();
+            await page.getByTestId('game-details-author-button-mobile').click();
+            await page.getByRole('button', { name: '申请认领' }).click();
+            await expect(page.getByTestId('creator-claim-panel')).toBeVisible();
+            await expect(page.getByText(`当前游戏：${title}`)).toBeVisible();
             await page.getByLabel('作者主页', { exact: true }).fill('https://example.com/author');
             await page.getByLabel('你与游戏的关系').fill('我是这款测试游戏的作者和开发者。');
             await capture(page, `${tag}-作者认证申请`);
             const created = page.waitForResponse(response => response.url().endsWith('/ugc/creator-claims') && response.request().method() === 'POST');
-            await page.getByRole('button', { name: '创建认证申请' }).click(); expect((await created).status()).toBe(201);
+            await page.getByRole('button', { name: '保存草稿' }).click(); expect((await created).status()).toBe(201);
             const claimId = (await (await created).json()).claimId as string;
-            const claim = page.locator('.creator-claim').filter({ has: page.getByText(title, { exact: true }) });
-            await expect(claim.getByText(/验证短码/)).toBeVisible();
-            const code = await claim.locator('b').innerText();
+            await expect(page.getByText(/验证短码/)).toBeVisible();
+            const code = await page.locator('.creator-code b').innerText();
             const proof = await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="640" height="400" fill="#f7f7f7"/><rect width="640" height="72" fill="#182532"/><text x="24" y="46" font-family="sans-serif" font-size="24" fill="white">TEST AUTHOR PROFILE - SAMPLE</text><text x="28" y="140" font-family="sans-serif" font-size="26" fill="#111">Profile control verification</text><text x="28" y="205" font-family="sans-serif" font-size="32" fill="#111">CODE: ${code}</text><text x="28" y="270" font-family="sans-serif" font-size="20" fill="#333">Synthetic evidence for browser testing only</text></svg>`)).png().toBuffer();
-            await claim.locator('input[type=file]').setInputFiles({ name: 'proof.png', mimeType: 'image/png', buffer: proof });
-            await claim.getByRole('button', { name: '上传截图' }).click();
-            await expect(claim.getByRole('button', { name: '提交审核' })).toBeEnabled();
-            await claim.scrollIntoViewIfNeeded();
+            await page.locator('.platform-upload-form input[type=file]').setInputFiles({ name: 'proof.png', mimeType: 'image/png', buffer: proof });
+            await expect(page.getByRole('button', { name: '提交审核' })).toBeEnabled();
+            await page.getByRole('button', { name: '提交审核' }).scrollIntoViewIfNeeded();
             await capture(page, `${tag}-作者认证材料`);
-            await claim.getByRole('button', { name: '提交审核' }).click();
-            await expect(claim.getByText('待审核', { exact: false })).toBeVisible();
+            await page.getByRole('button', { name: '提交审核' }).click();
+            await expect(page.getByText('待审核', { exact: false })).toBeVisible();
             await capture(page, `${tag}-作者认证待审核`);
 
             await adminPage.getByRole('button', { name: '作者认领', exact: true }).click();
@@ -146,7 +154,8 @@ for (const mobile of [false, true]) {
             await expect(adminPage.getByRole('heading', { name: '山中小屋' })).toBeVisible();
             await capture(adminPage, `${tag}-管理员嵌入检查`);
 
-            await page.getByRole('button', { name: '我的作品', exact: true }).click();
+            await page.goto('/?section=profile&tab=works');
+            await expect(page.getByRole('heading', { name: '我的作品' })).toBeVisible();
             await expect(page.getByText(title, { exact: true })).toBeVisible();
             await capture(page, `${tag}-已认领作品`);
             const work = page.locator('.creator-row').filter({ hasText: title });
@@ -162,6 +171,8 @@ for (const mobile of [false, true]) {
             await page.locator('.creator-row').filter({ hasText: title }).getByRole('button', { name: '预览作品' }).click();
             await expect(page.getByRole('heading', { name: title })).toBeVisible();
             await expect(page.getByText('作者可以直接修改并保存的测试介绍。')).toBeVisible();
+            await page.getByTestId('game-details-author-button-mobile').click();
+            await expect(page.getByTestId('game-details-author-modal')).toBeVisible();
             await expect(page.getByRole('button', { name: '管理我的作品' })).toBeVisible();
             await capture(page, `${tag}-作者作品预览`);
             await page.getByRole('button', { name: '开始游玩' }).click();
@@ -178,11 +189,6 @@ for (const mobile of [false, true]) {
             await capture(page, `${tag}-试玩全屏状态`);
             await page.getByRole('button', { name: '结束并返回' }).click();
             await expect(page.getByRole('heading', { name: '我的作品' })).toBeVisible();
-            await page.getByRole('button', { name: '作者认证', exact: true }).click();
-            const approvedClaim = page.locator('.creator-claim').filter({ hasText: title }).getByText('已通过', { exact: false });
-            await expect(approvedClaim).toBeVisible();
-            await approvedClaim.scrollIntoViewIfNeeded();
-            await capture(page, `${tag}-作者认证已通过`);
             await page.getByRole('button', { name: '我的投稿', exact: true }).click();
             await expect(page.locator('.creator-row').filter({ hasText: title })).toBeVisible();
             await page.getByLabel('状态').selectOption('approved');

@@ -115,7 +115,7 @@ export type TriggerTiming =
     | 'beforeScoring'
     | 'afterScoring';
 
-export type TitanAwareTriggerTiming = TriggerTiming | 'whenScoring' | 'onTitanMoved';
+export type TitanAwareTriggerTiming = TriggerTiming | 'whenScoring' | 'onTitanMoved' | 'onTitanRemovedFromPlay';
 
 export type AffectType =
     | 'destroy'
@@ -133,7 +133,7 @@ export interface TriggerContext {
     /** 完整的 match 状态，用于触发器创建交互 */
     matchState?: MatchState<SmashUpCore>;
     timing: TitanAwareTriggerTiming;
-    /** 触发来源 defId（queued trigger 在源对象离场后仍可依赖） */
+    /** 触发来源 defId（queued trigger 在源对象离场后仍可依赖或在源对象入场前显式指定） */
     sourceDefId?: string;
     /** 同一事件/同一牌的反应 frame */
     frameId?: string;
@@ -141,8 +141,6 @@ export interface TriggerContext {
     sourceEventId?: string;
     /** 具体触发来源实例 uid */
     sourceCardUid?: string;
-    /** 具体触发来源 defId；用于 source 尚未入场时的 explicit fallback */
-    sourceDefId?: string;
     /** 触发来源所在基地 */
     sourceBaseIndex?: number;
     /** 触发来源控制者 */
@@ -421,7 +419,7 @@ function resetCardSuppressionCache(): void {
 function shouldExposePodOngoingAlias(defId: string): boolean {
     const podCard = getCardDef(`${defId}_pod`);
     if (podCard) {
-        return podCard.abilityTags?.includes('ongoing') ?? false;
+        return podCard.type === 'action' && (podCard.abilityTags?.includes('ongoing') ?? false);
     }
     return Boolean(getBaseDef(`${defId}_pod`));
 }
@@ -795,7 +793,9 @@ function isQueuedTriggerPlayerEligible(
 ): boolean {
     const turnOrder = state.turnOrder ?? [];
     if (turnOrder.length === 0) return false;
-    return turnOrder.includes(trigger.ownerPlayerId) && turnOrder.includes(trigger.eventPlayerId);
+    return typeof trigger.eventPlayerId === 'string'
+        && turnOrder.includes(trigger.ownerPlayerId)
+        && turnOrder.includes(trigger.eventPlayerId);
 }
 
 function shouldSkipTriggerInstance(
@@ -1306,7 +1306,7 @@ export function registerPodOngoingAliases(): void {
     interceptorRegistry.push(...interceptorsToAdd);
 
 
-    const suppressionsToAdd: { sourceDefId: string; checker: BaseAbilitySuppressionChecker }[] = [];
+    const suppressionsToAdd: BaseAbilitySuppressionEntry[] = [];
     for (const entry of baseAbilitySuppressionRegistry) {
         const { sourceDefId, checker } = entry;
 
@@ -1328,7 +1328,7 @@ export function registerPodOngoingAliases(): void {
     baseAbilitySuppressionRegistry.push(...suppressionsToAdd);
 
 
-    const scoringSuppressionsToAdd: { sourceDefId: string; checker: BaseScoringSuppressionChecker }[] = [];
+    const scoringSuppressionsToAdd: BaseScoringSuppressionEntry[] = [];
     for (const entry of baseScoringSuppressionRegistry) {
         const { sourceDefId, checker } = entry;
 
@@ -1419,7 +1419,7 @@ export function getOngoingEffectRegistrySize(): {
 export function getRegisteredOngoingEffectIds(): {
     protectionIds: Set<string>;
     restrictionIds: Set<string>;
-    triggerIds: Map<string, TriggerTiming[]>;
+    triggerIds: Map<string, TitanAwareTriggerTiming[]>;
     interceptorIds: Set<string>;
     baseAbilitySuppressionIds: Set<string>;
     baseScoringSuppressionIds: Set<string>;
@@ -1463,7 +1463,7 @@ export function getRegisteredOngoingEffectIds(): {
     );
 
 
-    const triggerIds = new Map<string, TriggerTiming[]>();
+    const triggerIds = new Map<string, TitanAwareTriggerTiming[]>();
     for (const entry of triggerRegistry) {
         if (shouldHideGeneratedPodOngoingAlias(triggerRegistry, entry.sourceDefId)) continue;
         const existing = triggerIds.get(entry.sourceDefId) ?? [];
@@ -2436,24 +2436,15 @@ function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
         && state.bases.some(base => typeof base.metadata?.andStayDownTurnNumber === 'number')) {
         return true;
     }
-    // PR63: Tricksters POD「睡眠印记」会写入 sleepMarkedPlayers / sleepMoveMarkedPlayers，
+    // Tricksters POD「睡眠印记」会写入 playerRestrictionsUntilTurnStart，
     // 同时使用 registerInterceptor('trickster_mark_of_sleep_pod') 拦截 MINION_MOVED。
     //
     // 由于该卡在数据上是 standard action（不是 ongoing），它不会挂在 base.ongoingActions 上，
     // 如果仅依赖“卡牌是否在场”来判断 source 是否 active，会导致拦截器永远不生效。
     //
-    // 因此这里把“睡眠印记 POD 的 turn restriction 尚未清除”或旧版 sleep* 标记尚未过期视为 source active。
+    // 因此这里把该 POD 的 turn restriction 尚未清除视为 source active。
     if (sourceDefId === 'trickster_mark_of_sleep_pod') {
-        if (state.playerRestrictionsUntilTurnStart?.some(entry => entry.sourceDefId === sourceDefId)) {
-            return true;
-        }
-        const expires = state.sleepMarkExpiresOnTurnNumber;
-        const hasAnyMarks =
-            (state.sleepMarkedPlayers?.length ?? 0) > 0
-            || (state.sleepMoveMarkedPlayers?.length ?? 0) > 0;
-        if (hasAnyMarks && typeof expires === 'number' && state.turnNumber < expires) {
-            return true;
-        }
+        return state.playerRestrictionsUntilTurnStart?.some(entry => entry.sourceDefId === sourceDefId) ?? false;
     }
 
     if (state.pendingAfterScoringSpecials?.some(s => s.sourceDefId === sourceDefId)) {

@@ -137,7 +137,7 @@ describe('AbilityOverlays', () => {
         expect(onMagnifyCard).not.toHaveBeenCalled();
     });
 
-    it('高亮壳层保留统一描边结构，并用角色主题色的互补色提示可选技能', () => {
+    it('可选技能使用稳定描边提示，避免持续脉冲遮扰技能图面', () => {
         const { getByTestId } = renderAbilityOverlays({
             availableAbilityIds: ['fist-technique'],
             canHighlight: true,
@@ -146,14 +146,14 @@ describe('AbilityOverlays', () => {
         const highlight = getByTestId('dt-ability-highlight-fist');
         expect(highlight.className).toContain('inset-0');
         expect(highlight.className).toContain('rounded-lg');
-        expect(highlight.className).toContain('animate-pulse');
+        expect(highlight.className).not.toContain('animate-pulse');
         expect(highlight.style.borderWidth).toBe('2px');
         expect(highlight.style.borderColor).toBe('rgb(11, 98, 245)');
         expect(highlight.style.boxShadow).toContain('rgba(11,98,245,0.9)');
         expect(highlight.style.boxShadow).toContain('rgba(11,98,245,0.56)');
     });
 
-    it('选中态描边会沿用角色色并比普通高亮更强一档', () => {
+    it('选中技能用稳定边界和勾选标记区别于可选候选', () => {
         const { getByTestId } = renderAbilityOverlays({
             availableAbilityIds: ['fist-technique'],
             canHighlight: true,
@@ -162,9 +162,12 @@ describe('AbilityOverlays', () => {
 
         const selected = getByTestId('dt-ability-selected-fist');
         expect(selected.className).toContain('rounded-lg');
-        expect(selected.style.borderWidth).toBe('2.5px');
+        expect(selected.style.borderWidth).toBe('3px');
         expect(selected.style.borderColor).toBe('rgb(251, 191, 36)');
+        expect(selected.style.boxShadow).toContain('rgba(15,23,42,0.96)');
         expect(selected.style.boxShadow).toContain('rgba(251,191,36,0.96)');
+        expect(selected.querySelector('[data-testid="dt-ability-selected-check-fist"] svg')).not.toBeNull();
+        expect(selected.style.maskComposite).toBe('');
     });
 
     it('咒缚海盗高亮改用撞色描边，避免与面板暖色混在一起', () => {

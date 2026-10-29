@@ -81,7 +81,11 @@ export async function resolveOnlineAiRecoveryDispatch(args: {
         && shouldUseOnlineAiEmergencyOverlayFallback(candidate.reason)
         && isPrivateOverlayBlockedReason(aiDispatchResult.blockedReason);
 
-    if (shouldRetryWithEmergencyOverlay && aiDispatchResult.kind === 'blocked') {
+    if (
+        shouldRetryWithEmergencyOverlay
+        && aiDispatchResult.kind === 'blocked'
+        && isPrivateOverlayBlockedReason(aiDispatchResult.blockedReason)
+    ) {
         args.onEmergencyOverlayFallbackRetry?.({
             playerId: candidate.playerId,
             reason: candidate.reason,

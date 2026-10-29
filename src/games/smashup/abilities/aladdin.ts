@@ -19,6 +19,7 @@ import {
     revealHand,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
     type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -232,7 +233,7 @@ function resolveAladdinDiscardActionEffect(
     }));
 }
 
-const discardActionCostPromptProgram = createPromptProgram<AladdinDiscardActionCostContext, SmashUpCore, SmashUpEvent>({
+const discardActionCostPromptProgram = createPromptProgram<AladdinDiscardActionCostContext>({
     sourceId: 'aladdin_discard_action_cost',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `aladdin_discard_action_cost_${context.effect}_${context.now}`,
@@ -533,7 +534,7 @@ function buildCarpetMoveEvents(
         moveMinionToBase(state, minion, sourceBaseIndex, targetBaseIndex, playerId, 'aladdin_carpet', now));
 }
 
-const carpetCompanionPromptProgram = createPromptProgram<CarpetPromptContext, SmashUpCore, SmashUpEvent>({
+const carpetCompanionPromptProgram = createPromptProgram<CarpetPromptContext>({
     sourceId: 'aladdin_carpet_companions',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `aladdin_carpet_companions_${context.now}`,
@@ -587,7 +588,7 @@ const carpetCompanionPromptProgram = createPromptProgram<CarpetPromptContext, Sm
     },
 });
 
-const carpetDestinationPromptProgram = createPromptProgram<CarpetPromptContext, SmashUpCore, SmashUpEvent>({
+const carpetDestinationPromptProgram = createPromptProgram<CarpetPromptContext>({
     sourceId: 'aladdin_carpet_destination',
     buildInteraction: (context) => {
         const options = context.matchState.core.bases
@@ -620,13 +621,12 @@ const carpetDestinationPromptProgram = createPromptProgram<CarpetPromptContext, 
         if (companions.length > 0) {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     now: timestamp,
                     targetBaseIndex,
-                },
-                nextProgram: carpetCompanionPromptProgram,
+                }, carpetCompanionPromptProgram),
             };
         }
         return {
@@ -696,7 +696,7 @@ function buildAladdinCardToDeckTopEvent(
     };
 }
 
-const abuDiscardActionPromptProgram = createPromptProgram<AladdinOwnDiscardActionContext, SmashUpCore, SmashUpEvent>({
+const abuDiscardActionPromptProgram = createPromptProgram<AladdinOwnDiscardActionContext>({
     sourceId: 'aladdin_abu_discard_action',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `aladdin_abu_discard_action_${context.now}`,
@@ -724,7 +724,7 @@ const abuDiscardActionPromptProgram = createPromptProgram<AladdinOwnDiscardActio
     },
 });
 
-const caveOfWondersPromptProgram = createPromptProgram<AladdinOwnDiscardActionContext, SmashUpCore, SmashUpEvent>({
+const caveOfWondersPromptProgram = createPromptProgram<AladdinOwnDiscardActionContext>({
     sourceId: 'aladdin_cave_of_wonders',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `aladdin_cave_of_wonders_${context.now}`,
@@ -835,7 +835,7 @@ function buildJafarExtraActionOptions(context: JafarPromptContext) {
     ];
 }
 
-const jafarExtraActionPromptProgram = createPromptProgram<JafarPromptContext, SmashUpCore, SmashUpEvent>({
+const jafarExtraActionPromptProgram = createPromptProgram<JafarPromptContext>({
     sourceId: 'aladdin_jafar_extra_action',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `aladdin_jafar_extra_action_${context.now}`,
@@ -879,7 +879,7 @@ const jafarExtraActionPromptProgram = createPromptProgram<JafarPromptContext, Sm
 
 let jafarAdvanceProgram: AbilityProgram<JafarPromptContext, SmashUpCore, SmashUpEvent>;
 
-const jafarDiscardPromptProgram = createPromptProgram<JafarPromptContext, SmashUpCore, SmashUpEvent>({
+const jafarDiscardPromptProgram = createPromptProgram<JafarPromptContext>({
     sourceId: 'aladdin_jafar_discard_action',
     buildInteraction: (context) => {
         const currentPlayerId = context.pendingPlayerIds[0];
@@ -910,7 +910,7 @@ const jafarDiscardPromptProgram = createPromptProgram<JafarPromptContext, SmashU
                 payload: { playerId, cardUids: [card.uid] },
                 timestamp,
             } as CardsDiscardedEvent],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
@@ -919,8 +919,7 @@ const jafarDiscardPromptProgram = createPromptProgram<JafarPromptContext, SmashU
                     ...context.discardedActions,
                     { cardUid: card.uid, defId: card.defId, fromPlayerId: playerId },
                 ],
-            },
-            nextProgram: jafarAdvanceProgram,
+            }, jafarAdvanceProgram),
         };
     },
 });
@@ -935,8 +934,7 @@ jafarAdvanceProgram = createEffectProgram<JafarPromptContext, SmashUpCore, Smash
         if (actions.length > 0) {
             return {
                 events,
-                context: { ...context, pendingPlayerIds },
-                nextProgram: jafarDiscardPromptProgram,
+                continuation: createAbilityRuntimeContinuation({ ...context, pendingPlayerIds }, jafarDiscardPromptProgram),
             };
         }
         if (player) {
@@ -957,8 +955,7 @@ jafarAdvanceProgram = createEffectProgram<JafarPromptContext, SmashUpCore, Smash
     if (!hasExtraActionOption) return { events };
     return {
         events,
-        context: finalContext,
-        nextProgram: jafarExtraActionPromptProgram,
+        continuation: createAbilityRuntimeContinuation(finalContext, jafarExtraActionPromptProgram),
     };
 });
 
@@ -1023,7 +1020,7 @@ function collectStreetRatActionOptions(context: StreetRatContext) {
         );
 }
 
-const streetRatPromptProgram = createPromptProgram<StreetRatContext, SmashUpCore, SmashUpEvent>({
+const streetRatPromptProgram = createPromptProgram<StreetRatContext>({
     sourceId: 'aladdin_street_rat',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `aladdin_street_rat_${context.now}`,
@@ -1059,7 +1056,7 @@ const streetRatPromptProgram = createPromptProgram<StreetRatContext, SmashUpCore
     },
 });
 
-const aladdinSpecificSearchPromptProgram = createPromptProgram<AladdinSpecificSearchContext, SmashUpCore, SmashUpEvent>({
+const aladdinSpecificSearchPromptProgram = createPromptProgram<AladdinSpecificSearchContext>({
     sourceId: 'aladdin_specific_search',
     interactionSourceIds: [
         'aladdin_aladdin_search',
@@ -1182,7 +1179,7 @@ function theLamp(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const wishPowerPromptProgram = createPromptProgram<WishPowerPromptContext, SmashUpCore, SmashUpEvent>({
+const wishPowerPromptProgram = createPromptProgram<WishPowerPromptContext>({
     sourceId: 'aladdin_wish_power',
     buildInteraction: (context) => {
         const targets = collectMinions(context.matchState.core, () => true).map(({ minion, baseIndex }) => ({
@@ -1227,7 +1224,7 @@ const wishPowerPromptProgram = createPromptProgram<WishPowerPromptContext, Smash
     },
 });
 
-const wishPromptProgram = createPromptProgram<AbilityContext, SmashUpCore, SmashUpEvent>({
+const wishPromptProgram = createPromptProgram<AbilityContext>({
     sourceId: 'aladdin_wish',
     buildInteraction: (ctx) => createAbilityRuntimeSimpleChoice(
         `aladdin_wish_${ctx.now}`,
@@ -1268,15 +1265,14 @@ const wishPromptProgram = createPromptProgram<AbilityContext, SmashUpCore, Smash
         } else {
             return {
                 events,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
                     cardUid: context.cardUid,
                     defId: context.defId,
                     baseIndex: context.baseIndex,
-                },
-                nextProgram: wishPowerPromptProgram,
+                }, wishPowerPromptProgram),
             };
         }
         return { events };
@@ -1321,7 +1317,7 @@ function buildAgrabahCounterOptions(context: AgrabahBazaarPromptContext) {
     ];
 }
 
-const agrabahBazaarCounterPromptProgram = createPromptProgram<AgrabahBazaarPromptContext, SmashUpCore, SmashUpEvent>({
+const agrabahBazaarCounterPromptProgram: AbilityProgram<AgrabahBazaarPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<AgrabahBazaarPromptContext>({
     sourceId: 'base_agrabah_bazaar_counter',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `base_agrabah_bazaar_counter_${context.now}_${context.remaining}`,
@@ -1354,19 +1350,18 @@ const agrabahBazaarCounterPromptProgram = createPromptProgram<AgrabahBazaarPromp
         if (remaining <= 0) return { events };
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 baseIndex: context.baseIndex,
                 now: timestamp,
                 remaining,
-            },
-            nextProgram: agrabahBazaarCounterPromptProgram,
+            }, agrabahBazaarCounterPromptProgram),
         };
     },
 });
 
-const agrabahBazaarActionPromptProgram = createPromptProgram<AgrabahBazaarPromptContext, SmashUpCore, SmashUpEvent>({
+const agrabahBazaarActionPromptProgram = createPromptProgram<AgrabahBazaarPromptContext>({
     sourceId: 'base_agrabah_bazaar',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `base_agrabah_bazaar_${context.now}`,
@@ -1393,14 +1388,13 @@ const agrabahBazaarActionPromptProgram = createPromptProgram<AgrabahBazaarPrompt
                 payload: { playerId, cardUids: [action.uid] },
                 timestamp,
             } as CardsDiscardedEvent],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 baseIndex: context.baseIndex,
                 now: timestamp,
                 remaining: 2,
-            },
-            nextProgram: agrabahBazaarCounterPromptProgram,
+            }, agrabahBazaarCounterPromptProgram),
         };
     },
 });

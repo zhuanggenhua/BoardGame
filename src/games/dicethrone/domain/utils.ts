@@ -37,9 +37,14 @@ import type {
     DiceThroneCore,
     PendingAttack,
     PendingAttackSettlementStage,
-    PlayerId,
 } from './types';
+import type { PlayerId } from '../../../engine/types';
 import { getPlayerAbilityBaseDamage } from './abilityLookup';
+
+/** 攻击修正牌的临时骰不能推进或完成父攻击自身的奖励骰。 */
+export function attackModifierBonusDiceContinuation(): BonusDiceContinuation {
+    return { kind: 'attack', settlementStage: 'preserve', markBonusDiceResolved: false };
+}
 
 export function assertValidBonusDiceContinuation(
     continuation: BonusDiceContinuation | null | undefined,

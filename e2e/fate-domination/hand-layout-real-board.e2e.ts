@@ -32,6 +32,9 @@ const SOURCE_FILES=[
     'src/games/fate-domination/Board.tsx',
     'src/games/fate-domination/manifest.ts',
     'src/games/fate-domination/ui/FateHandSurface.tsx',
+    'src/games/fate-domination/ui/FateSelfDock.tsx',
+    'src/games/fate-domination/ui/FateMasterAbilities.tsx',
+    'src/components/common/overlays/InfoTooltip.tsx',
     'src/games/fate-domination/ui/useFateAttackDraft.ts',
     'src/games/fate-domination/domain/attackSelection.ts',
     'src/games/fate-domination/domain/commands.ts',
@@ -138,6 +141,8 @@ async function snapshot(page:Page):Promise<Snapshot>{
             skillZone:rect('.fd-skill-hand-zone'),
             skillHand:rect('.fd-skill-cards'),
             selfDock:rect('.fd-self-dock'),
+            masterAbilities:rect('.fd-master-abilities'),
+            masterAbilityButtons:Array.from(document.querySelectorAll('.fd-master-ability > button')).map(rectOf),
             selfIdentity:rect('.fd-self-identity'),
             selfSeals:rect('.fd-self-seals'),
             selfSealArtwork:Array.from(document.querySelectorAll<HTMLElement>('.fd-self-seals img, .fd-self-seals [data-card-atlas-frame="true"]')).map(rectOf),
@@ -189,10 +194,17 @@ function reviewCheck(failures:string[],name:string,condition:boolean,actual:unkn
 }
 function reviewHudClearance(snapshot:Snapshot,failures:string[],prefix:string){
     const visible=snapshot.visible as any;
-    const row=visible.playedRow,self=visible.selfDock,phase=visible.phaseControl,skill=visible.skillZone;
+    const row=visible.playedRow.width>0?visible.playedRow:visible.playedArea,self=visible.selfDock,phase=visible.phaseControl,skill=visible.skillZone;
     reviewCheck(failures,`${prefix}-played-row-clears-self-hud`,Boolean(row&&self&&row.left>=self.right+12),row&&self?{rowLeft:row.left,selfRight:self.right}:null,'row.left >= selfDock.right + 12');
     reviewCheck(failures,`${prefix}-played-row-clears-action-control`,Boolean(row&&phase&&row.right<=phase.left-12),row&&phase?{rowRight:row.right,phaseLeft:phase.left}:null,'row.right <= phaseControl.left - 12');
     reviewCheck(failures,`${prefix}-played-row-clears-skill-zone`,Boolean(row&&skill&&row.right<=skill.left-8),row&&skill?{rowRight:row.right,skillLeft:skill.left}:null,'row.right <= skillZone.left - 8');
+    // 回归合同来自改造前原图：威力与暂存牌在手牌上方，不能改成底部左右并排。
+    reviewCheck(failures,`${prefix}-played-row-above-hand`,Boolean(row&&visible.attackHand&&row.bottom<=visible.attackHand.top),{row,hand:visible.attackHand},'played row bottom <= hand top');
+    reviewCheck(failures,`${prefix}-power-above-hand`,Boolean(visible.summary&&visible.attackHand&&visible.summary.bottom<=visible.attackHand.top),{summary:visible.summary,hand:visible.attackHand},'summary bottom <= hand top');
+    reviewCheck(failures,`${prefix}-power-left-of-played-row`,Boolean(visible.summary&&row&&visible.summary.right<=row.left),{summary:visible.summary,row},'summary right <= played row left');
+    const abilities=visible.masterAbilities;
+    const apart=(a:any,b:any)=>!a||!b||a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top;
+    reviewCheck(failures,`${prefix}-ability-buttons-do-not-cover-power-or-hand`,apart(abilities,visible.summary)&&apart(abilities,visible.attackHand),{abilities,summary:visible.summary,hand:visible.attackHand},'ability column does not overlap summary or remaining hand');
 }
 function reviewNormalBoardVisibility(snapshot:Snapshot,failures:string[],prefix:string,expectedTouch:boolean){
     const visible=snapshot.visible as any;
@@ -205,6 +217,7 @@ function reviewNormalBoardVisibility(snapshot:Snapshot,failures:string[],prefix:
     reviewCheck(failures,`${prefix}-phase-control-within-viewport-and-hittable`,inside(visible.phaseButton)&&visible.phaseControlCenterHit,{rect:visible.phaseButton,centerHit:visible.phaseControlCenterHit},'primary action within viewport and center-hit reachable');
     reviewCheck(failures,`${prefix}-attack-and-skill-hand-hit-targets`,visible.attackHandCardCenterHit&&visible.skillHandCardCenterHit,{attack:visible.attackHandCardCenterHit,skill:visible.skillHandCardCenterHit},'first available attack and skill card centers reach their own elements');
     reviewCheck(failures,`${prefix}-touch-capability-matches-scene`,expectedTouch?visible.inputCapabilities.maxTouchPoints>0&&visible.inputCapabilities.coarsePointer&&!visible.inputCapabilities.hoverPointer:visible.inputCapabilities.hoverPointer,{expectedTouch,inputCapabilities:visible.inputCapabilities},expectedTouch?'touch/coarse pointer without desktop hover':'fine hover pointer');
+    reviewCheck(failures,`${prefix}-ability-button-touch-size`,visible.masterAbilityButtons.every((rect:any)=>rect&&rect.width>=44&&rect.height>=44),visible.masterAbilityButtons,'each ability control >=44x44 CSS px');
 }
 function loadedPlayedCardArt(snapshot:Snapshot){
     const cards=(snapshot.visible as any).cardArtwork as Array<{frameReady:boolean|null;images:Array<{complete:boolean;naturalWidth:number;naturalHeight:number}>}>;
@@ -269,6 +282,8 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await waitForState(page,state=>state.core.players['0'].locationId==='workshop','本人部署在魔术工房');
     await page.getByRole('button',{name:/查看玩家\s*1详情/}).click();
     await expect(page.getByRole('dialog',{name:'韦伯·维尔维特详情'})).toBeVisible();
+    await expect(page.getByRole('dialog').getByRole('button',{name:/^发动/})).toHaveCount(0);
+    await page.getByRole('button',{name:'关闭玩家详情',exact:true}).click();
     const handBeforeMasterAbility=(await readState(page)).core.players['0'].hand.length;
     await page.getByRole('button',{name:'发动战略部署'}).click();
     await waitForState(page,state=>state.core.players['0'].hand.length>=handBeforeMasterAbility+2,'行动阶段前实际使用战略部署抽两张牌');
@@ -484,16 +499,20 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await patchState(page,{core:{players:{'0':{hand:[],selectedAttackIds:[],activeAttackIds:[],activeSkills:[],normalAttackPlayed:true}}}});
     await waitForState(page,state=>state.core.players['0'].hand.length===0&&state.core.players['0'].activeAttackIds.length===0,'空攻击手牌状态仅用于布局几何复核');
     const emptyHand=await snapshot(page);
+    const emptyArea=(emptyHand.visible as any).playedArea;
+    const emptyRow=(emptyHand.visible as any).playedRow;
+    await expect(page.getByText('暂无攻击手牌',{exact:true})).toBeVisible();
     reviewHudClearance(emptyHand,reviewFailures,'empty-attack-hand');
-    reviewCheck(reviewFailures,'empty-hand-row-shrinks-within-hud-rails',(emptyHand.visible as any).playedRow.width<=(dense.visible as any).playedRow.width
-        &&(emptyHand.visible as any).playedRow.left>=(emptyHand.visible as any).selfDock.right+12
-        &&(emptyHand.visible as any).playedRow.right<=(emptyHand.visible as any).phaseControl.left-12,
-        {empty:(emptyHand.visible as any).playedRow,dense:(dense.visible as any).playedRow},'empty content may shrink; it must not expand across either HUD rail');
+    reviewCheck(reviewFailures,'empty-hand-area-shrinks-within-hud-rails',emptyArea.width<=(dense.visible as any).playedArea.width
+        &&emptyArea.left>=(emptyHand.visible as any).selfDock.right+12
+        &&emptyArea.right<=(emptyHand.visible as any).phaseControl.left-12,
+        {empty:emptyArea,dense:(dense.visible as any).playedArea},'保留原上方暂存排与左侧威力区域，避让两侧HUD');
     await capture('空攻击手牌仍留在独立攻击区','empty-attack-hand','布局代表态：空攻击手牌时攻击区宽度仍被HUD两侧轨道约束，不扩到本人HUD或操作区。');
     steps.push({id:'empty-attack-hand',action:'以布局起点注入空攻击手牌代表态并测量同一出牌区与HUD边界',before:beforeEmptyHand,after:emptyHand,assertions:[
-        assertion('empty-attack-hand-row-stays-between-hud-rails',((emptyHand.visible as any).playedRow.left>=(emptyHand.visible as any).selfDock.right+12
-            &&(emptyHand.visible as any).playedRow.right<=(emptyHand.visible as any).phaseControl.left-12),true),
-        assertion('empty-hand-does-not-expand-inline-row',(emptyHand.visible as any).playedRow.width<=(dense.visible as any).playedRow.width,true),
+        assertion('empty-attack-area-stays-between-hud-rails',(emptyArea.left>=(emptyHand.visible as any).selfDock.right+12
+            &&emptyArea.right<=(emptyHand.visible as any).phaseControl.left-12),true),
+        assertion('empty-attack-area-does-not-expand',emptyArea.width<=(dense.visible as any).playedArea.width,true),
+        assertion('empty-play-row-retains-original-upper-anchor',emptyRow.bottom<=emptyHand.visible.attackHand.top,true),
         assertion('empty-hand-row-does-not-block-map',await page.getByTestId('fate-played-cards').evaluate(element=>getComputedStyle(element).pointerEvents),'none'),
     ]});
     await patchState(page,{core:{players:{'0':{
@@ -629,7 +648,9 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await page.mouse.move(8,8);
     await page.waitForTimeout(1000);
     await expect(peerRow).toBeVisible();
-    await peerRow.hover();
+    const rowBounds=await peerRow.boundingBox();expect(rowBounds).toBeTruthy();
+    await page.mouse.move(rowBounds!.x+rowBounds!.width/2,rowBounds!.y+rowBounds!.height/2,{steps:6});
+    await expect(peerRow).toBeVisible();
     await page.waitForTimeout(2700);
     await expect(peerRow).toBeVisible();
     const afterRow=await snapshot(page);

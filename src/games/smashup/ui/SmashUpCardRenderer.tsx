@@ -236,15 +236,6 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
                 previewRef={{ type: 'atlas', atlasId: finalAtlasId, index: finalIndex }}
                 locale={imageLocale}
                 className="w-full h-full"
-                onError={(e) => {
-                    console.error('[SmashUpCardRenderer] CardPreview image load failed:', {
-                        defId,
-                        atlasId: finalAtlasId,
-                        index: finalIndex,
-                        locale: imageLocale,
-                        error: e,
-                    });
-                }}
             />
             {overlayPreviewRef && (
                 <div
@@ -292,4 +283,4 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
 
 
 // 注册渲染器（模块加载时自动执行）
-registerCardPreviewRenderer('smashup-card-renderer', SmashUpCardRenderer);
+registerCardPreviewRenderer('smashup-card-renderer', (args) => React.createElement(SmashUpCardRenderer, args));

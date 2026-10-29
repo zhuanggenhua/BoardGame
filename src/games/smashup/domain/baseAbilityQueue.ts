@@ -89,6 +89,7 @@ export function registerBaseAbilityAsQueuedTrigger(
       minionUid: ctx.triggerMinionUid,
       minionDefId: ctx.triggerMinionDefId,
       minionPower: ctx.triggerMinionPower,
+      simultaneousMoveBatchMinionUids: ctx.simultaneousMoveBatchMinionUids,
       destroyerId: ctx.destroyerId,
       controllerId: ctx.controllerId,
       reason: ctx.reason,
@@ -285,6 +286,7 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
       minionUid: ctx.triggerMinionUid,
       minionDefId: ctx.triggerMinionDefId,
       minionPower: ctx.triggerMinionPower,
+      simultaneousMoveBatchMinionUids: ctx.simultaneousMoveBatchMinionUids,
       destroyerId: ctx.destroyerId,
       controllerId: ctx.controllerId,
       reason: ctx.reason,
@@ -326,6 +328,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
   triggerMinionDefId?: string;
   triggerMinionPower?: number;
   triggerMinionFromDeck?: boolean;
+  simultaneousMoveBatchMinionUids?: string[];
   destroyerId?: PlayerId;
   controllerId?: PlayerId;
   reason?: string;
@@ -350,6 +353,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
     triggerMinionDefId,
     triggerMinionPower,
     triggerMinionFromDeck,
+    simultaneousMoveBatchMinionUids,
     destroyerId,
     controllerId,
     reason,
@@ -380,6 +384,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
       minionDefId: triggerMinionDefId,
       minionPower: triggerMinionPower,
       triggerMinionFromDeck,
+      simultaneousMoveBatchMinionUids,
       destroyerId,
       controllerId,
       reason,
@@ -427,6 +432,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
       triggerMinionDefId,
       triggerMinionPower,
       triggerMinionFromDeck,
+      simultaneousMoveBatchMinionUids,
       destroyerId,
       controllerId,
       reason,

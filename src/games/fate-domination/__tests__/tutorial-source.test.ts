@@ -5,8 +5,23 @@ import { expect, it } from 'vitest';
 import { FATE_TUTORIAL_PASSAGES, fateTutorialText } from '../tutorialText';
 import { buildFateTutorialPlan } from '../tutorial';
 import {FATE_TUTORIAL_LESSONS} from '../tutorialLessons';
+import {FATE_ATTACK_BY_ID} from '../data';
+import {FATE_TUTORIAL_MAP_PROTECTION} from '../ui/tutorialPresentation';
 
 const normalize = (text:string) => text.replace(/\s+/g,'');
+it('手牌课程始终保护实际卡牌、威力、身份和席位；地图关系课程另保护印刷读数',()=>{
+    const steps=buildFateTutorialPlan('workshop').steps;
+    const dark=steps.find(step=>step.fateCopy?.lessonId==='battlefieldDarkAttack')!;
+    for(const selector of ['.fd-runtime-card','.fd-play-summary','.fd-self-dock','.fd-master-abilities','.fd-runtime-seat','.fd-runtime-map-card-hit','.fd-runtime-pawn'])expect(dark.avoidOverlapSelectors).toContain(selector);
+    const movement=steps.find(step=>step.fateCopy?.lessonId==='movement')!;
+    const source=steps.find(step=>step.fateCopy?.lessonId==='actionAbility')!;
+    expect(FATE_TUTORIAL_MAP_PROTECTION.length).toBeGreaterThan(0);
+    for(const selector of FATE_TUTORIAL_MAP_PROTECTION){
+        expect(dark.avoidOverlapSelectors).not.toContain(selector);
+        expect(movement.avoidOverlapSelectors).toContain(selector);
+        expect(source.avoidOverlapSelectors).toContain(selector);
+    }
+});
 it('中文规则摘句能逐项在指定CHM原文转写中找到，不能以改写文案冒充摘句',()=>{
     for(const [id,passage] of Object.entries(FATE_TUTORIAL_PASSAGES)){
         if(!passage.source.startsWith('intake/'))continue;
@@ -15,6 +30,17 @@ it('中文规则摘句能逐项在指定CHM原文转写中找到，不能以改�
         expect(normalize(source),id).toContain(normalize(raw));
         if('transcription' in passage)expect(normalize(passage.quote)).toBe(normalize(raw.replace(/\s*[（(][CDJK][）)]/g,'')));
     }
+});
+
+it('追加的普通攻击能力在移动选择前呈现实际卡文与目的地，不能按从者技能查成空白',()=>{
+    const plan=buildFateTutorialPlan();
+    const step=plan.steps.find(step=>step.fateCopy?.ability?.attackId==='cardSurveil');
+    expect(step?.fateCommand?.type).toBe('PLAY_SKILL');
+    expect(step?.fateCommand?.payload.targetLocationId).toBe('shinto');
+    expect(step?.fateCopy?.passages).toContain('effectMovement');
+    expect(step?.content).toContain(FATE_ATTACK_BY_ID.cardSurveil.desc);
+    expect(step?.fateCopy?.input?.text).toContain('新都');
+    expect(step?.hideOverlay).toBe(false);
 });
 
 it('每张可见课程来自登记摘句与必要功能说明，首课不要求选角，也不强制参观详情窗口',()=>{

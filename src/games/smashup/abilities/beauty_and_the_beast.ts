@@ -15,6 +15,7 @@ import {
     queueMinionPlayEffect,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -314,7 +315,7 @@ const beautyDiscardAfterCommittedProgram = createEffectProgram<BeautyDiscardAfte
     }),
 );
 
-const beautyDiscardPromptProgram = createPromptProgram<BeautyDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+const beautyDiscardPromptProgram = createPromptProgram<BeautyDiscardPromptContext>({
     sourceId: 'beauty_and_the_beast_discard_hand',
     buildInteraction: context => {
         const options = buildBeautyDiscardOptions(context);
@@ -358,13 +359,12 @@ const beautyDiscardPromptProgram = createPromptProgram<BeautyDiscardPromptContex
         if (context.effect === 'none') return { events: [discardEvent] };
         return {
             events: [discardEvent],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 random,
-            } satisfies BeautyDiscardAfterCommittedContext,
-            nextProgram: beautyDiscardAfterCommittedProgram,
+            } satisfies BeautyDiscardAfterCommittedContext, beautyDiscardAfterCommittedProgram),
         };
     },
 });
@@ -409,8 +409,7 @@ const discoverTheLibraryProgram = createEffectProgram<DiscoverTheLibraryContext,
             context.random,
             context.now,
         ),
-        context,
-        nextProgram: discoverTheLibraryAfterCommittedDrawProgram,
+        continuation: createAbilityRuntimeContinuation(context, discoverTheLibraryAfterCommittedDrawProgram),
     }),
 );
 
@@ -426,7 +425,7 @@ function belleOnPlay(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const belleTalentPromptProgram = createPromptProgram<BelleTalentContext, SmashUpCore, SmashUpEvent>({
+const belleTalentPromptProgram = createPromptProgram<BelleTalentContext>({
     sourceId: 'beauty_and_the_beast_belle_talent',
     buildInteraction: (context) => {
         const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
@@ -603,7 +602,7 @@ function buildEverASurpriseOptions(context: EverASurpriseContext): PromptOption<
     ];
 }
 
-const everASurprisePromptProgram = createPromptProgram<EverASurpriseContext, SmashUpCore, SmashUpEvent>({
+const everASurprisePromptProgram = createPromptProgram<EverASurpriseContext>({
     sourceId: EVER_A_SURPRISE,
     buildInteraction: (context) => {
         const minionCount = (context.matchState.core.players[context.playerId]?.discard ?? [])
@@ -725,7 +724,7 @@ function playDiscardedActionSpecial(ctx: TriggerContext): SmashUpEvent[] {
     ];
 }
 
-const petalsPromptProgram = createPromptProgram<PetalsContext, SmashUpCore, SmashUpEvent>({
+const petalsPromptProgram = createPromptProgram<PetalsContext>({
     sourceId: PETALS_OF_THE_ROSE,
     buildInteraction: (context) => {
         const deck = context.matchState.core.players[context.playerId]?.deck ?? [];
@@ -792,9 +791,9 @@ const petalsPromptProgram = createPromptProgram<PetalsContext, SmashUpCore, Smas
 });
 
 function petalsOfTheRose(ctx: TriggerContext): TriggerResult {
-    if (!wasHandDiscard(ctx) || ctx.playerId !== ctx.sourceControllerId) return [];
+    if (!wasHandDiscard(ctx) || ctx.playerId !== ctx.sourceControllerId) return { events: [] };
     const player = ctx.state.players[ctx.playerId];
-    if (!player || player.deck.length === 0) return [];
+    if (!player || player.deck.length === 0) return { events: [] };
     if (!ctx.matchState) {
         return { events: [{
         type: SU_EVENTS.DECK_INSPECTED,

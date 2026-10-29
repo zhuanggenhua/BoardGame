@@ -13,7 +13,7 @@ import type {
 } from '../types';
 import { CP_MAX } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 
 // ============================================================================
 // 圣骑士技能处理器

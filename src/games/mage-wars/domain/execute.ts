@@ -117,8 +117,8 @@ export function createMageWarsDirectDamageResolutionEvents(
         sourceAbilityId: string;
         amount: number;
     },
-    sourceCommandType: string | undefined,
-    timestamp: number | undefined,
+    sourceCommandType: string,
+    timestamp: number,
 ): MageWarsEvent[] {
     const targetId = target.targetPlayerId ?? target.targetObjectId;
     if (!targetId || target.amount <= 0) return [];
@@ -1240,9 +1240,8 @@ export function resolveMageWarsObjectAttackEvents(
         const resolvedTargetObject = target.targetObjectId
             ? getArenaObject(state.core, target.targetObjectId)
             : undefined;
-        const statusEffects = effectDieResult === undefined
-            ? []
-            : resolveMageWarsObjectAttackStatusTokenEffects(
+        if (effectDieResult !== undefined) {
+            const statusEffects = resolveMageWarsObjectAttackStatusTokenEffects(
                 attacker,
                 attackProfile.id,
                 effectDieResult,
@@ -1251,22 +1250,23 @@ export function resolveMageWarsObjectAttackEvents(
                 !resolvedTargetObject
                 || canMageWarsStatusTokenAffectArenaObject(statusEffect.statusTokenId, resolvedTargetObject)
             ));
-        for (const statusEffect of statusEffects) {
-            events.push({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE,
-                payload: {
-                    sourcePlayerId: attacker.ownerId,
-                    targetPlayerId: target.targetPlayerId,
-                    targetObjectId: target.targetObjectId,
-                    statusTokenId: statusEffect.statusTokenId,
-                    amount: statusEffect.amount,
-                    sourceAbilityId,
-                    spellCardId: attacker.sourceSpellCardId,
-                    effectDieResult,
-                },
-                sourceCommandType,
-                timestamp,
-            });
+            for (const statusEffect of statusEffects) {
+                events.push({
+                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE,
+                    payload: {
+                        sourcePlayerId: attacker.ownerId,
+                        targetPlayerId: target.targetPlayerId,
+                        targetObjectId: target.targetObjectId,
+                        statusTokenId: statusEffect.statusTokenId,
+                        amount: statusEffect.amount,
+                        sourceAbilityId,
+                        spellCardId: attacker.sourceSpellCardId,
+                        effectDieResult,
+                    },
+                    sourceCommandType,
+                    timestamp,
+                });
+            }
         }
 
         accumulatedDamage += damageAmount;

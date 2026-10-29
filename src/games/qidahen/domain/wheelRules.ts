@@ -22,7 +22,7 @@ const QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIGS: QidahenWheelImmediateEffectConfig[
     {
         id: 'wheel-reclaim',
         label: '开垦',
-        summaryTitle: '轮盘开垦',
+        summaryTitle: '开垦',
         troopDelta: 0,
         populationDelta: 1,
         drawCards: 0,
@@ -31,7 +31,7 @@ const QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIGS: QidahenWheelImmediateEffectConfig[
     {
         id: 'wheel-military-farm',
         label: '军屯',
-        summaryTitle: '轮盘军屯',
+        summaryTitle: '军屯',
         troopDelta: 1,
         populationDelta: 0,
         drawCards: 2,

@@ -1,4 +1,5 @@
-import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
+import {
+ createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -15,6 +16,8 @@ import {
     shuffleBaseDeck,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -595,7 +598,7 @@ function buildCyBugMoveEventsForPlayer(
     return events;
 }
 
-const cyBugInfestationPromptProgram = createPromptProgram<CyBugInfestationContext, SmashUpCore, SmashUpEvent>({
+const cyBugInfestationPromptProgram: AbilityProgram<CyBugInfestationContext, SmashUpCore, SmashUpEvent> = createPromptProgram<CyBugInfestationContext>({
     sourceId: CY_BUG_INFESTATION,
     buildInteraction: (context) => {
         const choosingPlayerId = context.playerOrder[context.playerCursor] ?? context.playerId;
@@ -623,13 +626,12 @@ const cyBugInfestationPromptProgram = createPromptProgram<CyBugInfestationContex
         if (nextCursor < context.playerOrder.length) {
             return {
                 events,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     now: timestamp,
                     playerCursor: nextCursor,
-                },
-                nextProgram: cyBugInfestationPromptProgram,
+                }, cyBugInfestationPromptProgram),
             };
         }
 
@@ -642,7 +644,7 @@ const cyBugInfestationPromptProgram = createPromptProgram<CyBugInfestationContex
     },
 });
 
-const ralphPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+const ralphPromptProgram = createPromptProgram<WreckPromptContext>({
     sourceId: RALPH,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${RALPH}_${context.now}_${context.sourceCardUid}`,
@@ -697,7 +699,7 @@ const ralphPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, 
     },
 });
 
-const felixBaseModifierPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+const felixBaseModifierPromptProgram = createPromptProgram<WreckPromptContext>({
     sourceId: FELIX,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${FELIX}_${context.now}_${context.sourceCardUid}`,
@@ -733,7 +735,7 @@ const felixBaseModifierPromptProgram = createPromptProgram<WreckPromptContext, S
     },
 });
 
-const felixDiscardRecoverPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+const felixDiscardRecoverPromptProgram = createPromptProgram<WreckPromptContext>({
     sourceId: `${FELIX}_recover`,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${FELIX}_recover_${context.now}_${context.sourceCardUid}`,
@@ -759,7 +761,7 @@ const felixDiscardRecoverPromptProgram = createPromptProgram<WreckPromptContext,
     },
 });
 
-const vanellopeDestinationPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+const vanellopeDestinationPromptProgram = createPromptProgram<WreckPromptContext>({
     sourceId: VANELLOPE,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${VANELLOPE}_${context.now}_${context.sourceCardUid}`,
@@ -792,7 +794,7 @@ const vanellopeDestinationPromptProgram = createPromptProgram<WreckPromptContext
     },
 });
 
-const moveDestinationPromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, SmashUpEvent>({
+const moveDestinationPromptProgram = createPromptProgram<MovePromptContext>({
     sourceId: 'wreck_it_ralph_choose_move_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `wreck_it_ralph_choose_move_destination_${context.reason}_${context.now}_${context.sourceCardUid}`,
@@ -814,18 +816,17 @@ const moveDestinationPromptProgram = createPromptProgram<MovePromptContext, Smas
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 destinationBaseIndex: toBaseIndex,
-            },
-            nextProgram: moveMinionsPromptProgram,
+            }, moveMinionsPromptProgram),
         };
     },
 });
 
-const moveMinionsPromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, SmashUpEvent>({
+const moveMinionsPromptProgram = createPromptProgram<MovePromptContext>({
     sourceId: 'wreck_it_ralph_choose_move_minions',
     buildInteraction: (context) => {
         const options = collectMoveMinionOptions(
@@ -853,7 +854,7 @@ const moveMinionsPromptProgram = createPromptProgram<MovePromptContext, SmashUpC
     onResolve: ({ context, state, value, timestamp }) => {
         if (typeof context.destinationBaseIndex !== 'number') return { events: [] };
         const choices = (Array.isArray(value) ? value : [value]) as Array<MinionChoice | SkipChoice | undefined>;
-        if (choices.some(choice => choice?.skip)) return { events: [] };
+        if (choices.some(choice => choice !== undefined && 'skip' in choice && choice.skip)) return { events: [] };
         const selected = Array.from(new Map(
             choices
                 .filter((choice): choice is MinionChoice => !!choice && !(choice as SkipChoice).skip)
@@ -890,7 +891,7 @@ const moveMinionsPromptProgram = createPromptProgram<MovePromptContext, SmashUpC
     },
 });
 
-const kingCandyDestinationPromptProgram = createPromptProgram<KingCandyPromptContext, SmashUpCore, SmashUpEvent>({
+const kingCandyDestinationPromptProgram = createPromptProgram<KingCandyPromptContext>({
     sourceId: 'wreck_it_ralph_king_candy_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${KING_CANDY}_destination_${context.now}_${context.sourceCardUid}`,
@@ -918,13 +919,12 @@ const kingCandyDestinationPromptProgram = createPromptProgram<KingCandyPromptCon
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 destinationBaseIndex,
-            },
-            nextProgram: kingCandyTargetPromptProgram,
+            }, kingCandyTargetPromptProgram),
         };
     },
 });
@@ -987,7 +987,7 @@ function buildKingCandyEvents(
     ];
 }
 
-const kingCandyTargetPromptProgram = createPromptProgram<KingCandyPromptContext, SmashUpCore, SmashUpEvent>({
+const kingCandyTargetPromptProgram = createPromptProgram<KingCandyPromptContext>({
     sourceId: 'wreck_it_ralph_king_candy_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${KING_CANDY}_target_${context.now}_${context.sourceCardUid}`,
@@ -1014,7 +1014,7 @@ const kingCandyTargetPromptProgram = createPromptProgram<KingCandyPromptContext,
     },
 });
 
-const researchLabBeaconPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+const researchLabBeaconPromptProgram = createPromptProgram<WreckPromptContext>({
     sourceId: RESEARCH_LAB_BEACON,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${RESEARCH_LAB_BEACON}_${context.now}_${context.sourceCardUid}`,
@@ -1080,7 +1080,7 @@ function buildMintsEruptionEvents(
     ];
 }
 
-const mintsEruptionPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+const mintsEruptionPromptProgram = createPromptProgram<WreckPromptContext>({
     sourceId: MINTS_ERUPTION,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${MINTS_ERUPTION}_${context.now}_${context.sourceCardUid}`,
@@ -1528,7 +1528,7 @@ function collectPowerStripMoveOptions(core: SmashUpCore, playerId: string, baseI
     return options;
 }
 
-const powerStripPromptProgram = createPromptProgram<PowerStripPromptContext, SmashUpCore, SmashUpEvent>({
+const powerStripPromptProgram = createPromptProgram<PowerStripPromptContext>({
     sourceId: BASE_THE_POWER_STRIP,
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${BASE_THE_POWER_STRIP}_${context.now}_${context.baseIndex}`,
@@ -1618,8 +1618,8 @@ export function registerWreckItRalphAbilities(): void {
     registerAbilityProgram(VANELLOPE, 'talent', { program: createEffectProgram(vanellopeTalent) });
     registerAbilityProgram(CALHOUN, 'talent', { program: createEffectProgram(calhounTalent) });
     registerAbilityProgram(CY_BUG_INFESTATION, 'talent', { program: createEffectProgram(cyBugInfestationTalent) });
-    registerAbilityProgram(ESCAPE_POD, 'onPlay', { program: createEffectProgram(ctx => escapePodMove(ctx, 2)) });
-    registerAbilityProgram(ESCAPE_POD, 'special', { program: createEffectProgram(ctx => escapePodMove(ctx, 1)) });
+    registerAbilityProgram(ESCAPE_POD, 'onPlay', { program: createEffectProgram((ctx: AbilityContext) => escapePodMove(ctx, 2)) });
+    registerAbilityProgram(ESCAPE_POD, 'special', { program: createEffectProgram((ctx: AbilityContext) => escapePodMove(ctx, 1)) });
     registerAbilityProgram(IM_GONNA_WRECK_IT, 'talent', { program: createEffectProgram(iAmGonnaWreckItTalent) });
     registerAbilityProgram(KART_BAKERY, 'talent', { program: createEffectProgram(kartBakeryTalent) });
     registerAbilityProgram(KING_CANDY, 'talent', { program: createEffectProgram(kingCandyTalent) });

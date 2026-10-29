@@ -170,8 +170,6 @@ export const VIGILANTES_POD_MINIONS: MinionCardDef[] = [
         faction: VIGILANTES_POD_FACTION,
         power: 4,
         abilityTags: ['special'],
-        specialTiming: 'beforeScoring',
-        specialNeedsBase: true,
         count: 1,
         previewRef: { type: 'atlas', atlasId: VIGILANTES_POD_ATLAS, index: 14 },
     },

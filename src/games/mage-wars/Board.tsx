@@ -52,10 +52,10 @@ import {
     MAGE_WARS_COMMANDS,
     MAGE_WARS_MAX_PREPARED_SPELLS,
     type MageWarsArenaObjectState,
-    type MageWarsCastSpellCommand,
     type MageWarsCore,
     type MageWarsPlayerState,
 } from './domain';
+import type { MageWarsCastSpellCommand } from './domain/commands';
 import { MAGE_WARS_PHASE_ORDER, type MageWarsPhase } from './domain/types';
 import type { MageWarsWallState } from './domain/types';
 import {
@@ -3068,7 +3068,7 @@ function ArenaStage({
                         pendingMageAbility
                         && pendingMageAbilityTargetIds?.has(object.id),
                     );
-                    const canSelectObjectActor = isMageWarsArenaObjectActionable(
+                    const canSelectObjectActor: boolean = isMageWarsArenaObjectActionable(
                         object,
                         arenaObjectActionableOptions,
                     );
@@ -3901,7 +3901,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
     const [publicViewTargetPlayerId, setPublicViewTargetPlayerId] = useState<PlayerId | null>(null);
     const desktopBottomGap = MAGE_WARS_DESKTOP_BOTTOM_GAP_PX;
-    const phase = G.sys.phase ?? 'reset';
+    const phase: MageWarsPhase = MAGE_WARS_PHASE_ORDER.find((candidate) => candidate === G.sys.phase) ?? 'reset';
     const core = G.core;
     const players = core.playerOrder.map((id) => core.players[id]).filter(Boolean);
     const viewingPlayerId = resolveViewingPlayerId(core, playerID);
@@ -5002,14 +5002,13 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             return;
         }
         const willSelectPreparedSpell = selectedSpellCardId !== cardId;
-        let request: ReturnType<typeof buildChoiceRequestFromOpportunity> | null = null;
         if (canAct && activePlayer) {
             const opportunity = buildMageWarsSpellCastOpportunity({
                 state: G,
                 playerId: activePlayer.id,
                 spellCardId: cardId,
             });
-            request = opportunity ? buildChoiceRequestFromOpportunity(opportunity) : null;
+            const request = opportunity ? buildChoiceRequestFromOpportunity(opportunity) : null;
             if (!hasEnabledChoiceCandidate(request?.candidates)) {
                 const card = getMageWarsSpellCardFromConfig(cardId);
                 const deniedReason = request

@@ -13,7 +13,7 @@ import { canSufferFateDefeat, fateEliminationOutcome, normalizeFateRuleState } f
 export const FateDominationDomain: DomainCore<FateDominationCore, FateDominationCommand, FateDominationEvent> = {
     gameId: 'fate-domination',
     spectatorView: state => projectFatePlayerView(state, null),
-    setup: (playerIds: PlayerId[], random: RandomFn) => createInitialFateDominationCore(playerIds, random),
+    setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown) => createInitialFateDominationCore(playerIds, random, setupData),
     normalizeRuntimeState: (state: MatchState<FateDominationCore>) => {
         const core = state.core;
         const phaseCompletedPlayerIds = core.phaseCompletedPlayerIds ?? [];

@@ -401,6 +401,8 @@ export interface TutorialStepVisual {
 
 export interface TutorialStepSnapshot {
     id: string;
+    /** Optional course branch selected by a completed authored lesson action. */
+    branch?: string;
     content: string;
     /** 仅保留教程状态推进，不渲染重复文字浮层；适用于地图结果动画等自解释反馈。 */
     hideOverlay?: boolean;
@@ -506,6 +508,8 @@ export interface TutorialManifest {
      * Defaults to the existing completion route for tutorials that teach an isolated scenario.
      */
     stayOnMatchAfterCompletion?: boolean;
+    /** Close the active course when the authoritative match ends. */
+    closeOnGameOver?: boolean;
     steps: TutorialStepSnapshot[];
     allowManualSkip?: boolean;
     randomPolicy?: TutorialRandomPolicy;
@@ -525,6 +529,8 @@ export interface TutorialManifest {
      * 注意：函数不可序列化，不会存入 TutorialState。
      */
     stepValidator?: (state: MatchState<unknown>, step: TutorialStepSnapshot) => boolean;
+    /** Select one course branch from a successfully completed visible step. */
+    selectBranch?: (state: MatchState<unknown>, step: TutorialStepSnapshot, command: Command, events: GameEvent[]) => string | undefined;
 }
 
 /**
@@ -578,6 +584,8 @@ export interface TutorialState {
     /** manifest 级别配置（用于步骤推进时复用） */
     manifestAllowManualSkip?: boolean;
     manifestRandomPolicy?: TutorialRandomPolicy;
+    /** Persisted policy copied from the bound manifest for terminal cleanup. */
+    manifestCloseOnGameOver?: boolean;
     /** 派生值：结合 step + manifest 得出的有效随机策略 */
     randomPolicy?: TutorialRandomPolicy;
     /** 可变运行时：AI 动作队列（消费后清除） */
@@ -590,6 +598,7 @@ export interface TutorialState {
     skippedStepIds?: string[];
     /** 每个可见教程步骤的完整状态节点，按步骤顺序排列。 */
     checkpoints?: TutorialCheckpoint[];
+    selectedBranch?: string;
 }
 
 export const DEFAULT_TUTORIAL_STATE: TutorialState = {
@@ -598,6 +607,7 @@ export const DEFAULT_TUTORIAL_STATE: TutorialState = {
     stepIndex: 0,
     steps: [],
     step: null,
+    manifestCloseOnGameOver: false,
 };
 
 export interface RefereeTraceEntry {

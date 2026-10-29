@@ -70,14 +70,17 @@ export const SHARED_TOKENS: TokenDef[] = [
         colorTheme: 'from-cyan-500 to-blue-500',
         description: tokenText(TOKEN_IDS.EVASIVE, 'description') as unknown as string[],
         sfxKey: 'fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.weapon_power_up_wind',
-        stackLimit: 1,
-        category: 'buff',
-        passiveTrigger: {
-            timing: 'onDefense',
-            removable: true,
-            actions: [{ type: 'evade' }],
+        stackLimit: 3,
+        category: 'consumable',
+        activeUse: {
+            timing: ['beforeDamageReceived'],
+            consumeAmount: 1,
+            effect: {
+                type: 'rollToNegate',
+                rollSuccess: { range: [1, 2] },
+            },
         },
-        frameId: 'evasive',
+        frameId: 'dodge',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.MOON_ELF,
     },
 

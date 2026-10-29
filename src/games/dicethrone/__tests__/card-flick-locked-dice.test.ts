@@ -231,12 +231,12 @@ describe('弹一手修改对手锁定骰子', () => {
         expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(10);
     });
 
-    it('对手打出"我又行了"时，不能重掷当前投掷方的骰子', () => {
-        const random = createQueuedRandom([4, 2, 3, 5, 6]);
+    it('对手可打出"我又行了"，但只能由当前投掷者操作自己的骰子', () => {
+        const random = createQueuedRandom([4, 2, 3, 5, 6, 1]);
         const runner = createRunner(random, false);
 
         const result = runner.run({
-            name: '我又行了不能重掷对手骰子',
+            name: '我又行了由当前投掷者操作自己的骰子',
             setup: createSetupWithHand(['card-i-can-again'], {
                 playerId: '1',
                 cp: 10,
@@ -251,12 +251,17 @@ describe('弹一手修改对手锁定骰子', () => {
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('PLAY_CARD', '1', { cardId: 'card-i-can-again' }),
+                cmd('REROLL_DIE', '1', { dieId: 0 }),
+                cmd('REROLL_DIE', '0', { dieId: 0 }),
+                cmd('SYS_INTERACTION_CONFIRM', '0'),
             ],
+            expect: { expectError: { command: 'REROLL_DIE', error: 'player_mismatch' } },
         });
 
         expect(result.finalState.sys.interaction?.current).toBeUndefined();
-        expect(result.finalState.core.dice.map(die => die.value)).toEqual([4, 2, 3, 5, 6]);
-        expect(result.finalState.core.players['1'].hand.map(card => card.id)).toContain('card-i-can-again');
-        expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(10);
+        expect(result.finalState.core.dice.map(die => die.value)).toEqual([1, 2, 3, 5, 6]);
+        expect(result.finalState.core.players['1'].hand.map(card => card.id)).not.toContain('card-i-can-again');
+        expect(result.finalState.core.players['1'].discard.map(card => card.id)).toContain('card-i-can-again');
+        expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(9);
     });
 });

@@ -319,7 +319,10 @@
     "title": "作者",
     "game": "作品：{{game}}",
     "hint": "当前先展示作者署名，后续如有更完整的作者介绍，会从这里展开。",
-    "close": "关闭"
+    "close": "关闭",
+    "openHomepage": "打开作者主页",
+    "claim": "申请认领",
+    "manageWorks": "管理我的作品"
   },
   "packageManager": {
     "cardLabel": "{{game}} 移动端包管理",

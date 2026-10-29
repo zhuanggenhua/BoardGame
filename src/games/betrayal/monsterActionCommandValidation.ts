@@ -83,7 +83,7 @@ export function validateBetrayalMonsterActionCommand(
                 return { valid: false, error: '当前宅邸中找不到该怪物。' };
             }
             const damageAmount = command.payload.damageAmount;
-            if (!Number.isInteger(damageAmount) || damageAmount < 0) {
+            if (typeof damageAmount !== 'number' || !Number.isInteger(damageAmount) || damageAmount < 0) {
                 return { valid: false, error: '怪物受伤点数必须是非负整数。' };
             }
             const damageTrait = command.payload.damageTrait;

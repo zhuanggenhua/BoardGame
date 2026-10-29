@@ -323,6 +323,7 @@ export function executeCardCommand(
                         damageDealt: 0,
                         timestamp,
                         damageOrigin: 'card',
+                        isAttackModifierCard: card.isAttackModifier,
                     };
                     effectEvents.push(...resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random }));
                 }

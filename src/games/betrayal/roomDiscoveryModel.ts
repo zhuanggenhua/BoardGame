@@ -15,6 +15,7 @@ import {
     type BetrayalRoomDoorway,
     type BetrayalRoomEdge,
     type BetrayalRoomFloor,
+    type BetrayalRoomVisualId,
 } from './scenarioConfig';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,

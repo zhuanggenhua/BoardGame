@@ -4,13 +4,13 @@
  */
 
 import type { PlayerId, RandomFn, GameEvent } from '../../../engine/types';
-import { createDamageCalculation, type DamageCalculationConfig, type PassiveTriggerHandler } from '../../../engine/primitives/damageCalculation';
+import { createDamageCalculation, type DamageCalculation, type DamageCalculationConfig, type PassiveTriggerHandler } from '../../../engine/primitives/damageCalculation';
 import type { DamageOrigin, EffectAction, RollDieConditionalEffect, RollDieDefaultEffect } from './tokenTypes';
 
 export type { RollDieConditionalEffect, RollDieDefaultEffect };
 import type { AbilityEffect, EffectTiming, EffectResolutionContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
-import { getActiveDice, getAttackDiceFaceCounts, getAttackDiceValues, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit, hasPendingBonusDiceSettlement, isNyraCompanionActive } from './rules';
+import { getActiveDice, getAttackDiceFaceCounts, getAttackDiceValues, getFaceCounts, getOpponents, getPendingBonusSettlementDice, requirePlayerDieFace, getTokenStackLimit, hasPendingBonusDiceSettlement, isNyraCompanionActive } from './rules';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS } from './ids';
 import type {
@@ -41,7 +41,8 @@ import {
 } from './tokenResponse';
 import type { AbilityDef } from './combat';
 import { reduce as reduceDiceThroneCore } from './reducer';
-import { assertValidBonusDiceContinuation } from './utils';
+import { assertValidBonusDiceContinuation, attackModifierBonusDiceContinuation } from './utils';
+import { applyCurrentAttackDamageModifiers } from './attackDamageModifiers';
 
 // ============================================================================
 // 效果上下文
@@ -61,6 +62,8 @@ export interface EffectContext {
     isDefensiveContext?: boolean;
     /** 当前效果的现实伤害来源。卡牌上下文显式标为 card，其余技能默认 ability。 */
     damageOrigin?: DamageOrigin;
+    /** 攻击修正牌插入的骰子属于子过程，不能改变父攻击的结算进度。 */
+    isAttackModifierCard?: boolean;
 }
 
 const getAttackDamageBeforePercent = (breakdown: DamageBreakdown): number | undefined => {
@@ -155,11 +158,11 @@ export interface CustomActionMeta {
      * 用于 Token 门控等需要在 custom action 执行前估算伤害的场景。
      * 例如：暴击 Token 需要判断技能伤害是否 ≥5，但 CP 系伤害在执行前无法确定。
      * 
-     * @param state - 当前游戏状态（类型为 Record 以避免循环依赖）
+     * @param state - 当前 DiceThrone 核心状态
      * @param playerId - 使用技能的玩家 ID
      * @returns 预估的伤害值
      */
-    estimateDamage?: (state: Record<string, unknown>, playerId: string) => number;
+    estimateDamage?: (state: DiceThroneCore, playerId: string) => number;
 }
 
 /**
@@ -364,7 +367,7 @@ export function createBonusDiceWithReroll(
     // 投掷奖励骰
     for (let i = 0; i < config.diceCount; i++) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         const effectParams = config.effectParamsBuilder
             ? config.effectParamsBuilder({ value, index: i, face })
             : { value, index: i };
@@ -477,7 +480,7 @@ export function createBonusDiceWithReroll(
 export function createDTPassiveTriggerHandler(
     ctx: EffectContext,
     random?: RandomFn,
-): PassiveTriggerHandler {
+): PassiveTriggerHandler<DiceThroneEvent> {
     return {
         handleCustomAction(actionId, context) {
             const handler = getCustomActionHandler(actionId);
@@ -489,6 +492,7 @@ export function createDTPassiveTriggerHandler(
             // 构建 EffectAction，注入 damageAmount/tokenId/tokenStacks 参数
             const actionWithParams: EffectAction = {
                 type: 'custom',
+                target: context.targetId === context.attackerId ? 'self' : 'opponent',
                 customActionId: actionId,
                 params: {
                     damageAmount: context.damageAmount,
@@ -502,7 +506,7 @@ export function createDTPassiveTriggerHandler(
                 targetId: context.targetId,
                 attackerId: context.attackerId,
                 sourceAbilityId: context.sourceAbilityId ?? ctx.sourceAbilityId,
-                state: context.state,
+                state: ctx.state,
                 timestamp: context.timestamp,
                 random: context.random ?? random,
                 action: actionWithParams,
@@ -523,9 +527,15 @@ export function createDTPassiveTriggerHandler(
                 }
             }
 
-            return { events: handledEvents as GameEvent[], preventAmount };
+            return { events: handledEvents, preventAmount };
         },
     };
+}
+
+export function createDiceThroneDamageCalculation(
+    config: DamageCalculationConfig<DiceThroneEvent>,
+): DamageCalculation<DiceThroneEvent> {
+    return createDamageCalculation<DiceThroneEvent>(config);
 }
 
 /**
@@ -847,7 +857,7 @@ function resolveEffectAction(
 
             for (let i = 0; i < diceCount; i++) {
                 const value = random.d(6);
-                const face = getPlayerDieFace(state, attackerId, value) ?? '';
+                const face = requirePlayerDieFace(state, attackerId, value);
                 
                 // 查找匹配的条件效果
                 const matchedEffect = action.conditionalEffects?.find(e => e.face === face);
@@ -949,41 +959,18 @@ function resolveEffectAction(
                 // custom action 统一伤害累计入口 + 响应窗口拦截：
                 // 扫描 handler 产出的 DAMAGE_DEALT 事件，对符合条件的伤害替换为 TOKEN_RESPONSE_REQUESTED。
                 for (let i = 0; i < handledEvents.length; i++) {
-                    const handledEvent = handledEvents[i];
+                    let handledEvent = handledEvents[i];
                     if (handledEvent.type === 'DAMAGE_DEALT') {
-                        const dmgPayload = (handledEvent as DamageDealtEvent).payload;
-                        dmgPayload.damageOrigin = dmgPayload.damageOrigin ?? ctx.damageOrigin ?? 'ability';
-                        const damageScope = dmgPayload.damageScope ?? (
+                        const damageScope = handledEvent.payload.damageScope ?? (
                             ctx.isDefensiveContext ? 'direct' : state.pendingAttack ? 'attack' : 'direct'
                         );
-                        const isCurrentAttackDamage = damageScope === 'attack'
-                            && !ctx.isDefensiveContext
-                            && state.pendingAttack?.attackerId === attackerId
-                            && state.pendingAttack?.defenderId === dmgPayload.targetId;
-                        const currentAttackPercent = isCurrentAttackDamage
-                            ? [state.pendingAttack?.dazzleDamagePercent, state.pendingAttack?.zhizhuxiaDamagePercent]
-                                .filter((value): value is number => typeof value === 'number')
-                                .reduce((sum, value) => sum + value, 0)
-                            : undefined;
-                        if (isCurrentAttackDamage && typeof currentAttackPercent === 'number') {
-                            dmgPayload.attackDamageBeforePercent = dmgPayload.amount;
-                            const multiplier = Math.max(0, 1 + currentAttackPercent / 100);
-                            dmgPayload.amount = Math.ceil(dmgPayload.amount * multiplier);
-                            dmgPayload.actualDamage = Math.min(
-                                dmgPayload.amount,
-                                state.players[dmgPayload.targetId]?.resources[RESOURCE_IDS.HP] ?? dmgPayload.amount,
-                            );
-                        }
-                        if (
-                            isCurrentAttackDamage
-                            && (
-                                state.pendingAttack?.defensiveFlightActivated
-                                || state.pendingAttack?.dazzleCheckMissed
-                            )
-                        ) {
-                            dmgPayload.amount = 0;
-                            dmgPayload.actualDamage = 0;
-                        }
+                        handledEvent = applyCurrentAttackDamageModifiers(state, handledEvent, attackerId, {
+                            defensive: ctx.isDefensiveContext,
+                            inferredScope: damageScope,
+                        });
+                        handledEvents[i] = handledEvent;
+                        const dmgPayload = handledEvent.payload;
+                        dmgPayload.damageOrigin = dmgPayload.damageOrigin ?? ctx.damageOrigin ?? 'ability';
                         const tokenResponseEvent = maybeCreateDamageResponseEvent({
                             state,
                             attackerId,
@@ -1053,11 +1040,19 @@ function resolveEffectAction(
             const shieldValue = action.shieldValue ?? action.value ?? 0;
             if (shieldValue <= 0) break;
             const preventStatus = action.preventStatus === true;
+            const shieldTargetId = action.pendingDamageTarget
+                ? state.pendingDamage?.responseType === 'beforeDamageReceived'
+                    ? state.pendingDamage.targetPlayerId
+                    : !state.pendingDamage
+                        ? state.pendingAttack?.defenderId
+                        : undefined
+                : targetId;
+            if (!shieldTargetId) break;
 
             const shieldEvent: DamageShieldGrantedEvent = {
                 type: 'DAMAGE_SHIELD_GRANTED',
                 payload: {
-                    targetId,
+                    targetId: shieldTargetId,
                     value: shieldValue,
                     sourceId: sourceAbilityId,
                     preventStatus,
@@ -1481,7 +1476,7 @@ export function resolveRollDieSettlement(params: {
         // 普通 rollDie 的 bonusDamage 没有后续 damage 动作消费时，
         // 延后到最终骰面确认后按原规则造成一笔独立伤害。
         const target = ctx.state.players[settlement.targetId];
-        const bonusDamage = ctx.accumulatedBonusDamage;
+        const bonusDamage = ctx.accumulatedBonusDamage ?? 0;
         const targetHp = target?.resources[RESOURCE_IDS.HP] ?? 0;
         events.push({
             type: 'DAMAGE_DEALT',
@@ -1515,6 +1510,8 @@ export function resolveEffectsToEvents(
         skipDamage?: boolean;
         skipNonDamage?: boolean;
         continueAfterFirstDamage?: boolean;
+        startEffectIndex?: number;
+        onInteractionSuspended?: (nextEffectIndex: number, event: Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }>) => void;
     }
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
@@ -1549,6 +1546,7 @@ export function resolveEffectsToEvents(
     const timedEffects = combatAbilityManager.instance.getEffectsByTiming(effects, timing);
 
     for (let effectIndex = 0; effectIndex < timedEffects.length; effectIndex += 1) {
+        if (effectIndex < (config?.startEffectIndex ?? 0)) continue;
         const effect = timedEffects[effectIndex];
         if (!effect.action) {
             continue;
@@ -1635,7 +1633,7 @@ export function resolveEffectsToEvents(
                 || effect.action.resolutionMode === 'attackBonus'
                 || rollDieBonusDamageMode === 'inline'
             );
-        const rollDieContinuation = effect.action.type === 'rollDie'
+        const rollDieContinuation: PendingBonusDiceSettlement['continuation'] = effect.action.type === 'rollDie'
             ? rollDieFeedsAttack
                 ? timing === 'preDefense'
                     ? {
@@ -1662,7 +1660,21 @@ export function resolveEffectsToEvents(
             rollDieContinuation,
         ).filter(e => e !== undefined);
         const immediateEvents: DiceThroneEvent[] = [];
-        for (const event of effectEvents) {
+        for (const originalEvent of effectEvents) {
+            const event = originalEvent.type === 'BONUS_DICE_REROLL_REQUESTED'
+                && ctx.isAttackModifierCard
+                && ctx.state.pendingAttack?.attackerId === ctx.attackerId
+                ? {
+                    ...originalEvent,
+                    payload: {
+                        ...originalEvent.payload,
+                        settlement: {
+                            ...originalEvent.payload.settlement,
+                            continuation: attackModifierBonusDiceContinuation(),
+                        },
+                    },
+                }
+                : originalEvent;
             if (
                 shouldInlineBonusDamage
                 && event.type === 'BONUS_DAMAGE_ADDED'
@@ -1698,6 +1710,14 @@ export function resolveEffectsToEvents(
         resolutionCtx.faceCounts = useUpdatedAttackDiceSnapshot
             ? getAttackDiceFaceCounts(ctx.state)
             : getFaceCounts(updatedDice);
+
+        const interactionRequest = immediateEvents.find(
+            (event): event is Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }> => event.type === 'INTERACTION_REQUESTED',
+        );
+        if (interactionRequest && config?.onInteractionSuspended && effectIndex + 1 < timedEffects.length) {
+            config.onInteractionSuspended(effectIndex + 1, interactionRequest);
+            break;
+        }
 
         // TOKEN_RESPONSE_REQUESTED 意味着伤害被挂起等待玩家响应，
         // 后续效果（如 rollDie）应在 Token 响应完成后由 resolvePostDamageEffects 执行。

@@ -67,10 +67,10 @@
         "y": 615
       },
       "center": {
-        "x": 292,
-        "y": 612
+        "x": 293,
+        "y": 611
       },
-      "pixelCount": 12373
+      "pixelCount": 13933
     },
     {
       "id": "city-region-2",
@@ -80,10 +80,10 @@
         "y": 63
       },
       "center": {
-        "x": 499,
-        "y": 63
+        "x": 498,
+        "y": 72
       },
-      "pixelCount": 25856
+      "pixelCount": 24798
     },
     {
       "id": "city-region-3",
@@ -93,10 +93,10 @@
         "y": 78
       },
       "center": {
-        "x": 741,
-        "y": 78
+        "x": 743,
+        "y": 83
       },
-      "pixelCount": 34300
+      "pixelCount": 35507
     },
     {
       "id": "city-region-4",
@@ -106,10 +106,10 @@
         "y": 53
       },
       "center": {
-        "x": 1009,
-        "y": 53
+        "x": 1006,
+        "y": 62
       },
-      "pixelCount": 31262
+      "pixelCount": 32063
     },
     {
       "id": "city-region-5",
@@ -119,10 +119,10 @@
         "y": 125
       },
       "center": {
-        "x": 1184,
-        "y": 125
+        "x": 1179,
+        "y": 126
       },
-      "pixelCount": 26238
+      "pixelCount": 24571
     },
     {
       "id": "city-region-6",
@@ -132,10 +132,10 @@
         "y": 193
       },
       "center": {
-        "x": 636,
-        "y": 193
+        "x": 632,
+        "y": 188
       },
-      "pixelCount": 16062
+      "pixelCount": 21682
     },
     {
       "id": "city-region-7",
@@ -145,10 +145,10 @@
         "y": 186
       },
       "center": {
-        "x": 894,
-        "y": 186
+        "x": 928,
+        "y": 181
       },
-      "pixelCount": 14818
+      "pixelCount": 28178
     },
     {
       "id": "city-region-8",
@@ -158,10 +158,10 @@
         "y": 201
       },
       "center": {
-        "x": 478,
-        "y": 201
+        "x": 229,
+        "y": 192
       },
-      "pixelCount": 14102
+      "pixelCount": 160413
     },
     {
       "id": "city-region-9",
@@ -171,10 +171,10 @@
         "y": 181
       },
       "center": {
-        "x": 1012,
-        "y": 181
+        "x": 1011,
+        "y": 183
       },
-      "pixelCount": 5722
+      "pixelCount": 7841
     },
     {
       "id": "city-region-10",
@@ -184,10 +184,10 @@
         "y": 253
       },
       "center": {
-        "x": 764,
+        "x": 759,
         "y": 253
       },
-      "pixelCount": 9172
+      "pixelCount": 12387
     },
     {
       "id": "city-region-11",
@@ -197,23 +197,23 @@
         "y": 249
       },
       "center": {
-        "x": 1128,
-        "y": 249
+        "x": 1117,
+        "y": 254
       },
-      "pixelCount": 10465
+      "pixelCount": 12479
     },
     {
       "id": "xian-xing",
       "name": "咸兴",
       "seed": {
-        "x": 1126,
-        "y": 553
+        "x": 1065,
+        "y": 430
       },
       "center": {
-        "x": 1126,
-        "y": 553
+        "x": 1065,
+        "y": 429
       },
-      "pixelCount": 93190
+      "pixelCount": 1132
     },
     {
       "id": "city-region-13",
@@ -223,10 +223,10 @@
         "y": 296
       },
       "center": {
-        "x": 1009,
-        "y": 296
+        "x": 1004,
+        "y": 308
       },
-      "pixelCount": 11883
+      "pixelCount": 15887
     },
     {
       "id": "city-region-14",
@@ -236,23 +236,23 @@
         "y": 353
       },
       "center": {
-        "x": 579,
-        "y": 353
+        "x": 599,
+        "y": 360
       },
-      "pixelCount": 28818
+      "pixelCount": 41914
     },
     {
       "id": "city-region-15",
       "name": "辽北",
       "seed": {
-        "x": 892,
-        "y": 382
+        "x": 882,
+        "y": 369
       },
       "center": {
-        "x": 892,
-        "y": 382
+        "x": 886,
+        "y": 332
       },
-      "pixelCount": 25738
+      "pixelCount": 13779
     },
     {
       "id": "city-region-16",
@@ -262,10 +262,10 @@
         "y": 356
       },
       "center": {
-        "x": 409,
-        "y": 356
+        "x": 406,
+        "y": 364
       },
-      "pixelCount": 20365
+      "pixelCount": 23757
     },
     {
       "id": "city-region-17",
@@ -276,22 +276,22 @@
       },
       "center": {
         "x": 760,
-        "y": 339
+        "y": 342
       },
-      "pixelCount": 5310
+      "pixelCount": 7034
     },
     {
       "id": "city-region-18",
       "name": "平壤",
       "seed": {
-        "x": 1222,
-        "y": 501
+        "x": 1030,
+        "y": 577
       },
       "center": {
-        "x": 1222,
-        "y": 501
+        "x": 1029,
+        "y": 577
       },
-      "pixelCount": 17958
+      "pixelCount": 1384
     },
     {
       "id": "city-region-19",
@@ -301,10 +301,10 @@
         "y": 390
       },
       "center": {
-        "x": 710,
+        "x": 712,
         "y": 390
       },
-      "pixelCount": 5038
+      "pixelCount": 6503
     },
     {
       "id": "city-region-20",
@@ -314,10 +314,10 @@
         "y": 471
       },
       "center": {
-        "x": 152,
-        "y": 463
+        "x": 145,
+        "y": 442
       },
-      "pixelCount": 35373
+      "pixelCount": 34050
     },
     {
       "id": "city-region-21",
@@ -327,75 +327,10 @@
         "y": 455
       },
       "center": {
-        "x": 262,
-        "y": 501
+        "x": 260,
+        "y": 504
       },
-      "pixelCount": 9132
-    },
-    {
-      "id": "jinzhou",
-      "name": "锦州",
-      "seed": {
-        "x": 627,
-        "y": 477
-      },
-      "center": {
-        "x": 621,
-        "y": 465
-      },
-      "pixelCount": 13089
-    },
-    {
-      "id": "city-region-22",
-      "name": "东江",
-      "seed": {
-        "x": 878,
-        "y": 717
-      },
-      "center": {
-        "x": 881,
-        "y": 719
-      },
-      "pixelCount": 108882
-    },
-    {
-      "id": "song-jin",
-      "name": "皮岛",
-      "seed": {
-        "x": 825,
-        "y": 528
-      },
-      "center": {
-        "x": 825,
-        "y": 528
-      },
-      "pixelCount": 7059
-    },
-    {
-      "id": "city-region-24",
-      "name": "宣府",
-      "seed": {
-        "x": 395,
-        "y": 548
-      },
-      "center": {
-        "x": 395,
-        "y": 548
-      },
-      "pixelCount": 12146
-    },
-    {
-      "id": "city-region-25",
-      "name": "山海关",
-      "seed": {
-        "x": 543,
-        "y": 552
-      },
-      "center": {
-        "x": 543,
-        "y": 552
-      },
-      "pixelCount": 10868
+      "pixelCount": 20577
     },
     {
       "id": "city-region-26",
@@ -405,10 +340,10 @@
         "y": 632
       },
       "center": {
-        "x": 70,
-        "y": 632
+        "x": 76,
+        "y": 640
       },
-      "pixelCount": 27599
+      "pixelCount": 29782
     },
     {
       "id": "city-region-27",
@@ -418,10 +353,10 @@
         "y": 718
       },
       "center": {
-        "x": 473,
-        "y": 756
+        "x": 462,
+        "y": 751
       },
-      "pixelCount": 32308
+      "pixelCount": 40910
     },
     {
       "id": "city-region-28",
@@ -431,23 +366,23 @@
         "y": 634
       },
       "center": {
-        "x": 503,
-        "y": 634
+        "x": 500,
+        "y": 630
       },
-      "pixelCount": 7791
+      "pixelCount": 10046
     },
     {
       "id": "city-region-29",
       "name": "汉城",
       "seed": {
-        "x": 1239,
-        "y": 871
+        "x": 1139,
+        "y": 627
       },
       "center": {
-        "x": 1252,
-        "y": 820
+        "x": 1139,
+        "y": 627
       },
-      "pixelCount": 5445
+      "pixelCount": 1289
     },
     {
       "id": "city-region-30",
@@ -458,9 +393,9 @@
       },
       "center": {
         "x": 269,
-        "y": 776
+        "y": 766
       },
-      "pixelCount": 45643
+      "pixelCount": 44318
     },
     {
       "id": "city-region-31",
@@ -470,10 +405,10 @@
         "y": 809
       },
       "center": {
-        "x": 86,
-        "y": 809
+        "x": 109,
+        "y": 770
       },
-      "pixelCount": 22941
+      "pixelCount": 27750
     },
     {
       "id": "city-region-32",
@@ -483,10 +418,10 @@
         "y": 746
       },
       "center": {
-        "x": 756,
-        "y": 746
+        "x": 754,
+        "y": 742
       },
-      "pixelCount": 13859
+      "pixelCount": 17298
     },
     {
       "id": "city-region-33",
@@ -496,10 +431,88 @@
         "y": 830
       },
       "center": {
-        "x": 596,
-        "y": 830
+        "x": 604,
+        "y": 818
       },
-      "pixelCount": 22650
+      "pixelCount": 24401
+    },
+    {
+      "id": "city-region-15-liaodong",
+      "name": "辽东",
+      "seed": {
+        "x": 880,
+        "y": 455
+      },
+      "center": {
+        "x": 895,
+        "y": 433
+      },
+      "pixelCount": 17262
+    },
+    {
+      "id": "city-region-19-liaoxi",
+      "name": "辽西",
+      "seed": {
+        "x": 724,
+        "y": 447
+      },
+      "center": {
+        "x": 688,
+        "y": 478
+      },
+      "pixelCount": 9001
+    },
+    {
+      "id": "duoyan",
+      "name": "朵颜部",
+      "seed": {
+        "x": 602,
+        "y": 476
+      },
+      "center": {
+        "x": 557,
+        "y": 471
+      },
+      "pixelCount": 9938
+    },
+    {
+      "id": "xuan-fu",
+      "name": "宣府",
+      "seed": {
+        "x": 395,
+        "y": 548
+      },
+      "center": {
+        "x": 389,
+        "y": 544
+      },
+      "pixelCount": 15762
+    },
+    {
+      "id": "city-region-28-jizhen",
+      "name": "蓟镇",
+      "seed": {
+        "x": 566,
+        "y": 563
+      },
+      "center": {
+        "x": 550,
+        "y": 549
+      },
+      "pixelCount": 20058
+    },
+    {
+      "id": "city-region-22",
+      "name": "东江",
+      "seed": {
+        "x": 830,
+        "y": 550
+      },
+      "center": {
+        "x": 817,
+        "y": 536
+      },
+      "pixelCount": 10609
     }
   ],
   "edges": [
@@ -872,9 +885,9 @@
       "reverseRuleNote": "战场宽度 3"
     },
     {
-      "id": "city-region-14::jinzhou",
+      "id": "city-region-14::duoyan",
       "from": "city-region-14",
-      "to": "jinzhou",
+      "to": "duoyan",
       "bidirectional": true,
       "boundaryType": "city",
       "boundaryLabel": "攻城",
@@ -920,41 +933,9 @@
       "reverseRuleNote": "战场宽度 3"
     },
     {
-      "id": "city-region-15::city-region-22",
+      "id": "city-region-15::duoyan",
       "from": "city-region-15",
-      "to": "city-region-22",
-      "bidirectional": true,
-      "boundaryType": "mountain",
-      "boundaryLabel": "山脉",
-      "travelCost": 3,
-      "battleWidth": 2,
-      "ruleNote": "战场宽度 2",
-      "reverseBoundaryType": "mountain",
-      "reverseBoundaryLabel": "山脉",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
-    },
-    {
-      "id": "city-region-15::city-region-7",
-      "from": "city-region-15",
-      "to": "city-region-7",
-      "bidirectional": true,
-      "boundaryType": "plain",
-      "boundaryLabel": "平原",
-      "travelCost": 3,
-      "battleWidth": 3,
-      "ruleNote": "战场宽度 3",
-      "reverseBoundaryType": "plain",
-      "reverseBoundaryLabel": "平原",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
-    },
-    {
-      "id": "city-region-15::jinzhou",
-      "from": "city-region-15",
-      "to": "jinzhou",
+      "to": "duoyan",
       "bidirectional": true,
       "boundaryType": "city",
       "boundaryLabel": "攻城",
@@ -968,9 +949,9 @@
       "reverseRuleNote": "战场宽度 1"
     },
     {
-      "id": "city-region-15::song-jin",
+      "id": "city-region-15::city-region-22",
       "from": "city-region-15",
-      "to": "song-jin",
+      "to": "city-region-22",
       "bidirectional": true,
       "boundaryType": "coast",
       "boundaryLabel": "海岸/水路",
@@ -1034,9 +1015,9 @@
       "reverseRuleNote": "战场宽度 3"
     },
     {
-      "id": "city-region-16::jinzhou",
+      "id": "city-region-16::duoyan",
       "from": "city-region-16",
-      "to": "jinzhou",
+      "to": "duoyan",
       "bidirectional": true,
       "boundaryType": "city",
       "boundaryLabel": "攻城",
@@ -1102,9 +1083,9 @@
       "reverseUnitCap": 2
     },
     {
-      "id": "city-region-19::jinzhou",
+      "id": "city-region-19::duoyan",
       "from": "city-region-19",
-      "to": "jinzhou",
+      "to": "duoyan",
       "bidirectional": true,
       "boundaryType": "city",
       "boundaryLabel": "攻城",
@@ -1118,9 +1099,9 @@
       "reverseRuleNote": "战场宽度 1"
     },
     {
-      "id": "city-region-19::song-jin",
+      "id": "city-region-19::city-region-22",
       "from": "city-region-19",
-      "to": "song-jin",
+      "to": "city-region-22",
       "bidirectional": true,
       "boundaryType": "coast",
       "boundaryLabel": "海岸/水路",
@@ -1184,9 +1165,9 @@
       "reverseRuleNote": "战场宽度 2"
     },
     {
-      "id": "city-region-20::city-region-24",
+      "id": "city-region-20::xuan-fu",
       "from": "city-region-20",
-      "to": "city-region-24",
+      "to": "xuan-fu",
       "bidirectional": true,
       "boundaryType": "wall-convex",
       "boundaryLabel": "攻入长城",
@@ -1232,161 +1213,9 @@
       "reverseRuleNote": "战场宽度 2"
     },
     {
-      "id": "city-region-22::city-region-25",
-      "from": "city-region-22",
-      "to": "city-region-25",
-      "bidirectional": true,
-      "boundaryType": "city",
-      "boundaryLabel": "攻城",
-      "travelCost": 3,
-      "battleWidth": 1,
-      "ruleNote": "战场宽度 1",
-      "reverseBoundaryType": "city",
-      "reverseBoundaryLabel": "攻城",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
-    },
-    {
-      "id": "city-region-22::city-region-27",
-      "from": "city-region-22",
-      "to": "city-region-27",
-      "bidirectional": true,
-      "boundaryType": "mountain",
-      "boundaryLabel": "山脉",
-      "travelCost": 3,
-      "battleWidth": 2,
-      "ruleNote": "战场宽度 2",
-      "reverseBoundaryType": "mountain",
-      "reverseBoundaryLabel": "山脉",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
-    },
-    {
-      "id": "city-region-22::city-region-28",
-      "from": "city-region-22",
-      "to": "city-region-28",
-      "bidirectional": true,
-      "boundaryType": "plain",
-      "boundaryLabel": "平原",
-      "travelCost": 3,
-      "battleWidth": 3,
-      "ruleNote": "战场宽度 3",
-      "reverseBoundaryType": "plain",
-      "reverseBoundaryLabel": "平原",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
-    },
-    {
-      "id": "city-region-22::city-region-29",
-      "from": "city-region-22",
-      "to": "city-region-29",
-      "bidirectional": true,
-      "boundaryType": "coast",
-      "boundaryLabel": "海岸/水路",
-      "travelCost": 3,
-      "battleWidth": 2,
-      "ruleNote": "船锚区相邻，最多 2 部队",
-      "unitCap": 2,
-      "reverseBoundaryType": "coast",
-      "reverseBoundaryLabel": "海岸/水路",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "船锚区相邻，最多 2 部队",
-      "reverseUnitCap": 2
-    },
-    {
-      "id": "city-region-22::city-region-32",
-      "from": "city-region-22",
-      "to": "city-region-32",
-      "bidirectional": true,
-      "boundaryType": "coast",
-      "boundaryLabel": "海岸/水路",
-      "travelCost": 2,
-      "battleWidth": 2,
-      "ruleNote": "船锚区相邻，最多 2 部队",
-      "unitCap": 2,
-      "reverseBoundaryType": "coast",
-      "reverseBoundaryLabel": "海岸/水路",
-      "reverseTravelCost": 2,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "船锚区相邻，最多 2 部队",
-      "reverseUnitCap": 2
-    },
-    {
-      "id": "city-region-22::city-region-33",
-      "from": "city-region-22",
-      "to": "city-region-33",
-      "bidirectional": true,
-      "boundaryType": "mountain",
-      "boundaryLabel": "山脉",
-      "travelCost": 3,
-      "battleWidth": 2,
-      "ruleNote": "战场宽度 2",
-      "reverseBoundaryType": "mountain",
-      "reverseBoundaryLabel": "山脉",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
-    },
-    {
-      "id": "city-region-22::jinzhou",
-      "from": "city-region-22",
-      "to": "jinzhou",
-      "bidirectional": true,
-      "boundaryType": "city",
-      "boundaryLabel": "攻城",
-      "travelCost": 3,
-      "battleWidth": 1,
-      "ruleNote": "战场宽度 1",
-      "reverseBoundaryType": "city",
-      "reverseBoundaryLabel": "攻城",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
-    },
-    {
-      "id": "city-region-22::song-jin",
-      "from": "city-region-22",
-      "to": "song-jin",
-      "bidirectional": true,
-      "boundaryType": "coast",
-      "boundaryLabel": "海岸/水路",
-      "travelCost": 2,
-      "battleWidth": 2,
-      "ruleNote": "船锚区相邻，最多 2 部队",
-      "unitCap": 2,
-      "reverseBoundaryType": "coast",
-      "reverseBoundaryLabel": "海岸/水路",
-      "reverseTravelCost": 2,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "船锚区相邻，最多 2 部队",
-      "reverseUnitCap": 2
-    },
-    {
-      "id": "city-region-22::xian-xing",
-      "from": "city-region-22",
-      "to": "xian-xing",
-      "bidirectional": true,
-      "boundaryType": "coast",
-      "boundaryLabel": "海岸/水路",
-      "travelCost": 3,
-      "battleWidth": 2,
-      "ruleNote": "船锚区相邻，最多 2 部队",
-      "unitCap": 2,
-      "reverseBoundaryType": "coast",
-      "reverseBoundaryLabel": "海岸/水路",
-      "reverseTravelCost": 3,
-      "reverseBattleWidth": 2,
-      "reverseRuleNote": "船锚区相邻，最多 2 部队",
-      "reverseUnitCap": 2
-    },
-    {
-      "id": "city-region-24::city-region-25",
-      "from": "city-region-24",
-      "to": "city-region-25",
+      "id": "city-region-28-jizhen::xuan-fu",
+      "from": "xuan-fu",
+      "to": "city-region-28-jizhen",
       "bidirectional": true,
       "boundaryType": "plain",
       "boundaryLabel": "平原",
@@ -1400,8 +1229,8 @@
       "reverseRuleNote": "战场宽度 3"
     },
     {
-      "id": "city-region-24::city-region-27",
-      "from": "city-region-24",
+      "id": "city-region-27::xuan-fu",
+      "from": "xuan-fu",
       "to": "city-region-27",
       "bidirectional": true,
       "boundaryType": "plain",
@@ -1416,8 +1245,8 @@
       "reverseRuleNote": "战场宽度 3"
     },
     {
-      "id": "city-region-24::city-region-28",
-      "from": "city-region-24",
+      "id": "city-region-28::xuan-fu",
+      "from": "xuan-fu",
       "to": "city-region-28",
       "bidirectional": true,
       "boundaryType": "plain",
@@ -1432,9 +1261,9 @@
       "reverseRuleNote": "战场宽度 3"
     },
     {
-      "id": "city-region-24::jinzhou",
-      "from": "jinzhou",
-      "to": "city-region-24",
+      "id": "duoyan::xuan-fu",
+      "from": "duoyan",
+      "to": "xuan-fu",
       "bidirectional": true,
       "boundaryType": "city",
       "boundaryLabel": "攻城",
@@ -1448,25 +1277,9 @@
       "reverseRuleNote": "战场宽度 1"
     },
     {
-      "id": "city-region-25::city-region-28",
-      "from": "city-region-25",
-      "to": "city-region-28",
-      "bidirectional": true,
-      "boundaryType": "wall-flat",
-      "boundaryLabel": "出长城",
-      "travelCost": 1,
-      "battleWidth": 3,
-      "ruleNote": "自山海关攻击蓟镇视为突围，战场宽度 3",
-      "reverseBoundaryType": "shanhaiguan",
-      "reverseBoundaryLabel": "山海关特殊",
-      "reverseTravelCost": 1,
-      "reverseBattleWidth": 1,
-      "reverseRuleNote": "山海关属于蓟镇，未破败前按关隘防御处理"
-    },
-    {
-      "id": "city-region-25::jinzhou",
-      "from": "jinzhou",
-      "to": "city-region-25",
+      "id": "city-region-28-jizhen::duoyan",
+      "from": "duoyan",
+      "to": "city-region-28-jizhen",
       "bidirectional": true,
       "boundaryType": "city",
       "boundaryLabel": "攻城",
@@ -1750,6 +1563,114 @@
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
       "reverseRuleNote": "战场宽度 2"
+    },
+    {
+      "id": "city-region-15::city-region-7",
+      "from": "city-region-15",
+      "to": "city-region-7",
+      "bidirectional": true,
+      "boundaryType": "river",
+      "boundaryLabel": "河流",
+      "travelCost": 2,
+      "battleWidth": 2,
+      "ruleNote": "原图辽北北侧河界；战场宽度2。",
+      "unitCap": null,
+      "reverseBoundaryType": "river",
+      "reverseBoundaryLabel": "河流",
+      "reverseTravelCost": 2,
+      "reverseBattleWidth": 2,
+      "reverseRuleNote": "原图辽北北侧河界；战场宽度2。",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-15::city-region-15-liaodong",
+      "from": "city-region-15",
+      "to": "city-region-15-liaodong",
+      "bidirectional": true,
+      "boundaryType": "plain",
+      "boundaryLabel": "平原",
+      "travelCost": 1,
+      "battleWidth": 3,
+      "ruleNote": "原图辽北与辽东分界。",
+      "unitCap": null,
+      "reverseBoundaryType": "plain",
+      "reverseBoundaryLabel": "平原",
+      "reverseTravelCost": 1,
+      "reverseBattleWidth": 3,
+      "reverseRuleNote": "原图辽北与辽东分界。",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-19-liaoxi::duoyan",
+      "from": "duoyan",
+      "to": "city-region-19-liaoxi",
+      "bidirectional": true,
+      "boundaryType": "mountain",
+      "boundaryLabel": "山脉",
+      "travelCost": 2,
+      "battleWidth": 2,
+      "ruleNote": "原图朵颜与辽西山脊分界。",
+      "unitCap": null,
+      "reverseBoundaryType": "mountain",
+      "reverseBoundaryLabel": "山脉",
+      "reverseTravelCost": 2,
+      "reverseBattleWidth": 2,
+      "reverseRuleNote": "原图朵颜与辽西山脊分界。",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-19::city-region-19-liaoxi",
+      "from": "city-region-19",
+      "to": "city-region-19-liaoxi",
+      "bidirectional": true,
+      "boundaryType": "river",
+      "boundaryLabel": "河流",
+      "travelCost": 2,
+      "battleWidth": 2,
+      "ruleNote": "原图敖汉与辽西河界。",
+      "unitCap": null,
+      "reverseBoundaryType": "river",
+      "reverseBoundaryLabel": "河流",
+      "reverseTravelCost": 2,
+      "reverseBattleWidth": 2,
+      "reverseRuleNote": "原图敖汉与辽西河界。",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-15-liaodong::city-region-19-liaoxi",
+      "from": "city-region-15-liaodong",
+      "to": "city-region-19-liaoxi",
+      "bidirectional": true,
+      "boundaryType": "river",
+      "boundaryLabel": "河流",
+      "travelCost": 2,
+      "battleWidth": 2,
+      "ruleNote": "原图辽东与辽西河界。",
+      "unitCap": null,
+      "reverseBoundaryType": "river",
+      "reverseBoundaryLabel": "河流",
+      "reverseTravelCost": 2,
+      "reverseBattleWidth": 2,
+      "reverseRuleNote": "原图辽东与辽西河界。",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-28::city-region-28-jizhen",
+      "from": "city-region-28-jizhen",
+      "to": "city-region-28",
+      "bidirectional": true,
+      "boundaryType": "plain",
+      "boundaryLabel": "平原",
+      "travelCost": 1,
+      "battleWidth": 3,
+      "ruleNote": "原图蓟镇与顺天分界。",
+      "unitCap": null,
+      "reverseBoundaryType": "plain",
+      "reverseBoundaryLabel": "平原",
+      "reverseTravelCost": 1,
+      "reverseBattleWidth": 3,
+      "reverseRuleNote": "原图蓟镇与顺天分界。",
+      "reverseUnitCap": null
     }
   ]
 }

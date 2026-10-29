@@ -69,6 +69,7 @@ export function reactionResourceKey(ref: SmashUpReactionResourceRef): string {
             return `turnFlag:${ref.playerId ?? 'global'}:${ref.key}`;
         case 'baseDeck':
         case 'madnessDeck':
+        case 'monsterDeck':
             return ref.kind;
         case 'scoring':
         case 'targetAvailability':

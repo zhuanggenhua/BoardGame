@@ -4,11 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { HeartCrack, MousePointerClick } from 'lucide-react';
 import type { AbilityCard, Die, TurnPhase } from '../types';
 import type { PlayerId } from '../../../engine/types';
-import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
-import type { DiceModifyResult, DiceSelectResult } from '../domain/systems';
 import { DiceActions, DiceTray } from './DiceTray';
-import { getDiceInteractionHint, getDiceInteractionMeta, type GroupBonusReroll } from './diceInteractionContract';
+import type { DiceInteractionContract } from './diceInteractionContract';
 import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
@@ -53,20 +50,17 @@ export const RightSidebar = ({
     onUndoDiscard,
     discardHighlighted,
     sellButtonVisible,
-    interaction,
-    multistepInteraction,
+    diceInteraction,
     showDiceTray = true,
     showDiceActions = true,
     isBonusDiceSettlement = false,
     canRerollBonusDice = false,
     onRerollBonusDice,
-    groupBonusReroll,
     activeModifiers,
     attackModifierBonusDamage,
     damageSummary,
     passiveAbilityProps,
     rootPlayerId,
-    teamIdByPlayerId,
 }: {
     dice: Die[];
     rollCount: number;
@@ -95,22 +89,20 @@ export const RightSidebar = ({
     onUndoDiscard: () => void;
     discardHighlighted: boolean;
     sellButtonVisible: boolean;
-    interaction?: InteractionDescriptor;
-    multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
+    /** 显式声明当前骰子合同；普通状态传 undefined，交互状态不得漏接。 */
+    diceInteraction: DiceInteractionContract | undefined;
     showDiceTray?: boolean;
     showDiceActions?: boolean;
     isBonusDiceSettlement?: boolean;
     canRerollBonusDice?: boolean;
     onRerollBonusDice?: (dieIndex: number) => void;
-    groupBonusReroll?: GroupBonusReroll;
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     damageSummary?: DamageSummary;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
     rootPlayerId: PlayerId;
-    teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
-    const isDiceMultistep = Boolean(getDiceInteractionMeta(interaction));
+    const isDiceMultistep = diceInteraction?.kind === 'multistep';
 
     const { t } = useTranslation('game-dicethrone');
     const sidebarFrameStyle: CSSProperties = {
@@ -149,15 +141,18 @@ export const RightSidebar = ({
     };
     const hintContainerStyle: CSSProperties = {
         zIndex: UI_Z_INDEX.hint,
-        marginBottom: buildBoardShellInlineUnitValue(0.6),
+        position: 'absolute',
         right: 0,
         bottom: '100%',
-        maxWidth: 'calc(100vw - 1rem)',
+        marginBottom: buildBoardShellInlineUnitValue(0.6),
+        maxWidth: 'min(calc(100vw - 1rem), 22rem)',
         overflow: 'visible',
     };
     const hintBubbleStyle: CSSProperties = {
         width: 'max-content',
-        maxWidth: 'min(calc(100vw - 2rem), 22rem)',
+        maxWidth: diceInteraction?.kind === 'bonusSettlement'
+            ? 'min(calc(100vw - 2rem), 8.5rem)'
+            : 'min(calc(100vw - 2rem), 22rem)',
         boxSizing: 'border-box',
         gap: buildBoardShellInlineUnitValue(0.4),
         borderRadius: buildBoardShellInlineUnitValue(0.5),
@@ -204,10 +199,9 @@ export const RightSidebar = ({
             label: t('dice.bonusRollOwner', { owner: ownerName }),
         };
     }, [dice, isBonusDiceSettlement, t]);
-    const interactionHint = getDiceInteractionHint({
-        interaction, result: multistepInteraction?.result ?? undefined, groupBonusReroll, rootPlayerId, teamIdByPlayerId,
-    });
-
+    const interactionHint = diceInteraction?.hint.surface === 'dice-tray'
+        ? diceInteraction.hint
+        : undefined;
     return (
         <div
             className="absolute top-0 flex flex-col items-center pointer-events-none"
@@ -217,7 +211,31 @@ export const RightSidebar = ({
             <div className="flex-grow" />
             <div className="relative w-full flex flex-col items-center" style={stackStyle}>
                 {showDiceTray && (
+                <div className="relative w-full flex justify-center">
                 <div className="relative" style={diceTrayFrameStyle}>
+                    {interactionHint && (
+                        <div
+                            className="absolute z-10 pointer-events-none"
+                            style={hintContainerStyle}
+                            data-testid="dice-interaction-hint-anchor"
+                            data-anchor="dice-tray"
+                            data-placement="tray-top"
+                        >
+                            <div
+                                className="flex min-w-0 items-start border border-amber-500/50 bg-amber-950/95 shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-normal"
+                                style={hintBubbleStyle}
+                                data-testid="dice-interaction-hint"
+                            >
+                                <MousePointerClick className="text-amber-400 shrink-0" style={hintIconStyle} />
+                                <span
+                                    className="min-w-0 overflow-wrap-anywhere break-words text-amber-200 font-medium leading-snug"
+                                    style={hintTextStyle}
+                                >
+                                    {t(interactionHint.key, interactionHint.params)}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                     {hasModifierBadgeRow ? (
                         <div
                             className="pointer-events-none absolute inset-x-0 bottom-full flex items-center justify-center whitespace-nowrap"
@@ -257,26 +275,6 @@ export const RightSidebar = ({
                             <CurrentTotalDamageBadge summary={damageSummary} />
                         </div>
                     )}
-                    {interactionHint && (
-                        <div
-                            className="absolute z-10 pointer-events-none"
-                            style={hintContainerStyle}
-                        >
-                            <div
-                                className="flex min-w-0 items-start border border-amber-500/50 bg-amber-950/95 shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-normal"
-                                style={hintBubbleStyle}
-                                data-testid="dice-interaction-hint"
-                            >
-                                <MousePointerClick className="text-amber-400 shrink-0" style={hintIconStyle} />
-                                <span
-                                    className="min-w-0 overflow-wrap-anywhere break-words text-amber-200 font-medium leading-snug"
-                                    style={hintTextStyle}
-                                >
-                                    {t(interactionHint.key, interactionHint.params)}
-                                </span>
-                            </div>
-                        </div>
-                    )}
                     <DiceTray
                         dice={dice}
                         rollCount={rollCount}
@@ -290,15 +288,14 @@ export const RightSidebar = ({
                         rerollingDiceIds={rerollingDiceIds}
                         rerollAnimationSeq={rerollAnimationSeq}
                         locale={locale}
-                        interaction={isDiceMultistep ? interaction : undefined}
-                        multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
+                        diceInteraction={isDiceMultistep ? diceInteraction : undefined}
                         isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
                         bonusDiceReroll={onRerollBonusDice ? {
                             canReroll: canRerollBonusDice,
                             onReroll: onRerollBonusDice,
-                            selectedIds: groupBonusReroll?.selectedIds,
                         } : undefined}
                     />
+                </div>
                 </div>
                 )}
                 {showDiceActions && (
@@ -315,10 +312,7 @@ export const RightSidebar = ({
                         isResponseWindowOpen={isResponseWindowOpen}
                         isRolling={isRolling}
                         setIsRolling={setIsRolling}
-                        interaction={isDiceMultistep ? interaction : undefined}
-                        multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
-                        isBonusDiceSettlement={isBonusDiceSettlement}
-                        groupBonusReroll={groupBonusReroll}
+                        diceInteraction={diceInteraction}
                     />
                     </div>
                 )}

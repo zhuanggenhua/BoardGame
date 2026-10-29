@@ -575,7 +575,6 @@ function executeSummonWallSpell(ctx: MageWarsSpellAbilityContext): AbilityResult
         ownerId: ctx.ownerId,
         sourceSpellCardId: ctx.spell.spellCardId,
         sourceObjectId: ctx.spell.objectId,
-        createdAtTimestamp: ctx.timestamp,
         name: ctx.spell.name,
         edgeId,
         zoneIds,

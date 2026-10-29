@@ -62,6 +62,47 @@ const openBonusDiceState = (
 };
 
 describe('DiceThrone 奖励骰普通确认合同', () => {
+    it('modifyDie 请求缺少选择数量时拒绝建立含默认单骰语义的交互', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        const malformed = {
+            id: 'missing-dice-select-count',
+            playerId: '0',
+            sourceCardId: 'test-missing-count',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToModify',
+            selected: [],
+            dieModifyConfig: { mode: 'set', targetValue: 6 },
+        };
+        const request = {
+            type: 'INTERACTION_REQUESTED',
+            payload: { interaction: malformed },
+            sourceCommandType: 'TEST_INVALID_DICE_INTERACTION',
+            timestamp: 100,
+        } as DiceThroneEvent;
+
+        expect(() => runBonusDiceSystem(state, [request])).toThrow(/modifyDie interaction requires .*selectCount/);
+    });
+
+    it('selectDie 请求缺少选择数量时拒绝建立含默认单骰语义的交互', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        const malformed = {
+            id: 'missing-reroll-select-count',
+            playerId: '0',
+            sourceCardId: 'test-missing-reroll-count',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selected: [],
+        };
+        const request = {
+            type: 'INTERACTION_REQUESTED',
+            payload: { interaction: malformed },
+            sourceCommandType: 'TEST_INVALID_DICE_INTERACTION',
+            timestamp: 100,
+        } as DiceThroneEvent;
+
+        expect(() => runBonusDiceSystem(state, [request])).toThrow(/selectDie interaction requires positive integer selectCount/);
+    });
+
     it('所有生产奖励骰专用结算器都必须注册，避免投掷成功但确认后没有规则消费者', () => {
         const expectedSettlementIds = [
             'artificer-heal-bot-use',

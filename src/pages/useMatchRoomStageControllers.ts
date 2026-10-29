@@ -3,6 +3,7 @@ import type { i18n as I18nInstance } from 'i18next';
 import { useToast } from '../contexts/ToastContext';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
 import { isUiHintOnlyError, resolveCommandError } from '../engine/transport/errorI18n';
+import type { ManualForceEndAiPhaseResult } from '../engine/transport/protocol';
 import {
     ONLINE_MATCH_TRANSPORT_ERRORS,
     shouldShowOnlineGameErrorToast,
@@ -52,8 +53,8 @@ export function useMatchRoomStageControllers(args: {
         setDispatchManualSetupCommand(() => handler);
     }, []);
 
-    const [forceEndAiPhaseHandler, setForceEndAiPhaseHandler] = useState<(() => Promise<boolean>) | null>(null);
-    const handleForceEndAiPhaseReady = useCallback((handler: (() => Promise<boolean>) | null) => {
+    const [forceEndAiPhaseHandler, setForceEndAiPhaseHandler] = useState<(() => Promise<ManualForceEndAiPhaseResult>) | null>(null);
+    const handleForceEndAiPhaseReady = useCallback((handler: (() => Promise<ManualForceEndAiPhaseResult>) | null) => {
         setForceEndAiPhaseHandler(() => handler);
     }, []);
 

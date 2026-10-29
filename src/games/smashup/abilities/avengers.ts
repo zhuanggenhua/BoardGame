@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -20,6 +21,8 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -195,7 +198,7 @@ function buildDiscardOptions(
     }));
 }
 
-const discardCardsPromptProgram = createPromptProgram<DiscardPromptContext, SmashUpCore, SmashUpEvent>({
+const discardCardsPromptProgram = createPromptProgram<DiscardPromptContext>({
     sourceId: 'avengers_discard_cards',
     interactionSourceIds: ['avengers_hawkeye', 'avengers_jarvis'],
     buildInteraction: (context) => {
@@ -249,14 +252,13 @@ const discardPromptAfterCommittedDrawProgram = createEffectProgram<DrawThenDisca
         if (count === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation<DiscardPromptContext, SmashUpCore, SmashUpEvent>({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: context.now,
                 sourceId: context.sourceId,
                 count,
-            },
-            nextProgram: discardCardsPromptProgram,
+            }, discardCardsPromptProgram),
         };
     },
 );
@@ -270,16 +272,11 @@ const drawThenDiscardProgram = createEffectProgram<DrawThenDiscardContext, Smash
             context.random,
             context.now,
         ),
-        context,
-        nextProgram: discardPromptAfterCommittedDrawProgram,
+        continuation: createAbilityRuntimeContinuation(context, discardPromptAfterCommittedDrawProgram),
     }),
 );
 
-const blackWidowPromptProgram = createPromptProgram<
-    AvengersPromptContext & { baseIndex: number },
-    SmashUpCore,
-    SmashUpEvent
->({
+const blackWidowPromptProgram = createPromptProgram<AvengersPromptContext & { baseIndex: number }>({
     sourceId: 'avengers_black_widow',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -337,7 +334,7 @@ const blackWidowPromptProgram = createPromptProgram<
     },
 });
 
-const avengersAssemblePromptProgram = createPromptProgram<AvengersPromptContext, SmashUpCore, SmashUpEvent>({
+const avengersAssemblePromptProgram = createPromptProgram<AvengersPromptContext>({
     sourceId: 'avengers_assemble',
     buildInteraction: (context) => {
         const options = (context.matchState.core.players[context.playerId]?.discard ?? [])
@@ -396,7 +393,7 @@ const avengersAssemblePromptProgram = createPromptProgram<AvengersPromptContext,
     },
 });
 
-const moveMinionDestinationPromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, SmashUpEvent>({
+const moveMinionDestinationPromptProgram = createPromptProgram<MovePromptContext>({
     sourceId: 'avengers_repulsor_boots_move',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `avengers_repulsor_boots_move_${context.now}`,
@@ -431,7 +428,6 @@ const moveMinionDestinationPromptProgram = createPromptProgram<MovePromptContext
                 minionDefId: live.defId,
                 fromBaseIndex: context.fromBaseIndex,
                 toBaseIndex: choice.baseIndex,
-                moverId: playerId,
                 sourcePlayerId: playerId,
                 sourceDefId: context.sourceId,
                 sourceKind: 'action',
@@ -442,11 +438,7 @@ const moveMinionDestinationPromptProgram = createPromptProgram<MovePromptContext
     },
 });
 
-const repulsorBootsSourcePromptProgram = createPromptProgram<
-    RepulsorBootsSourcePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const repulsorBootsSourcePromptProgram = createPromptProgram<RepulsorBootsSourcePromptContext>({
     sourceId: 'avengers_repulsor_boots_source',
     buildInteraction: (context) => {
         const candidates = context.matchState.core.bases.flatMap((base, baseIndex) => (
@@ -507,7 +499,7 @@ const repulsorBootsSourcePromptProgram = createPromptProgram<
         if (!live) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation<MovePromptContext, SmashUpCore, SmashUpEvent>({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -515,13 +507,12 @@ const repulsorBootsSourcePromptProgram = createPromptProgram<
                 minionUid: live.uid,
                 minionDefId: live.defId,
                 fromBaseIndex: choice.baseIndex,
-            },
-            nextProgram: moveMinionDestinationPromptProgram,
+            }, moveMinionDestinationPromptProgram),
         };
     },
 });
 
-const ironManDestinationPromptProgram = createPromptProgram<IronManPromptContext, SmashUpCore, SmashUpEvent>({
+const ironManDestinationPromptProgram = createPromptProgram<IronManPromptContext>({
     sourceId: 'avengers_iron_man_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `avengers_iron_man_destination_${context.now}`,
@@ -557,7 +548,6 @@ const ironManDestinationPromptProgram = createPromptProgram<IronManPromptContext
             minionDefId: ironMan.defId,
             fromBaseIndex: context.fromBaseIndex,
             toBaseIndex: choice.baseIndex,
-            moverId: playerId,
             sourcePlayerId: playerId,
             sourceDefId: 'avengers_iron_man',
             sourceKind: 'nonAction',
@@ -575,7 +565,6 @@ const ironManDestinationPromptProgram = createPromptProgram<IronManPromptContext
                     minionDefId: companion.defId,
                     fromBaseIndex: context.fromBaseIndex,
                     toBaseIndex: choice.baseIndex,
-                    moverId: playerId,
                     sourcePlayerId: playerId,
                     sourceDefId: 'avengers_iron_man',
                     sourceKind: 'nonAction',
@@ -588,7 +577,7 @@ const ironManDestinationPromptProgram = createPromptProgram<IronManPromptContext
     },
 });
 
-const ironManCompanionPromptProgram = createPromptProgram<IronManPromptContext, SmashUpCore, SmashUpEvent>({
+const ironManCompanionPromptProgram = createPromptProgram<IronManPromptContext>({
     sourceId: 'avengers_iron_man_companion',
     buildInteraction: (context) => {
         const candidates = (context.matchState.core.bases[context.fromBaseIndex]?.minions ?? [])
@@ -626,18 +615,17 @@ const ironManCompanionPromptProgram = createPromptProgram<IronManPromptContext, 
         const choice = value as MinionChoice | undefined;
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 ...(choice?.minionUid ? { companionUid: choice.minionUid } : {}),
-            },
-            nextProgram: ironManDestinationPromptProgram,
+            }, ironManDestinationPromptProgram),
         };
     },
 });
 
-const thorDestinationPromptProgram = createPromptProgram<ThorPromptContext, SmashUpCore, SmashUpEvent>({
+const thorDestinationPromptProgram = createPromptProgram<ThorPromptContext>({
     sourceId: 'avengers_thor_mjolnir_destination',
     buildInteraction: (context) => {
         const candidates = context.matchState.core.bases.flatMap((base, baseIndex) =>
@@ -696,11 +684,7 @@ const thorDestinationPromptProgram = createPromptProgram<ThorPromptContext, Smas
     },
 });
 
-const thorSourcePromptProgram = createPromptProgram<
-    AvengersPromptContext & { sources: Required<ThorAttachmentChoice>[] },
-    SmashUpCore,
-    SmashUpEvent
->({
+const thorSourcePromptProgram = createPromptProgram<AvengersPromptContext & { sources: Required<ThorAttachmentChoice>[] }>({
     sourceId: 'avengers_thor_mjolnir_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `avengers_thor_mjolnir_source_${context.now}`,
@@ -725,13 +709,12 @@ const thorSourcePromptProgram = createPromptProgram<
         if (!choice?.actionUid) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 ...choice,
                 matchState: state,
                 now: timestamp,
-            },
-            nextProgram: thorDestinationPromptProgram,
+            }, thorDestinationPromptProgram),
         };
     },
 });
@@ -775,7 +758,7 @@ function buildThorDeckShuffleEvent(
     } as DeckReorderedEvent;
 }
 
-const thorSearchPromptProgram = createPromptProgram<ThorSearchPromptContext, SmashUpCore, SmashUpEvent>({
+const thorSearchPromptProgram = createPromptProgram<ThorSearchPromptContext>({
     sourceId: 'avengers_thor_search',
     buildInteraction: (context) => {
         const choices = collectThorSearchChoices(context.matchState.core, context.playerId);
@@ -845,7 +828,7 @@ const thorSearchPromptProgram = createPromptProgram<ThorSearchPromptContext, Sma
     },
 });
 
-const hawkeyeArrowsPickPromptProgram = createPromptProgram<HawkeyeArrowsPromptContext, SmashUpCore, SmashUpEvent>({
+const hawkeyeArrowsPickPromptProgram = createPromptProgram<HawkeyeArrowsPromptContext>({
     sourceId: 'avengers_hawkeyes_arrows_pick',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `avengers_hawkeyes_arrows_pick_${context.now}`,
@@ -902,18 +885,17 @@ const hawkeyeArrowsPickPromptProgram = createPromptProgram<HawkeyeArrowsPromptCo
 const hawkeyeArrowsPromptAfterRevealProgram = createEffectProgram<HawkeyeArrowsRevealContext, SmashUpCore, SmashUpEvent>(
     (context) => ({
         events: context.revealEvents,
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: context.matchState,
             playerId: context.playerId,
             now: context.now,
             actionCards: context.actionCards,
             hawkeyeInPlay: context.hawkeyeInPlay,
-        },
-        nextProgram: hawkeyeArrowsPickPromptProgram,
+        }, hawkeyeArrowsPickPromptProgram),
     }),
 );
 
-const hulkSmashReplacePromptProgram = createPromptProgram<HulkSmashPromptContext, SmashUpCore, SmashUpEvent>({
+const hulkSmashReplacePromptProgram = createPromptProgram<HulkSmashPromptContext>({
     sourceId: 'avengers_hulk_smash_replace',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `avengers_hulk_smash_replace_${context.now}`,
@@ -979,7 +961,7 @@ const hulkSmashReplacePromptProgram = createPromptProgram<HulkSmashPromptContext
     },
 });
 
-const hulkSmashArtifactsPromptProgram = createPromptProgram<HulkSmashPromptContext, SmashUpCore, SmashUpEvent>({
+const hulkSmashArtifactsPromptProgram = createPromptProgram<HulkSmashPromptContext>({
     sourceId: 'avengers_hulk_smash_artifacts',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -1033,8 +1015,7 @@ const hulkSmashArtifactsPromptProgram = createPromptProgram<HulkSmashPromptConte
         if (!canReplace) return { events };
         return {
             events,
-            context: { ...context, matchState: state, now: timestamp },
-            nextProgram: hulkSmashReplacePromptProgram,
+            continuation: createAbilityRuntimeContinuation({ ...context, matchState: state, now: timestamp }, hulkSmashReplacePromptProgram),
         };
     },
 });
@@ -1092,7 +1073,7 @@ function collectModularSources(state: SmashUpCore, playerId: PlayerId): ModularS
     return sources;
 }
 
-const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext, SmashUpCore, SmashUpEvent>({
+const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext>({
     sourceId: 'avengers_modular_tech_destination',
     interactionSourceIds: [
         'avengers_modular_tech_destination_base',
@@ -1181,11 +1162,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
     },
 });
 
-const modularSourcePromptProgram = createPromptProgram<
-    AvengersPromptContext & { sources: ModularSourceChoice[] },
-    SmashUpCore,
-    SmashUpEvent
->({
+const modularSourcePromptProgram = createPromptProgram<AvengersPromptContext & { sources: ModularSourceChoice[] }>({
     sourceId: 'avengers_modular_tech_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `avengers_modular_tech_source_${context.now}`,
@@ -1193,9 +1170,9 @@ const modularSourcePromptProgram = createPromptProgram<
         '模块化技术：选择要移动的装备或基地神器',
         context.sources.map((source, index) => ({
             id: `source-${index}`,
-            ...(source.actionDefId
-                ? { label: getCardDef(source.actionDefId)?.name ?? source.actionDefId }
-                : { labelKey: 'ui.avengers_modular_tech_source_fallback_option' }),
+            label: source.actionDefId
+                ? getCardDef(source.actionDefId)?.name ?? source.actionDefId
+                : source.kind === 'base' ? '基地行动' : '随从附加行动',
             value: source,
             displayMode: 'card' as const,
         })),
@@ -1212,13 +1189,12 @@ const modularSourcePromptProgram = createPromptProgram<
         if (!choice?.actionUid) return { events: [] };
         return {
             events: [],
-            context: { ...context, ...choice, matchState: state, now: timestamp },
-            nextProgram: modularDestinationPromptProgram,
+            continuation: createAbilityRuntimeContinuation({ ...context, ...choice, matchState: state, now: timestamp }, modularDestinationPromptProgram),
         };
     },
 });
 
-const strategizePromptProgram = createPromptProgram<StrategizePromptContext, SmashUpCore, SmashUpEvent>({
+const strategizePromptProgram: AbilityProgram<StrategizePromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<StrategizePromptContext>({
     sourceId: 'avengers_strategize_order',
     buildInteraction: (context) => {
         const selected = new Set(context.selectedTopUids);
@@ -1258,8 +1234,7 @@ const strategizePromptProgram = createPromptProgram<StrategizePromptContext, Sma
         if (selectedTopUids.length < targetTopCount) {
             return {
                 events: [],
-                context: { ...context, selectedTopUids, matchState: state, now: timestamp },
-                nextProgram: strategizePromptProgram,
+                continuation: createAbilityRuntimeContinuation({ ...context, selectedTopUids, matchState: state, now: timestamp }, strategizePromptProgram),
             };
         }
         const trackedUids = new Set(context.topCards.map(card => card.cardUid));

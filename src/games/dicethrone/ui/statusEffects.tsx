@@ -188,7 +188,7 @@ import { STATUS_EFFECT_META, TOKEN_META, getVisualMetaById, type StatusEffectMet
 export { STATUS_EFFECT_META, TOKEN_META, type StatusEffectMeta };
 
 const hasUsableStatusImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
-    Boolean(img) && img.naturalWidth > 0 && img.naturalHeight > 0;
+    img != null && img.naturalWidth > 0 && img.naturalHeight > 0;
 
 const normalizeComparableUrl = (url: string): string => {
     if (!url) return '';
@@ -1222,6 +1222,7 @@ export const SelectableStatusBadge = ({
     return (
         <div
             data-testid={dataTestId}
+            data-selected={isSelected ? 'true' : 'false'}
             className={`relative group ${clickable ? 'cursor-pointer' : ''
                 }`}
             onMouseEnter={() => setIsHovered(true)}

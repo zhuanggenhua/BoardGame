@@ -284,7 +284,7 @@ function surfingPenguin(ctx: AbilityContext): AbilityResult {
         createSkipOption('不移动伙伴', 'ui.penguins_surfing_penguin_skip_move_option'),
         ...ownMinionTargetOptions(ctx.state, ctx.playerId, ctx.baseIndex),
     ];
-    return queueChoice(
+    return queueChoice<MinionChoice>(
         ctx.matchState,
         ctx.playerId,
         `penguins_surfing_penguin_${ctx.cardUid}_${ctx.now}`,
@@ -452,7 +452,7 @@ function babyPenguin(ctx: AbilityContext): AbilityResult {
             _source: 'hand' as const,
         }));
     if (options.length === 0) return { events: [] };
-    return queueChoice(
+    return queueChoice<CardChoice>(
         ctx.matchState,
         ctx.playerId,
         `penguins_baby_penguin_${ctx.cardUid}_${ctx.now}`,
@@ -681,7 +681,7 @@ function iceSlideAfterScoring(ctx: TriggerContext): AbilityResult {
 function iceFloe(ctx: BaseAbilityContext): BaseAbilityResult {
     const options = ownMinionTargetOptions(ctx.state, ctx.playerId, ctx.baseIndex);
     if (options.length === 0) return { events: [] };
-    return queueChoiceFromBase(
+    return queueChoiceFromBase<MinionChoice>(
         ctx,
         `base_ice_floe_${ctx.playerId}_${ctx.now}`,
         '浮冰：选择这里你的一个伙伴放到牌库底',

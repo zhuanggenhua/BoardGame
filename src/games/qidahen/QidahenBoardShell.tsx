@@ -39,8 +39,8 @@ const buildMetrics = (
     height: number,
     layout: QidahenBoardLayoutConfig,
 ): QidahenBoardMetrics => {
-    const hudScale = Math.min(width / layout.width, height / layout.height);
     const isMobileLandscape = width <= layout.mobileMaxViewportWidth && width > height;
+    const hudScale = Math.min(width / layout.width, height / layout.height);
     const sceneScale = isMobileLandscape
         ? hudScale
         : Math.max(width / layout.width, height / layout.height);
@@ -106,7 +106,8 @@ export const QidahenBoardShell: React.FC<QidahenBoardShellProps> = ({
         color: 'inherit',
         transform: `scale(${metrics.hud.scale})`,
         transformOrigin: 'top left',
-        overflow: 'hidden',
+        // 固定HUD不能被按钮聚焦或浏览器scrollIntoView滚动；各决策面板自己承接滚动。
+        overflow: 'clip',
         '--qidahen-mobile-edge-pull': `${metrics.mobileEdgePull}px`,
         '--qidahen-mobile-top-inset': `${metrics.mobileTopInset}px`,
         '--qidahen-mobile-bottom-inset': `${metrics.mobileBottomInset}px`,

@@ -1,6 +1,7 @@
 import {
     buildGameConfigReviewTable,
     materializeGameConfigPackage,
+    validateGameConfigPackage,
     type GameConfigDeck,
     type GameConfigMaterializedPackage,
     type GameConfigObject,
@@ -22,11 +23,14 @@ import {
 
 export const MAGE_WARS_CONFIG_SOURCE_ID = 'src/games/mage-wars/data/mage-wars.config.json';
 
-export const MAGE_WARS_CONFIG_PACKAGE = configPackageJson as GameConfigPackage;
-
 type MageWarsGameConfigSetup = NonNullable<GameConfigPackage['setup']> & {
     formalStartingDeployment?: GameConfigStartingDeployment[];
 };
+const validatedConfigPackage = validateGameConfigPackage(configPackageJson);
+if (!validatedConfigPackage.ok || !validatedConfigPackage.package) {
+    throw new Error(`Mage Wars 配置包无效：${validatedConfigPackage.issues.map((issue) => issue.message).join('; ')}`);
+}
+export const MAGE_WARS_CONFIG_PACKAGE = validatedConfigPackage.package;
 
 export interface MageWarsConfigMageSetup {
     mageId: MageId;

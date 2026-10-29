@@ -168,7 +168,7 @@ function resolveSound(eventName: string, strategy: AudioStrategy): string | null
  * });
  * ```
  */
-export function defineEvents<T extends Record<string, EventConfig>>(
+export function defineEvents<const T extends Record<string, EventConfig>>(
   events: T
 ): EventDefinitions<T> {
   const result = {} as any;

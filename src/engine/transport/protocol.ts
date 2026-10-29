@@ -123,6 +123,10 @@ export interface ManualForceEndAiPhaseResult {
 // ============================================================================
 
 export interface ClientToServerEvents {
+    'feedback:capture': (
+        matchID: string, request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }, credentials?: string,
+        acknowledge?: (result: { accepted: boolean; captureId?: string }) => void,
+    ) => void;
     /** 同步请求：客户端连接/重连后请求当前状态 */
     'sync': (matchID: string, playerID: string | null, credentials?: string) => void;
 
@@ -161,6 +165,21 @@ export interface ClientToServerEvents {
 
     /** 临时 UI 事件：只转发给同局客户端，不进入权威游戏状态 */
     'ui:event': (matchID: string, eventType: string, payload: unknown, credentials?: string) => void;
+
+    /** 查询当前登录账号是否仍为管理员；服务端按数据库当前角色验证。 */
+    'admin-debug:access': (
+        token: string | null,
+        acknowledge?: (result: { allowed: boolean }) => void,
+    ) => void;
+
+    /** 管理员调试命令；必须绑定已同步的对局 socket 并由服务端验证当前角色。 */
+    'admin-debug:command': (
+        matchID: string,
+        commandType: string,
+        payload: unknown,
+        token: string | null,
+        acknowledge?: (result: { accepted: boolean; reason?: string }) => void,
+    ) => void;
 }
 
 // ============================================================================

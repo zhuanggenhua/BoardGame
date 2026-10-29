@@ -14,6 +14,7 @@ type ActionExtras = Pick<ActionCardDef,
     | 'ongoingTarget'
     | 'specialTiming'
     | 'specialNeedsBase'
+    | 'activatableAbilities'
     | 'responseWindowTiming'
     | 'responseWindowNeedsBase'
 >;
@@ -559,7 +560,7 @@ export const MUNCHKIN_WARRIORS_ACTIONS: ActionCardDef[] = [
     action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_cleave', '斩杀', 'Cleave', 2, 11], ['onPlay']),
     action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_dumbbells', '哑铃', 'Dumbbells', 1, 13], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true }),
     action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_dungeon_bait', '地牢诱饵', 'Dungeon Bait', 2, 14], ['onPlay']),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_eternal_hero', '永恒的英雄', 'Eternal Hero', 1, 16], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'own' }),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_eternal_hero', '永恒的英雄', 'Eternal Hero', 1, 16], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'self' }),
     action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_ruckus', '骚乱', 'Ruckus', 1, 17], ['onPlay']),
     action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_shield_of_ubiquity', '无处不在之盾', 'Shield of Ubiquity', 1, 18], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true }),
     action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_war_cry', '战争怒吼', 'War Cry', 1, 19], ['onPlay']),

@@ -249,9 +249,6 @@ function mythicHorsesSeastarPod(ctx: AbilityContext): AbilityResult {
         && minion.controller === ctx.playerId
     ));
     if (!hasOtherOwnMinion) return { events: [] };
-    if (ctx.matchState.core.extraMinionSourcesUsed?.[ctx.playerId]?.includes('mythic_horses_seastar_pod')) {
-        return { events: [] };
-    }
     return { events: [grantContextualExtraMinion(ctx, 'mythic_horses_seastar_pod')] };
 }
 
@@ -544,7 +541,7 @@ function handleTeachingPower(
     const selected: TeachingOrderChoice = {
         selectedCardUid: choice.cardUid,
         selectedDefId: choice.defId,
-        selectedPower: choice.power,
+        selectedPower: choice.selectedPower,
         baseIndex: choice.baseIndex,
         revealedCards: choice.revealedCards,
     };

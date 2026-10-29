@@ -121,16 +121,10 @@ export function DiceBoxPhysicsSource({
     const values = React.useMemo(() => dice.map((die) => die.value), [dice]);
     const diceHighlightsForEngine = React.useMemo(
         () =>
-            highlightedDice
-                .map((highlight) => {
-                    const dieIndex = dice.findIndex((die) => die.id === highlight.dieId);
-                    if (dieIndex < 0) return null;
-                    return {
-                        ...highlight,
-                        dieIndex,
-                    };
-                })
-                .filter((highlight): highlight is DicePhysicsHighlightState => Boolean(highlight)),
+            highlightedDice.flatMap((highlight) => {
+                const dieIndex = dice.findIndex((die) => die.id === highlight.dieId);
+                return dieIndex < 0 ? [] : [{ ...highlight, dieIndex }];
+            }),
         [dice, highlightedDice],
     );
     const valuesKey = React.useMemo(() => values.join(','), [values]);
@@ -609,10 +603,10 @@ export function DiceBoxPhysicsSource({
             data-dice-highlight-renderer={diceHighlightsForEngine.length > 0 ? DICE_PHYSICS_HIGHLIGHT_RENDERER : 'none'}
             data-dice-highlight-count={diceHighlightsForEngine.length}
             data-dice-highlight-candidate-count={
-                diceHighlightsForEngine.filter((highlight) => highlight.variant === 'candidate').length
+                diceHighlightsForEngine.filter((highlight) => highlight?.variant === 'candidate').length
             }
             data-dice-highlight-selected-count={
-                diceHighlightsForEngine.filter((highlight) => highlight.variant === 'selected').length
+                diceHighlightsForEngine.filter((highlight) => highlight?.variant === 'selected').length
             }
             data-dice-container-size-ready={containerSizeReady ? 'true' : 'false'}
             data-dice-motion-type={motion.type}

@@ -3,6 +3,7 @@ import { createSimpleChoice, type PromptOption } from '../../../engine/systems/I
 import { registerAbility, registerAbilityProgram, registerSimpleAbility, resolveTalent } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -253,9 +254,9 @@ function buildShuffleCardIntoDeckEvents(
     reason: string,
     now: number,
     random: RandomFn,
-    expectedLocation: 'discard' | 'bases' | 'any' = 'discard',
-    source?: {
-        sourcePlayerId?: PlayerId;
+    expectedLocation: 'discard' | 'bases' | 'any',
+    source: {
+        sourcePlayerId: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
@@ -268,7 +269,7 @@ function buildShuffleCardIntoDeckEvents(
         cardUid,
         defId,
         ownerId,
-        ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+        sourcePlayerId: source.sourcePlayerId,
         ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
         ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
         ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
@@ -942,16 +943,12 @@ function canTriggerHuluwawaLittleKingKongOnTalentUsed(ctx: TriggerContext): bool
     return getLittleKingKongCopyTalentCandidates(ctx.state, ctx.playerId, ctx.triggerMinionUid).length > 0;
 }
 
-const huluwawaDestroyForCounterProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaDestroyForCounterProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         sourceMinionUid: string;
         sourceBaseIndex: number;
         targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_si_wa',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_si_wa_${huluwawaPromptCounter++}`,
@@ -997,17 +994,13 @@ const huluwawaDestroyForCounterProgram = createPromptProgram<
     },
 });
 
-const huluwawaMoveToSourceBaseProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaMoveToSourceBaseProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         title: string;
         targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
         targetBaseIndex: number;
         reason: string;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_move_to_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_move_to_source_${huluwawaPromptCounter++}`,
@@ -1053,11 +1046,7 @@ const huluwawaMoveToSourceBaseProgram = createPromptProgram<
     },
 });
 
-const huluwawaSearchCardProgram = createPromptProgram<
-    HuluwawaSearchCardContext & { grantExtraActionAfter?: boolean },
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaSearchCardProgram = createPromptProgram<HuluwawaSearchCardContext & { grantExtraActionAfter?: boolean }>({
     sourceId: 'huluwawa_search_card',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_search_card_${huluwawaPromptCounter++}`,
@@ -1113,15 +1102,11 @@ const huluwawaSearchCardProgram = createPromptProgram<
     },
 });
 
-const huluwawaWhereDoYouThinkProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaWhereDoYouThinkProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         destroyTargets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
         moveTargets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_where_do_you_think',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_where_do_you_think_${huluwawaPromptCounter++}`,
@@ -1143,7 +1128,7 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
@@ -1152,15 +1137,14 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
                     titleKey: 'ui.huluwawa_where_do_you_think_destroy_title',
                     targets: context.destroyTargets,
                     reason: 'huluwawa_where_do_you_think_destroy',
-                },
-                nextProgram: huluwawaDestroyAnyProgram,
+                }, huluwawaDestroyAnyProgram),
             };
         }
         if (selected?.choice === 'move') {
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
@@ -1169,19 +1153,14 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
                     titleKey: 'ui.huluwawa_where_do_you_think_move_title',
                     targets: context.moveTargets,
                     reason: 'huluwawa_where_do_you_think_move',
-                },
-                nextProgram: huluwawaMoveAnyPickProgram,
+                }, huluwawaMoveAnyPickProgram),
             };
         }
         return { matchState: state, events: [] };
     },
 });
 
-const huluwawaDestroyAnyProgram = createPromptProgram<
-    HuluwawaSelectMinionContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaDestroyAnyProgram = createPromptProgram<HuluwawaSelectMinionContext>({
     sourceId: 'huluwawa_destroy_any',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_destroy_any_${huluwawaPromptCounter++}`,
@@ -1217,11 +1196,7 @@ const huluwawaDestroyAnyProgram = createPromptProgram<
     },
 });
 
-const huluwawaMoveAnyPickProgram = createPromptProgram<
-    HuluwawaSelectMinionContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaMoveAnyPickProgram = createPromptProgram<HuluwawaSelectMinionContext>({
     sourceId: 'huluwawa_move_any_pick',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_move_any_pick_${huluwawaPromptCounter++}`,
@@ -1244,7 +1219,7 @@ const huluwawaMoveAnyPickProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
@@ -1257,17 +1232,12 @@ const huluwawaMoveAnyPickProgram = createPromptProgram<
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
-            },
-            nextProgram: huluwawaMoveAnyBaseProgram,
+            }, huluwawaMoveAnyBaseProgram),
         };
     },
 });
 
-const huluwawaMoveAnyBaseProgram = createPromptProgram<
-    HuluwawaSelectBaseContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaMoveAnyBaseProgram = createPromptProgram<HuluwawaSelectBaseContext>({
     sourceId: 'huluwawa_move_any_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_move_any_base_${huluwawaPromptCounter++}`,
@@ -1302,15 +1272,11 @@ const huluwawaMoveAnyBaseProgram = createPromptProgram<
     },
 });
 
-const huluwawaPangolinProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaPangolinProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         sourceBaseIndex: number;
         targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_pangolin',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_pangolin_${huluwawaPromptCounter++}`,
@@ -1353,7 +1319,7 @@ const huluwawaPangolinProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
@@ -1365,17 +1331,12 @@ const huluwawaPangolinProgram = createPromptProgram<
                 fromBaseIndex: selected.baseIndex,
                 title: '穿山甲：选择要移动到的基地',
                 titleKey: 'ui.huluwawa_pangolin_choose_base_title',
-            },
-            nextProgram: huluwawaMoveAnyBaseProgram,
+            }, huluwawaMoveAnyBaseProgram),
         };
     },
 });
 
-const huluwawaErWaPromptProgram = createPromptProgram<
-    HuluwawaErwaContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaErWaPromptProgram = createPromptProgram<HuluwawaErwaContext>({
     sourceId: 'huluwawa_er_wa',
     buildInteraction: (context) => {
         const topCards = context.topCards.map((card, index) => ({
@@ -1404,15 +1365,14 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
                     now: timestamp,
                     sourceDefId: context.sourceDefId,
                     remainingCards: context.topCards,
-                },
-                nextProgram: huluwawaErWaReorderProgram,
+                }, huluwawaErWaReorderProgram),
             };
         }
         const chosenCard = context.topCards.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
@@ -1424,7 +1384,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
@@ -1436,8 +1396,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
                     title: '二娃：选择该随从额外打出的基地',
                     titleKey: 'ui.huluwawa_er_wa_extra_minion_base_title',
                     bases,
-                },
-                nextProgram: huluwawaExtraMinionBaseProgram,
+                }, huluwawaExtraMinionBaseProgram),
             };
         }
         const actionDef = getCardDef(chosenCard.defId) as ActionCardDef | undefined;
@@ -1445,8 +1404,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: { ...context, matchState: state, playerId, now: timestamp, sourceDefId: context.sourceDefId, chosenCard, remainingCards },
-                nextProgram: huluwawaErWaReorderProgram,
+                continuation: createAbilityRuntimeContinuation({ ...context, matchState: state, playerId, now: timestamp, sourceDefId: context.sourceDefId, chosenCard, remainingCards }, huluwawaErWaReorderProgram),
             };
         }
         if (actionLikeNeedsPlayMinion(actionDef)) {
@@ -1458,7 +1416,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
@@ -1470,8 +1428,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
                     title: '二娃：选择该行动额外打出的目标随从',
                     titleKey: 'ui.huluwawa_er_wa_extra_action_minion_title',
                     targets,
-                },
-                nextProgram: huluwawaExtraActionMinionProgram,
+                }, huluwawaExtraActionMinionProgram),
             };
         }
         if (actionLikeNeedsPlayBase(actionDef) || actionDef.subtype === 'ongoing') {
@@ -1484,7 +1441,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
@@ -1496,24 +1453,18 @@ const huluwawaErWaPromptProgram = createPromptProgram<
                     title: '二娃：选择该行动额外打出的目标基地',
                     titleKey: 'ui.huluwawa_er_wa_extra_action_base_title',
                     bases,
-                },
-                nextProgram: huluwawaExtraActionBaseProgram,
+                }, huluwawaExtraActionBaseProgram),
             };
         }
         return {
             matchState: state,
             events: [],
-            context: { ...context, matchState: state, playerId, now: timestamp, sourceDefId: context.sourceDefId, chosenCard, remainingCards, playTargets: {} },
-            nextProgram: huluwawaErWaReorderProgram,
+            continuation: createAbilityRuntimeContinuation({ ...context, matchState: state, playerId, now: timestamp, sourceDefId: context.sourceDefId, chosenCard, remainingCards, playTargets: {} }, huluwawaErWaReorderProgram),
         };
     },
 });
 
-const huluwawaErWaReorderProgram = createPromptProgram<
-    HuluwawaErwaReorderContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaErWaReorderProgram = createPromptProgram<HuluwawaErwaReorderContext>({
     sourceId: 'huluwawa_er_wa_reorder',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_er_wa_reorder_${huluwawaPromptCounter++}`,
@@ -1566,18 +1517,14 @@ const huluwawaErWaReorderProgram = createPromptProgram<
     },
 });
 
-const huluwawaExtraMinionBaseProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaExtraMinionBaseProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         chosenCard: CardInstance;
         remainingCards: CardInstance[];
         prefixEvents: SmashUpEvent[];
         title: string;
         bases: Array<{ baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_extra_minion_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_extra_minion_base_${huluwawaPromptCounter++}`,
@@ -1592,29 +1539,24 @@ const huluwawaExtraMinionBaseProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 playTargets: { baseIndex: selected.baseIndex },
-            },
-            nextProgram: huluwawaErWaReorderProgram,
+            }, huluwawaErWaReorderProgram),
         };
     },
 });
 
-const huluwawaExtraActionBaseProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaExtraActionBaseProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         chosenCard: CardInstance;
         remainingCards: CardInstance[];
         prefixEvents: SmashUpEvent[];
         title: string;
         bases: Array<{ baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_extra_action_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_extra_action_base_${huluwawaPromptCounter++}`,
@@ -1629,29 +1571,24 @@ const huluwawaExtraActionBaseProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 playTargets: { targetBaseIndex: selected.baseIndex },
-            },
-            nextProgram: huluwawaErWaReorderProgram,
+            }, huluwawaErWaReorderProgram),
         };
     },
 });
 
-const huluwawaExtraActionMinionProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaExtraActionMinionProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         chosenCard: CardInstance;
         remainingCards: CardInstance[];
         prefixEvents: SmashUpEvent[];
         title: string;
         targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_extra_action_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_extra_action_minion_${huluwawaPromptCounter++}`,
@@ -1661,7 +1598,7 @@ const huluwawaExtraActionMinionProgram = createPromptProgram<
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
             sourceDefId: context.sourceDefId,
-            effectType: 'attach_action',
+            effectType: 'affect',
         }),
         { sourceId: 'huluwawa_extra_action_minion', targetType: 'minion', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
@@ -1671,7 +1608,7 @@ const huluwawaExtraActionMinionProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
@@ -1679,22 +1616,17 @@ const huluwawaExtraActionMinionProgram = createPromptProgram<
                     targetBaseIndex: selected.baseIndex,
                     targetMinionUid: selected.minionUid,
                 },
-            },
-            nextProgram: huluwawaErWaReorderProgram,
+            }, huluwawaErWaReorderProgram),
         };
     },
 });
 
-const huluwawaPurpleGoldGourdProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaPurpleGoldGourdProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         targetBaseIndex: number;
         moveTargets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
         discardActions: CardInstance[];
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_purple_gold_gourd',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_purple_gold_gourd_${huluwawaPromptCounter++}`,
@@ -1716,7 +1648,7 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
@@ -1727,8 +1659,7 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
                     targets: context.moveTargets,
                     targetBaseIndex: context.targetBaseIndex,
                     reason: 'huluwawa_purple_gold_gourd_move',
-                },
-                nextProgram: huluwawaMoveToSourceBaseProgram,
+                }, huluwawaMoveToSourceBaseProgram),
             };
         }
         if (selected?.choice === 'bottom') {
@@ -1755,15 +1686,11 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
     },
 });
 
-const huluwawaOneAtATimeTargetProgram = createPromptProgram<
-    HuluwawaPromptContext & {
+const huluwawaOneAtATimeTargetProgram = createPromptProgram<HuluwawaPromptContext & {
         sourceDefId: string;
         baseIndex: number;
         targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'huluwawa_one_at_a_time_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_one_at_a_time_target_${huluwawaPromptCounter++}`,
@@ -1802,7 +1729,7 @@ const huluwawaOneAtATimeTargetProgram = createPromptProgram<
         return {
             matchState: state,
             events: returnEvents,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId: live.owner,
@@ -1812,17 +1739,12 @@ const huluwawaOneAtATimeTargetProgram = createPromptProgram<
                 returnedMinionDefId: selected.defId,
                 returnedToPlayerId: live.owner,
                 handCandidates,
-            },
-            nextProgram: huluwawaOneAtATimePlayProgram,
+            }, huluwawaOneAtATimePlayProgram),
         };
     },
 });
 
-const huluwawaOneAtATimePlayProgram = createPromptProgram<
-    HuluwawaOneAtATimeContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const huluwawaOneAtATimePlayProgram = createPromptProgram<HuluwawaOneAtATimeContext>({
     sourceId: 'huluwawa_one_at_a_time_play',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `huluwawa_one_at_a_time_play_${huluwawaPromptCounter++}`,

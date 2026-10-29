@@ -4,10 +4,13 @@
  * 这些能力具有独特的游戏机制，包括卡牌替换、揭示顺序改变、额外印戒、条件弃牌和直接胜利。
  */
 
-import { ABILITY_IDS, FACTION_IDS } from '../ids';
+import { ABILITY_IDS } from '../ids';
 import { CARDIA_EVENTS } from '../events';
 import { abilityExecutorRegistry } from '../abilityExecutor';
+import { createFactionSelectionInteraction, getAvailableFactions } from '../interactionHandlers';
+import { registerInteractionHandler } from '../abilityInteractionHandlers';
 import type { CardiaAbilityContext } from '../abilityExecutor';
+import type { FactionType } from '../core-types';
 
 /**
  * 傀儡师（Puppeteer）- 影响力 10
@@ -88,6 +91,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.DIVINER, (ctx: CardiaAbilityContext
                 type: CARDIA_EVENTS.REVEAL_ORDER_CHANGED.type,
                 payload: {
                     revealFirstPlayerId: ctx.opponentId,
+                    sourceAbilityId: ctx.abilityId,
                     forcedPlayOrderPlayerId: ctx.opponentId,  // 新增：强制先出牌
                 },
                 timestamp: ctx.timestamp,
@@ -147,33 +151,19 @@ abilityExecutorRegistry.register(ABILITY_IDS.ELF, (ctx: CardiaAbilityContext) =>
 /**
  * 勒索者（Extortionist）- 影响力 9（II 牌组）
  * 效果：选择一个派系，如果你的对手下一张牌没有打出该派系，则在揭示那张牌后弃掉2张手牌
- * 
- * 实现：注册延迟效果，在对手下次打牌后检查派系并执行弃牌
- * TODO: 在 Task 11 实现交互系统后，让玩家选择派系
- * 当前简化版本：自动选择沼泽派系
  */
 abilityExecutorRegistry.register(ABILITY_IDS.EXTORTIONIST, (ctx: CardiaAbilityContext) => {
-    // TODO: 在 Task 11 实现交互系统后，让玩家选择派系
-    const selectedFaction = FACTION_IDS.SWAMP; // 简化版本：自动选择沼泽派系
-    
+    const interaction = createFactionSelectionInteraction(
+        `${ctx.abilityId}_${ctx.timestamp}`,
+        ctx.abilityId,
+        ctx.playerId,
+        '选择派系',
+        '如果对手下一张牌不是所选派系，则在揭示后弃掉 2 张手牌'
+    );
+
     return {
-        events: [
-            {
-                type: CARDIA_EVENTS.DELAYED_EFFECT_REGISTERED.type,
-                payload: {
-                    effectId: `extortionist_${ctx.cardId}`,
-                    abilityId: ABILITY_IDS.EXTORTIONIST,
-                    playerId: ctx.playerId,
-                    targetPlayerId: ctx.opponentId,
-                    trigger: 'onOpponentPlayCard',
-                    data: {
-                        requiredFaction: selectedFaction,
-                        discardCount: 2,
-                    },
-                },
-                timestamp: ctx.timestamp,
-            }
-        ],
+        events: [],
+        interaction,
     };
 });
 
@@ -183,13 +173,13 @@ abilityExecutorRegistry.register(ABILITY_IDS.EXTORTIONIST, (ctx: CardiaAbilityCo
 export function registerSpecialInteractionHandlers(): void {
     // 勒索者：选择派系后注册延迟效果
     registerInteractionHandler(ABILITY_IDS.EXTORTIONIST, (state, playerId, value, _interactionData, _random, timestamp) => {
-        const selectedFaction = (value as { faction?: string })?.faction;
-        if (!selectedFaction) {
-            console.error('[Extortionist] No faction in interaction value');
+        const selectedFaction = (value as { faction?: FactionType })?.faction;
+        if (!selectedFaction || !getAvailableFactions().includes(selectedFaction)) {
             return { state, events: [] };
         }
-        
-        const opponentId = playerId === '0' ? '1' : '0';
+
+        const opponentId = state.core.playerOrder.find(id => id !== playerId);
+        if (!opponentId) return { state, events: [] };
         
         return {
             state,
@@ -206,6 +196,7 @@ export function registerSpecialInteractionHandlers(): void {
                             requiredFaction: selectedFaction,
                             discardCount: 2,
                         },
+                        timestamp,
                     },
                     timestamp,
                 }
@@ -213,6 +204,3 @@ export function registerSpecialInteractionHandlers(): void {
         };
     });
 }
-
-// 导入必要的类型和函数
-import { registerInteractionHandler } from '../abilityInteractionHandlers';

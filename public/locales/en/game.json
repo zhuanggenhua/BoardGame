@@ -120,6 +120,8 @@
       "tempLeaveHint": "Disconnect but keep seat",
       "forceExit": "Force Clear",
       "forceExitHint": "Clear local data (room may still exist on server)",
+      "leaveSpectate": "Stop spectating",
+      "leaveSpectateHint": "Return to lobby without affecting the match",
       "backToLobby": "Back to Lobby",
       "backToLobbyHint": "Leave room completely",
       "social": "Friends",
@@ -196,7 +198,8 @@
       "errors": {
         "loginRequired": "Login for better feedback tracking experience",
         "apiDisabled": "The dev:lite mode does not start the API service, so feedback submission is disabled. Your draft stays on this device.",
-        "submitFailed": "Submission failed. Please try again later."
+        "submitFailed": "Submission failed. Please try again later.",
+        "replayCaptureFailed": "Feedback was submitted, but the server could not save the full match state."
       },
       "type": {
         "bug": "Bug",
@@ -523,6 +526,7 @@
       "button": "🔄 Reset Game",
       "newRoom": "🆕 New Room",
       "creating": "Creating...",
+      "confirmDestroyCurrentRoom": "The current match will be left and destroyed after the new room is created. Continue?",
       "linkCopied": "New room link copied! Please share with your opponent.",
       "shareLinkManually": "Please copy and share this link with your opponent:",
       "hintTitle": "💡 Tip",

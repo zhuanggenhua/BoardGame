@@ -58,7 +58,7 @@ export function buildOngoingDetachedEvent(params: {
     ownerId: PlayerId;
     reason: string;
     isDestruction?: boolean;
-    now?: number;
+    now: number;
     clydeReturnToHand?: boolean;
     destination?: 'discard' | 'hand';
     targetBaseIndex?: number;

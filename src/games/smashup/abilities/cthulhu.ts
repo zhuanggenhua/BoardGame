@@ -4,7 +4,8 @@
  * 主题：疯狂卡操控、弃牌堆回收、额外行动
  */
 
-import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
+import {
+ registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { SU_EVENTS } from '../domain/types';
 import { MADNESS_CARD_DEF_ID } from '../domain/types';
@@ -15,6 +16,7 @@ import type {
     BaseClearedEvent,
     BaseReplacedEvent,
     SmashUpCore,
+    CardToDeckBottomEvent,
 } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { matchesDefId } from '../domain/utils';
@@ -31,6 +33,8 @@ import {
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -327,7 +331,7 @@ export function registerMadnessAbilities(): void {
     registerAbilityProgram('special_madness', 'onPlay', { program: specialMadnessProgram });
 }
 
-const cthulhuRecruitByForcePromptProgram = createPromptProgram<CthulhuPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuRecruitByForcePromptProgram = createPromptProgram<CthulhuPromptContext>({
     sourceId: 'cthulhu_recruit_by_force',
     buildInteraction: (context) => {
         const options = buildRecruitByForceOptions(context.matchState.core, context.playerId);
@@ -384,12 +388,11 @@ const cthulhuRecruitByForceProgram = createEffectProgram<AbilityContext, SmashUp
     }
     return {
         events: [],
-        context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext,
-        nextProgram: cthulhuRecruitByForcePromptProgram,
+        continuation: createAbilityRuntimeContinuation({ matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext, cthulhuRecruitByForcePromptProgram),
     };
 });
 
-const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuItBeginsAgainPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuItBeginsAgainPromptContext>({
     sourceId: 'cthulhu_it_begins_again',
     buildInteraction: (context) => {
         const options = buildItBeginsAgainOptions(
@@ -465,13 +468,12 @@ const cthulhuItBeginsAgainProgram = createEffectProgram<AbilityContext, SmashUpC
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             sourceCardUid: ctx.cardUid,
-        } satisfies CthulhuItBeginsAgainPromptContext,
-        nextProgram: cthulhuItBeginsAgainPromptProgram,
+        } satisfies CthulhuItBeginsAgainPromptContext, cthulhuItBeginsAgainPromptProgram),
     };
 });
 
@@ -514,7 +516,7 @@ function cthulhuSealIsBroken(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const cthulhuCorruptionPromptProgram = createPromptProgram<CthulhuPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuCorruptionPromptProgram = createPromptProgram<CthulhuPromptContext>({
     sourceId: 'cthulhu_corruption',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cthulhu_corruption_${context.now}`,
@@ -566,8 +568,7 @@ const cthulhuCorruptionProgram = createEffectProgram<AbilityContext, SmashUpCore
     }
     return {
         events,
-        context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext,
-        nextProgram: cthulhuCorruptionPromptProgram,
+        continuation: createAbilityRuntimeContinuation({ matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext, cthulhuCorruptionPromptProgram),
     };
 });
 
@@ -603,7 +604,7 @@ const cthulhuMadnessUnleashedAfterDiscardProgram = createEffectProgram<
     return { events };
 });
 
-const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessUnleashedPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessUnleashedPromptContext>({
     sourceId: 'cthulhu_madness_unleashed',
     buildInteraction: (context) => {
         const options = buildMadnessUnleashedOptions(
@@ -646,14 +647,13 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
         };
         return {
             events: [discardEvent],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 discardCount: madnessUids.length,
                 random: args.random,
-            } satisfies CthulhuMadnessUnleashedAfterDiscardContext,
-            nextProgram: cthulhuMadnessUnleashedAfterDiscardProgram,
+            } satisfies CthulhuMadnessUnleashedAfterDiscardContext, cthulhuMadnessUnleashedAfterDiscardProgram),
         };
     },
 });
@@ -665,13 +665,12 @@ const cthulhuMadnessUnleashedProgram = createEffectProgram<AbilityContext, Smash
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             sourceCardUid: ctx.cardUid,
-        } satisfies CthulhuMadnessUnleashedPromptContext,
-        nextProgram: cthulhuMadnessUnleashedPromptProgram,
+        } satisfies CthulhuMadnessUnleashedPromptContext, cthulhuMadnessUnleashedPromptProgram),
     };
 });
 
@@ -802,7 +801,6 @@ function buildChosenPromptOptions(
                 controller: chosen.controller,
             },
             displayMode: 'button' as const,
-            baseDefId: core.bases[chosen.baseIndex]?.defId,
         },
         {
             id: 'no',
@@ -810,12 +808,11 @@ function buildChosenPromptOptions(
             labelKey: 'ui.cthulhu_chosen_confirm_no_option',
             value: { activate: false },
             displayMode: 'button' as const,
-            baseDefId: core.bases[chosen.baseIndex]?.defId,
         },
     ];
 }
 
-const cthulhuChosenConfirmPromptProgram = createPromptProgram<CthulhuChosenPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuChosenConfirmPromptProgram: AbilityProgram<CthulhuChosenPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<CthulhuChosenPromptContext>({
     sourceId: 'cthulhu_chosen_confirm',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cthulhu_chosen_confirm_${context.chosen.uid}_${context.now}`,
@@ -854,13 +851,12 @@ const cthulhuChosenConfirmPromptProgram = createPromptProgram<CthulhuChosenPromp
         const [nextChosen, ...rest] = context.remaining;
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 now: timestamp,
                 chosen: nextChosen,
                 remaining: rest,
-            } satisfies CthulhuChosenPromptContext,
-            nextProgram: cthulhuChosenConfirmPromptProgram,
+            } satisfies CthulhuChosenPromptContext, cthulhuChosenConfirmPromptProgram),
         };
     },
 });
@@ -997,7 +993,7 @@ function cthulhuFurtheringTheCauseTrigger(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
-const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptContext, SmashUpCore, SmashUpEvent>({
+const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptContext>({
     sourceId: 'special_madness',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `special_madness_${context.now}`,
@@ -1042,16 +1038,15 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
 
 const specialMadnessProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
     events: [],
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
         cardUid: ctx.cardUid,
-    } satisfies SpecialMadnessPromptContext,
-    nextProgram: specialMadnessPromptProgram,
+    } satisfies SpecialMadnessPromptContext, specialMadnessPromptProgram),
 }));
 
-const cthulhuStarSpawnPromptProgram = createPromptProgram<StarSpawnPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuStarSpawnPromptProgram = createPromptProgram<StarSpawnPromptContext>({
     sourceId: 'cthulhu_star_spawn',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cthulhu_star_spawn_${context.now}`,
@@ -1087,17 +1082,16 @@ const cthulhuStarSpawnProgram = createEffectProgram<AbilityContext, SmashUpCore,
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             madnessUid: madnessCard.uid,
-        } satisfies StarSpawnPromptContext,
-        nextProgram: cthulhuStarSpawnPromptProgram,
+        } satisfies StarSpawnPromptContext, cthulhuStarSpawnPromptProgram),
     };
 });
 
-const cthulhuServitorPromptProgram = createPromptProgram<CthulhuPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuServitorPromptProgram = createPromptProgram<CthulhuPromptContext>({
     sourceId: 'cthulhu_servitor',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1169,7 +1163,6 @@ const cthulhuServitorProgram = createEffectProgram<AbilityContext, SmashUpCore, 
     }
     return {
         events,
-        context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext,
-        nextProgram: cthulhuServitorPromptProgram,
+        continuation: createAbilityRuntimeContinuation({ matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext, cthulhuServitorPromptProgram),
     };
 });

@@ -4,6 +4,7 @@
 
 import { defineEvents } from '../../../lib/audio/defineEvents';
 import type { GameEvent, PlayerId } from '../../../engine/types';
+import type { ModifierType } from '../../../engine/primitives/modifier';
 import type { CardPreviewRef } from '../../../core';
 import type { DtResponseWindowType } from './core-types';
 import type {
@@ -19,8 +20,8 @@ import type {
     BonusDieInfo,
     PendingSeatSwapRequest,
     TurnPhase,
-    DamageOrigin,
 } from './core-types';
+import type { DamageOrigin } from './tokenTypes';
 import type { AbilityDef } from './combat';
 import type { DoctorStrangeEvent } from './doctorStrange/types';
 
@@ -172,7 +173,7 @@ export interface DiceRolledEvent extends GameEvent<'DICE_ROLLED'> {
 export interface BonusDieRolledEvent extends GameEvent<'BONUS_DIE_ROLLED'> {
     payload: {
         value: number;
-        face: DieFace;
+        face: BonusDieInfo['face'];
         playerId: PlayerId;
         /** 效果目标玩家（若与 playerId 不同，则双方都显示特写） */
         targetPlayerId?: PlayerId;
@@ -286,7 +287,7 @@ export interface AbilityActivatedEvent extends GameEvent<'ABILITY_ACTIVATED'> {
 /** 伤害修改器（用于 ActionLog 展示） */
 export interface DamageModifier {
     /** 修改来源类型 */
-    type: 'defense' | 'token' | 'shield' | 'status';
+    type: 'defense' | 'token' | 'shield' | 'status' | ModifierType;
     /** 修改量（正数为增伤，负数为减伤） */
     value: number;
     /** 来源 ID（技能 ID、Token ID 等） */
@@ -326,6 +327,8 @@ export interface DamageBreakdown {
 
 /** 伤害事件 */
 export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
+    /** 与一次状态施加共同产生的事件组；该状态被防止时整组不提交。 */
+    statusApplicationId?: string;
     payload: {
         targetId: PlayerId;
         amount: number;
@@ -390,6 +393,7 @@ export interface CompanionHealthChangedEvent extends GameEvent<'COMPANION_HEALTH
 
 /** 状态施加事件 */
 export interface StatusAppliedEvent extends GameEvent<'STATUS_APPLIED'> {
+    statusApplicationId?: string;
     payload: {
         targetId: PlayerId;
         statusId: string;
@@ -401,6 +405,7 @@ export interface StatusAppliedEvent extends GameEvent<'STATUS_APPLIED'> {
 
 /** 状态移除事件 */
 export interface StatusRemovedEvent extends GameEvent<'STATUS_REMOVED'> {
+    statusApplicationId?: string;
     payload: {
         targetId: PlayerId;
         statusId: string;
@@ -754,6 +759,13 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             labelKey?: string;
             /** 候选卡牌的正式预览；仅用于展示，结算仍消费 value/customId。 */
             previewRef?: CardPreviewRef;
+            /** 规则对象候选的类型；供 UI 选择器复用真实对象交互，不改变结算值。 */
+            choiceKind?: 'card' | 'player' | 'status' | 'skip';
+            /** 候选卡牌真实 ID 与来源区；只用于匹配原选择器的精确候选。 */
+            cardId?: string;
+            cardSourceZone?: 'hand' | 'deck' | 'discard' | 'preparedSpells';
+            /** 候选状态真实 ID。 */
+            candidateStatusId?: string;
             /** 效果骰候选本体；只显示已投出的结果，结算仍由选项 value 负责。 */
             dicePreview?: { characterId: CharacterId; dice: Array<{ index: number; value: number }> };
             /** labelKey 对应的插值参数 */
@@ -889,6 +901,7 @@ export interface RollLimitChangedEvent extends GameEvent<'ROLL_LIMIT_CHANGED'> {
 export interface InteractionRequestedEvent extends GameEvent<'INTERACTION_REQUESTED'> {
     payload: {
         interaction: InteractionDescriptor;
+        preDefenseContinuation?: { nextEffectIndex: number; sourceAbilityId: string };
     };
 }
 

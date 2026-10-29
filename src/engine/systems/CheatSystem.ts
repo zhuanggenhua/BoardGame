@@ -211,6 +211,10 @@ export function createCheatSystem<TCore>(
         id: SYSTEM_IDS.CHEAT,
         name: 'Cheat 系统',
         priority: 1, // 最高优先级，确保作弊命令最先处理
+        adminDebugCommandTypes: [
+            ...Object.values(CHEAT_COMMANDS),
+            ...Object.keys(modifier?.customCommands ?? {}),
+        ],
 
         beforeCommand: (ctx): HookResult<TCore> | void => {
             const { state, command } = ctx;

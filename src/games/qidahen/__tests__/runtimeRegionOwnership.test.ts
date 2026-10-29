@@ -27,7 +27,7 @@ describe('qidahen runtime region ownership', () => {
         });
     });
 
-    it('共享印刷区会生成独立的运行时锚点，而不是继续共用同一个中心点', async () => {
+    it('编辑器锚点投影保持在当前各自土地内', async () => {
         const { data, info } = await sharp(REGION_MASK_PATH).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
         const printedRegionIdByPixel: Array<string | null> = new Array(info.width * info.height).fill(null);
 
@@ -60,7 +60,7 @@ describe('qidahen runtime region ownership', () => {
         }
     });
 
-    it('共享印刷区的运行时像素归属会把每个子区域都实际拆出来', async () => {
+    it('独立印刷土地的运行时像素归属保持各自身份', async () => {
         const { data, info } = await sharp(REGION_MASK_PATH).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
         const ownership = buildQidahenRuntimeRegionIdByPixel(
             new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),

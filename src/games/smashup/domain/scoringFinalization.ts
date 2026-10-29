@@ -9,6 +9,7 @@ import type {
     TriggerQueuedEvent,
 } from './types';
 import { SU_EVENTS } from './types';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import { collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
 import { reduce } from './reducer';
@@ -60,9 +61,7 @@ function materializeScoringFrameDeferredEvent(
 function createReactionQueueFallbackState(core: SmashUpCore): MatchState<SmashUpCore> {
     return {
         core,
-        sys: {
-            interaction: { current: undefined, queue: [] },
-        } as MatchState<SmashUpCore>['sys'],
+        sys: createInitialSystemState([], []),
     };
 }
 

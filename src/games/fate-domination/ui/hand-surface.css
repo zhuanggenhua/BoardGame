@@ -1,9 +1,9 @@
 .fd-runtime-table {
-    --fd-hand-card-width: 120px;
+    --fd-hand-card-width: clamp(140px, 9.4vw, 240px);
     --fd-hand-floor: max(8px, env(safe-area-inset-bottom));
 }
 .fd-runtime-hand-grid {
-    --fd-hand-hud-clearance: 146px;
+    --fd-hand-hud-clearance: 244px;
     position: absolute;
     z-index: 20;
     left: calc(var(--fd-hud-inline) + var(--fd-hand-hud-clearance));
@@ -119,6 +119,8 @@
 }
 
 .fd-play-power { color: #f5dc91; font-size: 18px; font-weight: 800; line-height: 1.35; }
+/* 用户要求放大可选手牌与技能，不改变上方已出/暂存排的原有尺寸。 */
+.fd-played-cards { --fd-hand-card-width: 120px; }
 .fd-played-cards.fd-hand-parallel { justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
 .fd-hand-parallel { justify-content: safe center; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
 .fd-hand-parallel > .fd-runtime-card { transition: translate .18s ease, filter .18s ease; }
@@ -153,11 +155,12 @@
 .fd-riding-controls button:focus-visible { outline: 2px solid #e3ca7b; outline-offset: 2px; }
 
 @media (max-width: 1023px) {
-    .fd-runtime-table { --fd-hand-card-width: 88px; }
+    .fd-runtime-table { --fd-hand-card-width: 108px; }
     .fd-runtime-hand-grid {
-        --fd-hand-hud-clearance: 146px;
+        --fd-hand-hud-clearance: 244px;
         gap: clamp(24px, 4vw, 36px);
     }
+    .fd-played-cards { --fd-hand-card-width: 88px; }
     .fd-skill-hand-zone { max-width: 36vw; }
     .fd-runtime-card-row { gap: 6px; }
     .fd-runtime-play-area { gap: 8px; }
@@ -171,9 +174,6 @@
 @media (max-width: 1023px) and (orientation: landscape) {
     .fd-runtime-hand-grid { bottom: var(--fd-hand-floor); }
 }
-
-/* 推进与技能共享实际承载，不再从另一处猜测卡高。 */
-.fd-skill-hand-zone > .fd-phase-control { bottom:calc(100% + 8px); right:64px; pointer-events:auto; }
 
 @media (prefers-reduced-motion: reduce) {
     .fd-hand-parallel > .fd-runtime-card { transition: none; }

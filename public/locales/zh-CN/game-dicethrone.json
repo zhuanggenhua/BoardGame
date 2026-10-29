@@ -2008,6 +2008,7 @@
   },
   "interaction": {
     "waitingOpponent": "等待对手操作…",
+    "clearSelection": "清空选择",
     "selectDie": "选择{{count}}颗骰子",
     "modifyDie": "修改骰子数值",
     "selectStatus": "选择要移除的状态",
@@ -2048,6 +2049,7 @@
     "hint_copy_step2": "选择要设为{{value}}的目标骰子",
     "hint_done": "完成",
     "hint_choose_value": "选择目标点数",
+    "hint_bonus_settlement": "确认效果骰结果并继续结算",
     "set_value": "设为{{value}}",
     "hint_group_reroll": "选择要一起重掷的骰子，或确认保留当前结果",
     "hint_group_reroll_selected": "已选择{{count}}颗骰子，点击重掷；也可确认保留当前结果",
@@ -3762,9 +3764,9 @@
     },
     "going-forward": {
       "name": "一往无前",
-      "description": "4 个手里剑：投掷 2 骰并造成骰值总和伤害。",
+      "description": "4 个手里剑：投掷 2 骰并造成骰值总和伤害；若最终点数和小于等于 6，本次攻击变为不可防御。",
       "effects": {
-        "roll2DiceDamageTotal": "投掷 2 骰并造成等于点数和的伤害",
+        "roll2DiceDamageTotal": "投掷 2 骰并造成等于点数和的伤害；若最终点数和小于等于 6，本次攻击变为不可防御",
         "resolveRolledDamage": "按投掷结果造成伤害"
       }
     },
@@ -7248,7 +7250,20 @@
     "skip": "跳过",
     "cast": "选择要施放的法术",
     "prepare": "选择要准备的法术",
+    "prepareFromDiscard": "从弃牌堆选择1个法术并准备",
+    "prepareFromDeckTop": "从牌库顶5张中选择至多2个法术",
+    "prepareFromHand": "从手牌选择1个法术并准备",
     "target": "选择这名玩家",
+    "selectOpponentToTakeOneDamage": "选择受到1点伤害的对手",
+    "selectOpponentToTakeThreeDamage": "选择受到3点伤害的对手",
+    "selectOpponentToTakeDamage": "选择受到伤害的对手",
+    "selectHeroToHealOne": "选择恢复1点生命的英雄",
+    "selectHeroToHealThree": "选择恢复3点生命的英雄",
+    "selectHeroToHeal": "选择恢复生命的英雄",
+    "selectPlayerToGainDejaVu": "选择获得即视感的玩家",
+    "selectOpponentToReceiveCrimsonBands": "选择施加深红系带的对手",
+    "selectOpponentToLoseOneCp": "选择失去1点施法值的对手",
+    "selectPlayerToGainCp": "选择获得施法值的玩家",
     "removeStatus": "移除状态：{{status}}",
     "removeStatusTitle": "选择要移除的状态",
     "incomeNormal": "不使用预感：抽1张牌",

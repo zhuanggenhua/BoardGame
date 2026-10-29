@@ -95,6 +95,33 @@ describe('runAuthoritativeCommandSuccessEffects', () => {
         expect(broadcastState).not.toHaveBeenCalled();
     });
 
+    it('管理员调试命令跳过训练样本及其状态快照构建', async () => {
+        const match = createMatch();
+        const recordDecisionSample = vi.fn();
+        const buildPostTrainingState = vi.fn(() => ({ id: 'after' }));
+
+        await runAuthoritativeCommandSuccessEffects({
+            match,
+            playerID: '__admin_debug__',
+            commandType: 'SYS_CHEAT_SET_HEALTH',
+            payload: { health: 99 },
+            stateIdBefore: 1,
+            stateIdAfter: 2,
+            preTrainingState: { id: 'before' },
+            buildPostTrainingState,
+            gameOver: undefined,
+            captureTrainingData: false,
+            trainingDataCapture: { recordDecisionSample },
+            reportOnlineAiRecoveryFeedback: vi.fn(),
+            broadcastState: vi.fn(),
+            clearOnlineAiCircuitBreaker: vi.fn(),
+            persistMetadata: vi.fn(),
+        });
+
+        expect(recordDecisionSample).not.toHaveBeenCalled();
+        expect(buildPostTrainingState).not.toHaveBeenCalled();
+    });
+
     it('首次 gameover 时更新 metadata、清理在线 AI circuit 并触发 gameover 回调', async () => {
         const match = createMatch();
         const gameOver = { winner: '0' };

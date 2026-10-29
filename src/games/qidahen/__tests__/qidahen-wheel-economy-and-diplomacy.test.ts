@@ -30,7 +30,7 @@ it('轮盘进入开垦时会给己方区域增加人口并保留摘要', () => {
 
         expect(next.actionWheelPosition).toBe('wheel-reclaim');
         expect(next.regions.find((region) => region.id === 'song-jin')?.population).toBe(3);
-        expect(next.lastSeasonSummary?.title).toBe('轮盘开垦');
+        expect(next.lastSeasonSummary?.title).toBe('开垦');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('皮岛');
     });
 
@@ -50,7 +50,7 @@ it('轮盘进入军屯时会给己方区域加兵并摸牌', () => {
         expect(next.factions.ming.handCount).toBe(5);
         expect(factionHandCards(next, 'ming')).toHaveLength(5);
         expect(next.drawPileCount).toBe(18);
-        expect(next.lastSeasonSummary?.title).toBe('轮盘军屯');
+        expect(next.lastSeasonSummary?.title).toBe('军屯');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('获得 2 张手牌');
     });
 

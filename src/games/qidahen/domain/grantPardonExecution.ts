@@ -66,6 +66,7 @@ export const resolveQidahenGrantPardonExecution = (
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const sourceToken = state.mapTokens.find((token) => token.id === choice?.sourceTokenId);
     const selectedPiece = state.pieces.find((piece) => piece.id === choice?.sourcePieceId);
+    const selectedPieceLocation = selectedPiece?.location;
     const grantPardonSourceRegion = runtimeRegions.find((region) => (
         region.id === choice?.sourceRegionId
         && choice?.sourceFactionId !== executorFactionId
@@ -85,7 +86,10 @@ export const resolveQidahenGrantPardonExecution = (
         )) ?? null
         : null;
 
-    if (!grantPardonSourceRegion || !grantPardonDestinationRegion) {
+    if (!choice || !selectedPiece
+        || (selectedPieceLocation !== 'field' && selectedPieceLocation !== 'city')
+        || !grantPardonSourceRegion
+        || !grantPardonDestinationRegion) {
         return {
             factions,
             lastSeasonSummary: null,
@@ -94,8 +98,8 @@ export const resolveQidahenGrantPardonExecution = (
         };
     }
 
-    const sourcePiece = selectedPiece!;
-    const sourceFactionId = choice!.sourceFactionId;
+    const sourcePiece = selectedPiece;
+    const sourceFactionId = choice.sourceFactionId;
     const sourceBefore = getNonSiegedCityActionSourceSnapshot(grantPardonSourceRegion).troops;
     const destinationBefore = getNonSiegedCityActionSourceSnapshot(grantPardonDestinationRegion).troops;
     const movedTroopStack = {
@@ -112,7 +116,7 @@ export const resolveQidahenGrantPardonExecution = (
     const removedSourceRegion = dependencies.removeSelectedTroopFromRegion(
         grantPardonSourceRegion,
         sourcePiece.id,
-        sourcePiece.location,
+        selectedPieceLocation,
         `${grantPardonSourceRegion.name}有 1 个部队经赐印招安转出。`,
     );
     if (!removedSourceRegion) {

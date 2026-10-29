@@ -201,7 +201,7 @@ describe('卡牌系统', () => {
     });
 
     describe('防御瞬发牌限制', () => {
-        it('下次不算不能在主阶段预先打出', () => {
+        it('下次一定作为投掷阶段行动牌不能在主要阶段打出', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
                 name: '下次不算需要待结算伤害',
@@ -210,7 +210,7 @@ describe('卡牌系统', () => {
                     cmd('PLAY_CARD', '0', { cardId: 'card-next-time' }),
                 ],
                 expect: {
-                    expectError: { command: 'PLAY_CARD', error: 'requirePendingDamage' },
+                    expectError: { command: 'PLAY_CARD', error: 'wrongPhaseForRoll' },
                     turnPhase: 'main1',
                 },
             });
@@ -328,7 +328,7 @@ describe('卡牌系统', () => {
             expect(afterResolved.pendingAttack).toBeNull();
         });
 
-        it('不可防御伤害仍应给防御方打出下次不算的受伤前时机', () => {
+        it('不可防御攻击进入主要阶段后不能再打出投掷阶段行动牌下次一定', () => {
             const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 1]));
             const result = runner.run({
                 name: '影步不可防御伤害允许下次不算响应',
@@ -352,14 +352,14 @@ describe('卡牌系统', () => {
                     cmd('SELECT_ABILITY', '0', { abilityId: 'shadow-step' }),
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('PLAY_CARD', '1', { cardId: 'card-next-time' }),
-                    cmd('SKIP_TOKEN_RESPONSE', '1'),
                 ],
                 expect: {
+                    expectError: { command: 'PLAY_CARD', error: 'wrongPhaseForRoll' },
                     players: {
                         '1': {
-                            hp: INITIAL_HEALTH,
-                            handSize: 0,
-                            discardSize: 1,
+                            hp: INITIAL_HEALTH - 6,
+                            handSize: 1,
+                            discardSize: 0,
                         },
                     },
                 },

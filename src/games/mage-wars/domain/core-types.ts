@@ -109,11 +109,11 @@ export interface MageWarsArenaObjectState {
         nextMeleeUnavoidable?: boolean;
         battleFuryRoundNumber?: number;
         battleFuryExtraAttackAvailable?: boolean;
-        banished?: {
-            remainingTokens: number;
-            returnToZoneId: ArenaZoneId;
-            sourceSpellCardId: number;
-        };
+    };
+    banished?: {
+        remainingTokens: number;
+        returnToZoneId: ArenaZoneId;
+        sourceSpellCardId: number;
     };
     statusTokens: Partial<Record<StatusTokenId, number>>;
     typeLine?: string;

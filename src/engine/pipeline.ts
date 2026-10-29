@@ -80,15 +80,21 @@ function applyGameoverCheck<TCore>(
 ): MatchState<TCore> {
     if (!domain.isGameOver) return state;
     const result = domain.isGameOver(state.core);
+    const closeTutorial = Boolean(
+        result
+        && state.sys.tutorial?.active
+        && state.sys.tutorial.manifestCloseOnGameOver,
+    );
     // 仅在状态变化时更新（避免无意义的对象创建）
-    if (result === state.sys.gameover) return state;
-    if (result && !state.sys.gameover) {
-        return { ...state, sys: { ...state.sys, gameover: result } };
-    }
-    if (!result && state.sys.gameover) {
-        return { ...state, sys: { ...state.sys, gameover: undefined } };
-    }
-    return { ...state, sys: { ...state.sys, gameover: result } };
+    if (result === state.sys.gameover && !closeTutorial) return state;
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            gameover: result ?? undefined,
+            ...(closeTutorial ? { tutorial: { ...DEFAULT_TUTORIAL_STATE } } : {}),
+        },
+    };
 }
 
 // ============================================================================

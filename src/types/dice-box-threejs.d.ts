@@ -90,66 +90,17 @@ declare module '@3d-dice/dice-box-threejs' {
         id?: number;
         shape: string;
         notation: { type: string };
-        geometry: {
-            groups?: Array<{
-                start?: number;
-                count?: number;
-                materialIndex: number;
-            }>;
-            clone?: () => DiceBoxDie['geometry'];
-            elementsNeedUpdate?: boolean;
-            getAttribute?: (name: string) => {
-                array: ArrayLike<number>;
-            };
-            index?: {
-                array: ArrayLike<number>;
-            } | null;
-            boundingBox?: {
-                min: {
-                    x: number;
-                    y: number;
-                    z: number;
-                    clone: () => {
-                        x: number;
-                        y: number;
-                        z: number;
-                        set: (x: number, y: number, z: number) => unknown;
-                        applyMatrix4: (matrix: unknown) => unknown;
-                        project: (camera: unknown) => unknown;
-                    };
-                };
-                max: {
-                    x: number;
-                    y: number;
-                    z: number;
-                };
-            };
-            computeBoundingBox?: () => void;
-        };
-        material: DiceBoxMaterialInstance | DiceBoxMaterialInstance[];
-        matrixWorld: unknown;
-        position: {
-            x: number;
-            y: number;
-            z: number;
-            set?: (x: number, y: number, z: number) => unknown;
-            clone: () => {
-                project: (camera: unknown) => { x: number; y: number; z: number };
-            };
-        };
-        rotation: {
-            x: number;
-            y: number;
-            z: number;
-        };
-        quaternion?: {
-            x?: number;
-            y?: number;
-            z?: number;
-            w?: number;
-            set?: (x: number, y: number, z: number, w: number) => unknown;
-            copy?: (value: { x?: number; y?: number; z?: number; w?: number }) => unknown;
-        };
+        geometry: import('three').BufferGeometry;
+        material:
+            | DiceBoxMaterialInstance
+            | (DiceBoxMaterialInstance & import('three').Material)
+            | DiceBoxMaterialInstance[]
+            | (DiceBoxMaterialInstance & import('three').Material)[];
+        matrixWorld: import('three').Matrix4;
+        position: import('three').Vector3;
+        rotation: import('three').Euler;
+        quaternion: import('three').Quaternion;
+        scale: import('three').Vector3;
         result: DiceValueRecord[];
         body?: {
             velocity?: {
@@ -182,7 +133,8 @@ declare module '@3d-dice/dice-box-threejs' {
         };
         getLastValue: () => DiceValueRecord;
         storeRolledValue: (reason?: string) => void;
-        updateMatrixWorld?: (force?: boolean) => void;
+        updateMatrixWorld: (force?: boolean) => void;
+        clone: (recursive?: boolean) => DiceBoxDie;
     }
 
     export interface DiceBoxSceneLike {
@@ -203,16 +155,7 @@ declare module '@3d-dice/dice-box-threejs' {
         updateMatrixWorld?: (force?: boolean) => void;
     }
 
-    export interface DiceBoxCameraLike {
-        fov?: number;
-        aspect?: number;
-        zoom?: number;
-        position?: { x?: number; y?: number; z?: number };
-        near?: number;
-        far?: number;
-        updateProjectionMatrix?: () => void;
-        updateMatrixWorld?: (force?: boolean) => void;
-    }
+    export type DiceBoxCameraLike = import('three').PerspectiveCamera;
 
     export interface DiceBoxRendererLike {
         domElement: HTMLCanvasElement;

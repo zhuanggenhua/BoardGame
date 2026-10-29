@@ -26,19 +26,28 @@
 .platform-profile-stats dd { font-weight: 800; }
 .platform-profile-login { padding: 32px; }
 @media (max-width: 1023px) {
-    .platform-profile-backdrop { padding: 100px 0 0; background: #fff; }
-    .platform-profile-background { bottom: auto; height: 120px; }
+    .platform-profile-backdrop { padding: 48px 0 0; background: #fff; }
+    .platform-profile-background { bottom: auto; height: 72px; }
     .platform-profile-background img { object-position: center 30%; }
-    .platform-profile { display: flex; flex-direction: column; width: 100%; padding: 16px; margin: 0; border: 0; box-shadow: none; gap: 16px; }
+    .platform-profile { display: flex; flex-direction: column; width: 100%; padding: 16px 16px calc(80px + env(safe-area-inset-bottom)); margin: 0; border: 0; box-shadow: none; gap: 12px; }
     .platform-profile-avatar { width: 64px; height: 64px; font-size: 28px; box-shadow: 4px 4px #000; }
     .platform-profile h1 { font-size: 24px; }
     .platform-profile h2 { font-size: 18px; }
     .platform-profile-stats { order: 1; padding: 0; border-left: 0; border-bottom: 0; }
-    .platform-profile-stats > button { margin-bottom: 12px; }
-    .platform-profile-stats dl { display: flex; gap: 16px; }
-    .platform-profile-stats dl > div { flex: 1; flex-direction: column; gap: 6px; border: 0; }
-    .platform-profile-tabs { order: 2; }
+    .platform-profile-stats > button { margin-bottom: 8px; width: 100%; }
+    .platform-profile-stats dl { display: flex; gap: 8px; }
+    .platform-profile-stats dl > div { flex: 1; flex-direction: column; gap: 4px; padding: 8px 0; border: 0; min-width: 0; }
+    .platform-profile-stats dt { font-size: 12px; overflow-wrap: anywhere; }
+    .platform-profile-stats dd { font-size: 16px; }
+    .platform-profile-tabs { order: 2; position: sticky; top: 0; z-index: 4; background: #fff; padding-top: 4px; gap: 4px; }
+    .platform-profile .platform-profile-tabs button { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 8px 4px; font-size: 13px; }
+    .platform-profile .creator-heading h2 {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+        clip: rect(0 0 0 0); clip-path: inset(50%); border: 0; white-space: nowrap;
+    }
+    .platform-profile .creator-heading { position: relative; margin-bottom: 12px; }
     .platform-profile-feed { order: 3; }
+    .platform-external-history-row { flex-direction: column; align-items: flex-start; }
 }
 
 @media (max-width:1023px) {

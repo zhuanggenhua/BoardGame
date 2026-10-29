@@ -22,6 +22,7 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
     createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
@@ -158,7 +159,8 @@ function getTurnOrderPlayers(core: SmashUpCore): PlayerId[] {
 }
 
 function getPlayerLabel(core: SmashUpCore, playerId: PlayerId): string {
-    return core.players[playerId]?.name ?? `玩家 ${playerId}`;
+    const playerIndex = getTurnOrderPlayers(core).indexOf(playerId);
+    return `玩家 ${playerIndex >= 0 ? playerIndex + 1 : playerId}`;
 }
 
 function runtimeToAbilityResult(result: {
@@ -549,13 +551,12 @@ const russianSearchPromptAfterEventsProgram = createEffectProgram<SearchPromptAf
         const { leadingEvents: _leadingEvents, ...searchContext } = context;
         return {
             events: context.leadingEvents,
-            context: searchContext,
-            nextProgram: russianSearchPromptProgram,
+            continuation: createAbilityRuntimeContinuation(searchContext, russianSearchPromptProgram),
         };
     },
 );
 
-const foolishMagicianPromptProgram = createPromptProgram<FoolishMagicianContext, SmashUpCore, SmashUpEvent>({
+const foolishMagicianPromptProgram = createPromptProgram<FoolishMagicianContext>({
     sourceId: 'russian_fairy_tales_foolish_magician',
     buildInteraction: (context) => {
         const drawnUidSet = new Set(context.drawnUids);
@@ -640,14 +641,13 @@ const foolishMagicianPromptAfterCommittedDrawProgram = createEffectProgram<Fooli
         if (hand.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: context.now,
                 random: context.random,
                 drawnUids: context.drawnUids,
-            },
-            nextProgram: foolishMagicianPromptProgram,
+            }, foolishMagicianPromptProgram),
         };
     },
 );
@@ -666,8 +666,7 @@ const foolishMagicianProgram = createEffectProgram<FoolishMagicianContext, Smash
             .flatMap(event => event.payload.cardUids);
         return {
             events,
-            context: { ...context, drawnUids },
-            nextProgram: foolishMagicianPromptAfterCommittedDrawProgram,
+            continuation: createAbilityRuntimeContinuation({ ...context, drawnUids }, foolishMagicianPromptAfterCommittedDrawProgram),
         };
     },
 );
@@ -699,8 +698,7 @@ const frogPrincessAttachAfterEventsProgram = createEffectProgram<FrogPrincessAtt
         const { leadingEvents: _leadingEvents, ...attachContext } = context;
         return {
             events: context.leadingEvents,
-            context: attachContext,
-            nextProgram: frogPrincessAttachProgram,
+            continuation: createAbilityRuntimeContinuation(attachContext, frogPrincessAttachProgram),
         };
     },
 );
@@ -718,7 +716,7 @@ function transformation(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             sourceKind: 'action',
             effectType: 'return',
-            semanticRole: 'primary',
+            semanticRole: 'target',
         }),
         {
             sourceId: 'russian_fairy_tales_transformation',
@@ -759,7 +757,7 @@ function babaYaga(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             sourceKind: 'nonAction',
             effectType: 'return',
-            semanticRole: 'primary',
+            semanticRole: 'target',
         }),
         {
             sourceId: 'russian_fairy_tales_baba_yaga',
@@ -866,7 +864,7 @@ function fetchIKnowNotWhat(ctx: AbilityContext): AbilityResult {
             ...actions.map((card, index) => ({
                 id: `action-${index}`,
                 label: cardLabel(card.defId),
-                value: { cardUid: card.uid, defId: card.defId, zone: 'deck', mode: 'toHand' as const },
+                value: { cardUid: card.uid, defId: card.defId, zone: 'deck' as const, mode: 'toHand' as const },
                 displayMode: 'card' as const,
             })),
         ],
@@ -1235,7 +1233,7 @@ function bewitchedTransferOnLeave(ctx: TriggerContext): AbilityResult {
             sourcePlayerId: ctx.sourceControllerId,
             sourceDefId,
             effectType: 'affect',
-            semanticRole: 'primary',
+            semanticRole: 'target',
         }),
         {
             sourceId: 'russian_fairy_tales_bewitched_transfer',

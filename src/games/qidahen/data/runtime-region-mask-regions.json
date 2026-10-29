@@ -69,7 +69,9 @@
       "printedRegionIds": [
         "city-region-1"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-2",
@@ -88,7 +90,9 @@
       "printedRegionIds": [
         "city-region-2"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-3",
@@ -108,7 +112,9 @@
       "printedRegionIds": [
         "city-region-3"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-4",
@@ -127,7 +133,9 @@
       "printedRegionIds": [
         "city-region-4"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-5",
@@ -146,7 +154,9 @@
       "printedRegionIds": [
         "city-region-5"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-6",
@@ -166,7 +176,9 @@
       "printedRegionIds": [
         "city-region-6"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-7",
@@ -179,7 +191,7 @@
       "links": [
         "city-region-10",
         "city-region-13",
-        "city-region-15-liaodong",
+        "city-region-15",
         "city-region-3",
         "city-region-4",
         "city-region-9"
@@ -187,7 +199,9 @@
       "printedRegionIds": [
         "city-region-7"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-8",
@@ -207,7 +221,9 @@
       "printedRegionIds": [
         "city-region-8"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-9",
@@ -227,7 +243,9 @@
       "printedRegionIds": [
         "city-region-9"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-10",
@@ -248,7 +266,9 @@
       "printedRegionIds": [
         "city-region-10"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-11",
@@ -267,15 +287,17 @@
       "printedRegionIds": [
         "city-region-11"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "jin",
+      "mapRole": "land"
     },
     {
       "id": "xian-xing",
       "name": "咸兴",
       "color": "#a6c62f",
       "seed": {
-        "x": 1126,
-        "y": 553
+        "x": 1065,
+        "y": 430
       },
       "links": [
         "city-region-11",
@@ -289,7 +311,15 @@
       "printedRegionIds": [
         "xian-xing"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "point",
+      "markerBounds": {
+        "left": 1049,
+        "top": 408,
+        "width": 33,
+        "height": 44
+      }
     },
     {
       "id": "city-region-13",
@@ -309,7 +339,9 @@
       "printedRegionIds": [
         "city-region-13"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "jin",
+      "mapRole": "land"
     },
     {
       "id": "city-region-14",
@@ -331,27 +363,32 @@
       "printedRegionIds": [
         "city-region-14"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "mongol",
+      "mapRole": "land"
     },
     {
       "id": "city-region-15",
       "name": "辽北",
       "color": "#4dd559",
       "seed": {
-        "x": 892,
-        "y": 382
+        "x": 882,
+        "y": 369
       },
       "links": [
         "city-region-10",
         "city-region-15-liaodong",
         "city-region-17",
         "city-region-19",
+        "city-region-7",
         "jinzhou"
       ],
       "printedRegionIds": [
         "city-region-15"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-16",
@@ -371,7 +408,9 @@
       "printedRegionIds": [
         "city-region-16"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-17",
@@ -390,15 +429,17 @@
       "printedRegionIds": [
         "city-region-17"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-18",
       "name": "平壤",
       "color": "#2fc6c0",
       "seed": {
-        "x": 1222,
-        "y": 501
+        "x": 1030,
+        "y": 577
       },
       "links": [
         "city-region-29",
@@ -407,7 +448,15 @@
       "printedRegionIds": [
         "city-region-18"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "point",
+      "markerBounds": {
+        "left": 1012,
+        "top": 553,
+        "width": 36,
+        "height": 49
+      }
     },
     {
       "id": "city-region-19",
@@ -426,7 +475,9 @@
       "printedRegionIds": [
         "city-region-19"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-20",
@@ -439,14 +490,16 @@
       "links": [
         "city-region-1",
         "city-region-16",
-        "city-region-24",
         "city-region-26",
-        "city-region-27"
+        "city-region-27",
+        "xuan-fu"
       ],
       "printedRegionIds": [
         "city-region-20"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-21",
@@ -460,15 +513,17 @@
       "printedRegionIds": [
         "city-region-21"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "jinzhou",
       "name": "锦州",
       "color": "#4d64d5",
       "seed": {
-        "x": 627,
-        "y": 477
+        "x": 756,
+        "y": 437
       },
       "links": [
         "city-region-14",
@@ -481,17 +536,26 @@
         "city-region-25"
       ],
       "printedRegionIds": [
-        "jinzhou"
+        "city-region-19-liaoxi"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "city",
+      "parentRegionId": "city-region-19-liaoxi",
+      "markerBounds": {
+        "left": 744,
+        "top": 415,
+        "width": 24,
+        "height": 44
+      }
     },
     {
       "id": "city-region-22",
       "name": "东江",
-      "color": "#c6422f",
+      "color": "#4dd586",
       "seed": {
-        "x": 878,
-        "y": 717
+        "x": 830,
+        "y": 550
       },
       "links": [
         "city-region-15-liaodong",
@@ -508,15 +572,17 @@
       "printedRegionIds": [
         "city-region-22"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "song-jin",
       "name": "皮岛",
       "color": "#4dd586",
       "seed": {
-        "x": 825,
-        "y": 528
+        "x": 863,
+        "y": 523
       },
       "links": [
         "city-region-15-liaodong",
@@ -524,37 +590,54 @@
         "city-region-22"
       ],
       "printedRegionIds": [
-        "song-jin"
+        "city-region-22"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "city",
+      "parentRegionId": "city-region-22",
+      "markerBounds": {
+        "left": 851,
+        "top": 499,
+        "width": 25,
+        "height": 49
+      }
     },
     {
       "id": "city-region-24",
-      "name": "宣府",
+      "name": "宁远",
       "color": "#9a2fc6",
       "seed": {
-        "x": 395,
-        "y": 548
+        "x": 693,
+        "y": 506
       },
       "links": [
-        "city-region-20",
+        "city-region-19-liaoxi",
         "city-region-25",
-        "city-region-27",
         "city-region-28-jizhen",
         "jinzhou"
       ],
       "printedRegionIds": [
-        "city-region-24"
+        "city-region-19-liaoxi"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "city",
+      "parentRegionId": "city-region-19-liaoxi",
+      "markerBounds": {
+        "left": 681,
+        "top": 483,
+        "width": 25,
+        "height": 46
+      }
     },
     {
       "id": "city-region-25",
       "name": "山海关",
       "color": "#d5d54d",
       "seed": {
-        "x": 543,
-        "y": 552
+        "x": 637,
+        "y": 516
       },
       "links": [
         "city-region-22",
@@ -563,9 +646,18 @@
         "jinzhou"
       ],
       "printedRegionIds": [
-        "city-region-25"
+        "city-region-28-jizhen"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "city",
+      "parentRegionId": "city-region-28-jizhen",
+      "markerBounds": {
+        "left": 624,
+        "top": 482,
+        "width": 26,
+        "height": 68
+      }
     },
     {
       "id": "city-region-26",
@@ -582,7 +674,9 @@
       "printedRegionIds": [
         "city-region-26"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "land"
     },
     {
       "id": "city-region-27",
@@ -595,23 +689,25 @@
       "links": [
         "city-region-20",
         "city-region-22",
-        "city-region-24",
         "city-region-28-jizhen",
         "city-region-30",
-        "city-region-33"
+        "city-region-33",
+        "xuan-fu"
       ],
       "printedRegionIds": [
         "city-region-27"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-28-jizhen",
       "name": "蓟镇",
-      "color": "#41c62f",
+      "color": "#d5d54d",
       "seed": {
-        "x": 572,
-        "y": 643
+        "x": 566,
+        "y": 563
       },
       "links": [
         "city-region-22",
@@ -621,9 +717,11 @@
         "city-region-28"
       ],
       "printedRegionIds": [
-        "city-region-28"
+        "city-region-28-jizhen"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-28",
@@ -639,15 +737,17 @@
       "printedRegionIds": [
         "city-region-28"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-29",
       "name": "汉城",
       "color": "#654dd5",
       "seed": {
-        "x": 1239,
-        "y": 871
+        "x": 1139,
+        "y": 627
       },
       "links": [
         "city-region-18",
@@ -657,7 +757,15 @@
       "printedRegionIds": [
         "city-region-29"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "neutral",
+      "mapRole": "point",
+      "markerBounds": {
+        "left": 1122,
+        "top": 604,
+        "width": 35,
+        "height": 47
+      }
     },
     {
       "id": "city-region-30",
@@ -674,7 +782,9 @@
       "printedRegionIds": [
         "city-region-30"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-31",
@@ -691,7 +801,9 @@
       "printedRegionIds": [
         "city-region-31"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-32",
@@ -708,7 +820,9 @@
       "printedRegionIds": [
         "city-region-32"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-33",
@@ -726,47 +840,93 @@
       "printedRegionIds": [
         "city-region-33"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-15-liaodong",
       "name": "辽东",
-      "color": "#4dd559",
+      "color": "#248de8",
       "seed": {
-        "x": 893,
-        "y": 460
+        "x": 880,
+        "y": 455
       },
       "links": [
         "city-region-13",
         "city-region-15",
+        "city-region-19-liaoxi",
         "city-region-22",
-        "city-region-7",
         "jinzhou",
         "song-jin",
         "xian-xing"
       ],
       "printedRegionIds": [
-        "city-region-15"
+        "city-region-15-liaodong"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
     },
     {
       "id": "city-region-19-liaoxi",
       "name": "辽西",
-      "color": "#d54db3",
+      "color": "#4d64d5",
       "seed": {
-        "x": 726,
-        "y": 503
+        "x": 724,
+        "y": 447
       },
       "links": [
+        "city-region-15-liaodong",
         "city-region-19",
+        "city-region-24",
+        "duoyan",
         "jinzhou",
         "song-jin"
       ],
       "printedRegionIds": [
-        "city-region-19"
+        "city-region-19-liaoxi"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "homelandFaction": "ming",
+      "mapRole": "land"
+    },
+    {
+      "id": "duoyan",
+      "name": "朵颜部",
+      "color": "#8ece4c",
+      "seed": {
+        "x": 602,
+        "y": 476
+      },
+      "links": [
+        "city-region-19-liaoxi"
+      ],
+      "acceptance": null,
+      "printedRegionIds": [
+        "duoyan"
+      ],
+      "mapRole": "land",
+      "homelandFaction": "neutral"
+    },
+    {
+      "id": "xuan-fu",
+      "name": "宣府",
+      "color": "#9a2fc6",
+      "seed": {
+        "x": 395,
+        "y": 548
+      },
+      "links": [
+        "city-region-20",
+        "city-region-27"
+      ],
+      "acceptance": null,
+      "printedRegionIds": [
+        "xuan-fu"
+      ],
+      "mapRole": "land",
+      "homelandFaction": "ming"
     }
   ]
 }

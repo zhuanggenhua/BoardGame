@@ -100,6 +100,8 @@ export interface BaseAbilityContext {
     destroyerId?: PlayerId;
     /** onMinionDestroyed 时：被消灭随从的控制者 */
     controllerId?: PlayerId;
+    /** 批量移动时的同批随从 UID；同批随从不应互相见证。 */
+    simultaneousMoveBatchMinionUids?: string[];
     /** onMinionDestroyed / onMinionMoved 时：本次事件的来源 reason */
     reason?: string;
     /** afterScoring 时：排名信息 */

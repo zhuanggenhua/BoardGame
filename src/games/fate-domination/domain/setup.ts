@@ -55,8 +55,26 @@ const createPlayer = (playerId: PlayerId, index: number): PlayerState => {
     };
 };
 
-export function createInitialFateDominationCore(playerIds: PlayerId[], random: RandomFn): FateDominationCore {
+export function createInitialFateDominationCore(playerIds: PlayerId[], random: RandomFn, setupData?: unknown): FateDominationCore {
     const normalizedPlayerIds = playerIds.length > 0 ? playerIds : ['0', '1', '2'];
+    const setupRecord = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
+        ? setupData as { firstPlayerId?: unknown; turnOrder?: unknown }
+        : undefined;
+    const requestedTurnOrder = Array.isArray(setupRecord?.turnOrder)
+        && setupRecord.turnOrder.length === normalizedPlayerIds.length
+        && setupRecord.turnOrder.every((playerId): playerId is string => typeof playerId === 'string' && normalizedPlayerIds.includes(playerId))
+        && new Set(setupRecord.turnOrder).size === normalizedPlayerIds.length
+        ? setupRecord.turnOrder
+        : undefined;
+    const requestedFirstPlayerId = setupRecord?.firstPlayerId;
+    const firstPlayerIndex = typeof requestedFirstPlayerId === 'string'
+        ? normalizedPlayerIds.indexOf(requestedFirstPlayerId)
+        : -1;
+    const turnOrder = requestedTurnOrder
+        ? [...requestedTurnOrder]
+        : firstPlayerIndex > 0
+        ? [...normalizedPlayerIds.slice(firstPlayerIndex), ...normalizedPlayerIds.slice(0, firstPlayerIndex)]
+        : [...normalizedPlayerIds];
     const players = Object.fromEntries(normalizedPlayerIds.map((playerId, index) => [playerId, createPlayer(playerId, index)]));
     const eventDeck = random.shuffle(FATE_EVENTS.map((event) => ({ ...event })));
     // CHM setup: shuffle ten ordinary situations, burn two, then reveal round one.
@@ -72,7 +90,7 @@ export function createInitialFateDominationCore(playerIds: PlayerId[], random: R
         gameId: 'fate-domination',
         round: 1,
         phase: 'preparation',
-        currentPlayerId: normalizedPlayerIds[0],
+        currentPlayerId: turnOrder[0],
         playerIds: normalizedPlayerIds,
         players,
         battlefield,
@@ -83,10 +101,10 @@ export function createInitialFateDominationCore(playerIds: PlayerId[], random: R
         situationDeckCount: situationDeck.length,
         eventDeckCount: eventDeck.length,
         eventDiscardCount: 0,
-        pendingChoice: { kind: 'identity', playerId: normalizedPlayerIds[0] },
+        pendingChoice: { kind: 'identity', playerId: turnOrder[0] },
         battleResult: null,
         actionNotice: '准备阶段：局势牌与事件牌已翻开。',
-        turnOrder: [...normalizedPlayerIds],
+        turnOrder,
         phaseCompletedPlayerIds: [],
         initialAttackHandDealtPlayerIds: [],
         currentTurnIndex: 0,

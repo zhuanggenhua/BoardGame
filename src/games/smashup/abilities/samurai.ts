@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
@@ -24,6 +25,8 @@ import type { CardInstance, MinionMetadataUpdatedEvent, MinionOnBase, SmashUpCor
 import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -52,7 +55,11 @@ type SamuraiPromptContext = {
     now: number;
 };
 type SamuraiRoninContext = SamuraiPromptContext & RoninContinuation;
-type SamuraiCombatRootContext = SamuraiPromptContext & Pick<CombatContinuation, 'sourceId' | 'outcome' | 'destroyReason'>;
+type SamuraiCombatRootContext = SamuraiPromptContext & {
+    sourceId: string;
+    outcome: CombatContinuation['outcome'];
+    destroyReason: string | undefined;
+};
 type SamuraiCombatPromptContext = SamuraiCombatRootContext & { baseIndex: number; friendlyMinionUid?: string };
 type SamuraiCodeOfBushidoContext = SamuraiPromptContext & { remaining: number };
 type SamuraiHonorAncestorsContext = SamuraiPromptContext & HonorAncestorsContinuation;
@@ -275,7 +282,7 @@ function resolveSamuraiRoninPrompt(
     };
 }
 
-const samuraiRoninPromptProgram = createPromptProgram<SamuraiRoninContext, SmashUpCore, SmashUpEvent>({
+const samuraiRoninPromptProgram = createPromptProgram<SamuraiRoninContext>({
     sourceId: 'samurai_ronin',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `samurai_ronin_${context.now}`,
@@ -306,7 +313,7 @@ const samuraiRoninPromptProgram = createPromptProgram<SamuraiRoninContext, Smash
     onResolve: ({ context, value, timestamp }) => resolveSamuraiRoninPrompt(context, value, timestamp),
 });
 
-const samuraiRoninPodPromptProgram = createPromptProgram<SamuraiRoninContext, SmashUpCore, SmashUpEvent>({
+const samuraiRoninPodPromptProgram = createPromptProgram<SamuraiRoninContext>({
     sourceId: 'samurai_ronin_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `samurai_ronin_pod_${context.now}`,
@@ -344,13 +351,12 @@ const samuraiRoninOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCor
     if (ownMinions.length !== 1) return { events: [] };
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             minionUid: source.minion.uid,
             baseIndex: source.baseIndex,
             counterAmount: 1,
             sourceId: 'samurai_ronin',
-        } satisfies RoninContinuation),
-        nextProgram: samuraiRoninPromptProgram,
+        } satisfies RoninContinuation), samuraiRoninPromptProgram),
     };
 });
 
@@ -361,17 +367,16 @@ const samuraiRoninPodOnPlayProgram = createEffectProgram<AbilityContext, SmashUp
     if (ownMinions.length !== 1) return { events: [] };
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             minionUid: source.minion.uid,
             baseIndex: source.baseIndex,
             counterAmount: 2,
             sourceId: 'samurai_ronin_pod',
-        } satisfies RoninContinuation),
-        nextProgram: samuraiRoninPodPromptProgram,
+        } satisfies RoninContinuation), samuraiRoninPodPromptProgram),
     };
 });
 
-const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext, SmashUpCore, SmashUpEvent>({
+const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext>({
     sourceId: 'samurai_yokai_attack_prompt',
     interactionSourceIds: ['samurai_yokai_attack'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -463,12 +468,11 @@ const samuraiYokaiAttackOnPlayProgram = createEffectProgram<AbilityContext, Smas
     }
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-        nextProgram: samuraiYokaiAttackPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now), samuraiYokaiAttackPromptProgram),
     };
 });
 
-const samuraiCombatEnemyPromptProgram = createPromptProgram<SamuraiCombatPromptContext, SmashUpCore, SmashUpEvent>({
+const samuraiCombatEnemyPromptProgram = createPromptProgram<SamuraiCombatPromptContext>({
     sourceId: 'samurai_combat_enemy_prompt',
     interactionSourceIds: ['samurai_honorable_combat_enemy', 'samurai_heart_of_the_battle_enemy', 'base_shoguns_palace'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -523,7 +527,7 @@ const samuraiCombatEnemyPromptProgram = createPromptProgram<SamuraiCombatPromptC
     },
 });
 
-const samuraiCombatFriendlyPromptProgram = createPromptProgram<SamuraiCombatPromptContext, SmashUpCore, SmashUpEvent>({
+const samuraiCombatFriendlyPromptProgram = createPromptProgram<SamuraiCombatPromptContext>({
     sourceId: 'samurai_combat_friendly_prompt',
     interactionSourceIds: ['samurai_honorable_combat_friendly', 'samurai_heart_of_the_battle_friendly'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -564,19 +568,18 @@ const samuraiCombatFriendlyPromptProgram = createPromptProgram<SamuraiCombatProm
         }
         return {
             events: [],
-            context: createSamuraiPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(state, context.playerId, timestamp, {
                 sourceId: context.sourceId,
                 outcome: context.outcome,
                 destroyReason: context.destroyReason,
                 baseIndex: context.baseIndex,
                 friendlyMinionUid: selected.minionUid,
-            }),
-            nextProgram: samuraiCombatEnemyPromptProgram,
+            }), samuraiCombatEnemyPromptProgram),
         };
     },
 });
 
-const samuraiCombatBasePromptProgram = createPromptProgram<SamuraiCombatRootContext, SmashUpCore, SmashUpEvent>({
+const samuraiCombatBasePromptProgram = createPromptProgram<SamuraiCombatRootContext>({
     sourceId: 'samurai_combat_base_prompt',
     interactionSourceIds: ['samurai_honorable_combat_base'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -598,15 +601,15 @@ const samuraiCombatBasePromptProgram = createPromptProgram<SamuraiCombatRootCont
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice | undefined;
         if (selected?.baseIndex === undefined) return { events: [] };
+        const combatContext: SamuraiCombatPromptContext = createSamuraiPromptContext(state, context.playerId, timestamp, {
+            sourceId: context.sourceId,
+            outcome: context.outcome,
+            destroyReason: context.destroyReason,
+            baseIndex: selected.baseIndex,
+        });
         return {
             events: [],
-            context: createSamuraiPromptContext(state, context.playerId, timestamp, {
-                sourceId: context.sourceId,
-                outcome: context.outcome,
-                destroyReason: context.destroyReason,
-                baseIndex: selected.baseIndex,
-            }),
-            nextProgram: samuraiCombatFriendlyPromptProgram,
+            continuation: createAbilityRuntimeContinuation(combatContext, samuraiCombatFriendlyPromptProgram),
         };
     },
 });
@@ -618,17 +621,18 @@ const samuraiHonorableCombatOnPlayProgram = createEffectProgram<AbilityContext, 
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     if (!ctx.matchState) return { events: [] };
+    const combatContext: SamuraiCombatRootContext = createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        sourceId: 'samurai_honorable_combat',
+        outcome: 'vp_to_winner',
+        destroyReason: undefined,
+    });
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-            sourceId: 'samurai_honorable_combat',
-            outcome: 'vp_to_winner',
-        }),
-        nextProgram: samuraiCombatBasePromptProgram,
+        continuation: createAbilityRuntimeContinuation(combatContext, samuraiCombatBasePromptProgram),
     };
 });
 
-const samuraiCodeOfBushidoPromptProgram = createPromptProgram<SamuraiCodeOfBushidoContext, SmashUpCore, SmashUpEvent>({
+const samuraiCodeOfBushidoPromptProgram: AbilityProgram<SamuraiCodeOfBushidoContext, SmashUpCore, SmashUpEvent> = createPromptProgram<SamuraiCodeOfBushidoContext>({
     sourceId: 'samurai_code_of_bushido_prompt',
     interactionSourceIds: ['samurai_code_of_bushido'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -659,8 +663,7 @@ const samuraiCodeOfBushidoPromptProgram = createPromptProgram<SamuraiCodeOfBushi
         return {
             events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'samurai_code_of_bushido', timestamp)],
             ...(nextRemaining > 0 ? {
-                context: createSamuraiPromptContext(state, context.playerId, timestamp, { remaining: nextRemaining }),
-                nextProgram: samuraiCodeOfBushidoPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(state, context.playerId, timestamp, { remaining: nextRemaining }), samuraiCodeOfBushidoPromptProgram),
             } : {}),
         };
     },
@@ -674,12 +677,11 @@ const samuraiCodeOfBushidoOnPlayProgram = createEffectProgram<AbilityContext, Sm
     if (!ctx.matchState) return { events: [] };
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { remaining: 3 }),
-        nextProgram: samuraiCodeOfBushidoPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { remaining: 3 }), samuraiCodeOfBushidoPromptProgram),
     };
 });
 
-const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAncestorsContext, SmashUpCore, SmashUpEvent>({
+const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAncestorsContext>({
     sourceId: 'samurai_honor_the_ancestors_prompt',
     interactionSourceIds: ['samurai_honor_the_ancestors'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -713,13 +715,12 @@ const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAn
         }
         return {
             events,
-            context: createSamuraiPromptContext(state, context.playerId, timestamp, { maxShuffle: context.maxShuffle }),
-            nextProgram: samuraiHonorTheAncestorsRecyclePromptProgram,
+            continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(state, context.playerId, timestamp, { maxShuffle: context.maxShuffle }), samuraiHonorTheAncestorsRecyclePromptProgram),
         };
     },
 });
 
-const samuraiHonorTheAncestorsRecyclePromptProgram = createPromptProgram<SamuraiHonorAncestorsContext, SmashUpCore, SmashUpEvent>({
+const samuraiHonorTheAncestorsRecyclePromptProgram = createPromptProgram<SamuraiHonorAncestorsContext>({
     sourceId: 'samurai_honor_the_ancestors_recycle_prompt',
     interactionSourceIds: ['samurai_honor_the_ancestors_recycle'],
     buildInteraction: (context) => attachOptionsGenerator(
@@ -763,8 +764,7 @@ const samuraiHonorTheAncestorsOnPlayProgram = createEffectProgram<AbilityContext
     if (!ctx.matchState) return { events: [] };
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { maxShuffle }),
-        nextProgram: samuraiHonorTheAncestorsPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { maxShuffle }), samuraiHonorTheAncestorsPromptProgram),
     };
 });
 
@@ -773,15 +773,15 @@ const samuraiHeartOfTheBattleSpecialProgram = createEffectProgram<AbilityContext
     if (collectOwnMinionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex).length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
+    const combatContext: SamuraiCombatPromptContext = createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        sourceId: 'samurai_heart_of_the_battle',
+        outcome: 'destroy_loser',
+        destroyReason: 'samurai_heart_of_the_battle',
+        baseIndex: ctx.baseIndex,
+    });
     return {
         events: [],
-        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-            sourceId: 'samurai_heart_of_the_battle',
-            outcome: 'destroy_loser',
-            destroyReason: 'samurai_heart_of_the_battle',
-            baseIndex: ctx.baseIndex,
-        }),
-        nextProgram: samuraiCombatFriendlyPromptProgram,
+        continuation: createAbilityRuntimeContinuation(combatContext, samuraiCombatFriendlyPromptProgram),
     };
 });
 
@@ -884,7 +884,7 @@ function samuraiWayOfTheWarriorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!drawPlayerId || typeof drawUntilTurnNumber !== 'number') return [];
 
     const currentTurnNumber = ctx.state.turnNumber ?? 0;
-    const currentPlayerId = ctx.state.currentPlayerId ?? ctx.state.turnOrder?.[ctx.state.currentPlayerIndex ?? 0];
+    const currentPlayerId = ctx.state.turnOrder?.[ctx.state.currentPlayerIndex ?? 0];
     const isWindowActive = currentTurnNumber < drawUntilTurnNumber
         || (currentTurnNumber === drawUntilTurnNumber && currentPlayerId !== drawPlayerId);
     if (!isWindowActive) return [];
@@ -931,6 +931,7 @@ function samuraiBaseShogunsPalaceOnMinionPlayed(ctx: BaseAbilityContext): Abilit
         createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'base_shoguns_palace',
             outcome: 'draw2_to_winner',
+            destroyReason: undefined,
             baseIndex: ctx.baseIndex,
             friendlyMinionUid: ctx.minionUid,
         }) satisfies SamuraiCombatPromptContext,

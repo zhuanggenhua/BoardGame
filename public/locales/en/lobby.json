@@ -319,7 +319,10 @@
     "title": "Digital Edition Author",
     "game": "Work: {{game}}",
     "hint": "This entry currently shows the credited digital edition author. More detailed creator info can expand here later.",
-    "close": "Close"
+    "close": "Close",
+    "openHomepage": "Open author homepage",
+    "claim": "Claim this game",
+    "manageWorks": "Manage my works"
   },
   "packageManager": {
     "cardLabel": "{{game}} mobile package management",
@@ -2480,8 +2483,8 @@
     "more": "More",
     "closeMenu": "Close menu",
     "retry": "Retry",
-    "save": "Save",
-    "saved": "Saved",
+    "save": "Favorite",
+    "saved": "Favorited",
     "favoriteError": "Could not save your library",
     "libraryNews": "Library updates",
     "librarySyncError": "Your library could not be synced",

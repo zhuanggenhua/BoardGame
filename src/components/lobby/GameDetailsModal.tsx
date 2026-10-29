@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useMemo, useCallback, useEffectEvent, type
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { AlertTriangle, Download, HardDriveDownload, Info, LoaderCircle, RefreshCw, TableProperties, X } from 'lucide-react';
+import { AlertTriangle, Download, HardDriveDownload, LoaderCircle, RefreshCw, TableProperties, X } from 'lucide-react';
 import * as matchApi from '../../services/matchApi';
 import { getLocalMatchPreferences, updateLocalMatchPreferences } from '../../api/user-settings';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +10,6 @@ import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
 import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, isOwnerActiveMatchSuppressed, suppressOwnerActiveMatch, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistAiSeatCredentials, persistMatchCredentials, isMatchNotFoundError } from '../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey, getOwnerType as resolveOwnerType } from '../../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
-import { ModalBase } from '../common/overlays/ModalBase';
 import { HomeGameDetailsPresentation as GameDetailsPresentation } from '../home/HomeGameDetailsPresentation';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -29,6 +28,7 @@ import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitP
 import { RoomList } from './RoomList';
 import { RoomPrimaryActions } from './RoomPrimaryActions';
 import { PlatformGameDetails } from '../home/PlatformGameDetails';
+import { GameAuthorInfo } from '../home/GameAuthorInfo';
 import { LeaderboardTab } from './LeaderboardTab';
 import type { LeaderboardEntry } from './leaderboardTypes';
 import { GameDetailsChangelogSection } from './GameDetailsChangelogSection';
@@ -134,9 +134,6 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
     const gameDisplayName = resolveGameDisplayName(gameManifest ?? { id: gameId, titleKey }, t, gameId);
     const gameDescription = resolveGameDescription(gameManifest ?? { descriptionKey }, t, descriptionKey);
     const gameAuthorName = resolveGameAuthorName(gameManifest);
-    const gameAuthorLabel = t('authorInfo.button', { author: gameAuthorName });
-    const gameAuthorMobileLabel = t('authorInfo.mobileButton', { author: gameAuthorName });
-    const gameAuthorButtonHint = t('authorInfo.buttonHint');
     const isNativeAndroidCapacitorRuntime = isNativeAndroidRuntime();
     const {
         isPackageManaged: isPackageManagedMobileGame,
@@ -335,7 +332,6 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
     const [pendingCreateRoomSetupGate, setPendingCreateRoomSetupGate] = useState<PendingCreateRoomSetupGate | null>(null);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = useState(false);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = useState<LocalMatchPreferences | null>(null);
-    const [showAuthorInfoModal, setShowAuthorInfoModal] = useState(false);
     const [matchEntryLoadingPhase, setMatchEntryLoadingPhase] = useState<MatchEntryLoadingPhase | null>(null);
     const passwordModalIdRef = useRef<string | null>(null);
 
@@ -2001,8 +1997,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                         {hasTutorialEntry && <button type="button" onClick={handleTutorial}>{t('actions.tutorial')}</button>}
                         {hasConfigReview && <button type="button" data-testid="game-details-config-review-button" onClick={handleConfigReview}>{t('actions.configReview')}</button>}
                     </>}
-                    author={<button type="button" data-testid="game-details-author-button-mobile" onClick={() => setShowAuthorInfoModal(true)}
-                        aria-label={gameAuthorButtonHint} title={gameAuthorButtonHint}>{gameAuthorLabel}</button>}
+                    author={<GameAuthorInfo authorName={gameAuthorName} gameName={gameDisplayName} />}
                     overlayControls={<>
                     {shouldShowMobilePackageCard && (
                         <div
@@ -2135,47 +2130,6 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                     />
                 </div>
             ) : null}
-
-            {showAuthorInfoModal && (
-                <ModalBase
-                    onClose={() => setShowAuthorInfoModal(false)}
-                    closeOnBackdrop
-                    containerClassName="p-4 sm:p-8"
-                >
-                    <div data-platform-dialog="author"
-                        data-testid="game-details-author-modal"
-                        className="pointer-events-auto w-[min(92vw,24rem)] rounded-[8px] border border-parchment-card-border/30 bg-parchment-card-bg p-5 text-parchment-base-text shadow-parchment-card-hover"
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-parchment-light-text">
-                                    <Info size={14} />
-                                    <span>{t('authorInfo.title')}</span>
-                                </div>
-                                <h3 className="mt-3 text-xl font-bold leading-tight">
-                                    {gameAuthorName}
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowAuthorInfoModal(false)}
-                                className="platform-dialog-close rounded-full p-1.5 text-parchment-light-text transition-colors hover:bg-parchment-base-bg hover:text-parchment-base-text cursor-pointer"
-                                title={t('authorInfo.close')}
-                            >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="mt-4 rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/40 px-3 py-2 text-sm">
-                            {t('authorInfo.game', { game: gameDisplayName })}
-                        </div>
-                        <p className="platform-author-placeholder mt-3 text-sm leading-6 text-parchment-light-text">
-                            {t('authorInfo.hint')}
-                        </p>
-                    </div>
-                </ModalBase>
-            )}
 
             {pendingPackageInstall && (
                 <GamePackageInstallConfirmModal

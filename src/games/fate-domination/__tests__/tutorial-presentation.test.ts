@@ -3,7 +3,7 @@ import { DEFAULT_TUTORIAL_STATE } from '../../../engine/types';
 import { FATE_TUTORIAL_TABLE_PROTECTION, presentFateTutorial } from '../ui/tutorialPresentation';
 import { fateTutorialText, type FateTutorialCopy } from '../tutorialText';
 
-const closed = { inspection:null,detail:null,seal:false,discard:false,movement:false,movementTarget:false,identity:false };
+const closed = { inspection:null,detail:null,seal:false,discard:false,deck:false,movement:false,movementTarget:false,identity:false };
 const copy:FateTutorialCopy={passages:['masterDraw'],input:{text:'发动战略部署。',owner:'PLAY_SKILL'}};
 const tutorial={...DEFAULT_TUTORIAL_STATE,active:true,step:{id:'play-master',fateCopy:copy,content:fateTutorialText(copy),highlightTarget:'fate-self',avoidOverlapSelectors:FATE_TUTORIAL_TABLE_PROTECTION}};
 it('本人能力使用同一摘句，对手详情不显示本人的操作教学',()=>{
@@ -26,6 +26,7 @@ it('令咒和弃牌面板独占当前决定，不在已选效果旁重复选择�
     expect(presentFateTutorial(tutorial,{...closed,seal:true}).step?.hideOverlay).toBe(true);
     const discard={...tutorial,step:{...tutorial.step,id:'ui-pile-1'}};
     expect(presentFateTutorial(discard,{...closed,discard:true}).step?.hideOverlay).toBe(true);
+    expect(presentFateTutorial(tutorial,{...closed,deck:true}).step?.hideOverlay).toBe(true);
     expect(presentFateTutorial(discard,{...closed,postBattle:true}).step?.hideOverlay).toBe(true);
     const publicCards={...tutorial,step:{...tutorial.step,id:'ui-public-cards-1'}};
     expect(presentFateTutorial(publicCards,{...closed,publicCards:true}).step?.hideOverlay).toBe(true);
@@ -36,7 +37,7 @@ it('移动选点前保留当前规则，选定后由正式确认承接，不追�
     expect(choosing.step?.content).toBe(tutorial.step.content);
     const selected=presentFateTutorial(tutorial,{...closed,movement:true,movementTarget:true});
     expect(selected.step?.hideOverlay).toBe(true);
-    expect(selected.step?.avoidOverlapSelectors).toContain('.fd-runtime-player-rail');
+    expect(selected.step?.avoidOverlapSelectors).toContain('.fd-runtime-seat');
 });
 it('普通草稿和骑乘选择完成后由正式所选卡与确认承接，不再重复目标名单',()=>{
     const attack={...tutorial,step:{...tutorial.step,fateCommand:{type:'CONFIRM_ATTACK',payload:{}}}};

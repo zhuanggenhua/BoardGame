@@ -18,13 +18,27 @@ const hasImplementationInProgressBadge = (characterId: string) => (
 describe('DiceThrone 角色目录生命周期状态合同', () => {
     it('已完成 closeout 的英雄不应继续保留 implementation_in_progress 徽标', () => {
         for (const characterId of [
-            'gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'artificer', 'doctor_strange',
+            'gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'artificer',
         ]) {
             expect(
                 hasImplementationInProgressBadge(characterId),
                 `${characterId} 不应继续保留 implementation_in_progress`,
             ).toBe(false);
         }
+    });
+
+    it('奇异博士当前范围审计后保持实施中，真人确认完成态前仍显示标记', () => {
+        const doctorStrange = DICETHRONE_CHARACTER_CATALOG.find((character) => character.id === 'doctor_strange');
+
+        expect(doctorStrange?.setupOptionStatus).toBe('in_progress');
+        expect(doctorStrange?.setupOptionStatusReason).toContain('真人确认');
+        expect(getImplementationInProgressBadge('doctor_strange')).toMatchObject({
+            id: 'implementation_in_progress',
+            labelKey: 'common:status_tags.under_construction',
+            tone: 'warning',
+            variant: 'disabled-overlay',
+        });
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).toContain('doctor_strange');
     });
 
     it('女猎手当前仍保留 implementation_in_progress 徽标', () => {

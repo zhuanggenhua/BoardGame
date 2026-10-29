@@ -34,29 +34,7 @@ const action = (id: string, index: number, cpCost: number, timing: AbilityCard['
 });
 
 export const DOCTOR_STRANGE_CARDS: AbilityCard[] = [
-    ...injectCommonCardPreviewRefs(COMMON_CARDS, DOCTOR_STRANGE_ATLAS.CARDS, DOCTOR_STRANGE_COMMON_ATLAS_INDEX)
-        .map(card => {
-            if (card.id === 'card-next-time') return { ...card, timing: 'roll' as const };
-            if (card.id === 'card-i-can-again') {
-                return { ...card, playCondition: { ...card.playCondition, phase: 'offensiveRoll' as const } };
-            }
-            if (card.id === 'card-worthy-of-me') {
-                const playCondition = { ...card.playCondition };
-                delete playCondition.requireIsRoller;
-                return {
-                    ...card,
-                    playCondition: {
-                        ...playCondition,
-                        requireIsRollerOrTeammate: true,
-                    },
-                    effects: card.effects?.map(effect => effect.action?.type === 'custom'
-                        && effect.action.customActionId === 'reroll-die-2'
-                        ? { ...effect, action: { ...effect.action, target: 'select' as const } }
-                        : effect),
-                };
-            }
-            return card;
-        }),
+    ...injectCommonCardPreviewRefs(COMMON_CARDS, DOCTOR_STRANGE_ATLAS.CARDS, DOCTOR_STRANGE_COMMON_ATLAS_INDEX),
     ...DOCTOR_STRANGE_SPELLS,
     action('card-strange-see-the-future', 27, 0, 'main', 'premonition-two'),
     { ...action('card-strange-icy-tendrils', 28, 1, 'roll', 'tendrils'), isAttackModifier: true },

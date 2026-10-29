@@ -104,7 +104,7 @@ export type MatchRoomOnlineOverlayBridgesModel = {
 export type MatchRoomOnlineSeatBridgeModel = {
     seatControllers: Record<string, AiSeatController>;
     engineConfig: GameEngineConfig | null;
-    onForceEndAiPhaseReady: (handler: (() => Promise<boolean>) | null) => void;
+    onForceEndAiPhaseReady: (handler: (() => Promise<ManualForceEndAiPhaseResult>) | null) => void;
 };
 
 export type MatchRoomOnlineBoardRuntimeModel = {

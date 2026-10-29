@@ -10,6 +10,11 @@ export interface CanPlayHandCardsForCurrentBoardParams {
     rollerId?: PlayerId;
 }
 
+export interface CanSellHandCardsForCurrentBoardParams {
+    isSpectator: boolean;
+    isActivePlayer: boolean;
+}
+
 export const canInteractHandForCurrentBoard = (): boolean => true;
 
 export const canPlayHandCardsForCurrentBoard = (_params: CanPlayHandCardsForCurrentBoardParams): boolean => {
@@ -21,6 +26,6 @@ export const canPlayHandCardsForCurrentBoard = (_params: CanPlayHandCardsForCurr
 export const canSellHandCardsForCurrentBoard = ({
     isSpectator,
     isActivePlayer,
-}: Pick<CanPlayHandCardsForCurrentBoardParams, 'isSpectator' | 'isActivePlayer'>): boolean => (
+}: CanSellHandCardsForCurrentBoardParams): boolean => (
     isSpectator || isActivePlayer
 );

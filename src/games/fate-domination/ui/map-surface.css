@@ -1,8 +1,13 @@
 .fd-runtime-map { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
 .fd-runtime-map-overlay { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; }
-.fd-runtime-location { position: absolute; z-index:1; padding: 0; border: 2px solid #a8ddcc; background: rgb(10 66 56 / .62); box-shadow:0 0 0 2px rgb(6 18 17 / .9); pointer-events: auto; cursor: pointer; }
+/* 移动选点覆盖手牌停靠区时，只抬高透明地图命中层；地图画布与卡牌仍保持原绘制层级。 */
+.fd-runtime-map-overlay[data-moving="true"] { z-index: 21; }
+.fd-runtime-map-landmark { position:absolute; display:block; pointer-events:none; }
+.fd-runtime-location { position: absolute; z-index:1; padding: 0; border: 2px solid #ead28f; background: transparent; box-shadow:0 0 12px rgb(235 196 100 / .24); pointer-events: auto; cursor: pointer; }
 .fd-runtime-location:hover { background: rgb(255 255 255 / .32); }
 .fd-runtime-deployment-slot { border-radius:50%; }
+.fd-runtime-deployment-slot:not(:disabled) { border-color:#ead28f; background:rgb(161 119 39 / .66); box-shadow:0 0 0 2px #17140e,0 0 15px rgb(235 196 100 / .6); }
+.fd-runtime-deployment-slot:not(:disabled):hover { background:rgb(224 190 109 / .8); }
 .fd-runtime-deployment-slot:disabled { border-color:transparent; background:transparent; box-shadow:none; cursor:default; }
 .fd-runtime-deployment-slot:disabled:hover { background:transparent; }
 .fd-runtime-map-card-hit { position: absolute; pointer-events: auto; border: 0; background: transparent; cursor: zoom-in; }

@@ -7,6 +7,7 @@ export type RegionMaskOverlayToneKey =
     | 'selected'
     | 'source'
     | 'dispatch'
+    | 'candidate'
     | 'tutorialSource'
     | 'tutorialCandidate'
     | 'tutorialPrimary'
@@ -98,21 +99,22 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         outerGlow: [255, 209, 108, 132],
         outerGlowRadius: 11,
     },
+    candidate: {
+        fill: [46, 166, 82, 60],
+        stroke: [109, 235, 145, 255],
+        innerStrokeRadius: 2,
+    },
     tutorialCandidate: {
         fill: [46, 166, 82, 24],
         stroke: [187, 222, 191, 142],
         innerStrokeRadius: 1,
     },
     tutorialPrimary: {
-        fill: [61, 196, 96, 104],
+        fill: [61, 196, 96, 86],
         stroke: [255, 255, 236, 255],
         innerStrokeRadius: 2,
-        outerFill: [61, 196, 96, 74],
-        outerFillRadius: 6,
-        outerStroke: [218, 255, 198, 255],
-        outerStrokeRadius: 9,
-        outerGlow: [126, 255, 140, 178],
-        outerGlowRadius: 16,
+        outerGlow: [126, 255, 140, 96],
+        outerGlowRadius: 3,
     },
     activeDispatch: {
         fill: [80, 206, 105, 76],

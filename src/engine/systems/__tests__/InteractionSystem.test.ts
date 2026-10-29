@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { MatchState, Command, RandomFn, DomainCore, GameEvent } from '../../types';
-import { executePipeline } from '../../pipeline';
+import { createInitialSystemState, executePipeline } from '../../pipeline';
 import { buildTargetAiHint, createInteractionHintScorer, scoreAiHint } from '../../ai';
 import type { AiDecisionContext, AiLegalAction } from '../../ai';
 import {
@@ -155,6 +155,23 @@ describe('InteractionSystem', () => {
         expect(result?.state?.sys.interaction.queue).toHaveLength(0);
     });
 
+    it('必选交互及其排队项不能被取消或强制解锁清除', () => {
+        const system = createInteractionSystem<TestCore>();
+        const state = createTestState();
+        state.sys.interaction.current = { ...state.sys.interaction.current!, cancelPolicy: 'forbidden' };
+        const run = (type: string) => system.beforeCommand?.({ state, command: { type, playerId: '0', payload: {}, timestamp: 1 },
+            events: [], random: mockRandom, playerIds: ['0', '1'] });
+        expect(run(INTERACTION_COMMANDS.CANCEL)).toMatchObject({ halt: true, error: '当前交互必须完成' });
+        expect(run(INTERACTION_COMMANDS.FORCE_UNLOCK)).toMatchObject({ halt: true, error: '当前交互必须完成' });
+        const timeout = createSimpleChoiceSystem<TestCore>().beforeCommand?.({ state,
+            command: { type: INTERACTION_COMMANDS.TIMEOUT, playerId: '0', payload: {}, timestamp: 1 },
+            events: [], random: mockRandom, playerIds: ['0', '1'] });
+        expect(timeout).toMatchObject({ halt: true, error: '当前交互必须完成' });
+        state.sys.interaction.current = { ...state.sys.interaction.current!, cancelPolicy: undefined };
+        state.sys.interaction.queue[0] = { ...state.sys.interaction.queue[0], cancelPolicy: 'forbidden' };
+        expect(run(INTERACTION_COMMANDS.FORCE_UNLOCK)).toMatchObject({ halt: true, error: '当前交互必须完成' });
+    });
+
     it('SYS_FORCE_UNLOCK 应同时清空交互、响应窗口和阻塞 frame', () => {
         const current = createSimpleChoice(
             'interaction-current',
@@ -182,6 +199,7 @@ describe('InteractionSystem', () => {
         let state: MatchState<TestCore> = {
             core: { value: 0 },
             sys: {
+                ...createInitialSystemState(['0', '1'], []),
                 interaction: {
                     current,
                     queue: [queued],
@@ -459,6 +477,7 @@ describe('InteractionSystem', () => {
         const state: MatchState<DynamicCore> = {
             core: { hand: [] },
             sys: {
+                ...createInitialSystemState(['0'], []),
                 interaction: { queue: [] },
             },
         } as unknown as MatchState<DynamicCore>;

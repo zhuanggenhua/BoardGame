@@ -2,7 +2,7 @@ import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomA
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { GUNSLINGER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
-import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDiceDefinitionId, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
+import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDiceDefinitionId, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit, requirePlayerDieFace } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
 import type { PendingInteraction } from '../core-types';
@@ -16,7 +16,7 @@ import type {
     InteractionRequestedEvent,
     StatusAppliedEvent,
 } from '../events';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 import { createCompareRollContext } from '../rollContext';
 
 const GUNSLINGER_LOADED_SETTLEMENT_ID = 'gunslinger-loaded-use';
@@ -42,7 +42,7 @@ function createLoadedChoiceContext(
     timestamp: number,
     random: CustomActionContext['random'],
 ): CustomActionContext {
-    const opponentId = getSelectedCombatOpponentId(state, attackerId, state.turnPhase)
+    const opponentId = getSelectedCombatOpponentId(state, attackerId, state.currentRollContext?.phase)
         ?? state.pendingAttack?.defenderId
         ?? attackerId;
     return {
@@ -98,7 +98,7 @@ function handleLoadedUse({ attackerId, sourceAbilityId, state, timestamp, random
     if (!random) return [];
 
     const loadedBoost = state.pendingAttack?.loadedBonusDieBoost;
-    const opponentId = getSelectedCombatOpponentId(state, attackerId, state.turnPhase)
+    const opponentId = getSelectedCombatOpponentId(state, attackerId, state.currentRollContext?.phase)
         ?? state.pendingAttack?.defenderId
         ?? attackerId;
     const maxRerollCount = Math.max(
@@ -134,7 +134,7 @@ function handleLoadedUse({ attackerId, sourceAbilityId, state, timestamp, random
     }
 
     const roll = random.d(6);
-    const face = getPlayerDieFace(state, attackerId, roll) ?? '';
+    const face = requirePlayerDieFace(state, attackerId, roll);
     const bonusDamage = Math.ceil(roll / 2);
 
     return [
@@ -179,7 +179,7 @@ function handleShowdownBonus({ attackerId, targetId, sourceAbilityId, state, tim
     const selectedDefenderId = getSelectedCombatOpponentId(
         state,
         attackerId,
-        state.turnPhase,
+        state.currentRollContext?.phase,
     ) ?? state.pendingAttack?.defenderId;
     const explicitOpponentId = targetId !== attackerId && getOpponents(state, attackerId).includes(targetId)
         ? targetId
@@ -189,8 +189,12 @@ function handleShowdownBonus({ attackerId, targetId, sourceAbilityId, state, tim
         throw new Error(`[DiceThrone] ${sourceAbilityId} 枪战决斗缺少目标对手：attackerId=${attackerId}`);
     }
 
-    const amount = typeof action.params?.bonusDamageOnWin === 'number'
-        ? action.params.bonusDamageOnWin
+    const params: unknown = action.params;
+    const amount = typeof params === 'object'
+        && params !== null
+        && 'bonusDamageOnWin' in params
+        && typeof params.bonusDamageOnWin === 'number'
+        ? params.bonusDamageOnWin
         : 2;
     const attackerFace = getPlayerDieFace(state, attackerId, attackerRoll);
     const defenderFace = getPlayerDieFace(state, resolvedDefenderId, defenderRoll);
@@ -263,7 +267,11 @@ function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }
     const originalDefenderId = state.pendingAttack?.defenderId;
     if (!originalAttackerId || !originalDefenderId) return [];
 
-    const winOnTie = action.params?.winOnTie === true;
+    const params: unknown = action.params;
+    const winOnTie = typeof params === 'object'
+        && params !== null
+        && 'winOnTie' in params
+        && params.winOnTie === true;
     const defenderFace = getPlayerDieFace(state, originalDefenderId, defenderRoll);
     const attackerFace = getPlayerDieFace(state, originalAttackerId, attackerRoll);
     const defenderDiceDefinitionId = getRequiredPlayerDiceDefinitionId(state, originalDefenderId, sourceAbilityId);
@@ -355,7 +363,7 @@ function handleEatMyLead({ attackerId, sourceAbilityId, state, timestamp, random
 
     const dice = Array.from({ length: 5 }, (_, index) => {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         return {
             index,
             value,

@@ -49,9 +49,10 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         ? toJsonSafe(current.data.choiceRequest as Record<string, unknown>)
         : undefined;
 
-    const optionsSource = Array.isArray(current.data?.options) ? 'explicit' : 'missing';
-    const options = optionsSource === 'explicit'
-        ? current.data.options
+    const rawOptions = current.data?.options;
+    const optionsSource = Array.isArray(rawOptions) ? 'explicit' : 'missing';
+    const options = Array.isArray(rawOptions)
+        ? rawOptions
             .filter((option): option is NonNullable<typeof option> => !!option && typeof option.id === 'string')
             .map((option) => ({
                 id: option.id as string,

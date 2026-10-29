@@ -20,6 +20,7 @@ import {
     serializeFeedbackDiagnosticPacket,
 } from '../../lib/feedback/diagnosticPacket';
 import { getCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackContext';
+import { prepareFeedbackReplayCapture, requestFeedbackReplayCapture } from '../../lib/feedback/feedbackReplayBridge';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
@@ -537,6 +538,11 @@ export const FeedbackModal = ({
                 gameId: (runtimeContext?.gameId ?? gameName) || undefined,
             });
 
+            const shouldCaptureReplay = attachState && clientContext.mode === 'online' && clientContext.matchId && clientContext.playerId;
+            const captureId = shouldCaptureReplay
+                ? await prepareFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!)
+                : undefined;
+
             const errorContext = lastErrorContext
                 ? {
                     message: lastErrorContext.message,
@@ -552,6 +558,7 @@ export const FeedbackModal = ({
                     state: attachState ? currentGameFeedbackContext.state : undefined,
                     clientContext,
                     source: 'user',
+                    collectionErrors: shouldCaptureReplay && !captureId ? ['private_replay_prepare_failed'] : undefined,
                 }))
                 : undefined;
 
@@ -613,20 +620,25 @@ export const FeedbackModal = ({
                 );
             }
 
-            const payload = await res.json().catch(() => null) as { rewardPoints?: number } | null;
+            const payload = await res.json().catch(() => null) as { _id?: string; rewardPoints?: number } | null;
+            let replayCaptureFailed = false;
+            if (shouldCaptureReplay) {
+                replayCaptureFailed = !captureId || !payload?._id || !await requestFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!, payload._id, captureId);
+            }
             const rewardPoints = typeof payload?.rewardPoints === 'number' ? payload.rewardPoints : 0;
             draftPersistenceDisabledRef.current = true;
             clearFeedbackDraft(draftStorageKey);
             if (rewardPoints > 0) {
                 addFeedbackPoints(rewardPoints);
-                success({
+                if (!replayCaptureFailed) success({
                     kind: 'reward-points',
                     text: t('hud.feedback.success'),
                     points: rewardPoints,
                 });
-            } else {
+            } else if (!replayCaptureFailed) {
                 success(t('hud.feedback.success'));
             }
+            if (replayCaptureFailed) error(t('hud.feedback.errors.replayCaptureFailed'));
             onSubmitted?.();
             onClose();
         } catch (err) {

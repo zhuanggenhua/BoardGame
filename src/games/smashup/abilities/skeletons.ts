@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type {
+ MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -7,7 +8,7 @@ import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
 import { addPowerCounter, buildAbilityFeedback, buildBaseTargetOptions, buildFieldSourceTargetPromptConfig, buildFieldSourceToBaseTargetOptions, buildStandardDrawEvents, createSkipOption } from '../domain/abilityHelpers';
-import { createEffectProgram, executeAbilityProgram } from '../domain/abilityRuntime';
+import { createAbilityRuntimeContinuation, type AbilityProgram,  createEffectProgram, executeAbilityProgram } from '../domain/abilityRuntime';
 import { registerDiscardSpecialProvider } from '../domain/discardSpecialAbilities';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { SU_EVENTS } from '../domain/types';
@@ -146,7 +147,11 @@ function buildDiscardBuryEvents(state: SmashUpCore, playerId: PlayerId, cardUid:
     });
 }
 
-const sequentialUncoverProgram = createEffectProgram<
+const sequentialUncoverProgram: AbilityProgram<
+    SequentialUncoverContext,
+    SmashUpCore,
+    SmashUpEvent
+> = createEffectProgram<
     SequentialUncoverContext,
     SmashUpCore,
     SmashUpEvent
@@ -173,12 +178,11 @@ const sequentialUncoverProgram = createEffectProgram<
         matchState: result.state,
         ...(remainingPicks.length > 0
             ? {
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: result.state,
                     picks: remainingPicks,
-                } satisfies SequentialUncoverContext,
-                nextProgram: sequentialUncoverProgram,
+                } satisfies SequentialUncoverContext, sequentialUncoverProgram),
             }
             : {}),
     };
@@ -233,7 +237,7 @@ function buildOptionalCounterPrompt(
     sourceId: 'skeletons_graveyard_counter' | 'skeletons_grave_goods_counter',
     targetMinionUid: string,
     targetBaseIndex: number,
-    matchState: any,
+    matchState: MatchState<SmashUpCore>,
 ) {
     const options = [
         { id: 'apply', label: '放置指示物', labelKey: 'ui.place_counter', value: { apply: true }, displayMode: 'button' as const },
@@ -300,12 +304,11 @@ const emitGraveGoodsFirstBuryThenContinueProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         playerId: context.playerId,
         now: context.now,
-    } satisfies GraveGoodsAfterFirstBuryContext,
-    nextProgram: resolveGraveGoodsAfterFirstBuryProgram,
+    } satisfies GraveGoodsAfterFirstBuryContext, resolveGraveGoodsAfterFirstBuryProgram),
 }));
 
 function skeletonsReturnedOneOnPlay(ctx: AbilityContext): AbilityResult {

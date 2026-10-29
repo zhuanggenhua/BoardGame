@@ -70,12 +70,12 @@ describe('Qidahen region mask overlay', () => {
     it('选中态会沿真实轮廓两侧出线，避免视觉上只剩内缩边框', () => {
         const width = 7;
         const height = 7;
-        const { hitmap, colorKey } = createRegionHitmap('jinzhou');
+        const { hitmap, colorKey } = createRegionHitmap('city-region-19-liaoxi');
         const pixels = buildRegionMaskOverlayPixels(
             hitmap,
             width,
             height,
-            new Map([['jinzhou', 'selected']]),
+            new Map([['city-region-19-liaoxi', 'selected']]),
         );
 
         expect(countVisiblePixelsOutsideMask(pixels, colorKey, hitmap, width, height)).toBeGreaterThan(0);
@@ -87,7 +87,7 @@ describe('Qidahen region mask overlay', () => {
         const width = 11;
         const height = 11;
         const { hitmap } = createRegionHitmap(
-            'jinzhou',
+            'city-region-19-liaoxi',
             width,
             height,
             { left: 4, right: 6, top: 4, bottom: 6 },
@@ -96,7 +96,7 @@ describe('Qidahen region mask overlay', () => {
             hitmap,
             width,
             height,
-            new Map([['jinzhou', 'selected']]),
+            new Map([['city-region-19-liaoxi', 'selected']]),
         );
 
         expect(pixels[((5 * width) + 0) * 4 + 3]).toBeGreaterThan(0);
@@ -106,7 +106,7 @@ describe('Qidahen region mask overlay', () => {
         const width = 11;
         const height = 11;
         const { hitmap } = createRegionHitmap(
-            'jinzhou',
+            'city-region-19-liaoxi',
             width,
             height,
             { left: 4, right: 6, top: 4, bottom: 6 },
@@ -115,7 +115,7 @@ describe('Qidahen region mask overlay', () => {
             hitmap,
             width,
             height,
-            new Map([['jinzhou', 'selected']]),
+            new Map([['city-region-19-liaoxi', 'selected']]),
         );
 
         const offset = ((5 * width) + 3) * 4;
@@ -126,12 +126,12 @@ describe('Qidahen region mask overlay', () => {
     it('势力归属态沿区域边界留下比填色更深的描边', () => {
         const width = 7;
         const height = 7;
-        const { hitmap } = createRegionHitmap('jinzhou');
+        const { hitmap } = createRegionHitmap('city-region-19-liaoxi');
         const pixels = buildRegionMaskOverlayPixels(
             hitmap,
             width,
             height,
-            new Map([['jinzhou', 'ming']]),
+            new Map([['city-region-19-liaoxi', 'ming']]),
         );
 
         expect(readAlphaAt(pixels, width, 2, 3)).toBeGreaterThan(readAlphaAt(pixels, width, 3, 3));
@@ -143,12 +143,12 @@ describe('Qidahen region mask overlay', () => {
     it('非选中态仍只留在区域内部，不把调度或悬浮提示扩到区域外', () => {
         const width = 7;
         const height = 7;
-        const { hitmap, colorKey } = createRegionHitmap('jinzhou');
+        const { hitmap, colorKey } = createRegionHitmap('city-region-19-liaoxi');
         const pixels = buildRegionMaskOverlayPixels(
             hitmap,
             width,
             height,
-            new Map([['jinzhou', 'dispatch']]),
+            new Map([['city-region-19-liaoxi', 'dispatch']]),
         );
 
         expect(countVisiblePixelsOutsideMask(pixels, colorKey, hitmap, width, height)).toBe(0);

@@ -119,7 +119,7 @@ describe('DiceThrone compatibility sizing', () => {
         };
 
         render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -140,7 +140,7 @@ describe('DiceThrone compatibility sizing', () => {
         expect(handCard?.style.height).toContain('--mobile-board-shell-inline-unit');
     });
 
-    it('牌池选择时应取消手牌底部裁切，保持卡牌完整落在视口内', () => {
+    it('牌池选择时为手牌预留底部安全余量，保持卡牌完整落在视口内', () => {
         vi.useFakeTimers();
 
         const topCard: AbilityCard = {
@@ -152,7 +152,7 @@ describe('DiceThrone compatibility sizing', () => {
         };
 
         const { rerender } = render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -167,7 +167,7 @@ describe('DiceThrone compatibility sizing', () => {
         expect(defaultCard?.style.bottom).toContain('* -2');
 
         rerender(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -176,7 +176,7 @@ describe('DiceThrone compatibility sizing', () => {
         );
 
         const protectedCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
-        expect(protectedCard?.style.bottom).toContain('* 0');
+        expect(protectedCard?.style.bottom).toContain('* 3');
     });
 
     it('隐藏手牌时只隐藏 UI，不卸载手牌区导致重新发牌', () => {
@@ -191,7 +191,7 @@ describe('DiceThrone compatibility sizing', () => {
         };
 
         const { rerender } = render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -210,7 +210,7 @@ describe('DiceThrone compatibility sizing', () => {
         expect(firstCardKey).toBeTruthy();
 
         rerender(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -225,7 +225,7 @@ describe('DiceThrone compatibility sizing', () => {
         expect(hiddenHandCard?.getAttribute('data-card-key')).toBe(firstCardKey);
 
         rerender(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -253,7 +253,7 @@ describe('DiceThrone compatibility sizing', () => {
         const onPlayCard = vi.fn();
 
         render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 onMagnifyCard={onMagnifyCard}
@@ -340,7 +340,7 @@ describe('DiceThrone compatibility sizing', () => {
         const onPlayCard = vi.fn(() => true);
 
         render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 onMagnifyCard={onMagnifyCard}

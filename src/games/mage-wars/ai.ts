@@ -246,9 +246,11 @@ function buildCurrentInteractionActions(state: MageWarsState, playerId: PlayerId
         return actions;
     }
     for (const option of enabledOptions) {
+        if (typeof option.id !== 'string') continue;
+        const optionLabel = typeof option.label === 'string' ? option.label : option.id;
         appendIfValid(actions, state, playerId, createAction({
             kind: 'interaction-choice',
-            label: typeof option.label === 'string' ? option.label : option.id,
+            label: optionLabel,
             commandType: INTERACTION_COMMANDS.RESPOND,
             payload: { interactionId, optionId: option.id },
             keyParts: [interactionId, option.id],
@@ -560,27 +562,29 @@ function appendAttackActions(
     for (const object of Object.values(state.core.objects)
         .filter((candidate) => candidate.ownerId === playerId && candidate.kind === 'creature')
         .sort((left, right) => left.id.localeCompare(right.id))) {
-        const targets = [
+        const targets: Array<{ targetPlayerId: string } | { targetObjectId: string }> = [
             { targetPlayerId: opponentId },
             ...enemyObjects.map((target) => ({ targetObjectId: target.id })),
         ];
         for (const attackProfile of getMageWarsObjectAttackProfiles(object)) {
             for (const target of targets) {
-                const targetObject = target.targetObjectId
-                    ? state.core.objects[target.targetObjectId]
+                const targetObjectId = 'targetObjectId' in target ? target.targetObjectId : undefined;
+                const targetPlayerId = 'targetPlayerId' in target ? target.targetPlayerId : undefined;
+                const targetObject = targetObjectId
+                    ? state.core.objects[targetObjectId]
                     : undefined;
                 const targetValue = getMageWarsTargetValue(
                     state.core,
-                    target.targetObjectId,
-                    target.targetPlayerId,
+                    targetObjectId,
+                    targetPlayerId,
                 );
                 const targetLife = targetObject
                     ? Math.max(0, targetObject.life - targetObject.damage)
-                    : target.targetPlayerId
+                    : targetPlayerId
                         ? Math.max(
                             0,
-                            state.core.players[target.targetPlayerId]?.life
-                                - state.core.players[target.targetPlayerId]?.damage,
+                            state.core.players[targetPlayerId]?.life
+                                - state.core.players[targetPlayerId]?.damage,
                         )
                         : 0;
                 const targetArmor = targetObject
@@ -601,7 +605,7 @@ function appendAttackActions(
                         attackProfileId: attackProfile.id,
                         ...target,
                     },
-                    keyParts: [object.id, attackProfile.id, target.targetPlayerId ?? target.targetObjectId],
+                    keyParts: [object.id, attackProfile.id, targetPlayerId ?? targetObjectId],
                     metadata: {
                         attackerObjectId: object.id,
                         attackProfileId: attackProfile.id,
@@ -883,10 +887,12 @@ const mageWarsSafetyScorer: LocalAiActionScorer = {
             };
         }
         if (action.kind === 'object-attack' || action.kind === 'attack') {
-            return action.metadata?.targetValue
-                && action.metadata.targetValue >= 300
-                && action.metadata?.expectedDamage
-                && action.metadata.expectedDamage > 0
+            const targetValue = action.metadata?.targetValue;
+            const expectedDamage = action.metadata?.expectedDamage;
+            return typeof targetValue === 'number'
+                && targetValue >= 300
+                && typeof expectedDamage === 'number'
+                && expectedDamage > 0
                 ? { score: 72, reason: '高压下优先处理能直接威胁法师的目标' }
                 : null;
         }

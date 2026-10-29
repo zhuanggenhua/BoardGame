@@ -189,7 +189,8 @@ const createBonusDieEvents = (
     settlementTargetId?: string,
 ): { dice: BonusDieInfo[]; events: DiceThroneEvent[] } => {
     const dice = values.map((value, index) => {
-        const face = getPlayerDieFace(state, playerId, value) ?? '';
+        const numericFace: `${number}` = `${value}`;
+        const face = getPlayerDieFace(state, playerId, value) ?? numericFace;
         const effectKey = effectKeyBuilder?.(value, face, index) ?? `bonusDie.effect.${face}`;
         return { index, value, face, effectKey };
     });
@@ -220,7 +221,7 @@ function stealOneCp({
     sourceAbilityId,
     state,
     timestamp,
-}: CustomActionContext): DiceThroneEvent[] {
+}: Pick<CustomActionContext, 'attackerId' | 'targetId' | 'sourceAbilityId' | 'state' | 'timestamp'>): DiceThroneEvent[] {
     const attacker = state.players[attackerId];
     const target = state.players[targetId];
     if (!attacker || !target) return [];
@@ -515,7 +516,7 @@ function requestOpponentDiscardOneCard({
     sourceAbilityId,
     state,
     timestamp,
-}: CustomActionContext): DiceThroneEvent[] {
+}: Pick<CustomActionContext, 'targetId' | 'sourceAbilityId' | 'state' | 'timestamp'>): DiceThroneEvent[] {
     const target = state.players[targetId];
     if (!target || target.hand.length === 0) return [];
 
@@ -701,6 +702,50 @@ function requestHumanVerdictCommand({
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as ChoiceRequestedEvent];
+}
+
+function buildHumanVerdictDamageEvent(
+    state: CustomActionContext['state'],
+    targetId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const target = state.players[targetId];
+    if (!target) return [];
+    const hp = target.resources[RESOURCE_IDS.HP] ?? 0;
+    return [{
+        type: 'DAMAGE_DEALT',
+        payload: {
+            targetId,
+            amount: 7,
+            actualDamage: Math.min(7, hp),
+            sourceAbilityId,
+            damageScope: 'attack',
+            unblockable: true,
+        },
+        sourceCommandType: 'CHOICE_RESOLVED',
+        timestamp,
+    } as DamageDealtEvent];
+}
+
+function buildHumanVerdictParleyAndDamageEvents(
+    state: CustomActionContext['state'],
+    targetId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    return [
+        ...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId,
+            statusId: STATUS_IDS.PARLEY,
+            stacks: 1,
+            sourceAbilityId,
+            sourceCommandType: 'CHOICE_RESOLVED',
+            timestamp,
+        }),
+        ...buildHumanVerdictDamageEvent(state, targetId, sourceAbilityId, timestamp + 1),
+    ];
 }
 
 function requestHumanMercilessPlunder({
@@ -1378,25 +1423,10 @@ export function registerCursedPirateCustomActions(): void {
 
         if (mode === WALK_THE_PLANK_DISCARD_MODE) {
             return requestOpponentDiscardOneCard({
-                attackerId: playerId,
                 targetId,
                 sourceAbilityId,
                 state,
                 timestamp,
-                random,
-                ctx: {
-                    attackerId: playerId,
-                    defenderId: targetId,
-                    sourceAbilityId,
-                    state,
-                    damageDealt: 0,
-                    timestamp,
-                },
-                action: {
-                    type: 'custom',
-                    target: 'opponent',
-                    customActionId: 'cursed-pirate-human-walk-the-plank-choice',
-                },
             });
         }
 
@@ -1439,37 +1469,16 @@ export function registerCursedPirateCustomActions(): void {
         const target = targetId ? state.players[targetId] : undefined;
         if (!targetId || !target) return [];
 
-        const hp = target.resources[RESOURCE_IDS.HP] ?? 0;
-        return [
+        const events: DiceThroneEvent[] = [
             {
                 type: 'ATTACK_MADE_UNDEFENDABLE',
                 payload: { attackerId: state.pendingAttack?.attackerId ?? playerId },
                 sourceCommandType: 'CHOICE_RESOLVED',
                 timestamp,
             } as AttackMadeUndefendableEvent,
-            ...buildStatusAppliedOrChoiceEvents({
-                state,
-                targetId,
-                statusId: STATUS_IDS.PARLEY,
-                stacks: 1,
-                sourceAbilityId,
-                sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp: timestamp + 1,
-            }),
-            {
-                type: 'DAMAGE_DEALT',
-                payload: {
-                    targetId,
-                    amount: 7,
-                    actualDamage: Math.min(7, hp),
-                    sourceAbilityId,
-                    damageScope: 'attack',
-                    unblockable: true,
-                },
-                sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp: timestamp + 2,
-            } as DamageDealtEvent,
         ];
+
+        return [...events, ...buildHumanVerdictParleyAndDamageEvents(state, targetId, sourceAbilityId, timestamp + 1)];
     });
     registerChoiceResolvedEventHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({
         state,
@@ -1561,8 +1570,9 @@ export function registerCursedPirateCustomActions(): void {
         if (!sourceAbilityId) return [];
         const decoded = decodeRansomSelectionValue(state, value ?? 0);
         const target = decoded.targetId ? state.players[decoded.targetId] : undefined;
+        if (!decoded.attackerId || !decoded.targetId || !target) return [];
         const die = getRansomEligibleCurrentDice(state, decoded.targetId).find(entry => entry.id === decoded.dieId);
-        if (!decoded.attackerId || !decoded.targetId || !target || !die) return [];
+        if (!die) return [];
 
         const targetCp = target.resources[RESOURCE_IDS.CP] ?? 0;
         const baseValue = Math.trunc(value ?? 0);

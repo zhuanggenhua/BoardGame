@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { saveDiceThroneAbilityLayout } from '../../../api/layout';
 import { UI_Z_INDEX } from '../../../core';
@@ -322,21 +323,16 @@ const buildAbilityHighlightStyle = (
     if (variant === 'selected') {
         return {
             borderStyle: 'solid',
-            borderWidth: '2.5px',
+            borderWidth: '3px',
             borderColor: tone.selectedBorderColor,
-            padding: '3px',
-            background: `linear-gradient(135deg, ${tone.selectedPulseBorderColor}, ${tone.selectedBorderColor} 45%, ${tone.selectedRimColor})`,
-            WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-            WebkitMaskComposite: 'xor',
-            maskComposite: 'exclude',
-            boxShadow: `0 0 20px ${tone.selectedGlowColor}, 0 0 34px ${tone.selectedHaloColor}`,
+            boxShadow: `0 0 0 2px rgba(15,23,42,0.96), 0 0 10px ${tone.selectedGlowColor}`,
         };
     }
     return {
         borderStyle: 'solid',
         borderWidth: '2px',
         borderColor: tone.highlightBorderColor,
-        boxShadow: `0 0 0 1px ${tone.highlightRimColor}, 0 0 16px ${tone.highlightGlowColor}, 0 0 26px ${tone.highlightHaloColor}`,
+        boxShadow: `0 0 0 1px ${tone.highlightRimColor}, 0 0 9px ${tone.highlightGlowColor}, 0 0 15px ${tone.highlightHaloColor}`,
     };
 };
 
@@ -409,7 +405,7 @@ const buildAbilityHighlightStyle = (
         const editingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-slate-950/65 pointer-events-none';
         const activeEditingGuideClassName = 'absolute inset-0 rounded-lg border-[2.5px] border-emerald-300 bg-emerald-400/12 shadow-[0_0_0_1px_rgba(6,95,70,0.95),0_0_18px_rgba(52,211,153,0.55)] pointer-events-none';
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
-        const highlightOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10 animate-pulse';
+        const highlightOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10';
         const selectedOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-20';
         const inspectButtonClassName = 'absolute z-20 flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-200 hover:brightness-125';
         const inspectButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_2px_7px_rgba(0,0,0,0.45)]';
@@ -699,7 +695,23 @@ const buildAbilityHighlightStyle = (
                                     data-testid={`dt-ability-selected-${slot.id}`}
                                     className={selectedOverlayClassName}
                                     style={selectedOverlayStyle}
-                                />
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        data-testid={`dt-ability-selected-check-${slot.id}`}
+                                        className="absolute -right-1.5 -top-1.5 grid place-items-center rounded-full border-2 border-slate-950 bg-amber-300 text-slate-950 shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
+                                        style={{
+                                            width: buildBoardShellScreenPixelValue(24),
+                                            height: buildBoardShellScreenPixelValue(24),
+                                        }}
+                                    >
+                                        <Check aria-hidden="true" style={{
+                                            width: buildBoardShellScreenPixelValue(14),
+                                            height: buildBoardShellScreenPixelValue(14),
+                                            strokeWidth: 3,
+                                        }} />
+                                    </span>
+                                </div>
                             )}
                             {upgradeCard && hasPrimarySlotClick && showDesktopInspectButton && !isEditing && (
                                 <button

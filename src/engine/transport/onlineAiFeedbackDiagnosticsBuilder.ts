@@ -65,7 +65,11 @@ export type OnlineAiFeedbackDiagnosticsBuilderConfig = {
 };
 
 export class OnlineAiFeedbackDiagnosticsBuilder {
-    constructor(private readonly config: OnlineAiFeedbackDiagnosticsBuilderConfig) {}
+    private readonly config: OnlineAiFeedbackDiagnosticsBuilderConfig;
+
+    constructor(config: OnlineAiFeedbackDiagnosticsBuilderConfig) {
+        this.config = config;
+    }
 
     async buildRecoveryStateSnapshot(
         match: OnlineAiFeedbackDiagnosticsMatch,

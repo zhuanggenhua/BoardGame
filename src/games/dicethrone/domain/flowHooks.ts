@@ -6,7 +6,7 @@
  * sys.phase 是阶段的单一权威来源，所有阶段副作用通过 FlowHooks 实现
  */
 
-import type { GameEvent, RandomFn } from '../../../engine/types';
+import type { GameEvent, PlayerId, RandomFn } from '../../../engine/types';
 import type { FlowHooks, PhaseExitResult } from '../../../engine';
 import { canUseDejaVu } from './doctorStrange/rules';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
@@ -24,10 +24,8 @@ import type {
     ChoiceRequestedEvent,
     DefenderSelectionRequestedEvent,
     DamageDealtEvent,
-    DamageShieldGrantedEvent,
     BonusDieRolledEvent,
     PendingBonusDiceSettlement,
-    PlayerId,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -65,9 +63,10 @@ import {
 } from './utils';
 import { createDTPassiveTriggerHandler, resolveEffectsToEvents } from './effects';
 import type { ResponseWindowOpenedEvent } from './events';
-import { createDamageCalculation } from '../../../engine/primitives';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from './effects';
 import { CP_MAX } from './types';
 import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
+import { getUsableActiveRollTokens } from './activeRollTokens';
 import { getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
@@ -86,6 +85,7 @@ import {
     getPowderKegTransferTargetIds,
 } from './statusEvents';
 import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
+import { deferAttackDebuffFollowups } from './deferredAttackDebuff';
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
@@ -385,6 +385,13 @@ function createOffensiveRollEndTokenChoiceEvent(
     };
 }
 
+/** 进攻效果刚给予可在本阶段使用的标记时，先让持有者操作或再次推进。 */
+function hasNewActiveOffensiveRollToken(before: DiceThroneCore, after: DiceThroneCore, attackerId: string): boolean {
+    return getUsableActiveRollTokens(after, attackerId, 'offensiveRoll').some(({ tokenId }) => (
+        (after.players[attackerId]?.tokens[tokenId] ?? 0) > (before.players[attackerId]?.tokens[tokenId] ?? 0)
+    ));
+}
+
 
 function isIncomingDebuffApplication(core: DiceThroneCore, defenderId: string, event: GameEvent): boolean {
     if (event.type !== 'STATUS_APPLIED' && event.type !== 'TOKEN_GRANTED') return false;
@@ -449,7 +456,17 @@ function preventIncomingDebuffsWithTreantDivine(
         } as ChoiceRequestedEvent];
     }
 
-    const filteredEvents = generatedEvents.filter(event => !isIncomingDebuffApplication(core, defenderId, event));
+    const blockedIndex = generatedEvents.findIndex(event => isIncomingDebuffApplication(core, defenderId, event));
+    const blockedEvent = generatedEvents[blockedIndex] as GameEvent & { statusApplicationId?: string };
+    let blockedStart = blockedIndex;
+    if (blockedEvent.statusApplicationId) {
+        while (blockedStart > 0) {
+            const previous = generatedEvents[blockedStart - 1] as GameEvent & { statusApplicationId?: string };
+            if (previous.statusApplicationId !== blockedEvent.statusApplicationId || previous.type === 'STATUS_APPLIED') break;
+            blockedStart -= 1;
+        }
+    }
+    const filteredEvents = generatedEvents.filter((_, index) => index < blockedStart || index > blockedIndex);
     return [
         {
             type: 'TOKEN_CONSUMED',
@@ -463,17 +480,6 @@ function preventIncomingDebuffsWithTreantDivine(
             sourceCommandType,
             timestamp,
         } as DiceThroneEvent,
-        {
-            type: 'DAMAGE_SHIELD_GRANTED',
-            payload: {
-                targetId: defenderId,
-                value: 0,
-                sourceId: TOKEN_IDS.TREANT_DIVINE,
-                preventStatus: true,
-            },
-            sourceCommandType,
-            timestamp: timestamp + 0.001,
-        } as DamageShieldGrantedEvent,
         ...filteredEvents,
     ];
 }
@@ -550,17 +556,29 @@ function getTotalImmediateExtraAttackStacksByStatus(
     const player = core.players[playerId];
     const statusInCore = player?.statusEffects[statusId] ?? 0;
 
-    const appliedInEvents = events.filter(e =>
-        e.type === 'STATUS_APPLIED' &&
-        e.payload.targetId === playerId &&
-        e.payload.statusId === statusId
-    ).reduce((sum, e) => sum + (e.payload as any).stacks, 0);
+    const appliedInEvents = events.reduce((sum, event) => {
+        if (event.type !== 'STATUS_APPLIED' || event.payload === null || typeof event.payload !== 'object') {
+            return sum;
+        }
+        const payload = event.payload as Record<string, unknown>;
+        return payload.targetId === playerId
+            && payload.statusId === statusId
+            && typeof payload.stacks === 'number'
+            ? sum + payload.stacks
+            : sum;
+    }, 0);
 
-    const removedInEvents = events.filter(e =>
-        e.type === 'STATUS_REMOVED' && 
-        e.payload.targetId === playerId && 
-        e.payload.statusId === statusId
-    ).reduce((sum, e) => sum + e.payload.stacks, 0);
+    const removedInEvents = events.reduce((sum, event) => {
+        if (event.type !== 'STATUS_REMOVED' || event.payload === null || typeof event.payload !== 'object') {
+            return sum;
+        }
+        const payload = event.payload as Record<string, unknown>;
+        return payload.targetId === playerId
+            && payload.statusId === statusId
+            && typeof payload.stacks === 'number'
+            ? sum + payload.stacks
+            : sum;
+    }, 0);
 
     return statusInCore + appliedInEvents - removedInEvents;
 }
@@ -573,7 +591,7 @@ function getTotalImmediateExtraAttackStacksByStatus(
 function appendBountyAttackRewardEvent(
     core: DiceThroneCore,
     preDefenseEvents: DiceThroneEvent[],
-    events: DiceThroneEvent[],
+    events: GameEvent[],
     timestamp: number,
 ): DiceThroneCore {
     if (!preDefenseEvents.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')) {
@@ -1084,10 +1102,11 @@ function resolvePowderKegUpkeepEvents(
     if (!player || (player.statusEffects[STATUS_IDS.POWDER_KEG] ?? 0) <= 0) return [];
 
     const value = random.d(6);
+    const face: `${number}` = `${value}`;
     const die = {
         index: 0,
         value,
-        face: String(value),
+        face,
         effectKey: `bonusDie.effect.powderKeg.${value}`,
         effectParams: { value },
     };
@@ -1113,7 +1132,7 @@ function resolvePowderKegUpkeepEvents(
         type: 'BONUS_DIE_ROLLED',
         payload: {
             value,
-            face: String(value),
+            face: `${value}`,
             playerId,
             targetPlayerId: playerId,
             effectKey: `bonusDie.effect.powderKeg.${value}`,
@@ -1201,7 +1220,8 @@ function createBlindedCheckExitResult(
     continuation: NonNullable<PendingBonusDiceSettlement['continuation']>,
 ): PhaseExitResult {
     const value = random.d(6);
-    const face = getPlayerDieFace(core, attackerId, value) ?? '';
+    const numericFace: `${number}` = `${value}`;
+    const face = getPlayerDieFace(core, attackerId, value) ?? numericFace;
     const effectKey = value <= 2
         ? 'bonusDie.effect.blinded.miss'
         : 'bonusDie.effect.blinded.hit';
@@ -1292,7 +1312,8 @@ function resolveDazzleCheckExitResult(
     }
 
     const value = random.d(6);
-    const face = getPlayerDieFace(core, pendingAttack.attackerId, value) ?? '';
+    const numericFace: `${number}` = `${value}`;
+    const face = getPlayerDieFace(core, pendingAttack.attackerId, value) ?? numericFace;
     const settlement: PendingBonusDiceSettlement = {
         id: `${TIANSHi_DAZZLE_CHECK_SETTLEMENT_ID}-${pendingAttack.attackerId}-${timestamp}`,
         sourceAbilityId: STATUS_IDS.DAZZLE,
@@ -1831,7 +1852,12 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
                     // 处理 preDefense 效果（攻击方的非伤害效果仍然生效）
                     let preDefenseEventsSneak = resolveOffensivePreDefenseEffects(core, random, timestamp);
-                    preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(core, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
+                    if (core.pendingAttack.treantDivinePreventDebuffChoice) {
+                        preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(core, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
+                    } else {
+                        const deferred = deferAttackDebuffFollowups(state, preDefenseEventsSneak, timestamp);
+                        if (deferred.state !== state) return { events: [...events, ...deferred.events], updatedState: deferred.state, halt: true };
+                    }
                     events.push(...preDefenseEventsSneak);
 
                     const hasSneakChoice = preDefenseEventsSneak.some(isBlockingInteractionEvent);
@@ -1843,6 +1869,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     const coreAfterPreDefenseSneak = preDefenseEventsSneak.length > 0
                         ? applyEvents(core, [...events] as DiceThroneEvent[], reduce)
                         : core;
+
+                    if (hasNewActiveOffensiveRollToken(core, coreAfterPreDefenseSneak, core.pendingAttack.attackerId)) {
+                        return { events, halt: true };
+                    }
 
                     // 潜行免伤但攻击成功：onHit 条件需要 damageDealt >= 1 才触发
                     // 将 resolvedDamage 设为基础伤害值，让 onHit 正确判定为"命中"
@@ -1874,7 +1904,12 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
                 // 处理进攻方的 preDefense 效果
                 let preDefenseEvents = resolveOffensivePreDefenseEffects(core, random, timestamp);
-                preDefenseEvents = preventIncomingDebuffsWithTreantDivine(core, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
+                if (core.pendingAttack.treantDivinePreventDebuffChoice) {
+                    preDefenseEvents = preventIncomingDebuffsWithTreantDivine(core, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
+                } else {
+                    const deferred = deferAttackDebuffFollowups(state, preDefenseEvents, timestamp);
+                    if (deferred.state !== state) return { events: [...events, ...deferred.events], updatedState: deferred.state, halt: true };
+                }
                 events.push(...preDefenseEvents);
 
                 const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
@@ -1894,6 +1929,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     events,
                     timestamp,
                 );
+
+                if (hasNewActiveOffensiveRollToken(core, coreAfterPreDefenseWithBountyReward, core.pendingAttack.attackerId)) {
+                    return { events, halt: true };
+                }
 
                 // ========== 攻击掷骰阶段结束时 Token 使用（暴击、精准） ==========
                 // 检查攻击方是否有可用的 onOffensiveRollEnd 时机 Token
@@ -1953,12 +1992,13 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
         // ========== targetingRoll 阶段退出：确定防御方后继续攻击流程 ==========
         if (from === 'targetingRoll') {
-            if (!core.pendingAttack) {
+            let pendingAttack = core.pendingAttack;
+            if (!pendingAttack) {
                 return { events, overrideNextPhase: 'main2' };
             }
 
             let targetingCore = core;
-            const attackerId = core.pendingAttack.attackerId;
+            const attackerId = pendingAttack.attackerId;
             const isSkirmish = isSkirmishMode(core);
             const targetingValue = isSkirmish ? 6 : (getActiveDice(core, from as TurnPhase)[0]?.value ?? 1);
             const autoDefenderId = getTargetingRollAutoDefenderId(core, attackerId, targetingValue);
@@ -1968,7 +2008,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
             if (
                 typeof selectedDefenderId === 'string'
-                && !targetingCore.pendingAttack.defenderId
+                && !pendingAttack.defenderId
                 && targetingCore.players[selectedDefenderId]
             ) {
                 const localResolvedEvent: DiceThroneEvent = {
@@ -1977,7 +2017,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         attackerId,
                         chooserPlayerId: getTargetingRollChoiceOwnerId(core, attackerId, targetingValue) ?? attackerId,
                         defenderId: selectedDefenderId,
-                        sourceAbilityId: targetingCore.pendingAttack.sourceAbilityId ?? 'targeting-roll',
+                        sourceAbilityId: pendingAttack.sourceAbilityId ?? 'targeting-roll',
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -1985,22 +2025,26 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 // 该事件已在 execute() 中正式产出；这里只做同拍本地推演，
                 // 让 targetingRoll 退出逻辑能读到最新 defenderId 并继续收敛。
                 targetingCore = applyEvents(targetingCore, [localResolvedEvent], reduce);
+                pendingAttack = targetingCore.pendingAttack;
+                if (!pendingAttack) {
+                    return { events, overrideNextPhase: 'main2' };
+                }
             }
 
-            if (isSkirmish && !targetingCore.pendingAttack.defenderId) {
+            if (isSkirmish && !pendingAttack.defenderId) {
                 if (
-                    targetingCore.pendingAttack.targetingSelectionPending
+                    pendingAttack.targetingSelectionPending
                     || state.sys.interaction?.current?.kind === 'dt:defender-choice'
                 ) {
                     return { events, halt: true };
                 }
-                if (targetingCore.pendingAttack.targetingSelectionResolved !== true) {
+                if (pendingAttack.targetingSelectionResolved !== true) {
                     const choiceEvent: DefenderSelectionRequestedEvent = {
                         type: 'DEFENDER_SELECTION_REQUESTED',
                         payload: {
                             attackerId,
                             chooserPlayerId: attackerId,
-                            sourceAbilityId: targetingCore.pendingAttack.sourceAbilityId ?? 'skirmish-targeting',
+                            sourceAbilityId: pendingAttack.sourceAbilityId ?? 'skirmish-targeting',
                             titleKey: 'interaction.targetingRollSelectTarget',
                             targetRollValue: 6,
                             options: getTargetingRollChoiceOptions(targetingCore, attackerId)
@@ -2016,23 +2060,27 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     events.push(choiceEvent);
                     return { events, halt: true };
                 }
-            } else if (autoDefenderId && !targetingCore.pendingAttack.defenderId) {
+            } else if (autoDefenderId && !pendingAttack.defenderId) {
                 const targetResolvedEvent: DiceThroneEvent = {
                     type: 'DEFENDER_SELECTION_RESOLVED',
                     payload: {
                         attackerId,
                         chooserPlayerId: attackerId,
                         defenderId: autoDefenderId,
-                        sourceAbilityId: targetingCore.pendingAttack.sourceAbilityId ?? 'targeting-roll',
+                        sourceAbilityId: pendingAttack.sourceAbilityId ?? 'targeting-roll',
                     },
                     sourceCommandType: command.type,
                     timestamp,
                 };
                 events.push(targetResolvedEvent);
                 targetingCore = applyEvents(core, [targetResolvedEvent], reduce);
+                pendingAttack = targetingCore.pendingAttack;
+                if (!pendingAttack) {
+                    return { events, overrideNextPhase: 'main2' };
+                }
             } else if (targetingValue === 5 || targetingValue === 6) {
                 if (
-                    targetingCore.pendingAttack.targetingSelectionPending
+                    pendingAttack.targetingSelectionPending
                     && state.sys.interaction?.current?.kind === 'dt:defender-choice'
                 ) {
                     return { events, halt: true };
@@ -2042,16 +2090,16 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 // 才跳过重新建 prompt，避免出现交互已丢失却永久不再重开的卡死状态。
                 const awaitingTargetingChoiceReduce = state.sys.flowHalted === true
                     && state.sys.interaction?.current === undefined
-                    && targetingCore.pendingAttack.targetingSelectionPending !== true
+                    && pendingAttack.targetingSelectionPending !== true
                     && (command.type === 'SELECT_DEFENDER_TARGET' || command.type === 'SYS_INTERACTION_CANCEL');
 
                 if (
-                    targetingCore.pendingAttack.targetingSelectionResolved !== true
+                    pendingAttack.targetingSelectionResolved !== true
                     && !awaitingTargetingChoiceReduce
                 ) {
                     const choiceOwnerId = getTargetingRollChoiceOwnerId(core, attackerId, targetingValue);
                     if (!choiceOwnerId) {
-                        return { events, overrideNextPhase: targetingCore.pendingAttack.isDefendable ? 'defensiveRoll' : 'main2' };
+                        return { events, overrideNextPhase: pendingAttack.isDefendable ? 'defensiveRoll' : 'main2' };
                     }
 
                     const choiceEvent: DefenderSelectionRequestedEvent = {
@@ -2059,7 +2107,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         payload: {
                             attackerId,
                             chooserPlayerId: choiceOwnerId,
-                            sourceAbilityId: targetingCore.pendingAttack.sourceAbilityId ?? 'targeting-roll',
+                            sourceAbilityId: pendingAttack.sourceAbilityId ?? 'targeting-roll',
                             titleKey: targetingValue === 5
                                 ? 'interaction.targetingRollOpponentDecidesTarget'
                                 : 'interaction.targetingRollSelectTarget',
@@ -2180,6 +2228,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                             damageDealt: 0,
                             timestamp: replayTimestamp,
                             damageOrigin: 'card',
+                            isAttackModifierCard: card.isAttackModifier,
                         },
                         { random },
                     );
@@ -2205,7 +2254,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 targetingCore = applyEvents(replayCore, [clearDeferredEvent], reduce);
             }
 
-            const pendingAttack = targetingCore.pendingAttack;
+            pendingAttack = targetingCore.pendingAttack;
             if (!pendingAttack?.defenderId) {
                 return { events, halt: true };
             }
@@ -2277,7 +2326,13 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const sneakStacks = defender?.tokens[TOKEN_IDS.SNEAK] ?? 0;
             if (sneakStacks > 0 && !pendingAttack.isUltimate) {
                 let preDefenseEventsSneak = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
-                preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
+                if (targetingCore.pendingAttack?.treantDivinePreventDebuffChoice) {
+                    preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
+                } else {
+                    const targetingState = { ...state, core: targetingCore };
+                    const deferred = deferAttackDebuffFollowups(targetingState, preDefenseEventsSneak, timestamp);
+                    if (deferred.state !== targetingState) return { events: [...events, ...deferred.events], updatedState: { ...deferred.state, core: state.core }, halt: true };
+                }
                 events.push(...preDefenseEventsSneak);
 
                 const hasSneakChoice = preDefenseEventsSneak.some(isBlockingInteractionEvent);
@@ -2315,7 +2370,13 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             }
 
             let preDefenseEvents = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
-            preDefenseEvents = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
+            if (targetingCore.pendingAttack?.treantDivinePreventDebuffChoice) {
+                preDefenseEvents = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
+            } else {
+                const targetingState = { ...state, core: targetingCore };
+                const deferred = deferAttackDebuffFollowups(targetingState, preDefenseEvents, timestamp);
+                if (deferred.state !== targetingState) return { events: [...events, ...deferred.events], updatedState: { ...deferred.state, core: state.core }, halt: true };
+            }
             events.push(...preDefenseEvents);
 
             const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);

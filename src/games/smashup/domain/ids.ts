@@ -356,7 +356,8 @@ export function getSmashUpFactionImplementationStatus(
     factionId: string | null | undefined,
 ): SmashUpFactionImplementationStatus | undefined {
     if (typeof factionId !== 'string') return undefined;
-    return SMASHUP_FACTION_IMPLEMENTATION_STATUS[factionId as SmashUpFactionId];
+    if (!Object.prototype.hasOwnProperty.call(SMASHUP_FACTION_IMPLEMENTATION_STATUS, factionId)) return undefined;
+    return SMASHUP_FACTION_IMPLEMENTATION_STATUS[factionId as keyof typeof SMASHUP_FACTION_IMPLEMENTATION_STATUS];
 }
 
 export function isSmashUpFactionSelectionIdentityImplementationInProgress(factionId: string): boolean {
@@ -468,7 +469,6 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.VIKINGS]: '维京人',
     [SMASHUP_FACTION_IDS.WIZARDS]: '巫师',
     [SMASHUP_FACTION_IDS.WIZARDS_POD]: '巫师 (POD版)',
-    [SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD]: '时间旅行者 (POD版)',
     [SMASHUP_FACTION_IDS.TRICKSTERS]: '捣蛋鬼',
     [SMASHUP_FACTION_IDS.TRICKSTERS_POD]: '捣蛋鬼 (POD版)',
     [SMASHUP_FACTION_IDS.STEAMPUNKS]: '蒸汽朋克',

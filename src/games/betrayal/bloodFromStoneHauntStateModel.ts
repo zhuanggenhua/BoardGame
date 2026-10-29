@@ -80,7 +80,7 @@ export function applyBetrayalBloodFromStonePeekabooResolvedState(
                 ...synced,
                 pendingDamageAllocation: pendingPeekabooDamageAllocation,
                 activePlayerId: pendingPeekabooDamageAllocation.playerId,
-                recommendedAction: 'damage',
+                recommendedAction: 'endTurn',
                 activityLog: appendActivity(synced, event.payload.logText, 'warning'),
             },
         };

@@ -655,7 +655,7 @@ export const GameHUD = ({
     const exitAction: FabAction = {
         id: 'exit',
         icon: <LogOut size={20} />,
-        label: t('hud.actions.exit'),
+        label: isSpectator ? t('hud.actions.leaveSpectate') : t('hud.actions.exit'),
         content: (
             <div className="space-y-3">
                 {/* 本地模式：只显示返回大厅 */}
@@ -679,8 +679,22 @@ export const GameHUD = ({
                 {/* 在线模式：根据身份显示不同选项 */}
                 {isOnline && (
                     <>
+                        {isSpectator && (
+                            <button
+                                onClick={handleLeave}
+                                disabled={isLoading}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 transition-all font-bold text-xs"
+                            >
+                                <LogOut size={16} />
+                                <div className="min-w-0 flex-1 text-left flex flex-col items-start">
+                                    <span>{t('hud.actions.leaveSpectate')}</span>
+                                    <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.leaveSpectateHint')}</span>
+                                </div>
+                            </button>
+                        )}
+
                         {/* 有凭证的情况 */}
-                        {credentials && (
+                        {!isSpectator && credentials && (
                             <>
                                 {/* 房主：显示销毁房间 */}
                                 {isHost && (
@@ -730,8 +744,8 @@ export const GameHUD = ({
                             </>
                         )}
 
-                        {/* 无凭证：只显示强制退出 */}
-                        {!credentials && (
+                        {/* 无凭证且非观战：只显示强制退出 */}
+                        {!isSpectator && !credentials && (
                             <button
                                 onClick={handleForceExit}
                                 disabled={isLoading}

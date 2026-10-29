@@ -17,6 +17,7 @@ import {
 import type { ActionBarAction } from "../../core/ui/types";
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import type { BetrayalCore } from "./game";
+import type { PreviewState } from "./previewStateModel";
 
 const ACTION_ICON_BY_ID: Partial<Record<ActionBarAction["id"], LucideIcon>> = {
   move: Footprints,
@@ -35,27 +36,11 @@ const ACTION_ICON_BY_ID: Partial<Record<ActionBarAction["id"], LucideIcon>> = {
   cancelTarget: X,
 };
 
-type BetrayalActionDockInteractionMode =
-  | "move"
-  | "trade"
-  | "heal"
-  | "attack"
-  | "eventChoice"
-  | "dustHauntSearch"
-  | "dustHauntCure"
-  | "inventoryTargetRoom"
-  | "helpingHandsTrollMove"
-  | "monsterMove"
-  | "monsterAttack"
-  | "bloodFromStoneSetupPlacement"
-  | "hauntTargeting"
-  | null;
-
 type BetrayalActionDockSurfaceProps = {
   actions: ActionBarAction[];
   phase: BetrayalCore["phase"];
   recommendedAction: ActionBarAction["id"] | null | undefined;
-  interactionMode: BetrayalActionDockInteractionMode;
+  interactionMode: PreviewState["interactionMode"];
   hauntActionKind: string | null | undefined;
   hauntTargetingActionKind: string | null | undefined;
   hasActiveHauntTargetGuide: boolean;

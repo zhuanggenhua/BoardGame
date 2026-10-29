@@ -117,7 +117,7 @@ export interface GameAudioConfig {
     // BGM 定义列表
     bgm?: BgmDefinition[];
     // BGM 分组（用于按阶段切换）
-    bgmGroups?: Record<BgmGroupId, SoundKey[]>;
+    bgmGroups?: Partial<Record<BgmGroupId, SoundKey[]>>;
     /**
      * 统一反馈解析器（必传）
      * 每个事件必须显式返回 { key, timing } 或 null。

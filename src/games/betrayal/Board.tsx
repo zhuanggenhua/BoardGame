@@ -40,6 +40,7 @@ import type {
 import type { BetrayalCommandMap } from "./commandTypes";
 import {
   BetrayalDomain,
+  DEFAULT_BETRAYAL_RANDOM,
   EXPLORER_CATALOG,
   createBetrayalCharacterSelectCore,
 } from "./game";
@@ -1363,6 +1364,7 @@ export default function BetrayalBoard({
       sourceRoomId: string;
       targetTestId: string;
       attachedTo: "room" | "explorer" | "mummy";
+      onComplete?: () => void;
     }) => {
       const girlToken = resolveBetrayalHauntTokenInstances(core).find(
         (token) => token.id === "mummy-girl-token",
@@ -1414,6 +1416,7 @@ export default function BetrayalBoard({
       const nextCore = BetrayalDomain.execute(
         { core: baseCore, sys: {} as never },
         command,
+        DEFAULT_BETRAYAL_RANDOM,
       ).reduce(
         (currentCore, event) => BetrayalDomain.reduce(currentCore, event),
         baseCore,
@@ -2086,7 +2089,7 @@ export default function BetrayalBoard({
     pendingRoomPlacementPreview,
     previewState.pendingRoomOrientationTurns,
   ]);
-  const selectedRoomOrientationTurns =
+  const selectedRoomOrientationTurns: 0 | 1 | 2 | 3 =
     selectedRoomOrientationOption?.orientationTurns ??
     pendingRoomPlacementPreview?.defaultOrientationTurns ??
     0;
@@ -3782,7 +3785,8 @@ export default function BetrayalBoard({
       ...previousState,
       dismissedLatestDiscoveryKey: latestDiscoveryKey,
       dismissedRecentRollId:
-        latestDiscoveryRecentRoll?.sourceTitle === latestDiscoveryTitle &&
+        latestDiscoveryRecentRoll &&
+        latestDiscoveryRecentRoll.sourceTitle === latestDiscoveryTitle &&
         latestDiscoveryRecentRoll.kind !== "eventRolledDamage"
           ? latestDiscoveryRecentRollDisplayKey
           : previousState.dismissedRecentRollId,
@@ -3992,7 +3996,7 @@ export default function BetrayalBoard({
     );
   };
   const handleDismissRecentRoll = React.useCallback(() => {
-    if (!coreRecentRollDisplayKey) {
+    if (!coreRecentRollDisplayKey || !core.recentRoll) {
       return;
     }
     if (
@@ -4215,7 +4219,7 @@ export default function BetrayalBoard({
             return sourceRect
               ? {
                   resolutionId: currentResolution.id,
-                  ownerPlayerId: latestDiscoveryOwnerPlayerId,
+                  ownerPlayerId: latestDiscoveryOwnerPlayerId ?? currentResolution.playerId,
                   card: latestDiscoveryPendingPossessionCard,
                   visual: latestDiscoveryPendingPossessionVisual,
                   sourceRect,
@@ -4946,9 +4950,12 @@ export default function BetrayalBoard({
 
   const handleSelectDustHauntTrait = React.useCallback(
     (
-      actionId: "search-for-cure" | "cure-the-dust",
+      actionId: string,
       trait: BetrayalTraitKey,
     ) => {
+      if (actionId !== "search-for-cure" && actionId !== "cure-the-dust") {
+        return;
+      }
       setPreviewState((previousState) => ({
         ...previousState,
         selectedDustSearchTrait:
@@ -5908,7 +5915,7 @@ export default function BetrayalBoard({
           focusExplorer(heroAttackTargets[0]?.playerId);
           break;
         case "play-peekaboo":
-          focusRoom(bloodFromStonePeekabooOptions[0]?.sameRoomRoomId);
+          focusRoom(bloodFromStonePeekabooOptions[0]?.sameRoomId);
           break;
         default:
           break;
@@ -6218,10 +6225,8 @@ export default function BetrayalBoard({
   const observedExplorerTemplate = EXPLORER_CATALOG.find(
     (explorer) => explorer.explorerId === observedExplorer.explorerId,
   );
-  const observedExplorerAbilityName =
-    observedExplorer.abilityName || observedExplorerTemplate?.abilityName || "";
-  const observedExplorerAbilityText =
-    observedExplorer.abilityText || observedExplorerTemplate?.abilityText || "";
+  const observedExplorerAbilityName = observedExplorerTemplate?.abilityName || "";
+  const observedExplorerAbilityText = observedExplorerTemplate?.abilityText || "";
 
   return (
     <UndoProvider value={undoProviderValue}>
@@ -6441,7 +6446,7 @@ export default function BetrayalBoard({
                     isDustAttackTargetingMode={isDustAttackTargetingMode}
                     hauntActionKind={hauntActionContext?.actionKind}
                     hauntActionTargetPlayerId={
-                      hauntActionContext?.targetPlayerId
+                      activeHauntTargetGuide?.playerId ?? null
                     }
                     selectedTradeTargetPlayerId={selectedTradeTargetPlayerId}
                     selectedCorpseLootTargetPlayerId={
@@ -6599,7 +6604,7 @@ export default function BetrayalBoard({
                   canModifyRoll={canCurrentPlayerModifyLatestDiscoveryRoll}
                   rollActorLabel={
                     latestDiscoveryRecentRoll
-                      ? resolveRecentRollActorLabel(latestDiscoveryRecentRoll)
+                      ? resolveRecentRollActorLabel(latestDiscoveryRecentRoll) ?? ""
                       : ""
                   }
                   rollModifierActionSlot={rollModifierActionSlot}
@@ -6640,7 +6645,7 @@ export default function BetrayalBoard({
                   }
                   actorLabel={
                     core.recentRoll
-                      ? resolveRecentRollActorLabel(core.recentRoll)
+                      ? resolveRecentRollActorLabel(core.recentRoll) ?? ""
                       : ""
                   }
                   onDismiss={handleDismissRecentRoll}
@@ -6965,7 +6970,16 @@ export default function BetrayalBoard({
                     previewState.selectedTradeTargetPlayerId
                   }
                   selectedDustTargetPlayerId={selectedDustTargetPlayerId}
-                  visibleFeedback={visibleBoardResultFeedback}
+                  visibleFeedback={
+                    visibleBoardResultFeedback?.kind === "heal"
+                      ? {
+                          kind: "heal",
+                          targetName: visibleBoardResultFeedback.targetName,
+                          traitSummary: visibleBoardResultFeedback.traitSummary,
+                          traitCount: visibleBoardResultFeedback.traitCount,
+                        }
+                      : null
+                  }
                   traitChangeFeedbackByPlayerId={traitChangeFeedbackByPlayerId}
                   helpingHandsMovableTrollHandIds={
                     mapMonsterSelectionEligibility.canSelectHelpingHandsMonsterMoveMonster
@@ -7416,7 +7430,7 @@ export default function BetrayalBoard({
                       isDustAttackTargetingMode={isDustAttackTargetingMode}
                       hauntActionKind={hauntActionContext?.actionKind}
                       hauntActionTargetPlayerId={
-                        hauntActionContext?.targetPlayerId
+                        activeHauntTargetGuide?.playerId ?? null
                       }
                       selectedTradeTargetPlayerId={selectedTradeTargetPlayerId}
                       selectedCorpseLootTargetPlayerId={

@@ -222,17 +222,18 @@ for (const mobile of [false, true]) {
             });
             await pauseForViewing();
             if (!mobile) {
-                await step('卡片悬浮', '逐张悬停封面，观察封面上的介绍叠层，卡片尺寸保持不变', async () => {
+                await step('卡片悬浮', '逐张悬停封面，观察独立侧边介绍层，网格占位保持不变', async () => {
                     for (const index of [0, 5]) {
                         const card = page.locator('.platform-game-card').nth(index);
                         await card.locator('.platform-game-open').hover();
-                        await expect(card.locator('.platform-game-hover-preview')).toHaveCount(0);
-                        await expect.poll(() => card.locator('.platform-game-veil').evaluate(node => getComputedStyle(node).opacity)).toBe('1');
+                        const preview = card.locator('.platform-game-hover-preview');
+                        await expect(preview).toBeVisible();
+                        await expect(card.locator('.platform-game-veil')).toHaveCount(0);
                         await expect(card.locator('.platform-game-description')).toHaveCount(0);
-                        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeLessThanOrEqual(1.001);
+                        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeGreaterThan(1.04);
                         if (index === 0) {
                             const favorite = card.locator('.platform-game-favorite');
-                            await expect(favorite).toHaveText('');
+                            await expect(favorite).toContainText('收藏');
                             await favorite.hover();
                             await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(213, 255, 0)');
                             await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).transform)).toBe('none');
@@ -240,10 +241,10 @@ for (const mobile of [false, true]) {
                         }
                         await pauseForViewing();
                         await page.mouse.move(1, 1);
-                        await expect.poll(() => card.locator('.platform-game-veil').evaluate(node => getComputedStyle(node).opacity)).toBe('0');
+                        await expect(preview).toHaveCount(0);
                         await pauseForViewing();
                     }
-                    return { desktopScale: false, onCardVeil: true, favoriteHoverFeedback: true, previewClosed: true };
+                    return { desktopScale: true, sidePreview: true, favoriteHoverFeedback: true, previewClosed: true };
                 });
                 await step('按钮反馈', '悬停分类按钮后移开，观察抬起和硬阴影恢复', async () => {
                     const filter = page.getByRole('button', { name: '卡牌', exact: true });

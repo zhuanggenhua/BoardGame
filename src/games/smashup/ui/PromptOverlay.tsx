@@ -1616,8 +1616,18 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             })
             : cardOptions;
         // 提取基地上下文信息（用于高亮和标题显示）
-        const contextBaseIndex = (prompt as any)?.continuationContext?.baseIndex;
-        const contextBaseDef = contextBaseIndex !== undefined ? getBaseDef(prompt.state?.bases?.[contextBaseIndex]?.defId) : undefined;
+        const continuationContext = prompt?.continuationContext;
+        const contextBaseIndex = typeof continuationContext === 'object'
+            && continuationContext !== null
+            && 'baseIndex' in continuationContext
+            ? continuationContext.baseIndex
+            : undefined;
+        const contextBaseDefId = typeof contextBaseIndex === 'number'
+            && Number.isInteger(contextBaseIndex)
+            && contextBaseIndex >= 0
+            ? core?.bases[contextBaseIndex]?.defId
+            : undefined;
+        const contextBaseDef = contextBaseDefId ? getBaseDef(contextBaseDefId) : undefined;
         const contextBaseName = contextBaseDef ? resolveCardName(contextBaseDef, t) : undefined;
 
         return (

@@ -1042,20 +1042,31 @@ export function validate(
                     return { valid: false, error: '该行动卡不需要选择随从目标' };
                 }
 
-                const specialValidation = resolveSpecial(rCard.defId)
-                    ? validateSpecialUse({
+                const specialValidation = (() => {
+                    if (!resolveSpecial(rCard.defId)) return { valid: true };
+                    const baseIndex = typeof targetBase === 'number'
+                        ? targetBase
+                        : reactionWindow.sourceBaseIndex;
+                    if (
+                        baseIndex === undefined
+                        || baseIndex < 0
+                        || baseIndex >= core.bases.length
+                    ) {
+                        return { valid: false, error: '该特殊能力缺少有效的基地上下文' };
+                    }
+                    return validateSpecialUse({
                         state: core,
                         matchState: state,
                         playerId: command.playerId,
                         cardUid: rCard.uid,
                         defId: rCard.defId,
-                        baseIndex: typeof targetBase === 'number' ? targetBase : undefined,
-                        targetBaseIndex: typeof targetBase === 'number' ? targetBase : undefined,
+                        baseIndex,
+                        ...(typeof targetBase === 'number' ? { targetBaseIndex: targetBase } : {}),
                         targetMinionUid,
                         random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                         now: core.turnNumber ?? 0,
-                    })
-                    : { valid: true };
+                    });
+                })();
                 if (!specialValidation.valid) {
                     return specialValidation;
                 }
@@ -1098,7 +1109,7 @@ export function validate(
                 };
             }
             if (!isCardActionLike(card)) return { valid: false, error: '该卡牌不是行动卡' };
-            if (fromStored && (card.counters ?? 0) > 0) {
+            if (fromStored && 'counters' in card && typeof card.counters === 'number' && card.counters > 0) {
                 return { valid: false, error: '该停滞牌仍有停滞指示物' };
             }
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
@@ -1624,7 +1635,7 @@ export function validate(
                 state: core,
                 matchState: state,
                 playerId: command.playerId,
-                cardUid: spMinionUid,
+                cardUid: spMinion.uid,
                 defId: spMinion.defId,
                 baseIndex: spBaseIndex,
                 targetBaseIndex: spTargetBaseIndex,

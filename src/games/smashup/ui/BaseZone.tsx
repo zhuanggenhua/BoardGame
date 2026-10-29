@@ -166,7 +166,7 @@ export const BaseZone: React.FC<{
     const layout = getLayoutConfig(playerCount, { isMobileViewport });
     
     const baseDef = getBaseDef(base.defId);
-    const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) : base.defId;
+    const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) ?? base.defId : base.defId;
     const localizedBaseDef = getBaseDef(resolvedBaseDefId) ?? baseDef;
     const baseName = localizedBaseDef ? (resolveCardName(localizedBaseDef, t) || resolvedBaseDefId) : base.defId;
     const totalPower = getTotalEffectivePowerOnBase(core, base, baseIndex);
@@ -417,7 +417,11 @@ export const BaseZone: React.FC<{
         const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
         const ongoingControllerId = ((oa.metadata?.sourceControllerId as string | undefined) ?? oa.ownerId);
         const pConf = PLAYER_CONFIG[parseInt(ongoingControllerId) % PLAYER_CONFIG.length];
-        const hasOngoingTalent = actionDef?.abilityTags?.includes('talent') ?? false;
+        const hasOngoingTalent = actionDef?.type === 'fusion'
+            ? actionDef.actionAbilityTags?.includes('talent') ?? false
+            : actionDef?.type === 'action'
+                ? actionDef.abilityTags?.includes('talent') ?? false
+                : false;
         const canUseOngoingTalent = !!usableOngoingTalentUids?.has(oa.uid);
         const hasExtraTalentReady =
             oa.metadata?.mythicHorsesSeastarExtraTalent === true
@@ -429,13 +433,14 @@ export const BaseZone: React.FC<{
         const isMultiSelectedOngoing = !!multiSelectedOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
-        const ongoingAccentHighlightActive =
+        const ongoingAccentHighlightActive = !!(
             isSelectedOngoing ||
             isMultiSelectedOngoing ||
             isSelectableOngoing ||
             isOngoingActivationArmed ||
             canUseOngoingTalent ||
-            showUsedOngoingState;
+            showUsedOngoingState
+        );
         const ongoingAccessoryChromeClass = getAccessoryChromeClass(ongoingAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
         const ongoingPowerCounterSurfaceClass = getAccessorySurfaceClass(ongoingAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
         const showOngoingInspectButton = !isSelectableOngoing && (
@@ -1616,7 +1621,7 @@ const MinionCard: React.FC<{
     const shouldShowAttachedActions =
         !isSelectionContext && (Boolean(selectableOngoingUids) || (isCoarsePointer ? !!isExpanded : false));
     const [isAttachedOverlayPinned, setIsAttachedOverlayPinned] = React.useState(false);
-    const attachedOverlayHideTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
+    const attachedOverlayHideTimerRef = React.useRef<number | null>(null);
     const attachedOverlayVisibilityChangeRef = React.useRef(onAttachedOverlayVisibilityChange);
     const attachedActionsPositionClass = shouldShowAttachedLeft
         ? 'right-full flex-col-reverse pr-[0.6vw]'
@@ -1804,10 +1809,10 @@ const MinionCard: React.FC<{
             : { rotate: rotation };
 
     const rotationTransition = isSelectableMinion
-        ? { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } }
+        ? { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' as const } }
         : canActivate
-            ? { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } }
-            : { type: 'spring', stiffness: 320, damping: 26 };
+            ? { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' as const } }
+            : { type: 'spring' as const, stiffness: 320, damping: 26 };
 
     return (
         <motion.div
@@ -2023,7 +2028,11 @@ const MinionCard: React.FC<{
                             const isSelectedAA = !!selectedOngoingUids?.has(aa.uid);
                             const isMultiSelectedAA = !!multiSelectedOngoingUids?.has(aa.uid);
                             const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
-                            const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
+                            const hasAATalent = actionDef?.type === 'fusion'
+                                ? actionDef.actionAbilityTags?.includes('talent') ?? false
+                                : actionDef?.type === 'action'
+                                    ? actionDef.abilityTags?.includes('talent') ?? false
+                                    : false;
                             const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
                             const attachedActivationKey = `attached-${aa.uid}`;
                             const isAttachedActivationArmed = isActivationArmed(attachedActivationKey);

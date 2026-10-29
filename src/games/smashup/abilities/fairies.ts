@@ -1,7 +1,10 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -49,6 +52,7 @@ import type {
     OngoingAttachedEvent,
     SmashUpReactionResourceFootprint,
     SmashUpReactionResourceRef,
+    MinionOnBase,
 } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 
@@ -70,6 +74,7 @@ type ButtonChoice = {
         | 'destroy_actions'
         | 'play_spirit'
         | 'self_bonus'
+        | 'target_other'
         | 'plus'
         | 'minus';
     skip?: boolean;
@@ -502,7 +507,7 @@ function createTransferSelfAbilityProgram(
     titleKey: string,
     reason: 'fairies_ladybug' | 'fairies_leaf_armor',
 ) {
-    const promptProgram = createPromptProgram<FairiesTransferPromptContext, SmashUpCore, SmashUpEvent>({
+    const promptProgram = createPromptProgram<FairiesTransferPromptContext>({
         sourceId,
         buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
             `${sourceId}_${context.now}`,
@@ -560,19 +565,18 @@ function createTransferSelfAbilityProgram(
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: ctx.matchState,
                 playerId: ctx.playerId,
                 now: ctx.now,
                 attachedCardUid: ctx.cardUid,
                 targets,
-            } satisfies FairiesTransferPromptContext,
-            nextProgram: promptProgram,
+            } satisfies FairiesTransferPromptContext, promptProgram),
         };
     });
 }
 
-const fairiesTitaniaReturnPromptProgram = createPromptProgram<FairiesTitaniaReturnPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesTitaniaReturnPromptProgram = createPromptProgram<FairiesTitaniaReturnPromptContext>({
     sourceId: 'fairies_titania_return_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_titania_return_minion_${context.now}`,
@@ -608,7 +612,7 @@ const fairiesTitaniaReturnPromptProgram = createPromptProgram<FairiesTitaniaRetu
     },
 });
 
-const fairiesTitaniaPodReturnPromptProgram = createPromptProgram<FairiesTitaniaPodReturnPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesTitaniaPodReturnPromptProgram = createPromptProgram<FairiesTitaniaPodReturnPromptContext>({
     sourceId: 'fairies_titania_pod_return_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_titania_pod_return_minion_${context.now}`,
@@ -652,7 +656,7 @@ const fairiesTitaniaPodReturnPromptProgram = createPromptProgram<FairiesTitaniaP
     },
 });
 
-const fairiesGlymmerTargetPromptProgram = createPromptProgram<FairiesGlymmerPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesGlymmerTargetPromptProgram = createPromptProgram<FairiesGlymmerPromptContext>({
     sourceId: 'fairies_glymmer_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_glymmer_target_${context.now}`,
@@ -683,7 +687,7 @@ const fairiesGlymmerTargetPromptProgram = createPromptProgram<FairiesGlymmerProm
     },
 });
 
-const fairiesGlymmerPromptProgram = createPromptProgram<FairiesGlymmerPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesGlymmerPromptProgram = createPromptProgram<FairiesGlymmerPromptContext>({
     sourceId: 'fairies_glymmer',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_glymmer_${context.now}`,
@@ -732,19 +736,18 @@ const fairiesGlymmerPromptProgram = createPromptProgram<FairiesGlymmerPromptCont
         if (selected.choice !== 'target_other') return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 sourceCardUid: context.sourceCardUid,
                 sourceBaseIndex: context.sourceBaseIndex,
-            } satisfies FairiesGlymmerPromptContext,
-            nextProgram: fairiesGlymmerTargetPromptProgram,
+            } satisfies FairiesGlymmerPromptContext, fairiesGlymmerTargetPromptProgram),
         };
     },
 });
 
-const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext>({
     sourceId: 'fairies_tinx',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_tinx_${context.now}`,
@@ -788,7 +791,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
     },
 });
 
-const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentContinuation & FairiesPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesEnchantmentPromptProgram: AbilityProgram<FairiesEnchantmentContinuation & FairiesPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<FairiesEnchantmentContinuation & FairiesPromptContext>({
     sourceId: 'fairies_enchantment',
     buildInteraction: (context) => {
         const selectedBranchIds = context.selectedBranchIds ?? [];
@@ -841,14 +844,13 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
             } as OngoingAttachedEvent];
             return {
                 events: immediateEvents,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     playerId,
                     now: timestamp,
                     selectedBranchIds: [selectedValue.branchId],
-                },
-                nextProgram: fairiesEnchantmentPromptProgram,
+                }, fairiesEnchantmentPromptProgram),
             };
         }
 
@@ -886,7 +888,7 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
     },
 });
 
-const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlayfulTricksDestroyPromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlayfulTricksDestroyPromptContext>({
     sourceId: 'fairies_playful_tricks_destroy',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_playful_tricks_destroy_${context.now}`,
@@ -933,7 +935,7 @@ const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlay
     },
 });
 
-const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesPlayfulTricksSpiritBasePromptContext, SmashUpCore, SmashUpEvent>({
+const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesPlayfulTricksSpiritBasePromptContext>({
     sourceId: 'fairies_playful_tricks_spirit_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `fairies_playful_tricks_spirit_base_${context.now}`,
@@ -1081,14 +1083,13 @@ const fairiesGlymmerProgram = createEffectProgram<AbilityContext, SmashUpCore, S
     if (!current) return { events: [] };
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             sourceCardUid: ctx.cardUid,
             sourceBaseIndex: current.baseIndex,
-        } satisfies FairiesGlymmerPromptContext,
-        nextProgram: fairiesGlymmerPromptProgram,
+        } satisfies FairiesGlymmerPromptContext, fairiesGlymmerPromptProgram),
     };
 });
 
@@ -1148,15 +1149,14 @@ const fairiesTinxProgram = createEffectProgram<AbilityContext, SmashUpCore, Smas
     if (options.length === 0) return { events: [] };
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             targetBaseIndex: current.baseIndex,
             targetMinionUid: ctx.cardUid,
             options,
-        } satisfies FairiesTinxPromptContext,
-        nextProgram: fairiesTinxPromptProgram,
+        } satisfies FairiesTinxPromptContext, fairiesTinxPromptProgram),
     };
 });
 
@@ -1263,15 +1263,14 @@ const fairiesEnchantmentProgram = createEffectProgram<AbilityContext, SmashUpCor
     const upgrade = getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now);
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             baseIndex: ctx.baseIndex,
             attachedCardUid: ctx.cardUid,
             allowBoth: !!upgrade,
-        } satisfies FairiesEnchantmentContinuation & FairiesPromptContext,
-        nextProgram: fairiesEnchantmentPromptProgram,
+        } satisfies FairiesEnchantmentContinuation & FairiesPromptContext, fairiesEnchantmentPromptProgram),
     };
 });
 

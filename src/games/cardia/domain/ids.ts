@@ -152,11 +152,16 @@ export const CARD_IDS_DECK_II = {
  * 所有卡牌 ID
  */
 export const CARD_IDS = {
-    ...CARD_IDS_DECK_I,
+    // 按牌组保留完整命名空间，避免两个牌组的 CARD_01 等键互相覆盖。
+    DECK_I: CARD_IDS_DECK_I,
+    DECK_II: CARD_IDS_DECK_II,
+    // 兼容旧调用：未分组的 CARD_XX 仍指向 II 牌组，保持此前运行时行为。
     ...CARD_IDS_DECK_II,
 } as const;
 
-export type CardId = typeof CARD_IDS[keyof typeof CARD_IDS];
+export type CardId =
+    | typeof CARD_IDS_DECK_I[keyof typeof CARD_IDS_DECK_I]
+    | typeof CARD_IDS_DECK_II[keyof typeof CARD_IDS_DECK_II];
 
 /**
  * 修正标记 ID

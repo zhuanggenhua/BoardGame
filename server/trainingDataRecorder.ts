@@ -35,6 +35,7 @@ export interface JsonlTrainingDataRecorderOptions {
 }
 
 export interface TrainingDataCaptureEnv {
+    [key: string]: string | undefined;
     ENABLE_TRAINING_DATA_CAPTURE?: string;
     TRAINING_DATA_DIR?: string;
     TRAINING_DATA_RAW_DIR?: string;

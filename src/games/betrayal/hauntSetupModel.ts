@@ -1,7 +1,7 @@
 import type {
     BetrayalCore,
-    BetrayalHauntType,
 } from './game';
+import type { BetrayalHauntType } from './hauntTraitorResolutionModel';
 import { findExplorerByPlayerId } from './explorerReadModel';
 import { resolveBloodFromStoneSetupPlacementPlan } from './bloodFromStoneSetupReadModel';
 import {
@@ -366,7 +366,7 @@ function createBetrayalHauntSetupCommandPreview(
     const baseGaps: BetrayalHauntSetupCommandPreviewGap[] =
         hasFormalSetupConfirmation ? [] : ['formal-command', 'ui-confirmation'];
     let action: BetrayalHauntSetupCommandPreviewAction = 'confirm-state';
-    let label = entry.id;
+    let label: string = entry.id;
     let targetPlayerIds: string[] = [];
     let targetRoomIds: string[] = [];
     let targetCardIds: string[] = [];

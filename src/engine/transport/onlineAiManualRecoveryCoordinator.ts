@@ -65,7 +65,10 @@ export type OnlineAiManualRecoveryCoordinatorHooks<TMatch extends OnlineAiManual
         candidate: ForceEndTurnStalledAiResolution;
         progressMarker: string;
         seatControllers: Record<string, OnlineAiWatchdogSeatController>;
-        options: { allowManualImmediateAiContinuation: true };
+        options: {
+            allowManualImmediateAiContinuation: true;
+            forceManualCommandExecution: true;
+        };
     }) => Promise<void>;
     hasRecoveryResolved: (
         match: TMatch,

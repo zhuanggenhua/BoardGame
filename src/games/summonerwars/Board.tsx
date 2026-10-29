@@ -17,6 +17,7 @@ import type { SummonerWarsCore } from './domain';
 import { SW_COMMANDS } from './domain';
 import './cursor'; // Register cursor themes
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
+import { useOptionalGameClient } from '../../engine/transport/react';
 import { SummonerWarsDebugConfig } from './debug-config';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { UndoProvider } from '../../contexts/UndoContext';
@@ -163,6 +164,7 @@ function SummonerWarsLifeToggle({
 export const SummonerWarsBoard: React.FC<Props> = ({
   G, dispatch, playerID, reset, matchData, isMultiplayer, locale,
 }) => {
+  const adminDebugAvailable = useOptionalGameClient()?.adminDebugAvailable === true;
   const isGameOver = G.sys.gameover;
   const gameMode = useGameMode();
   const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
@@ -1097,7 +1099,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   }, [abilityMode?.abilityId, findInteractionOptionId, respondInteractionOption, setAbilityMode]);
   const handleSaveLayout = useCallback(async (config: BoardLayoutConfig) => saveSummonerWarsLayout(config), []);
 
-  const debugPanel = !isSpectator ? (
+  const debugPanel = !isSpectator || adminDebugAvailable ? (
     <GameDebugPanel
       G={G}
       dispatch={dispatch}

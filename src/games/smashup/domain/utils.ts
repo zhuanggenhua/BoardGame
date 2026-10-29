@@ -761,7 +761,7 @@ export function buildDeck(
 export function drawCards(
     player: PlayerState,
     count: number,
-    random: RandomFn
+    random?: RandomFn
 ): {
     hand: CardInstance[];
     deck: CardInstance[];
@@ -776,6 +776,9 @@ export function drawCards(
 
     for (let i = 0; i < count; i++) {
         if (deck.length === 0 && discard.length > 0) {
+            if (!random) {
+                throw new Error('drawCards requires a random source to reshuffle the discard pile');
+            }
             deck = random.shuffle([...discard]);
             discard = [];
             if (!reshuffledDeckUids) {

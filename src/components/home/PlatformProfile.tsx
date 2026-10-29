@@ -9,12 +9,12 @@ import { AUTH_API_URL } from '../../config/server';
 import { getGameById } from '../../config/games.config';
 import { MatchHistoryList } from '../social/MatchHistoryList';
 import { getExternalHistory } from '../../api/external-games';
-import { CreatorVerification, MySubmissions, MyWorks } from './CreatorCenter';
+import { MySubmissions, MyWorks } from './CreatorCenter';
 import './platform-profile.css';
 
 interface GameActivity { totalPlays: number; }
-export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', initialGameId = '', submissionFilter = 'all', onSubmissionFilterChange = () => {}, onTabChange = () => {}, onOpenSubmission = () => {}, onOpenGame = () => {} }: {
-    favoriteCount: number; onLogin: () => void; tab?: string; initialGameId?: string;
+export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', submissionFilter = 'all', onSubmissionFilterChange = () => {}, onTabChange = () => {}, onOpenSubmission = () => {}, onOpenGame = () => {} }: {
+    favoriteCount: number; onLogin: () => void; tab?: string;
     submissionFilter?: string; onSubmissionFilterChange?: (filter: string) => void;
     onTabChange?: (tab: string) => void; onOpenSubmission?: (id?: string) => void; onOpenGame?: (id: string, preview?: boolean) => void;
 }) {
@@ -30,7 +30,7 @@ export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', init
         return response.json();
     } });
     const history = useQuery({ queryKey: ['external-play-history', user?.id], enabled: Boolean(user && token), queryFn: () => getExternalHistory(token!) });
-    const activeTab = ['overview', 'submissions', 'works', 'verification'].includes(tab) ? tab : 'overview';
+    const activeTab = ['overview', 'submissions', 'works'].includes(tab) ? tab : 'overview';
     if (!user) return <section className="platform-profile-login"><h2>{t('platform.profile.title')}</h2><button type="button" onClick={onLogin}>{t('platform.profile.login')}</button></section>;
     return <div className="platform-profile-backdrop">
       <div className="platform-profile-background" aria-hidden="true">{getGameById('smashup')?.thumbnail}</div>
@@ -56,7 +56,7 @@ export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', init
             {error && <p role="alert">{error}</p>}
         </header>
         <nav className="platform-profile-tabs" aria-label="个人中心分区">
-            {[['overview', '概览'], ['submissions', '我的投稿'], ['works', '我的作品'], ['verification', '作者认证']].map(([id, label]) => <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTabChange(id)}>{label}</button>)}
+            {[['overview', '概览'], ['submissions', '我的投稿'], ['works', '我的作品']].map(([id, label]) => <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTabChange(id)}>{label}</button>)}
         </nav>
         <section className="platform-profile-feed" data-testid="profile-plays">
             {activeTab === 'overview' && <><h2>{t('social:matchHistory.title')}</h2><MatchHistoryList />
@@ -67,8 +67,7 @@ export function PlatformProfile({ favoriteCount, onLogin, tab = 'overview', init
                     {history.data?.items?.map(item => <button type="button" className="platform-external-history-row" key={item.gameId} onClick={() => onOpenGame(item.gameId)}><strong>{item.name}</strong><span>前台停留约 {Math.floor(item.seconds / 60)} 分钟</span></button>)}
                 </div></>}
             {activeTab === 'submissions' && token && <MySubmissions token={token} userId={user.id} onOpen={onOpenSubmission} filter={submissionFilter} onFilterChange={onSubmissionFilterChange} />}
-            {activeTab === 'works' && token && <MyWorks token={token} userId={user.id} onTab={onTabChange} onOpenGame={onOpenGame} />}
-            {activeTab === 'verification' && token && <CreatorVerification token={token} userId={user.id} initialGameId={initialGameId} />}
+            {activeTab === 'works' && token && <MyWorks token={token} userId={user.id} onOpenGame={onOpenGame} />}
         </section>
         <aside className="platform-profile-stats" data-testid="profile-rail">
             {!editing && <button type="button" onClick={() => setEditing(true)}>{t('platform.profile.editProfile')}</button>}

@@ -106,7 +106,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const selectionState = core.factionSelection;
     const [focusedGroupId, setFocusedGroupId] = useState<string | null>(null);
     const [detailPreviewTab, setDetailPreviewTab] = useState<'hand' | 'bases'>('hand');
-    const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'titan' } | null>(null);
+    const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'fusion' | 'titan' } | null>(null);
     const selectionGridRef = useRef<HTMLDivElement | null>(null);
     const previousFactionSelectionsRef = useRef<string[]>([]);
     const [selectionGridMetrics, setSelectionGridMetrics] = useState<SelectionGridMetrics>(() => ({

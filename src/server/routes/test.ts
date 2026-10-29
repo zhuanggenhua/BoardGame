@@ -5,9 +5,10 @@
  */
 
 import Router from '@koa/router';
+import type { RouterContext } from '@koa/router';
 import type { GameTransportServer } from '../../engine/transport/server';
 import type { MatchStorage, StoredMatchState } from '../../engine/transport/storage';
-import type { MatchState } from '../../core/types';
+import type { MatchState } from '../../engine/types';
 import { validateMatchState, deepMerge, type StateValidatorRegistry } from '../../engine/transport/stateValidator';
 import { resolveSharedTestApiToken } from '../testApiToken';
 
@@ -63,7 +64,7 @@ export function createTestRoutes(
 ): Router {
     const router = new Router({ prefix: '/test' });
 
-    const requireMatchAccess = async (ctx: Router.RouterContext, matchId: string): Promise<boolean> => {
+    const requireMatchAccess = async (ctx: RouterContext, matchId: string): Promise<boolean> => {
         const playerId = ctx.get(TEST_PLAYER_ID_HEADER);
         const credentials = ctx.get(TEST_PLAYER_CREDENTIALS_HEADER);
 

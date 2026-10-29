@@ -1,15 +1,17 @@
 import { createAbilityExecutorRegistry } from '../../../engine/primitives/ability';
 import type { AbilityContext, AbilityResult } from '../../../engine/primitives/ability';
-import type { GameEvent, RandomFn } from '../../../engine/types';
+import type { RandomFn } from '../../../engine/types';
 import type { PlayerId } from '../../../engine/types';
 import type { CardiaCore, FactionType } from './core-types';
+import type { AbilityId } from './ids';
+import type { CardiaEvent } from './events';
 
 /**
  * Cardia 能力执行上下文
  */
 export interface CardiaAbilityContext extends AbilityContext {
     core: CardiaCore;
-    abilityId: string;
+    abilityId: AbilityId;
     cardId: string;
     playerId: PlayerId;
     opponentId: PlayerId;
@@ -19,6 +21,8 @@ export interface CardiaAbilityContext extends AbilityContext {
     selectedCardId?: string;
     selectedFaction?: FactionType;
     selectedModifier?: number;
+    selectedModifierValue?: number;
+    selectedOption?: string;
 }
 
 /**
@@ -26,14 +30,14 @@ export interface CardiaAbilityContext extends AbilityContext {
  */
 export type CardiaAbilityExecutor = (
     ctx: CardiaAbilityContext
-) => AbilityResult<GameEvent>;
+) => AbilityResult<CardiaEvent>;
 
 /**
  * 创建执行器注册表（使用引擎层框架）
  */
 export const abilityExecutorRegistry = createAbilityExecutorRegistry<
     CardiaAbilityContext,
-    GameEvent
+    CardiaEvent
 >('cardia-ability-executors');
 
 /**

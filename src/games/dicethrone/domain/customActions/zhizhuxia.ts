@@ -1,6 +1,7 @@
 import type {
     BonusDamageAddedEvent,
     BonusDieRolledEvent,
+    BonusDieInfo,
     DamageDealtEvent,
     DiceThroneEvent,
     ExtraAttackTriggeredEvent,
@@ -14,7 +15,7 @@ import type { CustomActionContext } from '../effects';
 import { createDisplayOnlySettlement, registerCustomActionHandler } from '../effects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { buildDrawEvents } from '../deckEvents';
-import { getActiveDice, getAttackMaxDuplicateValueCount, getPlayerDieFace, getTokenStackLimit, getPendingBonusSettlementDice } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getPlayerDieFace, requirePlayerDieFace, getTokenStackLimit, getPendingBonusSettlementDice } from '../rules';
 import { DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, ZHIZHUXIA_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { buildStatusAppliedOrChoiceEvents } from '../statusEvents';
@@ -79,11 +80,11 @@ const triggerComboExtraAttack = ({ attackerId, targetId, state, timestamp }: Cus
 
 const resolveSpiderReflex = ({ attackerId, targetId, sourceAbilityId, timestamp, random, state }: CustomActionContext): DiceThroneEvent[] => {
     if (!random) return [];
-    const dice = [] as Array<{ index: number; value: number; face: string; effectKey: string }>;
+    const dice: BonusDieInfo[] = [];
     const events: DiceThroneEvent[] = [];
     for (let index = 0; index < 2; index += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         const effectKey = `bonusDie.effect.zhizhuxia.spiderReflex.${face}`;
         dice.push({ index, value, face, effectKey });
         events.push({

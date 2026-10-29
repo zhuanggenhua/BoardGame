@@ -12,6 +12,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import type { CardPreviewRef } from '../../../core';
 import { UI_Z_INDEX } from '../../../core';
 import SpotlightContainer from './SpotlightContainer';
+import type { DieFace } from '../domain/core-types';
 
 const SPOTLIGHT_CARD_WIDTH = '16vw';
 const SPOTLIGHT_CARD_ASPECT_RATIO = 0.61;

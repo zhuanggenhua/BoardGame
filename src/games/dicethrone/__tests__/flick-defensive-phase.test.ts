@@ -16,6 +16,7 @@ import {
     createSetupWithHand,
     advanceTo,
 } from './test-utils';
+import { COMMON_CARDS } from '../domain/commonCards';
 
 describe('抬一手（card-give-hand）响应窗口触发', () => {
     it('伤害结算前的令牌响应中打出抬一手，必须进入选骰交互而不是卡在原响应界面', () => {
@@ -134,7 +135,7 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         expect(result2.finalState.sys.interaction?.current).toBeDefined();
     });
 
-    it('“我又行了”只允许在进攻投掷阶段打出', () => {
+    it('“我又行了”限于进攻投掷阶段，且防御阶段不得被起手牌提前打断', () => {
         const offensiveRunner = createRunner(createQueuedRandom([1, 1, 1, 4, 5]), false);
         const offensiveRoll = offensiveRunner.run({
             name: '进攻方持有“我又行了”并完成首次投掷',
@@ -168,7 +169,7 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         ]), false);
         const defensiveRoll = defensiveRunner.run({
             name: '防御方持有“我又行了”并完成防御投掷',
-            setup: createSetupWithHand(['card-i-can-again'], {
+            setup: createSetupWithHand([], {
                 playerId: '1',
                 cp: 10,
                 mutate: (core) => {
@@ -190,6 +191,9 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         expect(defensiveRoll.finalState.sys.phase).toBe('defensiveRoll');
         expect(defensiveRoll.finalState.core.rollCount).toBe(1);
         const defensiveResources = defensiveRoll.finalState.core.players['1'].resources;
+        const cardICanAgain = COMMON_CARDS.find((card) => card.id === 'card-i-can-again');
+        expect(cardICanAgain).toBeDefined();
+        defensiveRoll.finalState.core.players['1'].hand = [cardICanAgain!];
         const defensiveAttempt = defensiveRunner.run({
             name: '防御投掷阶段拒绝打出进攻专属的“我又行了”',
             setup: () => defensiveRoll.finalState,
@@ -201,7 +205,7 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         expect(defensiveAttempt.finalState.sys.interaction?.current).toBeFalsy();
     });
 
-    it('“就这？”不是红色即时牌：进攻掷骰阶段和非防御掷骰者都不能打出', () => {
+    it('“就这？”限于防御投掷阶段；持牌人可让当前防御骰主执行额外尝试', () => {
         const offensiveRandom = createQueuedRandom([
             1, 1, 1, 4, 5, // 进攻方投骰
         ]);
@@ -272,15 +276,17 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         expect(defensiveRollState.finalState.core.players['0'].hand.map((card) => card.id)).toContain('card-just-this');
 
         const wrongPlayerAttempt = defensiveRunner.run({
-            name: '防御掷骰阶段非当前防御掷骰者不能打出“就这？”',
+            name: '由持牌的进攻方发起，但由当前防御骰主选择骰子',
             setup: () => defensiveRollState.finalState,
             commands: [
                 cmd('PLAY_CARD', '0', { cardId: 'card-just-this' }),
             ],
         });
 
-        expect(wrongPlayerAttempt.finalState.core.players['0'].hand.map((card) => card.id)).toContain('card-just-this');
-        expect(wrongPlayerAttempt.finalState.sys.interaction?.current).toBeFalsy();
+        expect(wrongPlayerAttempt.assertionErrors).toEqual([]);
+        expect(wrongPlayerAttempt.finalState.core.players['0'].hand.map((card) => card.id)).not.toContain('card-just-this');
+        expect(wrongPlayerAttempt.finalState.sys.interaction?.current?.kind).toBe('multistep-choice');
+        expect(wrongPlayerAttempt.finalState.sys.interaction?.current?.playerId).toBe('1');
     });
 
     it('进攻阶段：防御方确认骰面后，进攻方可在响应窗口打出抬一手', () => {

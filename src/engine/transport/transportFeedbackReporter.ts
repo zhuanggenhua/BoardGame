@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import logger from '../../../server/logger.js';
 import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
+import { deliverFeedbackWithRetry, FeedbackDeliveryHttpError } from '../../lib/feedback/feedbackDelivery';
 import type { MatchState } from '../types';
 import type { CommandFailureFeedbackPayload } from './commandFailureFeedbackPayload';
 
@@ -34,6 +35,8 @@ export type OnlineAiRecoveryFeedbackPayload = {
     stateId?: number;
     stateRevision?: number;
     decisionEpoch?: number;
+    privateReplay?: string;
+    privateReplayError?: string;
 };
 
 export type OnlineAiFeedbackConfig = {
@@ -139,6 +142,8 @@ function buildServerDiagnosticPacket(args: {
     stateId?: number;
     stateRevision?: number;
     decisionEpoch?: number;
+    privateReplayError?: string;
+    privateReplayCaptured?: boolean;
 }): string {
     const snapshot = parseDiagnosticJson(args.stateSnapshot);
     const actionLog = parseDiagnosticJson(args.actionLog);
@@ -161,7 +166,7 @@ function buildServerDiagnosticPacket(args: {
         captureId: 'feedback-server-' + randomUUID(),
         capturedAt: new Date().toISOString(),
         source: args.source,
-        collectionStatus: 'complete',
+        collectionStatus: args.privateReplayError || !args.privateReplayCaptured ? 'partial' : 'complete',
         replayability,
         missingFields,
         correlation: {
@@ -179,7 +184,8 @@ function buildServerDiagnosticPacket(args: {
             at: snapshot,
         },
         actionLogTail: actionLog,
-        collectionErrors: [],
+        collectionErrors: args.privateReplayError ? [args.privateReplayError]
+            : args.privateReplayCaptured ? [] : ['private_replay_not_captured'],
         gameId: args.gameId,
         playerId: args.playerId,
     });
@@ -256,7 +262,7 @@ export const postInternalSystemFeedback = async (
 ): Promise<void> => {
     const { endpoint, token } = config;
     if (!endpoint || !token) {
-        return;
+        throw new Error(`feedback_delivery_unavailable:${config.disabledReason ?? 'missing-configuration'}`);
     }
     const response = await fetch(endpoint, {
         method: 'POST',
@@ -267,7 +273,7 @@ export const postInternalSystemFeedback = async (
         body: JSON.stringify(body),
     });
     if (!response.ok) {
-        throw new Error(`feedback_http_${response.status}`);
+        throw new FeedbackDeliveryHttpError(response.status);
     }
 };
 
@@ -290,6 +296,7 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
         contactInfo: 'system:online-ai-watchdog',
         actionLog: payload.actionLog,
         stateSnapshot: payload.stateSnapshot,
+        ...(payload.privateReplay ? { privateReplay: payload.privateReplay } : {}),
         diagnosticPacket: buildServerDiagnosticPacket({
             source: 'server',
             matchId: payload.matchId,
@@ -302,6 +309,8 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
             stateId: payload.stateId,
             stateRevision: payload.stateRevision,
             decisionEpoch: payload.decisionEpoch,
+            privateReplayError: payload.privateReplayError,
+            privateReplayCaptured: Boolean(payload.privateReplay),
         }),
         clientContext: {
             route: 'server-watchdog',
@@ -336,6 +345,7 @@ export const buildCommandFailureFeedbackRequestBody = (
         contactInfo: `system:${payload.feedbackSource}`,
         actionLog: payload.actionLog,
         stateSnapshot: payload.stateSnapshot,
+        ...(payload.privateReplay ? { privateReplay: payload.privateReplay } : {}),
         diagnosticPacket: buildServerDiagnosticPacket({
             source: 'server',
             matchId: payload.matchId,
@@ -348,6 +358,8 @@ export const buildCommandFailureFeedbackRequestBody = (
             requestId: payload.requestId,
             roomId: payload.roomId,
             decisionEpoch: payload.decisionEpoch,
+            privateReplayError: payload.privateReplayError,
+            privateReplayCaptured: Boolean(payload.privateReplay),
         }),
         clientContext: {
             route: isOnlineAiRecovery ? 'server-watchdog-command' : 'server-command',
@@ -397,7 +409,8 @@ export class TransportFeedbackReporter {
         postInternalSystemFeedback?: InternalSystemFeedbackPost;
         now?: () => number;
     } = {}) {
-        const postFeedback = options.postInternalSystemFeedback ?? postInternalSystemFeedback;
+        const postOnce = options.postInternalSystemFeedback ?? postInternalSystemFeedback;
+        const postFeedback: InternalSystemFeedbackPost = body => deliverFeedbackWithRetry(() => postOnce(body));
         this.onlineAiRecoveryFeedbackCooldownMs = options.onlineAiRecoveryFeedbackCooldownMs
             ?? DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS;
         this.commandFailureFeedbackCooldownMs = options.commandFailureFeedbackCooldownMs
@@ -439,6 +452,7 @@ export class TransportFeedbackReporter {
                 trackerKey: payload.trackerKey,
             });
         } catch (error) {
+            this.onlineAiRecoveryFeedbackCooldown.delete(dedupeKey);
             logger.warn('[GameTransport] online-ai-watchdog feedback failed', {
                 matchID: payload.matchId,
                 gameId: payload.gameId,
@@ -471,6 +485,7 @@ export class TransportFeedbackReporter {
                 incidentKey: payload.incidentKey,
             });
         } catch (error) {
+            this.commandFailureFeedbackCooldown.delete(dedupeKey);
             logger.warn('[GameTransport] command failure feedback failed', {
                 matchID: payload.matchId,
                 gameId: payload.gameId,

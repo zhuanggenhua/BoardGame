@@ -30,6 +30,8 @@ export type CommandFailureFeedbackPayload = {
     requestId?: string;
     stateRevision?: number;
     decisionEpoch?: number;
+    privateReplay?: string;
+    privateReplayError?: string;
 };
 
 const cloneCommandFailureDiagnosticValue = (value: unknown): unknown => {

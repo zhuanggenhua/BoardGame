@@ -7,12 +7,13 @@ import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState'
 import { getQidahenEffectivePopulation } from './populationRules';
 import { isQidahenCityRuntimeRegion, resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import type { QidahenCore, QidahenFactionId } from './types';
+import { getEffectiveHomelandController } from './regionRuleSemantics';
 
 export const isRegionUnderSiege = (
     region: Pick<QidahenCore['regions'][number], 'siegeState'>,
 ): boolean => region.siegeState != null;
 
-export const canPlaceRegularTroopsInRegion = (
+export const canReceiveFriendlyTroopsInRegion = (
     region: Pick<QidahenCore['regions'][number], 'controller' | 'diplomacyMarkerFaction' | 'diplomacyMarkerSide' | 'siegeState'>,
     factionId: QidahenFactionId,
 ): boolean => (
@@ -21,11 +22,17 @@ export const canPlaceRegularTroopsInRegion = (
     && !(region.diplomacyMarkerFaction === factionId && region.diplomacyMarkerSide === 'vassal')
 );
 
+export const canPlaceRegularTroopsInRegion = (
+    region: QidahenCore['regions'][number], factionId: QidahenFactionId, state: QidahenCore,
+): boolean => canReceiveFriendlyTroopsInRegion(region, factionId)
+    && region.diplomacyMarkerFaction == null
+    && getEffectiveHomelandController(state, region.id) === factionId;
+
 export const isRegionAvailableForNonDispatchAction = (
     region: Pick<QidahenCore['regions'][number], 'siegeState'>,
 ): boolean => !isRegionUnderSiege(region);
 
-const getPreferredNonSiegedControlledRuntimeRegion = (
+export const getPreferredNonSiegedControlledRuntimeRegion = (
     state: QidahenCore,
     factionId: QidahenFactionId,
 ): QidahenCore['regions'][number] | null => (
@@ -98,7 +105,7 @@ export const getPreferredRegularTroopPlacementRegion = (
     factionId: QidahenFactionId,
 ): QidahenCore['regions'][number] | null => (
     state.regions
-        .filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId))
+        .filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId, state))
         .sort((left, right) => {
             const leftSource = getNonSiegedCityActionSourceSnapshot(left);
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
@@ -126,7 +133,7 @@ export const getQidahenRegularTroopPlacementTarget = (
 ): QidahenCore['regions'][number] | null => (
     state.regions.find((region) => !region.isLogicalRegion
         && region.id === resolveQidahenPrimaryRuntimeRegionId(state.selectedRegionId)
-        && canPlaceRegularTroopsInRegion(region, factionId))
+        && canPlaceRegularTroopsInRegion(region, factionId, state))
     ?? getPreferredRegularTroopPlacementRegion(state, factionId)
 );
 

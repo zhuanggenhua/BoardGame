@@ -24,6 +24,8 @@ import type {
     TrainingDataRecorder,
 } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
+import { attachPrivateFeedbackReplay, capturePrivateFeedbackReplay } from './feedbackPrivateReplay';
+import { FeedbackReplayStaging } from './feedbackReplayStaging';
 import * as aiModule from '../ai';
 import { INTERACTION_COMMANDS } from '../systems/InteractionSystem';
 import {
@@ -51,6 +53,7 @@ import { shouldAutoReportCommandFailure } from './commandFailureReason';
 import type { CommandFailureFeedbackPayload } from './commandFailureFeedbackPayload';
 import {
     TransportFeedbackReporter,
+    resolveOnlineAiFeedbackConfig,
     resolveTransportFeedbackCorrelation,
     type CommandFailureFeedbackReporter,
     type OnlineAiFeedbackReporter,
@@ -66,9 +69,9 @@ import {
     normalizeOnlineAiWatchdogSeatControllerType,
     resolveRawOnlineAiWatchdogSeatControllers,
     resolveSeatControllerTypeForTraining,
-    type GameManifestIndex,
     type OnlineAiSeatControllerType,
 } from './onlineAiSeatControllers';
+import type { GameManifestIndex } from './onlineAiWatchdogSeatControllers';
 import { resolveOnlineAiRecoveryResolved } from './onlineAiRecoveryResolved';
 import { OnlineAiRepeatedRecoveryCoordinator } from './onlineAiRepeatedRecoveryCoordinator';
 import {
@@ -146,6 +149,7 @@ function emitOnlineAiBatchTrace(stage: string, payload: Record<string, unknown>)
 
 type ExecuteCommandInternalOptions = {
     suppressBroadcast?: boolean;
+    adminDebug?: boolean;
     reportFailureFeedback?: boolean;
     feedbackSource?: CommandFailureFeedbackPayload['feedbackSource'];
     expectedStateID?: number;
@@ -177,6 +181,8 @@ export interface GameTransportServerConfig {
         credentials: string | undefined,
         metadata: MatchMetadata,
     ) => boolean | Promise<boolean>;
+    /** 用签名 token 与数据库当前角色校验管理员调试权限。 */
+    authenticateAdminDebugToken?: (token: string | null | undefined) => Promise<string | null>;
     /** 游戏结束回调（可选） */
     onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
     /** 命令成功后回调（可选），用于刷新大厅摘要等非游戏状态视图 */
@@ -220,6 +226,7 @@ export class GameTransportServer {
     private readonly socketIndex: Map<string, SocketInfo>;
     private readonly offlineGraceMs: number;
     private readonly authenticate?: GameTransportServerConfig['authenticate'];
+    private readonly authenticateAdminDebugToken?: GameTransportServerConfig['authenticateAdminDebugToken'];
     private readonly onGameOver?: GameTransportServerConfig['onGameOver'];
     private readonly onCommandSucceeded?: GameTransportServerConfig['onCommandSucceeded'];
     private readonly trainingDataCapture: TrainingDataCapture;
@@ -270,6 +277,7 @@ export class GameTransportServer {
         this.socketIndex = new Map();
         this.offlineGraceMs = config.offlineGraceMs ?? 30000;
         this.authenticate = config.authenticate;
+        this.authenticateAdminDebugToken = config.authenticateAdminDebugToken;
         this.onGameOver = config.onGameOver;
         this.onCommandSucceeded = config.onCommandSucceeded;
         this.rulesVersion = config.rulesVersion ?? null;
@@ -478,8 +486,11 @@ export class GameTransportServer {
                     }
                 },
                 shouldReportCommandFailureFeedback: shouldAutoReportCommandFailure,
-                buildCommandFailureFeedbackPayload: (args) => (
-                    this.onlineAiFeedbackDiagnostics.buildCommandFailureFeedbackPayload({
+                buildCommandFailureFeedbackPayload: (args) => {
+                    const replay = capturePrivateFeedbackReplay({ ...args.match,
+                        getRandomCursor: typeof args.randomCursorBefore === 'number' ? () => args.randomCursorBefore! : undefined });
+                    return {
+                        ...this.onlineAiFeedbackDiagnostics.buildCommandFailureFeedbackPayload({
                         match: args.match,
                         playerId: args.playerId,
                         commandType: args.commandType,
@@ -489,8 +500,11 @@ export class GameTransportServer {
                         stateIdBefore: args.stateIdBefore,
                         visibleState: args.visibleState,
                         feedbackSource: args.feedbackSource,
-                    })
-                ),
+                        }),
+                        privateReplay: replay.data,
+                        privateReplayError: replay.error,
+                    };
+                },
                 reportCommandFailureFeedback: (payload) => (
                     this.transportFeedbackReporter.reportCommandFailureFeedback(payload)
                 ),
@@ -556,12 +570,12 @@ export class GameTransportServer {
                 recordOnlineAiCircuitFailure: (args) => this.recordOnlineAiCircuitFailure(args),
             },
         });
-        this.authoritativeCommandSuccessCoordinator = new AuthoritativeCommandSuccessCoordinator({
+        this.authoritativeCommandSuccessCoordinator = new AuthoritativeCommandSuccessCoordinator<ActiveMatch, OnlineAiRecoveryFeedbackPayload>({
             hooks: {
                 createTrackedRandom,
                 persistState: (match, storedState) => this.storage.setState(match.matchID, storedState),
-                buildUnsatisfiableInteractionFeedback: (args) => (
-                    this.onlineAiFeedbackDiagnostics.buildUnsatisfiableInteractionFeedback({
+                buildUnsatisfiableInteractionFeedback: async (args) => {
+                    const feedback = await this.onlineAiFeedbackDiagnostics.buildUnsatisfiableInteractionFeedback({
                         match: args.match,
                         playerId: args.playerId,
                         seatControllerType: args.seatControllerType,
@@ -569,8 +583,12 @@ export class GameTransportServer {
                         event: args.event,
                         progressMarkerBefore: args.progressMarkerBefore,
                         preCommandSeatView: args.preCommandSeatView,
-                    })
-                ),
+                    });
+                    if (!feedback) return null;
+                    const replay = capturePrivateFeedbackReplay({ ...args.match,
+                        getRandomCursor: typeof args.randomCursorBefore === 'number' ? () => args.randomCursorBefore! : undefined });
+                    return { ...feedback, privateReplay: replay.data, privateReplayError: replay.error };
+                },
                 buildPostTrainingState: (match, playerId) => this.stateSynchronizer.stripForTraining(
                     this.stateSynchronizer.applyPlayerView(match, playerId),
                 ) as MatchState<unknown>,
@@ -1078,6 +1096,7 @@ export class GameTransportServer {
     /** 启动传输层，监听 /game namespace */
     start(): void {
         const nsp = this.io.of('/game');
+        const feedbackReplayStaging = new FeedbackReplayStaging();
         registerGameSocketRoutes({
             namespace: nsp,
             hooks: {
@@ -1085,6 +1104,27 @@ export class GameTransportServer {
                 getMatch: (matchID) => this.matchRoomRegistry.get(matchID),
                 validateCommandAuth: (matchID, playerID, credentials) => (
                     this.validateCommandAuth(matchID, playerID, credentials)
+                ),
+                validateAdminDebugToken: (token) => this.authenticateAdminDebugToken?.(token) ?? Promise.resolve(null),
+                captureFeedbackReplay: async (match, playerId, request) => {
+                    if (request.phase === 'prepare') {
+                        const capture = capturePrivateFeedbackReplay(match);
+                        if (!capture.data || capture.error) throw new Error(capture.error ?? 'feedback_capture_missing');
+                        return { accepted: true, captureId: feedbackReplayStaging.prepare(match.matchID, playerId, capture.data) };
+                    }
+                    const data = feedbackReplayStaging.get(request.captureId, match.matchID, playerId);
+                    if (!data) return { accepted: false };
+                    const config = resolveOnlineAiFeedbackConfig();
+                    if (!config.endpoint || !config.token) throw new Error('feedback_capture_endpoint_unavailable');
+                    await attachPrivateFeedbackReplay({ endpoint: config.endpoint, token: config.token, feedbackId: request.feedbackId,
+                        matchId: match.matchID, playerId, privateReplay: data });
+                    return { accepted: true };
+                },
+                isAdminDebugCommand: (match, commandType) => match.engineConfig.systems.some(
+                    (system) => system.adminDebugCommandTypes?.includes(commandType) === true,
+                ),
+                handleAdminDebugCommand: (matchID, adminUserId, commandType, payload) => (
+                    this.handleAdminDebugCommand(matchID, adminUserId, commandType, payload)
                 ),
                 resolveOnlineAiSeatControllerType: (match, playerID) => (
                     this.resolveOnlineAiSeatControllerType(match, playerID)
@@ -1479,6 +1519,7 @@ export class GameTransportServer {
         });
 
         if (nextTracker.failureCount >= this.onlineAiRecoveryFailureReportThreshold) {
+            const replay = capturePrivateFeedbackReplay(match);
             await this.transportFeedbackReporter.reportOnlineAiRecoveryFeedback({
                 matchId: match.matchID,
                 gameId: match.gameId,
@@ -1488,6 +1529,8 @@ export class GameTransportServer {
                 reason: `${candidate.reason}:${phaseLabel}:${reason}`,
                 trackerKey: tracker.key,
                 progressMarker: progressMarkerBeforeRecovery,
+                privateReplay: replay.data,
+                privateReplayError: replay.error,
                 ...resolveTransportFeedbackCorrelation({
                     matchId: match.matchID,
                     state: match.state,
@@ -1667,18 +1710,20 @@ export class GameTransportServer {
             commandType,
             payload,
             queuedOptions: {
-                reportFailureFeedback: true,
+                reportFailureFeedback: options?.adminDebug ? false : options?.reportFailureFeedback ?? true,
                 feedbackSource: options?.feedbackSource,
                 expectedStateID: options?.expectedStateID,
                 onlineAiCircuitSource: options?.onlineAiCircuitSource,
                 onlineAiAttemptKey: options?.onlineAiAttemptKey,
                 clientTransport: options?.clientTransport,
+                adminDebug: options?.adminDebug,
             },
             directOptions: {
-                reportFailureFeedback: true,
+                reportFailureFeedback: options?.adminDebug ? false : options?.reportFailureFeedback ?? true,
                 expectedStateID: options?.expectedStateID,
                 onlineAiAttemptKey: options?.onlineAiAttemptKey,
                 clientTransport: options?.clientTransport,
+                adminDebug: options?.adminDebug,
             },
             executeCommand: (activeMatch, activePlayerID, activeCommandType, activePayload, activeOptions) =>
                 this.executeCommandInternal(
@@ -1690,6 +1735,29 @@ export class GameTransportServer {
                 ),
             onSucceeded: (activeMatch) => this.runOnlineAiImmediateExecution(activeMatch, 'command-succeeded'),
         });
+    }
+
+    private async handleAdminDebugCommand(
+        matchID: string,
+        adminUserId: string,
+        commandType: string,
+        payload: unknown,
+    ): Promise<boolean> {
+        logger.info('[ADMIN_DEBUG] command requested', { adminUserId, matchID, commandType });
+        const accepted = await this.handleCommand(
+            matchID,
+            '__admin_debug__',
+            commandType,
+            payload,
+            { adminDebug: true, reportFailureFeedback: false },
+        );
+        logger.info('[ADMIN_DEBUG] command completed', {
+            adminUserId,
+            matchID,
+            commandType,
+            result: accepted ? 'accepted' : 'rejected',
+        });
+        return accepted;
     }
 
     /**
@@ -1799,6 +1867,7 @@ export class GameTransportServer {
         match.lastCommandFailureReason = null;
         const { engineConfig, state, random, playerIds } = match;
         const stateIdBefore = match.stateID;
+        const randomCursorBefore = match.getRandomCursor();
         const progressMarkerBeforeCommand = buildAiProgressMarker(match.state, {
             engineConfig: match.engineConfig,
             gameId: match.gameId,
@@ -1890,10 +1959,12 @@ export class GameTransportServer {
                 onlineAiAttemptKey: options?.onlineAiAttemptKey,
                 clientTransport: options?.clientTransport,
                 stateIdBefore,
+                randomCursorBefore,
                 progressMarkerBeforeCommand,
                 preCommandSeatView: preTrainingState,
                 feedbackSource,
-                reportFailureFeedback: options?.reportFailureFeedback,
+                reportFailureFeedback: options?.adminDebug ? false : options?.reportFailureFeedback,
+                suppressCommandPayload: options?.adminDebug === true,
             });
         }
 
@@ -1905,9 +1976,11 @@ export class GameTransportServer {
             execution,
             seatControllerType,
             stateIdBefore,
+            randomCursorBefore,
             progressMarkerBeforeCommand,
             preCommandSeatView: preTrainingState,
             suppressBroadcast: options?.suppressBroadcast,
+            captureTrainingData: options?.adminDebug !== true,
         });
     }
 

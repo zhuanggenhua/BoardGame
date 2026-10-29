@@ -1,137 +1,50 @@
 # 七大恨区域拓扑单一真相
 
-## 适用场景
+## 来源与对象
 
-- 排查“某个地区为什么在正式图和运行时图里不一致”
-- 修改 `辽北 / 辽东`、`敖汉部 / 辽西`、`顺天 / 蓟镇` 这类 shared printed 区
-- 调整七大恨地图工具、运行时预览页、棋盘点击/高亮区域
-- 判断某次改动应该落到正式印刷区，还是运行时逻辑区
+原图是 `public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png`（1265×893），规则是正式 PDF Ver1.3。R81重新逐项读取原图及规则，取代旧稿从错误34区配置反推原图的结论；源图身份账见 `evidence/qidahen/.map-region-identities-source-20261028-r81.json`。
 
-## 当前单一真相分层
+原图有32块命名土地和3个朝鲜点位。锦州、宁远、山海关和皮岛白牌是土地内的城市或据点名称，不能因为字牌可点击就各切一片土地。
 
-### 1. 印刷正式区真相
+| 类型 | 对象 |
+| --- | --- |
+| 蒙古13土地 | 外喀尔喀、科尔沁、巴林、扎鲁特、内喀尔喀、克什克腾、察哈尔、奈曼、敖汉、土默特、喀喇沁、朵颜、鄂尔多斯 |
+| 女真6土地 | 乌喇、辉发、哈达、叶赫、建州女真、长白女真 |
+| 红字13土地 | 辽北、辽东、辽西、东江、宣府、大同、蓟镇、顺天、保定、山西、延绥、登莱、山东 |
+| 朝鲜3点位 | 咸兴、平壤、汉城；对应原图白色椭圆，不覆盖整个半岛或海域 |
 
-- 文件：
-  - `src/games/qidahen/data/region-mask-regions.json`
-  - `src/games/qidahen/data/region-graph.json`
-- 现实含义：
-  - 原图闭合命名区
-  - devtool 生成和保存的正式区域结果
-- 强制口径：
-  - 每个存在地区名的独立闭合区都必须先在这里独立存在
-  - 不得因为运行时逻辑区想聚合，就回头修改这里的地区名或吞并这里的闭合区
+辽北与辽东、辽西与敖汉、蓟镇与顺天在原图各有实际分界，并非共用土地后按锚点距离拆分的逻辑壳。朵颜也有独立地名与土地。旧稿相反结论已撤回。
 
-### 已盘点的正式闭合命名区
+## 正式数据的职责
 
-当前正式印刷区共 34 个，来自 `region-mask-regions.json` 与 `region-graph.json`：
+| 文件 | 职责 |
+| --- | --- |
+| `src/games/qidahen/data/region-mask.png` | 35个地理对象的逐像素归属，土地和朝鲜点位不混同 |
+| 同目录 `region-mask-regions.json` | 地理对象的ID、名称、颜色、内部种子及点位范围 |
+| 同目录 `region-graph.json` | 地理节点及通路；中心与面积从同一mask计算 |
+| 同目录 `runtime-region-mask-regions.json` | 35个地理对象和4个城镇对象；`mapRole`、`parentRegionId`、`markerBounds`及正式本土身份 |
+| 同目录 `runtime-region-graph.json` | 正式运行时通路、边界类型、移动代价和战场宽度 |
+| `src/games/qidahen/ui/mapGraph.ts` | 读取以上配置并派生查询，不另补地块或修改地名 |
 
-`大同`、`外喀尔喀部`、`科尔沁部`、`乌喇部`、`辉发部`、`扎鲁特部`、`叶赫部`、`巴林部`、`哈达部`、`内喀尔喀部`、`长白`、`咸兴`、`建州`、`察哈尔部`、`辽北`、`克什克腾部`、`奈曼部`、`平壤`、`敖汉部`、`土默特部`、`喀喇沁部`、`锦州`、`东江`、`皮岛`、`宣府`、`山海关`、`鄂尔多斯部`、`保定`、`顺天`、`汉城`、`山西`、`延绥`、`登莱`、`山东`。
+土地和点位通过 `printedRegionIds: [自身ID]` 一一映射。城市通过父土地ID及原图字牌范围定位，不在mask里占用一块省区；城市命中只在需要选择该城市时优先，选择土地时不吞掉父地域点击。正式像素归属不再使用锚点距离生成地界。编辑器的历史共图预览不构成正式拆区依据。
 
-本轮核对结论：
+## 城市与土地关系
 
-- `喀喇沁部` 已是独立正式印刷区：`city-region-21`，不能再并回 `土默特部`。
-- `土默特部` 是独立正式印刷区：`city-region-20`。
-- `辽东`、`辽西`、`蓟镇` 是运行时逻辑区，不写回正式印刷区名称；它们通过 `printedRegionIds` 映射到 `辽北`、`敖汉部`、`顺天` 对应的印刷区。
-- `朵颜部` 只在当前规则文本的剧本/标记描述中出现；在当前 `qidahen-main-map.png` 上未作为已确认独立闭合命名区落入正式印刷区表，后续若换图或补图，必须先重新看原图再新增正式区。
-- 左侧轮盘、顶部流程表、右侧牌库、底部行动/年份轨等闭合框属于 UI/装饰区，不进入正式印刷区。
+| 运行时对象 | 真实对象 | 父土地 |
+| --- | --- | --- |
+| `jinzhou` | 锦州城市 | `city-region-19-liaoxi` 辽西 |
+| `city-region-24` | 宁远城市 | 辽西 |
+| `city-region-25` | 山海关 | `city-region-28-jizhen` 蓟镇 |
+| `song-jin` | 皮岛据点 | `city-region-22` 东江 |
+| `xuan-fu` | 宣府土地 | 自身；不再借用宁远ID |
+| `duoyan` | 朵颜土地 | 自身 |
 
-### 2. 运行时逻辑区真相
+PDF的山海关特例仍须单独实施与验证：山海关属于蓟镇，蓟镇控制要求及从辽西进攻的守城入口，不因地图对象分层就自动证明全链正确。城市不另计一块霸权土地；剧本按土地列出的起始兵力也不得在城市复制一份。
 
-- 文件：
-  - `src/games/qidahen/data/runtime-region-mask-regions.json`
-  - `src/games/qidahen/data/runtime-region-graph.json`
-- 现实含义：
-  - 棋盘点击、高亮、移动、通路、运行时 shared printed 拆分后的目标区
-- 强制口径：
-- `辽东`、`辽西`、`蓟镇` 这类运行时专属区必须直接落盘在这两份文件里
-- `喀喇沁部（city-region-21）` 与 `土默特部（city-region-20）` 在运行时也必须保持一对一区域；不得把 `city-region-21` 写进 `city-region-20.printedRegionIds`
-- 禁止只在 `src/games/qidahen/ui/mapGraph.ts` 里手写补区、补边、补中心点
+## 几何校准与证据边界
 
-### 3. 印刷区 -> 运行时区显式映射
+R81先用正式编辑器、HTTP回读mask哈希、实际种子/命中矛盾定位，再重录地理身份及轮廓。原始错误数据保留于 `evidence/qidahen/r81-diagnostic/original-data/`，候选与逐项源图审查留在该诊断目录。原图被字牌、标题或牌库遮住的短段只按可见端点与明确记录的图缘近似锚封闭，报告必须标明 approximate；这些段不能被称为逐像素还原。
 
-- 真相字段：
-  - `runtime-region-mask-regions.json` 里的 `printedRegionIds`
-- 现实含义：
-  - 一个运行时区来源于哪些印刷正式区
-  - 一个印刷正式区为什么会被拆成多个运行时区
-- 强制口径：
-  - shared printed 关系必须通过 `printedRegionIds` 明示
-  - 禁止继续依赖“借同一个 id、再在代码里换名字/改邻接”的隐式映射
+源图轮廓审查、持久种子/中心与连通测试、正式编辑器回读、运行时高亮截图分别验证不同对象，不能彼此替代。教程必须复用正式地图候选、命中与轮廓；交互和图面门禁按 `.spec/knowledge/standards/ui-change-gates.md` 与 `e2e-verification.md` 执行。
 
-## 运行时锚点与中心点
-
-- `runtime-region-mask-regions.json` 的 `seed`：
-  - 运行时 ownership 拆分时的锚点真相
-- `runtime-region-graph.json` 的 `center` / `pixelCount`：
-  - 拆分后实际像素归属的中心点和面积真相
-- 强制口径：
-  - shared printed 区拆分后，`center` / `pixelCount` 必须来自实际像素归属结果
-  - 不得继续复用父印刷区的旧 `pixelCount`，也不得把父区中心点复制给子区
-
-## 改动落点判断
-
-## UI / 教程问题不得反向污染正式区域真相
-
-当用户反馈“地图高亮不对”“教程目标不聚焦”“区域看起来偏了”“某一步应该场景直选”时，默认先把问题归到 **UI 表达、视角移动、教程锚点、点击承接或运行时高亮消费**，不得直接修改正式区域真相源。
-
-### 禁止直接修改的正式真相
-
-- `src/games/qidahen/data/region-mask.png`
-- `src/games/qidahen/data/region-mask-regions.json`
-- `src/games/qidahen/data/region-graph.json`
-- `src/games/qidahen/data/runtime-region-mask-regions.json`
-- `src/games/qidahen/data/runtime-region-graph.json`
-- 任何把正式区域 `seed` / `center` / `pixelCount` / `links` 改成新值的测试预期
-
-### 允许修改正式区域数据的最低门槛
-
-只有同时满足以下证据，才允许改正式区域数据：
-
-1. `/dev/qidahen-region-mask` 当前正式工作区能复现区域本体错误，而不是教程层或截图角度错误。
-2. `region-mask.png` 像素、编辑器选区、`region-mask-regions.json` 种子、`region-graph.json` 中心点至少两项互相矛盾。
-3. 已对比上一个可信基线或用户确认的正确截图，能说明旧值本身错误，而不是当前 UI 没聚焦或高亮消费错误。
-4. 修复后回到编辑器截图、运行时高亮截图、区域持久点测试三处验证。
-
-### 已有正式能力优先复用
-
-- 如果正式地图已经有区域遮罩高亮、命中画布或编辑器选区能力，教程和 E2E 必须复用它们。
-- 禁止为教程临时发明圆球、编号、替代标牌或按钮路径来冒充区域高亮。
-- 可场景直选的地区目标，主路径必须点地图地区本体；按钮或右侧列表只能是备用入口或已选地区后的确认方式。
-- 若截图中只有某个地区异常，先用编辑器正式工作区与运行时遮罩截图核对该地区，不得先改区域数据。
-
-### 只影响正式闭合区
-
-- 改：
-  - `region-mask-regions.json`
-  - `region-graph.json`
-- 不改：
-  - `runtime-region-*`
-
-### 只影响运行时拆分、点击、高亮、通路
-
-- 改：
-  - `runtime-region-mask-regions.json`
-  - `runtime-region-graph.json`
-- 不改：
-  - `region-mask-regions.json` 的正式闭合区命名结果
-
-### 正式闭合区与运行时逻辑区同时变化
-
-- 先改印刷正式区
-- 再改运行时映射与运行时图
-- 最后回到 runtime preview / Board 验证
-
-## 禁止行为
-
-- 禁止把运行时逻辑区名称写回正式印刷区，伪装成“正式区已经拆好”
-- 禁止在 `mapGraph.ts` 里手写 runtime-only 地区、邻接或通路，绕过数据文件
-- 禁止拿 shared printed 审计结果反向覆盖正式印刷区命名
-- 禁止用截图、临时 overlay、旧 worktree 里的候选图充当正式拓扑真相
-
-## 最低验证
-
-1. `runtime-region-mask-regions.json` 与 `runtime-region-graph.json` 里的运行时区 id 必须一一对应
-2. shared printed 区必须能在 runtime preview 的“正式共图块审计”里明确列出
-3. 运行时拆出的子区必须有独立 `seed` / `center` / `pixelCount`
-4. `mapGraph.ts` 只能读取正式数据文件，不得再补 runtime-only 区
-5. `region-mask.png` 中每个正式印刷区必须是一个连续区域；如果同一个颜色跨成多个不相连块，必须先拆正式区或修 mask，不能靠运行时映射掩盖
+本轮直接核查的教学通路为辽北经河界进攻叶赫：战场宽度2。辽东不能跨过辽北直接连接叶赫。其余全图城市聚合控制、维护、税赋、跨年及全部通路的规则完整性仍须各自的领域证据，不能由地图几何或本课通过来背书。

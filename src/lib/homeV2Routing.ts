@@ -4,7 +4,7 @@ import { getLocalStorage } from './browserStorage';
 export const HOME_V2_PREVIEW_PATH = '/dev/home-v2-preview';
 export const HOME_ENTRY_STYLE_STORAGE_KEY = 'bg_home_entry_style';
 export const HOME_ENTRY_STYLE_QUERY_VERSION_KEY = 'homeStyleVersion';
-export const HOME_ENTRY_STYLE_VERSION = 'modern-classic-v2';
+export const HOME_ENTRY_STYLE_VERSION = 'modern-default-v3';
 const HOME_ENTRY_STYLE_STORAGE_VERSION_KEY = 'bg_home_entry_style_version';
 
 export type HomeEntryStyle = 'modern' | 'classic';
@@ -40,6 +40,7 @@ function migrateStoredHomeEntryStyleIfNeeded() {
             storage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, 'modern');
         }
         if (storedVersion !== HOME_ENTRY_STYLE_VERSION) {
+            storage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, 'modern');
             storage.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
         }
     } catch {

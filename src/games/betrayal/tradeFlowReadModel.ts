@@ -551,6 +551,7 @@ function resolvePendingTradeInstruction({
 > & {
   pendingTradeAgreement: PendingTradeAgreementInput;
 }): string {
+  if (!pendingTradeAgreement) return '';
   if (isPendingTradeForViewer) {
     if (pendingTradeAgreement.hasReturnCards) {
       return pendingTradeAgreement.hasOfferCards

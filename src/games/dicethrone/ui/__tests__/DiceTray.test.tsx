@@ -5,7 +5,8 @@ import { DiceActions, DiceTray } from '../DiceTray';
 import type { InteractionDescriptor, MultistepChoiceData } from '../../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../../engine/systems/useMultistepInteraction';
 import type { Die } from '../../types';
-import type { DiceModifyResult, DiceModifyStep, DiceSelectResult } from '../../domain/systems';
+import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../../domain/systems';
+import { createDiceInteractionContract } from '../diceInteractionContract';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -87,7 +88,31 @@ function createSelectInteraction(): InteractionDescriptor<MultistepChoiceData<un
             toCommands: () => [],
             meta: {
                 dtType: 'selectDie',
+                selectionMode: 'reroll',
                 selectCount: 1,
+                targetOpponentDice: false,
+            },
+        },
+    };
+}
+
+function createBonusGroupRerollInteraction(allowedDieIds: number[] = [0, 1]): InteractionDescriptor<MultistepChoiceData<DiceSelectStep, DiceSelectResult>> {
+    return {
+        id: 'bonus-dice-group-reroll',
+        kind: 'multistep-choice',
+        playerId: '0',
+        data: {
+            title: 'interaction.hint_group_reroll',
+            minSteps: 0,
+            allowedDieIds,
+            initialResult: { selectedDiceIds: [] },
+            localReducer: (current) => current,
+            toCommands: () => [],
+            meta: {
+                dtType: 'selectDie',
+                selectionMode: 'bonusGroupReroll',
+                selectCount: 2,
+                diceOwnerId: '0',
                 targetOpponentDice: false,
             },
         },
@@ -109,10 +134,24 @@ function createMultistepState(
     };
 }
 
+function createDiceInteraction(
+    interaction: InteractionDescriptor | undefined,
+    controller: MultistepInteractionState<DiceModifyResult | DiceSelectResult>,
+    isBonusDiceSettlement = false,
+) {
+    const contract = createDiceInteractionContract({
+        interaction,
+        controller,
+        rootPlayerId: '0',
+        isBonusDiceSettlement,
+    });
+    return contract?.kind === 'multistep' ? contract : undefined;
+}
+
 describe('DiceTray', () => {
     it('右侧 2D 骰盘保留真实入口和教程锚点', () => {
         render(
-            <DiceTray
+            <DiceTray diceInteraction={undefined}
                 dice={dice}
                 rollCount={1}
                 onToggleLock={vi.fn()}
@@ -129,7 +168,7 @@ describe('DiceTray', () => {
 
     it('右侧骰盘用 CSS Dice2D 按棋盘单位渲染', () => {
         render(
-            <DiceTray
+            <DiceTray diceInteraction={undefined}
                 dice={twoDice}
                 rollCount={1}
                 onToggleLock={vi.fn()}
@@ -145,7 +184,7 @@ describe('DiceTray', () => {
 
     it('奖励骰骰面按自身 definitionId 渲染，并保留真实 ownerId', () => {
         render(
-            <DiceTray
+            <DiceTray diceInteraction={undefined}
                 dice={[
                     {
                         id: 0,
@@ -176,7 +215,7 @@ describe('DiceTray', () => {
     it('投掷完成后可以直接锁定右侧骰子', () => {
         const onToggleLock = vi.fn();
         render(
-            <DiceTray
+            <DiceTray diceInteraction={undefined}
                 dice={dice}
                 rollCount={1}
                 onToggleLock={onToggleLock}
@@ -193,7 +232,7 @@ describe('DiceTray', () => {
     it('主动重掷模式不依赖主骰投掷次数，并允许点击已锁定骰子', () => {
         const onToggleLock = vi.fn();
         render(
-            <DiceTray
+            <DiceTray diceInteraction={undefined}
                 dice={[{ ...dice[0], value: 3, isKept: true, displayOnly: true }]}
                 rollCount={0}
                 onToggleLock={onToggleLock}
@@ -221,8 +260,7 @@ describe('DiceTray', () => {
                 currentPhase="offensiveRoll"
                 canInteract
                 isRolling={false}
-                interaction={createModifyInteraction('adjust')}
-                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step)}
+                diceInteraction={createDiceInteraction(createModifyInteraction('adjust'), createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step))}
             />,
         );
 
@@ -241,8 +279,7 @@ describe('DiceTray', () => {
                 currentPhase="offensiveRoll"
                 canInteract
                 isRolling={false}
-                interaction={createModifyInteraction('adjust')}
-                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step)}
+                diceInteraction={createDiceInteraction(createModifyInteraction('adjust'), createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step))}
             />,
         );
 
@@ -263,8 +300,7 @@ describe('DiceTray', () => {
                 currentPhase="offensiveRoll"
                 canInteract
                 isRolling={false}
-                interaction={createModifyInteraction('any', 2)}
-                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step)}
+                diceInteraction={createDiceInteraction(createModifyInteraction('any', 2), createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step))}
             />,
         );
 
@@ -278,7 +314,7 @@ describe('DiceTray', () => {
         const step = vi.fn();
         const interaction = createModifyInteraction('set', 1, [4, 5]);
         const tray = (targetValue?: number) => <DiceTray dice={twoDice} rollCount={1} onToggleLock={vi.fn()} currentPhase="offensiveRoll" canInteract isRolling={false}
-            interaction={interaction} multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0, targetValue }, step)} />;
+            diceInteraction={createDiceInteraction(interaction, createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0, targetValue }, step))} />;
         const { rerender } = render(tray());
         expect(screen.queryByTestId('die-adjust-increment-0')).toBeNull();
         expect(screen.queryByTestId('die-target-value-6')).toBeNull();
@@ -301,8 +337,7 @@ describe('DiceTray', () => {
                 currentPhase="defensiveRoll"
                 canInteract
                 isRolling={false}
-                interaction={createSelectInteraction()}
-                multistepInteraction={createMultistepState({ selectedDiceIds: [] }, step)}
+                diceInteraction={createDiceInteraction(createSelectInteraction(), createMultistepState({ selectedDiceIds: [] }, step))}
             />,
         );
 
@@ -314,7 +349,7 @@ describe('DiceTray', () => {
 describe('DiceActions', () => {
     it('首掷前显示投掷和确认两个按钮', () => {
         const { container } = render(
-            <DiceActions
+            <DiceActions diceInteraction={undefined}
                 rollCount={0}
                 rollLimit={3}
                 rollConfirmed={false}
@@ -333,7 +368,7 @@ describe('DiceActions', () => {
 
     it('非投掷阶段时投掷按钮置灰', () => {
         const { container } = render(
-            <DiceActions
+            <DiceActions diceInteraction={undefined}
                 rollCount={0}
                 rollLimit={3}
                 rollConfirmed={false}
@@ -352,7 +387,7 @@ describe('DiceActions', () => {
     it('Duel/对掷确认不应被上一轮普通投骰的已确认状态禁用', () => {
         const onConfirm = vi.fn();
         render(
-            <DiceActions
+            <DiceActions diceInteraction={undefined}
                 rollCount={1}
                 rollLimit={1}
                 rollConfirmed
@@ -385,13 +420,39 @@ describe('DiceActions', () => {
                 canInteract
                 isRolling={false}
                 setIsRolling={vi.fn()}
-                interaction={createModifyInteraction('any')}
-                multistepInteraction={createMultistepState({ modifications: { 0: 6 }, modCount: 1, totalAdjustment: 0 })}
+                diceInteraction={createDiceInteraction(createModifyInteraction('any'), createMultistepState({ modifications: { 0: 6 }, modCount: 1, totalAdjustment: 0 }))}
             />,
         );
 
         expect(screen.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
         expect(screen.queryByTestId('dice-confirm-button')).toBeNull();
+    });
+
+    it('不可取消的多步交互只显示原确认动作，不把左侧空位变回普通投掷', () => {
+        const interaction = createModifyInteraction('set');
+        interaction.cancelPolicy = 'forbidden';
+
+        const { container } = render(
+            <DiceActions
+                rollCount={1}
+                rollLimit={3}
+                rollConfirmed={false}
+                onRoll={vi.fn()}
+                onConfirm={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+                diceInteraction={createDiceInteraction(
+                    interaction,
+                    createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }),
+                )}
+            />,
+        );
+
+        expect(container.querySelector('[data-testid="dice-roll-button"]')).toBeNull();
+        expect(container.querySelector('[data-testid="dice-interaction-confirm-button"]')).not.toBeNull();
+        expect(screen.queryByText('common.cancel')).toBeNull();
     });
 
     it('改骰交互确认后，同一次残留点击不能立刻触发普通骰面确认', () => {
@@ -408,12 +469,11 @@ describe('DiceActions', () => {
                 canInteract
                 isRolling={false}
                 setIsRolling={vi.fn()}
-                interaction={createModifyInteraction('any')}
-                multistepInteraction={createMultistepState(
+                diceInteraction={createDiceInteraction(createModifyInteraction('any'), createMultistepState(
                     { modifications: { 0: 6 }, modCount: 1, totalAdjustment: 0 },
                     vi.fn(),
                     interactionConfirm,
-                )}
+                ))}
             />,
         );
 
@@ -421,7 +481,7 @@ describe('DiceActions', () => {
         expect(interactionConfirm).toHaveBeenCalledTimes(1);
 
         rerender(
-            <DiceActions
+            <DiceActions diceInteraction={undefined}
                 rollCount={1}
                 rollLimit={3}
                 rollConfirmed={false}
@@ -436,5 +496,242 @@ describe('DiceActions', () => {
 
         fireEvent.click(screen.getByText('dice.confirm').closest('button')!);
         expect(rollConfirm).not.toHaveBeenCalled();
+    });
+
+    it('组重掷沿用旧动作分工：左侧提交所选骰，右侧确认负责收口', () => {
+        const interactionConfirm = vi.fn();
+        const onConfirm = vi.fn();
+        render(
+            <DiceActions
+                rollCount={0}
+                rollLimit={0}
+                rollConfirmed={false}
+                onRoll={vi.fn()}
+                onConfirm={onConfirm}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+                diceInteraction={createDiceInteraction(createBonusGroupRerollInteraction(), createMultistepState({ selectedDiceIds: [0, 1] }, vi.fn(), interactionConfirm), true)}
+            />,
+        );
+
+        const rerollSelected = screen.getByTestId('dice-reroll-selected-group');
+        const settle = screen.getByTestId('dice-bonus-settlement-confirm-button');
+        expect(rerollSelected).toHaveTextContent('dice.reroll_action');
+        expect(rerollSelected).toHaveAttribute('data-tutorial-id', 'dice-reroll-selected-group');
+        expect(settle).toHaveTextContent('common.confirm');
+        expect(settle).toHaveAttribute('data-tutorial-id', 'dice-confirm-button');
+        fireEvent.click(rerollSelected);
+        expect(interactionConfirm).toHaveBeenCalledTimes(1);
+        expect(onConfirm).not.toHaveBeenCalled();
+
+        fireEvent.click(settle);
+        expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
+
+    it('组重掷空选不显示重掷动作，原确认入口直接保留当前结果', () => {
+        const interactionConfirm = vi.fn();
+        const onConfirm = vi.fn();
+        render(
+            <DiceActions
+                rollCount={0}
+                rollLimit={0}
+                rollConfirmed={false}
+                onRoll={vi.fn()}
+                onConfirm={onConfirm}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+                diceInteraction={createDiceInteraction(createBonusGroupRerollInteraction(), createMultistepState({ selectedDiceIds: [] }, vi.fn(), interactionConfirm), true)}
+            />,
+        );
+
+        expect(screen.queryByTestId('dice-reroll-selected-group')).toBeNull();
+        fireEvent.click(screen.getByTestId('dice-bonus-settlement-confirm-button'));
+        expect(interactionConfirm).not.toHaveBeenCalled();
+        expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
+
+    it('闪避响应沿原单确认按钮结算，即使普通投掷计数已归零', () => {
+        const onConfirm = vi.fn();
+        const interaction = {
+            id: 'dt-token-response-evasion',
+            kind: 'dt:token-response',
+            playerId: '0',
+            data: {},
+        } as unknown as InteractionDescriptor;
+        const diceInteraction = createDiceInteractionContract({
+            interaction,
+            rootPlayerId: '0',
+            isTokenEvasionConfirmation: true,
+        });
+        render(
+            <DiceActions
+                rollCount={0}
+                rollLimit={0}
+                rollConfirmed
+                onRoll={vi.fn()}
+                onConfirm={onConfirm}
+                currentPhase="defensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+                diceInteraction={diceInteraction}
+            />,
+        );
+
+        expect(screen.queryByTestId('dice-roll-button')).not.toBeInTheDocument();
+        const confirm = screen.getByTestId('dice-token-response-confirm-button');
+        expect(confirm).toHaveTextContent('common.confirm');
+        expect(confirm).toBeEnabled();
+        fireEvent.click(confirm);
+        expect(onConfirm).toHaveBeenCalledOnce();
+    });
+});
+
+describe('共享选骰合同', () => {
+    it('组重掷候选和点击使用普通多步交互状态', () => {
+        const onToggle = vi.fn();
+        render(
+            <DiceTray
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="defensiveRoll"
+                canInteract
+                isRolling={false}
+                diceInteraction={createDiceInteraction(createBonusGroupRerollInteraction([0]), createMultistepState({ selectedDiceIds: [0] }, onToggle), true)}
+            />,
+        );
+
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'true');
+        expect(screen.getByTestId('die-button-1')).toHaveAttribute('data-clickable', 'false');
+        fireEvent.click(screen.getByTestId('die-button-0'));
+        expect(onToggle).toHaveBeenCalledWith({ action: 'toggle', dieId: 0 });
+    });
+
+    it('激活共享选骰合同后，骰子点击不会被同骰盘的普通奖励骰入口抢走', () => {
+        const onSelect = vi.fn();
+        const onReroll = vi.fn();
+        render(
+            <DiceTray
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="defensiveRoll"
+                canInteract
+                isRolling={false}
+                diceInteraction={createDiceInteraction(
+                    createBonusGroupRerollInteraction(),
+                    createMultistepState({ selectedDiceIds: [] }, onSelect),
+                    true,
+                )}
+                bonusDiceReroll={{ canReroll: true, onReroll }}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('die-button-0'));
+        expect(onSelect).toHaveBeenCalledWith({ action: 'toggle', dieId: 0 });
+        expect(onReroll).not.toHaveBeenCalled();
+    });
+
+    it('同一骰被选择两次时，骰面明确显示两次重掷次数', () => {
+        const interaction = createSelectInteraction();
+        interaction.data.meta = {
+            ...interaction.data.meta,
+            selectCount: 2,
+            allowRepeatedDieSelection: true,
+        };
+        render(
+            <DiceTray
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                diceInteraction={createDiceInteraction(interaction, createMultistepState({ selectedDiceIds: [0, 0] }, vi.fn()))}
+            />,
+        );
+
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selection-count', '2');
+        expect(screen.getByTestId('die-selection-count-0')).toHaveTextContent('2');
+        expect(screen.getByTestId('die-button-1')).toHaveAttribute('data-selection-count', '0');
+    });
+
+    it('累计同一骰的服务端已提交次数与本批次选择', () => {
+        const interaction = createSelectInteraction();
+        interaction.data.meta = {
+            ...interaction.data.meta,
+            selectCount: 2,
+            allowRepeatedDieSelection: true,
+        };
+        (interaction.data as typeof interaction.data & { completedDieIds?: number[] }).completedDieIds = [0];
+        render(
+            <DiceTray
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                diceInteraction={createDiceInteraction(interaction, createMultistepState({ selectedDiceIds: [0] }, vi.fn()))}
+            />,
+        );
+
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selection-count', '2');
+        expect(screen.getByTestId('die-selection-count-0')).toHaveTextContent('2');
+    });
+
+    it('非重复交互将历史完成骰显示为已处理并禁用后续点击', () => {
+        const interaction = createSelectInteraction();
+        interaction.data.meta = {
+            ...interaction.data.meta,
+            selectCount: 2,
+        };
+        (interaction.data as typeof interaction.data & { completedDieIds?: number[]; completedSteps?: number }).completedDieIds = [0];
+        (interaction.data as typeof interaction.data & { completedDieIds?: number[]; completedSteps?: number }).completedSteps = 1;
+        const onStep = vi.fn();
+
+        render(
+            <DiceTray
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                diceInteraction={createDiceInteraction(interaction, createMultistepState({ selectedDiceIds: [] }, onStep))}
+            />,
+        );
+
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-completed', 'true');
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'true');
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'false');
+        fireEvent.click(screen.getByTestId('die-button-0'));
+        expect(onStep).not.toHaveBeenCalled();
+        expect(screen.getByTestId('die-button-1')).toHaveAttribute('data-clickable', 'true');
+    });
+
+    it('奖励骰重掷点击不会继续落入普通锁骰流程', () => {
+        const onToggleLock = vi.fn();
+        const onReroll = vi.fn();
+        render(
+            <DiceTray diceInteraction={undefined}
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={onToggleLock}
+                currentPhase="defensiveRoll"
+                canInteract
+                isRolling={false}
+                bonusDiceReroll={{ canReroll: true, onReroll }}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('die-button-0'));
+        expect(onReroll).toHaveBeenCalledWith(0);
+        expect(onToggleLock).not.toHaveBeenCalled();
     });
 });

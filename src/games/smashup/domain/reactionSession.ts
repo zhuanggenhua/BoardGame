@@ -998,23 +998,23 @@ export function buildReactionOptions(
 
     // Optional phase 里若仍残留同 frame 的 mandatory trigger，必须继续暴露它们，
     // 否则 live refresh 会把这类 trigger 误判成 stale，进而被 pass 吃掉。
-    const mandatoryOptions = getMandatoryFrameTriggers(state, session.frameId).map(trigger => ({
+    const mandatoryOptions: ReactionOption[] = getMandatoryFrameTriggers(state, session.frameId).map(trigger => ({
         id: `trigger:${trigger.id}`,
         label: buildTriggerLabel(trigger),
-        value: { kind: 'trigger', triggerId: trigger.id },
+        value: { kind: 'trigger' as const, triggerId: trigger.id },
         displayMode: 'button' as const,
     }));
 
-    const triggerOptions = getOptionalFrameTriggers(state, session.frameId, session.activePlayerId).map(trigger => ({
+    const triggerOptions: ReactionOption[] = getOptionalFrameTriggers(state, session.frameId, session.activePlayerId).map(trigger => ({
         id: `trigger:${trigger.id}`,
         label: buildTriggerLabel(trigger),
-        value: { kind: 'trigger', triggerId: trigger.id },
+        value: { kind: 'trigger' as const, triggerId: trigger.id },
         displayMode: 'button' as const,
     }));
 
     const cardOptions = buildPlayableCardOptions(state, session, session.activePlayerId, now);
     const hasBoardSpecialOption = cardOptions.some(option => option.value.kind === 'activate_special');
-    const earlyCleanupOptions = hasBoardSpecialOption
+    const earlyCleanupOptions: ReactionOption[] = hasBoardSpecialOption
         ? []
         : getEarlyCleanupSelfRecoveryTriggersForScoreAfter(state, session).map(trigger => ({
             id: `trigger:${trigger.id}`,
@@ -1031,7 +1031,7 @@ export function buildReactionOptions(
             id: 'pass',
             label: 'Pass',
             labelKey: 'ui.me_first_pass',
-            value: { kind: 'pass' },
+            value: { kind: 'pass' as const },
             displayMode: 'button',
         },
     ]);

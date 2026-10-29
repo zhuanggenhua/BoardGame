@@ -4,8 +4,7 @@ import { ModalBase } from '../../../components/common/overlays/ModalBase';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { FateDominationCore } from '../domain/types';
 import { projectFatePlayer } from './playerPresentation';
-import {projectFateSkillCards} from '../domain/playerView';
-import {resolveFatePlayerAbility} from '../domain/abilityRegistry';
+import {projectFatePlayerView, projectFateSkillCards} from '../domain/playerView';
 import './player-detail.css';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { fateCommandSealPreview, fateTokenAsset } from './identityArtwork';
@@ -18,12 +17,11 @@ interface Props {
     onPlayer: (id: string) => void;
     onClose: () => void;
     onInspect: (assetPath: string, name: string) => void;
-    canActivateAbility?: (sourceId: string) => boolean;
-    onActivateAbility?: (sourceId: string) => void;
 }
-export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillBack, onPlayer, onClose, onInspect, canActivateAbility, onActivateAbility }: Props) {
+export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillBack, onPlayer, onClose, onInspect }: Props) {
     const ref = useRef<HTMLButtonElement>(null);
-    const view = projectFatePlayer(core, playerId, viewerId);
+    const visibleCore = projectFatePlayerView(core, viewerId);
+    const view = projectFatePlayer(visibleCore, playerId, viewerId);
     const sealPreview = fateCommandSealPreview(view.player.masterId);
     useEffect(() => {
         const previous = document.activeElement as HTMLElement | null;
@@ -43,8 +41,8 @@ export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillB
     } }}>
         <section className="fd-player-detail-frame">
             <header className="fd-player-detail-header">
-                <nav aria-label="切换玩家">{core.playerIds.map(id => {
-                    const other = projectFatePlayer(core, id, viewerId);
+                <nav aria-label="切换玩家">{visibleCore.playerIds.map(id => {
+                    const other = projectFatePlayer(visibleCore, id, viewerId);
                     return <button key={id} type="button" aria-label={`切换到玩家${Number(id) + 1} ${other.master?.name ?? ''}`} aria-current={id === playerId ? 'page' : undefined} onClick={() => onPlayer(id)}>
                         <OptimizedImage src={fateTokenAsset(other.player.masterId)} alt=""/>
                         <span><small>玩家 {Number(id) + 1}</small>{other.master?.name ?? '御主'}</span>
@@ -66,13 +64,7 @@ export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillB
                             {Array.from({ length: view.player.commandSpells }, (_, index) => <CardPreview key={index} previewRef={sealPreview} alt="令咒" className="fd-detail-seal-card" style={{ position: 'absolute', left: index * 28, top: (view.player.commandSpells - 1 - index) * 4, zIndex: view.player.commandSpells - index }}/>)}
                         </div>
                 <section className="fd-detail-ability-copy" aria-label="御主能力说明">
-                    {view.master?.skills?.map(ability => {
-                        const source = view.player.skills.find(skill => skill.isMasterSkill && skill.id.split(':')[0] === ability.id);
-                        const actionable = view.own && onActivateAbility && source && resolveFatePlayerAbility(core, playerId, source.id);
-                        return <p key={ability.id}><strong>{ability.name}</strong> {ability.desc}
-                            {actionable && <button type="button" className="fd-detail-ability-action" aria-label={`发动${ability.name}`} disabled={!canActivateAbility?.(source.id)} onClick={() => onActivateAbility(source.id)}>发动</button>}
-                        </p>;
-                    })}
+                    {view.master?.skills?.map(ability => <p key={ability.id}><strong>{ability.name}</strong> {ability.desc}</p>)}
                 </section>
                     </div>
                 </div>

@@ -229,6 +229,13 @@ export class Feedback {
     @Prop({ type: String })
     autoReportKind?: string;
 
+    /** 同一份客户端自动故障现场的投递身份，不代表不同故障之间的聚合。 */
+    @Prop({ type: String })
+    autoCaptureKey?: string;
+
+    @Prop({ type: [String], default: undefined })
+    diagnosticCaptureIds?: string[];
+
     @Prop({ type: String })
     incidentKey?: string;
 
@@ -277,6 +284,10 @@ export class Feedback {
     @Prop({ type: Object })
     diagnosticPacket?: FeedbackDiagnosticPacket;
 
+    /** 权威对局可能包含隐藏手牌和随机种子，不得进入公开反馈投影。 */
+    @Prop({ type: String, select: false })
+    privateReplay?: string;
+
     @Prop({ type: Object })
     configProposal?: FeedbackConfigProposalContext;
 
@@ -290,6 +301,7 @@ FeedbackSchema.index({ reporterType: 1, source: 1, createdAt: -1 });
 FeedbackSchema.index({ gameId: 1, createdAt: -1 });
 FeedbackSchema.index({ status: 1, createdAt: -1 });
 FeedbackSchema.index({ 'diagnosticPacket.replayability': 1, createdAt: -1 });
+FeedbackSchema.index({ autoCaptureKey: 1 }, { unique: true, sparse: true });
 FeedbackSchema.index({ incidentKey: 1 }, { sparse: true });
 FeedbackSchema.index({ aggregationKey: 1 }, { sparse: true });
 FeedbackSchema.index(

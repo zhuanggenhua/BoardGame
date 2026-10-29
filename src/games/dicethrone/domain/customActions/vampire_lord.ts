@@ -19,7 +19,7 @@ import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { STATUS_IDS, TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
-import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, getPlayerDieFace, requirePlayerDieFace, getTokenStackLimit } from '../rules';
 import { buildStatusAppliedOrChoiceEvents } from '../statusEvents';
 import { CP_MAX } from '../types';
 
@@ -40,7 +40,7 @@ function createVampireLordBonusDie(
     effectKey: string,
     effectParams?: Record<string, string | number>,
 ): BonusDieInfo {
-    const face = getPlayerDieFace(state, playerId, value) ?? '';
+    const face = requirePlayerDieFace(state, playerId, value);
     return {
         index,
         value,
@@ -247,7 +247,7 @@ function handleTotalDemiseRoll({
 
     for (let index = 0; index < 5; index += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         const isClaw = face === VAMPIRE_LORD_DICE_FACE_IDS.CLAW;
         const die = createVampireLordBonusDie(
             state,

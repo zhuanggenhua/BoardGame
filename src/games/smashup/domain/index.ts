@@ -6,6 +6,7 @@
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState, PostProcessSystemEventsOptions } from '../../../engine/types';
 import { createEntityId } from '../../../engine/primitives';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import {
     processDestroyMoveCycle,
@@ -33,6 +34,7 @@ import type {
     BaseScoredEvent,
     BaseClearedEvent,
     BaseReplacedEvent,
+    SmashUpReactionSession,
     BaseDeckShuffledEvent,
     DeckReshuffledEvent,
     LimitModifiedEvent,
@@ -72,7 +74,10 @@ import {
 } from './reactionSession';
 import { discoverSmashUpTimingOpportunities } from './timingOpportunities';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
-import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
+import {
+    readSmashUpPregameDraftSetupConfig,
+    readSmashUpRuntimeSetupConfig,
+} from '../roomSetup';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute } from './reducer';
@@ -154,6 +159,8 @@ type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _processedMunchkinMonsterPlayedEvents?: Set<string>;
     _processedMunchkinMonsterDefeatedEvents?: Set<string>;
     _processedImmediateExtraEvents?: Set<string>;
+    _processedActionReturnToHandPromptEvents?: Set<string>;
+    [key: string]: unknown;
 };
 
 function getSmashUpRuntimeSys(state: MatchState<SmashUpCore>): SmashUpRuntimeSystemState {
@@ -163,9 +170,7 @@ function getSmashUpRuntimeSys(state: MatchState<SmashUpCore>): SmashUpRuntimeSys
 function createReactionQueueFallbackState(core: SmashUpCore): MatchState<SmashUpCore> {
     return {
         core,
-        sys: {
-            interaction: { current: undefined, queue: [] },
-        } as MatchState<SmashUpCore>['sys'],
+        sys: createInitialSystemState([], []),
     };
 }
 
@@ -240,11 +245,12 @@ function queueActionReturnToHandPrompts(
     events: SmashUpEvent[],
     now: number,
 ): MatchState<SmashUpCore> {
-    const sysAny = state.sys as Record<string, unknown>;
-    if (!(sysAny._processedActionReturnToHandPromptEvents instanceof Set)) {
-        sysAny._processedActionReturnToHandPromptEvents = new Set<string>();
+    const runtimeSys = getSmashUpRuntimeSys(state);
+    let processedKeys = runtimeSys._processedActionReturnToHandPromptEvents;
+    if (!processedKeys) {
+        processedKeys = new Set<string>();
+        runtimeSys._processedActionReturnToHandPromptEvents = processedKeys;
     }
-    const processedKeys = sysAny._processedActionReturnToHandPromptEvents as Set<string>;
 
     let nextState = state;
     for (const rawEvent of events) {
@@ -364,7 +370,7 @@ function getPlayersWithPlayableAfterScoringResponses(
         const player = state.core.players[playerId];
         if (!player) continue;
 
-        const probeSession = {
+        const probeSession: SmashUpReactionSession = {
             frameId: `afterScoring_probe_${playerId}_${now}`,
             frameKind: 'score-after',
             phase: 'optional',
@@ -374,7 +380,7 @@ function getPlayersWithPlayableAfterScoringResponses(
             passedPlayerIds: [],
             sourceBaseIndex,
             responseWindowType: 'afterScoring',
-        } as const;
+        };
 
         if (hasSmashUpResponderDrivenReactionOptions(state, probeSession, now)) {
             playablePlayers.push(playerId);
@@ -385,7 +391,7 @@ function getPlayersWithPlayableAfterScoringResponses(
 }
 
 function getEarlyScoringCleanupDiscardTriggerUids(state: MatchState<SmashUpCore>): Set<string> {
-    const raw = (state.sys as Record<string, unknown>)[EARLY_SCORING_CLEANUP_DISCARD_TRIGGER_UIDS_KEY];
+    const raw = getSmashUpRuntimeSys(state)[EARLY_SCORING_CLEANUP_DISCARD_TRIGGER_UIDS_KEY];
     return new Set(Array.isArray(raw) ? raw.filter((uid): uid is string => typeof uid === 'string') : []);
 }
 
@@ -773,14 +779,15 @@ function continueScoringAfterAwardCommitted(input: {
     } = input;
     const { scoringBase } = input;
     let { updatedCore, newBaseDeck } = input;
-    let ms = input.matchState;
-    if (!ms || !currentBaseRef || !getScoringSession(ms)) {
+    const initialMatchState = input.matchState;
+    if (!initialMatchState || !currentBaseRef || !getScoringSession(initialMatchState)) {
         throw new Error('SmashUp scoreBases after-award continuation requires an active scoring session/baseRef');
     }
+    let ms: MatchState<SmashUpCore> = initialMatchState;
     const resolveScoringReactionQueue = (state: MatchState<SmashUpCore>) =>
         maybeResolveReactionQueue(state, rng, now);
 
-    const scoringSessionAtEntry = ms ? getScoringSession(ms) : undefined;
+    const scoringSessionAtEntry = getScoringSession(ms);
     const afterScoringCore = updatedCore;
     const interactionBeforeAfterScoring = ms?.sys?.interaction?.current?.id ?? null;
     const queueLenBeforeAfterScoring = ms?.sys?.interaction?.queue?.length ?? 0;
@@ -815,7 +822,7 @@ function continueScoringAfterAwardCommitted(input: {
             now,
             random,
         });
-        ms = registeredPostScoring.matchState;
+        ms = registeredPostScoring.matchState ?? ms;
         newBaseDeck = registeredPostScoring.newBaseDeck;
         if (!getSmashUpReactionSession(ms)) {
             ms = startSmashUpReactionSession(ms, {
@@ -874,8 +881,7 @@ function continueScoringAfterAwardCommitted(input: {
                 type: SU_EVENT_TYPES.ABILITY_FEEDBACK,
                 payload: {
                     playerId: armed.playerId,
-                    sourceDefId: armed.sourceDefId,
-                    message: 'actionLog.ability_not_implemented',
+                    messageKey: 'actionLog.ability_not_implemented',
                 },
                 timestamp: now,
             };
@@ -952,7 +958,7 @@ function continueScoringAfterAwardCommitted(input: {
                 now,
                 random,
             });
-            ms = registeredPostScoring.matchState;
+            ms = registeredPostScoring.matchState ?? ms;
             newBaseDeck = registeredPostScoring.newBaseDeck;
             return { events, newBaseDeck, matchState: ms };
         }
@@ -1393,7 +1399,7 @@ function scoreCurrentBaseInSession(
 
     const scoringBase = updatedCore.bases[baseIndex] ?? updatedBase;
     const totalPower = getTotalEffectivePowerOnBase(updatedCore, scoringBase, baseIndex);
-    const effectiveBreakpoint = getEffectiveBreakpoint(updatedCore, scoringBase, baseIndex);
+    const effectiveBreakpoint = getEffectiveBreakpoint(updatedCore, baseIndex);
     const scoredByLockedEligibility = totalPower < effectiveBreakpoint;
     const finalPlayerPowers = collectQualifiedPlayerPowers(updatedCore, scoringBase, baseIndex);
     const rankings = buildBaseRankings(updatedCore, baseIndex, baseDef, finalPlayerPowers);
@@ -1553,7 +1559,7 @@ function updateStartTurnFactPlayer(
     };
 }
 
-function removeCardFromZones(cards: CardInstance[], cardUid: string): CardInstance[] {
+function removeCardFromZones<TCard extends CardInstance>(cards: TCard[], cardUid: string): TCard[] {
     return cards.filter(card => card.uid !== cardUid);
 }
 
@@ -2137,18 +2143,22 @@ function hasPregameDraftSetupField(setupData: Record<string, unknown> | undefine
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
     const nextUid = 1;
     const runtimeSetup = readSmashUpRuntimeSetupConfig(setupData, { playerCount: playerIds.length });
+    const pregameDraftSetup = readSmashUpPregameDraftSetupConfig(setupData);
     const {
         enabledExpansions,
-        includedFactionIds,
         deckQueryEnabled,
         victoryTarget,
         teamMode,
-        factionSelectionMode,
+    } = runtimeSetup;
+    const {
+        includedFactionIds,
+        factionSelectionMode: configuredFactionSelectionMode,
         factionCandidatePoolSize,
         banPolicy,
         firstPlayerPolicy,
         basePoolPolicy,
-    } = runtimeSetup;
+    } = pregameDraftSetup;
+    const factionSelectionMode = configuredFactionSelectionMode ?? 'snakeDraft';
     const seatOrder = [...playerIds];
 
     const players: Record<PlayerId, PlayerState> = {};
@@ -2229,10 +2239,12 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
     const playTurnOrder = firstPlayerPolicy === 'nextSeatPlaysFirst' && initialTurnOrder.length > 1
         ? [...initialTurnOrder.slice(1), initialTurnOrder[0]]
         : [...initialTurnOrder];
+    const effectiveCandidatePoolSize = factionCandidatePoolSize
+        ?? getSmashUpSelectableFactionIds(enabledExpansions, includedFactionIds).length;
     const playerCandidatePools = factionSelectionMode === 'individualPools'
         ? buildSmashUpPlayerCandidatePools(
             initialTurnOrder,
-            factionCandidatePoolSize,
+            effectiveCandidatePoolSize,
             random,
             enabledExpansions,
             includedFactionIds,
@@ -2248,7 +2260,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
     && (factionSelectionMode === 'snakeDraft' || factionSelectionMode === 'straightDraft')
         ? buildSmashUpSharedCandidatePool(
             initialTurnOrder,
-            factionCandidatePoolSize,
+            effectiveCandidatePoolSize,
             random,
             enabledExpansions,
             includedFactionIds,
@@ -2256,7 +2268,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         : [];
     const availableFactionIdsForBanPolicy = getSmashUpSelectableFactionIds(enabledExpansions, includedFactionIds);
     const resolvedBanPolicy = resolveSmashUpSupportedBanPolicy(
-        banPolicy,
+        banPolicy ?? 'none',
         factionSelectionMode,
         initialTurnOrder,
         2,
@@ -2272,7 +2284,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         currentPlayerIndex: 0,
         teamMode,
         factionSelectionMode,
-        factionCandidatePoolSize,
+        factionCandidatePoolSize: effectiveCandidatePoolSize,
         banPolicy: effectiveBanPolicy,
         firstPlayerPolicy,
         basePoolPolicy,
@@ -2292,7 +2304,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         factionSelection: {
             mode: factionSelectionMode,
             factionsPerPlayer: 2,
-            candidatePoolSize: factionCandidatePoolSize,
+            candidatePoolSize: effectiveCandidatePoolSize,
             banPolicy: effectiveBanPolicy,
             requestedBanPolicy: banPolicy,
             banPolicyDowngradeReason: resolvedBanPolicy.reason,
@@ -2621,7 +2633,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             }
 
             if (currentSession.currentStep === 'awaiting-post-scoring-finalize') {
-                const finalized = finalizeCurrentScoringBase(currentState, now);
+                const finalized = finalizeCurrentScoringBase(currentState, now, random);
                 return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
             }
 
@@ -2629,7 +2641,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 currentSession.currentStep === 'awaiting-interactions'
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
-                const finalized = finalizeCurrentScoringBase(currentState, now);
+                const finalized = finalizeCurrentScoringBase(currentState, now, random);
                 return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
             }
 
@@ -2661,7 +2673,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     const currentIsMultiBaseScoring =
                         (currentState.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId === 'multi_base_scoring';
                     const hasMultiBaseScoringInQueue = currentState.sys.interaction.queue.some(
-                        (interaction: { data?: { sourceId?: string } }) => interaction.data?.sourceId === 'multi_base_scoring',
+                        (interaction) => (interaction.data as { sourceId?: string } | undefined)?.sourceId === 'multi_base_scoring',
                     );
                     if (!currentIsMultiBaseScoring && !hasMultiBaseScoringInQueue) {
                         const interaction = buildMultiBaseScoringInteraction(currentState, pid, now, remainingBaseRefs);
@@ -3321,12 +3333,13 @@ function resolveTitanClashEventsOnBase(
         && matchState
     ) {
         const visitedBaseIndices = new Set(spiritOfForestVisitedBaseIndices);
+        const loserBaseIndex = loser.location.baseIndex;
         const otherBases = state.bases
             .map((candidateBase, index) => ({
                 baseIndex: index,
                 label: getBaseDef(candidateBase.defId)?.name ?? `基地 ${index + 1}`,
             }))
-            .filter(candidate => candidate.baseIndex !== loser.location.baseIndex);
+            .filter(candidate => candidate.baseIndex !== loserBaseIndex);
         if (otherBases.length > 0) {
             const baseTargetOptions = buildBaseTargetOptions(otherBases, state).map(option => {
                 if (!visitedBaseIndices.has(option.value.baseIndex)) return option;
@@ -3642,7 +3655,6 @@ function postProcessSystemEvents(
             });
             if (queued) {
                 derivedEvents.push(queued);
-                ms = queued.matchState ?? ms;
             }
             appendPrePlayEvent(event);
         } else if (event.type === SU_EVENTS.BASE_SCORED) {
@@ -3666,8 +3678,6 @@ function postProcessSystemEvents(
                 });
                 if (queued) {
                     derivedEvents.push(queued);
-                    ms = queued.matchState ?? ms;
-                    tempCore = queued.matchState?.core ?? tempCore;
                 }
             }
             appendPrePlayEvent(event);

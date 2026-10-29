@@ -73,6 +73,17 @@ const i18nSeg = (
 
 const textSegment = (text: string): ActionLogSegment => ({ type: 'text', text });
 
+const asRecord = (value: unknown): Record<string, unknown> | null => (
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : null
+);
+
+const findEventPayload = (events: GameEvent[], type: string): Record<string, unknown> | null => {
+    const event = events.find(candidate => candidate.type === type);
+    return event ? asRecord(event.payload) : null;
+};
+
 /** 构建卡牌 segment */
 const buildCardSegment = (cardId?: string): ActionLogSegment | null => {
     if (!cardId) return null;
@@ -115,10 +126,10 @@ export function formatCardiaActionEntry({
     // 命令格式化
     switch (command.type) {
         case CARDIA_COMMANDS.PLAY_CARD: {
-            const cardPlayedEvent = events.find(e => e.type === CARDIA_EVENTS.CARD_PLAYED.type);
-            if (!cardPlayedEvent) return null;
-            
-            const { cardUid, slotIndex } = cardPlayedEvent.payload;
+            const cardPlayedPayload = findEventPayload(events, CARDIA_EVENTS.CARD_PLAYED.type);
+            if (!cardPlayedPayload || typeof cardPlayedPayload.cardUid !== 'string') return null;
+            const cardUid = cardPlayedPayload.cardUid;
+            const slotIndex = cardPlayedPayload.slotIndex;
             
             const cardSeg = buildCardSegment(cardUid);
             if (!cardSeg) return null;
@@ -140,10 +151,9 @@ export function formatCardiaActionEntry({
         }
 
         case CARDIA_COMMANDS.ACTIVATE_ABILITY: {
-            const abilityEvent = events.find(e => e.type === CARDIA_EVENTS.ABILITY_ACTIVATED.type);
-            if (!abilityEvent) return null;
-            
-            const { cardId } = abilityEvent.payload;
+            const abilityPayload = findEventPayload(events, CARDIA_EVENTS.ABILITY_ACTIVATED.type);
+            if (!abilityPayload || typeof abilityPayload.cardId !== 'string') return null;
+            const cardId = abilityPayload.cardId;
             const cardSeg = buildCardSegment(cardId);
             if (!cardSeg) return null;
 
@@ -182,7 +192,9 @@ export function formatCardiaActionEntry({
         }
 
         case CARDIA_COMMANDS.ADD_MODIFIER: {
-            const { cardUid, modifierValue } = command.payload;
+            const payload = asRecord(command.payload);
+            if (!payload || typeof payload.cardUid !== 'string' || typeof payload.modifierValue !== 'number') return null;
+            const { cardUid, modifierValue } = payload;
             const cardSeg = buildCardSegment(cardUid);
             if (!cardSeg) return null;
 
@@ -200,7 +212,9 @@ export function formatCardiaActionEntry({
         }
 
         case CARDIA_COMMANDS.REMOVE_MODIFIER: {
-            const { cardUid } = command.payload;
+            const payload = asRecord(command.payload);
+            if (!payload || typeof payload.cardUid !== 'string') return null;
+            const { cardUid } = payload;
             const cardSeg = buildCardSegment(cardUid);
             if (!cardSeg) return null;
 
@@ -226,8 +240,19 @@ export function formatCardiaActionEntry({
                 let entry: ActionLogEntry | null = null;
 
                 switch (event.type) {
-                    case CARDIA_EVENTS.CARD_REPLACED: {
-                        const { slotIndex, oldCardId, newCardId } = event.payload;
+                    case CARDIA_EVENTS.CARD_REPLACED.type: {
+                        const payload = event.payload as {
+                            oldCardId: string;
+                            newCardId: string;
+                            encounterIndex?: number;
+                            slotIndex?: number;
+                        };
+                        const { oldCardId, newCardId } = payload;
+                        const encounterIndex = typeof payload.encounterIndex === 'number'
+                            ? payload.encounterIndex
+                            : typeof payload.slotIndex === 'number'
+                                ? payload.slotIndex + 1
+                                : 0;
                         const oldCardSeg = buildCardSegment(oldCardId);
                         const newCardSeg = buildCardSegment(newCardId);
                         if (!oldCardSeg || !newCardSeg) break;
@@ -242,14 +267,16 @@ export function formatCardiaActionEntry({
                                 oldCardSeg,
                                 i18nSeg('actionLog.with'),
                                 newCardSeg,
-                                i18nSeg('actionLog.atSlot', { slot: slotIndex }),
+                                i18nSeg('actionLog.atSlot', { slot: encounterIndex }),
                             ],
                         };
                         break;
                     }
 
-                    case CARDIA_EVENTS.FACTION_SELECTED: {
-                        const { faction } = event.payload;
+                    case CARDIA_EVENTS.FACTION_SELECTED.type: {
+                        const payload = asRecord(event.payload);
+                        if (!payload || typeof payload.faction !== 'string') break;
+                        const faction = payload.faction;
                         entry = {
                             id: `log-${eventTimestamp}`,
                             timestamp: eventTimestamp,

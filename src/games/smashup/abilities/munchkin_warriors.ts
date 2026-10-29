@@ -1,5 +1,6 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerAbility } from '../domain/abilityRegistry';
 import {
@@ -270,17 +271,17 @@ function isSourceMinionValid(state: SmashUpCore, playerId: PlayerId, sourceBaseI
     return source?.defId === defId && source.controller === playerId;
 }
 
-function queueModeChoice<T extends Record<string, unknown>>(
+function queueModeChoice<TChoice, T extends Record<string, unknown>>(
     matchState: MatchState<SmashUpCore>,
     id: string,
     playerId: PlayerId,
     title: string,
-    options: unknown[],
+    options: readonly PromptOption<TChoice>[],
     sourceId: string,
     titleKey: string,
     data: T,
 ) {
-    const interaction = createSimpleChoice(
+    const interaction = createSimpleChoice<TChoice>(
         id,
         playerId,
         title,
@@ -623,7 +624,7 @@ export function registerMunchkinWarriorsInteractionHandlers(): void {
     registerInteractionHandler(TAUNTER_MODE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const data = interactionData as SourceData | undefined;
         const choice = value as ModeChoice | undefined;
-        if (choice?.skip || !data?.sourceCardUid || data.sourceBaseIndex === undefined) return { state, events: [] };
+        if (!choice || choice.skip || !data?.sourceCardUid || data.sourceBaseIndex === undefined) return { state, events: [] };
         if (choice.mode !== 'playMonster' || !isSourceMinionValid(state.core, playerId, data.sourceBaseIndex, data.sourceCardUid, TAUNTER) || !state.core.monsterDeck?.length) return { state, events: [] };
         return { state, events: buildMonsterPlayEvents(state.core, playerId, [data.sourceBaseIndex], TAUNTER, timestamp) };
     });

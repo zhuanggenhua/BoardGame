@@ -3,6 +3,7 @@ import {
     getQidahenRuntimeRegionIdsForPrintedRegionId,
     QIDAHEN_REGION_ID_BY_MASK_COLOR,
     qidahenRegionColorKey,
+    QIDAHEN_RUNTIME_REGION_BY_ID,
 } from './mapGraph';
 
 export interface QidahenRuntimeRegionAnchor {
@@ -33,6 +34,10 @@ export const getQidahenRuntimeRegionBounds = (
     height: number,
     regionIds: readonly string[],
 ): QidahenRuntimeRegionBounds | null => {
+    if (regionIds.length === 1) {
+        const region = QIDAHEN_RUNTIME_REGION_BY_ID.get(regionIds[0]);
+        if (region?.mapRole === 'city' && region.markerBounds) return region.markerBounds;
+    }
     const wanted = new Set(regionIds);
     let left = width;
     let top = height;
@@ -50,8 +55,6 @@ export const getQidahenRuntimeRegionBounds = (
     }
     return right < 0 ? null : { left, top, width: right - left + 1, height: bottom - top + 1 };
 };
-
-const EMPTY_OWNER = -1;
 
 const projectPointIntoMask = (
     targetX: number,
@@ -140,145 +143,28 @@ export const resolveQidahenSharedPrintedRegionAnchors = (
     }).sort((left, right) => left.runtimeRegionId.localeCompare(right.runtimeRegionId, 'zh-CN'));
 };
 
-const partitionSharedPrintedRegionPixels = (
-    regionIdByPixel: Array<string | null>,
-    printedRegionId: string,
-    runtimeRegionIds: readonly string[],
-    pixelIndexes: readonly number[],
-    width: number,
-    height: number,
-) => {
-    const regionMask = new Uint8Array(width * height);
-    for (const pixelIndex of pixelIndexes) {
-        regionMask[pixelIndex] = 1;
-    }
-
-    const anchors = resolveQidahenSharedPrintedRegionAnchors(
-        printedRegionId,
-        runtimeRegionIds,
-        regionMask,
-        width,
-        height,
-    );
-    const anchorOrder = new Map(anchors.map((anchor, index) => [anchor.runtimeRegionId, index]));
-    const ownerByPixel = new Int16Array(width * height);
-    const distanceByPixel = new Int32Array(width * height);
-    ownerByPixel.fill(EMPTY_OWNER);
-    distanceByPixel.fill(-1);
-
-    const queue = new Int32Array(pixelIndexes.length);
-    let head = 0;
-    let tail = 0;
-    for (const anchor of anchors) {
-        const ownerIndex = anchorOrder.get(anchor.runtimeRegionId) ?? 0;
-        ownerByPixel[anchor.pixelIndex] = ownerIndex;
-        distanceByPixel[anchor.pixelIndex] = 0;
-        queue[tail] = anchor.pixelIndex;
-        tail += 1;
-    }
-
-    const preferCandidateOwner = (pixelIndex: number, candidateOwnerIndex: number, currentOwnerIndex: number): boolean => {
-        const x = pixelIndex % width;
-        const y = Math.floor(pixelIndex / width);
-        const candidateAnchor = anchors[candidateOwnerIndex];
-        const currentAnchor = anchors[currentOwnerIndex];
-        const candidateScore = ((x - candidateAnchor.point.x) ** 2) + ((y - candidateAnchor.point.y) ** 2);
-        const currentScore = ((x - currentAnchor.point.x) ** 2) + ((y - currentAnchor.point.y) ** 2);
-        if (candidateScore !== currentScore) {
-            return candidateScore < currentScore;
-        }
-        return candidateAnchor.runtimeRegionId.localeCompare(currentAnchor.runtimeRegionId, 'zh-CN') < 0;
-    };
-
-    while (head < tail) {
-        const pixelIndex = queue[head];
-        head += 1;
-        const ownerIndex = ownerByPixel[pixelIndex];
-        const nextDistance = distanceByPixel[pixelIndex] + 1;
-        const x = pixelIndex % width;
-        const y = Math.floor(pixelIndex / width);
-        const neighbors = [
-            x > 0 ? pixelIndex - 1 : -1,
-            x < width - 1 ? pixelIndex + 1 : -1,
-            y > 0 ? pixelIndex - width : -1,
-            y < height - 1 ? pixelIndex + width : -1,
-        ];
-        for (const nextPixelIndex of neighbors) {
-            if (nextPixelIndex < 0 || regionMask[nextPixelIndex] === 0) {
-                continue;
-            }
-            if (distanceByPixel[nextPixelIndex] < 0) {
-                distanceByPixel[nextPixelIndex] = nextDistance;
-                ownerByPixel[nextPixelIndex] = ownerIndex;
-                queue[tail] = nextPixelIndex;
-                tail += 1;
-                continue;
-            }
-            if (distanceByPixel[nextPixelIndex] !== nextDistance) {
-                continue;
-            }
-            const currentOwnerIndex = ownerByPixel[nextPixelIndex];
-            if (currentOwnerIndex === ownerIndex) {
-                continue;
-            }
-            if (preferCandidateOwner(nextPixelIndex, ownerIndex, currentOwnerIndex)) {
-                ownerByPixel[nextPixelIndex] = ownerIndex;
-            }
-        }
-    }
-
-    for (const pixelIndex of pixelIndexes) {
-        const ownerIndex = ownerByPixel[pixelIndex];
-        const runtimeRegionId = anchors[ownerIndex]?.runtimeRegionId ?? runtimeRegionIds[0] ?? printedRegionId;
-        regionIdByPixel[pixelIndex] = runtimeRegionId;
-    }
-};
-
+/** 正式土地与印刷mask一一对应；城市在原图字牌范围独立命中，不按锚点距离伪造地界。 */
 export const buildQidahenRuntimeRegionIdByPixel = (
     hitmap: Uint8ClampedArray,
     width: number,
     height: number,
 ): Array<string | null> => {
     const regionIdByPixel: Array<string | null> = new Array(width * height).fill(null);
-    const pixelIndexesByPrintedRegionId = new Map<string, number[]>();
-
+    const runtimeIdByPrintedId = new Map<string, string>();
     for (let pixelIndex = 0; pixelIndex < width * height; pixelIndex += 1) {
         const offset = pixelIndex * 4;
-        if (hitmap[offset + 3] === 0) {
-            continue;
+        if (hitmap[offset + 3] === 0) continue;
+        const printedId = QIDAHEN_REGION_ID_BY_MASK_COLOR[qidahenRegionColorKey(hitmap[offset], hitmap[offset + 1], hitmap[offset + 2])];
+        if (!printedId) continue;
+        let runtimeId = runtimeIdByPrintedId.get(printedId);
+        if (!runtimeId) {
+            const ids = getQidahenRuntimeRegionIdsForPrintedRegionId(printedId);
+            if (ids.length !== 1) throw new Error(`正式地图区域 ${printedId} 必须对应唯一土地或点位，实际为 ${ids.join(',')}`);
+            runtimeId = ids[0];
+            runtimeIdByPrintedId.set(printedId, runtimeId);
         }
-        const colorKey = qidahenRegionColorKey(hitmap[offset], hitmap[offset + 1], hitmap[offset + 2]);
-        const printedRegionId = QIDAHEN_REGION_ID_BY_MASK_COLOR[colorKey] ?? null;
-        if (!printedRegionId) {
-            continue;
-        }
-        const list = pixelIndexesByPrintedRegionId.get(printedRegionId);
-        if (list) {
-            list.push(pixelIndex);
-        } else {
-            pixelIndexesByPrintedRegionId.set(printedRegionId, [pixelIndex]);
-        }
+        regionIdByPixel[pixelIndex] = runtimeId;
     }
-
-    for (const [printedRegionId, pixelIndexes] of pixelIndexesByPrintedRegionId.entries()) {
-        const runtimeRegionIds = getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId);
-        if (runtimeRegionIds.length <= 1) {
-            const resolvedRuntimeRegionId = runtimeRegionIds[0] ?? printedRegionId;
-            for (const pixelIndex of pixelIndexes) {
-                regionIdByPixel[pixelIndex] = resolvedRuntimeRegionId;
-            }
-            continue;
-        }
-        partitionSharedPrintedRegionPixels(
-            regionIdByPixel,
-            printedRegionId,
-            runtimeRegionIds,
-            pixelIndexes,
-            width,
-            height,
-        );
-    }
-
     return regionIdByPixel;
 };
 

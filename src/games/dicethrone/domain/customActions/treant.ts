@@ -2,6 +2,7 @@ import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomAc
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from '../choiceEffects';
 import { getPlayerAbilityEffects } from '../abilityLookup';
+import type { TokenState } from '../tokenTypes';
 import { RESOURCE_IDS } from '../resources';
 import { buildDrawEvents } from '../deckEvents';
 import {
@@ -15,6 +16,7 @@ import {
     getTokenStackLimit,
 } from '../rules';
 import { CP_MAX } from '../types';
+import type { DieFace } from '../types';
 import type {
     BonusDamageAddedEvent,
     BonusDieRolledEvent,
@@ -156,8 +158,19 @@ function normalizeChoiceValue(value?: number): number {
     return Number.isFinite(value) ? Math.max(0, Math.floor(value as number)) : 0;
 }
 
-function isExpectedChoiceSource(sourceAbilityId: string | undefined, expectedSourceIds: readonly string[]): boolean {
-    return typeof sourceAbilityId === 'string' && expectedSourceIds.includes(sourceAbilityId);
+function isExpectedChoiceSource<TSourceId extends string>(
+    sourceAbilityId: string | undefined,
+    expectedSourceIds: readonly TSourceId[],
+): sourceAbilityId is TSourceId {
+    return typeof sourceAbilityId === 'string' && expectedSourceIds.includes(sourceAbilityId as TSourceId);
+}
+
+function requireTreantDieFace(state: CustomActionContext['state'], playerId: string, value: number): DieFace {
+    const face = getPlayerDieFace(state, playerId, value);
+    if (face === null) {
+        throw new Error(`Treant bonus die has no face mapping for player ${playerId} and value ${value}`);
+    }
+    return face;
 }
 
 function matchesCurrentPendingAttackSource(
@@ -330,7 +343,7 @@ function buildSpiritTransitionEvents(
         { tokenId: TOKEN_IDS.TREANT_DIVINE, current: current.divine, target: target.divine },
     ];
 
-    return transitions.flatMap(({ tokenId, current: currentAmount, target: targetAmount }, index) => {
+    return transitions.flatMap<DiceThroneEvent>(({ tokenId, current: currentAmount, target: targetAmount }, index) => {
         const delta = targetAmount - currentAmount;
         if (delta === 0) return [];
         if (delta > 0) {
@@ -435,10 +448,11 @@ function getCurrentTendCareCultivateAmount(
     if (sourceAbilityId === 'tend-care-2-main') return 4;
     if (sourceAbilityId === 'tend-care') return 3;
 
-    const effect = getPlayerAbilityEffects(state, playerId, 'tend-care').find(currentEffect => (
-        currentEffect.action.type === 'custom'
-        && currentEffect.action.customActionId === 'treant-tend-care-choice'
-    ));
+    const effect = getPlayerAbilityEffects(state, playerId, 'tend-care').find(currentEffect => {
+        const action = currentEffect.action;
+        return action?.type === 'custom'
+            && action.customActionId === 'treant-tend-care-choice';
+    });
     const amount = Number(effect?.action?.cultivateAmount);
     if (amount === 4) return 4;
     if (amount === 3) return 3;
@@ -779,7 +793,7 @@ function handleLifeSapUse({ attackerId, sourceAbilityId, state, timestamp, rando
     if (!random) return [];
 
     const value = random.d(6);
-    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+    const face = requireTreantDieFace(state, attackerId, value);
     const die = {
         index: 0,
         value,
@@ -1051,13 +1065,13 @@ function handleWildGrowth2Main(ctx: CustomActionContext): DiceThroneEvent[] {
     const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
     if (!random) return [];
 
-    const rollDice: Array<{ index: number; value: number; face: string; effectKey: string; effectParams: Record<string, number> }> = [];
+    const rollDice: Array<{ index: number; value: number; face: DieFace; effectKey: string; effectParams: Record<string, number> }> = [];
     const events: DiceThroneEvent[] = [];
 
     for (let i = 0; i < 5; i += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
-        const effectKey = `bonusDie.effect.treantWildGrowth2.${face || 'other'}`;
+        const face = requireTreantDieFace(state, attackerId, value);
+        const effectKey = `bonusDie.effect.treantWildGrowth2.${face}`;
         const effectParams = { value, index: i };
         rollDice.push({ index: i, value, face, effectKey, effectParams });
         events.push({
@@ -1188,13 +1202,13 @@ function handleTrample(ctx: CustomActionContext): DiceThroneEvent[] {
     const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
     if (!random) return [];
 
-    const dice: Array<{ index: number; value: number; face: string; effectKey: string; effectParams: Record<string, number> }> = [];
+    const dice: Array<{ index: number; value: number; face: DieFace; effectKey: string; effectParams: Record<string, number> }> = [];
     const events: DiceThroneEvent[] = [];
 
     for (let i = 0; i < 5; i += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
-        const effectKey = `bonusDie.effect.treantTrample.${face || 'other'}`;
+        const face = requireTreantDieFace(state, attackerId, value);
+        const effectKey = `bonusDie.effect.treantTrample.${face}`;
         const effectParams = { value, index: i };
         dice.push({ index: i, value, face, effectKey, effectParams });
         events.push({
@@ -1224,13 +1238,13 @@ function handleSoulfire(ctx: CustomActionContext): DiceThroneEvent[] {
     const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
     if (!random) return [];
 
-    const dice: Array<{ index: number; value: number; face: string; effectKey: string; effectParams: Record<string, number> }> = [];
+    const dice: Array<{ index: number; value: number; face: DieFace; effectKey: string; effectParams: Record<string, number> }> = [];
     const events: DiceThroneEvent[] = [];
 
     for (let i = 0; i < 3; i += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
-        const effectKey = `bonusDie.effect.treantSoulfire.${face || 'other'}`;
+        const face = requireTreantDieFace(state, attackerId, value);
+        const effectKey = `bonusDie.effect.treantSoulfire.${face}`;
         const effectParams = { value, index: i };
         dice.push({ index: i, value, face, effectKey, effectParams });
         events.push({
@@ -1261,12 +1275,12 @@ function handleMotherTree(ctx: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
 
     const value = random.d(6);
-    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+    const face = requireTreantDieFace(state, attackerId, value);
     const die = {
         index: 0,
         value,
         face,
-        effectKey: `bonusDie.effect.treantMotherTree.${face || 'other'}`,
+        effectKey: `bonusDie.effect.treantMotherTree.${face}`,
         effectParams: { value },
     };
     const events: DiceThroneEvent[] = [{
@@ -1362,10 +1376,11 @@ function handleRootedDefense(ctx: CustomActionContext): DiceThroneEvent[] {
 registerChoiceEffectHandler(WILD_GROWTH_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
     if (!isExpectedChoiceSource(sourceAbilityId, WILD_GROWTH_SOURCE_IDS)) return undefined;
-    if (!player || !matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
+    const pendingAttack = state.pendingAttack;
+    if (!player || !pendingAttack || !matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
 
     const choice = decodeWildGrowthChoice(value);
-    const currentTokens = player.tokens ?? {};
+    const currentTokens: TokenState = player.tokens;
     const removedTreeCount = choice.seedling + choice.sapling + choice.divine;
     if (
         choice.seedling > (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
@@ -1385,18 +1400,20 @@ registerChoiceEffectHandler(WILD_GROWTH_CHOICE_ID, ({ state, playerId, value, so
         [TOKEN_IDS.LIFE_SAP]: (currentTokens[TOKEN_IDS.LIFE_SAP] ?? 0) - (choice.lifeSap ? 1 : 0),
     };
 
-    return {
-        players: {
+    const nextPlayers: CustomActionContext['state']['players'] = {
             ...state.players,
             [playerId]: {
                 ...player,
                 tokens: nextTokens,
             },
-        },
+        };
+
+    return {
+        players: nextPlayers,
         pendingAttack: {
-            ...state.pendingAttack,
-            bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + removedTreeCount * 4,
-            isDefendable: choice.lifeSap ? false : state.pendingAttack.isDefendable,
+            ...pendingAttack,
+            bonusDamage: (pendingAttack.bonusDamage ?? 0) + removedTreeCount * 4,
+            isDefendable: choice.lifeSap ? false : pendingAttack.isDefendable,
             offensiveRollEndTokenResolved: true,
         },
     };
@@ -1414,7 +1431,7 @@ registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value
     if (removedSpiritCount === 0) return {};
     if (removedSpiritCount !== 1) return undefined;
 
-    const currentTokens = player.tokens ?? {};
+    const currentTokens: TokenState = player.tokens;
     if (
         choice.seedling > (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
         || choice.sapling > (currentTokens[TOKEN_IDS.TREANT_SAPLING] ?? 0)
@@ -1423,7 +1440,7 @@ registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value
         return undefined;
     }
 
-    const nextPlayers = {
+    const nextPlayers: CustomActionContext['state']['players'] = {
         ...state.players,
         [playerId]: {
             ...player,
@@ -1455,7 +1472,8 @@ registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value
 registerChoiceEffectHandler(NATURE_TOUCH_CULTIVATE_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
     if (!isExpectedChoiceSource(sourceAbilityId, NATURE_TOUCH_SOURCE_IDS)) return undefined;
-    if (!player || !matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
+    const pendingAttack = state.pendingAttack;
+    if (!player || !pendingAttack || !matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
 
     const choice = decodeSpiritCounts(value);
     const ctx: TreantSpiritContext = { attackerId: playerId, state };
@@ -1467,22 +1485,24 @@ registerChoiceEffectHandler(NATURE_TOUCH_CULTIVATE_CHOICE_ID, ({ state, playerId
     const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
     if (!isLegal) return undefined;
 
-    return {
-        players: {
-            ...state.players,
-            [playerId]: {
-                ...player,
-                tokens: {
-                    ...player.tokens,
-                    [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
-                    [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
-                    [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
-                },
+    const nextPlayers: CustomActionContext['state']['players'] = {
+        ...state.players,
+        [playerId]: {
+            ...player,
+            tokens: {
+                ...player.tokens,
+                [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
             },
         },
+    };
+
+    return {
+        players: nextPlayers,
         pendingAttack: {
-            ...state.pendingAttack,
-            bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + totalSpirits(choice),
+            ...pendingAttack,
+            bonusDamage: (pendingAttack.bonusDamage ?? 0) + totalSpirits(choice),
         },
     };
 });
@@ -1609,7 +1629,7 @@ const resolveRootedChoice = ({ state, playerId, value, sourceAbilityId, customId
         return undefined;
     }
     const lifeSapTargetId = playerIds[choice.lifeSapTargetIndex];
-    const nextPlayers = {
+    const nextPlayers: CustomActionContext['state']['players'] = {
         ...state.players,
         [playerId]: {
             ...player,
@@ -1660,7 +1680,7 @@ registerChoiceEffectHandler(FOREST_AWAKENS_CHOICE_ID, ({ state, playerId, value,
     const thornTargetId = state.pendingAttack?.defenderId ?? getOpponents(state, playerId)[0];
     if (!thornTargetId) return undefined;
 
-    const nextPlayers = {
+    const nextPlayers: CustomActionContext['state']['players'] = {
         ...state.players,
         [playerId]: {
             ...player,
@@ -1801,7 +1821,7 @@ registerChoiceEffectHandler(HARVEST_CHOICE_ID, ({ state, playerId, value, source
 
     const selectedTargetIds = getMaskPlayerIds(playerIds, choice.lifeSapTargetMask);
     const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
-    const nextPlayers = {
+    const nextPlayers: CustomActionContext['state']['players'] = {
         ...state.players,
         [playerId]: {
             ...player,
@@ -1967,7 +1987,7 @@ function resolveTendCareChoice(amount: number) {
         const thornTargetId = thornTargetIds[choice.thornTargetIndex];
         if (!lifeSapTargetId || !thornTargetId) return undefined;
 
-        const nextPlayers = {
+        const nextPlayers: CustomActionContext['state']['players'] = {
             ...state.players,
             [playerId]: {
                 ...player,
@@ -2404,8 +2424,8 @@ export function registerTreantCustomActions(): void {
         categories: ['damage', 'token'],
         requiresSelectedDefender: true,
         estimateDamage: (state, playerId) => {
-            const player = state.players?.[playerId] as { tokens?: Record<string, number> } | undefined;
-            const tokens = player?.tokens ?? {};
+            const player = state.players?.[playerId];
+            const tokens: TokenState = player?.tokens ?? {};
             return (tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
                 + (tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0)
                 + (tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0);

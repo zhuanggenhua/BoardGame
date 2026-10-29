@@ -104,6 +104,7 @@ const deriveStepState = (manifest: TutorialManifest, stepIndex: number, currentC
         step,
         manifestAllowManualSkip: manifest.allowManualSkip,
         manifestRandomPolicy: manifest.randomPolicy,
+        manifestCloseOnGameOver: manifest.closeOnGameOver ?? false,
         randomPolicy,
         aiActions: step.aiActions ? [...step.aiActions] : undefined,
         allowManualSkip: deriveManualSkip(step, manifest),
@@ -195,7 +196,7 @@ const restoreTutorialCheckpoint = <TCore>(
             undo: restoredUndo,
             tutorial: {
                 ...restored.sys.tutorial,
-                steps: tutorial.steps,
+                steps: restored.sys.tutorial.steps?.length ? restored.sys.tutorial.steps : tutorial.steps,
                 checkpoints: previousCheckpoints,
             },
         },
@@ -218,13 +219,15 @@ const bindManifestToExistingTutorialState = <TCore>(
         return state;
     }
 
+    const steps=tutorial.selectedBranch?manifest.steps.filter(step=>!step.branch||step.branch===tutorial.selectedBranch):manifest.steps;
+    const effectiveManifest=steps===manifest.steps?manifest:{...manifest,steps};
     const stepIndex = Number.isInteger(tutorial.stepIndex) ? tutorial.stepIndex : 0;
-    const manifestStep = manifest.steps[stepIndex];
+    const manifestStep = effectiveManifest.steps[stepIndex];
     if (!manifestStep) {
         return state;
     }
 
-    const reboundTutorial = deriveStepState(manifest, stepIndex, tutorial.randomPolicy?.cursor);
+    const reboundTutorial = deriveStepState(effectiveManifest, stepIndex, tutorial.randomPolicy?.cursor);
     const shouldPreserveConsumedAiActions = Boolean(
         tutorial.step?.id === manifestStep.id
         && !tutorial.step?.aiActions
@@ -242,6 +245,7 @@ const bindManifestToExistingTutorialState = <TCore>(
         pendingAnimationAdvance: tutorial.pendingAnimationAdvance,
         skippedStepIds: tutorial.skippedStepIds,
         checkpoints: tutorial.checkpoints,
+        selectedBranch:tutorial.selectedBranch,
     });
 };
 
@@ -308,6 +312,12 @@ const isEventMatch = (event: GameEvent, matcher: TutorialEventMatcher): boolean 
 const shouldAdvance = (events: GameEvent[], advanceOnEvents?: TutorialEventMatcher[]): boolean => {
     if (!advanceOnEvents || advanceOnEvents.length === 0) return false;
     return advanceOnEvents.some((matcher) => events.some((event) => isEventMatch(event, matcher)));
+};
+
+const commandBelongsToStep = (step: TutorialManifest['steps'][number] | null | undefined, command: Command | undefined): boolean => {
+    const allowedCommands = step?.allowedCommands;
+    if (!allowedCommands || allowedCommands.length === 0) return true;
+    return Boolean(command && allowedCommands.includes(command.type));
 };
 
 const isAuthoredTutorialAiAction = (tutorial: TutorialState | undefined, command: Command): boolean => {
@@ -384,6 +394,7 @@ const transitionTutorialStep = <TCore>(
                 const previousTutorial = {
                     ...deriveStepState(manifest, previousIndex, tutorial.randomPolicy?.cursor),
                     checkpoints: tutorial.checkpoints,
+                    selectedBranch:tutorial.selectedBranch,
                 };
                 return {
                     state: applyTutorialState(state, previousTutorial),
@@ -434,6 +445,7 @@ const transitionTutorialStep = <TCore>(
     const nextTutorial = {
         ...deriveStepState(manifest, nextIndex, tutorial.randomPolicy?.cursor),
         checkpoints: tutorial.checkpoints,
+        selectedBranch:tutorial.selectedBranch,
         ...(skippedStepIds.length > 0 ? { skippedStepIds } : {}),
     };
     const nextState = appendTutorialCheckpoint(
@@ -512,6 +524,7 @@ const shouldAutoAdvanceAfterAiConsumed = (
 
 export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
     let activeStepValidator: StepValidatorFn | undefined;
+    let activeBranchSelector: TutorialManifest['selectBranch'];
     const activeManifestById = new Map<string, TutorialManifest>();
     const resolveActiveManifest = (tutorial: TutorialState): TutorialManifest | undefined =>
         tutorial.manifestId ? activeManifestById.get(tutorial.manifestId) : undefined;
@@ -546,6 +559,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
                 activeManifestById.set(manifest.id, manifest);
                 activeStepValidator = manifest.stepValidator;
+                activeBranchSelector=manifest.selectBranch;
                 const nextTutorial = deriveStepState(manifest, 0);
                 const timestamp = resolveTimestamp(command);
                 const nextState = appendTutorialCheckpoint(
@@ -568,6 +582,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
                 activeManifestById.set(manifest.id, manifest);
                 activeStepValidator = manifest.stepValidator;
+                activeBranchSelector=manifest.selectBranch;
                 const reboundState = bindManifestToExistingTutorialState(state, manifest);
                 const reboundWithCheckpoint = reboundState.sys.tutorial.checkpoints?.length
                     ? reboundState
@@ -592,6 +607,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
             if (command.type === TUTORIAL_COMMANDS.CLOSE) {
                 activeStepValidator = undefined;
+                activeBranchSelector=undefined;
                 const manifestId = state.sys.tutorial.manifestId ?? null;
                 if (manifestId) {
                     activeManifestById.delete(manifestId);
@@ -741,30 +757,35 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
         },
 
         afterEvents: ({ state, events, command, random }): HookResult<TCore> | void => {
-            const tutorial = state.sys?.tutorial;
+            let currentState=state;
+            let tutorial = currentState.sys?.tutorial;
             if (!tutorial?.active) {
                 return;
             }
 
-            // 诊断日志：追踪事件匹配
-            const step = tutorial.step;
-            if (step?.advanceOnEvents && step.advanceOnEvents.length > 0) {
-                console.warn('[TutorialSystem] afterEvents:', {
-                    stepId: step.id,
-                    advanceOnEvents: step.advanceOnEvents.map((m: TutorialEventMatcher) => m.type),
-                    receivedEvents: events.map((e: GameEvent) => e.type),
-                    eventCount: events.length,
-                });
+            if(command&&activeBranchSelector&&tutorial.step&&!tutorial.selectedBranch){
+                const branch=activeBranchSelector(currentState as MatchState<unknown>,tutorial.step,command,events as GameEvent[]);
+                const manifest=resolveActiveManifest(tutorial);
+                if(branch&&manifest?.steps.some(step=>step.branch===branch)){
+                    const branchedTutorial={...tutorial,selectedBranch:branch,steps:tutorial.steps.filter(step=>!step.branch||step.branch===branch)};
+                    currentState={...currentState,sys:{...currentState.sys,tutorial:branchedTutorial}};
+                    tutorial=branchedTutorial;
+                }
             }
 
-            const matched = shouldAdvance(events, tutorial.step?.advanceOnEvents);
+            const step = tutorial.step;
+            // A previous action can emit the same event type as the next lesson's action
+            // (for example, a riding-choice response and the following PLAY_SKILL both
+            // emit FATE_ABILITY_USED). Only let a command advance a step authored for it.
+            const matched = commandBelongsToStep(step, command)
+                && shouldAdvance(events, step?.advanceOnEvents);
 
             if (!matched) {
                 // 事件未匹配：检查 stepValidator 是否判定当前步骤不可满足
-                if (shouldAdvanceInvalidCurrentStep(state, activeStepValidator)) {
+                if (shouldAdvanceInvalidCurrentStep(currentState, activeStepValidator)) {
                     const timestamp = resolveTimestamp(command, events);
                     return transitionTutorialStep(
-                        state,
+                        currentState,
                         'next',
                         timestamp,
                         activeStepValidator,
@@ -772,7 +793,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                         random.getCursor?.(),
                     );
                 }
-                return;
+                return currentState!==state?{state:currentState}:undefined;
             }
 
             const timestamp = resolveTimestamp(command, events);
@@ -784,13 +805,13 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                     pendingAnimationAdvance: true,
                 };
                 return {
-                    state: applyTutorialState(state, pendingState),
+                    state: applyTutorialState(currentState, pendingState),
                     events: [{ type: TUTORIAL_EVENTS.ANIMATION_PENDING, payload: { stepId: tutorial.step?.id }, timestamp }],
                 };
             }
 
             return transitionTutorialStep(
-                state,
+                currentState,
                 'next',
                 timestamp,
                 activeStepValidator,

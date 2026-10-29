@@ -22,6 +22,7 @@ import {
     findMinionByAttachedCard,
     findMinionOnBases,
     grantExtraAction,
+    revealDeckTop,
     grantExtraMinion,
 } from '../domain/abilityHelpers';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
@@ -464,11 +465,7 @@ function merlinTalent(ctx: AbilityContext): AbilityResult {
     const def = getCardDef(top.defId);
     if (def?.type !== 'action') {
         return {
-            events: [{
-                type: SU_EVENTS.REVEAL_DECK_TOP,
-                payload: { playerId: ctx.playerId, cardUids: [top.uid], reason: 'round_table_knights_merlin' },
-                timestamp: ctx.now,
-            } as SmashUpEvent],
+            events: [revealDeckTop(ctx.playerId, ctx.playerId, [top], 1, 'round_table_knights_merlin', ctx.now)],
         };
     }
     return {

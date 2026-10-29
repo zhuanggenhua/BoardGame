@@ -81,12 +81,16 @@ import type {
     DuelEndedEvent,
     TitanOngoingSuppressedEvent,
     CardBuriedEvent,
+    MinionReturnedEvent,
+    BuriedCardReturnedToHandEvent,
+    BaseAbilitySuppressedEvent,
+    PendingAfterScoringSpecial,
     MinionOnBase,
     MonsterOnBase,
     CardType,
     CardInstance,
     BaseInPlay,
-    BaseOngoingAction,
+    OngoingActionOnBase,
     AttachedActionOnMinion,
     ActionCardDef,
     FusionCardDef,
@@ -369,7 +373,7 @@ function allocateMunchkinTreasureUids(
     };
 }
 
-function getMunchkinTreasureCardType(defId: string): CardType {
+function getMunchkinTreasureCardType(defId: string): 'minion' | 'action' {
     const def = getCardDef(defId);
     if (!def || (def.type !== 'minion' && def.type !== 'action')) {
         throw new Error(`unknown Munchkin treasure card: ${defId}`);
@@ -837,13 +841,13 @@ export function reduceBaseReplacedEvent(state: SmashUpCore, event: BaseReplacedE
                     powerCounters: 0,
                     talentUsed: false,
                     metadata: undefined,
-                    location: { zone: 'setaside' },
+                    location: { zone: 'setaside' as const },
                 };
             })
             : state.titans;
         const cleanedTitanSuppressed = removedTitanUids.size > 0
             ? (state.titanOngoingSuppressedUntilTurnEnd ?? []).filter(uid => !removedTitanUids.has(uid))
-            : state.titanOngoingSuppressedUntilTurnEnd;
+            : [];
         const monsterSetup = dealMunchkinMonstersToBases(state, updatedBases, state.monsterDeck, state.nextUid);
         return {
             ...state,
@@ -1959,6 +1963,11 @@ export function reduceTalentUsedEvent(
 
     const newBases = state.bases.map(base => {
         if (ongoingCardUid) {
+            const hasTalentUsedLifecycle = (defId: string): boolean => {
+                const cardDef = getCardDef(defId);
+                return cardDef?.type === 'action'
+                    && cardDef.lifecycle?.expires.condition?.talentUsed === true;
+            };
             return {
                 ...base,
                 ongoingActions: base.ongoingActions.map(o =>
@@ -1966,11 +1975,11 @@ export function reduceTalentUsedEvent(
                         ? {
                             ...o,
                             talentUsed: true,
-                            metadata: (consumedSeastarExtra || getCardDef(o.defId)?.type === 'action' && getCardDef(o.defId)?.lifecycle?.expires.condition?.talentUsed === true)
+                            metadata: (consumedSeastarExtra || hasTalentUsedLifecycle(o.defId))
                                 ? {
                                     ...(o.metadata ?? {}),
                                     ...(consumedSeastarExtra ? { mythicHorsesSeastarExtraTalentConsumed: true } : {}),
-                                    ...(getCardDef(o.defId)?.type === 'action' && getCardDef(o.defId)?.lifecycle?.expires.condition?.talentUsed === true ? { lifecycleArmed: true } : {}),
+                                    ...(hasTalentUsedLifecycle(o.defId) ? { lifecycleArmed: true } : {}),
                                 }
                                 : o.metadata,
                         }
@@ -1983,11 +1992,11 @@ export function reduceTalentUsedEvent(
                             ? {
                                 ...a,
                                 talentUsed: true,
-                            metadata: (consumedSeastarExtra || getCardDef(a.defId)?.type === 'action' && getCardDef(a.defId)?.lifecycle?.expires.condition?.talentUsed === true)
+                            metadata: (consumedSeastarExtra || hasTalentUsedLifecycle(a.defId))
                                 ? {
                                     ...(a.metadata ?? {}),
                                     ...(consumedSeastarExtra ? { mythicHorsesSeastarExtraTalentConsumed: true } : {}),
-                                    ...(getCardDef(a.defId)?.type === 'action' && getCardDef(a.defId)?.lifecycle?.expires.condition?.talentUsed === true ? { lifecycleArmed: true } : {}),
+                                    ...(hasTalentUsedLifecycle(a.defId) ? { lifecycleArmed: true } : {}),
                                 }
                                 : a.metadata,
                             }
@@ -2119,7 +2128,7 @@ export function reduceActionPlayedEvent(
     const newUsedAbilities = fromDiscard && discardPlaySourceId
         ? Array.from(new Set([...(player.usedDiscardPlayAbilities ?? []), discardPlaySourceId]))
         : player.usedDiscardPlayAbilities;
-    const nextPlayers = {
+    const nextPlayers: Record<string, PlayerState> = {
         ...state.players,
         [playerId]: {
             ...player,
@@ -2201,9 +2210,9 @@ export function reduceMinionPlayedEvent(
     const newDiscard = allowImplicitSource ? removeCard(player.discard) : fromDiscard ? removeCard(player.discard) : player.discard;
     const newDeck = allowImplicitSource ? removeCard(player.deck) : (fromDeck && cardInDeck) ? removeCard(player.deck) : player.deck;
     const newStoredCards = allowImplicitSource
-        ? removeCard(player.storedCards ?? [])
+        ? (player.storedCards ?? []).filter(c => c.uid !== cardUid)
         : fromStored
-            ? removeCard(player.storedCards ?? [])
+            ? (player.storedCards ?? []).filter(c => c.uid !== cardUid)
             : player.storedCards;
     const minion: MinionOnBase = {
         uid: cardUid,
@@ -4878,7 +4887,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED: {
             const { cardUid, delta, metadataUpdate, replaceMode } = (event as OngoingCardCounterChangedEvent).payload;
             // 使用 cardUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
-            const updateOngoing = (oa: BaseOngoingAction | AttachedActionOnMinion) => {
+            const updateOngoing = (oa: OngoingActionOnBase | AttachedActionOnMinion) => {
                     if (oa.uid !== cardUid) return oa;
                     const prev = ((oa.metadata?.powerCounters as number) ?? 0);
                     const nextPowerCounters = replaceMode

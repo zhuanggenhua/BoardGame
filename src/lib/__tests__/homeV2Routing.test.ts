@@ -58,12 +58,25 @@ describe('home style preference', () => {
         expect(window.localStorage.getItem('unrelated-setting')).toBe('keep-me');
     });
 
-    it('preserves an existing classic choice while updating only the home-style schema version', async () => {
+    it('migrates a stored classic choice to modern when the home-style schema version changes', async () => {
         window.localStorage.setItem('bg_home_entry_style', 'classic');
-        window.localStorage.setItem('bg_home_entry_style_version', 'classic-default-v1');
+        window.localStorage.setItem('bg_home_entry_style_version', 'modern-classic-v2');
+        window.localStorage.setItem('unrelated-setting', 'keep-me');
         const { HOME_ENTRY_STYLE_VERSION, resolveHomeEntryStyle } = await import('../homeV2Routing');
 
-        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('classic');
+        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('modern');
+        expect(window.localStorage.getItem('bg_home_entry_style')).toBe('modern');
+        expect(window.localStorage.getItem('bg_home_entry_style_version')).toBe(HOME_ENTRY_STYLE_VERSION);
+        expect(window.localStorage.getItem('unrelated-setting')).toBe('keep-me');
+    });
+
+    it('keeps a classic choice stored under the current home-style schema version', async () => {
+        const { HOME_ENTRY_STYLE_VERSION, persistHomeEntryStyle, resolveHomeEntryStyle } = await import('../homeV2Routing');
+        persistHomeEntryStyle('classic');
+
+        vi.resetModules();
+        const { resolveHomeEntryStyle: resolveAfterReload } = await import('../homeV2Routing');
+        expect(resolveAfterReload(new URLSearchParams())).toBe('classic');
         expect(window.localStorage.getItem('bg_home_entry_style')).toBe('classic');
         expect(window.localStorage.getItem('bg_home_entry_style_version')).toBe(HOME_ENTRY_STYLE_VERSION);
     });

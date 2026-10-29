@@ -10,9 +10,10 @@ import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import './PhaseIndicator.css';
 
 /** 构建阶段信息列表 */
+const PHASE_ORDER: readonly TurnPhase[] = ['upkeep', 'income', 'main1', 'offensiveRoll', 'defensiveRoll', 'main2', 'discard'];
+
 const buildPhases = (t: TranslateFn): Array<PhaseInfo & { desc: string[] }> => {
-    const phaseOrder: TurnPhase[] = ['upkeep', 'income', 'main1', 'offensiveRoll', 'defensiveRoll', 'main2', 'discard'];
-    return phaseOrder.map(pid => ({
+    return PHASE_ORDER.map(pid => ({
         id: pid,
         label: t(`phase.${pid}.label`) as string,
         desc: resolveI18nList(t(`phase.${pid}.desc`, { returnObjects: true })),
@@ -50,6 +51,8 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
                 className="dt-phase-indicator__list flex flex-col"
                 renderPhaseItem={(phase, isActive) => {
                     const phaseWithDesc = phase as PhaseInfo & { desc: string[] };
+                    const phaseId = PHASE_ORDER.find((id) => id === phase.id);
+                    if (!phaseId) return null;
                     const isHovered = hoveredPhaseId === phase.id;
                     const isSelected = selectedPhaseId === phase.id;
                     const isTooltipVisible = isCoarsePointer ? isSelected : isHovered;
@@ -73,15 +76,15 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
                                 onClick={() => {
                                     if (!isCoarsePointer) return;
                                     setSelectedPhaseState((previous) => (
-                                        previous?.scope === selectionScope && previous.id === phase.id
+                                        previous?.scope === selectionScope && previous.id === phaseId
                                             ? null
-                                            : { scope: selectionScope, id: phase.id }
+                                            : { scope: selectionScope, id: phaseId }
                                     ));
                                 }}
                                 onKeyDown={(event) => {
                                     if (!isCoarsePointer || (event.key !== 'Enter' && event.key !== ' ')) return;
                                     event.preventDefault();
-                                    setSelectedPhaseState({ scope: selectionScope, id: phase.id });
+                                    setSelectedPhaseState({ scope: selectionScope, id: phaseId });
                                 }}
                                 className={`
                                     relative z-10 font-bold transition-[all] duration-300 truncate cursor-help

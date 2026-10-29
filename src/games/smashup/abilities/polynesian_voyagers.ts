@@ -465,7 +465,7 @@ function unityOfTheTribes(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const volcanicUprisingPromptProgram = createPromptProgram<VolcanicUprisingPromptContext, SmashUpCore, SmashUpEvent>({
+const volcanicUprisingPromptProgram = createPromptProgram<VolcanicUprisingPromptContext>({
     sourceId: 'polynesian_voyagers_volcanic_uprising',
     buildInteraction: (context) => {
         const targets = ownMinions(context.matchState.core, context.playerId)

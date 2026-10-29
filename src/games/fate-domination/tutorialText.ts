@@ -1,4 +1,4 @@
-import { FATE_MASTERS, FATE_SERVANTS } from './data';
+import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANTS } from './data';
 import type {FateLessonId} from './tutorialLessons';
 
 const play = 'intake/rules/chm-进行一场圣杯战争.md';
@@ -13,6 +13,8 @@ export const FATE_TUTORIAL_PASSAGES = {
     order: excerpt(play, '游戏流程', '当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。'),
     preparation: excerpt(play, '准备阶段', '按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。'),
     deployment: paperExcerpt(play, '前哨阶段（白天）', '按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值（C）。'),
+    workshopOrder: excerpt(introduction, 'C –工房区', '玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。'),
+    terrainOrder: excerpt(introduction, 'D –地利区', '玩家若选择部署于此，由数字的由高到低依次部署并获得等于其数字的基础地利值，地利值将在计算战力时增加您的合计威力。'),
     terrain: paperExcerpt(play, '前哨阶段（白天）', '若部署于战场且位于地利位置（D），战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。'),
     outpostAbility: excerpt(play, '前哨阶段（白天）', '玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。'),
     actionOrder: excerpt(play, '行动阶段（夜晚）', '然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。'),
@@ -20,6 +22,8 @@ export const FATE_TUTORIAL_PASSAGES = {
     activatedAbility: excerpt(play, '行动阶段（夜晚）', '印刷于攻击或技能牌上的“行动阶段”能力若不具有“被动/”，则需要将此牌激活才可使用。（激活：明置于你的攻击区）'),
     movement: excerpt(play, '常规移动', '你可以通过花费合计的移动成本（E），从一处地点移动至另一处。（移动是连续的）'),
     movementPayment: excerpt(play, '常规移动', '常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。'),
+    engagement: excerpt(play, '常规移动', '若你与至少一名对手（包括玩家和NPC）一起位于一处会发生战斗的战场，则你处于“交战状态”，此时你无法进行常规移动。'),
+    effectMovement: excerpt(play, '效果移动', '一些效果记为“沿着/逆着箭头移动X步”“移动至XX地点”，使用这些效果移动时若无特别说明，无需花费移动成本，且默认无视交战状态。'),
     battlefieldReward: excerpt(play, '战力结算', '令胜利者（们）获得该战场事件牌的战果点数之和的战果'),
     attack: excerpt(play, '常规出牌', '打出正好两张攻击牌作为你本回合的常规出牌。'),
     mixedAttack: excerpt(play, '常规出牌', '它们可以是你手中的普通攻击牌（背面为深蓝色），或是你技能区的技能攻击（背面为红色且具有魔力消耗和威力）'),
@@ -55,16 +59,17 @@ export interface FateTutorialCopy {
     /** 仅限来源未描述的电子版输入；不得填入界面布局、验收或设计说明。 */
     input?: { text: string; owner: string };
     /** 当前实际能力卡的身份；正文直接取正式卡文，不能套用其他角色能力。 */
-    ability?: { masterId?: string; servantId?: string; skillId: string; clause?: 'action' };
+    ability?: { masterId?: string; servantId?: string; attackId?: string; skillId: string; clause?: 'action' };
     /** 观察他席新后果时标明归属，避免卡文的“你”被误认为当前学员。 */
-    observer?: { playerId: string; abilityName?: string };
+    observer?: { playerId: string; masterId?: string; abilityName?: string };
 }
 
 export function fateTutorialText(copy: FateTutorialCopy): string {
     const source = copy.ability;
     const owner = source?.masterId ? FATE_MASTERS.find(master=>master.id===source.masterId) : FATE_SERVANTS.find(servant=>servant.id===source?.servantId);
     const skills = owner && ('skills' in owner ? owner.skills : 'skillCards' in owner ? owner.skillCards : undefined);
-    const description = source ? skills?.find(skill=>skill.id===source.skillId)?.desc : undefined;
+    const description = source?.attackId ? FATE_ATTACK_BY_ID[source.attackId]?.desc : source ? skills?.find(skill=>skill.id===source.skillId)?.desc : undefined;
     const ability = source?.clause==='action' ? description?.split('\n').filter(line=>line.includes('行动阶段：')).join('\n') : description;
-    return [...(copy.observer?[`玩家 ${Number(copy.observer.playerId)+1}${copy.observer.abilityName?' · '+copy.observer.abilityName:''}`]:[]),...copy.passages.map(id => FATE_TUTORIAL_PASSAGES[id].quote), ...(ability ? [ability] : []), ...(copy.input ? [copy.input.text] : [])].join('\n\n');
+    const observedMaster=copy.observer?.masterId?FATE_MASTERS.find(master=>master.id===copy.observer!.masterId):undefined;
+    return [...(copy.observer?[`对手玩家 ${Number(copy.observer.playerId)+1}${observedMaster?`（${observedMaster.name}）`:''}${copy.observer.abilityName?' · '+copy.observer.abilityName:''}`]:[]),...copy.passages.map(id => FATE_TUTORIAL_PASSAGES[id].quote), ...(ability ? [ability] : []), ...(copy.input ? [copy.input.text] : [])].join('\n\n');
 }

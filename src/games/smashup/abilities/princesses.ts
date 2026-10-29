@@ -1,7 +1,7 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { createAbilityRuntimeSimpleChoice, createEffectProgram, createPromptProgram, executeAbilityProgram } from '../domain/abilityRuntime';
+import { createAbilityRuntimeContinuation, createAbilityRuntimeSimpleChoice, createEffectProgram, createPromptProgram, executeAbilityProgram } from '../domain/abilityRuntime';
 import {
     addTempPower,
     buildAbilityFeedback,
@@ -149,8 +149,8 @@ function shuffleCardIntoDeck(
     random: AbilityContext['random'] | TriggerContext['random'],
     now: number,
     reason: string,
-    source?: {
-        sourcePlayerId?: PlayerId;
+    source: {
+        sourcePlayerId: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
@@ -174,7 +174,7 @@ function shuffleCardIntoDeck(
             cardUid,
             defId,
             ownerId: playerId,
-            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            sourcePlayerId: source.sourcePlayerId,
             ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
             ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
             ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
@@ -307,7 +307,7 @@ function canTriggerPrincessesWoodlandHelpers(ctx: TriggerContext, standardOnly =
 }
 
 function princessesSleepingBeautyOnDestroyed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
-    if (ctx.triggerMinion?.uid !== ctx.sourceCardUid || !ctx.triggerMinionDefId || ctx.baseIndex === undefined) {
+    if (!ctx.triggerMinion || ctx.triggerMinion.uid !== ctx.sourceCardUid || !ctx.triggerMinionDefId || ctx.baseIndex === undefined) {
         return [];
     }
     return shuffleCardIntoDeck(
@@ -665,11 +665,7 @@ function createPrincessesGriseldaPodContext(ctx: AbilityContext): PrincessesGris
     };
 }
 
-const princessesDestroyMinionPromptProgram = createPromptProgram<
-    PrincessesDestroyMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesDestroyMinionPromptProgram = createPromptProgram<PrincessesDestroyMinionPromptContext>({
     sourceId: 'princesses_apricot',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${princessesRuntimePromptCounter++}`,
@@ -765,7 +761,7 @@ function resolvePrincessesDirectToDvdSequelSelection(
             cardUid: card.uid,
             defId: card.defId,
             ownerId,
-            ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            sourcePlayerId: playerId,
             reason: 'princesses_direct_to_dvd_sequel',
             now: timestamp,
             expectedLocation: 'discard',
@@ -800,11 +796,7 @@ function resolvePrincessesDirectToDvdSequelSelection(
     return { matchState: state, events };
 }
 
-const princessesDirectToDvdSequelPromptProgram = createPromptProgram<
-    PrincessesDiscardSelectionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesDirectToDvdSequelPromptProgram = createPromptProgram<PrincessesDiscardSelectionPromptContext>({
     sourceId: 'princesses_direct_to_dvd_sequel',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_direct_to_dvd_sequel_${princessesRuntimePromptCounter++}`,
@@ -823,11 +815,7 @@ const princessesDirectToDvdSequelPromptProgram = createPromptProgram<
     ),
 });
 
-const princessesGriseldaPromptProgram = createPromptProgram<
-    PrincessesDiscardSelectionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesGriseldaPromptProgram = createPromptProgram<PrincessesDiscardSelectionPromptContext>({
     sourceId: 'princesses_griselda',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_griselda_${princessesRuntimePromptCounter++}`,
@@ -853,11 +841,7 @@ const princessesGriseldaPromptProgram = createPromptProgram<
     },
 });
 
-const princessesGriseldaPodPromptProgram = createPromptProgram<
-    PrincessesGriseldaPodPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesGriseldaPodPromptProgram = createPromptProgram<PrincessesGriseldaPodPromptContext>({
     sourceId: 'princesses_griselda_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_griselda_pod_${princessesRuntimePromptCounter++}`,
@@ -963,11 +947,7 @@ const princessesSomeDayMyPrinceWillComeProgram = createEffectProgram<
     return { events: [], nextProgram: princessesMovePromptProgram };
 });
 
-const princessesSnowWhitePromptProgram = createPromptProgram<
-    PrincessesSnowWhitePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesSnowWhitePromptProgram = createPromptProgram<PrincessesSnowWhitePromptContext>({
     sourceId: 'princesses_snow_white',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_snow_white_${princessesRuntimePromptCounter++}`,
@@ -1019,11 +999,7 @@ const princessesSnowWhiteProgram = createEffectProgram<
         : { events: [], nextProgram: princessesSnowWhitePromptProgram }
 ));
 
-const princessesWoodlandHelpersPromptProgram = createPromptProgram<
-    PrincessesWoodlandHelpersPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesWoodlandHelpersPromptProgram = createPromptProgram<PrincessesWoodlandHelpersPromptContext>({
     sourceId: 'princesses_woodland_helpers',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_woodland_helpers_${context.cardUid}_${princessesRuntimePromptCounter++}`,
@@ -1071,11 +1047,7 @@ const princessesWoodlandHelpersPromptProgram = createPromptProgram<
     },
 });
 
-const princessesMoveDestinationPromptProgram = createPromptProgram<
-    PrincessesMovePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesMoveDestinationPromptProgram = createPromptProgram<PrincessesMovePromptContext>({
     sourceId: 'princesses_true_loves_kiss_base',
     buildInteraction: (context) => {
         const selectedTarget = context.selectedTarget;
@@ -1121,11 +1093,7 @@ const princessesMoveDestinationPromptProgram = createPromptProgram<
     },
 });
 
-const princessesMovePromptProgram = createPromptProgram<
-    PrincessesMovePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesMovePromptProgram = createPromptProgram<PrincessesMovePromptContext>({
     sourceId: 'princesses_true_loves_kiss',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${princessesRuntimePromptCounter++}`,
@@ -1151,7 +1119,7 @@ const princessesMovePromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
@@ -1161,17 +1129,12 @@ const princessesMovePromptProgram = createPromptProgram<
                     defId: selected.defId,
                     fromBaseIndex: selected.baseIndex,
                 },
-            },
-            nextProgram: princessesMoveDestinationPromptProgram,
+            }, princessesMoveDestinationPromptProgram),
         };
     },
 });
 
-const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
-    PrincessesFairyGodmotherPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<PrincessesFairyGodmotherPromptContext>({
     sourceId: 'princesses_fairy_godmother_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_fairy_godmother_target_${princessesRuntimePromptCounter++}`,
@@ -1210,11 +1173,7 @@ const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
     },
 });
 
-const princessesFairyGodmotherPromptProgram = createPromptProgram<
-    PrincessesFairyGodmotherPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const princessesFairyGodmotherPromptProgram = createPromptProgram<PrincessesFairyGodmotherPromptContext>({
     sourceId: 'princesses_fairy_godmother',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_fairy_godmother_${princessesRuntimePromptCounter++}`,
@@ -1262,13 +1221,12 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
                 now: timestamp,
-            },
-            nextProgram: princessesFairyGodmotherTargetPromptProgram,
+            }, princessesFairyGodmotherTargetPromptProgram),
         };
     },
 });

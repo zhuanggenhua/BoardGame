@@ -7,7 +7,7 @@ interface PlatformGameDetailsProps<T extends string> {
     presentation?: 'modal' | 'inline';
     rootRef?: Ref<HTMLDivElement>;
     title: string;
-    description: string;
+    description: ReactNode;
     thumbnail: ReactNode;
     playerOptions: readonly number[];
     bestPlayers: readonly number[];

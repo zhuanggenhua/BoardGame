@@ -5,6 +5,8 @@ import { getExternalGame, getOwnedGame } from '../api/external-games';
 import { useAuth } from '../contexts/AuthContext';
 import { ExternalGameText } from '../components/external/ExternalGameText';
 import { useExternalPlay } from '../components/external/useExternalPlay';
+import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
+import { resolveExternalEmbed } from '../shared/externalGames';
 import './external-game-page.css';
 
 function hasControlCharacters(value: string) {
@@ -28,7 +30,6 @@ export default function ExternalGamePage() {
     const navigate = useNavigate();
     const { token, user, isLoading: authLoading } = useAuth();
     const [playingGameId, setPlayingGameId] = useState<string | null>(null);
-    const playing = playingGameId === gameId;
     const [menuOpen, setMenuOpen] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [frameKey, setFrameKey] = useState(0);
@@ -39,10 +40,13 @@ export default function ExternalGamePage() {
     const game = useQuery({ queryKey: ['external-game', gameId, preview ? token : null],
         queryFn: () => preview && token ? getOwnedGame(token, gameId) : getExternalGame(gameId), enabled: Boolean(gameId) && !authLoading });
     const item = game.data;
-    const restricted = Boolean(item && item.embedStatus === 'blocked' && item.embedCheckedUrl === item.url);
-    const safeHttps = !item || window.location.protocol !== 'https:' || item.url.startsWith('https:');
-    const sameOrigin = (() => { try { return !item || new URL(item.url).origin === window.location.origin; } catch { return true; } })();
-    const canEmbed = Boolean(item?.published && !restricted && safeHttps && !sameOrigin);
+    const embed = item ? resolveExternalEmbed(item, window.location.origin, window.location.protocol) : null;
+    const restricted = Boolean(embed?.restricted);
+    const safeHttps = embed?.safeHttps ?? true;
+    const sameOrigin = embed?.sameOrigin ?? false;
+    const canEmbed = Boolean(embed?.canEmbed);
+    const autoPlay = Boolean(item && canEmbed && !preview && game.isSuccess);
+    const playing = playingGameId === gameId || autoPlay;
     const play = useExternalPlay(gameId, token ?? null, playing && !authLoading && game.isSuccess && canEmbed);
     const returnPath = safeReturnPath(search.get('from'));
     useEffect(() => {
@@ -53,6 +57,10 @@ export default function ExternalGamePage() {
     useEffect(() => {
         if (playing && (game.isError || (game.isSuccess && !canEmbed))) setPlayingGameId(null);
     }, [canEmbed, game.isError, game.isSuccess, playing]);
+    useEffect(() => {
+        if (preview || !game.isSuccess || !item || canEmbed) return;
+        navigate(`/?game=${encodeURIComponent(gameId)}`, { replace: true });
+    }, [canEmbed, game.isSuccess, gameId, item, navigate, preview]);
     const leave = () => {
         setPlayingGameId(null);
         if (document.fullscreenElement === container.current) void document.exitFullscreen().catch(() => undefined);
@@ -60,15 +68,17 @@ export default function ExternalGamePage() {
     };
     if (game.isPending) return <main className="external-game-message" role="status">正在加载游戏…</main>;
     if (game.isError || !item) return <main className="external-game-message"><p role="alert">游戏加载失败：{game.error instanceof Error ? game.error.message : '请重试'}</p><button onClick={() => void game.refetch()}>重试</button><button onClick={leave}>返回</button></main>;
+    if (!preview && !canEmbed) return <main className="external-game-message" role="status">正在打开游戏详情…</main>;
     return <main className="external-page">
-        <div className="external-details">
+        {!playing && <div className="external-details">
             <button className="external-back" type="button" onClick={leave}>← 返回</button>
             <div className="external-details-grid">
                 <div className="external-cover">{item.coverUrl ? <img src={item.coverUrl} alt={`${item.name}封面`} /> : <div className="external-cover-placeholder"><span>外部游戏</span><strong>{item.name}</strong><small>{item.author}</small></div>}</div>
                 <section className="external-summary">
                     <span className="external-eyebrow">外部游戏</span><h1>{item.name}</h1>
                     {preview && !item.published && <p className="external-notice">作品尚未公开，当前为作者预览。</p>}
-                    <p className="external-author">作者：{item.author || '未填写'}{item.authorProfileUrl && <> · <a href={item.authorProfileUrl} target="_blank" rel="noopener noreferrer">作者主页 ↗</a></>}</p>
+                    <p className="external-author"><ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
+                        isOwner={Boolean(user && item.ownerUserId === user.id)} onManageWorks={() => navigate('/?section=profile&tab=works')} /></p>
                     <p className="external-description"><ExternalGameText text={item.description} /></p>
                     {item.rules && <details><summary>游戏规则</summary><p className="external-description"><ExternalGameText text={item.rules} /></p></details>}
                     <p className="external-meta">{item.minPlayers && item.maxPlayers ? `${item.minPlayers}–${item.maxPlayers} 人` : '人数待补充'}{item.durationMinutes ? ` · 约 ${item.durationMinutes} 分钟` : ''}</p>
@@ -78,13 +88,10 @@ export default function ExternalGamePage() {
                     <div className="external-actions">
                         {canEmbed && <button className="external-primary" type="button" onClick={() => { setMenuOpen(false); setShowHelp(false); setPlayingGameId(gameId); }}>开始游玩</button>}
                         <a className="external-secondary" href={item.url} target="_blank" rel="noopener noreferrer" onClick={() => setPlayingGameId(null)}>前往原网站 ↗</a>
-                        {user && item.ownerUserId === user.id
-                            ? <button className="external-link" type="button" onClick={() => navigate('/?section=profile&tab=works')}>管理我的作品</button>
-                            : <button className="external-link" type="button" onClick={() => navigate(`/?section=profile&tab=verification&claimGame=${encodeURIComponent(item.gameId)}`)}>我是作者，申请认领</button>}
                     </div>
                 </section>
             </div>
-        </div>
+        </div>}
         {playing && canEmbed && <div className="external-player" ref={container}>
             <iframe key={frameKey} title={`${item.name} 游戏`} src={item.url} sandbox="allow-scripts allow-forms allow-popups" referrerPolicy="no-referrer" />
             <div className="external-player-menu">

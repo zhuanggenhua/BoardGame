@@ -30,4 +30,4 @@
 - [x] 4.4 目标ESLint、production build和文档/evidence门禁通过；全仓TypeScript、i18n与共享音频manifest的最新失败及历史结果按精确路径归属，未声明全仓通过。当前/历史版本及日志见 evidence/dicethrone/doctor-strange-implementation-audit.md。
 - [x] 4.5 同端口6174/20000/21000完成真实E2E及视觉验收：run14全文件9/9，后续首页变更后正式双人链最新1/1；运行前后源码/runtime一致，后端输入匹配。当前证据包 evidence/dicethrone/doctor-strange-real-entry-20261026-closeout/ 保留9独立链、42图和实际sourceRevision，内部索引合同通过。40张变化图逐图审查，2张字节相同继承已审结论。8条规则链内部初始化后真实操作，双人链正式建房选角开局；逐文件影响复核见verification/doctor-strange-incremental-impact-20261026-final.json。未请求或打开Viewer。
 - [x] 4.6 独立审查、对象级 evidence 与批次矩阵；首轮与跟进独立审计发现 postDamage 伤害未入账、百分比舍入、零伤害累计基数、Protect减伤延续、固定护盾+Protect累计差额、单独百分比护盾未触发累计重算及连续施法覆盖护盾快照等攻击结算问题，以及两条法术目标语义错记；七项攻击P1和法术语义均已修复并补回归，最终代码复核 `PASS`，本轮修复范围无新增P1/P2。已复核32张实体牌逐行矩阵、18张共享牌 `sharedFlowId` 配置一致性及角色专属命令/最终状态断言；对象级审计闭合。全仓最新质量门禁残余按4.4归属；当前范围真实入口与图面验收已按4.5闭合。
-- [x] 4.7 按用户“完成、验收、审计”的目标执行完成态转换：doctor_strange正常可选、移除实施中标记；角色目录/生命周期单测和最新正式双人选角链均验证通过。
+- [ ] 4.7 等待用户当轮明确批准进入完成态；当前保留 `in_progress` 与 `implementation_in_progress`，真人选角可见，AI 自动选角继续过滤。

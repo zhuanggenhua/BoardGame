@@ -147,7 +147,7 @@ export function resolveBetrayalRoomNodeTileVisual(
     return resolveBetrayalRoomTileVisual(visualId) ?? BETRAYAL_ROOM_TILE_VISUALS.conservatory;
 }
 
-export function buildRoomAtlasImageStyle(visual: BetrayalRoomTileVisual): CSSProperties {
+export function buildRoomAtlasImageStyle(visual: BetrayalRoomTileVisual): CSSProperties & { aspectRatio: number } {
     const spriteStyle = computeSpriteImgStyle(visual.frameIndex, visual.config);
     return {
         width: spriteStyle.imgWidth,

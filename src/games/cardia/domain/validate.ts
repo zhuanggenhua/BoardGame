@@ -3,7 +3,7 @@
  */
 
 import type { ValidationResult, MatchState } from '../../../engine/types';
-import type { CardiaCore } from './core-types';
+import type { CardiaCore, CardInstance } from './core-types';
 import type { CardiaCommand } from './commands';
 import { CARDIA_COMMANDS } from './commands';
 import { FACTION_IDS } from './ids';
@@ -78,7 +78,7 @@ export function validate(
  */
 function validatePlayCard(
     core: CardiaCore,
-    command: Extract<CardiaCommand, { type: 'PLAY_CARD' }>
+    command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.PLAY_CARD }>
 ): ValidationResult {
     const { playerId } = command;
     const { cardUid } = command.payload;
@@ -183,7 +183,7 @@ function validateActivateAbility(
     }
     
     // 检查卡牌是否存在（可能在 playedCards 或 currentCard 中）
-    let card = player.playedCards.find(c => c.uid === sourceCardUid);
+    let card: CardInstance | undefined = player.playedCards.find(c => c.uid === sourceCardUid);
     if (!card && player.currentCard?.uid === sourceCardUid) {
         card = player.currentCard;
     }
@@ -208,7 +208,7 @@ function validateActivateAbility(
  */
 function validateSkipAbility(
     state: MatchState<CardiaCore>,
-    command: Extract<CardiaCommand, { type: 'SKIP_ABILITY' }>
+    command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.SKIP_ABILITY }>
 ): ValidationResult {
     const { core, sys } = state;
     const { playerId } = command;

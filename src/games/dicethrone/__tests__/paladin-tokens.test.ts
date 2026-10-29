@@ -195,7 +195,7 @@ describe('圣骑士 Token 定义', () => {
         expect(result).toEqual({ ok: false, reason: 'wrongPhaseForCard' });
     });
 
-    it('确认骰面窗口只放行改骰牌，受伤响应牌只能在对应伤害窗口使用', () => {
+    it('确认骰面窗口拒绝受伤响应牌，且“下次一定”过了投掷阶段后不可使用', () => {
         const state = createHeroMatchup('monk', 'gunslinger')(['0', '1'], fixedRandom);
         const attacker = state.core.players['0'];
         const defender = state.core.players['1'];
@@ -230,7 +230,7 @@ describe('圣骑士 Token 定义', () => {
             .toEqual({ ok: false, reason: 'wrongPhaseForCard' });
 
         expect(checkPlayCard(state.core, '1', nextTime, 'main2', 'afterAttackResolved'))
-            .toEqual({ ok: true });
+            .toEqual({ ok: false, reason: 'wrongPhaseForRoll' });
     });
 
     it('精准被拜拜了您嘞移除后，进攻投掷阶段收口不会再请求精准', () => {

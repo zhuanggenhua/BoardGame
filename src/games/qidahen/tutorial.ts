@@ -242,7 +242,7 @@ const wheelReclaimStepValidator = (state: MatchState<unknown>, step: { id: strin
                 && core.wheelActionUsed === false;
         case 'result':
         case 'finish':
-            return core.lastSeasonSummary?.title === '轮盘开垦'
+            return core.lastSeasonSummary?.title === '开垦'
                 && core.actionWheelPosition === 'wheel-reclaim'
                 && (targetRegion?.population ?? 0) >= 7;
         default:
@@ -260,7 +260,7 @@ const wheelMilitaryFarmStepValidator = (state: MatchState<unknown>, step: { id: 
                 && core.wheelActionUsed === false;
         case 'result':
         case 'finish':
-            return core.lastSeasonSummary?.title === '轮盘军屯'
+            return core.lastSeasonSummary?.title === '军屯'
                 && core.actionWheelPosition === 'wheel-military-farm'
                 && (targetRegion?.troops ?? 0) >= 3
                 && core.factions.ming.handCount >= 5;
@@ -550,10 +550,10 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
 
 const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
     id: QIDAHEN_DEFAULT_TUTORIAL_ID,
-    revision: 15,
+    revision: 18,
     stepValidator: basicOpeningStepValidator,
     numPlayers: 3,
-    randomPolicy: { mode: 'sequence', values: [1, 1, 4, 4, 4] },
+    randomPolicy: { mode: 'sequence', values: [1, 1, 1, 1, 9] },
     stayOnMatchAfterCompletion: true,
     steps: ([
         {
@@ -566,13 +566,13 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
         {
             id: 'select-farm-region',
             content: 'game-qidahen:tutorial.basic.steps.selectFarmRegion',
-            highlightTarget: 'qidahen-map-region-focus-city-region-15-liaodong',
+            highlightTarget: 'qidahen-map-region-focus-city-region-15',
             highlightFrame: 'none',
             avoidOverlapSelectors: ['[data-testid="qidahen-map-region-focus-name"]'],
             position: 'right',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-15-liaodong' } }],
+            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'city-region-15' } }],
         },
         {
             id: 'wheel-move',
@@ -594,17 +594,6 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-2-one-opponent' } }],
         },
         {
-            id: 'wheel-result',
-            content: 'game-qidahen:tutorial.basic.steps.wheelResult',
-            ...QIDAHEN_SEASON_SUMMARY_STEP_FOCUS,
-            avoidOverlapSelectors: [
-                ...QIDAHEN_SEASON_SUMMARY_STEP_FOCUS.avoidOverlapSelectors,
-                '[data-testid="qidahen-hand-row"]',
-                '[data-testid="fab-menu"]',
-            ],
-            infoStep: true,
-        },
-        {
             id: 'choose-raid',
             content: 'game-qidahen:tutorial.basic.steps.chooseRaid',
             highlightTarget: 'qidahen-action-raid',
@@ -618,7 +607,7 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
             hiddenAutomation: {
                 kind: 'branch-recovery', recoveryStepId: 'choose-raid',
-                reason: '本回合从辽东突袭叶赫，恢复行动选择前完整检查点，由玩家重新选择突袭。',
+                reason: '本回合从辽北突袭叶赫，恢复行动选择前完整检查点，由玩家重新选择突袭。',
             },
         },
         {
@@ -674,6 +663,7 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.basic.steps.playTactic',
             highlightTarget: 'qidahen-atlas05-1644-yuanyang-zhen',
             position: 'top',
+            avoidOverlapSelectors: ['[data-testid="qidahen-tactic-card-selection-panel"]', '[data-testid="qidahen-hand-zone"]'],
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
             advanceOnEvents: [{ type: 'TACTIC_CARD_PLAYED' }],
@@ -681,9 +671,9 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
         {
             id: 'resolve-battle',
             content: 'game-qidahen:tutorial.basic.steps.resolveBattle',
-            highlightTarget: 'qidahen-resolve-pending-action',
-            position: 'left',
-            avoidOverlapSelectors: ['[data-pending-committed-selectable="true"]'],
+            highlightTarget: 'qidahen-select-four-troops',
+            position: 'right',
+            avoidOverlapSelectors: ['[data-testid="qidahen-raid-intent"]'],
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION, INTERACTION_COMMANDS.RESPOND],
             advanceOnEvents: [
@@ -696,13 +686,13 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
             hiddenAutomation: {
                 kind: 'branch-recovery', recoveryStepId: 'resolve-battle',
-                reason: '本课以3支部队从辽东进攻叶赫；其他出兵数产生了未教学的败军退却，恢复结算前完整检查点重新选兵。',
+                reason: '本课以4支部队从辽北进攻叶赫；其他出兵数产生了未教学的败军退却，恢复结算前完整检查点重新选兵。',
             },
         },
         {
             id: 'battle-result',
             content: 'game-qidahen:tutorial.basic.steps.battleResult',
-            highlightTarget: 'qidahen-post-battle-selection',
+            highlightTarget: 'qidahen-post-battle-result-header',
             position: 'left',
             infoStep: true,
         },

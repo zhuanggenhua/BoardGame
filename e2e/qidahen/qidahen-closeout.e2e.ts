@@ -16,13 +16,17 @@ const TUTORIAL_RUN_ID = process.env.QIDAHEN_TUTORIAL_SCREENSHOT_RUN_ID
     ?? new Date().toISOString().replace(/[:.]/g, '-');
 const TUTORIAL_DIR = `${TUTORIAL_ROOT_DIR}/${TUTORIAL_RUN_ID}`;
 const MOBILE_TUTORIAL_DIR = `${TUTORIAL_ROOT_DIR}/${TUTORIAL_RUN_ID}-mobile`;
-const BASIC_FARM_REGION = `${TUTORIAL_DIR}/00-辽东军屯地区选择.png`;
+const BASIC_FARM_REGION = `${TUTORIAL_DIR}/00-辽北军屯地区选择.png`;
 const BASIC_WHEEL_CHOICE = `${TUTORIAL_DIR}/01-轮盘前进两格与军屯落点.png`;
 const BASIC_OPPONENT = `${TUTORIAL_DIR}/02-指定后金抽牌.png`;
-const BASIC_FARM_RESULT = `${TUTORIAL_DIR}/03-辽东军屯结果.png`;
+const BASIC_FARM_RESULT = `${TUTORIAL_DIR}/03-辽北军屯结果.png`;
+const BASIC_HAND_HOVER = `${TUTORIAL_DIR}/03a-手牌悬停完整抬起.png`;
+const BASIC_HAND_MAGNIFY = `${TUTORIAL_DIR}/03b-共享放大镜检视手牌.png`;
 const BASIC_TARGET = `${TUTORIAL_DIR}/04-叶赫部真实地图目标.png`;
 const BASIC_PAYMENT = `${TUTORIAL_DIR}/05-银两支付与鸳鸯阵手牌.png`;
-const BASIC_BATTLE = `${TUTORIAL_DIR}/06-野战出兵与战术牌.png`;
+const BASIC_TACTIC = `${TUTORIAL_DIR}/05a-鸳鸯阵选中与确认出牌.png`;
+const BASIC_BATTLE = `${TUTORIAL_DIR}/06-野战选择实际出兵部队.png`;
+const BASIC_BATTLE_BEFORE = `${TUTORIAL_DIR}/05b-出兵选择前与真实兵牌引导.png`;
 const BASIC_BATTLE_RESULT = `${TUTORIAL_DIR}/07-战后幸存部队与占领选择.png`;
 const BASIC_OCCUPIED = `${TUTORIAL_DIR}/08-叶赫部占领结果.png`;
 const BASIC_CONTINUE = `${TUTORIAL_DIR}/09-教程退出后同局继续.png`;
@@ -103,10 +107,11 @@ const KOREA_STEP_02 = `${TUTORIAL_DIR}/43-朝鲜第2步-看汉城威望已进入
 const KOREA_STEP_03 = `${TUTORIAL_DIR}/44-朝鲜第3步-看海路与船锚区域关系.png`;
 const KOREA_STEP_04 = `${TUTORIAL_DIR}/45-朝鲜第4步-点击新年维护进入耗损结算.png`;
 const KOREA_STEP_05 = `${TUTORIAL_DIR}/46-朝鲜第5步-看朝鲜耗损与山海关结果.png`;
-const MOBILE_RAID_PAYMENT = `${MOBILE_TUTORIAL_DIR}/移动-01-突袭支付与手牌.png`;
-const MOBILE_MAP_TARGET = `${MOBILE_TUTORIAL_DIR}/移动-00-叶赫部地图目标避开支付托盘.png`;
-const MOBILE_HAND_INSPECT = `${MOBILE_TUTORIAL_DIR}/移动-02-长按银两检视卡面.png`;
-const MOBILE_PAYMENT_SELECTED = `${MOBILE_TUTORIAL_DIR}/移动-03-检视返回后轻点银两选择支付.png`;
+const MOBILE_WHEEL_OPPONENT = `${MOBILE_TUTORIAL_DIR}/移动-00-轮盘军屯与指定对手.png`;
+const MOBILE_MAP_TARGET = `${MOBILE_TUTORIAL_DIR}/移动-01-叶赫部地图目标避开支付托盘.png`;
+const MOBILE_RAID_PAYMENT = `${MOBILE_TUTORIAL_DIR}/移动-02-突袭支付与手牌.png`;
+const MOBILE_HAND_INSPECT = `${MOBILE_TUTORIAL_DIR}/移动-03-长按银两检视卡面.png`;
+const MOBILE_PAYMENT_SELECTED = `${MOBILE_TUTORIAL_DIR}/移动-04-检视返回后轻点银两选择支付.png`;
 const ENDGAME_SCREENSHOT = `${CLOSEOUT_DIR}/02-终局遮罩-注入胜利后显示.png`;
 
 type BehaviorSnapshot = {
@@ -177,8 +182,21 @@ const readMapRegionInputPoint = async (page: Page, regionId: string) => {
             })),
         };
     });
-    await expect.poll(readExposure, { timeout: 5000, message: `${regionId}整片地区及名称必须可见，不能只露中心点` })
-        .toEqual({ inViewport: true, coveredBy: [] });
+    try {
+        await expect.poll(readExposure, { timeout: 5000, message: `${regionId}整片地区及名称必须可见，不能只露中心点` })
+            .toEqual({ inViewport: true, coveredBy: [] });
+    } catch (error) {
+        console.info('REGION_EXPOSURE_FAILURE', JSON.stringify(await page.evaluate(() => {
+            const selectors = ['[data-region-focus-shape]', '[data-testid="qidahen-map-region-focus-name"]',
+                '[data-testid="qidahen-map-layer"]', '[data-testid="qidahen-player-float"]', '[data-testid="qidahen-hand-zone"]',
+                '[data-testid="qidahen-hand-interaction-tray"] > div', '[data-testid="qidahen-actions-zone"]',
+                '[data-testid="qidahen-action-wheel"]', '[data-testid="qidahen-map-viewport-controls"]',
+                '[data-ui-role="qidahen-hand-magnify-viewport"]', '[data-testid="qidahen-draw-anchor"]',
+                '[data-testid="qidahen-discard-anchor"]', '[data-testid="qidahen-chronology-zone"]', '[data-testid="qidahen-korea-zone"]'];
+            return Object.fromEntries(selectors.map(selector => [selector, Array.from(document.querySelectorAll(selector)).map(element => element.getBoundingClientRect().toJSON())]));
+        })));
+        throw error;
+    }
     expect(await page.evaluate(value => document.elementFromPoint(value.x, value.y)?.tagName, input)).toBe('CANVAS');
     return input;
 };
@@ -206,6 +224,15 @@ type BehaviorTraceRecorder = {
 const behaviorTraceRecorders = new WeakMap<Page, BehaviorTraceRecorder>();
 const behaviorTraceScreenshotHashes = new Set<string>();
 const QIDAHEN_TUTORIAL_SOURCE_FILES = [
+    'src/games/qidahen/ui/QidahenBattlePreparation.tsx',
+    'src/components/common/overlays/CardInspectButton.tsx',
+    'e2e/qidahen/map-selection-geometry.e2e.ts',
+    'src/games/qidahen/ui/QidahenHoverTip.tsx',
+    'src/games/qidahen/domain/interactionSelectionAccessors.ts',
+    'src/games/qidahen/domain/victoryResolution.ts',
+    'src/games/qidahen/domain/regionEthnicity.ts',
+    'src/games/qidahen/domain/scenarioRuntimeRegionPresets.ts',
+    'src/games/qidahen/domain/mapTokens.ts',
     'src/games/qidahen/tutorial.ts',
     'src/games/qidahen/tutorialSetup.ts',
     'src/games/qidahen/Board.tsx',
@@ -243,10 +270,13 @@ const QIDAHEN_TUTORIAL_SOURCE_FILES = [
     'src/games/qidahen/ui/mapGraph.ts',
     'src/games/qidahen/ui/runtimeRegionOwnership.ts',
     'src/games/qidahen/ui/mapRegionFocus.ts',
+    'src/games/qidahen/ui/QidahenTutorialRegionLabel.tsx',
     'src/games/qidahen/ui/handInteractionView.ts',
     'src/components/game/framework/ZoomPanViewport.tsx',
     'src/engine/mapRenderer/PixiMapSceneHost.tsx',
     'src/games/qidahen/ui/regionMaskOverlay.ts',
+    'src/games/qidahen/ui/mapSelectionCandidates.ts',
+    'src/games/qidahen/ui/mapRegionHitTesting.ts',
     'src/games/qidahen/data/runtime-region-graph.json',
     'src/games/qidahen/data/region-mask.png',
     'src/games/qidahen/data/region-mask-regions.json',
@@ -255,16 +285,25 @@ const QIDAHEN_TUTORIAL_SOURCE_FILES = [
     'src/games/qidahen/data/region-authoritative-guides.json',
     'src/contexts/TutorialContext.tsx',
     'src/engine/pipeline.ts',
+    'src/engine/types.ts',
+    'src/engine/systems/TutorialSystem.ts',
+    'src/engine/transport/localDispatchCommand.ts',
     'src/games/qidahen/domain/actionWindowDispatch.ts',
     'src/games/qidahen/domain/regionSelectionPreferences.ts',
     'src/games/qidahen/domain/wheelImmediateEffect.ts',
+    'src/games/qidahen/domain/wheelRules.ts',
     'src/components/game/framework/widgets/GameHUD.tsx',
+    'src/lib/feedback/feedbackScreenshot.ts',
     'src/components/tutorial/TutorialOverlay.tsx',
     'src/games/qidahen/qidahen-board.css',
     'src/games/qidahen/ui/QidahenHandInteractionTray.tsx',
     'public/locales/zh-CN/game-qidahen.json',
     'public/locales/en/game-qidahen.json',
     'e2e/qidahen/qidahen-closeout.e2e.ts',
+    'src/games/qidahen/domain/characterActionWindow.ts',
+    'src/games/qidahen/domain/regionConfig.ts',
+    'src/games/qidahen/domain/regionRuleSemantics.ts',
+    'src/games/qidahen/domain/wheelRecruitTrain.ts',
 ];
 
 const getQidahenTutorialSourceRevision = () => {
@@ -547,6 +586,8 @@ const captureBehaviorCheckpoint = async (page: Page, targetPath: string) => {
 const saveScreenshot = async (page: Page, path: string) => {
     const targetPath = resolve(path);
     mkdirSync(dirname(targetPath), { recursive: true });
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(async () => { await document.fonts.ready; });
     await page.screenshot({ path: targetPath, fullPage: false, animations: 'disabled' });
     await captureBehaviorCheckpoint(page, targetPath);
     if (process.env.QIDAHEN_REGION_LAYOUT_DIAGNOSTIC === '1') {
@@ -630,6 +671,26 @@ const expectTutorialOverlayNotToCover = async (
         const detail = lastMeasurement ? `; overlay/target geometry=${JSON.stringify(lastMeasurement)}` : '';
         throw new Error(`${label}${detail}; ${error instanceof Error ? error.message : String(error)}`);
     }
+};
+
+const readHandCardVisibleFraction = async (card: Locator) => card.evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    let top = Math.max(0, bounds.top);
+    let bottom = Math.min(innerHeight, bounds.bottom);
+    for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+        if (/^(auto|scroll|hidden|clip)$/.test(getComputedStyle(ancestor).overflowY)) {
+            const clip = ancestor.getBoundingClientRect();
+            top = Math.max(top, clip.top);
+            bottom = Math.min(bottom, clip.bottom);
+        }
+    }
+    return Math.max(0, bottom - top) / bounds.height;
+});
+
+const clickExposedHandCard = async (card: Locator) => {
+    const bounds = await card.boundingBox();
+    if (!bounds) throw new Error('手牌没有实际可见牌面');
+    await card.click({ position: { x: bounds.width / 2, y: bounds.height / 4 } });
 };
 
 const expectMobileHandCardsFullyInsideViewport = async (page: Page) => {
@@ -824,14 +885,18 @@ const expectWheelPrimaryMove = async (page: Page, moveId: string) => {
 };
 
 const dispatchTouchLongPress = async (locator: Locator, durationMs = 700) => {
-    const box = await locator.boundingBox();
-    if (!box) {
-        throw new Error('qidahen touch long-press target bounding box missing');
-    }
-    const point = {
-        x: box.x + box.width / 2,
-        y: box.y + box.height / 2,
-    };
+    const point = await locator.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        let left = Math.max(0, bounds.left), right = Math.min(innerWidth, bounds.right);
+        let top = Math.max(0, bounds.top), bottom = Math.min(innerHeight, bounds.bottom);
+        for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+            const style = getComputedStyle(ancestor), clip = ancestor.getBoundingClientRect();
+            if (/^(auto|scroll|hidden|clip)$/.test(style.overflowY)) { top = Math.max(top, clip.top); bottom = Math.min(bottom, clip.bottom); }
+            if (/^(auto|scroll|hidden|clip)$/.test(style.overflowX)) { left = Math.max(left, clip.left); right = Math.min(right, clip.right); }
+        }
+        if (right <= left || bottom <= top) throw new Error('长按目标没有实际可见触摸面');
+        return { x: (left + right) / 2, y: (top + bottom) / 2 };
+    });
     const session = await locator.page().context().newCDPSession(locator.page());
     try {
         await session.send('Input.dispatchTouchEvent', {
@@ -848,6 +913,7 @@ test.describe('七大恨新游戏收口', () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeEach(async ({ page }, testInfo) => {
+        attachPageDiagnostics(page);
         await page.addInitScript(() => {
             (window as HarnessWindow).__BG_HIDE_DEBUG_PANEL__ = true;
         });
@@ -857,6 +923,13 @@ test.describe('七大恨新游戏收口', () => {
     });
 
     test.afterEach(async ({ page }, testInfo) => {
+        if (testInfo.status !== 'passed' && !page.isClosed()) {
+            console.info('TUTORIAL_PAGE_DIAGNOSTICS', JSON.stringify({ errors: attachPageDiagnostics(page).errors,
+                resources: await page.evaluate(() => performance.getEntriesByType('resource').slice(-20).map(entry => ({
+                    path: new URL(entry.name).pathname, duration: Math.round(entry.duration),
+                }))).catch(() => []),
+            }));
+        }
         finishBehaviorTrace(
             page,
             testInfo.status === 'passed' && testInfo.expectedStatus === 'passed',
@@ -866,6 +939,35 @@ test.describe('七大恨新游戏收口', () => {
     test.beforeAll(() => {
         mkdirSync(resolve(TUTORIAL_DIR), { recursive: true });
         mkdirSync(resolve(MOBILE_TUTORIAL_DIR), { recursive: true });
+    });
+
+    test('教程地区注释在宿主容器尺寸改变后仍贴合真实区域', async ({ page }) => {
+        await setChineseLocale(page);
+        await disableAudio(page);
+        await page.addInitScript(() => { (window as HarnessWindow).__E2E_TEST_MODE__ = true; });
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await page.goto(QIDAHEN_BASIC_TUTORIAL_URL, { waitUntil: 'domcontentloaded' });
+        await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 30000 });
+        await page.getByTestId('tutorial-next-button').click();
+        const anchor = page.getByTestId('qidahen-map-region-focus-city-region-15');
+        const label = page.locator('[data-testid="qidahen-map-region-focus-name"][data-region-id="city-region-15"]');
+        await expect(label).toHaveText('辽北');
+        const board = page.getByTestId('qidahen-board');
+        const original = await board.evaluate(element => ({ width: element.style.width, height: element.style.height }));
+        const before = await readLocatorRect(label);
+        try {
+            // 宿主侧栏改变容器大小不会派发window resize，注释仍须跟随同一地区。
+            await board.evaluate(element => { element.style.width = 'calc(100% - 180px)'; element.style.height = 'calc(100% - 40px)'; });
+            await expect.poll(async () => {
+                const [area, name] = await Promise.all([readLocatorRect(anchor), readLocatorRect(label)]);
+                return Math.abs(area.left - name.left) < 1 && Math.abs(area.top - name.bottom - 4) < 1
+                    && (Math.abs(name.left - before.left) > 1 || Math.abs(name.top - before.top) > 1);
+            }).toBe(true);
+            await expect(label).toHaveCSS('font-size', '14px');
+            expect(page.viewportSize()).toEqual({ width: 1920, height: 1080 });
+        } finally {
+            await board.evaluate((element, style) => { element.style.width = style.width; element.style.height = style.height; }, original);
+        }
     });
 
     test('唯一入门入口、刷新继续、重开与退出清理', async ({ page }) => {
@@ -878,7 +980,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('tutorial-catalog-stage')).toHaveCount(0);
         await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('辽东驻有3支明军');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('先在辽北军屯');
         await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('征召军队');
         await page.getByTestId('tutorial-next-button').click();
         await expect(page.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible();
@@ -894,11 +996,14 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-tutorial-step]')).toHaveCount(1);
         await recordBehaviorOnlyCheckpoint(page, '刷新后真实点击重头开始，恢复正式开局首屏', 'frontier');
+        await page.getByTestId('tutorial-next-button').click();
+        await expect(page.getByTestId('qidahen-map-region-focus-name')).toHaveText('辽北');
         await page.getByTestId('fab-menu').locator('button[data-fab-id]').first().click();
         await page.getByRole('button', { name: '离开', exact: true }).click();
         await page.getByTestId('fab-panel-exit').getByRole('button', { name: /返回大厅/ }).click();
         await expect(page).toHaveURL(/\/$/);
         await expect(page.locator('[data-tutorial-step]')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-map-region-focus-name')).toHaveCount(0);
         await expect(page.getByTestId('tutorial-highlight-ring')).toHaveCount(0);
         await expect.poll(() => page.evaluate(() => (
             (window as unknown as { __BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?: { active?: boolean } })
@@ -907,7 +1012,7 @@ test.describe('七大恨新游戏收口', () => {
         await recordBehaviorOnlyCheckpoint(page, '通过退出面板返回大厅，教程提示和高亮均清理', null, false);
     });
 
-    test('正式入门连续对局：军屯辽东、突袭叶赫、打出鸳鸯阵并占领', async ({ page }) => {
+    test('正式入门连续对局：军屯辽北、突袭叶赫、打出鸳鸯阵并占领', async ({ page }) => {
         test.setTimeout(120_000);
         await setChineseLocale(page);
         await disableAudio(page);
@@ -918,15 +1023,28 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-tutorial-step="frontier"]')).toBeVisible({ timeout: 15000 });
         const opening = await readQidahenCore(page);
-        const openingLiaodong = (opening.regions as Array<{ id: string; troops: number; population: number }>).find((region) => region.id === 'city-region-15-liaodong');
-        expect([openingLiaodong?.troops, openingLiaodong?.population]).toEqual([3, 3]);
+        const openingLiaobei = (opening.regions as Array<{ id: string; troops: number; population: number }>).find((region) => region.id === 'city-region-15');
+        expect([openingLiaobei?.troops, openingLiaobei?.population]).toEqual([3, 3]);
         await page.getByTestId('tutorial-next-button').click();
 
         await expect(page.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible();
-        const farmRegion = page.getByTestId('qidahen-map-region-focus-city-region-15-liaodong');
+        const candidateIds = (await page.getByTestId('qidahen-map-region-mask-overlay')
+            .getAttribute('data-qidahen-candidate-region-ids'))!.split('|');
+        expect(candidateIds).toEqual(expect.arrayContaining(['city-region-15', 'city-region-15-liaodong', 'city-region-28']));
+        expect(candidateIds).not.toContain('city-region-7');
+        expect(candidateIds).not.toContain('xian-xing');
+        const ordinaryCandidate = await page.getByTestId('qidahen-map-region-mask-overlay').evaluate((canvas: HTMLCanvasElement) => (
+            [...canvas.getContext('2d')!.getImageData(880, 455, 1, 1).data]
+        ));
+        expect(ordinaryCandidate[3]).toBeGreaterThanOrEqual(30);
+        const farmRegion = page.getByTestId('qidahen-map-region-focus-city-region-15');
         await expect(farmRegion).toHaveAttribute('data-region-focus-shape', 'runtime-region-mask');
-        await expect(farmRegion.getByTestId('qidahen-map-region-focus-name')).toHaveText('辽东');
-        const farmPoint = await readMapRegionInputPoint(page, 'city-region-15-liaodong');
+        await expect(page.locator('[data-testid="qidahen-map-region-focus-name"][data-region-id="city-region-15"]')).toHaveText('辽北');
+        const farmPoint = await readMapRegionInputPoint(page, 'city-region-15');
+        await page.mouse.move(farmPoint.x, farmPoint.y);
+        await expect(page.getByTestId('qidahen-map-region-tip')).toContainText('辽北');
+        await expect(page.getByTestId('qidahen-map-region-tip')).not.toContainText('调度可达');
+        await expect(page.getByTestId('qidahen-map-region-tip')).not.toContainText('特殊');
         await saveScreenshot(page, BASIC_FARM_REGION);
         await page.mouse.click(farmPoint.x, farmPoint.y);
         await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible();
@@ -936,20 +1054,42 @@ test.describe('七大恨新游戏收口', () => {
         await page.getByTestId('qidahen-wheel-move-target-move-2-one-opponent').click();
         await expect(page.locator('[data-tutorial-step="wheel-opponent"]')).toBeVisible();
         await expect(page.getByTestId('qidahen-wheel-opponent-jin')).toBeVisible();
-        await expect(page.getByTestId('qidahen-wheel-opponent-picker')).toContainText('军屯建军地：辽东');
+        await expect(page.getByTestId('qidahen-wheel-opponent-picker')).toContainText('军屯建军地：辽北');
         await saveScreenshot(page, BASIC_OPPONENT);
         await page.getByTestId('qidahen-wheel-opponent-jin').click();
 
-        await expect(page.locator('[data-tutorial-step="wheel-result"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-tutorial-step="choose-raid"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('qidahen-season-summary')).toHaveCount(0);
         const farmed = await readQidahenCore(page);
-        const farmedLiaodong = (farmed.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-15-liaodong');
-        expect(farmedLiaodong?.troops).toBe(4);
+        const farmedLiaobei = (farmed.regions as Array<{ id: string; troops: number }>).find((region) => region.id === 'city-region-15');
+        expect(farmedLiaobei?.troops).toBe(4);
         expect((farmed.factions as Record<string, { handCount: number }>).ming.handCount).toBe(5);
         expect((farmed.factions as Record<string, { handCount: number }>).jin.handCount).toBe(
             (opening.factions as Record<string, { handCount: number }>).jin.handCount + 2,
         );
         await saveScreenshot(page, BASIC_FARM_RESULT);
-        await page.getByTestId('tutorial-next-button').click();
+        const inspectCard = (farmed.handCards as Array<{ id: string; faction: string; cardKind: string }>).find(card => card.faction === 'ming' && card.cardKind === 'silver')!;
+        const inspectCardElement = page.getByTestId('qidahen-hand-card-' + inspectCard.id);
+        await expect.poll(() => readHandCardVisibleFraction(inspectCardElement)).toBeGreaterThan(0.4);
+        await expect.poll(() => readHandCardVisibleFraction(inspectCardElement)).toBeLessThan(0.62);
+        // 从实际露出的上半张移入；locator.hover 的自动滚动会把被裁切的整张牌滚入屏幕。
+        const restingCardBounds = await inspectCardElement.boundingBox();
+        expect(restingCardBounds).not.toBeNull();
+        await page.mouse.move(restingCardBounds!.x + restingCardBounds!.width / 2, restingCardBounds!.y + restingCardBounds!.height / 4);
+        await expect.poll(() => readHandCardVisibleFraction(inspectCardElement)).toBeGreaterThan(0.98);
+        await saveScreenshot(page, BASIC_HAND_HOVER);
+        await page.mouse.move(20, 20);
+        await expect.poll(() => readHandCardVisibleFraction(inspectCardElement)).toBeLessThan(0.62);
+        const inspectButton = page.getByTestId('qidahen-hand-card-magnify-' + inspectCard.id);
+        await expect(inspectButton.locator('svg')).toHaveCount(1);
+        await expect(inspectButton).toHaveText('');
+        await inspectButton.click();
+        await expect(page.getByTestId('qidahen-card-magnify-overlay')).toBeVisible();
+        await saveScreenshot(page, BASIC_HAND_MAGNIFY);
+        await page.getByTestId('qidahen-card-magnify-overlay').getByRole('button', { name: /关闭/ }).click();
+        await expect(page.getByTestId('qidahen-card-magnify-overlay')).toBeHidden();
+        expect((await readQidahenCore(page)).selectedPaymentCardIds).toEqual([]);
+
 
         await expect(page.locator('[data-tutorial-step="choose-raid"]')).toBeVisible();
         await page.getByTestId('qidahen-action-recruit').click();
@@ -960,10 +1100,14 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.getByTestId('qidahen-action-payment-hint')).toContainText('选择目标地区');
         await expect(page.getByTestId('qidahen-action-payment-hint')).not.toContainText('建州');
         expect((await readQidahenCore(page)).explicitRegionId).toBeNull();
+        const raidCandidateIds = (await page.getByTestId('qidahen-map-region-mask-overlay')
+            .getAttribute('data-qidahen-candidate-region-ids'))!.split('|');
+        expect(raidCandidateIds).toContain('city-region-7');
+        expect(raidCandidateIds).not.toContain('city-region-15');
         const target = page.getByTestId('qidahen-map-region-focus-city-region-7');
         await expect(target).toBeVisible();
         await expect(target).toHaveAttribute('data-region-focus-shape', 'runtime-region-mask');
-        await expect(target.getByTestId('qidahen-map-region-focus-name')).toHaveText('叶赫部');
+        await expect(page.locator('[data-testid="qidahen-map-region-focus-name"][data-region-id="city-region-7"]')).toHaveText('叶赫部');
         const targetPoint = await readMapRegionInputPoint(page, 'city-region-7');
         await saveScreenshot(page, BASIC_TARGET);
         await page.mouse.click(targetPoint.x, targetPoint.y);
@@ -975,11 +1119,11 @@ test.describe('七大恨新游戏收口', () => {
         await saveScreenshot(page, BASIC_PAYMENT);
         const preservedTactic = (beforePayment.handCards as Array<{ id: string; cardDefId: string }>).find((card) => card.cardDefId === 'qidahen-atlas05-1644-yuanyang-zhen');
         expect(preservedTactic).toBeTruthy();
-        await page.getByTestId('qidahen-hand-card-' + preservedTactic!.id).click();
+        await clickExposedHandCard(page.getByTestId('qidahen-hand-card-' + preservedTactic!.id));
         await expect.poll(async () => (await readQidahenCore(page)).selectedPaymentCardIds).toEqual([]);
         await expect(page.locator('[data-tutorial-step="pay-raid"]')).toBeVisible();
         await expect(page.getByTestId('qidahen-hand-card-' + preservedTactic!.id)).toBeVisible();
-        await page.getByTestId('qidahen-hand-card-' + silver!.id).click();
+        await clickExposedHandCard(page.getByTestId('qidahen-hand-card-' + silver!.id));
         await expect(page.locator('[data-tutorial-step="confirm-raid-payment"]')).toBeVisible();
         await expect(page.getByTestId('qidahen-action-payment-hint')).toContainText('叶赫部');
         await page.getByTestId('qidahen-action-payment-confirm').click();
@@ -987,36 +1131,61 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="battle-open"]')).toBeVisible({ timeout: 10000 });
         const pending = await readQidahenCore(page);
         expect(pending.pendingTargetAction).toMatchObject({
-            actionId: 'raid', sourceRegionId: 'city-region-15-liaodong', targetRegionId: 'city-region-7',
+            actionId: 'raid', sourceRegionId: 'city-region-15', targetRegionId: 'city-region-7',
         });
         await page.getByTestId('tutorial-next-button').click();
         await expect(page.locator('[data-tutorial-step="play-tactic"]')).toBeVisible();
         const tactic = (pending.handCards as Array<{ id: string; cardDefId: string; faction: string }>).find((card) => card.faction === 'ming' && card.cardDefId === 'qidahen-atlas05-1644-yuanyang-zhen');
         expect(tactic).toBeTruthy();
-        await page.getByTestId('qidahen-hand-card-' + tactic!.id).click();
+        await clickExposedHandCard(page.getByTestId('qidahen-hand-card-' + tactic!.id));
         await expect(page.getByTestId('qidahen-confirm-tactic-card')).toBeVisible();
+        await expect(page.getByTestId('qidahen-selected-tactic-card-label')).toContainText('鸳鸯阵');
+        await expectTutorialOverlayNotToCover(page, page.getByTestId('qidahen-tactic-card-selection-panel'), '教程提示不得遮挡战术确认面板');
+        await expectTutorialOverlayNotToCover(page, page.getByTestId('qidahen-hand-card-' + tactic!.id), '教程提示不得遮挡选中的鸳鸯阵');
+        await saveScreenshot(page, BASIC_TACTIC);
         await page.getByTestId('qidahen-confirm-tactic-card').click();
         await expect(page.locator('[data-tutorial-step="resolve-battle"]')).toBeVisible({ timeout: 10000 });
-        const thirdTroop = page.locator('[data-pending-committed-selectable="true"][data-pending-committed-index="3"]').first();
-        await expect(thirdTroop).toBeVisible();
-        await thirdTroop.click();
-        await expect(page.getByTestId('qidahen-raid-intent')).toContainText('本次出兵 3');
+        const fourthTroop = page.locator('[data-pending-committed-selectable="true"][data-pending-committed-index="4"]').first();
+        await expect(fourthTroop).toBeVisible();
+        await expect(page.getByTestId('qidahen-battle-committed-count')).toHaveText('尚未选择');
+        await expect(page.getByTestId('qidahen-resolve-pending-action')).toBeDisabled();
+        await expect(fourthTroop).toHaveAttribute('data-pending-committed-selected', 'false');
+        await saveScreenshot(page, BASIC_BATTLE_BEFORE);
+        await fourthTroop.click();
+        await expect(fourthTroop).toHaveAttribute('data-pending-committed-selected', 'true');
+        await expect(page.getByTestId('qidahen-battle-committed-count')).toHaveText('4 / 4');
+        await expect(page.getByTestId('qidahen-committed-troop-check')).toHaveCount(4);
+        await expect(page.getByTestId('qidahen-battle-preparation')).toContainText('步兵骰子等级+1');
+        await expect(page.getByTestId('qidahen-resolve-pending-action')).toBeEnabled();
         await saveScreenshot(page, BASIC_BATTLE);
         await page.getByTestId('qidahen-resolve-pending-action').click();
 
         await expect(page.locator('[data-tutorial-step="battle-result"]')).toBeVisible({ timeout: 10000 });
         await expect(page.getByTestId('qidahen-post-battle-selection')).toBeVisible();
+        await expect(page.getByTestId('qidahen-desktop-stage')).toHaveJSProperty('scrollTop', 0);
+        const actualRolls = (await readQidahenCore(page)).postBattleSelection as { battleRolls: { stages: Array<{ phase: string; attackerRolls: unknown[] }> } };
+        expect(actualRolls.battleRolls.stages.find(stage => stage.phase === 'infantry')?.attackerRolls)
+            .toEqual([expect.objectContaining({ troopKind: 'infantry', dieSides: 10, raw: 9 })]);
+        console.info('BATTLE_RESULT_LAYOUT', JSON.stringify(await page.getByTestId('qidahen-post-battle-result-header').evaluate(element => {
+            const nodes = []; for (let node: Element | null = element; node; node = node.parentElement) {
+                const style = getComputedStyle(node); nodes.push({ id: node.getAttribute('data-testid') ?? node.tagName, rect: node.getBoundingClientRect().toJSON(), scrollTop: node.scrollTop, scrollHeight: node.scrollHeight, clientHeight: node.clientHeight, overflowY: style.overflowY, transform: style.transform });
+            } return nodes;
+        })));
+        await expect.poll(async () => {
+            const [header, slot] = await Promise.all([readLocatorRect(page.getByTestId('qidahen-post-battle-result-header')), readLocatorRect(page.getByTestId('qidahen-action-slot'))]);
+            return header.top >= Math.max(0, slot.top) && header.bottom <= slot.bottom;
+        }, { message: '战后结果开头必须在滚动区域和视口内完整可见' }).toBe(true);
         await saveScreenshot(page, BASIC_BATTLE_RESULT);
         await page.getByTestId('tutorial-next-button').click();
         await expect(page.locator('[data-tutorial-step="occupy"]')).toBeVisible();
-        await selectPostBattleChoice(page, 'withdraw:city-region-15-liaodong');
+        await selectPostBattleChoice(page, 'withdraw:city-region-15');
         await expect(page.locator('[data-tutorial-step="occupy"]')).toBeVisible();
         await expect.poll(async () => (await readQidahenCore(page)).postBattleSelection != null).toBe(true);
         await selectPostBattleChoice(page, 'occupy');
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         const occupied = await readQidahenCore(page);
         const yehe = (occupied.regions as Array<{ id: string; controller: string; troops: number }>).find((region) => region.id === 'city-region-7');
-        expect([yehe?.controller, yehe?.troops]).toEqual(['ming', 3]);
+        expect([yehe?.controller, yehe?.troops]).toEqual(['ming', 4]);
         expect(occupied.currentPlayer).toBe('1');
         await saveScreenshot(page, BASIC_OCCUPIED);
         await page.getByTestId('tutorial-next-button').click();
@@ -1052,8 +1221,8 @@ test.describe('七大恨新游戏收口', () => {
             await touchPage.getByTestId('tutorial-next-button').tap();
             await expect(touchPage.locator('[data-tutorial-step="select-farm-region"]')).toBeVisible();
             await expect(touchPage.locator('[data-map-hit-testing-ready="true"]')).toBeVisible();
-            const farmRegion = touchPage.getByTestId('qidahen-map-region-focus-city-region-15-liaodong');
-            await expect(farmRegion.getByTestId('qidahen-map-region-focus-name')).toHaveText('辽东');
+            const farmRegion = touchPage.getByTestId('qidahen-map-region-focus-city-region-15');
+            await expect(touchPage.locator('[data-testid="qidahen-map-region-focus-name"][data-region-id="city-region-15"]')).toHaveText('辽北');
             let previousFarmGeometry = '';
             await expect.poll(async () => {
                 const rect = await farmRegion.boundingBox();
@@ -1062,19 +1231,23 @@ test.describe('七大恨新游戏收口', () => {
                 previousFarmGeometry = geometry;
                 return stable;
             }, { intervals: [50, 100, 100] }).toBe(true);
-            const tapPoint = await readMapRegionInputPoint(touchPage, 'city-region-15-liaodong');
+            const tapPoint = await readMapRegionInputPoint(touchPage, 'city-region-15');
             expect(await touchPage.evaluate((point) => (document.elementFromPoint(point.x, point.y) as HTMLElement)?.dataset.testid, tapPoint)).not.toBe('qidahen-hand-zone');
             await touchPage.touchscreen.tap(tapPoint.x, tapPoint.y);
             await expect(touchPage.locator('[data-tutorial-step="wheel-move"]')).toBeVisible();
             await touchPage.getByTestId('qidahen-wheel-move-target-move-2-one-opponent').tap();
+            await expect(touchPage.getByTestId('qidahen-wheel-opponent-picker')).toBeVisible();
+            const opponentButton = await touchPage.getByTestId('qidahen-wheel-opponent-jin').boundingBox();
+            expect(opponentButton!.height).toBeGreaterThanOrEqual(44);
+            expect(opponentButton!.width).toBeGreaterThanOrEqual(76);
+            await saveScreenshot(touchPage, MOBILE_WHEEL_OPPONENT);
             await touchPage.getByTestId('qidahen-wheel-opponent-jin').tap();
-            await expect(touchPage.locator('[data-tutorial-step="wheel-result"]')).toBeVisible();
-            await touchPage.getByTestId('tutorial-next-button').tap();
+            await expect(touchPage.getByTestId('qidahen-season-summary')).toHaveCount(0);
             await expect(touchPage.locator('[data-tutorial-step="choose-raid"]')).toBeVisible();
             await touchPage.getByTestId('qidahen-action-raid').tap();
             const target = touchPage.getByTestId('qidahen-map-region-focus-city-region-7');
             await expect(target).toBeVisible();
-            await expect(target.getByTestId('qidahen-map-region-focus-name')).toHaveText('叶赫部');
+            await expect(touchPage.locator('[data-testid="qidahen-map-region-focus-name"][data-region-id="city-region-7"]')).toHaveText('叶赫部');
             const paymentPanel = touchPage.getByTestId('qidahen-action-payment-panel');
             const playerFloat = touchPage.getByTestId('qidahen-player-float');
             await expect.poll(async () => getRectOverlapArea(await readLocatorRect(paymentPanel), await readLocatorRect(playerFloat)), { message: '支付栏不得遮挡玩家栏' }).toBeLessThanOrEqual(1);
@@ -1101,8 +1274,10 @@ test.describe('七大恨新游戏收口', () => {
             await expectTutorialOverlayNotToCover(touchPage, silverCard, '支付教程提示不得遮挡银两');
             await expect.poll(async () => {
                 const [cardRect, dockRect] = await Promise.all([readLocatorRect(silverCard), readLocatorRect(touchPage.getByTestId('qidahen-hand-zone'))]);
-                return cardRect.left >= dockRect.left && cardRect.right <= dockRect.right && cardRect.bottom <= 386;
-            }, { message: '银两牌应完整显示在手牌窗口和屏幕中' }).toBe(true);
+                return cardRect.left >= dockRect.left && cardRect.right <= dockRect.right;
+            }, { message: '银两的露出牌面应在手牌窗口内，可直接触摸' }).toBe(true);
+            await expect.poll(() => readHandCardVisibleFraction(silverCard)).toBeGreaterThan(0.4);
+            await expect.poll(() => readHandCardVisibleFraction(silverCard)).toBeLessThan(0.62);
             await saveScreenshot(touchPage, MOBILE_RAID_PAYMENT);
             const handDock = touchPage.getByTestId('qidahen-hand-zone');
             const handOverflow = await handDock.evaluate((element) => element.scrollWidth > element.clientWidth + 1);
@@ -1139,9 +1314,13 @@ test.describe('七大恨新游戏收口', () => {
             await touchPage.getByTestId('qidahen-card-magnify-overlay-close').tap();
             await expect(touchPage.locator('[data-tutorial-step="pay-raid"]')).toBeVisible();
             await recordBehaviorOnlyCheckpoint(touchPage, '关闭卡面检视后回到原突袭支付，未消耗手牌', 'pay-raid');
-            await touchPage.getByTestId('qidahen-hand-card-' + silver!.id).tap();
+            const silverTouchBounds = await silverCard.boundingBox();
+            await silverCard.tap({ position: { x: silverTouchBounds!.width / 2, y: silverTouchBounds!.height / 4 } });
             await expect(touchPage.locator('[data-tutorial-step="confirm-raid-payment"]')).toBeVisible();
             expect((await readQidahenCore(touchPage)).selectedPaymentCardIds).toEqual([silver!.id]);
+            const confirmButton = await touchPage.getByTestId('qidahen-action-payment-confirm').boundingBox();
+            expect(confirmButton!.height).toBeGreaterThanOrEqual(44);
+            expect(confirmButton!.width).toBeGreaterThanOrEqual(152);
             await saveScreenshot(touchPage, MOBILE_PAYMENT_SELECTED);
             finishBehaviorTrace(touchPage, true);
         } catch (error) {
@@ -1376,7 +1555,7 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-tutorial-step="overview"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('进入轮盘军屯结算');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('军屯行动');
         await saveScreenshot(page, WHEEL_MILITARY_FARM_OVERVIEW);
         await page.locator('[data-testid="tutorial-next-button"]').click();
 

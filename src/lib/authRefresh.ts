@@ -39,14 +39,14 @@ export function refreshAccessToken(observedToken = readLocalStorageItem('auth_to
     if (refreshInFlight) return refreshInFlight;
 
     const lockManager = typeof navigator !== 'undefined' ? navigator.locks : undefined;
-    const request = lockManager
-        ? lockManager.request('boardgame-auth-refresh', () => {
+    const request: Promise<string | null> = lockManager
+        ? lockManager.request<Promise<string | null>>('boardgame-auth-refresh', () => {
             const latestToken = readLocalStorageItem('auth_token');
             if (latestToken !== observedToken && isAccessTokenUsable(latestToken)) {
                 return Promise.resolve(latestToken);
             }
             return requestRefresh();
-        })
+        }).then((tokenPromise) => tokenPromise)
         : requestRefresh();
 
     refreshInFlight = request.finally(() => {

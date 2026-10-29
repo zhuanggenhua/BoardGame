@@ -19,9 +19,9 @@ import {
     createTutorialSystem,
     createTimingOpportunitySystem,
     createUndoSystem,
-    CharacterSelectionSystem,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
 import { DiceThroneDomain } from './domain';
 import { getDiceDefinition } from './domain/diceRegistry';
@@ -29,6 +29,8 @@ import { DICETHRONE_COMMANDS, TOKEN_IDS } from './domain/ids';
 import type {
     AbilityCard,
     DiceThroneCore,
+    DiceThroneCommand,
+    DiceThroneEvent,
     DtResponseWindowType,
     TurnPhase,
     ChoiceResolvedEvent,
@@ -47,6 +49,8 @@ import type {
     BonusDiceSettledEvent,
     BonusDieRerolledEvent,
     DamageShieldGrantedEvent,
+    DieModifiedEvent,
+    DieRerolledEvent,
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
@@ -759,7 +763,7 @@ function formatDiceThroneActionEntry({
             };
             const compareRoll = choiceRequestedEvent.payload?.compareRoll;
             const contestants = compareRoll?.contestants;
-            if (Array.isArray(contestants) && contestants.length === 2) {
+            if (compareRoll && Array.isArray(contestants) && contestants.length === 2) {
                 const first = contestants[0];
                 const second = contestants[1];
                 const firstDice = buildCompareRollDiceSegment(first);
@@ -815,7 +819,7 @@ function formatDiceThroneActionEntry({
             if (attackResolved) {
                 if (targetId === attackResolved.payload.defenderId) {
                     actorId = attackResolved.payload.attackerId;
-                } else if (sourceAbilityId === 'retribution-reflect') {
+                } else if (sourceAbilityId === 'retribution-reflect' && attackResolved.payload.defenderId) {
                     actorId = attackResolved.payload.defenderId;
                 }
             } else if (sourcePlayerId && sourcePlayerId !== targetId) {
@@ -843,6 +847,9 @@ function formatDiceThroneActionEntry({
                 },
                 {
                     resolve: (sid) => resolveAbilitySourceLabel(sid, core, actorId),
+                },
+                DT_NS,
+                {
                     // 自定义护盾渲染：解析护盾来源名称
                     renderShields: (shields) => shields.map(shield => {
                         const shieldSource = shield.sourceId
@@ -857,7 +864,6 @@ function formatDiceThroneActionEntry({
                         };
                     }),
                 },
-                DT_NS,
             );
 
             // 统一用 before + breakdown + after 模式
@@ -1395,24 +1401,23 @@ function findDiceThroneCard(
 // FlowSystem 配置由 FlowHooks 提供，符合设计规范
 // 注意：撤销快照保留 1 个 + 极度缩减日志（maxEntries: 20）以避免 MongoDB 16MB 限制
 const systems = [
-    new CharacterSelectionSystem({ setupPhaseName: 'setup' }),
     createFlowSystem<DiceThroneCore>({ hooks: diceThroneFlowHooks }),
-    createEventStreamSystem(),
-    createActionLogSystem({
+    createEventStreamSystem<DiceThroneCore>(),
+    createActionLogSystem<DiceThroneCore>({
         commandAllowlist: ACTION_LOG_ALLOWLIST,
         formatEntry: formatDiceThroneActionEntry,
     }),
-    createUndoSystem({
+    createUndoSystem<DiceThroneCore>({
         maxSnapshots: 10,
         // 只对白名单命令做撤回快照，避免 UI/系统行为导致“一进局就可撤回”。
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
     }),
-    createInteractionSystem(),
-    createSimpleChoiceSystem(),
-    createCompareRollChoiceSystem(),
-    createMultistepChoiceSystem(),
-    createRematchSystem(),
-    createResponseWindowSystem({
+    createInteractionSystem<DiceThroneCore>(),
+    createSimpleChoiceSystem<DiceThroneCore>(),
+    createCompareRollChoiceSystem<DiceThroneCore>(),
+    createMultistepChoiceSystem<DiceThroneCore>(),
+    createRematchSystem<DiceThroneCore>(),
+    createResponseWindowSystem<DiceThroneCore>({
         // 使用分类系统（推荐）
         allowedCommandCategories: [
             CommandCategory.TACTICAL,
@@ -1542,7 +1547,7 @@ const systems = [
             requestEvent: 'INTERACTION_REQUESTED',
         },
     }),
-    createTutorialSystem(),
+    createTutorialSystem<DiceThroneCore>(),
     createDiceThroneEventSystem(),
     createDoctorStrangeSpellSystem(),
     createTimingOpportunitySystem(DiceThroneDomain, createDiceThroneTimingOpportunitySystemConfig()),
@@ -2013,7 +2018,7 @@ const shouldReleaseDiceThroneManualSetupAttemptFromSharedState = (args: {
 };
 
 // 引擎配置
-export const engineConfig = {
+export const engineConfig: GameEngineConfig<DiceThroneCore, DiceThroneCommand, DiceThroneEvent> = {
     ...createGameEngine(adapterConfig),
     resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
     resolveLocalRuntimeControlledPlayerId: resolveDiceThroneLocalRuntimeControlledPlayerId,

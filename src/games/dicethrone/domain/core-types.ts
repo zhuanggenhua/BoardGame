@@ -4,6 +4,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
+import type { ModifierType } from '../../../engine/primitives/modifier';
 import type { AiSeatController, AiSetupOptionStatus } from '../../../engine/ai/types';
 import type { CardPreviewRef } from '../../../core';
 import type { CharacterBadgeDef } from '../../../core/ui/CharacterSelection.types';
@@ -154,7 +155,12 @@ function withDerivedCharacterBadges(character: CharacterDefinition): CharacterDe
 }
 
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = ([
-    { id: 'doctor_strange', nameKey: 'characters.doctor_strange' },
+    {
+        id: 'doctor_strange',
+        nameKey: 'characters.doctor_strange',
+        setupOptionStatus: 'in_progress',
+        setupOptionStatusReason: '当前实施范围已完成审计，等待真人确认进入完成态',
+    },
     { id: 'thor', nameKey: 'characters.thor', setupOptionStatus: 'in_progress', setupOptionStatusReason: '索尔完整玩法已实施，真人完成态确认前保持实施中' },
     { id: 'monk', nameKey: 'characters.monk' },
     { id: 'barbarian', nameKey: 'characters.barbarian' },
@@ -484,7 +490,8 @@ export type CardInteractionType =
     | 'selectStatus'
     | 'selectTargetStatus'
     | 'selectHandCard'
-    | 'selectDeckCard';
+    | 'selectDeckCard'
+    | 'selectCard';
 
 /** 改骰操作语义；固定结果与任意编辑不能互相替代。 */
 export type DieModifyConfig =
@@ -509,6 +516,18 @@ export interface InteractionDescriptor {
     /** 允许玩家在选择手牌弃置前取消这项可选成本。 */
     allowCancel?: boolean;
     targetPlayerIds?: PlayerId[];
+    /** 卡牌选择使用的真实来源区；selectCard 由现有卡池选择面承载。 */
+    cardSourceZone?: 'hand' | 'deck' | 'discard' | 'preparedSpells';
+    /** 限定本次交互可选的真实卡牌 ID，避免把来源区中的其它卡牌误作候选。 */
+    candidateCardIds?: string[];
+    /** 限定状态选择到本次规则请求给出的玩家、状态与真实状态区。 */
+    candidateStatusOptions?: Array<{
+        playerId: PlayerId;
+        statusId: string;
+        collection: 'statusEffects' | 'tokens';
+    }>;
+    /** 单选状态候选属于哪位玩家，用于重复状态 ID 时只高亮实际选择。 */
+    selectedStatusPlayerId?: PlayerId;
     dieModifyConfig?: DieModifyConfig;
     transferConfig?: {
         sourcePlayerId?: PlayerId;
@@ -644,7 +663,7 @@ export interface PendingDamage {
     };
     /** 伤害修改记录（用于 ActionLog 展示） */
     modifiers?: Array<{
-        type: 'defense' | 'token' | 'shield' | 'status';
+        type: 'defense' | 'token' | 'shield' | 'status' | ModifierType;
         value: number;
         sourceId?: string;
         sourceName?: string;
@@ -709,7 +728,7 @@ export interface BonusDieInfo {
     /** 当前点数 */
     value: number;
     /** 骰面符号 */
-    face: DieFace;
+    face: DieFace | `${number}`;
     /** 效果描述 i18n key（用于 displayOnly 展示） */
     effectKey?: string;
     /** 效果描述参数（例如 {{value}}） */
@@ -832,7 +851,8 @@ export type AttackBonusDiceContinuation =
         kind: 'attack';
         /** 未消费主攻击伤害时，不能声明只剩 ATTACK_RESOLVED 收口。 */
         markBonusDiceResolved: false;
-        settlementStage: Exclude<PendingAttackSettlementStage, 'readyToResolve'>;
+        /** preserve 表示临时骰只属于插入的效果，保持父攻击原阶段与结算标记。 */
+        settlementStage: Exclude<PendingAttackSettlementStage, 'readyToResolve'> | 'preserve';
     };
 
 export type BonusDiceContinuation =

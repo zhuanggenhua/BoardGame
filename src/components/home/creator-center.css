@@ -1,39 +1,50 @@
 .creator-center { min-width: 0; }
-.creator-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 20px; }
-.platform-profile .creator-heading h2 { margin: 0 0 6px; border: 0; padding: 0; }
-.creator-heading p, .creator-empty p, .creator-claim-form p { color: #555; line-height: 1.6; }
-.platform-profile .creator-primary { background: #d5ff00; border: 3px solid #000; box-shadow: 4px 4px #000; }
+.creator-claim-overlay { position: fixed; inset: 0; overflow: auto; background: #f3f3f3; color: #000; }
+.creator-claim-sheet { width: min(1100px, 100%); margin: 0 auto; }
+.creator-claim-overlay .platform-upload-back { display: inline-flex; align-items: center; margin: 16px 24px 0; }
+.creator-claim-overlay .platform-upload-form { padding: 12px 24px 32px; }
+.creator-claim-target { font-weight: 700; }
+.creator-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+.platform-profile .creator-heading h2 { margin: 0; border: 0; padding: 0; }
+.creator-empty p, .creator-row-main small { color: #555; line-height: 1.6; }
+.platform-profile .creator-primary, .creator-primary { background: #d5ff00; border: 3px solid #000; box-shadow: 4px 4px #000; font-weight: 800; min-height: 44px; padding: 8px 16px; }
 .creator-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-weight: 700; }
-.creator-filter select, .creator-claim-form input, .creator-claim-form select, .creator-claim-form textarea { min-height: 44px; padding: 8px; border: 2px solid #111; background: #fff; width: 100%; }
+.creator-filter select { min-height: 44px; padding: 8px; border: 3px solid #000; background: #fff; border-radius: 0; }
 .creator-filter select { width: auto; min-width: 120px; }
 .creator-list { display: grid; gap: 12px; }
-.creator-row, .creator-claim { display: flex; align-items: center; gap: 16px; padding: 14px; border: 2px solid #111; background: #fff; }
-.creator-thumb { flex: 0 0 64px; width: 64px; height: 76px; object-fit: cover; }
+.creator-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px; border: 3px solid #000; background: #fff; box-shadow: 4px 4px #000; }
+.creator-thumb { width: 56px; height: 72px; object-fit: cover; border: 2px solid #000; }
 .creator-thumb-placeholder { display: grid; place-items: center; background: #d5ff00; font-weight: 900; font-size: 24px; }
-.creator-row-main { display: grid; gap: 6px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.creator-row-main { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
 .creator-row-main strong { font-size: 18px; }
-.creator-row-main span, .creator-row-main small { color: #555; }
-.creator-row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.creator-empty { padding: 24px; background: #f1f1f1; border: 2px dashed #999; }
-.creator-claim-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 20px; border: 2px solid #111; }
-.creator-claim-form h3, .creator-claim-form p, .creator-claim-form label:has(textarea), .creator-claim-form [role="alert"] { grid-column: 1 / -1; }
-.creator-claim-form h3, .creator-section-title { font-weight: 800; font-size: 18px; }
-.creator-claim-form label, .creator-claim-actions label { display: grid; gap: 6px; font-weight: 700; }
-.creator-claim-form textarea { min-height: 90px; resize: vertical; }
-.creator-claim-form > button { justify-self: start; }
-.creator-section-title { margin: 24px 0 12px; }
-.creator-claim { display: grid; align-items: start; }
-.creator-claim-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-.creator-claim-actions input { max-width: 260px; }
-.creator-evidence { display: grid; gap: 8px; justify-items: start; }
-.creator-evidence img { max-width: min(100%, 560px); max-height: 400px; object-fit: contain; }
+.creator-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #555; }
+.creator-status { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border: 2px solid #000; font-size: 12px; font-weight: 800; color: #000; }
+.creator-status.is-pending { background: #fff2c7; }
+.creator-status.is-approved { background: #d5ff00; }
+.creator-status.is-rejected { background: #ffd0e0; }
+.creator-status.is-draft { background: #f1f1f1; }
+.creator-row-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.creator-row-actions button, .creator-center > button, .creator-evidence button {
+    min-height: 44px; padding: 8px 16px; border: 3px solid #000; background: #fff; font-weight: 800;
+}
+.creator-empty { display: grid; gap: 12px; justify-items: start; padding: 24px; background: #fff; border: 3px dashed #000; }
+.creator-empty .creator-primary { justify-self: start; }
+.creator-claim-overlay .creator-claim-explanation { grid-column: 1 / -1; }
+.creator-code { margin: 0; }
+.creator-code b { display: inline-block; margin: 0 4px; padding: 2px 8px; border: 2px solid #000; background: #d5ff00; font-size: 16px; }
+.creator-evidence { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+.creator-evidence img { width: 100%; max-width: min(100%, 560px); max-height: 400px; object-fit: contain; border: 3px solid #000; }
 .creator-center .platform-upload-form { padding: 20px 0; }
-@media (max-width: 700px) {
- .creator-heading { align-items: stretch; }
- .creator-heading > button { flex-shrink: 0; }
- .creator-row { flex-wrap: wrap; gap: 10px; }
- .creator-row-main { min-width: calc(100% - 84px); }
- .creator-row-actions { width: 100%; }
- .creator-claim-form { grid-template-columns: minmax(0, 1fr); padding: 14px; }
- .creator-claim-form h3, .creator-claim-form p, .creator-claim-form label:has(textarea) { grid-column: auto; }
+@media (max-width: 1023px) {
+    .creator-claim-overlay { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+    .creator-claim-overlay .platform-upload-back { margin: 16px 16px 0; }
+    .creator-claim-overlay .platform-upload-form { padding: 12px 16px 32px; }
+    .creator-heading { flex-direction: column; align-items: stretch; gap: 12px; }
+    .creator-heading .creator-primary, .creator-empty .creator-primary { width: 100%; }
+    .creator-row { grid-template-columns: 56px minmax(0, 1fr); }
+    .creator-row-actions { grid-column: 1 / -1; width: 100%; }
+    .creator-row-actions button { flex: 1 1 8rem; }
+    .creator-evidence img { max-width: 100%; }
+    .creator-filter { flex-wrap: wrap; }
+    .creator-filter select { flex: 1; min-width: 0; }
 }

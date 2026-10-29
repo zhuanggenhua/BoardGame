@@ -1,24 +1,31 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { AbilityResult } from '../domain/abilityRegistry';
-import type { TriggerEffectContract, SmashUpCore, SmashUpEvent, MinionOnBase } from '../domain/types';
+import type {
+    SmashUpReactionResourceRef,
+    TriggerEffectContract,
+    SmashUpCore,
+    SmashUpEvent,
+    MinionOnBase,
+} from '../domain/types';
 import type { TriggerResult } from '../domain/ongoingEffects';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getMinionPower } from '../domain/abilityHelpers';
 
+const SHAYU_RESOURCE_KEYS = [
+    'playLimits', 'triggerMinionPower', 'minionBoardState', 'titanBoardState',
+    'baseDeckState', 'handState', 'deckState', 'madnessDeckState', 'discardState',
+    'vpState', 'triggerMinionState', 'sourceSelfState', 'baseState', 'controllerState',
+    'scoringState', 'targetAvailability', 'turnFlags',
+] as const;
+
+const shayuResources = (): SmashUpReactionResourceRef[] => SHAYU_RESOURCE_KEYS.map(
+    (key): SmashUpReactionResourceRef => ({ kind: 'global', key }),
+);
+
 export const SHAYU_TRIGGER_CONTRACT: TriggerEffectContract = {
-    reads: [
-        'playLimits', 'triggerMinionPower', 'minionBoardState', 'titanBoardState',
-        'baseDeckState', 'handState', 'deckState', 'madnessDeckState', 'discardState',
-        'vpState', 'triggerMinionState', 'sourceSelfState', 'baseState', 'controllerState',
-        'scoringState', 'targetAvailability', 'turnFlags',
-    ],
-    writes: [
-        'playLimits', 'triggerMinionPower', 'minionBoardState', 'titanBoardState',
-        'baseDeckState', 'handState', 'deckState', 'madnessDeckState', 'discardState',
-        'vpState', 'triggerMinionState', 'sourceSelfState', 'baseState', 'controllerState',
-        'scoringState', 'targetAvailability', 'turnFlags',
-    ],
+    reads: shayuResources(),
+    writes: shayuResources(),
     opensInteraction: true,
 };
 

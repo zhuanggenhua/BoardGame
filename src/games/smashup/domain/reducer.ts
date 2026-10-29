@@ -42,6 +42,8 @@ import type {
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionReturnedEvent,
+    MinionOnBase,
+    BaseAbilityUsedEvent,
     MinionControlChangedEvent,
     BuriedCardReturnedToHandEvent,
     CardRecoveredFromDiscardEvent,
@@ -418,7 +420,7 @@ function executeCommand(
                 )
                 : undefined;
             const card = replacementCard ?? originalCard;
-            if (!card) return state;
+            if (!card) return { events: [] };
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
             const baseIndex = command.payload.baseIndex;
@@ -763,6 +765,7 @@ function executeCommand(
                 playerId: command.playerId,
                 targetBaseIndex,
                 targetMinionUid,
+                random,
                 now,
             });
             events.push(...result.events);
@@ -1053,7 +1056,7 @@ function executeCommand(
                 state: core,
                 matchState: state,
                 playerId: command.playerId,
-                cardUid: spUid,
+                cardUid: spMinion.uid,
                 defId: spMinion.defId,
                 baseIndex: spIdx,
                 targetBaseIndex: spTargetBaseIndex,
@@ -1121,7 +1124,7 @@ function executeCommand(
 function filterProtectedMinionEvents(
     events: SmashUpEvent[],
     core: SmashUpCore,
-    sourcePlayerId: PlayerId,
+    sourcePlayerId: PlayerId | undefined,
     protectedEventType: typeof SU_EVENTS.MINION_DESTROYED | typeof SU_EVENTS.MINION_MOVED,
 ): SmashUpEvent[] {
     const result: SmashUpEvent[] = [];
@@ -1174,7 +1177,7 @@ function filterProtectedMinionEvents(
     return result;
 }
 
-function buildAffectEventSourceKey(event: SmashUpEvent, fallbackSourcePlayerId: PlayerId): string | undefined {
+function buildAffectEventSourceKey(event: SmashUpEvent, fallbackSourcePlayerId: PlayerId | undefined): string | undefined {
     const payload = (event as { payload?: Record<string, unknown> }).payload;
     if (!payload) return undefined;
     const sourceParts = [
@@ -1197,7 +1200,7 @@ function buildAffectEventSourceKey(event: SmashUpEvent, fallbackSourcePlayerId: 
 export function filterProtectedDestroyEvents(
     events: SmashUpEvent[],
     core: SmashUpCore,
-    sourcePlayerId: PlayerId,
+    sourcePlayerId: PlayerId | undefined,
 ): SmashUpEvent[] {
     return filterProtectedMinionEvents(events, core, sourcePlayerId, SU_EVENTS.MINION_DESTROYED);
 }
@@ -1429,6 +1432,7 @@ export function processDestroyTriggers(
             powerCounters: 0,
             powerModifier: 0,
             tempPowerModifier: 0,
+            talentUsed: false,
             attachedActions: [],
             metadata: undefined,
         };
@@ -2500,7 +2504,7 @@ export function processAffectTriggers(
     let ms: MatchState<SmashUpCore> | undefined;
 
     const skipEnsignRedirect = (event: SmashUpEvent): boolean => (
-        ((event as { payload?: { skipEnsignRedirect?: boolean } }).payload?.skipEnsignRedirect ?? false) === true
+        'skipEnsignRedirect' in event.payload && event.payload.skipEnsignRedirect === true
     );
 
     eventLoop:

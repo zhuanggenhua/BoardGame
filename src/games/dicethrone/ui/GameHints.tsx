@@ -3,7 +3,7 @@
  * 
  * 统一管理游戏中所有的提示和状态消息，包括：
  * - 弃牌阶段提示
- * - 骰子交互提示
+ * - 手牌弃置交互提示
  * - 对手思考中提示
  * - 响应窗口提示
  */
@@ -11,7 +11,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
-import type { InteractionDescriptor, TurnPhase } from '../domain/types';
+import type { HandDiscardInteractionContract } from './handDiscardInteractionContract';
+import type { DiceInteractionContract } from './diceInteractionContract';
+import type { InteractionHint } from './interactionPresentationContract';
 import { UI_Z_INDEX, HudPortal } from '../../../core';
 
 const dtViewportInlineUnit = (multiplier: number) =>
@@ -26,17 +28,11 @@ export interface GameHintsProps {
     /** 必须弃牌数量 */
     mustDiscardCount: number;
 
-    /** 从当前可见手牌中选择弃牌时的提示与取消入口。 */
-    handDiscardPrompt?: {
-        onCancel?: () => void;
-    };
+    /** 手牌弃置的提示、合法候选和动作来自同一交互合同；无此交互时显式传 undefined。 */
+    handDiscardInteraction: HandDiscardInteractionContract | undefined;
 
-    /** 是否为骰子交互 */
-    isDiceInteraction: boolean;
-    /** 是否为交互所有者 */
-    isInteractionOwner: boolean;
-    /** 待处理交互 */
-    pendingInteraction?: InteractionDescriptor;
+    /** 当前骰子交互的同一份合同；普通状态显式传 undefined，交互状态不得漏接。 */
+    diceInteraction: DiceInteractionContract | undefined;
 
     /** 是否在等待对手 */
     isWaitingOpponent: boolean;
@@ -49,9 +45,6 @@ export interface GameHintsProps {
         kind: 'card' | 'token';
         passLabel?: string;
     };
-
-    /** 当前阶段 */
-    currentPhase: TurnPhase;
 
     /** 是否处于被动重掷选择模式 */
     isPassiveRerollSelecting?: boolean;
@@ -98,9 +91,10 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount 
 };
 
 const HandDiscardHint: React.FC<{
-    onCancel?: () => void;
-}> = ({ onCancel }) => {
+    interaction: HandDiscardInteractionContract;
+}> = ({ interaction }) => {
     const { t } = useTranslation('game-dicethrone');
+    const cancelAction = interaction.actions.cancel;
 
     return (
         <div
@@ -124,17 +118,17 @@ const HandDiscardHint: React.FC<{
             >
                 <Trash2 className="shrink-0 text-red-200" style={{ width: dtViewportInlineUnit(1.5), height: dtViewportInlineUnit(1.5) }} />
                 <span className="whitespace-nowrap text-red-100 font-black" style={{ fontSize: dtViewportInlineUnit(0.95) }}>
-                    {t('interaction.selectHandCardToDiscard')}
+                    {t(interaction.hint.key, interaction.hint.params)}
                 </span>
-                {onCancel && (
+                {cancelAction && (
                     <button
                         type="button"
                         data-testid="dicethrone-hand-discard-cancel"
-                        onClick={onCancel}
+                        onClick={cancelAction.onActivate}
                         className="pointer-events-auto rounded-lg border border-red-200/70 bg-black/30 px-3 py-2 text-white font-bold hover:bg-black/50"
                         style={{ minHeight: 44, fontSize: dtViewportInlineUnit(0.85) }}
                     >
-                        {t('common.cancel')}
+                        {t(cancelAction.labelKey)}
                     </button>
                 )}
             </div>
@@ -142,23 +136,38 @@ const HandDiscardHint: React.FC<{
     );
 };
 
-/**
- * 骰子交互提示（画面顶部中央）
- */
-const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor }> = ({ pendingInteraction }) => {
+/** 普通选骰/改骰提示固定在视口左侧垂直居中。 */
+const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = ({ interaction }) => {
     const { t } = useTranslation('game-dicethrone');
+
+    if (interaction.hint.surface !== 'game-hints') return null;
 
     return (
         <div
-            className="absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
-            style={{ zIndex: UI_Z_INDEX.hint, top: dtViewportInlineUnit(6) }}
+            data-testid="dice-interaction-hint-anchor"
+            data-anchor="viewport"
+            data-placement="left-center"
+            className="fixed left-[max(0.75rem,env(safe-area-inset-left))] top-1/2 -translate-y-1/2 pointer-events-none animate-pulse"
+            style={{
+                zIndex: UI_Z_INDEX.hint,
+                position: 'fixed',
+                top: '50%',
+                left: 'max(0.75rem, env(safe-area-inset-left))',
+                transform: 'translateY(-50%)',
+            }}
         >
             <div
-                className="bg-amber-600/90 backdrop-blur-sm rounded-xl border border-amber-400/60 shadow-lg text-center"
-                style={{ paddingInline: dtViewportInlineUnit(2), paddingBlock: dtViewportInlineUnit(0.6) }}
+                data-testid="dice-interaction-hint"
+                className="w-max max-w-[calc(100vw-2rem)] rounded-xl border border-amber-400/60 bg-amber-600/90 text-center shadow-lg backdrop-blur-sm"
+                style={{
+                    maxWidth: 'min(22rem, calc(100vw - 2rem))',
+                    boxSizing: 'border-box',
+                    paddingInline: dtViewportInlineUnit(2),
+                    paddingBlock: dtViewportInlineUnit(0.6),
+                }}
             >
                 <span className="text-white font-bold tracking-wide" style={{ fontSize: dtViewportInlineUnit(1) }}>
-                    {t(pendingInteraction.titleKey, { count: pendingInteraction.selectCount })}
+                    {t(interaction.hint.key, interaction.hint.params)}
                 </span>
             </div>
         </div>
@@ -235,7 +244,8 @@ const ResponseWindowHint: React.FC<{
     onResponsePass?: () => void;
     kind: 'card' | 'token';
     passLabel?: string;
-}> = ({ onResponsePass, kind, passLabel }) => {
+    hint?: InteractionHint;
+}> = ({ onResponsePass, kind, passLabel, hint }) => {
     const { t } = useTranslation('game-dicethrone');
 
     const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -304,7 +314,7 @@ const ResponseWindowHint: React.FC<{
                         className="relative z-10 text-[#fff3bd] font-black tracking-wider"
                         style={{ fontSize: dtViewportInlineUnit(0.95) }}
                     >
-                        {t('response.yourTurn')}
+                        {t(hint?.key ?? 'response.yourTurn', hint?.params)}
                     </span>
                     {onResponsePass && (
                         <button
@@ -362,15 +372,20 @@ const PassiveRerollHint: React.FC = () => {
 export const GameHints: React.FC<GameHintsProps> = ({
     isDiscardMode,
     mustDiscardCount,
-    handDiscardPrompt,
-    isDiceInteraction,
-    isInteractionOwner,
-    pendingInteraction,
+    handDiscardInteraction,
+    diceInteraction,
     isWaitingOpponent,
     opponentName,
     responsePrompt,
     isPassiveRerollSelecting,
 }) => {
+    const tokenResponseSettlement = diceInteraction?.kind === 'tokenResponseSettlement'
+        ? diceInteraction
+        : undefined;
+    const visibleResponsePrompt = responsePrompt ?? (tokenResponseSettlement
+        ? { kind: tokenResponseSettlement.responseKind, onPass: undefined, passLabel: undefined }
+        : undefined);
+
     return (
         <HudPortal>
             {/* 弃牌阶段提示 Banner */}
@@ -378,16 +393,13 @@ export const GameHints: React.FC<GameHintsProps> = ({
                 <DiscardHint mustDiscardCount={mustDiscardCount} />
             )}
 
-            {handDiscardPrompt && (
+            {handDiscardInteraction && (
                 <HandDiscardHint
-                    onCancel={handDiscardPrompt.onCancel}
+                    interaction={handDiscardInteraction}
                 />
             )}
 
-            {/* 骰子交互提示（画面顶部中央） */}
-            {isDiceInteraction && isInteractionOwner && pendingInteraction && (
-                <DiceInteractionHint pendingInteraction={pendingInteraction} />
-            )}
+            {diceInteraction && <DiceInteractionHint interaction={diceInteraction} />}
 
             {/* 被动重掷选择提示 */}
             {isPassiveRerollSelecting && (
@@ -400,11 +412,12 @@ export const GameHints: React.FC<GameHintsProps> = ({
             )}
 
             {/* 响应窗口：当前玩家可响应 */}
-            {responsePrompt && (
+            {visibleResponsePrompt && (
                 <ResponseWindowHint
-                    onResponsePass={responsePrompt.onPass}
-                    kind={responsePrompt.kind}
-                    passLabel={responsePrompt.passLabel}
+                    onResponsePass={visibleResponsePrompt.onPass}
+                    kind={visibleResponsePrompt.kind}
+                    passLabel={visibleResponsePrompt.passLabel}
+                    hint={tokenResponseSettlement?.hint}
                 />
             )}
         </HudPortal>

@@ -6,6 +6,7 @@ import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { resolveEffectsToEvents } from '../domain/effects';
 import { createDiceThroneEventSystem } from '../domain/systems';
+import { hideDeferredAttackDebuffFrames } from '../domain/deferredAttackDebuff';
 import { initializeCustomActions } from '../domain/customActions';
 import { validateCommand } from '../domain/commandValidation';
 import { checkPlayCard, getTokenStackLimit } from '../domain/rules';
@@ -3018,7 +3019,48 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBeUndefined();
     });
 
-    it('深海潜行真实进攻 pipeline 在偷取 CP 与施加凋零后保留对手弃牌交互', () => {
+    it('深海潜行弃牌交互结束后续接神性防止，再进入防御', () => {
+        const state = createHeroMatchup('cursed_pirate', 'treant')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.players['1'].hand = [getCardById('card-zhanshujia-strategic-defense')];
+        setCursedPirateDiceValues(state, [1, 4, 5, 6, 2]);
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('SELECT_ABILITY', '0', { abilityId: 'deep-sea-dive' }), fixedRandom, ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, selected.state,
+            command('ADVANCE_PHASE', '0'), fixedRandom, ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
+        expect(getCardInteractionPrompt(advanced.state, 'deep-sea-dive').type).toBe('selectHandCard');
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
+        const discarded = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, advanced.state,
+            command('RESOLVE_INTERACTION', '1', { selectedCardIds: ['card-zhanshujia-strategic-defense'] }), fixedRandom, ['0', '1'],
+        );
+        expect(discarded.success).toBe(true);
+        expect(discarded.state.core.players['1'].hand).toHaveLength(0);
+        const prompt = getSimpleChoicePrompt(discarded.state, TOKEN_IDS.TREANT_DIVINE);
+        const prevent = prompt.options.find(option => (option.value as { customId?: string }).customId === 'treant-divine-deferred-prevent');
+        expect(prevent).toBeDefined();
+        const resolved = respondToPrompt(discarded.state, prevent!.id, '1');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
+        expect(resolved.state.sys.phase).toBe('defensiveRoll');
+    });
+
+    it('深海潜行真实进攻 pipeline 在偷取 CP 后等待弃牌再施加凋零', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         setPlayerBoardFace(state, '0', 'cursed');
         state.sys.phase = 'offensiveRoll';
@@ -3056,7 +3098,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(advanced.success).toBe(true);
         expect(advanced.state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(6);
         expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(4);
-        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
 
         const discardPrompt = getCardInteractionPrompt(advanced.state, 'deep-sea-dive');
         expect(discardPrompt.type).toBe('selectHandCard');
@@ -3076,6 +3118,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(discarded.state.sys.interaction.current).toBeUndefined();
         expect(discarded.state.core.players['1'].hand).toHaveLength(0);
         expect(discarded.state.core.players['1'].discard.map(card => card.id)).toContain('card-zhanshujia-strategic-defense');
+        expect(discarded.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
     });
 
     it('诅咒卡牌允许选择自伤抽牌分支', () => {
@@ -3976,7 +4019,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse', damageDealt: 7 },
         );
 
-        expect(smallResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(smallHpBefore - 7);
+        expect(smallResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(smallHpBefore);
+        expect(smallResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
         expect(smallFollowUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
 
         const largeState = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
@@ -4001,11 +4045,12 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse', damageDealt: 9 },
         );
 
-        expect(largeResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(largeHpBefore - 9);
+        expect(largeResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(largeHpBefore);
+        expect(largeResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
         expect(largeFollowUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
-    it('human 面点燃炸药在未造成伤害时不施加火药桶', () => {
+    it('human 面点燃炸药受休战阻止伤害时仍施加火药桶', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.core = applyEvents(state.core, [{
             type: 'PLAYER_BOARD_FACE_CHANGED',
@@ -4030,7 +4075,76 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         );
 
         expect(result.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
-        expect(followUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(followUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('判决指令选择诅咒金币后的攻击伤害也应受到眩光减半', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST', timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'verdict-command',
+            isDefendable: false, damage: 7, dazzleCheckResolved: true, dazzleDamagePercent: -50,
+        };
+        const hp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const result = resolveAbilityEffectsWithSystem(
+            state, getAbilityEffects(state.core, '0', 'verdict-command'), 'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'verdict-command' },
+        );
+        const prompt = getSimpleChoicePrompt(result.state, 'verdict-command');
+        const accept = prompt.options.find(option => (option.value as { statusId?: string }).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp - 4);
+    });
+
+    it.each([
+        { name: '防止休战', label: 'choices.treantDivinePreventDebuff.prevent', parley: 0, divine: 0 },
+        { name: '不防止休战', label: 'choices.treantDivinePreventDebuff.skip', parley: 1, divine: 1 },
+    ])('树精选择$name后恢复判决指令时仍按攻击者的眩光修正伤害', ({ label, parley, divine }) => {
+        const state = createHeroMatchup('cursed_pirate', 'treant')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST', timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'verdict-command',
+            isDefendable: false, damage: 7, dazzleCheckResolved: true, dazzleDamagePercent: -50,
+        };
+        const hp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const result = resolveAbilityEffectsWithSystem(
+            state, getAbilityEffects(state.core, '0', 'verdict-command'), 'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'verdict-command' },
+        );
+        const coin = getSimpleChoicePrompt(result.state, 'verdict-command');
+        const accept = coin.options.find(option => (option.value as { statusId?: string }).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        const frame = accepted.state.sys.resolution?.frames.find(entry => entry.kind === 'dicethrone:attack-debuff-prevention');
+        expect(frame?.deferredEvents?.length).toBeGreaterThan(0);
+        const projected = hideDeferredAttackDebuffFrames(accepted.state);
+        const visibleFrame = projected.resolution?.frames.find(entry => entry.id === frame?.id);
+        expect(visibleFrame?.deferredEvents).toBeUndefined();
+        expect(visibleFrame?.metadata).toBeUndefined();
+        const treeChoice = getSimpleChoicePrompt(accepted.state, TOKEN_IDS.TREANT_DIVINE);
+        const option = treeChoice.options.find(entry => (entry.value as { labelKey?: string }).labelKey === label);
+        expect(option).toBeDefined();
+        const resolved = respondToPrompt(accepted.state, option!.id, '1');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp - 4);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(parley);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(divine);
+        expect(resolved.state.sys.resolution?.frames.some(entry => entry.id === frame?.id) ?? false).toBe(false);
     });
 
     it('human 面判决指令会获得诅咒金币、施加休战并造成不可防御伤害', () => {

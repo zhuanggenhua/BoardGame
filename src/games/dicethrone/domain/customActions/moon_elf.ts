@@ -24,7 +24,7 @@ import type {
 import { buildDrawEvents } from '../deckEvents';
 import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 import type { BonusDieInfo } from '../types';
 
 const FACE = MOON_ELF_DICE_FACE_IDS;
@@ -86,7 +86,7 @@ function dealDamage(
         }
         : undefined;
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: amount,
         state: ctx.state,
@@ -121,7 +121,8 @@ function rollMoonElfFiveBonusDice(
 
     for (let index = 0; index < 5; index += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = getPlayerDieFace(state, attackerId, value);
+        if (!face) throw new Error(`Moon Elf die face is not configured: player=${attackerId}, value=${value}`);
         dice.push({ index, value, face });
         diceValues.push(value);
         diceFaces.push(face);
@@ -730,6 +731,7 @@ export function registerMoonElfCustomActions(): void {
                 ],
             };
         }
+        if (!random) throw new Error('Moon Elf bonus-dice draw requires the authoritative random source');
         return {
             totalDamage: 0,
             followupEvents: buildDrawEvents(state, settlement.attackerId, 1, random, 'BONUS_DICE_SETTLED', timestamp, settlement.sourceAbilityId),

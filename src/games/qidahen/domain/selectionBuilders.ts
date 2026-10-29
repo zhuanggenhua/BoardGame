@@ -1,3 +1,4 @@
+import { getQidahenTrainableTroopPieces } from './wheelRecruitTrain';
 import {
     isQidahenLogicalRuleRegionId,
     isQidahenKoreaRuntimeRegionId,
@@ -8,6 +9,8 @@ import {
 } from './actionSourceRegionState';
 import {
     canPlaceRegularTroopsInRegion,
+    canReceiveFriendlyTroopsInRegion,
+    getPreferredNonSiegedControlledRuntimeRegion,
     getPreferredRegularTroopPlacementRegion,
     isRegionAvailableForNonDispatchAction,
     isRegionUnderSiege,
@@ -100,7 +103,7 @@ export const buildMaShiTradeSelectionFromRegionSemantics = (
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
-        && canPlaceRegularTroopsInRegion(region, 'ming')
+        && canPlaceRegularTroopsInRegion(region, 'ming', state)
     ));
     const targetRegion = selectedRuntimeRegion ?? getPreferredRegularTroopPlacementRegion(state, 'ming');
     if (!targetRegion) {
@@ -148,7 +151,7 @@ export const buildRecruitSelectionFromRegionSemantics = (
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
-        && canPlaceRegularTroopsInRegion(region, factionId)
+        && canPlaceRegularTroopsInRegion(region, factionId, state)
     ));
     const targetRegion = selectedRuntimeRegion ?? getPreferredRegularTroopPlacementRegion(state, factionId);
     if (!targetRegion) {
@@ -443,15 +446,15 @@ export const buildDiplomacySelectionFromRegionSemantics = (
         ? state.regions.find((region) => (
             !region.isLogicalRegion
             && region.id === pinnedSourceRuntimeRegionId
-            && canPlaceRegularTroopsInRegion(region, actingFactionId)
+            && canReceiveFriendlyTroopsInRegion(region, actingFactionId)
         )) ?? null
         : null;
-    const candidateSourceRegion = selectedTargetOrSourceRegion && canPlaceRegularTroopsInRegion(selectedTargetOrSourceRegion, actingFactionId)
+    const candidateSourceRegion = selectedTargetOrSourceRegion && canReceiveFriendlyTroopsInRegion(selectedTargetOrSourceRegion, actingFactionId)
         ? selectedTargetOrSourceRegion
         : null;
     const sourceRegion = candidateSourceRegion
         ? candidateSourceRegion
-        : pinnedSourceRegion ?? getPreferredRegularTroopPlacementRegion(state, actingFactionId);
+        : pinnedSourceRegion ?? getPreferredNonSiegedControlledRuntimeRegion(state, actingFactionId);
     if (!sourceRegion) {
         return null;
     }
@@ -639,17 +642,17 @@ export const buildKhanEdictSelectionFromRegionSemantics = (
     const preferredSourceRuntimeRegion = preferredSourceRuntimeRegionId
         ? state.regions.find((region) => !region.isLogicalRegion && region.id === preferredSourceRuntimeRegionId) ?? null
         : null;
-    const fallbackSourceRegion = preferredSourceRuntimeRegion && canPlaceRegularTroopsInRegion(preferredSourceRuntimeRegion, attackerFactionId)
+    const fallbackSourceRegion = preferredSourceRuntimeRegion && canReceiveFriendlyTroopsInRegion(preferredSourceRuntimeRegion, attackerFactionId)
         ? preferredSourceRuntimeRegion
-        : getPreferredRegularTroopPlacementRegion(state, attackerFactionId);
-    const recruitTargetRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
+        : getPreferredNonSiegedControlledRuntimeRegion(state, attackerFactionId);
+    const recruitTargetRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId, state)
         ? selectedRuntimeRegion
-        : fallbackSourceRegion;
-    const hireTargetRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
+        : getPreferredRegularTroopPlacementRegion(state, attackerFactionId);
+    const hireTargetRegion = selectedRuntimeRegion && canReceiveFriendlyTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
         ? selectedRuntimeRegion
         : fallbackSourceRegion;
     const choices: QidahenKhanEdictSelection['choices'] = [];
-    const preferredSourceRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
+    const preferredSourceRegion = selectedRuntimeRegion && canReceiveFriendlyTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
         ? selectedRuntimeRegion
         : fallbackSourceRegion ?? recruitTargetRegion ?? hireTargetRegion;
     const recruitTargetRegionName = recruitTargetRegion
@@ -668,11 +671,11 @@ export const buildKhanEdictSelectionFromRegionSemantics = (
         )
         : null;
 
-    if (recruitTargetRegion) {
+    if (recruitTargetRegion || getQidahenTrainableTroopPieces(state, attackerFactionId).length > 0) {
         choices.push({
             id: 'recruit-train',
             label: '征兵训练',
-            detail: `${recruitTargetRegionName} 部队 +2（免支付）`,
+            detail: recruitTargetRegion ? '选择征兵或训练。' : '训练现有部队。',
         });
     }
     if (hireTargetRegion) {

@@ -11,23 +11,23 @@ import type {
   BetrayalTraitKey,
 } from "./game";
 
-export const DUST_SEARCH_TRAIT_CHOICES: readonly BetrayalTraitKey[] = [
+export const DUST_SEARCH_TRAIT_CHOICES = [
   "knowledge",
   "sanity",
-];
+] as const satisfies readonly BetrayalTraitKey[];
 
-export const DUST_CURE_TRAIT_CHOICES: readonly BetrayalTraitKey[] = [
+export const DUST_CURE_TRAIT_CHOICES = [
   "might",
   "speed",
   "knowledge",
   "sanity",
-];
+] as const satisfies readonly BetrayalTraitKey[];
 
-export function isDustTraitChoice(
-  choices: readonly BetrayalTraitKey[],
+export function isDustTraitChoice<TTrait extends BetrayalTraitKey>(
+  choices: readonly TTrait[],
   trait: BetrayalTraitKey | null,
-): trait is BetrayalTraitKey {
-  return Boolean(trait && choices.includes(trait));
+): trait is TTrait {
+  return Boolean(trait && choices.some((choice) => choice === trait));
 }
 
 export interface BetrayalDustEndTurnResult {

@@ -36,6 +36,15 @@ const ROOMS: Record<LocationId, {
     shinto: { x: 397, y: 790, w: 1036, h: 357, pawnX: 1358, pawnY: 923 },
     recon: { x: 34, y: 788, w: 344, h: 358, pawnX: 212, pawnY: 958 },
 };
+// Empty DOM bounds over printed map text let tutorial placement avoid covering the data being taught.
+const TUTORIAL_MAP_LANDMARKS = [
+    { id: 'workshop-title', left: 850, top: 12, width: 570, height: 96 },
+    { id: 'workshop-values', left: 970, top: 108, width: 465, height: 230 },
+    { id: 'miyama-values', left: 1075, top: 408, width: 360, height: 345 },
+    { id: 'shinto-values', left: 1075, top: 788, width: 360, height: 345 },
+    { id: 'recon-values', left: 26, top: 784, width: 360, height: 360 },
+    { id: 'battle-track', left: 1438, top: 0, width: 489, height: 1179 },
+] as const;
 interface Props {
     core: FateDominationCore;
     locale: string;
@@ -102,7 +111,8 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
     ], [cards, locale]);
     return <div className="fd-runtime-map" data-tutorial-id="fate-map" ref={setHost}>
         <PixiMapSceneHost inputElement={host} sprites={sprites} mapWidth={WIDTH} mapHeight={HEIGHT} viewport={pose} onViewportChange={setPose} onDisplayViewportChange={project} minimumZoom={.25} maximumZoom={2.5} interactive regionSelectionEnabled={false} canvasTestId="fate-pixi-map-canvas" ariaLabel="冬木市地图，可拖动和缩放"/>
-        <div ref={overlay} className="fd-runtime-map-overlay" style={{ width: WIDTH, height: HEIGHT, transform: `translate(${pose.panX}px, ${pose.panY}px) scale(${pose.zoom})` }}>
+        <div ref={overlay} className="fd-runtime-map-overlay" data-moving={moving ? 'true' : undefined} style={{ width: WIDTH, height: HEIGHT, transform: `translate(${pose.panX}px, ${pose.panY}px) scale(${pose.zoom})` }}>
+            {TUTORIAL_MAP_LANDMARKS.map(({id,...bounds}) => <span key={id} aria-hidden="true" data-tutorial-map-landmark={id} className="fd-runtime-map-landmark" style={bounds}/>) }
             {movementOrigin && !moving && MOVEMENT_EXITS[movementOrigin] && <button type="button" className="fd-runtime-movement-exit" aria-label={`从${core.battlefield[movementOrigin].label}开始常规移动`} onClick={onPawn} style={{left:MOVEMENT_EXITS[movementOrigin]!.x,top:MOVEMENT_EXITS[movementOrigin]!.y,width:MOVEMENT_EXITS[movementOrigin]!.w,height:MOVEMENT_EXITS[movementOrigin]!.h}}/>}
             {Object.entries(ROOMS).map(([key, rect]) => {
             const id = key as LocationId;
@@ -111,8 +121,8 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             const deployment = core.phase === 'outpost';
             const slots = deployment ? DEPLOYMENT_SLOTS[id] : undefined;
             return <React.Fragment key={id}>
+                    {slots && nextSlot !== null && <span aria-hidden="true" data-tutorial-id={`fate-deployment-${id}`} style={{position:'absolute',left:slots[nextSlot].x,top:slots[nextSlot].y,width:slots[nextSlot].w,height:slots[nextSlot].h}}/>}
                     {legalLocations.includes(id) && (slots && nextSlot !== null ? slots.map((slot,index) => <React.Fragment key={index}>
-                        {index===nextSlot && <span aria-hidden="true" data-tutorial-id={`fate-deployment-${id}`} style={{position:'absolute',left:slot.x,top:slot.y,width:slot.w,height:slot.h}}/>}
                         <button type="button" className="fd-runtime-location fd-runtime-deployment-slot" disabled={!legalSlots.includes(index)} aria-pressed={index === selectedDeploymentSlot && selectedLocation === id} style={{left:slot.pawnX-44,top:slot.pawnY-44,width:88,height:88}} data-testid={index === nextSlot ? `fate-domination-location-${id}` : `fate-domination-slot-${id}-${index}`} aria-label={`部署到${core.battlefield[id].label}第${index+1}点位`} onClick={() => onLocation(id,index)}/></React.Fragment>)
                         : <button type="button" className={`fd-runtime-location${deployment ? ' fd-runtime-deployment-slot' : ''}`} aria-pressed={selectedLocation === id} style={deployment ? {left:rect.x+705,top:rect.y+46,width:88,height:88} : { left: rect.x, top: rect.y, width: rect.w, height: rect.h }} data-tutorial-id={deployment ? `fate-deployment-${id}` : undefined} data-testid={`fate-domination-location-${id}`} aria-label={`选择${core.battlefield[id].label}`} onClick={() => deployment ? onLocation(id,null) : onLocation(id)}/>) }
                     {core.battlefield[id].playerIds.map(playerId => {

@@ -18,6 +18,7 @@ import {
 } from '../domain/abilityHelpers';
 import { registerBaseAbility } from '../domain/baseAbilities';
 import {
+    createAbilityRuntimeContinuation,
     type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -775,7 +776,7 @@ function canDiyClownsMrsClownTrigger(ctx: TriggerContext): boolean {
 
 let diyClownsJugglingAdvanceProgram: AbilityProgram<JugglingPromptContext, SmashUpCore, SmashUpEvent>;
 
-const diyClownsJugglingPickActionProgram = createPromptProgram<JugglingPromptContext, SmashUpCore, SmashUpEvent>({
+const diyClownsJugglingPickActionProgram = createPromptProgram<JugglingPromptContext>({
     sourceId: 'diy_clowns_juggling_pick_action',
     buildInteraction: context => {
         const playerId = context.pendingPlayerIds[0];
@@ -824,13 +825,12 @@ const diyClownsJugglingPickActionProgram = createPromptProgram<JugglingPromptCon
                 ),
                 millFromDeck(currentPlayerId, [card.uid], 'diy_clowns_juggling', timestamp),
             ],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 pendingPlayerIds: context.pendingPlayerIds.slice(1),
                 now: timestamp,
-            },
-            nextProgram: diyClownsJugglingAdvanceProgram,
+            }, diyClownsJugglingAdvanceProgram),
         };
     },
 });
@@ -852,8 +852,7 @@ diyClownsJugglingAdvanceProgram = createEffectProgram<JugglingPromptContext, Sma
         if (actions.length > 0) {
             return {
                 events,
-                context: { ...context, pendingPlayerIds },
-                nextProgram: diyClownsJugglingPickActionProgram,
+                continuation: createAbilityRuntimeContinuation({ ...context, pendingPlayerIds }, diyClownsJugglingPickActionProgram),
             };
         }
 

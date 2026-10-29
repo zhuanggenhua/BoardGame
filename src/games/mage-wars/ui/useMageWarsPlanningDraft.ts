@@ -7,7 +7,8 @@ import {
     type SetStateAction,
 } from 'react';
 import type { PlayerId } from '../../../engine/types';
-import { MAGE_WARS_MAX_PREPARED_SPELLS, type MageWarsPhase } from '../domain';
+import { MAGE_WARS_MAX_PREPARED_SPELLS } from '../domain';
+import type { MageWarsPhase } from '../domain/core-types';
 
 const MAGE_WARS_PLANNING_DRAFT_STORAGE_PREFIX = 'mage-wars:planning-draft:v1';
 

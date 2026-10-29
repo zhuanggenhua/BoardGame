@@ -1,11 +1,11 @@
-import { test, expect, initHome, login, openGame, capture, record, beginHomeEvidence } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, openGame, openHomeUpload, capture, record, beginHomeEvidence } from './helpers/homeAcceptance';
 
 const views = [
-    { name:'桌面', width:1920, height:1080, columns:6 },
-    { name:'窄桌面', width:1024, height:768, columns:4 },
+    { name:'桌面', width:1920, height:1080, minColumns:7, maxCardWidth:260 },
+    { name:'窄桌面', width:1024, height:768, minColumns:4, maxCardWidth:260 },
     { name:'平板', width:820, height:1180, columns:3 },
     { name:'手机', width:375, height:812, columns:2 },
-    { name:'中桌面', width:1280, height:900, columns:4 },
+    { name:'中桌面', width:1280, height:900, minColumns:5, maxCardWidth:260 },
 ];
 for (const view of views) {
     test(`现代布局对比重构-${view.name}`, async ({ browser, accounts }, info) => {
@@ -17,11 +17,14 @@ for (const view of views) {
             await initHome(page);
             const metrics = await page.locator('.platform-home').evaluate(root => {
                 const grid = root.querySelector('.platform-game-grid')!;
+                const card = root.querySelector('.platform-game-card')?.getBoundingClientRect();
                 const nav = root.querySelector('.platform-navigation')!.getBoundingClientRect();
                 const header = root.querySelector('.platform-home-header')!.getBoundingClientRect();
-                return { columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length, overflow:document.documentElement.scrollWidth-innerWidth, navCenter:nav.x+nav.width/2, navWidth:nav.width, headerCenter:header.x+header.width/2, legacyUnderline:root.querySelectorAll('.platform-category-list .underline-center').length };
+                return { columns:getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length, cardWidth:card?.width ?? 0, overflow:document.documentElement.scrollWidth-innerWidth, navCenter:nav.x+nav.width/2, navWidth:nav.width, headerCenter:header.x+header.width/2, legacyUnderline:root.querySelectorAll('.platform-category-list .underline-center').length };
             });
-            expect(metrics.columns).toBe(view.columns);
+            if (view.columns) expect(metrics.columns).toBe(view.columns);
+            if (view.minColumns) expect(metrics.columns).toBeGreaterThanOrEqual(view.minColumns);
+            if (view.maxCardWidth) expect(metrics.cardWidth).toBeLessThanOrEqual(view.maxCardWidth);
             expect(metrics.overflow).toBeLessThanOrEqual(1);
             expect(metrics.legacyUnderline).toBe(0);
             if (!mobile) expect(Math.abs(metrics.navCenter-metrics.headerCenter)).toBeLessThanOrEqual(1);
@@ -59,8 +62,7 @@ for (const view of views) {
                 if (!mobile) expect(await page.getByTestId('profile-page').evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThan(900);
                 await capture(page,`重构-${view.name}-个人中心`);
                 if (mobile) {
-                    await page.getByRole('button',{name:'菜单',exact:true}).click();
-                    await page.locator('.platform-secondary-entry').click();
+                    await openHomeUpload(page, true);
                     await expect(page.locator('.platform-upload-form')).toBeVisible();
                     await capture(page,'重构-手机-投稿表头');
                     const author = page.locator('.platform-upload-form input[name="author"]');
@@ -77,8 +79,7 @@ for (const view of views) {
                     await expect(page.getByTestId('profile-plays').getByRole('heading',{name:'Match History',exact:true})).toBeVisible();
                     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
                     await capture(page,'重构-窄手机-英文个人中心');
-                    await page.getByRole('button',{name:'Menu',exact:true}).click();
-                    await page.locator('.platform-secondary-entry').click();
+                    await openHomeUpload(page, true);
                     await expect(page.getByRole('heading',{name:'Submit a new game',exact:true})).toBeVisible();
                     expect(await page.locator('.platform-upload-form-heading h2').evaluate(node=>node.getBoundingClientRect().height)).toBeLessThanOrEqual(72);
                     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);

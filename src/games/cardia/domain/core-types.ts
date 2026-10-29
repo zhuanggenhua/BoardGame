@@ -103,7 +103,7 @@ export interface PlayerState {
     tags: TagContainer;       // 玩家状态标签
     
     // 当前回合状态
-    currentCard?: CardInstance;  // 本回合打出的卡牌
+    currentCard?: CardInstance | null;  // 本回合打出的卡牌；null 表示本回合尚未打出
     hasPlayed: boolean;       // 本回合是否已打出卡牌
     cardRevealed: boolean;    // 卡牌是否已翻开（暗牌机制）
 }
@@ -122,7 +122,7 @@ export interface ModifierToken {
  * 持续能力
  */
 export interface OngoingAbility {
-    abilityId: string;      // 能力 ID
+    abilityId: AbilityId;   // 能力 ID
     cardId: string;         // 卡牌 ID
     playerId: PlayerId;     // 拥有者
     effectType: string;     // 效果类型（从 abilityRegistry 获取）
@@ -143,6 +143,9 @@ export interface DelayedEffect {
     sourceAbilityId: string;
     sourcePlayerId: PlayerId;
     timestamp: number;
+    effectId?: string;
+    targetPlayerId?: PlayerId;
+    requiredFaction?: FactionType;
 }
 
 /**

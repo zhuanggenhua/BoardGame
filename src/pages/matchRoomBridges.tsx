@@ -100,7 +100,7 @@ export const TutorialDispatchBridge = ({
     sessionScope?: TutorialSessionScope | null;
 }) => {
     const { dispatch, state } = useGameClient();
-    const { bindDispatch, unbindDispatch, syncTutorialState, tutorial: contextTutorial } = useTutorial();
+    const { bindDispatch, unbindDispatch, syncTutorialState, tutorial: contextTutorial, isBoardMounted: contextBoardMounted } = useTutorial();
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
     const dispatchRef = useRef(dispatch);
@@ -145,6 +145,7 @@ export const TutorialDispatchBridge = ({
         }
 
         const tutorial = (state as MatchState | undefined)?.sys?.tutorial;
+        const isGameOver = Boolean((state as MatchState | undefined)?.sys?.gameover);
         const activeProgress = snapshotTutorialProgress(tutorial, tutorialManifest);
         if (activeProgress?.manifestId === tutorialManifest.id) {
             lastActiveTutorialProgressRef.current = activeProgress;
@@ -158,7 +159,7 @@ export const TutorialDispatchBridge = ({
             contextMatchesManifest
             && (!tutorial?.active || tutorial.manifestId !== tutorialManifest.id)
         ) {
-            if (wasLastActiveTutorialStep(lastActiveTutorialProgressRef.current, tutorialManifest)) {
+            if (isGameOver || wasLastActiveTutorialStep(lastActiveTutorialProgressRef.current, tutorialManifest)) {
                 boundManifestRef.current = { manifest: tutorialManifest, stateKey: 'completed-local-tutorial' };
                 return;
             }
@@ -213,12 +214,16 @@ export const TutorialDispatchBridge = ({
         tutorialManifest,
     ]);
 
-    // 提前同步教程状态（Board 被 CriticalImageGate 阻塞时也能同步）
-    const lastSyncRef = useRef<string | null>(null);
+    // 挂载前由房间层同步；挂载后由真实棋盘同步含隐藏/检视状态的显示投影。
+    const lastSyncRef = useRef<{ state: unknown; signature: string } | null>(null);
     useEffect(() => {
         if (!isTutorialMode || !state) return;
         const tutorial = (state as MatchState).sys.tutorial;
         if (!tutorial) return;
+        if (contextBoardMounted && tutorial.active) {
+            lastSyncRef.current = null;
+            return;
+        }
         const contextMatchesManifest = contextTutorialActive
             && tutorialManifest
             && contextTutorialManifestId === tutorialManifest.id
@@ -229,7 +234,8 @@ export const TutorialDispatchBridge = ({
             tutorialManifest
             && contextMatchesManifest
             && (!tutorial.active || tutorial.manifestId !== tutorialManifest.id)
-            && wasLastActiveTutorialStep(lastActiveTutorialProgressRef.current, tutorialManifest)
+            && (Boolean((state as MatchState).sys.gameover)
+                || wasLastActiveTutorialStep(lastActiveTutorialProgressRef.current, tutorialManifest))
         );
         if (
             contextMatchesManifest
@@ -257,14 +263,16 @@ export const TutorialDispatchBridge = ({
                 : '',
             (state as MatchState).sys?.eventStream?.nextId ?? 0,
         ].join('-');
-        if (lastSyncRef.current === sig) return;
-        lastSyncRef.current = sig;
+        // 领域换席等正式更新可能没有表现事件，也不改变教程步骤；不能用字段枚举吞掉新快照。
+        if (lastSyncRef.current?.state === state && lastSyncRef.current.signature === sig) return;
+        lastSyncRef.current = { state, signature: sig };
         if (sessionScope) {
             contextRef.current.syncTutorialState(tutorial, undefined, sessionScope);
         } else {
             contextRef.current.syncTutorialState(tutorial);
         }
     }, [
+        contextBoardMounted,
         contextTutorialActive,
         contextTutorialManifestId,
         contextTutorialManifestRevision,

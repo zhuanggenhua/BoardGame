@@ -64,7 +64,7 @@ export function isSmashUpPromptOwnedByPlayer({
     return String(currentPrompt.playerId) === String(playerID);
 }
 
-export function shouldForceSmashUpPromptOverlay(currentPrompt: ButtonOverlayPromptLike): boolean {
+export function shouldForceSmashUpPromptOverlay(currentPrompt: ButtonOverlayPromptLike | null | undefined): boolean {
     const options = currentPrompt?.options;
     return Array.isArray(options) && options.length > 0 && options.every(option => option.displayMode === 'button');
 }

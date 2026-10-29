@@ -121,6 +121,39 @@ describe('TutorialSystem', () => {
         );
     });
 
+    it('事件只推进允许该步骤的命令，避免前一步同类事件跳过当前课', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const state = createTestState();
+        const manifest: TutorialManifest = {
+            id: 'event-source-step',
+            steps: [
+                { id: 'skill', content: 'play skill', requireAction: true, allowedCommands: ['PLAY_SKILL'], advanceOnEvents: [{ type: 'ABILITY_USED', match: { skillId: 'card' } }] },
+                { id: 'next', content: 'next' },
+            ],
+        };
+        const started = sys.beforeCommand?.({
+            state,
+            command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } },
+            events: [], random: mockRandom, playerIds: ['0', '1'],
+        });
+        const active = started!.state!;
+        const priorStepEvent = sys.afterEvents?.({
+            state: active,
+            command: { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: {} },
+            events: [{ type: 'ABILITY_USED', payload: { skillId: 'card' }, sourceCommandType: 'SYS_INTERACTION_RESPOND', timestamp: 1 } as GameEvent],
+            random: mockRandom, playerIds: ['0', '1'],
+        });
+        expect(priorStepEvent?.state?.sys.tutorial.step?.id ?? active.sys.tutorial.step?.id).toBe('skill');
+
+        const ownActionEvent = sys.afterEvents?.({
+            state: active,
+            command: { type: 'PLAY_SKILL', playerId: '0', payload: {} },
+            events: [{ type: 'ABILITY_USED', payload: { skillId: 'card' }, sourceCommandType: 'PLAY_SKILL', timestamp: 2 } as GameEvent],
+            random: mockRandom, playerIds: ['0', '1'],
+        });
+        expect(ownActionEvent?.state?.sys.tutorial.step?.id).toBe('next');
+    });
+
     it('NEXT: 步骤锁定时阻止推进', () => {
         const manifest: TutorialManifest = {
             id: 'locked',

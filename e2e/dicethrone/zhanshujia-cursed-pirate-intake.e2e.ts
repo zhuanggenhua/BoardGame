@@ -4853,8 +4853,8 @@ const playHeftyUntilLoot = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
-        await saveEvidenceScreenshot(match.guestPage, testInfo, '27-guest-hefty-bonus-die-right-tray-loot');
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 2 });
+        await saveEvidenceScreenshot(match.guestPage, testInfo, '27-guest-hefty-bonus-dice-right-tray-loot');
         await settleBonusDiceOnPage(match, match.guestPage);
 
         let lootResolved = true;
@@ -8533,13 +8533,58 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.CP, 4);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.CP, 6);
-            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 0);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '25-host-deep-sea-dive-discard-choice');
 
             await discardedHandCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', DEEP_SEA_DIVE_TARGET_CARD_ID);
             await waitForHandCount(match.matchId, match.hostPage, '0', 0);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '26-host-deep-sea-dive-discarded');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('深海潜行先弃牌再防止凋零后才能进入防御', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const match = await setupNewHeroMatch(browser, testInfo.project.use.baseURL as string | undefined, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            const targetCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], DEEP_SEA_DIVE_TARGET_CARD_ID);
+            await setupDeepSeaDiveAttackScenario(match, targetCard);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                players['0'] = { ...defender, tokens: { ...asRecord(defender.tokens), [TOKEN_IDS.TREANT_DIVINE]: 1 } };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            await match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lotus"]').first().click();
+            await waitForPendingAttack(match.matchId, match.guestPage, { attackerId: '1', defenderId: '0', sourceAbilityId: 'deep-sea-dive' });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const showcase = match.hostPage.getByTestId('attack-showcase-overlay');
+            await expect(showcase).toBeVisible({ timeout: 10000 });
+            await showcase.getByRole('button', { name: /开始防御|继续/i }).click();
+            const card = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${DEEP_SEA_DIVE_TARGET_CARD_ID}"]`);
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-hint')).toBeVisible({ timeout: 10000 });
+            let root = await readServerRoot(match.matchId, match.hostPage);
+            expect(root.sys.phase).toBe('offensiveRoll');
+            expect(asRecord(asRecord(root.core.players)['0']).statusEffects).not.toHaveProperty(STATUS_IDS.WITHER);
+            await card.click();
+            await waitForDiscardContains(match.matchId, match.hostPage, '0', DEEP_SEA_DIVE_TARGET_CARD_ID);
+            const prevent = match.hostPage.locator('#modal-root').getByRole('button', { name: /花费神性树灵：防止该状态/ });
+            await expect(prevent).toBeVisible({ timeout: 15000 });
+            root = await readServerRoot(match.matchId, match.hostPage);
+            expect(root.sys.phase).toBe('offensiveRoll');
+            await prevent.click();
+            await expect.poll(async () => (await readServerRoot(match.matchId, match.hostPage)).sys.phase, { timeout: 10000 }).toBe('defensiveRoll');
+            root = await readServerRoot(match.matchId, match.hostPage);
+            const defender = asRecord(asRecord(root.core.players)['0']);
+            expect(asRecord(defender.statusEffects)[STATUS_IDS.WITHER] ?? 0).toBe(0);
+            expect(asRecord(defender.tokens)[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(0);
         } finally {
             await cleanupDTMatch(match);
         }
@@ -9649,6 +9694,55 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('灵魂指令多个状态可指定防止火药桶并继续结算整次攻击', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            await setupSoulCommandScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                players['0'] = {
+                    ...defender,
+                    tokens: { ...asRecord(defender.tokens), [TOKEN_IDS.TREANT_DIVINE]: 1 },
+                    statusEffects: { ...asRecord(defender.statusEffects), [STATUS_IDS.POWDER_KEG]: 1 },
+                };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            const slot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lightning"]').first();
+            await expect(slot).toHaveAttribute('data-resolved-ability-id', 'soul-command', { timeout: 10000 });
+            await slot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1', defenderId: '0', sourceAbilityId: 'soul-command',
+            });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const modal = match.hostPage.locator('#modal-root');
+            await expect(modal.getByRole('button', { name: /^休战$/ })).toBeVisible({ timeout: 15000 });
+            await expect(modal.getByRole('button', { name: /^火药桶$/ })).toBeVisible();
+            await expect(modal.getByRole('button', { name: /^凋零$/ })).toBeVisible();
+            const before = await readServerRoot(match.matchId, match.hostPage);
+            const defenderBefore = asRecord(asRecord(before.core.players)['0']);
+            expect(asRecord(defenderBefore.resources)[RESOURCE_IDS.HP]).toBe(50);
+            expect(asRecord(defenderBefore.statusEffects)[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+            await modal.getByRole('button', { name: /^火药桶$/ }).click();
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            const after = await readServerRoot(match.matchId, match.hostPage);
+            const defenderAfter = asRecord(asRecord(after.core.players)['0']);
+            expect(asRecord(defenderAfter.resources)[RESOURCE_IDS.HP]).toBe(42);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.PARLEY]).toBe(1);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.POWDER_KEG]).toBe(1);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.WITHER]).toBe(1);
+            expect(asRecord(defenderAfter.tokens)[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(0);
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应通过咒缚面 combo 槽位触发并结算死亡吐息的小顺子多状态链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -9725,6 +9819,52 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '142-host-breath-of-death-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('反馈：判决指令选择金币后，树精可先用神性树灵防止休战再受伤', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            await setupHumanVerdictCommandScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                players['0'] = { ...defender, tokens: { ...asRecord(defender.tokens), [TOKEN_IDS.TREANT_DIVINE]: 1 } };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            const slot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lightning"]').first();
+            await expect(slot).toHaveAttribute('data-resolved-ability-id', 'verdict-command', { timeout: 10000 });
+            await slot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1', defenderId: '0', sourceAbilityId: 'verdict-command',
+            });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const guestModal = match.guestPage.locator('#modal-root');
+            await guestModal.getByRole('button', { name: /^获得诅咒金币$/ }).click({ timeout: 15000 });
+            const hostModal = match.hostPage.locator('#modal-root');
+            const prevent = hostModal.getByRole('button', { name: /花费神性树灵：防止该状态/ });
+            await expect(prevent).toBeVisible({ timeout: 15000 });
+            const before = await readServerRoot(match.matchId, match.hostPage);
+            const defenderBefore = asRecord(asRecord(before.core.players)['0']);
+            expect(asRecord(defenderBefore.resources)[RESOURCE_IDS.HP]).toBe(50);
+            expect(asRecord(defenderBefore.statusEffects)[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, 'feedback-verdict-treant-prevent-before-damage');
+            await prevent.click();
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            const after = await readServerRoot(match.matchId, match.hostPage);
+            const defenderAfter = asRecord(asRecord(after.core.players)['0']);
+            expect(asRecord(defenderAfter.resources)[RESOURCE_IDS.HP]).toBe(43);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+            expect(asRecord(defenderAfter.tokens)[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, 'feedback-verdict-treant-prevent-after-damage');
         } finally {
             await cleanupDTMatch(match);
         }
@@ -9844,6 +9984,48 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('反馈：点燃炸药对树精时，扎根发动后投防御骰之前不能先扣主攻击伤害', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            await setupHumanLightTheFuseScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const attacker = asRecord(players['1']);
+                players['1'] = { ...attacker, tokens: { ...asRecord(attacker.tokens), [TOKEN_IDS.THORN]: 1 } };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            const slot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="combo"]').first();
+            await expect(slot).toHaveAttribute('data-resolved-ability-id', 'light-the-fuse-small', { timeout: 10000 });
+            await slot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1', defenderId: '0', sourceAbilityId: 'light-the-fuse-small',
+            });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const defender = asRecord(asRecord(core.players)['0']);
+                return {
+                    phase: sys.phase,
+                    defenseAbilityId: asRecord(core.pendingAttack).defenseAbilityId,
+                    defenderHp: asRecord(defender.resources)[RESOURCE_IDS.HP],
+                    keg: asRecord(defender.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                    rollConfirmed: core.rollConfirmed,
+                };
+            }, { timeout: 15000 }).toMatchObject({
+                phase: 'defensiveRoll', defenseAbilityId: 'rooted', defenderHp: 50, keg: 1, rollConfirmed: false,
+            });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, 'feedback-light-fuse-treant-before-defense-roll');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应通过人类面 combo 槽位触发并结算点燃炸药的小顺子链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -9889,13 +10071,22 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 defenseAbilityId: 'countermeasures',
             });
 
+            await expect.poll(async () => {
+                const { core } = await readServerRoot(match.matchId, match.hostPage);
+                const defender = asRecord(asRecord(core.players)['0']);
+                return {
+                    hp: asRecord(defender.resources)[RESOURCE_IDS.HP],
+                    powderKeg: asRecord(defender.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ hp: 50, powderKeg: 1 });
+
             await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
                 const root = asRecord(state.G ?? state);
                 const core = asRecord(root.core);
                 root.core = {
                     ...core,
-                    dice: buildDiceForValues('zhanshujia-dice', [5, 5, 5, 5], {
-                        5: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+                    dice: buildDiceForValues('zhanshujia-dice', [6, 6, 6, 6], {
+                        6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
                     }),
                     rollCount: 1,
                     rollLimit: 1,

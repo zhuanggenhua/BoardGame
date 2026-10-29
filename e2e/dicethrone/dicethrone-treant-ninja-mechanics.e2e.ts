@@ -366,6 +366,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await expectRightTrayBonusDiceConfirmation(match.hostPage, () => readHarnessCoreState(match.hostPage));
             await screenshot(match.hostPage, testName, '02-life-sap-right-tray-before-confirm.png');
 
+            await settleCurrentBonusDice(match.hostPage, () => readHarnessCoreState(match.hostPage), {});
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);
                 const players = asRecordMap(core.players);
@@ -374,7 +375,6 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 return resources[RESOURCE_IDS.HP];
             }, { timeout: 10000 }).toBe(38);
 
-            await settleCurrentBonusDice(match.hostPage, () => readHarnessCoreState(match.hostPage), {});
             await expect(match.hostPage.getByText('38').first()).toBeVisible({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '03-life-sap-after-close.png');
         } finally {

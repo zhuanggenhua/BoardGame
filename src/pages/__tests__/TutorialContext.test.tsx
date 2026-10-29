@@ -189,6 +189,41 @@ describe('TutorialContext', () => {
         vi.useRealTimers();
     });
 
+    it('棋盘只改变教学隐藏投影时也会同步，不依赖步骤或事件变化', async () => {
+        const manifest: TutorialManifest = { id: 'fate-domination-foundation', steps: [{ id: 'post-battle', content: '事件卡原文' }] };
+        const dispatch = vi.fn();
+        const runtimeState = {};
+        const { result, rerender } = renderHook(({ hidden }: { hidden: boolean }) => {
+            const boardTutorial = makeBoardTutorialState(manifest, 0);
+            boardTutorial.step = { ...boardTutorial.step!, hideOverlay: hidden };
+            useTutorialBridge(boardTutorial, dispatch, 'unchanged-runtime-key', undefined, runtimeState);
+            return useTutorial();
+        }, { wrapper, initialProps: { hidden: false } });
+        await act(async () => undefined);
+        expect(result.current.currentStep?.hideOverlay).toBe(false);
+        rerender({ hidden: true });
+        await act(async () => undefined);
+        expect(result.current.currentStep?.hideOverlay).toBe(true);
+    });
+
+    it('同一步的新棋盘快照可完成显式AI等待，不依赖表现事件或教学文案变化', async () => {
+        const manifest = makeExplicitWaitMultiActionManifest();
+        const boardTutorial = makeBoardTutorialState(manifest, 1);
+        const dispatched: string[] = [];
+        const dispatch = (type: string) => { dispatched.push(type); };
+        const { rerender } = renderHook(({ runtimeState }: { runtimeState: object }) => {
+            useTutorialBridge(boardTutorial, dispatch, 'unchanged-runtime-key', undefined, runtimeState);
+        }, { wrapper, initialProps: { runtimeState: { currentPlayerId: '1' } } });
+        await runNextTutorialTimer();
+        await act(async () => { await vi.advanceTimersByTimeAsync(1200); });
+        expect(dispatched).toContain('AI_ONE');
+        expect(dispatched).not.toContain('AI_TWO');
+        rerender({ runtimeState: { currentPlayerId: '0' } });
+        await runNextTutorialTimer();
+        expect(dispatched.filter(type => type === 'AI_TWO')).toHaveLength(1);
+        expect(dispatched.filter(type => type === TUTORIAL_COMMANDS.AI_CONSUMED)).toHaveLength(1);
+    });
+
     it('previousStep 只分发教程上一步命令', () => {
         const dispatched: Array<{ type: string; payload?: unknown }> = [];
         const { result } = renderHook(() => useTutorial(), { wrapper });
@@ -495,6 +530,46 @@ describe('TutorialContext', () => {
             type: TUTORIAL_COMMANDS.AI_CONSUMED,
             payload: { stepId: 'explicit-wait-ai-step' },
         });
+    });
+
+    it('棋盘同步晚于一秒时仍等待真实同步，收到后只继续一次', async () => {
+        const manifest = makeExplicitWaitMultiActionManifest();
+        const dispatched: string[] = [];
+        const { result } = renderHook(() => useTutorial(), { wrapper });
+        act(() => {
+            const generation = result.current.bindDispatch(type => { dispatched.push(type); });
+            result.current.startTutorial(manifest);
+            syncTutorialStep(result.current.syncTutorialState, manifest, 1, 'before-slow-commit');
+            result.current.notifyBoardMounted(generation);
+        });
+        await runNextTutorialTimer();
+        await act(async () => { await vi.advanceTimersByTimeAsync(1200); });
+        expect(dispatched.filter(type => type === 'AI_ONE')).toHaveLength(1);
+        expect(dispatched).not.toContain('AI_TWO');
+        expect(dispatched).not.toContain(TUTORIAL_COMMANDS.AI_CONSUMED);
+        act(() => syncTutorialStep(result.current.syncTutorialState, manifest, 1, 'after-slow-commit'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(type => type === 'AI_TWO')).toHaveLength(1);
+        expect(dispatched.filter(type => type === TUTORIAL_COMMANDS.AI_CONSUMED)).toHaveLength(1);
+    });
+
+    it('等待慢棋盘同步期间关闭教程会取消旧批次', async () => {
+        const manifest = makeExplicitWaitMultiActionManifest();
+        const dispatched: string[] = [];
+        const { result } = renderHook(() => useTutorial(), { wrapper });
+        act(() => {
+            const generation = result.current.bindDispatch(type => { dispatched.push(type); });
+            result.current.startTutorial(manifest);
+            syncTutorialStep(result.current.syncTutorialState, manifest, 1, 'before-close');
+            result.current.notifyBoardMounted(generation);
+        });
+        await runNextTutorialTimer();
+        await act(async () => { await vi.advanceTimersByTimeAsync(1200); });
+        act(() => result.current.closeTutorial());
+        await act(async () => { await vi.advanceTimersByTimeAsync(2400); });
+        expect(result.current.isActive).toBe(false);
+        expect(dispatched).not.toContain('AI_TWO');
+        expect(dispatched).not.toContain(TUTORIAL_COMMANDS.AI_CONSUMED);
     });
 
     it('显式要求等待 Board 同步的多条教程 AI 动作没有同步时不会继续执行或消费 AI', async () => {

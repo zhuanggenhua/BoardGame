@@ -169,7 +169,8 @@ const createDefenseResolvedEvent = (
 export const resolveOffensivePreDefenseEffects = (
     state: DiceThroneCore,
     random?: RandomFn,
-    timestamp: number = 0
+    timestamp: number = 0,
+    startEffectIndex = 0,
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
     if (!pending || pending.preDefenseResolved) return [];
@@ -194,7 +195,15 @@ export const resolveOffensivePreDefenseEffects = (
 
     const events: DiceThroneEvent[] = [];
     events.push(...buildZhizhuxiaWebbedTriggerEvents(state, timestamp));
-    events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, { random }));
+    let suspended = false;
+    events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, {
+        random, startEffectIndex,
+        onInteractionSuspended: (nextEffectIndex, event) => {
+            event.payload.preDefenseContinuation = { nextEffectIndex, sourceAbilityId };
+            suspended = true;
+        },
+    }));
+    if (suspended) return events;
     if (events.some(isBlockingInteractionEvent) || events.some(isInteractiveBonusDiceRerollEvent)) {
         // 记录已完成的前置位置，但不能继续进入防御或主伤害。
         // 奖励骰确认后从这个位置恢复，既不会重掷，也不会提前结算父攻击。

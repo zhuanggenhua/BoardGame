@@ -1,4 +1,4 @@
-import { test, expect, initHome, login, settings, capture, record } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, settings, capture, record, openHomeUpload } from './helpers/homeAcceptance';
 
 for (const mobile of [false, true]) {
     test(`${mobile ? '手机触控' : '桌面鼠标'}浮球拖拽、刷新保留和设置仍可操作`, async ({ browser, accounts }, info) => {
@@ -41,8 +41,7 @@ for (const mobile of [false, true]) {
             expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);
             await settings(page);
             await page.keyboard.press('Escape');
-            await page.getByRole('button',{name:'菜单',exact:true}).click();
-            await page.locator('.platform-secondary-entry').click();
+            await openHomeUpload(page, mobile);
             await expect(page.locator('.platform-upload-form')).toBeVisible();
             await expect(fab).toBeVisible();
             expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);

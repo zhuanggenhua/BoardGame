@@ -1,15 +1,10 @@
-import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor } from '../../../engine/systems/InteractionSystem';
+import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import type { MatchState } from '../../../engine/types';
 import { resolveLiveSmashUpReactionChoice, type ReactionChoiceValue, type ReactionOption } from './reactionSession';
 import type { SmashUpCore } from './types';
 
-type SmashUpReactionChoiceInteraction = EngineInteractionDescriptor<unknown> & {
+type SmashUpReactionChoiceInteraction = EngineInteractionDescriptor<SimpleChoiceData<ReactionChoiceValue>> & {
     kind: 'simple-choice';
-    data: {
-        sourceId?: unknown;
-        optionsGenerator?: ((state: MatchState<SmashUpCore>, data: unknown) => ReactionOption[]) | undefined;
-        autoRefresh?: unknown;
-    };
 };
 
 function isReactionPassLikeOption(option: ReactionOption | undefined): boolean {
@@ -44,7 +39,7 @@ export function getSmashUpReactionChoiceOptions(
 
     const refreshedOptions = getFreshSimpleChoiceOptions(
         state,
-        interaction as EngineInteractionDescriptor<unknown>,
+        interaction,
     ) as ReactionOption[];
     const interactionOwnsLiveRefresh = typeof interaction.data.optionsGenerator === 'function'
         || interaction.data.autoRefresh !== undefined;

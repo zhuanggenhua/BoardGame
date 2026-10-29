@@ -1,4 +1,5 @@
-import { getAllCardDefs, getBaseDef, getCardDef, getCardDefsByFaction } from '../data/cards';
+import {
+ getAllCardDefs, getBaseDef, getCardDef, getCardDefsByFaction } from '../data/cards';
 import { registerAbilityProgram, registerSimpleAbility, type AbilityContext } from '../domain/abilityRegistry';
 import { getCurrentTrackedCardTopSnapshot, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
@@ -21,6 +22,8 @@ import {
     shuffleHandIntoDeck,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -244,7 +247,7 @@ type GeeksControlMinionTriggeredChoice = {
     skip?: boolean;
 };
 
-const geeksCosplayPromptProgram = createPromptProgram<GeeksCosplayPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksCosplayPromptProgram = createPromptProgram<GeeksCosplayPromptContext>({
     sourceId: 'geeks_cosplay',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `geeks_cosplay_${context.now}`,
@@ -679,7 +682,7 @@ function buildGeeksMinMaxingMinionOptions(
     }
 
     return [
-        ...buildMinionTargetOptions(candidates, { state: borrowedState.core }) as PromptOption<GeeksMinMaxingMinionChoice>[],
+        ...buildMinionTargetOptions(candidates, { state: borrowedState.core, sourcePlayerId: playerId }) as PromptOption<GeeksMinMaxingMinionChoice>[],
         createSkipOption('放弃打出这张牌', 'ui.geeks_skip_replay_card_option') as PromptOption<GeeksMinMaxingMinionChoice>,
     ];
 }
@@ -963,7 +966,7 @@ function buildGeeksNonInfiniteLoopMinionOptions(
     }
 
     return [
-        ...buildMinionTargetOptions(candidates, { state: preparedState.core }) as PromptOption<GeeksNonInfiniteLoopMinionChoice>[],
+        ...buildMinionTargetOptions(candidates, { state: preparedState.core, sourcePlayerId: playerId }) as PromptOption<GeeksNonInfiniteLoopMinionChoice>[],
         createSkipOption('放弃打出这张牌', 'ui.geeks_skip_replay_card_option') as PromptOption<GeeksNonInfiniteLoopMinionChoice>,
     ];
 }
@@ -1466,12 +1469,11 @@ function continueGeeksGrieferAfterEvents(
     if (!nextContext) return { events };
     return {
         events,
-        context: nextContext,
-        nextProgram: geeksGrieferStepProgram,
+        continuation: createAbilityRuntimeContinuation(nextContext, geeksGrieferStepProgram),
     };
 }
 
-const geeksGrieferDestroyPromptProgram = createPromptProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksGrieferDestroyPromptProgram: AbilityProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<GeeksGrieferPromptContext>({
     sourceId: 'geeks_griefer_destroy',
     buildInteraction: (context) => {
         const options = buildGeeksGrieferDestroyOptions(context.matchState.core, context.targetPlayerId);
@@ -1514,7 +1516,7 @@ const geeksGrieferDestroyPromptProgram = createPromptProgram<GeeksGrieferPromptC
     },
 });
 
-const geeksGrieferModePromptProgram = createPromptProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksGrieferModePromptProgram: AbilityProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<GeeksGrieferPromptContext>({
     sourceId: 'geeks_griefer',
     buildInteraction: (context) => {
         const targetState = getGeeksGrieferTargetState(
@@ -1564,12 +1566,11 @@ const geeksGrieferModePromptProgram = createPromptProgram<GeeksGrieferPromptCont
             if (destroyOptions.length > 0) {
                 return {
                     events: [],
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         ...context,
                         matchState: state,
                         now: timestamp,
-                    },
-                    nextProgram: geeksGrieferDestroyPromptProgram,
+                    }, geeksGrieferDestroyPromptProgram),
                 };
             }
         }
@@ -1578,7 +1579,7 @@ const geeksGrieferModePromptProgram = createPromptProgram<GeeksGrieferPromptCont
     },
 });
 
-const geeksGrieferStepProgram = createEffectProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent>((context) => {
+const geeksGrieferStepProgram: AbilityProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent> = createEffectProgram<GeeksGrieferPromptContext, SmashUpCore, SmashUpEvent>((context) => {
     const targetState = getGeeksGrieferTargetState(
         context.matchState.core,
         context.opponents,
@@ -1600,8 +1601,7 @@ const geeksGrieferStepProgram = createEffectProgram<GeeksGrieferPromptContext, S
     if (targetState.modes.length > 1) {
         return {
             events: [],
-            context: effectiveContext,
-            nextProgram: geeksGrieferModePromptProgram,
+            continuation: createAbilityRuntimeContinuation(effectiveContext, geeksGrieferModePromptProgram),
         };
     }
 
@@ -1609,15 +1609,13 @@ const geeksGrieferStepProgram = createEffectProgram<GeeksGrieferPromptContext, S
     if (onlyMode === 'destroy' && targetState.destroyOptions.length > 0) {
         return {
             events: [],
-            context: effectiveContext,
-            nextProgram: geeksGrieferDestroyPromptProgram,
+            continuation: createAbilityRuntimeContinuation(effectiveContext, geeksGrieferDestroyPromptProgram),
         };
     }
 
     return {
         events: [],
-        context: effectiveContext,
-        nextProgram: geeksGrieferModePromptProgram,
+        continuation: createAbilityRuntimeContinuation(effectiveContext, geeksGrieferModePromptProgram),
     };
 });
 
@@ -1629,19 +1627,18 @@ const geeksGrieferProgram = createEffectProgram<AbilityContext, SmashUpCore, Sma
     }
     return {
         events: [],
-        context: createGeeksGrieferPromptContext(
+        continuation: createAbilityRuntimeContinuation(createGeeksGrieferPromptContext(
             ctx.matchState,
             ctx.playerId,
             ctx.now,
             ctx.cardUid,
             opponents,
             targetState,
-        ),
-        nextProgram: geeksGrieferStepProgram,
+        ), geeksGrieferStepProgram),
     };
 });
 
-const geeksMulliganPromptProgram = createPromptProgram<GeeksMulliganPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksMulliganPromptProgram = createPromptProgram<GeeksMulliganPromptContext>({
     sourceId: 'geeks_mulligan',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `geeks_mulligan_${context.now}`,
@@ -1725,18 +1722,17 @@ const geeksMulliganProgram = createEffectProgram<AbilityContext, SmashUpCore, Sm
 
     return {
         events: reveal.events,
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
             topCards: reveal.topCards,
-        } satisfies GeeksMulliganPromptContext,
-        nextProgram: geeksMulliganPromptProgram,
+        } satisfies GeeksMulliganPromptContext, geeksMulliganPromptProgram),
     };
 });
 
-const geeksBannedListPromptProgram = createPromptProgram<GeeksBannedListPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksBannedListPromptProgram: AbilityProgram<GeeksBannedListPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<GeeksBannedListPromptContext>({
     sourceId: 'geeks_banned_list',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `geeks_banned_list_${context.targetPlayerId}_${context.now}`,
@@ -1793,20 +1789,19 @@ const geeksBannedListPromptProgram = createPromptProgram<GeeksBannedListPromptCo
         }
         return {
             events,
-            context: createGeeksBannedListPromptContext(
+            continuation: createAbilityRuntimeContinuation(createGeeksBannedListPromptContext(
                 state,
                 context.playerId,
                 timestamp,
                 context.cardUid,
                 context.opponents,
                 nextTargetState,
-            ),
-            nextProgram: geeksBannedListPromptProgram,
+            ), geeksBannedListPromptProgram),
         };
     },
 });
 
-const geeksMinMaxingBasePromptProgram = createPromptProgram<GeeksMinMaxingTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksMinMaxingBasePromptProgram = createPromptProgram<GeeksMinMaxingTargetPromptContext>({
     sourceId: 'geeks_min_maxing_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1857,7 +1852,7 @@ const geeksMinMaxingBasePromptProgram = createPromptProgram<GeeksMinMaxingTarget
     },
 });
 
-const geeksMinMaxingMinionPromptProgram = createPromptProgram<GeeksMinMaxingTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksMinMaxingMinionPromptProgram = createPromptProgram<GeeksMinMaxingTargetPromptContext>({
     sourceId: 'geeks_min_maxing_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1909,7 +1904,7 @@ const geeksMinMaxingMinionPromptProgram = createPromptProgram<GeeksMinMaxingTarg
     },
 });
 
-const geeksMinMaxingActionPromptProgram = createPromptProgram<GeeksMinMaxingActionPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksMinMaxingActionPromptProgram = createPromptProgram<GeeksMinMaxingActionPromptContext>({
     sourceId: 'geeks_min_maxing_action',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1965,7 +1960,7 @@ const geeksMinMaxingActionPromptProgram = createPromptProgram<GeeksMinMaxingActi
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -1973,15 +1968,14 @@ const geeksMinMaxingActionPromptProgram = createPromptProgram<GeeksMinMaxingActi
                 targetPlayerId: context.targetPlayerId,
                 replayCardUid: choice.cardUid,
                 replayDefId: choice.defId,
-            } satisfies GeeksMinMaxingTargetPromptContext,
-            nextProgram: targetMode === 'base'
+            } satisfies GeeksMinMaxingTargetPromptContext, targetMode === 'base'
                 ? geeksMinMaxingBasePromptProgram
-                : geeksMinMaxingMinionPromptProgram,
+                : geeksMinMaxingMinionPromptProgram),
         };
     },
 });
 
-const geeksMinMaxingOpponentPromptProgram = createPromptProgram<GeeksMinMaxingOpponentPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksMinMaxingOpponentPromptProgram = createPromptProgram<GeeksMinMaxingOpponentPromptContext>({
     sourceId: 'geeks_min_maxing_opponent',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2016,19 +2010,18 @@ const geeksMinMaxingOpponentPromptProgram = createPromptProgram<GeeksMinMaxingOp
             events: revealCards.length > 0
                 ? [revealHand(targetPlayerId, context.playerId, revealCards, 'geeks_min_maxing', timestamp, context.playerId)]
                 : [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 cardUid: context.cardUid,
                 targetPlayerId,
-            } satisfies GeeksMinMaxingActionPromptContext,
-            nextProgram: geeksMinMaxingActionPromptProgram,
+            } satisfies GeeksMinMaxingActionPromptContext, geeksMinMaxingActionPromptProgram),
         };
     },
 });
 
-const geeksNonInfiniteLoopBasePromptProgram = createPromptProgram<GeeksNonInfiniteLoopTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksNonInfiniteLoopBasePromptProgram = createPromptProgram<GeeksNonInfiniteLoopTargetPromptContext>({
     sourceId: 'geeks_non_infinite_loop_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2075,7 +2068,7 @@ const geeksNonInfiniteLoopBasePromptProgram = createPromptProgram<GeeksNonInfini
     },
 });
 
-const geeksNonInfiniteLoopMinionPromptProgram = createPromptProgram<GeeksNonInfiniteLoopTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksNonInfiniteLoopMinionPromptProgram = createPromptProgram<GeeksNonInfiniteLoopTargetPromptContext>({
     sourceId: 'geeks_non_infinite_loop_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2123,7 +2116,7 @@ const geeksNonInfiniteLoopMinionPromptProgram = createPromptProgram<GeeksNonInfi
     },
 });
 
-const geeksNonInfiniteLoopActionPromptProgram = createPromptProgram<GeeksNonInfiniteLoopActionPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksNonInfiniteLoopActionPromptProgram = createPromptProgram<GeeksNonInfiniteLoopActionPromptContext>({
     sourceId: 'geeks_non_infinite_loop_action',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2179,7 +2172,7 @@ const geeksNonInfiniteLoopActionPromptProgram = createPromptProgram<GeeksNonInfi
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -2187,15 +2180,14 @@ const geeksNonInfiniteLoopActionPromptProgram = createPromptProgram<GeeksNonInfi
                 replayCardUid: choice.cardUid,
                 replayDefId: choice.defId,
                 replayOwnerId,
-            } satisfies GeeksNonInfiniteLoopTargetPromptContext,
-            nextProgram: targetMode === 'base'
+            } satisfies GeeksNonInfiniteLoopTargetPromptContext, targetMode === 'base'
                 ? geeksNonInfiniteLoopBasePromptProgram
-                : geeksNonInfiniteLoopMinionPromptProgram,
+                : geeksNonInfiniteLoopMinionPromptProgram),
         };
     },
 });
 
-const geeksControlMinionTriggeredPromptProgram = createPromptProgram<GeeksControlMinionTriggeredPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksControlMinionTriggeredPromptProgram = createPromptProgram<GeeksControlMinionTriggeredPromptContext>({
     sourceId: 'geeks_control_minion_triggered',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `geeks_control_minion_triggered_${context.cardUid}_${context.now}`,
@@ -2254,7 +2246,7 @@ const geeksControlMinionTriggeredPromptProgram = createPromptProgram<GeeksContro
     },
 });
 
-const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyerTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyerTargetPromptContext>({
     sourceId: 'geeks_rules_lawyer_target',
     interactionSourceIds: [
         'geeks_rules_lawyer_target_base',
@@ -2349,7 +2341,7 @@ const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyer
     },
 });
 
-const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyerActionPromptContext, SmashUpCore, SmashUpEvent>({
+const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyerActionPromptContext>({
     sourceId: 'geeks_rules_lawyer_action',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `geeks_rules_lawyer_action_${context.now}`,
@@ -2377,7 +2369,7 @@ const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyer
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
@@ -2388,8 +2380,7 @@ const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyer
                 targetType: choice.targetType,
                 fromBaseIndex: choice.baseIndex,
                 ...(choice.minionUid ? { fromMinionUid: choice.minionUid } : {}),
-            } satisfies GeeksRulesLawyerTargetPromptContext,
-            nextProgram: geeksRulesLawyerTargetPromptProgram,
+            } satisfies GeeksRulesLawyerTargetPromptContext, geeksRulesLawyerTargetPromptProgram),
         };
     },
 });
@@ -2406,15 +2397,14 @@ const geeksBannedListProgram = createEffectProgram<AbilityContext, SmashUpCore, 
     }
     return {
         events: [],
-        context: createGeeksBannedListPromptContext(
+        continuation: createAbilityRuntimeContinuation(createGeeksBannedListPromptContext(
             ctx.matchState,
             ctx.playerId,
             ctx.now,
             ctx.cardUid,
             opponents,
             targetState,
-        ),
-        nextProgram: geeksBannedListPromptProgram,
+        ), geeksBannedListPromptProgram),
     };
 });
 
@@ -2426,13 +2416,12 @@ const geeksNonInfiniteLoopProgram = createEffectProgram<AbilityContext, SmashUpC
 
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
-        } satisfies GeeksNonInfiniteLoopActionPromptContext,
-        nextProgram: geeksNonInfiniteLoopActionPromptProgram,
+        } satisfies GeeksNonInfiniteLoopActionPromptContext, geeksNonInfiniteLoopActionPromptProgram),
     };
 });
 
@@ -2444,14 +2433,13 @@ const geeksRulesLawyerProgram = createEffectProgram<AbilityContext, SmashUpCore,
 
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
             actions,
-        } satisfies GeeksRulesLawyerActionPromptContext,
-        nextProgram: geeksRulesLawyerActionPromptProgram,
+        } satisfies GeeksRulesLawyerActionPromptContext, geeksRulesLawyerActionPromptProgram),
     };
 });
 
@@ -2465,7 +2453,7 @@ const geeksMinMaxingProgram = createEffectProgram<AbilityContext, SmashUpCore, S
 
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
@@ -2473,8 +2461,7 @@ const geeksMinMaxingProgram = createEffectProgram<AbilityContext, SmashUpCore, S
             opponents: opponentOptions
                 .map((option) => (option.value as GeeksMinMaxingOpponentChoice | undefined)?.targetPlayerId)
                 .filter((pid): pid is PlayerId => !!pid),
-        } satisfies GeeksMinMaxingOpponentPromptContext,
-        nextProgram: geeksMinMaxingOpponentPromptProgram,
+        } satisfies GeeksMinMaxingOpponentPromptContext, geeksMinMaxingOpponentPromptProgram),
     };
 });
 

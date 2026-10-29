@@ -59,7 +59,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
         return null;
     }
 
-    const resultText = hasTranslation(compareRoll.resultTextKey)
+    const resultText = compareRoll.resultTextKey && hasTranslation(compareRoll.resultTextKey)
         ? t(compareRoll.resultTextKey, compareRoll.resultTextParams)
         : compareRoll.resultText;
     const resultTone = compareRoll.resultTone ?? 'neutral';
@@ -106,7 +106,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                     style={{ marginTop: dtUnit(0.7), gap: dtUnit(0.45) }}
                 >
                     {options.map((option) => {
-                        const label = hasTranslation(option.labelKey)
+                        const label = option.labelKey && hasTranslation(option.labelKey)
                             ? t(option.labelKey, option.labelParams)
                             : option.label;
                         return (

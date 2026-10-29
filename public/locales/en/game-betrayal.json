@@ -775,6 +775,32 @@
           "endingSurvivors": "When the Magic Camera shatters, the trapped Essence returns to the bodies it belonged to. The shadows retreat, and the shutter falls silent.",
           "endingTraitor": "When the last photograph develops, every hero's Essence is gone. The shadows in the prints look up and walk out in their place."
         }
+      },
+      "uponReflection": {
+        "title": "Upon Reflection",
+        "objective": "Heroes find the correct Trait, Omen, and Room combination to break the curse while Mirror Beings pursue the explorers.",
+        "heroGoal": "Hold the matching Omen in the correct Room and pass the curse-breaking check with the correct Trait.",
+        "traitorGoal": "There is no traitor. The haunter's soul is trapped in the mirror and can communicate only through event-card hints.",
+        "nextFallback": "Find clues for the Trait, Omen, and Room, or give a teammate an event hint",
+        "progress": {
+          "combination": "Curse combination",
+          "mirrorBeings": "Mirror Beings",
+          "hint": "Event hint"
+        },
+        "reader": {
+          "prologueLabel": "Silence in the Mirror",
+          "prologue": "The Eerie Mirror makes the house unreliable. The haunter's soul is trapped in the mirror, and Mirror Beings begin pursuing the explorers.",
+          "setupLabel": "Opening Record",
+          "setup": "The haunter remains in the game but is treated as dead and cannot communicate normally. The secret combination contains one Trait, one Omen, and one Room; other players cannot see it. Place 2/3/4/5 Mirror Beings in the Entrance Hall, based on player count.",
+          "heroesLabel": "Hero Goal",
+          "heroes": "A hero must hold the correct Omen in the correct Room and make the curse-breaking check with the correct Trait. A result of 5+ with all three correct wins the game; otherwise the haunter gives only an affirmative or negative gesture. All heroes dying is a loss.",
+          "specialLabel": "Curse and Hints",
+          "special": "The haunter cannot speak, gesture, or write. Each turn, they may choose one card from the Event deck and give it to any living player as a hint. The event does not resolve and is set aside afterward.",
+          "monsterLabel": "Mirror Being",
+          "monster": "A Mirror Being has Might 4, Speed 3, Sanity 6, and Knowledge 4. It moves toward the nearest explorer through discovered rooms. If it ends movement in the same room as an explorer, it attacks with Sanity and deals only Knowledge or Sanity damage.",
+          "endingSurvivorsLabel": "Ending",
+          "endingSurvivors": "The mirror curse is broken. The surviving explorers escape the house."
+        }
       }
     },
     "actions": {

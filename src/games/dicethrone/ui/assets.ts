@@ -111,7 +111,9 @@ const dedupeStringList = (list: Array<string | undefined>) => {
 
 const getSpriteAssetPathCandidates = (assetPath?: string | null) => {
     const normalized = normalizeDiceSpriteAssetPath(assetPath);
-    const directInput = isDirectSpriteAsset(assetPath) ? assetPath.trim() : undefined;
+    const directInput = typeof assetPath === 'string' && isDirectSpriteAsset(assetPath)
+        ? assetPath.trim()
+        : undefined;
     return dedupeStringList([
         normalized,
         directInput,

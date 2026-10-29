@@ -8,6 +8,7 @@ import type {
     DiceThroneCore,
     DiceThroneEvent,
     HeroState,
+    BonusDieInfo,
 } from './types';
 import { SKIRMISH_INITIAL_HEALTH } from './types';
 import type { RandomFn } from '../../../engine/types';
@@ -17,6 +18,7 @@ import {
     getDieFaceByDefinition,
     getPendingBonusSettlementDice,
     getPlayerDieFace,
+    requirePlayerDieFace,
     getTokenStackLimit,
     isAttackSnapshotDieId,
     isSkirmishMode,
@@ -373,12 +375,14 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     const continuation = settlement?.continuation;
     assertValidBonusDiceContinuation(continuation, settlement?.sourceAbilityId);
     const pendingAttack = continuation?.kind === 'attack' && state.pendingAttack
-        ? updatePendingAttackSettlementStage(
-            continuation.markBonusDiceResolved
-                ? { ...state.pendingAttack, bonusDiceResolved: true }
-                : state.pendingAttack,
-            continuation.settlementStage,
-        )
+        ? continuation.settlementStage === 'preserve'
+            ? state.pendingAttack
+            : updatePendingAttackSettlementStage(
+                continuation.markBonusDiceResolved
+                    ? { ...state.pendingAttack, bonusDiceResolved: true }
+                    : state.pendingAttack,
+                continuation.settlementStage,
+            ) ?? null
         : continuation?.kind === 'complete' && state.pendingAttack && settlement?.rollDieResolution
             ? { ...state.pendingAttack, bonusDiceResolved: true }
             : state.pendingAttack;
@@ -563,12 +567,9 @@ const handleStatusApplied: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
     // 厚皮 II 在防御结算时需要据此移除一个“本次投掷阶段已施加”的状态；
     // 被 preventStatus 护盾拦截的状态在上面的分支直接结束，不会进入记录。
     const pendingAttack = state.pendingAttack;
-    const isIncomingStatusForCurrentAttack = Boolean(
-        pendingAttack
+    const nextPendingAttack = pendingAttack
         && pendingAttack.defenderId === targetId
         && cappedNewTotal > (target.statusEffects[statusId] ?? 0)
-    );
-    const nextPendingAttack = isIncomingStatusForCurrentAttack
         ? {
             ...pendingAttack,
             statusEffectsAppliedThisAttack: {
@@ -843,8 +844,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         const shouldSkipGenericTokenDelta = tokenId
             && customId?.startsWith('use-')
             && (
-                tokenActiveUseTiming === 'onOffensiveRollEnd'
-                || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+                tokenActiveUseTiming?.includes('onOffensiveRollEnd') === true
             );
         const shouldSkipGenericStatusDelta = statusId === 'cursed_coin'
             && (
@@ -888,8 +888,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         : undefined;
     const isOffensiveRollEndChoice = tokenId
         && (
-            tokenActiveUseTiming === 'onOffensiveRollEnd'
-            || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+            tokenActiveUseTiming?.includes('onOffensiveRollEnd') === true
         );
     const shouldAutoResolveOffensiveRollEndChoice = isOffensiveRollEndChoice
         && customId !== 'use-loaded'
@@ -920,7 +919,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
     if (nextPendingAttack !== resultState.pendingAttack) {
         resultState = {
             ...resultState,
-            pendingAttack: nextPendingAttack,
+            pendingAttack: nextPendingAttack ?? null,
         };
     }
 
@@ -1257,11 +1256,11 @@ const updatePendingBonusSettlementDie = (
     const settlement = state.pendingBonusDiceSettlement;
     if (!settlement) return settlement;
 
-    const dice = getPendingBonusSettlementDice(settlement).map(die => {
+    const dice: BonusDieInfo[] = getPendingBonusSettlementDice(settlement).map((die): BonusDieInfo => {
         if (die.index !== dieId) return die;
-        const rawFace = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true
-            ? String(newValue)
-            : (getPlayerDieFace(state, settlement.attackerId, newValue) ?? String(newValue));
+        const rawFace: BonusDieInfo['face'] = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true
+            ? `${newValue}` as `${number}`
+            : requirePlayerDieFace(state, settlement.attackerId, newValue);
         const face = rawFace;
         const effectKey = resolveBonusDieEffectKeyForValue(die.effectKey, face, newValue);
         return {
@@ -1881,7 +1880,7 @@ export const reduce = (
         case 'ATTACK_RESOLVED':
             return handleAttackResolved(state, event);
         case 'ATTACK_MADE_UNDEFENDABLE':
-            return handleAttackMadeUndefendable(state, event);
+            return handleAttackMadeUndefendable(state);
         case 'CHOICE_REQUESTED':
             return handleChoiceRequested(state, event);
         case 'CHOICE_RESOLVED':

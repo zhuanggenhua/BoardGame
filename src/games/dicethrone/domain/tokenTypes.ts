@@ -1,3 +1,5 @@
+import type { ModifierType } from '../../../engine/primitives/modifier';
+
 /**
  * TokenSystem - 统一的 Token 系统类型定义（DiceThrone 本地副本）
  */
@@ -13,7 +15,8 @@ export type TokenCategory =
     | 'companion'     // 独一同伴的位置标记，不属于可移除/转移的状态
     | 'buff'          // 正面效果
     | 'debuff'        // 负面效果（脑震荡、眩晕、击倒等）
-    | 'consumable';   // 可消耗道具（太极、闪避、净化等）
+    | 'consumable'    // 可消耗道具（太极、闪避、净化等）
+    | 'unique';       // 特殊触发的唯一标记
 
 // ============================================================================
 // 被动触发时机（原StatusEffect）
@@ -79,7 +82,6 @@ export interface TokenUseEffect {
         range: [number, number];
     };
 }
-
 // ============================================================================
 // Token 效果处理器（可扩展）
 // ============================================================================
@@ -105,7 +107,7 @@ export interface TokenEffectContext<TState = unknown> {
         currentDamage: number;
         responseType: 'beforeDamageDealt' | 'beforeDamageReceived';
         modifiers?: Array<{
-            type: 'defense' | 'token' | 'shield' | 'status';
+            type: 'defense' | 'token' | 'shield' | 'status' | ModifierType;
             value: number;
             sourceId?: string;
             sourceName?: string;
@@ -254,6 +256,8 @@ export interface EffectAction {
     newAbilityLevel?: number;
     // grantDamageShield 相关
     shieldValue?: number;
+    /** 护盾授予当前待处理伤害的目标；仅用于受伤前响应，不跟随出牌者或默认对手。 */
+    pendingDamageTarget?: boolean;
     /** 是否用于防止本次攻击的状态效果（grantDamageShield） */
     preventStatus?: boolean;
     // damage 相关
@@ -377,6 +381,8 @@ export interface TokenDef {
     name: string;
     /** 图标（已废弃，精灵图优先） */
     icon?: string;
+    /** 静态资源路径；当前尚未迁移到精灵图的角色 Token 使用。 */
+    iconPath?: string;
     /** 颜色主题（Tailwind gradient class） */
     colorTheme: string;
     /** 描述文本（供 UI 展示） */

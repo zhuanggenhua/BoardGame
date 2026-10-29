@@ -47,6 +47,14 @@ export interface PowerModifierContext {
     modifierSourceDefId?: string;
 }
 
+type BaseRuntimeActionContext = {
+    state: SmashUpCore;
+    baseIndex: number;
+    base: BaseInPlay;
+    minion?: MinionOnBase;
+    modifierSourceDefId?: string;
+};
+
 /** 力量修正函数：返回力量增减值（正数=加，负数=减） */
 export type PowerModifierFn = (ctx: PowerModifierContext) => number;
 
@@ -139,12 +147,12 @@ export interface PowerModifierRuntimeHelpers {
         options?: RuntimeActionMatchOptions,
     ): number;
     countBaseOngoingsMatchingRuntimeDefId(
-        ctx: PowerModifierContext,
+        ctx: BaseRuntimeActionContext,
         baseDefId: string,
         options?: RuntimeActionMatchOptions,
     ): number;
     sumBaseOngoingsMatchingRuntimeDefId(
-        ctx: PowerModifierContext,
+        ctx: BaseRuntimeActionContext,
         baseDefId: string,
         mapper: (action: ModifierRuntimeAction) => number,
         options?: RuntimeActionMatchOptions,
@@ -274,7 +282,7 @@ export function matchesRuntimeDefId(defId: unknown, baseDefId: string): boolean 
 }
 
 export function getActionControllerId(
-    action: ModifierRuntimeAction,
+    action: Pick<ModifierRuntimeAction, 'ownerId' | 'metadata'>,
     lens: OngoingControllerLens = 'sourceController',
 ): PlayerId {
     return getSemanticActionControllerId(action, lens);
@@ -287,7 +295,7 @@ function isEntityBackedModifierSource(defId: string): boolean {
 function shouldExposePodModifierAlias(defId: string): boolean {
     const podCard = getCardDef(`${defId}_pod`);
     if (podCard) {
-        return podCard.abilityTags?.includes('ongoing') ?? false;
+    return podCard.type === 'action' && (podCard.abilityTags?.includes('ongoing') ?? false);
     }
     return Boolean(getBaseDef(`${defId}_pod`));
 }
@@ -958,7 +966,7 @@ export function getModifierExceptionAuditSnapshot(): ModifierExceptionAuditSnaps
 }
 
 function filterRuntimeMatchedActions(
-    ctx: PowerModifierContext,
+    ctx: BaseRuntimeActionContext,
     actions: readonly ModifierRuntimeAction[],
     baseDefId: string,
     options?: RuntimeActionMatchOptions,

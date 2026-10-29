@@ -22,6 +22,7 @@ import type {
   BetrayalRoomPlacementPreview,
   BetrayalRoomTileAdjustmentOption,
 } from "./game";
+import type { RoomOrientationTurns } from "./roomMapModel";
 import type { BetrayalAttackLineOfSightSegment } from "./attackLineOfSightPresentation";
 import { BetrayalAttackLineOfSightOverlay } from "./attackLineOfSightSurface";
 import {
@@ -198,7 +199,7 @@ export interface BetrayalRoomMapSurfaceProps {
   attackImpactPresentationKey: string | null;
   pendingRoomPlacementFailureText: string | null;
   selectedRoomOrientationOption: RoomPlacementOrientationOption | null;
-  selectedRoomOrientationTurns: number;
+  selectedRoomOrientationTurns: RoomOrientationTurns;
   pendingRoomPlacementVisual: BetrayalRoomTileVisual | null;
   pendingRoomPlacementAdjustmentText: string | null;
   pendingRoomTileAdjustmentOptions: readonly BetrayalRoomTileAdjustmentOption[];

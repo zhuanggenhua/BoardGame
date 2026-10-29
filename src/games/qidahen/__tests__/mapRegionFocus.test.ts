@@ -40,7 +40,7 @@ describe('整片地区在实际HUD空位中聚焦', () => {
     });
 
     it.each([
-        { zoom: 0.1, panX: 2400, panY: 1800, expectedZoom: 1 },
+        { zoom: 0.1, panX: 2400, panY: 1800, expectedZoom: 0.3 },
         { zoom: 9, panX: -2400, panY: -1800, expectedZoom: 5 },
     ])('正式自由平移保留正负坐标，缩放$zoom仍限幅', ({ expectedZoom, ...viewport }) => {
         expect(clampQidahenMapViewport(viewport)).toEqual({ ...viewport, zoom: expectedZoom });

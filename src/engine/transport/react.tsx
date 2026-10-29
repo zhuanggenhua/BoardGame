@@ -26,6 +26,7 @@ import type { GameEngineConfig } from './engineConfig';
 import type { LatencyOptimizationConfig } from './latency/types';
 import type { AiSeatController } from '../ai/types';
 import type { LocalMatchSnapshot } from './localSession';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     shouldSilentlyRetryOnlineAiBatchRejection,
 } from './onlineAiRecovery';
@@ -39,6 +40,7 @@ import {
 } from './reactContext';
 export {
     useGameClient,
+    useOptionalGameClient,
     useBoardProps,
 } from './reactContext';
 export {
@@ -109,11 +111,13 @@ export function GameProvider({
     engineConfig,
     latencyConfig,
 }: GameProviderProps) {
+    const { token: adminToken } = useAuth();
     const { rollbackSignal, value } = useGameProviderRuntime({
         server,
         matchId,
         playerId,
         credentials,
+        adminToken,
         onError,
         onConnectionChange,
         onStateReady,

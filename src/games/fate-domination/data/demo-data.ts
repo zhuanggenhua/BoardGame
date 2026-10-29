@@ -187,7 +187,7 @@ export const DEMO_CARDS = [
     "type": "特殊",
     "cost": 1,
     "power": 3,
-    "desc": "行动：无视交战沿箭头移动。"
+    "desc": "行动阶段：无视交战状态，沿箭头移动至下一地点。"
   },
   {
     "id": "Card_YinQi",

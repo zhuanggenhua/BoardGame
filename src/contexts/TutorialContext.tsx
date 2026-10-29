@@ -171,8 +171,12 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             stepId: tutorial.step?.id ?? null,
             stepAiActionCount: tutorial.step?.aiActions?.length ?? 0,
             aiActionCount: tutorial.aiActions?.length ?? 0,
+            isAiExecuting: isAiExecutingRef.current,
+            aiExecutionGeneration: aiExecutionGenerationRef.current,
+            boardSyncVersion: boardSyncVersionRef.current,
+            executedAiStepIds: [...executedAiStepsRef.current],
         };
-    }, [isBoardMounted, isControllerReady, tutorial]);
+    }, [isBoardMounted, isControllerReady, isAiExecuting, tutorial]);
 
     const activateTutorialSession = useCallback((scope: TutorialSessionScope | null) => {
         activeSessionScopeRef.current = scope;
@@ -475,7 +479,6 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         const mustWaitForBoardSync = action.waitForBoardSyncAfter === true;
                         if (mustWaitForBoardSync) {
                             const didObserveBoardSync = await new Promise<boolean>((resolve) => {
-                                const startedAt = Date.now();
                                 const poll = () => {
                                     if (aiExecutionGenerationRef.current !== executionGeneration) {
                                         resolve(false);
@@ -485,14 +488,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                                         resolve(true);
                                         return;
                                     }
-                                    if (Date.now() - startedAt > 1000) {
-                                        console.warn('[TutorialContext] AI 命令后未观察到教程签名同步，暂停后续 AI 动作', {
-                                            stepId,
-                                            commandType: action.commandType,
-                                        });
-                                        resolve(false);
-                                        return;
-                                    }
+                                    // 显式等待必须由真实同步完成；慢提交不能在一秒后永久丢弃续程。
+                                    // 关闭、回退或切步仍由执行代际取消，未同步时绝不派发后续动作。
                                     window.setTimeout(poll, 16);
                                 };
                                 window.setTimeout(poll, 0);
@@ -586,12 +583,14 @@ export const useTutorialBridge = (
     dispatch: (type: string, payload?: unknown) => void,
     runtimeSyncKey?: string,
     sessionScope?: TutorialSessionScope | null,
+    runtimeState?: unknown,
 ) => {
     const context = useContext(TutorialContext);
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
     const effectiveSessionScope = sessionScope ?? context?.activeSessionScope ?? null;
     const lastSyncSignatureRef = useRef<string | null>(null);
+    const lastRuntimeStateRef = useRef<unknown>(undefined);
     // 用 ref 保持最新的 context 和 dispatch，供挂载时的 effect 使用
     const contextRef = useRef(context);
     const dispatchRef = useRef(dispatch);
@@ -606,15 +605,18 @@ export const useTutorialBridge = (
         if (!context) return;
         // 只在教程模式下同步状态，防止在线对局的 sys.tutorial 污染 TutorialContext
         if (!isTutorialMode) return;
+        // 挂载前仍由房间桥同步；完成挂载交接后，棋盘才接管显示投影。
+        if (!context.isBoardMounted) return;
         if (!tutorial) return;
         if (context.tutorial.active && !tutorial?.active && !context.isLastStep) {
             return;
         }
-        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}-${runtimeSyncKey ?? ''}-${effectiveSessionScope?.key ?? ''}`;
-        if (lastSyncSignatureRef.current === signature) return;
+        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}-${tutorial.step?.hideOverlay ?? false}-${runtimeSyncKey ?? ''}-${effectiveSessionScope?.key ?? ''}`;
+        if (lastSyncSignatureRef.current === signature && lastRuntimeStateRef.current === runtimeState) return;
         lastSyncSignatureRef.current = signature;
+        lastRuntimeStateRef.current = runtimeState;
         context.syncTutorialState(tutorial, runtimeSyncKey, effectiveSessionScope);
-    }, [context, tutorial, isTutorialMode, runtimeSyncKey, effectiveSessionScope]);
+    }, [context, tutorial, isTutorialMode, runtimeSyncKey, effectiveSessionScope, runtimeState]);
 
     useEffect(() => {
         // 只在教程模式下注册 controller，在线/本地模式的 Board 不应污染教程状态

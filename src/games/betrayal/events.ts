@@ -1,4 +1,5 @@
 import type { GameEvent } from '../../engine/types';
+import type { BetrayalHauntRevealResolution } from './scenarioConfig';
 import type { BetrayalBloodFromStoneSetupPlacement } from './bloodFromStoneSetupReadModel';
 import type { BetrayalCorpseLootedPayload } from './deathStateReadModel';
 import type { BetrayalEventRollReplacementResult } from './eventRollReplacementModel';
@@ -41,6 +42,7 @@ import type {
 } from './monsterActionReadModel';
 import type { BetrayalMonsterDamageOutcome } from './monsterReadModel';
 import type {
+    PossessionUseActionEffectProfile,
     PossessionUseEffectProfile,
     UseEffectProfile,
 } from './possessionEffects';
@@ -337,7 +339,7 @@ export type BetrayalEvent =
     | GameEvent<typeof EVENTS.POSSESSION_USED, {
         playerId: string;
         cardId: string;
-        effect: PossessionUseEffectProfile;
+        effect: PossessionUseActionEffectProfile;
         targetPlayerId?: string;
         targetRoomId?: string;
         targetRoomIdsByTokenId?: Record<string, string>;

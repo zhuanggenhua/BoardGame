@@ -4,6 +4,7 @@
 
 | 来源 | 适合查什么 | 定位方式 |
 | --- | --- | --- |
+| [Game UI Database](https://www.gameuidatabase.com/) | 游戏的地图、战斗、手牌、HUD、教程及选择／确认状态截图与视频 | 按游戏名、类型或屏幕分类检索；游戏 UI 的首查顺序和证据要求以 [UI 主规范](../../../knowledge/standards/ui-change-gates.md#开工门槛) 为准 |
 | [Checklist Design](https://www.checklist.design/) | 网站、Web 应用、手机应用、组件和跨页面流程的检查项 | 按功能选择清单；例如 [头像](https://www.checklist.design/elements/avatar) 有预览、入口、默认占位、格式及更新状态等项目。清单不是产品截图或业务规格 |
 | [UI Notes](https://uinotes.com/) | 国内真实产品的手机界面和相邻流程状态 | 从 App 或截图库定位产品、版本和具体屏幕；PC 对照另找对应网页，不把手机图放大当 PC 参考 |
 | [Refero](https://refero.design/) | Web 与 iOS 产品界面、控件和流程 | 按页面类型、交互模式、产品检索；[检索说明](https://refero.design/how-it-works) 支持按标签、文字和网站定位，并在 Web/iOS 间切换 |

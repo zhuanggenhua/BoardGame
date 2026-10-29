@@ -860,14 +860,21 @@ describe('InteractionOverlay', () => {
             expect(screen.getByTestId('dt-card-pool-panel')).toBeInTheDocument();
             expect(screen.getByTestId('dt-card-pool-panel').className).toContain('inset-x-0');
             expect(screen.getByTestId('dt-card-pool-panel').className).toContain('top-[clamp(4.25rem,9vh,6.25rem)]');
+            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('bottom-[max(0.75rem,env(safe-area-inset-bottom))]');
             expect(screen.getByTestId('dt-card-pool-panel').className).toContain('pointer-events-auto');
             expect(screen.getByTestId('dt-card-pool-surface').className).toContain('max-w-[70rem]');
+            expect(screen.getByTestId('dt-card-pool-surface').className).toContain('h-full');
+            expect(screen.getByTestId('dt-card-pool-surface').className).toContain('flex-col');
             expect(screen.getByTestId('dt-card-pool-backdrop').className).toContain('border-y');
+            expect(screen.getByTestId('dt-card-pool-backdrop')).toHaveAttribute('data-card-pool-hand-clearance', 'hand-area-top');
+            expect((screen.getByTestId('dt-card-pool-backdrop') as HTMLElement).style.bottom)
+                .toContain('--mobile-board-shell-inline-unit');
+            expect(screen.getByTestId('dt-card-pool-backdrop').className).not.toContain('inset-y-0');
             expect(screen.getByTestId('dt-card-pool-title').className).toContain('text-center');
             expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
             expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-visible-rows', 'two');
             expect(screen.getByTestId('dt-card-pool-selection').className).toContain('scrollbar-thin');
-            expect(screen.getByTestId('dt-card-pool-selection').className).toContain('max-h-[min(40vh,28rem)]');
+            expect(screen.getByTestId('dt-card-pool-selection').className).toContain('max-h-[min(50vh,28rem)]');
             expect(screen.getByTestId('dt-card-pool-selection').className).toContain('overflow-y-auto');
             expect(screen.getByTestId('dt-card-pool-selection').className).not.toContain('overflow-x-auto');
             expect(screen.getByTestId('dt-card-pool-track').className).toContain('justify-center');
@@ -890,7 +897,7 @@ describe('InteractionOverlay', () => {
             expect(screen.getByTestId('dt-card-choice-preview-card-vampire-lord-gushing-blood').className).not.toContain('aspect-[0.61]');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-atlas-id', 'dicethrone:vampire_lord-cards');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-index', '21');
-            expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-width', 'clamp(88px, min(7.2vw, 12.5vh), 132px)');
+            expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-width', 'clamp(104px, min(14vw, 23vh), 188px)');
             expect(screen.getAllByTestId('mock-card-preview')[2].className).toContain('bg-[#150609]');
             expect(targetOption.textContent?.trim()).toBe('');
             expect(screen.queryByText('血潮')).not.toBeInTheDocument();
@@ -904,6 +911,31 @@ describe('InteractionOverlay', () => {
 
             fireEvent.click(targetOption);
             expect(onSelectHandCard).toHaveBeenCalledWith('card-vampire-lord-gushing-blood');
+        });
+
+        it('单张候选选中后成为视觉焦点，同时保留其它牌面供比较', () => {
+            const selectedCardId = 'card-vampire-lord-blood-surge';
+            render(
+                <InteractionOverlay
+                    interaction={{ ...deckCardInteraction, selected: [selectedCardId] }}
+                    players={playersWithDeckCards}
+                    currentPlayerId="0"
+                    onSelectHandCard={vi.fn()}
+                    {...mockHandlers}
+                />
+            );
+
+            const selectedOption = screen.getByTestId(`dt-deck-card-option-${selectedCardId}`);
+            const otherOption = screen.getByTestId('dt-deck-card-option-card-vampire-lord-gushing-blood');
+
+            expect(selectedOption).toHaveAttribute('data-selection-focus', 'selected');
+            expect(selectedOption.className).toContain('z-10');
+            expect(selectedOption.className).not.toContain('scale-');
+            expect(selectedOption.className).not.toContain('-translate-y-');
+            expect(screen.getByTestId(`dt-card-choice-preview-${selectedCardId}`).className).toContain('ring-[3px]');
+            expect(screen.getByTestId(`dt-card-choice-selected-${selectedCardId}`)).toBeVisible();
+            expect(otherOption).toHaveAttribute('data-selection-focus', 'deemphasized');
+            expect(otherOption.className).toContain('opacity-75');
         });
 
         it('抽牌标题应使用交互传入的数量，而不是把数量写死', () => {

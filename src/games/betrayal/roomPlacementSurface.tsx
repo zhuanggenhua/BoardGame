@@ -51,7 +51,7 @@ export interface BetrayalRoomPlacementSurfaceProps {
   selectedOrientationTurns: RoomOrientationTurns;
   visual: BetrayalRoomTileVisual;
   adjustmentText: string | null;
-  tileAdjustmentOptions: BetrayalRoomTileAdjustmentOption[];
+  tileAdjustmentOptions: readonly BetrayalRoomTileAdjustmentOption[];
   selectedTileAdjustmentOption: BetrayalRoomTileAdjustmentOption | null;
   locale: string;
   onRotate: (direction: 1 | -1) => void;

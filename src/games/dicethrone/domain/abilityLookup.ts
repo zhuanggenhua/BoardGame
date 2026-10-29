@@ -131,11 +131,7 @@ function actionTargetsOpponentWithDamage(action: EffectAction): boolean {
     if (action.type === 'rollDie') {
         // 奖励骰的 damage 分支结算到当前 pending attack；target=self 表示掷骰者，
         // 不表示伤害施加给自己。排除 allOpponents 后，其伤害仍属于对手攻击意图。
-        const branches = [
-            ...(action.conditionalEffects ?? []),
-            ...(action.defaultEffect ? [action.defaultEffect] : []),
-        ];
-        return branches.some(branch => (
+        return (action.conditionalEffects ?? []).some(branch => (
             (typeof branch.bonusDamage === 'number' && branch.bonusDamage > 0)
             || (typeof branch.unblockableDamage === 'number' && branch.unblockableDamage > 0)
         ));
@@ -192,16 +188,17 @@ function hasEffectDamage(effects: AbilityEffect[]): boolean {
 
 function effectNeedsSingleOpponentTarget(action: EffectAction): boolean {
     if (action.type === 'rollDie') {
-        const branches = [
-            ...(action.conditionalEffects ?? []),
-            ...(action.defaultEffect ? [action.defaultEffect] : []),
-        ];
-        return branches.some((branch) => (
+        const conditionalBranchTargetsOpponent = action.conditionalEffects?.some((branch) => (
             (typeof branch.unblockableDamage === 'number' && branch.unblockableDamage > 0)
             || branch.grantStatus?.target === 'opponent'
             || branch.grantToken?.target === 'opponent'
             || (branch.grantTokens?.some((grant) => grant.target === 'opponent') ?? false)
-        ));
+        )) ?? false;
+        const defaultEffectTargetsOpponent = Boolean(
+            action.defaultEffect?.grantStatus?.target === 'opponent'
+            || action.defaultEffect?.grantToken?.target === 'opponent'
+        );
+        return conditionalBranchTargetsOpponent || defaultEffectTargetsOpponent;
     }
 
     if (action.target === 'opponent') {

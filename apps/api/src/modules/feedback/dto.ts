@@ -626,6 +626,11 @@ export class CreateSystemFeedbackDto {
     @IsOptional()
     diagnosticPacket?: Record<string, unknown>;
 
+    @IsString()
+    @IsOptional()
+    @MaxLength(1500000)
+    privateReplay?: string;
+
     @ValidateNested()
     @Type(() => FeedbackClientContextDto)
     @IsOptional()
@@ -635,6 +640,23 @@ export class CreateSystemFeedbackDto {
     @Type(() => FeedbackErrorContextDto)
     @IsOptional()
     errorContext?: FeedbackErrorContextDto;
+}
+
+export class AttachPrivateReplayDto {
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(128)
+    matchId!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(128)
+    playerId!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(1500000)
+    privateReplay!: string;
 }
 
 export class UpdateFeedbackStatusDto {

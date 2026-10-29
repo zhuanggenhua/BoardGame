@@ -42,6 +42,20 @@ const createTestState = (core: TestCore): MatchState<TestCore> => ({
 });
 
 describe('CheatSystem', () => {
+    it('声明所有内建与游戏扩展作弊命令的管理员调试保护名单', () => {
+        const customCommandType = 'GAME_DEBUG_CUSTOM_COMMAND';
+        const system = createCheatSystem<TestCore>({
+            getResource: () => 0,
+            setResource: (core) => core,
+            customCommands: { [customCommandType]: () => undefined },
+        });
+
+        expect(system.adminDebugCommandTypes).toEqual(expect.arrayContaining([
+            ...Object.values(CHEAT_COMMANDS),
+            customCommandType,
+        ]));
+    });
+
     it('SET_STATUS: modifier 存在时更新状态效果数量', () => {
         const modifier: CheatResourceModifier<TestCore> = {
             getResource: () => 0,

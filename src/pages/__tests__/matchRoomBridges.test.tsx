@@ -8,6 +8,7 @@ import type { TutorialSessionScope } from '../../contexts/TutorialContext';
 
 let gameClientState: MatchState<unknown>;
 let contextTutorialState: TutorialState;
+let contextBoardMounted = false;
 
 const dispatch = vi.fn();
 let gameClientDispatch = dispatch;
@@ -28,6 +29,7 @@ vi.mock('../../contexts/TutorialContext', () => ({
         unbindDispatch,
         syncTutorialState,
         tutorial: contextTutorialState,
+        isBoardMounted: contextBoardMounted,
     }),
 }));
 
@@ -49,6 +51,7 @@ describe('TutorialDispatchBridge', () => {
         bindDispatch.mockClear();
         unbindDispatch.mockClear();
         syncTutorialState.mockClear();
+        contextBoardMounted = false;
         gameClientState = buildState({
             active: false,
             manifestId: null,
@@ -107,6 +110,33 @@ describe('TutorialDispatchBridge', () => {
             undefined,
             sessionScope,
         ));
+    });
+
+    it('同一步无表现事件的领域换席仍通知棋盘同步，同一快照重渲染不重复通知', async () => {
+        const step = { id: 'play-61', content: '', aiActions: [{ commandType: 'ADVANCE_PHASE', playerId: '1', waitForBoardSyncAfter: true }] };
+        gameClientState = buildState({ active: true, manifestId: 'fate-domination-foundation', stepIndex: 61, steps: [step], step, aiActions: step.aiActions }, { round: 3, phase: 'preparation', currentPlayerId: '1' });
+        const view = render(<TutorialDispatchBridge><div /></TutorialDispatchBridge>);
+        await waitFor(() => expect(syncTutorialState).toHaveBeenCalledTimes(1));
+
+        // 正式换席只更新领域局面，教程尚待 AI_CONSUMED，表现事件游标也没有变化。
+        gameClientState = { ...gameClientState, core: { round: 3, phase: 'preparation', currentPlayerId: '0' } };
+        view.rerender(<TutorialDispatchBridge><div /></TutorialDispatchBridge>);
+        await waitFor(() => expect(syncTutorialState).toHaveBeenCalledTimes(2));
+        view.rerender(<TutorialDispatchBridge><div /></TutorialDispatchBridge>);
+        expect(syncTutorialState).toHaveBeenCalledTimes(2);
+    });
+
+    it('真实棋盘已挂载时房间层不覆盖棋盘的教学显示投影', async () => {
+        const step = { id: 'post-battle', content: '事件卡原文' };
+        gameClientState = buildState({ active: true, manifestId: 'fate-domination-foundation', stepIndex: 1, steps: [step], step });
+        contextTutorialState = { ...gameClientState.sys.tutorial, step: { ...step, hideOverlay: true } };
+        contextBoardMounted = true;
+        const view = render(<TutorialDispatchBridge><div /></TutorialDispatchBridge>);
+        await waitFor(() => expect(bindDispatch).toHaveBeenCalled());
+        expect(syncTutorialState).not.toHaveBeenCalled();
+        gameClientState = { ...gameClientState, core: { resolved: true } };
+        view.rerender(<TutorialDispatchBridge><div /></TutorialDispatchBridge>);
+        expect(syncTutorialState).not.toHaveBeenCalled();
     });
 
     it('同一步 AI 动作被消费后也会同步教程上下文，避免首个可见步骤卡住', async () => {
@@ -364,6 +394,7 @@ describe('TutorialDispatchBridge', () => {
 
         dispatch.mockClear();
         syncTutorialState.mockClear();
+        contextBoardMounted = true;
         gameClientState = buildState({
             active: false,
             manifestId: null,

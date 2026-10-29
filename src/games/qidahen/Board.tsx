@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Maximize2 } from 'lucide-react';
 import './qidahen-board.css';
+import { QidahenTutorialRegionLabel } from './ui/QidahenTutorialRegionLabel';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import {
@@ -28,6 +29,8 @@ import { useEndgame } from '../../hooks/game/useEndgame';
 import { useGameAudio } from '../../lib/audio/useGameAudio';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
+import { CardInspectButton } from '../../components/common/overlays/CardInspectButton';
+import { QidahenBattlePreparation } from './ui/QidahenBattlePreparation';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { getCardAtlasSource } from '../../components/common/media/cardAtlasRegistry';
 import { getLocalizedAssetPath, getOptimizedImageUrls } from '../../core/AssetLoader';
@@ -160,6 +163,8 @@ import {
     type QidahenPassageBoundaryType,
 } from './ui/mapGraph';
 import { renderRegionOwnershipOverlay, type RegionMaskOverlayToneKey } from './ui/regionMaskOverlay';
+import { getQidahenMapSelectionCandidateIds } from './ui/mapSelectionCandidates';
+import { resolveQidahenMapRegionAtPoint, renderQidahenCitySelectionFeedback } from './ui/mapRegionHitTesting';
 import {
     buildQidahenRuntimeRegionIdByPixel,
     getQidahenRuntimeRegionBounds,
@@ -442,7 +447,6 @@ const CARD_DIMENSIONS = {
 
 const BOTTOM_DOCK_INSET = 0;
 const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 14;
-const DESKTOP_HAND_DOCK_INSET = 18;
 const MOBILE_LANDSCAPE_TOP_SAFE_INSET = 18;
 const MOBILE_LANDSCAPE_CHRONOLOGY_TOP = 670;
 const QIDAHEN_BOARD_LAYOUT: QidahenBoardLayoutConfig = {
@@ -794,7 +798,7 @@ const renderQidahenBattleRollDiceGroup = (
 
     return (
         <div className="rounded-[3px] border px-2 py-2" style={{ borderColor, background }}>
-            <div className="flex items-center justify-between gap-3 text-[10px] font-black" style={{ color: '#f6d5a8' }}>
+            <div className="flex items-center justify-between gap-3 text-[13px] font-black" style={{ color: '#f6d5a8' }}>
                 <span>{sideLabel}</span>
                 <span>{`${QIDAHEN_BATTLE_ROLL_COPY.totalLabel} ${total}`}</span>
             </div>
@@ -802,7 +806,7 @@ const renderQidahenBattleRollDiceGroup = (
                 {rolls.map((roll, index) => (
                     <div
                         key={`${sideLabel}-${roll.troopKind}-${roll.level}-${roll.raw}-${roll.value}-${index}`}
-                        className="grid h-[34px] min-w-[34px] place-items-center border text-[12px] font-black leading-none"
+                        className="grid h-[34px] min-w-[34px] place-items-center border text-[14px] font-black leading-none"
                         style={{ borderColor, background: chipBackground, color: chipText, borderRadius: 3, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
                         title={`${roll.troopKind} Lv${roll.level} d${roll.dieSides}`}
                     >
@@ -810,7 +814,7 @@ const renderQidahenBattleRollDiceGroup = (
                     </div>
                 ))}
                 {rolls.length <= 0 ? (
-                    <div className="px-1 text-[10px]" style={{ color: '#d8c7ab' }}>{QIDAHEN_BATTLE_ROLL_COPY.noRollsLabel}</div>
+                    <div className="px-1 text-[13px]" style={{ color: '#d8c7ab' }}>{QIDAHEN_BATTLE_ROLL_COPY.noRollsLabel}</div>
                 ) : null}
             </div>
         </div>
@@ -821,14 +825,14 @@ const QidahenBattleRollDiceSummary: React.FC<{
     battleRolls: NonNullable<QidahenPostBattleSelection['battleRolls']>;
 }> = ({ battleRolls }) => (
     <div className="mt-2 rounded-[3px] border border-[#d8b36e]/40 bg-[rgba(44,20,11,0.24)] px-2.5 py-2" data-testid="qidahen-post-battle-dice-summary">
-        <div className="text-[10px] font-black tracking-[0.08em]" style={{ color: '#f6d5a8' }}>{QIDAHEN_BATTLE_ROLL_COPY.summaryTitle}</div>
+        <div className="text-[13px] font-black tracking-[0.08em]" style={{ color: '#f6d5a8' }}>{QIDAHEN_BATTLE_ROLL_COPY.summaryTitle}</div>
         <div className="mt-2 flex flex-col gap-2">
             {battleRolls.stages.map((stage, index) => (
                 <div
                     key={`${stage.phase}-${index}`}
                     className="rounded-[3px] border border-[#d8b36e]/25 bg-[rgba(0,0,0,0.12)] px-2 py-2"
                 >
-                    <div className="text-[10px] font-black" style={{ color: '#ffe5b3' }}>{`${formatQidahenBattleRollPhaseLabel(stage.phase)} · ${QIDAHEN_BATTLE_ROLL_COPY.attackerDamageLabel} ${stage.attackerDamage} · ${QIDAHEN_BATTLE_ROLL_COPY.defenderDamageLabel} ${stage.defenderDamage}`}</div>
+                    <div className="text-[13px] font-black" style={{ color: '#ffe5b3' }}>{`${formatQidahenBattleRollPhaseLabel(stage.phase)} · ${QIDAHEN_BATTLE_ROLL_COPY.attackerDamageLabel} ${stage.attackerDamage} · ${QIDAHEN_BATTLE_ROLL_COPY.defenderDamageLabel} ${stage.defenderDamage}`}</div>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                         {renderQidahenBattleRollDiceGroup(QIDAHEN_BATTLE_ROLL_COPY.attackerLabel, stage.attackerRolls, stage.attackerTotal, 'attacker')}
                         {renderQidahenBattleRollDiceGroup(QIDAHEN_BATTLE_ROLL_COPY.defenderLabel, stage.defenderRolls, stage.defenderTotal, 'defender')}
@@ -875,12 +879,6 @@ const getQidahenFriendlyPendingChoiceLabel = (choice: { id: string; label: strin
     }
     if (choice.id === 'defender-sortie') {
         return '出城野战';
-    }
-    if (choice.id === 'cavalry-plunder-attacker') {
-        return '抽己方牌堆';
-    }
-    if (choice.id === 'cavalry-plunder-defender') {
-        return '抽守方牌堆';
     }
     if (choice.id.startsWith('cavalry-evasion:')) {
         return choice.label.replace('骑兵避战至', '骑兵撤往 ');
@@ -951,10 +949,6 @@ const buildRegionMaskHitmap = (image: HTMLImageElement) => {
     }
     return null;
 };
-
-const formatSpecialTroops = (specialTroops: QidahenCore['regions'][number]['specialTroops']) => (
-    specialTroops.map((stack) => `${stack.label} x${stack.count}（${stack.level}级）`).join('，')
-);
 
 const getPendingTargetChoiceTestId = (choiceId: string): string => {
     if (choiceId === 'rear-guard' || choiceId === 'fight') {
@@ -1317,6 +1311,7 @@ const MapToken: React.FC<{
     tutorialResultArtilleryFocus = false,
 }) => {
     const { t } = useTranslation('game-qidahen');
+    const grantPardonSourceRegionId = token.regionId;
     const size = token.size ?? 30;
     const tone = factionTone[token.faction === 'neutral' ? 'ming' : token.faction];
     const isArmyToken = token.type === 'army';
@@ -1327,8 +1322,8 @@ const MapToken: React.FC<{
     const pendingCommittedTone = pendingCommittedSelected
         ? {
             opacity: 1,
-            boxShadow: '0 0 0 1px rgba(29, 83, 36, 0.72), 0 0 7px rgba(112, 238, 124, 0.34)',
-            filter: 'brightness(1.07) saturate(1.08)',
+            boxShadow: '0 0 0 2px rgba(255, 225, 145, 0.98)',
+            filter: 'brightness(1.12) saturate(1.12)',
         }
         : pendingCommittedSelectable
             ? {
@@ -1414,14 +1409,16 @@ const MapToken: React.FC<{
                         ? pincerAdvanceSelected
                         : pendingCommittedSelected)
                 : undefined}
-            data-tutorial-id={tutorialResultArtilleryFocus
+            data-tutorial-id={pendingCommittedSelectable && token.troopIndex === 4
+                ? 'qidahen-select-four-troops'
+                : tutorialResultArtilleryFocus
                 ? 'qidahen-tutorial-result-artillery'
                 : grantPardonSourceSelectable || grantPardonSourceSelected
                     ? `qidahen-grant-pardon-source-token-${token.id}`
                     : undefined}
             tabIndex={tokenSelectable ? 0 : undefined}
-            onClick={grantPardonSourceSelectable
-                ? () => onSelectGrantPardonSource?.(token.regionId, token.id)
+            onClick={grantPardonSourceSelectable && grantPardonSourceRegionId != null
+                ? () => onSelectGrantPardonSource?.(grantPardonSourceRegionId, token.id)
                 : wuzhenChaohaSelectable
                 ? () => onResolveWuzhenChaoha?.(token.id)
                 : instigateDefectionSelectable
@@ -1436,7 +1433,9 @@ const MapToken: React.FC<{
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         if (grantPardonSourceSelectable) {
-                            onSelectGrantPardonSource?.(token.regionId, token.id);
+                            if (token.regionId != null) {
+                                onSelectGrantPardonSource?.(token.regionId, token.id);
+                            }
                         } else if (wuzhenChaohaSelectable) {
                             onResolveWuzhenChaoha?.(token.id);
                         } else if (instigateDefectionSelectable) {
@@ -1462,6 +1461,9 @@ const MapToken: React.FC<{
                 zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : undefined,
             }}
         >
+            {pendingCommittedSelectable && pendingCommittedSelected ? (
+                <span aria-hidden="true" data-testid="qidahen-committed-troop-check" className="pointer-events-none absolute -right-1 -top-1 z-10 grid h-3 w-3 place-items-center rounded-full bg-[#ffe191] text-[10px] leading-none text-[#33210f]">✓</span>
+            ) : null}
             {showTokenImage ? (
                 <>
                     <OptimizedImage
@@ -1572,13 +1574,14 @@ const MapSceneLayer: React.FC<{
     tutorialHighlightsResultFeedback: boolean;
     tutorialGuideTargetRegionId?: string | null;
     tutorialRegionFocus?: { regionId: string; targetId: string } | null;
+    mapSelectionCandidateIds: readonly string[];
     onTutorialRegionBoundsChange?: (bounds: (QidahenRuntimeRegionBounds & { regionId: string }) | null) => void;
     compactRegionTip: boolean;
     viewport: QidahenMapViewport;
     onViewportChange: (viewport: QidahenMapViewport) => void;
     locale?: string;
     onSelectRegion: (regionId: string, tokenId?: string) => void;
-}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, tutorialRegionFocus, onTutorialRegionBoundsChange, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
+}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, tutorialRegionFocus, mapSelectionCandidateIds, onTutorialRegionBoundsChange, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const { t: tCommon } = useTranslation('common');
     const currentFactionId = perspectiveFactionId;
@@ -1587,6 +1590,7 @@ const MapSceneLayer: React.FC<{
     ), [locale]);
     const usePixiMapPilot = QIDAHEN_PIXI_MAP_PILOT_ENABLED;
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const tutorialRegionAnchorRef = React.useRef<HTMLDivElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const resultFeedbackCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const resultFeedbackLabelRef = React.useRef<HTMLDivElement>(null);
@@ -1670,6 +1674,7 @@ const MapSceneLayer: React.FC<{
         ? { ...core.lastSeasonSummary.mapResult, resultId: core.lastSeasonSummary.id }
         : null;
     const showStandardMapResultFeedback = tutorialStepId == null
+        || tutorialStepId === 'choose-raid'
         || tutorialStepId === 'battle-result'
         || tutorialStepId === 'city-result';
     const activeResultFeedback = tutorialResultFeedback ?? (showStandardMapResultFeedback ? resultFeedback : null) ?? (
@@ -1677,8 +1682,7 @@ const MapSceneLayer: React.FC<{
             ? { ...core.lastSeasonSummary.mapResult, resultId: core.lastSeasonSummary.id }
             : null
     );
-    // 轮盘 / 专题结果卡已经承担“发生了什么”的说明；战斗结果仍保留正式战果文字，
-    // 因为战斗后处理需要同时读战损与战后面板，不能只靠教程卡补课。
+    // 军屯直接沿用地图短反馈；战斗结果保留战损文字，供战后处理判断。
     const defeatInDetailSelectableSourceRegionIds = React.useMemo(
         () => getQidahenDefeatInDetailSelectableSourceRegionIds(pendingTargetAction),
         [pendingTargetAction],
@@ -1714,10 +1718,15 @@ const MapSceneLayer: React.FC<{
             : null
     ), [runtimeRegionOwnership, tutorialRegionFocus?.regionId, expandRuntimeRegionIds]);
 
+    const mapFocusBounds = React.useMemo(() => (
+        runtimeRegionOwnership && tutorialStepId === 'select-farm-region'
+            ? getQidahenRuntimeRegionBounds(runtimeRegionOwnership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, mapSelectionCandidateIds)
+            : tutorialRegionBounds
+    ), [runtimeRegionOwnership, tutorialStepId, mapSelectionCandidateIds, tutorialRegionBounds]);
     React.useEffect(() => {
-        onTutorialRegionBoundsChange?.(tutorialRegionBounds && tutorialRegionFocus
-            ? { ...tutorialRegionBounds, regionId: tutorialRegionFocus.regionId } : null);
-    }, [tutorialRegionBounds, tutorialRegionFocus?.regionId, onTutorialRegionBoundsChange]);
+        onTutorialRegionBoundsChange?.(mapFocusBounds && tutorialRegionFocus
+            ? { ...mapFocusBounds, regionId: tutorialRegionFocus.regionId } : null);
+    }, [mapFocusBounds, tutorialRegionFocus?.regionId, onTutorialRegionBoundsChange]);
 
     React.useEffect(() => {
         const canvas = overlayCanvasRef.current;
@@ -1736,6 +1745,9 @@ const MapSceneLayer: React.FC<{
             }
             applyTone(region.id, region.controller);
         }
+        for (const regionId of mapSelectionCandidateIds) {
+            applyTone(regionId, 'candidate');
+        }
         const wheelDispatchTargetRegionIds = new Set(
             pendingCommittedTroops != null && pendingCommittedTroops > 0
                 ? wheelDispatchSelection?.candidates.map((candidate) => candidate.targetRuntimeRegionId) ?? []
@@ -1747,7 +1759,7 @@ const MapSceneLayer: React.FC<{
                 ? tutorialGuideTargetRegionId
                 : core.explicitRegionId && wheelDispatchTargetRegionIds.has(core.explicitRegionId)
                     ? core.explicitRegionId
-                    : wheelDispatchSelection?.candidates[0]?.targetRuntimeRegionId ?? null;
+                    : null;
         applyTone(wheelDispatchSelection?.sourceRegionId, 'source');
         if (activeWheelDispatchTargetRegionId) {
             applyTone(activeWheelDispatchTargetRegionId, 'activeDispatch');
@@ -1798,6 +1810,7 @@ const MapSceneLayer: React.FC<{
             applyTone(tutorialRegionFocus.regionId, 'tutorialPrimary');
         }
         renderRegionOwnershipOverlay(canvas, runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, toneByRegionId);
+        renderQidahenCitySelectionFeedback(canvas, mapSelectionCandidateIds, tutorialRegionFocus?.regionId ?? core.explicitRegionId ?? null);
     }, [
         core.gaoDiDispatchSelection,
         internalDispatchSelection?.candidates,
@@ -1812,6 +1825,7 @@ const MapSceneLayer: React.FC<{
         grantPardonMapChoices,
         tutorialMapTargetRegionId,
         tutorialRegionFocus?.regionId,
+        mapSelectionCandidateIds,
         expandRuntimeRegionIds,
         tutorialStepId,
         wheelDispatchSelection?.sourceRegionId,
@@ -1879,9 +1893,6 @@ const MapSceneLayer: React.FC<{
     const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;
     const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;
     const focusedRegion = displayHoveredRegion ?? displaySelectedRegion;
-    const focusedSpecialTroopsSummary = focusedRegion && focusedRegion.specialTroops.length > 0
-        ? formatSpecialTroops(focusedRegion.specialTroops)
-        : null;
 
     const getRegionFromPointer = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
@@ -1893,8 +1904,8 @@ const MapSceneLayer: React.FC<{
         const y = Math.floor(((event.clientY - rect.top) / rect.height) * QIDAHEN_MAP_HEIGHT);
         if (x < 0 || y < 0 || x >= QIDAHEN_MAP_WIDTH || y >= QIDAHEN_MAP_HEIGHT) return null;
 
-        return runtimeRegionIdByPixel[(y * QIDAHEN_MAP_WIDTH) + x] ?? null;
-    }, []);
+        return resolveQidahenMapRegionAtPoint(runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, { x, y }, mapSelectionCandidateIds);
+    }, [mapSelectionCandidateIds]);
 
     const resolveRegionAtMapPoint = React.useCallback((point: MapScenePoint) => {
         const runtimeRegionIdByPixel = runtimeRegionIdByPixelRef.current;
@@ -1902,8 +1913,8 @@ const MapSceneLayer: React.FC<{
         const x = Math.floor(point.x);
         const y = Math.floor(point.y);
         if (x < 0 || y < 0 || x >= QIDAHEN_MAP_WIDTH || y >= QIDAHEN_MAP_HEIGHT) return null;
-        return runtimeRegionIdByPixel[(y * QIDAHEN_MAP_WIDTH) + x] ?? null;
-    }, []);
+        return resolveQidahenMapRegionAtPoint(runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, { x, y }, mapSelectionCandidateIds);
+    }, [mapSelectionCandidateIds]);
 
     const handlePointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         setHoveredRegionId(getRegionFromPointer(event));
@@ -1950,6 +1961,9 @@ const MapSceneLayer: React.FC<{
 
     const handlePointerUp = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         const regionId = getRegionFromPointer(event);
+        if (event.pointerType !== 'mouse') {
+            setHoveredRegionId(regionId);
+        }
         if (regionId) {
             onSelectRegion(regionId);
         }
@@ -2026,22 +2040,6 @@ const MapSceneLayer: React.FC<{
             return from && to ? { edge, from, to, directedPassage: statePassage ?? directedPassage } : null;
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
-    const activeMovementPreview = focusedRegion && focusedRegion.controller === currentFactionId
-        ? (() => {
-            const previewText = (['dispatch-infantry', 'dispatch-cavalry'] as const)
-                .map((profileId) => {
-                    const profile = getQidahenMovementProfile(profileId);
-                    const reachable = findQidahenReachableRuntimeRegions(core, focusedRegion.id, currentFactionId, profile.movementBudget)
-                        .slice(0, 3)
-                        .map((region) => `${region.regionName}${region.usesCoast ? ' 水' : ''}`)
-                        .join(' / ');
-                    return reachable ? `${profile.label} ${reachable}` : '';
-                })
-                .filter(Boolean)
-                .join(' · ');
-            return previewText;
-        })()
-        : '';
     const getRegionPoint = (regionId: string | null | undefined) => {
         if (!regionId) {
             return null;
@@ -2483,7 +2481,7 @@ const MapSceneLayer: React.FC<{
         [pendingTargetAction, core.postBattleSelection],
     );
     const pendingCommittedSelectedCount = Math.min(
-        pendingCommittedTroops ?? pendingTargetAction?.committedTroops ?? 0,
+        pendingCommittedTroops ?? (pendingTargetAction?.actionId === 'raid' ? 0 : pendingTargetAction?.committedTroops ?? 0),
         activeCommittedMax,
     );
     const handleSelectPendingCommittedTroopsFromMap = React.useCallback((troopIndex: number) => {
@@ -2718,6 +2716,7 @@ const MapSceneLayer: React.FC<{
                     className="pointer-events-none absolute inset-0 h-full w-full"
                     data-testid="qidahen-map-region-mask-overlay"
                     data-qidahen-region-outline="true"
+                    data-qidahen-candidate-region-ids={mapSelectionCandidateIds.join("|")}
                     data-qidahen-region-focus={tutorialRegionFocus?.regionId}
                     data-qidahen-tutorial-primary-target={tutorialGrantPardonFocusChoice?.targetRegionId ?? undefined}
                     data-qidahen-tutorial-source-region={tutorialGrantPardonFocusChoice?.sourceRegionId ?? undefined}
@@ -2730,22 +2729,15 @@ const MapSceneLayer: React.FC<{
                         data-testid={tutorialRegionFocus.targetId}
                         data-tutorial-id={tutorialRegionFocus.targetId}
                         data-region-focus-shape="runtime-region-mask"
+                        ref={tutorialRegionAnchorRef}
                         style={tutorialRegionBounds}
                     >
-                        <span
-                            data-testid="qidahen-map-region-focus-name"
-                            className="absolute bottom-full left-0 whitespace-nowrap font-bold"
-                            style={{
-                                transform: `scale(${1 / (MAP_COVER_SCALE * viewport.zoom)}) translateY(calc(-4px * var(--qidahen-scene-inverse-scale, 1)))`,
-                                transformOrigin: 'left bottom',
-                                fontSize: 'calc(14px * var(--qidahen-scene-inverse-scale, 1))',
-                                lineHeight: 'calc(20px * var(--qidahen-scene-inverse-scale, 1))',
-                                paddingInline: 'calc(4px * var(--qidahen-scene-inverse-scale, 1))',
-                                color: '#fff2d0', background: 'rgba(35,25,16,0.94)',
-                            }}
-                        >
-                            {core.regions.find(region => region.id === tutorialRegionFocus.regionId)?.name}
-                        </span>
+                        <QidahenTutorialRegionLabel
+                            anchorRef={tutorialRegionAnchorRef}
+                            viewport={viewport}
+                            regionId={tutorialRegionFocus.regionId}
+                            name={core.regions.find(region => region.id === tutorialRegionFocus.regionId)?.name ?? ''}
+                        />
                     </div>
                 ) : null}
                 {activeResultFeedback ? (
@@ -2859,7 +2851,7 @@ const MapSceneLayer: React.FC<{
                                 data-testid="qidahen-map-result-feedback-text"
                                 ref={resultFeedbackLabelRef}
                             >
-                                {t('board.map.regionTroopChange', {
+                                {core.actionWheelPosition === 'wheel-military-farm' ? `+${troopDelta}` : t('board.map.regionTroopChange', {
                                     regionName: resultRegion.name,
                                     before: activeResultFeedback.beforeTroops,
                                     after: activeResultFeedback.afterTroops,
@@ -3022,8 +3014,8 @@ const MapSceneLayer: React.FC<{
                     data-map-renderer-compat={usePixiMapPilot ? 'legacy-hidden' : undefined}
                     data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
                     onPointerMove={handlePointerMove}
-                    onPointerLeave={() => {
-                        if (!regionTipHoverLockRef.current) {
+                    onPointerLeave={(event) => {
+                        if (event.pointerType === 'mouse' && !regionTipHoverLockRef.current) {
                             setHoveredRegionId(null);
                         }
                     }}
@@ -3093,32 +3085,12 @@ const MapSceneLayer: React.FC<{
                     }}
                 >
                     <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{focusedRegion.name} · {focusedRegion.controlLabel}</div>
-                    {focusedSpecialTroopsSummary ? (
-                        <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                            {t('board.map.regionSpecialTroops', {
-                                summary: focusedSpecialTroopsSummary,
-                                defaultValue: '特殊 {{summary}}',
-                            })}
-                        </div>
-                    ) : null}
-                    {activeMovementPreview ? (
-                        <div
-                            className="mt-1 text-[11px]"
-                            data-testid="qidahen-map-region-movement-preview"
-                            style={{ color: '#f3d1a5' }}
-                        >
-                            {t('board.map.regionReachable', {
-                                summary: activeMovementPreview,
-                                defaultValue: '调度可达 {{summary}}',
-                            })}
-                        </div>
-                    ) : null}
                     {!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (
                         <div
                             className="pointer-events-auto mt-2 flex flex-wrap items-center gap-2"
                             data-testid="qidahen-shared-printed-runtime-switcher"
                         >
-                            <span className="text-[10px]" style={{ color: UI_STYLE.mapGold }}>
+                            <span className="text-[12px]" style={{ color: UI_STYLE.mapGold }}>
                                 {t('board.map.sharedPrintedRegion', { defaultValue: '同图块' })}
                             </span>
                             {sharedPrintedRuntimeOptions.map((region) => {
@@ -3128,7 +3100,7 @@ const MapSceneLayer: React.FC<{
                                         key={region.id}
                                         type="button"
                                         data-testid={`qidahen-shared-printed-runtime-option-${region.id}`}
-                                        className="inline-flex h-[28px] items-center justify-center border-[2px] px-2 text-[11px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                        className="inline-flex h-[28px] items-center justify-center border-[2px] px-2 text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                         onPointerDown={(event) => event.stopPropagation()}
                                         onClick={(event) => {
                                             event.stopPropagation();
@@ -3224,6 +3196,7 @@ const WheelPanel: React.FC<{
 }> = ({ selectedId, selectedMoveId, moveChoices, opponentFactionOptions, moveSummary: _moveSummary, militaryFarmTargetName, disabled, emphasized = false, primaryMoveId = null, directExecuteOnClick = false, onSelectMove, onExecuteMove }) => {
     const { t } = useTranslation('game-qidahen');
     const [activeMoveId, setActiveMoveId] = React.useState(selectedMoveId);
+    const [opponentAnchor, setOpponentAnchor] = React.useState<HTMLDivElement | null>(null);
     const [wheelHover, setWheelHover] = React.useState<{
         sectorId: (typeof WHEEL_SECTORS)[number]['id'];
         moveId: string | null;
@@ -3359,7 +3332,7 @@ const WheelPanel: React.FC<{
                                 : candidateTarget && emphasized
                                     ? 'fill-[#f5f2df]'
                                     : 'fill-[#241b14]';
-                        const labelFontSize = primaryTarget || selectedTarget || activeTarget ? 13 : 12;
+                        const labelFontSize = primaryTarget || selectedTarget || activeTarget ? 16 : 14;
                         const labelFontWeight = primaryTarget || (candidateTarget && emphasized && primaryMove == null) ? 900 : 650;
                         return (
                             <g
@@ -3634,17 +3607,18 @@ const WheelPanel: React.FC<{
                 </QidahenHoverTip>
             ) : null}
             {selectedMoveId === 'move-2-one-opponent' && !disabled ? (
-                <div
-                    className="pointer-events-auto absolute left-1/2 top-1/2 z-40 w-[190px] -translate-x-1/2 -translate-y-1/2 rounded-md border-2 border-[#4b3420] bg-[#f0dfb8] p-2 text-center shadow-xl"
-                    data-testid="qidahen-wheel-opponent-picker"
-                    role="group"
+                <>
+                <div ref={setOpponentAnchor} aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-0 w-0" />
+                <QidahenHoverTip open anchor={opponentAnchor} variant="panel" placement="below" width={210}
+                    testId="qidahen-wheel-opponent-picker"
                     aria-label={t('board.wheel.chooseOpponent', { defaultValue: '选择一名对手抽牌' })}
                 >
-                    <div className="mb-2 text-[12px] font-black text-[#3c2b1b]">
+                <div className="rounded-md border-2 border-[#4b3420] bg-[#f0dfb8] p-3 text-center shadow-xl">
+                    <div className="mb-2 text-[14px] font-black text-[#3c2b1b]">
                         {t('board.wheel.chooseOpponent', { defaultValue: '选择一名对手抽牌' })}
                     </div>
                     {WHEEL_SECTORS[activeMoveTargetIndex]?.actionKey === 'militaryFarm' && militaryFarmTargetName ? (
-                        <div data-testid="qidahen-military-farm-target" className="mb-2 text-[12px] font-bold text-[#3c2b1b]">
+                        <div data-testid="qidahen-military-farm-target" className="mb-2 text-[14px] font-bold text-[#3c2b1b]">
                             {t('board.wheel.militaryFarmTarget', { region: militaryFarmTargetName })}
                         </div>
                     ) : null}
@@ -3653,7 +3627,7 @@ const WheelPanel: React.FC<{
                             <button
                                 key={opponent.id}
                                 type="button"
-                                className="rounded border border-[#775733] bg-[#fff5db] px-2 py-1 text-[12px] font-bold text-[#3c2b1b] hover:bg-[#e4c98f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b83b27]"
+                                className="min-h-[44px] min-w-[76px] rounded border border-[#775733] bg-[#fff5db] px-2 py-1 text-[14px] font-bold text-[#3c2b1b] hover:bg-[#e4c98f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b83b27]"
                                 data-testid={`qidahen-wheel-opponent-${opponent.id}`}
                                 onClick={() => onExecuteMove(selectedMoveId, opponent.id)}
                             >
@@ -3662,6 +3636,8 @@ const WheelPanel: React.FC<{
                         ))}
                     </div>
                 </div>
+                </QidahenHoverTip>
+                </>
             ) : null}
         </div>
     );
@@ -3881,7 +3857,7 @@ const ActionButton: React.FC<{
                 <span className="min-w-0 whitespace-nowrap">{action.label}</span>
             </button>
             <QidahenHoverTip
-                open={tipOpen}
+                open={tipOpen && !disabled}
                 anchor={tipAnchor ?? buttonRef.current}
                 placement="left"
                 testId={`qidahen-action-tooltip-${action.id}`}
@@ -4058,6 +4034,14 @@ const ActionsZone: React.FC<{
         || pendingTargetAction != null
         || postBattleSelection != null;
     const engagedActionId = core.confirmedActionId;
+    const showBattlePreparation = pendingTargetAction != null
+        && pendingTargetAction.sourceRegionId != null
+        && pendingTargetAction.actionId !== 'marriage-subjugation'
+        && pendingTargetAction.battleStep !== 'retreat'
+        && !pendingTargetAction.resolvedBattleRolls;
+    const needsRaidTroopSelection = showBattlePreparation
+        && pendingTargetAction?.actionId === 'raid'
+        && pendingCommittedTroops == null;
     const pendingTargetPreview = pendingTargetAction
         ? applyRequestedCommittedTroops(core, pendingTargetAction, pendingCommittedTroops)
         : null;
@@ -4173,6 +4157,8 @@ const ActionsZone: React.FC<{
     const hideWheelRecruitTrainSummary = isTutorialActive
         && !['wheel-result', 'recruit-train-finish', 'recruit-train-finished', 'result', 'finish'].includes(tutorialStepId ?? '')
         && core.lastSeasonSummary?.title === '轮盘征兵/训练';
+    const hasMilitaryFarmMapFeedback = core.actionWheelPosition === 'wheel-military-farm'
+        && core.lastSeasonSummary?.mapResult != null;
     const explicitSelectedRuntimeRegionId = core.explicitRegionId
         ? resolveQidahenPrimaryRuntimeRegionId(core.explicitRegionId)
         : null;
@@ -4190,7 +4176,7 @@ const ActionsZone: React.FC<{
                                 : driveTigerConsentSelection ? 'drive-tiger-consent'
                                     : fortificationMaintenanceSelection ? 'fortification-maintenance'
                                         : wheelDispatchSelection ? 'wheel-dispatch'
-                                            : pendingTargetAction ? `pending:${pendingTargetAction.actionId}`
+                                            : pendingTargetAction ? `pending:${pendingTargetAction.actionId}:${pendingTargetAction.battleStep ?? 'prepare'}:${pendingTargetAction.resolvedBattleRolls ? 'result' : 'selection'}`
                                                 : postBattleSelection ? `post-battle:${postBattleSelection.actionId}`
                                                     : primaryStageMode ? `primary-stage:${primaryStageMode}`
                                                         : selectedAction ? `action-rail:${selectedAction.id}` : 'action-rail:none';
@@ -4200,6 +4186,8 @@ const ActionsZone: React.FC<{
             actionSlotRef.current.scrollTop = 0;
         }
     }, [actionSurfaceKey]);
+
+    if (actionPaymentPreviewVisible) return null;
 
     return (
         <div
@@ -4217,7 +4205,7 @@ const ActionsZone: React.FC<{
             <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {core.victoryStatus ? (
                 <div
-                    className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
+                    className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[14px] font-black leading-5"
                     data-testid="qidahen-victory-status"
                     style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
@@ -4230,7 +4218,7 @@ const ActionsZone: React.FC<{
                                 : t('board.actions.victory.prestige', { defaultValue: '威望胜利' }),
                         defaultValue: '{{winnerName}} 已达成{{condition}}',
                     })}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                         {core.victoryStatus.detail}
                     </div>
                 </div>
@@ -4243,7 +4231,7 @@ const ActionsZone: React.FC<{
                     {core.fortifications.map((fortification) => (
                         <div
                             key={fortification.id}
-                            className="border-[2px] px-2 py-1 text-[11px] font-black leading-4"
+                            className="border-[2px] px-2 py-1 text-[14px] font-black leading-4"
                             title={fortification.ruleNote}
                             data-testid={`qidahen-fortification-${fortification.id}`}
                             style={{
@@ -4290,7 +4278,7 @@ const ActionsZone: React.FC<{
                                 ? t('board.wheelRecruitTrain.khanTitle', { defaultValue: '大汗令箭 · 征兵训练' })
                                 : t('board.wheelRecruitTrain.title', { defaultValue: '征兵训练' })}
                         </div>
-                        <div className="mt-1 text-[11px]" data-testid="qidahen-wheel-recruit-train-progress" style={{ color: UI_STYLE.mapGold }}>
+                        <div className="mt-1 text-[14px]" data-testid="qidahen-wheel-recruit-train-progress" style={{ color: UI_STYLE.mapGold }}>
                             {t('board.wheelRecruitTrain.progress', {
                                 completed: wheelRecruitTrainProgress.actionsCompleted,
                                 extra: wheelRecruitTrainProgress.extraTrainingsCompleted,
@@ -4299,7 +4287,7 @@ const ActionsZone: React.FC<{
                         </div>
                         {wheelRecruitTrainProgress.summaryLines.length > 0 ? (
                             <div
-                                className="mt-2 border-t border-amber-200/40 pt-2 text-[11px] leading-4"
+                                className="mt-2 border-t border-amber-200/40 pt-2 text-[14px] leading-4"
                                 data-testid="qidahen-wheel-recruit-train-last-result"
                                 role="status"
                                 style={{ color: '#fff0b0' }}
@@ -4307,7 +4295,7 @@ const ActionsZone: React.FC<{
                                 {wheelRecruitTrainProgress.summaryLines[wheelRecruitTrainProgress.summaryLines.length - 1]}
                             </div>
                         ) : null}
-                        <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                        <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                             {wheelRecruitTrainProgress.trainingOnly
                                 ? t('board.wheelRecruitTrain.trainingOnlyHint', { defaultValue: '年中或新年时，只能进行训练行动。' })
                                 : wheelRecruitTrainProgress.phase === 'choose-action'
@@ -4318,7 +4306,7 @@ const ActionsZone: React.FC<{
                         </div>
                         {['choose-training-target', 'extra-training-target'].includes(wheelRecruitTrainProgress.phase) ? (
                         <div
-                            className="mt-1 border-t px-1 py-1 text-[10px] font-bold"
+                            className="mt-1 border-t px-1 py-1 text-[14px] font-bold"
                             data-testid="qidahen-wheel-recruit-train-scroll-hint"
                             role="note"
                             style={{ borderColor: 'rgba(255, 240, 176, 0.35)', background: UI_SURFACE.mapPanelSelected, color: '#fff0b0' }}
@@ -4339,14 +4327,14 @@ const ActionsZone: React.FC<{
                                     data-testid={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
                                     data-tutorial-id={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
                                     disabled={!(isTutorialCommandAllowed?.(QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE) ?? true)}
-                                    className={`inline-flex ${isRecruitTarget ? 'min-h-[40px] items-center py-1' : choice.kind === 'training-target' ? 'min-h-[40px] items-center py-1' : 'min-h-[44px] items-start py-2'} justify-between gap-3 border-[3px] px-3 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50`}
+                                    className={`inline-flex ${isRecruitTarget ? 'min-h-[40px] items-center py-1' : choice.kind === 'training-target' ? 'min-h-[40px] items-center py-1' : 'min-h-[44px] items-start py-2'} justify-between gap-3 border-[3px] px-3 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50`}
                                     onClick={() => onResolveWheelRecruitTrainChoice(choice.id)}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
                                     <span className={`min-w-0 ${isRecruitTarget ? 'flex flex-wrap items-baseline gap-x-2' : ''}`}>
-                                        <span className={`block ${isRecruitTarget ? 'text-[12px]' : 'text-[13px]'}`}>{choiceLabel}</span>
+                                        <span className={`block ${isRecruitTarget ? 'text-[14px]' : 'text-[13px]'}`}>{choiceLabel}</span>
                                         {description.detail ? (
-                                            <span className={`${isRecruitTarget ? 'block' : 'mt-1 block'} text-[11px]`} style={{ color: UI_STYLE.mutedInk }}>{description.detail}</span>
+                                            <span className={`${isRecruitTarget ? 'block' : 'mt-1 block'} text-[14px]`} style={{ color: UI_STYLE.mutedInk }}>{description.detail}</span>
                                         ) : null}
                                     </span>
                                 </button>
@@ -4355,14 +4343,14 @@ const ActionsZone: React.FC<{
                     </div>
                 </div>
             ) : null}
-            {!hideWheelRecruitTrainSummary && (!isTutorialActive || tutorialHighlightsSeasonSummary) && (!suppressPassiveActionContext || tutorialHighlightsSeasonSummary) && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (
+            {!hasMilitaryFarmMapFeedback && !hideWheelRecruitTrainSummary && (!isTutorialActive || tutorialHighlightsSeasonSummary) && (!suppressPassiveActionContext || tutorialHighlightsSeasonSummary) && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (
                 <div
-                    className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
+                    className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[14px] font-black leading-5"
                     data-testid="qidahen-season-summary"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapOpenPanel, color: UI_STYLE.ink, boxShadow: UI_SURFACE.mapOpenPanelShadow, borderRadius: 3 }}
                 >
                     <div>{core.lastSeasonSummary.title}</div>
-                    <div className="mt-1 space-y-1 text-[11px]" style={{ color: UI_STYLE.bronze }}>
+                    <div className="mt-1 space-y-1 text-[14px]" style={{ color: UI_STYLE.bronze }}>
                         {seasonSummaryLines.map((line) => (
                             <div key={line}>{line}</div>
                         ))}
@@ -4376,10 +4364,10 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{fortificationMaintenanceSelection.title}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                         {fortificationMaintenanceSelection.summary}
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]" data-testid="qidahen-upkeep-attrition-priority">
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[14px]" data-testid="qidahen-upkeep-attrition-priority">
                         <span className="mr-1" style={{ color: '#f3d1a5' }}>
                             {t('board.actions.attritionLabel', { defaultValue: '兵力耗损' })}
                         </span>
@@ -4399,7 +4387,7 @@ const ActionsZone: React.FC<{
                                     key={option.id}
                                     type="button"
                                     data-testid={`qidahen-upkeep-attrition-${option.id}`}
-                                    className="inline-flex h-[28px] min-w-[54px] items-center justify-center border-[2px] px-2 text-[11px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    className="inline-flex h-[28px] min-w-[54px] items-center justify-center border-[2px] px-2 text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onSelectUpkeepAttritionPriority(option.id)}
                                     style={{
                                         borderColor: selected ? UI_STYLE.oldGold : UI_STYLE.mapInk,
@@ -4420,13 +4408,13 @@ const ActionsZone: React.FC<{
                                 key={choice.id}
                                 type="button"
                                 data-testid={`qidahen-fortification-maintenance-choice-${choice.id}`}
-                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                 onClick={() => onResolveFortificationMaintenance(choice.id, upkeepAttritionPriority)}
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="min-w-0">
                                     <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                    <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                         {choice.detail}
                                     </span>
                                 </span>
@@ -4444,7 +4432,7 @@ const ActionsZone: React.FC<{
                     <div>{core.gaoDiDispatchSelection.title}</div>
                     {isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection) ? (
                         <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(210,183,117,0.28)' }}>
-                            <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                            <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                                 {t('board.actions.gaoDi.summary', {
                                     sourceRegionName: core.gaoDiDispatchSelection.displayAnchorRegionName,
                                     maxTroops: core.gaoDiDispatchSelection.maxTroops,
@@ -4452,10 +4440,10 @@ const ActionsZone: React.FC<{
                                     defaultValue: '选择调度目标 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口',
                                 })}
                             </div>
-                            <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                            <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                                 {core.gaoDiDispatchSelection.summary}
                             </div>
-                            <div className="text-[12px]" data-testid="qidahen-gao-di-dispatch-target" style={{ color: selectedGaoDiCandidate ? UI_STYLE.mapIvory : UI_STYLE.mapGold }}>
+                            <div className="text-[14px]" data-testid="qidahen-gao-di-dispatch-target" style={{ color: selectedGaoDiCandidate ? UI_STYLE.mapIvory : UI_STYLE.mapGold }}>
                                 {selectedGaoDiCandidate
                                     ? t('board.actions.gaoDi.currentTarget', {
                                         targetRegionName: selectedGaoDiCandidate.targetRegionName,
@@ -4511,7 +4499,7 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{internalDispatchSelection.title}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.internalDispatch.summary', {
                             sourceRegionName: internalDispatchSelection.displayAnchorRegionName,
                             maxTroops: internalDispatchSelection.maxTroops,
@@ -4520,7 +4508,7 @@ const ActionsZone: React.FC<{
                     </div>
                     <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(210,183,117,0.28)' }}>
                         <div
-                            className="text-[12px]"
+                            className="text-[14px]"
                             data-testid="qidahen-internal-dispatch-target"
                             aria-live="polite"
                             style={{ color: selectedInternalDispatchCandidate ? UI_STYLE.mapIvory : UI_STYLE.mapGold }}
@@ -4536,7 +4524,7 @@ const ActionsZone: React.FC<{
                         </div>
                         {selectedInternalDispatchCandidate ? (
                             <div
-                                className="mt-1 text-[11px] font-bold"
+                                className="mt-1 text-[14px] font-bold"
                                 data-testid="qidahen-internal-dispatch-consequence"
                                 style={{ color: UI_STYLE.mapGold }}
                             >
@@ -4579,7 +4567,7 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{t('board.actions.recruit.title', { defaultValue: '征召军队' })}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.recruit.summary', {
                             targetRegionName: recruitSelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             defaultValue: '选择建军方式',
@@ -4592,13 +4580,13 @@ const ActionsZone: React.FC<{
                                     key={choice.id}
                                     type="button"
                                     data-testid={`qidahen-recruit-choice-${choice.id}`}
-                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onResolveRecruitChoice(choice.id)}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
                                     <span className="min-w-0">
                                         <span className="block text-[13px]">{choice.label}</span>
-                                        <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                        <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                             {choice.detail}
                                         </span>
                                     </span>
@@ -4606,7 +4594,7 @@ const ActionsZone: React.FC<{
                             ))}
                         </div>
                     ) : (
-                        <div className="mt-2 border-[2px] px-2 py-2 text-[12px]" data-testid="qidahen-recruit-map-first-hint" style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(255, 241, 205, 0.08)', color: UI_STYLE.mapIvory, borderRadius: 3 }}>
+                        <div className="mt-2 border-[2px] px-2 py-2 text-[14px]" data-testid="qidahen-recruit-map-first-hint" style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(255, 241, 205, 0.08)', color: UI_STYLE.mapIvory, borderRadius: 3 }}>
                             {t('board.actions.recruit.mapFirstHint', { defaultValue: '先点击地图上的建军地区，再选择建军方式。' })}
                         </div>
                     )}
@@ -4626,7 +4614,7 @@ const ActionsZone: React.FC<{
                     }}
                 >
                     <div>{grantPardonSelection.title}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {grantPardonSelection.targetRegionId == null
                             ? t('board.actions.grantPardon.targetRegionHint', {
                                 factionName: grantPardonExecutorFactionName,
@@ -4642,7 +4630,7 @@ const ActionsZone: React.FC<{
                     </div>
                     {grantPardonSelection.targetRegionId != null && grantPardonSelection.opponentFactionId != null ? (
                         <div
-                            className="mt-2 border-[2px] px-2 py-1 text-[11px]"
+                            className="mt-2 border-[2px] px-2 py-1 text-[14px]"
                             data-testid="qidahen-grant-pardon-derived-opponent"
                             style={{
                                 borderColor: UI_STYLE.mapGold,
@@ -4666,7 +4654,7 @@ const ActionsZone: React.FC<{
                                     key={choice.sourceFactionId}
                                     type="button"
                                     data-testid={`qidahen-grant-pardon-opponent-${choice.sourceFactionId}`}
-                                    className="inline-flex min-h-[44px] items-center justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    className="inline-flex min-h-[44px] items-center justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onResolveGrantPardonChoice(`opponent:${choice.sourceFactionId}`)}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
@@ -4676,7 +4664,7 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : grantPardonHasMapTargets ? null : (
                         <div className="mt-2 flex flex-col gap-2">
-                            <div className="text-[10px] font-black uppercase tracking-[0.08em]" style={{ color: UI_STYLE.mapGold }}>
+                            <div className="text-[14px] font-black uppercase tracking-[0.08em]" style={{ color: UI_STYLE.mapGold }}>
                                 {t('board.actions.grantPardon.fallbackListLabel', { defaultValue: '备用选择' })}
                             </div>
                             {grantPardonSelection.choices.map((choice) => (
@@ -4684,13 +4672,13 @@ const ActionsZone: React.FC<{
                                     key={choice.id}
                                     type="button"
                                     data-testid={`qidahen-grant-pardon-choice-${choice.id}`}
-                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onResolveGrantPardonChoice(choice.id)}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
                                     <span className="min-w-0">
                                         <span className="block text-[13px]">{choice.label}</span>
-                                        <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                        <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                             {choice.detail}
                                         </span>
                                     </span>
@@ -4707,7 +4695,7 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{t('board.actions.maShiTrade.title', { defaultValue: '马市贸易' })}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.maShiTrade.summary', {
                             targetRegionName: maShiTradeSelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             defaultValue: '选择建军数量',
@@ -4720,13 +4708,13 @@ const ActionsZone: React.FC<{
                                     key={choice.troopCount}
                                     type="button"
                                     data-testid={`qidahen-ma-shi-trade-choice-${choice.troopCount}`}
-                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onResolveMaShiTradeChoice(choice.troopCount)}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
                                     <span className="min-w-0">
                                         <span className="block text-[13px]">{choice.label}</span>
-                                        <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                        <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                             {choice.detail}
                                         </span>
                                     </span>
@@ -4734,7 +4722,7 @@ const ActionsZone: React.FC<{
                             ))}
                         </div>
                     ) : (
-                        <div className="mt-2 border-[2px] px-2 py-2 text-[12px]" data-testid="qidahen-ma-shi-trade-map-first-hint" style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(255, 241, 205, 0.08)', color: UI_STYLE.mapIvory, borderRadius: 3 }}>
+                        <div className="mt-2 border-[2px] px-2 py-2 text-[14px]" data-testid="qidahen-ma-shi-trade-map-first-hint" style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(255, 241, 205, 0.08)', color: UI_STYLE.mapIvory, borderRadius: 3 }}>
                             {t('board.actions.maShiTrade.mapFirstHint', { defaultValue: '先点击地图上的建军地区，再选择建军数量。' })}
                         </div>
                     )}
@@ -4747,7 +4735,7 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{t('board.actions.khanEdict.title', { defaultValue: '大汗令箭' })}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.khanEdict.summary', {
                             sourceRegionName: khanEdictSelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             defaultValue: '选择执行效果',
@@ -4759,13 +4747,13 @@ const ActionsZone: React.FC<{
                                 key={choice.id}
                                 type="button"
                                 data-testid={`qidahen-khan-edict-choice-${choice.id}`}
-                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                 onClick={() => onResolveKhanEdictChoice(choice.id)}
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="min-w-0">
                                     <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                    <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                         {choice.detail}
                                     </span>
                                 </span>
@@ -4781,14 +4769,14 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{diplomacySelection.title}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.sourceSummary', {
                             sourceRegionName: diplomacySelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             hireRegionName: diplomacySelection.hireRegionName ?? t('board.actions.diplomacy.currentControlRegion', { defaultValue: '当前控制区' }),
                             defaultValue: '处理外交与雇佣',
                         })}
                     </div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.resolvedSummary', {
                             resolved: diplomacySelection.resolvedSteps.length,
                             total: diplomacySelection.maxTargetCount,
@@ -4796,7 +4784,7 @@ const ActionsZone: React.FC<{
                             defaultValue: '已执行 {{resolved}}/{{total}} 次外交 · 还可继续 {{remaining}} 次',
                         })}
                     </div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.targetSummary', {
                             targetHint: diplomacySelection.targetHint,
                             defaultValue: '在地图上点击外交目标；下方地区按钮仅作备用 · {{targetHint}}',
@@ -4804,7 +4792,7 @@ const ActionsZone: React.FC<{
                     </div>
                     {diplomacySelection.resolvedSteps.length > 0 ? (
                         <div
-                            className="mt-2 border-[2px] px-2 py-2 text-[11px] leading-4"
+                            className="mt-2 border-[2px] px-2 py-2 text-[14px] leading-4"
                             data-testid="qidahen-diplomacy-history"
                             style={{ borderColor: 'rgba(232,200,133,0.26)', background: 'rgba(17,11,7,0.22)', borderRadius: 3 }}
                         >
@@ -4828,7 +4816,7 @@ const ActionsZone: React.FC<{
                                     key={regionId}
                                     type="button"
                                     data-testid={`qidahen-diplomacy-target-${regionId}`}
-                                    className="border-[2px] px-2 py-1 text-[11px] font-black"
+                                    className="border-[2px] px-2 py-1 text-[14px] font-black"
                                     onClick={() => onSelectRegion(regionId)}
                                     style={{
                                         borderColor: UI_STYLE.mapInk,
@@ -4849,13 +4837,13 @@ const ActionsZone: React.FC<{
                                 key={choice.id}
                                 type="button"
                                 data-testid={`qidahen-diplomacy-choice-${choice.id}`}
-                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                 onClick={() => onResolveDiplomacyChoice(choice.id)}
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="min-w-0">
                                     <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                    <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                         {choice.detail}
                                     </span>
                                 </span>
@@ -4871,7 +4859,7 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{t('board.actions.driveTiger.title', { defaultValue: '驱虎吞狼' })}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.driveTiger.summary', {
                             targetFactionName: driveTigerConsentSelection.targetFactionName,
                             defaultValue: '先问 {{targetFactionName}} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻。',
@@ -4883,13 +4871,13 @@ const ActionsZone: React.FC<{
                                 key={choice.id}
                                 type="button"
                                 data-testid={`qidahen-drive-tiger-consent-choice-${choice.id}`}
-                                className="border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                className="border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                 onClick={() => onResolveDriveTigerConsent(choice.id)}
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="block">
                                     {choice.label}
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                    <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                         {choice.detail}
                                     </span>
                                 </span>
@@ -4905,7 +4893,7 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div>{wheelDispatchSelection.restriction}</div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.wheelDispatch.summary', {
                             sourceRegionName: wheelDispatchSelection.displayAnchorRegionName,
                             count: wheelDispatchSelection.candidates.length,
@@ -4916,10 +4904,13 @@ const ActionsZone: React.FC<{
             ) : null}
             {pendingTargetAction ? (
                 <div
-                    className="mt-3 border-[3px] px-3 py-2 text-[14px] font-black leading-6"
+                    className="mt-3 border px-4 py-4 text-[14px] font-black leading-6"
                     data-testid="qidahen-raid-intent"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
+                    {showBattlePreparation ? (
+                        <QidahenBattlePreparation pending={pendingTargetAction} selectedTroops={pendingCommittedTroops} showSelectionHint={!isTutorialActive || tutorialStepId !== 'resolve-battle'} />
+                    ) : (<>
                     <div>
                         {getQidahenFriendlyPendingTargetTitle(pendingTargetAction)}
                         <span className="sr-only">
@@ -4931,7 +4922,7 @@ const ActionsZone: React.FC<{
                             })}
                         </span>
                     </div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                         {pendingTargetPreview?.resolutionHint}
                         {pendingTargetAction.defenderPayCost != null
                             ? t('board.actions.pendingTarget.defenderPayCost', {
@@ -4941,7 +4932,7 @@ const ActionsZone: React.FC<{
                             : ''}
                     </div>
                     {pendingTargetAction.actionId === 'raid' || pendingTargetAction.actionId === 'wheel-dispatch' || pendingTargetAction.actionId === 'drive-tiger' ? (
-                        <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                        <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                             {t('board.actions.pendingTarget.stats', {
                                 sourceAvailableTroops: pendingTargetAction.sourceAvailableTroops,
                                 committedTroops: pendingTargetPreview?.committedTroops,
@@ -4956,34 +4947,14 @@ const ActionsZone: React.FC<{
                                 : ''}
                         </div>
                     ) : null}
-                    {!pendingTargetAction.resolvedBattleRolls && !core.pincerAdvanceSelection && !core.instigateDefectionSelection && !core.wuzhenChaohaSelection && getPendingCommittedTroopOptions(pendingTargetAction).length > 1 ? (
-                        <div className="mt-2 text-[11px]" data-testid="qidahen-pending-committed-troops">
-                            <span className="mr-1" style={{ color: '#f3d1a5' }}>
-                                {t('board.actions.pendingTarget.actualCommittedTroopsMapFirst', {
-                                    defaultValue: '实际出兵：点击地图上的源地区兵牌切换数量',
-                                })}
-                            </span>
-                            <span className="sr-only">
-                                {getPendingCommittedTroopOptions(pendingTargetAction).map((committedTroops) => (
-                                    <button
-                                        key={committedTroops}
-                                        type="button"
-                                        data-testid={`qidahen-pending-committed-${committedTroops}`}
-                                        onClick={() => onSelectPendingCommittedTroops(committedTroops)}
-                                    >
-                                        {committedTroops}
-                                    </button>
-                                ))}
-                            </span>
-                        </div>
-                    ) : null}
+                    </>)}
                     {pendingTargetAction.resolvedBattleRolls ? <QidahenBattleRollDiceSummary battleRolls={pendingTargetAction.resolvedBattleRolls} /> : null}
                     {core.wuzhenChaohaSelection ? (
                         <div className="mt-2" data-testid="qidahen-wuzhen-chaoha-selection">
-                            <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            <div className="mb-2 text-[14px]" style={{ color: '#f3d1a5' }}>
                                 {t('board.actions.wuzhenChaoha.hint', { defaultValue: '点击绿色步兵牌，指定其提前在炮兵阶段攻击。' })}
                             </div>
-                            <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[14px]">
                                 <span style={{ color: '#f3d1a5' }}>
                                     {t('board.actions.wuzhenChaoha.artilleryTechLabel', { defaultValue: '销毁《火炮技术》：' })}
                                 </span>
@@ -4997,7 +4968,7 @@ const ActionsZone: React.FC<{
                                             key={count}
                                             type="button"
                                             data-testid={`qidahen-wuzhen-chaoha-artillery-tech-${count}`}
-                                            className="inline-flex h-[28px] min-w-[34px] items-center justify-center border-[2px] px-2 text-[11px] font-black"
+                                            className="inline-flex h-[28px] min-w-[34px] items-center justify-center border-[2px] px-2 text-[14px] font-black"
                                             onClick={() => onSetWuzhenChaohaArtilleryTechCount(count)}
                                             style={{
                                                 borderColor: selected ? UI_STYLE.oldGold : UI_STYLE.mapInk,
@@ -5024,7 +4995,7 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : core.instigateDefectionSelection ? (
                         <div className="mt-2" data-testid="qidahen-instigate-defection-selection">
-                            <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            <div className="mb-2 text-[14px]" style={{ color: '#f3d1a5' }}>
                                 {t('board.actions.instigateDefection.hint', { defaultValue: '点击绿色兵牌选择要策反的敌方次级部队。' })}
                             </div>
                             <button
@@ -5039,7 +5010,7 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : core.pincerAdvanceSelection ? (
                         <div className="mt-2" data-testid="qidahen-pincer-advance-selection">
-                            <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            <div className="mb-2 text-[14px]" style={{ color: '#f3d1a5' }}>
                                 {t('board.actions.pincerAdvance.hint', {
                                     selected: core.pincerAdvanceSelection.selectedChoiceIds.length,
                                     max: core.pincerAdvanceSelection.maxTroops,
@@ -5070,7 +5041,7 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : core.infantryCavalryCombinedSelection ? (
                         <div className="mt-2" data-testid="qidahen-infantry-cavalry-combined-selection">
-                            <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            <div className="mb-2 text-[14px]" style={{ color: '#f3d1a5' }}>
                                 {t('board.actions.infantryCavalryCombined.hint', { defaultValue: '步骑联合：选择骑兵撤离，或让骑兵转入步兵阶段共同攻击。' })}
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -5096,7 +5067,7 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : (
                         <div className="mt-2 flex flex-wrap gap-2">
-                            {pendingTargetChoiceOptions.map((choice) => {
+                            {[...pendingTargetChoiceOptions].sort((a, b) => Number(b.id === 'fight') - Number(a.id === 'fight')).map((choice) => {
                                 const consequence = choice.id === 'rear-guard'
                                     ? '撤退时最多损失 1 个幸存部队'
                                     : choice.id === 'rout'
@@ -5104,7 +5075,7 @@ const ActionsZone: React.FC<{
                                         : choice.id.startsWith('cavalry-evasion:')
                                             ? '骑兵退出本次战斗并撤往所选地区'
                                             : choice.id.startsWith('cavalry-plunder-')
-                                                ? '骑兵改为劫掠，不进入常规交战'
+                                                ? null
                                                 : choice.id === 'defender-hold-city'
                                                     ? '守军收入城内，直接进入城战'
                                                     : choice.id === 'defender-sortie'
@@ -5116,12 +5087,13 @@ const ActionsZone: React.FC<{
                                         type="button"
                                         data-testid={getPendingTargetChoiceTestId(choice.id)}
                                         data-tutorial-id={getPendingTargetChoiceTestId(choice.id)}
-                                        className="inline-flex min-h-[52px] flex-col items-start justify-center border-[3px] px-3 py-1.5 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                        disabled={needsRaidTroopSelection && (choice.id === 'fight' || choice.id.startsWith('cavalry-plunder-'))}
+                                        className={`inline-flex min-h-[40px] items-center justify-center border px-3 py-2 text-left text-[14px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${choice.id === 'fight' ? 'w-full min-h-[48px]' : consequence ? 'flex-col items-start' : ''}`}
                                         onClick={() => onResolvePendingAction(choice.value, 'highest-level', 'highest-level', pendingTargetAction.resolvedBattleRolls ? undefined : pendingCommittedTroops)}
-                                        style={{ minWidth: getPendingTargetChoiceMinWidth(choice.id), borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                        style={{ minWidth: choice.id.startsWith('cavalry-plunder-') ? 0 : getPendingTargetChoiceMinWidth(choice.id), flex: choice.id.startsWith('cavalry-plunder-') ? '1 1 120px' : undefined, borderColor: choice.id === 'fight' ? '#f5d395' : UI_STYLE.mapInk, background: choice.id === 'fight' ? UI_STYLE.cinnabar : UI_SURFACE.paper, color: choice.id === 'fight' ? UI_STYLE.mapIvory : UI_STYLE.ink, borderRadius: 3 }}
                                     >
                                         <span>{getQidahenFriendlyPendingChoiceLabel(choice)}</span>
-                                        {consequence ? <span className="mt-0.5 text-[10px]" style={{ color: UI_STYLE.mutedInk }}>{consequence}</span> : null}
+                                        {consequence ? <span className="mt-0.5 text-[14px]" style={{ color: UI_STYLE.mutedInk }}>{consequence}</span> : null}
                                     </button>
                                 );
                             })}
@@ -5135,19 +5107,19 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-post-battle-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>
+                    <div data-tutorial-id="qidahen-post-battle-result-header" data-testid="qidahen-post-battle-result-header">
                         {getQidahenFriendlyPostBattleTitle(postBattleSelection)} · {postBattleSelection.targetRegionName}
                         <span className="sr-only">{postBattleSelection.title}</span>
                     </div>
-                    {postBattleSelection.battleRollSummary ? (
-                        <div className="mt-1 text-[11px]" style={{ color: '#ffe5b3' }} data-testid="qidahen-post-battle-roll-summary">
+                    {postBattleSelection.battleRollSummary && !postBattleSelection.battleRolls ? (
+                        <div className="mt-1 text-[14px]" style={{ color: '#ffe5b3' }} data-testid="qidahen-post-battle-roll-summary">
                             {normalizeQidahenBattleRollSummary(postBattleSelection.battleRollSummary)}
                         </div>
                     ) : null}
                     {postBattleSelection.battleRolls && postBattleMode == null ? (
                         <QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />
                     ) : null}
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.postBattle.summary', {
                             summary: postBattleSelection.summary,
                             survivingTroops: postBattleSelection.survivingTroops,
@@ -5177,7 +5149,7 @@ const ActionsZone: React.FC<{
                                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                         >
                                         <span className="block">{label}</span>
-                                        <span className="mt-1 block text-[10px]" style={{ color: UI_STYLE.mutedInk }}>
+                                        <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                             {t('board.actions.postBattle.choiceCount', {
                                                 count: choiceCount,
                                                 defaultValue: '{{count}} 种结果',
@@ -5190,7 +5162,7 @@ const ActionsZone: React.FC<{
                     ) : (
                         <div className="mt-3" data-testid={`qidahen-post-battle-mode-options-${postBattleMode}`}>
                             <div className="mb-2 flex items-center justify-between gap-3">
-                                <div className="text-[12px]" style={{ color: UI_STYLE.mapGold }}>
+                                <div className="text-[14px]" style={{ color: UI_STYLE.mapGold }}>
                                     {postBattleMode === 'occupy'
                                         ? t('board.actions.postBattle.occupyTitle', { defaultValue: '占领方式' })
                                         : postBattleMode === 'besiege'
@@ -5199,7 +5171,7 @@ const ActionsZone: React.FC<{
                                 </div>
                                 <button
                                     type="button"
-                                    className="min-h-[44px] border-[2px] px-3 text-[12px] font-black"
+                                    className="min-h-[44px] border-[2px] px-3 text-[14px] font-black"
                                     onClick={() => {
                                         setPostBattleMode(null);
                                         setDraftPostBattleChoiceId(null);
@@ -5210,7 +5182,7 @@ const ActionsZone: React.FC<{
                                 </button>
                             </div>
                             <div
-                                className="mb-2 text-[10px] leading-4"
+                                className="mb-2 text-[14px] leading-4"
                                 data-testid="qidahen-post-battle-scroll-hint"
                                 style={{ color: '#f3d1a5' }}
                             >
@@ -5229,13 +5201,13 @@ const ActionsZone: React.FC<{
                                             aria-pressed={selected}
                                             data-testid={`qidahen-post-battle-choice-${choice.id}`}
                                             data-tutorial-id={choice.id === 'besiege' ? 'qidahen-post-battle-choice-entry' : undefined}
-                                            className="inline-flex min-h-[52px] shrink-0 items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                            className="inline-flex min-h-[52px] shrink-0 items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                             onClick={() => setDraftPostBattleChoiceId(choice.id)}
                                             style={{ borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.mapInk, background: selected ? UI_SURFACE.paperPressed : UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                         >
                                             <span className="min-w-0">
                                                 <span className="block text-[13px]">{choice.label}</span>
-                                                <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                                <span className="mt-1 block text-[14px]" style={{ color: UI_STYLE.mutedInk }}>
                                                     {choice.detail}
                                                 </span>
                                             </span>
@@ -5331,9 +5303,7 @@ const HandCard: React.FC<{
     const selectedLift = multiSelectMode && selected
         ? multiSelectLift ?? 30
         : configuredSelectedLift ?? HAND_CARD_SELECTED_LIFT;
-    const selectedTransform = selected
-        ? `translateY(-${selectedLift}px) scale(${HAND_CARD_SELECTED_SCALE})`
-        : undefined;
+    const exposedLift = height / 2;
     const clearLongPressTimer = React.useCallback(() => {
         if (longPressTimerRef.current != null) {
             window.clearTimeout(longPressTimerRef.current);
@@ -5394,18 +5364,20 @@ const HandCard: React.FC<{
 
     return (
         <div
-            className="relative shrink-0 rounded-[11px]"
+            className="qidahen-hand-card group relative shrink-0 rounded-[11px]"
             data-qidahen-hand-card-selected={selected ? 'true' : undefined}
             data-testid={`qidahen-hand-card-shell-${card.id}`}
             style={{
                 width,
                 height,
-                zIndex: selected && !multiSelectMode ? totalCards + 12 : stackIndex + 1,
+                '--qidahen-card-order': selected && !multiSelectMode ? totalCards + 12 : stackIndex + 1,
+                '--qidahen-card-rest-lift': `${selected ? exposedLift + selectedLift : 0}px`,
+                '--qidahen-card-hover-lift': `${exposedLift}px`,
+                '--qidahen-card-scale': selected ? HAND_CARD_SELECTED_SCALE : 1,
                 marginLeft: stackIndex === 0 ? 0 : overlapPx,
-                transform: selectedTransform,
                 transformOrigin: 'bottom center',
                 transition: 'transform 180ms ease-out',
-            }}
+            } as React.CSSProperties}
         >
             <SelectableGameObject
                 aria-label={card.label}
@@ -5416,7 +5388,7 @@ const HandCard: React.FC<{
                 data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}
                 data-qidahen-hand-card-touch-inspect="long-press"
                 tabIndex={disabled ? -1 : 0}
-                className={`z-20 h-full w-full origin-bottom rounded-[9px] bg-transparent hover:z-50 hover:brightness-[1.03] ${selected ? 'brightness-[1.08]' : 'hover:-translate-y-[18px]'}`}
+                className={`z-20 h-full w-full origin-bottom rounded-[9px] bg-transparent hover:brightness-[1.03] ${selected ? 'brightness-[1.08]' : ''}`}
                 onClick={handleClick}
                 onPointerDown={handlePointerDown}
                 onPointerUp={handlePointerEnd}
@@ -5477,6 +5449,16 @@ const HandCard: React.FC<{
                     </span>
                 ) : null}
             </SelectableGameObject>
+            {onMagnify ? (
+                <CardInspectButton
+                    ariaLabel={t('board.magnifyCardAria', { card: card.label })}
+                    testId={`qidahen-hand-card-magnify-${card.id}`}
+                    onInspect={() => onMagnify(inspectTarget)}
+                    buttonSize="26px"
+                    iconSize="16px"
+                    alwaysVisible
+                />
+            ) : null}
         </div>
     );
 };
@@ -5525,7 +5507,6 @@ const HandZone: React.FC<{
     onMagnifyCard,
 }) => {
     const { t } = useTranslation('game-qidahen');
-    const magnifyScrollRef = React.useRef<HTMLDivElement>(null);
     const handDockRef = React.useRef<HTMLDivElement>(null);
     React.useLayoutEffect(() => {
         if (!guidedPaymentCardId) return;
@@ -5554,7 +5535,7 @@ const HandZone: React.FC<{
     const handCardHeight = CARD_DIMENSIONS.hand.height;
     const multiSelectMode = actionPaymentPreviewVisible || handLimitDiscardSelection != null;
     const handCardSelectedLift = HAND_CARD_SELECTED_LIFT;
-    const bottomDockHeight = handCardHeight + handCardSelectedLift + 4;
+    const bottomDockHeight = handCardHeight * 1.5 + handCardSelectedLift + Math.ceil(handCardHeight * (HAND_CARD_SELECTED_SCALE - 1)) + 8;
     const handCardOverlapPx = multiSelectMode
         ? 0
         : getQidahenHandCardOverlapPx(
@@ -5644,17 +5625,14 @@ const HandZone: React.FC<{
                 />
             </div>
             <div
-                className={`pointer-events-none absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible`}
+                className={`pointer-events-none absolute left-1/2 flex items-end justify-start overflow-x-auto overflow-y-visible`}
                 ref={handDockRef}
                 data-testid="qidahen-hand-zone"
                 data-tutorial-id="qidahen-hand-zone"
                 data-ui-role="qidahen-hand-dock"
                 data-map-target-selection-active={mapTargetSelectionActive ? 'true' : undefined}
-                onScroll={(event) => {
-                    magnifyScrollRef.current?.style.setProperty('--qidahen-hand-scroll-offset', `${-event.currentTarget.scrollLeft}px`);
-                }}
                 style={{
-                    bottom: DESKTOP_HAND_DOCK_INSET,
+                    bottom: -handCardHeight / 2,
                     transform: 'translateX(-50%)',
                     height: bottomDockHeight,
                     width: handDockWidth,
@@ -5717,7 +5695,7 @@ const HandZone: React.FC<{
                                 multiSelectMode={multiSelectMode}
                                 selectedLift={handCardSelectedLift}
                                 onMagnify={onMagnifyCard}
-                                onClick={selectableForHandLimit
+                                        onClick={selectableForHandLimit
                                     ? () => onToggleHandLimitDiscardCard(card.id)
                                     : selectableForSunYuanhua
                                         ? () => onSelectSunYuanhuaTechCard(card.id)
@@ -5733,65 +5711,6 @@ const HandZone: React.FC<{
                                         ? () => onTogglePaymentCard(card.id)
                                         : undefined}
                             />
-                        );
-                    })}
-                </div>
-            </div>
-            <div
-                ref={magnifyScrollRef}
-                data-ui-role="qidahen-hand-magnify-viewport"
-                className={`pointer-events-none absolute left-1/2 flex items-end justify-center overflow-x-clip overflow-y-visible`}
-                style={{
-                    bottom: BOTTOM_DOCK_INSET,
-                    transform: 'translateX(-50%)',
-                    height: bottomDockHeight,
-                    width: handDockWidth,
-                    maxWidth: handDockMaxWidth,
-                }}
-            >
-                <div className="mx-auto flex min-w-max items-end justify-center px-2" style={{ transform: 'translateX(var(--qidahen-hand-scroll-offset, 0px))' }}>
-                    {currentHandCards.map((card, index) => {
-                        const selected = isHandCardSelected(card);
-                        return (
-                            <div
-                                key={`magnify-${card.id}`}
-                                className="pointer-events-none relative shrink-0"
-                                style={{
-                                    width: handCardWidth,
-                                    height: handCardHeight,
-                                    zIndex: selected ? currentHandCards.length + 48 : currentHandCards.length + index + 24,
-                                    marginLeft: index === 0 ? 0 : handCardOverlapPx,
-                                    transform: selected
-                                        ? `translateY(-${handCardSelectedLift}px) scale(${HAND_CARD_SELECTED_SCALE})`
-                                        : undefined,
-                                    transformOrigin: 'bottom center',
-                                    transition: 'transform 180ms ease-out',
-                                }}
-                            >
-                                <button
-                                    type="button"
-                                    data-testid={`qidahen-hand-card-magnify-${card.id}`}
-                                    aria-label={t('board.magnifyCardAria', { card: card.label })}
-                                    className={`${mapTargetSelectionActive || handLimitDiscardSelection != null ? 'pointer-events-none' : 'pointer-events-auto'} absolute right-1 top-1 inline-flex items-center justify-center rounded-full border-[2px] text-[11px] font-black transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 h-[26px] min-w-[26px]`}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        onMagnifyCard?.({
-                                            previewRef: card.previewRef,
-                                            title: card.label,
-                                            rawWidth: CARD_DIMENSIONS.hand.rawWidth,
-                                            rawHeight: CARD_DIMENSIONS.hand.rawHeight,
-                                        });
-                                    }}
-                                    style={{
-                                        borderColor: '#4d3620',
-                                        background: 'rgba(245, 231, 206, 0.92)',
-                                        color: '#402a18',
-                                        boxShadow: '0 3px 8px rgba(56,35,15,0.18)',
-                                    }}
-                                >
-                                    {t('board.magnifyButton')}
-                                </button>
-                            </div>
                         );
                     })}
                 </div>
@@ -6387,7 +6306,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         maShiTradeSelection,
         pendingTargetAction,
     ]);
-    const [pendingCommittedTroops, setPendingCommittedTroops] = React.useState<number | undefined>(pendingTargetAction?.committedTroops);
+    const [pendingCommittedTroops, setPendingCommittedTroops] = React.useState<number | undefined>(pendingTargetAction?.actionId === 'raid' ? undefined : pendingTargetAction?.committedTroops);
     const [upkeepAttritionPriority, setUpkeepAttritionPriority] = React.useState<QidahenCasualtyPriority>('lowest-level');
     const wheelDispatchPaymentPending = isQidahenWheelDispatchPaymentPending(core);
     const wheelRecruitTrainPaymentPending = isQidahenWheelRecruitTrainPaymentPending(core);
@@ -6479,7 +6398,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const activePostBattleInteractionId = postBattleSelectionFromInteraction ? activeInteraction?.id ?? null : null;
 
     React.useEffect(() => {
-        setPendingCommittedTroops(pendingTargetAction?.committedTroops);
+        setPendingCommittedTroops(pendingTargetAction?.actionId === 'raid' ? undefined : pendingTargetAction?.committedTroops);
     }, [
         pendingTargetAction?.actionId,
         pendingTargetAction?.sourceRegionId,
@@ -6979,7 +6898,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
 
     const buildRegularTroopPlacementCandidates = React.useCallback((factionId: QidahenFactionId) => (
         displayCore.regions
-            .filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId))
+            .filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId, displayCore))
             .map((region) => ({
                 id: region.id,
                 action: 'select-region' as const,
@@ -7132,6 +7051,15 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         return null;
     })();
 
+    const actionMapCandidateIdsKey = topLevelMapSelectionGuide?.candidates.map(candidate => candidate.targetRegionId).join('|') ?? '';
+    const regularTroopPlacementActive = tutorialStep?.id === 'select-farm-region';
+    const raidMapPreviewActive = actionPaymentPreviewVisible && displayCore.confirmedActionId === 'raid' && pendingTargetAction == null;
+    const mapSelectionCandidateIds = React.useMemo(() => getQidahenMapSelectionCandidateIds(displayCore, {
+        actionCandidateIds: actionMapCandidateIdsKey ? actionMapCandidateIdsKey.split('|') : [],
+        regularTroopPlacement: regularTroopPlacementActive,
+        raidPreview: raidMapPreviewActive,
+    }), [displayCore, actionMapCandidateIdsKey, regularTroopPlacementActive, raidMapPreviewActive]);
+
     const autoFocusMapTargetRegionIdsKey = topLevelMapSelectionGuide?.candidates
         .map((candidate) => candidate.targetRegionId)
         .join('|') ?? '';
@@ -7154,7 +7082,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         : topLevelMapSelectionGuide && autoFocusMapTargetRegionIdsKey
             ? `${topLevelMapSelectionGuide.title}:${autoFocusMapTargetRegionIdsKey}:${tutorialMapFocusCandidateRegionId ?? ''}:${wheelDispatchSelection?.sourceRegionId ?? core.gaoDiDispatchSelection?.sourceRegionId ?? internalDispatchSelection?.sourceRegionId ?? grantPardonSelection?.sourceRegionId ?? ''}`
             : null;
-    const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;
+    const mapTargetSelectionActive = regularTroopPlacementActive || (topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0);
 
     React.useEffect(() => {
         const targetIds = autoFocusMapTargetRegionIdsKey ? autoFocusMapTargetRegionIdsKey.split('|') : [];
@@ -7177,6 +7105,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             '[data-ui-role="qidahen-hand-magnify-viewport"]', '[data-testid="fab-menu"]',
             '[data-testid="qidahen-draw-anchor"]', '[data-testid="qidahen-discard-anchor"]',
             '[data-testid="qidahen-chronology-zone"]',
+            '[data-testid="qidahen-korea-zone"]',
         ];
         const fitViewport = () => {
             let viewport: QidahenMapViewport | null = null;
@@ -7260,6 +7189,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 tutorialHighlightsResultFeedback={tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'}
                 tutorialGuideTargetRegionId={tutorialMapFocusCandidateRegionId}
                 tutorialRegionFocus={tutorialRegionFocus}
+                mapSelectionCandidateIds={mapSelectionCandidateIds}
                 onTutorialRegionBoundsChange={setTutorialRegionBounds}
                 compactRegionTip={compactMapRegionTip}
                 viewport={mapViewport}
@@ -7281,7 +7211,9 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                                 data-tutorial-id={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
                                 data-choice-id={candidate.resolutionChoiceId}
                                 data-action={candidate.action}
-                                data-grant-pardon-map-choice={candidate.action === 'grant-pardon' ? candidate.resolutionChoiceId : undefined}
+                                data-grant-pardon-map-choice={candidate.action === 'select-region'
+                                    ? candidate.resolutionChoiceId
+                                    : undefined}
                                 style={{
                                     position: 'absolute',
                                     left: targetPoint.x - 1,
@@ -7309,7 +7241,10 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                                 data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
                                 data-choice-id={candidate.resolutionChoiceId}
                                 data-action={candidate.action}
-                                data-grant-pardon-map-choice={candidate.action === 'grant-pardon' ? candidate.resolutionChoiceId : undefined}
+                                data-grant-pardon-map-choice={grantPardonSelection != null && grantPardonSelection.targetRegionId == null
+                                    && candidate.action === 'select-region'
+                                    ? candidate.resolutionChoiceId
+                                    : undefined}
                                 aria-label={`${topLevelMapSelectionGuide.title}：${candidate.targetRegionName}`}
                                 aria-pressed={candidate.action === 'gao-di'
                                     ? draftGaoDiChoiceId === candidate.resolutionChoiceId
@@ -7413,7 +7348,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             />
             <KoreaZone core={core} locale={locale} />
             <ChronologyZone cards={core.yearCards} locale={locale} onMagnify={setMagnifyTarget} />
-            <ActionsZone
+            {!regularTroopPlacementActive ? <ActionsZone
                 core={displayCore}
                 primaryStageMode={primaryStageMode}
                 isTutorialActive={isTutorialActive}
@@ -7460,7 +7395,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onResolvePostBattleDecision={resolvePostBattleDecision}
                 onResolveWheelRecruitTrainChoice={resolveWheelRecruitTrainChoice}
                 wheelDispatchSelection={wheelDispatchSelection}
-            />
+            /> : null}
             <QidahenHandInteractionTray
                 interaction={resolveQidahenHandInteraction(core, actionPaymentPreviewVisible, handLimitDiscardSelection, selectedHandLimitCardIds)}
                 bottom={HAND_INTERACTION_TRAY_BOTTOM}

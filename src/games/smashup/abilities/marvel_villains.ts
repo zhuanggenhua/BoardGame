@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -21,6 +22,9 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
+    type AbilityRuntimePromptResumeResult,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -497,7 +501,7 @@ function runDestroyFollowup(
     choice: MinionChoice | undefined,
     random: RandomFn,
     timestamp: number,
-): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore>; context?: unknown; nextProgram?: unknown } {
+): AbilityRuntimePromptResumeResult<VillainPromptContext, SmashUpCore, SmashUpEvent> {
     if (!choice?.minionUid || choice.baseIndex === undefined) return { events: [] };
     const live = state.core.bases[choice.baseIndex]?.minions.find(minion => minion.uid === choice.minionUid);
     if (!live) return { events: [] };
@@ -524,8 +528,7 @@ function runDestroyFollowup(
         case 'hydra_red_skull':
             return {
                 events: destroyEvents,
-                context: { matchState: state, playerId, now: timestamp, random, drawCount: 1 },
-                nextProgram: villainDrawAfterCommittedProgram,
+                continuation: createAbilityRuntimeContinuation({ matchState: state, playerId, now: timestamp, random, drawCount: 1 }, villainDrawAfterCommittedProgram),
             };
         case 'hydra_madame_hydra':
             return {
@@ -545,8 +548,7 @@ function runDestroyFollowup(
         case 'hydra_hail_hydra':
             return {
                 events: destroyEvents,
-                context: { matchState: state, playerId, now: timestamp, random, drawCount: powerBeforeDestroy },
-                nextProgram: villainDrawAfterCommittedProgram,
+                continuation: createAbilityRuntimeContinuation({ matchState: state, playerId, now: timestamp, random, drawCount: powerBeforeDestroy }, villainDrawAfterCommittedProgram),
             };
         case 'hydra_two_more_shall_take_its_place':
             return {
@@ -558,14 +560,13 @@ function runDestroyFollowup(
         case 'hydra_baron_strucker': {
             return {
                 events: destroyEvents,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     matchState: state,
                     now: timestamp,
                     mode: 'moveOwnMinion',
                     targetBaseIndex: context.sourceBaseIndex,
-                },
-                nextProgram: villainPromptProgram,
+                }, villainPromptProgram),
             };
         }
         case 'masters_of_evil_acceptable_losses':
@@ -606,7 +607,7 @@ function runDestroyFollowup(
     }
 }
 
-const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCore, SmashUpEvent>({
+const villainPromptProgram: AbilityProgram<VillainPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<VillainPromptContext>({
     sourceId: 'marvel_villains_runtime_prompt',
     buildInteraction: (context) => {
         const state = context.matchState.core;
@@ -1170,8 +1171,7 @@ const villainPromptAfterEventsProgram = createEffectProgram<VillainPromptAfterEv
         const { leadingEvents: _leadingEvents, ...promptContext } = context;
         return {
             events: context.leadingEvents,
-            context: promptContext,
-            nextProgram: villainPromptProgram,
+            continuation: createAbilityRuntimeContinuation(promptContext, villainPromptProgram),
         };
     },
 );

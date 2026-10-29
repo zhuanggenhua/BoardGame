@@ -144,6 +144,7 @@ export function readMageWarsResponseContext(frame: ResolutionFrame | undefined):
         return candidate as MageWarsSpellRedirectResponseContext;
     }
 
+    if (candidate.kind !== 'attack-reversal') return undefined;
     if (
         !isMageWarsAttackReversalResponseCardId(candidate.responseCardId)
         || typeof candidate.attackerObjectId !== 'string'

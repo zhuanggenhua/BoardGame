@@ -15,12 +15,12 @@ describe('七大恨战斗结算与进攻战术', () => {
 it('战斗双方剩余兵力相同时守方获胜，攻方必须撤退', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.actionWheelPosition = 'wheel-recruit-train';
-        core.selectedRegionId = 'city-region-24';
+        core.selectedRegionId = 'xuan-fu';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
                 return region;
             }
-            if (region.id === 'city-region-24') {
+            if (region.id === 'xuan-fu') {
                 return {
                     ...region,
                     controller: 'ming',
@@ -59,14 +59,14 @@ it('战斗双方剩余兵力相同时守方获胜，攻方必须撤退', () => {
         });
 
         expect(resolved.turnPhase).toBe('action-window');
-        expect(resolved.selectedRegionId).toBe('city-region-24');
+        expect(resolved.selectedRegionId).toBe('xuan-fu');
         expect(resolved.postBattleSelection).toBeNull();
         expect(resolved.regions.find((region) => region.id === 'city-region-20')).toMatchObject({
             controller: 'neutral',
             controlLabel: '中立',
             troops: 1,
         });
-        expect(resolved.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
+        expect(resolved.regions.find((region) => region.id === 'xuan-fu')).toMatchObject({
             controller: 'ming',
             controlLabel: '大明',
             troops: 0,

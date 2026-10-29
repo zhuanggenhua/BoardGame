@@ -241,19 +241,25 @@
       "name": "咸兴",
       "color": "#a6c62f",
       "seed": {
-        "x": 1126,
-        "y": 553
+        "x": 1065,
+        "y": 430
       },
       "links": [
         "city-region-11",
         "city-region-13",
         "city-region-15",
         "city-region-18",
-        "city-region-22",
         "city-region-29",
         "city-region-5"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "mapRole": "point",
+      "markerBounds": {
+        "left": 1049,
+        "top": 408,
+        "width": 33,
+        "height": 44
+      }
     },
     {
       "id": "city-region-13",
@@ -287,7 +293,7 @@
         "city-region-19",
         "city-region-6",
         "city-region-8",
-        "jinzhou"
+        "duoyan"
       ],
       "acceptance": null
     },
@@ -296,18 +302,18 @@
       "name": "辽北",
       "color": "#4dd559",
       "seed": {
-        "x": 892,
-        "y": 382
+        "x": 882,
+        "y": 369
       },
       "links": [
         "city-region-10",
         "city-region-13",
+        "city-region-15-liaodong",
         "city-region-17",
         "city-region-19",
         "city-region-22",
         "city-region-7",
-        "jinzhou",
-        "song-jin",
+        "duoyan",
         "xian-xing"
       ],
       "acceptance": null
@@ -325,7 +331,7 @@
         "city-region-14",
         "city-region-20",
         "city-region-8",
-        "jinzhou"
+        "duoyan"
       ],
       "acceptance": null
     },
@@ -350,14 +356,21 @@
       "name": "平壤",
       "color": "#2fc6c0",
       "seed": {
-        "x": 1222,
-        "y": 501
+        "x": 1030,
+        "y": 577
       },
       "links": [
         "city-region-29",
         "xian-xing"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "mapRole": "point",
+      "markerBounds": {
+        "left": 1012,
+        "top": 553,
+        "width": 36,
+        "height": 49
+      }
     },
     {
       "id": "city-region-19",
@@ -371,8 +384,9 @@
         "city-region-14",
         "city-region-15",
         "city-region-17",
-        "jinzhou",
-        "song-jin"
+        "city-region-19-liaoxi",
+        "city-region-22",
+        "duoyan"
       ],
       "acceptance": null
     },
@@ -387,9 +401,9 @@
       "links": [
         "city-region-1",
         "city-region-16",
-        "city-region-24",
         "city-region-26",
-        "city-region-27"
+        "city-region-27",
+        "xuan-fu"
       ],
       "acceptance": null
     },
@@ -402,95 +416,6 @@
         "y": 455
       },
       "links": [],
-      "acceptance": null
-    },
-    {
-      "id": "jinzhou",
-      "name": "锦州",
-      "color": "#4d64d5",
-      "seed": {
-        "x": 627,
-        "y": 477
-      },
-      "links": [
-        "city-region-14",
-        "city-region-15",
-        "city-region-16",
-        "city-region-19",
-        "city-region-22",
-        "city-region-24",
-        "city-region-25"
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "city-region-22",
-      "name": "东江",
-      "color": "#c6422f",
-      "seed": {
-        "x": 878,
-        "y": 717
-      },
-      "links": [
-        "city-region-15",
-        "city-region-25",
-        "city-region-27",
-        "city-region-28",
-        "city-region-29",
-        "city-region-32",
-        "city-region-33",
-        "jinzhou",
-        "song-jin",
-        "xian-xing"
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "song-jin",
-      "name": "皮岛",
-      "color": "#4dd586",
-      "seed": {
-        "x": 825,
-        "y": 528
-      },
-      "links": [
-        "city-region-15",
-        "city-region-19",
-        "city-region-22"
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "city-region-24",
-      "name": "宣府",
-      "color": "#9a2fc6",
-      "seed": {
-        "x": 395,
-        "y": 548
-      },
-      "links": [
-        "city-region-20",
-        "city-region-25",
-        "city-region-27",
-        "city-region-28",
-        "jinzhou"
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "city-region-25",
-      "name": "山海关",
-      "color": "#d5d54d",
-      "seed": {
-        "x": 543,
-        "y": 552
-      },
-      "links": [
-        "city-region-22",
-        "city-region-24",
-        "city-region-28",
-        "jinzhou"
-      ],
       "acceptance": null
     },
     {
@@ -517,11 +442,10 @@
       },
       "links": [
         "city-region-20",
-        "city-region-22",
-        "city-region-24",
         "city-region-28",
         "city-region-30",
-        "city-region-33"
+        "city-region-33",
+        "xuan-fu"
       ],
       "acceptance": null
     },
@@ -534,10 +458,9 @@
         "y": 634
       },
       "links": [
-        "city-region-22",
-        "city-region-24",
-        "city-region-25",
-        "city-region-27"
+        "city-region-27",
+        "city-region-28-jizhen",
+        "xuan-fu"
       ],
       "acceptance": null
     },
@@ -546,15 +469,21 @@
       "name": "汉城",
       "color": "#654dd5",
       "seed": {
-        "x": 1239,
-        "y": 871
+        "x": 1139,
+        "y": 627
       },
       "links": [
         "city-region-18",
-        "city-region-22",
         "xian-xing"
       ],
-      "acceptance": null
+      "acceptance": null,
+      "mapRole": "point",
+      "markerBounds": {
+        "left": 1122,
+        "top": 604,
+        "width": 35,
+        "height": 47
+      }
     },
     {
       "id": "city-region-30",
@@ -593,7 +522,6 @@
         "y": 746
       },
       "links": [
-        "city-region-22",
         "city-region-33"
       ],
       "acceptance": null
@@ -607,9 +535,102 @@
         "y": 830
       },
       "links": [
-        "city-region-22",
         "city-region-27",
         "city-region-32"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-15-liaodong",
+      "name": "辽东",
+      "color": "#248de8",
+      "seed": {
+        "x": 880,
+        "y": 455
+      },
+      "links": [
+        "city-region-15",
+        "city-region-19-liaoxi"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-19-liaoxi",
+      "name": "辽西",
+      "color": "#4d64d5",
+      "seed": {
+        "x": 724,
+        "y": 447
+      },
+      "links": [
+        "city-region-15-liaodong",
+        "city-region-19",
+        "duoyan"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "duoyan",
+      "name": "朵颜部",
+      "color": "#8ece4c",
+      "seed": {
+        "x": 602,
+        "y": 476
+      },
+      "links": [
+        "city-region-14",
+        "city-region-15",
+        "city-region-16",
+        "city-region-19",
+        "city-region-19-liaoxi",
+        "city-region-28-jizhen",
+        "xuan-fu"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "xuan-fu",
+      "name": "宣府",
+      "color": "#9a2fc6",
+      "seed": {
+        "x": 395,
+        "y": 548
+      },
+      "links": [
+        "city-region-20",
+        "city-region-27",
+        "city-region-28",
+        "city-region-28-jizhen",
+        "duoyan"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-28-jizhen",
+      "name": "蓟镇",
+      "color": "#d5d54d",
+      "seed": {
+        "x": 566,
+        "y": 563
+      },
+      "links": [
+        "city-region-28",
+        "duoyan",
+        "xuan-fu"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-22",
+      "name": "东江",
+      "color": "#4dd586",
+      "seed": {
+        "x": 830,
+        "y": 550
+      },
+      "links": [
+        "city-region-15",
+        "city-region-19"
       ],
       "acceptance": null
     }

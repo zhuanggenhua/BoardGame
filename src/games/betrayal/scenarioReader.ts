@@ -82,7 +82,8 @@ export type HauntDossierId =
   | "dust"
   | "bloodFromStone"
   | "helpingHands"
-  | "magicCamera";
+  | "magicCamera"
+  | "uponReflection";
 
 export type HauntDossier = {
   id: HauntDossierId;
@@ -217,12 +218,29 @@ const HAUNT_DOSSIERS: Record<HauntDossierId, HauntDossier> = {
       createHauntSection("magicCamera", "ending", "border-[#8f5a22]"),
     ],
   },
+  uponReflection: {
+    id: "uponReflection",
+    cardNumber: 7,
+    titleKey: "game-betrayal:board.haunts.uponReflection.title",
+    objectiveKey: "game-betrayal:board.haunts.uponReflection.objective",
+    heroGoalKey: "game-betrayal:board.haunts.uponReflection.heroGoal",
+    traitorGoalKey: "game-betrayal:board.haunts.uponReflection.traitorGoal",
+    sections: [
+      createHauntSection("uponReflection", "prologue", "border-[#8f5a22]"),
+      createHauntSection("uponReflection", "setup", "border-[#607f3a]"),
+      createHauntSection("uponReflection", "heroes", "border-[#43717a]"),
+      createHauntSection("uponReflection", "special", "border-[#a16c24]"),
+      createHauntSection("uponReflection", "monster", "border-[#684b87]"),
+      createHauntSection("uponReflection", "endingSurvivors", "border-[#8f5a22]"),
+    ],
+  },
 };
 
 const HAUNT_DOSSIER_BY_CARD_NUMBER: Record<number, HauntDossierId> = {
   1: "mummyRampage",
   3: "dust",
   5: "bloodFromStone",
+  7: "uponReflection",
   12: "helpingHands",
   33: "magicCamera",
 };
@@ -237,6 +255,7 @@ const HAUNT_DOSSIER_BY_HAUNT_ID: Record<
   "blood-from-a-stone": "bloodFromStone",
   "helping-hands": "helpingHands",
   "magic-camera": "magicCamera",
+  "upon-reflection": "uponReflection",
 };
 
 export function resolveScenarioCardDossier(

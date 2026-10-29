@@ -139,16 +139,18 @@ describe('七大恨区域图谱运行时解析', () => {
     it('正式印刷图谱已从当前区域 mask 回填中心、面积和粗连线', () => {
         expect(QIDAHEN_PRINTED_REGION_GRAPH_NODES).toHaveLength(QIDAHEN_MASK_REGION_DEFINITIONS.length);
         expect(QIDAHEN_PRINTED_REGION_GRAPH_NODES.every((node) => node.center != null && node.pixelCount > 0)).toBe(true);
-        expect(QIDAHEN_PRINTED_REGION_GRAPH_EDGES.length).toBeGreaterThanOrEqual(77);
+        expect(QIDAHEN_PRINTED_REGION_GRAPH_NODES).toHaveLength(35);
+        expect(QIDAHEN_PRINTED_REGION_GRAPH_EDGES.every(edge => QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID.has(edge.from) && QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID.has(edge.to))).toBe(true);
         expect(QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID.get('city-region-21')).toMatchObject({
             name: '喀喇沁部',
         });
     });
 
-    it('运行时图谱继续保留当前 33 区邻接与通路定义', () => {
+    it('运行时保留35个地理对象和4个城市子对象的通路定义', () => {
         expect(QIDAHEN_REGION_GRAPH_NODES).toHaveLength(QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS.length);
-        expect(QIDAHEN_REGION_GRAPH_NODES.every((node) => node.center != null && node.pixelCount > 0)).toBe(true);
-        expect(QIDAHEN_REGION_GRAPH_EDGES.length).toBeGreaterThanOrEqual(77);
+        expect(QIDAHEN_REGION_GRAPH_NODES.every(node => node.center != null && (QIDAHEN_RUNTIME_REGION_SOURCE_BY_ID.get(node.id)?.mapRole === 'city' ? node.pixelCount === 0 : node.pixelCount > 0))).toBe(true);
+        expect(QIDAHEN_REGION_GRAPH_NODES).toHaveLength(39);
+        expect(QIDAHEN_REGION_GRAPH_EDGES.every(edge => QIDAHEN_REGION_GRAPH_NODE_BY_ID.has(edge.from) && QIDAHEN_REGION_GRAPH_NODE_BY_ID.has(edge.to))).toBe(true);
         expect(getQidahenDirectedPassageBetween('city-region-1', 'city-region-20')).not.toBeNull();
         expect(getQidahenDirectedPassageBetween('city-region-16', 'jinzhou')).toMatchObject({
             boundaryType: 'city',
@@ -179,7 +181,7 @@ describe('七大恨区域图谱运行时解析', () => {
             ['city-region-19', '敖汉部'],
             ['city-region-20', '土默特部'],
             ['city-region-21', '喀喇沁部'],
-            ['city-region-24', '宣府'],
+            ['xuan-fu', '宣府'],
             ['city-region-26', '鄂尔多斯部'],
             ['city-region-27', '保定'],
             ['city-region-28', '顺天'],
@@ -221,23 +223,22 @@ describe('七大恨区域图谱运行时解析', () => {
         ]);
     });
 
-    it('印刷区点击可解析到对应 runtime 区，并支持反查整个 runtime 的印刷区集合', () => {
-        expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-21')).toEqual(['city-region-21']);
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-21')).toBe('city-region-21');
-        expect(getQidahenPrintedRegionIdsForRuntimeRegionId('city-region-20')).toEqual(['city-region-20']);
-        expect(getQidahenPrintedRegionIdsForRuntimeRegionId('city-region-21')).toEqual(['city-region-21']);
-        expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-15')).toEqual(['city-region-15', 'city-region-15-liaodong']);
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-15')).toBe('city-region-15');
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-15', ['city-region-15-liaodong'])).toBe('city-region-15-liaodong');
-        expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-19')).toEqual(['city-region-19', 'city-region-19-liaoxi']);
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-19')).toBe('city-region-19');
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-19', ['city-region-19-liaoxi'])).toBe('city-region-19-liaoxi');
-        expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-28')).toEqual(['city-region-28-jizhen', 'city-region-28']);
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-28')).toBe('city-region-28-jizhen');
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-28', ['city-region-28'])).toBe('city-region-28');
+    it('独立土地一一映射，不能因旧推荐编号把点击转移到另一片土地', () => {
+        for (const [left, right] of [
+            ['city-region-15', 'city-region-15-liaodong'],
+            ['city-region-19', 'city-region-19-liaoxi'],
+            ['city-region-28', 'city-region-28-jizhen'],
+        ]) {
+            for (const [id, other] of [[left, right], [right, left]]) {
+                expect(getQidahenRuntimeRegionIdsForPrintedRegionId(id)).toEqual([id]);
+                expect(getQidahenPrintedRegionIdsForRuntimeRegionId(id)).toEqual([id]);
+                expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId(id, [other])).toBe(id);
+            }
+        }
+        expect(getQidahenPrintedRegionIdsForRuntimeRegionId('jinzhou')).toEqual(['city-region-19-liaoxi']);
     });
 
-    it('共享印刷区拆出的运行时子区必须有各自独立的中心点，不能继续共用同一个点位', () => {
+    it('独立印刷土地必须各有内部中心点，不能共用相邻地区点位', () => {
         expect(QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-15-liaodong')?.center).not.toEqual(
             QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-15')?.center,
         );
@@ -249,24 +250,8 @@ describe('七大恨区域图谱运行时解析', () => {
         );
     });
 
-    it('正式 shared printed 映射与 authoritative guide 已覆盖当前已锁定真相', () => {
-        expect(getQidahenSharedPrintedRegionAudits()).toEqual([
-            {
-                printedRegionId: 'city-region-15',
-                runtimeRegionIds: ['city-region-15', 'city-region-15-liaodong'],
-                missingAuthoritativeRuntimeIds: [],
-            },
-            {
-                printedRegionId: 'city-region-19',
-                runtimeRegionIds: ['city-region-19', 'city-region-19-liaoxi'],
-                missingAuthoritativeRuntimeIds: [],
-            },
-            {
-                printedRegionId: 'city-region-28',
-                runtimeRegionIds: ['city-region-28-jizhen', 'city-region-28'],
-                missingAuthoritativeRuntimeIds: [],
-            },
-        ]);
+    it('正式地理不再保留按锚点距离制造的共享土地拆分', () => {
+        expect(getQidahenSharedPrintedRegionAudits()).toEqual([]);
     });
 
     it('运行时邻接/代价/边界类型与 runtime directed passage 保持一致', () => {
@@ -293,9 +278,9 @@ describe('七大恨区域图谱运行时解析', () => {
 
     it('保留本轮补齐后的关键粗值通路消耗', () => {
         expect(getQidahenDirectedPassageBetween('city-region-14', 'jinzhou')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-19-liaoxi', 'jinzhou')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-20', 'city-region-24')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-20')?.travelCost).toBe(2);
+        expect(getQidahenDirectedPassageBetween('city-region-19-liaoxi', 'jinzhou')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-20', 'xuan-fu')?.travelCost).toBe(2);
+        expect(getQidahenDirectedPassageBetween('xuan-fu', 'city-region-20')?.travelCost).toBe(2);
         expect(getQidahenDirectedPassageBetween('city-region-24', 'jinzhou')?.travelCost).toBe(3);
         expect(getQidahenDirectedPassageBetween('city-region-16', 'jinzhou')?.travelCost).toBe(3);
         expect(getQidahenDirectedPassageBetween('city-region-16', 'city-region-20')?.travelCost).toBe(3);
@@ -312,7 +297,7 @@ describe('七大恨区域图谱运行时解析', () => {
         expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-16')?.travelCost).toBe(3);
         expect(getQidahenDirectedPassageBetween('city-region-8', 'city-region-16')?.travelCost).toBe(3);
         expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-25')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-27')?.travelCost).toBe(2);
+        expect(getQidahenDirectedPassageBetween('xuan-fu', 'city-region-27')?.travelCost).toBe(2);
         expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-28-jizhen')?.travelCost).toBe(2);
         expect(getQidahenDirectedPassageBetween('city-region-13', 'city-region-15-liaodong')?.travelCost).toBe(2);
         expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-17')?.travelCost).toBe(2);
@@ -326,7 +311,8 @@ describe('七大恨区域图谱运行时解析', () => {
         expect(getQidahenDirectedPassageBetween('city-region-17', 'city-region-19')?.travelCost).toBe(2);
         expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-28-jizhen')?.travelCost).toBe(2);
         expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-14')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-15-liaodong', 'city-region-7')?.travelCost).toBe(3);
+        expect(getQidahenDirectedPassageBetween('city-region-15-liaodong', 'city-region-7')).toBeNull();
+        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-7')).toMatchObject({ boundaryType: 'river', travelCost: 2, battleWidth: 2 });
         expect(getQidahenDirectedPassageBetween('city-region-4', 'city-region-5')?.travelCost).toBe(3);
         expect(getQidahenDirectedPassageBetween('city-region-3', 'city-region-7')?.travelCost).toBe(3);
         expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-8')?.travelCost).toBe(3);

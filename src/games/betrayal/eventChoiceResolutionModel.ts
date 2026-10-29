@@ -1,5 +1,4 @@
 import type {
-    BetrayalAllTraitCheckResult,
     RandomFn,
     ValidationResult,
 } from '../../engine/types';
@@ -61,6 +60,7 @@ import type {
     BetrayalPendingEventChoiceState,
     BetrayalPendingEventRollResolutionState,
     BetrayalTraitKey,
+    BetrayalAllTraitCheckResult,
 } from './game';
 import type { BetrayalCommandMap } from './commandTypes';
 
@@ -189,7 +189,7 @@ export function createBetrayalEventSymbolSkipChoice(
         },
         acceptLabel: method === 'idol' ? '用雕像跳过事件' : '跳过事件',
         declineLabel: '抽取事件牌',
-        effect: { mode: 'none' },
+        effect: { mode: 'none', recommendedAction: 'explore' },
     };
 }
 
@@ -206,7 +206,9 @@ export function validateBetrayalEventChoiceResolution(
         if (payload.accept === false) {
             return { valid: true };
         }
-        if (!payload.trait || !pending.effect.allowedTraits.includes(payload.trait)) {
+        if (pending.effect.mode !== 'chosenTrait'
+            || !payload.trait
+            || !pending.effect.allowedTraits.includes(payload.trait)) {
             return { valid: false, error: '牙齿项链必须选择一项当前濒死属性。' };
         }
         return { valid: true };
@@ -381,7 +383,7 @@ function resolveDrawnEventChoicePayload(
     const eventCard = resolveEvent(core);
     const eventRollKind = eventCard.roll?.kind ?? 'trait';
     const eventRollResult = eventCard.roll
-        ? eventRollKind === 'dice'
+        ? eventCard.roll.kind === 'dice'
             ? rollEventFixedDice(random, eventCard.roll.dice)
             : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core)
         : null;
@@ -410,7 +412,7 @@ function resolveDrawnEventChoicePayload(
         : resolveEventDamageDeathPrevention(core, materializedEventEffect, random);
     const effectLabel = formatEffectLabel(materializedEventEffect);
     const eventRollLabel = eventCard.roll
-        ? eventRollKind === 'dice'
+        ? eventCard.roll.kind === 'dice'
             ? eventCard.roll.label
             : `${TRAIT_LABEL[eventCard.roll.trait]}检定`
         : undefined;
@@ -446,7 +448,7 @@ function resolveDrawnEventChoicePayload(
         eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch && eventRollResult
             ? {
                 kind: eventRollKind,
-                trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
+                trait: eventCard.roll.kind === 'dice' ? undefined : eventCard.roll.trait,
                 total: eventRollTotal,
                 label: eventBranch.label,
                 eventDescription: eventCard.description,
@@ -618,7 +620,7 @@ export function resolveBetrayalEventChoiceResolvedPayload(
                 playerId,
                 sourceTitle: pending.sourceTitle,
                 accepted: true,
-                eventEffect: { mode: 'none' },
+                eventEffect: { mode: 'none', recommendedAction: 'explore' },
                 discovery: {
                     kind: 'event',
                     title: summary,
@@ -874,8 +876,8 @@ export function resolveBetrayalEventChoiceResolvedPayload(
                 dice: rollResult.dice,
                 passiveBonus: rollResult.passiveBonus,
                 branchThresholds: [
-                    { min: pending.effect.passMin, label: '通过', effect: { mode: 'none' } },
-                    { min: 0, label: '失败', effect: { mode: 'none' } },
+                    { min: pending.effect.passMin, label: '通过', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+                    { min: 0, label: '失败', effect: { mode: 'none', recommendedAction: 'endTurn' } },
                 ],
             },
             discovery: {

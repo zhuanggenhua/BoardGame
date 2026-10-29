@@ -52,6 +52,16 @@ const createEvidence = (): EventCommitEvidence => ({
 });
 
 describe('onlineAiWatchdogFeedbackDiagnostics', () => {
+    it('真实 actionLog 与 EventStream 条目应保留身份和事件信息', () => {
+        const state = createState({ sys: {
+            phase: 'playCards', turnNumber: 1,
+            actionLog: { entries: [{ id: 'a-1', timestamp: 10, actorId: '1', kind: 'PLAY_CARD', segments: [{ type: 'text', text: '打出卡牌' }] }] },
+            eventStream: { nextId: 8, entries: [{ id: 7, event: { type: 'CARD_PLAYED', timestamp: 11, payload: { playerId: '1', cardId: 'card-a' } } }] },
+        } } as unknown as MatchState<unknown>);
+        const log = JSON.parse(buildOnlineAiDiagnosticActionLog({ state })!);
+        expect(log.actionLogTail[0]).toMatchObject({ id: 'a-1', timestamp: 10, actorId: '1', kind: 'PLAY_CARD' });
+        expect(log.eventStreamTail[0]).toMatchObject({ id: 7, type: 'CARD_PLAYED', timestamp: 11 });
+    });
     it('从 tracker key 只提取同一玩家和同一原因的 recovery fingerprint', () => {
         expect(extractOnlineAiRecoveryFingerprintFromTrackerKey(
             '1',

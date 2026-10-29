@@ -819,7 +819,6 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
     },
 
     onAutoContinueCheck: ({ state }) => {
-        if (state.sys.tutorial?.step?.skipAutomaticFlow) return;
         const phase = state.sys.phase as MageWarsPhase;
 
         // reset、聚魔和维持阶段没有玩家决策时由正式流程自动完成。

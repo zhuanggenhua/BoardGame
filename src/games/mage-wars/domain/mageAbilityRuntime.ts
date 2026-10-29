@@ -3,6 +3,7 @@ import {
     createAbilityOpportunity,
     type AbilityDef,
 } from '../../../engine/primitives/ability';
+import type { ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createTimingPoint, type Opportunity } from '../../../engine/TimingOpportunity';
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import {
@@ -315,7 +316,7 @@ function buildDisabledMageAbilityCandidate(args: {
     targetObject: MageWarsArenaObjectState;
     phase: MageWarsPhase;
     timestamp?: number;
-}) {
+}): ChoiceRequestCandidate<MageWarsMageAbilityActivationChoiceValue> {
     const command = createMageWarsMageAbilityCommand({
         playerId: args.player.id,
         abilityId: args.ability.abilityId,
@@ -363,10 +364,14 @@ function buildMageWarsMageAbilityActivationCandidates(args: {
     ability: MageWarsConfigMageAbility;
     phase: MageWarsPhase;
     timestamp?: number;
-}) {
+}): {
+    candidates: ChoiceRequestCandidate<MageWarsMageAbilityActivationChoiceValue>[];
+    condition: { satisfied: true } | { satisfied: false; reason: string };
+    aiPolicyId: 'choice-request:simple-target';
+} {
     const candidates = Object.values(args.state.core.objects)
         .sort((left, right) => left.id.localeCompare(right.id))
-        .flatMap((targetObject) => {
+        .flatMap<ChoiceRequestCandidate<MageWarsMageAbilityActivationChoiceValue>>((targetObject) => {
             const selections = buildStatusTokenSelections(args.ability, targetObject);
             if (selections.length === 0) {
                 return [buildDisabledMageAbilityCandidate({

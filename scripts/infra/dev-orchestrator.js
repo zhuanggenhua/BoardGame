@@ -426,6 +426,8 @@ async function main() {
         startCommand('dev:frontend', process.execPath, ['scripts/infra/vite-with-logging.js'], sharedDevEnv);
     }
 
+    console.log(`[dev-orchestrator] frontend: http://127.0.0.1:${resolvedPorts.frontend}`);
+
     if (skipApiMode) {
         console.log('[dev-orchestrator] frontend 已启动；API 已按当前模式跳过');
         return;
@@ -440,8 +442,6 @@ async function main() {
         console.log('[dev-orchestrator] frontend 已启动；API 因本地数据库不可用被跳过');
         return;
     }
-
-    console.log(`[dev-orchestrator] frontend: http://127.0.0.1:${resolvedPorts.frontend}`);
 }
 
 const isDirectExecution = process.argv[1]

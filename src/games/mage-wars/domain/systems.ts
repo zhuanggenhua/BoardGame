@@ -642,7 +642,7 @@ function resolveMageWarsEnchantmentResponse(
             : undefined;
         const redirectedManaCost = redirectedTargetDependentManaCost === undefined
             ? costResolution?.manaCost
-            : Math.max(0, redirectedTargetDependentManaCost - (costResolution.costReductionAmount ?? 0));
+            : Math.max(0, redirectedTargetDependentManaCost - (costResolution?.costReductionAmount ?? 0));
         if (!spell || redirectedManaCost === undefined) return { state, events: [] };
 
         const responder = state.core.players[responseObject.ownerId];
@@ -852,11 +852,12 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
             for (const event of ctx.events) {
                 if (isInteractionResolvedEvent(event)) {
                     if (event.payload.sourceId === MAGE_WARS_INTERACTION_SOURCE_IDS.TELEPORT_TRAP_CHOICE) {
-                        if (!isTeleportTrapChoiceValue(event.payload.value)) continue;
+                        const value = event.payload.value;
+                        if (!isTeleportTrapChoiceValue(value)) continue;
 
-                        const source = nextState.core.objects[event.payload.value.sourceObjectId];
-                        const target = nextState.core.objects[event.payload.value.targetObjectId];
-                        const targetZone = nextState.core.arena.find((zone) => zone.id === event.payload.value.toZoneId);
+                        const source = nextState.core.objects[value.sourceObjectId];
+                        const target = nextState.core.objects[value.targetObjectId];
+                        const targetZone = nextState.core.arena.find((zone) => zone.id === value.toZoneId);
                         const sourceZone = source?.anchoredToZoneId
                             ? nextState.core.arena.find((zone) => zone.id === source.anchoredToZoneId)
                             : undefined;
@@ -871,10 +872,10 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             || !source.anchoredToZoneId
                             || !target
                             || target.kind !== 'creature'
-                            || target.zoneId !== event.payload.value.fromZoneId
+                            || target.zoneId !== value.fromZoneId
                             || !targetZone
                             || !sourceZone
-                            || actualDistance !== event.payload.value.distance
+                            || actualDistance !== value.distance
                             || actualDistance <= 0
                             || actualDistance > 2
                         ) {
@@ -1105,6 +1106,7 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             continue;
                         }
                         if (value.action === 'cancel') continue;
+                        if (value.action !== 'retarget') continue;
 
                         if (attacker) {
                             events.push(...resolveMageWarsObjectAttackEvents({
@@ -1134,32 +1136,33 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                         continue;
                     }
                     if (event.payload.sourceId === MAGE_WARS_INTERACTION_SOURCE_IDS.UPKEEP_EQUIPMENT_DIRECT_DAMAGE_CHOICE) {
-                        if (!isUpkeepEquipmentDirectDamageChoiceValue(event.payload.value)) continue;
-                        if (event.payload.value.action === 'skip') continue;
+                        const value = event.payload.value;
+                        if (!isUpkeepEquipmentDirectDamageChoiceValue(value)) continue;
+                        if (value.action === 'skip') continue;
 
-                        const source = nextState.core.objects[event.payload.value.sourceObjectId];
-                        const player = nextState.core.players[event.payload.value.playerId];
-                        const target = getArenaObject(nextState.core, event.payload.value.targetObjectId);
+                        const source = nextState.core.objects[value.sourceObjectId];
+                        const player = nextState.core.players[value.playerId];
+                        const target = getArenaObject(nextState.core, value.targetObjectId);
                         const matchingSource = target
                             ? resolveMageWarsEquipmentUpkeepDirectDamage(nextState.core, target)
                                 .some((candidate) => (
-                                    candidate.sourceObjectId === event.payload.value.sourceObjectId
-                                    && candidate.sourceSpellCardId === event.payload.value.sourceSpellCardId
-                                    && candidate.ownerId === event.payload.value.playerId
-                                    && candidate.effect.amount === event.payload.value.amount
+                                    candidate.sourceObjectId === value.sourceObjectId
+                                    && candidate.sourceSpellCardId === value.sourceSpellCardId
+                                    && candidate.ownerId === value.playerId
+                                    && candidate.effect.amount === value.amount
                                 ))
                             : false;
                         if (
                             !source
                             || source.kind !== 'equipment'
-                            || source.sourceSpellCardId !== event.payload.value.sourceSpellCardId
-                            || source.ownerId !== event.payload.value.playerId
-                            || source.anchoredToPlayerId !== event.payload.value.playerId
+                            || source.sourceSpellCardId !== value.sourceSpellCardId
+                            || source.ownerId !== value.playerId
+                            || source.anchoredToPlayerId !== value.playerId
                             || !player
                             || !target
                             || !isMageWarsLivingArenaObject(target)
                             || !matchingSource
-                            || player.mana < event.payload.value.amount
+                            || player.mana < value.amount
                         ) {
                             continue;
                         }
@@ -1169,7 +1172,7 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             type: MAGE_WARS_EVENTS.MANA_SPENT,
                             payload: {
                                 playerId: player.id,
-                                amount: event.payload.value.amount,
+                                amount: value.amount,
                                 sourceAbilityId,
                                 spellCardId: source.sourceSpellCardId,
                                 targetObjectId: target.id,
@@ -1183,7 +1186,7 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                                 targetObjectId: target.id,
                                 sourcePlayerId: player.id,
                                 sourceAbilityId,
-                                amount: event.payload.value.amount,
+                                amount: value.amount,
                             },
                             ctx.command.type,
                             event.timestamp,

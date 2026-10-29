@@ -1,4 +1,5 @@
 import type { Server as IOServer, Socket as IOSocket } from 'socket.io';
+import logger from '../../../server/logger.js';
 import type { MatchState } from '../types';
 import {
     parseDispatchPayloadMeta,
@@ -43,6 +44,15 @@ export type GameSocketRouteHooks<TMatch extends GameSocketRouteMatch> = {
         matchID: string,
         playerID: string,
         credentials?: string,
+    ) => Promise<boolean>;
+    validateAdminDebugToken?: (token: string | null | undefined) => Promise<string | null>;
+    captureFeedbackReplay?: (match: TMatch, playerId: string, request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }) => Promise<{ accepted: boolean; captureId?: string }>;
+    isAdminDebugCommand?: (match: TMatch, commandType: string) => boolean;
+    handleAdminDebugCommand?: (
+        matchID: string,
+        adminUserId: string,
+        commandType: string,
+        payload: unknown,
     ) => Promise<boolean>;
     resolveOnlineAiSeatControllerType: (match: TMatch, playerID: string) => 'human' | string;
     handleSync: (
@@ -135,6 +145,29 @@ export function registerGameSocketRoutes<TMatch extends GameSocketRouteMatch>(
             await handleManualForceEndAiPhaseRoute({ socket, matchID, credentials, acknowledge, hooks });
         });
 
+        socket.on('feedback:capture', async (
+            matchID: string, request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }, credentials?: string,
+            acknowledge?: (result: { accepted: boolean; captureId?: string }) => void,
+        ) => {
+            try {
+                const info = hooks.getSocketInfo(socket.id);
+                if (!info || info.matchID !== matchID || !info.playerID || !request || (request.phase !== 'prepare' && (request.phase !== 'attach' || typeof request.feedbackId !== 'string' || !/^[a-f\d]{24}$/i.test(request.feedbackId) || typeof request.captureId !== 'string' || !/^[a-f\d-]{36}$/i.test(request.captureId)))
+                    || !await hooks.validateCommandAuth(matchID, info.playerID, info.credentials ?? credentials)) {
+                    acknowledge?.({ accepted: false });
+                    return;
+                }
+                const match = hooks.getMatch(matchID);
+                const result = match && hooks.captureFeedbackReplay
+                    ? await hooks.captureFeedbackReplay(match, info.playerID, request) : { accepted: false };
+                acknowledge?.(result);
+            } catch (error) {
+                logger.warn('[GameTransport] feedback capture failed', {
+                    matchID, error: error instanceof Error ? error.message : String(error),
+                });
+                acknowledge?.({ accepted: false });
+            }
+        });
+
         socket.on('ui:event', (
             matchID: string,
             eventType: string,
@@ -148,6 +181,33 @@ export function registerGameSocketRoutes<TMatch extends GameSocketRouteMatch>(
                 playerId: info.playerID,
                 payload,
                 sentAt: Date.now(),
+            });
+        });
+
+        socket.on('admin-debug:access', async (token, acknowledge) => {
+            try {
+                const adminUserId = await hooks.validateAdminDebugToken?.(token);
+                acknowledge?.({ allowed: Boolean(adminUserId) });
+            } catch {
+                acknowledge?.({ allowed: false });
+            }
+        });
+
+        socket.on('admin-debug:command', async (
+            matchID,
+            commandType,
+            payload,
+            token,
+            acknowledge,
+        ) => {
+            await handleAdminDebugCommandRoute({
+                socket,
+                matchID,
+                commandType,
+                payload,
+                token,
+                acknowledge,
+                hooks,
             });
         });
 
@@ -178,6 +238,10 @@ async function handleCommandRoute<TMatch extends GameSocketRouteMatch>(args: {
 
     const meta = parseDispatchPayloadMeta(payload);
     const match = hooks.getMatch(matchID);
+    if (match && hooks.isAdminDebugCommand?.(match, commandType)) {
+        socket.emit('error', matchID, 'admin_debug_channel_required');
+        return;
+    }
     if (meta.legacyManualAiSeatId) {
         socket.emit('error', matchID, 'online_ai_server_authority');
         return;
@@ -236,11 +300,71 @@ async function handleBatchRoute<TMatch extends GameSocketRouteMatch>(args: {
         return;
     }
     const match = hooks.getMatch(matchID);
+    if (match && commands.some((command) => (
+        Boolean(command)
+        && typeof command.type === 'string'
+        && hooks.isAdminDebugCommand?.(match, command.type) === true
+    ))) {
+        socket.emit('batch:rejected', matchID, batchId, 'admin_debug_channel_required');
+        return;
+    }
     if (match && hooks.resolveOnlineAiSeatControllerType(match, info.playerID) !== 'human') {
         socket.emit('batch:rejected', matchID, batchId, 'online_ai_server_authority');
         return;
     }
     await hooks.handleBatch(socket, matchID, info.playerID, batchId, commands, meta);
+}
+
+async function handleAdminDebugCommandRoute<TMatch extends GameSocketRouteMatch>(args: {
+    socket: IOSocket;
+    matchID: string;
+    commandType: string;
+    payload: unknown;
+    token: string | null;
+    acknowledge?: (result: { accepted: boolean; reason?: string }) => void;
+    hooks: GameSocketRouteHooks<TMatch>;
+}): Promise<void> {
+    const { socket, matchID, commandType, payload, token, acknowledge, hooks } = args;
+    if (!matchID || typeof commandType !== 'string' || commandType.length === 0 || commandType.length > 120) {
+        acknowledge?.({ accepted: false, reason: 'rejected' });
+        return;
+    }
+
+    const info = hooks.getSocketInfo(socket.id);
+    if (!info || info.matchID !== matchID) {
+        acknowledge?.({ accepted: false, reason: 'unauthorized' });
+        return;
+    }
+
+    let adminUserId: string | null = null;
+    try {
+        adminUserId = await hooks.validateAdminDebugToken?.(token) ?? null;
+    } catch {
+        adminUserId = null;
+    }
+    if (!adminUserId) {
+        socket.emit('error', matchID, 'unauthorized');
+        acknowledge?.({ accepted: false, reason: 'unauthorized' });
+        return;
+    }
+
+    const match = hooks.getMatch(matchID);
+    if (!match) {
+        acknowledge?.({ accepted: false, reason: 'match_not_found' });
+        return;
+    }
+    if (!hooks.isAdminDebugCommand?.(match, commandType) || !hooks.handleAdminDebugCommand) {
+        acknowledge?.({ accepted: false, reason: 'not_debug_command' });
+        return;
+    }
+
+    try {
+        const accepted = await hooks.handleAdminDebugCommand(matchID, adminUserId, commandType, payload);
+        acknowledge?.({ accepted, ...(accepted ? {} : { reason: 'rejected' }) });
+    } catch {
+        socket.emit('error', matchID, 'admin_debug_failed');
+        acknowledge?.({ accepted: false, reason: 'failed' });
+    }
 }
 
 async function handleManualSetupSelectionRoute<TMatch extends GameSocketRouteMatch>(args: {

@@ -45,10 +45,16 @@ export type MatchRoomRuntimeBatchResult = {
  * 它不复制 ActiveMatch 状态，避免形成第二套房间真相。
  */
 export class MatchRoomRuntime<Match extends MatchRoomRuntimeMatch<Options>, Options = unknown> {
+    private readonly match: Match;
+    private readonly queueHandlers: DrainAuthoritativeCommandQueueHandlers<Match, Options>;
+
     constructor(
-        private readonly match: Match,
-        private readonly queueHandlers: DrainAuthoritativeCommandQueueHandlers<Match, Options>,
-    ) {}
+        match: Match,
+        queueHandlers: DrainAuthoritativeCommandQueueHandlers<Match, Options>,
+    ) {
+        this.match = match;
+        this.queueHandlers = queueHandlers;
+    }
 
     isExecuting(): boolean {
         return this.match.executing;

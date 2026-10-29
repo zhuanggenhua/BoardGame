@@ -161,7 +161,7 @@ function formatEdges(edges: readonly BetrayalRoomEdge[]): string[] {
     return edges.map((edge) => EDGE_LABELS[edge]);
 }
 
-function formatDoorwayConnections(doorways: readonly BetrayalRoomSeed['doorways']): string[] {
+function formatDoorwayConnections(doorways: Readonly<BetrayalRoomSeed['doorways']>): string[] {
     return doorways.map((doorway) => {
         const target = doorway.connectsToRoomId ? `→ ${doorway.connectsToRoomId}` : '未连接';
         const floor = doorway.leadsToFloor ? ` / 通向${FLOOR_LABELS[doorway.leadsToFloor]}` : '';

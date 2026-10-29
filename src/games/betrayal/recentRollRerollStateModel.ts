@@ -85,7 +85,10 @@ function applyDeathPreventionRerollOutcome(
     core.scenarioRuntime = cloneScenarioRuntimeStatus(deathPrevention.scenarioRuntimeBeforeDefeat);
     core.monsters = deathPrevention.monstersBeforeDefeat.map(cloneMonster);
     resetExplorerTraits(explorer, deathPrevention.traitsBeforeDamage);
-    if (deathPrevention.damageTraits?.length) {
+    if (deathPrevention.damageKind === 'general') {
+        if (!deathPrevention.damageTraits?.length) {
+            throw new Error('General death-prevention damage is missing its assigned traits');
+        }
         applyGeneralDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageTraits, { allowSkull: true });
     } else {
         applyAttackDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageKind);
@@ -198,7 +201,7 @@ function refreshLatestEventDiscoveryAfterReroll(
     nextRoll: BetrayalRecentRollState,
     nextTotal: number,
     nextLabel: string,
-    effect: BetrayalRecentRollState['branchThresholds'][number]['effect'],
+    effect: NonNullable<BetrayalRecentRollState['branchThresholds']>[number]['effect'],
 ): void {
     if (!core.latestDiscovery || core.latestDiscovery.title !== nextRoll.sourceTitle) {
         return;

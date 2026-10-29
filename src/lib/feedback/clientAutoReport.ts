@@ -4,6 +4,8 @@ import { buildFeedbackClientContext, getCurrentRouteContext } from './clientFeed
 import { buildGameFeedbackActionLog, buildGameFeedbackStateSnapshot } from './gameFeedbackDiagnostics';
 import { getCurrentGameFeedbackContext } from './gameFeedbackContext';
 import { setLastErrorContext } from './errorContext';
+import { deliverFeedbackWithRetry, FeedbackDeliveryHttpError } from './feedbackDelivery';
+import { prepareFeedbackReplayCapture, requestFeedbackReplayCapture } from './feedbackReplayBridge';
 import {
     buildFeedbackDiagnosticPacket,
     serializeFeedbackDiagnosticPacket,
@@ -12,7 +14,8 @@ import {
 const DEFAULT_CLIENT_AUTO_REPORT_SOURCE = 'client-auto-report';
 const DEDUPE_STORAGE_PREFIX = 'bg:auto-feedback:v1:';
 const DEDUPE_TTL_MS = 6 * 60 * 60 * 1000;
-const inMemoryReportedKeys = new Set<string>();
+const inMemoryReportedKeys = new Map<string, number>();
+const inFlightReports = new Set<string>();
 
 type ClientAutoReportWindow = Window & {
     __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean;
@@ -79,7 +82,9 @@ function resolveClientAutoReportGameId(
 }
 
 function hasRecentReport(signature: string): boolean {
-    if (inMemoryReportedKeys.has(signature)) return true;
+    const reportedAt = inMemoryReportedKeys.get(signature);
+    if (reportedAt !== undefined && Date.now() - reportedAt <= DEDUPE_TTL_MS) return true;
+    inMemoryReportedKeys.delete(signature);
     if (typeof window === 'undefined') return false;
 
     try {
@@ -91,7 +96,7 @@ function hasRecentReport(signature: string): boolean {
             window.localStorage.removeItem(getStorageKey(signature));
             return false;
         }
-        inMemoryReportedKeys.add(signature);
+        inMemoryReportedKeys.set(signature, timestamp);
         return true;
     } catch {
         return false;
@@ -99,7 +104,7 @@ function hasRecentReport(signature: string): boolean {
 }
 
 function markRecentReport(signature: string) {
-    inMemoryReportedKeys.add(signature);
+    inMemoryReportedKeys.set(signature, Date.now());
     if (typeof window === 'undefined') return;
     try {
         window.localStorage.setItem(getStorageKey(signature), String(Date.now()));
@@ -359,39 +364,38 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     if ((import.meta as { env?: Record<string, unknown> }).env?.MODE === 'test' && !allowInTest) return;
     if (IS_DEV_API_DISABLED) return;
     if (shouldSkipClientAutoReport(payload)) return;
-    if (hasRecentReport(signature)) return;
+    if (hasRecentReport(signature) || inFlightReports.has(signature)) return;
 
     const { matchId, mode, gameIdFromRoute } = getCurrentRouteContext();
     const gameId = resolveClientAutoReportGameId(payload.gameId, payload.gameName, gameIdFromRoute);
     const source = payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE;
     const gameFeedbackContext = getCurrentGameFeedbackContext();
+    const playerId = payload.playerId ?? gameFeedbackContext?.playerId ?? undefined;
+    const clientContext = buildFeedbackClientContext({ mode, matchId, playerId, gameId });
     const actionLog = gameFeedbackContext?.state
         ? buildGameFeedbackActionLog(gameFeedbackContext.state)
         : undefined;
     const stateSnapshot = gameFeedbackContext?.state
         ? buildGameFeedbackStateSnapshot(gameFeedbackContext.state)
         : undefined;
-    const diagnosticPacket = serializeFeedbackDiagnosticPacket(buildFeedbackDiagnosticPacket({
+    const diagnostic = buildFeedbackDiagnosticPacket({
         state: gameFeedbackContext?.state,
-        clientContext: buildFeedbackClientContext({
-            mode,
-            matchId,
-            playerId: payload.playerId ?? undefined,
-            gameId,
-        }),
+        clientContext,
         source: 'client-auto',
         chainId: 'auto-' + signature,
-    }));
+    });
 
-    markRecentReport(signature);
+    inFlightReports.add(signature);
 
     try {
-        await fetch(FEEDBACK_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+        const captureId = mode === 'online' && matchId && playerId
+            ? await prepareFeedbackReplayCapture(matchId, playerId) : undefined;
+        if (mode === 'online' && matchId && playerId && !captureId) {
+            diagnostic.collectionStatus = 'partial';
+            diagnostic.collectionErrors = [...(diagnostic.collectionErrors ?? []), 'private_replay_prepare_failed'];
+        }
+        const diagnosticPacket = serializeFeedbackDiagnosticPacket(diagnostic);
+        const body = JSON.stringify({
                 content: payload.content,
                 type: 'bug',
                 severity: 'high',
@@ -402,12 +406,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 actionLog,
                 stateSnapshot,
                 diagnosticPacket,
-                clientContext: buildFeedbackClientContext({
-                    mode,
-                    matchId,
-                    playerId: payload.playerId ?? undefined,
-                    gameId,
-                }),
+                clientContext,
                 errorContext: {
                     name: payload.errorName,
                     message: payload.errorMessage,
@@ -416,9 +415,26 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                     jsStack: payload.jsStack ?? payload.stack,
                     componentStack: payload.componentStack,
                 },
-            }),
+            });
+        let feedbackId: string | undefined;
+        await deliverFeedbackWithRetry(async () => {
+            const response = await fetch(FEEDBACK_API_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+            });
+            if (!response.ok) throw new FeedbackDeliveryHttpError(response.status);
+            if (mode === 'online' && matchId && playerId) {
+                const responseBody = await response.json() as { _id?: unknown };
+                if (typeof responseBody._id === 'string') feedbackId = responseBody._id;
+            }
         });
+        if (mode === 'online' && matchId && playerId) {
+            const captured = feedbackId && captureId ? await requestFeedbackReplayCapture(matchId, playerId, feedbackId, captureId) : false;
+            if (!captured) console.warn('[client-auto-report] authoritative feedback capture failed', { matchId, feedbackId });
+        }
+        markRecentReport(signature);
     } catch (error) {
         console.warn('[client-auto-report] feedback submit failed', error);
+    } finally {
+        inFlightReports.delete(signature);
     }
 }

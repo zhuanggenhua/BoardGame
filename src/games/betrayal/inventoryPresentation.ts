@@ -13,6 +13,7 @@ import {
   type BetrayalPossessionSpecialActionStatus,
 } from "./possessionActionReadModel";
 import {
+  formatEffectLabel,
   resolveInventoryEffectId,
   resolveUseEffect,
 } from "./possessionEffects";
@@ -85,9 +86,6 @@ export function resolveInventoryCardAccentAsset(
   if (!effect) {
     return traitAssets.knowledge;
   }
-  if (effect.mode === "move") {
-    return traitAssets.speed;
-  }
   if (effect.mode === "moveOthersInRoom") {
     return traitAssets.speed;
   }
@@ -103,7 +101,7 @@ export function resolveInventoryCardAccentAsset(
   if (effect.mode === "nextNonCombatTraitRollTotalReplacement") {
     return traitAssets.knowledge;
   }
-  return traitAssets[effect.trait ?? "knowledge"];
+  return traitAssets.knowledge;
 }
 
 function formatSignedDelta(value: number): string {
@@ -142,10 +140,13 @@ export function resolvePreviewUseEffectLabel(
   if (profile.mode === "nextNonCombatTraitRollTotalReplacement") {
     return `下一次属性检定可用 ${profile.minTotal}-${profile.maxTotal} 的结果替代投骰`;
   }
-  return t("board.useEffects.trait", {
-    trait: t(`board.traits.${profile.trait}`),
-    value: formatSignedDelta(profile.amount),
-  });
+  if (profile.mode === "trait") {
+    return t("board.useEffects.trait", {
+      trait: t(`board.traits.${profile.trait}`),
+      value: formatSignedDelta(profile.amount),
+    });
+  }
+  return formatEffectLabel(profile);
 }
 
 export function resolveInventoryRulesSummary(
@@ -324,6 +325,7 @@ export function resolveBetrayalInventoryDisplayReadModel({
       : null;
   const normalizedReplacementRollTotal =
     selectedInventoryRollTotalReplacementEffect &&
+    typeof selectedInventoryReplacementRollTotal === "number" &&
     Number.isInteger(selectedInventoryReplacementRollTotal) &&
     selectedInventoryReplacementRollTotal >=
       selectedInventoryRollTotalReplacementEffect.minTotal &&

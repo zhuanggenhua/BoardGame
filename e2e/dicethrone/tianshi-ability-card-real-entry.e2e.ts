@@ -11,6 +11,7 @@ import type { GameTestContext } from '../framework';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { ALL_TOKEN_DEFINITIONS } from '../../src/games/dicethrone/domain/characters';
+import { DIVINE_PURIFICATION_2 } from '../../src/games/dicethrone/heroes/tianshi/abilities';
 import { buildDiceThroneTokenResponseChoiceCandidates } from '../../src/games/dicethrone/domain/timingOpportunities';
 import { setDiceThroneBonusDiceValues } from '../helpers/dicethrone';
 import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice, waitForDiceThroneVisualIdle } from './bonus-dice-flow';
@@ -592,6 +593,40 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await expect.poll(async () => (await readState(game)).core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? 0, { timeout: 10000 })
             .toBe(1);
         await game.screenshot('tianshi-holy-radiance-after-closeout', testInfo);
+    });
+
+    test('反馈：圣洁光辉获得的飞行应在防御前可用，掷出 6 后跳过防御', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll', dice: [1, 1, 1, 4, 2], opponentHp: 50,
+            disableLocalAiAutomation: true,
+            extra: { selectedCharacters: { '0': TIANSHI, '1': 'barbarian' } },
+        });
+        await clickAbilitySlot(page, 'chi', 'holy-radiance');
+        await expect.poll(async () => (await readState(game)).core?.pendingAttack?.sourceAbilityId ?? null)
+            .toBe('holy-radiance');
+        await advancePhase(page);
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return { phase: state.sys?.phase, flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? 0 };
+        }).toEqual({ phase: 'offensiveRoll', flight: 1 });
+        const flight = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
+        await expect(flight).toHaveAttribute('data-token-clickable', 'true');
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('feedback-holy-radiance-flight-before-defense', testInfo);
+        await setDiceThroneBonusDiceValues(page, [6, 1]);
+        await flight.click();
+        await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return { phase: state.sys?.phase, hp: state.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] };
+        }, { timeout: 15000 }).toEqual({ phase: 'main2', hp: 44 });
+        const state = await readState(game);
+        const events = (state.sys?.eventStream?.entries ?? []).map((entry: JsonRecord) => entry?.event ?? entry);
+        expect(events.some((event: JsonRecord) => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('feedback-holy-radiance-flight-no-defense', testInfo);
     });
 
     for (const scenario of [
@@ -1504,6 +1539,77 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-divine-purification-after-skip', testInfo);
     });
 
+    test('反馈：神圣净化 II 选择自身治疗后不应进入对手防御', async ({ page, game }, testInfo) => {
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll',
+            dice: [6, 5, 2, 5, 2],
+            hp: 43,
+            opponentHp: 37,
+            tokens: { [TOKEN_IDS.FLIGHT]: 1, [TOKEN_IDS.DIVINE_ARRIVAL]: 1, [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
+            extra: { selectedCharacters: { '0': TIANSHI, '1': 'barbarian' } },
+        });
+        await page.evaluate((upgradedAbility) => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness.state.get();
+            const player = state.core.players['0'];
+            return harness.state.set({
+                ...state,
+                core: {
+                    ...state.core,
+                    players: {
+                        ...state.core.players,
+                        '0': {
+                            ...player,
+                            abilities: player.abilities.map((ability: JsonRecord) => (
+                                ability.id === 'divine-purification' ? upgradedAbility : ability
+                            )),
+                            abilityLevels: { ...player.abilityLevels, 'divine-purification': 2 },
+                        },
+                    },
+                },
+            });
+        }, DIVINE_PURIFICATION_2);
+
+        const before = await readState(game);
+        expect(before.core.players['0'].abilityLevels['divine-purification']).toBe(2);
+        expect(before.core.players['1'].characterId).toBe('barbarian');
+        const previousEventIds = new Set((before.sys.eventStream?.entries ?? []).map((entry: JsonRecord) => entry.id));
+        const previousLogIds = new Set((before.sys.actionLog?.entries ?? []).map((entry: JsonRecord) => entry.id));
+        await game.screenshot('feedback-divine-purification-before-ability', testInfo);
+
+        await clickAbilitySlot(page, 'sky', 'divine-purification');
+        await advancePhase(page);
+        await expect(page.getByText('神圣净化：选择一名玩家')).toBeVisible({ timeout: 10000 });
+        await game.screenshot('feedback-divine-purification-before-self-choice', testInfo);
+        await page.getByRole('button', { name: '炽天使' }).click();
+
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                phase: state.sys?.phase,
+                interaction: state.sys?.interaction?.current ?? null,
+                hp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP],
+                opponentHp: state.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP],
+                pendingAttack: state.core?.pendingAttack ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'main2', interaction: null, hp: 48, opponentHp: 37, pendingAttack: null,
+        });
+
+        const after = await readState(game);
+        const events = (after.sys.eventStream?.entries ?? [])
+            .filter((entry: JsonRecord) => !previousEventIds.has(entry.id))
+            .map((entry: JsonRecord) => entry.event);
+        const logs = (after.sys.actionLog?.entries ?? [])
+            .filter((entry: JsonRecord) => !previousLogIds.has(entry.id));
+        expect(events.some((event: JsonRecord) => event.type === 'SYS_PHASE_CHANGED' && event.payload?.to === 'defensiveRoll')).toBe(false);
+        expect(events.some((event: JsonRecord) => event.type === 'ABILITY_ACTIVATED' && event.payload?.isDefense === true)).toBe(false);
+        expect(JSON.stringify(logs)).not.toContain('actionLog.confirmRollDefense');
+        await waitForDiceThroneVisualIdle(page);
+        await expect(page.locator('[data-dicethrone-resource="health"]')).toHaveAttribute('data-feedback-resource-value', '48', { timeout: 10000 });
+        await game.screenshot('feedback-divine-purification-after-self-heal', testInfo);
+    });
+
     test('圣击专属牌应从真实攻击修正入口投出五个奖励骰并施加眩光', async ({ page, game }, testInfo) => {
         const cardId = 'card-tianshi-holy-strike';
         await setupTianshiScene(game, {
@@ -1529,6 +1635,123 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             };
         }, { timeout: 10000 }).toMatchObject({ dazzle: 1 });
         await game.screenshot('tianshi-holy-strike-card-after-closeout', testInfo);
+    });
+
+    test('反馈：天堂断腕斩使用天使战术后应继续结算主攻击', async ({ page, game }, testInfo) => {
+        const cardId = 'card-tianshi-angelic-tactics';
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll', dice: [6, 6, 6, 6, 6], hand: [cardId], cp: 10, opponentHp: 50,
+            randomQueue: [3].map(randomValueForDieFace),
+            pendingAttack: {
+                attackerId: '0', defenderId: '1', sourceAbilityId: 'heavenly-severing',
+                isDefendable: false, isUltimate: true, damage: 13, settlementStage: 'preDamage',
+            },
+        });
+        await dragHandCardToPlay(page, cardId);
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: cardId });
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return { phase: state.sys?.phase, source: state.core?.pendingAttack?.sourceAbilityId, bonus: state.core?.pendingAttack?.bonusDamage };
+        }, { timeout: 10000 }).toEqual({ phase: 'offensiveRoll', source: 'heavenly-severing', bonus: 3 });
+        await advanceAttackToCloseout(page, game);
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return { phase: state.sys?.phase, attack: state.core?.pendingAttack ?? null, opponentHp: state.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] };
+        }, { timeout: 10000 }).toEqual({ phase: 'main2', attack: null, opponentHp: 34 });
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('feedback-angelic-tactics-ultimate-resolved', testInfo);
+    });
+
+    test('反馈：天使长之志使用天使战术后应继续防御与伤害结算', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+        const cardId = 'card-tianshi-angelic-tactics';
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll', dice: [2, 4, 3, 1, 5], hand: [cardId], cp: 10, opponentHp: 50,
+            extra: { selectedCharacters: { '0': TIANSHI, '1': 'barbarian' } },
+            randomQueue: [1, 1, 1, 1, 1].map(randomValueForDieFace),
+            pendingAttack: {
+                attackerId: '0', defenderId: '1', sourceAbilityId: 'archangel-resolve',
+                isDefendable: true, isUltimate: false, damage: 8, settlementStage: 'preDamage',
+            },
+        });
+        const before = await readState(game);
+        const priorIds = new Set((before.sys.actionLog?.entries ?? []).map((entry: JsonRecord) => entry.id));
+        await dragHandCardToPlay(page, cardId);
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: cardId });
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                source: state.core?.pendingAttack?.sourceAbilityId,
+                stage: state.core?.pendingAttack?.settlementStage,
+                bonus: state.core?.pendingAttack?.bonusDamage,
+            };
+        }, { timeout: 10000 }).toEqual({ source: 'archangel-resolve', stage: 'preDamage', bonus: 3 });
+        await advanceAttackToCloseout(page, game);
+        const after = await readState(game);
+        expect(after.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(39);
+        expect((after.sys.actionLog?.entries ?? []).filter((entry: JsonRecord) => !priorIds.has(entry.id))
+            .some((entry: JsonRecord) => JSON.stringify(entry).includes('actionLog.confirmRollDefense'))).toBe(true);
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('feedback-angelic-tactics-normal-attack-resolved', testInfo);
+    });
+
+    test('反馈：神圣惩戒在眩光掷出 2 后按四骰结果减半', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll', dice: [1, 4, 5, 6, 2], hp: 14, opponentHp: 21,
+            statuses: { [STATUS_IDS.DAZZLE]: 1 },
+            extra: { selectedCharacters: { '0': TIANSHI, '1': 'barbarian' } },
+            randomQueue: [2, 1, 2, 5, 6].map(randomValueForDieFace),
+        });
+        await clickAbilitySlot(page, 'lotus', 'divine-punishment');
+        await advancePhase(page);
+        await expect.poll(async () => {
+            const settlement = (await readState(game)).core?.pendingBonusDiceSettlement;
+            return { source: settlement?.sourceAbilityId, dice: settlement?.dice?.map((die: JsonRecord) => die.value) };
+        }, { timeout: 10000 }).toEqual({ source: STATUS_IDS.DAZZLE, dice: [2] });
+        await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: STATUS_IDS.DAZZLE });
+        await page.locator('[data-tutorial-id="dice-confirm-button"]:visible').first().click();
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                percent: state.core?.pendingAttack?.dazzleDamagePercent,
+                source: state.core?.pendingBonusDiceSettlement?.sourceAbilityId,
+                dice: state.core?.pendingBonusDiceSettlement?.dice?.map((die: JsonRecord) => die.value),
+            };
+        }, { timeout: 10000 }).toEqual({ percent: -50, source: 'divine-punishment', dice: [1, 2, 5, 6] });
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: 'divine-punishment' });
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return { phase: state.sys?.phase, attack: state.core?.pendingAttack ?? null, opponentHp: state.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] };
+        }, { timeout: 10000 }).toEqual({ phase: 'main2', attack: null, opponentHp: 19 });
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('feedback-divine-punishment-dazzle-resolved', testInfo);
+    });
+
+    test('天使战术的奖励骰结束后神圣惩戒自身的奖励骰仍应执行', async ({ page, game }) => {
+        test.setTimeout(90000);
+        const cardId = 'card-tianshi-angelic-tactics';
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll', dice: [1, 4, 5, 6, 2], hand: [cardId], cp: 10, opponentHp: 50,
+            randomQueue: [1, 1, 1, 5, 6].map(randomValueForDieFace),
+            pendingAttack: {
+                attackerId: '0', defenderId: '1', sourceAbilityId: 'divine-punishment',
+                isDefendable: false, isUltimate: false, damage: 0, settlementStage: 'preDamage',
+            },
+        });
+        await dragHandCardToPlay(page, cardId);
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: cardId });
+        await expect.poll(async () => (await readState(game)).core?.pendingAttack?.bonusDiceResolved ?? false).toBe(false);
+        await advancePhase(page);
+        await expect.poll(async () => {
+            const settlement = (await readState(game)).core?.pendingBonusDiceSettlement;
+            return { source: settlement?.sourceAbilityId, dice: settlement?.dice?.map((die: JsonRecord) => die.value) };
+        }, { timeout: 10000 }).toEqual({ source: 'divine-punishment', dice: [1, 1, 5, 6] });
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: 'divine-punishment' });
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return { phase: state.sys?.phase, attack: state.core?.pendingAttack ?? null, opponentHp: state.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] };
+        }, { timeout: 10000 }).toEqual({ phase: 'main2', attack: null, opponentHp: 43 });
     });
 
     test('天使战术专属牌应从真实攻击修正入口投出奖励骰并获得飞行', async ({ page, game }, testInfo) => {

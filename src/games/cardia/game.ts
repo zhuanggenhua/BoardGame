@@ -79,13 +79,13 @@ export const systems = [
         maxSnapshots: 10,
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
     }),
-    createInteractionSystem(),
-    createSimpleChoiceSystem(),
-    createCompareRollChoiceSystem(),
-    createRematchSystem(),
-    createResponseWindowSystem(),
-    createTutorialSystem(),
-    createEventStreamSystem(),
+    createInteractionSystem<CardiaCore>(),
+    createSimpleChoiceSystem<CardiaCore>(),
+    createCompareRollChoiceSystem<CardiaCore>(),
+    createRematchSystem<CardiaCore>(),
+    createResponseWindowSystem<CardiaCore>(),
+    createTutorialSystem<CardiaCore>(),
+    createEventStreamSystem<CardiaCore>(),
     createCardiaEventSystem(),
     createCheatSystem<CardiaCore>(cardiaCheatModifier),
 ];
@@ -108,8 +108,9 @@ export const Cardia = createGameEngine<CardiaCore, CardiaCommand, CardiaEvent>({
     minPlayers: 2,
     maxPlayers: 2,
     commandTypes,
-    audioConfig: CARDIA_AUDIO_CONFIG,
 });
+
+export { CARDIA_AUDIO_CONFIG as audioConfig };
 
 // 引擎配置（用于服务端注册）
 export const engineConfig = Cardia;

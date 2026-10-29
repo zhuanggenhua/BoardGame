@@ -11,10 +11,10 @@ import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture
 // ============================================================================
 // Layout Constants
 // ============================================================================
-export type HandAreaDropTarget = {
-    baseIndex: number;
-    minionUid?: string;
-};
+export type HandAreaDropTarget =
+    | { kind: 'board' }
+    | { kind: 'base'; baseIndex: number }
+    | { kind: 'minion'; baseIndex: number; minionUid: string };
 
 export type HandAreaDragPreview = {
     cardUid: string;
@@ -442,6 +442,7 @@ export const HandArea: React.FC<Props> = ({
                             index={i}
                             total={hand.length}
                             isSelected={false}
+                            isHighlighted={false}
                             isDiscardSelected={false}
                             isDiscardMode={false}
                             disableInteraction={true}

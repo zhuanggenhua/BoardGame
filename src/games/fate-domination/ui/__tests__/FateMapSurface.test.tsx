@@ -31,6 +31,14 @@ it('本人棋子直接选择移动，合法地点按钮直接提交目的地', (
  fireEvent.click(screen.getByTestId('fate-domination-location-shinto'));expect(onLocation).toHaveBeenCalledExactlyOnceWith('shinto');
 });
 
+it('观察他席部署时仍能锚定地图上的下一合法点位，但不开放本席输入',()=>{
+ const core=createReplayAdapter(FateDominationDomain,'map-observe-deployment').setup(['0','1','2']).core;
+ core.phase='outpost';
+ render(<FateMapSurface core={core} locale="zh-CN" legalLocations={[]} onLocation={vi.fn()} onInspect={vi.fn()}/>);
+ expect(document.querySelector('[data-tutorial-id="fate-deployment-shinto"]')).toBeTruthy();
+ expect(screen.queryByRole('button',{name:/部署到新都/})).toBeNull();
+});
+
 it('地图上的可访问对象与画布共用一个输入面，拖动阈值由共享相机处理', () => {
  const core=createReplayAdapter(FateDominationDomain,'map-input-surface').setup(['0','1','2']).core;
  const {container}=render(<FateMapSurface core={core} locale="zh-CN" legalLocations={['miyama']} onLocation={vi.fn()} onInspect={vi.fn()}/>);
@@ -38,6 +46,14 @@ it('地图上的可访问对象与画布共用一个输入面，拖动阈值由�
  expect(latest.inputElement).toBe(container.querySelector('.fd-runtime-map'));
  expect(latest.inputElement.contains(screen.getByTestId('fate-domination-location-miyama'))).toBe(true);
  expect(latest.regionSelectionEnabled).toBe(false);
+});
+
+it('提供战力轨道的透明避让区域，教学提示不遮住正在讲解的临时信息',()=>{
+ const core=createReplayAdapter(FateDominationDomain,'map-battle-track-landmark').setup(['0','1','2']).core;
+ render(<FateMapSurface core={core} locale="zh-CN" legalLocations={[]} onLocation={vi.fn()} onInspect={vi.fn()}/>);
+ const landmark=document.querySelector<HTMLElement>('[data-tutorial-map-landmark="battle-track"]');
+ expect(landmark).toBeTruthy();
+ expect([landmark!.style.left,landmark!.style.top,landmark!.style.width,landmark!.style.height]).toEqual(['1438px','0px','489px','1179px']);
 });
 
 it('未开始移动时常规入口覆盖印刷费用箭头，选目标时移除入口并显示目标选中态',()=>{

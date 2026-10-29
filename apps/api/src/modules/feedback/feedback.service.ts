@@ -12,7 +12,7 @@ import {
     FeedbackReporterType,
     FeedbackStatus,
 } from './feedback.schema';
-import { CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, QueryFeedbackDto, UpdateFeedbackStatusDto } from './dto';
+import { AttachPrivateReplayDto, CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, QueryFeedbackDto, UpdateFeedbackStatusDto } from './dto';
 
 type FeedbackManagerScope = {
     actorUserId: string;
@@ -56,6 +56,13 @@ const normalizeDiagnosticPacket = (
     value: unknown,
     fallbackSource: FeedbackDiagnosticPacket['source'],
 ): FeedbackDiagnosticPacket | undefined => {
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return undefined;
+        }
+    }
     if (!value || typeof value !== 'object') return undefined;
     const raw = value as Partial<FeedbackDiagnosticPacket>;
     const missingFields = Array.isArray(raw.missingFields)
@@ -128,8 +135,25 @@ export class FeedbackService {
         const source = this.normalizeUserSource(dto.source);
         const rewardPoints = userId ? FEEDBACK_REWARD_POINTS : 0;
         const diagnosticPacket = normalizeDiagnosticPacket(dto.diagnosticPacket, 'user');
-        const created = await this.feedbackModel.create({
-            ...dto,
+        if (dto.diagnosticPacket !== undefined && !diagnosticPacket) throw new BadRequestException('反馈诊断包格式无效');
+        const autoCaptureKey = this.isPublicAutoFeedbackSource(source) && diagnosticPacket && diagnosticPacket.captureId.length <= 128
+            ? `${source}:${diagnosticPacket.captureId}`
+            : undefined;
+        let created: FeedbackDocument;
+        try {
+            created = await this.feedbackModel.create({
+            content: dto.content,
+            type: dto.type,
+            severity: dto.severity,
+            gameName: dto.gameName,
+            autoReportKind: dto.autoReportKind,
+            contactInfo: dto.contactInfo,
+            actionLog: dto.actionLog,
+            stateSnapshot: dto.stateSnapshot,
+            clientContext: dto.clientContext,
+            errorContext: dto.errorContext,
+            configProposal: dto.configProposal,
+            configProposals: dto.configProposals,
             gameId: this.normalizeFeedbackGameIdCandidates(
                 dto.clientContext?.gameId,
                 dto.gameName,
@@ -140,8 +164,18 @@ export class FeedbackService {
             source,
             rewardPoints,
             ...(diagnosticPacket ? { diagnosticPacket } : {}),
+            ...(autoCaptureKey ? { autoCaptureKey } : {}),
             ...(userId && { userId }),
-        });
+            });
+        } catch (error) {
+            if (!autoCaptureKey || !this.isDuplicateKeyError(error)) throw error;
+            const existing = await this.feedbackModel.findOne({ autoCaptureKey }).exec();
+            if (!existing || existing.content !== dto.content
+                || String(existing.userId ?? '') !== String(userId ?? '')) {
+                throw new ConflictException('自动反馈现场标识冲突');
+            }
+            return existing;
+        }
         if (userId && rewardPoints > 0) {
             await this.userModel.updateOne(
                 { _id: userId },
@@ -156,6 +190,7 @@ export class FeedbackService {
         const gameId = this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName);
         const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
         const diagnosticPacket = normalizeDiagnosticPacket(dto.diagnosticPacket, 'server');
+        if (dto.diagnosticPacket !== undefined && !diagnosticPacket) throw new BadRequestException('反馈诊断包格式无效');
         if (this.shouldAggregateSystemFeedback(dto, source, gameId)) {
             return this.createOrUpdateAggregatedSystemFeedback(
                 diagnosticPacket ? { ...dto, diagnosticPacket } : dto,
@@ -226,7 +261,9 @@ export class FeedbackService {
                     },
                 }]
                 : [];
-            const summaryProjectionStage: PipelineStage[] = summaryOnly ? [{ $project: this.buildSummaryProjection() }] : [];
+            const summaryProjectionStage: PipelineStage[] = summaryOnly
+                ? [{ $project: this.buildSummaryProjection() }]
+                : [{ $project: { privateReplay: 0 } }];
             const aggregatedItems = await this.feedbackModel.aggregate<Array<FeedbackListRecord & { __isMine?: number }>>([
                 { $match: filter },
                 ...addMineFieldStage,
@@ -284,6 +321,25 @@ export class FeedbackService {
             ...decorated,
             canManage: manager ? this.canActorManageFeedbackItem(manager, decorated) : false,
         };
+    }
+
+    async findPrivateReplay(actorUserId: string, id: string): Promise<{ privateReplay: string } | null> {
+        const manager = await this.assertActorCanManage(actorUserId);
+        if (manager.role !== 'admin') throw new ForbiddenException('仅管理员可读取权威复现场景');
+        if (!Types.ObjectId.isValid(id)) return null;
+        const item = await this.feedbackModel.findById(id).select('+privateReplay').lean<{ privateReplay?: string } | null>().exec();
+        return typeof item?.privateReplay === 'string' ? { privateReplay: item.privateReplay } : null;
+    }
+
+    async attachPrivateReplay(id: string, dto: AttachPrivateReplayDto): Promise<boolean> {
+        if (!Types.ObjectId.isValid(id)) return false;
+        const filter = { _id: id, 'clientContext.matchId': dto.matchId, 'clientContext.playerId': dto.playerId };
+        const existing = await this.feedbackModel.findOne(filter).select('+privateReplay').lean<{ privateReplay?: string } | null>().exec();
+        if (!existing) return false;
+        if (typeof existing.privateReplay === 'string') return true;
+        const updated = await this.feedbackModel.updateOne({ ...filter, privateReplay: { $exists: false } }, { $set: { privateReplay: dto.privateReplay } }).exec();
+        if (updated.matchedCount > 0) return true;
+        return Boolean(await this.feedbackModel.exists({ ...filter, privateReplay: { $exists: true } }));
     }
 
     async updateStatus(actorUserId: string, id: string, dto: UpdateFeedbackStatusDto): Promise<Feedback | null> {
@@ -853,6 +909,8 @@ export class FeedbackService {
         await this.enforceWatchdogFeedbackRetention(now);
         const aggregationKey = aggregationPlan.dedupeKey;
         const aggregationActiveKey = aggregationKey;
+        const captureId = typeof dto.diagnosticPacket?.captureId === 'string'
+            && dto.diagnosticPacket.captureId.length <= 128 ? dto.diagnosticPacket.captureId : undefined;
 
         // 先查找活跃 canonical；若已超过去重窗口，先归档旧 canonical 再新开。
         let existing = await this.feedbackModel.findOne({
@@ -885,6 +943,7 @@ export class FeedbackService {
         }
 
         if (existing) {
+            if (captureId && existing.diagnosticCaptureIds?.includes(captureId)) return existing;
             const baseline = existing.lastOccurredAt ?? existing.createdAt ?? now;
             const baselineMs = baseline instanceof Date ? baseline.getTime() : new Date(baseline).getTime();
             const isWithinWindow = Number.isFinite(baselineMs)
@@ -914,6 +973,7 @@ export class FeedbackService {
                     firstOccurredAt: now,
                     lastOccurredAt: now,
                     latestIncidentKey: dto.incidentKey,
+                    ...(captureId ? { diagnosticCaptureIds: [captureId] } : {}),
                 });
                 await this.enforceWatchdogFeedbackRetention(now);
                 return created;
@@ -943,6 +1003,7 @@ export class FeedbackService {
                             firstOccurredAt: now,
                             lastOccurredAt: now,
                             latestIncidentKey: dto.incidentKey,
+                            ...(captureId ? { diagnosticCaptureIds: [captureId] } : {}),
                         });
                         await this.enforceWatchdogFeedbackRetention(now);
                         return created;
@@ -970,7 +1031,8 @@ export class FeedbackService {
                 ?? this.buildDefaultSystemResolvedMethod(dto)
             : undefined;
         const updated = await this.feedbackModel.findOneAndUpdate(
-            { _id: existing._id, status: { $ne: FeedbackStatus.CLOSED } },
+            { _id: existing._id, status: { $ne: FeedbackStatus.CLOSED },
+                ...(captureId ? { diagnosticCaptureIds: { $ne: captureId } } : {}) },
             {
                 $set: {
                     content: dto.content,
@@ -984,9 +1046,9 @@ export class FeedbackService {
                     gameName: dto.gameName ?? existing.gameName,
                     autoReportKind: dto.autoReportKind ?? existing.autoReportKind,
                     contactInfo: dto.contactInfo ?? existing.contactInfo,
-                    actionLog: dto.actionLog ?? existing.actionLog,
-                    stateSnapshot: dto.stateSnapshot ?? existing.stateSnapshot,
-                    diagnosticPacket: dto.diagnosticPacket ?? existing.diagnosticPacket,
+                    actionLog: existing.actionLog ?? dto.actionLog,
+                    stateSnapshot: existing.stateSnapshot ?? dto.stateSnapshot,
+                    diagnosticPacket: existing.diagnosticPacket ?? dto.diagnosticPacket,
                     clientContext: dto.clientContext ?? existing.clientContext,
                     errorContext: dto.errorContext ?? existing.errorContext,
                     incidentKey: aggregationKey,
@@ -999,11 +1061,16 @@ export class FeedbackService {
                 $inc: {
                     occurrenceCount: 1,
                 },
+                ...(captureId ? { $addToSet: { diagnosticCaptureIds: captureId } } : {}),
             },
             { new: true },
         ).exec();
 
         if (!updated) {
+            if (captureId) {
+                const alreadyRecorded = await this.feedbackModel.findOne({ _id: existing._id, diagnosticCaptureIds: captureId }).exec();
+                if (alreadyRecorded) return alreadyRecorded;
+            }
             if (retryDepth >= 1) {
                 throw new Error('failed_to_update_aggregated_system_feedback_after_retry');
             }

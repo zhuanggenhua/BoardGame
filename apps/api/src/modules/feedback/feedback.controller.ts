@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards, Request, NotFoundException } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
-import { BulkFeedbackIdsDto, CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, UpdateFeedbackStatusDto, QueryFeedbackDto } from './dto';
+import { AttachPrivateReplayDto, BulkFeedbackIdsDto, CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, UpdateFeedbackStatusDto, QueryFeedbackDto } from './dto';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 import { Roles } from '../admin/guards/roles.decorator';
@@ -45,6 +45,13 @@ export class FeedbackInternalController {
     async createSystem(@Body() dto: CreateSystemFeedbackDto) {
         return this.feedbackService.createSystem(dto);
     }
+
+    @Post(':id/private-replay')
+    async attachPrivateReplay(@Param('id') id: string, @Body() dto: AttachPrivateReplayDto) {
+        const attached = await this.feedbackService.attachPrivateReplay(id, dto);
+        if (!attached) throw new NotFoundException('feedback capture target not found');
+        return { attached: true };
+    }
 }
 
 @Controller('admin-api/feedback')
@@ -65,6 +72,15 @@ export class FeedbackAdminController {
             throw new NotFoundException('feedback not found');
         }
         return item;
+    }
+
+    @UseGuards(JwtAuthGuard, AdminGuard)
+    @Roles('admin')
+    @Get(':id/private-replay')
+    async findPrivateReplay(@Request() req: FeedbackAdminRequest, @Param('id') id: string) {
+        const replay = await this.feedbackService.findPrivateReplay(req.user!.userId, id);
+        if (!replay) throw new NotFoundException('feedback replay not found');
+        return replay;
     }
 
     @UseGuards(JwtAuthGuard, AdminGuard)

@@ -517,12 +517,14 @@ export function execute(
             const abilityId = normalizeSelectedAbilityId(state, selectingPlayerId, rawAbilityId);
 
             if (phase === 'defensiveRoll') {
+                const defenderId = state.pendingAttack?.defenderId;
+                if (!defenderId) break;
                 // 防御技能选择
                 const event: AbilityActivatedEvent = {
                     type: 'ABILITY_ACTIVATED',
                     payload: { 
                         abilityId, 
-                        playerId: state.pendingAttack!.defenderId,
+                        playerId: defenderId,
                         isDefense: true,
                     },
                     sourceCommandType: command.type,
@@ -724,14 +726,16 @@ export function execute(
                 
                 // 规则 3.3 步骤 3：如果骰面被修改且已选择技能，触发重选。
                 // 终极技能只有正式发动后才行动锁定；发动前仍可被改骰取消。
-                if (shouldRequireAbilityReselectionForCurrentRoll(state, phase)
+                const pendingAttackSourceAbilityId = state.pendingAttack?.sourceAbilityId;
+                if (pendingAttackSourceAbilityId
+                    && shouldRequireAbilityReselectionForCurrentRoll(state, phase)
                     && die
                     && newValue !== die.value) {
                     events.push({
                         type: 'ABILITY_RESELECTION_REQUIRED',
                         payload: {
                             playerId: state.activePlayerId,
-                            previousAbilityId: state.pendingAttack.sourceAbilityId,
+                            previousAbilityId: pendingAttackSourceAbilityId,
                             reason: 'dieModified',
                         },
                         sourceCommandType: command.type,
@@ -947,7 +951,7 @@ export function execute(
                 events.push({
                     type: 'INTERACTION_COMPLETED',
                     payload: {
-                        interactionId: currentInteraction.id,
+                        interactionId: interaction.id,
                         sourceCardId: interaction.sourceCardId ?? '',
                     },
                     sourceCommandType: command.type,
@@ -985,7 +989,7 @@ export function execute(
                     events.push({
                         type: 'INTERACTION_COMPLETED',
                         payload: {
-                            interactionId: currentInteraction.id,
+                            interactionId: interaction.id,
                             sourceCardId: interaction.sourceCardId ?? '',
                         },
                         sourceCommandType: command.type,
@@ -1062,7 +1066,7 @@ export function execute(
                 events.push({
                     type: 'INTERACTION_COMPLETED',
                     payload: {
-                        interactionId: currentInteraction.id,
+                        interactionId: interaction.id,
                         sourceCardId: interaction.sourceCardId ?? '',
                     },
                     sourceCommandType: command.type,
@@ -1189,7 +1193,7 @@ export function execute(
                 events.push({
                     type: 'INTERACTION_COMPLETED',
                     payload: {
-                        interactionId: currentInteraction.id,
+                        interactionId: interaction.id,
                         sourceCardId: interaction.sourceCardId ?? '',
                     },
                     sourceCommandType: command.type,
@@ -1303,6 +1307,7 @@ export function execute(
 
             // 执行动作
             if (action.type === 'rerollDie') {
+                if (targetDieId === undefined) break;
                 events.push(...buildCurrentRollRerollEvents({
                     state,
                     phase,

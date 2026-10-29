@@ -1,12 +1,21 @@
 import React from 'react';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './mapRegions';
-import { buildQidahenPopulationSites, layoutQidahenPopulation, QIDAHEN_POPULATION_SIZE } from './populationLayout';
+import { buildQidahenPopulationSites, layoutQidahenPopulation, QIDAHEN_POPULATION_SIZE, type PopulationSite } from './populationLayout';
 import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from './mapGraph';
 
 const geometry = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map(region => ({
     id: region.id, x: region.center!.x / QIDAHEN_MAP_WIDTH, y: region.center!.y / QIDAHEN_MAP_HEIGHT,
     isLogicalRegion: false, population: 0,
 }));
+
+const nameplateObstacles = QIDAHEN_RUNTIME_REGION_DEFINITIONS.flatMap(definition => {
+        const bounds = definition.markerBounds;
+        return bounds ? [{
+            x: (bounds.left + bounds.width / 2) / QIDAHEN_MAP_WIDTH,
+            y: (bounds.top + bounds.height / 2) / QIDAHEN_MAP_HEIGHT,
+            size: Math.max(bounds.width, bounds.height) + 4,
+        }] : [];
+    });
 
 export type QidahenMapPopulationRegion = {
     id: string;
@@ -21,11 +30,30 @@ export const QidahenMapPopulationLayer: React.FC<{
     ownership: readonly (string | null)[] | null;
     tokens: readonly { x: number; y: number; size?: number }[];
 }> = ({ regions, ownership, tokens }) => {
-    const sites = React.useMemo(() => ownership
-        ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, geometry)
-        : new Map(), [ownership]);
+    const sites = React.useMemo(() => {
+        const result = ownership
+            ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, geometry)
+            : new Map<string, PopulationSite>();
+        for (const definition of QIDAHEN_RUNTIME_REGION_DEFINITIONS) {
+            if (definition.mapRole === 'point' && definition.markerBounds) {
+                const site = result.get(definition.id);
+                if (site) result.set(definition.id, { ...site, anchor: {
+                    x: definition.markerBounds.left + definition.markerBounds.width / 2,
+                    y: definition.markerBounds.top + definition.markerBounds.height - 1,
+                } });
+            }
+            if (definition.mapRole !== 'city' || !definition.parentRegionId || !definition.markerBounds) continue;
+            const parent = result.get(definition.parentRegionId);
+            if (!parent) continue;
+            result.set(definition.id, {
+                ...parent,
+                anchor: { x: definition.markerBounds.left, y: definition.markerBounds.top + definition.markerBounds.height / 2 },
+            });
+        }
+        return result;
+    }, [ownership]);
     const placements = React.useMemo(() => layoutQidahenPopulation(
-        sites, regions, tokens, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT,
+        sites, regions, [...tokens, ...nameplateObstacles], QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT,
     ), [sites, regions, tokens]);
     const regionById = new Map(regions.map(region => [region.id, region]));
     return (

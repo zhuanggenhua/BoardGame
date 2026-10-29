@@ -51,6 +51,7 @@ function readUseTokenOption(candidate: ChoiceRequestCandidate): DiceThroneTokenR
     if (!isEnabledCandidate(candidate)) return null;
 
     const command = candidate.commands?.find((item) => item.type === 'USE_TOKEN');
+    if (!command) return null;
     const payload = asRecord(command?.payload);
     const tokenId = typeof payload?.tokenId === 'string' ? payload.tokenId : null;
     const amount = typeof payload?.amount === 'number' && Number.isFinite(payload.amount)

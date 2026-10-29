@@ -13,6 +13,11 @@ const UNSATISFIABLE_INTERACTION_REASONS = new Set([
     'min-selection-unreachable',
 ]);
 
+export type OnlineAiUnsatisfiableInteractionReason =
+    | 'empty-options'
+    | 'all-options-disabled'
+    | 'min-selection-unreachable';
+
 const isEmergencySkipOnlySelectability = (
     diagnostic: InteractionSelectabilityDiagnostic | null | undefined,
 ): boolean => {
@@ -53,7 +58,8 @@ const shouldTranslateAiEmergencySkipToCancel = (payload: unknown): boolean => {
 
 export const isOnlineAiUnsatisfiableInteractionReason = (
     reason: string | null | undefined,
-): boolean => typeof reason === 'string' && UNSATISFIABLE_INTERACTION_REASONS.has(reason);
+): reason is OnlineAiUnsatisfiableInteractionReason => typeof reason === 'string'
+    && UNSATISFIABLE_INTERACTION_REASONS.has(reason);
 
 export const shouldSuppressUnsatisfiableInteractionFeedback = (args: {
     sharedInteraction: AiInteractionSnapshot | null | undefined;

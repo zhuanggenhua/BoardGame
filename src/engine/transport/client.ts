@@ -38,6 +38,8 @@ export interface GameTransportClientConfig {
     playerID: string | null;
     /** 认证凭证 */
     credentials?: string;
+    /** 获取当前登录 token；管理员角色由服务端按请求时数据库状态校验。 */
+    getAdminDebugToken?: () => string | null;
     /** 状态更新回调 */
     onStateUpdate?: (
         state: unknown,
@@ -51,6 +53,7 @@ export interface GameTransportClientConfig {
     onPlayerConnectionChange?: (playerID: string, connected: boolean) => void;
     /** 错误回调 */
     onError?: (error: string) => void;
+    onAdminDebugAccessChange?: (allowed: boolean) => void;
     /** 调试事件回调 */
     onDebugEvent?: (event: {
         stage: 'sync-requested' | 'sync-received' | 'sync-timeout' | 'patch-discontinuity' | 'patch-apply-failed' | 'reconnect-requested';
@@ -128,6 +131,19 @@ export class GameTransportClient {
             && !this._destroyed
             && !this._syncInFlight
             && this._connectionState === 'connected';
+    }
+
+    captureFeedbackReplay(request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }): Promise<{ accepted: boolean; captureId?: string }> {
+        if (!this.socket || this._destroyed || this._connectionState !== 'connected' || !this.config.playerID) {
+            return Promise.resolve({ accepted: false });
+        }
+        return new Promise(resolve => {
+            const timer = setTimeout(() => resolve({ accepted: false }), 8000);
+            this.socket!.emit('feedback:capture', this.config.matchID, request, this.config.credentials, result => {
+                clearTimeout(timer);
+                resolve(result);
+            });
+        });
     }
 
     /** 最新游戏状态 */
@@ -259,6 +275,7 @@ export class GameTransportClient {
             this._terminalError = null;
             // 连接后立即发送 sync 请求
             this.sendSync('socket-connect');
+            this.requestAdminDebugAccess();
         });
 
         socket.on('state:sync', (matchID, state, matchPlayers, randomMeta, syncMeta) => {
@@ -412,6 +429,7 @@ export class GameTransportClient {
         socket.on('disconnect', () => {
             if (this._destroyed) return;
             this._connectionState = 'disconnected';
+            this.config.onAdminDebugAccessChange?.(false);
             this.config.onConnectionChange?.(false);
         });
 
@@ -467,6 +485,47 @@ export class GameTransportClient {
             payload,
             this.config.credentials,
             commandMeta,
+        );
+        return true;
+    }
+
+    /** 查询当前登录账号的管理员调试权限；结果只用于控制面板显示。 */
+    requestAdminDebugAccess(): boolean {
+        if (!this.socket || this._destroyed) return false;
+        this.socket.emit(
+            'admin-debug:access',
+            this.config.getAdminDebugToken?.() ?? null,
+            (result) => this.config.onAdminDebugAccessChange?.(result?.allowed === true),
+        );
+        return true;
+    }
+
+    /** 发送管理员调试命令；服务端仍会为每条命令重新校验 token 和当前角色。 */
+    sendAdminDebugCommand(
+        commandType: string,
+        payload: unknown,
+    ): boolean {
+        if (
+            !this.socket
+            || this._destroyed
+            || this._syncInFlight
+            || this._connectionState !== 'connected'
+        ) {
+            return false;
+        }
+        this.socket.emit(
+            'admin-debug:command',
+            this.config.matchID,
+            commandType,
+            payload,
+            this.config.getAdminDebugToken?.() ?? null,
+            (result) => {
+                if (result?.accepted === true) return;
+                if (result?.reason === 'unauthorized') {
+                    this.config.onAdminDebugAccessChange?.(false);
+                }
+                if (result?.reason) this.config.onError?.(`admin_debug_${result.reason}`);
+            },
         );
         return true;
     }

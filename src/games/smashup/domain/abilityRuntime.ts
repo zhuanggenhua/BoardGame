@@ -5,6 +5,7 @@ import {
     type InteractionDescriptor,
     type PromptOption,
     type SimpleChoiceConfig,
+    type SimpleChoiceData,
 } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, SmashUpEvent } from './types';
 
@@ -20,6 +21,7 @@ export interface AbilityRuntimeEffectResult<TContext, TState, TEvent>
     extends AbilityRuntimeResult<TState, TEvent> {
     context?: TContext;
     nextProgram?: AbilityProgram<TContext, TState, TEvent>;
+    continuation?: AbilityRuntimeContinuation<TState, TEvent>;
 }
 
 export type AbilityRuntimeEffect<TContext, TState, TEvent> = (
@@ -58,6 +60,11 @@ export type AbilityProgram<TContext, TState, TEvent> =
         else?: AbilityProgram<TContext, TState, TEvent>;
     }
     | {
+        kind: 'context-adapter';
+        execute: (context: TContext) => AbilityRuntimeResult<TState, TEvent>;
+        collectFootprints: (context: TContext) => unknown[];
+    }
+    | {
         kind: 'stop';
     };
 
@@ -73,6 +80,10 @@ export interface AbilityRuntimePromptMarker {
     continuation?: AbilityRuntimePromptContinuationData;
 }
 
+export type AbilityRuntimeSimpleChoiceData<T> = SimpleChoiceData<T> & Record<string, unknown> & {
+    runtimePrompt: AbilityRuntimePromptMarker;
+};
+
 export interface AbilityRuntimePromptResolveArgs<TContext, TState, TEvent> {
     context: TContext;
     state: MatchState<TState>;
@@ -87,6 +98,21 @@ export interface AbilityRuntimePromptResumeResult<TContext, TState, TEvent>
     extends AbilityRuntimeResult<TState, TEvent> {
     context?: TContext;
     nextProgram?: AbilityProgram<TContext, TState, TEvent>;
+    continuation?: AbilityRuntimeContinuation<TState, TEvent>;
+}
+
+/**
+ * Captures a context together with the program that accepts that exact context.
+ * The pair stays typed at construction, while runtime orchestration can carry it
+ * across a prompt without pretending every continuation uses the same context.
+ */
+export interface AbilityRuntimeContinuation<TState, TEvent> {
+    execute(matchState?: MatchState<TState>): AbilityRuntimeResult<TState, TEvent>;
+    createEvent(timestamp: number, sourceId?: string, matchState?: MatchState<TState>): TEvent;
+    then<TNextContext>(
+        nextProgram: AbilityProgram<TNextContext, TState, TEvent>,
+        nextContext: TNextContext,
+    ): AbilityRuntimeContinuation<TState, TEvent>;
 }
 
 export interface AbilityRuntimePromptContinuationData {
@@ -179,6 +205,16 @@ function getAbilityProgramId<TContext, TState, TEvent>(
         throw new Error('SmashUp ability runtime program 未注册');
     }
     return stableId;
+}
+
+function adaptAbilityProgramContext<TSourceContext, TTargetContext extends TSourceContext, TState, TEvent>(
+    program: AbilityProgram<TSourceContext, TState, TEvent>,
+): AbilityProgram<TTargetContext, TState, TEvent> {
+    return registerAbilityProgramNode({
+        kind: 'context-adapter',
+        execute: (context) => executeAbilityProgram(program, context),
+        collectFootprints: (context) => collectAbilityProgramFootprints(program, context),
+    }, `context-adapter:${getAbilityProgramId(program)}`);
 }
 
 function requireAbilityProgramById<TContext, TState, TEvent>(
@@ -320,6 +356,35 @@ function createAbilityRuntimeContinuationEvent<TContext, TState, TEvent>(
         },
         timestamp,
     } satisfies AbilityRuntimeContinuationEvent as unknown as TEvent;
+}
+
+export function createAbilityRuntimeContinuation<TContext, TState, TEvent>(
+    context: TContext,
+    nextProgram: AbilityProgram<TContext, TState, TEvent>,
+): AbilityRuntimeContinuation<TState, TEvent> {
+    const getContext = (matchState?: MatchState<TState>) => matchState
+        ? withRuntimeMatchState(context, matchState)
+        : context;
+    return {
+        execute: (matchState) => executeAbilityProgram(nextProgram, getContext(matchState)),
+        createEvent: (timestamp, sourceId, matchState) => createAbilityRuntimeContinuationEvent(
+            getContext(matchState),
+            nextProgram,
+            timestamp,
+            sourceId,
+        ),
+        then: <TNextContext>(followingProgram: AbilityProgram<TNextContext, TState, TEvent>, nextContext: TNextContext) => {
+            const chainedContext = mergeRuntimeContinuationContext(context, nextContext);
+            const combinedProgram = createSequenceProgram<TContext & TNextContext, TState, TEvent>(
+                adaptAbilityProgramContext<TContext, TContext & TNextContext, TState, TEvent>(nextProgram),
+                adaptAbilityProgramContext<TNextContext, TContext & TNextContext, TState, TEvent>(followingProgram),
+            );
+            return createAbilityRuntimeContinuation<TContext & TNextContext, TState, TEvent>(
+                chainedContext,
+                combinedProgram,
+            );
+        },
+    };
 }
 
 function readAbilityRuntimeContinuationEvent(
@@ -514,7 +579,7 @@ export function createStopProgram<TContext, TState, TEvent>(): AbilityProgram<TC
     }, 'stop');
 }
 
-export function createPromptProgram<TContext, TState, TEvent>(params: {
+export function createPromptProgram<TContext>(params: {
     sourceId: string;
     interactionSourceIds?: string[];
     deriveFootprint?: AbilityRuntimeFootprintDeriver<TContext>;
@@ -522,18 +587,18 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
     queueInteraction?: (
         context: TContext,
         interaction: InteractionDescriptor,
-    ) => MatchState<TState>;
+    ) => MatchState<SmashUpCore>;
     onResolve: (
-        args: AbilityRuntimePromptResolveArgs<TContext, TState, TEvent>,
-    ) => AbilityRuntimePromptResumeResult<TContext, TState, TEvent>;
-}): AbilityProgram<TContext, TState, TEvent> {
-    const promptProgram: AbilityProgram<TContext, TState, TEvent> = {
+        args: AbilityRuntimePromptResolveArgs<TContext, SmashUpCore, SmashUpEvent>,
+    ) => AbilityRuntimePromptResumeResult<TContext, SmashUpCore, SmashUpEvent>;
+}): AbilityProgram<TContext, SmashUpCore, SmashUpEvent> {
+    const promptProgram: AbilityProgram<TContext, SmashUpCore, SmashUpEvent> = {
         kind: 'prompt',
         sourceId: params.sourceId,
         ...(params.deriveFootprint ? { deriveFootprint: params.deriveFootprint } : {}),
         buildInteraction: params.buildInteraction,
         queueInteraction: params.queueInteraction ?? ((context, interaction) => {
-            const candidate = context as { matchState?: MatchState<TState> };
+            const candidate = context as { matchState?: MatchState<SmashUpCore> };
             if (!candidate.matchState) {
                 throw new Error(`SmashUp ability runtime prompt 缺少 matchState: ${params.sourceId}`);
             }
@@ -570,30 +635,38 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
             timestamp,
         });
         const nextContext = mergeRuntimeContinuationContext(
-            resolvedContext as TContext | undefined,
             resumeResult.context ?? resolvedContext as TContext,
+            resolvedContext as TContext | undefined,
         );
         const continuationProgram = continuation?.nextProgramId
-            ? requireAbilityProgramById<TContext, TState, TEvent>(continuation.nextProgramId)
+            ? requireAbilityProgramById<TContext, SmashUpCore, SmashUpEvent>(continuation.nextProgramId)
             : undefined;
-        const nextProgram = resumeResult.nextProgram && continuationProgram
-            ? createSequenceProgram(resumeResult.nextProgram, continuationProgram)
-            : resumeResult.nextProgram ?? continuationProgram;
-        let result: AbilityRuntimeResult<TState, TEvent> = {
+        const nextContinuation = resumeResult.continuation
+            ? continuationProgram
+                ? resumeResult.continuation.then(continuationProgram, nextContext)
+                : resumeResult.continuation
+            : resumeResult.nextProgram
+                ? continuationProgram
+                    ? createAbilityRuntimeContinuation(nextContext, resumeResult.nextProgram)
+                        .then(continuationProgram, nextContext)
+                    : createAbilityRuntimeContinuation(nextContext, resumeResult.nextProgram)
+                : continuationProgram
+                    ? createAbilityRuntimeContinuation(nextContext, continuationProgram)
+                    : undefined;
+        let result: AbilityRuntimeResult<SmashUpCore, SmashUpEvent> = {
             events: resumeResult.events,
             matchState: resumeResult.matchState ?? state,
             ...(resumeResult.deferredContinuation ? { deferredContinuation: true } : {}),
         };
-        if (nextProgram) {
+        if (nextContinuation) {
             if (hasRuntimeDomainEvents(resumeResult.events)) {
                 result = {
                     events: [
                         ...resumeResult.events,
-                        createAbilityRuntimeContinuationEvent(
-                            nextContext,
-                            nextProgram,
+                        nextContinuation.createEvent(
                             getRuntimeContinuationTimestamp(resumeResult.events, nextContext),
                             marker?.sourceId ?? params.sourceId,
+                            resumeResult.matchState ?? state,
                         ),
                     ],
                     matchState: resumeResult.matchState ?? state,
@@ -603,7 +676,7 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
                 const continuationState = prioritizeContinuationPromptState(result.matchState ?? state);
                 result = mergeRuntimeResults(
                     result,
-                    executeAbilityProgram(nextProgram, withRuntimeMatchState(nextContext, continuationState)),
+                    nextContinuation.execute(continuationState),
                 );
             }
         }
@@ -642,9 +715,11 @@ export function collectAbilityProgramFootprints<TContext, TState, TEvent>(
         }
         case 'sequence':
             return program.steps.flatMap(step => collectAbilityProgramFootprints(step, context));
+        case 'context-adapter':
+            return program.collectFootprints(context);
         case 'branch':
             return collectAbilityProgramFootprints(
-                program.when(context) ? program.then : (program.else ?? createStopProgram()),
+                program.when(context) ? program.then : (program.else ?? createStopProgram<TContext, TState, TEvent>()),
                 context,
             );
         case 'stop':
@@ -698,13 +773,27 @@ export function resolveAbilityRuntimePrompt(
     return handler(state, playerId, value, interactionData, random, timestamp);
 }
 
+export function createAbilityRuntimeSimpleChoice<const TOptions extends readonly PromptOption<unknown>[]>(
+    id: string,
+    playerId: string,
+    title: string,
+    options: TOptions,
+    config: SimpleChoiceConfig<NoInfer<TOptions[number]['value']>> & { sourceId: string; continuationId?: string },
+): InteractionDescriptor<AbilityRuntimeSimpleChoiceData<TOptions[number]['value']>>;
+export function createAbilityRuntimeSimpleChoice<T>(
+    id: string,
+    playerId: string,
+    title: string,
+    options: readonly PromptOption<T>[],
+    config: SimpleChoiceConfig<T> & { sourceId: string; continuationId?: string },
+): InteractionDescriptor<AbilityRuntimeSimpleChoiceData<T>>;
 export function createAbilityRuntimeSimpleChoice<T>(
     id: string,
     playerId: PlayerId,
     title: string,
-    options: PromptOption<T>[],
-    config: SimpleChoiceConfig & { sourceId: string; continuationId?: string },
-): InteractionDescriptor {
+    options: readonly PromptOption<T>[],
+    config: SimpleChoiceConfig<T> & { sourceId: string; continuationId?: string },
+): InteractionDescriptor<AbilityRuntimeSimpleChoiceData<T>> {
     const interaction = createSimpleChoice(id, playerId, title, options, config);
     return {
         ...interaction,
@@ -764,19 +853,19 @@ function mergeRuntimeResults<TState, TEvent>(
     };
 }
 
-function mergeRuntimeContinuationContext<TContext>(
-    previousContext: TContext | undefined,
-    nextContext: TContext,
-): TContext {
+function mergeRuntimeContinuationContext<TNextContext, TPreviousContext>(
+    nextContext: TNextContext,
+    previousContext: TPreviousContext | undefined,
+): TNextContext & TPreviousContext {
     const previousRecord = asPlainRecord(previousContext);
     const nextRecord = asPlainRecord(nextContext);
     if (!previousRecord || !nextRecord) {
-        return nextContext;
+        return nextContext as TNextContext & TPreviousContext;
     }
     return {
         ...previousRecord,
         ...nextRecord,
-    } as TContext;
+    } as TNextContext & TPreviousContext;
 }
 
 function withRuntimeMatchState<TContext, TState>(
@@ -840,24 +929,25 @@ function ensureRuntimePromptSourceId(
 
 export function executeAbilityProgram<TContext, TState, TEvent>(
     program: AbilityProgram<TContext, TState, TEvent>,
-    context: TContext,
+    context: NoInfer<TContext>,
 ): AbilityRuntimeResult<TState, TEvent> {
     switch (program.kind) {
         case 'effect': {
             const result = program.effect(context);
             const normalized = normalizeRuntimeResult(result) as AbilityRuntimeEffectResult<TContext, TState, TEvent>;
-            if (!normalized.nextProgram) {
+            const nextContinuation = normalized.continuation ?? (normalized.nextProgram
+                ? createAbilityRuntimeContinuation(normalized.context ?? context, normalized.nextProgram)
+                : undefined);
+            if (!nextContinuation) {
                 return normalized;
             }
-            const nextContext = normalized.context ?? context;
+            const continuationContext = normalized.context ?? context;
             if (hasRuntimeDomainEvents(normalized.events)) {
                 return {
                     events: [
                         ...normalized.events,
-                        createAbilityRuntimeContinuationEvent(
-                            nextContext,
-                            normalized.nextProgram,
-                            getRuntimeContinuationTimestamp(normalized.events, nextContext),
+                        nextContinuation.createEvent(
+                            getRuntimeContinuationTimestamp(normalized.events, continuationContext),
                         ),
                     ],
                     matchState: normalized.matchState,
@@ -875,7 +965,7 @@ export function executeAbilityProgram<TContext, TState, TEvent>(
                         ? { suspended: true as const, continuationId: normalized.continuationId }
                         : {}),
                 },
-                executeAbilityProgram(normalized.nextProgram, nextContext),
+                nextContinuation.execute(),
             );
         }
         case 'prompt': {
@@ -951,8 +1041,13 @@ export function executeAbilityProgram<TContext, TState, TEvent>(
             }
             return result;
         }
+        case 'context-adapter':
+            return program.execute(context);
         case 'branch':
-            return executeAbilityProgram(program.when(context) ? program.then : (program.else ?? createStopProgram()), context);
+            return executeAbilityProgram(
+                program.when(context) ? program.then : (program.else ?? createStopProgram<TContext, TState, TEvent>()),
+                context,
+            );
         case 'stop':
             return { events: [] };
         default: {

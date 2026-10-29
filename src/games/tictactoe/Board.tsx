@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import type { MatchState } from '../../engine/types';
+import { useOptionalGameClient } from '../../engine/transport/react';
 import type { TicTacToeCore } from './domain';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
@@ -122,6 +123,7 @@ const IconO = ({ className }: { className?: string }) => (
 );
 
 export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, matchData, isMultiplayer }) => {
+    const adminDebugAvailable = useOptionalGameClient()?.adminDebugAvailable === true;
     const isGameOver = G.sys.gameover;
     const isWinner = isGameOver?.winner !== undefined;
     const coreCurrentPlayer = G.core.currentPlayer;
@@ -485,7 +487,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
 
                 {/* 统一结束页面遮罩 */}
                 <EndgameOverlay {...endgameProps} />
-                {!isSpectator && (
+                {(!isSpectator || adminDebugAvailable) && (
                     <GameDebugPanel
                         G={G}
                         dispatch={dispatch}

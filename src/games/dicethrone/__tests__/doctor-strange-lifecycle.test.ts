@@ -281,11 +281,11 @@ function runDoctorStrangeCard(
 }
 
 describe('奇异博士完成态与开局卡区', () => {
-    it('默认可选且不显示实施中标记，同时内部初始化仍可用', () => {
+    it('当前范围保持实施中、允许真人选择并保留实施中标记', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(candidate => candidate.id === 'doctor_strange');
-        expect(character?.setupOptionStatus).toBeUndefined();
-        expect(character?.setupOptionStatusReason).toBeUndefined();
-        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(false);
+        expect(character?.setupOptionStatus).toBe('in_progress');
+        expect(character?.setupOptionStatusReason).toContain('真人确认');
+        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(true);
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.some(candidate => candidate.id === 'doctor_strange')).toBe(true);
 
         const playerIds = ['0', '1'];
@@ -330,22 +330,7 @@ describe('奇异博士完成态与开局卡区', () => {
                 index: DOCTOR_STRANGE_COMMON_ATLAS_INDEX[card.id],
             });
 
-            const expected = structuredClone(common!);
-            if (card.id === 'card-next-time') {
-                expected.timing = 'roll';
-            } else if (card.id === 'card-i-can-again') {
-                expected.playCondition = { ...expected.playCondition, phase: 'offensiveRoll' };
-            } else if (card.id === 'card-worthy-of-me') {
-                const playCondition = { ...expected.playCondition };
-                delete playCondition.requireIsRoller;
-                expected.playCondition = { ...playCondition, requireIsRollerOrTeammate: true };
-                expected.effects = expected.effects?.map(effect => effect.action?.type === 'custom'
-                    && effect.action.customActionId === 'reroll-die-2'
-                    ? { ...effect, action: { ...effect.action, target: 'select' } }
-                    : effect);
-            }
-
-            expect(actualDefinition, `共享定义或许可配置差异越界：${card.id}`).toEqual(expected);
+            expect(actualDefinition, `公共牌定义应由唯一共享来源提供：${card.id}`).toEqual(structuredClone(common!));
         }
     });
 
@@ -654,7 +639,92 @@ describe('奇异博士完成态与开局卡区', () => {
         expect(state.sys.interaction.current).toBeUndefined();
     });
 
-    it('奇异博士的 card-worthy-of-me 可由队友选择当前投掷者骰子并重复重掷两次', async () => {
+    it('其他玩家打出我又行了后由当前进攻掷骰者自愿选择自己的骰子', () => {
+        const cardId = 'card-i-can-again';
+        const random = createQueuedRandom([1, 2, 3, 4, 5, 6]);
+        let state = createDoctorStrangeCardState(cardId, 'offensiveRoll');
+        const card = state.core.players['0'].hand.find(candidate => candidate.id === cardId);
+        if (!card) throw new Error(`测试初始牌缺少 ${cardId}`);
+        state.core.players['0'].hand = [];
+        state.core.players['1'].hand = [structuredClone(card)];
+        state.core.players['1'].deck = state.core.players['1'].deck.filter(candidate => candidate.id !== cardId);
+        state.core.players['1'].resources.cp = 1;
+        state = rollDoctorStrangeDice(state, '0', random);
+        state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
+
+        const selection = state.sys.interaction.current;
+        expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: '0' });
+        expect(selection?.data).toMatchObject({
+            sourceId: cardId,
+            minSteps: 0,
+            meta: {
+                dtType: 'selectDie',
+                selectCount: 5,
+                diceOwnerId: '0',
+                targetOpponentDice: false,
+            },
+        });
+        expect(DiceThroneDomain.validate(state, {
+            ...cmd('REROLL_DIE', '1', { dieId: 0 }),
+            timestamp: 219,
+        } as never)).toMatchObject({ valid: false, error: 'player_mismatch' });
+
+        state = dispatchDoctorStrangeCommand(state, 'REROLL_DIE', '0', { dieId: 0 }, random);
+        state = confirmDoctorStrangeCardInteraction(state, '0', random);
+
+        expect(state.core.dice.map(die => die.value)).toEqual([6, 2, 3, 4, 5]);
+        expect(state.core.players['1'].resources.cp).toBe(0);
+        expect(state.core.players['1'].discard.map(candidate => candidate.id)).toContain(cardId);
+        expect(state.sys.interaction.current).toBeUndefined();
+    });
+
+    it('其他玩家打出就这后由当前防御掷骰者选择是否接受额外尝试', () => {
+        const cardId = 'card-just-this';
+        const random = createQueuedRandom([2, 2, 2, 2, 2, 6]);
+        let state = createDoctorStrangeCardState(cardId, 'defensiveRoll');
+        const card = state.core.players['0'].hand.find(candidate => candidate.id === cardId);
+        if (!card) throw new Error(`测试初始牌缺少 ${cardId}`);
+        state.core.players['0'].hand = [];
+        state.core.players['1'].hand = [structuredClone(card)];
+        state.core.players['1'].deck = state.core.players['1'].deck.filter(candidate => candidate.id !== cardId);
+        state.core.players['1'].resources.cp = 1;
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            defenseAbilityId: 'test-defense',
+            isDefendable: true,
+            damage: 5,
+        };
+        state = rollDoctorStrangeDice(state, '0', random);
+        const originalDice = state.core.dice.map(die => die.value);
+        state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
+
+        const selection = state.sys.interaction.current;
+        expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: '0' });
+        expect(selection?.data).toMatchObject({
+            sourceId: cardId,
+            minSteps: 0,
+            meta: {
+                dtType: 'selectDie',
+                selectCount: 5,
+                diceOwnerId: '0',
+                targetOpponentDice: false,
+            },
+        });
+        expect(DiceThroneDomain.validate(state, {
+            ...cmd('REROLL_DIE', '1', { dieId: 0 }),
+            timestamp: 219,
+        } as never)).toMatchObject({ valid: false, error: 'player_mismatch' });
+
+        state = confirmDoctorStrangeCardInteraction(state, '0', random);
+
+        expect(state.core.dice.map(die => die.value)).toEqual(originalDice);
+        expect(state.core.players['1'].resources.cp).toBe(1);
+        expect(state.core.players['1'].discard.map(candidate => candidate.id)).toContain(cardId);
+        expect(state.sys.interaction.current).toBeUndefined();
+    });
+
+    it('公共卡不愧是我由当前投掷者控制队友发起的两次重掷', async () => {
         const playerIds = ['0', '1', '2', '3'] as const;
         const random = createQueuedRandom([1, 2, 3, 4, 5, 6, 5]);
         let state = createNoResponseSetup()(playerIds as unknown as string[], random);
@@ -722,20 +792,21 @@ describe('奇异博士完成态与开局卡区', () => {
         state = playResult.state as typeof state;
 
         const selection = state.sys.interaction.current;
-        expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: teammateId });
+        expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: rollerId });
         expect(selection?.data).toMatchObject({
             sourceId: card.id,
+            minSteps: 0,
             meta: {
                 dtType: 'selectDie',
                 selectCount: 2,
                 diceOwnerId: rollerId,
-                targetOpponentDice: true,
+                targetOpponentDice: false,
                 allowRepeatedDieSelection: true,
             },
         });
 
         expect(DiceThroneDomain.validate(state, {
-            ...cmd('REROLL_DIE', opponentId, { dieId: 0 }),
+            ...cmd('REROLL_DIE', teammateId, { dieId: 0 }),
             timestamp: 221,
         } as never)).toMatchObject({ valid: false, error: 'player_mismatch' });
 
@@ -743,18 +814,18 @@ describe('奇异博士完成态与开局卡区', () => {
             engineConfig,
             state,
             matchId: 'local:doctor-strange-worthy-of-me-teammate-reroll',
-            seatControllers: { [teammateId]: { type: 'local-ai' } },
+            seatControllers: { [rollerId]: { type: 'local-ai' } },
         });
-        expect(aiResolution?.playerId).toBe(teammateId);
+        expect(aiResolution?.playerId).toBe(rollerId);
         expect(aiResolution?.action.kind).toBe('interaction-multistep');
         const aiRerollCommand = aiResolution?.action.commands.find(command => command.type === 'REROLL_DIE');
         expect(aiRerollCommand?.payload).toMatchObject({ dieId: 0 });
         if (!aiRerollCommand) throw new Error('本地AI必须选择一颗可重掷骰子');
-        dispatch(cmd('REROLL_DIE', teammateId, aiRerollCommand.payload as Record<string, unknown>));
+        dispatch(cmd('REROLL_DIE', rollerId, aiRerollCommand.payload as Record<string, unknown>));
         expect(state.core.dice[0]?.value).toBe(6);
-        dispatch(cmd('REROLL_DIE', teammateId, { dieId: 0 }));
+        dispatch(cmd('REROLL_DIE', rollerId, { dieId: 0 }));
         expect(state.core.dice[0]?.value).toBe(5);
-        dispatch(cmd('SYS_INTERACTION_CONFIRM', teammateId));
+        dispatch(cmd('SYS_INTERACTION_CONFIRM', rollerId));
 
         expect(state.sys.interaction.current).toBeUndefined();
         expect(state.core.dice.map(die => die.value)).toEqual([5, 2, 3, 4, 5]);

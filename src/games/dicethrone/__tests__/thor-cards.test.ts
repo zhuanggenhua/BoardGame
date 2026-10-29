@@ -100,11 +100,16 @@ describe('索尔物理牌、升级和最终效果',()=>{
  });
  it.each([{cardId:'card-thor-impenetrable',hp:5,roll:1,expected:5},{cardId:'card-thor-undaunted',hp:5,roll:4,expected:1},{cardId:'card-thor-undaunted',hp:5,roll:1,expected:0}])('$cardId面对真实致命攻击，骰值$roll后生命=$expected',({cardId,hp,roll,expected})=>{
    let state=scene();state.core.players['0'].hand=[THOR_CARDS.find(c=>c.id===cardId)!];state.core.players['0'].tokens[T.ELECTROKINESIS]=2;state.core.players['0'].resources[R.HP]=hp;
-   state.sys.phase='offensiveRoll';state.core.activePlayerId='1';
+   state.sys.phase='defensiveRoll';state.core.turnPhase='defensiveRoll';state.core.activePlayerId='1';
    state.core.pendingAttack={attackerId:'1',defenderId:'0',sourceAbilityId:'fist-technique-5',isDefendable:false,settlementStage:'preDamage',preDefenseResolved:true} as DiceThroneCore['pendingAttack'];
    const damage={type:'DAMAGE_DEALT',timestamp:10,payload:{targetId:'0',amount:10,actualDamage:5,sourcePlayerId:'1',sourceAbilityId:'fist-technique-5',damageScope:'attack',damageOrigin:'ability',unblockable:true}} as DiceThroneEvent;
    const response=maybeCreateDamageResponseEvent({state:state.core,damageEvent:damage as Extract<DiceThroneEvent,{type:'DAMAGE_DEALT'}>,attackerId:'1',sourceAbilityId:'fist-technique-5',timestamp:10,allowAttackerBoost:false});
-   expect(response).toBeDefined();state.core=reduce(state.core,response!);
+   expect(response).not.toBeNull();
+   if (!response) throw new Error(`${cardId} 的真实受伤响应窗口没有打开`);
+   expect(response.payload.pendingDamage).toMatchObject({
+     targetPlayerId:'0',responseType:'beforeDamageReceived',originalDamage:10,currentDamage:10,
+   });
+   state.core=reduce(state.core,response);
    const played=executePipeline(cfg,state,{type:'PLAY_CARD',playerId:'0',payload:{cardId},timestamp:11} as DiceThroneCommand,createQueuedRandom([roll]),['0','1']);
    expect(played.success,played.error).toBe(true);state=played.state;
    if(cardId==='card-thor-undaunted'){

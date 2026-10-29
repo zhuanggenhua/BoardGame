@@ -40,7 +40,7 @@ const resolveGlobalBuildInfo = (): BuildInfoCandidate => {
 };
 
 const resolveImportMetaBuildInfo = (): BuildInfoCandidate => {
-    const metaEnv = (import.meta as { env?: Record<string, string | undefined> }).env;
+    const metaEnv = import.meta.env;
     if (!metaEnv) {
         return {};
     }

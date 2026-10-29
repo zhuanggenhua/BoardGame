@@ -1953,6 +1953,7 @@
   },
   "interaction": {
     "waitingOpponent": "Waiting for opponent...",
+    "clearSelection": "Clear selection",
     "selectDie": "Select {{count}} die(s)",
     "modifyDie": "Modify die value",
     "selectStatus": "Select a status to remove",
@@ -1993,6 +1994,7 @@
     "hint_copy_step2": "Select target die to set to {{value}}",
     "hint_done": "Done",
     "hint_choose_value": "Choose the target value",
+    "hint_bonus_settlement": "Confirm these bonus dice results to continue settlement",
     "set_value": "Set to {{value}}",
     "hint_group_reroll": "Select dice to reroll together, or confirm to keep these results",
     "hint_group_reroll_selected": "{{count}} dice selected. Reroll, or confirm to keep these results",
@@ -3693,9 +3695,9 @@
     },
     "going-forward": {
       "name": "Going Forward",
-      "description": "4 Shuriken: deal 7 damage.",
+      "description": "4 Shuriken: roll 2 dice and deal damage equal to the total; if the final total is 6 or less, this attack becomes undefendable.",
       "effects": {
-        "roll2DiceDamageTotal": "Roll 2 dice and deal damage equal to the total",
+        "roll2DiceDamageTotal": "Roll 2 dice and deal damage equal to the total; if the final total is 6 or less, this attack becomes undefendable",
         "resolveRolledDamage": "Deal damage based on the roll result"
       }
     },
@@ -7216,7 +7218,20 @@
     "skip": "Skip",
     "cast": "Choose a spell to cast",
     "prepare": "Choose a spell to prepare",
+    "prepareFromDiscard": "Choose a spell from your discard pile to prepare",
+    "prepareFromDeckTop": "Choose up to 2 spells from the top 5 cards of your deck",
+    "prepareFromHand": "Choose a spell from your hand to prepare",
     "target": "Choose this player",
+    "selectOpponentToTakeOneDamage": "Choose an opponent to take 1 damage",
+    "selectOpponentToTakeThreeDamage": "Choose an opponent to take 3 damage",
+    "selectOpponentToTakeDamage": "Choose an opponent to take damage",
+    "selectHeroToHealOne": "Choose a hero to heal for 1",
+    "selectHeroToHealThree": "Choose a hero to heal for 3",
+    "selectHeroToHeal": "Choose a hero to heal",
+    "selectPlayerToGainDejaVu": "Choose a player to gain Deja Vu",
+    "selectOpponentToReceiveCrimsonBands": "Choose an opponent to receive Crimson Bands",
+    "selectOpponentToLoseOneCp": "Choose an opponent to lose 1 CP",
+    "selectPlayerToGainCp": "Choose a player to gain CP",
     "removeStatus": "Remove status: {{status}}",
     "removeStatusTitle": "Choose a status to remove",
     "incomeNormal": "Do not spend Premonition: draw 1 card",

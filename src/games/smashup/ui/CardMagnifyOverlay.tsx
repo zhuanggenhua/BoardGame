@@ -32,7 +32,7 @@ function magnifyFrameStyle(isBase: boolean): React.CSSProperties {
 
 export interface CardMagnifyTarget {
     defId: string;
-    type: 'minion' | 'base' | 'action' | 'titan';
+    type: 'minion' | 'base' | 'action' | 'fusion' | 'titan';
     overlayDefId?: string;
 }
 
@@ -59,7 +59,7 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
     if (!target) return null;
 
     const baseDef = target.type === 'base' ? getBaseDef(target.defId) : undefined;
-    const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) : target.defId;
+    const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) ?? target.defId : target.defId;
     const def = target.type === 'base'
         ? (getBaseDef(resolvedBaseDefId) ?? baseDef)
         : getCardDef(target.defId);

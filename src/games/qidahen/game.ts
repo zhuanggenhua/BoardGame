@@ -34,7 +34,7 @@ const resolveQidahenLocalRuntimeControlledPlayerId = (args: {
     fallbackPlayerId: string | null;
 }): string | null => {
     const interaction = args.state.sys?.interaction?.current;
-    return getInteractionSourceId(interaction) === QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID
+    return interaction && getInteractionSourceId(interaction) === QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID
         ? interaction.playerId
         : args.fallbackPlayerId;
 };
@@ -248,7 +248,7 @@ export const engineConfig = {
         resolveCurrentPlayerId: resolveQidahenOnlineAiCurrentPlayerId,
         resolveManualSetupSelectionTakeoverPlayerId: resolveQidahenManualSetupSelectionTakeoverPlayerId,
         shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseQidahenManualSetupSelection,
-        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
+        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }: { type: string; payload: unknown }) => (
             type === QIDAHEN_COMMANDS.SELECT_FACTION
             && Boolean(payload)
             && typeof payload === 'object'

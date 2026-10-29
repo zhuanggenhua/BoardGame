@@ -20,7 +20,7 @@ import type {
     SmashUpCore,
     SmashUpEvent,
     TempPowerAddedEvent,
-    TitanInPlay,
+    TitanState,
 } from './types';
 import { SU_EVENTS } from './types';
 
@@ -64,7 +64,7 @@ type CardInPlayLookup =
     | { targetKind: 'minion'; baseIndex: number; minion: MinionOnBase }
     | { targetKind: 'ongoing'; baseIndex: number; ongoing: OngoingActionOnBase }
     | { targetKind: 'attached_action'; baseIndex: number; hostMinion: MinionOnBase; action: AttachedActionOnMinion }
-    | { targetKind: 'titan'; titan: TitanInPlay };
+    | { targetKind: 'titan'; titan: TitanState };
 
 function findCardInPlayByUid(
     core: SmashUpCore,

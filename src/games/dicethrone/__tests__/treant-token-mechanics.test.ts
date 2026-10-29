@@ -4,12 +4,14 @@ import { execute } from '../domain/execute';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
 import { reduce } from '../domain/reducer';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
+import { resumeAttackDebuffFollowups } from '../domain/deferredAttackDebuff';
 import { validateCommand } from '../domain/commandValidation';
 import { RESOURCE_IDS } from '../domain/resources';
 import { STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../domain/ids';
 import { WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';
 import { getAvailableAbilityIds } from '../domain/rules';
-import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { createHeroMatchup, createQueuedRandom, getSimpleChoicePrompt, respondToPrompt, testSystems } from './test-utils';
+import { executePipeline } from '../../../engine/pipeline';
 import { MAX_HEALTH } from '../domain/types';
 import { DiceThroneDomain } from '../domain';
 import type { RemoveStatusCommand } from '../domain/types';
@@ -738,109 +740,147 @@ describe('DiceThrone Treant Token 机制', () => {
         expect((events as DiceThroneEvent[]).some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
     });
 
-    it('树精神圣防止即将受到的负面状态必须由玩家选择，可跳过或消耗防止', () => {
-        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+    it('点燃炸药真实攻击管线中树灵先防止新桶再进入防御', () => {
+        const state = createHeroMatchup('cursed_pirate', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
         state.core.pendingAttack = {
-            attackerId: '0',
-            defenderId: '1',
-            sourceAbilityId: 'poison-blade',
-            isDefendable: true,
-            damage: 5,
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse-small',
+            isDefendable: true, damage: 7,
         };
         state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        const hp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp);
+        const prompt = getSimpleChoicePrompt(advanced.state, TOKEN_IDS.TREANT_DIVINE);
+        const prevent = prompt.options.find(option => (option.value as { customId?: string }).customId === 'treant-divine-deferred-prevent');
+        expect(prevent).toBeDefined();
+        const resolved = respondToPrompt(advanced.state, prevent!.id, '1');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('defensiveRoll');
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
+    });
 
-        let result = diceThroneFlowHooks.onPhaseExit?.({
-            state: { core: state.core, sys: { phase: 'offensiveRoll' } },
-            from: 'offensiveRoll',
-            to: 'defensiveRoll',
-            command: command('ADVANCE_PHASE', '0'),
-            random: createQueuedRandom([1]),
-        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
-        const events = Array.isArray(result) ? result : (result?.events ?? []);
-        const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED') as Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }> | undefined;
-        expect(choiceEvent).toBeDefined();
-        expect(choiceEvent?.payload.playerId).toBe('1');
-        expect(events.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.DELAYED_POISON)).toBe(false);
-        expect(events.some(event => event.type === 'TOKEN_CONSUMED')).toBe(false);
-
-        const skipOption = choiceEvent?.payload.options.find(option => option.customId === 'treant-divine-skip-debuff');
-        expect(skipOption).toBeDefined();
-        let next = applyEvents(state.core, events as DiceThroneEvent[]);
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: {
-                playerId: '1',
-                sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
-                customId: skipOption?.customId,
-                value: skipOption?.value,
-            },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 101,
-        } as unknown as DiceThroneEvent);
-        result = diceThroneFlowHooks.onPhaseExit?.({
-            state: { core: next, sys: { phase: 'offensiveRoll' } },
-            from: 'offensiveRoll',
-            to: 'defensiveRoll',
-            command: command('ADVANCE_PHASE', '0'),
-            random: createQueuedRandom([1]),
-        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
-        let followUpEvents = (Array.isArray(result) ? result : (result?.events ?? [])) as DiceThroneEvent[];
-        next = applyEvents(next, followUpEvents);
-        expect(followUpEvents.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.DELAYED_POISON)).toBe(true);
-        expect(next.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(1);
-        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
-
-        const preventState = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
-        preventState.sys.phase = 'offensiveRoll';
-        preventState.core.pendingAttack = {
-            attackerId: '0',
-            defenderId: '1',
-            sourceAbilityId: 'poison-blade',
-            isDefendable: true,
-            damage: 5,
-        };
-        preventState.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
-        result = diceThroneFlowHooks.onPhaseExit?.({
-            state: { core: preventState.core, sys: { phase: 'offensiveRoll' } },
-            from: 'offensiveRoll',
-            to: 'defensiveRoll',
-            command: command('ADVANCE_PHASE', '0'),
-            random: createQueuedRandom([1]),
-        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
-        const preventChoice = ((Array.isArray(result) ? result : (result?.events ?? [])) as DiceThroneEvent[])
-            .find(event => event.type === 'CHOICE_REQUESTED') as Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }> | undefined;
-        const preventOption = preventChoice?.payload.options.find(option => option.customId === 'treant-divine-prevent-debuff');
-        expect(preventOption).toBeDefined();
-        next = applyEvents(preventState.core, ((Array.isArray(result) ? result : (result?.events ?? [])) as DiceThroneEvent[]));
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: {
-                playerId: '1',
-                sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
-                customId: preventOption?.customId,
-                value: preventOption?.value,
-            },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 101,
+    it('同一攻击施加多个负面状态时，神性树灵可选择防止后面的炸药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core = reduce(state.core, {
+            type: 'PLAYER_BOARD_FACE_CHANGED', payload: { playerId: '0', face: 'cursed', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST', timestamp: 90,
         } as DiceThroneEvent);
-        result = diceThroneFlowHooks.onPhaseExit?.({
-            state: { core: next, sys: { phase: 'offensiveRoll' } },
-            from: 'offensiveRoll',
-            to: 'defensiveRoll',
-            command: command('ADVANCE_PHASE', '0'),
-            random: createQueuedRandom([1]),
-        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
-        followUpEvents = (Array.isArray(result) ? result : (result?.events ?? [])) as DiceThroneEvent[];
-        next = applyEvents(next, followUpEvents);
-        expect(followUpEvents.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.DELAYED_POISON)).toBe(false);
-        expect(followUpEvents.find(event => event.type === 'TOKEN_CONSUMED')?.payload).toMatchObject({
-            playerId: '1',
-            tokenId: TOKEN_IDS.TREANT_DIVINE,
-            amount: 1,
-        });
-        expect(next.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
-        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] ?? 0).toBe(0);
+        state.sys.phase = 'offensiveRoll';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'soul-command', isDefendable: false, damage: 8,
+        };
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        const hp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        const prompt = getSimpleChoicePrompt(advanced.state, TOKEN_IDS.TREANT_DIVINE);
+        const keg = prompt.options.find(option => option.labelKey === `statusEffects.${STATUS_IDS.POWDER_KEG}.name`);
+        expect(keg).toBeDefined();
+        const resolved = respondToPrompt(advanced.state, keg!.id, '1');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp - 8);
+    });
+
+    it('跳过多状态防止时全部状态与伤害续接且神性树灵保留', () => {
+        const state = createHeroMatchup('cursed_pirate', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core = reduce(state.core, {
+            type: 'PLAYER_BOARD_FACE_CHANGED', payload: { playerId: '0', face: 'cursed', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST', timestamp: 90,
+        } as DiceThroneEvent);
+        state.sys.phase = 'offensiveRoll';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'soul-command', isDefendable: false, damage: 8,
+        };
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        const hp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), ['0', '1'],
+        );
+        const prompt = getSimpleChoicePrompt(advanced.state, TOKEN_IDS.TREANT_DIVINE);
+        const skip = prompt.options.find(option => (option.value as { customId?: string }).customId === 'treant-divine-deferred-skip');
+        expect(skip).toBeDefined();
+        const resolved = respondToPrompt(advanced.state, skip!.id, '1');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hp - 8);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(1);
+        for (const id of [STATUS_IDS.PARLEY, STATUS_IDS.POWDER_KEG, STATUS_IDS.WITHER]) {
+            expect(resolved.state.core.players['1'].statusEffects[id]).toBe(1);
+        }
+    });
+
+    it('跳过神性防止后攻击正常续接，负面状态生效且不消耗树灵', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'offensiveRoll';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'poison-blade', isDefendable: true, damage: 5,
+        };
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(advanced.state, TOKEN_IDS.TREANT_DIVINE);
+        const skip = prompt.options.find(option => (option.value as { customId?: string }).customId === 'treant-divine-deferred-skip');
+        expect(skip).toBeDefined();
+        const resolved = respondToPrompt(advanced.state, skip!.id, '1');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('defensiveRoll');
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(1);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+    });
+
+    it('防止结算帧拒绝伪造来源、玩家和非交互选择', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'offensiveRoll';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'poison-blade', isDefendable: true, damage: 5,
+        };
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), ['0', '1'],
+        );
+        const event = {
+            type: 'CHOICE_RESOLVED', payload: {
+                playerId: '1', sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
+                customId: 'treant-divine-deferred-prevent', value: 1, interactionBacked: true,
+            }, sourceCommandType: 'RESOLVE_CHOICE', timestamp: 101,
+        } as const;
+        expect(resumeAttackDebuffFollowups(advanced.state, { ...event, payload: { ...event.payload, sourceAbilityId: 'forged' } })).toBeUndefined();
+        expect(resumeAttackDebuffFollowups(advanced.state, { ...event, payload: { ...event.payload, playerId: '0' } })).toBeUndefined();
+        expect(resumeAttackDebuffFollowups(advanced.state, { ...event, payload: { ...event.payload, interactionBacked: false } })).toBeUndefined();
     });
 
     it('树精神圣防负面应拒绝合法 customId 但错误来源的 CHOICE_RESOLVED', () => {
@@ -864,7 +904,7 @@ describe('DiceThrone Treant Token 机制', () => {
         } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
         const events = Array.isArray(result) ? result : (result?.events ?? []);
         const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED') as Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }> | undefined;
-        const skipOption = choiceEvent?.payload.options.find(option => option.customId === 'treant-divine-skip-debuff');
+        const skipOption = choiceEvent?.payload.options.find(option => option.customId === 'treant-divine-deferred-skip');
         expect(skipOption).toBeDefined();
 
         const withChoice = applyEvents(state.core, events as DiceThroneEvent[]);
@@ -905,7 +945,7 @@ describe('DiceThrone Treant Token 机制', () => {
         } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
         const events = Array.isArray(result) ? result : (result?.events ?? []);
         const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED') as Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }> | undefined;
-        const preventOption = choiceEvent?.payload.options.find(option => option.customId === 'treant-divine-prevent-debuff');
+        const preventOption = choiceEvent?.payload.options.find(option => option.customId === 'treant-divine-deferred-prevent');
         expect(preventOption).toBeDefined();
 
         const withChoice = applyEvents(state.core, events as DiceThroneEvent[]);

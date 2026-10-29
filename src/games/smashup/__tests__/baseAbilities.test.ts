@@ -302,11 +302,7 @@ describe('能力运行时骨架', () => {
     });
 
     it('prompt program 恢复后会继续执行后续 sequence', () => {
-        const promptProgram = createPromptProgram<
-            { matchState: any; chosen?: string },
-            SmashUpCore,
-            SmashUpEvent
-        >({
+        const promptProgram = createPromptProgram<{ matchState: any; chosen?: string }>({
             sourceId: 'runtime_test_prompt',
             buildInteraction: (_context) => createSimpleChoice(
                 'runtime-test-prompt',
@@ -399,11 +395,7 @@ describe('能力运行时骨架', () => {
     });
 
     it('已挂起 prompt 可以追加外部后续程序且不覆盖原 sequence', () => {
-        const promptProgram = createPromptProgram<
-            { matchState: any; chosen?: string; appended?: string },
-            SmashUpCore,
-            SmashUpEvent
-        >({
+        const promptProgram = createPromptProgram<{ matchState: any; chosen?: string; appended?: string }>({
             sourceId: 'runtime_append_prompt',
             buildInteraction: (_context) => createSimpleChoice(
                 'runtime-append-prompt',
@@ -520,11 +512,7 @@ describe('能力运行时骨架', () => {
         const runtimeA = await import('../domain/abilityRuntime');
 
         const buildRuntimeProgram = (runtime: typeof import('../domain/abilityRuntime')) => {
-            const promptProgram = runtime.createPromptProgram<
-                { matchState: any; chosen?: string },
-                SmashUpCore,
-                SmashUpEvent
-            >({
+            const promptProgram = runtime.createPromptProgram<{ matchState: any; chosen?: string }>({
                 sourceId: 'runtime_reload_prompt',
                 buildInteraction: (_context) => createSimpleChoice(
                     'runtime-reload-prompt',

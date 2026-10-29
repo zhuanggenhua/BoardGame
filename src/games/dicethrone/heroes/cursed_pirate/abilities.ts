@@ -322,9 +322,8 @@ const HUMAN_LIGHT_THE_FUSE: AbilityDef = {
                 grantStatus(
                     STATUS_IDS.POWDER_KEG,
                     abilityEffectText('light-the-fuse', 'smallInflictPowderKeg'),
-                    { timing: 'postDamage', condition: { type: 'onHit' } },
                 ),
-                damage(7, abilityEffectText('light-the-fuse', 'smallDamage7'), { timing: 'preDefense' }),
+                damage(7, abilityEffectText('light-the-fuse', 'smallDamage7')),
             ],
             priority: 1,
         },
@@ -335,9 +334,8 @@ const HUMAN_LIGHT_THE_FUSE: AbilityDef = {
                 grantStatus(
                     STATUS_IDS.POWDER_KEG,
                     abilityEffectText('light-the-fuse', 'largeInflictPowderKeg'),
-                    { timing: 'postDamage', condition: { type: 'onHit' } },
                 ),
-                damage(9, abilityEffectText('light-the-fuse', 'largeDamage9'), { timing: 'preDefense' }),
+                damage(9, abilityEffectText('light-the-fuse', 'largeDamage9')),
             ],
             priority: 2,
         },

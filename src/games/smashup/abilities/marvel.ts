@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -18,6 +19,8 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -229,7 +232,7 @@ function buildMoveToBaseEvents(
     });
 }
 
-const shieldReassignmentPromptProgram = createPromptProgram<ShieldReassignmentContext, SmashUpCore, SmashUpEvent>({
+const shieldReassignmentPromptProgram = createPromptProgram<ShieldReassignmentContext>({
     sourceId: 'shield_reassignment',
     buildInteraction: (context) => {
         const options = [
@@ -277,7 +280,7 @@ const shieldReassignmentPromptProgram = createPromptProgram<ShieldReassignmentCo
     },
 });
 
-const shieldSuperiorFirepowerPromptProgram = createPromptProgram<MarvelPromptContext, SmashUpCore, SmashUpEvent>({
+const shieldSuperiorFirepowerPromptProgram = createPromptProgram<MarvelPromptContext>({
     sourceId: 'shield_superior_firepower',
     buildInteraction: (context) => {
         const minionTargets = context.matchState.core.bases.flatMap((base, baseIndex) => (
@@ -367,7 +370,7 @@ const shieldSuperiorFirepowerPromptProgram = createPromptProgram<MarvelPromptCon
     },
 });
 
-const chooseMoveDestinationPromptProgram = createPromptProgram<MoveMinionContext, SmashUpCore, SmashUpEvent>({
+const chooseMoveDestinationPromptProgram = createPromptProgram<MoveMinionContext>({
     sourceId: 'marvel_move_destination',
     interactionSourceIds: [
         'ultimates_captain_marvel_move',
@@ -420,7 +423,7 @@ const chooseMoveDestinationPromptProgram = createPromptProgram<MoveMinionContext
     },
 });
 
-const scrambleSourcePromptProgram = createPromptProgram<ScrambleSourceContext, SmashUpCore, SmashUpEvent>({
+const scrambleSourcePromptProgram = createPromptProgram<ScrambleSourceContext>({
     sourceId: 'ultimates_scramble_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ultimates_scramble_source_${context.now}`,
@@ -450,7 +453,7 @@ const scrambleSourcePromptProgram = createPromptProgram<ScrambleSourceContext, S
         if (!live) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -459,13 +462,12 @@ const scrambleSourcePromptProgram = createPromptProgram<ScrambleSourceContext, S
                 minionDefId: live.defId,
                 fromBaseIndex: choice.baseIndex,
                 reason: 'ultimates_scramble',
-            } satisfies MoveMinionContext,
-            nextProgram: chooseMoveDestinationPromptProgram,
+            } satisfies MoveMinionContext, chooseMoveDestinationPromptProgram),
         };
     },
 });
 
-const ultimatesMoveDestinationPromptProgram = createPromptProgram<UltimatesMoveContext, SmashUpCore, SmashUpEvent>({
+const ultimatesMoveDestinationPromptProgram = createPromptProgram<UltimatesMoveContext>({
     sourceId: 'ultimates_move_with_bonus_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -527,7 +529,7 @@ const ultimatesMoveDestinationPromptProgram = createPromptProgram<UltimatesMoveC
     },
 });
 
-const powerAndSpeedMovePromptProgram = createPromptProgram<PowerAndSpeedContext, SmashUpCore, SmashUpEvent>({
+const powerAndSpeedMovePromptProgram = createPromptProgram<PowerAndSpeedContext>({
     sourceId: 'ultimates_power_and_speed_move',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ultimates_power_and_speed_move_${context.now}`,
@@ -587,7 +589,7 @@ const marvelDrawAfterCommittedProgram = createEffectProgram<MarvelDrawContinuati
     }),
 );
 
-const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, SmashUpCore, SmashUpEvent>({
+const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext>({
     sourceId: 'ultimates_cosmic_knowledge',
     buildInteraction: (context) => {
         const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
@@ -636,19 +638,18 @@ const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, Sm
         }));
         return {
             events: bottomEvents,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 random,
                 now: timestamp,
                 drawCount: selectedCards.length + 1,
-            },
-            nextProgram: marvelDrawAfterCommittedProgram,
+            }, marvelDrawAfterCommittedProgram),
         };
     },
 });
 
-const heroicLandingSourcePromptProgram = createPromptProgram<HeroicLandingContext, SmashUpCore, SmashUpEvent>({
+const heroicLandingSourcePromptProgram: AbilityProgram<HeroicLandingContext, SmashUpCore, SmashUpEvent> = createPromptProgram<HeroicLandingContext>({
     sourceId: 'ultimates_heroic_landing_source',
     buildInteraction: (context) => {
         const options = [
@@ -688,11 +689,11 @@ const heroicLandingSourcePromptProgram = createPromptProgram<HeroicLandingContex
     },
 });
 
-const heroicLandingDestinationPromptProgram = createPromptProgram<
+const heroicLandingDestinationPromptProgram: AbilityProgram<
     HeroicLandingContext & { minionUid: string; minionDefId: string; fromBaseIndex: number },
     SmashUpCore,
     SmashUpEvent
->({
+> = createPromptProgram<HeroicLandingContext & { minionUid: string; minionDefId: string; fromBaseIndex: number }>({
     sourceId: 'ultimates_heroic_landing_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ultimates_heroic_landing_destination_${context.now}`,
@@ -733,14 +734,13 @@ const heroicLandingDestinationPromptProgram = createPromptProgram<
         });
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
                 now: timestamp,
                 movedUids: context.movedUids,
-            },
-            nextProgram: heroicLandingSourcePromptProgram,
+            }, heroicLandingSourcePromptProgram),
         };
     },
 });
@@ -787,7 +787,7 @@ function buildCoordinatedAttackEvents(
     return events;
 }
 
-const coordinatedAttackPromptProgram = createPromptProgram<CoordinatedAttackContext, SmashUpCore, SmashUpEvent>({
+const coordinatedAttackPromptProgram = createPromptProgram<CoordinatedAttackContext>({
     sourceId: 'ultimates_coordinated_attack',
     buildInteraction: (context) => {
         const minionOptions = buildOwnMinionOptions(context.matchState.core, context.playerId, {
@@ -891,7 +891,7 @@ function buildSpiderVerseDeckReorderEvent(
     };
 }
 
-const spiderVerseDeckOrderPromptProgram = createPromptProgram<SpiderVerseDeckOrderContext, SmashUpCore, SmashUpEvent>({
+const spiderVerseDeckOrderPromptProgram = createPromptProgram<SpiderVerseDeckOrderContext>({
     sourceId: 'spider_verse_deck_order',
     interactionSourceIds: ['spider_verse_spider_reflexes_order', 'spider_verse_ghost_spider_order'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -918,7 +918,7 @@ const spiderVerseDeckOrderPromptProgram = createPromptProgram<SpiderVerseDeckOrd
     },
 });
 
-const spiderVerseDeckSelectionPromptProgram = createPromptProgram<SpiderVerseDeckSelectionContext, SmashUpCore, SmashUpEvent>({
+const spiderVerseDeckSelectionPromptProgram = createPromptProgram<SpiderVerseDeckSelectionContext>({
     sourceId: 'spider_verse_deck_selection',
     interactionSourceIds: ['spider_verse_spider_reflexes_pick', 'spider_verse_ghost_spider_pick'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -958,20 +958,19 @@ const spiderVerseDeckSelectionPromptProgram = createPromptProgram<SpiderVerseDec
         if (remaining.length === 0) return { events: [drawEvent] };
         return {
             events: [drawEvent],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
                 remaining,
-            },
-            nextProgram: spiderVerseDeckOrderPromptProgram,
+            }, spiderVerseDeckOrderPromptProgram),
         };
     },
 });
 
-const spiderVerseGreatPowerPromptProgram = createPromptProgram<SpiderVerseGreatPowerContext, SmashUpCore, SmashUpEvent>({
+const spiderVerseGreatPowerPromptProgram = createPromptProgram<SpiderVerseGreatPowerContext>({
     sourceId: 'spider_verse_with_great_power',
     buildInteraction: (context) => {
         const candidates = context.matchState.core.bases.flatMap((base, baseIndex) => {
@@ -1067,7 +1066,7 @@ function buildViewFromAboveEvents(
     ];
 }
 
-const spiderVerseViewFromAbovePromptProgram = createPromptProgram<MarvelPromptContext, SmashUpCore, SmashUpEvent>({
+const spiderVerseViewFromAbovePromptProgram = createPromptProgram<MarvelPromptContext>({
     sourceId: 'spider_verse_view_from_above',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `spider_verse_view_from_above_${context.now}`,
@@ -1094,7 +1093,7 @@ const spiderVerseViewFromAbovePromptProgram = createPromptProgram<MarvelPromptCo
     },
 });
 
-const ultimatesFirstToArrivePromptProgram = createPromptProgram<MarvelPromptContext, SmashUpCore, SmashUpEvent>({
+const ultimatesFirstToArrivePromptProgram = createPromptProgram<MarvelPromptContext>({
     sourceId: 'ultimates_first_to_arrive',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ultimates_first_to_arrive_${context.now}`,
@@ -1207,8 +1206,7 @@ function shieldTogether(ctx: AbilityContext): AbilityResult {
 function ultimatesSelfMoveTalent(ctx: AbilityContext, sourceId: string, bonusAfterMove = 0): AbilityResult {
     const found = findMinion(ctx.state, ctx.cardUid);
     if (!found || found.minion.controller !== ctx.playerId) return { events: [] };
-    const program = bonusAfterMove === 0 ? chooseMoveDestinationPromptProgram : ultimatesMoveDestinationPromptProgram;
-    return runtimeToAbilityResult(executeAbilityProgram(program, {
+    const context = {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
@@ -1217,8 +1215,10 @@ function ultimatesSelfMoveTalent(ctx: AbilityContext, sourceId: string, bonusAft
         minionDefId: found.minion.defId,
         fromBaseIndex: found.baseIndex,
         reason: sourceId,
-        powerBonus: bonusAfterMove,
-    }));
+    };
+    return runtimeToAbilityResult(bonusAfterMove === 0
+        ? executeAbilityProgram(chooseMoveDestinationPromptProgram, context)
+        : executeAbilityProgram(ultimatesMoveDestinationPromptProgram, { ...context, powerBonus: bonusAfterMove }));
 }
 
 function ultimatesCoordinatedAttack(ctx: AbilityContext): AbilityResult {
@@ -1520,14 +1520,13 @@ const shieldRescueMissionProgram = createEffectProgram<ShieldRescueMissionContex
         ));
         return {
             events: topEvents,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 random: context.random,
                 now: context.now,
                 drawCount: 1,
-            },
-            nextProgram: marvelDrawAfterCommittedProgram,
+            }, marvelDrawAfterCommittedProgram),
         };
     },
 );
@@ -1605,7 +1604,11 @@ function cardHasSpecialAbility(defId: string | undefined): boolean {
     if (!defId) return false;
     const def = getCardDef(defId);
     if (!def) return false;
-    if (def.abilityTags?.includes('special')) return true;
+    if (def.type === 'fusion') {
+        if (def.minionAbilityTags?.includes('special') || def.actionAbilityTags?.includes('special')) return true;
+    } else if (def.abilityTags?.includes('special')) {
+        return true;
+    }
     if (def.type === 'action') return Boolean(def.specialTiming ?? def.responseWindowTiming);
     if (def.type === 'minion') return def.beforeScoringPlayable === true;
     return false;
@@ -1637,7 +1640,7 @@ function ultimatesAidFromAlliesTrigger(ctx: TriggerContext): SmashUpEvent[] {
         ctx.triggerSharedState.ultimatesAidFromAlliesBatches = seenBatches;
     }
 
-    return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
+    return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId ?? ctx.playerId, 1, ctx.random, ctx.now);
 }
 
 function spiderVerseWebbedUpSuppression(

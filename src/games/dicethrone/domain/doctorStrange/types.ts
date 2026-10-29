@@ -15,6 +15,10 @@ export interface SpellCandidate {
     labelParams?: Record<string, string | number>;
     previewRef?: AbilityCard['previewRef'];
     targetPlayerId?: string;
+    choiceKind?: 'card' | 'player' | 'status' | 'skip';
+    cardId?: string;
+    cardSourceZone?: SpellZone;
+    statusId?: string;
     tasks: SpellTask[];
 }
 

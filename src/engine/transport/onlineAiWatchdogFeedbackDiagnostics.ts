@@ -46,9 +46,14 @@ export type OnlineAiRecoveryPendingDamageDiagnostic = {
 export type OnlineAiRecoveryActionLogTailEntry = {
     text?: string;
     type?: unknown;
+    id?: string;
+    timestamp?: number;
+    actorId?: string;
+    kind?: string;
 };
 
 export type OnlineAiRecoveryEventTailEntry = {
+    id?: number;
     type?: string;
     timestamp?: unknown;
     payload?: unknown;
@@ -389,7 +394,7 @@ export function extractOnlineAiRecoveryActionLogTail(
     state: MatchState<unknown>,
 ): OnlineAiRecoveryActionLogTailEntry[] {
     const entries = (state.sys?.actionLog as {
-        entries?: Array<{ text?: unknown; event?: { type?: unknown } }>;
+        entries?: Array<{ id?: unknown; timestamp?: unknown; actorId?: unknown; kind?: unknown; text?: unknown; event?: { type?: unknown } }>;
     } | undefined)?.entries;
     if (!Array.isArray(entries) || entries.length === 0) {
         return [];
@@ -397,6 +402,10 @@ export function extractOnlineAiRecoveryActionLogTail(
     return entries.slice(-5).map((entry) => ({
         text: typeof entry?.text === 'string' ? entry.text : undefined,
         type: entry?.event?.type,
+        ...(typeof entry?.id === 'string' ? { id: entry.id } : {}),
+        ...(typeof entry?.timestamp === 'number' ? { timestamp: entry.timestamp } : {}),
+        ...(typeof entry?.actorId === 'string' ? { actorId: entry.actorId } : {}),
+        ...(typeof entry?.kind === 'string' ? { kind: entry.kind } : {}),
     }));
 }
 
@@ -404,14 +413,15 @@ export function extractOnlineAiRecoveryEventTail(
     state: MatchState<unknown>,
 ): OnlineAiRecoveryEventTailEntry[] {
     const entries = (state.sys?.eventStream as {
-        entries?: Array<{ type?: unknown; timestamp?: unknown; payload?: unknown }>;
+        entries?: Array<{ id?: unknown; type?: unknown; timestamp?: unknown; payload?: unknown; event?: { type?: unknown; timestamp?: unknown } }>;
     } | undefined)?.entries;
     if (!Array.isArray(entries) || entries.length === 0) {
         return [];
     }
     return entries.slice(-5).map((entry) => ({
-        type: typeof entry?.type === 'string' ? entry.type : undefined,
-        timestamp: entry?.timestamp,
+        ...(typeof entry?.id === 'number' ? { id: entry.id } : {}),
+        type: typeof entry?.event?.type === 'string' ? entry.event.type : typeof entry?.type === 'string' ? entry.type : undefined,
+        timestamp: entry?.event?.timestamp ?? entry?.timestamp,
         ...(entry?.payload !== undefined ? { payload: cloneOnlineAiDiagnosticValue(entry.payload) } : {}),
     }));
 }

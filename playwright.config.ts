@@ -80,7 +80,10 @@ async function resolveSingleWorkerPorts() {
     return allocated;
 }
 
-const resolvedSingleWorkerPorts = !isMultiWorker && !useDevServers
+// 托管 runtime 的端口已由 supervisor 预留并启动；Playwright 再次 reserve 会把测试
+// 分配到另一组端口，导致真实联机用例探测到错误的游戏服务器。
+const isManagedRuntime = Boolean(process.env.PW_MANAGED_RUNTIME_ID?.trim());
+const resolvedSingleWorkerPorts = !isMultiWorker && !useDevServers && !isManagedRuntime
     ? await resolveSingleWorkerPorts()
     : SINGLE_WORKER_PORTS;
 const ports = useDevServers ? DEV_PORTS : resolvedSingleWorkerPorts;

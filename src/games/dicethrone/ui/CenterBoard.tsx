@@ -32,7 +32,7 @@ export interface CenterBoardProps {
     selectedAbilityId?: string;
     activatingAbilityId?: string;
     abilityLevels?: Record<string, number>;
-    characterId?: string;
+    characterId?: HeroState['characterId'];
     playerBoardFace?: HeroState['playerBoardFace'];
     locale?: string;
     onMagnifyImage: (image: string) => void;

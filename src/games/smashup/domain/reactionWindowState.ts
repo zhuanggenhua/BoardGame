@@ -98,11 +98,13 @@ export function getLiveSmashUpReactionWindowContext(
     const session = getReactionSessionFromResolution(state);
     if (session?.responseWindowType) {
         const normalizedSession = normalizeReactionSessionPlayers(state, session);
-        const sourceBaseIndex = session.responseWindowType === 'afterScoring'
+        const windowType = normalizedSession.responseWindowType;
+        if (!windowType) return undefined;
+        const sourceBaseIndex = windowType === 'afterScoring'
             ? getCurrentScoringBaseIndex(state)
             : session.sourceBaseIndex;
         return {
-            windowType: normalizedSession.responseWindowType,
+            windowType,
             activePlayerId: normalizedSession.activePlayerId,
             currentPlayerId: normalizedSession.currentPlayerId,
             sourceBaseIndex,
@@ -119,16 +121,18 @@ export function getSmashUpReactionWindowPresentation(
 
     if (session?.responseWindowType) {
         const normalizedSession = normalizeReactionSessionPlayers(state, session);
+        const windowType = normalizedSession.responseWindowType;
+        if (!windowType) return undefined;
         const responderQueue = getClockwiseOrder(state.core.turnOrder ?? [], normalizedSession.currentPlayerId);
         const currentResponderIndex = Math.max(0, responderQueue.indexOf(normalizedSession.activePlayerId));
         const sessionPassedPlayers = (normalizedSession.passedPlayerIds ?? [])
             .filter(playerId => responderQueue.includes(playerId));
-        const sourceBaseIndex = normalizedSession.responseWindowType === 'afterScoring'
+        const sourceBaseIndex = windowType === 'afterScoring'
             ? getCurrentScoringBaseIndex(state)
             : normalizedSession.sourceBaseIndex;
 
         return {
-            windowType: normalizedSession.responseWindowType,
+            windowType,
             activePlayerId: normalizedSession.activePlayerId,
             currentPlayerId: normalizedSession.currentPlayerId,
             sourceBaseIndex,

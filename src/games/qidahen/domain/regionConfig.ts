@@ -1,4 +1,4 @@
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../ui/mapGraph';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, QIDAHEN_RUNTIME_REGION_BY_ID } from '../ui/mapGraph';
 import type { QidahenFactionId, QidahenSpecialTroopStack } from './types';
 
 type QidahenRegionTag =
@@ -106,9 +106,18 @@ const runtimeRegionOverrides: Partial<Record<string, Partial<QidahenRuleRegionCo
         initialNote: '剧本一大明本土：辽西，按规则书落 1 个 Lv1 部队与 2 人口。',
     },
     'city-region-24': {
-        name: '宣府',
+        name: '宁远',
         tags: ['city', 'frontier'],
         maintenanceFortificationId: 'ningyuan',
+    },
+    'xuan-fu': {
+        name: '宣府',
+        tags: ['frontier'],
+        initialController: 'ming',
+    },
+    duoyan: {
+        name: '朵颜部',
+        tags: ['frontier'],
     },
     'city-region-28': {
         name: '顺天',
@@ -340,11 +349,6 @@ const logicalRuleRegionConfigs: QidahenRuleRegionConfig[] = [
         primaryRuntimeRegionId: 'city-region-15-liaodong',
     }),
     createLogicalRuleRegionConfig({
-        id: 'xuan-fu',
-        name: '宣府',
-        primaryRuntimeRegionId: 'city-region-24',
-    }),
-    createLogicalRuleRegionConfig({
         id: 'shun-tian',
         name: '顺天',
         primaryRuntimeRegionId: 'city-region-28',
@@ -478,3 +482,10 @@ export const isQidahenKoreaRuntimeRegionId = (regionId: string): boolean => (
 export const getQidahenInitialController = (regionId: string): QidahenFactionId | 'neutral' => (
     resolveQidahenRuleRegionConfig(regionId).initialController
 );
+
+/** 本土是印刷地区属性，不能由本局开局驻军/控制者倒推。 */
+export const getQidahenHomelandFaction = (regionId: string): QidahenFactionId | 'neutral' => {
+    const runtimeId = resolveQidahenPrimaryRuntimeRegionId(regionId);
+    const definition = QIDAHEN_RUNTIME_REGION_BY_ID.get(runtimeId);
+    return definition?.homelandFaction ?? 'neutral';
+};

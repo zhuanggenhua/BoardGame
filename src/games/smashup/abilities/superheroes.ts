@@ -19,6 +19,7 @@ import {
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
 import {
+    type AbilityRuntimeSimpleChoiceData,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -107,10 +108,10 @@ type RadioactiveExposureSearchContext = SuperheroesPromptContext & {
 type MindLadyPromptContext = SuperheroesPromptContext;
 
 function attachOptionsGenerator<T>(
-    interaction: InteractionDescriptor<T>,
+    interaction: InteractionDescriptor<AbilityRuntimeSimpleChoiceData<T>>,
     generator: (state: MatchState<SmashUpCore>) => PromptOption<T>[],
-): InteractionDescriptor<T> {
-    interaction.data.optionsGenerator = generator as typeof interaction.data.optionsGenerator;
+): InteractionDescriptor<AbilityRuntimeSimpleChoiceData<T>> {
+    interaction.data.optionsGenerator = generator as NonNullable<AbilityRuntimeSimpleChoiceData<T>['optionsGenerator']>;
     return interaction;
 }
 
@@ -305,7 +306,7 @@ function buildCardSuppressedEvent(
     };
 }
 
-const mindLadyPromptProgram = createPromptProgram<MindLadyPromptContext, SmashUpCore, SmashUpEvent>({
+const mindLadyPromptProgram = createPromptProgram<MindLadyPromptContext>({
     sourceId: 'superheroes_mind_lady',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -344,7 +345,7 @@ const mindLadyPromptProgram = createPromptProgram<MindLadyPromptContext, SmashUp
     },
 });
 
-const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext, SmashUpCore, SmashUpEvent>({
+const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext>({
     sourceId: 'superheroes_not_really_dead',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -382,7 +383,7 @@ const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext,
     },
 });
 
-const goldenAgePromptProgram = createPromptProgram<SuperheroesPromptContext, SmashUpCore, SmashUpEvent>({
+const goldenAgePromptProgram = createPromptProgram<SuperheroesPromptContext>({
     sourceId: 'superheroes_golden_age',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -433,7 +434,7 @@ const goldenAgePromptProgram = createPromptProgram<SuperheroesPromptContext, Sma
     },
 });
 
-const sidekickPromptProgram = createPromptProgram<SuperheroesPromptContext, SmashUpCore, SmashUpEvent>({
+const sidekickPromptProgram = createPromptProgram<SuperheroesPromptContext>({
     sourceId: 'superheroes_sidekick',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -465,11 +466,7 @@ const sidekickPromptProgram = createPromptProgram<SuperheroesPromptContext, Smas
     },
 });
 
-const mildManneredCitizenSearchPromptProgram = createPromptProgram<
-    MildManneredCitizenSearchContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const mildManneredCitizenSearchPromptProgram = createPromptProgram<MildManneredCitizenSearchContext>({
     sourceId: 'superheroes_mild_mannered_citizen_search',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -545,11 +542,7 @@ function runMildManneredCitizenSearch(
     };
 }
 
-const radioactiveExposureSearchPromptProgram = createPromptProgram<
-    RadioactiveExposureSearchContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const radioactiveExposureSearchPromptProgram = createPromptProgram<RadioactiveExposureSearchContext>({
     sourceId: 'superheroes_radioactive_exposure_search',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -624,11 +617,7 @@ function runRadioactiveExposureSearch(
     };
 }
 
-const mildManneredCitizenPromptProgram = createPromptProgram<
-    MildManneredCitizenPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const mildManneredCitizenPromptProgram = createPromptProgram<MildManneredCitizenPromptContext>({
     sourceId: 'superheroes_mild_mannered_citizen',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `superheroes_mild_mannered_citizen_${context.minionUid}_${context.now}`,
@@ -681,6 +670,7 @@ const mildManneredCitizenPromptProgram = createPromptProgram<
                 matchState: state,
                 playerId,
                 now: timestamp,
+                cardUid: context.cardUid,
                 core: state.core,
                 baseIndex: context.baseIndex,
                 deck,
@@ -727,6 +717,7 @@ function mindLadyTalent(ctx: AbilityContext): AbilityResult {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        cardUid: ctx.cardUid,
     });
     return {
         events: result.events,
@@ -743,6 +734,7 @@ function notReallyDeadOnPlay(ctx: AbilityContext): AbilityResult {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        cardUid: ctx.cardUid,
     });
     return {
         events: result.events,
@@ -777,6 +769,7 @@ function sidekickOnPlay(ctx: AbilityContext): AbilityResult {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        cardUid: ctx.cardUid,
     });
     return {
         events: result.events,
@@ -815,6 +808,7 @@ function radioactiveExposureOnPlay(ctx: AbilityContext): AbilityResult {
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
+            cardUid: ctx.cardUid,
             core: ctx.state,
             baseIndex: ctx.baseIndex,
             deck,
@@ -855,6 +849,7 @@ function superheroesMildManneredCitizenTrigger(ctx: TriggerContext): AbilityResu
         matchState: ctx.matchState,
         playerId: minion.controller,
         now: ctx.now,
+        cardUid: ctx.sourceCardUid,
         minionUid: minion.uid,
         minionDefId: minion.defId,
         baseIndex: ctx.sourceBaseIndex,

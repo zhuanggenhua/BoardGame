@@ -151,12 +151,12 @@ function detachOngoing(
     return buildOngoingDetachedEvent({ cardUid, defId, ownerId, reason, now, ...source }) as OngoingDetachedEvent;
 }
 
-function queuePrompt<T>(
+function queuePrompt<const TOptions extends readonly PromptOption<unknown>[]>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     sourceId: string,
     title: string,
-    options: PromptOption<T>[],
+    options: TOptions,
     now: number,
     targetType: 'button' | 'base' | 'hand' | 'minion' | 'generic' | 'field-source-target' | 'field-source-action',
     titleKey?: string,
@@ -3829,7 +3829,7 @@ function registerTeens(): void {
         const names = ctx.state.bases.flatMap(base =>
             base.minions.filter(minion => minion.controller === ctx.playerId && minion.uid !== host.minion.uid).map(minion => minion.defId)
         );
-        return [{
+        return { events: [{
             type: SU_EVENTS.MINION_METADATA_UPDATED,
             payload: {
                 minionUid: host.minion.uid,
@@ -3841,7 +3841,7 @@ function registerTeens(): void {
                 reason: ctx.defId,
             },
             timestamp: ctx.now,
-        } as SmashUpEvent];
+        } as SmashUpEvent] };
     });
     registerSimpleAbility('teens_brunch_bunch', 'onPlay', ctx => {
         if (ctx.targetBaseIndex === undefined) {
@@ -4621,8 +4621,8 @@ function registerWraithrustlersInteractionHandlers(): void {
             .map((_base, baseIndex) => ({ baseIndex, label: baseName(state.core, baseIndex) }))
             .filter(candidate => candidate.baseIndex !== location.baseIndex);
         const options: PromptOption<WraithActionChoice>[] = [
-            { id: 'destroy', label: '摧毁此行动', labelKey: 'ui.wraithrustlers_resurgence_destroy_option', value: { mode: 'destroy', cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' },
-            ...(otherBases.length > 0 ? [{ id: 'transfer', label: '转移到另一个基地', labelKey: 'ui.wraithrustlers_resurgence_transfer_option', value: { mode: 'transfer', cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' as const }] : []),
+            { id: 'destroy', label: '摧毁此行动', labelKey: 'ui.wraithrustlers_resurgence_destroy_option', value: { mode: 'destroy' as const, cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' },
+            ...(otherBases.length > 0 ? [{ id: 'transfer', label: '转移到另一个基地', labelKey: 'ui.wraithrustlers_resurgence_transfer_option', value: { mode: 'transfer' as const, cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' as const }] : []),
         ];
         return {
             state: queuePrompt(
@@ -4816,7 +4816,10 @@ function registerWraithrustlersInteractionHandlers(): void {
         const sourceBaseIndex = typeof continuation?.sourceBaseIndex === 'number' ? continuation.sourceBaseIndex : selectedSourceBaseIndex(selected);
         const targetBaseIndex = typeof continuation?.targetBaseIndex === 'number' ? continuation.targetBaseIndex : selected.targetBaseIndex;
         const targetMinionUid = selected.targetMinionUid;
-        const targetMinionDefId = selected.targetMinionDefId ?? selected.defId;
+        const minion = sourceBaseIndex === undefined
+            ? undefined
+            : state.core.bases[sourceBaseIndex]?.minions.find(candidate => candidate.uid === targetMinionUid);
+        const targetMinionDefId = selected.targetMinionDefId ?? minion?.defId;
         if (
             selected.skip
             || !actionUid
@@ -4828,10 +4831,7 @@ function registerWraithrustlersInteractionHandlers(): void {
             return { state, events: [] };
         }
         const location = findActionLocationByUid(state.core, actionUid, sourceBaseIndex);
-        const minion = state.core.bases[sourceBaseIndex]?.minions.find(candidate =>
-            candidate.uid === targetMinionUid && candidate.controller === playerId
-        );
-        if (!location || location.action.defId !== 'wraithrustlers_ectoplasm_one' || !minion) {
+        if (!location || location.action.defId !== 'wraithrustlers_ectoplasm_one' || !minion || minion.controller !== playerId) {
             return { state, events: [] };
         }
         const events = [

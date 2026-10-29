@@ -46,7 +46,7 @@ export const applyQidahenWheelImmediateEffect = (
         && region.id === resolveQidahenPrimaryRuntimeRegionId(state.selectedRegionId)
         && (
             requiresRegularTroopPlacement
-                ? canPlaceRegularTroopsInRegion(region, factionId)
+                ? canPlaceRegularTroopsInRegion(region, factionId, state)
                 : isRegionControlledByFaction(region, factionId)
         )
     ));
@@ -57,10 +57,15 @@ export const applyQidahenWheelImmediateEffect = (
                 : getPreferredSelectedRegionIdForFaction(state, factionId)
         )
         : state.selectedRegionId;
+    const regularTroopTarget = requiresRegularTroopPlacement
+        ? getQidahenRegularTroopPlacementTarget(state, factionId)
+        : null;
     const targetRegionId = requiresRegularTroopPlacement
-        ? getQidahenRegularTroopPlacementTarget(state, factionId)?.id ?? state.selectedRegionId
+        ? regularTroopTarget?.id ?? state.selectedRegionId
         : selectedRegion?.id ?? fallbackRegionId ?? state.selectedRegionId;
-    const targetRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === targetRegionId);
+    const targetRegion = requiresRegularTroopPlacement
+        ? regularTroopTarget
+        : state.regions.find((region) => !region.isLogicalRegion && region.id === targetRegionId);
     const drawCards = Math.max(0, Math.min(config.drawCards, getFactionDrawPileCount(state, factionId)));
     const summaryLines: string[] = [];
     let mapResult: QidahenSeasonSummary['mapResult'];
@@ -77,11 +82,9 @@ export const applyQidahenWheelImmediateEffect = (
                     const troopDelta = Math.max(0, config.troopDelta);
                     const populationDelta = Math.max(0, config.populationDelta);
                     const troopsBefore = actionTargetRegion.troops;
-                    const populationBefore = actionTargetRegion.population;
                     const troopsAfter = troopsBefore + troopDelta;
-                    const populationAfter = populationBefore + populationDelta;
                     if (populationDelta > 0) {
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，人口 +${populationDelta}（由 ${populationBefore} 增至 ${populationAfter}）。`);
+                        summaryLines.push(`${actionTargetRegion.name}：人口 +${populationDelta}。`);
                     }
                     if (troopDelta > 0) {
                         mapResult = {
@@ -90,7 +93,7 @@ export const applyQidahenWheelImmediateEffect = (
                             beforeTroops: troopsBefore,
                             afterTroops: troopsAfter,
                         };
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，部队 +${troopDelta}（由 ${troopsBefore} 增至 ${troopsAfter}）。`);
+                        summaryLines.push(`${actionTargetRegion.name}：部队 +${troopDelta}。`);
                     }
                     const nextRegion = {
                         ...actionTargetRegion,
@@ -107,10 +110,12 @@ export const applyQidahenWheelImmediateEffect = (
         : state.regions;
 
     if (!targetRegion) {
-        summaryLines.push(`${state.factions[factionId].name} 当前没有可结算轮盘${config.label}的己方区域。`);
+        summaryLines.push(requiresRegularTroopPlacement
+            ? `${state.factions[factionId].name} 当前没有可建立正规军的本土区域，未建立部队。`
+            : `${state.factions[factionId].name} 当前没有可结算轮盘${config.label}的己方区域。`);
     }
     if (drawCards > 0) {
-        summaryLines.push(`${state.factions[factionId].name} 因轮盘${config.label}获得 ${drawCards} 张手牌。`);
+        summaryLines.push(`抽 ${drawCards} 张手牌。`);
     }
     if (summaryLines.length === 0) {
         summaryLines.push(`${state.factions[factionId].name} 执行轮盘${config.label}，当前无额外可见效果。`);
@@ -135,7 +140,7 @@ export const applyQidahenWheelImmediateEffect = (
             ...nextFactions,
             [factionId]: {
                 ...nextFactions[factionId],
-                troops: state.factions[factionId].troops + Math.max(0, config.troopDelta),
+                troops: state.factions[factionId].troops + (targetRegion ? Math.max(0, config.troopDelta) : 0),
             },
         },
         actionLog: [

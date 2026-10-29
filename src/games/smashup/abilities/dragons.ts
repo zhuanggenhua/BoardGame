@@ -15,6 +15,7 @@ import {
     shuffleBaseDeck,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -374,7 +375,7 @@ function collectWeakMinionsOnBase(
         });
 }
 
-const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext, SmashUpCore, SmashUpEvent>({
+const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext>({
     sourceId: 'dragons_wyvern_destroy',
     interactionSourceIds: ['dragons_wyvern'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -384,7 +385,7 @@ const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext, Sma
         buildMinionTargetOptions(context.targets, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
-            sourceKind: 'minion',
+            sourceKind: 'nonAction',
             effectType: 'destroy',
         }),
         {
@@ -414,13 +415,13 @@ const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext, Sma
                 sourceDefId: 'dragons_wyvern',
                 sourceControllerId: playerId,
                 sourceBaseIndex: context.sourceBaseIndex,
-                sourceKind: 'minion',
+                sourceKind: 'nonAction',
             }),
         };
     },
 });
 
-const burnItDownPromptProgram = createPromptProgram<BurnItDownPromptContext, SmashUpCore, SmashUpEvent>({
+const burnItDownPromptProgram = createPromptProgram<BurnItDownPromptContext>({
     sourceId: 'dragons_burn_it_down',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `dragons_burn_it_down_${context.now}`,
@@ -452,7 +453,7 @@ const burnItDownPromptProgram = createPromptProgram<BurnItDownPromptContext, Sma
     },
 });
 
-const flankAttackChooseBasePromptProgram = createPromptProgram<FlankAttackPromptContext, SmashUpCore, SmashUpEvent>({
+const flankAttackChooseBasePromptProgram = createPromptProgram<FlankAttackPromptContext>({
     sourceId: 'dragons_flank_attack_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -524,7 +525,7 @@ const flankAttackChooseBasePromptProgram = createPromptProgram<FlankAttackPrompt
     },
 });
 
-const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPromptContext, SmashUpCore, SmashUpEvent>({
+const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPromptContext>({
     sourceId: 'dragons_flank_attack_card',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -603,7 +604,7 @@ const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPrompt
 
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
@@ -612,13 +613,12 @@ const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPrompt
                 replayOwnerId: player.deck.find((card) => card.uid === selected.cardUid)?.owner
                     ?? player.discard.find((card) => card.uid === selected.cardUid)?.owner
                     ?? playerId,
-            },
-            nextProgram: flankAttackChooseBasePromptProgram,
+            }, flankAttackChooseBasePromptProgram),
         };
     },
 });
 
-const flankAttackChooseSourcePromptProgram = createPromptProgram<FlankAttackPromptContext, SmashUpCore, SmashUpEvent>({
+const flankAttackChooseSourcePromptProgram = createPromptProgram<FlankAttackPromptContext>({
     sourceId: 'dragons_flank_attack_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `dragons_flank_attack_source_${context.now}`,
@@ -639,11 +639,10 @@ const flankAttackChooseSourcePromptProgram = createPromptProgram<FlankAttackProm
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 searchScope: selected.searchScope,
-            },
-            nextProgram: flankAttackChooseCardPromptProgram,
+            }, flankAttackChooseCardPromptProgram),
         };
     },
 });

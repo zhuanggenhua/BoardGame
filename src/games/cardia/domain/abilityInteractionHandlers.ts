@@ -10,7 +10,8 @@
  */
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import type { CardiaCore, CardiaEvent } from './core-types';
+import type { CardiaCore } from './core-types';
+import type { CardiaEvent } from './events';
 
 // ============================================================================
 // 交互处理函数类型

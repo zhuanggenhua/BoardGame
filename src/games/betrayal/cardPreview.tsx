@@ -70,7 +70,7 @@ const BetrayalPreviewRenderer: CardPreviewRenderer = ({ previewRef, locale, clas
     if (resolved.kind === 'room') {
         return (
             <div className={className} style={style}>
-                <RoomTileSprite visual={resolved.visual} locale={effectiveLocale} alt={payload.visualId} className="h-full w-full" />
+                <RoomTileSprite visual={resolved.visual} locale={effectiveLocale} alt={payload.kind === 'room' ? payload.visualId : ''} className="h-full w-full" />
             </div>
         );
     }
@@ -78,7 +78,7 @@ const BetrayalPreviewRenderer: CardPreviewRenderer = ({ previewRef, locale, clas
     const frameStyle = buildDiscoveryAtlasImageStyle(resolved.visual);
     return (
         <div className={className} style={{ ...style, aspectRatio: frameStyle.aspectRatio }}>
-            <DiscoveryAtlasFrame visual={resolved.visual} locale={effectiveLocale} alt={payload.kind === 'event' ? payload.title : payload.cardId} className="h-full w-full" />
+            <DiscoveryAtlasFrame visual={resolved.visual} locale={effectiveLocale} alt={payload.kind === 'event' ? payload.title : payload.kind === 'possession' ? payload.cardId : payload.visualId} className="h-full w-full" />
         </div>
     );
 };

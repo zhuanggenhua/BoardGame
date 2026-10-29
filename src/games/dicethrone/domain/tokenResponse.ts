@@ -16,6 +16,7 @@ import type {
     TokenUsedEvent,
     TokenResponseClosedEvent,
     DamageDealtEvent,
+    TurnPhase,
 } from './types';
 import type {
     DamageOrigin,
@@ -30,7 +31,8 @@ import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
-import { getTokenStackLimit, isNyraCompanionActive } from './rules';
+import { checkPlayCard, getTokenStackLimit, isNyraCompanionActive } from './rules';
+import { resolveCurrentRollContext } from './rollContext';
 import { isPurifiableDebuffId } from './statusRemoval';
 import { getRemainingArtificerBotActivations, isArtificerBotTokenId } from './artificerBots';
 import {
@@ -50,21 +52,45 @@ function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerI
 // Token 可用性检查
 // ============================================================================
 
-export function hasBeforeDamageReceivedCard(
-    state: DiceThroneCore,
-    playerId: PlayerId,
-): boolean {
-    const player = state.players[playerId];
-    if (!player) return false;
+function getDamageResponsePhase(state: DiceThroneCore): TurnPhase {
+    const legacyPhase = state as DiceThroneCore & { turnPhase?: TurnPhase; phase?: TurnPhase };
+    const phase = resolveCurrentRollContext(state)?.phase ?? legacyPhase.turnPhase ?? legacyPhase.phase;
+    if (phase) return phase;
+    if (state.pendingAttack) {
+        return state.pendingAttack.defenseAbilityId ? 'defensiveRoll' : 'offensiveRoll';
+    }
+    return 'main1';
+}
 
-    return (player.hand ?? []).some(card => {
-        const pendingDamage = card.playCondition?.pendingDamage;
-        if (!pendingDamage || pendingDamage.responseType !== 'beforeDamageReceived') return false;
-        if (pendingDamage.role === 'source') return false;
-        if (card.timing !== 'instant' && card.timing !== 'roll') return false;
-        if (!card.effects?.some(effect => effect.action)) return false;
-        return (player.resources?.[RESOURCE_IDS.CP] ?? 0) >= card.cpCost;
-    });
+export function hasBeforeDamageReceivedCardForTarget(
+    state: DiceThroneCore,
+    targetPlayerId: PlayerId,
+    phase: TurnPhase = getDamageResponsePhase(state),
+    candidatePendingDamage?: PendingDamage,
+): boolean {
+    if (state.pendingAttack?.isUltimate === true) return false;
+
+    const pendingDamage = state.pendingDamage ?? candidatePendingDamage;
+    if (pendingDamage) {
+        if (
+            pendingDamage.targetPlayerId !== targetPlayerId
+            || pendingDamage.responseType !== 'beforeDamageReceived'
+        ) return false;
+    } else if (state.pendingAttack?.defenderId !== targetPlayerId) {
+        return false;
+    }
+
+    const playState = !state.pendingDamage && candidatePendingDamage
+        ? { ...state, pendingDamage: candidatePendingDamage }
+        : state;
+
+    return Object.entries(state.players).some(([cardOwnerId, player]) => (
+        (player.hand ?? []).some(card => {
+            const condition = card.playCondition?.pendingDamage;
+            if (!condition || condition.responseType !== 'beforeDamageReceived') return false;
+            return checkPlayCard(playState, cardOwnerId, card, phase).ok;
+        })
+    ));
 }
 
 function resolveAdditionalTokenCosts(
@@ -286,7 +312,7 @@ export function createPendingDamage(
     responseType: 'beforeDamageDealt' | 'beforeDamageReceived',
     sourceAbilityId: string | undefined,
     timestamp: number = 0,
-    initialModifiers?: Array<{ type: 'defense' | 'token' | 'shield' | 'status'; value: number; sourceId?: string; sourceName?: string }>,
+    initialModifiers?: PendingDamage['modifiers'],
     damageScope?: 'attack' | 'direct',
     unblockable?: boolean,
     deferredTokenGrants?: PendingDamage['deferredTokenGrants'],
@@ -407,9 +433,16 @@ export const resolveDamageResponseType = (
     state: DiceThroneCore,
     defenderId: PlayerId,
     rawTokenResponseType: 'attackerBoost' | 'defenderMitigation' | null,
+    candidatePendingDamage?: PendingDamage,
+    phase: TurnPhase = getDamageResponsePhase(state),
 ): 'attackerBoost' | 'defenderMitigation' | null => {
     const isUltimateDamage = state.pendingAttack?.isUltimate === true;
-    const hasDefenderCardResponse = hasBeforeDamageReceivedCard(state, defenderId);
+    const hasDefenderCardResponse = hasBeforeDamageReceivedCardForTarget(
+        state,
+        defenderId,
+        phase,
+        candidatePendingDamage,
+    );
     if (rawTokenResponseType === 'attackerBoost') return 'attackerBoost';
     if (isUltimateDamage) return null;
     if (rawTokenResponseType === 'defenderMitigation') return 'defenderMitigation';
@@ -444,10 +477,37 @@ export function maybeCreateDamageResponseEvent(params: {
     const isUnblockable = dmgPayload.unblockable === true;
     const bypassShields = dmgPayload.bypassShields === true;
     const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
+    const phase = getDamageResponsePhase(state);
     const target = state.players[dmgTargetId];
     const hasNyraRedirect = isNyraCompanionActive(target)
         && state.pendingAttack?.isUltimate !== true;
-    const hasDefenderAvoidanceResponse = hasBeforeDamageReceivedCard(state, dmgTargetId)
+    const candidatePendingDamage = damageScope === 'attack'
+        && state.pendingAttack?.defenderId === dmgTargetId
+        ? applyExistingDamagePreventionToPendingDamage(
+            state,
+            createPendingDamage(
+                attackerId,
+                dmgTargetId,
+                dmgAmount,
+                'beforeDamageReceived',
+                sourceAbilityId ?? dmgPayload.sourceAbilityId,
+                timestamp,
+                dmgPayload.modifiers,
+                damageScope,
+                isUnblockable,
+                dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
+                undefined,
+                dmgPayload.damageOrigin,
+            ),
+            {
+                bypassShields,
+                isUltimateDamage: state.pendingAttack?.isUltimate === true,
+            },
+        )
+        : undefined;
+    const hasDefenderCardResponse = (candidatePendingDamage?.currentDamage ?? dmgAmount) > 0
+        && hasBeforeDamageReceivedCardForTarget(state, dmgTargetId, phase, candidatePendingDamage);
+    const hasDefenderAvoidanceResponse = hasDefenderCardResponse
         || hasDefensiveTokens(state, dmgTargetId, damageScope, dmgAmount, isUnblockable)
         || hasNyraRedirect;
 
@@ -477,6 +537,8 @@ export function maybeCreateDamageResponseEvent(params: {
         state,
         dmgTargetId,
         rawTokenResponseType ?? (hasNyraRedirect && effectiveDamageForTokenResponse > 0 ? 'defenderMitigation' : null),
+        candidatePendingDamage,
+        phase,
     );
 
     if (!tokenResponseType) return null;
@@ -484,27 +546,29 @@ export function maybeCreateDamageResponseEvent(params: {
     const responseType = tokenResponseType === 'attackerBoost'
         ? 'beforeDamageDealt'
         : 'beforeDamageReceived';
-    const pendingDamage = applyExistingDamagePreventionToPendingDamage(
-        state,
-        createPendingDamage(
-        attackerId,
-        dmgTargetId,
-        dmgAmount,
-        responseType,
-        sourceAbilityId ?? dmgPayload.sourceAbilityId,
-        timestamp,
-        dmgPayload.modifiers,
-        damageScope,
-        isUnblockable,
-        dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
-        undefined,
-        dmgPayload.damageOrigin,
-        ),
-        {
-            bypassShields,
-            isUltimateDamage: state.pendingAttack?.isUltimate === true,
-        },
-    );
+    const pendingDamage = responseType === 'beforeDamageReceived' && candidatePendingDamage
+        ? candidatePendingDamage
+        : applyExistingDamagePreventionToPendingDamage(
+            state,
+            createPendingDamage(
+                attackerId,
+                dmgTargetId,
+                dmgAmount,
+                responseType,
+                sourceAbilityId ?? dmgPayload.sourceAbilityId,
+                timestamp,
+                dmgPayload.modifiers,
+                damageScope,
+                isUnblockable,
+                dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
+                undefined,
+                dmgPayload.damageOrigin,
+            ),
+            {
+                bypassShields,
+                isUltimateDamage: state.pendingAttack?.isUltimate === true,
+            },
+        );
     if (typeof dmgPayload.attackDamageBeforePercent === 'number') {
         pendingDamage.attackDamageBeforePercent = dmgPayload.attackDamageBeforePercent;
     }

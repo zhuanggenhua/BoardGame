@@ -63,7 +63,7 @@ export function resolveBetrayalExplorerMovedPayload(
             skeletonKeyRoll,
             skeletonKeyBuried,
             bloodFromStoneTurnStartVisibleStoneCherubIds,
-            bloodFromStoneNewLineOfSightDamageRoll,
+            bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
             logText: `${core.currentExplorer.displayName}使用骨制钥匙穿过墙壁到${room.name}，投出 ${skeletonKeyRoll}${skeletonKeyBuried ? '，骨制钥匙被埋葬' : ''}`,
         };
     }
@@ -78,7 +78,7 @@ export function resolveBetrayalExplorerMovedPayload(
             consumeMove: false,
             usedActionId: 'stalk-the-prey',
             bloodFromStoneTurnStartVisibleStoneCherubIds,
-            bloodFromStoneNewLineOfSightDamageRoll,
+            bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
             logText: `${actor.displayName}发动“Stalk the Prey”，潜行到了${room.name}`,
         };
     }
@@ -88,7 +88,7 @@ export function resolveBetrayalExplorerMovedPayload(
             roomId: room.id,
             controlledToken: 'jack-spirit',
             bloodFromStoneTurnStartVisibleStoneCherubIds,
-            bloodFromStoneNewLineOfSightDamageRoll,
+            bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
             logText: `杰克之灵游荡到了${room.name}`,
         };
     }
@@ -98,7 +98,7 @@ export function resolveBetrayalExplorerMovedPayload(
             roomId: room.id,
             controlledToken: 'feverish',
             bloodFromStoneTurnStartVisibleStoneCherubIds,
-            bloodFromStoneNewLineOfSightDamageRoll,
+            bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
             logText: `狂热病患移动到了${room.name}`,
         };
     }
@@ -107,7 +107,7 @@ export function resolveBetrayalExplorerMovedPayload(
         roomId: room.id,
         moveCost: resolveBetrayalMoveCost(core),
         bloodFromStoneTurnStartVisibleStoneCherubIds,
-        bloodFromStoneNewLineOfSightDamageRoll,
+        bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
         logText: `${core.currentExplorer.displayName}移动到${room.name}`,
     };
 }

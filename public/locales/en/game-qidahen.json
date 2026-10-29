@@ -74,7 +74,6 @@
     }
   },
   "board": {
-    "magnifyButton": "View",
     "magnifyCardAria": "View {{card}}",
     "operation": {
       "discardHand": "Choose a card to discard"
@@ -141,9 +140,7 @@
       "regionTroopsPopulation": "Troops {{troops}} · Population {{population}}",
       "regionPopulation": "Population {{population}}",
       "statPopulation": "Population",
-      "regionSpecialTroops": "Special {{summary}}",
       "regionPassages": "Borders {{summary}}",
-      "regionReachable": "Dispatch reach {{summary}}",
       "sharedPrintedRegion": "Shared print",
       "selectionGuideSource": "Start",
       "selectionContinueHint": "Choose target",
@@ -371,7 +368,12 @@
         "actualCommittedTroops": "Actual commit",
         "actualCommittedTroopsMapFirst": "Actual troops: click the source army token on the map to change the count",
         "attackerCasualtyLabel": "Attacker losses",
-        "defenderCasualtyLabel": "Defender losses"
+        "defenderCasualtyLabel": "Defender losses",
+        "selectedTroopsTitle": "Troops to commit",
+        "chooseTroops": "Not selected",
+        "battleWidthTitle": "Battle width",
+        "selectSourceTroops": "Choose troops on the map in {{region}}.",
+        "tacticLevelBonus": "{{troop}} die level {{bonus}}"
       },
       "postBattle": {
         "summary": "{{summary}} · Commit {{committedTroops}}",
@@ -489,23 +491,22 @@
   "tutorial": {
     "basic": {
       "title": "Qidahen Basics",
-    "description": "From Ming's formal opening, farm troops, raid, occupy, and continue the same match.",
+      "description": "From Ming's formal opening, farm troops, raid, occupy, and continue the same match.",
       "steps": {
-      "frontier": "Ming has three troops in Liaodong. Attack the neighboring Mongol-held Yehe region this turn to gain control of it. Neither the wheel action nor the hand action has been used.",
-      "selectFarmRegion": "Regular troops may only be established in homeland (dark) regions. Select Liaodong as the placement region for this Military Farm action.",
-      "wheelMove": "Choose an opponent to draw two cards and move the wheel two spaces. At Military Farm, draw two cards and establish one level-2 regular troop. Move two spaces.",
-      "wheelOpponent": "The Mongols hold Yehe. Choose Jin to draw two cards, then move the wheel to Military Farm.",
-      "wheelResult": "Military Farm established one level-2 regular troop in Liaodong, and Ming drew two cards. Liaodong now has four Ming troops to attack Yehe.",
-      "chooseTarget": "Yehe borders Liaodong and has a Mongol garrison. Select Yehe on the map as the target of this raid.",
-      "chooseRaid": "Raid: discard one hand card to attack, without dispatching. Select Raid.",
-      "payRaid": "Discard Silver to pay for this raid and keep Mandarin Duck Formation for the battle. To inspect a card, select View on desktop or press and hold on touch screens.",
-      "confirmRaidPayment": "Confirm discarding the selected Silver card.",
-      "battleOpen": "Both sides reveal their troops. The uppermost pips show level: level 1 rolls a d6, level 2 a d8, and level 3 a d10. In field battles artillery ignores boundary limits; other troops use the battle width. The plains boundary between Liaodong and Yehe has width 3.",
-      "playTactic": "Mandarin Duck Formation cannot be used during siege attack or defense; it raises your infantry die level by one in battle. This is a field battle. Play the tactic card.",
-      "resolveBattle": "Select three Liaodong troops on the map, leave one to hold Liaodong, then click Start battle. Resolve artillery, cavalry, then infantry, with both sides acting simultaneously in each stage. Every three points deals one damage. The highest-level infantry or cavalry loses levels; remove it only at level zero.",
-      "battleResult": "The side with more surviving troops wins, excluding artillery; ties favor the defender. Check the dice and survivors, then decide how to occupy Yehe.",
-      "occupy": "After winning, the attacker may occupy or withdraw without changing control. Choose to occupy Yehe.",
-      "finish": "Ming now controls Yehe. Supremacy victory requires at least 16 controlled regions outside Korea at New Year. The tutorial ends here; continue this match."
+        "frontier": "Attack Yehe this turn. First use Military Farm in Liaobei to reinforce the frontier.",
+        "selectFarmRegion": "Regular troops may only be established in homeland regions. Select Liaobei.",
+        "wheelMove": "Choose an opponent to draw two cards and move the wheel two spaces. At Military Farm, draw two cards and establish one level-2 regular troop. Move two spaces.",
+        "wheelOpponent": "Choose Jin to draw two cards.",
+        "chooseTarget": "Select Yehe as the raid target.",
+        "chooseRaid": "Raid: discard one hand card to attack, without dispatching. Select Raid.",
+        "payRaid": "Discard Silver to pay for this raid and keep Mandarin Duck Formation for the battle. Inspect a card with the magnifying glass or press and hold on touch screens.",
+        "confirmRaidPayment": "Confirm discarding the selected Silver card.",
+        "battleOpen": "Both sides reveal their troops. The uppermost pips show level: level 1 rolls a d6, level 2 a d8, and level 3 a d10. Liaobei and Yehe are separated by a river, giving battle width 2; artillery ignores the boundary limit.",
+        "playTactic": "Mandarin Duck Formation cannot be used during siege attack or defense; it raises your infantry die level by one in battle. This is a field battle. Play the tactic card.",
+        "resolveBattle": "Select the fourth Liaobei troop to commit four troops, then click Start battle.",
+        "battleResult": "Resolve artillery, cavalry, then infantry, with both sides acting simultaneously in each stage. Every three points deals one damage. Infantry and cavalry lose levels and are removed at level zero.\n\nThe side with more surviving troops wins, excluding artillery; ties favor the defender. Check the dice and survivors, then decide how to occupy Yehe.",
+        "occupy": "After winning, the attacker may occupy or withdraw without changing control. Choose to occupy Yehe.",
+        "finish": "Supremacy victory requires at least 16 controlled regions outside Korea at New Year. The tutorial ends here; continue this match."
       }
     },
     "attackAndBattle": {
@@ -604,7 +605,7 @@
       }
     },
     "wheelReclaim": {
-      "title": "Wheel Reclaim",
+      "title": "Reclaim",
       "description": "Wheel Reclaim directly adds population to a controlled region.",
       "steps": {
         "overview": "Enter Wheel Reclaim resolution.",
@@ -614,17 +615,17 @@
       }
     },
     "wheelMilitaryFarm": {
-      "title": "Wheel Military Farm",
-      "description": "Wheel Military Farm adds both cards and troops.",
+      "title": "Military Farm",
+      "description": "Draw cards and establish a regular troop through Military Farm.",
       "steps": {
-        "overview": "Enter Wheel Military Farm resolution.",
+        "overview": "Military Farm: draw two cards and establish one level-2 regular troop.",
         "chooseMove": "Click the highlighted Military Farm sector on the wheel.",
         "result": "Military Farm is complete: 1 level-2 regular troop appears in Xuanfu, and the hand is replenished.",
         "finish": "Military Farm is complete."
       }
     },
     "wheelRecruitTrain": {
-      "title": "Wheel Recruit And Train",
+      "title": "Recruit and Train",
       "description": "Pay a hand card, choose Recruit or Train, and see the troop change on the board.",
       "steps": {
         "overview": "Move 1 more space from Military Farm to reach Recruit / Train.",

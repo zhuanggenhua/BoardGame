@@ -80,7 +80,11 @@ export const buildCurrentRollRerollEvents = ({
         timestamp,
     } as DieRerolledEvent];
 
-    if (!skipAbilityReselection && shouldRequireAbilityReselectionForCurrentRoll(state, phase)) {
+    if (
+        !skipAbilityReselection
+        && state.pendingAttack
+        && shouldRequireAbilityReselectionForCurrentRoll(state, phase)
+    ) {
         events.push({
             type: 'ABILITY_RESELECTION_REQUIRED',
             payload: {

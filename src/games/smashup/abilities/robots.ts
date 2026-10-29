@@ -23,6 +23,7 @@ import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createBranchProgram,
     createEffectProgram,
@@ -77,14 +78,14 @@ type RobotTechCenterContext = RobotPromptContext & {
     candidates: Array<{ baseIndex: number; count: number; label: string }>;
 };
 
-function attachOptionsGenerator<T>(
+function attachOptionsGenerator<T extends object>(
     interaction: InteractionDescriptor<T>,
     optionsGenerator: (state: MatchState<SmashUpCore>, data: Record<string, unknown> | undefined) => unknown[],
-): InteractionDescriptor<T> {
+): InteractionDescriptor<T & { optionsGenerator: typeof optionsGenerator }> {
     return {
         ...interaction,
         data: {
-            ...(interaction.data ?? {}),
+            ...interaction.data,
             optionsGenerator,
         },
     };
@@ -188,7 +189,7 @@ function createRobotMicrobotGuardContext(ctx: AbilityContext): RobotMicrobotGuar
     };
 }
 
-const robotMicrobotGuardPromptProgram = createPromptProgram<RobotMicrobotGuardContext, SmashUpCore, SmashUpEvent>({
+const robotMicrobotGuardPromptProgram = createPromptProgram<RobotMicrobotGuardContext>({
     sourceId: 'robot_microbot_guard',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -283,7 +284,7 @@ function createRobotMicrobotReclaimerContext(ctx: AbilityContext): RobotMicrobot
     };
 }
 
-const robotMicrobotReclaimerPromptProgram = createPromptProgram<RobotMicrobotReclaimerContext, SmashUpCore, SmashUpEvent>({
+const robotMicrobotReclaimerPromptProgram = createPromptProgram<RobotMicrobotReclaimerContext>({
     sourceId: 'robot_microbot_reclaimer',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -362,7 +363,7 @@ function createRobotHoverbotContext(ctx: AbilityContext): RobotHoverbotContext {
     };
 }
 
-const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseContext, SmashUpCore, SmashUpEvent>({
+const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseContext>({
     sourceId: 'robot_hoverbot_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `robot_hoverbot_base_${context.now}`,
@@ -400,7 +401,7 @@ const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseCont
     },
 });
 
-const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, SmashUpCore, SmashUpEvent>({
+const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext>({
     sourceId: 'robot_hoverbot',
     buildInteraction: (context) => {
         const topCard = context.topCard!;
@@ -489,7 +490,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
@@ -497,8 +498,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                 defId: choice.defId,
                 power: choice.power ?? 0,
                 ownerId: choice.ownerId ?? playerId,
-            },
-            nextProgram: robotHoverbotBasePromptProgram,
+            }, robotHoverbotBasePromptProgram),
         };
     },
 });
@@ -540,7 +540,7 @@ function createRobotTechCenterContext(ctx: AbilityContext): RobotTechCenterConte
     };
 }
 
-const robotTechCenterPromptProgram = createPromptProgram<RobotTechCenterContext, SmashUpCore, SmashUpEvent>({
+const robotTechCenterPromptProgram = createPromptProgram<RobotTechCenterContext>({
     sourceId: 'robot_tech_center',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(

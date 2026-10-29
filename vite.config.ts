@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
-import type { ViteDevServer } from 'vite'
+import type { Plugin, ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -182,7 +182,7 @@ const createAndroidBuildMetaPlugin = (
   backendUrl: string,
   homeV2DraftEnabled: boolean,
   env: Record<string, string>,
-) => ({
+): Plugin => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -236,7 +236,7 @@ const createAndroidBuildMetaPlugin = (
   },
 })
 
-const createIosBuildMetaPlugin = (mode: string, backendUrl: string, env: Record<string, string>) => ({
+const createIosBuildMetaPlugin = (mode: string, backendUrl: string, env: Record<string, string>): Plugin => ({
   name: 'ios-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -787,7 +787,7 @@ export default defineConfig(({ mode }) => {
             // 入口模块图过宽时，自动发现会在空缓存首次访问中扫描整个 src。
             // 开发与 E2E 共用同一份关键 CJS 依赖清单，避免两种运行模式各自漂移。
             noDiscovery: true,
-            include: STABLE_OPTIMIZE_DEPS,
+            include: [...STABLE_OPTIMIZE_DEPS],
             // 依赖已完全显式列出，无需等静态导入爬取结束才返回首批优化结果。
             holdUntilCrawlEnd: false,
             entries: undefined,

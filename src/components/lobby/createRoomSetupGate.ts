@@ -45,12 +45,13 @@ export function resolveCreateRoomSetupGateState(args: {
     runtimeAdapter?: GameRuntimeAdapter | null;
     config: RoomConfig;
 }): PendingCreateRoomSetupGate | null {
-    const Gate = args.runtimeAdapter?.CreateRoomSetupGate;
-    if (!Gate) {
+    const runtimeAdapter = args.runtimeAdapter;
+    const Gate = runtimeAdapter?.CreateRoomSetupGate;
+    if (!runtimeAdapter || !Gate) {
         return null;
     }
 
-    const initialSetup = args.runtimeAdapter.resolveCreateRoomSetup?.({
+    const initialSetup = runtimeAdapter.resolveCreateRoomSetup?.({
         numPlayers: args.config.numPlayers,
         setupSelections: args.config.setupSelections,
         setupData: args.config.setupData,

@@ -51,6 +51,7 @@ type HandCardChoice = { cardUid?: string; defId?: string };
 
 type MinionChoice = {
     minionUid?: string;
+    minionDefId?: string;
     baseIndex?: number;
     defId?: string;
 };
@@ -537,7 +538,7 @@ function magesTowerOnMinionPlayed(ctx: BaseAbilityContext): BaseAbilityResult {
         '法师之塔：是否抽一张牌',
         [
             { id: 'draw', label: '抽一张牌', labelKey: 'ui.munchkin_mages_base_mages_tower_draw_option', value: { draw: true }, displayMode: 'button' },
-            createSkipOption('不抽牌', 'ui.munchkin_mages_base_mages_tower_skip'),
+            { ...createSkipOption('不抽牌', 'ui.munchkin_mages_base_mages_tower_skip'), value: { draw: false } },
         ],
         {
             sourceId: BASE_MAGES_TOWER_SOURCE_ID,
@@ -644,20 +645,21 @@ export function registerMunchkinMagesInteractionHandlers(): void {
         const data = interactionData as CostInteractionData | undefined;
         const cost = getSelectedHandCard(state.core, playerId, value);
         if (!data || !isSourceCardValid(state.core, data, playerId) || !cost) return { state, events: [] };
-        const source = data.sourceBaseIndex === undefined
+        const sourceBaseIndex = data.sourceBaseIndex;
+        const source = sourceBaseIndex === undefined
             ? undefined
-            : state.core.bases[data.sourceBaseIndex]?.minions.find(minion => minion.uid === data.sourceCardUid);
-        if (!source) return { state, events: [] };
+            : state.core.bases[sourceBaseIndex]?.minions.find(minion => minion.uid === data.sourceCardUid);
+        if (sourceBaseIndex === undefined || !source) return { state, events: [] };
         return {
             state,
             events: [
                 { type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId, cardUids: [cost.uid] }, timestamp },
-                addTempPower(source.uid, data.sourceBaseIndex, 2, HAPPY_ZAPPER, timestamp, {
+                addTempPower(source.uid, sourceBaseIndex, 2, HAPPY_ZAPPER, timestamp, {
                     sourcePlayerId: playerId,
                     sourceCardUid: data.sourceCardUid,
                     sourceDefId: HAPPY_ZAPPER,
                     sourceControllerId: playerId,
-                    sourceBaseIndex: data.sourceBaseIndex,
+                    sourceBaseIndex,
                 }),
             ],
         };

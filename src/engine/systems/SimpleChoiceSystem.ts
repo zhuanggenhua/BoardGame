@@ -57,6 +57,7 @@ export function createSimpleChoiceSystem<TCore>(
 
             if (command.type === INTERACTION_COMMANDS.TIMEOUT) {
                 if (!current || current.kind !== 'simple-choice') return;
+                if (current.cancelPolicy === 'forbidden') return { halt: true, error: '当前交互必须完成' };
                 const timestamp = resolveCommandTimestamp(command);
                 return handleSimpleChoiceTimeout(state, timestamp);
             }

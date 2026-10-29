@@ -115,7 +115,8 @@ it('大汗令箭当前选中敌区时会保留焦点，令箭效果面板回退�
         expect(next.selectedRegionId).toBe('city-region-24');
         expect(getKhanEdictSelection(next)?.sourceRegionId).toBe('city-region-25');
         expect(getKhanEdictSelection(next)?.sourceRegionName).toBe('山海关');
-        expect(getKhanEdictSelection(next)?.recruitTargetRegionId).toBe('city-region-25');
+        // 占领山海关不会把它变成蒙古本土；仍可雇佣和从此出兵。
+        expect(getKhanEdictSelection(next)?.recruitTargetRegionId).toBeNull();
         expect(getKhanEdictSelection(next)?.hireTargetRegionId).toBe('city-region-25');
 
         const rebound = apply(next, {
@@ -131,8 +132,8 @@ it('大汗令箭当前选中敌区时会保留焦点，令箭效果面板回退�
         expect(getKhanEdictSelection(rebound)).toMatchObject({
             displayAnchorRegionId: 'city-region-25',
             displayAnchorRegionName: '山海关',
-            recruitTargetRegionId: 'city-region-25',
-            recruitTargetRegionName: '山海关',
+            recruitTargetRegionId: null,
+            recruitTargetRegionName: null,
             hireTargetRegionId: 'city-region-25',
             hireTargetRegionName: '山海关',
         });
@@ -492,8 +493,8 @@ it('大汗令箭以逻辑区辽西为当前选区时，会保留当前焦点并�
         expect(getKhanEdictSelection(selected)).toMatchObject({
             sourceRegionId: 'city-region-19-liaoxi',
             sourceRegionName: '辽西',
-            recruitTargetRegionId: 'city-region-19-liaoxi',
-            recruitTargetRegionName: '辽西',
+            recruitTargetRegionId: null,
+            recruitTargetRegionName: null,
             hireTargetRegionId: 'city-region-19-liaoxi',
             hireTargetRegionName: '辽西',
         });
@@ -927,14 +928,14 @@ it('外交目标若只有 cityState 城内正规军，也会被判定为存在�
         const targeted = apply(chooseDiplomacy, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '1',
-            payload: { regionId: 'jinzhou' },
+            payload: { regionId: 'city-region-24' },
         });
 
         expect(targeted.diplomacyProgress).toMatchObject({
             sourceRegionId: 'city-region-25',
             remainingTargetCount: 3,
         });
-        expect(getDiplomacySelection(targeted)?.targetRegionId).toBe('jinzhou');
+        expect(getDiplomacySelection(targeted)?.targetRegionId).toBe('city-region-24');
         expect(getDiplomacySelection(targeted)?.targetHint).toContain('存在正规军');
         expect(getDiplomacySelection(targeted)?.choices.map((choice) => choice.id)).toEqual(['hire-only']);
     });

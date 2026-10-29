@@ -212,7 +212,7 @@ export function resolveEventRollResolution(
         throw new Error(`event ${eventCard.name} has no roll to resolve`);
     }
     const eventRollKind = eventCard.roll.kind ?? 'trait';
-    const eventRollResult = eventRollKind === 'dice'
+    const eventRollResult = eventCard.roll.kind === 'dice'
         ? rollEventFixedDice(random, eventCard.roll.dice)
         : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core);
     const eventRollTotal = eventRollResult.total;
@@ -224,7 +224,7 @@ export function resolveEventRollResolution(
         core,
         { materializeRandomResults: false },
     );
-    const eventRollLabel = eventRollKind === 'dice'
+    const eventRollLabel = eventCard.roll.kind === 'dice'
         ? eventCard.roll.label
         : `${TRAIT_LABEL[eventCard.roll.trait]}检定`;
     const resolutionText = `${eventRollLabel} ${eventRollTotal}：${eventBranch.label}；${formatEffectLabel(materializedEventEffect)}`;
@@ -254,7 +254,7 @@ export function resolveEventRollResolution(
         eventEffect: materializedEventEffect,
         eventRoll: {
             kind: eventRollKind,
-            trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
+            trait: eventCard.roll.kind === 'dice' ? undefined : eventCard.roll.trait,
             total: eventRollTotal,
             label: eventBranch.label,
             eventDescription: eventCard.description,

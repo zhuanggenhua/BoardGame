@@ -6,17 +6,18 @@
 
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
-import type { AbilityContext } from '../domain/abilityRegistry';
+import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, buildSemanticOngoingAttachEvents, getMinionPower, buildStandardDrawEvents, buildValidatedMoveEvents, buildValidatedReturnEvents } from '../domain/abilityHelpers';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, ActionCardDef } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, ActionCardDef, CardsDrawnEvent } from '../domain/types';
 import { registerRestriction, registerTrigger, registerInterceptor } from '../domain/ongoingEffects';
 import type { RestrictionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -64,7 +65,7 @@ function createPromptContext(
 
 function buildReplayOngoingAttachedEvent(
     state: MatchState<SmashUpCore> | SmashUpCore,
-    context: Pick<SteampunkPromptContext, 'replayCardUid' | 'replayDefId' | 'replayOwnerId'>,
+    context: { replayCardUid: string; replayDefId: string; replayOwnerId?: string },
     sourcePlayerId: PlayerId,
     target:
         | { targetType: 'base'; targetBaseIndex: number }
@@ -158,7 +159,7 @@ function buildCaptainAhabBaseOptions(
     core: SmashUpCore,
     playerId: PlayerId,
     currentBaseIndex: number,
-): PromptOption<{ baseIndex: number; baseDefId: string }>[] {
+): PromptOption<{ baseIndex: number; baseDefId?: string }>[] {
     const candidates: Array<{ baseIndex: number; label: string }> = [];
     for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex++) {
         if (baseIndex === currentBaseIndex) continue;
@@ -197,7 +198,7 @@ function buildZeppelinBaseOptions(
     core: SmashUpCore,
     zepBaseIndex: number,
     fromBaseIndex: number,
-): PromptOption<{ baseIndex: number; baseDefId: string }>[] {
+): PromptOption<{ baseIndex: number; baseDefId?: string }>[] {
     const allowedBaseIndices = fromBaseIndex === zepBaseIndex
         ? core.bases.map((_, index) => index).filter(index => index !== fromBaseIndex)
         : [zepBaseIndex];
@@ -485,7 +486,7 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
 // 新增能力实现
 // ============================================================================
 
-const steampunkScrapDivingPromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkScrapDivingPromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_scrap_diving',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -523,15 +524,14 @@ const steampunkScrapDivingProgram = createEffectProgram<AbilityContext, SmashUpC
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceCardUid: ctx.cardUid,
             sourceDefId: ctx.defId,
-        }),
-        nextProgram: steampunkScrapDivingPromptProgram,
+        }), steampunkScrapDivingPromptProgram),
     };
 });
 
-const steampunkCaptainAhabPromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkCaptainAhabPromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_captain_ahab',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `steampunk_captain_ahab_${context.now}`,
@@ -586,16 +586,15 @@ const steampunkCaptainAhabProgram = createEffectProgram<AbilityContext, SmashUpC
     if (!ctx.matchState) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceCardUid: ctx.cardUid,
             sourceDefId: ctx.defId,
             currentBaseIndex,
-        }),
-        nextProgram: steampunkCaptainAhabPromptProgram,
+        }), steampunkCaptainAhabPromptProgram),
     };
 });
 
-const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_zeppelin_choose_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -655,7 +654,7 @@ const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPr
     },
 });
 
-const steampunkZeppelinChooseMinionPromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkZeppelinChooseMinionPromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_zeppelin_choose_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -688,14 +687,13 @@ const steampunkZeppelinChooseMinionPromptProgram = createPromptProgram<Steampunk
         if (!liveOption?.value?.defId) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 sourceCardUid: context.sourceCardUid,
                 zepBaseIndex: context.zepBaseIndex,
                 fromBaseIndex: selected.baseIndex,
                 selectedMinionUid: selected.minionUid,
                 selectedMinionDefId: liveOption.value.defId,
-            }),
-            nextProgram: steampunkZeppelinChooseBasePromptProgram,
+            }), steampunkZeppelinChooseBasePromptProgram),
         };
     },
 });
@@ -710,16 +708,15 @@ const steampunkZeppelinProgram = createEffectProgram<AbilityContext, SmashUpCore
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceCardUid: ctx.cardUid,
             sourceDefId: ctx.defId,
             zepBaseIndex,
-        }),
-        nextProgram: steampunkZeppelinChooseMinionPromptProgram,
+        }), steampunkZeppelinChooseMinionPromptProgram),
     };
 });
 
-const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_mechanic_target',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -774,7 +771,7 @@ const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPrompt
                 }),
                 ...buildReplayOngoingAttachedEvent(
                     state,
-                    context,
+                    { replayCardUid: context.replayCardUid, replayDefId: context.replayDefId, replayOwnerId: context.replayOwnerId },
                     playerId,
                     { targetType: 'base', targetBaseIndex: selected.baseIndex },
                     timestamp,
@@ -787,7 +784,7 @@ const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPrompt
     },
 });
 
-const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_mechanic',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -824,12 +821,11 @@ const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContex
         }) as SmashUpEvent;
         return {
             events: [recoverEvent],
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 replayCardUid: selected.cardUid,
                 replayDefId: defId,
                 replayOwnerId: liveCard.owner,
-            }),
-            nextProgram: steampunkMechanicTargetPromptProgram,
+            }), steampunkMechanicTargetPromptProgram),
         };
     },
 });
@@ -840,12 +836,11 @@ const steampunkMechanicProgram = createEffectProgram<AbilityContext, SmashUpCore
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-        nextProgram: steampunkMechanicPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now), steampunkMechanicPromptProgram),
     };
 });
 
-const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_change_of_venue_choose_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -902,7 +897,7 @@ const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<Stea
                 }),
                 ...buildReplayOngoingAttachedEvent(
                     state,
-                    context,
+                    { replayCardUid: context.replayCardUid, replayDefId: context.replayDefId, replayOwnerId: context.replayOwnerId },
                     playerId,
                     {
                         targetType: 'minion',
@@ -919,7 +914,7 @@ const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<Stea
     },
 });
 
-const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_change_of_venue_choose_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -974,7 +969,7 @@ const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<Steamp
                 }),
                 ...buildReplayOngoingAttachedEvent(
                     state,
-                    context,
+                    { replayCardUid: context.replayCardUid, replayDefId: context.replayDefId, replayOwnerId: context.replayOwnerId },
                     playerId,
                     { targetType: 'base', targetBaseIndex: selected.baseIndex },
                     timestamp,
@@ -987,7 +982,7 @@ const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<Steamp
     },
 });
 
-const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptContext, SmashUpCore, SmashUpEvent>({
+const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptContext>({
     sourceId: 'steampunk_change_of_venue',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1042,14 +1037,13 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             }
             return {
                 events: [detachEvent, recoverEvent],
-                context: createPromptContext(state, playerId, timestamp, {
+                continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                     replayCardUid: selected.cardUid,
                     replayDefId: selected.defId,
                     replayOwnerId: selected.ownerId,
-                }),
-                nextProgram: (cardDef.ongoingTarget ?? 'base') === 'minion'
+                }), (cardDef.ongoingTarget ?? 'base') === 'minion'
                     ? steampunkChangeOfVenueChooseMinionPromptProgram
-                    : steampunkChangeOfVenueChooseBasePromptProgram,
+                    : steampunkChangeOfVenueChooseBasePromptProgram),
             };
         }
 
@@ -1085,8 +1079,7 @@ const steampunkChangeOfVenueProgram = createEffectProgram<AbilityContext, SmashU
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-        nextProgram: steampunkChangeOfVenuePromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now), steampunkChangeOfVenuePromptProgram),
     };
 });
 

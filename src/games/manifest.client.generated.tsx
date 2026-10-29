@@ -81,6 +81,7 @@ const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './cardia/Board'),
+        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -142,14 +143,16 @@ const loadCriticalImageResolver6 = async () => {
 };
 
 const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
-    const [gameModule, boardModule] = await Promise.all([
+    const [gameModule, boardModule, runtimeAdapterModule] = await Promise.all([
         import('./fate-domination/game'),
         import('./fate-domination/Board'),
+        import('./fate-domination/runtimeAdapter'),
     ]);
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './fate-domination/Board'),
         audioConfig: gameModule.audioConfig,
+        runtimeAdapter: runtimeAdapterModule.fateDominationGameRuntimeAdapter,
     };
 };
 

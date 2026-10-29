@@ -1,7 +1,7 @@
 import {CardPreview} from '../../../components/common/media/CardPreview';
 import {fateCardPreview} from '../data/cardArtwork';
 import './identityArtwork';
-import {useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode} from 'react';
+import {useLayoutEffect, useRef, useState, type CSSProperties} from 'react';
 import {motion} from 'framer-motion';
 import {OptimizedImage} from '../../../components/common/media/OptimizedImage';
 import {FATE_ATTACK_BY_ID} from '../data';
@@ -18,12 +18,12 @@ export type FateSkillCardView = {
 };
 
 interface Props {
-    phaseControl?: ReactNode;
     player: PlayerState;
     power: number;
     skills: readonly FateSkillCardView[];
     canSelect: boolean;
     rollbackRevision?: number;
+    requestedCardId?: string;
     canSelectCard?: (id: string, faceDown?: boolean) => boolean;
     onSelect: (id: string, faceDown?: boolean) => void;
     onPlaySkill: (id: string) => void;
@@ -42,11 +42,18 @@ interface Props {
 }
 
 /** The attack and skill hands stay separate; played cards remain direct card objects. */
-export function FateHandSurface({phaseControl, player, power, skills, canSelect, canSelectCard, onSelect, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice, rollbackRevision = 0}: Props) {
+export function FateHandSurface({player, power, skills, canSelect, canSelectCard, onSelect, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice, requestedCardId, rollbackRevision = 0}: Props) {
     const interactionScope = JSON.stringify([player.id, canSelect, ridingChoice?.interactionId ?? null, ridingChoice?.round ?? null, rollbackRevision]);
     const [faceDownState, setFaceDownState] = useState<{scope: string; value: boolean}>({scope: '', value: false});
     const [ridingSelectionState, setRidingSelectionState] = useState<{scope: string; ids: string[]}>({scope: '', ids: []});
     const surface = useRef<HTMLDivElement>(null);
+    useLayoutEffect(()=>{
+        if(!requestedCardId)return;
+        const cards=surface.current?.querySelectorAll<HTMLElement>('[data-focus-card]');
+        const card=Array.from(cards??[]).find(element=>element.dataset.cardId===requestedCardId||element.dataset.focusCard===`skill-${player.id}-${requestedCardId}`);
+        const row=card?.closest<HTMLElement>('.fd-runtime-card-row');
+        if(card&&row)row.scrollLeft=card.offsetLeft-row.offsetLeft-(row.clientWidth-card.offsetWidth)/2;
+    },[requestedCardId,player.id,rollbackRevision]);
     const focusedCard = useRef<{key: string; element: HTMLElement} | null>(null);
     const touchInspection = useTouchLongPress<string,{assetPath:string;name:string}>({
         enabled:true,durationMs:500,moveCancelPx:10,clickBlockMs:500,
@@ -195,6 +202,7 @@ export function FateHandSurface({phaseControl, player, power, skills, canSelect,
             onFocusCapture={event => {
                 const element = (event.target as HTMLElement).closest<HTMLElement>('[data-focus-card]');
                 focusedCard.current = element?.dataset.focusCard ? {key: element.dataset.focusCard, element} : null;
+                element?.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
             }}
             onBlurCapture={event => {
                 if ((!event.relatedTarget && (event.target as HTMLElement).isConnected) || (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node))) focusedCard.current = null;
@@ -224,7 +232,6 @@ export function FateHandSurface({phaseControl, player, power, skills, canSelect,
                 </div>
             </section>
             <section data-tutorial-id="fate-skills" className="fd-runtime-hand-zone fd-skill-hand-zone" aria-label="技能牌">
-                {phaseControl}
                 <div className="fd-runtime-card-row fd-hand-parallel fd-skill-cards" style={{'--card-count': Math.max(1, readySkills.length)} as CSSProperties}>
                     {readySkills.map(item => renderSkill(item))}
                 </div>

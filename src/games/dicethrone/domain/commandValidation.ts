@@ -727,11 +727,15 @@ const validateSelectAbility = (
         if (!state.pendingAttack) {
             return fail('no_pending_attack');
         }
-        if (!isMoveAllowed(playerId, state.pendingAttack.defenderId)) {
+        const defenderId = state.pendingAttack.defenderId;
+        if (!defenderId) {
+            return fail('no_pending_attack');
+        }
+        if (!isMoveAllowed(playerId, defenderId)) {
             return fail('player_mismatch');
         }
 
-        const defender = state.players[state.pendingAttack.defenderId];
+        const defender = state.players[defenderId];
         if (!defender) return fail('player_not_found');
 
         // 防御阶段分两步：
@@ -758,7 +762,7 @@ const validateSelectAbility = (
         }
 
         // 掷骰后选择：实时计算可用技能（派生状态）
-        const availableAbilityIds = getAvailableAbilityIds(state, state.pendingAttack.defenderId, phase);
+        const availableAbilityIds = getAvailableAbilityIds(state, defenderId, phase);
         if (!availableAbilityIds.includes(abilityId)) {
             return fail('ability_not_available');
         }
@@ -1313,10 +1317,7 @@ const validateResolveInteraction = (
         }
         return ok();
     }
-    if (pendingInteraction.type !== 'selectPlayer') {
-        return fail('invalid_interaction_type');
-    }
-    return ok();
+    return fail('invalid_interaction_type');
 };
 
 /**

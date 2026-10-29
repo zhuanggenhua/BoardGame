@@ -1,4 +1,5 @@
 import { syncQidahenSpecialRuleState } from './specialRuleState';
+import { QIDAHEN_RUNTIME_REGION_BY_ID } from '../ui/mapGraph';
 import {
     isQidahenKoreaRuntimeRegionId,
     isQidahenRuleRegionEquivalent,
@@ -32,7 +33,10 @@ export const countQidahenControlledRuntimeRegions = (
     regions: QidahenCore['regions'],
     factionId: QidahenFactionId,
 ): number => (
-    regions.filter((region) => !region.isLogicalRegion && !isQidahenKoreaRuntimeRegionId(region.id) && region.controller === factionId).length
+    regions.filter((region) => !region.isLogicalRegion
+        && QIDAHEN_RUNTIME_REGION_BY_ID.get(region.id)?.mapRole !== 'city'
+        && !isQidahenKoreaRuntimeRegionId(region.id)
+        && region.controller === factionId).length
 );
 
 export const getQidahenPrestigeBonusByFaction = (state: QidahenCore): Record<QidahenFactionId, number> => {

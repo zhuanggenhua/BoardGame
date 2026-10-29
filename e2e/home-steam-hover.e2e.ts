@@ -1,6 +1,6 @@
 import { test, expect, initHome, capture, record } from './helpers/homeAcceptance';
 
-test('桌面封面悬浮显示标题和游戏信息，移开后恢复', async ({ page }) => {
+test('桌面封面悬浮突出并在右侧展示标题、背景图和游戏信息，移开后恢复', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 900 });
     await initHome(page);
     await expect(page.locator('.platform-menu-trigger')).toHaveCount(0);
@@ -10,18 +10,20 @@ test('桌面封面悬浮显示标题和游戏信息，移开后恢复', async ({
     const cardLayout = () => cards.evaluateAll(nodes => nodes.map(node => {
         const r = node.getBoundingClientRect(); return { x: r.x, y: r.y + window.scrollY, width: r.width, height: r.height };
     }));
-    const veilOpacity = (card: ReturnType<typeof cards.nth>) => card.locator('.platform-game-veil').evaluate(node => getComputedStyle(node).opacity);
     const baseline = await cardLayout();
     for (const index of [0, 3]) {
         const card = cards.nth(index);
         const button = card.locator('.platform-game-open');
         await button.hover();
-        await expect(card.locator('.platform-game-hover-preview')).toHaveCount(0);
+        const preview = card.locator('.platform-game-hover-preview');
+        await expect(preview).toBeVisible();
         await expect(card.locator('.platform-game-description')).toHaveCount(0);
-        await expect.poll(() => veilOpacity(card)).toBe('1');
-        await expect(card.locator('.platform-game-veil strong')).not.toBeEmpty();
-        await expect(card.locator('.platform-game-veil p, .platform-game-veil small').first()).toBeVisible();
-        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeLessThanOrEqual(1.001);
+        await expect(card.locator('.platform-game-veil')).toHaveCount(0);
+        await expect(preview.locator('strong')).not.toBeEmpty();
+        await expect(preview.locator('.platform-game-hover-preview-art')).toBeVisible();
+        await expect(preview.locator('p, small').first()).toBeVisible();
+        await expect.poll(() => card.evaluate(node => node.querySelector('.platform-game-surface')!.getBoundingClientRect().width / node.getBoundingClientRect().width)).toBeGreaterThan(1.04);
+        if (index === 3) await expect(preview).toHaveAttribute('data-preview-side', 'left');
         const favorite = card.locator('.platform-game-favorite');
         await expect(favorite).toBeVisible();
         await expect(favorite).toContainText('收藏');
@@ -37,17 +39,17 @@ test('桌面封面悬浮显示标题和游戏信息，移开后恢复', async ({
         }
         await expect.poll(cardLayout).toEqual(baseline);
         await page.mouse.move(1, 1);
-        await expect.poll(() => veilOpacity(card)).toBe('0');
+        await expect(preview).toHaveCount(0);
     }
     await page.getByRole('searchbox', { name: '搜索游戏' }).filter({ visible: true }).focus();
     await page.keyboard.press('Tab');
     await expect(first.locator('.platform-game-open')).toBeFocused();
-    await expect.poll(() => veilOpacity(first)).toBe('1');
+    await expect(first.locator('.platform-game-hover-preview')).toBeVisible();
     await expect(page.locator('.platform-game-description')).toHaveCount(0);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await first.locator('.platform-game-open').hover();
     await expect(first.locator('.platform-game-surface')).toHaveCSS('transform', 'none');
-    await record('桌面悬浮合同', { coverScale: false, onCardVeil: true, sidePreview: false, gridUnchanged: true, reducedMotion: true, labeledFavorite: true });
+    await record('桌面悬浮合同', { scaleOverFourPercent: true, sidePreview: true, gridUnchanged: true, reducedMotion: true, labeledFavorite: true });
 });
 
 test('手机直接触控详情，不出现桌面侧边悬浮层', async ({ browser }, info) => {

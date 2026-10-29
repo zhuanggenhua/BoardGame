@@ -210,18 +210,23 @@ export function tickRuleModificationLifetimes<
   stack: RuleModificationStack<TContext, TValue>,
 ): { stack: RuleModificationStack<TContext, TValue>; expiredIds: string[] } {
   const expiredIds: string[] = [];
-  const entries = stack.entries.flatMap((entry) => {
+  const entries: OrderedRuleModification<TContext, TValue>[] = [];
+  for (const entry of stack.entries) {
     const lifetime = entry.def.lifetime;
     if (!lifetime || lifetime.kind === 'permanent' || lifetime.kind === 'until-round-end' || lifetime.kind === 'until-turn-end') {
-      return [entry];
+      entries.push(entry);
+      continue;
     }
     const remaining = lifetime.remaining - 1;
     if (remaining <= 0) {
       expiredIds.push(entry.def.id);
-      return [];
+      continue;
     }
-    return [{ ...entry, def: { ...entry.def, lifetime: { kind: 'uses', remaining } } }];
-  });
+    entries.push({
+      ...entry,
+      def: { ...entry.def, lifetime: { kind: 'uses', remaining } },
+    });
+  }
   return { stack: entries.length === stack.entries.length ? stack : { entries, nextOrder: stack.nextOrder }, expiredIds };
 }
 

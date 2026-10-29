@@ -173,6 +173,8 @@ export function eventRollResolutionNeedsSharedAcknowledgement(
         | 'magicCameraSetup'
         | 'helpingHandsSetup'
         | 'uponReflectionSetup'
+        | 'effect'
+        | 'hauntRoll'
     >,
 ): boolean {
     if (!eventRollResolutionNeedsAcknowledgement(resolution)) {

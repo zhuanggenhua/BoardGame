@@ -256,7 +256,7 @@ function resolvePeekabooGuide({
     kind: "monster",
     roomId:
       step === "same-room"
-        ? option.sameRoomRoomId
+        ? option.sameRoomId
         : option.lineOfSightRoomId,
     monsterId:
       step === "same-room"

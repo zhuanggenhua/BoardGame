@@ -145,8 +145,10 @@ function assertNoCoreMutationWithDomainEvents(params: {
     );
 }
 
-function getPendingBodyShopDistributions(state: { sys: Record<string, unknown> }): BodyShopPendingDistribution[] {
-    const raw = state.sys[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY];
+function getPendingBodyShopDistributions(
+    state: Pick<MatchState<SmashUpCore>, 'sys'>,
+): BodyShopPendingDistribution[] {
+    const raw = Reflect.get(state.sys, BODY_SHOP_PENDING_DISTRIBUTIONS_KEY);
     return Array.isArray(raw) ? raw as BodyShopPendingDistribution[] : [];
 }
 
@@ -256,8 +258,9 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
         name: '大杀四方事件处理',
         priority: 24, // 必须在 FlowSystem(25) 之前执行，确保交互处理器先于 onAutoContinueCheck 运行
         beforeCommand: ({ state }) => {
-            const sys = state.sys as Record<string, unknown>;
-            if (!sys._processedDestroyEvents && !sys._processedPlayedEvents && !sys._processedTitanPositionEvents) {
+            if (!Reflect.get(state.sys, '_processedDestroyEvents')
+                && !Reflect.get(state.sys, '_processedPlayedEvents')
+                && !Reflect.get(state.sys, '_processedTitanPositionEvents')) {
                 return;
             }
             return {

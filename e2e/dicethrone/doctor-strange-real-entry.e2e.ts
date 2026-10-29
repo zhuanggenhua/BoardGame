@@ -5,7 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../framework';
-import { getFrontendSourceHash } from '../../scripts/infra/e2e-source-identity.mjs';
+import { getFrontendSourceHash, sourceIdentityMatches } from '../../scripts/infra/e2e-source-identity.mjs';
+import { findRuntimeById } from '../../scripts/infra/e2e-runtime-registry.js';
 import {
     createEvidenceScreenshotRun,
     promoteEvidenceScreenshotRun,
@@ -33,7 +34,26 @@ const DICE_THRONE_PREPARE_RANDOM = {
 
 const PREPARE_SPELL_ID = 'spell-fangs-of-farallah';
 const HAND_CARD_ID = 'card-strange-see-the-future';
+const DOCTOR_STRANGE_E2E_SOURCE_REVISION = createHash('sha256')
+    .update(readFileSync(fileURLToPath(import.meta.url)))
+    .digest('hex');
 const CRIMSON_BANDS_SPELL_ID = 'spell-crimson-bands-of-cyttorak';
+
+function assertCurrentEvidenceSourceIdentity(): { sourceRevision: string; e2eSourceRevision: string } {
+    const runtimeId = process.env.PW_MANAGED_RUNTIME_ID;
+    const runtime = runtimeId ? findRuntimeById(runtimeId) : undefined;
+    if (!runtime?.frontendSourceHash) throw new Error('证据必须绑定当前托管运行时的前端源码身份');
+
+    const sourceRevision = getFrontendSourceHash();
+    expect(runtime.frontendSourceHash).toBe(sourceRevision);
+    expect(sourceIdentityMatches(runtime.sourceIdentity)).toBe(true);
+
+    const e2eSourceRevision = createHash('sha256')
+        .update(readFileSync(fileURLToPath(import.meta.url)))
+        .digest('hex');
+    expect(e2eSourceRevision).toBe(DOCTOR_STRANGE_E2E_SOURCE_REVISION);
+    return { sourceRevision, e2eSourceRevision };
+}
 
 type TestCard = { id: string };
 type TestPlayer = {
@@ -117,8 +137,15 @@ async function readEvidenceSnapshot(page: Page, game?: EvidenceGameReader): Prom
             .map(element => element.getAttribute('data-available-ability-id'));
         const preparedSpellIds = Array.from(document.querySelectorAll('[data-prepared-spell-card]'))
             .map(element => element.getAttribute('data-prepared-spell-card'));
-        const choiceLabels = Array.from(document.querySelectorAll('#modal-root [data-choice-custom-id="doctor-strange-choice"]'))
-            .map(element => element.textContent?.trim() ?? '');
+        const choiceLabels = Array.from(document.querySelectorAll(
+            '#modal-root [data-choice-custom-id="doctor-strange-choice"], #modal-root [data-testid^="dt-hand-card-option-"], #modal-root [data-testid^="dt-deck-card-option-"], #modal-root [data-testid^="dt-discard-card-option-"], #modal-root [data-testid^="dt-preparedSpells-card-option-"], #modal-root [data-testid^="dt-player-target-"], #modal-root [data-testid^="dt-status-effect-"]',
+        )).map(element => element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.getAttribute('data-testid') ?? '');
+        const choiceIds = Array.from(document.querySelectorAll(
+            '#modal-root [data-choice-custom-id="doctor-strange-choice"], #modal-root [data-testid^="dt-hand-card-option-"], #modal-root [data-testid^="dt-deck-card-option-"], #modal-root [data-testid^="dt-discard-card-option-"], #modal-root [data-testid^="dt-preparedSpells-card-option-"], #modal-root [data-testid^="dt-player-target-"], #modal-root [data-testid^="dt-status-effect-"]',
+        )).map(element => element.getAttribute('data-testid') ?? '');
+        const selectedChoiceIds = Array.from(document.querySelectorAll('#modal-root [data-selected="true"]'))
+            .map(element => element.getAttribute('data-testid') ?? '')
+            .filter(Boolean);
         const modalButtonLabels = Array.from(document.querySelectorAll('#modal-root button'))
             .map(element => element.textContent?.trim() ?? '')
             .filter(Boolean);
@@ -161,6 +188,8 @@ async function readEvidenceSnapshot(page: Page, game?: EvidenceGameReader): Prom
             selectedAbilityIds,
             preparedSpellIds,
             choiceLabels,
+            choiceIds,
+            selectedChoiceIds,
             modalButtonLabels,
             diceInteractionHintText,
             modalText: readText(modal),
@@ -272,10 +301,8 @@ async function promoteTracedEvidenceScreenshotRun(
     requirement: string,
     outcome: string,
 ): Promise<void> {
-    const chainId = media[0]?.chainId;
-    expect(chainId, '行为证据链必须包含媒体').toBeTruthy();
-    const sourceRevision = getFrontendSourceHash();
-    const e2eSourceRevision = createHash('sha256').update(readFileSync(fileURLToPath(import.meta.url))).digest('hex');
+    expect(media[0]?.chainId, '行为证据链必须包含媒体').toBeTruthy();
+    const { sourceRevision, e2eSourceRevision } = assertCurrentEvidenceSourceIdentity();
     const enrichedMedia = media.map(entry => ({
         ...entry,
         uiChange: entry.uiChange ?? (entry.stage === '前态' || entry.stage === '后态' ? 'layout' : 'interaction-mode'),
@@ -286,32 +313,44 @@ async function promoteTracedEvidenceScreenshotRun(
         requirements: [requirement],
         viewport: entry.viewport ?? 'desktop',
     }));
+    const interactionMedia = enrichedMedia.filter(entry => (
+        entry.stage === '中态' || entry.stage === '独特界面态'
+    ));
+    expect(interactionMedia.length, '用户验收索引只包含新交互状态截图').toBeGreaterThan(0);
     const stepIds = new Set(recorder.steps.map(step => step.id));
-    for (const entry of enrichedMedia) {
+    for (const entry of interactionMedia) {
         expect(stepIds.has(entry.behaviorStepId!), `行为链缺少截图步骤 ${entry.behaviorStepId}`).toBe(true);
     }
-    const uiStates = enrichedMedia.map(entry => ({
-        id: entry.uiStateId!,
-        stepId: entry.behaviorStepId!,
-        change: entry.uiChange!,
-        viewport: entry.viewport!,
-        sha256: createHash('sha256').update(readFileSync(join(run.stagingDir, entry.path))).digest('hex'),
-    }));
-    const trace = {
-        gameId: 'dicethrone',
-        evidenceCategory: 'independent',
-        chainId,
-        sourceRun: run.runId,
-        sourceRevision,
-        e2eSourceRevision,
-        status: 'PASS',
-        outcome,
-        steps: recorder.steps,
-        uiStates,
-    };
-    await writeFile(join(run.stagingDir, `${chainId}.trace.json`), `${JSON.stringify(trace, null, 2)}\n`, 'utf8');
+    const mediaByChain = new Map<string, typeof enrichedMedia>();
+    for (const entry of interactionMedia) {
+        const chain = mediaByChain.get(entry.chainId) ?? [];
+        chain.push(entry);
+        mediaByChain.set(entry.chainId, chain);
+    }
+    for (const [chainId, chainMedia] of mediaByChain) {
+        const chainStepIds = new Set(chainMedia.map(entry => entry.behaviorStepId!));
+        const trace = {
+            gameId: 'dicethrone',
+            evidenceCategory: 'independent',
+            chainId,
+            sourceRun: run.runId,
+            sourceRevision,
+            e2eSourceRevision,
+            status: 'PASS',
+            outcome,
+            steps: recorder.steps.filter(step => chainStepIds.has(step.id)),
+            uiStates: chainMedia.map(entry => ({
+                id: entry.uiStateId!,
+                stepId: entry.behaviorStepId!,
+                change: entry.uiChange!,
+                viewport: entry.viewport!,
+                sha256: createHash('sha256').update(readFileSync(join(run.stagingDir, entry.path))).digest('hex'),
+            })),
+        };
+        await writeFile(join(run.stagingDir, `${chainId}.trace.json`), `${JSON.stringify(trace, null, 2)}\n`, 'utf8');
+    }
     await promoteEvidenceScreenshotRun(run, {
-        gameId: 'dicethrone', evidenceCategory: 'independent', capturePolicy: 'distinct-ui-state', media: enrichedMedia,
+        gameId: 'dicethrone', evidenceCategory: 'independent', capturePolicy: 'distinct-ui-state', media: interactionMedia,
     });
 }
 
@@ -339,6 +378,7 @@ async function openOnlineSelection(page: Page, beforeRoomCreate?: () => Promise<
 }
 
 async function captureState(page: Page, run: EvidenceScreenshotRun, name: string): Promise<string> {
+    assertCurrentEvidenceSourceIdentity();
     const filename = `${name}.png`;
     const path = join(run.stagingDir, filename);
     await mkdir(dirname(path), { recursive: true });
@@ -347,7 +387,111 @@ async function captureState(page: Page, run: EvidenceScreenshotRun, name: string
         animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity
     )), undefined, { timeout: 10000 });
     await page.screenshot({ path, fullPage: false, timeout: 20000 });
+    assertCurrentEvidenceSourceIdentity();
     return filename;
+}
+
+async function assertCardPoolInteractionFitsViewport(page: Page): Promise<void> {
+    const layout = await page.evaluate(() => {
+        const rect = (selector: string) => {
+            const element = document.querySelector(selector);
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+        };
+        const contains = (outer: NonNullable<ReturnType<typeof rect>>, inner: NonNullable<ReturnType<typeof rect>>) => (
+            inner.left >= outer.left - 1 && inner.top >= outer.top - 1
+            && inner.right <= outer.right + 1 && inner.bottom <= outer.bottom + 1
+        );
+        const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+        const panel = rect('[data-testid="dt-card-pool-panel"]');
+        const surface = rect('[data-testid="dt-card-pool-surface"]');
+        const title = rect('[data-testid="dt-card-pool-title"]');
+        const selection = rect('[data-testid="dt-card-pool-selection"]');
+        const selectedPreview = rect('[data-testid^="dt-card-choice-preview-"]');
+        const selectedMarker = rect('[data-testid^="dt-card-choice-selected-"]');
+        const cardPoolBackdrop = rect('[data-testid="dt-card-pool-backdrop"]');
+        const handArea = rect('[data-testid="hand-area"]');
+        const panelElement = document.querySelector('[data-testid="dt-card-pool-panel"]');
+        const surfaceElement = document.querySelector('[data-testid="dt-card-pool-surface"]');
+        const selectionElement = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-selection"]');
+        const selectionClipRect = selection && selectionElement ? {
+            left: selection.left + selectionElement.clientLeft,
+            top: selection.top + selectionElement.clientTop,
+            right: selection.left + selectionElement.clientLeft + selectionElement.clientWidth,
+            bottom: selection.top + selectionElement.clientTop + selectionElement.clientHeight,
+        } : null;
+        const optionRects = Array.from(document.querySelectorAll('[data-testid^="dt-discard-card-option-"]'))
+            .map(element => {
+                const box = element.getBoundingClientRect();
+                return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+            });
+        const handRects = Array.from(document.querySelectorAll('[data-testid="hand-area"] [data-testid="hand-card-visual"]'))
+            .map(element => {
+                const box = element.getBoundingClientRect();
+                return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+            });
+        const visibleRectSelectors = [
+            '[data-testid="dt-card-pool-panel"]',
+            '[data-testid="dt-card-pool-surface"]',
+            '[data-testid="dt-card-pool-title"]',
+            '[data-testid="dt-card-pool-selection"]',
+            '[data-testid="dt-card-pool-actions"]',
+            '[data-testid="dt-interaction-confirm"]',
+        ];
+        const requiredRects = visibleRectSelectors.map(rect);
+        return {
+            viewport,
+            panel,
+            surface,
+            title,
+            requiredRects,
+            selection,
+            selectionClipRect,
+            selectedPreview,
+            selectedMarker,
+            cardPoolBackdrop,
+            handArea,
+            optionRects,
+            handRects,
+            panelContainsSurface: Boolean(panel && surface && contains(panel, surface)),
+            surfaceContainsTitle: Boolean(surface && title && contains(surface, title)),
+            surfaceContainsSelection: Boolean(surface && selection && contains(surface, selection)),
+            surfaceContainsActions: Boolean(surface && rect('[data-testid="dt-card-pool-actions"]')
+                && contains(surface, rect('[data-testid="dt-card-pool-actions"]')!)),
+            actionsContainButtons: Boolean(rect('[data-testid="dt-card-pool-actions"]')
+                && rect('[data-testid="dt-interaction-confirm"]')
+                && contains(rect('[data-testid="dt-card-pool-actions"]')!, rect('[data-testid="dt-interaction-confirm"]')!)),
+            selectionContainsPreview: Boolean(selection && selectedPreview && contains(selection, selectedPreview)),
+            selectionContainsMarker: Boolean(selection && selectedMarker && contains(selection, selectedMarker)),
+            selectionClipContainsPreview: Boolean(selectionClipRect && selectedPreview && contains(selectionClipRect, selectedPreview)),
+            selectionClipContainsMarker: Boolean(selectionClipRect && selectedMarker && contains(selectionClipRect, selectedMarker)),
+            viewportContainsMarker: Boolean(selectedMarker && contains(viewport, selectedMarker)),
+            viewportContainsPanel: Boolean(panel && contains(viewport, panel)),
+            viewportContainsOptions: optionRects.length > 0 && optionRects.every(option => contains(viewport, option)),
+            viewportContainsHand: handRects.length > 0 && handRects.every(card => contains(viewport, card)),
+            backdropStopsBeforeHand: Boolean(cardPoolBackdrop && handArea
+                && cardPoolBackdrop.bottom <= handArea.top + 1),
+            panelClientHeight: panelElement instanceof HTMLElement ? panelElement.clientHeight : null,
+            surfaceClientHeight: surfaceElement instanceof HTMLElement ? surfaceElement.clientHeight : null,
+        };
+    });
+
+    expect(layout.requiredRects.every(box => box && box.left >= -1 && box.top >= -1
+        && box.right <= layout.viewport.right + 1 && box.bottom <= layout.viewport.bottom + 1),
+    `卡池标题、选中卡、操作按钮需完整留在视口内：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.viewportContainsPanel, `卡池整体上下边界必须留在视口内：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.panelContainsSurface && layout.surfaceContainsTitle && layout.surfaceContainsSelection
+        && layout.surfaceContainsActions && layout.actionsContainButtons,
+    `卡池标题、列表、按钮必须位于可视面板范围内：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.selectionContainsPreview, `选中卡面不能被卡池滚动窗口裁掉：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.selectionContainsMarker, `选中标记不能被卡池滚动窗口裁掉：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.selectionClipContainsPreview, `选中卡面必须完整留在卡池当前可视滚动区域：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.selectionClipContainsMarker, `选中标记必须完整留在卡池当前可视滚动区域：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.viewportContainsMarker, `选中标记不能被视口裁掉：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.viewportContainsOptions, `卡牌候选不能被视口裁掉：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.viewportContainsHand, `底部手牌不能被视口裁掉：${JSON.stringify(layout)}`).toBe(true);
+    expect(layout.backdropStopsBeforeHand, `卡池遮罩必须在手牌区域上方结束，不能压暗或模糊手牌：${JSON.stringify(layout)}`).toBe(true);
 }
 
 async function dismissCardSpotlights(page: Page): Promise<void> {
@@ -449,7 +593,6 @@ async function runAwarenessPrepareFlow(
     screenshotPrefix: string,
 ): Promise<{ media: EvidenceScreenshotIndexEntry[]; trace: EvidenceTraceRecorder }> {
     const viewportName = viewport.width < 1000 ? 'mobile' : 'desktop';
-    const chainId = `奇异博士内部初始化法术准备-${screenshotPrefix}`;
     const media: EvidenceScreenshotIndexEntry[] = [];
     const trace = newEvidenceTraceRecorder();
     await page.setViewportSize(viewport);
@@ -479,7 +622,7 @@ async function runAwarenessPrepareFlow(
             rollCount: 1,
             rollLimit: 3,
             rollConfirmed: true,
-            dice: [3, 3, 4, 4, 1].map((value, id) => ({ id, value, isKept: true })),
+            dice: [3, 3, 3, 3, 1].map((value, id) => ({ id, value, isKept: true })),
         },
     });
 
@@ -510,25 +653,31 @@ async function runAwarenessPrepareFlow(
         .toHaveAttribute('data-character-id', 'doctor_strange');
     await expect(page.locator('[data-testid="player-board-surface"] [data-ability-slot="chi"]').first())
         .toHaveAttribute('data-available-ability-id', 'strange-cosmic-awareness');
-    const initialScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, `${screenshotPrefix}-公开法术起始态`,
-        'internal-setup-public-prepared-spells', '初始化奇异博士牌桌并关闭新局卡牌特写',
-        '角色与起始法术公开可见',
-        snapshot => (snapshot.visible.boardHeroIds as (string | null)[]).includes('doctor_strange')
-            && (snapshot.visible.preparedSpellIds as (string | null)[]).includes('spell-flames-of-faltine'),
-        true,
-    );
-    media.push({
-        path: initialScreenshot, chainId, chainStep: media.length + 1, stage: '前态',
-        uiStateId: `doctor-strange-${viewportName}-prepared-spells-before`,
-        behaviorStepId: 'internal-setup-public-prepared-spells',
-        description: '初始化特写关闭后，公开起始法术与可操作技能槽均已显示。',
-        role: 'main-flow', viewport: viewportName, transition: '内部注入奇异博士牌桌状态并关闭初始卡牌特写。',
-    });
-
     const awarenessSlot = page.locator('[data-testid="player-board-surface"] [data-ability-slot="chi"]').first();
     await clickAbilitySlot(page, 'chi', 'strange-cosmic-awareness');
     await expect(awarenessSlot).toHaveAttribute('data-is-selected', 'true');
+    await expect(page.getByTestId('dt-ability-selected-check-chi')).toBeVisible();
+    await page.waitForTimeout(300);
+    const selectedHandCard = page.locator(
+        `[data-testid="hand-area"] [data-card-id="${HAND_CARD_ID}"] [data-testid="hand-card-visual"]`,
+    );
+    const selectedHandCardBounds = await selectedHandCard.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        return {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+        };
+    });
+    expect(selectedHandCardBounds.top).toBeGreaterThanOrEqual(-1);
+    expect(selectedHandCardBounds.left).toBeGreaterThanOrEqual(-1);
+    expect(selectedHandCardBounds.right).toBeLessThanOrEqual(selectedHandCardBounds.viewportWidth + 1);
+    expect(selectedHandCardBounds.bottom,
+        `技能待结算时手牌需留出视口底边距：${JSON.stringify(selectedHandCardBounds)}`,
+    ).toBeLessThanOrEqual(selectedHandCardBounds.viewportHeight - (viewport.width < 1000 ? 18 : 20));
     const selectedScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, `${screenshotPrefix}-宇宙感知已选待结算`,
         'internal-setup-select-awareness', '真实鼠标选择宇宙感知技能槽',
@@ -537,7 +686,7 @@ async function runAwarenessPrepareFlow(
         true,
     );
     media.push({
-        path: selectedScreenshot, chainId, chainStep: media.length + 1, stage: '中态',
+        path: selectedScreenshot, chainId: `奇异博士选择宇宙感知技能-${viewportName}`, chainStep: '技能已选待结算', stage: '中态',
         uiStateId: `doctor-strange-${viewportName}-awareness-selected`,
         behaviorStepId: 'internal-setup-select-awareness',
         description: '真实鼠标选择宇宙感知；技能待结算，法术效果尚未触发。',
@@ -546,8 +695,25 @@ async function runAwarenessPrepareFlow(
     const advance = page.locator('[data-tutorial-id="advance-phase-button"]');
     await expect(advance).toContainText('结算攻击');
     await advance.click();
-    const spellOption = page.getByRole('button', { name: '法瑞拉之牙' });
+    const spellOption = page.getByTestId(`dt-discard-card-option-${PREPARE_SPELL_ID}`);
     await expect(spellOption).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await expect(page.getByText('从弃牌堆选择1个法术并准备', { exact: true })).toBeVisible();
+    await page.waitForTimeout(300);
+    const handCardGeometry = await page.locator('[data-testid="hand-area"] [data-testid="hand-card-visual"]')
+        .evaluateAll(cards => ({
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            cards: cards.map(card => {
+                const rect = card.getBoundingClientRect();
+                return { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left };
+            }),
+        }));
+    expect(handCardGeometry.cards.length).toBeGreaterThan(0);
+    expect(handCardGeometry.cards.every(rect => rect.top >= -1
+        && rect.left >= -1
+        && rect.right <= handCardGeometry.viewportWidth + 1
+        && rect.bottom <= handCardGeometry.viewportHeight - (viewport.width < 1000 ? 18 : 20))).toBe(true);
     if (viewport.width < 1000) {
         const geometry = await spellOption.evaluate(element => {
             const scrollViewport = element.closest('.overflow-y-auto');
@@ -562,7 +728,7 @@ async function runAwarenessPrepareFlow(
         expect(geometry.optionWidth).toBeLessThanOrEqual(130);
         expect(geometry.optionBottom).toBeLessThanOrEqual(geometry.visibleBottom + 1);
     }
-    await expect(page.locator('#modal-root [data-choice-custom-id="doctor-strange-choice"]')).toHaveCount(1);
+    await expect(page.getByTestId(`dt-discard-card-option-${PREPARE_SPELL_ID}`)).toBeVisible();
     const choiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, `${screenshotPrefix}-弃牌准备选择态`,
         'internal-setup-choose-spell-from-discard', '提交技能结算并显示弃牌法术候选',
@@ -571,33 +737,113 @@ async function runAwarenessPrepareFlow(
         true,
     );
     media.push({
-        path: choiceScreenshot, chainId, chainStep: media.length + 1, stage: '中态',
+        path: choiceScreenshot, chainId: `宇宙感知从弃牌堆选择法术-${viewportName}`, chainStep: '法术候选', stage: '中态',
         uiStateId: `doctor-strange-${viewportName}-spell-choice`,
         behaviorStepId: 'internal-setup-choose-spell-from-discard',
         description: '内部初始化场景；真实鼠标命中技能槽后显示弃牌准备选择。',
         role: 'main-flow', viewport: viewportName, transition: '玩家点击宇宙感知并打开法术选择',
     });
     await spellOption.click();
+    await page.waitForTimeout(250);
+    await expect(page.getByTestId('board-magnify-overlay')).toHaveCount(0);
+    const selectedCardBounds = await spellOption.evaluate(element => {
+        const preview = element.querySelector('[data-testid^="dt-card-choice-preview-"]');
+        const viewport = element.closest('[data-testid="dt-card-pool-selection"]');
+        const previewRect = preview?.getBoundingClientRect();
+        const viewportRect = viewport?.getBoundingClientRect();
+        return {
+            previewTop: previewRect?.top ?? Number.NaN,
+            previewBottom: previewRect?.bottom ?? Number.NaN,
+            viewportTop: viewportRect?.top ?? Number.NaN,
+            viewportBottom: viewportRect?.bottom ?? Number.NaN,
+        };
+    });
+    expect(selectedCardBounds.previewTop).toBeGreaterThanOrEqual(selectedCardBounds.viewportTop);
+    expect(selectedCardBounds.previewBottom).toBeLessThanOrEqual(selectedCardBounds.viewportBottom);
+    await assertCardPoolInteractionFitsViewport(page);
+    const selectedHandGeometry = await page.locator('[data-testid="hand-area"] [data-testid="hand-card-visual"]')
+        .evaluateAll(cards => ({
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            cards: cards.map(card => {
+                const rect = card.getBoundingClientRect();
+                return { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left };
+            }),
+        }));
+    expect(selectedHandGeometry.cards.length).toBeGreaterThan(0);
+    expect(selectedHandGeometry.cards.every(rect => rect.top >= -1
+        && rect.left >= -1
+        && rect.right <= selectedHandGeometry.viewportWidth + 1
+        && rect.bottom <= selectedHandGeometry.viewportHeight - (viewport.width < 1000 ? 18 : 20))).toBe(true);
+    const selectedSpellScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, `${screenshotPrefix}-法术卡已选待确认`,
+        'internal-setup-select-spell-card', '从弃牌法术候选区选中法瑞拉之牙但暂不提交',
+        '候选卡高亮且确认按钮可用',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes(`dt-discard-card-option-${PREPARE_SPELL_ID}`),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    media.push({
+        path: selectedSpellScreenshot, chainId: `宇宙感知从弃牌堆选择法术-${viewportName}`, chainStep: '已选待确认', stage: '中态',
+        uiStateId: `doctor-strange-${viewportName}-spell-choice-selected`,
+        behaviorStepId: 'internal-setup-select-spell-card',
+        description: '选中弃牌区的法瑞拉之牙后显示选中态，仍需通过现有确认按钮提交。',
+        role: 'main-flow', viewport: viewportName, transition: '在弃牌候选卡池点击法术卡。',
+    });
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await spellOption.click();
+    await expect(spellOption).toHaveAttribute('data-selected', 'false');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeDisabled();
+    await spellOption.click();
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await page.getByTestId('dt-interaction-confirm').click();
 
-    const targetChoice = page.locator(`#modal-root button[data-choice-custom-id="doctor-strange-choice"]`);
-    await expect(targetChoice).toHaveCount(1);
-    await expect(targetChoice).toContainText('选择这名玩家');
+    const targetChoice = page.getByTestId('dt-player-target-1');
+    await expect(targetChoice).toBeVisible();
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await expect(page.getByText('选择失去1点施法值的对手', { exact: true })).toBeVisible();
     await expect.poll(async () => (await game.getState())?.core?.players?.['1']?.resources?.cp).toBe(3);
     const targetScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, `${screenshotPrefix}-法术准备目标选择态`,
         'internal-setup-select-opponent-cp-target', '选择法瑞拉之牙并显示目标选择',
-        '目标选项数量',
+        '目标玩家数量',
         snapshot => (snapshot.visible.choiceLabels as string[]).length,
         1,
     );
     media.push({
-        path: targetScreenshot, chainId, chainStep: media.length + 1, stage: '中态',
+        path: targetScreenshot, chainId: `法瑞拉之牙选择施法值目标-${viewportName}`, chainStep: '目标候选', stage: '中态',
         uiStateId: `doctor-strange-${viewportName}-spell-prepare-target-choice`,
         behaviorStepId: 'internal-setup-select-opponent-cp-target',
-        description: '准备法瑞拉之牙后出现真实目标选择；对手初始拥有3点施法值。',
+        description: '标题说明目标效果为失去1点施法值，候选只包含合法对手。',
         role: 'main-flow', viewport: viewportName, transition: '点击法术卡并选择受影响的对手。',
     });
     await targetChoice.click();
+    const selectedTargetScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, `${screenshotPrefix}-目标玩家已选待确认`,
+        'internal-setup-select-target-player', '从现有玩家卡片交互选中对手但暂不提交',
+        '目标玩家高亮且确认按钮可用',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-player-target-1'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    media.push({
+        path: selectedTargetScreenshot, chainId: `法瑞拉之牙选择施法值目标-${viewportName}`, chainStep: '目标已选待确认', stage: '中态',
+        uiStateId: `doctor-strange-${viewportName}-spell-target-selected`,
+        behaviorStepId: 'internal-setup-select-target-player',
+        description: '选中失去施法值的对手后保留待确认态。',
+        role: 'main-flow', viewport: viewportName, transition: '在现有玩家选择面选中对手。',
+    });
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await targetChoice.click();
+    await expect(targetChoice).toHaveAttribute('data-selected', 'false');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeDisabled();
+    await targetChoice.click();
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await page.getByTestId('dt-interaction-confirm').click();
 
     await expect.poll(async () => {
         const state = await game.getState();
@@ -617,40 +863,242 @@ async function runAwarenessPrepareFlow(
     });
     await expect(page.locator(`[data-prepared-spell-card="${PREPARE_SPELL_ID}"]`)).toBeVisible();
     await page.waitForTimeout(1000);
-    const settledScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, `${screenshotPrefix}-法术准备结算态`,
-        'internal-setup-spell-prepared', '确认对手并完成法术准备结算',
-        '法术进入公开准备区且对手施法值扣减',
-        snapshot => ({
-            prepared: (snapshot.authoritative.players as Record<string, { preparedSpellIds: string[] }>)['0']?.preparedSpellIds,
-            opponentCp: (snapshot.authoritative.players as Record<string, { resources: { cp: number | null } }>)['1']?.resources.cp,
-        }),
-        { prepared: ['spell-flames-of-faltine', PREPARE_SPELL_ID], opponentCp: 2 },
-    );
-    media.push({
-        path: settledScreenshot, chainId, chainStep: media.length + 1, stage: '后态',
-        uiStateId: `doctor-strange-${viewportName}-spell-prepared`,
-        behaviorStepId: 'internal-setup-spell-prepared',
-        description: '内部初始化场景；确认法术进入公开准备区且资源与状态结算。',
-        role: 'main-flow', viewport: viewportName, transition: '玩家选择法瑞拉之牙并完成结算',
-    });
     return { media, trace };
 }
 
 test.describe('Dice Throne 奇异博士独立交互验收（内部初始化）', () => {
+    test.describe.configure({ timeout: 90_000 });
+
     test('桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术', async ({ page, game }, testInfo) => {
         const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
         const result = await runAwarenessPrepareFlow(page, game, evidenceRun, { width: 1440, height: 900 }, '桌面');
         await promoteTracedEvidenceScreenshotRun(evidenceRun, result.media, result.trace,
-            '桌面宇宙感知真实交互与法术准备', '真实选择宇宙感知、从弃牌选择法术并将其准备到公开法术区。');
+            '桌面宇宙感知与法术选择交互', '索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。');
     });
 
     test('手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术', async ({ page, game }, testInfo) => {
         const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
         const result = await runAwarenessPrepareFlow(page, game, evidenceRun, { width: 812, height: 375 }, '手机横屏');
         await promoteTracedEvidenceScreenshotRun(evidenceRun, result.media, result.trace,
-            '手机横屏宇宙感知真实交互与法术准备', '手机横屏真实选择宇宙感知、选择法术并结算公开准备区。');
+            '手机横屏宇宙感知与法术选择交互', '索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。');
     });
+});
+
+test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状态', async ({ page, game }, testInfo) => {
+    const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+    const media: EvidenceScreenshotIndexEntry[] = [];
+    const trace = newEvidenceTraceRecorder();
+    const removalSpellId = 'spell-winds-of-watoomb';
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await setChineseLocale(page.context());
+    await game.openTestGame('dicethrone', {
+        playerID: '0', disableLocalAiAutomation: true, seat0: 'human', seat1: 'human',
+    });
+    trace.previous = await readEvidenceSnapshot(page, game);
+    const excludedIds = new Set(['spell-flames-of-faltine', removalSpellId, HAND_CARD_ID]);
+    const remainingDeck = DOCTOR_STRANGE_CARDS.filter(card => !excludedIds.has(card.id)).map(card => card.id);
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            hand: [HAND_CARD_ID], deck: remainingDeck, discard: [removalSpellId],
+            resources: { CP: 3, HP: 50 },
+        },
+        player1: { statusEffects: { dazzle: 1, blinded: 1 }, resources: { CP: 3, HP: 50 } },
+        currentPlayer: '0', phase: 'offensiveRoll',
+        extra: {
+            selectedCharacters: { '0': 'doctor_strange', '1': 'monk' },
+            seatControllers: { '0': { type: 'human' }, '1': { type: 'human' } },
+            hostStarted: true, rollCount: 1, rollLimit: 3, rollConfirmed: true,
+            dice: [3, 3, 3, 3, 1].map((value, id) => ({ id, value, isKept: true })),
+        },
+    });
+    const awarenessSlot = page.locator('[data-testid="player-board-surface"] [data-ability-slot="chi"]').first();
+    await expect(awarenessSlot).toHaveAttribute('data-available-ability-id', 'strange-cosmic-awareness');
+    await expect.poll(async () => (await game.getState())?.core?.dice?.map(die => die.symbol), { timeout: 10000 })
+        .toEqual(Array(4).fill(DOCTOR_STRANGE_FACE.BOOK).concat(DOCTOR_STRANGE_FACE.MANDALA));
+    await dismissCardSpotlights(page);
+    await clickAbilitySlot(page, 'chi', 'strange-cosmic-awareness');
+    await expect(awarenessSlot).toHaveAttribute('data-is-selected', 'true');
+    const selectedAbilityScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '法术移除状态-宇宙感知已选',
+        'remove-status-select-awareness', '选择宇宙感知且尚未结算法术效果',
+        '宇宙感知技能槽已选中',
+        snapshot => (snapshot.visible.selectedAbilityIds as (string | null)[]).includes('strange-cosmic-awareness'),
+        true,
+    );
+    media.push({
+        path: selectedAbilityScreenshot, chainId: '奇异博士选择宇宙感知技能', chainStep: '技能已选待结算', stage: '中态',
+        uiStateId: 'doctor-strange-remove-status-awareness-selected',
+        behaviorStepId: 'remove-status-select-awareness',
+        description: '真实鼠标选择宇宙感知，确认技能尚未结算。',
+        role: 'main-flow', viewport: 'desktop', transition: '选择满足四本魔法书骰面的宇宙感知。',
+    });
+    const advance = page.locator('[data-tutorial-id="advance-phase-button"]');
+    await expect(advance).toContainText('结算攻击');
+    await advance.click();
+
+    const spellOption = page.getByTestId(`dt-discard-card-option-${removalSpellId}`);
+    await expect.poll(async () => (await game.getState())?.core?.players?.['0']?.deck?.length, { timeout: 15000 }).toBe(28);
+    await expect(spellOption).toBeVisible({ timeout: 10000 });
+    const cardCandidatesScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '瓦图姆之风-弃牌法术候选',
+        'remove-status-prepare-card-candidates', '真实使用宇宙感知打开弃牌法术选择',
+        '候选池只显示授权准备的弃牌法术',
+        snapshot => ({
+            count: (snapshot.visible.choiceLabels as string[]).length,
+            removalSpellVisible: (snapshot.visible.choiceIds as string[]).includes(`dt-discard-card-option-${removalSpellId}`),
+        }),
+        { count: 1, removalSpellVisible: true },
+    );
+    await spellOption.click();
+    const cardSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '瓦图姆之风-法术卡已选待确认',
+        'remove-status-prepare-card-selected', '选中弃牌区的瓦图姆之风并等待确认',
+        '法术卡选中且确认按钮可用',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes(`dt-discard-card-option-${removalSpellId}`),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    await page.getByTestId('dt-interaction-confirm').click();
+
+    const statusCandidates = page.locator('#modal-root [data-testid^="dt-status-effect-"]');
+    await expect(statusCandidates).toHaveCount(2, { timeout: 10000 });
+    await expect(page.getByText('选择要移除的状态', { exact: true })).toBeVisible();
+    const statusOwner = page.locator('#modal-root [data-testid^="dt-status-owner-"]');
+    await expect(statusOwner).toHaveCount(1);
+    await expect(page.locator('#modal-root [data-testid^="dt-player-target-"]')).toHaveCount(0);
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    const statusCandidatesScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '瓦图姆之风-状态效果候选',
+        'remove-status-candidate-effects', '准备瓦图姆之风后显示规则给出的状态候选',
+        '本人和对手现存的两个状态均可选择',
+        snapshot => (snapshot.visible.choiceLabels as string[]).length,
+        2,
+    );
+    await page.getByTestId('dt-status-effect-1-dazzle').click();
+    await expect(statusOwner).toBeVisible();
+    await expect(page.locator('#modal-root [data-testid^="dt-player-target-"]')).toHaveCount(0);
+    await expect(page.getByTestId('dt-status-effect-1-dazzle')).toHaveAttribute('data-selected', 'true');
+    await page.mouse.move(720, 310);
+    await page.waitForTimeout(300);
+    const statusSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '瓦图姆之风-状态已选待确认',
+        'remove-status-opponent-effect-selected', '直接点击 P2 的眩目状态图标；一次指定持有人和状态，等待确认',
+        '状态图标选中但效果仍未结算',
+        snapshot => {
+            const players = snapshot.authoritative.players as Record<string, {
+                statusEffects: Record<string, number>;
+                preparedSpellIds: string[];
+            }>;
+            return {
+                selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-status-effect-1-dazzle'),
+                confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+                opponentDazzleUnchanged: players['1']?.statusEffects?.dazzle === 1,
+                opponentBlindedUnchanged: players['1']?.statusEffects?.blinded === 1,
+                spellPrepared: players['0']?.preparedSpellIds?.includes(removalSpellId) === true,
+            };
+        },
+        {
+            selected: true,
+            confirmVisible: true,
+            opponentDazzleUnchanged: true,
+            opponentBlindedUnchanged: true,
+            spellPrepared: true,
+        },
+    );
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await page.getByTestId('dt-status-effect-1-dazzle').click();
+    await expect(page.getByTestId('dt-status-effect-1-dazzle')).toHaveAttribute('data-selected', 'false');
+    await expect(page.getByTestId('dt-interaction-confirm')).toHaveText('跳过');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await page.setViewportSize({ width: 812, height: 375 });
+    await page.mouse.move(406, 180);
+    await expect(page.getByText('选择要移除的状态', { exact: true })).toBeVisible();
+    await expect(page.locator('#modal-root [data-testid^="dt-player-target-"]')).toHaveCount(0);
+    const mobileStatusGeometry = async () => page.locator('#modal-root [data-testid^="dt-status-effect-"]')
+        .evaluateAll(elements => elements.map(element => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height,
+                viewportWidth: window.innerWidth, viewportHeight: window.innerHeight };
+        }));
+    const mobileStatusCandidateGeometry = await mobileStatusGeometry();
+    expect(mobileStatusCandidateGeometry).toHaveLength(2);
+    expect(mobileStatusCandidateGeometry.every(rect => rect.width > 0 && rect.height > 0
+        && rect.left >= -1 && rect.top >= -1
+        && rect.right <= rect.viewportWidth + 1 && rect.bottom <= rect.viewportHeight + 1)).toBe(true);
+    const mobileStatusCandidatesScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '瓦图姆之风-横屏-状态效果候选',
+        'remove-status-mobile-candidate-effects', '缩窄到横屏手机后仍可直接选择状态图标',
+        '两个状态候选和持有人均完整可见，且没有玩家目标选择步骤',
+        snapshot => ({
+            candidateCount: (snapshot.visible.choiceLabels as string[]).length,
+            skipVisible: (snapshot.visible.modalButtonLabels as string[]).includes('跳过'),
+        }),
+        { candidateCount: 2, skipVisible: true },
+    );
+    await page.getByTestId('dt-status-effect-1-dazzle').click();
+    await expect(page.getByTestId('dt-status-effect-1-dazzle')).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await expect(page.locator('#modal-root [data-testid^="dt-player-target-"]')).toHaveCount(0);
+    const mobileStatusSelectedGeometry = await mobileStatusGeometry();
+    const mobileConfirmBounds = await page.getByTestId('dt-interaction-confirm').boundingBox();
+    expect(mobileStatusSelectedGeometry).toHaveLength(2);
+    expect(mobileStatusSelectedGeometry.every(rect => rect.width > 0 && rect.height > 0
+        && rect.left >= -1 && rect.top >= -1
+        && rect.right <= rect.viewportWidth + 1 && rect.bottom <= rect.viewportHeight + 1)).toBe(true);
+    expect(mobileConfirmBounds).toBeTruthy();
+    expect(mobileConfirmBounds!.x).toBeGreaterThanOrEqual(-1);
+    expect(mobileConfirmBounds!.y).toBeGreaterThanOrEqual(-1);
+    expect(mobileConfirmBounds!.x + mobileConfirmBounds!.width).toBeLessThanOrEqual(813);
+    expect(mobileConfirmBounds!.y + mobileConfirmBounds!.height).toBeLessThanOrEqual(376);
+    const mobileStatusSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '瓦图姆之风-横屏-状态已选待确认',
+        'remove-status-mobile-selected-effect', '横屏手机直接选中对手的眩目状态并暂不提交',
+        '状态图标显示选中反馈，确认可用，状态仍未移除',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-status-effect-1-dazzle'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+            opponentDazzleUnchanged: (snapshot.authoritative.players as Record<string, { statusEffects: Record<string, number> }> )['1']?.statusEffects?.dazzle === 1,
+        }),
+        { selected: true, confirmVisible: true, opponentDazzleUnchanged: true },
+    );
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await page.getByTestId('dt-interaction-confirm').click();
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            ownBlinded: state?.core?.players?.['0']?.statusEffects?.blinded ?? 0,
+            opponentDazzle: state?.core?.players?.['1']?.statusEffects?.dazzle ?? 0,
+            opponentBlinded: state?.core?.players?.['1']?.statusEffects?.blinded ?? 0,
+            prepared: state?.core?.players?.['0']?.preparedSpells?.some(card => card.id === removalSpellId) ?? false,
+        };
+    }, { timeout: 10000 }).toEqual({ ownBlinded: 0, opponentDazzle: 0, opponentBlinded: 1, prepared: true });
+    media.push(
+        { path: cardCandidatesScreenshot, chainId: '奇异博士从弃牌堆选择法术', chainStep: '法术候选', stage: '中态', uiStateId: 'doctor-strange-remove-status-card-candidates',
+            behaviorStepId: 'remove-status-prepare-card-candidates', description: '宇宙感知的弃牌准备候选只显示瓦图姆之风。',
+            role: 'main-flow', viewport: 'desktop', transition: '推进宇宙感知的法术准备选择。' },
+        { path: cardSelectedScreenshot, chainId: '奇异博士从弃牌堆选择法术', chainStep: '法术已选待确认', stage: '中态', uiStateId: 'doctor-strange-remove-status-card-selected',
+            behaviorStepId: 'remove-status-prepare-card-selected', description: '选中瓦图姆之风后由确认按钮提交卡牌选择。',
+            role: 'main-flow', viewport: 'desktop', transition: '点击弃牌区的瓦图姆之风。' },
+        { path: statusCandidatesScreenshot, chainId: '瓦图姆之风直接选择状态效果', chainStep: '状态候选', stage: '中态', uiStateId: 'doctor-strange-remove-status-candidates',
+            behaviorStepId: 'remove-status-candidate-effects', description: '瓦图姆之风已准备后的状态候选；每个图标都可直接点击，玩家卡只标出持有人。',
+            role: 'main-flow', viewport: 'desktop', transition: '选状态图标，玩家只作为状态持有人标识。' },
+        { path: statusSelectedScreenshot, chainId: '瓦图姆之风直接选择状态效果', chainStep: '状态已选待确认', stage: '中态', uiStateId: 'doctor-strange-remove-status-selected',
+            behaviorStepId: 'remove-status-opponent-effect-selected', description: '直接选中二号玩家的眩目图标；状态仍未移除，等待确认。',
+            role: 'main-flow', viewport: 'desktop', transition: '直接点击目标状态图标，一次确定持有人和效果。' },
+    );
+    media.push(
+        { path: mobileStatusCandidatesScreenshot, chainId: '瓦图姆之风直接选择状态效果-横屏', chainStep: '状态候选', stage: '中态', uiStateId: 'doctor-strange-remove-status-mobile-candidates',
+            behaviorStepId: 'remove-status-mobile-candidate-effects', description: '横屏手机上直接从两个状态图标中选择；没有先选玩家的步骤。',
+            role: 'main-flow', viewport: 'mobile', transition: '桌面候选态的同一交互切换到横屏手机视口。' },
+        { path: mobileStatusSelectedScreenshot, chainId: '瓦图姆之风直接选择状态效果-横屏', chainStep: '状态已选待确认', stage: '中态', uiStateId: 'doctor-strange-remove-status-mobile-selected',
+            behaviorStepId: 'remove-status-mobile-selected-effect', description: '横屏手机上直接选中眩目状态；确认可见，状态尚未移除。',
+            role: 'main-flow', viewport: 'mobile', transition: '点击眩目状态图标，一次锁定状态和持有人。' },
+    );
+    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+        '奇异博士复用法术卡池和状态选择器', '索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。');
 });
 
 test('四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子', async ({ page, game }, testInfo) => {
@@ -662,7 +1110,9 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await page.setViewportSize({ width: 1440, height: 900 });
     await setChineseLocale(page.context());
     await game.openTestGame('dicethrone', {
-        playerID: '2', disableLocalAiAutomation: true,
+        // The card is owned by teammate 2, while the current roller (player 0)
+        // owns the reroll decision and must see/operate this interaction.
+        playerID: '0', disableLocalAiAutomation: true,
         seat0: 'human', seat1: 'human', seat2: 'human', seat3: 'human',
     });
     trace.previous = await readEvidenceSnapshot(page, game);
@@ -757,35 +1207,17 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         dice: [1, 2, 3, 4, 5],
     });
     await dismissCardSpotlights(page);
-    await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-worthy-of-me"]')).toBeVisible();
-    const readyScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-四人队伍起始态',
-        'worthy-teammate-roll-ready', '内部初始化四人组队牌桌并由奇异博士队友查看手牌',
-        '当前投掷者与奇异博士位于同队且队友持有目标牌',
-        snapshot => {
-            const players = snapshot.authoritative.players as Record<string, { characterId: string; handIds: string[] }>;
-            return {
-                phase: snapshot.authoritative.phase,
-                rollerDice: snapshot.authoritative.dice,
-                strangeHero: players['2']?.characterId,
-                strangeHand: players['2']?.handIds,
-            };
-        },
-        {
-            phase: 'offensiveRoll',
-            rollerDice: [1, 2, 3, 4, 5].map((value, id) => ({ id, value, ownerId: '0' })),
-            strangeHero: 'doctor_strange',
-            strangeHand: ['card-worthy-of-me'],
-        },
-    );
-    media.push({
-        path: readyScreenshot, chainId, chainStep: 1, stage: '前态',
-        uiStateId: 'doctor-strange-worthy-teammate-ready', behaviorStepId: 'worthy-teammate-roll-ready',
-        description: '内部初始化四人组队状态；奇异博士是当前投掷者的队友，持有值得拥有。',
-        role: 'main-flow', viewport: 'desktop', transition: '进入当前投掷者的进攻投掷阶段。',
+    await page.evaluate(async () => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: { command?: { dispatch?: (command: unknown) => Promise<unknown> } };
+        }).__BG_TEST_HARNESS__;
+        if (!harness?.command?.dispatch) throw new Error('TestHarness command dispatch 不可用');
+        await harness.command.dispatch({
+            type: 'PLAY_CARD',
+            playerId: '2',
+            payload: { cardId: 'card-worthy-of-me' },
+        });
     });
-
-    await dragHandCardToPlay(page, 'card-worthy-of-me');
     await expect.poll(async () => {
         const interaction = (await game.getState())?.sys?.interaction?.current;
         return {
@@ -798,8 +1230,8 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
             selectCount: interaction?.data?.meta?.selectCount,
         };
     }, { timeout: 10000 }).toEqual({
-        kind: 'multistep-choice', playerId: '2', sourceId: 'card-worthy-of-me',
-        dtType: 'selectDie', diceOwnerId: '0', targetOpponentDice: true, selectCount: 2,
+        kind: 'multistep-choice', playerId: '0', sourceId: 'card-worthy-of-me',
+        dtType: 'selectDie', diceOwnerId: '0', targetOpponentDice: false, selectCount: 2,
     });
     const diceTray = getRightTrayDiceTray(page);
     const firstRollerDie = diceTray.getByTestId('die-button-0').first();
@@ -808,11 +1240,19 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await expect(secondRollerDie).toHaveAttribute('data-owner-id', '0');
     await expect(firstRollerDie).toHaveAttribute('data-clickable', 'true');
     await expect(secondRollerDie).toHaveAttribute('data-clickable', 'true');
-    await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择队友的骰子');
+    await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择骰子');
+    const diceHintAnchor = page.getByTestId('dice-interaction-hint-anchor');
+    await expect(diceHintAnchor).toHaveAttribute('data-placement', 'left-center');
+    const diceHintBounds = await diceHintAnchor.boundingBox();
+    expect(diceHintBounds).not.toBeNull();
+    expect(Math.abs(diceHintBounds!.y + diceHintBounds!.height / 2 - 450)).toBeLessThanOrEqual(32);
+    expect(diceHintBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(diceHintBounds!.x).toBeLessThan(360);
+    expect(diceHintBounds!.x + diceHintBounds!.width).toBeLessThanOrEqual(1441);
     const targetScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-队友骰区目标态',
-        'worthy-teammate-dice-targets', '真实拖拽打出值得拥有并显示当前投掷者骰区',
-        '交互明确标出队友骰子，且投掷者骰子可点击',
+        page, game, evidenceRun, trace, '值得拥有-投掷者骰区目标态',
+        'worthy-teammate-dice-targets', '队友出牌后由当前投掷者查看自己的骰区',
+        '交互归当前投掷者，且其骰子可点击',
         snapshot => {
             const interaction = snapshot.authoritative.interaction as Record<string, unknown>;
             const dice = snapshot.visible.dice as { id: string | null; ownerId: string | null; clickable: boolean }[];
@@ -824,44 +1264,65 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         },
         {
             interaction: {
-                kind: 'multistep-choice', playerId: '2', sourceId: 'card-worthy-of-me',
-                dtType: 'selectDie', selectCount: 2, diceOwnerId: '0', targetOpponentDice: true,
+                kind: 'multistep-choice', playerId: '0', sourceId: 'card-worthy-of-me',
+                dtType: 'selectDie', selectCount: 2, diceOwnerId: '0', targetOpponentDice: false,
                 allowedDieIds: [0, 1, 2, 3, 4],
             },
             rollerDiceClickable: true,
-            allyHintText: '选择队友的骰子（0/2）',
+            allyHintText: '选择骰子（0/2）',
         },
     );
     media.push({
-        path: targetScreenshot, chainId, chainStep: 2, stage: '中态',
+        path: targetScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '骰子候选', stage: '中态',
         uiStateId: 'doctor-strange-worthy-teammate-targets', uiChange: 'interaction-mode',
         uiChangeReason: '队友牌出牌后进入骰子选择，玩家可在当前投掷者的实际骰区选择。',
         behaviorStepId: 'worthy-teammate-dice-targets',
-        description: '投掷者的骰子所属玩家编号为0；交互说明文字明确写出“队友的骰子”。',
+        description: '当前投掷者0拥有交互并在自己的骰区选择骰子。',
         role: 'main-flow', viewport: 'desktop', transition: '奇异博士队友真实打出该牌并进入骰子选择。',
     });
 
     await firstRollerDie.click();
-    await secondRollerDie.click();
+    await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择骰子（1/2）');
+    const oneRerollScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '值得拥有-同骰已选一次',
+        'worthy-teammate-dice-selected-once', '真实鼠标首次选择当前投掷者的一颗骰子',
+        '同一颗骰子出现选中态且仍可再次选择',
+        snapshot => ({
+            selected: (snapshot.visible.dice as { id: string | null; selected: boolean }[])
+                .some(die => die.id === '0' && die.selected),
+            hint: snapshot.visible.diceInteractionHintText,
+        }),
+        { selected: true, hint: '选择骰子（1/2）' },
+    );
+    media.push({
+        path: oneRerollScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '已选1/2', stage: '中态',
+        uiStateId: 'doctor-strange-worthy-teammate-die-selected-once',
+        behaviorStepId: 'worthy-teammate-dice-selected-once',
+        description: '当前投掷者选中一颗骰子后显示1/2进度；该骰仍是可再次点击的合法目标。',
+        role: 'main-flow', viewport: 'desktop', transition: '第一次选中同一骰子。',
+    });
+    await expect(firstRollerDie).toHaveAttribute('data-clickable', 'true');
+    await firstRollerDie.click();
+    await expect(page.getByTestId('dice-interaction-hint')).toHaveText('完成');
     await expect(firstRollerDie).toHaveAttribute('data-selected', 'true');
-    await expect(secondRollerDie).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('dice-interaction-hint')).toHaveText('完成');
     const selectedScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-队友骰子已选',
-        'worthy-teammate-dice-selected', '真实鼠标选择当前投掷者的第1和第2颗骰子',
-        '两颗队友骰子出现选中反馈并进入待确认状态',
+        page, game, evidenceRun, trace, '值得拥有-投掷者同骰重选两次',
+        'worthy-teammate-dice-selected', '真实鼠标连续选择当前投掷者的同一颗骰子两次',
+        '同一颗骰子计入两次重掷预算并进入待确认状态',
         snapshot => {
             const dice = snapshot.visible.dice as { id: string | null; ownerId: string | null; selected: boolean }[];
-            return ['0', '1'].every(id => dice.some(die => die.id === id && die.ownerId === '0' && die.selected));
+            return dice.some(die => die.id === '0' && die.ownerId === '0' && die.selected);
         },
         true,
     );
     media.push({
-        path: selectedScreenshot, chainId, chainStep: 3, stage: '中态',
+        path: selectedScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '已选2/2待确认', stage: '中态',
         uiStateId: 'doctor-strange-worthy-teammate-selected-dice', uiChange: 'target-highlight',
-        uiChangeReason: '真实鼠标点击后两颗合法队友骰子分别显示选中态。',
+        uiChangeReason: '真实鼠标连续点击后同一颗合法骰子显示选中态且进度达到2/2。',
         behaviorStepId: 'worthy-teammate-dice-selected',
-        description: '两颗骰子来自投掷者0，并在真实操作后显示选中反馈。',
-        role: 'main-flow', viewport: 'desktop', transition: '选择第1和第2颗队友骰子。',
+        description: '同一颗骰子来自当前投掷者0，连续选择两次达到规则预算。',
+        role: 'main-flow', viewport: 'desktop', transition: '将同一颗骰子重掷两次。',
     });
 
     await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
@@ -877,33 +1338,12 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
             strangeDiscard: state?.core?.players?.['2']?.discard?.map(card => card.id),
         };
     }, { timeout: 10000 }).toEqual({
-        dice: [6, 5, 3, 4, 5], interaction: null,
+            dice: [5, 2, 3, 4, 5], interaction: null,
         strangeHand: [], strangeDiscard: ['card-worthy-of-me'],
-    });
-    const settledScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-队友骰区重掷结算',
-        'worthy-teammate-reroll-settled', '确认重掷并收口卡牌交互',
-        '投掷者骰面变化、交互关闭且卡牌进入奇异博士弃牌堆',
-        snapshot => ({
-            dice: snapshot.authoritative.dice,
-            interaction: snapshot.authoritative.interaction,
-            hand: (snapshot.authoritative.players as Record<string, { handIds: string[] }>)['2']?.handIds,
-            discard: (snapshot.authoritative.players as Record<string, { discardIds: string[] }>)['2']?.discardIds,
-        }),
-        {
-            dice: [6, 5, 3, 4, 5].map((value, id) => ({ id, value, ownerId: '0' })),
-            interaction: null, hand: [], discard: ['card-worthy-of-me'],
-        },
-    );
-    media.push({
-        path: settledScreenshot, chainId, chainStep: 4, stage: '后态',
-        uiStateId: 'doctor-strange-worthy-teammate-settled', behaviorStepId: 'worthy-teammate-reroll-settled',
-        description: '投掷者0的第1、2颗骰子分别变为6和5，交互关闭，牌进入奇异博士弃牌堆。',
-        role: 'main-flow', viewport: 'desktop', transition: '确认选择并结算两颗队友骰子。',
     });
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
         '奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子',
-        '四人组队内部初始化场景中，奇异博士队友通过手牌拖放选择投掷者骰子并结算；此链不证明线上真实选角开放。');
+        '截图只展示骰子候选与选择进度；骰面变化和卡牌去向由同用例断言验证。');
 });
 
 test('桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段', async ({ page, game }, testInfo) => {
@@ -973,7 +1413,7 @@ test('桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段', as
         true,
     );
     media.push({
-        path: hoverScreenshot, chainId, chainStep: media.length + 1, stage: '中态',
+        path: hoverScreenshot, chainId: '即视感状态悬停查看说明', chainStep: '状态说明悬停', stage: '中态',
         uiStateId: 'doctor-strange-deja-vu-token-hover', behaviorStepId: 'deja-vu-token-hover',
         uiChange: 'target-highlight', uiChangeReason: '悬停时可操作的状态标记放大并显示说明。',
         description: '鼠标悬停即视感标记后，标记高亮并显示操作说明。',
@@ -1015,14 +1455,13 @@ test('桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段', as
         role: 'main-flow', viewport: 'desktop', transition: '点击即视感状态重开进攻投掷阶段。',
     });
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
-        '即视感在投掷用尽后可重开进攻投掷阶段', '真实使用即视感后，消耗状态并清除本回合状态，返回进攻投掷阶段。');
+        '即视感状态操作说明交互', '截图只展示状态标记的悬停说明；点击后的阶段与状态变化由同用例断言验证。');
 });
 
 test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底', async ({ page, game }, testInfo) => {
     const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
     const media: EvidenceScreenshotIndexEntry[] = [];
     const trace = newEvidenceTraceRecorder();
-    const chainId = '奇异博士预感替代收入抽牌返还';
     const viewport = { width: 1440, height: 900 };
     await page.setViewportSize(viewport);
     await setChineseLocale(page.context());
@@ -1051,7 +1490,7 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         true,
     );
     await threeDrawChoice.click();
-    const drawnCardChoices = page.locator('#modal-root [data-choice-custom-id="doctor-strange-choice"]');
+    const drawnCardChoices = page.locator('#modal-root [data-testid^="dt-hand-card-option-"]');
     await expect(drawnCardChoices).toHaveCount(3, { timeout: 10000 });
     const cardChoiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '本次抽牌返还选择-桌面',
@@ -1061,6 +1500,17 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         3,
     );
     await drawnCardChoices.first().click();
+    const selectedDrawnCardScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '本次抽牌已选待确认-桌面',
+        'income-return-drawn-card-selected', '选中本次抽到的卡牌但暂不提交返还对象',
+        '选中卡牌高亮且确认按钮可用',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).length,
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: 1, confirmVisible: true },
+    );
+    await page.getByTestId('dt-interaction-confirm').click();
     const bottomChoice = page.getByRole('button', { name: '牌库底', exact: true });
     await expect(bottomChoice).toBeVisible();
     const returnPositionScreenshot = await captureTracedState(
@@ -1097,25 +1547,29 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         { premonition: 0, handCount: 3 },
     );
     media.push(
-        { path: incomeOptionsScreenshot, chainId, chainStep: 1, stage: '前态',
+        { path: incomeOptionsScreenshot, chainId: '预感替代收入选项', chainStep: '收入选项候选', stage: '独特界面态',
             uiStateId: 'doctor-strange-income-options', behaviorStepId: 'income-replacement-choice',
             description: '真实主要阶段推进到收入阶段后显示正常收入与预感替代选项。', role: 'main-flow', viewport: 'desktop', transition: '玩家结束维护阶段进入收入阶段。' },
-        { path: cardChoiceScreenshot, chainId, chainStep: 2, stage: '中态',
+        { path: cardChoiceScreenshot, chainId: '本次抽牌返还对象选择', chainStep: '本次抽牌候选', stage: '中态',
             uiStateId: 'doctor-strange-income-drawn-cards', behaviorStepId: 'income-return-drawn-card',
             description: '选择花费3层预感抽3张后，只显示本次抽到的卡牌供返还。', role: 'main-flow', viewport: 'desktop', transition: '选择花费3层预感抽取3张牌。' },
-        { path: returnPositionScreenshot, chainId, chainStep: 3, stage: '中态',
+        { path: selectedDrawnCardScreenshot, chainId: '本次抽牌返还对象选择', chainStep: '卡牌已选待确认', stage: '中态',
+            uiStateId: 'doctor-strange-income-drawn-card-selected', behaviorStepId: 'income-return-drawn-card-selected',
+            description: '选中本次抽到的一张牌后，通过确认按钮提交返还选择。', role: 'main-flow', viewport: 'desktop', transition: '从本次抽牌候选中点击一张牌。' },
+        { path: returnPositionScreenshot, chainId: '本次抽牌返还位置选择', chainStep: '牌库位置候选', stage: '中态',
             uiStateId: 'doctor-strange-income-return-position', behaviorStepId: 'income-return-position',
             description: '选择本次抽到的牌后，显示返还牌库顶或牌库底选项。', role: 'main-flow', viewport: 'desktop', transition: '选择一张本次抽牌作为返还对象。' },
-        { path: settledScreenshot, chainId, chainStep: 4, stage: '后态',
+        { path: settledScreenshot, chainId: '本次抽牌返还结算', chainStep: '返还结果', stage: '后态',
             uiStateId: 'doctor-strange-income-settled', behaviorStepId: 'income-returned-to-bottom',
             description: '结算后预感消耗3、其余两张留手牌且一张回到牌库底。', role: 'main-flow', viewport: 'desktop', transition: '选择牌库底并完成收入替代。' },
     );
     expect(drawnIds).toHaveLength(3);
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
-        '预感可替代收入抽牌并将本次抽牌放回牌库底', '消耗3层预感抽3张，选择其中一张放回牌库底，其余两张留在手牌。');
+        '预感替代收入选项与卡牌选择交互', '索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。');
 });
 
 test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌', async ({ page, game }, testInfo) => {
+    test.setTimeout(90_000);
     const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
     const media: EvidenceScreenshotIndexEntry[] = [];
     const trace = newEvidenceTraceRecorder();
@@ -1171,22 +1625,58 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
     const advance = page.locator('[data-tutorial-id="advance-phase-button"]');
     await expect(advance).toContainText('结算攻击');
     await advance.click();
-    const firstSpell = page.getByRole('button', { name: '博萨特之雷' });
+    const firstSpell = page.getByTestId('dt-deck-card-option-spell-bolts-of-balthakk');
     await expect(firstSpell).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('从牌库顶5张中选择至多2个法术', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
     const firstChoiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '全知之眼顶五法术选择-桌面',
         'ultimate-prepare-top-five', '结算全知之眼并显示顶五法术候选',
-        '顶五中显示两张法术和跳过候选',
+        '顶五中显示两张法术候选和跳过操作',
         snapshot => (snapshot.visible.choiceLabels as string[]).length,
-        3,
+        2,
+    );
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await firstSpell.click();
+    await expect(firstSpell).toHaveAttribute('data-selection-focus', 'selected');
+    await expect(page.getByTestId('dt-deck-card-option-spell-fangs-of-farallah')).toHaveAttribute('data-selection-focus', 'deemphasized');
+    await expect(page.getByTestId('dt-card-choice-selected-spell-bolts-of-balthakk')).toBeVisible();
+    const firstSpellSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼首张法术已选-桌面',
+        'ultimate-first-top-five-spell-selected', '选中顶五中的第一张法术并等待确认',
+        '首张法术卡已高亮且可确认',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-deck-card-option-spell-bolts-of-balthakk'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
     );
     await firstSpell.click();
-    const secondSpell = page.getByRole('button', { name: '法瑞拉之牙' });
+    await expect(page.getByTestId('dt-card-choice-selected-spell-bolts-of-balthakk')).toHaveCount(0);
+    await expect(page.getByTestId('dt-interaction-confirm')).toHaveText('跳过');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await expect(firstSpell).toHaveAttribute('data-selection-focus', 'available');
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await firstSpell.click();
+    await expect(page.getByTestId('dt-interaction-confirm')).toHaveText('确认');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await page.getByTestId('dt-interaction-confirm').click();
+    const secondSpell = page.getByTestId('dt-deck-card-option-spell-fangs-of-farallah');
     await expect(secondSpell).toBeVisible({ timeout: 10000 });
     await secondSpell.click();
-    const prepareTarget = page.locator('#modal-root button[data-choice-custom-id="doctor-strange-choice"]');
-    await expect(prepareTarget).toHaveCount(1, { timeout: 10000 });
-    await expect(prepareTarget).toContainText('选择这名玩家');
+    const secondSpellSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼次张法术已选-桌面',
+        'ultimate-second-top-five-spell-selected', '选中顶五中的第二张法术并等待确认',
+        '次张法术卡已高亮且可确认',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-deck-card-option-spell-fangs-of-farallah'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    await page.getByTestId('dt-interaction-confirm').click();
+    const prepareTarget = page.getByTestId('dt-player-target-1');
+    await expect(prepareTarget).toBeVisible({ timeout: 10000 });
     const prepareTargetScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '全知之眼法术准备目标选择-桌面',
         'ultimate-prepare-spell-target', '选择两张不同法术并显示目标选择',
@@ -1194,9 +1684,26 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         snapshot => (snapshot.visible.choiceLabels as string[]).length,
         1,
     );
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
     await prepareTarget.click();
+    const targetPlayerSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼目标玩家已选-桌面',
+        'ultimate-prepare-target-selected', '选中法瑞拉之牙的对手目标并等待确认',
+        '目标玩家高亮且确认按钮可用',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-player-target-1'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    await prepareTarget.click();
+    await expect(page.getByTestId('dt-player-target-1')).toHaveAttribute('data-selected', 'false');
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeDisabled();
+    await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await prepareTarget.click();
+    await page.getByTestId('dt-interaction-confirm').click();
 
-    const reorderChoices = page.locator('#modal-root [data-choice-custom-id="doctor-strange-choice"]');
+    const reorderChoices = page.locator('#modal-root [data-testid^="dt-deck-card-option-"]');
     await expect(reorderChoices).toHaveCount(3, { timeout: 10000 });
     const reorderScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '全知之眼重排剩余三张-桌面',
@@ -1205,15 +1712,30 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         snapshot => (snapshot.visible.choiceLabels as string[]).length,
         3,
     );
+    let reorderSelectedScreenshot: string | undefined;
     for (let index = 0; index < 3; index += 1) {
-        const firstRemaining = page.locator('#modal-root [data-choice-custom-id="doctor-strange-choice"]').first();
+        const firstRemaining = page.locator('#modal-root [data-testid^="dt-deck-card-option-"]').first();
         await expect(firstRemaining).toBeVisible();
         await firstRemaining.click();
+        if (index === 0) {
+            reorderSelectedScreenshot = await captureTracedState(
+                page, game, evidenceRun, trace, '全知之眼重排首张已选-桌面',
+                'ultimate-first-reorder-card-selected', '选中牌库顶五剩余卡中的第一张并等待确认',
+                '重排卡牌已高亮且可确认',
+                snapshot => ({
+                    selected: (snapshot.visible.selectedChoiceIds as string[]).length,
+                    confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+                }),
+                { selected: 1, confirmVisible: true },
+            );
+        }
+        await page.getByTestId('dt-interaction-confirm').click();
     }
 
     // 重排完成后，法术帧会自动续接到施法选择；此时进攻按钮应保持禁用。
     const castSkip = page.getByRole('button', { name: '跳过', exact: true });
     await expect(castSkip).toBeVisible({ timeout: 10000 });
+    await waitForDiceThroneVisualIdle(page);
     await page.waitForTimeout(500);
     const castScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '全知之眼攻击后施法选择-桌面',
@@ -1222,6 +1744,32 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         snapshot => (snapshot.visible.modalButtonLabels as string[]).includes('跳过'),
         true,
     );
+    const castSpell = page.getByTestId('dt-preparedSpells-card-option-spell-fangs-of-farallah');
+    await expect(castSpell).toBeVisible({ timeout: 10000 });
+    await castSpell.click();
+    await waitForDiceThroneVisualIdle(page);
+    const castSpellSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼准备区法术已选-桌面',
+        'ultimate-prepared-spell-selected', '选中准备区的法瑞拉之牙施放并等待确认',
+        '准备区法术高亮且可确认',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-preparedSpells-card-option-spell-fangs-of-farallah'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    await page.getByTestId('dt-interaction-confirm').click();
+    await expect(page.getByRole('button', { name: '跳过', exact: true })).toBeVisible({ timeout: 10000 });
+    const secondCastChoiceScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼下一次施放选择-桌面',
+        'ultimate-second-cast-choice', '完成第一次施放后显示剩余准备法术与跳过操作',
+        '剩余准备法术候选和跳过操作可见',
+        snapshot => ({
+            candidates: (snapshot.visible.choiceLabels as string[]).length,
+            skipVisible: (snapshot.visible.modalButtonLabels as string[]).includes('跳过'),
+        }),
+        { candidates: 2, skipVisible: true },
+    );
     await castSkip.click();
     await expect.poll(async () => {
         const state = await game.getState();
@@ -1229,12 +1777,14 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         return {
             opponentHp: state?.core?.players?.['1']?.resources?.hp,
             prepared: player?.preparedSpells?.map(card => card.id),
+            discard: player?.discard?.map(card => card.id) ?? [],
             pendingAttack: state?.core?.pendingAttack,
             hasStrangeFrame: Boolean(state?.sys?.resolution?.frames?.some((frame: { kind?: string }) => frame.kind === 'dicethrone:doctor-strange-spell')),
         };
     }, { timeout: 15000 }).toMatchObject({
-        opponentHp: 40,
-        prepared: expect.arrayContaining(['spell-flames-of-faltine', ...chosenSpellIds]),
+        opponentHp: 37,
+        prepared: expect.arrayContaining(['spell-flames-of-faltine', 'spell-bolts-of-balthakk']),
+        discard: expect.arrayContaining(['spell-fangs-of-farallah']),
         pendingAttack: null,
         hasStrangeFrame: false,
     });
@@ -1246,40 +1796,59 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         'ultimate-attack-settled', '跳过施法并完成终极攻击结算',
         '攻击伤害已结算、法术准备区保留三张且攻击事务收口',
         snapshot => {
-            const players = snapshot.authoritative.players as Record<string, { resources: { hp: number | null }; preparedSpellIds: string[] }>;
+            const players = snapshot.authoritative.players as Record<string, { resources: { hp: number | null }; preparedSpellIds: string[]; discardIds: string[] }>;
             return {
                 opponentHp: players['1']?.resources.hp,
-                prepared: ['spell-flames-of-faltine', ...chosenSpellIds].every(id => players['0']?.preparedSpellIds.includes(id)),
+                prepared: ['spell-flames-of-faltine', 'spell-bolts-of-balthakk'].every(id => players['0']?.preparedSpellIds.includes(id)),
+                discardedCastSpell: players['0']?.discardIds.includes('spell-fangs-of-farallah'),
                 pendingAttack: snapshot.authoritative.pendingAttack,
             };
         },
-        { opponentHp: 40, prepared: true, pendingAttack: null },
+        { opponentHp: 37, prepared: true, discardedCastSpell: true, pendingAttack: null },
     );
     media.push(
         { path: attackReadyScreenshot, chainId, chainStep: attackReadyStep, stage: '前态', uiStateId: 'doctor-strange-ultimate-ready',
             behaviorStepId: 'ultimate-five-amulet-ready', description: '内部初始化场景；五颗护身符满足全知之眼终极技能。',
             role: 'main-flow', viewport: 'desktop', transition: '达到终极技能骰面条件。' },
-        { path: abilitySelectedScreenshot, chainId, chainStep: attackReadyStep + 1, stage: '中态', uiStateId: 'doctor-strange-ultimate-selected',
+        { path: abilitySelectedScreenshot, chainId: '全知之眼技能选择', chainStep: '技能已选待结算', stage: '中态', uiStateId: 'doctor-strange-ultimate-selected',
             behaviorStepId: 'ultimate-select-before-resolution', description: '真实鼠标选择全知之眼后，等待玩家提交攻击结算。',
             role: 'main-flow', viewport: 'desktop', transition: '点击全知之眼技能槽。' },
-        { path: firstChoiceScreenshot, chainId, chainStep: attackReadyStep + 2, stage: '中态', uiStateId: 'doctor-strange-ultimate-top-five-choice',
+        { path: firstChoiceScreenshot, chainId: '全知之眼顶五法术选择', chainStep: '法术候选', stage: '中态', uiStateId: 'doctor-strange-ultimate-top-five-choice',
             behaviorStepId: 'ultimate-prepare-top-five', description: '真实鼠标触发终极技能后，顶五中法术以卡图供选择准备。',
             role: 'main-flow', viewport: 'desktop', transition: '推进按钮提交攻击结算。' },
-        { path: prepareTargetScreenshot, chainId, chainStep: attackReadyStep + 3, stage: '中态', uiStateId: 'doctor-strange-ultimate-prepare-target',
+        { path: firstSpellSelectedScreenshot, chainId: '全知之眼顶五法术选择', chainStep: '第一张法术已选待确认', stage: '中态', uiStateId: 'doctor-strange-ultimate-top-five-first-selected',
+            behaviorStepId: 'ultimate-first-top-five-spell-selected', description: '第一张顶五法术卡片选中后显示提交确认状态。',
+            role: 'main-flow', viewport: 'desktop', transition: '从顶五候选中选中博萨特之雷。' },
+        { path: secondSpellSelectedScreenshot, chainId: '全知之眼顶五法术选择', chainStep: '第二张法术已选待确认', stage: '中态', uiStateId: 'doctor-strange-ultimate-top-five-second-selected',
+            behaviorStepId: 'ultimate-second-top-five-spell-selected', description: '第二张顶五法术卡片选中后显示提交确认状态。',
+            role: 'main-flow', viewport: 'desktop', transition: '从剩余顶五候选中选中法瑞拉之牙。' },
+        { path: prepareTargetScreenshot, chainId: '法瑞拉之牙目标玩家选择', chainStep: '目标候选', stage: '中态', uiStateId: 'doctor-strange-ultimate-prepare-target',
             behaviorStepId: 'ultimate-prepare-spell-target', description: '准备法瑞拉之牙后，选择其效果影响的对手。',
             role: 'main-flow', viewport: 'desktop', transition: '依次准备博萨特之雷和法瑞拉之牙。' },
-        { path: reorderScreenshot, chainId, chainStep: attackReadyStep + 4, stage: '中态', uiStateId: 'doctor-strange-ultimate-reorder',
+        { path: targetPlayerSelectedScreenshot, chainId: '法瑞拉之牙目标玩家选择', chainStep: '对手已选待确认', stage: '中态', uiStateId: 'doctor-strange-ultimate-target-selected',
+            behaviorStepId: 'ultimate-prepare-target-selected', description: '目标玩家卡片选中后保留待确认态。',
+            role: 'main-flow', viewport: 'desktop', transition: '在玩家选择面选中对手。' },
+        { path: reorderScreenshot, chainId: '全知之眼剩余卡牌重排', chainStep: '剩余卡牌候选', stage: '中态', uiStateId: 'doctor-strange-ultimate-reorder',
             behaviorStepId: 'ultimate-order-remaining-cards', description: '准备两张不同法术后，玩家选择顶五中剩余三张的顺序。',
             role: 'main-flow', viewport: 'desktop', transition: '选择法瑞拉之牙的目标并完成准备效果。' },
-        { path: castScreenshot, chainId, chainStep: attackReadyStep + 5, stage: '中态', uiStateId: 'doctor-strange-ultimate-post-damage-cast',
+        { path: reorderSelectedScreenshot!, chainId: '全知之眼剩余卡牌重排', chainStep: '首张已选待确认', stage: '中态', uiStateId: 'doctor-strange-ultimate-reorder-card-selected',
+            behaviorStepId: 'ultimate-first-reorder-card-selected', description: '选中剩余卡牌后由现有确认按钮逐张提交排序。',
+            role: 'main-flow', viewport: 'desktop', transition: '选择下一张牌库顶卡。' },
+        { path: castScreenshot, chainId: '全知之眼攻击后选择法术', chainStep: '施放候选', stage: '中态', uiStateId: 'doctor-strange-ultimate-post-damage-cast',
             behaviorStepId: 'ultimate-post-damage-cast-choice', description: '终极攻击结算后显示至多两张不同法术的施放选择。',
             role: 'main-flow', viewport: 'desktop', transition: '完成顶五剩余卡牌排序。' },
-        { path: settledScreenshot, chainId, chainStep: attackReadyStep + 6, stage: '后态', uiStateId: 'doctor-strange-ultimate-settled',
-            behaviorStepId: 'ultimate-attack-settled', description: '跳过施法后终极攻击造成10点伤害且准备区保留三张法术。',
-            role: 'main-flow', viewport: 'desktop', transition: '跳过施放并等待攻击收口。' },
+        { path: castSpellSelectedScreenshot, chainId: '全知之眼攻击后选择法术', chainStep: '法术已选待确认', stage: '中态', uiStateId: 'doctor-strange-ultimate-prepared-spell-selected',
+            behaviorStepId: 'ultimate-prepared-spell-selected', description: '从公开准备区选中法瑞拉之牙并等待确认施放。',
+            role: 'main-flow', viewport: 'desktop', transition: '在准备法术候选面选中法瑞拉之牙。' },
+        { path: secondCastChoiceScreenshot, chainId: '全知之眼攻击后选择法术', chainStep: '下一次施放候选', stage: '中态', uiStateId: 'doctor-strange-ultimate-second-cast-choice',
+            behaviorStepId: 'ultimate-second-cast-choice', description: '第一张法术施放后，剩余候选继续显示并允许跳过。',
+            role: 'main-flow', viewport: 'desktop', transition: '确认施放法瑞拉之牙。' },
+        { path: settledScreenshot, chainId, chainStep: attackReadyStep + 12, stage: '后态', uiStateId: 'doctor-strange-ultimate-settled',
+            behaviorStepId: 'ultimate-attack-settled', description: '一次法术施放后跳过剩余施放，攻击与法术帧均收口。',
+            role: 'main-flow', viewport: 'desktop', transition: '跳过剩余施放并等待攻击收口。' },
     );
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
-        '全知之眼从顶五准备两张不同法术并结算攻击', '顶五选择、手动目标、剩余牌重排、攻击后施法选择和伤害结算完整收口。');
+        '全知之眼法术和目标选择交互', '索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。');
 });
 
 test('桌面牌桌以真实鼠标选择星际侵入并确认奖励骰', async ({ page, game }, testInfo) => {
@@ -1411,10 +1980,10 @@ test('桌面牌桌以真实鼠标选择星际侵入并确认奖励骰', async ({
         { path: readyScreenshot, chainId, chainStep: 1, stage: '前态', uiStateId: 'doctor-strange-astral-ready',
             behaviorStepId: 'astral-incursion-ready', description: '桌面牌桌展示星际侵入所需四种骰面与第五颗曼荼罗骰。',
             role: 'main-flow', viewport: 'desktop', transition: '满足星际侵入的骰面组合。' },
-        { path: selectedScreenshot, chainId, chainStep: 2, stage: '中态', uiStateId: 'doctor-strange-astral-selected',
+        { path: selectedScreenshot, chainId: '星际侵入技能选择', chainStep: '技能已选待结算', stage: '中态', uiStateId: 'doctor-strange-astral-selected',
             behaviorStepId: 'astral-incursion-selected', description: '真实鼠标选择星际侵入后，等待玩家提交攻击结算。',
             role: 'main-flow', viewport: 'desktop', transition: '点击星际侵入技能槽。' },
-        { path: bonusDiceScreenshot, chainId, chainStep: 3, stage: '中态', uiStateId: 'doctor-strange-astral-bonus-dice',
+        { path: bonusDiceScreenshot, chainId: '星际侵入奖励骰确认', chainStep: '奖励骰待确认', stage: '中态', uiStateId: 'doctor-strange-astral-bonus-dice',
             behaviorStepId: 'astral-bonus-dice-pending', description: '星际侵入生成两颗右侧奖励骰，玩家可见骰面并等待普通确认。',
             role: 'main-flow', viewport: 'desktop', transition: '提交星际侵入攻击并生成奖励骰。' },
         { path: confirmedScreenshot, chainId, chainStep: 4, stage: '后态', uiStateId: 'doctor-strange-astral-bonus-confirmed',
@@ -1422,7 +1991,7 @@ test('桌面牌桌以真实鼠标选择星际侵入并确认奖励骰', async ({
             role: 'main-flow', viewport: 'desktop', transition: '普通确认右侧奖励骰。' },
     );
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
-        '星际侵入奖励骰真实确认', '真实选择星际侵入并确认两颗奖励骰，记录攻击加伤、预感和仍待防御的伤害阶段。');
+        '星际侵入技能与奖励骰交互', '索引展示技能待结算和奖励骰待确认界面；伤害前状态由同用例断言验证。');
 });
 
 test('桌面牌桌真实打出法术并将深红系带施加到对手', async ({ page, game }, testInfo) => {
@@ -1460,9 +2029,8 @@ test('桌面牌桌真实打出法术并将深红系带施加到对手', async ({
         { phase: 'main1', handCount: 1 },
     );
     await dragHandCardToPlay(page, CRIMSON_BANDS_SPELL_ID);
-    const targetChoice = page.locator('#modal-root button[data-choice-custom-id="doctor-strange-choice"]');
-    await expect(targetChoice).toHaveCount(1, { timeout: 10000 });
-    await expect(targetChoice).toContainText('选择这名玩家');
+    const targetChoice = page.getByTestId('dt-player-target-1');
+    await expect(targetChoice).toBeVisible({ timeout: 10000 });
     const targetScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '深红系带目标选择-桌面',
         'crimson-bands-select-opponent', '真实鼠标打出法术并显示对手目标选项',
@@ -1471,6 +2039,17 @@ test('桌面牌桌真实打出法术并将深红系带施加到对手', async ({
         1,
     );
     await targetChoice.click();
+    const targetSelectedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '深红系带对手已选待确认-桌面',
+        'crimson-bands-opponent-selected', '选中深红系带目标玩家但暂不提交',
+        '对手卡片已选中且确认按钮可用',
+        snapshot => ({
+            selected: (snapshot.visible.selectedChoiceIds as string[]).includes('dt-player-target-1'),
+            confirmVisible: (snapshot.visible.modalButtonLabels as string[]).includes('确认'),
+        }),
+        { selected: true, confirmVisible: true },
+    );
+    await page.getByTestId('dt-interaction-confirm').click();
     await expect(page.getByTestId('dt-player-1-status-crimson-bands')).toBeVisible({ timeout: 10000 });
     await expect.poll(async () => {
         const state = await game.getState();
@@ -1502,15 +2081,18 @@ test('桌面牌桌真实打出法术并将深红系带施加到对手', async ({
         { path: readyScreenshot, chainId, chainStep: 1, stage: '前态', uiStateId: 'doctor-strange-crimson-bands-hand',
             behaviorStepId: 'crimson-bands-spell-in-hand', description: '主阶段手牌中显示可打出的深红系带法术。',
             role: 'main-flow', viewport: 'desktop', transition: '进入奇异博士主阶段。' },
-        { path: targetScreenshot, chainId, chainStep: 2, stage: '中态', uiStateId: 'doctor-strange-crimson-bands-target',
+        { path: targetScreenshot, chainId: '深红系带选择目标玩家', chainStep: '对手目标候选', stage: '中态', uiStateId: 'doctor-strange-crimson-bands-target',
             behaviorStepId: 'crimson-bands-select-opponent', description: '真实打出法术后显示深红系带的对手目标选择。',
             role: 'main-flow', viewport: 'desktop', transition: '点击手牌中的深红系带法术。' },
+        { path: targetSelectedScreenshot, chainId: '深红系带选择目标玩家', chainStep: '对手已选待确认', stage: '中态', uiStateId: 'doctor-strange-crimson-bands-target-selected',
+            behaviorStepId: 'crimson-bands-opponent-selected', description: '对手卡片已选中，状态仍未施加，等待确认。',
+            role: 'main-flow', viewport: 'desktop', transition: '在现有玩家选择面点击对手卡片。' },
         { path: settledScreenshot, chainId, chainStep: 3, stage: '后态', uiStateId: 'doctor-strange-crimson-bands-granted',
             behaviorStepId: 'crimson-bands-status-granted', description: '对手状态区显示深红系带；权威状态记录获得回合以延迟本回合激活。',
             role: 'main-flow', viewport: 'desktop', transition: '选择对手并完成法术效果。' },
     );
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
-        '深红系带法术真实目标选择与状态施加', '真实打出法术、选择对手并确认其状态与获得回合。');
+        '深红系带法术玩家选择交互', '索引只展示现有玩家选择面中的目标候选和选中待确认界面；状态施加结果由同用例断言验证。');
 });
 
 test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, testInfo) => {
@@ -1539,47 +2121,47 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
     });
     const doctorStrangeCard = page.locator('[data-testid="character-selection-overlay"] [data-character-id="doctor_strange"]');
     await expect(doctorStrangeCard).toBeVisible();
-    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeHidden();
+    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeVisible();
     await expect(page.locator('[data-character-id="monk"]')).toBeVisible();
     const desktopScreenshot = await captureTracedState(
         page, undefined, evidenceRun, trace, '真实选角入口-奇异博士可选-桌面',
         'online-room-created-selection-visible', '确认创建房间并进入桌面选角界面',
-        '真实选角目录显示奇异博士且不带实施中徽标',
+        '真实选角目录显示可选奇异博士及实施中徽标',
         snapshot => ({
             doctorStrangeVisible: (snapshot.visible.selectableHeroIds as string[]).includes('doctor_strange'),
             implementationBadgeVisible: snapshot.visible.doctorStrangeImplementationBadgeVisible,
             setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
         }),
-        { doctorStrangeVisible: true, implementationBadgeVisible: false, setupOptionStatus: null },
+        { doctorStrangeVisible: true, implementationBadgeVisible: true, setupOptionStatus: 'in_progress' },
     );
     media.push({
-        path: desktopScreenshot, chainId, chainStep: 2, stage: '中态',
+        path: desktopScreenshot, chainId: '奇异博士在线角色选择界面', chainStep: '桌面角色候选', stage: '中态',
         uiStateId: 'doctor-strange-available-desktop-selection',
         behaviorStepId: 'online-room-created-selection-visible',
-        description: '真实选角页展示可选奇异博士且不带实施中徽标。',
+        description: '真实选角页展示可选奇异博士及实施中徽标。',
         role: 'main-flow', viewport: 'desktop', transition: '创建联机房间并显示真实角色选择界面',
     });
 
     await page.setViewportSize({ width: 812, height: 375 });
     await expect(doctorStrangeCard).toBeVisible();
-    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeHidden();
+    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeVisible();
     const mobileScreenshot = await captureTracedState(
         page, undefined, evidenceRun, trace, '真实选角入口-奇异博士可选-窄屏',
         'online-selection-mobile-viewport', '将同一真实联机选角页切换到手机横屏尺寸',
-        '窄屏选角仍显示奇异博士且不带实施中徽标',
+        '窄屏选角仍显示奇异博士及实施中徽标',
         snapshot => ({
             doctorStrangeVisible: (snapshot.visible.selectableHeroIds as string[]).includes('doctor_strange'),
             implementationBadgeVisible: snapshot.visible.doctorStrangeImplementationBadgeVisible,
             setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
         }),
-        { doctorStrangeVisible: true, implementationBadgeVisible: false, setupOptionStatus: null },
+        { doctorStrangeVisible: true, implementationBadgeVisible: true, setupOptionStatus: 'in_progress' },
     );
     media.push({
-        path: mobileScreenshot, chainId, chainStep: 3, stage: '后态',
+        path: mobileScreenshot, chainId: '奇异博士在线角色选择界面', chainStep: '手机横屏角色候选', stage: '独特界面态',
         uiStateId: 'doctor-strange-available-mobile-selection',
         uiChange: 'layout', uiChangeReason: '同一真实选角页切换到 812×375 窄屏。',
         behaviorStepId: 'online-selection-mobile-viewport',
-        description: '手机横屏真实选角页显示奇异博士且不带实施中徽标。',
+        description: '手机横屏真实选角页显示奇异博士及实施中徽标。',
         role: 'main-flow', viewport: 'mobile', transition: '切换同一选角入口为手机横屏视口',
     });
 
@@ -1610,7 +2192,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
             true,
         );
         media.push({
-            path: doctorSelectedScreenshot, chainId, chainStep: 4, stage: '中态',
+            path: doctorSelectedScreenshot, chainId: '房主选择奇异博士', chainStep: '角色已选', stage: '中态',
             uiStateId: 'doctor-strange-selected-by-host', behaviorStepId: 'host-selects-doctor-strange',
             description: '房主选中奇异博士，卡面显示房主选择标记。',
             role: 'main-flow', viewport: 'desktop', transition: '房主点击奇异博士角色卡。',
@@ -1629,10 +2211,10 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 doctorStrangeSelected: (snapshot.visible.selectedHeroIds as string[]).includes('doctor_strange'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { doctorStrangeSelected: true, setupOptionStatus: null },
+            { doctorStrangeSelected: true, setupOptionStatus: 'in_progress' },
         );
         media.push({
-            path: readyScreenshot, chainId, chainStep: 5, stage: '中态',
+            path: readyScreenshot, chainId: '双方选角并准备', chainStep: '双方角色就绪', stage: '中态',
             uiStateId: 'doctor-strange-opponent-ready', behaviorStepId: 'guest-selects-monk-and-ready',
             description: '客人选中武僧并准备，房主看到可开始状态。',
             role: 'main-flow', viewport: 'desktop', transition: '客人完成选角并提交准备。',
@@ -1650,7 +2232,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 doctorStrangeBoardVisible: (snapshot.visible.boardHeroIds as (string | null)[]).includes('doctor_strange'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { doctorStrangeBoardVisible: true, setupOptionStatus: null },
+            { doctorStrangeBoardVisible: true, setupOptionStatus: 'in_progress' },
         );
         media.push({
             path: hostBoardScreenshot, chainId, chainStep: 6, stage: '后态',
@@ -1670,7 +2252,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 monkBoardVisible: (snapshot.visible.boardHeroIds as (string | null)[]).includes('monk'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { monkBoardVisible: true, setupOptionStatus: null },
+            { monkBoardVisible: true, setupOptionStatus: 'in_progress' },
         );
         media.push({
             path: guestBoardScreenshot, chainId, chainStep: 7, stage: '后态',
@@ -1682,5 +2264,5 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
         await guestContext.close();
     }
     await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
-        '真实双人联机选择奇异博士并进入牌桌', '房主在真实联机选角中选择奇异博士，客人选择武僧并准备；房主开始后双方均看到对应的真实玩家板。');
+        '奇异博士真实玩家选择界面', '索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。');
 });

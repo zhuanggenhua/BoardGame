@@ -166,7 +166,7 @@ const advanceAttackAndBattleTutorialToPendingBattle = (
 
 describe('qidahen tutorial flow', () => {
     it('重构过的教程章节递增进度 revision，避免恢复旧步骤快照', () => {
-        expect(QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.revision).toBe(15);
+        expect(QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.revision).toBe(18);
         for (const tutorialId of [
             'wheel-shared-cost',
             'wheel-recruit-train',
@@ -178,12 +178,12 @@ describe('qidahen tutorial flow', () => {
         }
     });
 
-    it('正式开局先让玩家看辽东与叶赫部，再进入有局面用途的轮盘行动', () => {
+    it('正式开局先让玩家看辽北与叶赫部，再进入有局面用途的轮盘行动', () => {
         const steps = QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.steps ?? [];
         expect(steps[0]).toMatchObject({ id: 'frontier', highlightTarget: 'qidahen-map-layer' });
         expect(steps[1]).toMatchObject({
             id: 'select-farm-region',
-            highlightTarget: 'qidahen-map-region-focus-city-region-15-liaodong',
+            highlightTarget: 'qidahen-map-region-focus-city-region-15',
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         });
     });
@@ -272,7 +272,7 @@ describe('qidahen tutorial flow', () => {
         expect(collectNextTutorialChain('year-and-characters')).toEqual([]);
         expect(collectNextTutorialChain('korea-and-special-map-rules')).toEqual([]);
         expect(stepIdsOf('basic-opening')).toEqual([
-            'frontier', 'select-farm-region', 'wheel-move', 'wheel-opponent', 'wheel-result',
+            'frontier', 'select-farm-region', 'wheel-move', 'wheel-opponent',
             'choose-raid', 'action-branch-recovery', 'choose-target', 'pay-raid', 'payment-branch-recovery', 'confirm-raid-payment',
             'battle-open', 'play-tactic', 'resolve-battle', 'battle-branch-recovery', 'battle-result',
             'occupy', 'occupation-branch-recovery', 'finish',
@@ -356,8 +356,8 @@ describe('qidahen tutorial flow', () => {
     it('教程结果步骤聚焦真实结果承接物，轮盘落点优先聚焦当前行动标记', () => {
         const allSteps = Object.values(QIDAHEN_TEST_TUTORIALS.tutorials)
             .flatMap((tutorial) => tutorial.manifest.steps);
-        const wheelResult = allSteps.find((step) => step.id === 'wheel-result');
-        expect(wheelResult?.highlightTarget).toBe('qidahen-season-summary');
+        expect(QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.steps
+            .some((step) => step.id === 'wheel-result')).toBe(false);
         expect(QIDAHEN_TEST_TUTORIALS.tutorials['basic-opening']?.manifest.steps
             .find((step) => step.id === 'choose-target')?.highlightTarget).toBe('qidahen-map-region-focus-city-region-7');
         const seasonSummarySteps = allSteps.filter((step) => step.highlightTarget === 'qidahen-season-summary');
@@ -427,13 +427,6 @@ describe('qidahen tutorial flow', () => {
         expect(allSteps.find((step) => step.id === 'result'
             && step.content === 'game-qidahen:tutorial.wheelReclaim.steps.result'))
             .toEqual(expect.objectContaining({
-                avoidOverlapSelectors: expect.arrayContaining([
-                    '[data-testid="qidahen-actions-zone"]',
-                ]),
-            }));
-        expect(allSteps.find((step) => step.id === 'wheel-result'))
-            .toEqual(expect.objectContaining({
-                position: 'left',
                 avoidOverlapSelectors: expect.arrayContaining([
                     '[data-testid="qidahen-actions-zone"]',
                 ]),
@@ -702,7 +695,7 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('result');
         expect((state.core as any).actionWheelPosition).toBe('wheel-reclaim');
-        expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘开垦');
+        expect((state.core as any).lastSeasonSummary?.title).toBe('开垦');
         expect((state.core as any).regions.find((region: any) => region.id === 'city-region-24')?.population).toBe(7);
     });
 
@@ -737,7 +730,7 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('result');
         expect((state.core as any).actionWheelPosition).toBe('wheel-military-farm');
-        expect((state.core as any).lastSeasonSummary?.title).toBe('轮盘军屯');
+        expect((state.core as any).lastSeasonSummary?.title).toBe('军屯');
         expect((state.core as any).regions.find((region: any) => region.id === 'city-region-24')?.troops).toBe(3);
         expect((state.core as any).factions.ming.handCount).toBe(handBefore + 2);
     });

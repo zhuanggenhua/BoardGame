@@ -120,6 +120,7 @@ export function useEventCardModes({
         targetPosition?: CellCoord;
         summonPosition?: CellCoord;
         position?: CellCoord;
+        newPosition?: CellCoord;
       } | undefined;
       const target = value?.targetPosition ?? value?.summonPosition ?? value?.position ?? value?.newPosition;
       return !!target && target.row === pos.row && target.col === pos.col;

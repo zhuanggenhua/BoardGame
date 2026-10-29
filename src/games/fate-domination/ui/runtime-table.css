@@ -52,10 +52,18 @@
 .fd-self-seals:disabled { cursor:default; }
 .fd-self-identity { display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%; text-align:left; background:transparent; border-left:3px solid #c7a74e; border-radius:0; padding:4px 0 4px 8px; text-shadow:0 2px 7px #000; }
 .fd-self-identity strong { display:block; font-size:14px; }
+.fd-self-character { position:relative; }
+.fd-master-abilities { position:absolute; left:calc(100% + 10px); bottom:0; display:flex; flex-direction:column; gap:7px; width:104px; max-height:min(260px,45dvh); overflow-y:auto; }
+.fd-master-ability { position:relative; }
+.fd-master-ability > button { width:100%; min-height:44px; padding:7px 9px; border:1px solid #b7a16b; border-radius:3px; background:#16211ff2; color:#f0dcaa; font-size:14px; text-align:left; white-space:nowrap; }
+.fd-master-ability > button[aria-disabled="true"] { color:#a6aaa0; border-color:#65716a; cursor:default; }
+.fd-master-ability > button:not([aria-disabled="true"]):hover { background:#364338; border-color:#f0d794; }
+.fd-master-ability > button:focus-visible { outline:2px solid #f0d794; outline-offset:2px; }
 .fd-self-identity small { display:block; margin-top:8px; font-size:12px; line-height:1.4; color:#d9cca7; white-space:normal; overflow-wrap:anywhere; }
 .fd-self-pile-info { position:absolute; left:calc(100% + 12px); top:0; white-space:nowrap; z-index:30; background:#111a17f5; padding:10px; font-size:12px; }
 /* 技能上方的推进槽向内避让全局离开按钮，保留两者独立的点击区域。 */
-.fd-phase-control { position:absolute; right:calc(var(--fd-hud-inline) + 64px); bottom:calc(var(--fd-hand-card-width,120px) * 214 / 148 + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:126px; }
+/* Anchored to the table, not the asynchronously sized skill-card zone. */
+.fd-phase-control { position:absolute; right:calc(var(--fd-hud-inline) + 64px); bottom:calc(var(--fd-hand-floor) + var(--fd-hand-card-width,120px) * 214 / 148 + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:126px; pointer-events:auto; }
 .fd-phase-control .fd-runtime-primary { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; width:79px; height:79px; border-radius:50%; border:3px solid #eed38a; background:#b9635b; box-shadow:0 4px 18px #0009; color:#f5efe5; font-size:15px; font-weight:800; }
 .fd-phase-control .fd-runtime-primary:disabled { filter:grayscale(.7); opacity:.5; cursor:not-allowed; }
 @media(max-width:1100px) {
@@ -103,7 +111,7 @@
 @media(max-width:1023px) and (orientation:landscape) {
  .fd-runtime-table { min-height:0; height:100%; }
  .fd-runtime-table { --fd-hud-bottom:0px; }
- .fd-runtime-player-rail { top:72px; height:188px; }
+ .fd-runtime-player-rail { top:64px; height:164px; }
  .fd-runtime-top { height:64px; padding:6px 12px; }
  .fd-runtime-top h1 { font-size:20px; }
  .fd-runtime-round { gap:8px; font-size:15px; }
@@ -113,8 +121,8 @@
  .fd-self-identity small { margin-top:4px; font-size:13px; }
  .fd-phase-copy small { font-size:12px; }
  .fd-phase-copy b { font-size:15px; }
- .fd-phase-control { flex-direction:row; align-items:center; width:max-content; max-width:calc(100% - 2 * var(--fd-hud-inline)); }
- .fd-phase-copy { max-width:160px; }
+ .fd-phase-control { right:calc(var(--fd-hud-inline) + 204px); flex-direction:column; align-items:center; width:100px; }
+ .fd-phase-copy { max-width:100px; text-align:center; }
  .fd-runtime-inspection.is-pinned .fd-inspection-close { top:4px; right:4px; width:48px; height:48px; }
 }
 

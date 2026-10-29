@@ -449,7 +449,7 @@ export function validateActionPlaySemantics(
     }
 
     if (typeof targetBaseIndex === 'number') {
-        const ongoingTarget = def.ongoingTarget ?? 'base';
+        const ongoingTarget = 'ongoingTarget' in def ? def.ongoingTarget ?? 'base' : 'base';
         if (ongoingTarget === 'base' && isOperationRestricted(core, targetBaseIndex, playerId, 'play_action')) {
             return { valid: false, error: '该基地禁止打出行动卡' };
         }

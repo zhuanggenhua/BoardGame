@@ -1,5 +1,8 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -962,7 +965,7 @@ function buildOwnDiscardCardOptions(
         }));
 }
 
-const vigilantesShiftPromptProgram = createPromptProgram<OwnDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+const vigilantesShiftPromptProgram = createPromptProgram<OwnDiscardPromptContext>({
     sourceId: 'vigilantes_shift',
     buildInteraction: (context) => {
         const options = buildOwnDiscardCardOptions(
@@ -1000,7 +1003,7 @@ const vigilantesShiftPromptProgram = createPromptProgram<OwnDiscardPromptContext
     },
 });
 
-const vigilantesStonefordPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+const vigilantesStonefordPromptProgram = createPromptProgram<ZhongguoPromptContext>({
     sourceId: 'vigilantes_stoneford',
     buildInteraction: (context) => {
         const options = (context.matchState.core.players[context.playerId]?.deck ?? [])
@@ -1056,7 +1059,7 @@ const vigilantesStonefordPromptProgram = createPromptProgram<ZhongguoPromptConte
     },
 });
 
-const discoUlDiscoLouPromptProgram = createPromptProgram<OwnDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+const discoUlDiscoLouPromptProgram = createPromptProgram<OwnDiscardPromptContext>({
     sourceId: 'disco_dancers_ul_disco_lou',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `disco_dancers_ul_disco_lou_${context.now}`,
@@ -1096,7 +1099,7 @@ function collectOwnInPlayMinionDefIds(state: SmashUpCore, playerId: PlayerId): S
     return new Set(collectOwnMinions(state, playerId).map(candidate => candidate.defId));
 }
 
-const discoStayinAlivePromptProgram = createPromptProgram<OwnDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+const discoStayinAlivePromptProgram = createPromptProgram<OwnDiscardPromptContext>({
     sourceId: 'disco_dancers_stayin_alive',
     buildInteraction: (context) => {
         const ownInPlayDefIds = collectOwnInPlayMinionDefIds(context.matchState.core, context.playerId);
@@ -1293,7 +1296,7 @@ function resolveSimpleMinionEffect(
     return { events: [] };
 }
 
-const simpleMinionEffectPromptProgram = createPromptProgram<SimpleMinionEffectContext, SmashUpCore, SmashUpEvent>({
+const simpleMinionEffectPromptProgram = createPromptProgram<SimpleMinionEffectContext>({
     sourceId: 'zhongguo_simple_minion_effect',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceDefId}_${context.now}`,
@@ -1325,7 +1328,7 @@ const simpleMinionEffectPromptProgram = createPromptProgram<SimpleMinionEffectCo
         resolveSimpleMinionEffect(state, context, value as MinionChoice | undefined, timestamp, random),
 });
 
-const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionContext, SmashUpCore, SmashUpEvent>({
+const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionContext>({
     sourceId: 'zhongguo_move_own_minion_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceDefId}_destination_${context.now}`,
@@ -1373,7 +1376,7 @@ const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionC
     },
 });
 
-const moveOwnMinionPromptProgram = createPromptProgram<MoveOwnMinionContext, SmashUpCore, SmashUpEvent>({
+const moveOwnMinionPromptProgram = createPromptProgram<MoveOwnMinionContext>({
     sourceId: 'zhongguo_move_own_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceDefId}_${context.now}`,
@@ -1399,17 +1402,16 @@ const moveOwnMinionPromptProgram = createPromptProgram<MoveOwnMinionContext, Sma
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 selectedMinionUid: selected.minionUid,
                 fromBaseIndex: selected.baseIndex,
-            },
-            nextProgram: moveOwnMinionDestinationPromptProgram,
+            }, moveOwnMinionDestinationPromptProgram),
         };
     },
 });
 
-const vigilantesDeathWisherPromptProgram = createPromptProgram<VigilantesDeathWisherContext, SmashUpCore, SmashUpEvent>({
+const vigilantesDeathWisherPromptProgram = createPromptProgram<VigilantesDeathWisherContext>({
     sourceId: 'vigilantes_death_wisher',
     buildInteraction: (context) => {
         const candidates = collectMinionsMatching(
@@ -1476,7 +1478,7 @@ const vigilantesDeathWisherPromptProgram = createPromptProgram<VigilantesDeathWi
     },
 });
 
-const vigilantesBrojakPromptProgram = createPromptProgram<VigilantesBrojakContext, SmashUpCore, SmashUpEvent>({
+const vigilantesBrojakPromptProgram = createPromptProgram<VigilantesBrojakContext>({
     sourceId: 'vigilantes_brojak',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `vigilantes_brojak_${context.now}`,
@@ -1542,7 +1544,7 @@ function collectTruckersFixItDiscardActions(state: SmashUpCore, playerId: Player
         .map(card => ({ cardUid: card.uid, defId: card.defId }));
 }
 
-const truckersFixItPromptProgram = createPromptProgram<TruckersFixItContext, SmashUpCore, SmashUpEvent>({
+const truckersFixItPromptProgram = createPromptProgram<TruckersFixItContext>({
     sourceId: 'truckers_fixin_to_fix_it',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_fixin_to_fix_it_${context.now}`,
@@ -1599,7 +1601,7 @@ function truckersFixIt(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const truckersRallyPromptProgram = createPromptProgram<ZhongguoPromptContext & { sourceBaseIndex: number }, SmashUpCore, SmashUpEvent>({
+const truckersRallyPromptProgram = createPromptProgram<ZhongguoPromptContext & { sourceBaseIndex: number }>({
     sourceId: 'truckers_rally',
     buildInteraction: (context) => {
         const candidates = collectMinionsMatching(context.matchState.core, (_minion, baseIndex) => baseIndex === context.sourceBaseIndex);
@@ -1643,7 +1645,7 @@ const truckersRallyPromptProgram = createPromptProgram<ZhongguoPromptContext & {
     },
 });
 
-const truckersTurnTheBeatAroundPenaltyPromptProgram = createPromptProgram<TruckersTurnTheBeatAroundContext, SmashUpCore, SmashUpEvent>({
+const truckersTurnTheBeatAroundPenaltyPromptProgram = createPromptProgram<TruckersTurnTheBeatAroundContext>({
     sourceId: 'truckers_turn_the_beat_around_penalty',
     buildInteraction: (context) => {
         const candidates = collectMinionsMatching(
@@ -1697,7 +1699,7 @@ const truckersTurnTheBeatAroundPenaltyPromptProgram = createPromptProgram<Trucke
     },
 });
 
-const truckersTurnTheBeatAroundBoostPromptProgram = createPromptProgram<TruckersTurnTheBeatAroundContext, SmashUpCore, SmashUpEvent>({
+const truckersTurnTheBeatAroundBoostPromptProgram = createPromptProgram<TruckersTurnTheBeatAroundContext>({
     sourceId: 'truckers_turn_the_beat_around',
     buildInteraction: (context) => {
         const candidates = collectMinionsMatching(
@@ -1729,17 +1731,16 @@ const truckersTurnTheBeatAroundBoostPromptProgram = createPromptProgram<Truckers
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 affectedMinionUid: selected.minionUid,
                 affectedBaseIndex: selected.baseIndex,
-            },
-            nextProgram: truckersTurnTheBeatAroundPenaltyPromptProgram,
+            }, truckersTurnTheBeatAroundPenaltyPromptProgram),
         };
     },
 });
 
-const truckersHighSpeedChaseBasePromptProgram = createPromptProgram<TruckersHighSpeedChaseContext, SmashUpCore, SmashUpEvent>({
+const truckersHighSpeedChaseBasePromptProgram = createPromptProgram<TruckersHighSpeedChaseContext>({
     sourceId: 'truckers_high_speed_chase_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_high_speed_chase_base_${context.now}`,
@@ -1790,7 +1791,7 @@ const truckersHighSpeedChaseBasePromptProgram = createPromptProgram<TruckersHigh
     },
 });
 
-const truckersHighSpeedChaseMinionPromptProgram = createPromptProgram<TruckersHighSpeedChaseContext, SmashUpCore, SmashUpEvent>({
+const truckersHighSpeedChaseMinionPromptProgram = createPromptProgram<TruckersHighSpeedChaseContext>({
     sourceId: 'truckers_high_speed_chase_minion',
     buildInteraction: (context) => {
         const ownMinions = context.matchState.core.bases[context.sourceBaseIndex]?.minions
@@ -1827,19 +1828,18 @@ const truckersHighSpeedChaseMinionPromptProgram = createPromptProgram<TruckersHi
         }
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp, {
                 sourceCardUid: context.sourceCardUid,
                 sourceBaseIndex: selected.baseIndex,
                 sourceControllerId: context.playerId,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
-            }),
-            nextProgram: truckersHighSpeedChaseBasePromptProgram,
+            }), truckersHighSpeedChaseBasePromptProgram),
         };
     },
 });
 
-const truckersDekotoraMinionsPromptProgram = createPromptProgram<TruckersDekotoraContext, SmashUpCore, SmashUpEvent>({
+const truckersDekotoraMinionsPromptProgram = createPromptProgram<TruckersDekotoraContext>({
     sourceId: 'truckers_dekotora_minions',
     buildInteraction: (context) => {
         const ownMinions = context.matchState.core.bases[context.sourceBaseIndex]?.minions
@@ -1910,7 +1910,7 @@ const truckersDekotoraMinionsPromptProgram = createPromptProgram<TruckersDekotor
     },
 });
 
-const truckersDekotoraBasePromptProgram = createPromptProgram<TruckersDekotoraContext, SmashUpCore, SmashUpEvent>({
+const truckersDekotoraBasePromptProgram = createPromptProgram<TruckersDekotoraContext>({
     sourceId: 'truckers_dekotora_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_dekotora_base_${context.now}`,
@@ -1945,16 +1945,15 @@ const truckersDekotoraBasePromptProgram = createPromptProgram<TruckersDekotoraCo
         }
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp, {
                 ...context,
                 targetBaseIndex: selected.baseIndex,
-            }),
-            nextProgram: truckersDekotoraMinionsPromptProgram,
+            }), truckersDekotoraMinionsPromptProgram),
         };
     },
 });
 
-const truckersCabOverPeteCardPromptProgram = createPromptProgram<TruckersCabOverPeteContext, SmashUpCore, SmashUpEvent>({
+const truckersCabOverPeteCardPromptProgram = createPromptProgram<TruckersCabOverPeteContext>({
     sourceId: 'truckers_cab_over_pete_card',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_cab_over_pete_card_${context.now}`,
@@ -2025,7 +2024,7 @@ const truckersCabOverPeteCardPromptProgram = createPromptProgram<TruckersCabOver
     },
 });
 
-const truckersCabOverPeteBasePromptProgram = createPromptProgram<TruckersCabOverPeteContext, SmashUpCore, SmashUpEvent>({
+const truckersCabOverPeteBasePromptProgram = createPromptProgram<TruckersCabOverPeteContext>({
     sourceId: 'truckers_cab_over_pete_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_cab_over_pete_base_${context.now}`,
@@ -2043,16 +2042,15 @@ const truckersCabOverPeteBasePromptProgram = createPromptProgram<TruckersCabOver
         if (selected?.baseIndex === undefined) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp, {
                 ...context,
                 targetBaseIndex: selected.baseIndex,
-            }),
-            nextProgram: truckersCabOverPeteCardPromptProgram,
+            }), truckersCabOverPeteCardPromptProgram),
         };
     },
 });
 
-const truckersHotwireBasePromptProgram = createPromptProgram<TruckersHotwireContext, SmashUpCore, SmashUpEvent>({
+const truckersHotwireBasePromptProgram = createPromptProgram<TruckersHotwireContext>({
     sourceId: 'truckers_hotwire_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_hotwire_base_${context.now}`,
@@ -2094,7 +2092,7 @@ const truckersHotwireBasePromptProgram = createPromptProgram<TruckersHotwireCont
     },
 });
 
-const truckersHotwireModePromptProgram = createPromptProgram<TruckersHotwireContext, SmashUpCore, SmashUpEvent>({
+const truckersHotwireModePromptProgram = createPromptProgram<TruckersHotwireContext>({
     sourceId: 'truckers_hotwire_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_hotwire_mode_${context.now}`,
@@ -2133,16 +2131,15 @@ const truckersHotwireModePromptProgram = createPromptProgram<TruckersHotwireCont
         }
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp, {
                 ...context,
                 actionMode: selected.mode,
-            }),
-            nextProgram: truckersHotwireBasePromptProgram,
+            }), truckersHotwireBasePromptProgram),
         };
     },
 });
 
-const truckersHotwireActionPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+const truckersHotwireActionPromptProgram = createPromptProgram<ZhongguoPromptContext>({
     sourceId: 'truckers_hotwire_action',
     buildInteraction: (context) => {
         const candidates = collectBaseOngoingActions(
@@ -2194,13 +2191,12 @@ const truckersHotwireActionPromptProgram = createPromptProgram<ZhongguoPromptCon
         });
         return {
             events: [],
-            context: nextContext,
-            nextProgram: modes.length === 1 ? truckersHotwireBasePromptProgram : truckersHotwireModePromptProgram,
+            continuation: createAbilityRuntimeContinuation(nextContext, modes.length === 1 ? truckersHotwireBasePromptProgram : truckersHotwireModePromptProgram),
         };
     },
 });
 
-const truckersElBandidoTakeControlPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+const truckersElBandidoTakeControlPromptProgram = createPromptProgram<ZhongguoPromptContext>({
     sourceId: 'truckers_el_bandido_take_control',
     buildInteraction: (context) => {
         const candidates = collectBaseOngoingActions(
@@ -2242,7 +2238,7 @@ const truckersElBandidoTakeControlPromptProgram = createPromptProgram<ZhongguoPr
     },
 });
 
-const truckersElBandidoTransferBasePromptProgram = createPromptProgram<TruckersElBandidoTransferContext, SmashUpCore, SmashUpEvent>({
+const truckersElBandidoTransferBasePromptProgram = createPromptProgram<TruckersElBandidoTransferContext>({
     sourceId: 'truckers_el_bandido_transfer_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_el_bandido_transfer_base_${context.now}`,
@@ -2281,7 +2277,7 @@ const truckersElBandidoTransferBasePromptProgram = createPromptProgram<TruckersE
     },
 });
 
-const truckersElBandidoTransferActionPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+const truckersElBandidoTransferActionPromptProgram = createPromptProgram<ZhongguoPromptContext>({
     sourceId: 'truckers_el_bandido_transfer_action',
     buildInteraction: (context) => {
         const candidates = collectBaseOngoingActions(
@@ -2308,19 +2304,18 @@ const truckersElBandidoTransferActionPromptProgram = createPromptProgram<Zhonggu
         if (!action) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp, {
                 actionUid: action.uid,
                 actionBaseIndex: action.baseIndex,
                 actionDefId: action.defId,
                 actionOwnerId: action.ownerId,
                 actionControllerId: action.controllerId,
-            }),
-            nextProgram: truckersElBandidoTransferBasePromptProgram,
+            }), truckersElBandidoTransferBasePromptProgram),
         };
     },
 });
 
-const truckersElBandidoTalentModePromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+const truckersElBandidoTalentModePromptProgram = createPromptProgram<ZhongguoPromptContext>({
     sourceId: 'truckers_el_bandido_talent_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_el_bandido_talent_mode_${context.now}`,
@@ -2343,13 +2338,12 @@ const truckersElBandidoTalentModePromptProgram = createPromptProgram<ZhongguoPro
         }
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp),
-            nextProgram: truckersElBandidoTransferActionPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp), truckersElBandidoTransferActionPromptProgram),
         };
     },
 });
 
-const truckersSkinnyMinnieActionPromptProgram = createPromptProgram<TruckersSkinnyMinnieContext, SmashUpCore, SmashUpEvent>({
+const truckersSkinnyMinnieActionPromptProgram = createPromptProgram<TruckersSkinnyMinnieContext>({
     sourceId: 'truckers_skinny_minnie_action',
     buildInteraction: (context) => {
         const candidates = collectBaseOngoingActions(
@@ -2407,7 +2401,7 @@ const truckersSkinnyMinnieActionPromptProgram = createPromptProgram<TruckersSkin
     },
 });
 
-const truckersSkinnyMinnieBasePromptProgram = createPromptProgram<TruckersSkinnyMinnieContext, SmashUpCore, SmashUpEvent>({
+const truckersSkinnyMinnieBasePromptProgram = createPromptProgram<TruckersSkinnyMinnieContext>({
     sourceId: 'truckers_skinny_minnie_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_skinny_minnie_base_${context.now}`,
@@ -2425,11 +2419,10 @@ const truckersSkinnyMinnieBasePromptProgram = createPromptProgram<TruckersSkinny
         if (selected?.baseIndex === undefined) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, context.playerId, timestamp, {
                 ...context,
                 targetBaseIndex: selected.baseIndex,
-            }),
-            nextProgram: truckersSkinnyMinnieActionPromptProgram,
+            }), truckersSkinnyMinnieActionPromptProgram),
         };
     },
 });
@@ -2493,7 +2486,7 @@ function performCounterTransfer(
     ];
 }
 
-const kungFuCounterTransferAmountPromptProgram = createPromptProgram<CounterTransferContext, SmashUpCore, SmashUpEvent>({
+const kungFuCounterTransferAmountPromptProgram = createPromptProgram<CounterTransferContext>({
     sourceId: 'kung_fu_counter_transfer_amount',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2554,7 +2547,7 @@ const kungFuCounterTransferAmountPromptProgram = createPromptProgram<CounterTran
     },
 });
 
-const kungFuCounterTransferTargetPromptProgram = createPromptProgram<CounterTransferContext, SmashUpCore, SmashUpEvent>({
+const kungFuCounterTransferTargetPromptProgram = createPromptProgram<CounterTransferContext>({
     sourceId: 'kung_fu_counter_transfer_target',
     buildInteraction: (context) => {
         const targets = collectCounterTransferTargets(
@@ -2608,18 +2601,17 @@ const kungFuCounterTransferTargetPromptProgram = createPromptProgram<CounterTran
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 targetMinionUid: target.uid,
                 targetBaseIndex: selected.baseIndex,
                 sourceCounterAmount: sourcePowerCounters,
-            },
-            nextProgram: kungFuCounterTransferAmountPromptProgram,
+            }, kungFuCounterTransferAmountPromptProgram),
         };
     },
 });
 
-const kungFuCounterTransferSourcePromptProgram = createPromptProgram<CounterTransferContext, SmashUpCore, SmashUpEvent>({
+const kungFuCounterTransferSourcePromptProgram = createPromptProgram<CounterTransferContext>({
     sourceId: 'kung_fu_counter_transfer_source',
     buildInteraction: (context) => {
         const sourceOptions = buildMinionTargetOptions(
@@ -2662,13 +2654,12 @@ const kungFuCounterTransferSourcePromptProgram = createPromptProgram<CounterTran
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceMinionUid: source.uid,
                 sourceBaseIndex: selected.baseIndex,
                 sourceCounterAmount: sourcePowerCounters,
-            },
-            nextProgram: kungFuCounterTransferTargetPromptProgram,
+            }, kungFuCounterTransferTargetPromptProgram),
         };
     },
 });
@@ -2718,7 +2709,7 @@ function buildEverybodyWasDestroyEvents(
     }));
 }
 
-const everybodyWasTargetPromptProgram = createPromptProgram<EverybodyWasContext, SmashUpCore, SmashUpEvent>({
+const everybodyWasTargetPromptProgram: AbilityProgram<EverybodyWasContext, SmashUpCore, SmashUpEvent> = createPromptProgram<EverybodyWasContext>({
     sourceId: 'kung_fu_fighters_everybody_was_kung_fu_fighting_target',
     buildInteraction: (context) => {
         const baseIndex = context.baseIndex ?? -1;
@@ -2776,18 +2767,17 @@ const everybodyWasTargetPromptProgram = createPromptProgram<EverybodyWasContext,
         }
         return {
             events: [],
-            context: createPromptContext(state, remaining[0]!, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, remaining[0]!, timestamp, {
                 ...context,
                 playerId: remaining[0]!,
                 remainingPlayerIds: remaining,
                 selections,
-            }),
-            nextProgram: everybodyWasTargetPromptProgram,
+            }), everybodyWasTargetPromptProgram),
         };
     },
 });
 
-const everybodyWasBasePromptProgram = createPromptProgram<EverybodyWasContext, SmashUpCore, SmashUpEvent>({
+const everybodyWasBasePromptProgram = createPromptProgram<EverybodyWasContext>({
     sourceId: 'kung_fu_fighters_everybody_was_kung_fu_fighting_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_everybody_was_base_${context.now}`,
@@ -2807,12 +2797,11 @@ const everybodyWasBasePromptProgram = createPromptProgram<EverybodyWasContext, S
         if (participants.length === 0) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, participants[0]!, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, participants[0]!, timestamp, {
                 baseIndex: selected.baseIndex,
                 remainingPlayerIds: participants,
                 selections: [],
-            }),
-            nextProgram: everybodyWasTargetPromptProgram,
+            }), everybodyWasTargetPromptProgram),
         };
     },
 });
@@ -3131,7 +3120,7 @@ function buildExpertTimingTransferEvents(
     return events;
 }
 
-const expertTimingTargetPromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+const expertTimingTargetPromptProgram = createPromptProgram<KungFuExpertTimingContext>({
     sourceId: 'kung_fu_fighters_expert_timing_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_expert_timing_target_${context.now}`,
@@ -3156,7 +3145,7 @@ const expertTimingTargetPromptProgram = createPromptProgram<KungFuExpertTimingCo
     }),
 });
 
-const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingContext>({
     sourceId: 'kung_fu_fighters_expert_timing_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_expert_timing_source_${context.now}`,
@@ -3173,7 +3162,7 @@ const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingCo
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as ExpertTimingCardChoice | undefined;
-        if (!selected?.kind || selected.baseIndex === undefined) {
+        if (!selected?.kind || selected.kind === 'titan' || selected.baseIndex === undefined) {
             if ((context.mode === 'both' || context.mode === 'talent') && context.talentBaseIndex !== undefined) {
                 const extraTalentEvent = buildExpertTimingExtraTalentEvent({
                     kind: context.talentCardKind,
@@ -3204,20 +3193,19 @@ const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingCo
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceCardKind: selected.kind,
                 sourceMinionUid: selected.minionUid,
                 sourceActionUid: selected.actionUid,
                 sourceBaseIndex: selected.baseIndex,
                 sourceCounterAmount: sourceCounters,
-            },
-            nextProgram: expertTimingTargetPromptProgram,
+            }, expertTimingTargetPromptProgram),
         };
     },
 });
 
-const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingContext>({
     sourceId: 'kung_fu_fighters_expert_timing_talent',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_expert_timing_talent_${context.now}`,
@@ -3238,15 +3226,14 @@ const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingCo
         if (context.mode === 'both') {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     talentCardKind: selected.kind,
                     talentMinionUid: selected.minionUid,
                     talentActionUid: selected.actionUid,
                     talentTitanUid: selected.titanUid,
                     talentBaseIndex: selected.baseIndex,
-                },
-                nextProgram: expertTimingSourcePromptProgram,
+                }, expertTimingSourcePromptProgram),
             };
         }
         const extraTalentEvent = buildExpertTimingExtraTalentEvent(selected, timestamp);
@@ -3254,7 +3241,7 @@ const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingCo
     },
 });
 
-const expertTimingModePromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+const expertTimingModePromptProgram = createPromptProgram<KungFuExpertTimingContext>({
     sourceId: 'kung_fu_fighters_expert_timing_mode',
     buildInteraction: (context) => {
         const canTransfer = collectExpertTimingCounterSources(context.matchState.core).length > 0
@@ -3315,15 +3302,14 @@ const expertTimingModePromptProgram = createPromptProgram<KungFuExpertTimingCont
         });
         return {
             events: [],
-            context: nextContext,
-            nextProgram: selected.mode === 'talent' || selected.mode === 'both'
+            continuation: createAbilityRuntimeContinuation(nextContext, selected.mode === 'talent' || selected.mode === 'both'
                 ? expertTimingTalentPromptProgram
-                : expertTimingSourcePromptProgram,
+                : expertTimingSourcePromptProgram),
         };
     },
 });
 
-const fastAsLightningPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+const fastAsLightningPromptProgram = createPromptProgram<ZhongguoPromptContext>({
     sourceId: 'kung_fu_fighters_fast_as_lightning',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_fast_as_lightning_${context.now}`,
@@ -3370,7 +3356,7 @@ const fastAsLightningPromptProgram = createPromptProgram<ZhongguoPromptContext, 
     },
 });
 
-const ancientChineseArtModePromptProgram = createPromptProgram<AncientChineseArtModeContext, SmashUpCore, SmashUpEvent>({
+const ancientChineseArtModePromptProgram = createPromptProgram<AncientChineseArtModeContext>({
     sourceId: 'kung_fu_fighters_ancient_chinese_art_mode',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -3421,20 +3407,20 @@ const ancientChineseArtModePromptProgram = createPromptProgram<AncientChineseArt
             if (targets.length === 0) {
                 return { events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', timestamp)] };
             }
+            const continuationContext: CounterTransferContext = createPromptContext(state, playerId, timestamp, {
+                reason: 'kung_fu_fighters_ancient_chinese_art',
+                sourcePromptTitle: '',
+                targetPromptTitle: '古老的中国艺术：选择本基地一个随从放置 1 枚指示物',
+                amountPromptTitle: '',
+                fixedAmount: 1,
+                allowedAddBaseIndex: context.baseIndex,
+                sourceMinionUid: '__virtual_counter_source__',
+                sourceBaseIndex: context.baseIndex,
+                sourceCounterAmount: 1,
+            });
             return {
                 events: [],
-                context: createPromptContext(state, playerId, timestamp, {
-                    reason: 'kung_fu_fighters_ancient_chinese_art',
-                    sourcePromptTitle: '',
-                    targetPromptTitle: '古老的中国艺术：选择本基地一个随从放置 1 枚指示物',
-                    amountPromptTitle: '',
-                    fixedAmount: 1,
-                    allowedAddBaseIndex: context.baseIndex,
-                    sourceMinionUid: '__virtual_counter_source__',
-                    sourceBaseIndex: context.baseIndex,
-                    sourceCounterAmount: 1,
-                }),
-                nextProgram: ancientChineseArtAddCounterPromptProgram,
+                continuation: createAbilityRuntimeContinuation(continuationContext, ancientChineseArtAddCounterPromptProgram),
             };
         }
         if (selected?.mode === 'transfer') {
@@ -3454,7 +3440,7 @@ const ancientChineseArtModePromptProgram = createPromptProgram<AncientChineseArt
     },
 });
 
-const ancientChineseArtAddCounterPromptProgram = createPromptProgram<CounterTransferContext, SmashUpCore, SmashUpEvent>({
+const ancientChineseArtAddCounterPromptProgram = createPromptProgram<CounterTransferContext>({
     sourceId: 'kung_fu_fighters_ancient_chinese_art_add_counter',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.allowedAddBaseIndex ?? -1];
@@ -3496,7 +3482,7 @@ const ancientChineseArtAddCounterPromptProgram = createPromptProgram<CounterTran
     },
 });
 
-const everybodyKnewPromptProgram = createPromptProgram<EverybodyKnewContext, SmashUpCore, SmashUpEvent>({
+const everybodyKnewPromptProgram = createPromptProgram<EverybodyKnewContext>({
     sourceId: 'kung_fu_fighters_everybody_knew_their_part',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_everybody_knew_their_part_${context.now}`,
@@ -3543,7 +3529,7 @@ const everybodyKnewPromptProgram = createPromptProgram<EverybodyKnewContext, Sma
     },
 });
 
-const aLittleBitFrighteningRewardPromptProgram = createPromptProgram<ABitFrighteningContext, SmashUpCore, SmashUpEvent>({
+const aLittleBitFrighteningRewardPromptProgram = createPromptProgram<ABitFrighteningContext>({
     sourceId: 'kung_fu_fighters_a_little_bit_frightening_reward',
     buildInteraction: (context) => {
         const baseIndex = context.referenceBaseIndex ?? -1;
@@ -3588,7 +3574,7 @@ const aLittleBitFrighteningRewardPromptProgram = createPromptProgram<ABitFrighte
     },
 });
 
-const aLittleBitFrighteningDestroyPromptProgram = createPromptProgram<ABitFrighteningContext, SmashUpCore, SmashUpEvent>({
+const aLittleBitFrighteningDestroyPromptProgram = createPromptProgram<ABitFrighteningContext>({
     sourceId: 'kung_fu_fighters_a_little_bit_frightening_destroy',
     buildInteraction: (context) => {
         const baseIndex = context.referenceBaseIndex ?? -1;
@@ -3650,13 +3636,12 @@ const aLittleBitFrighteningDestroyPromptProgram = createPromptProgram<ABitFright
         }
         return {
             events: destroyEvents,
-            context,
-            nextProgram: aLittleBitFrighteningRewardPromptProgram,
+            continuation: createAbilityRuntimeContinuation(context, aLittleBitFrighteningRewardPromptProgram),
         };
     },
 });
 
-const aLittleBitFrighteningReferencePromptProgram = createPromptProgram<ABitFrighteningContext, SmashUpCore, SmashUpEvent>({
+const aLittleBitFrighteningReferencePromptProgram = createPromptProgram<ABitFrighteningContext>({
     sourceId: 'kung_fu_fighters_a_little_bit_frightening_reference',
     buildInteraction: (context) => {
         const candidates = collectAllMinions(context.matchState.core).filter((candidate) => {
@@ -3705,17 +3690,16 @@ const aLittleBitFrighteningReferencePromptProgram = createPromptProgram<ABitFrig
         }
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 referenceMinionUid: reference.uid,
                 referenceBaseIndex: selected.baseIndex,
                 referencePower: getMinionPower(state.core, reference, selected.baseIndex),
-            }),
-            nextProgram: aLittleBitFrighteningDestroyPromptProgram,
+            }), aLittleBitFrighteningDestroyPromptProgram),
         };
     },
 });
 
-const letsGetItOnChooseTargetsPromptProgram = createPromptProgram<LetsGetItOnContext, SmashUpCore, SmashUpEvent>({
+const letsGetItOnChooseTargetsPromptProgram = createPromptProgram<LetsGetItOnContext>({
     sourceId: 'kung_fu_fighters_lets_get_it_on_targets',
     buildInteraction: (context) => {
         const baseIndex = context.sourceBaseIndex ?? -1;
@@ -3779,7 +3763,7 @@ const letsGetItOnChooseTargetsPromptProgram = createPromptProgram<LetsGetItOnCon
     },
 });
 
-const letsGetItOnChooseSourcePromptProgram = createPromptProgram<LetsGetItOnContext, SmashUpCore, SmashUpEvent>({
+const letsGetItOnChooseSourcePromptProgram = createPromptProgram<LetsGetItOnContext>({
     sourceId: 'kung_fu_fighters_lets_get_it_on_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `kung_fu_fighters_lets_get_it_on_source_${context.now}`,
@@ -3818,17 +3802,16 @@ const letsGetItOnChooseSourcePromptProgram = createPromptProgram<LetsGetItOnCont
         }
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 sourceMinionUid: source.uid,
                 sourceBaseIndex: selected.baseIndex,
                 sourcePower,
-            }),
-            nextProgram: letsGetItOnChooseTargetsPromptProgram,
+            }), letsGetItOnChooseTargetsPromptProgram),
         };
     },
 });
 
-const ohHohHohHoahPromptProgram = createPromptProgram<OhHohHohHoahContext, SmashUpCore, SmashUpEvent>({
+const ohHohHohHoahPromptProgram = createPromptProgram<OhHohHohHoahContext>({
     sourceId: 'kung_fu_fighters_oh_hoh_hoh_hoah',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -4090,11 +4073,7 @@ function ladyWhirlwindTalent(ctx: AbilityContext): AbilityResult {
     return { events: result.events, matchState: result.matchState };
 }
 
-const ladyWhirlwindPromptProgram = createPromptProgram<
-    ZhongguoPromptContext & { selfUid: string; selfBaseIndex: number },
-    SmashUpCore,
-    SmashUpEvent
->({
+const ladyWhirlwindPromptProgram = createPromptProgram<ZhongguoPromptContext & { selfUid: string; selfBaseIndex: number }>({
     sourceId: 'kung_fu_fighters_lady_whirlwind',
     buildInteraction: (context) => {
         const self = context.matchState.core.bases[context.selfBaseIndex]?.minions.find((minion) => minion.uid === context.selfUid);
@@ -4611,7 +4590,7 @@ function truckersTurnTheBeatAround(ctx: AbilityContext): AbilityResult {
     return { events: result.events, matchState: result.matchState };
 }
 
-const discoDancingKingPromptProgram = createPromptProgram<DiscoDancingKingContext, SmashUpCore, SmashUpEvent>({
+const discoDancingKingPromptProgram = createPromptProgram<DiscoDancingKingContext>({
     sourceId: 'disco_dancers_dancing_king',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -4686,7 +4665,7 @@ const discoDancingKingPromptProgram = createPromptProgram<DiscoDancingKingContex
     },
 });
 
-const discoIWillSurvivePromptProgram = createPromptProgram<DiscoIWillSurviveContext, SmashUpCore, SmashUpEvent>({
+const discoIWillSurvivePromptProgram = createPromptProgram<DiscoIWillSurviveContext>({
     sourceId: 'disco_dancers_i_will_survive',
     buildInteraction: (context) => {
         const candidates = collectMinionsMatching(

@@ -2,6 +2,7 @@ import type { MatchState } from '../types';
 import {
     buildAiProgressMarker,
     type ForceEndTurnStalledAiResolution,
+    type OnlineAiRecoveryEngineConfig,
 } from './onlineAiRecovery';
 import {
     createOnlineAiActionDelayContext,
@@ -22,16 +23,7 @@ export type OnlineAiImmediateExecutionMatch = {
     state: MatchState<unknown>;
     stateID: number;
     unloaded: boolean;
-    engineConfig: {
-        onlineAiRecovery?: {
-            allowForceCommandAfterLegalActionExhausted?: (args: {
-                state: MatchState<unknown>;
-                phase: string;
-                previousCandidate: ForceEndTurnStalledAiResolution;
-                nextCandidate: ForceEndTurnStalledAiResolution;
-            }) => boolean;
-        };
-    };
+    engineConfig: OnlineAiRecoveryEngineConfig;
 };
 
 export type OnlineAiImmediateExecutionRoomRuntime = OnlineAiRecoverySequenceRoomRuntime & {
@@ -281,7 +273,7 @@ export class OnlineAiImmediateExecutionRunner<TMatch extends OnlineAiImmediateEx
                     seatControllers,
                     delayContext,
                 });
-                if (!actionRecovery.applied) {
+                if (actionRecovery.outcome !== 'applied') {
                     const shouldRunForcedRecovery = shouldRunImmediateForcedRecoveryAfterLegalActionMiss({
                         state: match.state,
                         engineConfig: match.engineConfig,

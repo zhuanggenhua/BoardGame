@@ -47,6 +47,8 @@ import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { PlatformHomeSurface } from '../components/home/PlatformHomeSurface';
 import { PlatformFavoriteButton } from '../components/home/PlatformFavoriteButton';
+import { ExternalGameDetails } from '../components/home/ExternalGameDetails';
+import { isExternalGameId } from '../shared/externalGames';
 import { ClassicHomeSurface } from '../components/home/ClassicHomeSurface';
 import { useMobileViewport } from '../hooks/ui/useMobileViewport';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
@@ -354,10 +356,17 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         reopenNonce: gameModalReopenNonce,
         getModalConfig: useCallback((gameId: string) => {
             const game = getGameById(gameId);
-            if (!game) return null;
+            if (!game && !isExternalGameId(gameId)) return null;
             return {
                 animateExit: homeStyle === 'modern',
                 render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => {
+                    if (!game) {
+                        return (
+                            <HomeModalErrorBoundary resetKey={gameId}>
+                                <ExternalGameDetails gameId={gameId} onClose={close} closeOnBackdrop={closeOnBackdrop} />
+                            </HomeModalErrorBoundary>
+                        );
+                    }
                     const GameDetailsModalComponent = loadedGameDetailsModalRef.current ?? LazyGameDetailsModal;
                     return (
                         <HomeModalErrorBoundary resetKey={game.id}>
@@ -433,6 +442,18 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
     }, [activeGameModalId, gameUrlModal.navigateAwayRef, navigate]);
 
     const handleGameClick = async (id: string) => {
+        if (isExternalGameId(id)) {
+            if (activeGameModalId === id) {
+                setGameModalReopenNonce((nonce) => nonce + 1);
+                return;
+            }
+            setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set('game', id);
+                return next;
+            });
+            return;
+        }
         const game = getGameById(id);
         if (game?.type === 'tool') {
             const toolRoute = resolveToolRoute(id);
@@ -1045,6 +1066,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
 
     const libraryGameId = searchParams.get('libraryGame');
     const libraryGame = libraryGameId ? getGameById(libraryGameId) : undefined;
+    const externalLibraryGameId = libraryGameId && isExternalGameId(libraryGameId) ? libraryGameId : undefined;
     useEffect(() => {
         if (!isMobileHome || !libraryGameId || searchParams.get('section') !== 'library') return;
         setSearchParams(current => {
@@ -1102,20 +1124,22 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
             <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
                 brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
                 utility={<>
-                    <span data-platform-utility-id="support" data-platform-utility-priority="1"><AuthorSupportButton /></span>
-                    <span data-platform-utility-id="guide" data-platform-utility-priority="0"><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /></span>
-                    <span data-platform-utility-id="language" data-platform-utility-priority="2"><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></span>
+                    <span><AuthorSupportButton /></span>
+                    <span><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /></span>
+                    <span><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></span>
                 </>}
-                mobileUtility={(close, included) => <>{(!included || included.has('support')) && <AuthorSupportButton />}{(!included || included.has('guide')) && <OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" />}{(!included || included.has('language')) && <LanguageSwitcher visualStyle="platform" className="platform-language-control" />}</>}
+                mobileUtility={close => <><AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
                 games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
                 onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
                 onOpenLibraryGame={openLibraryGame}
-                libraryDetails={!isMobileHome && libraryGame && searchParams.get('section') === 'library' ? <HomeModalErrorBoundary resetKey={libraryGame.id}>
+                libraryDetails={!isMobileHome && searchParams.get('section') === 'library' && libraryGame ? <HomeModalErrorBoundary resetKey={libraryGame.id}>
                     <Suspense fallback={<p role="status">{t('platform.loading')}</p>}>
                         <LazyGameDetailsModal key={libraryGame.id} isOpen presentation="inline" onClose={closeLibraryDetails}
                             gameId={libraryGame.id} titleKey={libraryGame.titleKey} descriptionKey={libraryGame.descriptionKey} thumbnail={libraryGame.thumbnail}
                             favoriteControl={<PlatformFavoriteButton gameId={libraryGame.id} title={libraryGame.titleKey} />} />
                     </Suspense>
+                </HomeModalErrorBoundary> : !isMobileHome && searchParams.get('section') === 'library' && externalLibraryGameId ? <HomeModalErrorBoundary resetKey={externalLibraryGameId}>
+                    <ExternalGameDetails gameId={externalLibraryGameId} presentation="inline" onClose={closeLibraryDetails} />
                 </HomeModalErrorBoundary> : undefined}
                 onLogin={() => openAuth('login')} onRegister={() => openAuth('register')} onLogout={handleLogout}
                 activeMatch={activeMatchCard}

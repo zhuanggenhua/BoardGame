@@ -21,9 +21,8 @@ import type {
     PendingInteraction,
     InteractionRequestedEvent,
 } from '../types';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext, createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import { resolveDiceOwnerId, resolveTargetOpponentDice } from './common';
 
 const FACE = SHADOW_THIEF_DICE_FACE_IDS;
@@ -698,22 +697,19 @@ function handleSneakAttackUse({ attackerId, state, timestamp, random }: CustomAc
 // ============================================================================
 
 /** CP 系伤害预估：等同当前 CP 的一半（向上取整） */
-const estimateHalfCpDamage = (state: Record<string, unknown>, playerId: string): number => {
-    const players = state.players as Record<string, { resources: Record<string, number> }>;
-    const cp = Math.min(players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX);
+const estimateHalfCpDamage = (state: CustomActionContext['state'], playerId: string): number => {
+    const cp = Math.min(state.players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX);
     return Math.ceil(cp / 2);
 };
 
 /** CP 系伤害预估：等同当前 CP */
-const estimateFullCpDamage = (state: Record<string, unknown>, playerId: string): number => {
-    const players = state.players as Record<string, { resources: Record<string, number> }>;
-    return Math.min(players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX);
+const estimateFullCpDamage = (state: CustomActionContext['state'], playerId: string): number => {
+    return Math.min(state.players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX);
 };
 
 /** CP 系伤害预估：当前 CP + 5 */
-const estimateCpPlus5Damage = (state: Record<string, unknown>, playerId: string): number => {
-    const players = state.players as Record<string, { resources: Record<string, number> }>;
-    return Math.min(players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX) + 5;
+const estimateCpPlus5Damage = (state: CustomActionContext['state'], playerId: string): number => {
+    return Math.min(state.players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX) + 5;
 };
 
 // ============================================================================

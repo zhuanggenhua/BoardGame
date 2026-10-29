@@ -3,6 +3,7 @@ import type { ImpactEffects } from '../../../components/common/animations/Impact
 import type { SummonColorTheme } from '../../../components/common/animations/SummonEffect';
 
 type MageWarsTravelFxKind = 'attack' | 'push' | 'move';
+type MageWarsFxColorKind = MageWarsTravelFxKind | 'teleport';
 type MageWarsTravelFxTuning = {
     pathPaddingCells: number;
     pathMinSizeCells: number;
@@ -147,8 +148,11 @@ export function resolveMageWarsSummonColor(objectKind: unknown): SummonColorThem
     return objectKind === 'conjuration' ? 'gold' : 'blue';
 }
 
-export function mageWarsFxColors(kind: MageWarsTravelFxKind, strong = false): string[] {
+export function mageWarsFxColors(kind: MageWarsFxColorKind, strong = false): string[] {
     if (kind === 'attack') return ['#fff7ed', '#fca5a5', '#ef4444', '#7f1d1d'];
+    if (kind === 'teleport') return strong
+        ? ['#f5f3ff', '#c4b5fd', '#8b5cf6', '#4c1d95']
+        : ['#f5f3ff', '#ddd6fe', '#a78bfa', '#6d28d9'];
     if (kind === 'move') return ['#ecfeff', '#a5f3fc', '#22d3ee', '#0e7490'];
     if (kind === 'push') return ['#e0f2fe', '#bae6fd', '#38bdf8', '#0369a1'];
     return strong

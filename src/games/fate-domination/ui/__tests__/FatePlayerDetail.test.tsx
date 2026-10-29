@@ -58,3 +58,20 @@ it('监督者详情可见隐藏职阶但不揭露真名，普通玩家和旁观�
   expect(screen.queryByLabelText('已知职阶')).toBeNull();
  }
 });
+
+it('详情读取对手时按当前观看者投影身份与技能，只有真名解放后显示正面',()=>{
+ const core=createReplayAdapter(FateDominationDomain,'detail-opponent-hidden').setup(['0','1','2']).core;
+ expect(core.players['1'].isRevealed).toBe(false);
+ const props={core,playerId:'1',viewerId:'0',servantBack:'back',skillBack:'skillback',onPlayer:vi.fn(),onClose:vi.fn(),onInspect:vi.fn()};
+ const view=render(<FatePlayerDetail {...props}/>);
+ const identity=within(screen.getByRole('dialog')).getByRole('button',{name:'从者尚未解放'});
+ expect(identity.querySelector('img')?.getAttribute('src')).toBe('back');
+ expect(view.container.querySelectorAll('.fd-player-detail-skills img[src="skillback"]')).toHaveLength(3);
+ expect(within(screen.getByRole('dialog')).getAllByRole('button',{name:/^检视暗置技能/}).every(button=>(button as HTMLButtonElement).disabled)).toBe(true);
+
+ const revealed=structuredClone(core);
+ revealed.players['1'].isRevealed=true;
+ view.rerender(<FatePlayerDetail {...props} core={revealed}/>);
+ expect(within(screen.getByRole('dialog')).getByRole('button',{name:'检视从者'}).querySelector('img')?.getAttribute('src')).not.toBe('back');
+ expect(view.container.querySelectorAll('.fd-player-detail-skills img[src="skillback"]')).toHaveLength(0);
+});

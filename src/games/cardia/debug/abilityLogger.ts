@@ -14,12 +14,13 @@ import type { AbilityId } from '../domain/ids';
 /**
  * 日志级别
  */
-export enum LogLevel {
-    DEBUG = 'DEBUG',
-    INFO = 'INFO',
-    WARN = 'WARN',
-    ERROR = 'ERROR',
-}
+export const LogLevel = {
+    DEBUG: 'DEBUG',
+    INFO: 'INFO',
+    WARN: 'WARN',
+    ERROR: 'ERROR',
+} as const;
+export type LogLevel = typeof LogLevel[keyof typeof LogLevel];
 
 /**
  * 日志条目

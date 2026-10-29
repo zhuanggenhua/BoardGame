@@ -11,6 +11,7 @@ import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { ASSETS } from './assets';
 import { getAbilitySlotIdForCharacter } from './abilitySlotMapping';
+import type { HandDiscardInteractionContract } from './handDiscardInteractionContract';
 import {
     buildBoardShellInlineUnitValue,
     convertScreenPixelsToBoardShellPixels,
@@ -18,6 +19,7 @@ import {
     readBoardShellInlineUnitPixelValue,
     readBoardShellScaleValue,
 } from '../../../shared/runtimeLayoutUnits';
+import { DICETHRONE_HAND_AREA_HEIGHT_UNITS } from './handLayoutConstants';
 import {
     isHandCardReleaseOverDiscardPile,
     resolveHandDragReleaseIntent,
@@ -30,8 +32,8 @@ const HAND_CARD_SIDE_OFFSET_UNITS = HAND_CARD_WIDTH_UNITS / 2;
 const HAND_CARD_Y_OFFSET_UNITS = 0.8;
 const HAND_CARD_ROTATION_STEP_DEGREES = 5;
 const HAND_CARD_ANCHOR_Y_UNITS = 6;
+const HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS = 3;
 const HAND_CARD_HOVER_LIFT_UNITS = 3.1;
-const HAND_AREA_HEIGHT_UNITS = 22;
 const HAND_TUTORIAL_FALLBACK_WIDTH_UNITS = 20;
 const HAND_TUTORIAL_VISIBLE_HEIGHT_UNITS = 18;
 const HAND_CARD_ASPECT_RATIO = 0.61;
@@ -225,7 +227,8 @@ export const HandArea = ({
     onPlayHintChange,
     onSellButtonChange,
     tutorialAllowedCardIds,
-    isDiscardMode = false,
+    isDiscardMode: isDiscardModeRequested = false,
+    handDiscardInteraction,
     onDiscardCard,
     onMagnifyCard,
     respondableCardIds,
@@ -256,6 +259,8 @@ export const HandArea = ({
     tutorialAllowedCardIds?: string[];
     /** 弃牌模式：手牌超限时点击卡牌直接弃置 */
     isDiscardMode?: boolean;
+    /** 交互式弃牌的候选、提示和提交动作共享同一合同。 */
+    handDiscardInteraction: HandDiscardInteractionContract | undefined;
     /** 弃牌模式下点击卡牌的回调 */
     onDiscardCard?: (cardId: string) => void;
     onMagnifyCard?: (card: AbilityCard) => void;
@@ -271,6 +276,7 @@ export const HandArea = ({
     preserveCardVisibility?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const isDiscardMode = isDiscardModeRequested || Boolean(handDiscardInteraction);
     const isCoarsePointer = useCoarsePointer();
     const [draggingCardKey, setDraggingCardKey] = React.useState<string | null>(null);
     const screenDragOffsetRef = React.useRef({ x: 0, y: 0 });
@@ -453,10 +459,10 @@ export const HandArea = ({
     const centerIndex = (totalCards - 1) / 2;
     const hasRespondableCards = (respondableCardIds?.size ?? 0) > 0;
     const visibleFanBottomOffset = preserveCardVisibility
-        ? Math.max(0, ...handEntries.map(({ index }) => {
+        ? HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS + Math.max(0, ...handEntries.map(({ index }) => {
             const offset = Math.abs(index - centerIndex);
             const angle = offset * HAND_CARD_ROTATION_STEP_DEGREES * Math.PI / 180;
-            // 扇形牌面绕中心旋转，完整可见态同时补偿下移与旋转后的底边。
+            // 扇形牌面绕中心旋转，完整可见态同时补偿下移、旋转后的底边和视口留白。
             return offset * HAND_CARD_Y_OFFSET_UNITS
                 + HAND_CARD_WIDTH_UNITS / 2 * Math.abs(Math.sin(angle))
                 + HAND_CARD_WIDTH_UNITS / HAND_CARD_ASPECT_RATIO / 2 * (Math.abs(Math.cos(angle)) - 1);
@@ -828,14 +834,18 @@ export const HandArea = ({
         }
         if (shouldBlockLongPressClick(entry.key)) return;
 
-        if (canClickDiscard && onDiscardCard) {
+        if (canClickDiscard && (handDiscardInteraction || onDiscardCard)) {
             pendingDiscardRef.current = {
                 cardKey: entry.key,
                 card: entry.card,
                 originalIndex: entry.index,
             };
             setDiscardingCardKey(entry.key);
-            onDiscardCard(entry.card.id);
+            if (handDiscardInteraction) {
+                handDiscardInteraction.actions.selectCard(entry.card.id);
+            } else {
+                onDiscardCard?.(entry.card.id);
+            }
             return;
         }
 
@@ -855,11 +865,11 @@ export const HandArea = ({
     }, [
         beginPendingCardAction,
         clearPendingPlay,
+        handDiscardInteraction,
         handEntries,
         onDiscardCard,
         onMagnifyCard,
         onPlayCard,
-        resetDragValues,
         shouldBlockLongPressClick,
     ]);
 
@@ -915,7 +925,7 @@ export const HandArea = ({
             className="absolute bottom-0 left-0 right-0 flex justify-center items-end pb-0 pointer-events-none"
             style={{
                 zIndex: UI_Z_INDEX.hud,
-                height: buildBoardShellInlineUnitValue(HAND_AREA_HEIGHT_UNITS),
+                height: buildBoardShellInlineUnitValue(DICETHRONE_HAND_AREA_HEIGHT_UNITS),
                 display: isHidden ? 'none' : undefined,
             }}
         >
@@ -945,9 +955,11 @@ export const HandArea = ({
                         const isReturning = !!returningEntry;
                         const returnVersion = returningVersionMap[cardKey] ?? 0;
                         const tutorialCardAllowed = !tutorialAllowedCardIds?.length || tutorialAllowedCardIds.includes(card.id);
+                        const handDiscardCandidateAllowed = !handDiscardInteraction
+                            || handDiscardInteraction.candidates.cardIds.includes(card.id);
                         // 弃牌模式下禁用拖拽，改用点击
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode && tutorialCardAllowed;
-                        const canClickDiscard = isDiscardMode && isFlipped && !isReturning && tutorialCardAllowed;
+                        const canClickDiscard = isDiscardMode && isFlipped && !isReturning && tutorialCardAllowed && handDiscardCandidateAllowed;
                         const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode && tutorialCardAllowed;
                         const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning && tutorialCardAllowed;
                         const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))

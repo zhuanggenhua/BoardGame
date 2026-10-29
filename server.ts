@@ -15,7 +15,7 @@ import bodyParser from 'koa-bodyparser';
 import { Server as IOServer, Socket as IOSocket } from 'socket.io';
 import msgpackParser from 'socket.io-msgpack-parser';
 import { nanoid } from 'nanoid';
-import { connectDB } from './src/server/db';
+import mongoose, { connectDB } from './src/server/db';
 import { chatHistoryByMatch, registerMatchChat } from './src/server/matchChat';
 import {
     LOBBY_ALL,
@@ -169,6 +169,9 @@ const resolvePlayableMatchEmoteContext = async (
     const decision = resolveMatchEmoteJoinDecision(metadata, playerId);
     if (!decision.ok) {
         return { reason: decision.reason };
+    }
+    if (!metadata) {
+        return { reason: 'match_not_found' };
     }
 
     return {
@@ -446,6 +449,25 @@ const gameTransport = new GameTransportServer({
     trainingDataMinCompletedMatchDurationMs: TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS,
     rulesVersion: process.env.npm_package_version ?? null,
     offlineGraceMs: 300000, // 5 分钟：给断线玩家充足的重连时间
+    authenticateAdminDebugToken: async (token) => {
+        if (!token) return null;
+        const payload = claimSeatUtils.verifyGameToken(token, JWT_SECRET);
+        const userId = payload?.userId;
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId) || !mongoose.connection.db) return null;
+        try {
+            const user = await mongoose.connection.db.collection('users').findOne(
+                { _id: new mongoose.Types.ObjectId(userId) },
+                { projection: { role: 1, banned: 1 } },
+            );
+            return user?.role === 'admin' && user.banned !== true ? userId : null;
+        } catch (error) {
+            logger.warn('[ADMIN_DEBUG] current role lookup failed', {
+                userId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return null;
+        }
+    },
     authenticate: async (matchID, playerID, credentials, metadata) => {
         if (!credentials) return false;
         const playerMeta = metadata.players[playerID];
@@ -454,7 +476,9 @@ const gameTransport = new GameTransportServer({
     },
     onGameOver: (matchID, gameName, gameover) => {
         // 记录游戏结束日志
-        const winner = gameover?.winner !== undefined ? String(gameover.winner) : null;
+        const winner = gameover && typeof gameover === 'object' && 'winner' in gameover && gameover.winner !== undefined
+            ? String(gameover.winner)
+            : null;
         gameLogger.matchEnded(matchID, gameName, winner, 0); // duration 需要从 metadata 计算
         
         // 归档对局结果

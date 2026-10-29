@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED } from '../domain/wheelDispatchPayment';
 import type { QidahenHandInteractionView } from './handInteractionView';
 import { UI_STYLE, UI_SURFACE } from './qidahenTheme';
+import { QidahenHoverTip } from './QidahenHoverTip';
 
 interface Props {
     interaction: QidahenHandInteractionView | null;
@@ -15,11 +16,12 @@ interface Props {
     onConfirmWheelRecruitTrainPayment: () => void;
 }
 
-const BUTTON_CLASS = 'inline-flex min-h-[44px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0';
+const BUTTON_CLASS = 'inline-flex min-h-[44px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0';
 
 /** 所有手牌确认共用同一个托盘；规则判定由只读投影和原命令入口负责。 */
 export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, bottom, ...actions }) => {
     const { t } = useTranslation('game-qidahen');
+    const [anchor, setAnchor] = React.useState<HTMLDivElement | null>(null);
     if (!interaction) return null;
 
     let title: string;
@@ -115,12 +117,13 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
 
     const payment = 'selectedCardLabels' in interaction;
     return (
-        <div
-            className="pointer-events-none absolute inset-x-0 z-40 flex justify-center"
-            data-testid="qidahen-hand-interaction-tray"
+        <>
+        <div ref={setAnchor} aria-hidden="true" className="pointer-events-none absolute inset-x-0 h-0" style={{ bottom }} />
+        <QidahenHoverTip
+            open anchor={anchor} placement="above" variant="panel" width={860} gap={0}
+            testId="qidahen-hand-interaction-tray"
             data-hand-interaction-kind={interaction.kind}
             data-hand-interaction-action={interaction.kind === 'action' ? interaction.action.id : undefined}
-            style={{ bottom }}
         >
             <div
                 className="pointer-events-auto flex items-center justify-between gap-4 border-[3px] px-4 py-3"
@@ -128,7 +131,7 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
                 data-tutorial-id={interaction.kind === 'wheel-recruit-train' ? panelTestId : undefined}
                 data-ui-anchor="bottom-hand"
                 style={{
-                    width: 860,
+                    width: '100%',
                     borderColor: payment ? UI_STYLE.oldGold : UI_STYLE.mapInk,
                     background: UI_SURFACE.mapPanelSelected,
                     color: UI_STYLE.mapIvory,
@@ -137,19 +140,19 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
                 }}
             >
                 <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-black leading-5">{title}</div>
-                    <div className="mt-1 text-[11px]" data-testid={statusTestId} style={{ color: payment ? UI_STYLE.mapGold : '#f3d1a5' }}>
+                    <div className="text-[14px] font-black leading-5">{title}</div>
+                    <div className="mt-1 text-[14px]" data-testid={statusTestId} style={{ color: payment ? UI_STYLE.mapGold : '#f3d1a5' }}>
                         {status}
                     </div>
                     {payment && interaction.selectedCardLabels.length > 0 ? (
-                        <div className="mt-1 text-[11px] font-black" data-testid={selectedCardsTestId} style={{ color: '#fff0b0' }}>
+                        <div className="mt-1 text-[14px] font-black" data-testid={selectedCardsTestId} style={{ color: '#fff0b0' }}>
                             {t('board.handInteraction.actionPaymentSelectedCards', {
                                 cards: interaction.selectedCardLabels.join('、'), defaultValue: '已选：{{cards}}',
                             })}
                         </div>
                     ) : null}
                     {interaction.kind === 'action' && interaction.action.id === 'raid' ? (
-                        <div className="mt-1 text-[11px]" data-testid="qidahen-action-payment-hint" style={{ color: '#f3d1a5' }}>
+                        <div className="mt-1 text-[14px]" data-testid="qidahen-action-payment-hint" style={{ color: '#f3d1a5' }}>
                             {interaction.raidTarget
                                 ? t('board.handInteraction.raidPaymentTarget', {
                                     ...interaction.raidTarget, defaultValue: '目标：{{targetRegionName}} · {{resolutionHint}}',
@@ -184,6 +187,7 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
                     ) : null}
                 </div>
             </div>
-        </div>
+        </QidahenHoverTip>
+        </>
     );
 };

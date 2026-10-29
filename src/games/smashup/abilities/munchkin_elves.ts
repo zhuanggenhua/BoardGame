@@ -1,5 +1,5 @@
 import type { PlayerId, MatchState, RandomFn } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type InteractionDescriptor, type PromptOption, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import { registerAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter,
@@ -141,7 +141,7 @@ function findMinion(state: SmashUpCore, baseIndex: number | undefined, minionUid
 
 function queueSimpleChoice<T>(
     matchState: MatchState<SmashUpCore>,
-    interaction: ReturnType<typeof createSimpleChoice<T>>,
+    interaction: InteractionDescriptor<SimpleChoiceData<T>>,
 ) {
     return queueInteraction(matchState, interaction);
 }
@@ -490,7 +490,7 @@ function helpingHandsAfterScoring(ctx: TriggerContext): SmashUpEvent[] | { event
         '援手：是否从获胜玩家处获得 1 VP？',
         [
             { id: 'take', label: '获得 1 VP', labelKey: 'ui.munchkin_elves_helping_hands_vp_take_option', value: { take: true }, displayMode: 'button' },
-            skipOption('不获得'),
+            { ...skipOption('不获得'), value: { take: false } },
         ],
         { sourceId: HELPING_CHOOSE_VP, targetType: 'button', buttonIntent: 'mode', titleKey: 'ui.munchkin_elves_helping_hands_vp_title', autoResolveIfSingle: false, displayCard: { defId: HELPING_HANDS, cardUid: entry.cardUid } },
     );
@@ -612,7 +612,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
         if (choice.baseIndex === undefined || sourceBaseIndex === undefined || !sourceCardUid) return { state, events: [] };
         const options = minionOptionsAtBase(state.core, sourceBaseIndex, playerId, playerId, RUN_AWAY_MORE);
         if (options.length === 0) return { state, events: [] };
-        const interaction = createSimpleChoice<MinionChoice[]>(`${RUN_MORE_CHOOSE_MINIONS}_${timestamp}`, playerId, '赶紧逃跑吧：选择任意数量己方随从', options, { sourceId: RUN_MORE_CHOOSE_MINIONS, targetType: 'minion', titleKey: 'ui.munchkin_elves_run_away_more_minions_title', autoResolveIfSingle: false, multi: { min: 0, max: options.length }, responseValidationMode: 'live', autoRefresh: 'field', displayCard: { defId: RUN_AWAY_MORE, cardUid: sourceCardUid } });
+        const interaction = createSimpleChoice<MinionChoice>(`${RUN_MORE_CHOOSE_MINIONS}_${timestamp}`, playerId, '赶紧逃跑吧：选择任意数量己方随从', options, { sourceId: RUN_MORE_CHOOSE_MINIONS, targetType: 'minion', titleKey: 'ui.munchkin_elves_run_away_more_minions_title', autoResolveIfSingle: false, multi: { min: 0, max: options.length }, responseValidationMode: 'live', autoRefresh: 'field', displayCard: { defId: RUN_AWAY_MORE, cardUid: sourceCardUid } });
         return { state: queueSimpleChoice(state, { ...interaction, data: { ...interaction.data, sourceBaseIndex, targetBaseIndex: choice.baseIndex, sourceCardUid } }), events: [] };
     });
 
@@ -698,7 +698,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
     registerInteractionHandler(TREEHOUSE_CHOOSE_PLAYER, (state, playerId, value, data, _random, timestamp) => {
         const targetPlayerId = (value as PlayerChoice)?.targetPlayerId;
         if (!targetPlayerId || targetPlayerId === playerId) return { state, events: [] };
-        const interaction = createSimpleChoice<{ draw?: boolean }>(`${TREEHOUSE_CHOOSE_DRAW}_${timestamp}`, targetPlayerId, '树屋：是否抽一张牌？', [{ id: 'draw', label: '抽一张牌', labelKey: 'ui.base_treehouse_draw_option', value: { draw: true }, displayMode: 'button' }, skipOption('跳过')], { sourceId: TREEHOUSE_CHOOSE_DRAW, targetType: 'button', titleKey: 'ui.base_treehouse_draw_title', autoResolveIfSingle: false });
+        const interaction = createSimpleChoice<{ draw?: boolean }>(`${TREEHOUSE_CHOOSE_DRAW}_${timestamp}`, targetPlayerId, '树屋：是否抽一张牌？', [{ id: 'draw', label: '抽一张牌', labelKey: 'ui.base_treehouse_draw_option', value: { draw: true }, displayMode: 'button' }, { ...skipOption('跳过'), value: { draw: false } }], { sourceId: TREEHOUSE_CHOOSE_DRAW, targetType: 'button', titleKey: 'ui.base_treehouse_draw_title', autoResolveIfSingle: false });
         return { state: queueSimpleChoice(state, { ...interaction, data: { ...interaction.data, sourcePlayerId: playerId } }), events: [] };
     });
 

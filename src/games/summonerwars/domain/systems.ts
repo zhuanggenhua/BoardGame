@@ -554,7 +554,10 @@ type SwInteractionMeta =
         | 'high_telekinesis_instead'
         | 'vanish'
         | 'mogu_blood_infusion'
-        | 'shadow_return_to_shadow';
+        | 'shadow_return_to_shadow'
+        | 'zhongcai_erase'
+        | 'zhongcai_inspire'
+        | 'zhongcai_word';
       sourceUnitId: string;
       sourcePosition: CellCoord;
       step?: 'selectCard' | 'selectPosition' | 'selectUnit' | 'selectDirection';
@@ -690,7 +693,7 @@ type SwSimpleChoiceData<T = unknown> = Record<string, unknown> & {
   sw?: SwInteractionMeta;
 };
 type SwSimpleChoiceInteraction<T = unknown> = InteractionDescriptor<SwSimpleChoiceData<T>>;
-type SwSimpleChoiceConfig<T = unknown> = SimpleChoiceConfig & {
+type SwSimpleChoiceConfig<T = unknown> = Omit<SimpleChoiceConfig<T>, 'optionsGenerator'> & {
   optionsGenerator?: (state: MatchState<SummonerWarsCore>, data: SwSimpleChoiceData<T>) => PromptOption<T>[];
 };
 
@@ -703,19 +706,29 @@ function createSimpleChoice<T>(
   timeout?: number,
   multi?: PromptMultiConfig,
 ): SwSimpleChoiceInteraction<T> {
+  let engineSourceIdOrConfig: string | SimpleChoiceConfig<T> | undefined =
+    typeof sourceIdOrConfig === 'string' || sourceIdOrConfig === undefined
+      ? sourceIdOrConfig
+      : undefined;
+  let optionsGenerator: SwSimpleChoiceConfig<T>['optionsGenerator'];
+  if (typeof sourceIdOrConfig === 'object' && sourceIdOrConfig !== null) {
+    const { optionsGenerator: gameOptionsGenerator, ...engineConfig } = sourceIdOrConfig;
+    optionsGenerator = gameOptionsGenerator;
+    engineSourceIdOrConfig = engineConfig;
+  }
   const interaction = createEngineSimpleChoice(
     id,
     playerId,
     title,
     options,
-    sourceIdOrConfig,
+    engineSourceIdOrConfig,
     timeout,
     multi,
   ) as unknown as SwSimpleChoiceInteraction<T>;
-  if (typeof sourceIdOrConfig === 'object' && sourceIdOrConfig?.optionsGenerator) {
+  if (optionsGenerator) {
     interaction.data = {
       ...interaction.data,
-      optionsGenerator: sourceIdOrConfig.optionsGenerator,
+      optionsGenerator,
     };
   }
   return interaction;
@@ -2225,11 +2238,13 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           const options: PromptOption<SwInteractionValue>[] = [
             {
               id: 'discard',
+              label: '弃掉这张事件牌',
               labelKey: 'actions.zhongcaiDecreeDiscard',
               value: { action: 'zhongcai_decree_discard' },
             },
             {
               id: 'keep',
+              label: '保留这张事件牌',
               labelKey: 'actions.zhongcaiDecreeKeep',
               value: { action: 'zhongcai_decree_keep' },
             },
@@ -2340,7 +2355,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               },
               autoResolveIfSingle: false,
               responseValidationMode: 'live',
-              optionsGenerator: (state) => buildGrabFollowOptions(
+              optionsGenerator: (state: MatchState<SummonerWarsCore>) => buildGrabFollowOptions(
                 state.core as SummonerWarsCore,
                 payload.movedTo,
                 payload.grabberUnitId,
@@ -3513,7 +3528,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
             interaction.data = {
               ...interactionData,
-              optionsGenerator: (state) => buildBloodRuneOptions(state.core as SummonerWarsCore, sourceUnit.owner),
+              optionsGenerator: (state: MatchState<SummonerWarsCore>) => buildBloodRuneOptions(state.core as SummonerWarsCore, sourceUnit.owner),
               sw: {
                 type: 'on_phase_start_blood_rune',
                 sourceUnitId,

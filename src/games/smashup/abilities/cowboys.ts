@@ -17,7 +17,7 @@ import {
     inspectDeck,
     moveTitan,
 } from '../domain/abilityHelpers';
-import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
+import { registerBaseAbility, registerExtended, type BaseAbilityContext, type BaseAbilityResult } from '../domain/baseAbilities';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { canStartDuel, isMinionInActiveDuel, startDuelWithEvents } from '../domain/duel';
@@ -39,6 +39,7 @@ import type {
 import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -535,16 +536,16 @@ function cowboysBaseSoSoCorralOnMinionPlayed(ctx: BaseAbilityContext): AbilityRe
     return { events: result.events, matchState: result.matchState };
 }
 
-function cowboysBaseSaloonOnMinionDestroyed(ctx: any): AbilityResult {
+function cowboysBaseSaloonOnMinionDestroyed(ctx: BaseAbilityContext): BaseAbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
-    const playerIds = Array.from(new Set(base.minions.map((minion: MinionOnBase) => minion.controller)));
+    const playerIds = Array.from(new Set<PlayerId>(base.minions.map((minion: MinionOnBase) => minion.controller)));
     return {
         events: playerIds.flatMap((playerId) => buildStandardDrawEvents(ctx.state, playerId, 1, dummyRandom, ctx.now)),
     };
 }
 
-const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptContext>({
     sourceId: 'cowboys_optional_duel_target',
     interactionSourceIds: ['cowboys_gunfighter', 'cowboys_sheriff_before_scoring', 'base_so_so_corral'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -580,7 +581,7 @@ const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptCo
     },
 });
 
-const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuelPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuelPromptContext>({
     sourceId: 'cowboys_friendly_duel_select',
     interactionSourceIds: ['cowboys_high_noon_friendly', 'cowboys_run_em_off_friendly'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -606,7 +607,7 @@ const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuel
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
         return {
             events: [],
-            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createCowboysPromptContext(state, context.playerId, timestamp, {
                 visibleSourceId: context.nextVisibleSourceId,
                 title: context.nextTitle,
                 titleKey: context.nextTitleKey,
@@ -617,13 +618,12 @@ const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuel
                 outcome: context.outcome,
                 ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
                 respectActionProtection: context.respectActionProtection,
-            }),
-            nextProgram: cowboysEnemyDuelPromptProgram,
+            }), cowboysEnemyDuelPromptProgram),
         };
     },
 });
 
-const cowboysEnemyDuelPromptProgram = createPromptProgram<CowboysDuelPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysEnemyDuelPromptProgram = createPromptProgram<CowboysDuelPromptContext>({
     sourceId: 'cowboys_enemy_duel_target',
     interactionSourceIds: ['cowboys_high_noon_enemy', 'cowboys_run_em_off_enemy'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -656,7 +656,7 @@ const cowboysEnemyDuelPromptProgram = createPromptProgram<CowboysDuelPromptConte
     },
 });
 
-const cowboysQuickDrawPromptProgram = createPromptProgram<CowboysPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysQuickDrawPromptProgram = createPromptProgram<CowboysPromptContext>({
     sourceId: 'cowboys_quick_draw',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cowboys_quick_draw_${context.now}`,
@@ -682,7 +682,7 @@ const cowboysQuickDrawPromptProgram = createPromptProgram<CowboysPromptContext, 
     },
 });
 
-const cowboysDynamiteSurprisePromptProgram = createPromptProgram<CowboysDynamitePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysDynamiteSurprisePromptProgram = createPromptProgram<CowboysDynamitePromptContext>({
     sourceId: 'cowboys_dynamite_surprise',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -729,7 +729,7 @@ const cowboysDynamiteSurprisePromptProgram = createPromptProgram<CowboysDynamite
     },
 });
 
-const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDynamiteSeenPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDynamiteSeenPromptContext>({
     sourceId: 'cowboys_dynamite_surprise_seen',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cowboys_dynamite_surprise_seen_${context.now}_${context.cardUid}`,
@@ -798,7 +798,7 @@ const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDyna
     },
 });
 
-const cowboysGoldSelectPromptProgram = createPromptProgram<GoldSelectPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysGoldSelectPromptProgram = createPromptProgram<GoldSelectPromptContext>({
     sourceId: 'cowboys_gold_in_them_thar_hills',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cowboys_gold_in_them_thar_hills_${context.now}`,
@@ -821,17 +821,16 @@ const cowboysGoldSelectPromptProgram = createPromptProgram<GoldSelectPromptConte
         const remaining = currentTopCards.filter(card => card.uid !== currentChosen.uid);
         return {
             events: [],
-            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createCowboysPromptContext(state, context.playerId, timestamp, {
                 chosenCard: currentChosen,
                 remainingCards: remaining,
                 random: context.random,
-            }),
-            nextProgram: remaining.length > 1 ? cowboysGoldOrderPromptProgram : cowboysGoldPostOrderProgram,
+            }), remaining.length > 1 ? cowboysGoldOrderPromptProgram : cowboysGoldPostOrderProgram),
         };
     },
 });
 
-const cowboysGoldOrderPromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysGoldOrderPromptProgram = createPromptProgram<GoldRuntimePromptContext>({
     sourceId: 'cowboys_gold_in_them_thar_hills_order',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -863,12 +862,11 @@ const cowboysGoldOrderPromptProgram = createPromptProgram<GoldRuntimePromptConte
         const orderedRemaining = [topCard, ...currentRemaining.filter(card => card.uid !== selected.topCardUid)];
         return {
             events: [],
-            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createCowboysPromptContext(state, context.playerId, timestamp, {
                 chosenCard: currentChosen,
                 remainingCards: orderedRemaining,
                 random: context.random,
-            }),
-            nextProgram: cowboysGoldPostOrderProgram,
+            }), cowboysGoldPostOrderProgram),
         };
     },
 });
@@ -887,12 +885,11 @@ const cowboysGoldPostOrderProgram = createEffectProgram<GoldRuntimePromptContext
     }
     return {
         events: [],
-        context,
-        nextProgram: cowboysGoldModePromptProgram,
+        continuation: createAbilityRuntimeContinuation(context, cowboysGoldModePromptProgram),
     };
 });
 
-const cowboysGoldModePromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysGoldModePromptProgram = createPromptProgram<GoldRuntimePromptContext>({
     sourceId: 'cowboys_gold_in_them_thar_hills_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cowboys_gold_in_them_thar_hills_mode_${context.now}`,
@@ -926,12 +923,11 @@ const cowboysGoldModePromptProgram = createPromptProgram<GoldRuntimePromptContex
         }
         return {
             events: [],
-            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createCowboysPromptContext(state, context.playerId, timestamp, {
                 chosenCard: context.chosenCard,
                 remainingCards: context.remainingCards,
                 random: context.random,
-            }),
-            nextProgram: cowboysGoldPlayResolverProgram,
+            }), cowboysGoldPlayResolverProgram),
         };
     },
 });
@@ -960,7 +956,7 @@ const cowboysGoldPlayResolverProgram = createEffectProgram<GoldRuntimePromptCont
                 ),
             };
         }
-        return { events: [], context, nextProgram: cowboysGoldMinionBasePromptProgram };
+        return { events: [], continuation: createAbilityRuntimeContinuation(context, cowboysGoldMinionBasePromptProgram) };
     }
 
     if (context.chosenCard.type !== 'action') {
@@ -1014,7 +1010,7 @@ const cowboysGoldPlayResolverProgram = createEffectProgram<GoldRuntimePromptCont
                 ),
             };
         }
-        return { events: [], context, nextProgram: cowboysGoldActionMinionPromptProgram };
+        return { events: [], continuation: createAbilityRuntimeContinuation(context, cowboysGoldActionMinionPromptProgram) };
     }
 
     if (actionLikeNeedsPlayBase(actionDef) || actionDef.subtype === 'ongoing') {
@@ -1039,7 +1035,7 @@ const cowboysGoldPlayResolverProgram = createEffectProgram<GoldRuntimePromptCont
                 ),
             };
         }
-        return { events: [], context, nextProgram: cowboysGoldActionBasePromptProgram };
+        return { events: [], continuation: createAbilityRuntimeContinuation(context, cowboysGoldActionBasePromptProgram) };
     }
 
     return playGoldCard(
@@ -1053,7 +1049,7 @@ const cowboysGoldPlayResolverProgram = createEffectProgram<GoldRuntimePromptCont
     );
 });
 
-const cowboysGoldMinionBasePromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysGoldMinionBasePromptProgram = createPromptProgram<GoldRuntimePromptContext>({
     sourceId: 'cowboys_gold_in_them_thar_hills_minion_base',
     buildInteraction: (context) => {
         const options = context.matchState.core.bases
@@ -1090,7 +1086,7 @@ const cowboysGoldMinionBasePromptProgram = createPromptProgram<GoldRuntimePrompt
     },
 });
 
-const cowboysGoldActionBasePromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysGoldActionBasePromptProgram = createPromptProgram<GoldRuntimePromptContext>({
     sourceId: 'cowboys_gold_in_them_thar_hills_action_base',
     buildInteraction: (context) => {
         const options = context.matchState.core.bases
@@ -1126,7 +1122,7 @@ const cowboysGoldActionBasePromptProgram = createPromptProgram<GoldRuntimePrompt
     },
 });
 
-const cowboysGoldActionMinionPromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysGoldActionMinionPromptProgram = createPromptProgram<GoldRuntimePromptContext>({
     sourceId: 'cowboys_gold_in_them_thar_hills_action_minion',
     buildInteraction: (context) => {
         const minionOptions = context.matchState.core.bases.flatMap((base, baseIndex) => (
@@ -1169,7 +1165,7 @@ const cowboysGoldActionMinionPromptProgram = createPromptProgram<GoldRuntimeProm
     },
 });
 
-const cowboysStagecoachSourcePromptProgram = createPromptProgram<StagecoachSourcePromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysStagecoachSourcePromptProgram = createPromptProgram<StagecoachSourcePromptContext>({
     sourceId: 'cowboys_stagecoach_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `cowboys_stagecoach_source_${context.now}`,
@@ -1185,15 +1181,14 @@ const cowboysStagecoachSourcePromptProgram = createPromptProgram<StagecoachSourc
         if (movableCards.length === 0) return { events: [] };
         return {
             events: [],
-            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createCowboysPromptContext(state, context.playerId, timestamp, {
                 sourceBaseIndex: selected.baseIndex,
-            }),
-            nextProgram: cowboysStagecoachCardsPromptProgram,
+            }), cowboysStagecoachCardsPromptProgram),
         };
     },
 });
 
-const cowboysStagecoachCardsPromptProgram = createPromptProgram<StagecoachCardsPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysStagecoachCardsPromptProgram = createPromptProgram<StagecoachCardsPromptContext>({
     sourceId: 'cowboys_stagecoach_cards',
     buildInteraction: (context) => {
         const movableCards = collectStagecoachCardsOnBase(context.matchState.core, context.playerId, context.sourceBaseIndex);
@@ -1241,16 +1236,15 @@ const cowboysStagecoachCardsPromptProgram = createPromptProgram<StagecoachCardsP
         if (sanitizedCards.length === 0) return { events: [] };
         return {
             events: [],
-            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createCowboysPromptContext(state, context.playerId, timestamp, {
                 sourceBaseIndex: context.sourceBaseIndex,
                 selectedCards: sanitizedCards,
-            }),
-            nextProgram: cowboysStagecoachDestinationPromptProgram,
+            }), cowboysStagecoachDestinationPromptProgram),
         };
     },
 });
 
-const cowboysStagecoachDestinationPromptProgram = createPromptProgram<StagecoachDestinationPromptContext, SmashUpCore, SmashUpEvent>({
+const cowboysStagecoachDestinationPromptProgram = createPromptProgram<StagecoachDestinationPromptContext>({
     sourceId: 'cowboys_stagecoach_destination',
     buildInteraction: (context) => {
         const destinationBases = context.matchState.core.bases

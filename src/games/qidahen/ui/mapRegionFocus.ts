@@ -2,7 +2,7 @@ import type { QidahenRuntimeRegionBounds } from './runtimeRegionOwnership';
 
 type Rect = QidahenRuntimeRegionBounds;
 export type QidahenMapViewport = { zoom: number; panX: number; panY: number };
-export const QIDAHEN_MAP_MIN_ZOOM = 1;
+export const QIDAHEN_MAP_MIN_ZOOM = 0.3;
 export const QIDAHEN_MAP_MAX_ZOOM = 5;
 
 /** 两种地图渲染共用自由平移；缩放仍受正式范围限制。 */

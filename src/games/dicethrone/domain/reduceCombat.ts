@@ -590,7 +590,7 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
 
     // 同时结算收尾：将防御方 HP 钳制回上限
     const currentDefender = defenderId ? players[defenderId] : undefined;
-    if (currentDefender) {
+    if (defenderId && currentDefender) {
         const healthCap = getPlayerHealthCap(state, defenderId);
         const currentHp = currentDefender.resources[RESOURCE_IDS.HP] ?? 0;
         const cappedHp = Math.min(healthCap, Math.max(0, currentHp));
@@ -644,10 +644,11 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
             }
             : state.vampireLordBloodPowerEndTurnPending,
     };
-    if (isSettledReplayOnlyRollContext(nextState.currentRollContext)) {
+    const nextRollContext = nextState.currentRollContext;
+    if (nextRollContext && isSettledReplayOnlyRollContext(nextRollContext)) {
         return state.pendingAttack?.tokenResponseFullyEvaded === true
-            && nextState.currentRollContext.kind === 'bonus'
-            ? clearCurrentRollContext(nextState, nextState.currentRollContext.id)
+            && nextRollContext.kind === 'bonus'
+            ? clearCurrentRollContext(nextState, nextRollContext.id)
             : nextState;
     }
     return clearCurrentRollContext(nextState, nextState.currentRollContext?.id);
@@ -839,7 +840,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
             ...(state.treantSpiritSpentThisTurn ?? {}),
             [playerId]: {
                 ...(state.treantSpiritSpentThisTurn?.[playerId] ?? {}),
-                [tokenId]: true,
+                [tokenId]: true as const,
             },
         }
         : state.treantSpiritSpentThisTurn;

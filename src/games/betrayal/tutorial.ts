@@ -94,7 +94,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createStartedFirstScenarioTutorialCore().core ?? createStartedFirstScenarioTutorialCore(),
+                        fields: createStartedFirstScenarioTutorialCore(),
                     },
                 },
             ],
@@ -456,7 +456,7 @@ const createBetrayalHeroReaderAndFirstObjectiveSteps = (
                 position: 'top' as const,
                 requireAction: true,
                 allowedCommands: [BETRAYAL_COMMANDS.STUDY_MUMMY_NAME],
-                randomPolicy: { mode: 'fixed', values: [3] },
+                randomPolicy: { mode: 'fixed' as const, values: [3] },
                 advanceOnEvents: [{ type: 'MUMMY_NAME_STUDIED', match: { playerId: '0', success: true } }],
                 viewAs: '0',
             },
@@ -497,7 +497,7 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createNaturalHauntTriggerTutorialCore().core ?? createNaturalHauntTriggerTutorialCore(),
+                        fields: createNaturalHauntTriggerTutorialCore(),
                     },
                 },
             ],
@@ -642,7 +642,7 @@ const BETRAYAL_TRADE_AND_AGREEMENT: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createExchangeReadyTutorialCore().core ?? createExchangeReadyTutorialCore(),
+                        fields: createExchangeReadyTutorialCore(),
                     },
                 },
             ],
@@ -734,7 +734,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyReadyToBanishTutorialCore().core ?? createMummyReadyToBanishTutorialCore(),
+                        fields: createMummyReadyToBanishTutorialCore(),
                     },
                 },
             ],
@@ -957,7 +957,7 @@ const BETRAYAL_HERO_ATTACK_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createHeroAttackTraitorReadyTutorialCore().core ?? createHeroAttackTraitorReadyTutorialCore(),
+                        fields: createHeroAttackTraitorReadyTutorialCore(),
                     },
                 },
             ],
@@ -1009,7 +1009,7 @@ const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createJackSpiritPostReviveAttackReadyTutorialCore().core ?? createJackSpiritPostReviveAttackReadyTutorialCore(),
+                        fields: createJackSpiritPostReviveAttackReadyTutorialCore(),
                     },
                 },
             ],
@@ -1061,7 +1061,7 @@ const BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyTraitorVictoryReadyTutorialCore().core ?? createMummyTraitorVictoryReadyTutorialCore(),
+                        fields: createMummyTraitorVictoryReadyTutorialCore(),
                     },
                 },
             ],
@@ -1132,7 +1132,7 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyMonsterMoveReadyTutorialCore().core ?? createMummyMonsterMoveReadyTutorialCore(),
+                        fields: createMummyMonsterMoveReadyTutorialCore(),
                     },
                 },
             ],
@@ -1198,7 +1198,7 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyMonsterAttackRewardReadyTutorialCore().core ?? createMummyMonsterAttackRewardReadyTutorialCore(),
+                        fields: createMummyMonsterAttackRewardReadyTutorialCore(),
                     },
                 },
             ],
@@ -1271,7 +1271,7 @@ const BETRAYAL_TRAITOR_VIEW_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyMonsterMoveReadyTutorialCore().core ?? createMummyMonsterMoveReadyTutorialCore(),
+                        fields: createMummyMonsterMoveReadyTutorialCore(),
                     },
                 },
             ],

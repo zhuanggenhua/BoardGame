@@ -4,7 +4,7 @@
  */
 
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
-import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from './effects';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import type { ChoiceRequest, ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
@@ -25,6 +25,9 @@ import { getPlayerPassiveAbilities } from './passiveAbility';
 import { collectThorCompanionFollowups } from './customActions/thor';
 import { findPlayerAbility } from './abilityLookup';
 import { getChoiceResolvedEventHandler } from './choiceResolvedEvents';
+import { applyCurrentAttackDamageModifiers } from './attackDamageModifiers';
+import { deferAttackDebuffFollowups, hideDeferredAttackDebuffFrames, resumeAttackDebuffFollowups } from './deferredAttackDebuff';
+import { beginPreDefenseInteraction, resumePreDefenseInteraction } from './preDefenseInteractionContinuation';
 import { hasCurrentChoiceAnchor } from './choiceEffects';
 import { getActiveDice } from './rules';
 import { isRemovableStatusId } from './statusRemoval';
@@ -96,23 +99,38 @@ const buildAutoResolvedCompareRollEvent = (
     timestamp,
 });
 
+/** 选择者可能是防守方；同一攻击的后续伤害仍由原攻击方承担修正。 */
+const normalizeChoiceFollowupDamage = (
+    core: DiceThroneCore,
+    event: DiceThroneEvent,
+    choicePlayerId: string,
+): DiceThroneEvent => {
+    if (event.type !== 'DAMAGE_DEALT') return event;
+    const attack = core.pendingAttack;
+    const attackerId = attack && event.payload.damageScope === 'attack'
+        && event.payload.sourceAbilityId === attack?.sourceAbilityId
+        ? attack.attackerId
+        : choicePlayerId;
+    return applyCurrentAttackDamageModifiers(core, event, attackerId);
+};
+
 const pushChoiceResolvedFollowups = (
     nextEvents: GameEvent[],
     state: MatchState<DiceThroneCore>,
     resolvedEvent: ChoiceResolvedEvent,
     random: RandomFn,
-): void => {
+): MatchState<DiceThroneCore> => {
     const customId = resolvedEvent.payload.customId;
     if (!customId) {
-        return;
+        return state;
     }
     const followupHandler = getChoiceResolvedEventHandler(customId);
     const hasChoiceAnchor = hasCurrentChoiceAnchor(state.core, resolvedEvent.payload.sourceAbilityId)
         || resolvedEvent.payload.interactionBacked === true;
     if (!followupHandler || !hasChoiceAnchor) {
-        return;
+        return state;
     }
-    nextEvents.push(...followupHandler({
+    const followups = followupHandler({
         state: state.core,
         playerId: resolvedEvent.payload.playerId,
         customId,
@@ -120,7 +138,11 @@ const pushChoiceResolvedFollowups = (
         value: resolvedEvent.payload.value,
         timestamp: resolvedEvent.timestamp,
         random,
-    }));
+    });
+    const normalized = followups.map(followup => normalizeChoiceFollowupDamage(state.core, followup, resolvedEvent.payload.playerId));
+    const deferred = deferAttackDebuffFollowups(state, normalized, resolvedEvent.timestamp);
+    nextEvents.push(...deferred.events);
+    return deferred.state;
 };
 
 function extractChoiceCustomIds(interactionData: unknown): string[] {
@@ -167,8 +189,7 @@ function isOffensiveRollEndTokenChoice(customIds: string[], sourceId?: string): 
 
 function isOnOffensiveRollEndToken(core: DiceThroneCore, tokenId: string): boolean {
     const timing = core.tokenDefinitions.find((definition) => definition.id === tokenId)?.activeUse?.timing;
-    return timing === 'onOffensiveRollEnd'
-        || (Array.isArray(timing) && timing.includes('onOffensiveRollEnd'));
+    return Array.isArray(timing) && timing.includes('onOffensiveRollEnd');
 }
 
 function isStaleOffensiveRollEndChoiceResolved(core: DiceThroneCore, event: ChoiceResolvedEvent): boolean {
@@ -795,6 +816,13 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
         afterEvents: ({ state, events, random }): HookResult<DiceThroneCore> | void => {
             let newState = state;
             const nextEvents: GameEvent[] = [];
+            const resumePreDefense = (interactionId: string, timestamp: number) => {
+                const resumed = resumePreDefenseInteraction(newState, interactionId, random, timestamp);
+                if (resumed) {
+                    newState = resumed.state;
+                    nextEvents.push(...resumed.events);
+                }
+            };
             nextEvents.push(...events
                 .filter((event): event is Extract<DiceThroneEvent, { type: 'BONUS_DAMAGE_ADDED' }> => event.type === 'BONUS_DAMAGE_ADDED')
                 .map(event => resolvePostDamageBonusDamage(state, event))
@@ -852,7 +880,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 eventTimestamp + 1,
                             );
                             nextEvents.push(resolvedEvent);
-                            pushChoiceResolvedFollowups(nextEvents, newState, resolvedEvent, random);
+                            newState = pushChoiceResolvedFollowups(nextEvents, newState, resolvedEvent, random);
                             continue;
                         }
 
@@ -863,8 +891,20 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 title: payload.titleKey,
                                 sourceId: payload.sourceAbilityId,
                                 contestants: [
-                                    payload.compareRoll.contestants[0],
-                                    payload.compareRoll.contestants[1],
+                                    {
+                                        ...payload.compareRoll.contestants[0],
+                                        label: payload.compareRoll.contestants[0].label
+                                            ?? payload.compareRoll.contestants[0].labelKey
+                                            ?? payload.compareRoll.contestants[0].playerId
+                                            ?? '玩家1',
+                                    },
+                                    {
+                                        ...payload.compareRoll.contestants[1],
+                                        label: payload.compareRoll.contestants[1].label
+                                            ?? payload.compareRoll.contestants[1].labelKey
+                                            ?? payload.compareRoll.contestants[1].playerId
+                                            ?? '玩家2',
+                                    },
                                 ],
                                 resultText: payload.compareRoll.resultText,
                                 resultTextKey: payload.compareRoll.resultTextKey,
@@ -961,11 +1001,19 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const payload = (dtEvent as InteractionRequestedEvent).payload;
                     const pendingInteraction = payload.interaction;
                     const currentPhase = (newState.sys.phase ?? 'main1') as TurnPhase;
+                    const interactionId = pendingInteraction.type === 'modifyDie' ? `dt-dice-modify-${pendingInteraction.id}`
+                        : pendingInteraction.type === 'selectDie' ? `dt-dice-select-${pendingInteraction.id}`
+                            : `dt-interaction-${pendingInteraction.id}`;
+                    const continuation = beginPreDefenseInteraction(newState, dtEvent, interactionId);
+                    newState = continuation.state;
                     
                     // 骰子修改类交互 → multistep-choice
                     if (pendingInteraction.type === 'modifyDie') {
                         const config = pendingInteraction.dieModifyConfig;
-                        const selectCount = pendingInteraction.selectCount ?? 1;
+                        const selectCount = pendingInteraction.selectCount;
+                        if (typeof selectCount !== 'number' || !Number.isInteger(selectCount) || selectCount < 1 || !config) {
+                            throw new Error(`[DiceThrone] modifyDie interaction requires dieModifyConfig and positive integer selectCount: ${pendingInteraction.id}`);
+                        }
                         const mode = config?.mode;
                         const allowedDieIds = Array.isArray(pendingInteraction.allowedDieIds) && pendingInteraction.allowedDieIds.length > 0
                             ? Array.from(new Set(pendingInteraction.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
@@ -1010,7 +1058,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         );
                         newState = syncCurrentChoiceAnchorWithInteraction(queueDiceThroneInteraction(
                             newState,
-                            interaction,
+                            { ...interaction, resolutionFrameId: continuation.frameId ?? interaction.resolutionFrameId,
+                                ...(continuation.frameId && !pendingInteraction.allowCancel ? { cancelPolicy: 'forbidden' as const } : {}) },
                             { requestedInteractionId: pendingInteraction.id },
                         ));
                         continue;
@@ -1018,7 +1067,10 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
 
                     // 骰子选择（重掷）类交互 → multistep-choice
                     if (pendingInteraction.type === 'selectDie') {
-                        const selectCount = pendingInteraction.selectCount ?? 1;
+                        const selectCount = pendingInteraction.selectCount;
+                        if (typeof selectCount !== 'number' || !Number.isInteger(selectCount) || selectCount < 1) {
+                            throw new Error(`[DiceThrone] selectDie interaction requires positive integer selectCount: ${pendingInteraction.id}`);
+                        }
                         const allowRepeatedDieSelection = pendingInteraction.allowRepeatedDieSelection === true;
                         const isRepeatedReroll = allowRepeatedDieSelection;
                         const allowedDieIds = Array.isArray(pendingInteraction.allowedDieIds) && pendingInteraction.allowedDieIds.length > 0
@@ -1055,6 +1107,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             } : {}),
                             meta: {
                                 dtType: 'selectDie',
+                                selectionMode: 'reroll',
                                 selectCount,
                                 diceOwnerId: pendingInteraction.diceOwnerId,
                                 targetOpponentDice: pendingInteraction.targetOpponentDice ?? false,
@@ -1070,7 +1123,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         );
                         newState = syncCurrentChoiceAnchorWithInteraction(queueDiceThroneInteraction(
                             newState,
-                            interaction,
+                            { ...interaction, resolutionFrameId: continuation.frameId ?? interaction.resolutionFrameId,
+                                ...(continuation.frameId && !pendingInteraction.allowCancel ? { cancelPolicy: 'forbidden' as const } : {}) },
                             { requestedInteractionId: pendingInteraction.id },
                         ));
                         continue;
@@ -1104,6 +1158,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             if (!hasAnyStatus) {
                                 // 无可选项，自动跳过交互（直接 resolve，不生成事件）
                                 newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
+                                resumePreDefense(interactionId, dtEvent.timestamp);
                                 continue;
                             }
                         }
@@ -1115,6 +1170,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         id: `dt-interaction-${pendingInteraction.id}`,
                         kind: 'dt:card-interaction',
                         playerId: pendingInteraction.playerId,
+                        resolutionFrameId: continuation.frameId,
+                        ...(continuation.frameId && !pendingInteraction.allowCancel ? { cancelPolicy: 'forbidden' as const } : {}),
                         data: { ...pendingInteraction, sourceId: pendingInteraction.sourceCardId },
                     };
                     newState = syncCurrentChoiceAnchorWithInteraction(queueDiceThroneInteraction(
@@ -1155,6 +1212,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             newState = markCurrentAttackReadyAfterInteraction(newState, interactionData);
                             // 状态选择完成和骰子选择完成一样，必须通知响应窗口解除同一交互锁。
                             newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
+                            resumePreDefense(completedInteractionId, dtEvent.timestamp);
                             nextEvents.push({
                                 type: INTERACTION_EVENTS.CONFIRMED,
                                 payload: {
@@ -1178,6 +1236,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     if (current?.kind === 'dt:card-interaction' && (!interactionId || current.id === interactionId)) {
                         statusInteractionCompleted = true;
                         newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
+                        resumePreDefense(current.id, dtEvent.timestamp);
                     }
                 }
 
@@ -1313,6 +1372,11 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     } as DiceThroneEvent);
                 }
 
+                if (event.type === INTERACTION_EVENTS.RESOLVED || event.type === INTERACTION_EVENTS.CONFIRMED) {
+                    const interactionId = (event.payload as { interactionId?: unknown }).interactionId;
+                    if (typeof interactionId === 'string') resumePreDefense(interactionId, event.timestamp);
+                }
+
                 // 处理 Prompt 响应 -> 生成 CHOICE_RESOLVED 领域事件
                 const resolvedEvent = handlePromptResolved(event);
                 if (resolvedEvent) {
@@ -1324,13 +1388,19 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         newState = restoreResolvedChoiceAnchorFromInteraction(newState, resolvedEvent.payload.sourceAbilityId);
                     }
                     nextEvents.push(resolvedEvent);
+                    const resumedDebuff = resumeAttackDebuffFollowups(newState, resolvedEvent);
+                    if (resumedDebuff) {
+                        newState = resumedDebuff.state;
+                        nextEvents.push(...resumedDebuff.events);
+                        continue;
+                    }
                     const customId = resolvedEvent.payload.customId;
                     if (customId) {
                         const followupHandler = getChoiceResolvedEventHandler(customId);
                         const hasChoiceAnchor = hasCurrentChoiceAnchor(newState.core, resolvedEvent.payload.sourceAbilityId)
                             || isInteractionBackedChoice;
                         if (followupHandler && hasChoiceAnchor) {
-                            nextEvents.push(...followupHandler({
+                            const followupEvents = followupHandler({
                                 state: newState.core,
                                 playerId: resolvedEvent.payload.playerId,
                                 customId,
@@ -1338,7 +1408,11 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 value: resolvedEvent.payload.value,
                                 timestamp: resolvedEvent.timestamp,
                                 random,
-                            }));
+                            });
+                            const normalized = followupEvents.map(followup => normalizeChoiceFollowupDamage(newState.core, followup, resolvedEvent.payload.playerId));
+                            const deferred = deferAttackDebuffFollowups(newState, normalized, resolvedEvent.timestamp);
+                            newState = deferred.state;
+                            nextEvents.push(...deferred.events);
                         }
                     }
                 }
@@ -1494,6 +1568,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 };
             }
         },
+        playerView: (state) => hideDeferredAttackDebuffFrames(state),
     };
 }
 
@@ -1508,25 +1583,35 @@ export function handlePromptResolved(
     const eventTimestamp = typeof event.timestamp === 'number' ? event.timestamp : 0;
     
     const payload = event.payload as {
-        interactionId: string;
-        playerId: string;
-        optionId: string | null;
-        value: { statusId?: string; tokenId?: string; value: number; customId?: string };
-        sourceId?: string;
+        interactionId?: unknown;
+        playerId?: unknown;
+        optionId?: unknown;
+        value?: unknown;
+        sourceId?: unknown;
     };
-    const resolvedValue = typeof payload.value?.value === 'number' && Number.isFinite(payload.value.value)
-        ? payload.value.value
-        : undefined;
+    const valuePayload = payload.value && typeof payload.value === 'object' && !Array.isArray(payload.value)
+        ? payload.value as Record<string, unknown>
+        : null;
+    if (
+        typeof payload.interactionId !== 'string'
+        || typeof payload.playerId !== 'string'
+        || !valuePayload
+        || typeof valuePayload.value !== 'number'
+        || !Number.isFinite(valuePayload.value)
+    ) {
+        return null;
+    }
+    const resolvedValue = valuePayload.value;
     
     const resolvedEvent: ChoiceResolvedEvent = {
         type: 'CHOICE_RESOLVED',
         payload: {
             playerId: payload.playerId,
-            statusId: payload.value.statusId,
-            tokenId: payload.value.tokenId,
+            statusId: typeof valuePayload.statusId === 'string' ? valuePayload.statusId : undefined,
+            tokenId: typeof valuePayload.tokenId === 'string' ? valuePayload.tokenId : undefined,
             value: resolvedValue,
-            customId: payload.value.customId,
-            sourceAbilityId: payload.sourceId,
+            customId: typeof valuePayload.customId === 'string' ? valuePayload.customId : undefined,
+            sourceAbilityId: typeof payload.sourceId === 'string' ? payload.sourceId : undefined,
         },
         sourceCommandType: 'RESOLVE_CHOICE',
         timestamp: eventTimestamp,

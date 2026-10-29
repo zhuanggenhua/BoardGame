@@ -14,6 +14,7 @@ import {
     inspectDeck,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -205,7 +206,7 @@ function getOtherPlayers(state: SmashUpCore, playerId: PlayerId): PlayerId[] {
 }
 
 function getPlayerLabel(state: SmashUpCore, playerId: PlayerId): string {
-    return state.players[playerId]?.name ?? `玩家 ${playerId}`;
+    return `玩家 ${playerId}`;
 }
 
 function getCardLabel(defId: string): string {
@@ -460,13 +461,12 @@ const pendingActionResolutionProgram = createEffectProgram<PendingActionContinua
         return {
             events,
             matchState: resolution.state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: resolution.state,
                 playerId: context.playerId,
                 now: context.now,
                 ...context.postGiftSelf,
-            } satisfies GiftSelfContext,
-            nextProgram: giftSelfPromptProgram,
+            } satisfies GiftSelfContext, giftSelfPromptProgram),
         };
     },
 );
@@ -476,8 +476,7 @@ const pendingActionAfterEventsProgram = createEffectProgram<PendingActionAfterEv
         const { leadingEvents: _leadingEvents, ...nextContext } = context;
         return {
             events: context.leadingEvents,
-            context: nextContext,
-            nextProgram: pendingActionResolutionProgram,
+            continuation: createAbilityRuntimeContinuation(nextContext, pendingActionResolutionProgram),
         };
     },
 );
@@ -527,7 +526,7 @@ const giftSelfAfterTransferProgram = createEffectProgram<GiftSelfAfterTransferCo
     },
 );
 
-const giftCardsPromptProgram = createPromptProgram<GiftCardsContext, SmashUpCore, SmashUpEvent>({
+const giftCardsPromptProgram = createPromptProgram<GiftCardsContext>({
     sourceId: 'anansi_tales_gift_cards',
     interactionSourceIds: [
         'anansi_tales_akye_the_turtle',
@@ -580,19 +579,18 @@ const giftCardsPromptProgram = createPromptProgram<GiftCardsContext, SmashUpCore
         }
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 transferCount: events.length,
                 random: args.random,
-            } satisfies GiftCardsAfterTransferContext,
-            nextProgram: giftCardsAfterTransferProgram,
+            } satisfies GiftCardsAfterTransferContext, giftCardsAfterTransferProgram),
         };
     },
 });
 
-const giftSelfPromptProgram = createPromptProgram<GiftSelfContext, SmashUpCore, SmashUpEvent>({
+const giftSelfPromptProgram = createPromptProgram<GiftSelfContext>({
     sourceId: 'anansi_tales_gift_self',
     interactionSourceIds: [
         'anansi_tales_let_it_be_full_and_eat',
@@ -642,18 +640,17 @@ const giftSelfPromptProgram = createPromptProgram<GiftSelfContext, SmashUpCore, 
         const events: SmashUpEvent[] = [transferEvent];
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 random: args.random,
-            } satisfies GiftSelfAfterTransferContext,
-            nextProgram: giftSelfAfterTransferProgram,
+            } satisfies GiftSelfAfterTransferContext, giftSelfAfterTransferProgram),
         };
     },
 });
 
-const counterPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+const counterPromptProgram = createPromptProgram<CounterPromptContext>({
     sourceId: 'anansi_tales_counter_allocation',
     interactionSourceIds: [
         ANANSI_POT_OF_BEANS_COUNTER_SOURCE_ID,
@@ -713,22 +710,21 @@ const counterPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCo
         if (context.giftSelf) {
             return {
                 events,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
                     sourceId: context.giftSelf.sourceId ?? context.sourceId,
                     effectSourceId: context.giftSelf.effectSourceId ?? effectSourceId,
                     ...context.giftSelf,
-                } satisfies GiftSelfContext,
-                nextProgram: giftSelfPromptProgram,
+                } satisfies GiftSelfContext, giftSelfPromptProgram),
             };
         }
         return { events };
     },
 });
 
-const featherGiftDestinationPromptProgram = createPromptProgram<MoveDestinationContext, SmashUpCore, SmashUpEvent>({
+const featherGiftDestinationPromptProgram = createPromptProgram<MoveDestinationContext>({
     sourceId: 'anansi_tales_feather_gifts_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `anansi_tales_feather_gifts_destination_${context.now}`,
@@ -769,19 +765,18 @@ const featherGiftDestinationPromptProgram = createPromptProgram<MoveDestinationC
         }
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
                 ...context.giftSelf,
-            } satisfies GiftSelfContext,
-            nextProgram: giftSelfPromptProgram,
+            } satisfies GiftSelfContext, giftSelfPromptProgram),
         };
     },
 });
 
-const featherGiftSourcePromptProgram = createPromptProgram<MoveSourceContext, SmashUpCore, SmashUpEvent>({
+const featherGiftSourcePromptProgram = createPromptProgram<MoveSourceContext>({
     sourceId: 'anansi_tales_feather_gifts',
     buildInteraction: (context) => {
         const candidates = context.matchState.core.bases.flatMap((base, baseIndex) => (
@@ -819,14 +814,13 @@ const featherGiftSourcePromptProgram = createPromptProgram<MoveSourceContext, Sm
         if (!choice?.minionUid || choice.baseIndex === undefined) {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
                     sourceId: context.sourceId,
                     ...context.giftSelf,
-                } satisfies GiftSelfContext,
-                nextProgram: giftSelfPromptProgram,
+                } satisfies GiftSelfContext, giftSelfPromptProgram),
             };
         }
         const live = state.core.bases[choice.baseIndex]?.minions.find(minion =>
@@ -834,32 +828,30 @@ const featherGiftSourcePromptProgram = createPromptProgram<MoveSourceContext, Sm
         if (!live || state.core.bases.length <= 1) {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
                     sourceId: context.sourceId,
                     ...context.giftSelf,
-                } satisfies GiftSelfContext,
-                nextProgram: giftSelfPromptProgram,
+                } satisfies GiftSelfContext, giftSelfPromptProgram),
             };
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 minionUid: live.uid,
                 minionDefId: live.defId,
                 fromBaseIndex: choice.baseIndex,
-            } satisfies MoveDestinationContext,
-            nextProgram: featherGiftDestinationPromptProgram,
+            } satisfies MoveDestinationContext, featherGiftDestinationPromptProgram),
         };
     },
 });
 
-const deckActionSearchPromptProgram = createPromptProgram<DeckActionSearchContext, SmashUpCore, SmashUpEvent>({
+const deckActionSearchPromptProgram = createPromptProgram<DeckActionSearchContext>({
     sourceId: 'anansi_tales_deck_action_search',
     interactionSourceIds: [
         'anansi_tales_the_perfect_gift',
@@ -936,7 +928,7 @@ const deckActionSearchPromptProgram = createPromptProgram<DeckActionSearchContex
     },
 });
 
-const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext, SmashUpCore, SmashUpEvent>({
+const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext>({
     sourceId: 'anansi_tales_collecting_stories',
     buildInteraction: (context) => {
         const options: PromptOption<CollectingStoriesChoice>[] = getOtherPlayers(context.matchState.core, context.playerId)
@@ -977,30 +969,28 @@ const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext, 
         if (isCardMinionLike(card) || def?.type === 'fusion') {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
                     cardUid: card.uid,
                     defId: card.defId,
                     fromPlayerId: choice.fromPlayerId,
-                } satisfies CollectingStoriesBaseContext,
-                nextProgram: collectingStoriesBasePromptProgram,
+                } satisfies CollectingStoriesBaseContext, collectingStoriesBasePromptProgram),
             };
         }
         if (isCardActionLike(card) && isStandardActionDef(def)) {
             if (actionLikeNeedsPlayBase(def) && !actionLikeNeedsPlayMinion(def)) {
                 return {
                     events: [],
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         matchState: state,
                         playerId: context.playerId,
                         now: timestamp,
                         cardUid: card.uid,
                         defId: card.defId,
                         fromPlayerId: choice.fromPlayerId,
-                    } satisfies CollectingStoriesBaseContext,
-                    nextProgram: collectingStoriesBasePromptProgram,
+                    } satisfies CollectingStoriesBaseContext, collectingStoriesBasePromptProgram),
                 };
             }
             const events = buildExtraActionPlayEventsFromHand(
@@ -1024,7 +1014,7 @@ const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext, 
     },
 });
 
-const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStoriesBaseContext, SmashUpCore, SmashUpEvent>({
+const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStoriesBaseContext>({
     sourceId: 'anansi_tales_collecting_stories_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `anansi_tales_collecting_stories_base_${context.cardUid}_${context.now}`,
@@ -1088,7 +1078,7 @@ const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStories
     },
 });
 
-const discardActionRecyclePromptProgram = createPromptProgram<DiscardActionRecycleContext, SmashUpCore, SmashUpEvent>({
+const discardActionRecyclePromptProgram = createPromptProgram<DiscardActionRecycleContext>({
     sourceId: 'anansi_tales_ear_of_corn',
     buildInteraction: (context) => {
         const actions = (context.matchState.core.players[context.playerId]?.discard ?? [])
@@ -1134,19 +1124,18 @@ const discardActionRecyclePromptProgram = createPromptProgram<DiscardActionRecyc
         events.push(buildExtraActionEvent(state, context.playerId, context.sourceId, timestamp));
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
                 ...context.giftSelf,
-            } satisfies GiftSelfContext,
-            nextProgram: giftSelfPromptProgram,
+            } satisfies GiftSelfContext, giftSelfPromptProgram),
         };
     },
 });
 
-const hornetBasePromptProgram = createPromptProgram<HornetBaseContext, SmashUpCore, SmashUpEvent>({
+const hornetBasePromptProgram = createPromptProgram<HornetBaseContext>({
     sourceId: 'anansi_tales_mboro_hornet',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `anansi_tales_mboro_hornet_${context.cardUid}_${context.now}`,
@@ -1194,8 +1183,7 @@ const hornetBasePromptProgram = createPromptProgram<HornetBaseContext, SmashUpCo
 const giftSelfAfterCommittedDrawProgram = createEffectProgram<GiftSelfContext, SmashUpCore, SmashUpEvent>(
     (context) => ({
         events: [],
-        context,
-        nextProgram: giftSelfPromptProgram,
+        continuation: createAbilityRuntimeContinuation(context, giftSelfPromptProgram),
     }),
 );
 
@@ -1208,7 +1196,7 @@ const drawThenGiftSelfProgram = createEffectProgram<DrawThenGiftSelfContext, Sma
             context.random,
             context.now,
         ),
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: context.matchState,
             playerId: context.playerId,
             now: context.now,
@@ -1218,8 +1206,7 @@ const drawThenGiftSelfProgram = createEffectProgram<DrawThenGiftSelfContext, Sma
             ...(context.fromPlayerId ? { fromPlayerId: context.fromPlayerId } : {}),
             ...(context.drawCardsAfterTransfer !== undefined ? { drawCardsAfterTransfer: context.drawCardsAfterTransfer } : {}),
             ...(context.baseMetadataAfterTransfer ? { baseMetadataAfterTransfer: context.baseMetadataAfterTransfer } : {}),
-        } satisfies GiftSelfContext,
-        nextProgram: giftSelfAfterCommittedDrawProgram,
+        } satisfies GiftSelfContext, giftSelfAfterCommittedDrawProgram),
     }),
 );
 
@@ -1238,7 +1225,7 @@ const potOfWisdomAfterCommittedDrawProgram = createEffectProgram<PotOfWisdomCont
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: context.now,
@@ -1248,8 +1235,7 @@ const potOfWisdomAfterCommittedDrawProgram = createEffectProgram<PotOfWisdomCont
                 maxCards: context.otherCount,
                 onePerOtherPlayer: true,
                 grantExtraActionAfter: true,
-            } satisfies GiftCardsContext,
-            nextProgram: giftCardsPromptProgram,
+            } satisfies GiftCardsContext, giftCardsPromptProgram),
         };
     },
 );
@@ -1263,8 +1249,7 @@ const potOfWisdomProgram = createEffectProgram<PotOfWisdomContext, SmashUpCore, 
             context.random,
             context.now,
         ),
-        context,
-        nextProgram: potOfWisdomAfterCommittedDrawProgram,
+        continuation: createAbilityRuntimeContinuation(context, potOfWisdomAfterCommittedDrawProgram),
     }),
 );
 

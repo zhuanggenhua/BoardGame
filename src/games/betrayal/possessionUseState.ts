@@ -9,7 +9,6 @@ import type { BetrayalPossessionUsedPayload } from './possessionUseResolution';
 import {
     applyTraitLoss,
     healExplorerTraitToStart,
-    moveExplorerTraitSteps,
 } from './traitTrackModel';
 
 function healExplorerTraitsToStart(
@@ -25,9 +24,7 @@ export function applyBetrayalPossessionUsedState(
     core: BetrayalCore,
     payload: BetrayalPossessionUsedPayload,
 ): void {
-    if (payload.effect.mode === 'move') {
-        core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + payload.effect.amount));
-    } else if (payload.effect.mode === 'nextNonCombatTraitReplacement') {
+    if (payload.effect.mode === 'nextNonCombatTraitReplacement') {
         const owner = findExplorerByPlayerId(core, payload.playerId) ?? core.currentExplorer;
         applyTraitLoss(owner, ['sanity'], payload.effect.sanityCost);
         core.nextNonCombatTraitReplacement = {
@@ -93,11 +90,8 @@ export function applyBetrayalPossessionUsedState(
                 : monster;
         });
     } else {
-        moveExplorerTraitSteps(
-            core.currentExplorer,
-            payload.effect.trait!,
-            payload.effect.amount,
-        );
+        const unsupportedEffect: never = payload.effect;
+        throw new Error(`Unsupported possession use effect: ${String(unsupportedEffect)}`);
     }
     core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, payload.cardId];
     core.latestDiscovery = null;

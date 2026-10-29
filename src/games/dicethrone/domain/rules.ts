@@ -4,7 +4,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
-import type { DtResponseWindowType } from './core-types';
+import type { CharacterId, DtResponseWindowType } from './core-types';
 import type { AbilityContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
 import type { RollDieConditionalEffect, RollDieDefaultEffect } from './effects';
@@ -80,6 +80,14 @@ export const getPlayerDieFace = (state: DiceThroneCore, playerId: PlayerId, valu
     const player = state.players[playerId];
     if (!player || !player.characterId || player.characterId === 'unselected') return null;
     return getHeroDieFace(player.characterId, value);
+};
+
+export const requirePlayerDieFace = (state: DiceThroneCore, playerId: PlayerId, value: number): DieFace => {
+    const face = getPlayerDieFace(state, playerId, value);
+    if (!face) {
+        throw new Error(`Cannot resolve die face for player ${playerId} with value ${value}`);
+    }
+    return face;
 };
 
 export const getPlayerDiceDefinitionId = (state: DiceThroneCore, playerId: PlayerId): string | null => {
@@ -165,7 +173,7 @@ export const hasPendingBonusDiceSettlement = (
 
 export const hasPhaseBlockingPendingBonusDiceSettlement = (state: DiceThroneCore): boolean => {
     const settlement = state.pendingBonusDiceSettlement;
-    if (!hasPendingBonusDiceSettlement(settlement)) {
+    if (!settlement || !hasPendingBonusDiceSettlement(settlement)) {
         return false;
     }
 
@@ -379,7 +387,7 @@ export const getSelectedCombatOpponentId = (
             return pendingAttack.defenderId;
         }
 
-        const effectivePhase = phase ?? state.turnPhase;
+        const effectivePhase = phase ?? state.currentRollContext?.phase;
         if (effectivePhase === 'targetingRoll') {
             const targetingValue = getActiveDice(state, effectivePhase)[0]?.value;
             if (typeof targetingValue === 'number') {
@@ -941,12 +949,17 @@ const matchesPendingDamagePlayCondition = (
         // 这时尚未生成 pendingDamage，因此允许 beforeDamageReceived 类卡牌在 defensiveRoll 先落成一次性护盾。
         // 对于不可防御攻击，当前项目口径同样允许这类“受击即刻防伤牌”在防御阶段直接落地护盾，
         // 不把“不可防御”误解释为“连受击即时牌都不能打”。
+        const knownDamageTargetId = state.pendingAttack?.defenderId;
         if (
             phase === 'defensiveRoll'
             && pendingDamageCondition.responseType === 'beforeDamageReceived'
-            && state.pendingAttack?.defenderId === playerId
+            && knownDamageTargetId !== undefined
         ) {
-            return pendingDamageCondition.role !== 'source';
+            if (pendingDamageCondition.role === 'source') return false;
+            if (pendingDamageCondition.role === 'target' || pendingDamageCondition.role === 'responder') {
+                return knownDamageTargetId === playerId;
+            }
+            return true;
         }
         return false;
     }
@@ -1522,7 +1535,8 @@ const rollBranchTargetsOpponent = (
     if (!branch) return false;
     return branch.grantStatus?.target === 'opponent'
         || branch.grantToken?.target === 'opponent'
-        || (branch.grantTokens?.some((grant) => grant.target === 'opponent') ?? false);
+        || (('grantTokens' in branch
+            && branch.grantTokens?.some((grant) => grant.target === 'opponent')) ?? false);
 };
 
 export const hasOpponentTargetEffect = (card: AbilityCard): boolean => {
@@ -1562,7 +1576,8 @@ const rollBranchNeedsSelectedDefender = (
     if (!branch) return false;
     return branch.grantStatus?.target === 'opponent'
         || branch.grantToken?.target === 'opponent'
-        || (branch.grantTokens?.some((grant) => grant.target === 'opponent') ?? false);
+        || (('grantTokens' in branch
+            && branch.grantTokens?.some((grant) => grant.target === 'opponent')) ?? false);
 };
 
 const actionNeedsSelectedDefender = (

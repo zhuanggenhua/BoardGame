@@ -85,6 +85,30 @@ function operationTasks(operation: string, core: DiceThroneCore, program: SpellP
     }
 }
 
+function getTargetChoiceTitleKey(task: Extract<SpellTask, { kind: 'target' }>): string {
+    switch (task.effect) {
+        case 'damage':
+            return task.amount === 1 ? 'doctorStrange.selectOpponentToTakeOneDamage'
+                : task.amount === 3 ? 'doctorStrange.selectOpponentToTakeThreeDamage'
+                    : 'doctorStrange.selectOpponentToTakeDamage';
+        case 'heal':
+            return task.amount === 1 ? 'doctorStrange.selectHeroToHealOne'
+                : task.amount === 3 ? 'doctorStrange.selectHeroToHealThree'
+                    : 'doctorStrange.selectHeroToHeal';
+        case 'deja-vu': return 'doctorStrange.selectPlayerToGainDejaVu';
+        case 'crimson-bands': return 'doctorStrange.selectOpponentToReceiveCrimsonBands';
+        case 'cp':
+            return task.amount < 0 ? 'doctorStrange.selectOpponentToLoseOneCp'
+                : 'doctorStrange.selectPlayerToGainCp';
+    }
+}
+
+function getPrepareChoiceTitleKey(task: Extract<SpellTask, { kind: 'prepare-choice' }>): string {
+    if (task.zone === 'deck') return 'doctorStrange.prepareFromDeckTop';
+    if (task.zone === 'hand') return 'doctorStrange.prepareFromHand';
+    return 'doctorStrange.prepareFromDiscard';
+}
+
 function spellTasks(index: number, mode: 'prepare' | 'cast', program: SpellProgram, core: DiceThroneCore, cardId: string): SpellTask[] {
     if (mode === 'prepare') {
         switch (index) {
@@ -239,6 +263,10 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                             labelParams: candidate.labelParams,
                             previewRef: candidate.previewRef,
                             targetPlayerId: candidate.targetPlayerId,
+                            choiceKind: candidate.choiceKind,
+                            cardId: candidate.cardId,
+                            cardSourceZone: candidate.cardSourceZone,
+                            candidateStatusId: candidate.statusId,
                         })),
                     },
                 };
@@ -268,14 +296,17 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                         && (task.kind !== 'cast-choice' || (!task.used?.includes(card.id) && !task.exclude?.includes(card.id))));
                     if (!cards.length || task.remaining <= 0) continue;
                     const choices: SpellCandidate[] = cards.map(card => ({ labelKey: card.name, previewRef: card.previewRef,
+                        choiceKind: 'card', cardId: card.id, cardSourceZone: task.zone,
                         tasks: [task.kind === 'prepare-choice' ? { kind: 'prepare', cardId: card.id, zone: task.zone, passive: task.zone === 'hand' }
                             : { kind: 'cast', cardId: card.id, zone: task.zone },
                         ...(task.remaining > 1 ? [{ ...task, remaining: task.remaining - 1,
                             ...(task.kind === 'cast-choice' ? { used: [...(task.used ?? []), card.id] } : {}) } as SpellTask] : [])],
                     }));
                     // 通用FAQ：施放永远可放弃；准备仅“至多/可以”可放弃。
-                    if (task.kind === 'cast-choice' || task.optional) choices.push({ labelKey: 'doctorStrange.skip', tasks: [] });
-                    return choose(choices, task.kind === 'cast-choice' ? 'doctorStrange.cast' : 'doctorStrange.prepare');
+                    if (task.kind === 'cast-choice' || task.optional) choices.push({ labelKey: 'doctorStrange.skip', choiceKind: 'skip', tasks: [] });
+                    return choose(choices, task.kind === 'cast-choice'
+                        ? 'doctorStrange.cast'
+                        : getPrepareChoiceTitleKey(task));
                 }
                 if (task.kind === 'prepare' || task.kind === 'cast') {
                     const card = player[task.zone]?.find(candidate => candidate.id === task.cardId);
@@ -295,8 +326,8 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                 }
                 if (task.kind === 'target') {
                     const targets = task.opponents ? getOpponents(core, program.playerId) : Object.keys(core.players);
-                    return choose(targets.map(targetId => ({ labelKey: 'doctorStrange.target', targetPlayerId: targetId,
-                        tasks: [{ ...effect(task.effect, task.amount, targetId), sourceId: task.sourceId } as SpellTask] })), 'interaction.selectPlayer');
+                    return choose(targets.map(targetId => ({ labelKey: 'doctorStrange.target', choiceKind: 'player', targetPlayerId: targetId,
+                        tasks: [{ ...effect(task.effect, task.amount, targetId), sourceId: task.sourceId } as SpellTask] })), getTargetChoiceTitleKey(task));
                 }
                 if (task.kind === 'remove-status') {
                     const choices: SpellCandidate[] = [];
@@ -305,11 +336,11 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                             if (definition.category !== 'debuff' && definition.category !== 'buff') continue;
                             const stacks = target.statusEffects[definition.id] ?? 0;
                             if (stacks <= 0) continue;
-                            choices.push({ labelKey: 'doctorStrange.removeStatus', labelParams: { status: definition.name }, targetPlayerId: targetId,
+                            choices.push({ labelKey: 'doctorStrange.removeStatus', labelParams: { status: definition.name }, choiceKind: 'status', statusId: definition.id, targetPlayerId: targetId,
                                 tasks: [{ kind: 'remove-status-target', targetId, statusId: definition.id, token: false }] });
                         }
                     }
-                    choices.push({ labelKey: 'doctorStrange.skip', tasks: [] });
+                    choices.push({ labelKey: 'doctorStrange.skip', choiceKind: 'skip', tasks: [] });
                     return choose(choices, 'doctorStrange.removeStatusTitle');
                 }
                 if (task.kind === 'remove-status-target') return emit([task.token
@@ -331,7 +362,7 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                 if (task.kind === 'income-return') {
                     const cards = player.hand.filter(card => task.cardIds.includes(card.id));
                     if (!cards.length) continue;
-                    return choose(cards.map(card => ({ labelKey: card.name, previewRef: card.previewRef, tasks: [{ kind: 'return-position', cardId: card.id }] })), 'doctorStrange.returnCard');
+                    return choose(cards.map(card => ({ labelKey: card.name, previewRef: card.previewRef, choiceKind: 'card', cardId: card.id, cardSourceZone: 'hand', tasks: [{ kind: 'return-position', cardId: card.id }] })), 'doctorStrange.returnCard');
                 }
                 if (task.kind === 'return-position') return choose((['top', 'bottom'] as const).map(position => ({
                     labelKey: `doctorStrange.${position}`, tasks: [{ kind: 'return', cardId: task.cardId, position }],
@@ -349,6 +380,7 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                         continue;
                     }
                     return choose(remaining.map(id => ({ labelKey: player.deck.find(card => card.id === id)!.name, previewRef: player.deck.find(card => card.id === id)!.previewRef,
+                        choiceKind: 'card', cardId: id, cardSourceZone: 'deck',
                         tasks: [{ ...task, ordered: [...(task.ordered ?? []), id] }],
                     })), 'doctorStrange.orderNext');
                 }

@@ -17,7 +17,7 @@ import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import type { CardiaCore } from './core-types';
 import { CARDIA_EVENTS } from './events';
 import type { CardiaInteraction } from './interactionHandlers';
-import { getInteractionHandler } from './abilityInteractionHandlers';
+import { getInteractionHandler, type InteractionHandler } from './abilityInteractionHandlers';
 import { reduce } from './reduce';
 import { ABILITY_IDS } from './ids';
 import { filterCards, createCardSelectionInteraction } from './interactionHandlers';
@@ -29,6 +29,7 @@ type CardiaSimpleChoiceOption = {
     id: string;
     label: string;
     value: unknown;
+    displayMode?: 'card' | 'button';
     disabled?: boolean;
 };
 
@@ -216,6 +217,7 @@ function wrapCardiaInteraction(
             id: card.optionId,
             label: card.defId, // 卡牌名称
             value: { cardUid: card.uid }, // 包含 cardUid 的值对象
+            displayMode: 'button',
         }));
     } else if (cardiaInteraction.type === 'faction_selection') {
         interactionType = 'faction-selection';
@@ -232,6 +234,7 @@ function wrapCardiaInteraction(
             id: `faction_${faction}`,
             label: factionLabels[faction],
             value: { faction },
+            displayMode: 'button',
         }));
     } else if (cardiaInteraction.type === 'modifier_selection') {
         interactionType = 'modifier-selection';
@@ -242,20 +245,11 @@ function wrapCardiaInteraction(
             id: `modifier_${value}`,
             label: value > 0 ? `+${value}` : `${value}`,
             value: { modifierValue: value },
-        }));
-    } else if (cardiaInteraction.type === 'choice') {
-        interactionType = 'choice';
-        
-        // 创建通用选择选项列表
-        const choiceOptions = (cardiaInteraction as any).options || [];
-        options = choiceOptions.map((opt: any) => ({
-            id: opt.id,
-            label: opt.label,
-            value: { option: opt.id },  // 包含 option 字段，供 handler 识别
-            description: opt.description,
+            displayMode: 'button',
         }));
     } else {
-        interactionType = 'unknown';
+        const unsupportedInteraction: never = cardiaInteraction;
+        throw new Error(`Cardia 交互缺少 simple-choice 适配: ${String(unsupportedInteraction)}`);
     }
     
     const multi = cardiaInteraction.type === 'card_selection' && cardiaInteraction.maxSelect > 1
@@ -274,7 +268,6 @@ function wrapCardiaInteraction(
             // 直接使用 abilityId 作为 sourceId（显式优于隐式）
             sourceId: cardiaInteraction.abilityId,
             targetType: 'generic',
-            displayMode: 'button' as const,
             // ✅ 修复：禁止单候选自动执行，确保玩家始终看到交互界面
             autoResolveIfSingle: false,
             multi,
@@ -292,7 +285,12 @@ function wrapCardiaInteraction(
         minSelect: cardiaInteraction.type === 'card_selection' ? cardiaInteraction.minSelect : undefined,
         maxSelect: cardiaInteraction.type === 'card_selection' ? cardiaInteraction.maxSelect : undefined,
         disabledCardUids: cardiaInteraction.type === 'card_selection' 
-            ? cards.filter(c => !options.some(opt => opt.value.cardUid === c.uid)).map(c => c.uid)  // 所有不在 options 中的卡牌都是禁用的
+            ? cards.filter(c => !options.some(opt => (
+                typeof opt.value === 'object'
+                && opt.value !== null
+                && 'cardUid' in opt.value
+                && opt.value.cardUid === c.uid
+            ))).map(c => c.uid)  // 所有不在 options 中的卡牌都是禁用的
             : undefined,
         // ✅ 修复：优先使用 cardiaInteraction.cardId，其次使用传入的 cardId 参数
         cardId: (cardiaInteraction as any).cardId || cardId,
@@ -492,7 +490,7 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                         console.error('[CardiaEventSystem] About to check if handler exists');
                         if (handler) {
                             console.error('[CardiaEventSystem] Handler exists, about to call it');
-                            let result: any;
+                            let result: ReturnType<InteractionHandler>;
                             try {
                                 const random: RandomFn = {
                                     random: () => Math.random(),

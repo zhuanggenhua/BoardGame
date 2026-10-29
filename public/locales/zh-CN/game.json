@@ -120,6 +120,8 @@
       "tempLeaveHint": "断开连接但保留位置",
       "forceExit": "强制清理",
       "forceExitHint": "清除本地记录（不影响服务器房间）",
+      "leaveSpectate": "退出观战",
+      "leaveSpectateHint": "返回大厅，不影响对局",
       "backToLobby": "返回大厅",
       "backToLobbyHint": "彻底离开房间",
       "social": "好友",
@@ -196,7 +198,8 @@
       "errors": {
         "loginRequired": "登录后可获得更好的反馈跟进体验",
         "apiDisabled": "当前轻量开发模式未启动后端服务，反馈提交已禁用；草稿会保留在本机。",
-        "submitFailed": "提交失败，请稍后再试"
+        "submitFailed": "提交失败，请稍后再试",
+        "replayCaptureFailed": "反馈已提交，但服务器未能保存完整对局现场。"
       },
       "type": {
         "bug": "问题",
@@ -523,6 +526,7 @@
       "button": "🔄 重置游戏",
       "newRoom": "🆕 创建新房间",
       "creating": "创建中…",
+      "confirmDestroyCurrentRoom": "当前对局将被退出，并在新房间创建后销毁。是否继续？",
       "linkCopied": "新房间链接已复制到剪贴板，请发送给对手！",
       "shareLinkManually": "请复制以下链接发送给对手：",
       "hintTitle": "💡 提示",

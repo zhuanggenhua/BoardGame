@@ -81,6 +81,10 @@ export interface QidahenMaskRegionDefinition {
     seed: QidahenRegionGraphPoint | null;
     links: string[];
     printedRegionIds: string[];
+    mapRole: 'land' | 'city' | 'point';
+    parentRegionId: string | null;
+    markerBounds: { left: number; top: number; width: number; height: number } | null;
+    homelandFaction: 'ming' | 'mongol' | 'jin' | 'neutral' | null;
 }
 
 export interface QidahenRuntimeRegionDefinition extends QidahenMaskRegionDefinition {
@@ -161,6 +165,16 @@ const parseMaskRegionDefinition = (value: unknown): QidahenMaskRegionDefinition 
         printedRegionIds: Array.isArray(value.printedRegionIds)
             ? value.printedRegionIds.map((item) => toStringOrEmpty(item)).filter(Boolean)
             : [id],
+        mapRole: value.mapRole === 'city' || value.mapRole === 'point' ? value.mapRole : 'land',
+        parentRegionId: typeof value.parentRegionId === 'string' ? value.parentRegionId : null,
+        homelandFaction: ['ming', 'mongol', 'jin', 'neutral'].includes(String(value.homelandFaction))
+            ? value.homelandFaction as 'ming' | 'mongol' | 'jin' | 'neutral' : null,
+        markerBounds: isRecord(value.markerBounds) ? {
+            left: toFiniteNumber(value.markerBounds.left),
+            top: toFiniteNumber(value.markerBounds.top),
+            width: toFiniteNumber(value.markerBounds.width),
+            height: toFiniteNumber(value.markerBounds.height),
+        } : null,
     };
 };
 
@@ -390,6 +404,8 @@ export const QIDAHEN_RUNTIME_REGION_BY_ID = new Map(QIDAHEN_RUNTIME_REGION_DEFIN
 export const QIDAHEN_RUNTIME_REGION_IDS_BY_PRINTED_REGION_ID = QIDAHEN_RUNTIME_REGION_DEFINITIONS.reduce<Map<string, string[]>>(
     (map, region) => {
         for (const printedRegionId of region.printedRegionIds) {
+            // 城镇挂在土地下面，不参与把土地像素再次切成假地块。
+            if (region.mapRole === 'city') continue;
             const current = map.get(printedRegionId) ?? [];
             if (!current.includes(region.id)) {
                 current.push(region.id);

@@ -1,3 +1,13 @@
+/* 壳内使用 PC 设计单位，避免宽屏根字号把文字和间距再放大一次。 */
+[data-testid='qidahen-scene-stage'],
+[data-testid='qidahen-desktop-stage'] {
+    font-size: 16px;
+    line-height: 1.5;
+    --spacing: 4px;
+    --text-xs: 12px;
+    --radius-md: 6px;
+}
+
 [data-qidahen-layout-mode='mobile-landscape'] [data-hand-interaction-action='raid'] > div {
     display: grid;
     width: min(560px, calc(100vw - 16px)) !important;
@@ -558,4 +568,20 @@
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-hand-interaction-tray'] .text-\[11px\],
 [data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-character-markers-'] {
     font-size: 12px;
+}
+.qidahen-hand-card {
+    z-index: var(--qidahen-card-order);
+    transform: translateY(calc(-1 * var(--qidahen-card-rest-lift))) scale(var(--qidahen-card-scale));
+}
+
+@media (hover: hover) {
+    .qidahen-hand-card:hover {
+        z-index: 160;
+        transform: translateY(calc(-1 * max(var(--qidahen-card-rest-lift), var(--qidahen-card-hover-lift)))) scale(var(--qidahen-card-scale));
+    }
+}
+
+.qidahen-hand-card:has(:focus-visible) {
+    z-index: 160;
+    transform: translateY(calc(-1 * max(var(--qidahen-card-rest-lift), var(--qidahen-card-hover-lift)))) scale(var(--qidahen-card-scale));
 }

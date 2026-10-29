@@ -3,6 +3,7 @@ import { createSimpleChoice, queueInteraction, type PromptOption } from '../../.
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -227,7 +228,7 @@ function buildOwnLowerBreakpointMinionOptions(
     });
 }
 
-const reunionTourPromptProgram = createPromptProgram<ReunionTourContext, SmashUpCore, SmashUpEvent>({
+const reunionTourPromptProgram = createPromptProgram<ReunionTourContext>({
     sourceId: 'rock_stars_reunion_tour',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `rock_stars_reunion_tour_${context.now}`,
@@ -266,7 +267,7 @@ const reunionTourPromptProgram = createPromptProgram<ReunionTourContext, SmashUp
     },
 });
 
-const rockOfLuuvPromptProgram = createPromptProgram<RockOfLuuvContext, SmashUpCore, SmashUpEvent>({
+const rockOfLuuvPromptProgram = createPromptProgram<RockOfLuuvContext>({
     sourceId: 'rock_stars_rock_of_luuv',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `rock_stars_rock_of_luuv_${context.now}`,
@@ -300,7 +301,7 @@ const rockOfLuuvPromptProgram = createPromptProgram<RockOfLuuvContext, SmashUpCo
     },
 });
 
-const groupieSearchPromptProgram = createPromptProgram<GroupieSearchContext, SmashUpCore, SmashUpEvent>({
+const groupieSearchPromptProgram = createPromptProgram<GroupieSearchContext>({
     sourceId: 'rock_stars_groupie_search',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -347,7 +348,7 @@ const groupieSearchPromptProgram = createPromptProgram<GroupieSearchContext, Sma
     },
 });
 
-const moveToBasePromptProgram = createPromptProgram<MoveToBaseContext, SmashUpCore, SmashUpEvent>({
+const moveToBasePromptProgram = createPromptProgram<MoveToBaseContext>({
     sourceId: 'rock_stars_move_to_base',
     buildInteraction: (context) => {
         const options = buildOwnLowerBreakpointMinionOptions(
@@ -402,7 +403,7 @@ const moveToBasePromptProgram = createPromptProgram<MoveToBaseContext, SmashUpCo
     },
 });
 
-const tourBusChooseBasePromptProgram = createPromptProgram<TourBusBaseContext, SmashUpCore, SmashUpEvent>({
+const tourBusChooseBasePromptProgram = createPromptProgram<TourBusBaseContext>({
     sourceId: 'rock_stars_tour_bus_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `rock_stars_tour_bus_base_${context.now}`,
@@ -422,14 +423,13 @@ const tourBusChooseBasePromptProgram = createPromptProgram<TourBusBaseContext, S
         if (selected.baseIndex === undefined) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 now: timestamp,
                 sourceId: 'rock_stars_tour_bus',
                 targetBaseIndex: selected.baseIndex,
                 targetBaseDefId: selected.baseDefId,
-            } satisfies MoveToBaseContext,
-            nextProgram: moveToBasePromptProgram,
+            } satisfies MoveToBaseContext, moveToBasePromptProgram),
         };
     },
 });
@@ -784,7 +784,7 @@ function teddyBearsLoveOverload(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const teddyGroupHugPromptProgram = createPromptProgram<TeddyGroupHugContext, SmashUpCore, SmashUpEvent>({
+const teddyGroupHugPromptProgram = createPromptProgram<TeddyGroupHugContext>({
     sourceId: 'teddy_bears_group_hug',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `teddy_bears_group_hug_${context.now}`,
@@ -854,7 +854,7 @@ function teddyBearsCarePackage(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const teddySirSqueezesPromptProgram = createPromptProgram<TeddySirSqueezesContext, SmashUpCore, SmashUpEvent>({
+const teddySirSqueezesPromptProgram = createPromptProgram<TeddySirSqueezesContext>({
     sourceId: 'teddy_bears_sir_squeezes',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `teddy_bears_sir_squeezes_${context.now}`,
@@ -1821,6 +1821,7 @@ function buildExplorerBaseOptions(
 
 function buildExplorerMinionOptions(
     state: SmashUpCore,
+    sourcePlayerId: PlayerId,
     predicate: (minion: SmashUpCore['bases'][number]['minions'][number], baseIndex: number) => boolean,
 ) {
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
@@ -1837,6 +1838,7 @@ function buildExplorerMinionOptions(
     });
     return buildMinionTargetOptions(candidates, {
         state,
+        sourcePlayerId,
         sourceKind: 'action',
         effectType: 'move',
     }) as PromptOption<ExplorerMinionChoice>[];
@@ -2082,7 +2084,7 @@ function handleExplorersLostCityPrompt(
 }
 
 function explorersMoveOneOwnMinion(ctx: AbilityContext): AbilityResult {
-    const options = buildExplorerMinionOptions(ctx.state, minion => minion.controller === ctx.playerId);
+    const options = buildExplorerMinionOptions(ctx.state, ctx.playerId, minion => minion.controller === ctx.playerId);
     if (options.length === 0) return { events: [] };
     return {
         events: [],
@@ -2327,7 +2329,7 @@ function handleExplorersGloryHoundPrompt(
 }
 
 function explorersItBelongsInAMuseum(ctx: AbilityContext): AbilityResult {
-    const options = buildExplorerMinionOptions(ctx.state, () => true);
+    const options = buildExplorerMinionOptions(ctx.state, ctx.playerId, () => true);
     if (options.length < 2) return { events: [] };
     return {
         events: [],
@@ -2509,7 +2511,7 @@ function handleExplorersCamelsPrompt(
 }
 
 function explorersDrLivingstone(ctx: AbilityContext): AbilityResult {
-    const options = buildExplorerMinionOptions(ctx.state, (_minion, baseIndex) => (
+    const options = buildExplorerMinionOptions(ctx.state, ctx.playerId, (_minion, baseIndex) => (
         ctx.state.bases[baseIndex]?.minions.length === 1
     ));
     if (options.length === 0) return { events: [] };

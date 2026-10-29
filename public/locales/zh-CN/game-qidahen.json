@@ -74,7 +74,6 @@
     }
   },
   "board": {
-    "magnifyButton": "看",
     "magnifyCardAria": "查看 {{card}}",
     "operation": {
       "discardHand": "选择弃置的手牌"
@@ -141,9 +140,7 @@
       "regionTroopsPopulation": "兵力 {{troops}} · 人口 {{population}}",
       "regionPopulation": "人口 {{population}}",
       "statPopulation": "人口",
-      "regionSpecialTroops": "特殊 {{summary}}",
       "regionPassages": "接边 {{summary}}",
-      "regionReachable": "调度可达 {{summary}}",
       "sharedPrintedRegion": "同图块",
       "selectionGuideSource": "起",
       "selectionContinueHint": "选择目标",
@@ -371,7 +368,12 @@
         "actualCommittedTroops": "实际投入",
         "actualCommittedTroopsMapFirst": "实际出兵：点击地图上的源地区兵牌切换数量",
         "attackerCasualtyLabel": "攻方承伤",
-        "defenderCasualtyLabel": "守方承伤"
+        "defenderCasualtyLabel": "守方承伤",
+        "selectedTroopsTitle": "出兵部队",
+        "chooseTroops": "尚未选择",
+        "battleWidthTitle": "战场宽度",
+        "selectSourceTroops": "点击地图上的{{region}}部队选择出兵。",
+        "tacticLevelBonus": "{{troop}}骰子等级{{bonus}}"
       },
       "postBattle": {
         "summary": "{{summary}} · 幸存 {{survivingTroops}}",
@@ -489,23 +491,22 @@
   "tutorial": {
     "basic": {
       "title": "七大恨入门",
-    "description": "从大明正式开局，完成军屯、突袭与战后占领，再继续同一局。",
+      "description": "从大明正式开局，完成军屯、突袭与战后占领，再继续同一局。",
       "steps": {
-      "frontier": "辽东驻有3支明军，邻近的叶赫部由蒙古控制。这回合从辽东进攻叶赫部，争取区域控制权；轮盘和手牌行动都尚未使用。",
-      "selectFarmRegion": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。",
-      "wheelMove": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。",
-      "wheelOpponent": "叶赫部由蒙古控制。本次指定后金抽2张牌，随后轮盘进入军屯。",
-      "wheelResult": "军屯已在辽东建立1支等级2的正规军，大明也抽了2张牌。辽东现在有4支明军，可以从这里进攻叶赫部。",
-      "chooseTarget": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。",
-      "chooseRaid": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。",
-      "payRaid": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。",
-      "confirmRaidPayment": "确认弃掉选中的银两。",
-      "battleOpen": "双方公开部队，最上方的点数表示等级。1级掷6面骰，2级掷8面骰，3级掷10面骰。野战时炮兵不受边界限制，其他部队按战场宽度投入；辽东与叶赫部之间是平原边界，宽度为3。",
-      "playTactic": "鸳鸯阵：不能在攻城、守城时使用；战斗中我方步兵骰子等级+1。现在是野战，打出这张战术牌。",
-      "resolveBattle": "在地图上选择辽东的3支部队参战，留1支驻守辽东，再点「开始战斗」。野战按炮兵、骑兵、步兵顺序，同阶段双方同时结算；每3点造成1损伤。损伤由最高等级的步骑兵承受，降低等级，归零才移除。",
-      "battleResult": "剩余部队数较多的一方获胜，不计算炮兵；相同则守方获胜。查看本次掷骰与幸存部队，再处理叶赫部的占领。",
-      "occupy": "攻方获胜后可以占领，也可以撤回而不改变控制权。这次选择占领叶赫部。",
-      "finish": "叶赫部已由大明控制。霸权胜利要在新年时控制至少16个非朝鲜区域。教程提示到此结束；继续这局对战。"
+        "frontier": "本回合进攻叶赫部。先在辽北军屯，为前线补兵。",
+        "selectFarmRegion": "正规军只能在本土区域建立。选择辽北。",
+        "wheelMove": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。",
+        "wheelOpponent": "指定后金抽2张牌。",
+        "chooseTarget": "选择叶赫部作为突袭目标。",
+        "chooseRaid": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。",
+        "payRaid": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。查看卡面：点击放大镜，或在触屏上长按。",
+        "confirmRaidPayment": "确认弃掉选中的银两。",
+        "battleOpen": "双方公开部队，最上方的点数表示等级。1级掷6面骰，2级掷8面骰，3级掷10面骰。辽北与叶赫部隔河，战场宽度为2；炮兵不受边界限制。",
+        "playTactic": "鸳鸯阵：不能在攻城、守城时使用；战斗中我方步兵骰子等级+1。现在是野战，打出这张战术牌。",
+        "resolveBattle": "点击辽北的第4支部队，选出4支部队，再点击「开始战斗」。",
+        "battleResult": "野战按炮兵、骑兵、步兵顺序，同阶段双方同时结算；每3点造成1损伤。损伤使步骑兵降低等级，归零才移除。\n\n剩余部队数较多的一方获胜，不计算炮兵；相同则守方获胜。查看本次掷骰与幸存部队，再处理叶赫部的占领。",
+        "occupy": "攻方获胜后可以占领，也可以撤回而不改变控制权。这次选择占领叶赫部。",
+        "finish": "霸权胜利要求在新年时控制至少16个非朝鲜区域。教程结束，继续本局对战。"
       }
     },
     "attackAndBattle": {
@@ -604,7 +605,7 @@
       }
     },
     "wheelReclaim": {
-      "title": "轮盘开垦",
+      "title": "开垦",
       "description": "轮盘开垦会直接把人口加到己方控制区。",
       "steps": {
         "overview": "进入轮盘开垦结算。",
@@ -614,17 +615,17 @@
       }
     },
     "wheelMilitaryFarm": {
-      "title": "轮盘军屯",
-      "description": "轮盘军屯会同时补牌并加兵。",
+      "title": "军屯",
+      "description": "通过军屯补牌并建立正规军。",
       "steps": {
-        "overview": "进入轮盘军屯结算。",
+        "overview": "军屯行动：抽2张手牌，并建立1个等级2的正规军部队。",
         "chooseMove": "点击轮盘上高亮的“军屯”区域。",
         "result": "军屯完成：宣府出现 1 个等级 2 正规军，手牌已补充。",
         "finish": "军屯已完成。"
       }
     },
     "wheelRecruitTrain": {
-      "title": "轮盘征兵训练",
+      "title": "征兵训练",
       "description": "亲自支付手牌，选择征兵或训练，并查看部队变化。",
       "steps": {
         "overview": "从军屯再前进 1 格，会进入征兵训练。",

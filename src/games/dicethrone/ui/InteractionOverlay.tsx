@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, X } from 'lucide-react';
+import { Check, Search, X } from 'lucide-react';
 import type { AbilityCard, InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
@@ -16,10 +16,13 @@ import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects'
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
 import { getDiceThroneCardPreviewRef } from './cardPreviewHelper';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+import { DICETHRONE_HAND_AREA_HEIGHT_UNITS } from './handLayoutConstants';
 
 type TeamTone = 'self' | 'ally' | 'enemy';
 
 const CARD_POOL_CARD_WIDTH = 'clamp(88px, min(7.2vw, 12.5vh), 132px)';
+const CARD_POOL_FOCUSED_CARD_WIDTH = 'clamp(104px, min(14vw, 23vh), 188px)';
 const CARD_POOL_CARD_MAX_WIDTH_PX = 132;
 const CARD_POOL_PANEL_MAX_WIDTH_PX = 1120;
 const CARD_POOL_PANEL_SAFE_PADDING_PX = 96;
@@ -144,6 +147,13 @@ export interface InteractionOverlayProps {
     locale?: string;
     /** 保留提示确认能力，同时允许查看/操作背景棋盘。 */
     allowBackgroundInteraction?: boolean;
+    /** 限制是否可提交；复用选择界面承载 ChoiceRequest 时对应原交互权限。 */
+    canResolve?: boolean;
+    /** 操作按钮翻译 key 覆盖，用于选择器内明确显示“清空选择”或“跳过”。 */
+    cancelLabelKey?: string;
+    confirmLabelKey?: string;
+    /** 是否允许清空当前本地选择。 */
+    canCancel?: boolean;
 }
 
 export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
@@ -162,6 +172,10 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     statusIconAtlas,
     locale,
     allowBackgroundInteraction = false,
+    canResolve = true,
+    cancelLabelKey = 'common.cancel',
+    confirmLabelKey = 'common.confirm',
+    canCancel = true,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     const interactionType = interaction.type;
@@ -187,6 +201,20 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             )),
         );
     }, [isRemovableEffect, isTransferStatusSelection, tokenDefinitions]);
+    const getStatusEntries = React.useCallback((
+        playerId: PlayerId,
+        collection: 'statusEffects' | 'tokens',
+        entries: Record<string, number> | undefined,
+    ) => {
+        const candidates = interaction.candidateStatusOptions;
+        if (!candidates) return getRemovableEntries(entries);
+        const allowedIds = new Set(candidates
+            .filter(candidate => candidate.playerId === playerId && candidate.collection === collection)
+            .map(candidate => candidate.statusId));
+        return Object.fromEntries(Object.entries(entries ?? {}).filter(([statusId, stacks]) => (
+            stacks > 0 && allowedIds.has(statusId)
+        )));
+    }, [getRemovableEntries, interaction.candidateStatusOptions]);
 
     // 状态效果选择模式
     // 玩家选择模式（选择目标玩家：授予 token / 移除所有状态等）
@@ -194,7 +222,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     // 卡牌选择模式（由持有者从手牌或抽牌堆自行选择）
     const isHandCardSelection = interactionType === 'selectHandCard';
     const isDeckCardSelection = interactionType === 'selectDeckCard';
-    const isCardSelection = isHandCardSelection || isDeckCardSelection;
+    const isCardSelection = isHandCardSelection || isDeckCardSelection || interactionType === 'selectCard';
+    const cardSourceZone = interaction.cardSourceZone ?? (isDeckCardSelection ? 'deck' : 'hand');
     // 转移模式的第二阶段：选择目标玩家
     const isTransferTargetSelection = interactionType === 'selectTargetStatus' && interaction.transferConfig?.statusId;
     const shouldRenderStatusOwners = isStatusSelection && !isTransferTargetSelection;
@@ -209,8 +238,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const playersWithStatus = targetPlayerIds.filter(pid => {
         const p = players[pid];
         if (!p) return false;
-        const hasEffects = Object.keys(getRemovableEntries(p.statusEffects)).length > 0;
-        const hasTokens = Object.keys(getRemovableEntries(p.tokens)).length > 0;
+        const hasEffects = Object.keys(getStatusEntries(pid, 'statusEffects', p.statusEffects)).length > 0;
+        const hasTokens = Object.keys(getStatusEntries(pid, 'tokens', p.tokens)).length > 0;
         return hasEffects || hasTokens;
     });
 
@@ -221,7 +250,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const getPlayerMeta = React.useCallback((pid: PlayerId) => {
         const isSelf = pid === currentPlayerId;
         const isAlly = !isSelf && !!currentTeamId && teamIdByPlayerId?.[pid] === currentTeamId;
-        const teamTone = isSelf ? 'self' : isAlly ? 'ally' : 'enemy';
+        const teamTone: TeamTone = isSelf ? 'self' : isAlly ? 'ally' : 'enemy';
         const seatIndex = resolvedSeatingOrder.indexOf(pid);
         const seatNumber = seatIndex >= 0 ? seatIndex + 1 : Number.parseInt(String(pid), 10) + 1;
         const seatLabel = Number.isFinite(seatNumber) ? `P${seatNumber}` : `P${String(pid)}`;
@@ -276,24 +305,26 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     }, [interaction.transferConfig?.sourcePlayerId, interaction.transferConfig?.statusId, isTransferTargetSelection, players]);
 
     const minSelectCount = interaction.minSelectCount ?? (
-        isPlayerSelection || isHandCardSelection || isTransferTargetSelection ? 1 : interaction.selectCount
+        isPlayerSelection || isCardSelection || isTransferTargetSelection ? 1 : interaction.selectCount
     );
-    const canConfirm = selectedItems.length >= minSelectCount;
+    const canConfirm = canResolve && selectedItems.length >= minSelectCount;
     const [cardPoolSearch, setCardPoolSearch] = React.useState('');
     const cardSelectionCards = React.useMemo(() => {
         if (!isCardSelection) return [] as AbilityCard[];
-        return (isDeckCardSelection
-            ? players[interaction.playerId]?.deck
-            : players[interaction.playerId]?.hand) ?? [];
-    }, [interaction.playerId, isCardSelection, isDeckCardSelection, players]);
+        const player = players[interaction.playerId];
+        const sourceCards = player?.[cardSourceZone] ?? [];
+        const candidateIds = interaction.candidateCardIds;
+        return candidateIds ? sourceCards.filter(card => candidateIds.includes(card.id)) : sourceCards;
+    }, [cardSourceZone, interaction.candidateCardIds, interaction.playerId, isCardSelection, players]);
     const cardPoolSearchSignature = React.useMemo(() => (
         [
             interaction.id,
             interaction.playerId,
             interactionType,
+            cardSourceZone,
             cardSelectionCards.map(card => card.id).join('|'),
         ].join('::')
-    ), [cardSelectionCards, interaction.id, interaction.playerId, interactionType]);
+    ), [cardSelectionCards, cardSourceZone, interaction.id, interaction.playerId, interactionType]);
 
     React.useEffect(() => {
         setCardPoolSearch('');
@@ -342,10 +373,14 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const isOpen = true; // Controlled by BoardOverlays
 
     if (isCardSelection) {
+        const useFocusedCardSize = cardSelectionCards.length <= 6;
+        const hasFocusedSingleCardSelection = useFocusedCardSize
+            && (interaction.selectCount ?? 1) <= 1
+            && selectedItems.length > 0;
         const cardPoolCardStyle: React.CSSProperties = {
             backgroundColor: '#0f172a',
             borderRadius: '0.25rem',
-            width: CARD_POOL_CARD_WIDTH,
+            width: useFocusedCardSize ? CARD_POOL_FOCUSED_CARD_WIDTH : CARD_POOL_CARD_WIDTH,
         };
 
         return (
@@ -360,22 +395,24 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             >
                 <div
                     data-testid="dt-card-pool-panel"
-                    className="pointer-events-auto absolute inset-x-0 top-[clamp(4.25rem,9vh,6.25rem)] px-4"
+                    className="pointer-events-auto absolute inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] top-[clamp(4.25rem,9vh,6.25rem)] min-h-0 px-4"
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
                 >
                     <div
                         data-testid="dt-card-pool-surface"
-                        className="relative isolate mx-auto w-full max-w-[70rem] px-3 py-3"
+                        className="relative isolate mx-auto flex h-full min-h-0 w-full max-w-[70rem] flex-col px-3 py-3"
                     >
                         <div
                             aria-hidden="true"
                             data-testid="dt-card-pool-backdrop"
-                            className="pointer-events-none absolute inset-x-[2%] inset-y-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
+                            data-card-pool-hand-clearance="hand-area-top"
+                            className="pointer-events-none absolute inset-x-[2%] top-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
+                            style={{ bottom: buildBoardShellInlineUnitValue(DICETHRONE_HAND_AREA_HEIGHT_UNITS) }}
                         />
                         <h2
                             data-testid="dt-card-pool-title"
-                            className="mb-2 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
+                            className="mb-2 shrink-0 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
                         >
                             {t(interaction.titleKey, { count: interaction.selectCount })}
                         </h2>
@@ -424,9 +461,9 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                         ) : null}
                         <div
                             data-testid="dt-card-pool-selection"
-                            data-card-pool-kind={isDeckCardSelection ? 'deck' : 'hand'}
+                            data-card-pool-kind={cardSourceZone}
                             data-card-pool-visible-rows="two"
-                            className="scrollbar-thin mx-auto max-h-[min(40vh,28rem)] w-full overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
+                            className="scrollbar-thin mx-auto min-h-0 max-h-[min(50vh,28rem)] w-full overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
                         >
                             <div
                                 data-testid="dt-card-pool-track"
@@ -448,16 +485,23 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         <button
                                             key={card.id}
                                             type="button"
-                                            data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
+                                            data-testid={`dt-${cardSourceZone}-card-option-${card.id}`}
                                             data-selected={isSelected ? 'true' : 'false'}
                                             data-card-pool-mode="preview"
                                             data-card-preview-ready={previewRef ? 'true' : 'false'}
+                                            data-selection-focus={isSelected
+                                                ? 'selected'
+                                                : hasFocusedSingleCardSelection ? 'deemphasized' : 'available'}
                                             aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
                                             aria-pressed={isSelected}
                                             onClick={() => onSelectHandCard(card.id)}
                                             className={`
-                                                group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
-                                                ${isSelected ? '-translate-y-2 z-10' : 'hover:-translate-y-1 hover:z-10'}
+                                                group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-[transform,opacity] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
+                                                ${isSelected
+                                                    ? 'z-10'
+                                                    : hasFocusedSingleCardSelection
+                                                        ? 'opacity-75 hover:-translate-y-1 hover:scale-[1.02] hover:opacity-100 hover:z-10'
+                                                        : 'hover:-translate-y-1 hover:scale-[1.02] hover:z-10'}
                                             `}
                                         >
                                             <div
@@ -465,7 +509,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 className={`
                                                     overflow-hidden rounded-[0.3rem] transition-[box-shadow,filter] duration-200
                                                     ${isSelected
-                                                        ? 'ring-2 ring-amber-200 shadow-[0_0_0_1px_rgba(127,29,29,0.86),0_0_24px_rgba(248,113,113,0.52),0_14px_24px_rgba(0,0,0,0.48)]'
+                                                        ? 'ring-[3px] ring-amber-200 shadow-[0_0_0_2px_rgba(127,29,29,0.96),0_0_28px_rgba(251,191,36,0.72),0_18px_28px_rgba(0,0,0,0.58)]'
                                                         : 'shadow-[0_12px_22px_rgba(0,0,0,0.42)] group-hover:ring-1 group-hover:ring-red-200/75 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
                                                 `}
                                             >
@@ -477,6 +521,15 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                     alt={cardName}
                                                 />
                                             </div>
+                                            {isSelected && (
+                                                <span
+                                                    aria-hidden="true"
+                                                    data-testid={`dt-card-choice-selected-${card.id}`}
+                                                    className="absolute -right-2 -top-2 z-20 grid h-8 w-8 place-items-center rounded-full border-[3px] border-[#2b0808] bg-amber-300 text-[#321010] shadow-[0_0_0_2px_rgba(255,244,214,0.9),0_4px_12px_rgba(0,0,0,0.6)]"
+                                                >
+                                                    <Check size={18} strokeWidth={3} />
+                                                </span>
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -484,22 +537,26 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                         </div>
                         <div
                             data-testid="dt-card-pool-actions"
-                            className="mt-2 flex items-center justify-center gap-3"
+                            className="mt-2 flex shrink-0 items-center justify-center gap-3"
                         >
-                            <GameButton
-                                onClick={onCancel}
-                                variant="secondary"
-                                size="sm"
-                            >
-                                {t('common.cancel')}
-                            </GameButton>
+                            {canCancel && (
+                                <GameButton
+                                    onClick={onCancel}
+                                    variant="secondary"
+                                    size="sm"
+                                    data-testid="dt-interaction-clear"
+                                >
+                                    {t(cancelLabelKey)}
+                                </GameButton>
+                            )}
                             <GameButton
                                 onClick={onConfirm}
                                 disabled={!canConfirm}
                                 variant="primary"
                                 size="sm"
+                                data-testid="dt-interaction-confirm"
                             >
-                                {t('common.confirm')}
+                                {t(confirmLabelKey)}
                             </GameButton>
                         </div>
                     </div>
@@ -526,20 +583,24 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             allowBackgroundInteraction={allowBackgroundInteraction}
             footer={
                 <>
-                    <GameButton
-                        onClick={onCancel}
-                        variant="secondary"
-                        className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
-                    >
-                        {t('common.cancel')}
-                    </GameButton>
+                    {canCancel && (
+                        <GameButton
+                            onClick={onCancel}
+                            variant="secondary"
+                            className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
+                            data-testid="dt-interaction-clear"
+                        >
+                            {t(cancelLabelKey)}
+                        </GameButton>
+                    )}
                     <GameButton
                         onClick={onConfirm}
                         disabled={!canConfirm}
                         variant="primary"
                         className="px-8 -translate-y-0.5 shadow-[0_6px_0_#b45309] active:translate-y-[3px] active:shadow-[0_2px_0_#b45309]"
+                        data-testid="dt-interaction-confirm"
                     >
-                        {t('common.confirm')}
+                        {t(confirmLabelKey)}
                     </GameButton>
                 </>
             }
@@ -573,6 +634,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         relationLabel={relationLabel}
                                         seatLabel={seatLabel}
                                         onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
+                                        selected={isSelected}
                                         containerClassName={`
                                             p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                             ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'opacity-50 cursor-not-allowed'}
@@ -585,8 +647,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     >
                                         {/* 显示玩家的状态效果（仅供参考） */}
                                         <SelectableEffectsContainer
-                                            effects={requiresTargetWithStatus ? getRemovableEntries(player.statusEffects) : (player.statusEffects ?? {})}
-                                            tokens={requiresTargetWithStatus ? getRemovableEntries(player.tokens) : player.tokens}
+                                            effects={requiresTargetWithStatus ? getStatusEntries(pid, 'statusEffects', player.statusEffects) : (player.statusEffects ?? {})}
+                                            tokens={requiresTargetWithStatus ? getStatusEntries(pid, 'tokens', player.tokens) : player.tokens}
                                             highlightAll={false}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="small"
@@ -625,9 +687,9 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 >
                                     {hasStatus ? (
                                         <SelectableEffectsContainer
-                                            effects={getRemovableEntries(player.statusEffects)}
-                                            tokens={getRemovableEntries(player.tokens)}
-                                            selectedId={selectedStatusId}
+                                            effects={getStatusEntries(pid, 'statusEffects', player.statusEffects)}
+                                            tokens={getStatusEntries(pid, 'tokens', player.tokens)}
+                                            selectedId={interaction.selectedStatusPlayerId === pid ? selectedStatusId : undefined}
                                             highlightAll={true}
                                             onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}

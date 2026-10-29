@@ -6,6 +6,7 @@ import {
     type LocalAiPolicy,
 } from '../../engine/ai';
 import type { Command, MatchState, PlayerId } from '../../engine/types';
+import type { BetrayalCore } from './game';
 import { BETRAYAL_COMMANDS } from './commands';
 import {
     BETRAYAL_EXPLORER_CATALOG,
@@ -154,6 +155,7 @@ interface BetrayalAiCore {
         sourceCardId: string;
         replacementTrait: BetrayalTraitKey;
     } | null;
+    nextNonCombatTraitRollTotalReplacement: BetrayalCore['nextNonCombatTraitRollTotalReplacement'];
     recentRoll: BetrayalAiRecentRoll | null;
     pendingEventRollStart?: {
         playerId: string;
@@ -164,6 +166,7 @@ interface BetrayalAiCore {
         sourceTitle: string;
         effect: UseEffectProfile;
     } | null;
+    pendingEventRollResolution?: BetrayalCore['pendingEventRollResolution'];
     pendingTradeAgreement: {
         playerId: string;
         targetPlayerId: string;
@@ -330,7 +333,7 @@ function buildTraitSelections(
 }
 
 function expandEffectPayloads(
-    core: BetrayalCore,
+    core: { rooms: Array<Pick<BetrayalCore['rooms'][number], 'id' | 'state'>> },
     effect: UseEffectProfile,
     seeds: EventChoicePayload[],
 ): EventChoicePayload[] {

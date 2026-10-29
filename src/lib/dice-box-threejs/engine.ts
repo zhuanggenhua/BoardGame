@@ -9,7 +9,7 @@ import {
     SRGBColorSpace,
     ShaderMaterial,
     Vector3,
-} from '@3d-dice/dice-box-threejs/node_modules/three/build/three.module.js';
+} from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -93,6 +93,7 @@ type DiceBoxInternalNotationVector = {
 
 type DiceBoxInternalRuntime = InstanceType<typeof DiceBoxModule> & {
     strength?: number;
+    iterationLimit?: number;
     iteration?: number;
     last_time?: number;
     notationVectors?: DiceBoxInternalNotationVector | null;
@@ -200,14 +201,14 @@ type DiceBoxHighlightMaterial = ShaderMaterial & {
 };
 
 type DiceBoxHighlightMesh = DiceBoxSurfaceObject & {
-    clone?: (recursive?: boolean) => DiceBoxHighlightMesh;
-    position: DiceBoxVectorLike;
-    quaternion?: DiceBoxQuaternionLike;
-    rotation: DiceBoxVectorLike;
-    scale: DiceBoxVectorLike;
+    clone: (recursive?: boolean) => DiceBoxHighlightMesh;
+    position: DiceBoxVectorLike & { set: (x: number, y: number, z: number) => void };
+    quaternion: DiceBoxQuaternionLike & { set: (x: number, y: number, z: number, w: number) => void };
+    rotation: DiceBoxVectorLike & { set: (x: number, y: number, z: number) => void };
+    scale: DiceBoxVectorLike & { set: (x: number, y: number, z: number) => void };
     renderOrder: number;
     frustumCulled?: boolean;
-    updateMatrixWorld?: (force?: boolean) => void;
+    updateMatrixWorld: (force?: boolean) => void;
     material: DiceBoxHighlightMaterial;
 };
 
@@ -2215,10 +2216,7 @@ export class DiceBoxThreeEngine {
         const color = (highlight.color ?? DEFAULT_DICE_HIGHLIGHT_COLORS[highlight.variant]) as DiceBoxColorRepresentation;
         const opacity = this.resolveHighlightOpacity(highlight);
         const material = this.createDiceHighlightMaterial(color, opacity);
-        const mesh = (die as DiceBoxHighlightMesh).clone?.(false);
-        if (!mesh) {
-            throw new Error('DiceBox highlight shell requires cloneable dice mesh');
-        }
+        const mesh = (die as unknown as DiceBoxHighlightMesh).clone(false);
         mesh.name = `dice-highlight-shell-${dieIndex}-${highlight.variant}`;
         mesh.material = material;
         mesh.castShadow = false;

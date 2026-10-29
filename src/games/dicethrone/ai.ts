@@ -53,7 +53,7 @@ import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './domain/passiveAbility';
-import { areTeammates, canOwnerRerollPendingBonusDiceSettlement, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
+import { areTeammates, canOwnerRerollPendingBonusDiceSettlement, getDieFaceByDefinition, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { canUseDejaVuCore } from './domain/doctorStrange/rules';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
@@ -84,9 +84,15 @@ import { readDiceThroneTokenResponseChoiceContract } from './domain/tokenRespons
 
 type DiceThroneState = MatchState<DiceThroneCore>;
 
-const getDiceThronePhaseFromState = (state: DiceThroneState): TurnPhase => (
-    state.sys.phase ?? state.sys.flow?.phase ?? 'setup'
-) as TurnPhase;
+const DICE_THRONE_PHASES: readonly TurnPhase[] = [
+    'setup', 'upkeep', 'income', 'main1', 'offensiveRoll', 'targetingRoll',
+    'defensiveRoll', 'main2', 'discard',
+];
+
+const getDiceThronePhaseFromState = (state: DiceThroneState): TurnPhase => {
+    const phase = state.sys.phase;
+    return DICE_THRONE_PHASES.find(candidate => candidate === phase) ?? 'setup';
+};
 
 const getAiActiveDice = (
     state: DiceThroneState,
@@ -117,7 +123,7 @@ const resolveDiceThroneCurrentDecisionPlayerId = (args: {
             : args.fallbackPlayerId ?? undefined;
     }
     const settlement = diceThroneState?.core?.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
-    if (!responseWindowCurrent && settlement && isCurrentBonusRollSettlement(diceThroneState.core, settlement)) {
+    if (!responseWindowCurrent && diceThroneState && settlement && isCurrentBonusRollSettlement(diceThroneState.core, settlement)) {
         return typeof settlement.attackerId === 'string' && settlement.attackerId.length > 0
             ? settlement.attackerId
             : args.fallbackPlayerId ?? undefined;
@@ -146,6 +152,7 @@ const resolveDiceThroneOnlineDecisionVisibility = (args: {
         && sharedInteraction?.kind === 'dt:bonus-dice'
         && sharedInteraction.playerId === args.playerId
         && settlement?.attackerId === args.playerId
+        && sharedState
         && isCurrentBonusRollSettlement(sharedState.core, settlement)
     ) {
         return 'shared';
@@ -1503,12 +1510,13 @@ const buildSelectPlayerDecisionFromInteraction = (
         const data = current.data as {
             options?: Array<{ playerId?: PlayerId; customId?: string; disabled?: boolean }>;
             targetRollValue?: number;
+            sourceId?: unknown;
         };
         return {
             kind: 'select-player',
             interactionId: current.id,
             actorPlayerId: playerId,
-            sourceId: current.sourceId,
+            sourceId: typeof data.sourceId === 'string' ? data.sourceId : undefined,
             selection: { min: 1, max: 1 },
             metadata: {
                 targetRollValue: data.targetRollValue,
@@ -1539,7 +1547,7 @@ const buildSelectPlayerDecisionFromInteraction = (
     }
 
     if (current.kind === 'dt:card-interaction') {
-        const data = current.data as CardInteractionData;
+        const data = current.data as CardInteractionData & { sourceId?: unknown };
         if (data.type !== 'selectPlayer') {
             return null;
         }
@@ -1552,7 +1560,7 @@ const buildSelectPlayerDecisionFromInteraction = (
             kind: 'select-player',
             interactionId: current.id,
             actorPlayerId: playerId,
-            sourceId: current.sourceId,
+            sourceId: typeof data.sourceId === 'string' ? data.sourceId : undefined,
             selection: { min: selectCount, max: selectCount },
             candidates: targetPlayerIds.map((targetPlayerId) => ({
                 id: targetPlayerId,
@@ -3192,7 +3200,7 @@ export function buildDiceThroneAiLegalActions(args: {
     const player = state.core.players[args.playerId];
     if (!player) return [];
 
-    const phase = (state.sys.phase ?? state.sys.flow?.phase ?? 'setup') as TurnPhase;
+    const phase = getDiceThronePhaseFromState(state);
 
     const interactionActions = buildInteractionActions(state, args.playerId, phase);
     if (interactionActions !== null) {
@@ -4599,7 +4607,7 @@ const estimateCustomActionStrategicValue = (args: {
     if (!meta) return 0;
 
     let score = 0;
-    const estimatedDamage = meta.estimateDamage?.(args.state.core as unknown as Record<string, unknown>, args.playerId) ?? 0;
+    const estimatedDamage = meta.estimateDamage?.(args.state.core, args.playerId) ?? 0;
     if (estimatedDamage > 0) {
         score += estimatedDamage * 24;
     } else if (meta.categories.includes('damage')) {
@@ -4909,7 +4917,8 @@ const buildProjectedDice = (
         return {
             ...die,
             value: nextValue,
-            symbol: face?.symbols[0] ?? die.symbol,
+            symbol: getDieFaceByDefinition(die.definitionId, nextValue) ?? die.symbol,
+            symbols: face?.symbols ?? die.symbols,
         };
     });
 };
@@ -5065,7 +5074,7 @@ const enumerateModifyProjectedDice = (
 const enumerateRerollSelectionsForAction = (
     dice: DiceThroneCore['dice'],
     customActionId: string,
-): DiceThroneCore['dice'][][] => {
+): DiceThroneCore['dice'][] => {
     if (dice.length === 0) return [];
 
     switch (customActionId) {

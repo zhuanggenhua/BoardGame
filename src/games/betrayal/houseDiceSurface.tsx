@@ -400,11 +400,15 @@ export function BetrayalHouseDice3DGroup({
               getBetrayalRerollTargetVisualRotation(target.layout);
             const targetProjectedWidth = Math.max(
               1,
-              target.layout.visualWidth ?? target.layout.width,
+              "visualWidth" in target.layout
+                ? target.layout.visualWidth ?? target.layout.width
+                : target.layout.width,
             );
             const targetProjectedHeight = Math.max(
               1,
-              target.layout.visualHeight ?? target.layout.height,
+              "visualHeight" in target.layout
+                ? target.layout.visualHeight ?? target.layout.height
+                : target.layout.height,
             );
             const targetWidth = Math.max(1, targetHitSize.width);
             const targetHeight = Math.max(1, targetHitSize.height);

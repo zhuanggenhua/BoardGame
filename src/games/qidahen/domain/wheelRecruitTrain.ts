@@ -10,7 +10,7 @@ import {
     upgradeCompatPieceToLevel,
 } from './troopCompat';
 import { materializeNonSiegedCityActionSourceRegion } from './actionSourceRegionState';
-import { getEffectiveHomelandController } from './regionRuleSemantics';
+import { canPlaceRegularTroopsInRegion } from './regionSelectionPreferences';
 import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { syncQidahenCorePieceCollections } from './coreDerivedState';
@@ -97,7 +97,7 @@ const getTroopTrainingCap = (
     return 3;
 };
 
-const getTrainablePieces = (
+export const getQidahenTrainableTroopPieces = (
     state: QidahenCore,
     factionId: QidahenFactionId,
 ): QidahenTrainablePiece[] => {
@@ -203,10 +203,7 @@ const getRecruitableRegions = (
     factionId: QidahenFactionId,
 ) => state.regions.filter((region) => (
     !region.isLogicalRegion
-    && !region.siegeState
-    && region.controller === factionId
-    && region.diplomacyMarkerFaction == null
-    && getEffectiveHomelandController(state, region.id) === factionId
+    && canPlaceRegularTroopsInRegion(region, factionId, state)
 ));
 
 export const isQidahenWheelRecruitTrainPaymentPending = (
@@ -222,7 +219,7 @@ export const getQidahenWheelRecruitTrainChoices = (
     }
 
     const factionId = getCurrentFactionId(state);
-    const trainablePieces = getTrainablePieces(state, factionId);
+    const trainablePieces = getQidahenTrainableTroopPieces(state, factionId);
     if (progress.phase === 'choose-action') {
         const choices: QidahenWheelRecruitTrainChoice[] = [];
         if (progress.actionsCompleted < QIDAHEN_WHEEL_RECRUIT_TRAIN_BASE_ACTION_LIMIT) {

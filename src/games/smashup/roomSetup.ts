@@ -1,3 +1,10 @@
+import type {
+    SmashUpBanPolicy,
+    SmashUpBasePoolPolicy,
+    SmashUpFactionSelectionMode,
+    SmashUpFirstPlayerPolicy,
+} from './domain/types';
+
 export const SMASHUP_DECK_QUERY_SETUP_VALUE = 'deckQuery' as const;
 export const SMASHUP_VICTORY_20_SETUP_VALUE = 'victory20' as const;
 export const DEFAULT_SMASHUP_VICTORY_TARGET = 15;
@@ -17,6 +24,15 @@ export interface SmashUpRuntimeSetupConfig {
     deckQueryEnabled: boolean;
     victoryTarget: number;
     teamMode: 'ffa' | '2v2';
+}
+
+export interface SmashUpPregameDraftSetupConfig {
+    includedFactionIds?: string[];
+    factionSelectionMode?: SmashUpFactionSelectionMode;
+    factionCandidatePoolSize?: number;
+    banPolicy?: SmashUpBanPolicy;
+    firstPlayerPolicy?: SmashUpFirstPlayerPolicy;
+    basePoolPolicy?: SmashUpBasePoolPolicy;
 }
 
 function normalizeExpansionOrder(
@@ -147,6 +163,55 @@ export function readSmashUpRuntimeSetupConfig(
         deckQueryEnabled: readSmashUpDeckQueryEnabled(setupData),
         victoryTarget: readSmashUpVictoryTarget(setupData),
         teamMode: readSmashUpTeamMode(setupData, options?.playerCount ?? 0),
+    };
+}
+
+export function readSmashUpPregameDraftSetupConfig(
+    setupData?: Record<string, unknown>,
+): SmashUpPregameDraftSetupConfig {
+    const readValue = (fieldKey: string) => setupData?.[fieldKey] ?? readSetupSelectionValue(setupData, fieldKey);
+    const readEnum = <TValue extends string>(fieldKey: string, values: readonly TValue[]): TValue | undefined => {
+        const value = readValue(fieldKey);
+        return typeof value === 'string' && values.includes(value as TValue)
+            ? value as TValue
+            : undefined;
+    };
+    const rawIncludedFactionIds = readValue('smashupIncludedFactionIds');
+    const includedFactionIds = Array.isArray(rawIncludedFactionIds)
+        ? rawIncludedFactionIds.filter((value): value is string => typeof value === 'string')
+        : undefined;
+    const rawCandidatePoolSize = readValue('factionCandidatePoolSize');
+    const candidatePoolSize = typeof rawCandidatePoolSize === 'number'
+        ? rawCandidatePoolSize
+        : typeof rawCandidatePoolSize === 'string' && rawCandidatePoolSize.trim()
+            ? Number(rawCandidatePoolSize)
+            : undefined;
+    const factionSelectionMode = readEnum(
+        'factionSelectionMode',
+        ['snakeDraft', 'straightDraft', 'openDraft', 'freePick', 'individualPools'] as const,
+    );
+    const banPolicy = readEnum(
+        'banPolicy',
+        ['none', 'preDraft', 'afterFirstRound', 'preAndAfterFirstRound'] as const,
+    );
+    const firstPlayerPolicy = readEnum(
+        'firstPlayerPolicy',
+        ['sameDraftAndPlay', 'nextSeatPlaysFirst'] as const,
+    );
+    const basePoolPolicy = readEnum(
+        'basePoolPolicy',
+        ['selectedFactionBases', 'selectedExpansionBases', 'allRegularBases'] as const,
+    );
+
+    return {
+        ...(includedFactionIds ? { includedFactionIds } : {}),
+        ...(factionSelectionMode ? { factionSelectionMode } : {}),
+        ...(candidatePoolSize !== undefined && Number.isSafeInteger(candidatePoolSize) && candidatePoolSize > 0
+            ? { factionCandidatePoolSize: candidatePoolSize }
+            : {}),
+        ...(banPolicy ? { banPolicy } : {}),
+        ...(firstPlayerPolicy ? { firstPlayerPolicy } : {}),
+        ...(basePoolPolicy ? { basePoolPolicy } : {}),
     };
 }
 

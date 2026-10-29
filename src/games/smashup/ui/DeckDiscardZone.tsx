@@ -260,24 +260,25 @@ export const DeckDiscardZone: React.FC<Props> = ({
     const displayCardsData = useMemo(() => {
         if (!showDiscard || discard.length === 0) return undefined;
 
-        return {
+        const displayData = {
             title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
             panelKind: 'discard' as const,
             // 反转顺序：最新弃掉的卡在左边
             cards: [...discard].reverse().map(c => ({ uid: c.uid, defId: c.defId })),
             onClose: handleCloseDiscard,
-            // 有可打出的卡牌时，传递选择相关 props
-            ...(playableCards && playableCards.length > 0 && {
-                selectedUid,
-                selectedUids,
-                onSelect: onSelectCard,
-                selectHint: selectHint || t('ui.click_base_to_deploy'),
-                playableUids: new Set(playableCards.map(c => c.uid)),
-                onConfirmSelection,
-                confirmDisabled,
-                minSelections,
-                maxSelections,
-            }),
+        };
+        if (!playableCards?.length || !onSelectCard) return displayData;
+        return {
+            ...displayData,
+            selectedUid,
+            selectedUids,
+            onSelect: onSelectCard,
+            selectHint: selectHint || t('ui.click_base_to_deploy'),
+            playableUids: new Set(playableCards.map(c => c.uid)),
+            onConfirmSelection,
+            confirmDisabled,
+            minSelections,
+            maxSelections,
         };
     }, [showDiscard, discard, playableCards, selectedUid, selectedUids, onSelectCard, selectHint, onConfirmSelection, confirmDisabled, minSelections, maxSelections, t, handleCloseDiscard]);
 
@@ -286,19 +287,21 @@ export const DeckDiscardZone: React.FC<Props> = ({
         const hasPlayableDeckCards = playableDeckCards !== undefined && playableDeckCards.length > 0;
         if (!hasPlayableDeckCards && (!deckQueryEnabled || aggregatedDeckCards.length === 0)) return undefined;
 
-        return {
+        const displayData = {
             title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
             panelKind: 'deck' as const,
             cards: hasPlayableDeckCards
                 ? playableDeckCards.map(card => ({ uid: card.uid, defId: card.defId }))
                 : aggregatedDeckCards,
             onClose: handleCloseDeck,
-            ...(hasPlayableDeckCards && {
-                selectedUid: selectedDeckUid,
-                onSelect: onSelectDeckCard,
-                selectHint: deckSelectHint || t('ui.click_base_to_deploy'),
-                playableUids: new Set(playableDeckCards.map(card => card.uid)),
-            }),
+        };
+        if (!playableDeckCards?.length || !onSelectDeckCard) return displayData;
+        return {
+            ...displayData,
+            selectedUid: selectedDeckUid,
+            onSelect: onSelectDeckCard,
+            selectHint: deckSelectHint || t('ui.click_base_to_deploy'),
+            playableUids: new Set(playableDeckCards.map(card => card.uid)),
         };
     }, [showDeck, playableDeckCards, deckQueryEnabled, aggregatedDeckCards, t, deckCount, handleCloseDeck, selectedDeckUid, onSelectDeckCard, deckSelectHint]);
 

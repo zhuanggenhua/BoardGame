@@ -380,7 +380,7 @@ function buildDamageShieldPreventionOpportunity(
     pendingDamage: DamagePreventionSubject,
     shield: DamageShield,
     shieldIndex: number,
-): Opportunity {
+): Opportunity<DiceThroneTokenResponseChoiceValue> {
     const metadata = {
         pendingDamageId: pendingDamage.id,
         sourcePlayerId: pendingDamage.sourcePlayerId,
@@ -424,7 +424,7 @@ function buildDamageShieldPreventionOpportunity(
 function discoverDamageShieldPreventionOpportunities(
     args: TimingOpportunityDiscoveryArgs<DiceThroneCore, DiceThroneCommand, DiceThroneEvent>,
     pendingDamage: DamagePreventionSubject,
-): Opportunity[] {
+): Opportunity<DiceThroneTokenResponseChoiceValue>[] {
     if (
         !isDamageShieldPreventionTiming(args)
         || pendingDamage.currentDamage <= 0

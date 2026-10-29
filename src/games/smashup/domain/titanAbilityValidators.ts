@@ -76,12 +76,15 @@ export function validateTitanSpecialActivation(ctx: TitanAbilityValidationContex
 }
 
 export function validateTitanTalentUse(ctx: TitanAbilityValidationContext): string | null {
+    const titanBaseIndex = ctx.titan.location.zone === 'base'
+        ? ctx.titan.location.baseIndex
+        : undefined;
     const canUseGreatWolfSpiritDoubleTalent = ctx.titan.talentUsed
-        && ctx.titan.location.zone === 'base'
+        && titanBaseIndex !== undefined
         && (ctx.state.titans ?? []).some(sourceTitan =>
             sourceTitan.defId === 'werewolves_great_wolf_spirit'
             && sourceTitan.location.zone === 'base'
-            && sourceTitan.location.baseIndex === ctx.titan.location.baseIndex
+            && sourceTitan.location.baseIndex === titanBaseIndex
             && sourceTitan.controllerId === ctx.playerId
             && !(ctx.state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(sourceTitan.uid),
         )

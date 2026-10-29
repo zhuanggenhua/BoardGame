@@ -26,7 +26,7 @@ function setup(masterId: string) {
     return { adapter, state };
 }
 
-it('本人详情发动战略部署，使用部署所得魔力抽牌，对手详情不提供操作', () => {
+it('本人牌桌发动战略部署，角色详情保持只读且对手不提供操作', () => {
     const { adapter, state } = setup('m_waver');
     let live = state;
     const dispatch = vi.fn((type, payload) => {
@@ -36,6 +36,8 @@ it('本人详情发动战略部署，使用部署所得魔力抽牌，对手详�
     const view = render(<FateDominationBoard {...(props as never)}/>);
     fireEvent.click(screen.getByRole('button', { name: '查看玩家 1详情' }));
     expect(screen.getByRole('dialog')).not.toHaveTextContent('当前威力');
+    expect(within(screen.getByRole('dialog')).queryByRole('button',{name:/^发动/})).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '关闭玩家详情' }));
     const ability = screen.getByRole('button', { name: '发动战略部署' });
     const count = live.core.players['0'].hand.length;
     const mana = live.core.players['0'].mana;
@@ -46,15 +48,13 @@ it('本人详情发动战略部署，使用部署所得魔力抽牌，对手详�
     expect(live.core.players['0'].hand).toHaveLength(count + 2);
     expect(live.core.players['0'].mana).toBe(mana - 1);
     view.rerender(<FateDominationBoard {...({ ...props, G: live } as never)}/>);
-    fireEvent.click(screen.getByRole('button', { name: '查看玩家 1详情' }));
-    expect(screen.getByRole('button', { name: '发动战略部署' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: '关闭玩家详情' }));
+    expect(screen.getByRole('button', { name: '发动战略部署' })).toHaveAttribute('aria-disabled','true');
     fireEvent.click(screen.getByRole('button', { name: '查看玩家 2详情' }));
     expect(state.core.players['1'].skills.some(skill => skill.name === '战略部署')).toBe(true);
     expect(within(screen.getByRole('dialog')).queryByRole('button', { name: /^发动/ })).toBeNull();
 });
 
-it('监督者从本人详情进入目标选择，取消不扣费，选中后确认才提交移动', () => {
+it('监督者从牌桌能力进入目标选择，取消不扣费，选中后确认才提交移动', () => {
     const { state } = setup('m_kirei');
     state.core.phase = 'action';
     state.core.players['0'].mana = 8;
@@ -63,7 +63,6 @@ it('监督者从本人详情进入目标选择，取消不扣费，选中后确�
     const dispatch = vi.fn();
     render(<FateDominationBoard {...({ G: state, dispatch, playerID: '0', isMultiplayer: true, matchData: [] } as never)}/>);
     const begin = () => {
-        fireEvent.click(screen.getByRole('button', { name: '查看玩家 1详情' }));
         fireEvent.click(screen.getByRole('button', { name: '发动监督者' }));
     };
     begin();

@@ -1,5 +1,5 @@
 /* @vitest-environment happy-dom */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { GameHUD } from '../GameHUD';
@@ -438,5 +438,30 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('fab-action-settings')).toBeInTheDocument();
         expect(screen.getByTestId('fab-action-action-log')).toBeInTheDocument();
         expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+    });
+
+    it('观战退出使用返回大厅文案，不走强制清理', () => {
+        const onLeave = vi.fn();
+        const onForceExit = vi.fn();
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="tictactoe"
+                myPlayerId={null}
+                onLeave={onLeave}
+                onForceExit={onForceExit}
+            />,
+        );
+
+        expect(screen.getByTestId('fab-action-exit')).toHaveTextContent(/退出观战|leaveSpectate/);
+        const exitContent = screen.getByTestId('fab-content-exit');
+        expect(exitContent).toHaveTextContent(/退出观战|leaveSpectate/);
+        expect(exitContent).not.toHaveTextContent(/强制清理|forceExit/);
+        expect(exitContent).not.toHaveTextContent(/彻底离开房间|leaveRoomHint/);
+
+        fireEvent.click(exitContent.querySelector('button') as HTMLButtonElement);
+        expect(onLeave).toHaveBeenCalledTimes(1);
+        expect(onForceExit).not.toHaveBeenCalled();
     });
 });

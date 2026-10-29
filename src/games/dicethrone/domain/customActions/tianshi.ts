@@ -1,7 +1,7 @@
 /** 炽天使专属行动处理器。复杂规则在这里进入领域交互，而不是散落在 UI。 */
 
 import type { PlayerId } from '../../../../engine/types';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 import { buildDrawEvents } from '../deckEvents';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler, type ChoiceResolvedEventContext } from '../choiceResolvedEvents';
@@ -18,6 +18,7 @@ import { isPurifiableDebuffId } from '../statusRemoval';
 import { STATUS_IDS, TIANSHI_DICE_FACE_IDS as FACE, TOKEN_IDS } from '../ids';
 import { getDiceThronePlayerChoiceLabel } from '../playerDisplay';
 import { finalizeTokenResponse } from '../tokenResponse';
+import { attackModifierBonusDiceContinuation } from '../utils';
 import type {
     BonusDieInfo,
     BonusDieRolledEvent,
@@ -125,6 +126,17 @@ function directDamageEvents(
 ): DiceThroneEvent[] {
     const target = state.players[targetId];
     if (!target || amount <= 0) return [];
+    const pendingAttack = state.pendingAttack;
+    const isCurrentAttackDamage = pendingAttack?.attackerId === sourcePlayerId
+        && pendingAttack.defenderId === targetId
+        && pendingAttack.sourceAbilityId === sourceAbilityId;
+    const damagePercentModifiers = isCurrentAttackDamage
+        ? [pendingAttack.dazzleDamagePercent, pendingAttack.zhizhuxiaDamagePercent]
+            .filter((value): value is number => typeof value === 'number')
+        : [];
+    const combinedDamagePercent = damagePercentModifiers.length > 0
+        ? damagePercentModifiers.reduce((sum, value) => sum + value, 0)
+        : undefined;
     const context: EffectContext = {
         attackerId: sourcePlayerId,
         defenderId: targetId,
@@ -142,6 +154,20 @@ function directDamageEvents(
         timestamp,
         autoCollectShields: false,
         passiveTriggerHandler: createDTPassiveTriggerHandler(context, random),
+        ...(typeof combinedDamagePercent === 'number' ? {
+            additionalModifiers: [{
+                id: '__tianshi_dazzle__',
+                type: 'percent' as const,
+                value: combinedDamagePercent,
+                priority: 19,
+                source: pendingAttack?.zhizhuxiaDamagePercent !== undefined && pendingAttack.dazzleDamagePercent === undefined
+                    ? 'spider-sense'
+                    : STATUS_IDS.DAZZLE,
+                description: pendingAttack?.zhizhuxiaDamagePercent !== undefined && pendingAttack.dazzleDamagePercent === undefined
+                    ? 'tokens.invisible.name'
+                    : 'tokens.dazzle.name',
+            }],
+        } : {}),
     }).resolve();
     const events: DiceThroneEvent[] = [...result.sideEffectEvents] as DiceThroneEvent[];
     if (result.finalDamage <= 0) return events;
@@ -175,14 +201,15 @@ function attackDamageEvents(
     timestamp: number,
     unblockable = false,
 ): DiceThroneEvent[] {
-    if (amount <= 0 || !ctx.state.players[targetId]) return [];
+    if (!ctx.state.players[targetId]) return [];
     const pending = ctx.state.pendingAttack;
     const attackDamageContext = pending
         && pending.attackerId === ctx.attackerId
         && pending.defenderId === targetId
         && pending.sourceAbilityId === ctx.sourceAbilityId
-        ? { attackerId: ctx.attackerId, defenderId: targetId, isUltimate: pending.isUltimate }
+        ? { attackerId: ctx.attackerId, defenderId: targetId, isUltimate: pending.isUltimate, bonusDamage: pending.bonusDamage }
         : undefined;
+    if (amount <= 0 && (attackDamageContext?.bonusDamage ?? 0) <= 0) return [];
     const events = createDamageCalculation({
         source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: targetId },
@@ -307,6 +334,7 @@ function makeNoRerollBonusDice(
     settlementId: string,
     effectKey: string,
     resolve: (dice: BonusDieInfo[]) => DiceThroneEvent[],
+    settlementStage: 'preDamage' | 'readyToResolve' = 'readyToResolve',
 ): DiceThroneEvent[] {
     return createBonusDiceWithReroll(ctx, {
         diceCount,
@@ -319,7 +347,9 @@ function makeNoRerollBonusDice(
         customResolutionId: settlementId,
         showTotal: false,
         allowDiceModification: true,
-        continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true },
+        continuation: settlementStage === 'preDamage'
+            ? attackModifierBonusDiceContinuation()
+            : { kind: 'attack', settlementStage, markBonusDiceResolved: true },
     }, resolve);
 }
 
@@ -410,15 +440,12 @@ function resolveDivinePunishmentBonus(ctx: CustomActionContext, dice: BonusDieIn
     const events: DiceThroneEvent[] = [];
 
     if (targetId) {
-        events.push(...directDamageEvents(
-            ctx.state,
+        events.push(...attackDamageEvents(
+            ctx,
             targetId,
             (counts[FACE.BLADE] ?? 0) * damagePerBlade,
-            ctx.sourceAbilityId,
             ctx.timestamp,
-            ctx.attackerId,
             true,
-            ctx.random,
         ));
     }
 
@@ -480,7 +507,7 @@ function handleUseFlight({ state, attackerId, sourceAbilityId, timestamp, action
     const dice: BonusDieInfo[] = [];
     for (let index = 0; index < 2; index += 1) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? String(value);
+        const face = getPlayerDieFace(state, attackerId, value) ?? `${value}`;
         dice.push({
             index,
             value,
@@ -627,11 +654,11 @@ function handleAngelicCloak(ctx: CustomActionContext): DiceThroneEvent[] {
 }
 
 function handleHolyStrikeCard(ctx: CustomActionContext): DiceThroneEvent[] {
-    return makeNoRerollBonusDice(ctx, 5, HOLY_STRIKE_SETTLEMENT_ID, 'bonusDie.effect.tianshi.holyStrike', dice => resolveHolyStrikeBonus(ctx, dice));
+    return makeNoRerollBonusDice(ctx, 5, HOLY_STRIKE_SETTLEMENT_ID, 'bonusDie.effect.tianshi.holyStrike', dice => resolveHolyStrikeBonus(ctx, dice), 'preDamage');
 }
 
 function handleAngelicTacticsCard(ctx: CustomActionContext): DiceThroneEvent[] {
-    return makeNoRerollBonusDice(ctx, 1, ANGELIC_TACTICS_SETTLEMENT_ID, 'bonusDie.effect.tianshi.angelicTactics', dice => resolveAngelicTacticsBonus(ctx, dice));
+    return makeNoRerollBonusDice(ctx, 1, ANGELIC_TACTICS_SETTLEMENT_ID, 'bonusDie.effect.tianshi.angelicTactics', dice => resolveAngelicTacticsBonus(ctx, dice), 'preDamage');
 }
 
 function handleGospelArrivalCard(ctx: CustomActionContext): DiceThroneEvent[] {

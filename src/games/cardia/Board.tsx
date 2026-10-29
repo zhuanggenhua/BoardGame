@@ -353,7 +353,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         eventStreamEntries: G.sys.eventStream?.entries ?? [],
         animations,
         toast,
-        t,
+        noValidTargetMessage: t('ability.noValidTarget.noMarkers'),
         cardRefs,
     });
     

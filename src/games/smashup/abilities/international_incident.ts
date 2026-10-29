@@ -1,6 +1,9 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type {
+ MatchState, PlayerId } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     type AbilityRuntimeResult,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -352,17 +355,17 @@ type AllForOneDestroyMarker = {
     turnNumber: number;
 };
 
-function createPromptContext<TExtra extends object>(
+function createPromptContext<TExtra extends object = Record<string, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,
-    extra: TExtra,
+    extra?: TExtra,
 ): PromptContext & TExtra {
     return {
         matchState,
         playerId,
         now,
-        ...extra,
+        ...(extra ?? {} as TExtra),
     };
 }
 
@@ -722,7 +725,7 @@ function canSeeOwnMinionOnBase(state: SmashUpCore, playerId: PlayerId, baseIndex
     return state.bases[baseIndex]?.minions.some(minion => minion.controller === playerId) ?? false;
 }
 
-const minionEffectPrompt = createPromptProgram<MinionEffectContext, SmashUpCore, SmashUpEvent>({
+const minionEffectPrompt = createPromptProgram<MinionEffectContext>({
     sourceId: 'international_incident_minion_effect',
     buildInteraction: (context) => {
         const options = buildMinionTargetOptions(context.candidates, {
@@ -850,7 +853,7 @@ function runMinionEffect(
     }));
 }
 
-const extraActionMinionPrompt = createPromptProgram<ExtraActionMinionContext, SmashUpCore, SmashUpEvent>({
+const extraActionMinionPrompt = createPromptProgram<ExtraActionMinionContext>({
     sourceId: 'international_incident_extra_action_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -895,7 +898,7 @@ function runExtraActionsRestrictedToMinion(
     }));
 }
 
-const moveDestinationPrompt = createPromptProgram<MoveDestinationContext, SmashUpCore, SmashUpEvent>({
+const moveDestinationPrompt = createPromptProgram<MoveDestinationContext>({
     sourceId: 'international_incident_move_destination',
     buildInteraction: (context) => {
         const allowedTargets = context.allowedToBaseIndices
@@ -950,7 +953,7 @@ const moveDestinationPrompt = createPromptProgram<MoveDestinationContext, SmashU
     },
 });
 
-const moveMinionPrompt = createPromptProgram<MoveMinionContext, SmashUpCore, SmashUpEvent>({
+const moveMinionPrompt = createPromptProgram<MoveMinionContext>({
     sourceId: 'international_incident_move_minion',
     buildInteraction: (context) => {
         const minionOptions = buildMinionTargetOptions(context.candidates, {
@@ -980,7 +983,7 @@ const moveMinionPrompt = createPromptProgram<MoveMinionContext, SmashUpCore, Sma
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
@@ -995,13 +998,12 @@ const moveMinionPrompt = createPromptProgram<MoveMinionContext, SmashUpCore, Sma
                 extraActionAfter: context.extraActionAfter,
                 fixedToBaseIndex: context.fixedToBaseIndex,
                 allowedToBaseIndices: context.allowedToBaseIndices,
-            } satisfies MoveDestinationContext,
-            nextProgram: moveDestinationPrompt,
+            } satisfies MoveDestinationContext, moveDestinationPrompt),
         };
     },
 });
 
-const bodySlamPlayerPrompt = createPromptProgram<PromptContext, SmashUpCore, SmashUpEvent>({
+const bodySlamPlayerPrompt = createPromptProgram<PromptContext>({
     sourceId: 'sumo_wrestlers_body_slam_player',
     buildInteraction: (context) => {
         const candidates = Object.keys(context.matchState.core.players)
@@ -1042,18 +1044,17 @@ const bodySlamPlayerPrompt = createPromptProgram<PromptContext, SmashUpCore, Sma
         if (!hasValidBase) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 targetPlayerId: selected.targetPlayerId,
-            } satisfies BodySlamBaseContext,
-            nextProgram: bodySlamBasePrompt,
+            } satisfies BodySlamBaseContext, bodySlamBasePrompt),
         };
     },
 });
 
-const bodySlamBasePrompt = createPromptProgram<BodySlamBaseContext, SmashUpCore, SmashUpEvent>({
+const bodySlamBasePrompt = createPromptProgram<BodySlamBaseContext>({
     sourceId: 'sumo_wrestlers_body_slam_base',
     buildInteraction: (context) => {
         const candidates = context.matchState.core.bases
@@ -1087,19 +1088,18 @@ const bodySlamBasePrompt = createPromptProgram<BodySlamBaseContext, SmashUpCore,
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 targetPlayerId: context.targetPlayerId,
                 fromBaseIndex: selected.baseIndex,
-            } satisfies BodySlamDestinationContext,
-            nextProgram: bodySlamDestinationPrompt,
+            } satisfies BodySlamDestinationContext, bodySlamDestinationPrompt),
         };
     },
 });
 
-const bodySlamDestinationPrompt = createPromptProgram<BodySlamDestinationContext, SmashUpCore, SmashUpEvent>({
+const bodySlamDestinationPrompt = createPromptProgram<BodySlamDestinationContext>({
     sourceId: 'sumo_wrestlers_body_slam_destination',
     buildInteraction: (context) => {
         const candidates = context.matchState.core.bases
@@ -1143,7 +1143,7 @@ const bodySlamDestinationPrompt = createPromptProgram<BodySlamDestinationContext
     },
 });
 
-const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, SmashUpCore, SmashUpEvent>({
+const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext>({
     sourceId: 'mounties_northern_mover_mode',
     buildInteraction: (context) => {
         const canMove = hasOtherBaseTarget(context.matchState.core, context.selected.baseIndex);
@@ -1166,7 +1166,7 @@ const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, Sm
         if (selected.mode === 'move' && hasOtherBaseTarget(state.core, context.selected.baseIndex)) {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
@@ -1176,8 +1176,7 @@ const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, Sm
                     minionDefId: context.selected.defId,
                     fromBaseIndex: context.selected.baseIndex,
                     reason: 'mounties_northern_mover',
-                } satisfies MoveDestinationContext,
-                nextProgram: moveDestinationPrompt,
+                } satisfies MoveDestinationContext, moveDestinationPrompt),
             };
         }
         return {
@@ -1191,7 +1190,7 @@ const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, Sm
     },
 });
 
-const northernMoverTargetPrompt = createPromptProgram<NorthernMoverTargetContext, SmashUpCore, SmashUpEvent>({
+const northernMoverTargetPrompt = createPromptProgram<NorthernMoverTargetContext>({
     sourceId: 'mounties_northern_mover_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mounties_northern_mover_target_${context.now}`,
@@ -1216,18 +1215,17 @@ const northernMoverTargetPrompt = createPromptProgram<NorthernMoverTargetContext
         if (!candidate) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 selected: candidate,
-            } satisfies NorthernMoverModeContext,
-            nextProgram: northernMoverModePrompt,
+            } satisfies NorthernMoverModeContext, northernMoverModePrompt),
         };
     },
 });
 
-const chikaraMizuDiscardPrompt = createPromptProgram<ChikaraMizuDiscardContext, SmashUpCore, SmashUpEvent>({
+const chikaraMizuDiscardPrompt = createPromptProgram<ChikaraMizuDiscardContext>({
     sourceId: 'sumo_wrestlers_chikara_mizu_discard',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_chikara_mizu_discard_${context.now}`,
@@ -1259,7 +1257,7 @@ const chikaraMizuDiscardPrompt = createPromptProgram<ChikaraMizuDiscardContext, 
     },
 });
 
-const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext, SmashUpCore, SmashUpEvent>({
+const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext>({
     sourceId: 'sumo_wrestlers_chikara_mizu_mode',
     buildInteraction: (context) => {
         const canDiscard = getDiscardableHandCards(
@@ -1290,14 +1288,13 @@ const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext, SmashU
         if (selected.mode === 'discardPower4') {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: context.matchState,
                     playerId: context.playerId,
                     now: timestamp,
                     selected: context.selected,
                     sourceCardUid: context.sourceCardUid,
-                } satisfies ChikaraMizuDiscardContext,
-                nextProgram: chikaraMizuDiscardPrompt,
+                } satisfies ChikaraMizuDiscardContext, chikaraMizuDiscardPrompt),
             };
         }
         return {
@@ -1311,7 +1308,7 @@ const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext, SmashU
     },
 });
 
-const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext, SmashUpCore, SmashUpEvent>({
+const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext>({
     sourceId: 'sumo_wrestlers_chikara_mizu_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_chikara_mizu_target_${context.now}`,
@@ -1336,19 +1333,18 @@ const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext, Sm
         if (!candidate) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 selected: candidate,
                 sourceCardUid: context.sourceCardUid,
-            } satisfies ChikaraMizuModeContext,
-            nextProgram: chikaraMizuModePrompt,
+            } satisfies ChikaraMizuModeContext, chikaraMizuModePrompt),
         };
     },
 });
 
-const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext, SmashUpCore, SmashUpEvent>({
+const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext>({
     sourceId: 'sumo_wrestlers_bulking_stew_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_bulking_stew_target_${context.now}`,
@@ -1388,7 +1384,7 @@ const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext, Sm
     },
 });
 
-const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext, SmashUpCore, SmashUpEvent>({
+const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext>({
     sourceId: 'sumo_wrestlers_bulking_stew_discard',
     buildInteraction: (context) => {
         const discardable = getDiscardableHandCards(
@@ -1420,15 +1416,14 @@ const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext, 
         if (selectedCardUids.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceCardUid: context.sourceCardUid,
                 selectedCardUids,
                 candidates: context.candidates,
-            } satisfies BulkingStewTargetContext,
-            nextProgram: bulkingStewTargetPrompt,
+            } satisfies BulkingStewTargetContext, bulkingStewTargetPrompt),
         };
     },
 });
@@ -1451,7 +1446,7 @@ function runMoveMinion(
     }));
 }
 
-const baseEffectPrompt = createPromptProgram<BaseEffectContext, SmashUpCore, SmashUpEvent>({
+const baseEffectPrompt = createPromptProgram<BaseEffectContext>({
     sourceId: 'international_incident_base_effect',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -1512,7 +1507,7 @@ function runBaseEffect(
     }));
 }
 
-const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext, SmashUpCore, SmashUpEvent>({
+const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext>({
     sourceId: 'sumo_wrestlers_yokozuna_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_yokozuna_mode_${context.now}`,
@@ -1539,7 +1534,7 @@ const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext, SmashUpCore,
         if (candidates.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
@@ -1548,8 +1543,7 @@ const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext, SmashUpCore,
                 titleKey: 'ui.sumo_wrestlers_yokozuna_move_title',
                 candidates,
                 reason: 'sumo_wrestlers_yokozuna',
-            } satisfies MoveMinionContext,
-            nextProgram: moveMinionPrompt,
+            } satisfies MoveMinionContext, moveMinionPrompt),
         };
     },
 });
@@ -1595,7 +1589,7 @@ function sumoFightingSpiritPrize(ctx: AbilityContext): AbilityResult {
     });
 }
 
-const sumoHeadButtPrompt = createPromptProgram<SumoHeadButtContext, SmashUpCore, SmashUpEvent>({
+const sumoHeadButtPrompt = createPromptProgram<SumoHeadButtContext>({
     sourceId: 'sumo_wrestlers_head_butt',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_head_butt_${context.now}`,
@@ -1804,7 +1798,7 @@ function sumoTopTierOnCardsDiscarded(ctx: TriggerContext): SmashUpEvent[] {
     })];
 }
 
-const rookieSumoTargetPrompt = createPromptProgram<RookieSumoTargetContext, SmashUpCore, SmashUpEvent>({
+const rookieSumoTargetPrompt = createPromptProgram<RookieSumoTargetContext>({
     sourceId: 'sumo_wrestlers_rookie_sumo_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_rookie_sumo_target_${context.now}`,
@@ -1846,7 +1840,7 @@ const rookieSumoTargetPrompt = createPromptProgram<RookieSumoTargetContext, Smas
     },
 });
 
-const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext, SmashUpCore, SmashUpEvent>({
+const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext>({
     sourceId: 'sumo_wrestlers_rookie_sumo_discard',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_rookie_sumo_discard_${context.now}`,
@@ -1873,14 +1867,13 @@ const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext, Sm
         if (candidates.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 selectedCardUid: selectedCard.uid,
                 candidates,
-            } satisfies RookieSumoTargetContext,
-            nextProgram: rookieSumoTargetPrompt,
+            } satisfies RookieSumoTargetContext, rookieSumoTargetPrompt),
         };
     },
 });
@@ -2206,7 +2199,7 @@ function buildAlwaysGetOurManTargetCandidates(
     });
 }
 
-const alwaysGetOurManTargetPrompt = createPromptProgram<AlwaysGetOurManContext, SmashUpCore, SmashUpEvent>({
+const alwaysGetOurManTargetPrompt = createPromptProgram<AlwaysGetOurManContext>({
     sourceId: 'mounties_always_get_our_man_target',
     buildInteraction: (context) => {
         const candidates = buildAlwaysGetOurManTargetCandidates(
@@ -2280,7 +2273,7 @@ const alwaysGetOurManTargetPrompt = createPromptProgram<AlwaysGetOurManContext, 
     },
 });
 
-const alwaysGetOurManSourcePrompt = createPromptProgram<PromptContext, SmashUpCore, SmashUpEvent>({
+const alwaysGetOurManSourcePrompt = createPromptProgram<PromptContext>({
     sourceId: 'mounties_always_get_our_man_source',
     buildInteraction: (context) => {
         const candidates = collectOwnMinions(context.matchState.core, context.playerId)
@@ -2323,13 +2316,12 @@ const alwaysGetOurManSourcePrompt = createPromptProgram<PromptContext, SmashUpCo
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 selected: candidate,
-            } satisfies AlwaysGetOurManContext,
-            nextProgram: alwaysGetOurManTargetPrompt,
+            } satisfies AlwaysGetOurManContext, alwaysGetOurManTargetPrompt),
         };
     },
 });
@@ -2440,7 +2432,7 @@ function mountiesDudleeTalent(ctx: AbilityContext): AbilityResult {
     })));
 }
 
-const haichQMovePrompt = createPromptProgram<HaichQMoveContext, SmashUpCore, SmashUpEvent>({
+const haichQMovePrompt = createPromptProgram<HaichQMoveContext>({
     sourceId: 'mounties_haich_q_move',
     buildInteraction: (context) => {
         const candidates = collectOwnMinions(context.matchState.core, context.playerId)
@@ -2464,7 +2456,7 @@ const haichQMovePrompt = createPromptProgram<HaichQMoveContext, SmashUpCore, Sma
         const fixedToBaseIndex = selected.baseIndex === context.sourceBaseIndex ? undefined : context.sourceBaseIndex;
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
@@ -2475,8 +2467,7 @@ const haichQMovePrompt = createPromptProgram<HaichQMoveContext, SmashUpCore, Sma
                 fromBaseIndex: selected.baseIndex,
                 reason: 'mounties_haich_q',
                 fixedToBaseIndex,
-            } satisfies MoveDestinationContext,
-            nextProgram: moveDestinationPrompt,
+            } satisfies MoveDestinationContext, moveDestinationPrompt),
         };
     },
 });
@@ -2520,7 +2511,7 @@ function luchadorsQuickSetUpOnPlay(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraAction(ctx, 'luchadors_quick_set_up')] };
 }
 
-const tagTeamBasePrompt = createPromptProgram<TagTeamBaseContext, SmashUpCore, SmashUpEvent>({
+const tagTeamBasePrompt = createPromptProgram<TagTeamBaseContext>({
     sourceId: 'luchadors_tag_team_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_tag_team_base_${context.now}`,
@@ -2547,7 +2538,7 @@ const tagTeamBasePrompt = createPromptProgram<TagTeamBaseContext, SmashUpCore, S
     },
 });
 
-const cheapPopPrompt = createPromptProgram<CheapPopContext, SmashUpCore, SmashUpEvent>({
+const cheapPopPrompt = createPromptProgram<CheapPopContext>({
     sourceId: 'luchadors_cheap_pop',
     buildInteraction: (context) => {
         const options = buildMinionTargetOptions(context.candidates, {
@@ -2621,7 +2612,7 @@ function luchadorsTagTeam(ctx: AbilityContext): AbilityResult {
     })));
 }
 
-const muchoslamRecoverActionPrompt = createPromptProgram<MuchoslamRecoverActionContext, SmashUpCore, SmashUpEvent>({
+const muchoslamRecoverActionPrompt = createPromptProgram<MuchoslamRecoverActionContext>({
     sourceId: 'luchadors_senor_muchoslam',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_senor_muchoslam_${context.now}`,
@@ -2676,7 +2667,7 @@ function luchadorsSenorMuchoslamTalent(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraAction(ctx, 'luchadors_senor_muchoslam')] };
 }
 
-const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsContext, SmashUpCore, SmashUpEvent>({
+const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsContext>({
     sourceId: 'luchadors_reversal_destroy_actions',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_reversal_destroy_actions_${context.now}`,
@@ -2796,7 +2787,7 @@ function luchadorsReversalTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
-const muchoslamVsMonstersPrompt = createPromptProgram<MuchoslamVsMonstersContext, SmashUpCore, SmashUpEvent>({
+const muchoslamVsMonstersPrompt = createPromptProgram<MuchoslamVsMonstersContext>({
     sourceId: 'luchadors_senor_muchoslam_vs_the_monsters',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_senor_muchoslam_vs_the_monsters_${context.now}`,
@@ -2867,7 +2858,7 @@ function luchadorsSenorMuchoslamVsTheMonsters(ctx: AbilityContext): AbilityResul
     })));
 }
 
-const searchActionPrompt = createPromptProgram<SearchActionContext, SmashUpCore, SmashUpEvent>({
+const searchActionPrompt = createPromptProgram<SearchActionContext>({
     sourceId: 'international_incident_search_action',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -2904,7 +2895,7 @@ const searchActionPrompt = createPromptProgram<SearchActionContext, SmashUpCore,
     },
 });
 
-const capaRojaTargetPrompt = createPromptProgram<CapaRojaTargetContext, SmashUpCore, SmashUpEvent>({
+const capaRojaTargetPrompt = createPromptProgram<CapaRojaTargetContext>({
     sourceId: 'luchadors_capa_roja',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -2974,7 +2965,7 @@ const capaRojaTargetPrompt = createPromptProgram<CapaRojaTargetContext, SmashUpC
     },
 });
 
-const heyaTrainingStablePrompt = createPromptProgram<HeyaTrainingStableContext, SmashUpCore, SmashUpEvent>({
+const heyaTrainingStablePrompt = createPromptProgram<HeyaTrainingStableContext>({
     sourceId: 'base_heya_training_stable',
     buildInteraction: (context) => {
         const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
@@ -3023,7 +3014,7 @@ const heyaTrainingStablePrompt = createPromptProgram<HeyaTrainingStableContext, 
     },
 });
 
-const baseMovePrompt = createPromptProgram<BaseMovePromptContext, SmashUpCore, SmashUpEvent>({
+const baseMovePrompt = createPromptProgram<BaseMovePromptContext>({
     sourceId: 'international_incident_base_move',
     interactionSourceIds: ['base_the_dohyo', 'base_strategic_syrup_reserve'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -3087,7 +3078,7 @@ const baseMovePrompt = createPromptProgram<BaseMovePromptContext, SmashUpCore, S
     },
 });
 
-const greatWhiteNorthPrompt = createPromptProgram<GreatWhiteNorthContext, SmashUpCore, SmashUpEvent>({
+const greatWhiteNorthPrompt: AbilityProgram<GreatWhiteNorthContext, SmashUpCore, SmashUpEvent> = createPromptProgram<GreatWhiteNorthContext>({
     sourceId: 'base_great_white_north_eh',
     buildInteraction: (context) => {
         const options = buildGreatWhiteNorthOptions(
@@ -3106,7 +3097,7 @@ const greatWhiteNorthPrompt = createPromptProgram<GreatWhiteNorthContext, SmashU
                 responseValidationMode: 'live',
                 optionsGenerator: (state) => [
                     createSkipOption('跳过（不移动随从）', 'ui.international_incident_skip_move_minion_option'),
-                    ...buildGreatWhiteNorthOptions(state.core, context.playerId, context.sourceBaseIndex),
+                    ...buildGreatWhiteNorthOptions((state as MatchState<SmashUpCore>).core, context.playerId, context.sourceBaseIndex),
                 ],
                 titleKey: 'ui.base_great_white_north_eh_title',
             },
@@ -3159,14 +3150,13 @@ const greatWhiteNorthPrompt = createPromptProgram<GreatWhiteNorthContext, SmashU
         if (!nextPlayerId) return { events };
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: nextPlayerId,
                 now: timestamp,
                 sourceBaseIndex: context.sourceBaseIndex,
                 remainingPlayerIds,
-            } satisfies GreatWhiteNorthContext,
-            nextProgram: greatWhiteNorthPrompt,
+            } satisfies GreatWhiteNorthContext, greatWhiteNorthPrompt),
         };
     },
 });
@@ -3241,7 +3231,7 @@ function musketeersTokenOfAffection(ctx: AbilityContext): AbilityResult {
     })));
 }
 
-const luchadorsOutForTheCountPrompt = createPromptProgram<OutForTheCountContext, SmashUpCore, SmashUpEvent>({
+const luchadorsOutForTheCountPrompt = createPromptProgram<OutForTheCountContext>({
     sourceId: 'luchadors_out_for_the_count',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_out_for_the_count_${context.now}`,

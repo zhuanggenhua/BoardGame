@@ -183,24 +183,21 @@ export const shouldShowBoardRenderFallback = ({
  * - 最多重试 5 次
  * - 重试期间显示 loading fallback
  */
+type BoardErrorBoundaryProps = {
+    children: React.ReactNode;
+    fallback?: React.ReactNode;
+    resetKey: React.Key;
+    resetIdentity: unknown;
+};
+
 class BoardErrorBoundary extends React.Component<
-    {
-        children: React.ReactNode;
-        fallback?: React.ReactNode;
-        resetKey: React.Key;
-        resetIdentity: unknown;
-    },
+    BoardErrorBoundaryProps,
     { hasError: boolean; error?: Error; retryCount: number }
 > {
     private retryTimer: NodeJS.Timeout | null = null;
     private readonly maxRetries = BOARD_ERROR_BOUNDARY_MAX_RETRIES;
 
-    constructor(props: {
-        children: React.ReactNode;
-        fallback?: React.ReactNode;
-        resetKey: React.Key;
-        resetIdentity: unknown;
-    }) {
+    constructor(props: BoardErrorBoundaryProps) {
         super(props);
         this.state = { hasError: false, retryCount: 0 };
     }
@@ -252,7 +249,7 @@ class BoardErrorBoundary extends React.Component<
         }
     }
 
-    componentDidUpdate(prevProps: React.ComponentProps<typeof BoardErrorBoundary>) {
+    componentDidUpdate(prevProps: Readonly<BoardErrorBoundaryProps>) {
         // 只在 Board 实例身份或显式 remountKey 改变时重置错误，
         // 父组件每次更新都会创建新的 children 元素，不能把它当作恢复条件。
         if (this.state.hasError && (

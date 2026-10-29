@@ -531,8 +531,10 @@ function lastCallSpecial(ctx: AbilityContext): AbilityResult {
 }
 
 function pestlingExtraMinion(ctx: AbilityContext | TriggerContext): AbilityResult {
-    const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
-    const playerId = ctx.playerId ?? ctx.sourceControllerId;
+    const sourceBaseIndex = 'sourceBaseIndex' in ctx ? ctx.sourceBaseIndex : undefined;
+    const sourceControllerId = 'sourceControllerId' in ctx ? ctx.sourceControllerId : undefined;
+    const baseIndex = ctx.baseIndex ?? sourceBaseIndex;
+    const playerId = ctx.playerId ?? sourceControllerId;
     if (baseIndex === undefined || !playerId) return { events: [] };
     return {
         events: [grantExtraMinion(playerId, HALFLINGS_PESTLING, ctx.now, baseIndex)],
@@ -603,8 +605,10 @@ function shireMarshalTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function bardlingExtraMinion(ctx: AbilityContext | TriggerContext): AbilityResult {
-    const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
-    const playerId = ctx.playerId ?? ctx.sourceControllerId;
+    const sourceBaseIndex = 'sourceBaseIndex' in ctx ? ctx.sourceBaseIndex : undefined;
+    const sourceControllerId = 'sourceControllerId' in ctx ? ctx.sourceControllerId : undefined;
+    const baseIndex = ctx.baseIndex ?? sourceBaseIndex;
+    const playerId = ctx.playerId ?? sourceControllerId;
     if (baseIndex === undefined || !playerId) return { events: [] };
     if (!hasOpponentMorePowerAtBase(ctx.state, baseIndex, playerId)) return { events: [] };
     return {
@@ -2259,6 +2263,7 @@ function thievesGuildOnActionPlayed(ctx: BaseAbilityContext): BaseAbilityResult 
     if (triggerDef?.type !== 'action' || triggerDef.faction !== MUNCHKIN_TREASURE_FACTION_ID) {
         return { events: [] };
     }
+    if (!ctx.random) throw new Error('Thieves Guild draw trigger requires the command random source');
     return {
         events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
     };
@@ -2293,8 +2298,9 @@ function anythingForMoneyOnPlay(ctx: AbilityContext): AbilityResult {
         },
     );
     interaction.data.optionsGenerator = (latestState, data) => {
-        const sourceCardUid = typeof (data as AnythingForMoneyInteractionData).sourceCardUid === 'string'
-            ? (data as AnythingForMoneyInteractionData).sourceCardUid
+        const candidateSourceCardUid = (data as AnythingForMoneyInteractionData).sourceCardUid;
+        const sourceCardUid = typeof candidateSourceCardUid === 'string'
+            ? candidateSourceCardUid
             : undefined;
         return buildAnythingForMoneyDiscardOptions(
             latestState.core as SmashUpCore,
@@ -3570,7 +3576,7 @@ export function registerMunchkinInteractionHandlers(): void {
         const data = interactionData as DungeonRulebookInteractionData | undefined;
         const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
         const targetCardUid = typeof choice?.cardUid === 'string' ? choice.cardUid : undefined;
-        if (!sourceCardUid || !targetCardUid) return { state, events: [] };
+        if (!sourceCardUid || !choice || !targetCardUid) return { state, events: [] };
 
         const player = state.core.players[playerId];
         if (!player?.discard.some((card) => card.uid === sourceCardUid && card.defId === DUNGEON_RULEBOOK)) {
@@ -3608,7 +3614,7 @@ export function registerMunchkinInteractionHandlers(): void {
         const data = interactionData as NoMyPreciousInteractionData | undefined;
         const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
         const targetCardUid = typeof choice?.cardUid === 'string' ? choice.cardUid : undefined;
-        if (!sourceCardUid || !targetCardUid) return { state, events: [] };
+        if (!sourceCardUid || !choice || !targetCardUid) return { state, events: [] };
 
         const player = state.core.players[playerId];
         if (!player?.discard.some((card) => card.uid === sourceCardUid && card.defId === DWARVES_NO_MY_PRECIOUS)) {
@@ -3704,6 +3710,7 @@ export function registerMunchkinInteractionHandlers(): void {
             || targetBaseIndex === undefined
             || !minionUid
             || !minionDefId
+            || !choice
             || fromBaseIndex !== targetBaseIndex
             || toBaseIndex === undefined
             || toBaseIndex === fromBaseIndex

@@ -9,8 +9,15 @@ import type { DiceThroneEvent } from '../types';
 type NyraEffect = 'heal' | 'grant-bond' | 'grant-bond-and-heal';
 
 function handleNyraEffect(context: CustomActionContext): DiceThroneEvent[] {
-    const effect = context.action.params?.effect as NyraEffect | undefined;
-    const amount = Number(context.action.params?.amount ?? 0);
+    const params = context.action.params as Record<string, unknown> | undefined;
+    const rawEffect = params?.effect;
+    const effect: NyraEffect | undefined = rawEffect === 'heal'
+        || rawEffect === 'grant-bond'
+        || rawEffect === 'grant-bond-and-heal'
+        ? rawEffect
+        : undefined;
+    const rawAmount = params?.amount;
+    const amount = typeof rawAmount === 'number' && Number.isFinite(rawAmount) ? rawAmount : 0;
     const player = context.state.players[context.attackerId];
     if (!player?.companion || player.companion.id !== 'nyra') return [];
 
@@ -47,7 +54,8 @@ function handleKindredBond(context: CustomActionContext): DiceThroneEvent[] {
 
     const faceCounts = getFaceCounts(getActiveDice(context.state));
     const spearDamage = faceCounts[FACE.SPEAR] ?? 0;
-    const sabertoothDamage = context.action.params?.includeSabertooth === true
+    const params = context.action.params as Record<string, unknown> | undefined;
+    const sabertoothDamage = params?.includeSabertooth === true
         ? (faceCounts[FACE.SABERTOOTH] ?? 0)
         : 0;
     const clawDamage = isNyraCompanionActive(player) ? (faceCounts[FACE.CLAW] ?? 0) * 2 : 0;

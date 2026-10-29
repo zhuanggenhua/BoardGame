@@ -73,17 +73,14 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
     const externalGames = external.data?.items ?? [];
     const externalCards: PlatformCatalogGame[] = externalGames.map(game => ({
         id: game.gameId, titleKey: game.name, descriptionKey: game.description,
-        thumbnail: game.coverUrl ? <img src={game.coverUrl} alt="" /> : <span className="platform-external-art"><small>外部游戏</small><strong>{game.name}</strong><span>{game.author}</span></span>,
+        thumbnail: game.coverUrl ? <img src={game.coverUrl} alt="" /> : <span className="platform-external-art"><small>外部游戏</small></span>,
     }));
     const favorites = allGames.filter(game => favoriteIds.has(game.id));
     const allCards = [...allGames, ...externalCards];
     const filteredFavorites = allCards.filter(game => favoriteIds.has(game.id) && resolveGameDisplayName(game, t).toLocaleLowerCase().includes(libraryQuery.trim().toLocaleLowerCase()));
     const visibleExternalCards = externalCards.filter(card => category === 'All' || externalGames.find(game => game.gameId === card.id)?.category === category);
     const openGame = (id: string, fromLibrary = false) => {
-        if (externalGames.some(game => game.gameId === id)) {
-            writeSessionStorageItem('bg-external-return', JSON.stringify({ url: location.pathname + location.search, scroll: window.scrollY }));
-            navigate(`/external/${encodeURIComponent(id)}?from=${encodeURIComponent(location.pathname + location.search)}`);
-        } else if (fromLibrary) onOpenLibraryGame(id); else onOpenGame(id);
+        if (fromLibrary) onOpenLibraryGame(id); else onOpenGame(id);
     };
     useEffect(() => {
         if (external.isPending) return;
@@ -147,7 +144,7 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
             </> : section === 'upload' ? <PlatformUploadWorkspace onLogin={onLogin} initialSubmissionId={searchParams.get('submission') ?? undefined} onBack={searchParams.get('fromProfile') ? () => {
                 setSearchParams(current => { const next = new URLSearchParams(current); next.set('section', 'profile'); next.set('tab', 'submissions'); next.delete('submission'); next.delete('fromProfile'); return next; });
             } : undefined} />
-                : <PlatformProfile favoriteCount={allCards.filter(game => favoriteIds.has(game.id)).length} onLogin={onLogin} tab={searchParams.get('tab') ?? 'overview'} initialGameId={searchParams.get('claimGame') ?? ''}
+                : <PlatformProfile favoriteCount={allCards.filter(game => favoriteIds.has(game.id)).length} onLogin={onLogin} tab={searchParams.get('tab') ?? 'overview'}
                     submissionFilter={searchParams.get('submissionFilter') ?? 'all'}
                     onSubmissionFilterChange={filter => setSearchParams(current => { const next = new URLSearchParams(current); if (filter === 'all') next.delete('submissionFilter'); else next.set('submissionFilter', filter); return next; }, { replace: true })}
                     onTabChange={tab => setSearchParams(current => { const next = new URLSearchParams(current); next.set('tab', tab); next.delete('claimGame'); return next; })}
@@ -155,7 +152,14 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
                         writeSessionStorageItem('bg-submission-return', JSON.stringify({ userId: user?.id, filter: searchParams.get('submissionFilter') ?? 'all', scroll: window.scrollY }));
                         setSearchParams(current => { const next = new URLSearchParams(current); next.set('section', 'upload'); next.set('fromProfile', '1'); if (submissionId) next.set('submission', submissionId); else next.delete('submission'); return next; });
                     }}
-                    onOpenGame={(id, preview) => navigate(`/external/${encodeURIComponent(id)}?${preview ? 'preview=1&' : ''}from=${encodeURIComponent(location.pathname + location.search)}`)} />}
+                    onOpenGame={(id, preview) => {
+                        if (preview) {
+                            writeSessionStorageItem('bg-external-return', JSON.stringify({ url: location.pathname + location.search, scroll: window.scrollY }));
+                            navigate(`/external/${encodeURIComponent(id)}?preview=1&from=${encodeURIComponent(location.pathname + location.search)}`);
+                            return;
+                        }
+                        onOpenGame(id);
+                    }} />}
         </main>
         {activeMatch && <div className="platform-active-match" data-testid="home-active-match-banner">{activeMatch}</div>}
     </div>;

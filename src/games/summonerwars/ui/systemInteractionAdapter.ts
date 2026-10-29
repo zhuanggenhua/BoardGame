@@ -1258,10 +1258,11 @@ export function deriveSystemAbilityMode(
   }
 
   if (swInteraction.type === 'zhongcai_decree_discard') {
+    if (typeof meta.sourceUnitId !== 'string') return null;
     return {
       abilityId: 'zhongcai_decree',
       step: 'selectChoice',
-      sourceUnitId: typeof meta.sourceUnitId === 'string' ? meta.sourceUnitId : undefined,
+      sourceUnitId: meta.sourceUnitId,
       systemChoiceOptions: swInteraction.options.map((option) => ({
         id: option.id,
         label: typeof option.label === 'string' ? option.label : undefined,
@@ -1623,15 +1624,17 @@ export function deriveSystemAbilityMode(
         || meta.abilityId === 'zhongcai_word')
       && (meta.step === 'selectUnit' || meta.step === 'selectPosition')
     ) {
+      if (typeof meta.sourceUnitId !== 'string') return null;
       return {
         abilityId: meta.abilityId,
         step: meta.step === 'selectPosition' ? 'selectPosition' : 'selectUnit',
-        sourceUnitId: typeof meta.sourceUnitId === 'string' ? meta.sourceUnitId : undefined,
+        sourceUnitId: meta.sourceUnitId,
         targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
       };
     }
 
     if (meta.abilityId === 'shadow_return_to_shadow' && meta.step === 'selectUnit') {
+      if (typeof meta.sourceUnitId !== 'string') return null;
       return {
         abilityId: 'shadow_return_to_shadow',
         step: 'selectUnit',
