@@ -18,7 +18,8 @@ import { DOCTOR_STRANGE_ABILITY, DOCTOR_STRANGE_ATLAS, DOCTOR_STRANGE_TOKEN } fr
 import { getPendingAttackExpectedDamage } from '../domain/utils';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { cmd, createHeroMatchup, createQueuedRandom, fixedRandom, getSimpleChoicePrompt,
-    advanceTo, createNoResponseSetup, interactionRespondCommandType, testSystems } from './test-utils';
+    advanceTo, createNoResponseSetup, expectNoPrompt, getMultistepChoicePrompt,
+    interactionRespondCommandType, testSystems } from './test-utils';
 
 function resolveDoctorStrangeAttack(
     abilityId: string,
@@ -652,7 +653,7 @@ describe('奇异博士完成态与开局卡区', () => {
         state = rollDoctorStrangeDice(state, '0', random);
         state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
 
-        const selection = state.sys.interaction.current;
+        const selection = getMultistepChoicePrompt(state, cardId);
         expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: '0' });
         expect(selection?.data).toMatchObject({
             sourceId: cardId,
@@ -675,7 +676,7 @@ describe('奇异博士完成态与开局卡区', () => {
         expect(state.core.dice.map(die => die.value)).toEqual([6, 2, 3, 4, 5]);
         expect(state.core.players['1'].resources.cp).toBe(0);
         expect(state.core.players['1'].discard.map(candidate => candidate.id)).toContain(cardId);
-        expect(state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(state);
     });
 
     it('其他玩家打出就这后由当前防御掷骰者选择是否接受额外尝试', () => {
@@ -699,7 +700,7 @@ describe('奇异博士完成态与开局卡区', () => {
         const originalDice = state.core.dice.map(die => die.value);
         state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
 
-        const selection = state.sys.interaction.current;
+        const selection = getMultistepChoicePrompt(state, cardId);
         expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: '0' });
         expect(selection?.data).toMatchObject({
             sourceId: cardId,
@@ -721,7 +722,7 @@ describe('奇异博士完成态与开局卡区', () => {
         expect(state.core.dice.map(die => die.value)).toEqual(originalDice);
         expect(state.core.players['1'].resources.cp).toBe(1);
         expect(state.core.players['1'].discard.map(candidate => candidate.id)).toContain(cardId);
-        expect(state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(state);
     });
 
     it('公共卡不愧是我由当前投掷者控制队友发起的两次重掷', async () => {

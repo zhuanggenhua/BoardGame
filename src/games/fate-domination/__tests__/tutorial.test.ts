@@ -4,6 +4,8 @@ import type { MatchState } from '../../../engine/types';
 import { FateDominationDomain } from '../domain';
 import type { FateDominationCore } from '../domain';
 import { buildLocalDispatchCommand } from '../../../engine/transport/localDispatchCommand';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { cancelPrompt, createRespondToPromptCommand } from '../../../engine/testing/interactionTestFacade';
 import { engineConfig } from '../game';
 import { FateDominationTutorial, buildFateTutorialPlan, FATE_TUTORIAL_SEED } from '../tutorial';
 import {applyPlayerViewToState} from '../../../engine/ai/playerView';
@@ -11,6 +13,40 @@ import type {AiDecisionContext} from '../../../engine/ai';
 import {buildFateAiLegalActions,chooseFateAiAction} from '../ai';
 import {fateTutorialAllows} from '../ui/tutorialContract';
 import { fateDominationGameRuntimeAdapter } from '../runtimeAdapter';
+
+function buildTutorialDispatchCommand(
+    state: MatchState<FateDominationCore>,
+    type: string,
+    payload: unknown,
+    playerId: string,
+    automatic: boolean,
+) {
+    const data = payload as Record<string, unknown>;
+    const command = automatic
+        ? { type, playerId, payload: { ...data, __tutorialPlayerId: playerId, __tutorialAiCommand: true } }
+        : type === INTERACTION_COMMANDS.RESPOND
+            ? createRespondToPromptCommand(state, {
+                playerId,
+                ...(typeof data.optionId === 'string' ? { optionId: data.optionId } : {}),
+                ...(Array.isArray(data.optionIds)
+                    ? { optionIds: data.optionIds.filter((optionId): optionId is string => typeof optionId === 'string') }
+                    : {}),
+                ...(Object.prototype.hasOwnProperty.call(data, 'mergedValue') ? { mergedValue: data.mergedValue } : {}),
+            })
+            : type === INTERACTION_COMMANDS.CANCEL
+                ? cancelPrompt(state, {
+                    playerId,
+                    ...(typeof data.reason === 'string' ? { reason: data.reason } : {}),
+                })
+                : { type, playerId, payload: data };
+
+    return buildLocalDispatchCommand({
+        commandType: command.type,
+        payload: command.payload,
+        state,
+        localPregameControlledPlayerId: '0',
+    });
+}
 
 it('教程从正式开局复演至终局，包含混选、御主、骑乘和多轮阶段', () => {
     const plan = buildFateTutorialPlan();
@@ -87,12 +123,12 @@ it.each(['miyama','shinto'] as const)('首次部署选择%s后，正式教程进
     let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,FATE_TUTORIAL_SEED)};
     const send=(type:string,payload:unknown,playerId='0',automatic=false)=>{
         const data=payload as Record<string,unknown>;
-        if(['SELECT_MASTER','SELECT_SERVANT','DEPLOY_MASTER','SELECT_ATTACK_CARD','CONFIRM_ATTACK','INSPECT_CARD','ADVANCE_PHASE','MOVE_PLAYER','PASS_ACTION','RESOLVE_LOCATION','PLAY_SKILL','USE_COMMAND_SPELL','SYS_INTERACTION_RESPOND','SYS_INTERACTION_CANCEL'].includes(type)){
+        if(['SELECT_MASTER','SELECT_SERVANT','DEPLOY_MASTER','SELECT_ATTACK_CARD','CONFIRM_ATTACK','INSPECT_CARD','ADVANCE_PHASE','MOVE_PLAYER','PASS_ACTION','RESOLVE_LOCATION','PLAY_SKILL','USE_COMMAND_SPELL',INTERACTION_COMMANDS.RESPOND,INTERACTION_COMMANDS.CANCEL].includes(type)){
             const expected=planned[actionIndex++];const expectedPayload={...(expected?.payload as Record<string,unknown>??{})};delete expectedPayload.interactionId;
             const actualPayload={...data};delete actualPayload.interactionId;
             expect({type,playerId,payload:actualPayload},`首次部署${locationId}后，第${actionIndex-1}项实际动作应与真实复演计划一致`).toEqual({type:expected?.type,playerId:expected?.playerId,payload:expectedPayload});
         }
-        const local=buildLocalDispatchCommand({commandType:type,payload:automatic?{...data,__tutorialPlayerId:playerId,__tutorialAiCommand:true}:type.startsWith('SYS_INTERACTION_')?{...data,interactionId:state.sys.interaction.current?.id}:payload,state,localPregameControlledPlayerId:'0'});
+        const local = buildTutorialDispatchCommand(state, type, payload, playerId, automatic);
         const result=executePipeline({domain:FateDominationDomain,systems:engineConfig.systems},state,local.command,random,ids);
         expect(result.success,`${state.sys.tutorial.step?.id}/${type}: ${result.error??''}`).toBe(true);state=result.state;
     };
@@ -122,7 +158,7 @@ it.each(['miyama','shinto'] as const)('首次部署选择%s后，正式教程进
 
 it('自然课程中学员亲自处理战后选择，不能只观察他席选择', () => {
     const plan = buildFateTutorialPlan();
-    const responses = plan.steps.filter(step => step.fateCommand?.type === 'SYS_INTERACTION_RESPOND'
+    const responses = plan.steps.filter(step => step.fateCommand?.type === INTERACTION_COMMANDS.RESPOND
         && typeof step.fateCommand.payload.optionId === 'string');
     expect(responses.map(step => step.fateCommand!.payload.optionId)).toContain('restore');
 });
@@ -138,7 +174,7 @@ it('先读费用与技能门槛再支付；自动收牌先于查看弃牌，不�
     expect(cleanup).toBeGreaterThan(reading);expect(discard).toBeGreaterThan(cleanup);
     expect(steps[discard].content).toContain('你可以于任何时候查看自己的弃牌堆');
     expect(steps[discard].content).not.toContain('关闭');
-    const reward=steps.find(step=>step.fateCommand?.type==='SYS_INTERACTION_RESPOND'&&step.fateCommand.payload.optionId==='restore');
+    const reward=steps.find(step=>step.fateCommand?.type===INTERACTION_COMMANDS.RESPOND&&step.fateCommand.payload.optionId==='restore');
     expect(reward?.content).toContain('此战场的胜者可以恢复1枚令咒');
 });
 
@@ -191,7 +227,7 @@ it('首轮先移动到战场再出牌，骑乘在实际战场触发且不强迫�
             if(state.core.round===1){
                 if(command.type==='MOVE_PLAYER'){expect(normal).toBe(false);moved=true;movementDestination=String((command.payload as {locationId:string}).locationId);}
                 if(command.type==='CONFIRM_ATTACK'){expect(moved).toBe(true);expect(['miyama','shinto']).toContain(movementDestination);expect(state.core.players['0'].locationId).toBe(movementDestination);normal=true;}
-                expect(command.type).not.toBe('SYS_INTERACTION_CANCEL');
+                expect(command.type).not.toBe(INTERACTION_COMMANDS.CANCEL);
             }
             if(command.type==='PLAY_SKILL'&&String((command.payload as {skillId:string}).skillId).startsWith('sc_iskandar_1')){
                 expect(normal).toBe(true);expect(['miyama','shinto']).toContain(state.core.players['0'].locationId);riding=true;
@@ -208,8 +244,7 @@ it('正式教程系统逐步承接全部计划动作，自动命令不越过当�
     const ids = ['1', '0', '2'];
     let state: MatchState<FateDominationCore> = { core: FateDominationDomain.setup(ids, random), sys: createInitialSystemState(ids, engineConfig.systems, FATE_TUTORIAL_SEED) };
     const send = (type: string, payload: unknown, playerId = '0', automatic = false) => {
-        const data = payload as Record<string,unknown>;
-        const local = buildLocalDispatchCommand({ commandType: type, payload: automatic ? { ...data, __tutorialPlayerId: playerId, __tutorialAiCommand: true } : type.startsWith('SYS_INTERACTION_') ? { ...data, interactionId: state.sys.interaction.current?.id } : payload, state, localPregameControlledPlayerId: '0' });
+        const local = buildTutorialDispatchCommand(state, type, payload, playerId, automatic);
         const result = executePipeline({ domain: FateDominationDomain, systems: engineConfig.systems }, state, local.command, random, ids);
         expect(result.success, `${state.sys.tutorial.step?.id}/${type}: ${result.error ?? ''}`).toBe(true);
         state = result.state;
