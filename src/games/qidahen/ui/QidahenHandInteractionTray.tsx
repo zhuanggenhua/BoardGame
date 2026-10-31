@@ -157,8 +157,8 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
                                 ? t('board.handInteraction.raidPaymentTarget', {
                                     ...interaction.raidTarget, defaultValue: '目标：{{targetRegionName}} · {{resolutionHint}}',
                                 })
-                                : t('board.handInteraction.raidPaymentInvalidTarget', {
-                                    defaultValue: '在地图上选择目标地区',
+                                : t(interaction.raidSourceSelected ? 'board.handInteraction.raidPaymentInvalidTarget' : 'board.handInteraction.raidPaymentSelectSource', {
+                                    defaultValue: interaction.raidSourceSelected ? '在地图上选择目标地区' : '在地图上选择出兵地区',
                                 })}
                         </div>
                     ) : null}

@@ -2,33 +2,7 @@ import type {
     InteractionDescriptor,
     SimpleChoiceData,
 } from '../../../engine/systems/InteractionSystem';
-import type {
-    QidahenCasualtyPriority,
-    QidahenDiplomacyChoice,
-    QidahenDiplomacySelection,
-    QidahenDriveTigerConsentChoice,
-    QidahenDriveTigerConsentSelection,
-    QidahenEventCharacterTargetSelection,
-    QidahenEventOpponentHandChoiceSelection,
-    QidahenFeignedRetreatSelection,
-    QidahenFortificationMaintenanceMode,
-    QidahenFortificationMaintenanceSelection,
-    QidahenGrantPardonChoice,
-    QidahenGrantPardonSelection,
-    QidahenHandLimitDiscardSelection,
-    QidahenInternalDispatchSelection,
-    QidahenKhanEdictChoice,
-    QidahenKhanEdictSelection,
-    QidahenMaShiTradeSelection,
-    QidahenOpenGateSurrenderSelection,
-    QidahenPendingTargetAction,
-    QidahenPostBattleSelection,
-    QidahenRaidAndAmbushSelection,
-    QidahenRecruitChoice,
-    QidahenRecruitSelection,
-    QidahenWheelDispatchSelection,
-    ResolvePendingActionCommand,
-} from './types';
+import type { QidahenCasualtyPriority, QidahenDiplomacyChoice, QidahenDiplomacySelection, QidahenDriveTigerConsentChoice, QidahenDriveTigerConsentSelection, QidahenEventCharacterTargetSelection, QidahenEventOpponentHandChoiceSelection, QidahenFeignedRetreatSelection, QidahenGrantPardonChoice, QidahenGrantPardonSelection, QidahenHandLimitDiscardSelection, QidahenInternalDispatchSelection, QidahenKhanEdictChoice, QidahenKhanEdictSelection, QidahenMaShiTradeSelection, QidahenOpenGateSurrenderSelection, QidahenPendingTargetAction, QidahenPostBattleSelection, QidahenRaidAndAmbushSelection, QidahenRecruitChoice, QidahenRecruitSelection, QidahenWheelDispatchSelection, ResolvePendingActionCommand } from './types';
 
 interface QidahenHandLimitDiscardChoiceValue {
     cardId: string;
@@ -74,10 +48,7 @@ interface QidahenDriveTigerConsentChoiceValue {
     choiceId: QidahenDriveTigerConsentChoice['id'];
 }
 
-interface QidahenFortificationMaintenanceChoiceValue {
-    choiceId: QidahenFortificationMaintenanceMode;
-    attritionPriority?: QidahenCasualtyPriority;
-}
+
 
 interface QidahenEventCharacterTargetChoiceValue {
     choiceId: string;
@@ -170,11 +141,7 @@ export type QidahenDriveTigerConsentInteraction = InteractionDescriptor<
     }
 >;
 
-export type QidahenFortificationMaintenanceInteraction = InteractionDescriptor<
-    SimpleChoiceData<QidahenFortificationMaintenanceChoiceValue> & {
-        qidahenFortificationMaintenanceSelection: QidahenFortificationMaintenanceSelection;
-    }
->;
+
 
 export type QidahenEventCharacterTargetInteraction = InteractionDescriptor<
     SimpleChoiceData<QidahenEventCharacterTargetChoiceValue> & {

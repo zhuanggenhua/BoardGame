@@ -11,7 +11,7 @@ import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import {
     addFactionHandCards,
-    buildDrawnHandCards,
+    appendDrawnHandCards,
     drawFromFactionPile,
     getFactionDrawPileCount,
 } from './handCardState';
@@ -80,25 +80,12 @@ interface QidahenActionWindowChoiceDependencies {
         state: QidahenCore,
         factionId: QidahenFactionId,
     ) => number;
-    drawFromFactionPile: (
-        factions: QidahenCore['factions'],
-        sourceFactionId: QidahenFactionId,
-        requestedCards: number,
-        discardGain?: number,
-    ) => {
-        factions: QidahenCore['factions'];
-        drawnCards: number;
-    };
+    drawFromFactionPile: typeof drawFromFactionPile;
     addFactionHandCards: (
         factions: QidahenCore['factions'],
         factionId: QidahenFactionId,
         handGain: number,
     ) => QidahenCore['factions'];
-    buildDrawnHandCards: (
-        state: QidahenCore,
-        factionId: QidahenFactionId,
-        drawCards: number,
-    ) => QidahenCore['handCards'];
     materializeNonSiegedCityActionSourceRegion: (
         region: QidahenCore['regions'][number],
     ) => QidahenCore['regions'][number];
@@ -144,7 +131,6 @@ export const resolveQidahenRecruitInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -262,7 +248,6 @@ export const resolveQidahenGrantPardonInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -418,7 +403,6 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -475,7 +459,7 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         diplomacyProgress: null,
         wheelDispatchProgress: null,
         drawPileCount: acceptedSelection.attackerFactionId === 'ming' ? state.drawPileCount - drawResult.drawnCards : state.drawPileCount,
-        handCards: dependencies.buildDrawnHandCards(state, acceptedSelection.attackerFactionId, drawResult.drawnCards),
+        handCards: appendDrawnHandCards(state.handCards, drawResult.cards, acceptedSelection.attackerFactionId),
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('驱虎吞狼', timestamp, [
             `${state.factions[selection.targetFactionId].name} 同意接受${state.factions[selection.commanderFactionId].name}指挥，并获得 ${drawResult.drawnCards} 张手牌。`,
@@ -506,7 +490,6 @@ export const resolveQidahenMaShiTradeInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -551,7 +534,7 @@ export const resolveQidahenMaShiTradeInteractionChoice = (
         diplomacyProgress: null,
         regions: nextRegions,
         drawPileCount: currentFactionId === 'ming' ? state.drawPileCount - drawResult.drawnCards : state.drawPileCount,
-        handCards: dependencies.buildDrawnHandCards(state, currentFactionId, drawResult.drawnCards),
+        handCards: appendDrawnHandCards(state.handCards, drawResult.cards, currentFactionId),
         factions: {
             ...drawResult.factions,
             ming: {
@@ -594,7 +577,6 @@ export const resolveQidahenKhanEdictInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -908,7 +890,6 @@ export const resolveQidahenDiplomacyInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,

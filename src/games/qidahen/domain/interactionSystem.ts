@@ -14,6 +14,7 @@ import {
     resolveQidahenTurnActionInteractionEvent,
 } from './turnActionInteractionEventHandlers';
 import type { QidahenCore } from './types';
+import { recordQidahenChronologyStatistics } from './chronologyStatistics';
 import {
     clearQidahenRuntimeInteractionCurrent,
     syncQidahenRuntimeInteractionState,
@@ -85,7 +86,7 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
                 if (resolvedCore !== undefined && resolvedCore != null) {
                     nextState = {
                         ...nextState,
-                        core: resolvedCore,
+                        core: recordQidahenChronologyStatistics(nextState.core, resolvedCore),
                     };
                 }
             }

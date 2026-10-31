@@ -65,16 +65,12 @@ const QIDAHEN_CHRONOLOGY_YEAR_CONFIGS: QidahenChronologyYearConfig[] = [
     },
     {
         previewIndex: 3,
-        factionOrder: ['ming', 'mongol', 'jin'],
-        source: 'inferred',
+        factionOrder: ['mongol', 'ming', 'jin'],
+        source: 'confirmed',
         characterAvailabilityByFaction: {
-            ming: { mode: 'exact', summary: '高第、熊廷弼、杨镐', characterIds: ['ming-gao-di', 'ming-xiong-tingbi', 'ming-yang-gao'] },
-            mongol: { mode: 'representative', summary: '台吉中择一', characterIds: ['mongol-choghtu-taiji', 'mongol-oba-taiji'] },
-            jin: {
-                mode: 'representative',
-                summary: '任意人物牌',
-                characterIds: ['jin-daisan', 'jin-amin', 'jin-manggultai', 'jin-yanguli', 'jin-fan-wencheng', 'jin-huangtaiji'],
-            },
+            ming: { mode: 'representative', summary: '熊廷弼、孙元化、毛文龙、杨镐择一', characterIds: ['ming-xiong-tingbi', 'ming-sun-yuanhua', 'ming-mao-wenlong', 'ming-yang-gao'] },
+            mongol: { mode: 'exact', summary: '衮楚克图吉', characterIds: ['mongol-gunchu-ketuji'] },
+            jin: { mode: 'representative', summary: '代善、额亦都、阿敏择一', characterIds: ['jin-daisan', 'jin-eidu', 'jin-amin'] },
         },
     },
     {

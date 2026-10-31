@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type { QidahenCore } from './types';
 
@@ -19,21 +20,12 @@ export const resolveQidahenHandLimitDiscard = (
         return state;
     }
     const selectedCardIds = selection.selectedCardIds.slice(0, selection.requiredDiscardCount);
-    const removedCardIds = new Set(selectedCardIds);
     const faction = state.factions[selection.factionId];
     return dependencies.updateTurnLabel({
         ...state,
         turnPhase: 'action-window',
         handLimitDiscardSelection: null,
-        factions: {
-            ...state.factions,
-            [selection.factionId]: {
-                ...faction,
-                handCount: Math.max(0, faction.handCount - selectedCardIds.length),
-                discardPileCount: Math.max(0, faction.discardPileCount ?? 0) + selectedCardIds.length,
-            },
-        },
-        handCards: state.handCards.filter((card) => !removedCardIds.has(card.id)),
+        ...discardQidahenHandCards(state, selectedCardIds),
         actionLog: [
             {
                 id: `log-hand-limit-resolved-${timestamp}`,

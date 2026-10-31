@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import {
     resolveQidahenGaoDiDispatchChoice,
     resolveQidahenInternalDispatchInteractionChoice,
@@ -28,9 +29,7 @@ import {
 import {
     getFactionIdByPlayerId,
 } from './factionTurnAccessors';
-import {
-    resolveQidahenFortificationMaintenanceInteractionChoice,
-} from './fortificationMaintenance';
+
 import {
     resolveQidahenEventCharacterTargetChoice,
     resolveQidahenEventOpponentHandChoice,
@@ -59,7 +58,6 @@ import {
     buildQidahenWuzhenChaohaSelection,
     QIDAHEN_WUZHEN_CHAOHA_CARD_DEF_ID,
     resolveQidahenWuzhenChaohaSelection,
-    setQidahenWuzhenChaohaArtilleryTechCount,
 } from './wuzhenChaohaSelection';
 import {
     resolveQidahenDefeatInDetailPlayed,
@@ -322,7 +320,8 @@ const resolveQidahenTacticCardPlayedEvent = (
                 label: playedCard.label,
                 side: 'attacker' as const,
                 troopKind: 'infantry' as const,
-                levelBonus: 1,
+                levelBonus: 0,
+                defenseBonus: 1,
             }]
             : []),
         ...(isBayaraAttack
@@ -486,8 +485,7 @@ const resolveQidahenTacticCardPlayedEvent = (
                 ].filter(Boolean).join(' · '),
             }
             : pendingTargetAction,
-        handCards: state.handCards.filter((card) => card.id !== playedCard.id),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [playedCard.id]),
         lastSeasonSummary: {
             id: `summary-${event.timestamp}`,
             title: '战术牌',
@@ -573,16 +571,7 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
             event.payload.selection,
         ),
     ),
-    defineResolvedEventReducer(
-        ['FORTIFICATION_MAINTENANCE_RESOLVED'],
-        (state, event) => resolveQidahenFortificationMaintenanceInteractionChoice(
-            state,
-            event.payload.choiceId,
-            event.timestamp,
-            event.payload.attritionPriority,
-            event.payload.selection,
-        ),
-    ),
+
     defineResolvedEventReducer(
         ['DRIVE_TIGER_CONSENT_RESOLVED'],
         (state, event) => resolveQidahenDriveTigerConsentInteractionChoice(
@@ -732,13 +721,6 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
             ...state,
             instigateDefectionSelection: null,
         }),
-    ),
-    defineResolvedEventReducer(
-        ['WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT_SET'],
-        (state, event) => setQidahenWuzhenChaohaArtilleryTechCount(
-            state,
-            event.payload.count,
-        ),
     ),
     defineResolvedEventReducer(
         ['WUZHEN_CHAOHA_RESOLVED'],

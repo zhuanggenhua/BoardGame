@@ -1,5 +1,5 @@
 import { expect } from 'vitest';
-import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenFortificationMaintenanceSelectionFromInteraction, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore, QidahenDomain } from '../../domain';
+import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore, QidahenDomain } from '../../domain';
 
 import { QIDAHEN_COMMANDS } from '../../domain/commands';
 import { getQidahenCurrentWheelDispatchSelectionForCore, getQidahenInternalDispatchSelectionForCore } from '../../domain/dispatchSelectionBuilders';
@@ -14,7 +14,12 @@ import { createRespondToPromptCommand, getCurrentInteractionSummary } from '../.
 import { engineConfig } from '../../game';
 
 // 只承载七大恨领域测试的合法状态构造、命令执行和提示响应夹具。
-export const random = () => 0.5;
+export const random: RandomFn = {
+    random: () => 0.5,
+    d: () => 4,
+    range: min => min,
+    shuffle: items => [...items],
+};
 
 export type QidahenDiplomacySelectionSnapshot = ReturnType<typeof getQidahenDiplomacySelectionForCore>;
 
@@ -119,10 +124,6 @@ export function apply(core: QidahenCore, command: QidahenCommand, randomFn: Rand
         ? payWheelDispatchDiscard(core, command.playerId, randomFn)
         : core;
     return applyUnchecked(paidCore, command, randomFn);
-}
-
-export function getFortificationMaintenanceSelection(core: QidahenCore) {
-    return getQidahenFortificationMaintenanceSelectionFromInteraction(stateOf(core).sys.interaction?.current);
 }
 
 export function getDriveTigerConsentSelection(core: QidahenCore) {

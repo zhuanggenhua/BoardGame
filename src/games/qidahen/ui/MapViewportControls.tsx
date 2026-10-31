@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { UI_STYLE, UI_SURFACE } from './qidahenTheme';
 
 export const MapViewportControls: React.FC<{
+    disabled?: boolean;
     onZoom: (factor: number) => void;
     onReset: () => void;
-}> = ({ onZoom, onReset }) => {
+}> = ({ onZoom, onReset, disabled = false }) => {
     const { t } = useTranslation('game-qidahen');
     return (
         <div
@@ -17,6 +18,7 @@ export const MapViewportControls: React.FC<{
                 <button
                     type="button"
                     data-testid="qidahen-map-zoom-out"
+                    disabled={disabled}
                     className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                     onClick={() => onZoom(1 / 1.14)}
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
@@ -26,6 +28,7 @@ export const MapViewportControls: React.FC<{
                 <button
                     type="button"
                     data-testid="qidahen-map-zoom-reset"
+                    disabled={disabled}
                     className="inline-flex h-[38px] min-w-[74px] items-center justify-center border-[3px] px-3 text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                     onClick={onReset}
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
@@ -35,6 +38,7 @@ export const MapViewportControls: React.FC<{
                 <button
                     type="button"
                     data-testid="qidahen-map-zoom-in"
+                    disabled={disabled}
                     className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                     onClick={() => onZoom(1.14)}
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}

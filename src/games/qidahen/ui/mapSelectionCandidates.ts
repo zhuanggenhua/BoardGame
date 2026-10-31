@@ -1,5 +1,5 @@
 import type { QidahenCore } from '../domain/types';
-import { getExplicitRaidTargetAction } from '../domain/pendingTargetActionBuilder';
+import { getExplicitRaidTargetAction, getQidahenRaidSourceCandidateIds } from '../domain/pendingTargetActionBuilder';
 import { canPlaceRegularTroopsInRegion } from '../domain/regionSelectionPreferences';
 import { getCurrentFactionId } from '../domain/factionTurnAccessors';
 
@@ -19,6 +19,7 @@ export function getQidahenMapSelectionCandidateIds(
             .map(region => region.id);
     }
     if (options.raidPreview) {
+        if (!core.regionFocusState.lockedSourceRegionId) return getQidahenRaidSourceCandidateIds(core);
         return core.regions
             .filter(region => !region.isLogicalRegion && getExplicitRaidTargetAction(
                 { ...core, explicitRegionId: region.id }, factionId,

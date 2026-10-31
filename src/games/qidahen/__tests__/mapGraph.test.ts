@@ -127,7 +127,7 @@ describe('七大恨区域图谱运行时解析', () => {
     it('保留运行时默认边界类型元数据', () => {
         expect(getQidahenBoundaryTypeMeta('mountain')).toMatchObject({
             label: '山脉',
-            travelCost: 2,
+            travelCost: 1,
             battleWidth: 2,
         });
         expect(getQidahenBoundaryTypeMeta('coast')).toMatchObject({
@@ -276,52 +276,52 @@ describe('七大恨区域图谱运行时解析', () => {
         }
     });
 
-    it('保留本轮补齐后的关键粗值通路消耗', () => {
-        expect(getQidahenDirectedPassageBetween('city-region-14', 'jinzhou')?.travelCost).toBe(3);
+    it('相邻通路均耗一点移动力，不把战场宽度当路程', () => {
+        expect(getQidahenDirectedPassageBetween('city-region-14', 'jinzhou')?.travelCost).toBe(1);
         expect(getQidahenDirectedPassageBetween('city-region-19-liaoxi', 'jinzhou')?.travelCost).toBe(1);
-        expect(getQidahenDirectedPassageBetween('city-region-20', 'xuan-fu')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('xuan-fu', 'city-region-20')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-24', 'jinzhou')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-16', 'jinzhou')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-16', 'city-region-20')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('jinzhou', 'city-region-25')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-33')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-3', 'city-region-4')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-15')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-17')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-11', 'city-region-13')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-17')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-20', 'city-region-26')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-30', 'city-region-31')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-32', 'city-region-33')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-16')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-8', 'city-region-16')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-25')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('xuan-fu', 'city-region-27')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-28-jizhen')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-13', 'city-region-15-liaodong')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-17')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-26', 'city-region-31')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-30')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-22', 'city-region-32')?.travelCost).toBe(2);
+        expect(getQidahenDirectedPassageBetween('city-region-20', 'xuan-fu')).toBeNull();
+        expect(getQidahenDirectedPassageBetween('xuan-fu', 'city-region-20')).toBeNull();
+        expect(getQidahenDirectedPassageBetween('city-region-24', 'jinzhou')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-16', 'jinzhou')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-16', 'city-region-20')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('jinzhou', 'city-region-25')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-33')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-3', 'city-region-4')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-15')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-17')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-11', 'city-region-13')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-17')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-20', 'city-region-26')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-30', 'city-region-31')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-32', 'city-region-33')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-16')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-8', 'city-region-16')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-25')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('xuan-fu', 'city-region-27')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-24', 'city-region-28-jizhen')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-13', 'city-region-15-liaodong')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-17')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-26', 'city-region-31')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-30')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-22', 'city-region-32')?.travelCost).toBe(1);
         expect(getQidahenDirectedPassageBetween('city-region-22', 'city-region-32')?.boundaryType).toBe('coast');
         expect(getQidahenDirectedPassageBetween('city-region-22', 'city-region-32')?.unitCap).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-22', 'city-region-28-jizhen')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-19')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-17', 'city-region-19')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-28-jizhen')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-14')?.travelCost).toBe(3);
+        expect(getQidahenDirectedPassageBetween('city-region-22', 'city-region-28-jizhen')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-19')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-17', 'city-region-19')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-27', 'city-region-28-jizhen')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-10', 'city-region-14')?.travelCost).toBe(1);
         expect(getQidahenDirectedPassageBetween('city-region-15-liaodong', 'city-region-7')).toBeNull();
-        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-7')).toMatchObject({ boundaryType: 'river', travelCost: 2, battleWidth: 2 });
-        expect(getQidahenDirectedPassageBetween('city-region-4', 'city-region-5')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-3', 'city-region-7')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-8')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-19')?.travelCost).toBe(2);
-        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-6')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-13', 'city-region-7')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-5', 'city-region-11')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-5', 'city-region-9')?.travelCost).toBe(3);
-        expect(getQidahenDirectedPassageBetween('city-region-5', 'xian-xing')?.travelCost).toBe(3);
+        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-7')).toMatchObject({ boundaryType: 'river', travelCost: 1, battleWidth: 2 });
+        expect(getQidahenDirectedPassageBetween('city-region-4', 'city-region-5')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-3', 'city-region-7')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-8')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-15', 'city-region-19')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-14', 'city-region-6')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-13', 'city-region-7')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-5', 'city-region-11')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-5', 'city-region-9')?.travelCost).toBe(1);
+        expect(getQidahenDirectedPassageBetween('city-region-5', 'xian-xing')?.travelCost).toBe(1);
         expect(getQidahenDirectedPassageBetween('city-region-22', 'song-jin')?.unitCap).toBe(2);
     });
 

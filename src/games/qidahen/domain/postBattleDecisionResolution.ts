@@ -1,3 +1,4 @@
+import { drawQidahenKoreaCards } from './koreaCardState';
 import {
     materializeNonSiegedCityActionSourceRegion,
 } from './actionSourceRegionState';
@@ -10,9 +11,8 @@ import { getAttackerDeckPlunderHandBonus } from './characterAbilitySemantics';
 import { getRegionControlLabel, toFactionLabel } from './factionLabelSemantics';
 import {
     addFactionHandCards,
-    buildDrawnHandCards,
+    appendDrawnHandCards,
     drawFromFactionPile,
-    drawKoreaCardsForFaction,
     getFactionDrawPileCount,
 } from './handCardState';
 import { getEffectiveKoreaTributeCardsForFaction } from './koreaTributeRules';
@@ -83,35 +83,13 @@ interface QidahenPostBattleResolutionDependencies {
     materializeNonSiegedCityActionSourceRegion: (
         region: QidahenRuntimeRegion,
     ) => QidahenRuntimeRegion;
-    drawFromFactionPile: (
-        factions: QidahenCore['factions'],
-        sourceFactionId: QidahenFactionId,
-        requestedCards: number,
-        discardGain?: number,
-    ) => {
-        factions: QidahenCore['factions'];
-        drawnCards: number;
-    };
-    buildDrawnHandCards: (
-        state: QidahenCore,
-        factionId: QidahenFactionId,
-        drawCards: number,
-    ) => QidahenCore['handCards'];
+    drawFromFactionPile: typeof drawFromFactionPile;
     addFactionHandCards: (
         factions: QidahenCore['factions'],
         factionId: QidahenFactionId,
         drawCards: number,
     ) => QidahenCore['factions'];
-    drawKoreaCardsForFaction: (
-        factions: QidahenCore['factions'],
-        koreaDeckCount: number,
-        factionId: QidahenFactionId,
-        requestedCards: number,
-    ) => {
-        factions: QidahenCore['factions'];
-        koreaDeckCount: number;
-        drawnCards: number;
-    };
+    drawKoreaCards: typeof drawQidahenKoreaCards;
     getEffectiveKoreaTributeCardsForFaction: (
         state: QidahenCore,
         factionId: QidahenFactionId,
@@ -121,7 +99,7 @@ interface QidahenPostBattleResolutionDependencies {
 
 export type QidahenPostBattleDecisionResolution = Pick<
     QidahenCore,
-    'regions' | 'factions' | 'koreaDeckCount' | 'drawPileCount' | 'discardPileCount' | 'handCards'
+    'regions' | 'factions' | 'koreaDeckCount' | 'koreaDrawPile' | 'koreaDiscardPile' | 'koreaDiscardCount' | 'drawPileCount' | 'discardPileCount' | 'handCards'
 > & {
     logText: string;
     selectedRegionId: string;
@@ -135,6 +113,7 @@ export const resolvePostBattleDecision = (
         toFactionLabel,
         getActionRuleDisplayRegionName,
         getFactionDrawPileCount,
+        drawKoreaCards: drawQidahenKoreaCards,
         getSurvivingCommittedSpecialTroops,
         applyCommittedTroopRemovalToRegion,
         applyCasualtyPriorityToRegion,
@@ -142,10 +121,8 @@ export const resolvePostBattleDecision = (
         refreshRuntimeRegionRules,
         materializeNonSiegedCityActionSourceRegion,
         drawFromFactionPile,
-        buildDrawnHandCards,
         addFactionHandCards,
-        drawKoreaCardsForFaction,
-        getEffectiveKoreaTributeCardsForFaction,
+            getEffectiveKoreaTributeCardsForFaction,
     },
 ): QidahenPostBattleDecisionResolution => {
     const choice = selection.choices.find((item) => item.id === choiceId) ?? selection.choices[0];
@@ -156,6 +133,9 @@ export const resolvePostBattleDecision = (
             regions: state.regions,
             factions: state.factions,
             koreaDeckCount: state.koreaDeckCount,
+            koreaDrawPile: state.koreaDrawPile,
+            koreaDiscardPile: state.koreaDiscardPile,
+            koreaDiscardCount: state.koreaDiscardCount,
             drawPileCount: state.drawPileCount,
             discardPileCount: state.discardPileCount,
             handCards: state.handCards,
@@ -452,14 +432,13 @@ export const resolvePostBattleDecision = (
     const koreaOccupationCards = choice.mode === 'occupy'
         ? dependencies.getEffectiveKoreaTributeCardsForFaction(state, selection.attackerFactionId, selection.targetRuntimeRegionId)
         : 0;
-    const koreaDrawResult = dependencies.drawKoreaCardsForFaction(
-        nextFactions,
-        state.koreaDeckCount,
-        selection.attackerFactionId,
-        koreaOccupationCards,
-    );
-    const koreaText = koreaDrawResult.drawnCards > 0
-        ? `，攻陷朝鲜区域并抽朝鲜牌 ${koreaDrawResult.drawnCards} 张`
+    const koreaDrawResult = dependencies.drawKoreaCards({
+        ...state, factions: nextFactions,
+        handCards: appendDrawnHandCards(state.handCards, plunderDrawResult.cards, selection.attackerFactionId),
+    }, selection.attackerFactionId, koreaOccupationCards);
+    const receivedKoreaCards = koreaDrawResult.handCards.length - state.handCards.length - plunderDrawResult.cards.length;
+    const koreaText = receivedKoreaCards > 0
+        ? `，攻陷朝鲜区域并抽朝鲜牌 ${receivedKoreaCards} 张`
         : '';
     const selectedRegionId = choice.mode === 'withdraw'
         ? withdrawRegionId ?? selection.targetRuntimeRegionId
@@ -468,9 +447,12 @@ export const resolvePostBattleDecision = (
         regions: nextRegions,
         factions: koreaDrawResult.factions,
         koreaDeckCount: koreaDrawResult.koreaDeckCount,
+        koreaDrawPile: koreaDrawResult.koreaDrawPile,
+        koreaDiscardPile: koreaDrawResult.koreaDiscardPile,
+        koreaDiscardCount: koreaDrawResult.koreaDiscardCount,
         drawPileCount: plunderSourceFactionId === 'ming' ? state.drawPileCount - plunderDrawCards : state.drawPileCount,
         discardPileCount: state.discardPileCount + plunderDiscardGain,
-        handCards: dependencies.buildDrawnHandCards(state, selection.attackerFactionId, plunderHandGain),
+        handCards: koreaDrawResult.handCards,
         selectedRegionId,
         logText: choice.mode === 'occupy'
             ? `${state.factions[selection.attackerFactionId].name} 战后占领 ${selection.targetRegionName}${plunderText ? `，${plunderText}` : ''}${koreaText}。`

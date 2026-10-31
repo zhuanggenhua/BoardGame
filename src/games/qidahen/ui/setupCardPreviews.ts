@@ -20,16 +20,24 @@ const scenarioPreviewIndexById: Record<QidahenScenarioId, number> = {
 const characterPreviewIndexById: Partial<Record<QidahenFactionId, Record<string, number>>> = {
     ming: {
         'ming-xiong-tingbi': 0,
-        'ming-wang-huazhen': 8,
+        'ming-sun-chengzong': 1,
+        'ming-sun-yuanhua': 2,
+        'ming-mao-wenlong': 3,
+        'ming-yang-gao': 4,
+        'ming-wei-zhongxian': 5,
+        'ming-yuan-chonghuan': 6,
+        'ming-gao-di': 7,
+        'ming-wang-huazhen': 11,
     },
     jin: {
         'jin-yanguli': 0,
         'jin-fan-wencheng': 1,
-        'jin-amin': 2,
+        'jin-amin': 7,
         'jin-manggultai': 3,
         'jin-eidu': 4,
         'jin-daisan': 5,
-        'jin-huangtaiji': 6,
+        'jin-huangtaiji': 8,
+        'jin-nurhaci': 9,
     },
 };
 

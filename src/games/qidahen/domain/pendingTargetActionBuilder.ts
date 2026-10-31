@@ -1,3 +1,4 @@
+import { getCurrentFactionId } from './factionTurnAccessors';
 import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
 import {
     isQidahenCityRuntimeRegion,
@@ -79,7 +80,7 @@ export const getExplicitRaidTargetAction = (
     attackerFactionId: QidahenFactionId,
 ): QidahenPendingTargetAction | null => {
     const regionId = state.explicitRegionId;
-    if (!regionId) return null;
+    if (!regionId || (state.confirmedActionId === 'raid' && !state.regionFocusState.lockedSourceRegionId)) return null;
     const region = state.regions.find((candidate) => candidate.id === regionId);
     const result = buildPendingTargetAction(state, attackerFactionId, 'raid', region, regionId);
     return result?.targetRuntimeRegionId === resolveQidahenPrimaryRuntimeRegionId(regionId) ? result : null;
@@ -169,6 +170,9 @@ export const buildPendingTargetAction = (
         .filter((region): region is NonNullable<typeof region> => {
             if (
                 region == null
+                || (actionId === 'raid' && state.confirmedActionId === 'raid'
+                    && state.regionFocusState.lockedSourceRegionId != null
+                    && region.id !== resolveQidahenPrimaryRuntimeRegionId(state.regionFocusState.lockedSourceRegionId))
                 || !isRegionFriendlyToFaction(region, attackerFactionId)
                 || !isRegionAvailableForNonDispatchAction(region)
             ) {
@@ -266,4 +270,15 @@ export const buildPendingTargetAction = (
             attackBoundaryType,
         })],
     };
+};
+
+/** 来源候选同样由正式进攻合法性推得，不根据兵力排序替玩家选军。 */
+export const getQidahenRaidSourceCandidateIds = (state: QidahenCore): string[] => {
+    const factionId = getCurrentFactionId(state);
+    return state.regions.filter(source => !source.isLogicalRegion && source.controller === factionId
+        && state.regions.some(target => !target.isLogicalRegion && buildPendingTargetAction({
+            ...state, confirmedActionId: 'raid',
+            regionFocusState: { ...state.regionFocusState, lockedSourceRegionId: source.id },
+        }, factionId, 'raid', target, target.id) != null))
+        .map(source => source.id);
 };

@@ -18,14 +18,14 @@ const upgradeArmamentActionChoice: QidahenActionChoice = {
     id: 'upgrade-armament',
     label: '升级军备',
     cost: 2,
-    detail: '弃 1 张手牌，选择一项已开发军备进行升级。',
+    detail: '打出 1 张军备牌，再弃 1 张手牌；军备留在场上。',
 };
 
 const playEventCardActionChoice: QidahenActionChoice = {
     id: 'play-event-card',
     label: '执行事件',
     cost: 1,
-    detail: '打出 1 张已确认事件牌，记录规则摘要，并按当前已接入的逐牌效果结算。',
+    detail: '打出 1 张事件牌，执行牌面效果。',
 };
 
 const defaultActionIdByFaction: Record<QidahenFactionId, string> = {
@@ -36,18 +36,18 @@ const defaultActionIdByFaction: Record<QidahenFactionId, string> = {
 
 const actionChoiceCatalog: Record<QidahenFactionId, QidahenActionChoice[]> = {
     ming: [
-        { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
-        { id: 'recruit', label: '征召军队', cost: 1, detail: '弃 1 张手牌，建立 6 个等级 2 部队、2 个等级 4 川兵；已研发火炮技术时可建立炮兵。' },
+        { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动。' },
+        { id: 'recruit', label: '征召军队', cost: 1, detail: '弃 1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 川兵。' },
         { id: 'grant-pardon', label: '赐印招安', cost: 3, detail: '指定 1 个对手，将相邻部队改为大明控制。' },
         { id: 'drive-tiger', label: '驱虎吞狼', cost: 3, detail: '指定 1 个对手抽 6 张牌，并由大明指挥其部队。' },
     ],
     mongol: [
-        { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+        { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动。' },
         { id: 'ma-shi-trade', label: '马市贸易', cost: 1, detail: '弃 1 张手牌，大明选择建立 1-3 个部队，蒙古抽 2 倍张数的手牌。' },
         { id: 'khan-edict', label: '大汗令箭', cost: 1, detail: '弃 1 张手牌，执行征兵训练或外交雇佣，不需再支付花费。' },
     ],
     jin: [
-        { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+        { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动。' },
         { id: 'marriage-subjugation', label: '联姻诱降', cost: 2, detail: '弃 2 张手牌，指定邻近控制区域，触发对手支付或转控判定。' },
     ],
 };
@@ -170,8 +170,6 @@ export const buildTurnLabel = (
             ? '等待驱虎吞狼同意'
         : turnPhase === 'dispatch-targeting'
             ? '选择调度目标'
-        : turnPhase === 'season-resolution'
-            ? '岁时结算'
         : wheelActionUsed && factionActionUsed && !bonusFactionActionPending
             ? '回合收口'
         : wheelActionUsed

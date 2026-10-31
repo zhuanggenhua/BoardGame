@@ -39,6 +39,7 @@ const readDirectInputEventReducerRegistrySource = () => {
 const readCharacterCatalogStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterCatalogState.ts'), 'utf8');
 const readCharacterChronologyConfigSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterChronologyConfig.ts'), 'utf8');
 const readCharacterChronologyStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterChronologyState.ts'), 'utf8');
+const readChronologyResolutionSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'chronologyResolution.ts'), 'utf8');
 const readCharacterConflictStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterConflictState.ts'), 'utf8');
 const readCharacterAbilitySemanticsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterAbilitySemantics.ts'), 'utf8');
 const readCharacterPresenceAccessorsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterPresenceAccessors.ts'), 'utf8');
@@ -49,7 +50,7 @@ const readFactionActionWindowSource = () => readFileSync(resolve(TEST_DIR, '..',
 const readFactionLabelSemanticsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'factionLabelSemantics.ts'), 'utf8');
 const readFactionTurnAccessorsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'factionTurnAccessors.ts'), 'utf8');
 const readFactionTurnOrderSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'factionTurnOrder.ts'), 'utf8');
-const readFortificationMaintenanceSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'fortificationMaintenance.ts'), 'utf8');
+const readSeasonTasksSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'seasonTasks.ts'), 'utf8');
 const readGrantPardonExecutionSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'grantPardonExecution.ts'), 'utf8');
 const readGrantPardonExecutionDependenciesSource = () => {
     try {
@@ -223,7 +224,9 @@ const readSelectedActionStateCommitDependenciesSource = () => {
         return '';
     }
 };
-const readSeasonResolutionSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'seasonResolution.ts'), 'utf8');
+const readTurnResolutionFactsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'turnResolutionFacts.ts'), 'utf8');
+const readTurnResolutionSystemSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'turnResolutionSystem.ts'), 'utf8');
+const readTurnResolutionChoicesSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'turnResolutionChoices.ts'), 'utf8');
 const readSeasonSummaryBuilderSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'seasonSummaryBuilder.ts'), 'utf8');
 const readSpecialRuleStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'specialRuleState.ts'), 'utf8');
 const readVictoryResolutionSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'victoryResolution.ts'), 'utf8');
@@ -377,8 +380,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(board).toContain('const STAGE_HEIGHT = 1080;');
         expect(shell).toContain('data-testid="qidahen-scene-stage"');
         expect(shell).toContain('data-testid="qidahen-desktop-stage"');
-        expect(shell).toContain('const sceneScale = Math.max(width / layout.width, height / layout.height);');
-        expect(shell).toContain(': Math.min(width / layout.width, height / layout.height);');
+        expect(shell).toContain('const hudScale = Math.min(width / layout.width, height / layout.height);');
+        expect(shell).toContain('const sceneScale = isMobileLandscape');
+        expect(shell).toContain('? hudScale');
+        expect(shell).toContain(': Math.max(width / layout.width, height / layout.height);');
         expect(shell).toContain("transformOrigin: 'top left',");
     });
 
@@ -393,23 +398,23 @@ describe('Qidahen compatibility source guards', () => {
         expect(shell).toContain('top: metrics.scene.top,');
     });
 
-    it('底部手牌坞应锚到底边，手机横屏使用真实视口 CSS px 并限制宽度避免牌堆挤出主视口', () => {
+    it('底部手牌坞应锚到底边，保持 HUD 设计尺寸并限制宽度避免牌堆挤出主视口', () => {
         const board = readBoardSource();
         const shell = readBoardShellSource();
 
         expect(board).toContain('data-testid="qidahen-bottom-dock"');
         expect(board).toContain('className="pointer-events-none absolute inset-x-0 bottom-0 z-[80]"');
-        expect(shell).toContain('const hudScale = isMobileLandscape ? 1 : Math.min(width / layout.width, height / layout.height);');
-        expect(shell).toContain('mobileBottomInset: isMobileLandscape ? layout.mobileLandscapeBottomDockInset : layout.bottomDockInset');
-        expect(shell).toContain('width: metrics.isMobileLandscape ? metrics.viewportWidth : layout.width');
-        expect(shell).toContain('height: metrics.isMobileLandscape ? metrics.viewportHeight : layout.height');
+        expect(shell).toContain('const hudScale = Math.min(width / layout.width, height / layout.height);');
+        expect(shell).toContain('mobileBottomInset: layout.bottomDockInset,');
+        expect(shell).toContain('width: layout.width,');
+        expect(shell).toContain('height: layout.height,');
         expect(shell).toContain("'--qidahen-mobile-bottom-inset': `${metrics.mobileBottomInset}px`,");
         expect(board).toContain("const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';");
         expect(board).toContain('height: bottomDockHeight,');
         expect(board).toContain('bottom: dockBottomInset,');
         expect(board).toContain('data-testid="qidahen-hand-zone"');
         expect(board).toContain('data-ui-role="qidahen-hand-dock"');
-        expect(board).toContain('const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : \'calc(100vw - 320px)\';');
+        expect(board).toContain("const handDockMaxWidth = 'calc(100% - 320px)';");
         expect(board).toContain('maxWidth: handDockMaxWidth,');
     });
 
@@ -418,6 +423,7 @@ describe('Qidahen compatibility source guards', () => {
         const indexSource = readDomainIndexSource();
         const trainingSource = readTroopTrainingSource();
         const wheelImmediateEffectSource = readWheelImmediateEffectSource();
+        const wheelRecruitTrainSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'wheelRecruitTrain.ts'), 'utf8');
 
         expect(indexSource).not.toContain("} from './troopTraining';");
         expect(indexSource).not.toContain('trainArtilleryStacksToLevel,');
@@ -427,8 +433,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(characterActionWindowSource).toContain("} from './troopTraining';");
         expect(characterActionWindowSource).toContain('trainSpecialTroopsOneStepForFaction,');
         expect(characterActionWindowSource).toContain('trainTroopsOneStepForFactionWithLimit,');
-        expect(wheelImmediateEffectSource).toContain("} from './troopTraining';");
-        expect(wheelImmediateEffectSource).toContain("import { trainArtilleryStacksToLevel } from './troopTraining';");
+        expect(wheelImmediateEffectSource).not.toContain("from './troopTraining';");
+        expect(wheelRecruitTrainSource).toContain('export const beginQidahenWheelRecruitTrain = (');
         expect(trainingSource).toContain('export const trainArtilleryStacksToLevel = (');
         expect(trainingSource).toContain('export const trainSpecialTroopsOneStepForFaction = (');
         expect(trainingSource).toContain('export const trainTroopsOneStepForFactionWithLimit = (');
@@ -443,7 +449,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(trainingSource).not.toContain('轮盘征兵训练将');
         expect(trainingSource).not.toContain('熊廷弼免费训练');
         expect(trainingSource).not.toContain('xiong-tingbi');
-        expect(wheelImmediateEffectSource).toContain('轮盘征兵训练将');
+        expect(wheelRecruitTrainSource).toContain("buildSeasonSummary('轮盘征兵/训练'");
         expect(characterActionWindowSource).toContain('log-xiong-tingbi-training-');
         expect(characterActionWindowSource).toContain('const resolveQidahenXiongTingbiFreeTraining = (');
         expect(characterActionWindowSource).toContain('text: trainingResolution.logText,');
@@ -478,14 +484,14 @@ describe('Qidahen compatibility source guards', () => {
     it('compat piece 回折应直接在 collapse helper 收口，不能再绕回独立的 stack-first merge helper', () => {
         const compatSource = readTroopCompatSource();
         const indexSource = readDomainIndexSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
 
         expect(compatSource).toContain('export const collapseCompatPiecesToSpecialTroopStacks = (');
         expect(compatSource).toContain('return [...grouped.values()]');
         expect(compatSource).not.toContain('return mergeSpecialTroopStacks(Array.from(grouped.values()));');
         expect(compatSource).not.toContain('const mergeSpecialTroopStacks = (');
-        expect(seasonResolutionSource).toContain("} from './troopCompat';");
-        expect(seasonResolutionSource).toContain('collapseCompatPiecesToSpecialTroopStacks,');
+        expect(turnResolutionFactsSource).toContain("} from './troopCompat';");
+        expect(turnResolutionFactsSource).toContain('collapseCompatPiecesToSpecialTroopStacks,');
         expect(indexSource).not.toContain('collapseCompatPiecesToSpecialTroopStacks,');
         expect(indexSource).not.toContain('const collapseCompatPiecesToSpecialTroopStacks = (');
     });
@@ -645,7 +651,7 @@ describe('Qidahen compatibility source guards', () => {
         const mapTokensSource = readMapTokensSource();
         const runtimeRegionRulesSource = readRuntimeRegionRulesSource();
         const scenarioRuntimeRegionPresetsSource = readScenarioRuntimeRegionPresetsSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
         const wheelImmediateEffectSource = readWheelImmediateEffectSource();
 
         expect(pendingTargetResolutionDependenciesSource).toBe('');
@@ -662,18 +668,16 @@ describe('Qidahen compatibility source guards', () => {
         expect(characterActionWindowSource).toContain('hasNonMercenaryTroops,');
         expect(characterActionWindowSource).toContain('someCompatPieces,');
         expect(wheelImmediateEffectSource).toContain("import { addSpecialTroopStackToRegion } from './troopCompat';");
-        expect(mapTokensSource).toContain("import { inferTroopKindForStack, syncPiecesFromRegions } from './troopCompat';");
+        expect(mapTokensSource).toContain('inferTroopKindForStack,');
+        expect(mapTokensSource).toContain('syncPiecesFromRegions');
+        expect(mapTokensSource).toContain("from './troopCompat';");
         expect(initialCoreSetupSource).not.toContain("import { cloneSpecialTroopStacksAsPieces } from './troopCompat';");
         expect(scenarioRuntimeRegionPresetsSource).toContain("import { cloneSpecialTroopStacksAsPieces } from './troopCompat';");
         expect(pendingTargetResolutionSource).toContain('subtractSpecialTroopStacks,');
         expect(indexSource).not.toContain('sortCompatPiecesForRemoval,');
-        expect(seasonResolutionSource).toContain("} from './troopCompat';");
-        expect(seasonResolutionSource).toContain('collapseCompatPiecesToSpecialTroopStacks,');
-        expect(seasonResolutionSource).toContain('cloneRuntimeRegionAsPieceSnapshot,');
-        expect(seasonResolutionSource).toContain('expandSpecialTroopStacksToCompatPieces,');
-        expect(seasonResolutionSource).toContain('getRegularTroopCount,');
-        expect(seasonResolutionSource).toContain('getSpecialTroopCount,');
-        expect(seasonResolutionSource).toContain('sortCompatPiecesForRemoval,');
+        expect(turnResolutionFactsSource).toContain("} from './troopCompat';");
+        expect(turnResolutionFactsSource).toContain('collapseCompatPiecesToSpecialTroopStacks,');
+        expect(turnResolutionFactsSource).toContain('expandSpecialTroopStacksToCompatPieces');
         expect(runtimeRegionRulesSource).toContain('cloneCityStateAsPieceSnapshot,');
         expect(runtimeRegionRulesSource).toContain('cloneRuntimeRegionAsPieceSnapshot,');
         expect(runtimeRegionRulesSource).toContain('cloneSiegeStateAsPieceSnapshot,');
@@ -768,7 +772,9 @@ describe('Qidahen compatibility source guards', () => {
         expect(coreDerivedStateSource).toContain('mapTokens: syncQidahenMapTokensFromRegions(regions, pieces),');
         expect(mapTokensSource).toContain("import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';");
         expect(mapTokensSource).toContain("import { getRegularTroopKindForFaction } from './troopStacks';");
-        expect(mapTokensSource).toContain("import { inferTroopKindForStack, syncPiecesFromRegions } from './troopCompat';");
+        expect(mapTokensSource).toContain('inferTroopKindForStack,');
+        expect(mapTokensSource).toContain('syncPiecesFromRegions');
+        expect(mapTokensSource).toContain("from './troopCompat';");
         expect(mapTokensSource).toContain('const controlMarkerByFaction: Record<QidahenFactionId, string> = {');
         expect(mapTokensSource).toContain('const diplomacyMarkerImageByFaction: Record<QidahenFactionId, Record<\'friendly\' | \'vassal\', string>> = {');
         expect(mapTokensSource).not.toContain('const getMapTokenBaseId = (');
@@ -881,6 +887,7 @@ describe('Qidahen compatibility source guards', () => {
         const compatSource = readTroopCompatSource();
         const troopTrainingSource = readTroopTrainingSource();
         const wheelImmediateEffectSource = readWheelImmediateEffectSource();
+        const wheelRecruitTrainSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'wheelRecruitTrain.ts'), 'utf8');
 
         expect(indexSource).not.toContain("} from './troopTraining';");
         expect(indexSource).not.toContain('trainArtilleryStacksToLevel,');
@@ -890,8 +897,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(characterActionWindowSource).toContain("} from './troopTraining';");
         expect(characterActionWindowSource).toContain('trainSpecialTroopsOneStepForFaction,');
         expect(characterActionWindowSource).toContain('trainTroopsOneStepForFactionWithLimit,');
-        expect(wheelImmediateEffectSource).toContain("} from './troopTraining';");
-        expect(wheelImmediateEffectSource).toContain("import { trainArtilleryStacksToLevel } from './troopTraining';");
+        expect(wheelImmediateEffectSource).not.toContain("from './troopTraining';");
+        expect(wheelRecruitTrainSource).toContain('export const beginQidahenWheelRecruitTrain = (');
         expect(troopTrainingSource).toContain('export const trainArtilleryStacksToLevel = (');
         expect(troopTrainingSource).toContain('export const trainSpecialTroopsOneStepForFaction = (');
         expect(troopTrainingSource).toContain('export const trainTroopsOneStepForFactionWithLimit = (');
@@ -910,7 +917,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(troopTrainingSource).not.toContain('轮盘征兵训练将');
         expect(troopTrainingSource).not.toContain('部队经免费训练后提升 1 级。');
         expect(troopTrainingSource).not.toContain('部队经熊廷弼免费训练后提升 1 级。');
-        expect(wheelImmediateEffectSource).toContain('轮盘征兵训练将');
+        expect(wheelRecruitTrainSource).toContain("buildSeasonSummary('轮盘征兵/训练'");
         expect(characterActionWindowSource).toContain('部队经熊廷弼免费训练后提升 1 级。');
         expect(characterActionWindowSource).toContain('因毛文龙免费训练东江部队 1 次。');
         expect(compatSource).not.toContain('export type QidahenCompatPieceTrainingDetailEntry = {');
@@ -997,9 +1004,11 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectionBuildersSource).toContain('export const getQidahenRecruitSelectionForCore = (');
         expect(selectionBuildersSource).toContain('export const getQidahenKhanEdictSelectionForCore = (');
         expect(dispatchSelectionSource).toContain('export const shouldPersistExplicitWheelDispatchSelectionForWheelState = (');
-        expect(wheelMoveExecutionSource).toContain("} from './dispatchSelectionBuilders';");
-        expect(wheelMoveExecutionSource).toContain('buildWheelDispatchSelectionFromWheel,');
-        expect(wheelMoveExecutionSource).toContain('shouldPersistExplicitWheelDispatchSelectionForWheelState,');
+        expect(wheelMoveExecutionSource).not.toContain("from './dispatchSelectionBuilders';");
+        expect(wheelMoveExecutionSource).not.toContain('buildWheelDispatchSelectionFromWheel');
+        expect(wheelMoveExecutionSource).not.toContain('shouldPersistExplicitWheelDispatchSelectionForWheelState');
+        expect(dispatchSelectionSource).toContain('export const buildWheelDispatchSelectionFromWheel = (');
+        expect(dispatchSelectionSource).toContain('export const shouldPersistExplicitWheelDispatchSelectionForWheelState = (');
         expect(turnFlowOrchestrationSource).toBe('');
         expect(turnAdvanceSource).toContain("} from './dispatchSelectionBuilders';");
         expect(turnAdvanceSource).toContain('getCurrentWheelDispatchSelectionForCore: getQidahenCurrentWheelDispatchSelectionForCore,');
@@ -1167,9 +1176,12 @@ describe('Qidahen compatibility source guards', () => {
         const reducersSource = readResolvedEventReducersSource();
         const registryMapSource = readResolvedEventReducerRegistryMapSource();
         const registrySource = readResolvedEventReducerRegistrySource();
+        const turnResolutionSystemSource = readTurnResolutionSystemSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
 
         expect(indexSource).toContain("} from './resolvedEventReducers';");
-        expect(indexSource).toContain('const reducedCore = reduceQidahenResolvedEvent(state, event)');
+        expect(indexSource).toContain("const reducedCore = (event.type === 'TURN_RESOLUTION_APPLIED' ? reduceQidahenTurnResolutionFact(state, event) : undefined)");
+        expect(indexSource).toContain('?? reduceQidahenResolvedEvent(state, event)');
         expect(indexSource).not.toContain("} from './actionWindowResolvedEventOrchestration';");
         expect(indexSource).not.toContain('resolveQidahenActionWindowResolvedEventForTurnFlow');
         expect(indexSource).not.toContain("} from './actionWindowResolvedEventBridge';");
@@ -1200,7 +1212,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(reducersSource).toContain("} from './actionWindowDispatch';");
         expect(reducersSource).toContain("} from './actionWindowChoices';");
         expect(reducersSource).toContain("} from './factionTurnAccessors';");
-        expect(reducersSource).toContain("} from './fortificationMaintenance';");
+        expect(reducersSource).not.toContain("from './fortificationMaintenance';");
         expect(reducersSource).not.toContain('export const QIDAHEN_RESOLVED_EVENT_REDUCERS = [');
         expect(reducersSource).toContain('const QIDAHEN_RESOLVED_EVENT_REDUCERS = [');
         expect(reducersSource).toContain('const QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE = new Map<');
@@ -1209,7 +1221,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(reducersSource).toContain('const reducer = QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE.get(event.type);');
         expect(reducersSource).toContain("'GAO_DI_DISPATCH_RESOLVED'");
         expect(reducersSource).toContain("'INTERNAL_DISPATCH_RESOLVED'");
-        expect(reducersSource).toContain("'FORTIFICATION_MAINTENANCE_RESOLVED'");
+        expect(reducersSource).not.toContain("'FORTIFICATION_MAINTENANCE_RESOLVED'");
         expect(reducersSource).toContain("'DRIVE_TIGER_CONSENT_RESOLVED'");
         expect(reducersSource).toContain("'RECRUIT_CHOICE_RESOLVED'");
         expect(reducersSource).toContain("'MA_SHI_TRADE_CHOICE_RESOLVED'");
@@ -1218,7 +1230,9 @@ describe('Qidahen compatibility source guards', () => {
         expect(reducersSource).toContain('resolveQidahenGaoDiDispatchChoice(');
         expect(reducersSource).toContain('getFactionIdByPlayerId(');
         expect(reducersSource).toContain('resolveQidahenInternalDispatchInteractionChoice(');
-        expect(reducersSource).toContain('resolveQidahenFortificationMaintenanceInteractionChoice(');
+        expect(reducersSource).not.toContain('resolveQidahenFortificationMaintenanceInteractionChoice(');
+        expect(turnResolutionSystemSource).toContain('QIDAHEN_TURN_RESOLUTION_CHOICE');
+        expect(turnResolutionChoicesSource).toContain("case 'maintenance':");
         expect(reducersSource).toContain('resolveQidahenDriveTigerConsentInteractionChoice(');
         expect(reducersSource).toContain('resolveQidahenRecruitInteractionChoice(');
         expect(reducersSource).toContain('resolveQidahenMaShiTradeInteractionChoice(');
@@ -1758,7 +1772,6 @@ describe('Qidahen compatibility source guards', () => {
         expect(grantPardonExecutionSource).toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
         expect(grantPardonExecutionSource).toContain('materializeNonSiegedCityActionSourceRegion,');
         expect(grantPardonExecutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior,');
-        expect(grantPardonExecutionSource).toContain('removeTroopsFromNonSiegedCityStateRegion,');
         expect(grantPardonExecutionSource).toContain('refreshRuntimeRegionRules,');
         expect(grantPardonExecutionDependenciesSource).toBe('');
         expect(grantPardonExecutionSource).toContain("lastSeasonSummary: dependencies.buildSeasonSummary('赐印招安', timestamp, [");
@@ -1831,7 +1844,7 @@ describe('Qidahen compatibility source guards', () => {
 
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionPendingFollowUpResolution';");
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionSelectionFollowUpResolution';");
-        expect(selectedActionFollowUpSource).toContain("import { buildPendingTargetAction } from './pendingTargetActionBuilder';");
+        expect(selectedActionFollowUpSource).toContain("import { buildPendingTargetAction, getExplicitRaidTargetAction } from './pendingTargetActionBuilder';");
         expect(selectedActionFollowUpSource).toContain("} from './selectionBuilders';");
         expect(selectedActionFollowUpSource).toContain('buildGrantPardonSelectionFromRegionSemantics');
         expect(selectedActionFollowUpSource).toContain("resolution.grantPardonSelection");
@@ -1882,7 +1895,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionFollowUpSource).toContain("if (actionId === 'ma-shi-trade' && !maShiTradeSelection) {");
         expect(selectedActionFollowUpSource).toContain("const CROSS_MOUNTAINS_CARD_DEF_ID = 'qidahen-atlas05-1614-cross-mountains';");
         expect(selectedActionFollowUpSource).toContain("const pendingActionId = actionId === 'play-event-card' && selectedEventActionCardDefId === CROSS_MOUNTAINS_CARD_DEF_ID");
-        expect(selectedActionFollowUpSource).toContain("const pendingTargetAction = (pendingActionId === 'raid' || pendingActionId === 'marriage-subjugation')");
+        expect(selectedActionFollowUpSource).toContain(": (pendingActionId === 'raid' || pendingActionId === 'marriage-subjugation')");
         expect(selectedActionFollowUpSource).toContain("pendingActionId,");
         expect(selectedActionFollowUpSource).toContain("applyCrossMountainsBoundaryEffect(pendingTargetAction)");
 
@@ -1946,6 +1959,7 @@ describe('Qidahen compatibility source guards', () => {
         const commandEventBuilderRegistrySource = readCommandEventBuilderRegistrySource();
         const resolvedCommandBridgeSource = readResolvedCommandBridgeSource();
         const resolvedCommandEventBuildersSource = readResolvedCommandEventBuildersSource();
+        const turnResolutionSystemSource = readTurnResolutionSystemSource();
         const resolvedCommandEventBuilderRegistrySource = readResolvedCommandEventBuilderRegistrySource();
         const actionWindowResolvedCommandDependenciesSource = readActionWindowResolvedCommandDependenciesSource();
         const pendingBattleResolvedCommandDependenciesSource = readPendingBattleResolvedCommandDependenciesSource();
@@ -2091,7 +2105,9 @@ describe('Qidahen compatibility source guards', () => {
         expect(resolvedCommandEventBuildersSource).not.toContain('const buildKhanEdictResolvedCommandEvents = buildStatefulResolvedCommandEvents<ResolveKhanEdictChoiceCommand>(');
         expect(resolvedCommandEventBuildersSource).not.toContain('const buildDiplomacyResolvedCommandEvents = buildStatefulResolvedCommandEvents<ResolveDiplomacyChoiceCommand>(');
         expect(resolvedCommandEventBuildersSource).toContain('selection: dependencies.getQidahenInternalDispatchSelectionForCore(state.core, state.sys.interaction?.current),');
-        expect(resolvedCommandEventBuildersSource).toContain('selection: dependencies.getQidahenFortificationMaintenanceSelectionForCore(state.core, state.sys.interaction?.current),');
+        expect(resolvedCommandEventBuildersSource).not.toContain('getQidahenFortificationMaintenanceSelectionForCore');
+        expect(turnResolutionSystemSource).toContain('QIDAHEN_TURN_RESOLUTION_CHOICE');
+        expect(turnResolutionSystemSource).toContain('isQidahenTurnChoiceSelectionValid(');
         expect(resolvedCommandEventBuildersSource).toContain('selection: dependencies.getQidahenDriveTigerConsentSelectionForCore(state.core, state.sys.interaction?.current),');
         expect(resolvedCommandEventBuildersSource).toContain('selection: dependencies.getQidahenRecruitSelectionForCore(state.core, state.sys.interaction?.current),');
         expect(resolvedCommandEventBuildersSource).toContain('selection: dependencies.getQidahenMaShiTradeSelectionForCore(state.core, state.sys.interaction?.current),');
@@ -2133,9 +2149,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(resolvedCommandEventBuildersSource).toContain('commandTypes: [QIDAHEN_COMMANDS.RESOLVE_INTERNAL_DISPATCH],');
         expect(resolvedCommandEventBuildersSource).toContain('buildEvents: buildStatefulResolvedCommandEvents<ResolveInternalDispatchCommand>(');
         expect(resolvedCommandEventBuildersSource).toContain('buildQidahenInternalDispatchResolvedEvent,');
-        expect(resolvedCommandEventBuildersSource).toContain('commandTypes: [QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],');
-        expect(resolvedCommandEventBuildersSource).toContain('buildEvents: buildStatefulResolvedCommandEvents<ResolveFortificationMaintenanceCommand>(');
-        expect(resolvedCommandEventBuildersSource).toContain('buildQidahenFortificationMaintenanceResolvedEvent,');
+        expect(resolvedCommandEventBuildersSource).not.toContain('QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE');
+        expect(resolvedCommandEventBuildersSource).not.toContain('ResolveFortificationMaintenanceCommand');
         expect(resolvedCommandEventBuildersSource).toContain('commandTypes: [QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT],');
         expect(resolvedCommandEventBuildersSource).toContain('buildEvents: buildStatefulResolvedCommandEvents<ResolveDriveTigerConsentCommand>(');
         expect(resolvedCommandEventBuildersSource).toContain('buildQidahenDriveTigerConsentResolvedEvent,');
@@ -2368,7 +2383,9 @@ describe('Qidahen compatibility source guards', () => {
         const resolvedEventReducersSource = readResolvedEventReducersSource();
         const registrySource = readResolvedEventReducerRegistrySource();
         const pendingBattleStateTransitionSource = readPendingBattleStateTransitionSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
+        const turnResolutionSystemSource = readTurnResolutionSystemSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
         const specialRuleStateSource = readSpecialRuleStateSource();
         const seasonResolutionDependenciesSource = readSeasonResolutionDependenciesSource();
         const turnActionDependenciesSource = readTurnActionDependenciesSource();
@@ -2446,19 +2463,18 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('resolveQidahenMidyear,');
         expect(indexSource).not.toContain('resolveQidahenNewYear,');
         expect(turnActionDependenciesSource).toBe('');
-        expect(seasonResolutionSource).toContain('export const resolveQidahenMidyear = (');
-        expect(seasonResolutionSource).toContain('export const resolveQidahenNewYear = (');
-        expect(seasonResolutionSource).not.toContain("export type QidahenMidyearResolution = Pick<QidahenCore, 'factions' | 'lastSeasonSummary'>;");
-        expect(seasonResolutionSource).toContain("type QidahenMidyearResolution = Pick<QidahenCore, 'factions' | 'lastSeasonSummary'>;");
-        expect(seasonResolutionSource).not.toContain("export type QidahenNewYearResolution = Pick<");
-        expect(seasonResolutionSource).toContain("type QidahenNewYearResolution = Pick<");
-        expect(seasonResolutionSource).not.toContain('export interface QidahenSeasonResolutionDependencies {');
-        expect(seasonResolutionSource).toContain('interface QidahenSeasonResolutionDependencies {');
-        expect(seasonResolutionSource).toContain('dependencies: QidahenSeasonResolutionDependencies = {');
-        expect(seasonResolutionSource).not.toContain('export const resolveQidahenMidyearWithSeasonDependencies = (');
-        expect(seasonResolutionSource).not.toContain('export const resolveQidahenNewYearWithSeasonDependencies = (');
-        expect(seasonResolutionSource).not.toContain('const QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES: QidahenSeasonResolutionDependencies = {');
-        expect(seasonResolutionSource).not.toContain('export const QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES: QidahenSeasonResolutionDependencies = {');
+        expect(turnResolutionSystemSource).toContain("id: 'qidahen-turn-resolution'");
+        expect(turnResolutionSystemSource).toContain('export function createQidahenTurnResolutionSystem()');
+        expect(turnResolutionSystemSource).toContain('isQidahenTurnChoiceSelectionValid(');
+        expect(turnResolutionSystemSource).toContain('getQidahenAutomaticTurnFact(');
+        expect(turnResolutionChoicesSource).toContain("case 'maintenance':");
+        expect(turnResolutionChoicesSource).toContain("case 'upkeep':");
+        expect(turnResolutionFactsSource).toContain('export function reduceQidahenTurnResolutionFact(');
+        expect(turnResolutionFactsSource).toContain("case 'midyear-income':");
+        expect(turnResolutionFactsSource).toContain("case 'year-transition':");
+        expect(turnResolutionFactsSource).toContain("case 'finish-wheel':");
+        expect(turnResolutionFactsSource).not.toContain('resolveQidahenMidyear');
+        expect(turnResolutionFactsSource).not.toContain('resolveQidahenNewYear');
         expect(seasonResolutionDependenciesSource).toBe('');
         expect(indexSource).toContain("export { getQidahenEffectiveVpByFaction, getQidahenPrestigeBonusByFaction } from './victoryResolution';");
         expect(indexSource).not.toContain('const QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES: QidahenSpecialRuleStateDependencies = {');
@@ -2532,7 +2548,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingBattleFlowSource).toMatch(/resolveQidahenPendingActionFromPayload[\s\S]*const currentPendingTargetAction = getQidahenInteractionSelectionStateForCore\([\s\S]*payload\.pendingTargetAction,[\s\S]*state,[\s\S]*getQidahenPendingTargetActionForCore,[\s\S]*\);/);
         expect(pendingBattleFlowSource).toContain('return applyPendingActionResolutionToBattleFlowState(');
         expect(pendingBattleFlowSource).toContain('export const resolveQidahenPendingTargetInteractionChoice = (');
-        expect(pendingBattleFlowSource).toContain('const payload = normalizePendingTargetInteractionPayload(value);');
+        expect(pendingBattleFlowSource).toContain("import { normalizePendingTargetInteractionPayload } from './pendingTargetChoicePayload';");
+        expect(pendingBattleFlowSource).toContain('normalizePendingTargetInteractionPayload(value)');
         expect(pendingBattleFlowSource).toMatch(/resolveQidahenPendingTargetInteractionChoice[\s\S]*const currentPendingTargetAction = getQidahenInteractionSelectionStateForCore\([\s\S]*interactionPendingTargetAction,[\s\S]*state,[\s\S]*getQidahenPendingTargetActionForCore,[\s\S]*\);/);
         expect(pendingBattleFlowSource).toContain('dependencies.createStructuredBattleRolls(state, pendingTargetAction, random, {');
         expect(pendingBattleFlowSource).toContain('export const resolveQidahenPostBattleInteractionChoice = (');
@@ -2576,9 +2593,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(victoryResolutionSource).toContain('const victoryStatus = findMilitaryWinner(nextState)');
         expect(victoryResolutionSource).toContain('?? findPrestigeWinner(nextState)');
         expect(victoryResolutionSource).toContain('?? (options.allowHegemony ? findHegemonyWinner(nextState) : null);');
-        expect(seasonResolutionSource).toContain("} from './victoryResolution';");
-        expect(seasonResolutionSource).toContain('countQidahenControlledRuntimeRegions,');
-        expect(seasonResolutionSource).toContain('getQidahenEffectiveVpByFaction,');
+        expect(turnResolutionFactsSource).toContain("from './victoryResolution';");
+        expect(turnResolutionFactsSource).toContain('applyQidahenVictoryStatus');
         expect(specialRuleStateSource).toContain("} from './regionConfig';");
         expect(specialRuleStateSource).not.toContain('export interface QidahenSpecialRuleStateDependencies {');
         expect(specialRuleStateSource).toContain('interface QidahenSpecialRuleStateDependencies {');
@@ -2789,9 +2805,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(regionSelectionPreferencesSource).toContain('export const canPlaceRegularTroopsInRegion = (');
         expect(regionSelectionPreferencesSource).toContain('export const getPreferredSelectedRegionIdForFaction = (');
         expect(regionSelectionPreferencesSource).toContain('export const getPreferredActionWindowSelectedRegionIdForFaction = (');
-        expect(regionSelectionPreferencesSource).not.toContain('export const getPreferredNonSiegedControlledRuntimeRegion = (');
-        expect(regionSelectionPreferencesSource).not.toContain('export const getPreferredControlledRuntimeRegion = (');
-        expect(regionSelectionPreferencesSource).toContain('const getPreferredNonSiegedControlledRuntimeRegion = (');
+        expect(regionSelectionPreferencesSource).toContain('export const getPreferredNonSiegedControlledRuntimeRegion = (');
         expect(regionSelectionPreferencesSource).toContain('const getPreferredControlledRuntimeRegion = (');
         expect(scenarioPresetsSource).not.toContain('export const QIDAHEN_SCENARIO_PRESETS: Record<QidahenScenarioId, QidahenScenarioPreset> = {');
         expect(scenarioPresetsSource).toContain('const QIDAHEN_SCENARIO_PRESETS: Record<QidahenScenarioId, QidahenScenarioPreset> = {');
@@ -2799,7 +2813,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(wheelMovesSource).not.toContain('export const QIDAHEN_WHEEL_MOVE_CHOICES: QidahenWheelMoveChoice[] = [');
         expect(wheelMovesSource).toContain('const QIDAHEN_WHEEL_MOVE_CHOICES: QidahenWheelMoveChoice[] = [');
         expect(wheelMovesSource).toContain('export const getQidahenWheelMoveChoices = (): QidahenWheelMoveChoice[] => (');
-        expect(wheelMovesSource).toContain('export const buildQidahenWheelMoveSummary = (moveId: string): string => {');
+        expect(wheelMovesSource).toContain('export const buildQidahenWheelMoveSummary = (');
+        expect(wheelMovesSource).toContain('moveId: string,');
     });
 
     it('region selection 偏好与调度目标规则应由 regionSelectionPreferences / battleState owner 承接，selectionBuilders 不再本地复制区位判定 helper', () => {
@@ -2848,7 +2863,6 @@ describe('Qidahen compatibility source guards', () => {
         const pendingTargetResolutionDependenciesSource = readPendingTargetResolutionDependenciesSource();
         const pendingTargetResolutionSource = readPendingTargetResolutionSource();
         const scenarioChoiceStateSource = readScenarioChoiceStateSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
         const selectionBuildersSource = readSelectionBuildersSource();
         const actionWindowChoicesSource = readActionWindowChoicesSource();
         const troopStacksSource = readTroopStacksSource();
@@ -2864,11 +2878,6 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingTargetResolutionDependenciesSource).toBe('');
         expect(pendingTargetResolutionSource).toContain("import { getRegionControlLabel, toFactionLabel } from './factionLabelSemantics';");
         expect(pendingTargetResolutionSource).toContain('getRegionControlLabel,');
-        expect(seasonResolutionSource).toContain("} from './factionLabelSemantics';");
-        expect(seasonResolutionSource).toContain("import { getFactionDisplayName, toFactionLabel } from './factionLabelSemantics';");
-        expect(seasonResolutionSource).not.toContain("import { factionDisplayNameById, toFactionLabel } from './factionLabelSemantics';");
-        expect(seasonResolutionSource).toContain('getFactionDisplayName(character.faction)');
-        expect(seasonResolutionSource).toContain('getFactionDisplayName(occupiedDongjiangController)');
 
         expect(initialCoreSetupSource).not.toContain("import { factionDisplayNameById } from './factionLabelSemantics';");
         expect(initialCoreSetupSource).not.toContain('factionDisplayNameById,');
@@ -2897,6 +2906,7 @@ describe('Qidahen compatibility source guards', () => {
         const seasonSummaryBuilderSource = readSeasonSummaryBuilderSource();
         const wheelMoveExecutionSource = readWheelMoveExecutionSource();
         const pendingBattleStateTransitionSource = readPendingBattleStateTransitionSource();
+        const wheelRecruitTrainSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'wheelRecruitTrain.ts'), 'utf8');
 
         expect(indexSource).not.toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
         expect(indexSource).not.toContain('const buildSeasonSummary = (title: string, timestamp: number, lines: string[]): QidahenSeasonSummary => ({');
@@ -2905,7 +2915,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(seasonSummaryBuilderSource).toContain("import type { QidahenSeasonSummary } from './types';");
         expect(seasonSummaryBuilderSource).toContain('export const buildSeasonSummary = (');
         expect(seasonSummaryBuilderSource).toContain("id: `season-${timestamp}`,");
-        expect(wheelMoveExecutionSource).toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
+        expect(wheelMoveExecutionSource).not.toContain("from './seasonSummaryBuilder';");
+        expect(wheelRecruitTrainSource).toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
         expect(pendingBattleStateTransitionSource).toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
         expect(pendingBattleStateTransitionSource).not.toContain('const buildSeasonSummary = (');
     });
@@ -2988,13 +2999,14 @@ describe('Qidahen compatibility source guards', () => {
         const directInputEventReducerBridgeSource = readDirectInputEventReducerBridgeSource();
         const directInputEventReducersSource = readDirectInputEventReducersSource();
         const indexSource = readDomainIndexSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
-        const seasonResolutionDependenciesSource = readSeasonResolutionDependenciesSource();
         const turnActionDependenciesSource = readTurnActionDependenciesSource();
         const wheelImmediateEffectSource = readWheelImmediateEffectSource();
         const wheelMoveExecutionSource = readWheelMoveExecutionSource();
         const wheelRulesSource = readWheelRulesSource();
-        const fortificationMaintenanceSource = readFortificationMaintenanceSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
+        const turnResolutionSystemSource = readTurnResolutionSystemSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
+        const wheelRecruitTrainSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'wheelRecruitTrain.ts'), 'utf8');
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
         expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
@@ -3014,8 +3026,6 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain("case 'WHEEL_MOVE_EXECUTED':");
         expect(directInputEventReducerBridgeSource).toBe('');
 
-        expect(wheelMoveExecutionSource).toContain("import { applyQidahenWheelImmediateEffect } from './wheelImmediateEffect';");
-        expect(wheelMoveExecutionSource).toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
         expect(wheelMoveExecutionSource).not.toContain('export interface QidahenWheelMoveExecutionDependencies {');
         expect(wheelMoveExecutionSource).toContain('interface QidahenWheelMoveExecutionDependencies {');
         expect(wheelMoveExecutionSource).not.toContain('export const QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES: QidahenWheelMoveExecutionDependencies = {');
@@ -3023,41 +3033,26 @@ describe('Qidahen compatibility source guards', () => {
         expect(wheelMoveExecutionSource).toContain('export const resolveQidahenWheelMoveExecuted = (');
         expect(wheelMoveExecutionSource).not.toContain('export const resolveQidahenWheelMoveExecutedEvent = (');
         expect(wheelMoveExecutionSource).toContain('dependencies: QidahenWheelMoveExecutionDependencies = {');
-        expect(wheelMoveExecutionSource).toContain('const wheelSectorOrder = [');
-        expect(wheelMoveExecutionSource).not.toContain('const advanceWheelPosition = (');
-        expect(wheelMoveExecutionSource).toContain('const currentWheelPositionIndex = Math.max(0, wheelSectorOrder.indexOf(state.actionWheelPosition));');
+        expect(wheelMoveExecutionSource).toContain('const destination = getQidahenWheelDestination(state.actionWheelPosition, move.steps);');
+        expect(wheelMoveExecutionSource).toContain('actionWheelPosition: nextWheelPosition,');
+        expect(wheelMoveExecutionSource).not.toContain('buildWheelDispatchSelectionFromWheel');
+        expect(wheelMoveExecutionSource).not.toContain('buildSeasonSummary');
+        expect(wheelMoveExecutionSource).not.toContain('resolveMidyear');
+        expect(wheelMoveExecutionSource).not.toContain('resolveNewYear');
         expect(wheelRulesSource).not.toContain('export type QidahenWheelPositionId =');
         expect(wheelRulesSource).toContain('type QidahenWheelPositionId =');
-        expect(wheelMoveExecutionSource).toContain('const nextWheelPosition = wheelSectorOrder[');
-        expect(wheelMoveExecutionSource).toContain('const midyearResolution = dependencies.resolveMidyear(nextState, timestamp);');
-        expect(wheelMoveExecutionSource).toContain("lastSeasonSummary: dependencies.buildSeasonSummary('新年结算', timestamp, [");
-        expect(wheelMoveExecutionSource).toContain('const diplomacySelection = buildDiplomacySelectionFromRegionSemantics(');
-        expect(wheelMoveExecutionSource).toContain("getQidahenLockedRegionSelectionSemantics,");
-        expect(wheelMoveExecutionSource).toContain('getQidahenLockedRegionSelectionSemantics(nextState)');
-        expect(wheelMoveExecutionSource).toContain('const wheelDispatchSelection = buildWheelDispatchSelectionFromWheel(');
-        expect(wheelMoveExecutionSource).toContain('const shouldPersistExplicitWheelDispatchSelection = shouldPersistExplicitWheelDispatchSelectionForWheelState(');
         expect(directInputEventReducersSource).toContain('resolveQidahenWheelMoveExecuted,');
         expect(directInputEventReducersSource).toContain('event.payload.moveId,');
         expect(directInputEventReducersSource).toContain('event.timestamp,');
-        expect(wheelMoveExecutionSource).toContain('nextState = applyQidahenWheelImmediateEffect(');
-        expect(wheelMoveExecutionSource).toContain('return dependencies.advanceTurnIfReady(');
-        expect(wheelMoveExecutionSource).not.toContain('const resolveMidyear = (');
-        expect(wheelMoveExecutionSource).not.toContain('const applyWheelImmediateEffect = (');
-        expect(wheelMoveExecutionSource).not.toContain('applyWheelImmediateEffect: (');
-        expect(wheelMoveExecutionSource).not.toContain('const advanceTurnIfReady = (');
         expect(turnActionDependenciesSource).toBe('');
-        expect(seasonResolutionSource).not.toContain('const QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES: QidahenSeasonResolutionDependencies = {');
-        expect(seasonResolutionSource).not.toContain('export const QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES: QidahenSeasonResolutionDependencies = {');
-        expect(seasonResolutionSource).toContain('export const resolveQidahenMidyear = (');
-        expect(seasonResolutionSource).not.toContain('export const resolveQidahenMidyearWithSeasonDependencies = (');
-        expect(seasonResolutionDependenciesSource).toBe('');
-        expect(wheelMoveExecutionSource).toContain("import { resolveQidahenMidyear } from './seasonResolution';");
-        expect(wheelMoveExecutionSource).toContain('resolveMidyear: resolveQidahenMidyear,');
-        expect(wheelMoveExecutionSource).not.toContain("import { resolveQidahenMidyearWithSeasonDependencies } from './seasonResolution';");
-        expect(fortificationMaintenanceSource).toContain("import {");
-        expect(fortificationMaintenanceSource).toContain('    resolveQidahenNewYear,');
-        expect(fortificationMaintenanceSource).toContain('resolveNewYear: resolveQidahenNewYear,');
-        expect(fortificationMaintenanceSource).not.toContain('resolveQidahenNewYearWithSeasonDependencies');
+        expect(turnResolutionSystemSource).toContain("id: 'qidahen-turn-resolution'");
+        expect(turnResolutionSystemSource).toContain('createQidahenTurnResolutionSystem');
+        expect(turnResolutionSystemSource).toContain('getQidahenAutomaticTurnFact(');
+        expect(turnResolutionChoicesSource).toContain("case 'maintenance':");
+        expect(turnResolutionChoicesSource).toContain("case 'upkeep':");
+        expect(turnResolutionFactsSource).toContain("case 'midyear-income':");
+        expect(turnResolutionFactsSource).toContain("case 'maintenance':");
+        expect(turnResolutionFactsSource).toContain("case 'year-transition':");
 
         expect(wheelImmediateEffectSource).toContain("} from './handCardState';");
         expect(wheelImmediateEffectSource).toContain("} from './regionSelectionPreferences';");
@@ -3069,15 +3064,20 @@ describe('Qidahen compatibility source guards', () => {
         expect(wheelRulesSource).toContain('export const getQidahenWheelImmediateEffectConfig = (');
         expect(wheelImmediateEffectSource).toContain('export const applyQidahenWheelImmediateEffect = (');
         expect(wheelImmediateEffectSource).toContain('const drawCards = Math.max(0, Math.min(config.drawCards, getFactionDrawPileCount(state, factionId)));');
-        expect(wheelImmediateEffectSource).toContain("const artilleryTraining = config.id === 'wheel-recruit-train'");
-        expect(wheelImmediateEffectSource).toContain('lastSeasonSummary: buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),');
+        expect(wheelImmediateEffectSource).not.toContain('artilleryTraining');
+        expect(wheelRecruitTrainSource).toContain('export const resolveQidahenWheelRecruitTrainChoice = (');
+        expect(wheelRecruitTrainSource).toContain('const trainablePieces = getQidahenTrainableTroopPieces(state, factionId);');
+        expect(wheelImmediateEffectSource).toContain('lastSeasonSummary: {');
+        expect(wheelImmediateEffectSource).toContain('...buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),');
     });
 
     it('回合标签收口应由 turnLabelState owner 承接，directInputEventReducerBridge 不应把 turn label 本体回退进 index', () => {
         const directInputEventReducerBridgeSource = readDirectInputEventReducerBridgeSource();
         const directInputEventReducersSource = readDirectInputEventReducersSource();
         const indexSource = readDomainIndexSource();
-        const fortificationMaintenanceSource = readFortificationMaintenanceSource();
+        const seasonTasksSource = readSeasonTasksSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
         const handLimitDiscardSource = readHandLimitDiscardSource();
         const selectionInputStateSource = readSelectionInputStateSource();
         const turnActionChoiceOrchestrationSource = readTurnActionChoiceOrchestrationSource();
@@ -3132,23 +3132,12 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionDependenciesSource).toBe('');
         expect(turnActionChoiceOrchestrationSource).toBe('');
 
-        expect(fortificationMaintenanceSource).not.toContain('export interface QidahenFortificationMaintenanceDependencies {');
-        expect(fortificationMaintenanceSource).toContain('interface QidahenFortificationMaintenanceDependencies {');
-        expect(fortificationMaintenanceSource).not.toContain('export const QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES: QidahenFortificationMaintenanceDependencies = {');
-        expect(fortificationMaintenanceSource).toContain('resolveNewYear: (');
-        expect(fortificationMaintenanceSource).toContain('syncCorePieceCollections: (');
-        expect(fortificationMaintenanceSource).toContain('applyVictoryStatus: (');
-        expect(fortificationMaintenanceSource).toContain('advanceTurnIfReady: (');
-        expect(fortificationMaintenanceSource).toContain('resolveQidahenFortificationMaintenanceInteractionChoice');
-        expect(fortificationMaintenanceSource).not.toContain('resolveQidahenFortificationMaintenanceInteractionChoiceWithDependencies');
-        expect(fortificationMaintenanceSource).not.toContain('const QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES: QidahenFortificationMaintenanceDependencies = {');
-        expect(fortificationMaintenanceSource).toContain('dependencies: QidahenFortificationMaintenanceDependencies = {');
-        expect(fortificationMaintenanceSource).toContain('getQidahenInteractionSelectionStateForCore,');
-        expect(fortificationMaintenanceSource).toContain('const selection = getQidahenInteractionSelectionStateForCore(');
-        expect(fortificationMaintenanceSource).toContain('const newYearResolution = dependencies.resolveNewYear(');
-        expect(fortificationMaintenanceSource).not.toContain("QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES,");
-        expect(fortificationMaintenanceSource).toContain('id: `log-new-year-${timestamp}`');
-        expect(fortificationMaintenanceSource).toContain('return dependencies.advanceTurnIfReady(');
+        expect(seasonTasksSource).toContain('export function getQidahenFortificationMaintenanceCost(');
+        expect(seasonTasksSource).toContain('export function canMaintainQidahenFortification(');
+        expect(turnResolutionChoicesSource).toContain("case 'maintenance':");
+        expect(turnResolutionChoicesSource).toContain('getQidahenFortificationMaintenanceCost(core, fortification.id)');
+        expect(turnResolutionFactsSource).toContain("case 'maintenance':");
+        expect(turnResolutionFactsSource).toContain('ruined: !fact.maintain');
 
         expect(handLimitDiscardSource).not.toContain('export interface QidahenHandLimitDiscardDependencies {');
         expect(handLimitDiscardSource).toContain('interface QidahenHandLimitDiscardDependencies {');
@@ -3283,50 +3272,26 @@ describe('Qidahen compatibility source guards', () => {
         expect(conflictSource).toContain('export const resolveJinDaisanConflict = (');
     });
 
-    it('纪年人物启用主流程应由 characterChronologyState owner 承接，index 只保留配置与种子依赖装配', () => {
-        const chronologySource = readCharacterChronologyStateSource();
+    it('纪年人物选择与冲突处理应由 chronologyResolution owner 承接，turn-resolution 只消费选择结果', () => {
+        const chronologySource = readChronologyResolutionSource();
         const conflictSource = readCharacterConflictStateSource();
         const indexSource = readDomainIndexSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
-        const seasonResolutionDependenciesSource = readSeasonResolutionDependenciesSource();
-        const turnActionDependenciesSource = readTurnActionDependenciesSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
 
-        expect(indexSource).not.toContain("} from './characterChronologyState';");
+        expect(indexSource).not.toContain("from './characterChronologyState';");
         expect(indexSource).not.toContain('applyChronologyCharactersForYear,');
-        expect(indexSource).not.toContain('type QidahenCharacterChronologyStateDependencies,');
-        expect(indexSource).not.toContain('const QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES: QidahenCharacterChronologyStateDependencies = {');
-        expect(turnActionDependenciesSource).toBe('');
-        expect(seasonResolutionSource).toContain("} from './characterChronologyState';");
-        expect(seasonResolutionSource).toContain('applyChronologyCharactersForYear,');
-        expect(seasonResolutionSource).not.toContain('type QidahenCharacterChronologyStateDependencies,');
-        expect(seasonResolutionSource).not.toContain('const QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES: QidahenCharacterChronologyStateDependencies = {');
-        expect(seasonResolutionSource).not.toContain('getChronologyCharacterAvailabilityForYear,');
-        expect(seasonResolutionSource).not.toContain('createInitialCharacterStates,');
-        expect(seasonResolutionSource).not.toContain('QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES,');
-        expect(seasonResolutionDependenciesSource).toBe('');
-        expect(indexSource).not.toContain('const selectChronologyRepresentativeCharacterIds = (');
-        expect(indexSource).not.toContain('const applyChronologyCharactersForYear = (');
+        expect(turnResolutionChoicesSource).toContain("from './chronologyResolution';");
+        expect(turnResolutionChoicesSource).toContain('getQidahenChronologyCharacterCandidates,');
+        expect(turnResolutionFactsSource).toContain("from './chronologyResolution';");
+        expect(turnResolutionFactsSource).toContain('applyQidahenChronologyCharacter');
+        expect(turnResolutionFactsSource).not.toContain('applyChronologyCharactersForYear');
 
         expect(chronologySource).toContain("from './characterConflictState';");
-        expect(chronologySource).not.toContain('export interface QidahenCharacterChronologyStateDependencies {');
-        expect(chronologySource).toContain('interface QidahenCharacterChronologyStateDependencies {');
-        expect(chronologySource).toContain("from './characterCatalogState';");
-        expect(chronologySource).toContain("from './characterChronologyConfig';");
-        expect(chronologySource).not.toContain('const QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES: QidahenCharacterChronologyStateDependencies = {');
-        expect(chronologySource).toContain('getChronologyCharacterAvailabilityForYear: (');
-        expect(chronologySource).toContain('createInitialCharacterStates: (');
-        expect(chronologySource).toContain('getCharacterNameById: (');
-        expect(chronologySource).toContain('const selectChronologyRepresentativeCharacterIds = (');
-        expect(chronologySource).toContain('export const applyChronologyCharactersForYear = (');
-        expect(chronologySource).toContain('dependencies: QidahenCharacterChronologyStateDependencies = {');
-        expect(chronologySource).toContain('resolveMingCharacterConflict(nextFactions);');
-        expect(chronologySource).toContain('resolveNurhaciRemovedByYuanChonghuan(nextFactions);');
-        expect(chronologySource).toContain('resolveJinHuangtaijiConflict(nextFactions);');
-        expect(chronologySource).toContain('resolveJinDaisanConflict(nextFactions);');
-        expect(chronologySource).not.toContain('resolveMingCharacterConflict: typeof resolveMingCharacterConflict;');
-        expect(chronologySource).not.toContain('resolveNurhaciRemovedByYuanChonghuan: typeof resolveNurhaciRemovedByYuanChonghuan;');
-        expect(chronologySource).not.toContain('resolveJinHuangtaijiConflict: typeof resolveJinHuangtaijiConflict;');
-        expect(chronologySource).not.toContain('resolveJinDaisanConflict: typeof resolveJinDaisanConflict;');
+        expect(chronologySource).toContain('export function getQidahenChronologyCharacterCandidates(');
+        expect(chronologySource).toContain('export function applyQidahenChronologyCharacter(');
+        expect(chronologySource).toContain('factions = resolve(factions).factions;');
+        expect(chronologySource).toContain('resolveJinDaisanConflict, resolveJinHuangtaijiConflict, resolveMingCharacterConflict, resolveNurhaciRemovedByYuanChonghuan');
 
         expect(conflictSource).toContain('export const resolveMingCharacterConflict = (');
         expect(conflictSource).toContain('export const resolveNurhaciRemovedByYuanChonghuan = (');
@@ -3336,16 +3301,18 @@ describe('Qidahen compatibility source guards', () => {
         const chronologyConfigSource = readCharacterChronologyConfigSource();
         const chronologySource = readCharacterChronologyStateSource();
         const indexSource = readDomainIndexSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
-        const seasonResolutionDependenciesSource = readSeasonResolutionDependenciesSource();
         const turnActionDependenciesSource = readTurnActionDependenciesSource();
+        const chronologyResolutionSource = readChronologyResolutionSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
 
         expect(indexSource).not.toContain("} from './characterChronologyConfig';");
         expect(indexSource).not.toContain('getChronologyCharacterAvailabilityForYear,');
         expect(turnActionDependenciesSource).toBe('');
-        expect(seasonResolutionSource).toContain("} from './characterChronologyConfig';");
-        expect(seasonResolutionSource).not.toContain('getChronologyCharacterAvailabilityForYear,');
-        expect(seasonResolutionDependenciesSource).toBe('');
+        expect(chronologySource).toContain("from './characterChronologyConfig';");
+        expect(chronologySource).toContain('getChronologyCharacterAvailabilityForYear');
+        expect(chronologyResolutionSource).toContain("from './characterChronologyConfig';");
+        expect(chronologyResolutionSource).toContain('getYearLabelByIndex(core.currentYearIndex + 1)');
+        expect(turnResolutionChoicesSource).toContain("from './chronologyResolution';");
         expect(indexSource).not.toContain('type QidahenChronologyYearConfig = {');
         expect(indexSource).not.toContain('type QidahenChronologyCharacterAvailability =');
         expect(indexSource).not.toContain('const YEAR_SEQUENCE = [');
@@ -3356,13 +3323,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('const getFactionOrderForYearIndex = (');
         expect(indexSource).not.toContain('const getChronologyCharacterAvailabilityForYear = (');
         expect(indexSource).not.toContain('const getYearLabelByIndex = (');
-        expect(seasonResolutionSource).toContain("} from './characterChronologyConfig';");
-        expect(seasonResolutionSource).toContain('buildYearCardSlots,');
-        expect(seasonResolutionSource).toContain('getFactionOrderForYearIndex,');
-        expect(seasonResolutionSource).toContain('getQidahenMaxChronologyYearIndex,');
-        expect(seasonResolutionSource).toContain('getYearLabelByIndex,');
-        expect(seasonResolutionSource).not.toContain('QIDAHEN_YEAR_SEQUENCE,');
-        expect(seasonResolutionSource).toContain('getQidahenMaxChronologyYearIndex()');
+        expect(chronologyResolutionSource).not.toContain('QIDAHEN_YEAR_SEQUENCE');
 
         expect(chronologyConfigSource).toContain("import { filterFactionOrderForScenario } from './factionTurnOrder';");
         expect(chronologyConfigSource).toContain("import type { QidahenCore, QidahenFactionId, QidahenScenarioId } from './types';");
@@ -3389,23 +3350,17 @@ describe('Qidahen compatibility source guards', () => {
         expect(chronologySource).toContain('type QidahenChronologyCharacterAvailability = ReturnType<typeof getChronologyCharacterAvailabilityForYear>;');
     });
 
-    it('人物种子与名字读取应由 characterCatalogState owner 承接，index 与 chronology/scenario 只保留消费接线', () => {
+    it('人物种子与名字读取应由 characterCatalogState owner 承接，initialCoreSeeds 与 scenarioChoiceState 只保留消费接线', () => {
         const catalogSource = readCharacterCatalogStateSource();
-        const chronologySource = readCharacterChronologyStateSource();
+        const initialCoreSeedsSource = readInitialCoreSeedsSource();
         const indexSource = readDomainIndexSource();
         const scenarioChoiceStateSource = readScenarioChoiceStateSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
-        const seasonResolutionDependenciesSource = readSeasonResolutionDependenciesSource();
         const turnActionDependenciesSource = readTurnActionDependenciesSource();
 
         expect(indexSource).not.toContain("} from './characterCatalogState';");
         expect(indexSource).not.toContain('createInitialCharacterStates,');
         expect(indexSource).not.toContain('getCharacterNameById,');
         expect(turnActionDependenciesSource).toBe('');
-        expect(seasonResolutionSource).not.toContain("} from './characterCatalogState';");
-        expect(seasonResolutionSource).not.toContain('createInitialCharacterStates,');
-        expect(seasonResolutionSource).not.toContain('getCharacterNameById,');
-        expect(seasonResolutionDependenciesSource).toBe('');
         expect(indexSource).not.toContain('type InitialCharacterSeed = {');
         expect(indexSource).not.toContain('const initialCharacterSeedsByFaction: Record<QidahenFactionId, InitialCharacterSeed[]> = {');
         expect(indexSource).not.toContain('const createInitialCharacterStates = (');
@@ -3418,8 +3373,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(catalogSource).toContain('export const createInitialCharacterStates = (');
         expect(catalogSource).toContain('export const getCharacterNameById = (');
 
-        expect(chronologySource).toContain('createInitialCharacterStates: (');
-        expect(chronologySource).toContain('getCharacterNameById: (');
+        expect(initialCoreSeedsSource).toContain("from './characterCatalogState';");
+        expect(initialCoreSeedsSource).toContain('characters: createInitialCharacterStates(id),');
         expect(scenarioChoiceStateSource).toContain('getCharacterNameById: (');
     });
 
@@ -3479,7 +3434,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(initialCoreSetupSource).toContain("} from './scenarioChoiceState';");
         expect(initialCoreSetupSource).not.toContain("} from './scenarioChoiceStateDependencies';");
         expect(initialCoreSetupSource).toContain("} from './initialCoreSeeds';");
-        expect(initialCoreSetupSource).toContain("import { buildInitialHandCards } from './handCardState';");
+        expect(initialCoreSetupSource).toContain("import { buildInitialCardPiles } from './handCardState';");
         expect(initialCoreSetupSource).toContain("import { refreshRuntimeRegionRules } from './runtimeRegionRules';");
         expect(initialCoreSetupSource).toContain("import { syncQidahenCorePieceCollections } from './coreDerivedState';");
         expect(initialCoreSetupSource).toContain("} from './characterChronologyConfig';");
@@ -3571,6 +3526,7 @@ describe('Qidahen compatibility source guards', () => {
         const pendingTargetResolutionSource = readPendingTargetResolutionSource();
         const postBattleContractsSource = readPostBattleContractsSource();
         const wheelMoveExecutionSource = readWheelMoveExecutionSource();
+        const koreaCardStateSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'koreaCardState.ts'), 'utf8');
 
         expect(indexSource).not.toContain("} from './handCardState';");
         expect(indexSource).not.toContain('addFactionHandCards,');
@@ -3589,9 +3545,10 @@ describe('Qidahen compatibility source guards', () => {
         const postBattleResolutionDependenciesSource = readPostBattleResolutionDependenciesSource();
         const postBattleDecisionResolutionSource = readPostBattleDecisionResolutionSource();
         expect(postBattleResolutionDependenciesSource).toBe('');
-        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCardsForFaction,');
+        expect(postBattleDecisionResolutionSource).toContain("import { drawQidahenKoreaCards } from './koreaCardState';");
+        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCards: drawQidahenKoreaCards,');
 
-        expect(initialCoreSetupSource).toContain("import { buildInitialHandCards } from './handCardState';");
+        expect(initialCoreSetupSource).toContain("import { buildInitialCardPiles } from './handCardState';");
         expect(initialCoreSetupSource).not.toContain('const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;');
         expect(initialCoreSetupSource).not.toContain('const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard[\'previewRef\']> = {');
         expect(initialCoreSetupSource).not.toContain('const buildInitialHandCards = (');
@@ -3602,36 +3559,37 @@ describe('Qidahen compatibility source guards', () => {
         expect(handCardStateSource).toContain("import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';");
         expect(handCardStateSource).toContain("const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];");
         expect(handCardStateSource).toContain('export const QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION: Record<QidahenFactionId, number[]> = {');
-        expect(handCardStateSource).toContain('const getFactionAtlas05DeckIndex = (');
+        expect(handCardStateSource).toContain('resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)');
         expect(handCardStateSource).toContain('Missing confirmed qidahen atlas05 ordinary hand card identity');
         expect(handCardStateSource).not.toContain('atlasIndex %');
         expect(handCardStateSource).not.toContain('identity!');
         expect(handCardStateSource).not.toContain('const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;');
         expect(handCardStateSource).not.toContain('const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard[\'previewRef\']> = {');
         expect(handCardStateSource).toContain('export const buildInitialHandCards = (');
-        expect(handCardStateSource).toContain('export const buildDrawnHandCards = (');
+        expect(handCardStateSource).toContain('export const appendDrawnHandCards = (');
         expect(handCardStateSource).toContain('export const getFactionDrawPileCount = (');
         expect(handCardStateSource).toContain('export const drawFromFactionPile = (');
         expect(handCardStateSource).toContain('export const addFactionHandCards = (');
-        expect(handCardStateSource).toContain('export const drawKoreaCardsForFaction = (');
+        expect(handCardStateSource).not.toContain('drawKoreaCardsForFaction');
+        expect(koreaCardStateSource).toContain('export function drawQidahenKoreaCards(');
 
-        expect(actionWindowChoicesSource).toContain('buildDrawnHandCards: (');
+        expect(actionWindowChoicesSource).toContain('appendDrawnHandCards(');
         expect(actionWindowChoicesSource).toContain('getFactionDrawPileCount: (');
-        expect(actionWindowChoicesSource).toContain('drawFromFactionPile: (');
+        expect(actionWindowChoicesSource).toContain('drawFromFactionPile: typeof drawFromFactionPile;');
         expect(actionWindowChoicesSource).toContain('addFactionHandCards: (');
-        expect(pendingTargetResolutionSource).toContain('buildDrawnHandCards: (');
+        expect(pendingTargetResolutionSource).toContain('appendDrawnHandCards(');
         expect(pendingTargetResolutionSource).toContain('getFactionDrawPileCount: (');
-        expect(pendingTargetResolutionSource).toContain('drawFromFactionPile: (');
+        expect(pendingTargetResolutionSource).toContain('drawFromFactionPile: typeof drawFromFactionPile;');
         expect(pendingTargetResolutionSource).toContain('addFactionHandCards: (');
         expect(postBattleContractsSource).toBe('');
-        expect(postBattleDecisionResolutionSource).toContain('buildDrawnHandCards: (');
+        expect(postBattleDecisionResolutionSource).toContain('appendDrawnHandCards(');
         expect(postBattleDecisionResolutionSource).toContain('getFactionDrawPileCount: (');
-        expect(postBattleDecisionResolutionSource).toContain('drawFromFactionPile: (');
+        expect(postBattleDecisionResolutionSource).toContain('drawFromFactionPile: typeof drawFromFactionPile;');
         expect(postBattleDecisionResolutionSource).toContain('addFactionHandCards: (');
-        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCardsForFaction: (');
-        expect(wheelMoveExecutionSource).toContain('buildDrawnHandCards: (');
-        expect(wheelMoveExecutionSource).toContain('drawFromFactionPile: (');
-        expect(wheelMoveExecutionSource).toContain('addFactionHandCards: (');
+        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCards: typeof drawQidahenKoreaCards;');
+        expect(wheelMoveExecutionSource).toContain('appendDrawnHandCards(');
+        expect(wheelMoveExecutionSource).toContain('drawFromFactionPile: typeof drawFromFactionPile;');
+        expect(wheelMoveExecutionSource).toContain('addFactionHandCards: typeof addFactionHandCards;');
     });
 
     it('行动窗口入口默认状态应由 actionWindowEntryState owner 承接，initialCoreSetup 与 turnAdvance 不再各自手写同一批开局字段', () => {
@@ -3665,33 +3623,28 @@ describe('Qidahen compatibility source guards', () => {
     it('朝鲜贡牌增益与败北标记应用应由 koreaTributeRules / defeatMarkerState owner 承接，seasonResolution 与 index 只保留消费接线', () => {
         const defeatMarkerStateSource = readDefeatMarkerStateSource();
         const handCardStateSource = readHandCardStateSource();
+        const koreaCardStateSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'koreaCardState.ts'), 'utf8');
         const indexSource = readDomainIndexSource();
         const koreaTributeRulesSource = readKoreaTributeRulesSource();
         const pendingTargetResolutionSource = readPendingTargetResolutionSource();
         const postBattleDecisionResolutionSource = readPostBattleDecisionResolutionSource();
         const postBattleContractsSource = readPostBattleContractsSource();
-        const seasonResolutionSource = readSeasonResolutionSource();
+        const turnResolutionFactsSource = readTurnResolutionFactsSource();
 
         expect(koreaTributeRulesSource).toContain("import { hasActiveCharacter } from './characterPresenceAccessors';");
         expect(koreaTributeRulesSource).toContain("import { resolveQidahenRuleRegionConfig } from './regionConfig';");
         expect(koreaTributeRulesSource).toContain('export const getEffectiveKoreaTributeCardsForFaction = (');
         expect(koreaTributeRulesSource).toContain('const baseTributeCards = resolveQidahenRuleRegionConfig(regionId).tributeCards;');
 
-        expect(handCardStateSource).toContain('export const drawKoreaCardsForFaction = (');
+        expect(handCardStateSource).not.toContain('drawKoreaCardsForFaction');
+        expect(koreaCardStateSource).toContain('export function drawQidahenKoreaCards(');
 
-        expect(seasonResolutionSource).toContain("} from './handCardState';");
-        expect(seasonResolutionSource).toContain('drawKoreaCardsForFaction,');
-        expect(seasonResolutionSource).toContain("import { getEffectiveKoreaTributeCardsForFaction } from './koreaTributeRules';");
-        expect(seasonResolutionSource).toContain("} from './defeatMarkerState';");
-        expect(seasonResolutionSource).toContain('getMidyearDefeatMarkerRoll,');
-        expect(seasonResolutionSource).toContain('listMarkedCharacters,');
-        expect(seasonResolutionSource).toContain('syncFactionCharactersToDefeatMarkerCount,');
-        expect(seasonResolutionSource).not.toContain('const drawKoreaCardsForFaction = (');
-        expect(seasonResolutionSource).not.toContain('const getEffectiveKoreaTributeCardsForFaction = (');
-        expect(seasonResolutionSource).not.toContain('const syncFactionCharactersToDefeatMarkerCount = (');
-        expect(seasonResolutionSource).not.toContain('const listMarkedCharacters = (');
-        expect(seasonResolutionSource).not.toContain('const getMidyearDefeatMarkerRoll = (');
-        expect(seasonResolutionSource).not.toContain('export const addDefeatMarkerToCharacters = (');
+        expect(turnResolutionFactsSource).toContain("from './koreaCardState';");
+        expect(turnResolutionFactsSource).toContain('drawQidahenKoreaCards');
+        expect(turnResolutionFactsSource).toContain("from './koreaTributeRules';");
+        expect(pendingTargetResolutionSource).toContain("} from './defeatMarkerState';");
+        expect(turnResolutionFactsSource).toContain("import { applyQidahenCharacterJudgement } from './characterJudgement';");
+        expect(turnResolutionFactsSource).toContain("case 'judgement': next = applyQidahenCharacterJudgement(core, fact.task, fact.outcome);");
 
         expect(indexSource).not.toContain("import { getEffectiveKoreaTributeCardsForFaction } from './koreaTributeRules';");
         expect(indexSource).not.toContain("} from './defeatMarkerState';");
@@ -3716,10 +3669,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(defeatMarkerStateSource).toContain('export const getMidyearDefeatMarkerRoll = (');
         expect(defeatMarkerStateSource).toContain('export const addDefeatMarkerToFaction = (');
 
-        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCardsForFaction(');
+        expect(postBattleDecisionResolutionSource).toContain('dependencies.drawKoreaCards(');
         expect(postBattleDecisionResolutionSource).toContain('getEffectiveKoreaTributeCardsForFaction(state, selection.attackerFactionId, selection.targetRuntimeRegionId)');
         expect(postBattleContractsSource).toBe('');
-        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCardsForFaction: (');
+        expect(postBattleDecisionResolutionSource).toContain('drawKoreaCards: typeof drawQidahenKoreaCards;');
         expect(postBattleDecisionResolutionSource).toContain('getEffectiveKoreaTributeCardsForFaction: (');
         expect(pendingTargetResolutionSource).toContain('addDefeatMarkerToFaction: (');
     });
@@ -3765,7 +3718,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectionBuildersSource).not.toContain('const getEffectiveHomelandController = (');
 
         expect(regionRuleSemanticsSource).toContain("import {");
-        expect(regionRuleSemanticsSource).toContain("getQidahenInitialController,");
+        expect(regionRuleSemanticsSource).toContain("getQidahenHomelandFaction,");
         expect(regionRuleSemanticsSource).toContain("isQidahenLogicalRuleRegionId,");
         expect(regionRuleSemanticsSource).not.toContain("QIDAHEN_LOGICAL_RULE_REGION_IDS,");
         expect(regionRuleSemanticsSource).toContain("resolveQidahenPrimaryRuntimeRegionId,");
@@ -4098,7 +4051,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingTargetResolutionSource).not.toContain('export const resolvePendingCapturedBattleFollowup = (');
         expect(pendingTargetResolutionSource).toContain('const resolvePendingCapturedBattleFollowup = (');
         expect(pendingTargetResolutionSource).toContain('const capturedBattleFollowup = resolvePendingCapturedBattleFollowup(');
-        expect(pendingTargetResolutionSource).toContain("computeQidahenAttackPressure(survivingAttackers, pendingTargetAction.battleWidth)");
+        expect(pendingTargetResolutionSource).toContain('computeQidahenAttackPressure(survivingAttackers, continuedForceAction.battleWidth)');
         expect(pendingTargetResolutionSource).toContain('mergeSpecialTroopStackGroupsAsPieces(');
         expect(pendingTargetResolutionSource).toContain('dependencies.buildPostBattleSelection(');
     });
@@ -4238,7 +4191,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(grantPardonExecutionDependenciesSource).toBe('');
         expect(grantPardonExecutionSource).toContain("} from './cityInteriorTroopTransfer';");
         expect(grantPardonExecutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior,');
-        expect(grantPardonExecutionSource).toContain('removeTroopsFromNonSiegedCityStateRegion,');
+        expect(grantPardonExecutionSource).toContain('removeSelectedTroopFromRegion,');
         expect(pendingTargetResolutionSource).toContain("} from './cityInteriorTroopTransfer';");
         expect(pendingTargetResolutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior,');
 
@@ -4250,8 +4203,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(cityInteriorTroopTransferSource).toContain('applyCommittedTroopRemovalToRegion({');
 
         expect(grantPardonExecutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior: (');
-        expect(grantPardonExecutionSource).toContain('removeTroopsFromNonSiegedCityStateRegion: (');
-        expect(grantPardonExecutionSource).toContain('dependencies.removeTroopsFromNonSiegedCityStateRegion(');
+        expect(grantPardonExecutionSource).toContain('removeSelectedTroopFromRegion: (');
+        expect(grantPardonExecutionSource).toContain('dependencies.removeSelectedTroopFromRegion(');
         expect(grantPardonExecutionSource).toContain('dependencies.addTroopsToFriendlyBesiegedCityInterior(');
 
         expect(pendingTargetResolutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior: (');
@@ -4460,6 +4413,7 @@ describe('Qidahen compatibility source guards', () => {
     it('wheel/pending/postBattle accessor owner 应迁出 runtime 文件，避免 builder 与 snapshot getter 混在一处', () => {
         const runtimeSource = readRuntimeInteractionsSource();
         const accessorSource = readInteractionAccessorsSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
 
         expect(runtimeSource).not.toContain('export function getQidahenWheelDispatchSelectionForCore(');
         expect(runtimeSource).not.toContain('export function getQidahenPendingTargetActionForCore(');
@@ -4470,7 +4424,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(accessorSource).toContain('export function getQidahenPendingTargetActionForCore(');
         expect(accessorSource).toContain('export function getQidahenPostBattleSelectionForCore(');
         expect(accessorSource).toContain('export function getQidahenDriveTigerConsentSelectionForCore(');
-        expect(accessorSource).toContain('export function getQidahenFortificationMaintenanceSelectionForCore(');
+        expect(accessorSource).not.toContain('getQidahenFortificationMaintenanceSelectionForCore');
         expect(accessorSource).toContain('export const getQidahenInteractionSelectionStateForCore = <TSelection>(');
         expect(accessorSource).toContain('const getQidahenHandLimitDiscardSelectionFromInteractionData = (');
         expect(accessorSource).not.toContain('export function getQidahenHandLimitDiscardSelectionFromInteractionData(');
@@ -4500,8 +4454,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(accessorSource).toContain('readCore: (currentCore) => currentCore.wheelDispatchProgress,');
         expect(accessorSource).toContain('}) ?? getQidahenDriveTigerConsentDispatchSelectionForCore(core);');
         expect(accessorSource).not.toContain('readCore: (currentCore) => currentCore.driveTigerConsentSelection');
-        expect(accessorSource).toContain('const interactionSelection = getQidahenFortificationMaintenanceSelectionFromInteraction(interaction);');
-        expect(accessorSource).not.toContain('readCore: (currentCore) => currentCore.fortificationMaintenanceSelection');
+        expect(turnResolutionChoicesSource).toContain("case 'maintenance':");
     });
 
     it('runtimeInteractions 不应继续充当 moved accessor 的 compat re-export 出口', () => {
@@ -4588,6 +4541,7 @@ describe('Qidahen compatibility source guards', () => {
         const accessorSource = readInteractionAccessorsSource();
         const sourceOwner = readInteractionSourcesSource();
         const runtimeSource = readRuntimeInteractionsSource();
+        const turnResolutionTypesSource = readFileSync(resolve(TEST_DIR, '..', 'domain', 'turnResolutionTypes.ts'), 'utf8');
 
         expect(accessorSource).toContain("} from './interactionSources';");
         expect(accessorSource).not.toContain("export const QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID = 'qidahen:hand-limit-discard';");
@@ -4614,8 +4568,9 @@ describe('Qidahen compatibility source guards', () => {
         expect(accessorSource).toContain('const getQidahenKhanEdictSelectionFromInteractionData = (');
         expect(accessorSource).not.toContain('export function getQidahenDriveTigerConsentSelectionFromInteractionData(');
         expect(accessorSource).toContain('const getQidahenDriveTigerConsentSelectionFromInteractionData = (');
-        expect(accessorSource).not.toContain('export function getQidahenFortificationMaintenanceSelectionFromInteractionData(');
-        expect(accessorSource).toContain('const getQidahenFortificationMaintenanceSelectionFromInteractionData = (');
+        expect(accessorSource).not.toContain('getQidahenFortificationMaintenanceSelectionFromInteractionData');
+        expect(sourceOwner).not.toContain('FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID');
+        expect(turnResolutionTypesSource).toContain("export const QIDAHEN_TURN_RESOLUTION_CHOICE = 'qidahen:turn-resolution-choice';");
         expect(accessorSource).not.toContain('export function getQidahenPendingTargetActionFromInteractionData(');
         expect(accessorSource).toContain('const getQidahenPendingTargetActionFromInteractionData = (');
         expect(accessorSource).not.toContain('export function getQidahenPostBattleSelectionFromInteractionData(');
@@ -4636,7 +4591,9 @@ describe('Qidahen compatibility source guards', () => {
         const turnActionDependenciesSource = readTurnActionDependenciesSource();
         const actionWindowDispatchSource = readActionWindowDispatchSource();
         const actionWindowChoicesSource = readActionWindowChoicesSource();
-        const fortificationMaintenanceSource = readFortificationMaintenanceSource();
+        const seasonTasksSource = readSeasonTasksSource();
+        const turnResolutionSystemSource = readTurnResolutionSystemSource();
+        const turnResolutionChoicesSource = readTurnResolutionChoicesSource();
         const handLimitDiscardSource = readHandLimitDiscardSource();
 
         expect(interactionResolverRegistrySource).toBe('');
@@ -4666,7 +4623,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionInteractionEventHandlersSource).toContain("} from './interactionResolutionPayload';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './actionWindowDispatch';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './actionWindowChoices';");
-        expect(turnActionInteractionEventHandlersSource).toContain("} from './fortificationMaintenance';");
+        expect(turnActionInteractionEventHandlersSource).not.toContain("from './fortificationMaintenance';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './handLimitDiscard';");
         expect(turnActionInteractionEventHandlersSource).toContain('const asQidahenResolvedSelectionCarrier = (');
         expect(turnActionInteractionEventHandlersSource).toContain('...interactionData,');
@@ -4674,7 +4631,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionInteractionEventHandlersSource).toContain('const asQidahenInteractionSelectionCarrier = (interactionData?: unknown) => ({ data: interactionData });');
         expect(turnActionInteractionEventHandlersSource).toContain('const resolveQidahenHandLimitDiscardInteractionEvent = (');
         expect(turnActionInteractionEventHandlersSource).toContain('const resolveQidahenRecruitInteractionEvent = (');
-        expect(turnActionInteractionEventHandlersSource).toContain('const resolveQidahenFortificationMaintenanceInteractionEvent = (');
+        expect(turnActionInteractionEventHandlersSource).not.toContain('resolveQidahenFortificationMaintenanceInteractionEvent');
         expect(turnActionInteractionEventHandlersSource).toContain('asQidahenResolvedSelectionCarrier(payload)');
         expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenRecruitSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
         expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenGrantPardonSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
@@ -4693,7 +4650,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionInteractionEventHandlersSource).toContain('getQidahenMaShiTradeSelectionFromInteraction(');
         expect(turnActionInteractionEventHandlersSource).toContain('getQidahenKhanEdictSelectionFromInteraction(');
         expect(turnActionInteractionEventHandlersSource).toContain('getQidahenDriveTigerConsentSelectionFromInteraction(');
-        expect(turnActionInteractionEventHandlersSource).toContain('getQidahenFortificationMaintenanceSelectionFromInteraction(');
+        expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenFortificationMaintenanceSelectionFromInteraction');
         expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenRecruitSelectionFromInteractionData(');
         expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenDiplomacySelectionFromInteractionData(');
         expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenWheelDispatchSelectionFromInteractionData(');
@@ -4728,8 +4685,9 @@ describe('Qidahen compatibility source guards', () => {
         expect(actionWindowChoicesSource).not.toContain('const QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES: QidahenActionWindowChoiceDependencies = {');
         expect(actionWindowDispatchSource).not.toContain('export const QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES: QidahenActionWindowDispatchDependencies = {');
         expect(actionWindowDispatchSource).not.toContain('const QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES: QidahenActionWindowDispatchDependencies = {');
-        expect(fortificationMaintenanceSource).not.toContain('export const QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES: QidahenFortificationMaintenanceDependencies = {');
-        expect(fortificationMaintenanceSource).not.toContain('const QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES: QidahenFortificationMaintenanceDependencies = {');
+        expect(turnResolutionSystemSource).toContain('QIDAHEN_TURN_RESOLUTION_CHOICE');
+        expect(turnResolutionChoicesSource).toContain("case 'maintenance':");
+        expect(seasonTasksSource).toContain('export function getQidahenFortificationMaintenanceCost(');
         expect(handLimitDiscardSource).not.toContain('export const QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES: QidahenHandLimitDiscardDependencies = {');
         expect(handLimitDiscardSource).not.toContain('const QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES: QidahenHandLimitDiscardDependencies = {');
 
@@ -4879,7 +4837,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(typesSource).toContain("targetKind?: 'region' | 'siege-attacker' | 'siege-reinforce';");
         expect(typesSource).not.toContain('export type QidahenTurnPhase =');
         expect(typesSource).toContain('turnPhase:');
-        expect(typesSource).toContain("| 'season-resolution';");
+        expect(typesSource).not.toContain("| 'season-resolution';");
+        expect(typesSource).toContain("| 'resolve-pending'");
     });
 
     it('types owner 下零外部 caller 的嵌套子形状应退回本地 interface，避免继续暴露假公共状态壳', () => {
@@ -4938,7 +4897,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(typesSource).toContain('selectedHandActionCardId: string | null;');
         expect(typesSource).toContain('sourceHandCardId?: string;');
         expect(typesSource).toContain('sourceHandCardId?: string | null;');
-        expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);');
+        expect(boardSource).toContain('previewAction(actionId, card.id);');
         expect(commandEventBuildersSource).toContain('sourceHandCardId: command.payload.sourceHandCardId ?? null,');
         expect(previewActionReducerSource).toContain('selectedHandActionCardId: sourceCard?.id ?? null,');
         expect(previewActionReducerSource).toContain('const nextState: QidahenCore = {');

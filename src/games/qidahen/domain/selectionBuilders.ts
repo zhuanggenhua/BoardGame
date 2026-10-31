@@ -177,16 +177,6 @@ export const buildRecruitSelectionFromRegionSemantics = (
         },
     ];
 
-    const artilleryTechLevel = getArmamentLevel(state, factionId, 'artillery-tech');
-    if (artilleryTechLevel > 0) {
-        choices.push({
-            id: 'level-1-artillery',
-            label: '建立 1 个等级 1 炮兵',
-            detail: `${targetRegionName} 部队 +1，并记录炮兵 x1（1级）；火炮技术${artilleryTechLevel} 允许建立炮兵。`,
-            troopDelta: 1,
-        });
-    }
-
     return {
         targetRegionId: targetRegion.id,
         targetRegionName,

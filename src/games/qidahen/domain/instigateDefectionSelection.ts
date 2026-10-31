@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import {
     getEffectivePendingDefenderTroops,
     getPendingActionDefenderForceSnapshot,
@@ -114,8 +115,7 @@ export const resolveQidahenInstigateDefectionSelection = (
             resolutionHint: `${pending.resolutionHint} · 策反 ${choice.label} 转攻方`,
         },
         instigateDefectionSelection: null,
-        handCards: state.handCards.filter((card) => card.id !== selection.cardId),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [selection.cardId]),
         lastSeasonSummary: {
             id: `summary-${timestamp}`,
             title: '战术牌',

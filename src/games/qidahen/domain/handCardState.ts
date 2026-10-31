@@ -3,6 +3,7 @@ import {
 } from '../ui/cardAtlas';
 import { resolveQidahenAtlas05OrdinaryHandCardIdentity } from './handCardIdentity';
 import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from './ordinaryHandCardIdentities';
+import { isQidahenSpecialCard } from './specialCards';
 import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';
 
 const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
@@ -40,90 +41,133 @@ const buildAtlas05OrdinaryHandCard = (
     };
 };
 
-const getFactionAtlas05DeckIndex = (
+export const getQidahenOrdinaryDeckSequence = (
     factionId: QidahenFactionId,
-    sequenceIndex: number,
-): number => {
-    const deckSequence = QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION[factionId];
-    return deckSequence[sequenceIndex % deckSequence.length] ?? sequenceIndex;
-};
+    specialCardsEnabled = false,
+): number[] => QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION[factionId]
+    .filter(index => specialCardsEnabled || !isQidahenSpecialCard(factionId, index));
 
-export const buildInitialHandCards = (
+/** TTS牌堆已不含场外初始军备；先过滤特典，再从同一实体序列发起始手牌。 */
+export const buildInitialCardPiles = (
     factions: QidahenCore['factions'],
-): QidahenCore['handCards'] => {
-    let nextId = 1;
-    return factionOrder.flatMap((factionId) => {
-        const visibleCardCount = factions[factionId].handCount;
-        return Array.from({ length: visibleCardCount }, (_, index) => {
-            const cardId = `hand-${nextId}`;
-            nextId += 1;
-            const ordinaryHandCard = buildAtlas05OrdinaryHandCard(getFactionAtlas05DeckIndex(factionId, index));
-            return {
-                ...ordinaryHandCard,
-                id: cardId,
-                faction: factionId,
-                accent: factionId,
-                status: index < factions[factionId].handCount ? 'payable' as const : 'idle' as const,
-            };
-        });
-    });
-};
-
-export const buildDrawnHandCards = (
-    state: QidahenCore,
-    factionId: QidahenFactionId,
-    drawCards: number,
-): QidahenCore['handCards'] => {
-    if (drawCards <= 0) {
-        return state.handCards;
-    }
-    const currentMaxIndex = state.handCards.reduce((max, card) => {
-        const match = /hand-(\d+)/.exec(card.id);
-        const parsed = match ? Number.parseInt(match[1], 10) : Number.NaN;
-        return Number.isFinite(parsed) ? Math.max(max, parsed) : max;
-    }, 0);
-    const factionCardCount = state.handCards.filter((card) => card.faction === factionId).length;
-    const previewBase = (state.factions[factionId].discardPileCount ?? 0) + factionCardCount;
-    const nextCards = Array.from({ length: drawCards }, (_, index) => {
-        const ordinaryHandCard = buildAtlas05OrdinaryHandCard(getFactionAtlas05DeckIndex(factionId, previewBase + index));
-        return {
-            ...ordinaryHandCard,
-            id: `hand-${currentMaxIndex + index + 1}`,
+    specialCardsEnabled = false,
+    shuffle: (cards: QidahenHandCard[], factionId: QidahenFactionId) => QidahenHandCard[] = cards => cards,
+    deal = true,
+): Pick<QidahenCore, 'factions' | 'handCards' | 'activeEventCards'> => {
+    const nextFactions = { ...factions };
+    const handCards: QidahenHandCard[] = [];
+    let initialHandSerial = 0;
+    const activeEventCards: QidahenCore['activeEventCards'] = [];
+    for (const factionId of factionOrder) {
+        const initialAtlasIndex = { ming: 26, mongol: 19, jin: 3 }[factionId];
+        const cards = [...getQidahenOrdinaryDeckSequence(factionId, specialCardsEnabled), initialAtlasIndex].map((atlasIndex, index): QidahenHandCard => ({
+            ...buildAtlas05OrdinaryHandCard(atlasIndex),
+            id: `deck-${factionId}-${index + 1}`,
             faction: factionId,
             accent: factionId,
-            status: 'payable' as const,
-        };
-    });
-    return [...state.handCards, ...nextCards];
+            status: 'payable',
+        }));
+        const developedCards: QidahenHandCard[] = [];
+        const armaments = factions[factionId].armaments.map(armament => {
+            const sources: string[] = [];
+            for (let level = 0; level < armament.level; level += 1) {
+                const bannerCardSlot = { 'manzhou-banners': 6, 'mongol-banners': 7, 'han-banners': 5 }[armament.id as 'manzhou-banners' | 'mongol-banners' | 'han-banners'];
+                let index = cards.length - 1;
+                while (index >= 0 && (bannerCardSlot == null
+                    ? cards[index].armamentId !== armament.id
+                    : cards[index].cardDefId !== `qidahen-atlas05-160${bannerCardSlot}-establish-${armament.id}`)) index -= 1;
+                if (index < 0) throw new Error(`Missing initial armament entity: ${factionId}/${armament.id}`);
+                const [card] = cards.splice(index, 1);
+                if (card.cardKind === 'event') {
+                    activeEventCards.push({ id: `active-event-${card.id}`, cardDefId: card.cardDefId!, label: card.label, ownerFactionId: factionId, rulesSummary: card.rulesSummary ?? null, sourceCard: card });
+                } else developedCards.push(card);
+                sources.push(card.cardDefId!);
+            }
+            return { ...armament, sourceCardDefIds: sources };
+        });
+        const shuffledCards = shuffle(cards, factionId);
+        const handCount = deal ? factions[factionId].handCount : 0;
+        handCards.push(...shuffledCards.splice(0, handCount).map(card => ({ ...card, id: `hand-${++initialHandSerial}` })));
+        const drawPile = shuffledCards;
+        nextFactions[factionId] = { ...factions[factionId], handCount, armaments, developedCards, drawPile, discardPile: [], drawPileCount: drawPile.length, discardPileCount: 0 };
+    }
+    return { factions: nextFactions, handCards, activeEventCards };
 };
 
-export const getFactionDrawPileCount = (
-    state: QidahenCore,
-    factionId: QidahenFactionId,
-): number => Math.max(0, state.factions[factionId].drawPileCount ?? state.drawPileCount);
+export const buildInitialHandCards = (factions: QidahenCore['factions'], specialCardsEnabled = false): QidahenHandCard[] => (
+    buildInitialCardPiles(factions, specialCardsEnabled).handCards
+);
 
+export const getFactionDrawPileCount = (state: QidahenCore, factionId: QidahenFactionId): number => (
+    state.factions[factionId].drawPile.length + state.factions[factionId].discardPile.length
+);
+
+/** 空牌堆按原顺序翻回弃牌堆，不洗牌、不按计数重新生成卡牌。 */
 export const drawFromFactionPile = (
     factions: QidahenCore['factions'],
     sourceFactionId: QidahenFactionId,
     requestedCards: number,
     discardGain = 0,
-): { factions: QidahenCore['factions']; drawnCards: number } => {
-    const sourceFaction = factions[sourceFactionId];
-    const availableCards = Math.max(0, sourceFaction.drawPileCount ?? 0);
-    const drawnCards = Math.max(0, Math.min(requestedCards, availableCards));
-    if (drawnCards <= 0 && discardGain <= 0) {
-        return { factions, drawnCards };
+): { factions: QidahenCore['factions']; drawnCards: number; cards: QidahenHandCard[] } => {
+    const source = factions[sourceFactionId];
+    let drawPile = [...source.drawPile];
+    let discardPile = [...source.discardPile];
+    const cards: QidahenHandCard[] = [];
+    for (let index = 0; index < requestedCards; index += 1) {
+        if (drawPile.length === 0) {
+            drawPile = discardPile;
+            discardPile = [];
+        }
+        const card = drawPile.shift();
+        if (!card) break;
+        cards.push(card);
     }
+    // 劫掠抽出的末尾牌直接入弃牌，不作为手牌再造一次。
+    const discarded = cards.splice(Math.max(0, cards.length - discardGain), discardGain);
+    discardPile.push(...discarded);
     return {
-        drawnCards,
+        drawnCards: cards.length + discarded.length,
+        cards,
         factions: {
             ...factions,
-            [sourceFactionId]: {
-                ...sourceFaction,
-                drawPileCount: availableCards - drawnCards,
-                discardPileCount: Math.max(0, sourceFaction.discardPileCount ?? 0) + Math.max(0, discardGain),
-            },
+            [sourceFactionId]: { ...source, drawPile, discardPile, drawPileCount: drawPile.length, discardPileCount: discardPile.length },
         },
+    };
+};
+
+export const appendDrawnHandCards = (
+    handCards: QidahenHandCard[], cards: QidahenHandCard[], ownerFactionId: QidahenFactionId,
+): QidahenHandCard[] => [...handCards, ...cards.map(card => ({ ...card, faction: ownerFactionId, status: 'payable' as const }))];
+
+/** 所有实际弃牌沿用同一实体，依弃牌顺序进入所属势力弃牌堆。 */
+export const discardQidahenHandCards = (
+    state: QidahenCore, cardIds: readonly string[],
+): Pick<QidahenCore, 'factions' | 'handCards' | 'drawPileCount' | 'discardPileCount' | 'koreaDiscardPile' | 'koreaDiscardCount'> => {
+    const selected = new Set(cardIds);
+    const factions = { ...state.factions };
+    for (const factionId of factionOrder) {
+        const removed = cardIds.flatMap(id => {
+            const card = state.handCards.find(candidate => candidate.id === id && candidate.faction === factionId);
+            return card ? [card] : [];
+        });
+        if (removed.length === 0) continue;
+        const faction = factions[factionId];
+        const discardPile = [...faction.discardPile, ...removed.filter(card => card.originDeck !== 'korea')];
+        factions[factionId] = { ...faction, handCount: faction.handCount - removed.length, discardPile, discardPileCount: discardPile.length };
+    }
+    const koreaDiscardPile = [...state.koreaDiscardPile, ...cardIds.flatMap(id => {
+        const card = state.handCards.find(candidate => candidate.id === id && candidate.originDeck === 'korea');
+        if (!card) return [];
+        const { faction: _owner, status: _status, ...deckCard } = card;
+        return [deckCard];
+    })];
+    return {
+        factions,
+        koreaDiscardPile,
+        koreaDiscardCount: koreaDiscardPile.length,
+        handCards: state.handCards.filter(card => !selected.has(card.id)),
+        drawPileCount: factions.ming.drawPileCount,
+        discardPileCount: factions.ming.discardPileCount,
     };
 };
 
@@ -141,19 +185,5 @@ export const addFactionHandCards = (
             ...factions[factionId],
             handCount: factions[factionId].handCount + handGain,
         },
-    };
-};
-
-export const drawKoreaCardsForFaction = (
-    factions: QidahenCore['factions'],
-    koreaDeckCount: number,
-    factionId: QidahenFactionId,
-    requestedCards: number,
-): { factions: QidahenCore['factions']; koreaDeckCount: number; drawnCards: number } => {
-    const drawnCards = Math.max(0, Math.min(requestedCards, koreaDeckCount));
-    return {
-        factions: addFactionHandCards(factions, factionId, drawnCards),
-        koreaDeckCount: Math.max(0, koreaDeckCount - drawnCards),
-        drawnCards,
     };
 };

@@ -1,3 +1,5 @@
+import { buildInitialQidahenKoreaPile } from './koreaCardState';
+import { buildInitialQidahenChronology, buildQidahenActualYearCardSlots } from './chronologyCards';
 import type { PlayerId } from '../../../engine/types';
 import {
     qidahenKoreaSpecialPreview,
@@ -10,7 +12,6 @@ import { buildQidahenActionWindowEntryState } from './actionWindowEntryState';
 import { getPreferredActionWindowSelectedRegionIdForFaction as getPreferredOpeningActionWindowSelectedRegionId } from './regionSelectionPreferences';
 import { applyQidahenScenarioRuntimeRegionPreset } from './scenarioRuntimeRegionPresets';
 import {
-    buildYearCardSlots,
     getYearLabelByIndex,
 } from './characterChronologyConfig';
 import { getScenarioPlayableFactionIds } from './factionTurnOrder';
@@ -26,7 +27,7 @@ import {
     createInitialRuntimeRegionSummaries,
     getScenarioPlayerIdsByFaction,
 } from './initialCoreSeeds';
-import { buildInitialHandCards } from './handCardState';
+import { buildInitialCardPiles } from './handCardState';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { syncQidahenCorePieceCollections } from './coreDerivedState';
 import {
@@ -48,6 +49,10 @@ export const createInitialCore = (
     scenarioId: QidahenScenarioId = 'post-sarhu-1619',
     resolveChoiceGroups = false,
     scenarioSelections?: QidahenScenarioChoiceSelections,
+    specialCardsEnabled = false,
+    shuffle?: Parameters<typeof buildInitialCardPiles>[2],
+    shuffleKorea?: Parameters<typeof buildInitialQidahenKoreaPile>[0],
+    shuffleChronology?: (cards: number[]) => number[],
 ): QidahenCore => {
     const playableFactionIds = getScenarioPlayableFactionIds(scenarioId);
     const normalizedPlayerIds = playableFactionIds.map((_, index) => playerIds[index] ?? String(index));
@@ -106,8 +111,13 @@ export const createInitialCore = (
             scenarioSelections,
         );
 
+    const cardPiles = buildInitialCardPiles(factions, specialCardsEnabled, shuffle, pendingScenarioArmamentChoices.length === 0);
+
+    const koreaDrawPile = buildInitialQidahenKoreaPile(shuffleKorea);
+    const chronology = buildInitialQidahenChronology(scenarioId, regions, shuffleChronology);
     const baseCore: QidahenCore = {
         playerIds: normalizedPlayerIds,
+        specialCardsEnabled,
         scenarioVote: null,
         factionSelection: null,
         scenarioId,
@@ -124,7 +134,7 @@ export const createInitialCore = (
         actionWheelPosition: 'wheel-new-year',
         wheelMoveChoices: getQidahenWheelMoveChoices(),
         lastSeasonSummary: null,
-        activeEventCards: [],
+        activeEventCards: cardPiles.activeEventCards,
         hanseongPrestigeUnlocked: false,
         guihuaPrestigeMarkerController: null,
         victoryStatus: null,
@@ -135,16 +145,19 @@ export const createInitialCore = (
         instigateDefectionSelection: null,
         wuzhenChaohaSelection: null,
         openGateSurrenderSelection: null,
-        factions,
+        factions: cardPiles.factions,
         regions,
         fortifications,
-        yearCards: buildYearCardSlots(currentYearIndex),
-        koreaDeckCount: 12,
-        koreaDiscardCount: 5,
+        yearCards: buildQidahenActualYearCardSlots(chronology),
+        chronology,
+        koreaDrawPile,
+        koreaDiscardPile: [],
+        koreaDeckCount: koreaDrawPile.length,
+        koreaDiscardCount: 0,
         koreaDiscardPreviewRef: qidahenKoreaSpecialPreview(0),
-        drawPileCount: 20,
-        discardPileCount: 7,
-        handCards: buildInitialHandCards(factions),
+        drawPileCount: cardPiles.factions.ming.drawPileCount,
+        discardPileCount: 0,
+        handCards: cardPiles.handCards,
         nextPieceSerial: 1,
         pieces: [],
         mapTokens: [],
@@ -194,10 +207,14 @@ export const createInitialCore = (
 
 export const createInitialCoreForInMatchScenarioVote = (
     playerIds: PlayerId[],
+    specialCardsEnabled = false,
+    shuffle?: Parameters<typeof buildInitialCardPiles>[2],
+    shuffleKorea?: Parameters<typeof buildInitialQidahenKoreaPile>[0],
+    shuffleChronology?: (cards: number[]) => number[],
 ): QidahenCore => {
     const allowedScenarioIds = getQidahenScenarioIdsForPlayerCount(playerIds.length);
     const placeholderScenarioId = allowedScenarioIds[0] ?? DEFAULT_QIDAHEN_SCENARIO_ID;
-    const baseCore = createInitialCore(playerIds, placeholderScenarioId, true);
+    const baseCore = createInitialCore(playerIds, placeholderScenarioId, true, undefined, specialCardsEnabled, shuffle, shuffleKorea, shuffleChronology);
     return {
         ...baseCore,
         scenarioVote: {

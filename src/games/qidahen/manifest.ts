@@ -5,6 +5,7 @@ import {
     QIDAHEN_PREGAME_CHOICE_FIELDS,
     QIDAHEN_SCENARIO_SETUP_OPTIONS,
     QIDAHEN_SCENARIO_SETUP_FIELD,
+    QIDAHEN_SPECIAL_CARDS_SETUP_FIELD,
 } from './roomSetup';
 
 const entry: GameManifestEntry = {
@@ -21,6 +22,17 @@ const entry: GameManifestEntry = {
     cursorTheme: 'qidahen-tactical',
     allowLocalMode: false,
     playerOptions: [...QIDAHEN_PLAYER_OPTIONS],
+    setupOptions: {
+        [QIDAHEN_SPECIAL_CARDS_SETUP_FIELD]: {
+            type: 'select',
+            labelKey: 'setup.specialCards.label',
+            default: 'disabled',
+            options: [
+                { value: 'disabled', labelKey: 'setup.specialCards.disabled' },
+                { value: 'enabled', labelKey: 'setup.specialCards.enabled' },
+            ],
+        },
+    },
     createRoomSetup: {
         hiddenSelectionKeys: [
             QIDAHEN_SCENARIO_SETUP_FIELD,
@@ -29,7 +41,7 @@ const entry: GameManifestEntry = {
         forcedSelections: {
             [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
         },
-        showSetupOptions: false,
+        showSetupOptions: true,
     },
     publicRoomSetupSummary: {
         scenario: {

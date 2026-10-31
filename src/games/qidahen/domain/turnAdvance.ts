@@ -60,27 +60,7 @@ const beginHandLimitDiscardIfNeeded = (
         .filter((card) => card.faction === factionId && card.status !== 'disabled')
         .map((card) => card.id);
     if (candidateCardIds.length < excessCards) {
-        const removedCardIds = new Set(candidateCardIds);
-        return {
-            ...state,
-            factions: {
-                ...state.factions,
-                [factionId]: {
-                    ...faction,
-                    handCount: handLimit,
-                    discardPileCount: Math.max(0, faction.discardPileCount ?? 0) + excessCards,
-                },
-            },
-            handCards: state.handCards.filter((card) => !removedCardIds.has(card.id)),
-            actionLog: [
-                {
-                    id: `log-hand-limit-${timestamp}`,
-                    faction: factionId,
-                    text: `${faction.name} 手牌超过上限 ${handLimit}，实体手牌不足以选择，自动弃掉 ${excessCards} 张牌。`,
-                },
-                ...state.actionLog,
-            ].slice(0, 6),
-        };
+        throw new Error(`Qidahen hand entities do not match handCount for ${factionId}`);
     }
 
     return dependencies.updateTurnLabel({
@@ -134,7 +114,6 @@ export function advanceQidahenTurnIfReady(
         || maShiTradeSelection
         || khanEdictSelection
         || diplomacySelection
-        || nextState.turnPhase === 'season-resolution'
         || nextState.handLimitDiscardSelection
         || nextState.gaoDiDispatchSelection
         || internalDispatchSelection

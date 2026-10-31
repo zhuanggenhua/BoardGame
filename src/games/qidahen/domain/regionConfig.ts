@@ -212,7 +212,7 @@ const runtimeRegionOverrides: Partial<Record<string, Partial<QidahenRuleRegionCo
     'city-region-18': {
         name: '平壤',
         tags: ['korea'],
-        tributeCards: 1,
+        tributeCards: 2,
         initialController: 'ming',
         initialTroops: 1,
         initialSpecialTroops: [
@@ -222,7 +222,7 @@ const runtimeRegionOverrides: Partial<Record<string, Partial<QidahenRuleRegionCo
     'city-region-29': {
         name: '汉城',
         tags: ['capital', 'korea'],
-        tributeCards: 1,
+        tributeCards: 2,
         initialController: 'ming',
         initialTroops: 1,
         initialSpecialTroops: [
@@ -388,7 +388,7 @@ const QIDAHEN_FORTIFICATION_CONFIGS: QidahenFortificationConfig[] = [
         maintenanceCost: 2,
         dependencyRegionId: null,
         dependencyLabel: null,
-        ruleNote: '当前图谱仅保留维护费，不额外改边界；后续可继续细分内墙区段。',
+        ruleNote: '攻入内长城凸面战场宽度1；破败后对应边界视为平原宽度3。',
         autoPayPriority: 4,
     },
     {

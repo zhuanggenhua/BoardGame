@@ -41,7 +41,7 @@ import {
 import { getRegionControlLabel, toFactionLabel } from './factionLabelSemantics';
 import {
     addFactionHandCards,
-    buildDrawnHandCards,
+    appendDrawnHandCards,
     drawFromFactionPile,
     getFactionDrawPileCount,
 } from './handCardState';
@@ -374,25 +374,12 @@ interface QidahenPendingTargetResolutionDependencies {
         state: QidahenCore,
         factionId: QidahenPendingTargetAction['attackerFactionId'],
     ) => number;
-    drawFromFactionPile: (
-        factions: QidahenCore['factions'],
-        sourceFactionId: QidahenPendingTargetAction['attackerFactionId'],
-        requestedCards: number,
-        discardGain?: number,
-    ) => {
-        factions: QidahenCore['factions'];
-        drawnCards: number;
-    };
+    drawFromFactionPile: typeof drawFromFactionPile;
     addFactionHandCards: (
         factions: QidahenCore['factions'],
         factionId: QidahenPendingTargetAction['attackerFactionId'],
         drawCards: number,
     ) => QidahenCore['factions'];
-    buildDrawnHandCards: (
-        state: QidahenCore,
-        factionId: QidahenPendingTargetAction['attackerFactionId'],
-        drawCards: number,
-    ) => QidahenCore['handCards'];
     findAutoDefenderRetreatRegion: (
         state: QidahenCore,
         battleRegion: QidahenRuntimeRegion,
@@ -897,7 +884,6 @@ const resolvePendingCavalryPlunderAction = (
         | 'getFactionDrawPileCount'
         | 'drawFromFactionPile'
         | 'addFactionHandCards'
-        | 'buildDrawnHandCards'
         | 'toFactionLabel'
     >,
 ): {
@@ -977,11 +963,7 @@ const resolvePendingCavalryPlunderAction = (
         ? Math.max(0, state.drawPileCount - drawCards)
         : state.drawPileCount;
     const discardPileCount = state.discardPileCount + discardGain;
-    const handCards = dependencies.buildDrawnHandCards(
-        state,
-        pendingTargetAction.attackerFactionId,
-        handGain,
-    );
+    const handCards = appendDrawnHandCards(state.handCards, drawResult.cards, pendingTargetAction.attackerFactionId);
     const plunderDeckText = canPlunderDefenderDeck
         ? `抽${dependencies.toFactionLabel(pendingTargetAction.defenderFactionId)}牌堆获得 ${handGain} 张手牌`
         : `抽自己牌堆获得 ${handGain} 张手牌、弃牌堆 +${discardGain}${attackerDeckPlunderHandBonus > 0 ? '（含人物额外摸牌）' : ''}`;
@@ -1411,7 +1393,7 @@ const resolvePendingBattleTargetAction = (
         const loss = casualties.defenderLoss;
         const attackerLoss = casualties.attackerLoss;
         const survivingAttackers = Math.max(0, pendingTargetAction.committedTroops - attackerLoss);
-        const survivingAttackersForBattle = Math.max(0, survivingAttackers - committedArtilleryCount);
+        const survivingAttackersForBattle = battleRolls?.attackerMorale.survivingCombatTroops ?? Math.max(0, survivingAttackers - committedArtilleryCount);
         const remainingDefenderTroops = Math.max(0, effectiveDefenderTroops - loss);
         const survivingSiegeSpecialTroops = dependencies.applyCasualtiesToSpecialStacks(
             battleRegionSnapshot.specialTroops,
@@ -1612,7 +1594,6 @@ export const resolvePendingTargetActionByActionType = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         findAutoDefenderRetreatRegion,
         computeStructuredDefenderRout,
         getSurvivingDefenderRetreatSpecialTroops,
@@ -1943,7 +1924,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
         | 'computeRetreatLoss'
     >,
 ): QidahenPendingSiegeAttackerBattleResolution => {
-    const attackerWinsBattle = survivingAttackersForBattle > remainingDefenderTroops;
+    const attackerWinsBattle = survivingAttackersForBattle > (battleRolls?.defenderMorale.survivingCombatTroops ?? remainingDefenderTroops);
     if (attackerWinsBattle && survivingAttackersForBattle > 0) {
         return {
             region: {
@@ -2037,8 +2018,8 @@ const resolvePendingGenericBattleOutcome = (
     dependencies: QidahenPendingTargetResolutionDependencies,
 ): QidahenPendingGenericBattleOutcomeResolution => {
     const survivingAttackers = Math.max(0, pendingTargetAction.committedTroops - attackerLoss);
-    const survivingAttackersForBattle = Math.max(0, survivingAttackers - committedArtilleryCount);
-    const remainingBattleTroops = Math.max(0, effectiveDefenderTroops - loss);
+    const survivingAttackersForBattle = battleRolls?.attackerMorale.survivingCombatTroops ?? Math.max(0, survivingAttackers - committedArtilleryCount);
+    const remainingBattleTroops = battleRolls?.defenderMorale.survivingCombatTroops ?? Math.max(0, effectiveDefenderTroops - loss);
     const remainingTroops = Math.max(0, battleRegionSnapshot.troops > 0 ? battleRegionSnapshot.troops - loss : remainingBattleTroops);
     const attackerWinsBattle = survivingAttackersForBattle > remainingBattleTroops;
     const captured = battleRegion.controller !== pendingTargetAction.attackerFactionId && attackerWinsBattle && survivingAttackersForBattle > 0;

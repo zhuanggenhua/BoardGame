@@ -1,3 +1,4 @@
+import { getQidahenRaidSourceCandidateIds } from './pendingTargetActionBuilder';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { type QidahenMovementProfileId } from './movement';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
@@ -110,6 +111,16 @@ export const reduceQidahenRegionSelected = (
         resolveQidahenGrantPardonInteractionChoice,
     },
 ): QidahenCore => {
+    if (state.turnPhase === 'action-window' && state.confirmedActionId === 'raid' && !state.factionActionUsed && !state.pendingTargetAction) {
+        const sourceId = getQidahenRaidSourceCandidateIds(state).find(id => id === regionId);
+        if (sourceId) return dependencies.updateTurnLabel({
+            ...state, explicitRegionId: null,
+            regionFocusState: buildQidahenRegionFocusState(state.regionFocusState.defaultFocusRegionId, {
+                lockedSourceRegionId: sourceId, currentTargetRegionId: null, displayAnchorRegionId: sourceId,
+            }),
+        });
+        if (!state.regionFocusState.lockedSourceRegionId) return state;
+    }
     const actionWindowEffect = state.turnPhase === 'action-window'
         ? dependencies.applyCharacterActionWindowEffectsWithFocus(state)
         : { state, forcedSelectedRegionId: null };
@@ -317,14 +328,6 @@ export const reduceQidahenRegionSelected = (
             selectedRegionId: nextState.selectedRegionId,
             explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
             turnPhase: 'sun-yuanhua-tech-choice',
-        });
-    }
-    if (nextState.turnPhase === 'season-resolution') {
-        return dependencies.updateTurnLabel({
-            ...nextState,
-            selectedRegionId: nextState.selectedRegionId,
-            explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
-            turnPhase: nextState.turnPhase,
         });
     }
     if (nextState.pendingTargetAction) {

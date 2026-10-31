@@ -11,6 +11,7 @@ const QIDAHEN_CHOICE_REQUEST_AI_POLICY_ID = 'qidahen-button-options';
 
 export function createQidahenChoiceRequestInteraction<TValue>(args: {
     requestId: string;
+    ownerFrameId?: string;
     playerId: string;
     title: string;
     titleKey?: string;
@@ -26,6 +27,7 @@ export function createQidahenChoiceRequestInteraction<TValue>(args: {
     const max = args.multi?.max ?? min;
     const request: ChoiceRequest<TValue> = {
         requestId: args.requestId,
+        ownerFrameId: args.ownerFrameId,
         gameId: 'qidahen',
         playerId: args.playerId,
         kind: 'choose-option',
@@ -41,7 +43,7 @@ export function createQidahenChoiceRequestInteraction<TValue>(args: {
         ai: { status: 'shared-policy', policyId: QIDAHEN_CHOICE_REQUEST_AI_POLICY_ID },
     };
 
-    return createSimpleChoiceFromChoiceRequest(request, {
+    const interaction = createSimpleChoiceFromChoiceRequest(request, {
         title: args.title,
         titleKey: args.titleKey,
         targetType: args.targetType ?? 'button',
@@ -49,4 +51,5 @@ export function createQidahenChoiceRequestInteraction<TValue>(args: {
         subtitle: args.subtitle,
         allowedCommands: args.allowedCommands,
     });
+    return args.ownerFrameId ? { ...interaction, resolutionFrameId: args.ownerFrameId } : interaction;
 }

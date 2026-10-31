@@ -1,3 +1,5 @@
+import { getQidahenArtilleryTechnologyCount } from './armamentStateAccessors';
+import { discardQidahenHandCards } from './handCardState';
 import { getArmamentLevel } from './armamentStateAccessors';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import { advanceQidahenTurnIfReady } from './turnAdvance';
@@ -63,7 +65,7 @@ const getTroopTrainingCap = (
     },
 ): number => {
     if (piece.troopKind === 'artillery') {
-        return Math.max(0, Math.min(4, Math.floor(getArmamentLevel(state, currentFactionId, 'artillery-tech'))));
+        return Math.max(0, Math.min(4, Math.floor(getQidahenArtilleryTechnologyCount(state, currentFactionId))));
     }
 
     const originalFaction = piece.originalFaction ?? piece.faction ?? currentFactionId;
@@ -352,15 +354,7 @@ const discardSelectedCard = (
     const faction = state.factions[factionId];
     return {
         ...state,
-        factions: {
-            ...state.factions,
-            [factionId]: {
-                ...faction,
-                handCount: Math.max(0, faction.handCount - 1),
-                discardPileCount: Math.max(0, faction.discardPileCount ?? 0) + 1,
-            },
-        },
-        handCards: state.handCards.filter((candidate) => candidate.id !== cardId),
+        ...discardQidahenHandCards(state, [cardId]),
         actionLog: [
             {
                 id: `log-wheel-recruit-train-payment-${timestamp}`,

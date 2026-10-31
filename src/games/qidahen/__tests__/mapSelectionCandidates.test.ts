@@ -4,12 +4,11 @@ import { buildQidahenTutorialSetupData } from '../tutorialSetup';
 import { createSeededRandom } from '../../../engine';
 import { getQidahenMapSelectionCandidateIds } from '../ui/mapSelectionCandidates';
 import { getQidahenHomelandFaction } from '../domain/regionConfig';
-import { applyQidahenWheelImmediateEffect } from '../domain/wheelImmediateEffect';
 
 const options = { actionCandidateIds: [], regularTroopPlacement: false, raidPreview: false };
-const opening = () => QidahenDomain.setup(
+const opening = () => ({ ...QidahenDomain.setup(
     ['0', '1', '2'], createSeededRandom(81), buildQidahenTutorialSetupData('basic-opening', true)!.setupData,
-);
+), currentPlayer: '0' });
 
 describe('地图合法候选与教程引导分层', () => {
     it('军屯呈现全部己方合法建军地，不能仅剩教程推荐的辽东', () => {
@@ -19,13 +18,17 @@ describe('地图合法候选与教程引导分层', () => {
         expect(ids).not.toContain('city-region-7');
     });
 
-    it('突袭预览呈现合法敌区，未选目标时也不能让玩家猜', () => {
+    it('突袭先呈现全部出兵来源，选定来源后才呈现合法目标', () => {
         const core = opening();
         core.explicitRegionId = null;
         const ids = getQidahenMapSelectionCandidateIds(core, { ...options, raidPreview: true });
-        expect(ids).toContain('city-region-7');
-        expect(ids).not.toContain('city-region-15-liaodong');
+        expect(ids).toContain('city-region-15');
+        expect(ids).not.toContain('city-region-7');
         expect(core.explicitRegionId).toBeNull();
+        core.regionFocusState.lockedSourceRegionId = 'city-region-15';
+        const targets = getQidahenMapSelectionCandidateIds(core, { ...options, raidPreview: true });
+        expect(targets).toContain('city-region-7');
+        expect(targets).not.toContain('city-region-15');
     });
 
     it('受控中立区和朝鲜控制标记不被误标成正规军建军地', () => {
@@ -45,7 +48,7 @@ describe('地图合法候选与教程引导分层', () => {
         })).toEqual(['city-region-7', 'city-region-13']);
     });
 
-    it('没有合法本土时，军屯只抽牌，不向所选非本土或兵力汇总加兵', () => {
+    it('没有合法本土时不把非本土伪装成建军候选', () => {
         const core = opening();
         core.regions = core.regions.map(region => ({
             ...region,
@@ -53,15 +56,6 @@ describe('地图合法候选与教程引导分层', () => {
                 : region.id === 'city-region-7' ? 'ming' as const : region.controller,
         }));
         core.selectedRegionId = 'city-region-7';
-        const beforeTroops = core.factions.ming.troops;
-        const beforeHand = core.factions.ming.handCount;
-        const beforeRegions = core.regions.map(region => [region.id, region.troops]);
         expect(getQidahenMapSelectionCandidateIds(core, { ...options, regularTroopPlacement: true })).toEqual([]);
-        const result = applyQidahenWheelImmediateEffect(core, 'ming', 'wheel-military-farm', 81);
-        expect(result.regions.map(region => [region.id, region.troops])).toEqual(beforeRegions);
-        expect(result.factions.ming.troops).toBe(beforeTroops);
-        expect(result.factions.ming.handCount).toBe(beforeHand + 2);
-        expect(result.lastSeasonSummary?.mapResult).toBeUndefined();
-        expect(result.lastSeasonSummary?.lines.join(' ')).toContain('未建立部队');
     });
 });

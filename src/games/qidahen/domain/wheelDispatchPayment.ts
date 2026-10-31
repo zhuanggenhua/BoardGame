@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type { QidahenCore, QidahenPaymentState } from './types';
@@ -53,7 +54,6 @@ export const resolveQidahenWheelDispatchPayment = (
     if (selectedCardIds.length < QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED) {
         return state;
     }
-    const removedCardIds = new Set(selectedCardIds);
     const faction = state.factions[currentFactionId];
     const discardedCardCount = selectedCardIds.length;
     return updateQidahenTurnLabel({
@@ -64,15 +64,7 @@ export const resolveQidahenWheelDispatchPayment = (
             selected: 0,
             prompt: '进攻调度弃牌已完成',
         },
-        factions: {
-            ...state.factions,
-            [currentFactionId]: {
-                ...faction,
-                handCount: Math.max(0, faction.handCount - discardedCardCount),
-                discardPileCount: Math.max(0, faction.discardPileCount ?? 0) + discardedCardCount,
-            },
-        },
-        handCards: state.handCards.filter((card) => !removedCardIds.has(card.id)),
+        ...discardQidahenHandCards(state, selectedCardIds),
         actionLog: [
             {
                 id: `log-wheel-dispatch-payment-${timestamp}`,

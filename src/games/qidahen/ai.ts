@@ -18,15 +18,7 @@ import {
     getQidahenPostBattleSelectionForCore,
     getQidahenWheelDispatchSelectionForCore,
 } from './domain';
-import {
-    getQidahenDiplomacySelectionForCore,
-    getQidahenFortificationMaintenanceSelectionForCore,
-    getQidahenHandLimitDiscardSelectionForCore,
-    getQidahenInternalDispatchSelectionForCore,
-    getQidahenKhanEdictSelectionForCore,
-    getQidahenMaShiTradeSelectionForCore,
-    getQidahenRecruitSelectionForCore,
-} from './domain/interactionSelectionAccessors';
+import { getQidahenDiplomacySelectionForCore, getQidahenHandLimitDiscardSelectionForCore, getQidahenInternalDispatchSelectionForCore, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore } from './domain/interactionSelectionAccessors';
 import { hasRemainingFactionAction } from './domain/factionActionWindow';
 import { getFactionIdByPlayerId } from './domain/factionTurnAccessors';
 import {
@@ -886,34 +878,7 @@ const buildPostBattleActions = (
     return actions;
 };
 
-const buildFortificationMaintenanceActions = (
-    state: QidahenState,
-    playerId: string,
-): AiLegalAction[] => {
-    const actions: AiLegalAction[] = [];
-    const selection = getQidahenFortificationMaintenanceSelectionForCore(state.core, state.sys.interaction?.current);
-    if (!selection) {
-        return actions;
-    }
 
-    const orderedChoices = [...selection.choices].sort((left, right) => {
-        const leftScore = left.id === 'auto-pay' ? 0 : 1;
-        const rightScore = right.id === 'auto-pay' ? 0 : 1;
-        return leftScore - rightScore;
-    });
-    for (const choice of orderedChoices) {
-        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
-            actionId: createAiLegalActionId('fortification-maintenance', choice.id),
-            kind: 'fortification-maintenance',
-            label: choice.label,
-            commandType: QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE,
-            payload: { choiceId: choice.id },
-            metadata: { choiceId: choice.id },
-        }));
-    }
-
-    return actions;
-};
 
 const buildActionWindowActions = (
     state: QidahenState,
@@ -1034,7 +999,6 @@ export function buildQidahenAiLegalActions(args: {
         ...buildPostBattleActions(state, args.playerId),
         ...buildWheelDispatchPaymentActions(state, args.playerId),
         ...buildWheelDispatchActions(state, args.playerId),
-        ...buildFortificationMaintenanceActions(state, args.playerId),
     ];
 
     if (phaseActions.length > 0) {

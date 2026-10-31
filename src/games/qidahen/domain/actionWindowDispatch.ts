@@ -73,7 +73,7 @@ const markCharacterActionWindowEffectHandled = (
     return `${triggerKey}|${[...handledEffectIds].sort().join(',')}`;
 };
 
-const buildPendingTargetActionFromWheelDispatchChoice = (
+export const buildPendingTargetActionFromWheelDispatchChoice = (
     selection: QidahenWheelDispatchSelection,
     candidate: QidahenWheelDispatchCandidate,
     options: {
@@ -225,6 +225,7 @@ const resolveGaoDiDispatch = (
                 ...state.factions.ming,
                 handCount: Math.max(0, state.factions.ming.handCount - 1),
                 discardPileCount: Math.max(0, state.factions.ming.discardPileCount ?? 0) + 1,
+                discardPile: [...state.factions.ming.discardPile, ...state.handCards.filter(card => removedCardIds.has(card.id))],
             },
         },
         handCards: state.handCards.filter((card) => !removedCardIds.has(card.id)),

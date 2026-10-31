@@ -1,35 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
     findQidahenReachableRuntimeRegions,
-    getQidahenFortificationMaintenanceSelectionFromInteraction,
     QidahenDomain,
 } from '../domain';
-import { QIDAHEN_COMMANDS } from '../domain/commands';
+import { reduceQidahenTurnResolutionFact } from '../domain/turnResolutionFacts';
 import { getQidahenDirectedPassageRule } from '../domain/movement';
 import { syncQidahenRuntimeInteractionState } from '../domain/runtimeInteractions';
 import type { QidahenCommand, QidahenCore, QidahenEvent } from '../domain/types';
-import type { MatchState } from '../../../engine/types';
+import type { MatchState, RandomFn } from '../../../engine/types';
 
-const random = () => 0.5;
+const random: RandomFn = { random: () => 0.5, d: () => 1, range: min => min, shuffle: items => [...items] };
 
 function stateOf(core: QidahenCore): MatchState<QidahenCore> {
     return syncQidahenRuntimeInteractionState({
         core,
         sys: {} as MatchState<QidahenCore>['sys'],
     });
-}
-
-function apply(core: QidahenCore, command: QidahenCommand): QidahenCore {
-    const validation = QidahenDomain.validate(stateOf(core), command);
-    expect(validation.valid).toBe(true);
-    return QidahenDomain.execute(stateOf(core), command).reduce(
-        (next, event) => QidahenDomain.reduce(next, event as QidahenEvent),
-        core,
-    );
-}
-
-function getFortificationMaintenanceSelection(core: QidahenCore) {
-    return getQidahenFortificationMaintenanceSelectionFromInteraction(stateOf(core).sys.interaction?.current);
 }
 
 function getDirectedTravelCostIfUsable(
@@ -81,74 +67,34 @@ describe('七大恨移动规则 helper', () => {
             };
         });
 
-        expect(getDirectedTravelCostIfUsable(core, 'city-region-22', 'song-jin', 'ming')).toBe(2);
+        expect(getDirectedTravelCostIfUsable(core, 'city-region-22', 'song-jin', 'ming')).toBe(1);
         expect(getDirectedTravelCostIfUsable(core, 'city-region-22', 'song-jin', 'jin')).toBeNull();
         expect(isReachableWithinBudget(core, 'city-region-22', 'song-jin', 'ming', 2)).toBe(true);
         expect(isReachableWithinBudget(core, 'city-region-22', 'song-jin', 'jin', 2)).toBe(false);
     });
 
-    it('防线破败后会把运行时边界与移动代价一起刷新到最新规则', () => {
+    it.each([["outer-wall","city-region-26","city-region-31"],["outer-wall","city-region-26","city-region-1"],["outer-wall","city-region-21","city-region-1"],["outer-wall","city-region-21","xuan-fu"],["outer-wall","duoyan","xuan-fu"],["outer-wall","duoyan","city-region-28-jizhen"],["inner-wall","city-region-1","city-region-30"],["inner-wall","city-region-1","city-region-27"],["inner-wall","xuan-fu","city-region-27"],["inner-wall","xuan-fu","city-region-28"],["inner-wall","xuan-fu","city-region-28-jizhen"]] as const)('%s 的 %s→%s 完好凸1平3，仅所属墙破败变平原3，维护可恢复', (owner, from, to) => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
-        core.actionWheelPosition = 'wheel-midyear';
-        expect(getQidahenDirectedPassageRule(core, 'jinzhou', 'city-region-25', 'ming')).toMatchObject({
-            boundaryType: 'city',
-            travelCost: 2,
-            battleWidth: 1,
-            usable: true,
+        const maintained = getQidahenDirectedPassageRule(core, from, to, 'ming');
+        expect(maintained).toMatchObject({ boundaryType: 'wall-convex', travelCost: 1, battleWidth: 1 });
+        expect(getQidahenDirectedPassageRule(core, to, from, 'ming')).toMatchObject({ boundaryType: 'wall-flat', battleWidth: 3 });
+        const applyMaintenanceFact = (state: QidahenCore, id: string, maintain: boolean) => reduceQidahenTurnResolutionFact(state, {
+            type: 'TURN_RESOLUTION_APPLIED', timestamp: 100,
+            payload: { frameId: 'movement-maintenance', factionId: 'ming', fromStep: 'maintenance', fact: { kind: 'maintenance', fortificationId: id, cardIds: [], maintain } },
         });
-        core.regions = core.regions.map((region) => {
-            if (region.isLogicalRegion) {
-                return region;
-            }
-            if (region.id === 'xian-xing') {
-                return {
-                    ...region,
-                    controller: 'ming',
-                    controlLabel: '大明',
-                };
-            }
-            if (region.id === 'city-region-18' || region.id === 'city-region-29') {
-                return {
-                    ...region,
-                    controller: 'neutral',
-                    controlLabel: '中立',
-                };
-            }
-            if (region.id === 'song-jin') {
-                return {
-                    ...region,
-                    troops: 3,
-                    population: 1,
-                };
-            }
-            return region;
-        });
-
-        const next = apply(core, {
-            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
-            playerId: '0',
-            payload: { moveId: 'move-1-free' },
-        });
-        expect(getFortificationMaintenanceSelection(next)).not.toBeNull();
-
-        const settled = apply(next, {
-            type: QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE,
-            playerId: '0',
-            payload: { choiceId: 'skip-all' },
-        });
-
-        expect(getQidahenDirectedPassageRule(settled, 'city-region-20', 'city-region-24', 'ming')).toMatchObject({
-            boundaryType: 'plain',
-            travelCost: 1,
-            battleWidth: 3,
-            usable: true,
-        });
-        expect(getQidahenDirectedPassageRule(settled, 'jinzhou', 'city-region-25', 'ming')).toMatchObject({
-            boundaryType: 'plain',
-            travelCost: 1,
-            battleWidth: 3,
-            usable: true,
-        });
+        // 这里只核维护事实后的边界投影；合法支付另由正式年度管线验证。
+        const other = applyMaintenanceFact(core, owner === 'outer-wall' ? 'inner-wall' : 'outer-wall', false);
+        expect(getQidahenDirectedPassageRule(other, from, to, 'ming')).toMatchObject({ boundaryType: 'wall-convex', battleWidth: 1 });
+        const ruined = applyMaintenanceFact(core, owner, false);
+        for (const [left, right] of [[from, to], [to, from]]) expect(getQidahenDirectedPassageRule(ruined, left, right, 'ming')).toMatchObject({ boundaryType: 'plain', travelCost: 1, battleWidth: 3 });
+        const repaired = applyMaintenanceFact(ruined, owner, true);
+        expect(getQidahenDirectedPassageRule(repaired, from, to, 'ming')).toEqual(maintained);
+        expect(getQidahenDirectedPassageRule(core, from, to, 'ming')).toEqual(maintained);
+    });
+    it('土默特与宣府之间隔着喀喇沁，不生成伪邻接；土默特与宁远也不相邻', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        expect(getQidahenDirectedPassageRule(core, 'city-region-20', 'xuan-fu', 'ming')).toBeNull();
+        expect(getQidahenDirectedPassageRule(core, 'city-region-20', 'city-region-24', 'ming')).toBeNull();
     });
 
     it('可达搜索会消费 travelCost，并阻止水路后再接陆路扩展', () => {
@@ -184,11 +130,11 @@ describe('七大恨移动规则 helper', () => {
 
         const bySea = findQidahenReachableRuntimeRegions(core, 'song-jin', 'ming', 4);
         expect(bySea.find((item) => item.regionId === 'city-region-22')).toMatchObject({
-            totalTravelCost: 2,
+            totalTravelCost: 1,
             usesCoast: true,
         });
         expect(bySea.find((item) => item.regionId === 'city-region-32')).toMatchObject({
-            totalTravelCost: 4,
+            totalTravelCost: 2,
             usesCoast: true,
         });
     });
@@ -274,9 +220,9 @@ describe('七大恨移动规则 helper', () => {
             return region;
         });
 
-        const reachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'mongol', 4);
+        const reachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'mongol', 1);
         expect(reachable.find((item) => item.regionId === 'city-region-19')).toMatchObject({
-            totalTravelCost: 5,
+            totalTravelCost: 2,
         });
     });
 
@@ -313,9 +259,9 @@ describe('七大恨移动规则 helper', () => {
             return region;
         });
 
-        const reachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'jin', 4);
+        const reachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'jin', 1);
         expect(reachable.find((item) => item.regionId === 'city-region-19')).toMatchObject({
-            totalTravelCost: 5,
+            totalTravelCost: 2,
         });
     });
 
@@ -353,15 +299,15 @@ describe('七大恨移动规则 helper', () => {
             return region;
         });
 
-        const cavalryReachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'ming', 4, {
+        const cavalryReachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'ming', 1, {
             movementProfileId: 'dispatch-cavalry',
         });
-        const infantryReachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'ming', 4, {
+        const infantryReachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'ming', 1, {
             movementProfileId: 'dispatch-infantry',
         });
 
         expect(cavalryReachable.find((item) => item.regionId === 'city-region-19')).toMatchObject({
-            totalTravelCost: 5,
+            totalTravelCost: 2,
         });
         expect(infantryReachable.some((item) => item.regionId === 'city-region-19')).toBe(false);
     });

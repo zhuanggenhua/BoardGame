@@ -39,6 +39,7 @@ export interface QidahenRegionGraphNode {
 
 export interface QidahenRegionGraphEdge {
     id: string;
+    fortificationId?: 'outer-wall' | 'inner-wall';
     from: string;
     to: string;
     bidirectional: boolean;
@@ -104,9 +105,9 @@ export interface QidahenSharedPrintedRegionAudit {
 
 const DEFAULT_BOUNDARY_TYPES: QidahenPassageBoundaryMeta[] = [
     { id: 'plain', label: '平原', note: '战场宽度 3', travelCost: 1, battleWidth: 3, unitCap: null },
-    { id: 'mountain', label: '山脉', note: '战场宽度 2', travelCost: 2, battleWidth: 2, unitCap: null },
-    { id: 'river', label: '河流', note: '战场宽度 2', travelCost: 2, battleWidth: 2, unitCap: null },
-    { id: 'coast', label: '海岸/水路', note: '船锚区相邻，最多 2 部队', travelCost: 2, battleWidth: 2, unitCap: 2 },
+    { id: 'mountain', label: '山脉', note: '战场宽度 2', travelCost: 1, battleWidth: 2, unitCap: null },
+    { id: 'river', label: '河流', note: '战场宽度 2', travelCost: 1, battleWidth: 2, unitCap: null },
+    { id: 'coast', label: '海岸/水路', note: '船锚区相邻，最多 2 部队', travelCost: 1, battleWidth: 2, unitCap: 2 },
     { id: 'wall-convex', label: '攻入长城', note: '凸面战场宽度 1', travelCost: 1, battleWidth: 1, unitCap: null },
     { id: 'wall-flat', label: '出长城', note: '平面战场宽度 3', travelCost: 1, battleWidth: 3, unitCap: null },
     { id: 'city', label: '攻城', note: '战场宽度 1', travelCost: 1, battleWidth: 1, unitCap: null },
@@ -229,6 +230,8 @@ export const parseQidahenRegionGraph = (raw: unknown): QidahenRegionGraph => {
             if (!from || !to || !nodeIds.has(from) || !nodeIds.has(to) || from === to) return null;
             const bidirectional = item.bidirectional !== false;
             const boundaryType = parseBoundaryType(item.boundaryType);
+            const fortificationId = item.fortificationId;
+            if (fortificationId !== undefined && fortificationId !== 'outer-wall' && fortificationId !== 'inner-wall') throw new Error(`Unknown wall owner: ${fortificationId}`);
             const meta = boundaryMetaById.get(boundaryType) ?? DEFAULT_BOUNDARY_META_BY_ID.get(boundaryType) ?? DEFAULT_BOUNDARY_TYPES[0];
             const reverseBoundaryType = bidirectional
                 ? parseOptionalBoundaryType(item.reverseBoundaryType) ?? boundaryType
@@ -240,6 +243,7 @@ export const parseQidahenRegionGraph = (raw: unknown): QidahenRegionGraph => {
                 : null;
             return {
                 id: toStringOrEmpty(item.id) || normalizeQidahenPassageId(from, to),
+                fortificationId,
                 from,
                 to,
                 bidirectional,

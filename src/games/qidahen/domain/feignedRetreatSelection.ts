@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { canUseAttackerCavalryPlunder } from './pendingTargetChoiceOptions';
 import type {
     PendingActionResolvedEvent,
@@ -78,14 +79,13 @@ export const playQidahenFeignedRetreat = (
     return {
         ...state,
         feignedRetreatSelection: null,
-        handCards: state.handCards.filter((candidate) => candidate.id !== cardId),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [cardId]),
         lastSeasonSummary: {
             id: `summary-${timestamp}`,
-            title: '诈败诱敌',
+            title: '佯败诱敌',
             lines: [
                 `${state.factions[selection.factionId].name} 打出战术牌「${card.label}」。`,
-                '取消本次骑兵劫掠，原宣告骑兵立即投入正常战斗并按正常规则撤退。',
+                '取消本次骑兵劫掠，原宣告骑兵立即投入正常战斗并照常掷骰。',
             ],
         },
         actionLog: [

@@ -17,6 +17,23 @@ const overlaps = (a: Rect, b: Rect) => a.left < b.left + b.width - 1e-6 && a.lef
 const contains = (a: Rect, b: Rect) => a.left <= b.left + 1e-6 && a.top <= b.top + 1e-6
     && a.left + a.width + 1e-6 >= b.left + b.width && a.top + a.height + 1e-6 >= b.top + b.height;
 
+/** 地图取景与临时结算共用同一空位计算，不挤占当前军队和常驻HUD。 */
+export function getQidahenAvailableMapFrames(visibleRect: Rect, protectedRects: readonly Rect[], padding: number): Rect[] {
+    const screen = { left: visibleRect.left + padding, top: visibleRect.top + padding, width: visibleRect.width - padding * 2, height: visibleRect.height - padding * 2 };
+    const obstacles = protectedRects.map(rect => ({ left: rect.left - padding, top: rect.top - padding, width: rect.width + padding * 2, height: rect.height + padding * 2 }));
+    let frames = [screen];
+    for (const obstacle of obstacles) {
+        const next = frames.flatMap(frame => !overlaps(frame, obstacle) ? [frame] : [
+            { ...frame, height: obstacle.top - frame.top },
+            { ...frame, top: obstacle.top + obstacle.height, height: frame.top + frame.height - obstacle.top - obstacle.height },
+            { ...frame, width: obstacle.left - frame.left },
+            { ...frame, left: obstacle.left + obstacle.width, width: frame.left + frame.width - obstacle.left - obstacle.width },
+        ].filter(rect => rect.width > 0 && rect.height > 0 && contains(frame, rect)));
+        frames = next.filter((rect, index) => !next.some((other, otherIndex) => otherIndex !== index && contains(other, rect) && (!contains(rect, other) || otherIndex < index)));
+    }
+    return frames;
+}
+
 /** 根据整片地区范围寻找可见地图空位，不再用地区中心点周围的圆形尺寸估算。 */
 export const focusQidahenMapRegion = (options: {
     region: Rect;
@@ -34,21 +51,7 @@ export const focusQidahenMapRegion = (options: {
         width: visibleRect.width - padding * 2, height: visibleRect.height - padding * 2 };
     const obstacles = options.protectedRects.map(rect => ({ left: rect.left - padding, top: rect.top - padding,
         width: rect.width + padding * 2, height: rect.height + padding * 2 }));
-    let frames = [screen];
-    for (const obstacle of obstacles) {
-        const next = frames.flatMap(frame => {
-            if (!overlaps(frame, obstacle)) return [frame];
-            return [
-                { ...frame, height: obstacle.top - frame.top },
-                { ...frame, top: obstacle.top + obstacle.height, height: frame.top + frame.height - obstacle.top - obstacle.height },
-                { ...frame, width: obstacle.left - frame.left },
-                { ...frame, left: obstacle.left + obstacle.width, width: frame.left + frame.width - obstacle.left - obstacle.width },
-            ].filter(rect => rect.width > 0 && rect.height > 0 && contains(frame, rect));
-        });
-        frames = next.filter((rect, index) => !next.some((other, otherIndex) => (
-            otherIndex !== index && contains(other, rect) && (!contains(rect, other) || otherIndex < index)
-        )));
-    }
+    const frames = getQidahenAvailableMapFrames(visibleRect, options.protectedRects, padding);
     const candidates = frames.flatMap(frame => {
         const zoom = Math.min(QIDAHEN_MAP_MAX_ZOOM, options.preferredZoom, frame.width / (region.width * mapScale), (frame.height - labelHeight) / (region.height * mapScale));
         if (zoom < QIDAHEN_MAP_MIN_ZOOM) return [];

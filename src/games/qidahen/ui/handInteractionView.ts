@@ -17,6 +17,7 @@ export type QidahenHandInteractionView =
     | (PaymentCards & {
         kind: 'action';
         action: Pick<QidahenActionChoice, 'id' | 'label' | 'cost'>;
+        raidSourceSelected: boolean;
         raidTarget: { targetRegionName: string; resolutionHint: string } | null;
     })
     | {
@@ -70,6 +71,7 @@ export const resolveQidahenHandInteraction = (
         return {
             kind: 'action', action: { id: action.id, label: action.label, cost: action.cost },
             selectedCardLabels, selectedCount,
+            raidSourceSelected: core.regionFocusState.lockedSourceRegionId != null,
             raidTarget: raidTarget ? { targetRegionName: raidTarget.targetRegionName, resolutionHint: raidTarget.resolutionHint } : null,
             canConfirm: selectedCount >= action.cost && (action.id !== 'raid' || raidTarget != null),
         };

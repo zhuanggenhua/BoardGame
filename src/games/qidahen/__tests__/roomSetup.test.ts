@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../engine/types';
 import { QidahenDomain } from '../domain';
-import { QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';
+import { getQidahenOrdinaryDeckSequence, QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';
 import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from '../domain/ordinaryHandCardIdentities';
 import { engineConfig } from '../game';
 import manifest from '../manifest';
@@ -433,21 +433,21 @@ describe('七大恨房间 setup 解析', () => {
         expect(factionHandCards('mongol')).toHaveLength(6);
         expect(factionHandCards('jin')).toHaveLength(10);
         expect(factionHandCards('ming').map((card) => card.previewRef)).toEqual(
-            QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.ming.slice(0, 3).map((index) => ({
+            getQidahenOrdinaryDeckSequence('ming').slice(0, 3).map((index) => ({
                 type: 'atlas',
                 atlasId: 'qidahen:atlas05-ordinary-hand-preview',
                 index,
             })),
         );
         expect(factionHandCards('mongol').map((card) => card.previewRef)).toEqual(
-            QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.mongol.slice(0, 6).map((index) => ({
+            getQidahenOrdinaryDeckSequence('mongol').slice(0, 6).map((index) => ({
                 type: 'atlas',
                 atlasId: 'qidahen:atlas05-ordinary-hand-preview',
                 index,
             })),
         );
         expect(factionHandCards('jin').map((card) => card.previewRef)).toEqual(
-            QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin.slice(0, 10).map((index) => ({
+            getQidahenOrdinaryDeckSequence('jin').slice(0, 10).map((index) => ({
                 type: 'atlas',
                 atlasId: 'qidahen:atlas05-ordinary-hand-preview',
                 index,
@@ -534,9 +534,9 @@ describe('七大恨房间 setup 解析', () => {
         expect(core.factions.mongol.playerId).toBe('qidahen-neutral-mongol');
         expect(core.pendingScenarioCharacterChoices).toHaveLength(2);
         expect(core.pendingScenarioArmamentChoices).toHaveLength(1);
-        expect(core.factions.ming.handCount).toBe(5);
+        expect(core.factions.ming.handCount).toBe(0);
         expect(core.factions.mongol.handCount).toBe(0);
-        expect(core.factions.jin.handCount).toBe(6);
+        expect(core.factions.jin.handCount).toBe(0);
         const mingInPlayCharacterNames = core.factions.ming.characters
             .filter((character) => character.inPlay)
             .map((character) => character.name);

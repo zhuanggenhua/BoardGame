@@ -10,6 +10,7 @@ import type {
 
 export const QIDAHEN_SCENARIO_SETUP_FIELD = 'scenario' as const;
 export const QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD = 'qidahenInMatchScenarioVote' as const;
+export const QIDAHEN_SPECIAL_CARDS_SETUP_FIELD = 'specialCards' as const;
 export const DEFAULT_QIDAHEN_SCENARIO_ID: QidahenScenarioId = 'post-sarhu-1619';
 
 export const QIDAHEN_SCENARIO_SETUP_OPTIONS = [
@@ -224,6 +225,10 @@ function getPregameFieldValue(
     const nestedValue = setupSelections?.[fieldKey];
     return typeof nestedValue === 'string' ? nestedValue : undefined;
 }
+
+export const readQidahenSpecialCardsEnabled = (setupData?: Record<string, unknown>): boolean => (
+    getPregameFieldValue(setupData, QIDAHEN_SPECIAL_CARDS_SETUP_FIELD) === 'enabled'
+);
 
 function isValidPregameChoiceValue(
     field: QidahenPregameChoiceField,

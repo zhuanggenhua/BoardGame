@@ -64,6 +64,10 @@
         "city-region-16",
         "city-region-2",
         "city-region-20",
+        "city-region-21",
+        "city-region-26",
+        "city-region-27",
+        "city-region-30",
         "city-region-8"
       ],
       "printedRegionIds": [
@@ -491,8 +495,7 @@
         "city-region-1",
         "city-region-16",
         "city-region-26",
-        "city-region-27",
-        "xuan-fu"
+        "city-region-27"
       ],
       "printedRegionIds": [
         "city-region-20"
@@ -509,7 +512,10 @@
         "x": 306,
         "y": 455
       },
-      "links": [],
+      "links": [
+        "city-region-1",
+        "xuan-fu"
+      ],
       "printedRegionIds": [
         "city-region-21"
       ],
@@ -668,6 +674,7 @@
         "y": 632
       },
       "links": [
+        "city-region-1",
         "city-region-20",
         "city-region-31"
       ],
@@ -687,6 +694,7 @@
         "y": 718
       },
       "links": [
+        "city-region-1",
         "city-region-20",
         "city-region-22",
         "city-region-28-jizhen",
@@ -714,7 +722,9 @@
         "city-region-24",
         "city-region-25",
         "city-region-27",
-        "city-region-28"
+        "city-region-28",
+        "duoyan",
+        "xuan-fu"
       ],
       "printedRegionIds": [
         "city-region-28-jizhen"
@@ -732,7 +742,8 @@
         "y": 634
       },
       "links": [
-        "city-region-28-jizhen"
+        "city-region-28-jizhen",
+        "xuan-fu"
       ],
       "printedRegionIds": [
         "city-region-28"
@@ -776,6 +787,7 @@
         "y": 776
       },
       "links": [
+        "city-region-1",
         "city-region-27",
         "city-region-31"
       ],
@@ -900,7 +912,9 @@
         "y": 476
       },
       "links": [
-        "city-region-19-liaoxi"
+        "city-region-19-liaoxi",
+        "city-region-28-jizhen",
+        "xuan-fu"
       ],
       "acceptance": null,
       "printedRegionIds": [
@@ -918,8 +932,11 @@
         "y": 548
       },
       "links": [
-        "city-region-20",
-        "city-region-27"
+        "city-region-21",
+        "city-region-27",
+        "city-region-28",
+        "city-region-28-jizhen",
+        "duoyan"
       ],
       "acceptance": null,
       "printedRegionIds": [

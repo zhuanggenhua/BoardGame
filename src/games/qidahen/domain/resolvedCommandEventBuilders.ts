@@ -1,51 +1,14 @@
+import { applyQidahenBattlePieceSelection } from './battlePieceSelection';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { QIDAHEN_COMMANDS } from './commands';
-import {
-    getQidahenDiplomacySelectionForCore,
-    getQidahenDriveTigerConsentSelectionForCore,
-    getQidahenEventCharacterTargetSelectionForCore,
-    getQidahenEventOpponentHandChoiceSelectionForCore,
-    getQidahenFortificationMaintenanceSelectionForCore,
-    getQidahenGrantPardonSelectionForCore,
-    getQidahenInternalDispatchSelectionForCore,
-    getQidahenKhanEdictSelectionForCore,
-    getQidahenMaShiTradeSelectionForCore,
-    getQidahenPendingTargetActionForCore,
-    getQidahenPostBattleSelectionForCore,
-    getQidahenRecruitSelectionForCore,
-} from './interactionSelectionAccessors';
+import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenEventCharacterTargetSelectionForCore, getQidahenEventOpponentHandChoiceSelectionForCore, getQidahenGrantPardonSelectionForCore, getQidahenInternalDispatchSelectionForCore, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenPendingTargetActionForCore, getQidahenPostBattleSelectionForCore, getQidahenRecruitSelectionForCore } from './interactionSelectionAccessors';
 import {
     createQidahenStructuredBattleRolls,
 } from './battleRollMath';
 import {
     applyRequestedCommittedTroops,
 } from './pendingBattleCommittedTroops';
-import type {
-    QidahenCore,
-    QidahenCommand,
-    QidahenEvent,
-    ResolveDiplomacyChoiceCommand,
-    ResolveDriveTigerConsentCommand,
-    ResolveEventCharacterTargetCommand,
-    ResolveEventOpponentHandChoiceCommand,
-    ResolveFortificationMaintenanceCommand,
-    ResolveGaoDiDispatchCommand,
-    ResolveGrantPardonChoiceCommand,
-    HandLimitDiscardResolvedEvent,
-    PendingActionResolvedEvent,
-    PostBattleDecisionResolvedEvent,
-    ConfirmWheelDispatchPaymentCommand,
-    ConfirmWheelRecruitTrainPaymentCommand,
-    ResolveHandLimitDiscardCommand,
-    ResolveInternalDispatchCommand,
-    ResolveKhanEdictChoiceCommand,
-    ResolveMaShiTradeChoiceCommand,
-    ResolvePendingActionCommand,
-    ResolvePostBattleDecisionCommand,
-    ResolveRecruitChoiceCommand,
-    ResolveSunYuanhuaTechCommand,
-    SunYuanhuaTechResolvedEvent,
-} from './types';
+import type { QidahenCore, QidahenCommand, QidahenEvent, ResolveDiplomacyChoiceCommand, ResolveDriveTigerConsentCommand, ResolveEventCharacterTargetCommand, ResolveEventOpponentHandChoiceCommand, ResolveGaoDiDispatchCommand, ResolveGrantPardonChoiceCommand, HandLimitDiscardResolvedEvent, PendingActionResolvedEvent, PostBattleDecisionResolvedEvent, ConfirmWheelDispatchPaymentCommand, ConfirmWheelRecruitTrainPaymentCommand, ResolveHandLimitDiscardCommand, ResolveInternalDispatchCommand, ResolveKhanEdictChoiceCommand, ResolveMaShiTradeChoiceCommand, ResolvePendingActionCommand, ResolvePostBattleDecisionCommand, ResolveRecruitChoiceCommand, ResolveSunYuanhuaTechCommand, SunYuanhuaTechResolvedEvent } from './types';
 
 type QidahenResolvedCommandEventBuilder = (
     state: MatchState<QidahenCore>,
@@ -61,7 +24,7 @@ interface QidahenResolvedCommandEventBuilderSpec {
 
 interface QidahenActionWindowResolvedCommandDependencies {
     getQidahenInternalDispatchSelectionForCore: typeof getQidahenInternalDispatchSelectionForCore;
-    getQidahenFortificationMaintenanceSelectionForCore: typeof getQidahenFortificationMaintenanceSelectionForCore;
+
     getQidahenDriveTigerConsentSelectionForCore: typeof getQidahenDriveTigerConsentSelectionForCore;
     getQidahenRecruitSelectionForCore: typeof getQidahenRecruitSelectionForCore;
     getQidahenGrantPardonSelectionForCore: typeof getQidahenGrantPardonSelectionForCore;
@@ -74,7 +37,7 @@ interface QidahenActionWindowResolvedCommandDependencies {
 
 const DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES: QidahenActionWindowResolvedCommandDependencies = {
     getQidahenInternalDispatchSelectionForCore,
-    getQidahenFortificationMaintenanceSelectionForCore,
+
     getQidahenDriveTigerConsentSelectionForCore,
     getQidahenRecruitSelectionForCore,
     getQidahenGrantPardonSelectionForCore,
@@ -200,22 +163,7 @@ const buildQidahenInternalDispatchResolvedEvent = (
     timestamp,
 });
 
-const buildQidahenFortificationMaintenanceResolvedEvent = (
-    state: MatchState<QidahenCore>,
-    command: ResolveFortificationMaintenanceCommand,
-    timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
-): QidahenEvent => ({
-    type: 'FORTIFICATION_MAINTENANCE_RESOLVED',
-    payload: {
-        playerId: command.playerId,
-        choiceId: command.payload.choiceId,
-        attritionPriority: command.payload.attritionPriority,
-        selection: dependencies.getQidahenFortificationMaintenanceSelectionForCore(state.core, state.sys.interaction?.current),
-    },
-    sourceCommandType: command.type,
-    timestamp,
-});
+
 
 const buildQidahenDriveTigerConsentResolvedEvent = (
     state: MatchState<QidahenCore>,
@@ -389,13 +337,16 @@ const buildQidahenPendingActionResolvedEvent = (
         state.core,
         state.sys.interaction?.current,
     );
-    const pendingTargetAction = currentPendingTargetAction?.resolvedBattleRolls ? currentPendingTargetAction : currentPendingTargetAction
+    const countSelectedPendingAction = currentPendingTargetAction?.resolvedBattleRolls ? currentPendingTargetAction : currentPendingTargetAction
         ? dependencies.applyRequestedCommittedTroops(
             state.core,
             currentPendingTargetAction,
             command.payload.committedTroops,
         )
         : null;
+    const pendingTargetAction = countSelectedPendingAction && command.payload.selectedPieceIds && !countSelectedPendingAction.resolvedBattleRolls
+        ? applyQidahenBattlePieceSelection(state.core, countSelectedPendingAction, command.payload.selectedPieceIds)
+        : countSelectedPendingAction;
 
     return {
         type: 'PENDING_ACTION_RESOLVED',
@@ -524,12 +475,7 @@ const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEv
             buildQidahenInternalDispatchResolvedEvent,
         ),
     },
-    {
-        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
-        buildEvents: buildStatefulResolvedCommandEvents<ResolveFortificationMaintenanceCommand>(
-            buildQidahenFortificationMaintenanceResolvedEvent,
-        ),
-    },
+
     {
         commandTypes: [QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT],
         buildEvents: buildStatefulResolvedCommandEvents<ResolveDriveTigerConsentCommand>(

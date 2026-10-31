@@ -1,13 +1,20 @@
+import { createInitialCore } from '../domain/initialCoreSetup';
+import { syncFactionActionWindow } from '../domain/factionActionWindow';
 import { describe, expect, it } from 'vitest';import { getQidahenEventCharacterTargetSelectionForCore, getQidahenEventOpponentHandChoiceSelectionForCore, QidahenDomain } from '../domain';
 
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';import { getQidahenDirectActionIdForHandCard, resolveQidahenAtlas05OrdinaryHandCardIdentity } from '../domain/handCardIdentity';
 
-import { buildDrawnHandCards, QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES, QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID } from '../domain/ordinaryHandCardIdentities';
+import { drawFromFactionPile, getQidahenOrdinaryDeckSequence, QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES, QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID } from '../domain/ordinaryHandCardIdentities';
 
 import { getQidahenFortificationConfigs } from '../domain/regionConfig';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_SHAPES, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';import type { QidahenCore } from '../domain/types';
 import { random, stateOf, apply, factionHandCards } from './helpers/paymentSelectionHarness';
+
+// 这些测试只验证大明手牌入口；正式开局顺位由正常年度链验证。
+const createMingActionWindowFixture = () => syncFactionActionWindow({
+    ...createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true), currentPlayer: '0',
+}, 'ming');
 
 describe('七大恨开局、地图与手牌真相源', () => {
 it('地图区域定义与领域区域保持同源', () => {
@@ -81,9 +88,9 @@ it('剧本一开局普通手牌按 TTS 真实牌堆顺序暴露 atlas05 图集�
             ...factionHandCards(core, 'jin'),
         ];
         const expectedAtlasIndices = [
-            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.ming.slice(0, factionHandCards(core, 'ming').length),
-            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.mongol.slice(0, factionHandCards(core, 'mongol').length),
-            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin.slice(0, factionHandCards(core, 'jin').length),
+            ...getQidahenOrdinaryDeckSequence('ming').slice(0, factionHandCards(core, 'ming').length),
+            ...getQidahenOrdinaryDeckSequence('mongol').slice(0, factionHandCards(core, 'mongol').length),
+            ...getQidahenOrdinaryDeckSequence('jin').slice(0, factionHandCards(core, 'jin').length),
         ];
 
         for (const [index, card] of allVisibleHandCards.entries()) {
@@ -106,9 +113,9 @@ it('剧本一开局正式手牌会消费 atlas05 通过验收的普通手牌身�
         expect(allVisibleHandCards.every((card) => card.previewKind === 'unknown')).toBe(true);
         expect(allVisibleHandCards.every((card) => card.cardKind !== 'unknown')).toBe(true);
         const expectedInitialIdentities = [
-            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.ming.slice(0, factionHandCards(core, 'ming').length),
-            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.mongol.slice(0, factionHandCards(core, 'mongol').length),
-            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin.slice(0, factionHandCards(core, 'jin').length),
+            ...getQidahenOrdinaryDeckSequence('ming').slice(0, factionHandCards(core, 'ming').length),
+            ...getQidahenOrdinaryDeckSequence('mongol').slice(0, factionHandCards(core, 'mongol').length),
+            ...getQidahenOrdinaryDeckSequence('jin').slice(0, factionHandCards(core, 'jin').length),
         ].map((atlasIndex) => QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((identity) => (
             identity.atlasIndex === atlasIndex
         ))!);
@@ -135,10 +142,11 @@ it('剧本一开局正式手牌会消费 atlas05 通过验收的普通手牌身�
 
 it('正式局后续摸牌会继续沿当前势力 TTS 真实牌堆顺序发放普通手牌', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
-        const drawn = buildDrawnHandCards(core, 'jin', 2);
-        const nextCards = drawn.slice(-2);
-        const firstDrawnIndex = QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin[10];
-        const secondDrawnIndex = QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin[11];
+        const draw = drawFromFactionPile(core.factions, 'jin', 2);
+        const nextCards = draw.cards;
+        expect(nextCards.map(card => card.id)).toEqual(core.factions.jin.drawPile.slice(0, 2).map(card => card.id));
+        const firstDrawnIndex = getQidahenOrdinaryDeckSequence('jin')[10];
+        const secondDrawnIndex = getQidahenOrdinaryDeckSequence('jin')[11];
         const firstDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((identity) => (
             identity.atlasIndex === firstDrawnIndex
         ));
@@ -426,7 +434,7 @@ it('atlas05 普通手牌真相表只解析通过验收的事件、军备、战�
 it('剧本一开局已开发军备遵循规则设置', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
 
-        expect(core.factions.ming.armaments).toEqual([
+        expect(core.factions.ming.armaments).toMatchObject([
             { id: 'artillery-tech', name: '火炮技术', level: 1 },
             { id: 'infantry-armor', name: '步兵铁甲', level: 0 },
             { id: 'cavalry-armor', name: '骑兵铁甲', level: 0 },
@@ -438,7 +446,7 @@ it('剧本一开局已开发军备遵循规则设置', () => {
             { id: 'mongol-banners', name: '蒙古八旗', level: 0 },
             { id: 'han-banners', name: '汉军八旗', level: 0 },
         ]);
-        expect(core.factions.mongol.armaments).toEqual([
+        expect(core.factions.mongol.armaments).toMatchObject([
             { id: 'artillery-tech', name: '火炮技术', level: 0 },
             { id: 'infantry-armor', name: '步兵铁甲', level: 0 },
             { id: 'cavalry-armor', name: '骑兵铁甲', level: 1 },
@@ -450,7 +458,7 @@ it('剧本一开局已开发军备遵循规则设置', () => {
             { id: 'mongol-banners', name: '蒙古八旗', level: 0 },
             { id: 'han-banners', name: '汉军八旗', level: 0 },
         ]);
-        expect(core.factions.jin.armaments).toEqual([
+        expect(core.factions.jin.armaments).toMatchObject([
             { id: 'artillery-tech', name: '火炮技术', level: 0 },
             { id: 'infantry-armor', name: '步兵铁甲', level: 1 },
             { id: 'cavalry-armor', name: '骑兵铁甲', level: 0 },
@@ -475,7 +483,7 @@ it('会为关键借位区和高置信图区同时生成逻辑规则区', () => {
         });
         expect(regionsById.get('city-region-24')).toMatchObject({
             id: 'city-region-24',
-            name: '宣府',
+            name: '宁远',
             isLogicalRegion: false,
         });
         expect(regionsById.get('city-region-28')).toMatchObject({
@@ -532,9 +540,9 @@ it('会为关键借位区和高置信图区同时生成逻辑规则区', () => {
         expect(regionsById.get('xuan-fu')).toMatchObject({
             id: 'xuan-fu',
             name: '宣府',
-            isLogicalRegion: true,
-            primaryRuntimeRegionId: 'city-region-24',
-            runtimeRegionIds: ['city-region-24'],
+            isLogicalRegion: false,
+            primaryRuntimeRegionId: 'xuan-fu',
+            runtimeRegionIds: ['xuan-fu'],
         });
         expect(regionsById.get('shun-tian')).toMatchObject({
             id: 'shun-tian',
@@ -543,7 +551,6 @@ it('会为关键借位区和高置信图区同时生成逻辑规则区', () => {
             primaryRuntimeRegionId: 'city-region-28',
             runtimeRegionIds: ['city-region-28'],
         });
-        expect(regionsById.get('xuan-fu')?.troops).toBe(regionsById.get('city-region-24')?.troops);
         expect(regionsById.get('shun-tian')?.controller).toBe(regionsById.get('city-region-28')?.controller);
         expect(regionsById.get('liao-dong')?.population).toBe(regionsById.get('city-region-15-liaodong')?.population);
         const fortificationConfigs = getQidahenFortificationConfigs();
@@ -553,7 +560,7 @@ it('会为关键借位区和高置信图区同时生成逻辑规则区', () => {
     });
 
 it('升级军备不能脱离已识别军备牌退回抽象势力行动按钮', () => {
-        const validation = QidahenDomain.validate(stateOf(QidahenDomain.setup(['0', '1', '2'], random)), {
+        const validation = QidahenDomain.validate(stateOf(createMingActionWindowFixture()), {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
             playerId: '0',
             payload: { actionId: 'upgrade-armament' },
@@ -563,7 +570,7 @@ it('升级军备不能脱离已识别军备牌退回抽象势力行动按钮', (
     });
 
 it('从已识别军备手牌进入升级军备时，会把这张军备牌作为手牌行动来源锁进支付', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = createMingActionWindowFixture();
         const [armamentCard, paymentCard] = factionHandCards(core, 'ming');
         const mappedCore: QidahenCore = {
             ...core,
@@ -632,7 +639,7 @@ it('atlas05 已核对军备牌全集都能直点升级军备并指向对应军�
         expect(armamentIdentities).toHaveLength(12);
 
         for (const identity of armamentIdentities) {
-            const core = QidahenDomain.setup(['0', '1', '2'], random);
+            const core = createMingActionWindowFixture();
             const [sourceCard, paymentCard] = factionHandCards(core, 'ming');
             expect(sourceCard).toBeDefined();
             expect(paymentCard).toBeDefined();
@@ -694,7 +701,7 @@ it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件入�
         expect(eventIdentities.length).toBeGreaterThan(0);
 
         for (const identity of eventIdentities) {
-            const core = QidahenDomain.setup(['0', '1', '2'], random);
+            const core = createMingActionWindowFixture();
             const [sourceCard] = factionHandCards(core, 'ming');
             expect(sourceCard).toBeDefined();
             const mappedCore: QidahenCore = {

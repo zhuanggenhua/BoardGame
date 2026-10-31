@@ -6,6 +6,8 @@ import {
     createSimpleChoiceSystem,
     createRematchSystem,
     createUndoSystem,
+    createTimingOpportunitySystem,
+    createResolutionFrameSystem,
 } from '../../engine';
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
 import { isManualSetupSelectionEnabledForSeat, registerGameAiRuntime } from '../../engine/ai';
@@ -16,6 +18,8 @@ import { QidahenDomain } from './domain';
 import type { QidahenCore } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
 import { createQidahenInteractionSystem } from './domain/interactionSystem';
+import { createQidahenTurnResolutionSystem } from './domain/turnResolutionSystem';
+import { QIDAHEN_TURN_RESOLUTION_CHOICE } from './domain/turnResolutionTypes';
 import {
     getInteractionSourceId,
     QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
@@ -34,7 +38,7 @@ const resolveQidahenLocalRuntimeControlledPlayerId = (args: {
     fallbackPlayerId: string | null;
 }): string | null => {
     const interaction = args.state.sys?.interaction?.current;
-    return interaction && getInteractionSourceId(interaction) === QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID
+    return interaction && (getInteractionSourceId(interaction) === QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID || (interaction.data as { sourceId?: string }).sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE)
         ? interaction.playerId
         : args.fallbackPlayerId;
 };
@@ -48,6 +52,8 @@ const resolveQidahenOnlineAiCurrentPlayerId = (args: {
     if (!core) {
         return args.fallbackPlayerId;
     }
+    const interaction = args.state.sys.interaction?.current;
+    if (interaction && (interaction.data as { sourceId?: string }).sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE) return interaction.playerId;
 
     // 剧本前置选择是按势力归属的隐式决策窗口。历史线上房间可能已经把
     // currentPlayer 推进到下一势力，但前一势力仍有待选人物/军备；watchdog
@@ -177,8 +183,7 @@ const formatQidahenFallbackLogText = (core: QidahenCore, command: Command): stri
             return '确认驱虎吞狼回应';
         case QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE:
             return '确认征召军队';
-        case QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE:
-            return '确认城防维护';
+
         case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE:
             return '确认剧本人物';
         case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE:
@@ -230,6 +235,9 @@ const systems = [
     createEventStreamSystem(),
     createSimpleChoiceSystem(),
     createQidahenInteractionSystem(),
+    createQidahenTurnResolutionSystem(),
+    createTimingOpportunitySystem(QidahenDomain),
+    createResolutionFrameSystem(),
     createRematchSystem(),
 ];
 

@@ -622,6 +622,8 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
             if (command.type === TUTORIAL_COMMANDS.AI_CONSUMED) {
                 const payload = command.payload as TutorialAiConsumedPayload | undefined;
+                // 动作事件可能已进入下一步，旧步骤的回执不能清除新步骤尚未执行的动作。
+                if (payload?.stepId && payload.stepId !== state.sys.tutorial.step?.id) return { halt: true };
                 const timestamp = resolveTimestamp(command);
                 const shouldAdvanceAfterConsume = shouldAutoAdvanceAfterAiConsumed(
                     state.sys.tutorial,

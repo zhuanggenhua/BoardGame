@@ -71,9 +71,15 @@
       "summaryScenario": "Scenario",
       "noExtraChoices": "After entering the board, resolve the scenario briefing and host choice first.",
       "confirm": "Enter board"
+    },
+    "specialCards": {
+      "label": "Promo cards",
+      "disabled": "Off · Base game",
+      "enabled": "On · 9 promo cards"
     }
   },
   "board": {
+    "handScroll": {"previous":"View previous hand cards","next":"View next hand cards"},
     "magnifyCardAria": "View {{card}}",
     "operation": {
       "discardHand": "Choose a card to discard"
@@ -99,7 +105,8 @@
       "raidPaymentTarget": "Target: {{targetRegionName}} · {{resolutionHint}}",
       "raidPaymentInvalidTarget": "Choose a target region on the map.",
       "wheelDispatchPaymentTitle": "Attack Dispatch · Discard",
-      "wheelDispatchPaymentStatus": "Discard {{required}} · Selected {{selected}}"
+      "wheelDispatchPaymentStatus": "Discard {{required}} · Selected {{selected}}",
+      "raidPaymentSelectSource": "Select the region to attack from on the map"
     },
     "inspect": {
       "factionHeader": "Faction details",
@@ -293,8 +300,7 @@
       "cancel": "Cancel",
       "wuzhenChaoha": {
         "hint": "Click a green infantry card to make it attack early during the artillery phase.",
-        "artilleryTechLabel": "Destroy Artillery Technology:",
-        "artilleryTechCount": "{{count}} card(s)"
+        "techBonus": "{{count}} developed Artillery Technology cards: +{{count}} to the roll"
       },
       "instigateDefection": {
         "hint": "Click a green troop card to choose the enemy minor unit to defect."
@@ -387,7 +393,8 @@
         "back": "Back",
         "scrollHint": "Scroll the list to see every option.",
         "confirm": "Confirm post-battle resolution"
-      }
+      },
+      "returnToWheel": "Return to wheel actions"
     },
     "setup": {
       "eyebrow": "In-match setup",
@@ -474,6 +481,25 @@
       "confirmScenarioFirst": "Confirm the starting scenario setup card first",
       "confirmedCount": "Confirmed {{confirmed}} / {{total}}",
       "confirmFaction": "Confirm faction"
+    },
+    "battleRoll": {
+      "attacker": "Attacker",
+      "defender": "Defender",
+      "totals": "Roll totals: attacker {{attacker}} · defender {{defender}}",
+      "damage": "Attacker deals {{attacker}} damage; defender deals {{defender}} damage",
+      "phase": {
+        "artillery": "Artillery",
+        "cavalry": "Cavalry",
+        "infantry": "Infantry",
+        "melee": "Melee"
+      }
+    },
+    "turnChoice": {
+      "selectedSupport": "Selected {{cards}} cards and {{units}} troops",
+      "selectedTroops": "Selected {{units}} troops",
+      "supportOrRemove": "Choose support cards or troops to remove",
+      "selectHand": "Choose from your hand",
+      "confirm": "Confirm"
     }
   },
   "battle": {
@@ -489,9 +515,85 @@
     }
   },
   "tutorial": {
+    "annual": {
+      "steps": {
+        "frontier-goal": "You command Ming. Prepare Liaobei, then advance into Yehe. Win by controlling 16 non-Korean regions at New Year, capturing an enemy capital, or reaching 3 prestige.",
+        "opening-move": "All factions share the wheel. Move 1 for free; moving 2 lets one chosen opponent draw 2, while moving 3 lets every opponent draw 2. Move 1 this turn.",
+        "prepare-hand": "After moving, you may perform one hand action and the landing action in either order. First recruit troops for Liaobei.",
+        "recruit-source": "Regular troops must be raised in your homeland. Select Liaobei.",
+        "recruit-action": "Recruit Army: discard 1 card to raise six level-2 troops or two level-4 Sichuan troops. Choose Recruit Army.",
+        "recruit-payment": "Cards also pay for actions. Spend Silver, which has no special effect, and keep Mandarin Duck Formation. Use the magnifier to inspect a card; on touch screens you can also long-press.",
+        "recruit-confirm": "Confirm the payment to recruit.",
+        "recruit-troops": "Choose six level-2 troops to provide infantry for the river crossing.",
+        "farm-action": "Military Farming draws 2 cards and raises one level-2 regular troop. Replenish the front and your hand.",
+        "farm-target": "Select Liaobei for the new troop.",
+        "reclaim-action": "Reclaim adds 1 population to each of up to 5 controlled regions, within their caps. Liaodong currently has equal population and troops; increase its population to prepare for tax income.",
+        "reclaim-target": "Select Liaodong. A region with more population than troops provides 1 tax card at Midyear.",
+        "opening-finish": "Your hand action, reclaiming and military farming are complete. Finish the wheel action; Mongolia acts next.",
+        "midyear": "Jin reaches Midyear. The wheel must stop at Midyear and New Year. After the active player resolves one landing action, all players collect tax from unsieged regions with more population than troops; Ming draws 5 additional canal cards. Then check character conditions and roll once per defeat marker.",
+        "hand-limit": "Ming now exceeds its 15-card hand limit. Discard the highlighted six cards at the start of your turn, preserving Artillery Technology and Mandarin Duck Formation.",
+        "battle-move": "Move 1 to dispatch and attack. This turn cross from Liaobei into Yehe.",
+        "upgrade-first": "First develop Artillery Technology with your hand action, then use the wheel to attack.",
+        "upgrade-card": "An armament is played as a hand action and costs one additional discard. It stays in play. Each developed Artillery Technology adds 1 to artillery rolls and raises its training cap.",
+        "upgrade-payment": "Spend Silver for the additional cost. The technology card will stay in play.",
+        "upgrade-confirm": "Confirm Artillery Technology.",
+        "dispatch-action": "Discard 1 card to command up to 6 troops. Infantry and artillery move 1 region; cavalry move 2. Entering enemy territory triggers battle.",
+        "dispatch-payment": "Pay with this card and preserve Mandarin Duck Formation.",
+        "dispatch-source": "Select your source first: Liaobei.",
+        "dispatch-troops": "The river into Yehe has width 2; artillery does not use that width. Select the two newly recruited level-2 infantry and one level-1 artillery, then confirm.",
+        "dispatch-target": "Select Yehe. Its Mongol defender must now decide whether to evade.",
+        "defender-response": "Defending cavalry can evade into other controlled regions. Mongolia fights. Normal defense is 3, but its cavalry armor raises this to 4: four roll points are needed per damage. The tactics phase follows.",
+        "tactic-card": "Tactics are played during battle, normally one per battle. Level-2 infantry use eight-sided d8 dice. Mandarin Duck Formation temporarily changes these to ten-sided d10 dice; the troops themselves remain level 2. Select and confirm the card.",
+        "battle-roll": "Both sides resolve artillery, cavalry, then infantry. Highest-level troops take damage first. Each damage lowers infantry or cavalry one level; at zero they are removed. Artillery cannot absorb damage and does not count toward victory. Start the rolls.",
+        "occupy": "More surviving non-artillery troops wins; ties favor the defender. The Mongol defenders are destroyed. Occupy to increase Ming's controlled regions. A field-battle loser also places a defeat marker on an eligible character for Midyear judgement.",
+        "battle-finish": "Ming controls Yehe. Uncommitted troops remain in Liaobei. Finish your turn.",
+        "opponent-round": "Mongolia and Jin move the shared wheel. Your next turn starts from its new position.",
+        "diplomacy-move": "Move 1 to weaken Mongol relations and hire reinforcements behind the front.",
+        "diplomacy-action": "Diplomacy affects up to 3 regions adjacent to your controlled territory, placing or removing control markers. Homeland without a control marker, regular garrisons and Korea are excluded. Choose diplomacy.",
+        "diplomacy-target": "Outer Khalkha has a reverse Mongol friendship marker permitting passage and garrisoning; the front represents vassal control. Select it to remove the Mongol friendship marker.",
+        "diplomacy-finish": "Mongolia's friendship marker is removed. The region remains neutral. Finish diplomacy.",
+        "hire-action": "The first discard hires two level-2 mercenaries into a controlled region. Further hires during this action cost one card per troop.",
+        "hire-payment": "Pay Silver for this hire.",
+        "hire-target": "Deploy the two mercenaries in Liaodong.",
+        "diplomacy-round-finish": "Diplomacy and hiring are complete. Finish the wheel action.",
+        "save-hand": "New Year maintenance and upkeep require cards. Keep your hand and decline another hand action this turn.",
+        "new-year": "Mongolia reaches New Year. First draw tribute according to controlled Korean regions. Ming then chooses each fortification's maintenance, followed by upkeep, chronology and characters. Korea has separate draw and discard piles.",
+        "maintain-shanhai": "Shanhaiguan, Ningyuan and Jinzhou each cost 2 cards; the inner wall costs 2 and the outer wall 6. Abandonment ruins that defense and removes its special effects. Keep Shanhaiguan and reserve the rest for troop upkeep.",
+        "maintenance-first-card": "Select the first Shanhaiguan maintenance card.",
+        "maintenance-second-card": "Select one more to complete the two-card cost.",
+        "abandon-jinzhou": "Abandon Jinzhou maintenance to conserve cards.",
+        "abandon-ningyuan": "Abandon Ningyuan maintenance.",
+        "abandon-inner-wall": "Abandon inner-wall maintenance.",
+        "abandon-outer-wall": "Abandon outer-wall maintenance. Ruin markers appear on the defenses.",
+        "upkeep-yehe": "Each unsupported troop needs one discarded card or must be removed. Ming regulars receive no local support in non-Han regions.",
+        "upkeep-xianxing": "Korean garrisons receive no local population support. Discard this card to retain Xianxing's troop.",
+        "other-upkeep": "Jin pays for its own Jianzhou upkeep. Wait for Jin, then continue at Liaobei.",
+        "upkeep-liaobei": "Liaobei has four more troops than population. Select these four support cards.",
+        "upkeep-pyongyang": "You may instead remove troops. Preserve cards for later actions by removing the Pyongyang mercenary.",
+        "upkeep-hanseong": "Remove the Hanseong mercenary and keep your cards.",
+        "upkeep-liaodong": "Liaodong needs one more support. Remove this level-1 artillery, preserving the artillery at Yehe.",
+        "claim-year": "The next chronology compares territorial growth. Taking Yehe qualifies Ming; ties favor the faction later in the old order. Discard half your hand, rounded up, to claim this year's card and 1 prestige, or decline for the next faction. Claim it now.",
+        "chronology-first-card": "With 5 cards, discard 3 to claim the chronology. Select this Korean Silver.",
+        "chronology-second-card": "Select the second Korean card.",
+        "new-order": "The new chronology sets turn order and character candidates: Mongolia, Ming, then Jin. Mongolia plays a character before you.",
+        "year-character": "Characters are separate from your hand and have lasting effects. Your army has grown; choose Yang Gao to command up to 10 troops when dispatching or attacking, unaffected by other character effects. Inspect his card with the magnifier.",
+        "year-ready": "Jin completes its character choice. Mongolia takes the first turn of the new year, followed by Ming.",
+        "training-move": "Move 1 to recruit and train. Your saved card can pay for training.",
+        "training-action": "Discard 1 card for up to 4 recruit or train actions. Each recruit raises one level-2 regular troop; each training raises one troop one level. Train the artillery at Yehe.",
+        "training-payment": "Pay this Korean card. It goes to Korea’s discard pile.",
+        "training-payment-confirm": "Confirm payment to begin.",
+        "training-kind": "Choose training.",
+        "training-target": "Each troop can gain at most one level per turn. Artillery's cap depends on armaments. Your developed technology permits this Yehe artillery to advance from level 1 to level 2.",
+        "training-finish": "Each additional discarded hand card allows one more training action.",
+        "training-slot-finish": "Finish the wheel action.",
+        "training-round-finish": "",
+        "finish": "You completed recruitment, supply, battle and the Midyear/New Year cycle. Continue pursuing territory and chronology cards: reach 3 prestige, capture an enemy capital, or control 16 non-Korean regions at New Year.",
+        "chronology-third-card": "Discard the third card to claim this year’s chronology."
+      }
+    },
     "basic": {
-      "title": "Qidahen Basics",
-      "description": "From Ming's formal opening, farm troops, raid, occupy, and continue the same match.",
+      "title": "Introduction: from recruitment to New Year",
+      "description": "Learn recruitment, battle, supply, Midyear and New Year in one continuous match.",
       "steps": {
         "frontier": "Attack Yehe this turn. First use Military Farm in Liaobei to reinforce the frontier.",
         "selectFarmRegion": "Regular troops may only be established in homeland regions. Select Liaobei.",

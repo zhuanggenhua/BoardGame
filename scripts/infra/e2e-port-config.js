@@ -25,7 +25,7 @@ export const E2E_SINGLE_WORKER_PORTS = Object.freeze({
 
 // 多 worker 端口基础值：worker 0 为 6273/20100/21100，后续 worker 每个 +100。
 export const E2E_MULTI_WORKER_BASE_PORTS = Object.freeze({
-  frontend: 6273,
+  frontend: resolvePort(process.env.PW_E2E_MULTI_FRONTEND_PORT, 6273),
   gameServer: 20100,
   apiServer: 21100,
 });

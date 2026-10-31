@@ -464,6 +464,25 @@ describe('TutorialSystem', () => {
         expect(consumed?.state?.sys.tutorial.step?.aiActions).toBeUndefined();
     });
 
+    it('AI_CONSUMED: 旧步骤回执不清除当前步骤的自动动作', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = { id: 'late-ai-receipt', steps: [
+            { id: 'current', content: '当前对手行动', aiActions: [{ commandType: 'AI_MOVE', playerId: '1' }] },
+            { id: 'after', content: '下一决定' },
+        ] };
+        const args = { state: createTestState(), events: [], random: mockRandom, playerIds: ['0','1'] };
+        const startResult = sys.beforeCommand?.({ ...args, command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } } });
+        if (!startResult?.state) throw new Error('START should initialize the current tutorial step');
+        const started = startResult.state;
+        const stale = sys.beforeCommand?.({ ...args, state: started, command: { type: TUTORIAL_COMMANDS.AI_CONSUMED, playerId: '0', payload: { stepId: 'previous' } } });
+        expect(stale?.error).toBeUndefined();
+        expect(stale?.state ?? started).toEqual(started);
+        const current = sys.beforeCommand?.({ ...args, state: started, command: { type: TUTORIAL_COMMANDS.AI_CONSUMED, playerId: '0', payload: { stepId: 'current' } } });
+        expect(current?.state?.sys.tutorial.step?.id).toBe('current');
+        expect(current?.state?.sys.tutorial.aiActions).toBeUndefined();
+        expect(current?.state?.sys.tutorial.step?.aiActions).toBeUndefined();
+    });
+
     it('START: compressed-repeat 必须引用此前玩家可见步骤', () => {
         const sys = createTutorialSystem<TestCore>();
         const state = createTestState();

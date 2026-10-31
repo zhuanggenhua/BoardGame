@@ -5,8 +5,7 @@ import {
     getQidahenLockedRegionSelectionSemantics,
 } from './regionFocusSemantics';
 import { buildGrantPardonSelectionFromRegionSemantics } from './selectionBuilders';
-import {
-} from './seasonResolution';
+
 import { advanceQidahenTurnIfReady } from './turnAdvance';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type {
@@ -365,6 +364,7 @@ function finalizeQidahenMongolNoblesCongress(
                 ...nextFactions[selection.ownerFactionId],
                 handCount: Math.max(0, nextFactions[selection.ownerFactionId].handCount - selection.paymentCardIds.length),
                 discardPileCount: Math.max(0, nextFactions[selection.ownerFactionId].discardPileCount ?? 0) + discardedCardCount,
+                discardPile: [...nextFactions[selection.ownerFactionId].discardPile, ...state.handCards.filter(card => removedPaymentCardIds.has(card.id))],
             },
         },
         factionActionUsed: true,
@@ -418,6 +418,7 @@ export function resolveQidahenEventCharacterTargetChoice(
             ...state.factions[selection.ownerFactionId],
             handCount: Math.max(0, state.factions[selection.ownerFactionId].handCount - selection.paymentCardIds.length),
             discardPileCount: Math.max(0, state.factions[selection.ownerFactionId].discardPileCount ?? 0) + discardedCardCount,
+            discardPile: [...state.factions[selection.ownerFactionId].discardPile, ...state.handCards.filter(card => removedPaymentCardIds.has(card.id) && card.id !== selection.eventCardId)],
         },
         [choice.factionId]: {
             ...state.factions[choice.factionId],
@@ -517,10 +518,12 @@ export function resolveQidahenEventOpponentHandChoice(
                 ...state.factions[selection.ownerFactionId],
                 handCount: Math.max(0, state.factions[selection.ownerFactionId].handCount - selection.paymentCardIds.length),
                 discardPileCount: Math.max(0, state.factions[selection.ownerFactionId].discardPileCount ?? 0) + discardedCardCount,
+                discardPile: [...state.factions[selection.ownerFactionId].discardPile, ...state.handCards.filter(card => removedPaymentCardIds.has(card.id) && card.id !== selection.eventCardId)],
             },
             [selection.targetFactionId]: {
                 ...state.factions[selection.targetFactionId],
                 discardPileCount: Math.max(0, state.factions[selection.targetFactionId].discardPileCount ?? 0) + 1,
+            discardPile: [...state.factions[selection.targetFactionId].discardPile, ...state.handCards.filter(card => card.id === selection.eventCardId).map(card => ({ ...card, faction: selection.targetFactionId!, accent: selection.targetFactionId! }))],
             },
         };
         const nextState = updateQidahenTurnLabel({
@@ -883,11 +886,14 @@ export function resolveQidahenEventOpponentHandChoice(
         [selection.ownerFactionId]: {
             ...state.factions[selection.ownerFactionId],
             handCount: Math.max(0, state.factions[selection.ownerFactionId].handCount - selection.paymentCardIds.length) + 1,
+            discardPile: [...state.factions[selection.ownerFactionId].discardPile, ...state.handCards.filter(card => removedPaymentCardIds.has(card.id) && card.id !== selection.eventCardId)],
+            discardPileCount: state.factions[selection.ownerFactionId].discardPileCount + selection.paymentCardIds.filter(id => id !== selection.eventCardId).length,
         },
         [selection.targetFactionId]: {
             ...state.factions[selection.targetFactionId],
             handCount: Math.max(0, state.factions[selection.targetFactionId].handCount - 1),
             discardPileCount: Math.max(0, state.factions[selection.targetFactionId].discardPileCount ?? 0) + 1,
+            discardPile: [...state.factions[selection.targetFactionId].discardPile, ...state.handCards.filter(card => card.id === selection.eventCardId).map(card => ({ ...card, faction: selection.targetFactionId!, accent: selection.targetFactionId! }))],
         },
     };
 

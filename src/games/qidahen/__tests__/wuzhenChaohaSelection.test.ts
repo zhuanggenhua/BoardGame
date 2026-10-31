@@ -13,7 +13,6 @@ import type { QidahenCommand, QidahenCore } from '../domain/types';
 import {
     buildQidahenWuzhenChaohaSelection,
     resolveQidahenWuzhenChaohaSelection,
-    setQidahenWuzhenChaohaArtilleryTechCount,
 } from '../domain/wuzhenChaohaSelection';
 
 const fixedRandom: RandomFn = {
@@ -24,7 +23,7 @@ const fixedRandom: RandomFn = {
 };
 
 const buildCore = (): QidahenCore => {
-    const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+    const core = QidahenDomain.setup(['0', '1', '2'], fixedRandom);
     const baseCard = core.handCards.find((card) => card.faction === 'ming')!;
     core.currentPlayer = '0';
     core.turnPhase = 'resolve-pending';
@@ -41,12 +40,13 @@ const buildCore = (): QidahenCore => {
         cardKind: 'tactic',
         armamentId: null,
         cardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
-        rulesSummary: '指定 1 个步兵提前在炮兵阶段攻击；每销毁 1 张《火炮技术》，该部队攻击等级 +1。',
+        rulesSummary: '指定 1 个步兵提前在炮兵阶段攻击；每研发 1 张《火炮技术》，该部队掷骰点数 +1。',
     }];
     core.factions = {
         ...core.factions,
         ming: {
             ...core.factions.ming,
+            handCount: 1,
             armaments: core.factions.ming.armaments.map((armament) => (
                 armament.id === 'artillery-tech'
                     ? {
@@ -169,14 +169,13 @@ describe('乌真超哈选择', () => {
 
         expect(selection?.choices).toHaveLength(2);
         expect(selection?.choices.every((choice) => choice.sourceRegionId === 'city-region-16')).toBe(true);
-        expect(selection?.maxDestroyedArtilleryTechCount).toBe(1);
-        expect(selection?.destroyedArtilleryTechCount).toBe(0);
+        expect(selection?.artilleryTechBonus).toBe(1);
     });
 
-    it('确认兵牌后才消耗手牌，销毁火炮技术但保留红衣大炮来源', () => {
+    it('确认兵牌后弃实际战术牌，已研发火炮技术与红衣大炮均留场', () => {
         const core = buildCore();
         core.wuzhenChaohaSelection = buildQidahenWuzhenChaohaSelection(core, 'ming-wuzhen-chaoha');
-        const selectedCount = setQidahenWuzhenChaohaArtilleryTechCount(core, 1);
+        const selectedCount = core;
         const choice = selectedCount.wuzhenChaohaSelection!.choices[0]!;
         const resolved = resolveQidahenWuzhenChaohaSelection(selectedCount, choice.id, 100);
         const artilleryTech = resolved.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech');
@@ -185,8 +184,8 @@ describe('乌真超哈选择', () => {
         expect(resolved.handCards.some((card) => card.id === 'ming-wuzhen-chaoha')).toBe(false);
         expect(resolved.discardPileCount).toBe(core.discardPileCount + 1);
         expect(artilleryTech).toMatchObject({
-            level: 1,
-            sourceCardDefIds: ['qidahen-atlas05-1634-red-coat-cannon'],
+            level: 2,
+            sourceCardDefIds: ['qidahen-atlas05-1626-artillery-tech', 'qidahen-atlas05-1634-red-coat-cannon'],
         });
         expect(resolved.pendingTargetAction?.tacticModifiers).toEqual([
             expect.objectContaining({
@@ -195,12 +194,13 @@ describe('乌真超哈选择', () => {
                 targetTokenId: choice.tokenId,
                 rollAsPhase: 'artillery',
                 rollUnitCount: 1,
-                levelBonus: 1,
+                levelBonus: 0,
+                rollValueBonus: 1,
             }),
         ]);
     });
 
-    it('正式命令链会先建立选择态，再按数量和地图兵牌完成结算', () => {
+    it('正式命令链先选择实际参战步兵，再执行提前攻击', () => {
         const core = buildCore();
         const selecting = execute(core, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
@@ -211,11 +211,7 @@ describe('乌真超哈选择', () => {
         expect(selecting.wuzhenChaohaSelection?.choices).toHaveLength(2);
         expect(selecting.handCards.some((card) => card.id === 'ming-wuzhen-chaoha')).toBe(true);
 
-        const counted = execute(selecting, {
-            type: QIDAHEN_COMMANDS.SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT,
-            playerId: '0',
-            payload: { count: 1 },
-        });
+        const counted = selecting;
         const choiceId = counted.wuzhenChaohaSelection!.choices[0]!.id;
         const resolved = execute(counted, {
             type: QIDAHEN_COMMANDS.RESOLVE_WUZHEN_CHAOHA,
@@ -228,7 +224,8 @@ describe('乌真超哈选择', () => {
         expect(resolved.pendingTargetAction?.tacticModifiers).toEqual([
             expect.objectContaining({
                 targetTokenId: choiceId,
-                levelBonus: 1,
+                levelBonus: 0,
+                rollValueBonus: 1,
                 rollAsPhase: 'artillery',
             }),
         ]);
@@ -250,7 +247,7 @@ describe('乌真超哈选择', () => {
         core.pieces = syncPiecesFromRegions(core.regions);
         core.mapTokens = syncQidahenMapTokensFromRegions(core.regions, core.pieces);
         core.wuzhenChaohaSelection = buildQidahenWuzhenChaohaSelection(core, 'ming-wuzhen-chaoha');
-        const selectedCount = setQidahenWuzhenChaohaArtilleryTechCount(core, 1);
+        const selectedCount = core;
         const choice = selectedCount.wuzhenChaohaSelection!.choices.find((candidate) => (
             candidate.pieceId === 'ming-infantry-1'
         ))!;
@@ -272,7 +269,9 @@ describe('乌真超哈选择', () => {
         expect(artilleryStage?.attackerRolls).toEqual([
             expect.objectContaining({
                 troopKind: 'infantry',
-                level: 4,
+                level: 3,
+                raw: 4,
+                value: 5,
             }),
         ]);
         expect(infantryStage?.attackerRolls).toEqual([
@@ -310,7 +309,7 @@ describe('乌真超哈选择', () => {
             }],
         };
         core.wuzhenChaohaSelection = buildQidahenWuzhenChaohaSelection(core, 'ming-wuzhen-chaoha');
-        const selectedCount = setQidahenWuzhenChaohaArtilleryTechCount(core, 1);
+        const selectedCount = core;
         const choice = selectedCount.wuzhenChaohaSelection!.choices.find((candidate) => (
             candidate.pieceId === 'ming-infantry-1'
         ))!;
@@ -332,7 +331,9 @@ describe('乌真超哈选择', () => {
         expect(artilleryStage?.attackerRolls).toEqual([
             expect.objectContaining({
                 troopKind: 'infantry',
-                level: 4,
+                level: 3,
+                raw: 4,
+                value: 5,
             }),
         ]);
         expect(infantryStage?.attackerRolls).toEqual([
@@ -403,7 +404,7 @@ describe('乌真超哈选择', () => {
         expect(survivingPieceIds).toContain('ming-other-infantry-piece');
     });
 
-    it('蒙古使用时同样可直选参战步兵并通过销毁火炮技术提高提前攻击等级', () => {
+    it('蒙古使用时根据已研发火炮技术增加提前攻击骰点，不销毁科技', () => {
         const core = buildCore();
         core.handCards = core.handCards.map((card) => ({
             ...card,
@@ -455,9 +456,9 @@ describe('乌真超哈选择', () => {
 
         core.wuzhenChaohaSelection = buildQidahenWuzhenChaohaSelection(core, 'mongol-wuzhen-chaoha');
         expect(core.wuzhenChaohaSelection?.choices).toHaveLength(2);
-        expect(core.wuzhenChaohaSelection?.maxDestroyedArtilleryTechCount).toBe(1);
+        expect(core.wuzhenChaohaSelection?.artilleryTechBonus).toBe(1);
 
-        const selectedCount = setQidahenWuzhenChaohaArtilleryTechCount(core, 1);
+        const selectedCount = core;
         const choice = selectedCount.wuzhenChaohaSelection!.choices.find((candidate) => (
             candidate.pieceId === 'mongol-infantry-1'
         ))!;
@@ -480,13 +481,15 @@ describe('乌真超哈选择', () => {
         ));
 
         expect(artilleryTech).toMatchObject({
-            level: 0,
-            sourceCardDefIds: [],
+            level: 1,
+            sourceCardDefIds: ['qidahen-atlas05-1626-artillery-tech'],
         });
         expect(artilleryStage?.attackerRolls).toEqual([
             expect.objectContaining({
                 troopKind: 'infantry',
-                level: 3,
+                level: 2,
+                raw: 4,
+                value: 5,
             }),
         ]);
         expect(infantryStage?.attackerRolls).toEqual([

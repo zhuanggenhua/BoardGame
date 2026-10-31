@@ -44,7 +44,7 @@ export const getMovableTroopCountForProfile = (
         return Math.max(0, Math.min(region.troops, cavalryCount));
     }
 
-    return Math.max(0, region.troops - cavalryCount);
+    return region.troops;
 };
 
 export const applyRequestedCommittedTroops = (

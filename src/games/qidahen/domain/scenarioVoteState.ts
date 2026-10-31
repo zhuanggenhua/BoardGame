@@ -76,7 +76,22 @@ export const resolveQidahenScenarioVoteCastEvent = (
         };
     }
 
-    const finalizedCore = createInitialCore(state.playerIds, selection.scenarioId, false);
+    // 房主选剧本前已由 setup 的权威随机源洗牌；换剧本时保留该隐藏顺序，移出该剧本实际初始军备后重新发牌。
+    const finalizedCore = createInitialCore(state.playerIds, selection.scenarioId, false, undefined, state.specialCardsEnabled, (cards, factionId) => {
+        const previousOrder = [
+            ...state.handCards.filter(card => card.faction === factionId),
+            ...state.factions[factionId].drawPile,
+            ...state.factions[factionId].developedCards,
+            ...state.activeEventCards.flatMap(event => event.ownerFactionId === factionId && event.sourceCard ? [event.sourceCard] : []),
+        ];
+        const remaining = [...cards];
+        const ordered = previousOrder.flatMap(previous => {
+            const index = remaining.findIndex(card => JSON.stringify(card.previewRef) === JSON.stringify(previous.previewRef));
+            return index < 0 ? [] : remaining.splice(index, 1);
+        });
+        if (remaining.length > 0) throw new Error(`Missing initial card order for ${factionId}`);
+        return ordered;
+    }, () => [...state.koreaDrawPile, ...state.koreaDiscardPile], () => [...state.chronology.drawPile]);
     const finalizedScenarioLabel = getQidahenScenarioVoteMeta(selection.scenarioId).label;
     return {
         ...finalizedCore,

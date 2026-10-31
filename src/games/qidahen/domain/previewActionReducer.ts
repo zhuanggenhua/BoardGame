@@ -50,6 +50,7 @@ const reduceQidahenPreviewActionConfirmed = (
         selectedActionId: actionId,
         confirmedActionId: actionId,
         explicitRegionId: actionId === 'raid' ? null : state.explicitRegionId,
+        regionFocusState: actionId === 'raid' ? { ...state.regionFocusState, lockedSourceRegionId: null, currentTargetRegionId: null } : state.regionFocusState,
         selectedPaymentCardIds,
         selectedHandActionCardId: sourceCard?.id ?? null,
         grantPardonSelection: null,
@@ -72,6 +73,7 @@ const reduceQidahenPreviewActionCancelled = (
     dependencies: QidahenPreviewActionConfirmedDependencies,
 ): QidahenCore => dependencies.updateTurnLabel({
     ...state,
+    regionFocusState: state.confirmedActionId === 'raid' ? { ...state.regionFocusState, lockedSourceRegionId: null, currentTargetRegionId: null } : state.regionFocusState,
     confirmedActionId: null,
     explicitRegionId: state.confirmedActionId === 'raid' ? null : state.explicitRegionId,
     selectedPaymentCardIds: [],

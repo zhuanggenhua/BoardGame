@@ -23,7 +23,7 @@ import type {
 
 export type DiceBoxProjectedLayout = DicePhysicsProjectedLayout;
 export type DiceBoxMotionSnapshot = DicePhysicsMotionSnapshot;
-export type DiceBoxDieType = 'd6' | 'd12';
+export type DiceBoxDieType = 'd6' | 'd8' | 'd10' | 'd12';
 
 export type DiceBoxMaterial = NonNullable<DiceBoxConfig['theme_material']>;
 export type DiceBoxCustomColorset = NonNullable<DiceBoxConfig['theme_customColorset']>;
@@ -612,7 +612,7 @@ function createNotation(values: number[], dieType: DiceBoxDieType): string {
 }
 
 function createControlledRollCompleteResult(values: number[], dieType: DiceBoxDieType): DiceBoxRollCompleteResult {
-    const sides = dieType === 'd12' ? 12 : 6;
+    const sides = Number(dieType.slice(1));
     const rolls = values.map((value, index) => ({
         type: dieType,
         sides,
@@ -926,7 +926,7 @@ export class DiceBoxThreeEngine {
         for (let index = 0; index < this.box.diceList.length; index += 1) {
             const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
             const skin = this.dieSkins[index] ?? this.dieSkins.find(Boolean);
-            const readableFaceValue = skin?.readableFaceValue;
+            const readableFaceValue = skin?.readableFaceValue ?? readDieValue(die);
             if (!die || typeof readableFaceValue !== 'number') continue;
 
             const localFaceNormal = this.getFaceNormalForValue(die, readableFaceValue);
@@ -2534,14 +2534,13 @@ export class DiceBoxThreeEngine {
         const lift = Math.max(2.4, Math.min(5.2, baseScale * 0.06));
         const sideTravel = Math.max(2.4, Math.min(5.6, baseScale * 0.07));
         const duration = Math.max(360, durationMs);
-        const totalSteps = Math.max(24, Math.ceil(duration / 33));
+        const startedAt = performance.now();
         const canvas = this.box.renderer?.domElement;
         const canvasWidth = canvas?.clientWidth || canvas?.width || 0;
         const canvasHeight = canvas?.clientHeight || canvas?.height || 0;
         const motionScreenMargin = Math.max(2, Math.min(6, baseScale * 0.06));
 
         await new Promise<void>((resolve, reject) => {
-            let stepIndex = 0;
             let frameId: number | null = null;
             let timerId: number | null = null;
             let watchdogId: number | null = null;
@@ -2574,7 +2573,8 @@ export class DiceBoxThreeEngine {
                 if (completed) return;
                 try {
                     clearScheduledStep();
-                    const progress = Math.min(1, stepIndex / totalSteps);
+                    // 调度频率只决定绘制次数；运动时长统一由单调时钟决定，不能随显示器刷新率缩短。
+                    const progress = clampNumber((performance.now() - startedAt) / duration, 0, 1);
                     const eased = progress < 0.5
                         ? 2 * progress * progress
                         : 1 - Math.pow(-2 * progress + 2, 2) / 2;
@@ -2658,7 +2658,6 @@ export class DiceBoxThreeEngine {
                         return;
                     }
 
-                    stepIndex += 1;
                     scheduleStep();
                 } catch (error) {
                     fail(error);
@@ -2692,6 +2691,11 @@ export class DiceBoxThreeEngine {
         const maxAngularVelocity = Math.max(4.4, baseScale * 0.075);
 
         vectors.forEach((vector, index) => {
+            // 原生spawn按轴角直接生成四元数；随机轴须先归一，避免首帧把旋转变成几何缩放。
+            if (vector.axis) {
+                const unitAxis = new Vector3(vector.axis.x, vector.axis.y, vector.axis.z).normalize();
+                this.setVector(vector.axis, unitAxis);
+            }
             const orderOffset = index - (count - 1) / 2;
             const targetX = clampNumber(orderOffset * laneSpacing, -halfX, halfX);
             const targetY = clampNumber(
@@ -2822,11 +2826,12 @@ export class DiceBoxThreeEngine {
 
         const presetValues = Array.isArray(preset.values)
             ? preset.values
-            : Array.from({ length: this.getDieType() === 'd12' ? 12 : 6 }, (_, index) => index + 1);
-        const labels = Array.from({ length: presetValues.length + 2 }, () => '');
+            : Array.from({ length: Number(this.getDieType().slice(1)) }, (_, index) => index + 1);
+        const faceOffset = this.getFaceMaterialOffset();
+        const labels = Array.from({ length: presetValues.length + faceOffset }, () => '');
         for (const [valueIndex, faceValue] of presetValues.entries()) {
             const label = primarySkin.faceLabels?.[Number(faceValue)];
-            labels[valueIndex + 2] = typeof label === 'string' ? label : '';
+            labels[valueIndex + faceOffset] = typeof label === 'string' ? label : '';
         }
         // Full-face canvas skins must clear dice-box's default symbol labels to avoid
         // drawing an extra layer, while explicit text-label skins may opt back in.
@@ -2869,19 +2874,24 @@ export class DiceBoxThreeEngine {
         }
     }
 
+    /** 原生十面骰仅有一个边缘材质，其余受支持骰型有两个。与库的swapDiceFace使用同一索引语义。 */
+    private getFaceMaterialOffset(): number {
+        return this.getDieType() === 'd10' ? 1 : 2;
+    }
+
     private getFaceValueForMaterialIndex(materialIndex: number): number | null {
         const preset = this.box.DiceFactory?.get?.(this.getDieType());
-        const values = preset?.values ?? Array.from({ length: this.getDieType() === 'd12' ? 12 : 6 }, (_, index) => index + 1);
-        const valueIndex = materialIndex - 2;
+        const values = preset?.values ?? Array.from({ length: Number(this.getDieType().slice(1)) }, (_, index) => index + 1);
+        const valueIndex = materialIndex - this.getFaceMaterialOffset();
         const value = values[valueIndex];
         return typeof value === 'number' ? value : null;
     }
 
     private getMaterialIndexForFaceValue(faceValue: number): number | null {
         const preset = this.box.DiceFactory?.get?.(this.getDieType());
-        const values = preset?.values ?? Array.from({ length: this.getDieType() === 'd12' ? 12 : 6 }, (_, index) => index + 1);
+        const values = preset?.values ?? Array.from({ length: Number(this.getDieType().slice(1)) }, (_, index) => index + 1);
         const valueIndex = values.indexOf(faceValue);
-        return valueIndex >= 0 ? valueIndex + 2 : null;
+        return valueIndex >= 0 ? valueIndex + this.getFaceMaterialOffset() : null;
     }
 
     private getFaceNormalForValue(die: DiceBoxDie, faceValue: number): Vector3 | null {
@@ -2951,7 +2961,7 @@ export class DiceBoxThreeEngine {
         const edgeCanvas = skin.edgeCanvas;
         const faceMaterialIndexes = materials
             .map((_, materialIndex) => materialIndex)
-            .filter((materialIndex) => materialIndex > 1);
+            .filter((materialIndex) => materialIndex >= this.getFaceMaterialOffset());
         for (const materialIndex of faceMaterialIndexes) {
             const material = materials[materialIndex];
             const faceValue = this.getFaceValueForMaterialIndex(materialIndex);
@@ -2966,7 +2976,7 @@ export class DiceBoxThreeEngine {
 
         if (edgeCanvas) {
             for (const [materialIndex, material] of materials.entries()) {
-                if (materialIndex > 1) continue;
+                if (materialIndex >= this.getFaceMaterialOffset()) continue;
                 if (this.updateExistingMaterialMap(material, edgeCanvas)) {
                     didChange = true;
                 }

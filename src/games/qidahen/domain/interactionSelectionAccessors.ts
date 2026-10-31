@@ -1,22 +1,5 @@
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import {
-    QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
-    QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
-    QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
-    QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
-    QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
-    QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
-    QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
-    QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
-    QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
-    QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
-    QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID,
-    QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID,
-    QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
-    QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
-    type QidahenInteractionSourceId,
-} from './interactionSources';
+import { QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID, QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID, QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID, QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID, QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID, QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID, QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID, QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID, QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID, QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID, QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID, QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID, QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID, QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID, type QidahenInteractionSourceId } from './interactionSources';
 import {
     buildDriveTigerDispatchSelectionFromRegionSemantics,
     getQidahenInternalDispatchSelectionForCore as getCoreQidahenInternalDispatchSelectionForCore,
@@ -29,25 +12,7 @@ import {
     getQidahenMaShiTradeSelectionForCore as getCoreQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore as getCoreQidahenRecruitSelectionForCore,
 } from './selectionBuilders';
-import type {
-    QidahenCore,
-    QidahenDiplomacySelection,
-    QidahenDriveTigerConsentSelection,
-    QidahenEventCharacterTargetSelection,
-    QidahenEventOpponentHandChoiceSelection,
-    QidahenFactionId,
-    QidahenFortificationMaintenanceSelection,
-    QidahenGrantPardonSelection,
-    QidahenHandLimitDiscardSelection,
-    QidahenInternalDispatchSelection,
-    QidahenKhanEdictSelection,
-    QidahenMaShiTradeSelection,
-    QidahenOpenGateSurrenderSelection,
-    QidahenPendingTargetAction,
-    QidahenPostBattleSelection,
-    QidahenRecruitSelection,
-    QidahenWheelDispatchSelection,
-} from './types';
+import type { QidahenCore, QidahenDiplomacySelection, QidahenDriveTigerConsentSelection, QidahenEventCharacterTargetSelection, QidahenEventOpponentHandChoiceSelection, QidahenFactionId, QidahenGrantPardonSelection, QidahenHandLimitDiscardSelection, QidahenInternalDispatchSelection, QidahenKhanEdictSelection, QidahenMaShiTradeSelection, QidahenOpenGateSurrenderSelection, QidahenPendingTargetAction, QidahenPostBattleSelection, QidahenRecruitSelection, QidahenWheelDispatchSelection } from './types';
 
 type QidahenInteractionSelectionCarrier = Pick<InteractionDescriptor, 'data'>;
 
@@ -212,6 +177,7 @@ export function getQidahenRecruitSelectionForCore(
         ),
         readInteraction: getQidahenRecruitSelectionFromInteraction,
         readCore: (currentCore) => currentCore.recruitSelection ?? getCoreQidahenRecruitSelectionForCore(currentCore),
+        preferInteraction: false,
     });
 }
 
@@ -434,54 +400,11 @@ export function getQidahenDriveTigerConsentSelectionForCore(
     };
 }
 
-export function getQidahenFortificationMaintenanceSelectionFromInteraction(
-    interaction?: QidahenInteractionSelectionCarrier | null,
-): QidahenFortificationMaintenanceSelection | null {
-    return getQidahenFortificationMaintenanceSelectionFromInteractionData(interaction?.data);
-}
 
-const getQidahenFortificationMaintenanceSelectionFromInteractionData = (
-    interactionData?: unknown,
-): QidahenFortificationMaintenanceSelection | null => {
-    return readQidahenInteractionSelectionField(
-        interactionData,
-        QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-        'qidahenFortificationMaintenanceSelection',
-    );
-};
 
-export function getQidahenFortificationMaintenanceSelectionForCore(
-    core: QidahenCore,
-    interaction?: QidahenInteractionSelectionCarrier | null,
-): QidahenFortificationMaintenanceSelection | null {
-    const isFortificationMaintenanceActive = (
-        core.turnPhase === 'season-resolution'
-        && core.actionWheelPosition === 'wheel-new-year'
-    );
-    if (!isFortificationMaintenanceActive) {
-        return null;
-    }
-    const interactionSelection = getQidahenFortificationMaintenanceSelectionFromInteraction(interaction);
-    if (interactionSelection) {
-        return interactionSelection;
-    }
-    return {
-        title: '新年防线维护',
-        summary: `大明当前手牌 ${core.factions.ming.handCount} 张；可先选择尽量维护，也可本年放弃维护全部防线。`,
-        choices: [
-            {
-                id: 'auto-pay',
-                label: '尽量维护防线',
-                detail: '按当前防线优先级自动支付可负担的维护费，无法维护或依赖区域失守的防线改为破败。',
-            },
-            {
-                id: 'skip-all',
-                label: '放弃维护全部防线',
-                detail: '本年不支付防线维护费，外长城、内长城、山海关、宁远、锦州全部改为破败。',
-            },
-        ],
-    };
-}
+
+
+
 
 export function getQidahenPendingTargetActionFromInteraction(
     interaction?: QidahenInteractionSelectionCarrier | null,

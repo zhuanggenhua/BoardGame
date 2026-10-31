@@ -71,9 +71,15 @@
       "summaryScenario": "剧本",
       "noExtraChoices": "进入棋盘后将先处理剧本介绍与房主选择。",
       "confirm": "进入棋盘"
+    },
+    "specialCards": {
+      "label": "特典扩展牌",
+      "disabled": "关闭 · 基础规则",
+      "enabled": "启用 · 9 张特典牌"
     }
   },
   "board": {
+    "handScroll": {"previous":"向左翻看手牌","next":"向右翻看手牌"},
     "magnifyCardAria": "查看 {{card}}",
     "operation": {
       "discardHand": "选择弃置的手牌"
@@ -99,7 +105,8 @@
       "raidPaymentTarget": "目标：{{targetRegionName}} · {{resolutionHint}}",
       "raidPaymentInvalidTarget": "在地图上选择目标地区",
       "wheelDispatchPaymentTitle": "进攻调度 · 弃牌",
-      "wheelDispatchPaymentStatus": "需弃 {{required}} 张 · 已选 {{selected}} 张"
+      "wheelDispatchPaymentStatus": "需弃 {{required}} 张 · 已选 {{selected}} 张",
+      "raidPaymentSelectSource": "在地图上选择出兵地区"
     },
     "inspect": {
       "factionHeader": "势力详情",
@@ -293,8 +300,7 @@
       "cancel": "取消",
       "wuzhenChaoha": {
         "hint": "点击绿色步兵牌，指定其提前在炮兵阶段攻击。",
-        "artilleryTechLabel": "销毁《火炮技术》：",
-        "artilleryTechCount": "{{count}} 张"
+        "techBonus": "已研发 {{count}} 张火炮技术：掷骰点数 +{{count}}"
       },
       "instigateDefection": {
         "hint": "点击绿色兵牌选择要策反的敌方次级部队。"
@@ -387,7 +393,8 @@
         "back": "返回",
         "scrollHint": "滚动列表查看全部选项。",
         "confirm": "确认战后处理"
-      }
+      },
+      "returnToWheel": "返回轮盘行动"
     },
     "setup": {
       "eyebrow": "局内开局设置",
@@ -474,6 +481,25 @@
       "confirmScenarioFirst": "请先确认起始剧本设置卡",
       "confirmedCount": "已确认 {{confirmed}} / {{total}}",
       "confirmFaction": "确认阵营"
+    },
+    "battleRoll": {
+      "attacker": "攻方",
+      "defender": "守方",
+      "totals": "骰点合计：攻方 {{attacker}} · 守方 {{defender}}",
+      "damage": "攻方造成 {{attacker}} 损伤，守方造成 {{defender}} 损伤",
+      "phase": {
+        "artillery": "炮兵阶段",
+        "cavalry": "骑兵阶段",
+        "infantry": "步兵阶段",
+        "melee": "近身混战"
+      }
+    },
+    "turnChoice": {
+      "selectedSupport": "已选 {{cards}} 张手牌、{{units}} 支部队",
+      "selectedTroops": "已选 {{units}} 支",
+      "supportOrRemove": "选择手牌支持，或选择部队移除",
+      "selectHand": "从手牌中选择",
+      "confirm": "确认"
     }
   },
   "battle": {
@@ -489,9 +515,85 @@
     }
   },
   "tutorial": {
+    "annual": {
+      "steps": {
+        "frontier-goal": "你控制大明，准备从辽北向叶赫部推进。先扩充前线、取得补给，再出兵。新年控制至少16个非朝鲜区域、攻下对手首都，或率先取得3点威望，都能获胜。",
+        "opening-move": "轮盘由三方共用。免费前进1格，不让对手抽牌；前进2格要让指定对手抽2张，前进3格要让所有对手各抽2张。这次前进1格。",
+        "prepare-hand": "移动后，可以各执行一次手牌行动和落点行动，顺序自定。这回合先征召军队，扩充辽北兵力。",
+        "recruit-source": "正规军只能建立在自己的本土区域。选择辽北。",
+        "recruit-action": "征召军队：弃1张手牌，建立6个等级2部队，或2个等级4的川兵部队。这次选择征召军队。",
+        "recruit-payment": "手牌也是行动资源。银两没有特殊效果，用这张银两支付，保留鸳鸯阵。点击放大镜可检查整张牌；触屏也可长按检视。",
+        "recruit-confirm": "确认弃牌，执行征召。",
+        "recruit-troops": "选择6个等级2部队，保留足够的步兵参与后续跨河作战。",
+        "farm-action": "军屯：抽2张手牌，并且建立1个等级2的正规军部队。用它补充前线与手牌。",
+        "farm-target": "选择辽北，建立军屯部队。",
+        "reclaim-action": "开垦：最多选择5个己方控制区域，各增加1人口，不能超过当地人口上限。辽东人口与兵力相同，先增加人口，为年中税赋创造条件。",
+        "reclaim-target": "选择辽东，将人口增加1。人口多于部队时，这处区域在年中可提供1张税赋牌。",
+        "opening-finish": "本回合的手牌行动、开垦和军屯都已完成。结束轮盘行动，轮到蒙古。",
+        "midyear": "后金将轮盘推进到年中。经过年中、新年必须停下；该玩家完成格内择一行动后，全体结算。人口多于部队且未被围城的区域各收1张税赋牌，大明另抽5张漕运牌；之后检查人物条件，每个战败标记各判定一次。",
+        "hand-limit": "补牌后，大明手牌超过15张上限。回合开始先弃掉多余的6张；保留鸳鸯阵和火炮技术，选择高亮的6张牌并确认。",
+        "battle-move": "前进1格，到进攻调度。这回合从辽北渡河进攻叶赫部。",
+        "upgrade-first": "先用本回合的手牌行动研发火炮技术，再执行轮盘进攻。",
+        "upgrade-card": "军备牌作为手牌行动打出，还需另弃1张手牌，打出的牌留场。选择火炮技术：每张已研发的火炮技术使炮兵骰点加1，也提高炮兵训练上限。",
+        "upgrade-payment": "用银两支付额外费用。火炮技术牌本身将留在场上。",
+        "upgrade-confirm": "确认研发火炮技术。",
+        "dispatch-action": "进攻调度：弃1张手牌，指挥最多6个部队移动。步兵、炮兵移动1格，骑兵移动2格；进入敌方区域触发战斗。",
+        "dispatch-payment": "选择这张手牌支付调度费用，保留鸳鸯阵用于战斗。",
+        "dispatch-source": "先选择出兵来源：辽北。",
+        "dispatch-troops": "辽北到叶赫部隔河，战场宽度为2，炮兵不占宽度。选择两支新征召的等级2步兵和一支等级1炮兵，再确认。",
+        "dispatch-target": "选择叶赫部。其守军属于蒙古，接下来由蒙古决定是否避战。",
+        "defender-response": "骑兵守军可以撤往其它己方控制区域避战。蒙古这次迎战。部队通常防御为3；它已研发骑兵铁甲，本次防御为4，每4点骰值造成1损伤。接下来进入战术阶段。",
+        "tactic-card": "战术牌在战斗中使用，每场通常只能打出1张。等级2步兵使用八面骰d8；鸳鸯阵让这次改投十面骰d10，部队本身仍是等级2。选择这张牌并确认打出。",
+        "battle-roll": "野战依炮兵、骑兵、步兵的顺序，双方同时结算。损伤先由最高等级部队承受，步骑每受1损伤降1级，降至0移除；炮兵不承伤，也不计胜负兵数。开始投掷。",
+        "occupy": "存活的非炮兵部队较多的一方获胜，同数守方胜。蒙古守军已被消灭；选择占领，增加大明控制区域。野战败方还需把战败标记放到符合条件的人物上，留待年中判定。",
+        "battle-finish": "叶赫部已由大明控制，未出动部队仍留在辽北。结束本回合。",
+        "opponent-round": "蒙古、后金继续移动共用轮盘。到你行动时，从轮盘的新位置继续。",
+        "diplomacy-move": "前进1格，削弱蒙古的友好关系，并雇佣部队补充后方。",
+        "diplomacy-action": "外交可影响最多3个邻近己方控制区域的区域，放置或移除控制标记；没有控制标记的本土区域、有正规军驻守的区域及朝鲜不能成为目标。先选择外交。",
+        "diplomacy-target": "外喀尔喀部有蒙古的反面友好标记，允许蒙古通行、驻守；正面则表示附庸控制区。选择这里，移除蒙古的反面标记，取消这处友好关系。",
+        "diplomacy-finish": "蒙古的友好标记已移除，区域仍为中立。结束外交。",
+        "hire-action": "雇佣：首次弃1张手牌，可在己方控制区域建立2个等级2雇佣军。同次行动继续雇佣时，每张牌只能建立1个。",
+        "hire-payment": "用银两支付这次雇佣。",
+        "hire-target": "将两支雇佣军部署到辽东，补充后方兵力。",
+        "diplomacy-round-finish": "外交和雇佣已执行，结束轮盘行动。",
+        "save-hand": "新年将至，维护与耗损都要用手牌。这回合保留手牌，不再执行手牌行动。",
+        "new-year": "蒙古到达新年。先按朝鲜区域标记领取朝贡牌；接着由大明逐项决定防线维护，再处理各方耗损、纪年卡和新年度人物。朝鲜牌使用独立牌堆和弃牌堆。",
+        "maintain-shanhai": "山海关、宁远、锦州各需弃2张手牌，内长城需2张，外长城需6张；放弃会使对应防线破败、失去特殊效果。这次保留山海关，把其余手牌留给军队补给。",
+        "maintenance-first-card": "为山海关选择第一张维护牌。",
+        "maintenance-second-card": "再选择一张，凑足山海关的2张维护费用。",
+        "abandon-jinzhou": "放弃维护锦州，保留手牌。",
+        "abandon-ningyuan": "放弃维护宁远。",
+        "abandon-inner-wall": "放弃维护内长城。",
+        "abandon-outer-wall": "放弃维护外长城。破败会直接显示在对应防线上。",
+        "upkeep-yehe": "兵力超过当地补给时，每缺1份补给须弃1张手牌，或移除1支部队。大明正规军在非汉人区域不能接受当地补给。",
+        "upkeep-xianxing": "朝鲜驻军完全由手牌补给，不使用当地人口。弃这张牌，保留咸兴驻军。",
+        "other-upkeep": "建州的耗损由后金自己支付。等待后金完成后，继续处理辽北。",
+        "upkeep-liaobei": "辽北兵力超过人口4支。选择这4张牌支持部队，保留前线兵力。",
+        "upkeep-pyongyang": "也可以选择撤去驻军来承担耗损。为后续行动留下手牌，这次移除平壤的雇佣军。",
+        "upkeep-hanseong": "同样移除汉城的雇佣军，保留手牌。",
+        "upkeep-liaodong": "辽东还差1份补给。撤去这支等级1炮兵，保留已在叶赫部参战的炮兵。",
+        "claim-year": "下一张纪年卡比较控制区域的增长。占领叶赫部使大明取得资格；同分时原顺位靠后者优先。弃一半手牌、向上取整，可取得本年纪年卡及1点威望；放弃则资格顺延。这次领取。",
+        "chronology-first-card": "你有5张手牌，需要弃3张。先选择这张朝鲜银两。",
+        "chronology-second-card": "选择第二张朝鲜牌。",
+        "new-order": "新纪年卡决定顺位与可出场人物。本年顺位变为蒙古、大明、后金，蒙古先打出人物，随后轮到你。",
+        "year-character": "人物牌不是手牌，出场后效果持续生效。你已扩充了军队，这次打出杨镐：调度或进攻时可指挥10个部队，不受其它人物效果影响。点放大镜查看他的卡面。",
+        "year-ready": "后金完成人物选择后，新年度依新顺位开始。蒙古先行动，再轮到大明。",
+        "training-move": "前进1格到征兵训练。上回合留下的手牌现在可以支付训练费用。",
+        "training-action": "征兵训练：弃1张手牌，最多进行4次征兵或训练；每次征兵建立1个等级2正规军，每次训练使一支部队提高1级。这次训练叶赫部的炮兵。",
+        "training-payment": "选择这张朝鲜手牌支付费用。朝鲜牌弃到朝鲜弃牌堆。",
+        "training-payment-confirm": "确认弃牌，开始征兵训练。",
+        "training-kind": "选择训练。",
+        "training-target": "每支部队每回合最多提升1级；炮兵上限由军备提高。火炮技术已经研发，现在选择叶赫部这支等级1炮兵，将它提升到等级2。",
+        "training-finish": "每额外弃1张手牌，可以再进行1次训练。",
+        "training-slot-finish": "结束轮盘行动。",
+        "training-round-finish": "",
+        "finish": "你已完成扩军、补给、战斗，以及年中和新年的完整循环。继续争取领土与纪年卡；先取得3点威望、攻下对手首都，或在新年控制16个非朝鲜区域即可获胜。",
+        "chronology-third-card": "再弃第三张，取得本年纪年卡。"
+      }
+    },
     "basic": {
-      "title": "七大恨入门",
-      "description": "从大明正式开局，完成军屯、突袭与战后占领，再继续同一局。",
+      "title": "连续入门：从扩军到新年",
+      "description": "沿一局真实对局，完成扩军、战斗、补给、年中与新年结算。",
       "steps": {
         "frontier": "本回合进攻叶赫部。先在辽北军屯，为前线补兵。",
         "selectFarmRegion": "正规军只能在本土区域建立。选择辽北。",

@@ -6,6 +6,7 @@ import { syncQidahenRuntimeInteractionState } from './runtimeInteractions';
 import {
     readQidahenScenarioChoiceSelections,
     readQidahenScenarioId,
+    readQidahenSpecialCardsEnabled,
     shouldUseQidahenInMatchScenarioVote,
     shouldResolveQidahenScenarioChoiceGroups,
 } from '../roomSetup';
@@ -16,6 +17,9 @@ import { syncQidahenJadeCasketControlAfterRegionChange } from './jadeCasketContr
 import { applyQidahenVictoryStatus } from './victoryResolution';
 import type { QidahenCommand, QidahenCore, QidahenEvent } from './types';
 import { playerView } from './view';
+import { discoverQidahenTurnOpportunities } from './turnResolutionOpportunities';
+import { reduceQidahenTurnResolutionFact } from './turnResolutionFacts';
+import { recordQidahenChronologyStatistics } from './chronologyStatistics';
 
 const now = () => Date.now();
 
@@ -36,7 +40,7 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
                 || typeof rawSetupData.scenarioId === 'string'
             );
         if (!hasExplicitScenario && shouldUseQidahenInMatchScenarioVote(rawSetupData)) {
-            const initialCore = createInitialCoreForInMatchScenarioVote(playerIds);
+            const initialCore = createInitialCoreForInMatchScenarioVote(playerIds, readQidahenSpecialCardsEnabled(rawSetupData), cards => _random.shuffle(cards), cards => _random.shuffle(cards), cards => _random.shuffle(cards));
             return tutorialCoreTransform ? tutorialCoreTransform(initialCore) : initialCore;
         }
         const initialCore = createInitialCore(
@@ -44,11 +48,16 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
             readQidahenScenarioId(rawSetupData),
             shouldResolveQidahenScenarioChoiceGroups(rawSetupData),
             readQidahenScenarioChoiceSelections(rawSetupData),
+            readQidahenSpecialCardsEnabled(rawSetupData),
+            cards => _random.shuffle(cards),
+            cards => _random.shuffle(cards),
+            cards => _random.shuffle(cards),
         );
         return tutorialCoreTransform ? tutorialCoreTransform(initialCore) : initialCore;
     },
 
     validate,
+    discoverTimingOpportunities: discoverQidahenTurnOpportunities,
 
     normalizeRuntimeState: (state: MatchState<QidahenCore>): MatchState<QidahenCore> => {
         const normalizedState = {
@@ -71,21 +80,22 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
     },
 
     reduce: (state, event): QidahenCore => {
-        const reducedCore = reduceQidahenResolvedEvent(state, event)
+        const reducedCore = (event.type === 'TURN_RESOLUTION_APPLIED' ? reduceQidahenTurnResolutionFact(state, event) : undefined)
+            ?? reduceQidahenResolvedEvent(state, event)
             ?? reduceQidahenDirectInputEvent(state, event)
             ?? state;
         const syncedCore = syncQidahenJadeCasketControlAfterRegionChange(state, reducedCore);
         if (syncedCore === reducedCore) {
-            return reducedCore;
+            return recordQidahenChronologyStatistics(state, reducedCore);
         }
         const jadeCasketTransferred = syncedCore.activeEventCards !== reducedCore.activeEventCards;
         if (!jadeCasketTransferred || reducedCore.victoryStatus?.condition !== 'prestige') {
-            return syncedCore;
+            return recordQidahenChronologyStatistics(state, syncedCore);
         }
-        return applyQidahenVictoryStatus({
+        return recordQidahenChronologyStatistics(state, applyQidahenVictoryStatus({
             ...syncedCore,
             victoryStatus: state.victoryStatus,
-        });
+        }));
     },
 
     playerView,
@@ -105,58 +115,12 @@ export {
     findQidahenReachableRuntimeRegions,
     getQidahenMovementProfile,
 } from './movement';
-export type {
-    QidahenActionChoice,
-    QidahenBattleRoll,
-    QidahenBattleRollPhase,
-    QidahenCasualtyPriority,
-    QidahenCommandMap,
-    QidahenCore,
-    QidahenDiplomacySelection,
-    QidahenDriveTigerConsentSelection,
-    QidahenFactionId,
-    QidahenFortificationMaintenanceSelection,
-    QidahenGrantPardonChoice,
-    QidahenGrantPardonSelection,
-    QidahenHandCard,
-    QidahenHandLimitDiscardSelection,
-    QidahenInternalDispatchSelection,
-    QidahenMapToken,
-    QidahenPostBattleSelection,
-    QidahenRecruitChoice,
-    QidahenScenarioId,
-    QidahenWheelDispatchSelection,
-    QidahenWheelMoveChoice,
-    QidahenWheelRecruitTrainChoice,
-} from './types';
+export type { QidahenActionChoice, QidahenBattleRoll, QidahenBattleRollPhase, QidahenCasualtyPriority, QidahenCommandMap, QidahenCore, QidahenDiplomacySelection, QidahenDriveTigerConsentSelection, QidahenFactionId, QidahenGrantPardonChoice, QidahenGrantPardonSelection, QidahenHandCard, QidahenHandLimitDiscardSelection, QidahenInternalDispatchSelection, QidahenMapToken, QidahenPostBattleSelection, QidahenRecruitChoice, QidahenScenarioId, QidahenWheelDispatchSelection, QidahenWheelMoveChoice, QidahenWheelRecruitTrainChoice } from './types';
 export {
     getQidahenDiplomacySelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './selectionBuilders';
-export {
-    getQidahenDriveTigerConsentSelectionFromInteraction,
-    getQidahenDriveTigerConsentSelectionForCore,
-    getQidahenDiplomacySelectionFromInteraction,
-    getQidahenEventCharacterTargetSelectionFromInteraction,
-    getQidahenEventCharacterTargetSelectionForCore,
-    getQidahenEventOpponentHandChoiceSelectionFromInteraction,
-    getQidahenEventOpponentHandChoiceSelectionForCore,
-    getQidahenFortificationMaintenanceSelectionFromInteraction,
-    getQidahenFortificationMaintenanceSelectionForCore,
-    getQidahenGrantPardonSelectionFromInteraction,
-    getQidahenGrantPardonSelectionForCore,
-    getQidahenHandLimitDiscardSelectionFromInteraction,
-    getQidahenInternalDispatchSelectionFromInteraction,
-    getQidahenKhanEdictSelectionFromInteraction,
-    getQidahenMaShiTradeSelectionFromInteraction,
-    getQidahenPendingTargetActionForCore,
-    getQidahenPendingTargetActionFromInteraction,
-    getQidahenPostBattleSelectionForCore,
-    getQidahenPostBattleSelectionFromInteraction,
-    getQidahenRecruitSelectionFromInteraction,
-    getQidahenWheelDispatchSelectionForCore,
-    getQidahenWheelDispatchSelectionFromInteraction,
-} from './interactionSelectionAccessors';
+export { getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenDriveTigerConsentSelectionForCore, getQidahenDiplomacySelectionFromInteraction, getQidahenEventCharacterTargetSelectionFromInteraction, getQidahenEventCharacterTargetSelectionForCore, getQidahenEventOpponentHandChoiceSelectionFromInteraction, getQidahenEventOpponentHandChoiceSelectionForCore, getQidahenGrantPardonSelectionFromInteraction, getQidahenGrantPardonSelectionForCore, getQidahenHandLimitDiscardSelectionFromInteraction, getQidahenInternalDispatchSelectionFromInteraction, getQidahenKhanEdictSelectionFromInteraction, getQidahenMaShiTradeSelectionFromInteraction, getQidahenPendingTargetActionForCore, getQidahenPendingTargetActionFromInteraction, getQidahenPostBattleSelectionForCore, getQidahenPostBattleSelectionFromInteraction, getQidahenRecruitSelectionFromInteraction, getQidahenWheelDispatchSelectionForCore, getQidahenWheelDispatchSelectionFromInteraction } from './interactionSelectionAccessors';
 export { getQidahenEffectiveVpByFaction, getQidahenPrestigeBonusByFaction } from './victoryResolution';

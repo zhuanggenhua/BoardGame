@@ -1,6 +1,7 @@
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 
 export const QIDAHEN_HAN_RUNTIME_REGION_IDS = new Set([
+    'city-region-1',
     'xuan-fu',
     'city-region-19-liaoxi',
     'city-region-15',

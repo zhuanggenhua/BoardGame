@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { getQidahenBattleForceCommitments } from './battleForceCommitments';
 import { getPendingActionSourceForceSnapshot } from './battleState';
 import { takeCommittedSpecialTroopStacks } from './movementProfileTroopSelection';
@@ -139,8 +140,7 @@ export const playQidahenRaidAndAmbush = (
             ...selection,
             phase: 'select-troop-kind',
         },
-        handCards: state.handCards.filter((candidate) => candidate.id !== cardId),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [cardId]),
         lastSeasonSummary: {
             id: `summary-${timestamp}`,
             title: '偷袭与伏击',

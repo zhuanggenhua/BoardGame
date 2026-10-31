@@ -1,6 +1,6 @@
 import {
     addFactionHandCards,
-    buildDrawnHandCards,
+    appendDrawnHandCards,
     drawFromFactionPile,
     getFactionDrawPileCount,
 } from './handCardState';
@@ -131,7 +131,7 @@ export const applyQidahenWheelImmediateEffect = (
         regionFocusState: buildQidahenRegionFocusState(targetRegionId),
         regions: nextRegions,
         drawPileCount: state.drawPileCount - drawnResult.drawnCards,
-        handCards: buildDrawnHandCards(state, factionId, drawnResult.drawnCards),
+        handCards: appendDrawnHandCards(state.handCards, drawnResult.cards, factionId),
         lastSeasonSummary: {
             ...buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),
             ...(mapResult ? { mapResult } : {}),

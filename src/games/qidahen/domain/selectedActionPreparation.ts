@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import {
     resolveSelectedArmamentIdFromCards,
 } from './armamentLowFidelity';
@@ -52,6 +53,7 @@ interface QidahenSelectedActionPreparedState {
     discardedCardCount: number;
     nextFactions: QidahenCore['factions'];
     paidHandCards: QidahenCore['handCards'];
+    koreaDiscardPile: QidahenCore['koreaDiscardPile'];
     selectedEventActionCardDefId: string | null;
     selectedEventActionCardLabel: string | null;
     selectedEventActionCardRemovedFromGame: boolean;
@@ -122,7 +124,6 @@ export function prepareQidahenSelectedAction(
         && QIDAHEN_DROUGHT_EVENT_CARD_DEF_IDS.has(selectedEventActionCard.cardDefId)
         && QIDAHEN_SECOND_HALF_WHEEL_POSITIONS.has(state.actionWheelPosition)
     );
-    const discardedCardCount = Math.max(0, spentCardCount - (selectedEventActionCardRemovedFromGame ? 1 : 0));
     const selectedArmamentActionCard = actionId === 'upgrade-armament'
         ? state.handCards.find((card) => (
             spentCardIds.includes(card.id)
@@ -131,6 +132,9 @@ export function prepareQidahenSelectedAction(
         )) ?? null
         : null;
     const selectedHandActionCardLabel = selectedArmamentActionCard?.label ?? null;
+    const discardedCardCount = Math.max(0, spentCardCount
+        - (selectedEventActionCardRemovedFromGame ? 1 : 0)
+        - (selectedArmamentActionCard && selectedArmamentActionCard.originDeck !== 'korea' ? 1 : 0));
     const selectedHandActionCardDefId = selectedArmamentActionCard?.cardDefId ?? null;
     const selectedPaymentResourceLabels = state.handCards
         .filter((card) => spentCardIds.includes(card.id))
@@ -432,20 +436,29 @@ export function prepareQidahenSelectedAction(
         };
     }
 
+    const payment = discardQidahenHandCards(state, spentCardIds.filter(cardId => {
+        const card = state.handCards.find(candidate => candidate.id === cardId);
+        if (card?.originDeck === 'korea') return true;
+        return cardId !== selectedArmamentActionCard?.id
+            && !(selectedEventActionCardRemovedFromGame && cardId === selectedEventActionCard?.id);
+    }));
     return {
         kind: 'prepared',
         actionLabel,
         currentFactionId,
         discardedCardCount,
         nextFactions: {
-            ...state.factions,
+            ...payment.factions,
             [currentFactionId]: {
-                ...state.factions[currentFactionId],
+                ...payment.factions[currentFactionId],
                 handCount: Math.max(0, state.factions[currentFactionId].handCount - spentCardCount),
-                discardPileCount: Math.max(0, state.factions[currentFactionId].discardPileCount ?? 0) + discardedCardCount,
+                developedCards: selectedArmamentActionCard && selectedArmamentActionCard.originDeck !== 'korea'
+                    ? [...state.factions[currentFactionId].developedCards, selectedArmamentActionCard]
+                    : state.factions[currentFactionId].developedCards,
             },
         },
         paidHandCards: state.handCards.filter((card) => !selectedCardIds.has(card.id)),
+        koreaDiscardPile: payment.koreaDiscardPile,
         selectedEventActionCardDefId: selectedEventActionCard?.cardDefId ?? null,
         selectedEventActionCardLabel: selectedEventActionCard?.label ?? null,
         selectedEventActionCardRemovedFromGame,
