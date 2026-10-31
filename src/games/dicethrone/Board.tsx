@@ -2772,6 +2772,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                     || Boolean(selectedAbilityId)
                                     || Boolean(sharedResponsePrompt)
                                     || isManualSelfResponseWindow}
+                                preserveCardVisibilityBottomGapUnits={sharedResponsePrompt ? 1.25 : undefined}
                             />
                         </>
                     );

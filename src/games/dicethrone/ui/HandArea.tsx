@@ -232,6 +232,7 @@ export const HandArea = ({
     onDiscardCard,
     onMagnifyCard,
     respondableCardIds,
+    preserveCardVisibilityBottomGapUnits = HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS,
     characterId,
     playerBoardFace,
     disableCardPointerEvents = false,
@@ -274,6 +275,8 @@ export const HandArea = ({
     isHidden?: boolean;
     /** 牌池选择等交互中，保持手牌完整落在视口内，不用底部裁切换空间。 */
     preserveCardVisibility?: boolean;
+    /** 响应提示占用手牌上方槽位时，可收紧额外底边留白以避免提示压牌。 */
+    preserveCardVisibilityBottomGapUnits?: number;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isDiscardMode = isDiscardModeRequested || Boolean(handDiscardInteraction);
@@ -461,7 +464,7 @@ export const HandArea = ({
     // 可响应牌是当前决策的正式候选；与弃牌/牌池选择一样，整手牌需要完整落在视口内。
     const shouldPreserveCardVisibility = preserveCardVisibility || hasRespondableCards;
     const visibleFanBottomOffset = shouldPreserveCardVisibility
-        ? HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS + Math.max(0, ...handEntries.map(({ index }) => {
+        ? preserveCardVisibilityBottomGapUnits + Math.max(0, ...handEntries.map(({ index }) => {
             const offset = Math.abs(index - centerIndex);
             const angle = offset * HAND_CARD_ROTATION_STEP_DEGREES * Math.PI / 180;
             // 扇形牌面绕中心旋转，完整可见态同时补偿下移、旋转后的底边和视口留白。
