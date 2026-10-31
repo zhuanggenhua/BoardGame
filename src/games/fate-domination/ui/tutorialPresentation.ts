@@ -1,5 +1,7 @@
 import type { TutorialState } from '../../../engine/types';
 import type { FateTutorialStep } from './tutorialContract';
+import type { LocationId } from '../domain/types';
+import { fateTutorialText } from '../tutorialText';
 
 interface VisibleTutorialUi {
     inspection: { name: string; source: string } | null;
@@ -16,6 +18,8 @@ interface VisibleTutorialUi {
     publicCards?: boolean;
     movement: boolean;
     movementTarget: boolean;
+    deploymentTarget?: boolean;
+    deploymentLocation?: LocationId | null;
     identity: boolean;
 }
 export const FATE_TUTORIAL_TABLE_PROTECTION = ['.fd-play-summary','.fd-phase-control','.fd-self-dock','.fd-self-stats','.fd-self-pile-info','.fd-self-piles','.fd-master-abilities','.fd-event-deck-count','.fd-runtime-map-card-hit','.fd-runtime-deployment-slot:not(:disabled)','.fd-runtime-card','.fd-runtime-pawn','.fd-riding-controls','.fd-runtime-opponent-cards','.fd-runtime-seat'];
@@ -33,8 +37,11 @@ export function presentFateTutorial(tutorial: TutorialState, ui: VisibleTutorial
     if (!tutorial.active || !tutorial.step) return tutorial;
     const step = tutorial.step as FateTutorialStep;
     const expected = step.fateCommand;
+    const deploymentCopy = expected?.type==='DEPLOY_MASTER' && ui.deploymentLocation ? step.fateDeploymentChoiceCopies?.[ui.deploymentLocation] : undefined;
     const hide = () => ({ ...tutorial, step: { ...step, hideOverlay:true, highlightTarget:undefined } });
-    if (ui.inspection || ui.detail || ui.masterAbilityTip || ui.seal || ui.discard || ui.deck || ui.postBattle || (ui.publicCards && step.id.startsWith('ui-public-cards')) || ui.movementTarget || (ui.attackStaged && expected?.type==='CONFIRM_ATTACK')) return hide();
+    if (ui.inspection || ui.detail || ui.masterAbilityTip || ui.seal || ui.discard || ui.deck || ui.postBattle || (ui.publicCards && step.id.startsWith('ui-public-cards')) || ui.movementTarget || (ui.deploymentTarget && expected?.type==='DEPLOY_MASTER'&&!deploymentCopy) || (ui.attackStaged && expected?.type==='CONFIRM_ATTACK')) return hide();
+    if (deploymentCopy) return {...tutorial,step:({...step,fateCopy:deploymentCopy,content:fateTutorialText(deploymentCopy),highlightTarget:'fate-deployment-selected',highlightFrame:'none',hideOverlay:false} satisfies FateTutorialStep) as FateTutorialStep};
+    if (ui.movement && expected?.type==='MOVE_PLAYER') return {...tutorial,step:{...step,highlightTarget:`fate-location-${String(expected.payload.locationId)}`,highlightFrame:'none'}};
     if(expected?.type==='SYS_INTERACTION_RESPOND' && Array.isArray(expected.payload.optionIds) && (ui.ridingSelectionCount??0)>=expected.payload.optionIds.length)return hide();
     return tutorial;
 }

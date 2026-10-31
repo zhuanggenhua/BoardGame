@@ -1,8 +1,9 @@
 import type { TutorialState, TutorialStepSnapshot } from '../../../engine/types';
 import type { FateTutorialCopy } from '../tutorialText';
+import type { LocationId } from '../domain/types';
 
 /** 只约束教程的练习目标，正式规则仍由领域验证器决定。 */
-export type FateTutorialStep = TutorialStepSnapshot & { fateCommand?: { type: string; payload: Record<string, unknown> }; fateCommandOptions?: Array<{ type: string; payload: Record<string, unknown> }>; fateBranch?: string; fateUiDetailTarget?: string; fateUiInspectionSource?: 'hand'; fateCopy?: FateTutorialCopy };
+export type FateTutorialStep = TutorialStepSnapshot & { fateCommand?: { type: string; payload: Record<string, unknown> }; fateCommandOptions?: Array<{ type: string; payload: Record<string, unknown> }>; fateBranch?: string; fateUiDetailTarget?: string; fateUiInspectionSource?: 'hand'; fateCopy?: FateTutorialCopy; fateDeploymentChoiceCopies?: Partial<Record<LocationId,FateTutorialCopy>> };
 export function fateTutorialExpected(tutorial: TutorialState) {
     return tutorial.active ? (tutorial.step as FateTutorialStep | undefined)?.fateCommand : undefined;
 }

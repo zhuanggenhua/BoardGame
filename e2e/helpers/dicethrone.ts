@@ -14,6 +14,7 @@ import { getMatchState, injectMatchState } from './state-injection';
 import { getDieFaceByDefinition, getHeroDieFace } from '../../src/games/dicethrone/domain/rules';
 import type { SelectableCharacterId } from '../../src/games/dicethrone/domain/types';
 import '../../src/games/dicethrone/domain';
+import { startSourceSession, releaseSourceSession } from '../framework/sourceIdentity';
 
 const GAME_NAME = 'dicethrone';
 
@@ -734,6 +735,7 @@ export const setupDTOnlineMatch = async (
         ? { blockLobbySocket: options.blockLobbySocket, skipImageGate: options.skipImageGate ?? true }
         : { skipImageGate: true };
     const hostContext = await browser.newContext({ baseURL });
+    await startSourceSession(hostContext, baseURL);
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
@@ -760,6 +762,7 @@ export const setupDTOnlineMatch = async (
     await gotoDTMatchRoom(hostPage, matchId, '0');
 
     const guestContext = await browser.newContext({ baseURL });
+    await startSourceSession(guestContext, baseURL);
     await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const guestPage = await guestContext.newPage();
 
@@ -839,6 +842,7 @@ export const setupDTOnlineMatchWithPlayers = async (
         ...options.contextOptions,
         baseURL,
     });
+    await startSourceSession(hostContext, baseURL!);
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
@@ -893,6 +897,7 @@ export const setupDTOnlineMatchWithPlayers = async (
             ...options.contextOptions,
             baseURL,
         });
+        await startSourceSession(guestContext, baseURL!);
         await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
         const guestPage = await guestContext.newPage();
 
@@ -978,6 +983,7 @@ export const cleanupDTMatch = async (setup: DTMatchSetup | DTMultiMatchSetup) =>
 
     for (const context of contexts) {
         try {
+            await releaseSourceSession(context);
             await context.close();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -1368,7 +1374,6 @@ export const applyDiceValues = async (page: Page, values: number[]) => {
             throw new Error('No dice found in state');
         }
 
-        const { getDieFaceByDefinition } = await import('/src/games/dicethrone/domain/rules.ts');
         const applyValues = (dice: Array<{ definitionId?: string; value?: number; symbol?: string; symbols?: string[] }>) => (
             dice.map((die, index) => {
                 const value = nextValues[index] ?? die.value;
@@ -1510,6 +1515,17 @@ export const maybePassResponse = async (page: Page, timeout = 1000): Promise<boo
         return true;
     }
     return false;
+};
+
+/** Continue the existing attack-result showcase when it is waiting for player input. */
+export const continueAttackShowcaseIfVisible = async (page: Page): Promise<boolean> => {
+    const showcase = page.getByTestId('attack-showcase-overlay');
+    if (!(await showcase.isVisible({ timeout: 1000 }).catch(() => false))) return false;
+    const continueButton = showcase.getByRole('button', { name: /^(开始防御|继续|Start Defense|Continue)$/i }).first();
+    await expect(continueButton).toBeVisible();
+    await continueButton.click();
+    await expect(showcase).toBeHidden({ timeout: 10000 });
+    return true;
 };
 
 /**

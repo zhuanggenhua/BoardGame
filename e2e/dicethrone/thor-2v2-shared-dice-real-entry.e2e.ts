@@ -5,6 +5,7 @@ import { getGameServerBaseURL } from '../helpers/common';
 import {
     cleanupDTMatch,
     closeDebugPanelIfOpen,
+    continueAttackShowcaseIfVisible,
     dragDiceThroneHandCardToPlay,
     readyMultiplePlayersAndStartGame,
     selectCharacter,
@@ -96,15 +97,6 @@ const makeThorDice = (values: number[], ownerId: string) => values.map((value, i
 const readOnlineRoot = async (match: MatchSetup, page: Page = match.hostPage) => {
     const state = await getMatchState(match.matchId, page) as unknown as JsonRecord;
     return getRoot(state);
-};
-
-const continueAttackShowcaseIfVisible = async (page: Page) => {
-    const showcase = page.getByTestId('attack-showcase-overlay');
-    if (!(await showcase.isVisible({ timeout: 1000 }).catch(() => false))) return;
-    const continueButton = showcase.getByRole('button', { name: /^(开始防御|继续|Start Defense|Continue)$/i }).first();
-    await expect(continueButton).toBeVisible();
-    await continueButton.click();
-    await expect(showcase).toBeHidden({ timeout: 10000 });
 };
 
 const injectRerollStart = async (
@@ -333,9 +325,15 @@ const playRerollCardAsTeammate = async (
         await continueAttackShowcaseIfVisible(thorPage);
     }
     const hint = thorPage.getByTestId('dice-interaction-hint');
+    const hintTitle = thorPage.getByTestId('dice-interaction-hint-title');
+    const hintDetail = thorPage.getByTestId('dice-interaction-hint-detail');
     await expect(hint).toBeVisible();
     await expectDiceHintSurface(thorPage, 'viewport');
-    await expect(hint).toHaveText(input.repeatedDie ? '选择骰子（0/2）' : '选择骰子（0/5）');
+    await expect(hintTitle).toHaveText(input.repeatedDie ? '选择重投骰子（0/2）' : '选择重投骰子（0/5）');
+    await expect(hintDetail).toContainText(`还可选择 ${input.repeatedDie ? 2 : 5} 次`);
+    await expect(hintDetail).toContainText('在骰盘确认重投');
+    if (input.repeatedDie) await expect(hintDetail).toContainText('同一颗可重复选择');
+    else await expect(hintDetail).not.toContainText('同一颗可重复选择');
     await expect(thorPage.locator('[data-testid^="die-button-"]')).toHaveCount(5);
     await expect(teammatePage.getByTestId('dice-interaction-hint')).toBeHidden();
     await expect(teammatePage.getByTestId('dice-interaction-confirm-button')).toBeHidden();
@@ -343,17 +341,23 @@ const playRerollCardAsTeammate = async (
 
     if (input.repeatedDie) {
         await thorPage.locator('[data-testid="die-button-0"]').click();
-        await expect(hint).toHaveText('选择骰子（1/2）');
+        await expect(hintTitle).toHaveText('选择重投骰子（1/2）');
+        await expect(hintDetail).toContainText('还可选择 1 次，同一颗可重复选择');
         await thorPage.locator('[data-testid="die-button-0"]').click();
         await expect(thorPage.locator('[data-testid="die-button-0"]')).toHaveAttribute('data-selection-count', '2');
-        await expect(hint).toHaveText('完成');
+        await expect(hintTitle).toHaveText('重投选择已就绪（2/2）');
+        await expect(hintDetail).toContainText('待执行 2 次');
+        await expect(hintDetail).toContainText('点击骰盘“确认重投”执行');
     } else {
         await thorPage.locator('[data-testid="die-button-0"]').click();
         await thorPage.locator('[data-testid="die-button-1"]').click();
-        await expect(hint).toHaveText('选择骰子（2/5）');
+        await expect(hintTitle).toHaveText('选择重投骰子（2/5）');
+        await expect(hintDetail).toContainText('还可选择 3 次');
+        await expect(hintDetail).toContainText('确认重投');
     }
-    await shot(thorPage, info, `${input.label}-原骰盘显示所选次数与强制操作提示`);
+    await shot(thorPage, info, `${input.label}-提示说明重投次数与下一步确认`);
     await expect(thorPage.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
+    await expect(thorPage.getByTestId('dice-interaction-confirm-button')).toHaveText('确认重投');
     await thorPage.getByTestId('dice-interaction-confirm-button').click();
 
     await expect.poll(async () => {

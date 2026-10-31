@@ -63,7 +63,7 @@ function executeAndReduceCore(
 describe('Qidahen Commands 交互宿主门禁', () => {
     it('非当前座位不能执行当前势力的一级动作、轮盘和普通地图选择', () => {
         const state: MatchState<QidahenCore> = {
-            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            core: QidahenDomain.setup(['0', '1', '2'], testRandom),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         };
 
@@ -119,7 +119,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
     it('征召军队命令校验现在可以只依赖 interaction current，而不是 core.recruitSelection', () => {
         let state: MatchState<QidahenCore> = {
-            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            core: QidahenDomain.setup(['0', '1', '2'], testRandom),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         };
 
@@ -168,7 +168,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     it('马市贸易命令校验现在可以只依赖 interaction current，而不是 core.maShiTradeSelection', () => {
         let state: MatchState<QidahenCore> = {
             core: {
-                ...QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+                ...QidahenDomain.setup(['0', '1', '2'], testRandom),
                 currentPlayer: '1',
                 selectedRegionId: 'song-jin',
                 selectedActionId: 'ma-shi-trade',
@@ -216,7 +216,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     });
 
     it('大汗令箭命令校验现在可以只依赖 interaction current，而不是 core.khanEdictSelection', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
         core.currentPlayer = '1';
         core.selectedRegionId = 'city-region-25';
         core.actionChoices = getActionChoicesForFaction('mongol');
@@ -283,7 +283,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
     it('驱虎吞狼同意命令校验现在可以只依赖 interaction current，而不是 core.driveTigerConsentSelection', () => {
         let state: MatchState<QidahenCore> = {
-            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            core: QidahenDomain.setup(['0', '1', '2'], testRandom),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         };
         state.core.selectedRegionId = 'jinzhou';
@@ -362,7 +362,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
     it('待结算与战后命令校验现在可以只依赖 interaction current，而不是 core 历史字段', () => {
         let state: MatchState<QidahenCore> = {
-            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            core: QidahenDomain.setup(['0', '1', '2'], testRandom),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         };
         state.core.selectedRegionId = 'city-region-24';
@@ -500,7 +500,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     });
 
     it('战术牌命令只能在待结算战斗中由攻方打出自己的战术牌', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const tacticCardId = 'ming-tactic-test-card';
         const fieldOnlyTacticCardId = 'ming-field-only-tactic-test-card';
         const defenderOnlyTacticCardId = 'ming-defender-only-tactic-test-card';
@@ -930,7 +930,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         ['策反/内应', 'qidahen-atlas05-1604-instigate-defection-insider'],
         ['策反', 'qidahen-atlas05-1611-instigate-defection'],
     ] as const)('%s在守方没有参战炮兵时不能打出且不消耗手牌', (label, cardDefId) => {
-        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const mingCard = core.handCards.find((card) => card.faction === 'ming');
         expect(mingCard).toBeTruthy();
         const cardId = `test-${cardDefId}`;
@@ -1007,7 +1007,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     });
 
     it('箭如雨下在攻方没有参战步兵时不能打出且不消耗手牌', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const mingCard = core.handCards.find((card) => card.faction === 'ming');
         expect(mingCard).toBeTruthy();
         const cardId = 'test-arrows-like-rain-without-infantry';
@@ -1091,7 +1091,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         const tacticIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
             .filter((identity) => identity.cardKind === 'tactic');
         expect(tacticIdentities).toHaveLength(19);
-        const baseCore = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const baseMingCard = baseCore.handCards.find((card) => card.faction === 'ming');
         expect(baseMingCard).toBeTruthy();
         const tacticCards = tacticIdentities.map((identity) => ({
@@ -1106,7 +1106,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         }));
         const buildBattleState = (battleMode: 'field' | 'city'): MatchState<QidahenCore> => {
             const core = {
-                ...QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+                ...QidahenDomain.setup(['0', '1', '2'], testRandom),
                 turnPhase: 'resolve-pending' as const,
                 handCards: tacticCards,
                 pendingTargetAction: {
@@ -1380,7 +1380,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     });
 
     it('偷袭与伏击不能从普通攻方战术窗口被当作已打出战术消耗', () => {
-        const baseCore = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const baseMingCard = baseCore.handCards.find((card) => card.faction === 'ming');
         expect(baseMingCard).toBeTruthy();
         const raidAndAmbushCard = {
@@ -1451,7 +1451,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     });
 
     it('诈败诱敌不能从普通攻方战术窗口被当作已打出战术消耗', () => {
-        const baseCore = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const baseMingCard = baseCore.handCards.find((card) => card.faction === 'ming');
         expect(baseMingCard).toBeTruthy();
         const feignedRetreatCard = {
@@ -1522,7 +1522,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     });
 
     it('次级部队版策反不能从普通攻方战术窗口被当作已打出战术消耗', () => {
-        const baseCore = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], testRandom);
         const baseMingCard = baseCore.handCards.find((card) => card.faction === 'ming');
         expect(baseMingCard).toBeTruthy();
         const instigateDefectionAltCard = {
@@ -1594,7 +1594,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
     it('新年维护命令校验现在可以只依赖 interaction current，而不是 core.fortificationMaintenanceSelection', () => {
         let state: MatchState<QidahenCore> = {
-            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            core: QidahenDomain.setup(['0', '1', '2'], testRandom),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         };
         state.core.actionWheelPosition = 'wheel-midyear';
@@ -1624,7 +1624,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     it('新年防线维护即使由非大明轮盘触发，也只能由大明座位处理', () => {
         let state: MatchState<QidahenCore> = {
             core: {
-                ...QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+                ...QidahenDomain.setup(['0', '1', '2'], testRandom),
                 actionWheelPosition: 'wheel-midyear',
                 playerIds: ['2', '1', '0'],
                 currentPlayer: '2',
@@ -1653,7 +1653,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
     it('王化贞内部调度命令校验现在可以只依赖 interaction current，而不是 core.internalDispatchSelection', () => {
         let state: MatchState<QidahenCore> = {
-            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            core: QidahenDomain.setup(['0', '1', '2'], testRandom),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         };
         state.core.currentPlayer = '0';

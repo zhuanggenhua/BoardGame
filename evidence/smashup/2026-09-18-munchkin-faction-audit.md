@@ -40,11 +40,11 @@
 | 实现消费链 | `passed` | 入口覆盖 `munchkin.ts`、`munchkin_mages.ts`、`munchkin_orcs.ts`、`munchkin_warriors.ts` 及公共 Munchkin reducer / interaction handler。 |
 | 最终权威结果 | `passed` | 证据回到手牌、弃牌堆、基地随从 / 怪物、额外额度、力量修正、响应窗口和 `interactionSourceId` / `sys.interaction.current`。 |
 | 交互真实入口 | `passed_scoped` | 半身人 2 条新入口、盗贼 13/13、法师专属 14/14、勇士 11/11，另有牧师“抓鬼”跨派系联动 1/1；兽人本轮重新运行 45/45。 |
-| 验证证据 | `passed_scoped` | 法师领域行为与负向 / 生命周期 19/19、响应窗口与交互栏定向测试合计 53 条通过；兽人领域 22/22、兽人相关真实入口本轮重跑 45/45（其中 44 条为兽人对象链、1 条为牧师跨派系联动）；勇士领域测试 10/10、真实入口 11/11；共享 `interactionTargetTypeAudit` 仍有 2 条静态合同残余，不归入 Munchkin 派系运行时缺陷。 |
+| 验证证据 | `passed_scoped` | 法师领域行为与负向 / 生命周期 19/19、响应窗口与交互栏定向测试合计 53 条通过；兽人领域 22/22、兽人相关真实入口本轮重跑 45/45（其中 44 条为兽人对象链、1 条为牧师跨派系联动）；勇士领域测试 10/10、真实入口 11/11。2026-10-23 重跑共享 `interactionTargetTypeAudit` 为 12/14；两条失败分别是 response chooser 的 field-source-action 静态合同片段缺失，以及 `base_uss_undertaking` / 三个 goblins sourceId 混用 targetType，详情见本文件续审记录。 |
 | 共享影响与代表链依据 | `passed` | `sharedFlowId` 见下表；代表链只用于共享流程判等，不替代派系对象全集。 |
 | 缺口分类与范围裁定 | `passed` | 法师、兽人、勇士已完成当前对象级真实入口收口；牧师抓鬼跨派系联动已复测通过；共享静态合同和公共牌堆仍按各自范围保留。 |
 | 旧 evidence / 旧结论对账回写 | `passed` | 旧 Munchkin 总账顶部已追加 2026-09-18 回写；半身人和盗贼旧 `in_progress` 结论被本文件替代。 |
-| 残余范围声明 | `passed` | 明确禁止把当前结论外推到公共牌堆或 Munchkin 整扩展；共享 `interactionTargetTypeAudit` 的 2 条静态合同残余另行处理。 |
+| 残余范围声明 | `passed` | 明确禁止把当前结论外推到公共牌堆或 Munchkin 整扩展；共享 `interactionTargetTypeAudit` 的两类静态失败不构成 Munchkin 对象运行时失败证据，仍需在共享合同范围处理。 |
 
 ## 共享流程审计与代表链依据
 
@@ -108,7 +108,7 @@
 
 | 条目 | 分类 | 现实影响 | 最小补救 |
 | --- | --- | --- | --- |
-| 共享 `interactionTargetTypeAudit` 2 条静态合同失败 | 共享流程审计残余 | 静态扫描未找到场上来源动作入口的公共合同片段；当前没有证据表明法师真实运行时入口失败。 | 单开共享交互合同专项，修复公共扫描 / 合同或补证据；本轮不改法师规则。 |
+| 共享 `interactionTargetTypeAudit` 两条静态测试失败 | 共享流程审计残余 | 2026-10-23 结果为 12/14：一条检查缺 `FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE` 与对应 `targetType` 片段；另一条发现 `base_uss_undertaking`（Cease and Desist / Half the Battle）及 `goblins_chaos_lord`、`goblins_blaster`、`goblins_demolition` 的 sourceId 跨调用混用 targetType。当前没有 Munchkin sourceId 出现在这四项冲突中，也没有 Munchkin 运行时失败证据。 | 在共享合同专项中裁定 response chooser 的 source-action 语义及 sourceId 冲突；不据此回退五个 Munchkin 派系的对象级结论。 |
 | 测试共享入口的卡牌特写遮罩 | `confirmed_test_harness_gap`，已修复 | `GameTestContext.playCard` 先点击手牌时未复用已有遮罩关闭入口，现实后果是可见手牌存在但真实点击被特写层拦截；规则源码没有因此失败。 | 已在 `e2e/framework/GameTestContext.ts` 的 `playCard` 开头调用 `dismissRevealOverlayIfPresent()`；坑洞离场后死亡之息原始用例已重新通过。 |
 | 战争怒吼候选生成过宽 | `功能实现阻塞`，已修复 | 旧实现先展示没有可加力量仆从的基地怪物，玩家选中后第二步没有合法目标，形成无法完成的玩家流程。 | 候选生成与刷新统一先检查同基地合法仆从，再暴露怪物；已补红绿回归测试。 |
 | 公共怪物 / 宝藏牌堆 | 非本批次范围 | 其状态仍不能由半身人 / 盗贼摘牌外推。 | 继续沿 Munchkin 公共牌堆独立 evidence 收口。 |
@@ -146,3 +146,16 @@
 - 可以说：半身人、盗贼、法师、兽人和勇士已完成当前本地对象级审计并摘牌。
 - 必须说：牧师“抓鬼”与呆瓜兽人跨派系联动已复测通过；共享静态合同、公共牌堆和整批移动端图面仍保留各自残余。
 - 禁止说：19 个实施中派系已全部审计完成，或 Munchkin 整扩展已收口。
+
+## 2026-10-23 续审：共享 targetType 合同扫描
+
+- 命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`。
+- 结果：14 项中 12 通过、2 失败；扫描耗时约 137 秒。第一项失败要求 `smashup_reaction_choose` 的场上 special 来源本体确认包含 `FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE` 及 `targetType: FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE` 两个共享合同片段。第二项失败报告四个跨调用 sourceId 冲突：`base_uss_undertaking` 为 `generic/minion`，`goblins_chaos_lord` 为 `minion/generic`，`goblins_blaster` 为 `generic/button`，`goblins_demolition` 为 `generic/minion`。
+- 责任边界：这些是全局静态合同扫描失败，不是五个 Munchkin 派系对象的运行时失败；当前错误清单没有 Munchkin sourceId。五派系对象级结论保持原范围，公共静态合同债务仍未关闭。
+
+## 同类扩审与漏审归因
+
+- 搜索范围：共享静态扫描器当前遍历全部 Smash Up abilities 与 domain base-ability 源；另以精确 sourceId 搜索复核 Munchkin 五派系能力注册和本文件记录的对象级真实入口结论。
+- 命中项：本轮扫描失败仅为 `smashup_reaction_choose` 中缺少 field-source-action 合同片段，以及 `base_uss_undertaking`、`goblins_chaos_lord`、`goblins_blaster`、`goblins_demolition` 的跨调用 targetType 语义冲突。错误清单未包含 Munchkin sourceId；没有发现 Munchkin 对象级运行时失败。
+- 漏审归因：旧 evidence 将“共享扫描仍红”概括为两条 Munchkin 共享合同残余，没有保留当前失败测试名、静态错误位置或受影响对象，导致范围看起来像 Munchkin 专属问题。本次已将它校正为全局静态审计基线，未把全局失败转嫁为 Munchkin 规则缺陷。
+- 残余扩审范围：共享 response chooser 的来源本体确认合同和四个冲突 sourceId 仍需单独裁定；五个 Munchkin 派系对象级结论与公共怪物 / 宝藏牌堆范围继续分开管理。要声称共享扫描通过，需在完成共享合同处理后重跑完整 `interactionTargetTypeAudit.test.ts`。

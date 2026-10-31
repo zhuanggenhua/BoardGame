@@ -1167,7 +1167,7 @@ export const CreateRoomModal = ({
                                 ) : null}
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
-                                    <div className="rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3 space-y-3">
+                                    <div className="platform-room-ai rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3 space-y-3">
                                         <button
                                             type="button"
                                             onClick={handleToggleAiEnabled}

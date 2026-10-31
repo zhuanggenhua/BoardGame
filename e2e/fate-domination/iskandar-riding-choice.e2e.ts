@@ -253,7 +253,6 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
     }, undefined, { timeout: 20000 });
     await expect(page.getByTestId('fate-domination-board')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('region', { name: '选择御主与从者' })).toBeVisible();
-    const identitySetup = page.getByRole('region', { name: '选择御主与从者' });
     await chooseFateIdentity(page,'master','m_waver');
     await chooseFateIdentity(page,'servant','servant-rider');
     await page.getByTestId('fate-domination-primary-action').click();
@@ -269,8 +268,7 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
     expect((await readState(page)).core.players['0'].locationId).toBeNull();
     await page.getByTestId('fate-domination-primary-action').click();
     await waitForState(page, state => state.core.players['0'].locationId === 'workshop', '等待韦伯部署工房');
-    await page.getByRole('button', { name: /查看玩家\s*1详情/ }).click();
-    await expect(page.getByRole('dialog', { name: '韦伯·维尔维特详情' })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     const handBeforeMasterAbility = (await readState(page)).core.players['0'].hand.length;
     await page.getByRole('button', { name: '发动战略部署' }).click();
     await waitForState(page, state => state.core.players['0'].hand.length >= handBeforeMasterAbility + 2, '等待战略部署抽取两张手牌');

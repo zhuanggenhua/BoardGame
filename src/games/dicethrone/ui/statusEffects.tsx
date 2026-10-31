@@ -1167,6 +1167,7 @@ export const SelectableStatusBadge = ({
     atlas,
     characterId,
     visualDefinitions,
+    tooltipPlacementBoundarySelector,
 }: {
     effectId: string;
     stacks: number;
@@ -1179,6 +1180,7 @@ export const SelectableStatusBadge = ({
     atlas?: StatusAtlases | null;
     characterId?: string;
     visualDefinitions?: TokenDef[];
+    tooltipPlacementBoundarySelector?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const preferredDefinitions = resolveVisualDefinitions(characterId, visualDefinitions);
@@ -1227,7 +1229,11 @@ export const SelectableStatusBadge = ({
                 }`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => clickable && onSelect?.()}
+            onClick={() => {
+                if (!clickable) return;
+                setIsHovered(false);
+                onSelect?.();
+            }}
         >
             <div
                 className={`
@@ -1262,6 +1268,7 @@ export const SelectableStatusBadge = ({
                 content={info.description}
                 isVisible={isHovered}
                 position="right"
+                placementBoundarySelector={tooltipPlacementBoundarySelector}
             />
         </div>
     );
@@ -1282,6 +1289,7 @@ export const SelectableEffectsContainer = ({
     atlas,
     characterId,
     visualDefinitions,
+    tooltipPlacementBoundarySelector,
 }: {
     effects: Record<string, number>;
     tokens?: Record<string, number>;
@@ -1296,6 +1304,7 @@ export const SelectableEffectsContainer = ({
     atlas?: StatusAtlases | null;
     characterId?: string;
     visualDefinitions?: TokenDef[];
+    tooltipPlacementBoundarySelector?: string;
 }) => {
     const activeEffects = Object.entries(effects).filter(([, stacks]) => stacks > 0);
     const activeTokens = tokens ? Object.entries(tokens).filter(([, amount]) => amount > 0) : [];
@@ -1319,6 +1328,7 @@ export const SelectableEffectsContainer = ({
                     atlas={atlas}
                     characterId={characterId}
                     visualDefinitions={visualDefinitions}
+                    tooltipPlacementBoundarySelector={tooltipPlacementBoundarySelector}
                 />
             ))}
         </div>

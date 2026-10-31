@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "validatedAt": "2026-10-26T13:37:07.471Z",
+  "validator": "scripts/verify/e2e-image-index-contract.mjs:validateE2EImageIndex",
+  "mediaCount": 42,
+  "chainCount": 9
+}

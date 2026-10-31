@@ -64,8 +64,8 @@ import { createHandDiscardInteractionContract } from './ui/handDiscardInteractio
 import { useGameMode } from '../../contexts/GameModeContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useCurrentChoice, useCurrentDefenderChoice, useDiceThroneState } from './hooks/useDiceThroneState';
-import { INTERACTION_COMMANDS, asCompareRollChoice } from '../../engine/systems/InteractionSystem';
-import { useMultistepInteraction } from '../../engine/systems/useMultistepInteraction';
+import { INTERACTION_COMMANDS, asCompareRollChoice, type InteractionDescriptor as EngineInteractionDescriptor } from '../../engine/systems/InteractionSystem';
+import { useMultistepInteraction, type MultistepInteractionState } from '../../engine/systems/useMultistepInteraction';
 import { type DiceModifyResult, type DiceModifyStep, type DiceSelectResult, type DiceSelectStep } from './domain/systems';
 // 游戏特定 Hooks
 import { useInteractionState } from './hooks/useInteractionState';
@@ -122,10 +122,12 @@ import {
 } from './domain/tokenResponseChoiceContract';
 import { createClientBonusDiceGroupRerollInteraction, rebuildClientDiceMultistepInteraction } from './ui/clientDiceMultistepInteraction';
 import { createDiceInteractionContract, getDiceInteractionMeta } from './ui/diceInteractionContract';
+import { describeDiceCombinationChoice } from './ui/diceCombinationChoice';
 import { buildBoardShellInlineUnitValue } from '../../shared/runtimeLayoutUnits';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 const dtUnit = buildBoardShellInlineUnitValue;
+const EMPTY_DICE_CHOICE_IDS: number[] = [];
 const DT_RESPONSE_WINDOW_TYPES: readonly DtResponseWindowType[] = [
     'afterRollConfirmed',
     'afterCardPlayed',
@@ -219,6 +221,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const locale = i18n.resolvedLanguage ?? i18n.language;
     const [autoResponseEnabled, setAutoResponseEnabled] = React.useState(() => getAutoResponseEnabled());
     const [isHandHidden, setIsHandHidden] = React.useState(false);
+    const [diceChoiceSelection, setDiceChoiceSelection] = React.useState<{ interactionKey: string; dieIds: number[] }>({
+        interactionKey: '',
+        dieIds: [],
+    });
     const handleToggleHandHidden = React.useCallback(() => {
         setIsHandHidden((current) => !current);
     }, []);
@@ -820,6 +826,45 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 进攻技能特写期间阻止所有操作
     const canAdvancePhase = isFocusPlayer && access.canAdvancePhase && !hasBlockingAttackShowcase;
     const canResolveChoice = Boolean(choice.hasChoice && choice.playerId === rootPid);
+    const choiceDiceInteractionKey = choice.hasChoice
+        ? (sysInteraction?.id ?? `${choice.sourceAbilityId ?? 'choice'}:${choice.title ?? ''}:${choice.options.map(option => option.id).join(',')}`)
+        : '';
+    const diceCombinationChoice = React.useMemo(
+        () => choice.hasChoice
+            ? describeDiceCombinationChoice(choice.options, choice.playerId ? G.players[choice.playerId]?.characterId : undefined)
+            : undefined,
+        [G.players, choice.hasChoice, choice.options, choice.playerId],
+    );
+    const canResolveDiceChoice = Boolean(
+        canResolveChoice
+        && sysInteraction?.kind === 'simple-choice'
+        && diceCombinationChoice,
+    );
+    const selectedChoiceDieIds = React.useMemo(() => (
+        diceChoiceSelection.interactionKey === choiceDiceInteractionKey
+            ? diceChoiceSelection.dieIds
+            : EMPTY_DICE_CHOICE_IDS
+    ), [choiceDiceInteractionKey, diceChoiceSelection.dieIds, diceChoiceSelection.interactionKey]);
+    const choiceDiceTrayDice = React.useMemo(() => {
+        if (!canResolveDiceChoice || !diceCombinationChoice || !choice.playerId) return null;
+        const definitionId = `${diceCombinationChoice.characterId}-dice`;
+        return diceCombinationChoice.dice.map(die => {
+            const symbol = getPlayerDieFace(G, choice.playerId!, die.value);
+            return {
+                id: die.id,
+                definitionId,
+                value: die.value,
+                symbol,
+                symbols: symbol ? [symbol] : [],
+                isKept: false,
+                ownerId: choice.playerId,
+                displayOnly: false,
+            } as Die;
+        });
+    }, [G, canResolveDiceChoice, choice.playerId, diceCombinationChoice]);
+    React.useEffect(() => {
+        setDiceChoiceSelection({ interactionKey: choiceDiceInteractionKey, dieIds: [] });
+    }, [choiceDiceInteractionKey]);
 
     const directTokenResponseIds = React.useMemo(() => {
         if (!isTokenResponseInteraction || !pendingDamage || !isTokenResponder) return [];
@@ -1504,13 +1549,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         });
     }, [currentRollDice, replayOnlyRollDice, attackSnapshotInteractionDice, bonusDiceTrayDice, isCurrentPhaseMainRollPhase]);
     const rightSidebarDice = React.useMemo(() => {
+        if (choiceDiceTrayDice) return choiceDiceTrayDice;
         if (bonusDiceTrayDice) return bonusDiceTrayDice;
         const defaultCharacterDice = G.dice.length > 0
             ? G.dice
             : getDefaultDiceForCharacter(player.characterId);
         const baseDice = getRailDiceForCurrentBoard(interactionDice, defaultCharacterDice);
         return baseDice;
-    }, [G.dice, bonusDiceTrayDice, interactionDice, player.characterId]);
+    }, [G.dice, bonusDiceTrayDice, choiceDiceTrayDice, interactionDice, player.characterId]);
     const rightTrayBonusDiceSettlement = pendingBonusDiceRoutedToRightTray
         ? currentPendingBonusDiceSettlement
         : undefined;
@@ -1560,6 +1606,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             || !!rerollSelectingAction
             || isRightTrayBonusDiceSettlementActive
             || canConfirmTokenEvasionFromRightTray
+            || canResolveDiceChoice
         );
     // 状态效果/玩家交互配置
     // 单张当前手牌弃置直接沿用 HandArea；复数候选仍保留牌池确认流程。
@@ -1743,6 +1790,74 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         activeResolutionFrameId,
     ]);
 
+    const hasObjectChoice = choice.hasChoice && choice.options.some(option => (
+        option.choiceKind === 'card' || option.choiceKind === 'player' || option.choiceKind === 'status'
+    ));
+    const choiceDiceInteractionView = React.useMemo<EngineInteractionDescriptor | undefined>(() => {
+        if (!canResolveDiceChoice || !diceCombinationChoice || !choice.playerId || !sysInteraction) return undefined;
+        return {
+            id: `${sysInteraction.id}:dice-choice-view`,
+            kind: 'multistep-choice',
+            playerId: choice.playerId,
+            resolutionFrameId: sysInteraction.resolutionFrameId,
+            cancelPolicy: 'forbidden',
+            data: {
+                titleKey: choice.title ?? 'interaction.hint_choose_dice',
+                minSteps: diceCombinationChoice.selectCount,
+                maxSteps: diceCombinationChoice.selectCount,
+                allowedDieIds: diceCombinationChoice.allowedDieIds,
+                meta: {
+                    dtType: 'selectDie',
+                    selectionMode: 'choice',
+                    selectCount: diceCombinationChoice.selectCount,
+                    diceOwnerId: choice.playerId,
+                    targetOpponentDice: false,
+                    allowRepeatedDieSelection: false,
+                },
+            },
+        };
+    }, [canResolveDiceChoice, choice.playerId, choice.title, diceCombinationChoice, sysInteraction]);
+    const choiceDiceInteractionController = React.useMemo<MultistepInteractionState<DiceModifyResult | DiceSelectResult> | undefined>(() => {
+        if (!choiceDiceInteractionView || !diceCombinationChoice) return undefined;
+        const selectedDiceIds = selectedChoiceDieIds;
+        return {
+            result: { selectedDiceIds },
+            stepCount: selectedDiceIds.length,
+            canConfirm: selectedDiceIds.length === diceCombinationChoice.selectCount,
+            step: payload => {
+                const step = payload as DiceSelectStep;
+                if (step.action !== 'toggle' || !diceCombinationChoice.allowedDieIds.includes(step.dieId)) return;
+                setDiceChoiceSelection(current => {
+                    const currentDieIds = current.interactionKey === choiceDiceInteractionKey ? current.dieIds : [];
+                    if (currentDieIds.includes(step.dieId)) {
+                        return {
+                            interactionKey: choiceDiceInteractionKey,
+                            dieIds: currentDieIds.filter(id => id !== step.dieId),
+                        };
+                    }
+                    if (currentDieIds.length >= diceCombinationChoice.selectCount) return current;
+                    return { interactionKey: choiceDiceInteractionKey, dieIds: [...currentDieIds, step.dieId] };
+                });
+            },
+            confirm: () => {
+                if (selectedDiceIds.length !== diceCombinationChoice.selectCount || !canResolveChoice) return;
+                const selectedKey = [...selectedDiceIds].sort((left, right) => left - right).join(',');
+                const option = diceCombinationChoice.options.find(candidate => candidate.dieIds.join(',') === selectedKey);
+                if (!option) return;
+                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id, interactionId: sysInteraction?.id });
+                setDiceChoiceSelection({ interactionKey: choiceDiceInteractionKey, dieIds: [] });
+            },
+            cancel: () => undefined,
+        };
+    }, [
+        canResolveChoice,
+        choiceDiceInteractionKey,
+        choiceDiceInteractionView,
+        diceCombinationChoice,
+        dispatch,
+        selectedChoiceDieIds,
+        sysInteraction?.id,
+    ]);
     const choiceModalEntry = React.useMemo<Omit<ModalEntry, 'id'>>(() => ({
         ...(choice.hasChoice ? {
             owner: {
@@ -1766,10 +1881,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         closeOnBackdrop: false,
         closeOnEsc: false,
         onClose: () => undefined,
+        allowPointerThrough: hasObjectChoice,
         render: () => (
-            choice.hasChoice && choice.options.some(option => (
-                option.choiceKind === 'card' || option.choiceKind === 'player' || option.choiceKind === 'status'
-            )) ? (
+            hasObjectChoice ? (
                 <ChoiceObjectSelection
                     key={sysInteraction?.id ?? `${choice.sourceAbilityId ?? 'choice'}:${choice.title ?? ''}`}
                     choiceId={sysInteraction?.id ?? 'dicethrone_choice'}
@@ -1811,7 +1925,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 />
             )
         ),
-    }), [G.players, G.seatingOrder, G.teamIdByPlayerId, G.tokenDefinitions, activeResolutionFrameId, canResolveChoice, choice, dispatch, locale, playerNames, rootPid, statusIconAtlas, sysInteraction]);
+    }), [G.players, G.seatingOrder, G.teamIdByPlayerId, G.tokenDefinitions, activeResolutionFrameId, canResolveChoice, choice, dispatch, hasObjectChoice, locale, playerNames, rootPid, statusIconAtlas, sysInteraction]);
 
     const defenderChoiceModalEntry = React.useMemo<Omit<ModalEntry, 'id'>>(() => ({
         ...(defenderChoice ? {
@@ -1866,7 +1980,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
 
     useSyncedModalStackEntry({
-        enabled: Boolean(choice.hasChoice && !shouldUseDirectTokenChoice),
+        enabled: Boolean(choice.hasChoice && !shouldUseDirectTokenChoice && !canResolveDiceChoice),
         entryId: 'dicethrone_choice',
         entry: choiceModalEntry,
     });
@@ -1963,7 +2077,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         ...diceMultistepState,
         confirm: confirmRightSidebarDiceInteraction,
     }), [confirmRightSidebarDiceInteraction, diceMultistepState]);
-    const diceInteractionContract = React.useMemo(() => {
+    const choiceDiceInteractionContract = React.useMemo(() => (
+        choiceDiceInteractionView && choiceDiceInteractionController
+            ? createDiceInteractionContract({
+                interaction: choiceDiceInteractionView,
+                controller: choiceDiceInteractionController,
+                rootPlayerId: rootPid,
+                teamIdByPlayerId: G.teamIdByPlayerId,
+            })
+            : undefined
+    ), [G.teamIdByPlayerId, choiceDiceInteractionController, choiceDiceInteractionView, rootPid]);
+    const regularDiceInteractionContract = React.useMemo(() => {
         if (!isInteractionOwner && !isRightTrayBonusDiceSettlementActive && !canConfirmTokenEvasionFromRightTray) return undefined;
         return createDiceInteractionContract({
             interaction: canConfirmTokenEvasionFromRightTray ? sysInteraction : diceMultistepInteraction,
@@ -1983,6 +2107,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         rootPid,
         sysInteraction,
     ]);
+    const diceInteractionContract = choiceDiceInteractionContract ?? regularDiceInteractionContract;
 
     React.useEffect(() => {
         if (isTutorialActive && tutorialStep?.id === 'knockdown-choice' && modals.removeKnockdown) nextTutorialStep();
@@ -2503,8 +2628,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             !rightTrayBonusDiceSettlement
                             || Boolean(diceMultistepInteraction)
                             || isRightTrayBonusDiceSettlementActive
+                            || Boolean(choiceDiceInteractionContract)
                         )}
-                        isBonusDiceSettlement={isRightTrayBonusDiceSettlementActive || canConfirmTokenEvasionFromRightTray}
+                        isBonusDiceSettlement={isRightTrayBonusDiceSettlementActive}
                         canRerollBonusDice={canRerollBonusDiceFromRightTray}
                         onRerollBonusDice={isRightTrayBonusDiceSettlementActive && !rightTrayBonusDiceSettlement?.groupReroll
                             ? handleRerollBonusDiceFromRightTray

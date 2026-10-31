@@ -11,14 +11,13 @@ import './creator-center.css';
 
 interface GameAuthorInfoProps {
     authorName: string;
-    gameName: string;
     actions?: ReactNode | ((close: () => void) => ReactNode);
 }
 
-const actionClassName = 'inline-flex min-h-11 w-full items-center justify-start border-0 bg-transparent px-0 text-left text-sm font-bold text-parchment-base-text underline decoration-1 underline-offset-4 hover:text-[#b00060] cursor-pointer';
+const actionClassName = 'platform-author-action';
 
 /** 详情作者入口：与原生游戏同一套点击作者 → 作者信息弹层。 */
-export function GameAuthorInfo({ authorName, gameName, actions }: GameAuthorInfoProps) {
+export function GameAuthorInfo({ authorName, actions }: GameAuthorInfoProps) {
     const { t } = useTranslation('lobby');
     const [open, setOpen] = useState(false);
     const close = () => setOpen(false);
@@ -26,7 +25,7 @@ export function GameAuthorInfo({ authorName, gameName, actions }: GameAuthorInfo
     return <>
         <button type="button" data-testid="game-details-author-button-mobile" onClick={() => setOpen(true)}
             aria-label={t('authorInfo.buttonHint')} title={t('authorInfo.buttonHint')}>
-            {t('authorInfo.button', { author: authorName })}
+            {authorName}
         </button>
         {open && createPortal(
             <ModalBase onClose={close} closeOnBackdrop containerClassName="p-4 sm:p-8">
@@ -48,11 +47,8 @@ export function GameAuthorInfo({ authorName, gameName, actions }: GameAuthorInfo
                             </svg>
                         </button>
                     </div>
-                    <div className="mt-4 rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/40 px-3 py-2 text-sm">
-                        {t('authorInfo.game', { game: gameName })}
-                    </div>
                     <p className="platform-author-placeholder mt-3 text-sm leading-6 text-parchment-light-text">{t('authorInfo.hint')}</p>
-                    {actionNodes ? <div className="mt-4 grid gap-1">{actionNodes}</div> : null}
+                    {actionNodes ? <div className="platform-author-actions mt-4 grid gap-2">{actionNodes}</div> : null}
                 </div>
             </ModalBase>,
             document.body,
@@ -89,11 +85,11 @@ export function ExternalGameAuthor({ author, authorProfileUrl, gameId, gameName,
             </section>)
         : null;
     return <>
-        <GameAuthorInfo authorName={label} gameName={gameName} actions={close => <>
-            {authorProfileUrl && <a className={actionClassName} href={authorProfileUrl} target="_blank" rel="noopener noreferrer">{t('authorInfo.openHomepage')}</a>}
+        <GameAuthorInfo authorName={label} actions={close => <>
+            {authorProfileUrl && <a className="platform-author-profile-link" href={authorProfileUrl} target="_blank" rel="noopener noreferrer">{authorProfileUrl}</a>}
             {isOwner
                 ? <button type="button" className={actionClassName} onClick={() => { close(); onManageWorks(); }}>{t('authorInfo.manageWorks')}</button>
-                : <button type="button" className={actionClassName} onClick={() => { close(); setClaimOpen(true); }}>{t('authorInfo.claim')}</button>}
+                : <button type="button" className={`${actionClassName} platform-author-action--claim`} onClick={() => { close(); setClaimOpen(true); }}>{t('authorInfo.claim')}</button>}
         </>} />
         {overlay && createPortal(overlay, document.body)}
     </>;

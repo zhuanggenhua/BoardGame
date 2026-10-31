@@ -114,3 +114,34 @@
 
 - [x] 13.5 当前P轮8项E2E零重试、4文件11项单测及ESLint通过；另行核对桌面突出与连续退场、手机按压及详情进退。真实触摸RED发现原生active缩放未生效，修为pointer反馈后按住/取消/释放断言通过。经典不动，用户最终游戏感验收与8.6/9.5总体验收仍未关闭。
 - [x] 13.6 2026-10-28恢复现代桌面“发现／收藏库”居中位置，上传紧跟收藏库；1024/1280/1366/1440/1920 五宽度、中英文、访客/登录态验证三项命中无重叠。手机上传保留抽屉入口，补真实上滑到作者字段并键入的断言。当前9项E2E零重试、导航单测4/4；1024×900桌面图、375×812手机图及PC/手机录屏逐份由主代理和Luna max核对通过。记录：[行为结果](../../../test-results/evidence-screenshots/home/首页上传与收藏悬浮修复/行为验收结果.json)、[视觉审查](../../../test-results/evidence-screenshots/home/首页上传与收藏悬浮修复/视觉审查.json)、[PASS清单](../../../test-results/evidence-screenshots/home/首页上传与收藏悬浮修复/focused-pass-manifest.json)。上一轮REVISE原因是PC截图未覆盖1024px，手机视频未证明作者字段可滚动到导航上方并输入；当前跑次已补齐这两项。整体首页行为矩阵和用户最终验收仍未关闭。
+
+## 14. 详情作者与按钮反馈（2026-10-30）
+
+- [x] 14.1 接续当前详情与作者弹层实现；现代详情收藏、详情关闭及二级弹层关闭补齐品红悬浮、抬升硬阴影、按压和键盘焦点，减少动态效果保留颜色反馈。经典动效不改。
+- [x] 14.2 作者弹层直接显示提供的网址链接，真实点击打开原地址；作品与黄色申请认领入口保留。不扩展原生认领服务端接收范围。
+- [x] 14.3 直连4273采集桌面1920×1080、手机390×844十张当前整屏独立代表态；相关源码采集前后及交付组装时哈希一致。两文件七项单测、ESLint及十三项浏览器现场检查通过，行为结果与逐图视觉结论分开记录；独立逐图审查十项通过，纯视觉清单校验通过。详见[本轮范围与行为](../../../test-results/evidence-screenshots/platform/details-author-claim-20261030/行为检查与验收范围.md)、[逐图审查](../../../test-results/evidence-screenshots/platform/details-author-claim-20261030/visual-review.json)、[清单](../../../test-results/evidence-screenshots/platform/details-author-claim-20261030/focused-pass-manifest.json)。本组不证明完整首页行为链、经典视觉、实体手机、连续动效或认领提交成功。
+- [ ] 14.4 用户最终视觉验收；既有完整首页矩阵及原生认领提交限制继续保留，不能以本次局部纯视觉通过关闭。
+- [x] 14.5 按用户后续纠偏移除作者弹层作品列表、专用目录查询及作品跳转回调，作品继续由个人主页承载；详情入口仅显示作者名字，弹层内标明电子化作者。删除收藏专属悬浮规则，收藏和教程共用详情次要按钮样式。两文件六项单测通过，ESLint零错误（五条原有警告），十一项当前浏览器检查通过，其中两个白底按钮悬浮的底色、文字色、位移及硬阴影计算值一致。九张当前桌面／手机图独立逐图审查通过，清单为纯视觉独立代表态；旧14.2／14.3图组的作品与品红收藏结论已撤回最终展示资格。详见[当前行为范围](../../../test-results/evidence-screenshots/platform/details-author-unified-20261030/行为与视觉范围.md)、[逐图审查](../../../test-results/evidence-screenshots/platform/details-author-unified-20261030/visual-review.json)、[清单](../../../test-results/evidence-screenshots/platform/details-author-unified-20261030/focused-pass-manifest.json)。14.4仍待用户验收；未扩大为完整首页、认领提交或实体手机验收。
+
+## 15. 收藏库导航与现代首页完整图组（2026-10-30）
+
+- [x] 15.1 真实入口红测确认顶部收藏库保留旧详情参数，修为进入分区主页时清除游戏选择；桌面及手机验证先主页、点击游戏后详情。
+- [x] 15.2 用有内容的房间、动态、评价、排行及账户投稿数据发现并修复：作者与标题脱节、更新旧外壳、分栏与阅读区过宽、外站空封面与弱链接样式、桌面模态房间展示容量、认领字体及窄触控区域。外站缺封面由目录与详情共用首字占位；经典样式不改。
+- [x] 15.3 保存可复跑的[主采集脚本](../../../e2e/platform-home-review.mjs)、[数据夹具](../../../e2e/helpers/homeVisualFixture.mjs)和[补充控件采集](../../../e2e/platform-home-review-supplement.mjs)。直连4273，模拟数据不写开发数据库；来源209份采集前后及交付组装时一致。
+- [x] 15.4 桌面49张、手机52张，共101张当前整屏独立代表态逐图审查通过；相同字节沿用审查，新字节重读，重复状态移出展示清单。四文件八项单测、九项浏览器检查通过，ESLint零错误、两条既有警告；行为与视觉分开。过程含误判纠正：注册入口是旧选择器问题，找回密码按钮并未裁切，重连命中区已为44高，已收藏底色属于选中状态。详见[行为结果](../../../test-results/evidence-screenshots/platform/home-full-20261030-final/behavior-result.json)、[逐图报告](../../../test-results/evidence-screenshots/platform/home-full-20261030-final/visual-review.json)、[过程与范围](../../../test-results/evidence-screenshots/platform/home-full-20261030-final/验收过程与剩余范围.md)、[纯视觉清单](../../../test-results/evidence-screenshots/platform/home-full-20261030-final/focused-pass-manifest.json)。查看器严格清单校验通过。
+- [ ] 15.5 用户最终视觉验收；模拟画面不关闭真实建房加入、重连、邮件、投稿上传送审及持久化的完整行为矩阵，原生认领提交限制继续保留。14.4及既有整体行为验收仍独立待办。
+
+## 16. 建房宽度与旧版施工标记纠偏（2026-10-30）
+
+- [x] 16.1 修改前真实入口复现：桌面加入智能对手入口比房名窄三十二像素，手机同样窄三十二像素；只去掉现代建房配置块的重复内边距和外框，修后两端与其它表单字段左右对齐，展开配置保留。经典分支不改。
+- [x] 16.2 核对历史提交 c057cfe76 的经典大厅及共享施工标记，将现代目录角落小标签恢复为既有黑黄斜向施工横幅，复用原组件，不改共享组件或经典首页。
+- [x] 16.3 桌面与手机各三张当前整屏图逐图审查通过，卡片既有三项单测与双端同宽检查通过；行为与视觉分开记录。桌面展开图首审末项截断，修正取图滚动目标后只重拍该张，另五张字节保留；手机施工图曾误用本轮坏例作旧基线，核历史源码后纠正，原裁决保留。六图纯视觉清单校验通过并注册查看器；详见[行为结果](../../../test-results/evidence-screenshots/platform/home-width-ribbon-20261030/behavior-result.json)、[逐图报告](../../../test-results/evidence-screenshots/platform/home-width-ribbon-20261030/visual-review.json)、[审查过程](../../../test-results/evidence-screenshots/platform/home-width-ribbon-20261030/审查过程.md)。旧整组中本轮被指出的问题不凭历史通过结论收口；用户最终视觉验收仍待完成。
+- [x] 16.4 用户已确认对象为右上角账户头像，仅取消现代账户入口的可见白框，保留原尺寸、悬浮及键盘焦点；通知按钮、个人中心、预设选择格与经典入口不改。已有账户单测三项通过，双端外框与触控尺寸、点按及键盘切换菜单和进入个人主页实测通过；四张当前整屏图独立审查及纯视觉清单校验通过，行为和视觉分开。详见[行为结果](../../../test-results/evidence-screenshots/platform/home-account-avatar-20261030/behavior-result.json)、[逐图报告](../../../test-results/evidence-screenshots/platform/home-account-avatar-20261030/visual-review.json)、[范围与过程](../../../test-results/evidence-screenshots/platform/home-account-avatar-20261030/范围与过程.md)。用户最终验收仍待完成。
+
+## 17. 核心截图、表单参考与赞助记录（2026-10-31）
+
+- [x] 17.1 按用户最新交付要求，只交核心界面和实质布局/交互变化；细微修改由验证记录承接，不机械追加整组截图。收藏库主页、导航选中和点击游戏后的选中关系为重点。
+- [x] 17.2 现代首页关于入口移除赞助记录区，并停止名单请求和相应自动轮播；经典和局内默认行为保留。桌面及手机实际入口验证不渲染该区、不请求名单，不为这一小改动另交截图。
+- [x] 17.3 桌面与手机各两张收藏库核心整屏图独立审查通过：先主页、导航选中、点击后才进详情、再次进入清除旧选择；手机详情与底部导航分层覆盖，导航选中由主页图证明。三文件十一项导航、收藏和经典保护单测，六项浏览器检查通过；代码检查零错误、一条既有依赖警告。行为与视觉分开，纯视觉清单校验通过。详见[行为结果](../../../test-results/evidence-screenshots/platform/home-library-core-20261031/behavior-result.json)、[视觉报告](../../../test-results/evidence-screenshots/platform/home-library-core-20261031/visual-review.json)、[范围与过程](../../../test-results/evidence-screenshots/platform/home-library-core-20261031/范围与过程.md)。用户最终验收仍待完成。
+- [x] 17.4 按当前完整查看器顺序核对76–78对应作品编辑发布操作、投稿和我的反馈；只读查找GitHub表单、Zendesk用户请求及桌面/手机上传参考。桌面蚂蚁设计拖拽区与手机独立图片上传演示均实际截图并私下审阅；手机桌面文档被挤压的截图不作为合格移动参考。参考对照保存于本轮证据目录。
+- [ ] 17.5 投稿及作品表单、我的反馈、认证截图上传的正式重构尚未完成；本轮仅收敛参考，不宣称已改版。我的反馈最后正常视觉基线未锁，GitHub长表单与Zendesk请求列表的移动完整形态仍需补证据；不凭新偏好冒充回归恢复。完整首页真实业务矩阵及既有未完成项继续独立保留。

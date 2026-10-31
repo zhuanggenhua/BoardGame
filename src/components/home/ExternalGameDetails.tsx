@@ -9,6 +9,7 @@ import { playerOptionsFromRange, resolveExternalEmbed } from '../../shared/exter
 import { HomeGameDetailsPresentation } from './HomeGameDetailsPresentation';
 import { PlatformGameDetails } from './PlatformGameDetails';
 import { PlatformFavoriteButton } from './PlatformFavoriteButton';
+import { PlatformExternalCover } from './PlatformExternalCover';
 import { ExternalGameAuthor } from './GameAuthorInfo';
 import { writeSessionStorageItem } from '../../lib/browserStorage';
 
@@ -33,9 +34,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
         writeSessionStorageItem('bg-external-return', JSON.stringify({ url: from, scroll: window.scrollY }));
         navigate(`/external/${encodeURIComponent(gameId)}?from=${encodeURIComponent(from)}`);
     };
-    const thumbnail = item?.coverUrl
-        ? <img src={item.coverUrl} alt="" />
-        : <span className="platform-external-art"><small>{t('platform.externalGamePage.externalGame')}</small></span>;
+    const thumbnail = item && <PlatformExternalCover name={item.name} coverUrl={item.coverUrl} />;
     return <HomeGameDetailsPresentation presentation={presentation} onClose={onClose} closeOnBackdrop={closeOnBackdrop} containerClassName="p-0 home-game-details-layer">
         {game.isPending || !item ? <div className="platform-game-details" role="status">{t('platform.externalGamePage.loading')}</div>
             : game.isError ? <div className="platform-game-details" role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}

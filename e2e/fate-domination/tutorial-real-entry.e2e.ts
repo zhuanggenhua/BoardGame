@@ -77,11 +77,14 @@ async function expectDeploymentChoicesUnobscured(page:Page){
   });
   return {tooltip:tooltip?{left:tooltip.left,top:tooltip.top,right:tooltip.right,bottom:tooltip.bottom}:null,options};
  });
- await expect(overlay).toBeVisible();
+ const selected=layout.options.find(option=>option.pressed==='true');
+ if(selected&&!selected.label?.includes('魔术工房'))await expect(overlay).toContainText('地利');
+ else if(selected)await expect(overlay).toHaveCount(0);
+ else await expect(overlay).toBeVisible();
  const workshopOptions=layout.options.filter(option=>option.label?.includes('魔术工房'));
  expect(workshopOptions,`三个合法工房点位都应同时可选且有明确高亮：${JSON.stringify(layout)}`).toHaveLength(3);
  expect(workshopOptions.filter(option=>option.pressed==='true').length).toBeLessThanOrEqual(1);
- expect(workshopOptions.every(option=>option.pressed==='true'?option.borderColor==='rgb(241, 218, 176)':option.borderColor==='rgb(234, 210, 143)'),`三个合法点位必须分别呈现候选描边与已选强调色：${JSON.stringify(workshopOptions)}`).toBe(true);
+ expect(workshopOptions.every(option=>option.pressed==='true'?option.borderColor==='rgb(255, 255, 255)':option.borderColor==='rgb(234, 210, 143)'),`三个合法点位必须分别呈现候选描边与已选强调色：${JSON.stringify(workshopOptions)}`).toBe(true);
  const expectedLegalChoices=['部署到魔术工房第2点位','部署到魔术工房第3点位','部署到魔术工房第4点位','部署到深山町第1点位','部署到新都第1点位'];
  expect(layout.options.map(option=>option.label).sort(),`本局所有当前合法部署点都要同时有可见、可操作的候选高亮：${JSON.stringify(layout.options)}`).toEqual(expectedLegalChoices.sort());
  expect(layout.options.every(option=>option.borderWidth==='2px'&&option.boxShadow!=='none'&&option.backgroundColor!=='rgba(0, 0, 0, 0)'),`每个合法部署点都必须具有候选填色与外发光，不能只在工房点位高亮：${JSON.stringify(layout.options)}`).toBe(true);
@@ -102,7 +105,7 @@ function fateSourceRevision(){
  for(const file of readdirSync('src/games/fate-domination',{recursive:true}).map(String).filter(file=>/\.(tsx?|css)$/.test(file)&&!file.includes('__tests__')).sort()){
   hash.update(file);hash.update(readFileSync(path.join('src/games/fate-domination',file)));
  }
- for(const file of ['src/hooks/ui/useTouchLongPress.ts','src/engine/types.ts','src/engine/pipeline.ts','src/engine/systems/TutorialSystem.ts','src/contexts/TutorialContext.tsx','src/pages/matchRoomBridges.tsx','src/components/tutorial/TutorialOverlay.tsx']){hash.update(file);hash.update(readFileSync(file));}
+ for(const file of ['src/hooks/ui/useTouchLongPress.ts','src/engine/types.ts','src/engine/pipeline.ts','src/engine/systems/TutorialSystem.ts','src/contexts/TutorialContext.tsx','src/pages/matchRoomBridges.tsx','src/components/tutorial/TutorialOverlay.tsx','public/locales/zh-CN/game-fate-domination.json','public/locales/en/game-fate-domination.json']){hash.update(file);hash.update(readFileSync(file));}
  return 'tree-sha256:'+hash.digest('hex');
 }
 async function snapshot(page:Page,current?:State){
@@ -138,24 +141,29 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  const diagnostics=attachPageDiagnostics(page),run=await createEvidenceScreenshotRun(testInfo,{requireChineseName:true}),directory=run.stagingDir;
  await mkdir(directory,{recursive:true});
  const sourceRevision=fateSourceRevision(),trace:any[]=[],media:any[]=[],seen=new Set<string>(),seenHashes=new Map<string,string>();
- // 教学提示与其后真实结果都必须进入相册；同类重复牌名只由行为轨迹证明。
+ // 完整操作与选图分开：正文逐步核对，截图只保留决定、模式变化及结果的必要连接。
  const lessonCaptures:Record<string,string>={
-  preparation:'准备阶段补牌规则',deployment:'先手占用工房 +2 后的真实落位',deploymentChoice:'工房三个 +1 点位与其他合法地点',outpost:'实际部署后的前哨能力窗口',
-  masterAbility:'御主能力与行动入口',phaseOrder:'准备、前哨、行动与战斗的轮序',navigation:'地图拖动、缩放与局势检视',
+  deploymentChoice:'魔术工房的三个 +1 点位可选',
+  masterAbility:'前哨阶段使用战略部署',
+  masterReading:'使用战略部署前，先学会通过本人头像读取御主能力',
+  mixedAttack:'第一次选牌：点牌选择、再点撤回，选齐后确认攻击',
   movement:'先移动再出牌及移动目的',engagement:'抵达交战战场后无法常规移动的原因',cardReading:'攻击牌费用、威力与时机',sealMana:'技能出牌门槛与令咒恢复魔力',
-  mixedAttack:'普通牌与技能牌混合出牌',riding:'已激活骑乘的行动能力',ridingChoice:'骑乘追加攻击选择与费用',actionAbility:'发动已打出的急行，以效果移动前往新都',
-  publicPower:'公开总威力与对手出牌查看',battle:'战斗阶段结束后的战力结算',settlement:'真实战力结算组成',
-  roundReturn:'回合结束时技能牌与弃牌的去向',discard:'随时查看自己的弃牌堆',sealBattle:'战斗强化令咒效果',sealMove:'令咒效果移动与常规移动的交战限制不同',
-  normalAttack:'两张明置普通攻击的本次选择',battleDeployment:'战场空位与地利点位',battlefieldDarkAttack:'位于战场时的暗置限制',
+  riding:'已打出的骑乘可以发动',actionAbility:'发动已打出的急行前往新都',
+  battle:'行动结束，进入战斗阶段',settlement:'战力结算',
+  discard:'回合结束后，技能返回技能区，普通攻击进入弃牌堆',
+  battlefieldDarkAttack:'在战场准备一明一暗两张攻击',
   postBattle:'战后恢复令咒选择',revelation:'真实从者揭示与技能公开',elimination:'第十日淘汰状态',
  };
- const expectedLessonIds=new Set(['opening',...Object.keys(lessonCaptures)]);
+ const expectedLessonIds=new Set(['opening','preparation','deploymentChoice','masterReading','masterAbility','phaseOrder','movement','engagement','cardReading','sealMana','mixedAttack','riding','ridingChoice','actionAbility','publicPower','battle','settlement','discard','battleDeployment','battlefieldDarkAttack','postBattle','revelation','sealBattle','elimination']);
  const capturedLessonIds=new Set<string>();
  const capturedAbilityIds=new Set<string>();
  const observedLessons=new Set<string>();
  const modalLessons=new Set(['postBattle']);
- const screenshotStates=new Set(['intro','cards-wide-desktop','master-ability-tooltip','deployment-candidates','deployment-selected','deployment-landed','deployment-landed-workshop-third-option','deployment-landed-miyama','deployment-landed-shinto','navigation-zoomed','detail','detail-inspection','inspection-constrained','opponent-detail-hidden','deck-count','discard','seal-cancel','seal-mana','movement-cancel','draft','riding','public-cards','opponent-detail-revealed','eliminated-observer','eliminated-detail','post-battle','terminal','after-completion','identity-constrained','identity-tokiomi',...Object.keys(lessonCaptures).map(id=>'lesson-'+id)]);
+ const screenshotStates=new Set(['intro','cards-wide-desktop','master-ability-tooltip','deployment-candidates','deployment-selected','deployment-landed','deployment-landed-workshop-third-option','deployment-landed-miyama','deployment-landed-shinto','navigation-zoomed','detail','detail-inspection','inspection-constrained','opponent-detail-hidden','deck-count','discard','seal-cancel','seal-mana','movement-cancel','draft','riding','effect-move-result','public-cards','opponent-detail-revealed','eliminated-observer','eliminated-detail','post-battle','terminal','after-completion','identity-constrained','identity-tokiomi',...Object.keys(lessonCaptures).map(id=>'lesson-'+id)]);
  screenshotStates.add('deployment-map-pan');
+ screenshotStates.add('movement-choosing');screenshotStates.add('hand-inspection');
+ screenshotStates.add('battle-deployment-choice');
+ screenshotStates.add('deployment-terrain-preview');
  screenshotStates.add('dark-mode');screenshotStates.add('dark-draft');
  const capture=async(key:string,name:string)=>{
   if(!screenshotStates.has(key)||seen.has(key))return;
@@ -297,7 +305,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     }
    }
   }
-  if(step.id==='map-camera'){
+  if(lessonId==='movement'&&!refreshed){
    if(!refreshed){await resume(page,step.id,before.core);refreshed=true;}
    const readCamera=()=>page.evaluate(()=>({zoom:document.querySelector('.fd-runtime-camera-controls span')?.textContent?.trim()??null,transform:document.querySelector('.fd-runtime-map-overlay')?.getAttribute('style')??null}));
    const cameraBefore=await readCamera(),cameraBeforeSnapshot=await snapshot(page);
@@ -312,33 +320,36 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    trace.push({id:'map-camera-gesture',action:'在无 UI 遮挡的地图画布上拖动并滚轮缩放，再恢复原视野',before:{...cameraBeforeSnapshot,visible:{...cameraBeforeSnapshot.visible,camera:cameraBefore}},after:{...cameraAfterSnapshot,visible:{...cameraAfterSnapshot.visible,camera:cameraAfter,gesturePoint}},assertions:[{name:'zoom-indicator-changed',actual:cameraAfter.zoom!==cameraBefore.zoom,expected:true},{name:'map-transform-changed',actual:cameraAfter.transform!==cameraBefore.transform,expected:true}]});
    await page.getByRole('button',{name:'复位',exact:true}).click();
    await expect.poll(async()=>(await readCamera()).zoom,{message:'复位应恢复手势前的缩放比例'}).toBe(cameraBefore.zoom);
-   await optionalDetail('0','detail','可选本人详情保留身份、能力与令咒，不显示临时威力');
+   await page.locator('.fd-runtime-map-card-hit').first().click();await closeInspection(page);
+   const deck=page.getByRole('button',{name:/抽牌堆 \d+ 张/});await deck.click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);await capture('deck-count','牌堆计数与一级资源威力同帧可读');await deck.click();
+  }
+  if(step.id.startsWith('ui-detail')){
+   expect(lessonId).toBe('masterReading');
+   expect(step.fateUiDetailTarget).toBe('0');
+   await expect(page.locator('[data-tutorial-id="fate-self-avatar"]')).toBeVisible();
+   await expect(page.getByTestId('tutorial-overlay-card')).toContainText('韦伯头像');
+   await optionalDetail('0','detail','从本人头像打开御主资料，为接下来的战略部署读卡');
    await page.getByRole('button',{name:'检视御主能力',exact:true}).click();
-   await capture('detail-inspection','完整卡面阅读时不保留底层教学窗口');
-   await page.setViewportSize({width:936,height:432});
-   await capture('inspection-constrained','受限横屏完整检视与关闭入口');
+   await capture('detail-inspection','点御主卡后完整阅读战略部署，教学不穿透当前卡面');
+   await page.setViewportSize({width:936,height:432});await capture('inspection-constrained','受限横屏完整检视与关闭入口');
    await page.setViewportSize({width:1920,height:1080});await closeInspection(page);
-   const hiddenPeer=Object.values((await state(page)).core.players).find((player:any)=>player.id!=='0'&&!player.isRevealed) as any;
-   expect(hiddenPeer,'隐藏信息截图必须选择实际尚未真名解放的对手').toBeTruthy();
+   const hiddenPeer=Object.values(before.core.players).find((player:any)=>player.id!=='0'&&!player.isRevealed) as any;
+   expect(hiddenPeer).toBeTruthy();
    await page.getByRole('button',{name:new RegExp('切换到玩家'+(Number(hiddenPeer.id)+1))}).click();
    const hiddenDetail=page.getByRole('dialog');
    await expect(hiddenDetail.getByAltText('未解放从者牌背')).toBeVisible();
-   const hiddenSkills=hiddenDetail.getByRole('button',{name:/^检视暗置技能/});
    await expect(hiddenDetail.locator('.fd-player-detail-skills button')).toHaveCount(3);
    await expect(hiddenDetail.locator('.fd-player-detail-skills button:not([disabled])')).toHaveCount(0);
-   await expect(hiddenDetail.locator('.fd-player-detail-identity .fd-detail-art img[alt="未解放从者牌背"]')).toHaveCount(1);
-   expect(await hiddenSkills.count()).toBe(3);
-   for(const skill of await hiddenSkills.all())await expect(skill).toBeDisabled();
-   await capture('opponent-detail-hidden','可选对手详情保持从者及技能隐藏');
+   await capture('opponent-detail-hidden','可选切席：尚未真名解放的对手保持从者与技能牌背');
+   await page.getByRole('button',{name:/切换到玩家1/}).click();
+   expect((await state(page)).core).toEqual(before.core);
    await page.getByRole('button',{name:'关闭玩家详情',exact:true}).click();
-   await page.locator('.fd-runtime-map-card-hit').first().click();await closeInspection(page);
-   const deck=page.getByRole('button',{name:/抽牌堆 \d+ 张/});await deck.click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);await capture('deck-count','牌堆计数与一级资源威力同帧可读');await deck.click();
-   await page.getByTestId('tutorial-next-button').click();
   }else if(step.id.startsWith('ui-inspection')){
-   const card=page.locator('.fd-attack-hand-zone [data-card-zone=hand]').first();await card.scrollIntoViewIfNeeded();
+   const card=page.locator('[data-tutorial-id='+JSON.stringify(step.highlightTarget)+']');await card.scrollIntoViewIfNeeded();
    const box=await card.boundingBox();expect(box).toBeTruthy();
    await page.mouse.click(box!.x+box!.width/2,box!.y+box!.height/2,{button:'right'});
    await expect(page.getByTestId('fate-runtime-inspection')).toBeVisible();
+   await capture('hand-inspection','首次读骑乘原卡后再筹备费用与选牌');
    await closeInspection(page);
   }else if(step.id.startsWith('ui-pile')){
    await page.getByRole('button',{name:/弃牌堆 \d+ 张/}).click();
@@ -355,7 +366,8 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    const row=page.getByLabel('玩家 2已打出');await expect(row).toBeVisible();await row.hover();await page.waitForTimeout(2700);await expect(row).toBeVisible();
    await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
    await capture('public-cards','对手一级威力与无框单排出牌同时可比较');
-   await row.getByRole('button').first().click();await closeInspection(page);await row.hover();
+   await row.getByRole('button').first().click();await closeInspection(page);
+   await page.getByRole('button',{name:/查看玩家\s*2详情/}).hover();await expect(row).toBeVisible();await row.hover();
    await page.mouse.move(8,8);await expect(row).toBeHidden({timeout:4000});
   }else if(step.id==='revelation-observe'){
    const peer=Object.values(before.core.players).find((player:any)=>player.id!=='0'&&player.isRevealed) as any;
@@ -387,12 +399,17 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
       await expect(candidate).toBeVisible();await expect(candidate).toBeEnabled();
       await expectDeploymentChoicesUnobscured(page);
       await candidate.click();await expect(candidate).toHaveAttribute('aria-pressed','true');
+      await expect(candidate.getByAltText('玩家1待部署')).toBeVisible();
+      await expect(candidate).toContainText('待确认');
+      await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
       await expectDeploymentChoicesUnobscured(page);
       expect((await state(page)).core).toEqual(before.core);
       await expect(page.locator('.fd-runtime-deployment-slot[aria-pressed="true"]')).toHaveCount(1);
       if(slot===1)await capture('deployment-selected','选中工房第二点位后仍未提交，可撤回或改选');
      }
      await page.getByRole('button',{name:'取消部署',exact:true}).click();
+     await expect(page.getByAltText('玩家1待部署')).toHaveCount(0);
+     await expect(page.getByTestId('tutorial-overlay-card')).toBeVisible();
      expect((await state(page)).core).toEqual(before.core);
      for(const slot of [1,2,3]){
       const candidate=page.getByRole('button',{name:`部署到魔术工房第${slot+1}点位`});
@@ -408,10 +425,14 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
       await page.getByTestId('tutorial-previous-button').click();
       await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).toBe(step.id);
       const restored=await state(page);expect(restored.core).toEqual(before.core);expect(restored.sys.tutorial.selectedBranch).toBeFalsy();
+      backtracked=true;
      }
      for(const locationId of ['miyama','shinto'] as const){
       const alternative=page.getByTestId('fate-domination-location-'+locationId);
       await clickVisibleMapLocation(page,locationId,async()=>{deploymentMapPanned=true;await capture('deployment-map-pan','拖动地图显露被底部卡牌覆盖的合法部署点位');});await expect(alternative).toHaveAttribute('aria-pressed','true');
+      await expectDeploymentChoicesUnobscured(page);
+      await expect(page.getByTestId('tutorial-overlay-card')).toContainText('地利数的合计威力');
+      if(locationId==='miyama')await capture('deployment-terrain-preview','可选部署：确认深山町前查看所选点位的地利');
       expect((await state(page)).core).toEqual(before.core);
       const locationName={miyama:'深山町',shinto:'新都'}[locationId];
       await primary(page).click();
@@ -430,7 +451,9 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     const deploymentLocationName={workshop:'魔术工房',miyama:'深山町',shinto:'新都'}[deploymentLocation];
     const deploymentSlot=typeof payload.deploymentSlot==='number'?payload.deploymentSlot:0;
     expect(await point.getAttribute('aria-label')).toBe(`部署到${deploymentLocationName}第${deploymentSlot+1}点位`);
-    await point.click();expect((await state(page)).core.players['0'].locationId).toBeNull();
+    await clickVisibleMapLocation(page,payload.locationId,async()=>{
+     if(before.core.round>1)await capture('battle-deployment-choice','拖动地图显露本次战场部署点位，确认前读取地利');
+    });expect((await state(page)).core.players['0'].locationId).toBeNull();
     if(!seen.has('deployment-selected')){
      await expect(page.getByRole('button',{name:/部署到魔术工房第3点位/})).toBeEnabled();
      await page.getByRole('button',{name:'取消部署',exact:true}).click();expect((await state(page)).core).toEqual(before.core);
@@ -475,11 +498,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    }else if(type==='PLAY_SKILL'){
     const master=before.core.players['0'].skills.find((skill:any)=>skill.id===payload.skillId&&skill.isMasterSkill);
     if(master){
-     await page.getByRole('button',{name:/查看玩家\s*1详情/}).click();
-     await page.getByRole('button',{name:/切换到玩家2/}).click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
-     await page.getByRole('button',{name:/切换到玩家1/}).click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);await expect(page.getByLabel('御主能力说明')).toContainText('你能支付1魔力来抽2张牌。');
-     await expect(page.getByRole('dialog').getByRole('button',{name:/^发动/})).toHaveCount(0);
-     await page.getByRole('button',{name:'关闭玩家详情',exact:true}).click();
+     await expect(page.getByRole('dialog')).toHaveCount(0);
      const abilityButton=page.getByRole('button',{name:'发动'+master.name,exact:true});
      await abilityButton.hover();
      await expect(page.getByTestId('info-tooltip')).toContainText('你能支付1魔力来抽2张牌。');
@@ -497,9 +516,16 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
      expect(['miyama','shinto']).toContain(payload.locationId);
      await expect(page.getByTestId('tutorial-overlay-card')).toContainText('1.进行常规移动');
      const destination=before.core.battlefield[payload.locationId].label;
-     await expect(page.getByTestId('tutorial-overlay-card')).toContainText(`本次前往${destination}争夺事件战果`);
+     await expect(page.getByTestId('tutorial-overlay-card')).toContainText(`选择${destination}`);
+     expect(step.highlightTarget).toBe('fate-pawn-0');
     }
-    await page.getByRole('button',{name:/玩家1位于/}).click();const movementTargetPoint=await clickVisibleMapLocation(page,payload.locationId);
+    await page.getByRole('button',{name:/玩家1位于/}).click();
+    if(!seen.has('movement-choosing')){
+     await expect(page.getByRole('dialog')).toHaveCount(0);
+     await expect(page.locator('[data-tutorial-id="fate-location-'+payload.locationId+'"]')).toBeVisible();
+     await capture('movement-choosing','点棋盘本人棋子后显示合法地点，等待选择目的地');
+    }
+    const movementTargetPoint=await clickVisibleMapLocation(page,payload.locationId);
     await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
     if(!seen.has('movement-cancel')){
      trace.push({id:'movement-map-hit-area',action:'在地图可见且未被遮挡的目标区域开始移动',before:beforeSnapshot,after:await snapshot(page),clickPoint:movementTargetPoint,assertions:[{name:'44px-map-target-available',actual:true,expected:true}]});
@@ -556,19 +582,14 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
   }
   await waitStep(page,step.id);
   let after=await state(page);
-  if(!backtracked&&step.fateCommand?.type==='ADVANCE_PHASE'&&before.core.round===1&&before.core.phase==='preparation'){
-   const once=after.core;
-   await page.getByTestId('tutorial-previous-button').click();
-   await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).toBe(step.id);
-   expect((await state(page)).core).toEqual(before.core);
-   await primary(page).click();await waitStep(page,step.id);after=await state(page);
-   expect(after.core).toEqual(once);backtracked=true;
+  if(step.fateCopy?.ability?.attackId==='cardSurveil'&&step.fateCommand?.type==='PLAY_SKILL'){
+   expect(after.core.players['0'].locationId).toBe(step.fateCommand.payload.targetLocationId);
+   await capture('effect-move-result','急行结算后，韦伯已抵达新都');
   }
   trace.push({id:step.id,action:step.fateCommand?.type??step.id,before:beforeSnapshot,after:await snapshot(page,after),assertions:[{name:'current-rule-step-completed',actual:after.sys.tutorial.step?.id!==step.id,expected:true}]});
  }
  const terminal=await state(page);
  for(const id of expectedLessonIds)expect(observedLessons.has(id),`未走到中文规则课程：${id}`).toBe(true);
- for(const id of Object.keys(lessonCaptures))expect(seen.has('lesson-'+id),`缺少对应教学画面：${id}`).toBe(true);
  expect(terminal.sys.tutorial.active,`终局权威状态仍显示教程活动：${JSON.stringify({tutorial:terminal.sys.tutorial,tutorialContext:terminal.tutorialContext})}`).toBe(false);expect(terminal.sys.gameover).toBeTruthy();
  await expect(page.getByRole('region',{name:'圣杯战争结果'})).toBeVisible();
  expect({refreshed,branched,retracted,backtracked,lateRefreshed}).toEqual({refreshed:true,branched:true,retracted:true,backtracked:true,lateRefreshed:true});

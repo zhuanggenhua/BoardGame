@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { build as nativeBuild, context as nativeContext } from 'esbuild';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
+import './load-dev-env.mjs';
 import { resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 import { withWindowsHide } from './windows-hide.js';
 import { captureSourceIdentity } from './e2e-source-identity.mjs';
@@ -282,6 +283,18 @@ const rebuildPlugin = {
     },
 };
 
+const isProductionBundle = process.env.NODE_ENV === 'production';
+const nodeImportMetaEnv = {
+    BASE_URL: '/',
+    DEV: !isProductionBundle,
+    MODE: isProductionBundle ? 'production' : 'development',
+    PROD: isProductionBundle,
+    SSR: true,
+    ...Object.fromEntries(
+        Object.entries(process.env).filter(([name]) => name.startsWith('VITE_')),
+    ),
+};
+
 const sharedBuildOptions = {
     absWorkingDir: repoRoot,
     entryPoints: [entry],
@@ -294,15 +307,26 @@ const sharedBuildOptions = {
     sourcemap: enableNodeBundleSourceMap,
     logLevel: 'info',
     tsconfig,
+    define: { 'import.meta.env': JSON.stringify(nodeImportMetaEnv) },
 };
 
 function writeSourceIdentity(result) {
     const configuration = ['package.json', 'package-lock.json', tsconfig,
         ...fs.readdirSync(repoRoot).filter(name => /^tsconfig.*\.json$/.test(name) || /^\.env(?:\.|$)/.test(name)),
     ].filter(file => fs.existsSync(path.resolve(repoRoot, file)));
-    const inputs = [...Object.keys(result.metafile.inputs), ...configuration];
-    if (inputs.some(input => fs.statSync(path.resolve(repoRoot, input)).mtimeMs > currentBuildStartedAt)) throw new Error('构建期间输入文件改变，不能将当前源码身份赋给旧构建。');
-    fs.writeFileSync(`${absOutfile}.sources.json`, JSON.stringify(captureSourceIdentity(inputs, repoRoot)));
+    const fileInputs = Object.keys(result.metafile.inputs)
+        .filter(input => !input.startsWith('<define:'));
+    const inputs = [...fileInputs, ...configuration];
+    const identity = captureSourceIdentity(inputs, repoRoot);
+    for (const file of identity.files) {
+        if (fs.statSync(file.path).mtimeMs > currentBuildStartedAt) file.unstable = true;
+    }
+    const absolute = input => path.resolve(repoRoot, input);
+    const imports = Object.fromEntries(fileInputs.map(input => [absolute(input),
+        result.metafile.inputs[input].imports.filter(dependency => !dependency.external)
+            .map(dependency => absolute(dependency.path))]));
+    fs.writeFileSync(`${absOutfile}.sources.json`, JSON.stringify({ ...identity,
+        graph: { entry: absolute(entry), imports, configuration: configuration.map(absolute) } }));
 }
 
 if (onceMode) {

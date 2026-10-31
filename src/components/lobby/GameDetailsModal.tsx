@@ -1997,7 +1997,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                         {hasTutorialEntry && <button type="button" onClick={handleTutorial}>{t('actions.tutorial')}</button>}
                         {hasConfigReview && <button type="button" data-testid="game-details-config-review-button" onClick={handleConfigReview}>{t('actions.configReview')}</button>}
                     </>}
-                    author={<GameAuthorInfo authorName={gameAuthorName} gameName={gameDisplayName} />}
+                    author={<GameAuthorInfo authorName={gameAuthorName} />}
                     overlayControls={<>
                     {shouldShowMobilePackageCard && (
                         <div

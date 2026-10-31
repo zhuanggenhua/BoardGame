@@ -6,6 +6,14 @@ import {FateDominationDomain} from '../../domain';
 import {FATE_ATTACK_BY_ID} from '../../data';
 import {FateHandSurface} from '../FateHandSurface';
 
+vi.mock('react-i18next', async () => {
+ const {createInstance}=await import('i18next');
+ const {default:zh}=await import('../../../../../public/locales/zh-CN/game-fate-domination.json');
+ const i18n=createInstance();
+ await i18n.init({lng:'zh-CN',resources:{'zh-CN':{'game-fate-domination':zh}}});
+ return {useTranslation:()=>({t:i18n.getFixedT('zh-CN','game-fate-domination'),i18n})};
+});
+
 vi.mock('../../../../components/common/media/OptimizedImage', () => ({OptimizedImage: ({src, alt}: {src: string; alt: string}) => <img src={src} alt={alt}/> }));
 
 const preparedHandCore = (seed: string, servantId?: string) => {

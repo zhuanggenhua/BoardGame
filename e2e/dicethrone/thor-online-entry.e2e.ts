@@ -1,7 +1,6 @@
 import { dirname } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { getFrontendSourceHash } from '../../scripts/infra/e2e-source-identity.mjs';
-import { findRuntimeById } from '../../scripts/infra/e2e-runtime-registry.js';
+import { captureEvidenceSourceIdentity } from '../framework/sourceIdentity';
 import type { MatchState } from '../../src/engine/types';
 import type { DiceThroneCore } from '../../src/games/dicethrone/domain/types';
 import { test, expect } from '../framework';
@@ -19,14 +18,14 @@ test('索尔可在真实双人房间选择并以实施中状态开局',async({br
   await selectCharacter(match.hostPage,'thor');await selectCharacter(match.guestPage,'monk');
   await expect(match.hostPage.getByTestId('character-badge-thor-implementation_in_progress')).toHaveCount(1);
   async function shot(name:string){
+   await captureEvidenceSourceIdentity(match!.hostPage,'dicethrone');
    const path=getEvidenceScreenshotPath(info,name,{filename:`${name}.png`,format:'png',requireChineseName:true});await mkdir(dirname(path),{recursive:true});
    await match!.hostPage.mouse.move(15,15);await match!.hostPage.waitForTimeout(1150);await match!.hostPage.screenshot({path,fullPage:false});
    const state=await readDiceThroneHarnessState<MatchState<DiceThroneCore>>(match!.hostPage);
    const visible={text:await match!.hostPage.locator('body').innerText()};
    const authoritative={phase:state.sys.phase,selectedCharacters:state.core.selectedCharacters,hostStarted:state.core.hostStarted,players:Object.fromEntries(Object.entries(state.core.players).map(([id,p])=>[id,{characterId:p.characterId,hand:p.hand.map(c=>c.id)}]))};
-   const runtime=findRuntimeById(process.env.PW_MANAGED_RUNTIME_ID);
-   if(!runtime?.frontendSourceHash)throw new Error('截图必须绑定当前托管运行时的前端源码身份');
-   await writeFile(path+'.state.json',JSON.stringify({sourceRevision:runtime.frontendSourceHash,workspaceSourceRevision:getFrontendSourceHash(),runtimeId:runtime.runtimeId,visible,authoritative},null,2));
+   const identity=await captureEvidenceSourceIdentity(match!.hostPage,'dicethrone');
+   await writeFile(path+'.state.json',JSON.stringify({...identity,visible,authoritative},null,2));
   }
   await shot('01-索尔真实双人选角与实施中标记');
   await readyAndStartGame(match.hostPage,match.guestPage);

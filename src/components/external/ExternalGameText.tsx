@@ -5,7 +5,7 @@ export function ExternalGameText({ text }: { text: string }) {
         try {
             const url = new URL(part);
             if (url.username || url.password) return part;
-            return <a key={`${index}-${part}`} href={url.href} target="_blank" rel="noopener noreferrer">{part}</a>;
+            return <a key={`${index}-${part}`} className="platform-author-profile-link" href={url.href} target="_blank" rel="noopener noreferrer">{part}</a>;
         } catch { return part; }
     })}</>;
 }

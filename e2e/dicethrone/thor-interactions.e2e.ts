@@ -2,7 +2,11 @@ import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { waitForTestHarness } from '../helpers/common';
 import { dragDiceThroneHandCardToPlay, closeDebugPanelIfOpen } from '../helpers/dicethrone';
-import { expectDiceHintSurface, shot } from '../helpers/dicethroneThorEvidence';
+import { expectDiceHintSurface, finalizeThorEvidenceSourceIdentity, shot } from '../helpers/dicethroneThorEvidence';
+
+test.afterEach(async ({ page }) => {
+ await finalizeThorEvidenceSourceIdentity(page);
+});
 
 test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},info)=>{
  test.setTimeout(240000); await clearEvidenceScreenshotsForTest(info);
@@ -224,11 +228,20 @@ test('索尔连锁闪电选择效果骰并自动结算唯一附属目标',async(
  await shot(page,info,'02-三颗效果骰等待确认');
  await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
  await expect(page.getByText('选择两颗效果骰',{exact:true})).toBeVisible();
-  await shot(page,info,'03-选择两颗效果骰组合');
- await page.locator('[data-option-id="option-2"]').click();
+ await expectDiceHintSurface(page,'viewport');
+ await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择两颗效果骰');
+ await expect(page.getByTestId('dicethrone-2d-dice-tray')).toHaveAttribute('data-dice-count','3');
+ await expect(page.locator('[data-option-id]')).toHaveCount(0);
+ await shot(page,info,'03-效果骰投影到旧骰盘并显示选择提示');
+ await page.getByTestId('die-button-1').click(); await page.getByTestId('die-button-2').click();
+ await expect(page.getByTestId('die-button-1')).toHaveAttribute('data-selected','true');
+ await expect(page.getByTestId('die-button-2')).toHaveAttribute('data-selected','true');
+ await expect(page.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
+ await shot(page,info,'04-两颗骰子选中后启用原确认动作');
+ await page.getByTestId('dice-interaction-confirm-button').click();
  await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,bonus:s.core.pendingAttack?.bonusDamage,phase:s.sys.phase};}).toEqual({hp:48,bonus:10,phase:'defensiveRoll'});
   await expect(page.getByText('选择附属伤害目标',{exact:true})).toHaveCount(0);
-  await shot(page,info,'04-附属伤害自动命中唯一对手并保留主攻击');
+  await shot(page,info,'05-附属伤害自动命中唯一对手并保留主攻击');
 });
 
 

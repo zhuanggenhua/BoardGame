@@ -600,6 +600,10 @@ const candidateIndexRoots = (dirPath) => {
 };
 
 const findIndexFiles = (dirPath) => {
+  // 当前目录的正式索引就是该图组真相，避免每次请求扫描整个游戏历史并阻塞健康检查。
+  const canonicalIndex = path.join(dirPath, ".e2e-image-index.json");
+  if (existsSync(canonicalIndex)) return [canonicalIndex];
+
   const results = [];
   const acceptedNames = new Set([".e2e-image-index.json", "image-index.json", "label-source-manifest.json"]);
 

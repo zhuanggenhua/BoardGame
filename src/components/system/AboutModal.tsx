@@ -9,6 +9,7 @@ import { UI_Z_INDEX } from '../../core';
 
 interface AboutModalProps {
     onClose: () => void;
+    showSponsors?: boolean;
 }
 
 interface SponsorItem {
@@ -23,7 +24,7 @@ const ROW_HEIGHT = 48;
 const PAGE_SIZE = 50;
 const OVERSCAN = 6;
 
-export const AboutModal = ({ onClose }: AboutModalProps) => {
+export const AboutModal = ({ onClose, showSponsors = true }: AboutModalProps) => {
     const { t } = useTranslation('game');
     const { success, error } = useToast();
     const backdropRef = useRef<HTMLDivElement>(null);
@@ -269,8 +270,8 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
     }, [sponsorHasMore, loadSponsors]);
 
     useEffect(() => {
-        loadSponsors(1, true);
-    }, [loadSponsors]);
+        if (showSponsors) void loadSponsors(1, true);
+    }, [loadSponsors, showSponsors]);
 
     useEffect(() => {
         const element = scrollRef.current;
@@ -306,6 +307,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 
     // 自动轮播逻辑
     useEffect(() => {
+        if (!showSponsors) return;
         let animationFrameId: number;
         const animate = () => {
             const element = scrollRef.current;
@@ -329,7 +331,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
         };
         animationFrameId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationFrameId);
-    }, [containerHeight, isHovered, loadMoreSponsors, sponsorHasMore, sponsors.length, updateStartIndex]);
+    }, [containerHeight, isHovered, loadMoreSponsors, showSponsors, sponsorHasMore, sponsors.length, updateStartIndex]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) onClose();
@@ -405,7 +407,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                         </button>
                     </div>
 
-                    <div className="pt-4 border-t border-parchment-brown/10 space-y-4">
+                    {showSponsors && <div className="pt-4 border-t border-parchment-brown/10 space-y-4">
                         {/* Sponsor Area - Bottom */}
                         <div
                             className="platform-about-sponsors relative rounded-xl overflow-hidden border border-parchment-gold/30 bg-parchment-brown/5 shadow-inner h-40"
@@ -462,7 +464,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                             <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-parchment-base-bg/10 to-transparent z-10 pointer-events-none" />
                             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-parchment-base-bg/10 to-transparent z-10 pointer-events-none" />
                         </div>
-                    </div>
+                    </div>}
                 </div>
             </motion.div>
         </div>

@@ -138,6 +138,7 @@ export const ChoiceObjectSelection: React.FC<ChoiceObjectSelectionProps> = ({
             locale={locale}
             canResolve={canResolve && hasValidSelection}
             canCancel={false}
+            allowBackgroundInteraction
             onCancel={() => undefined}
             confirmLabelKey={!selectedValue && skipOption ? skipOption.label : 'common.confirm'}
         />

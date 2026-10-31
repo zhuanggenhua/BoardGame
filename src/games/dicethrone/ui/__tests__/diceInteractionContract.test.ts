@@ -83,6 +83,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
         })).toEqual({
             key: 'interaction.hint_select',
             params: { current: 1, max: 2 },
+            detail: { key: 'interaction.hint_reroll_detail', params: { completed: 0, selected: 1, remaining: 1 } },
         });
     });
 
@@ -184,10 +185,33 @@ describe('固定结果与批量重掷的共享操作合同', () => {
             left: { kind: 'cancel', labelKey: 'common.cancel' },
             right: {
                 kind: 'confirmInteraction',
-                labelKey: 'common.confirm',
+                labelKey: 'interaction.skip_reroll',
                 buttonTestId: 'dice-interaction-confirm-button',
             },
         });
+    });
+
+    it('重投待执行与已经执行完成使用不同提示和确认职责', () => {
+        const meta = {
+            dtType: 'selectDie' as const, selectionMode: 'reroll' as const,
+            allowRepeatedDieSelection: true, selectCount: 2, diceOwnerId: '0', targetOpponentDice: false,
+        };
+        const create = (selected: number[], completedDieIds: number[]) => createDiceInteractionContract({
+            interaction: { id: 'reroll-progress', kind: 'multistep-choice', playerId: '0',
+                data: { meta, completedDieIds, completedSteps: completedDieIds.length, minSteps: 1 } },
+            controller: { result: { selectedDiceIds: selected }, stepCount: selected.length,
+                canConfirm: selected.length + completedDieIds.length > 0,
+                step: () => undefined, confirm: () => undefined, cancel: () => undefined },
+            rootPlayerId: '0',
+        });
+        const ready = create([0, 0], []);
+        expect(ready?.hint).toMatchObject({ key: 'interaction.hint_reroll_ready', params: { current: 2, max: 2 },
+            detail: { key: 'interaction.hint_reroll_ready_detail', params: { completed: 0, selected: 2, remaining: 0 } } });
+        expect(ready?.actions.right.labelKey).toBe('interaction.confirm_reroll');
+        const done = create([], [0, 0]);
+        expect(done?.hint).toMatchObject({ key: 'interaction.hint_reroll_done',
+            detail: { key: 'interaction.hint_reroll_done_detail', params: { completed: 2, selected: 0, remaining: 0 } } });
+        expect(done?.actions.right.labelKey).toBe('interaction.finish_reroll');
     });
 
     it('不可取消的骰子交互隐藏取消动作，但仍提供提示与确认', () => {

@@ -1,0 +1,1064 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-00-辽东边境与当前目标.png",
+      "sha256": "533509ae73a6e1bf7e80726ff516d90e19dd74f7fe1e788d618a9e6cc397ebbd",
+      "status": "PASS",
+      "observation": "辽北真实轮廓高亮完整，明控制章与实体部队可辨，教程卡停在地区右侧；三方资源、两侧牌堆和底部手牌牌名及放大镜可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\00-frontier-goal.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-01-轮盘免费前进一步.png",
+      "sha256": "d854e1c30e335c438cd4e9ce8698e85763ee0872c75aefe5b174e920b38d5ed0",
+      "status": "PASS",
+      "observation": "行动轮盘的当前可推进扇区清楚，教程文字与轮盘职责分离；辽北和邻区兵章可辨，底部三张手牌半露并保留放大镜。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\01-opening-move.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-02-征召弃牌支付.png",
+      "sha256": "a2a95ada20bb2e92256fdd45ed7c94c80cc56edc61690e5bfe39800dc4e75f22",
+      "status": "PASS",
+      "observation": "支付进度、确认与取消同屏，银两手牌有绿色候选边界与放大镜；白教程卡未压住当前银两牌体，资源与牌堆数量仍可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\02-recruit-payment.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-03-共享放大镜检视征召手牌.png",
+      "sha256": "3c95a31fc4662fad282493e1de6b5bed5de3dc4aa807ff679ec9b69e1a7e6993",
+      "status": "PASS",
+      "observation": "银两正式整牌以独立检视层完整展开，右上关闭入口清楚；关闭可返回原支付状态，背景手牌与牌堆仍能辨认，没有空白牌面。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\03-recruit-payment-inspect.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-04-全部合法征兵地区与辽北引导.png",
+      "sha256": "ac61e97d314837921402acafbb2dd9de9a68464ca37a1b2de7562f4869b632d9",
+      "status": "PASS",
+      "observation": "征兵正式合法地区按真实轮廓逐一绿色描边，辽北白边与实体军队完整；白教程卡在合法地区真实形状之外，手牌与资源持续可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\04-recruit-source.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-05-辽北完整地区与建军选项.png",
+      "sha256": "19fc5967a4b14d79da693fcea45c54a5484a5c30d442cc4806773b468e1c996d",
+      "status": "PASS",
+      "observation": "已选辽北真实区域以红色标示，建立部队两种选项及选中态清楚；辽北现有部队和控制章可见，白教程卡位于地图下方空地且未侵占手牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\05-recruit-troops.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-06-军屯地区选择.png",
+      "sha256": "ddde7c5cce0cd5a26974b379c29cdd35fdff21b718a1f1ff0a4ccd2e6494ff3e",
+      "status": "PASS",
+      "observation": "军屯正式候选地区真实边界与实体兵章可见，右侧选择及确认清楚；辽北部队增长后的实体仍在区内，底部手牌牌名与放大镜保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\06-farm-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png",
+      "sha256": "7aa04cfdfaa00111edef0b2a936c7c2e31039ace9f4acca3501bf7b2688fab5b",
+      "status": "PASS",
+      "observation": "开垦合法地区按真实形状高亮，辽东白边完整且兵章可辨；白教程卡在合法区域外侧，四张手牌半露、牌堆与三方资源可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\07-reclaim-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+      "sha256": "86b7bd9f01a7311be5e23233462997fdca527acfe66eddc48585d2f76b757133",
+      "status": "PASS",
+      "observation": "年中教程、手牌上限进度与确认弃牌分别承载说明和操作；溢出手牌两端翻看箭头位于牌带外缘，未覆盖牌体，牌名和放大镜仍可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\08-midyear.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-09-年中补牌后的手牌上限处理.png",
+      "sha256": "006e4cddfe00f29e9eaffdd921cfeffee0ca114ed56f8cb731162038a558c422",
+      "status": "PASS",
+      "observation": "弃牌正式候选手牌以绿色轮廓标示，确认弃牌与进度清楚，溢出翻看箭头可见；白卡局部覆盖背景辽东人口牌右侧，该地区不是当前弃牌对象，地图缩放复位入口仍在。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\09-hand-limit.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-10-军备升级卡牌.png",
+      "sha256": "682aaf32c45af4b3a5c4a61772c3cafc13808eca141da9682e36fa125d13f773",
+      "status": "PASS",
+      "observation": "火炮技术正式手牌、其它支付牌与手牌翻看箭头可辨，白教程卡未遮当前手牌；白卡覆盖背景顺天兵章，该地区没有当前正式候选，普通阶段地图可平移且缩放复位入口可见，不能据此声称全地图同屏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\10-upgrade-card.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-11-先选出兵来源.png",
+      "sha256": "6aa1ccef55cc9fe6dff17c6f4d6a24141da2170684e761c414181afc68e0e1c4",
+      "status": "PASS",
+      "observation": "出兵来源正式合法地区均按真实形状描边，辽北白边、完整控制章及实体部队可见；右侧确认与地图分离，溢出手牌箭头不盖牌体。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\11-dispatch-source.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/11"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-12-地图兵牌选择出兵.png",
+      "sha256": "55c99ce496d85412fd9a468896914c8b9e8b8c34a1a0ad8cd98fec2dee965333",
+      "status": "PASS",
+      "observation": "辽北当前可出动实体步兵、骑兵和炮兵有贴合本体的绿色边界，未选数量及确认在右侧；白教程卡避开辽北真实区域，叶赫方向与双方控制章可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\12-dispatch-troops.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/12"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+      "sha256": "dc4c7861afdf1fa50c7de9a410f8da10cd6b7e098392a37d9d5386da1b0769ec",
+      "status": "PASS",
+      "observation": "两支步兵和一支炮兵以黄色选中边界与实体呈现，已选数量及确认清楚；辽北轮廓和控制章可见，教程卡未覆盖来源部队，手牌仍有翻看入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\13-dispatch-troops-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/13"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-14-出兵来源到叶赫部目标.png",
+      "sha256": "6f0f0a0b7860563147817650ec3e03eae44423f62904f6a1f2ded9008e70125c",
+      "status": "PASS",
+      "observation": "叶赫及其它正式候选地区的真实轮廓完整可辨，来源辽北实体兵章与候选同屏；重新选择部队及确认入口明确，白卡位于地图右侧之外，手牌与牌堆保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\14-dispatch-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/14"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-15-战术牌使用前.png",
+      "sha256": "fe77fda47febb5c7bea4081737403531cd41ac6e241927c262148bcf41115c3b",
+      "status": "PASS",
+      "observation": "辽北至叶赫的真实攻防地区、双方实体与完整控制章同屏，箭头表达来源去向；白卡位于左下背景，未覆盖本次双方地区，战术手牌和开始战斗入口可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\15-tactic-card.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/15"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-16-选中鸳鸯阵并确认.png",
+      "sha256": "9cff72a26801a61eab7f31de558e700a9199f9c41708407009959d92419ad0f1",
+      "status": "PASS",
+      "observation": "选中鸳鸯阵正式卡牌抬升并完整可读，打出战术牌及取消紧随选择状态；辽北和叶赫真实地区与兵章可见，白教程卡在右侧空地，未压实际手牌或攻防对象。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\16-tactic-card-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/16"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-17-炮兵白骰真实投掷.jpg",
+      "sha256": "f8238733843315883aaf069cf14e6c222f92a26bbb56de0a35810875361bc5a3",
+      "status": "PASS",
+      "observation": "炮兵阶段六面骰出现多个立体转动朝向，骰体完整处于骰盘内；辽北与叶赫部的真实地区、部队和完整控制章位于骰盘外，手牌滚动箭头未覆盖骰盘或其它资源对象。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-artillery-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-18-炮兵停稳与结果.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "status": "PASS",
+      "observation": "炮兵六面骰停稳，骰面、加数、合计和下方损伤结果均可读；骰体没有膨胀或越界裁切，双方地图地区保持可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-artillery-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-19-骑兵红骰真实投掷.jpg",
+      "sha256": "9f5c0e7cf8d05aa68db6ad2d2dcd46fd4b6f89f4cbceca14467ee11c4a2e2c9c",
+      "status": "PASS",
+      "observation": "骑兵阶段红色八面骰呈立体转动姿态，完整处于骰盘内；双方地图地区、军队和控制章可辨，手牌箭头不遮骰盘。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-cavalry-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-20-骑兵停稳与结果.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "status": "PASS",
+      "observation": "骑兵红色八面骰停稳，骰面、合计及损伤结果可读；骰体与文字未越界，地图双方地区未被骰盘覆盖。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-cavalry-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-21-步兵绿骰真实投掷.jpg",
+      "sha256": "fac0033d117da555313991dff414ae18967f91002e4480f1dd0b3f3e2bfc872b",
+      "status": "PASS",
+      "observation": "步兵阶段两枚绿色十面骰呈不同转动朝向，仍完整处于骰盘范围；双方地区、兵和控制章保持可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-infantry-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-22-步兵停稳与结果.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "status": "PASS",
+      "observation": "两枚十面骰停稳，零面按十显示的结果、合计和损伤文字可读；骰体未膨胀或裁切，结果区域未侵占双方地区。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-infantry-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-23-炮骑步连续真实掷骰录屏.webm",
+      "sha256": "284c2f9d3bdc5d0653b714cb3c663c508028dbaf7b1c6372627e6c750561c6e0",
+      "status": "PASS",
+      "observation": "全部解码帧已分组逐格私审，炮兵、骑兵、步兵分别出现多姿态、停稳与结果阅读段，随后骰盘退场；补读整屏可见战后占领和撤回入口。手牌箭头未遮骰盘或其它资源对象。采样空档内的运动连续性没有外推。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "全部解码帧分组骰盘联系表私审，首帧与退场整屏补读",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-real-time.webm",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png",
+      "sha256": "882d89f896505a082dc3c56dd4ac3ef0ec1bf779ca874e74728bbc8d56fafb58",
+      "status": "PASS",
+      "observation": "辽北来源实体部队和完整明控制章、叶赫战后真实地区及蒙古完整控制章同屏；守军消灭后未伪造残兵，占领与撤回并列可见，白卡避开双方地区，溢出手牌翻看入口及资源牌堆保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\24-occupy.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-head.json",
+      "sourceReviewEntry": "/media/17"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-25-外交友好标记选择.png",
+      "sha256": "04e55ce010800ffcb6e8e0bb7cf2001ed2645fae35f3dddca5a9656656870533",
+      "status": "PASS",
+      "observation": "外交目标的真实区域轮廓位于棋盘上方，区域内标记与名称可辨；说明卡避开目标，右侧结束外交与确认入口归属清楚，手牌两侧箭头与牌堆分离。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\25-diplomacy-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-26-外交结果与落点继续.png",
+      "sha256": "d2061e0d2f7ca051c02063431e74cf5fdc13d8eea4673dfa950d95621bf1f722",
+      "status": "PASS",
+      "observation": "结束外交选项呈焦点边框，说明卡与右侧操作面板分开；目标所在上方区域仍可见，手牌横向浏览入口保留，资源和四处牌堆未被遮挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\26-diplomacy-finish.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-27-雇佣部队目标.png",
+      "sha256": "b6f7570e4396cc42e4059ac26245180d5100c4629c3e6e84ffd1066c83ccc550",
+      "status": "PASS",
+      "observation": "雇佣候选按真实区域轮廓高亮，辽东名称与区域内控制章、部队可见；说明卡位于右下空位，确认面板独立，未压住候选本体。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\27-hire-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-28-新年朝贡与结算顺序.png",
+      "sha256": "b96e49ff3209cb1e2d239337b46d46c454825980fc3612a4c499502c607b3558",
+      "status": "PASS",
+      "observation": "新年说明与下一步位于纪年卡旁，两张正式卡面完整；右侧山海关维护选项清楚，顶部资源、手牌及横向浏览入口均保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\28-new-year.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-29-山海关维护选择.png",
+      "sha256": "6c7ab0936bf847eba79507cfbd322384ac85f90c9772cceb38ca516fc8c4a71f",
+      "status": "PASS",
+      "observation": "山海关维护选项具有焦点边框，放弃维护与确认顺序明确；较长说明完整承载，山海关名牌及邻近控制章不被说明卡遮住，手牌仍可浏览。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\29-maintain-shanhai.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-30-叶赫部队维持费用.png",
+      "sha256": "6c6f561ca2e9f31324d18b298bb8f508a0a2011a7c8b0d24bd25ad1da0f8e9ef",
+      "status": "PASS",
+      "observation": "叶赫部真实区域完整高亮，名称、明方控制章及三枚部队完整；右侧补给选择与确认面板分离，底部牌名和放大入口可辨，左右小箭头均在手牌两端且未挤占牌堆。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\30-upkeep-yehe.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-31-三张费用牌分别选中.png",
+      "sha256": "4376f1b2506b18eb510c3cac9690db3c92f6a25908154a306510884442c67a50",
+      "status": "PASS",
+      "observation": "三张支付牌分别抬起，各有独立边界和已选标记，牌面内容可辨；叶赫部真实区域、控制章与部队保持完整，右侧已选提示及确认清楚，两端手牌箭头仍可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\31-upkeep-yehe-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-32-手牌末端与翻看入口.png",
+      "sha256": "09df4c6ce862247d8c434d547b552ee67e127189ebed0cd53315dbefd90fc151",
+      "status": "PASS",
+      "observation": "手牌已浏览到末端，末端各牌的名称、类型与放大入口可辨；左侧返回箭头清晰且紧邻手牌，右侧箭头弱化体现到端，右侧仍显示三张已选，资源和牌堆未被箭头遮住。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\32-hand-scroll-end.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-33-平壤雇佣军耗损选择.png",
+      "sha256": "5b61f087a37ca66f51a846de53076caf2099aa4440d24e801963b63ab28b4210",
+      "status": "PASS",
+      "observation": "平壤名牌、完整明方控制章及雇佣军本体全部可见，真实区域边界贴合名牌；说明卡位于其上方，未压住候选与右侧确认面板，底部剩余手牌可发现。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\33-upkeep-pyongyang.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-34-选中平壤耗损部队.png",
+      "sha256": "dd75631ae907673f1f02be4891180838cfd82ebc00c95bf56b9f2c487a02c2a2",
+      "status": "PASS",
+      "observation": "平壤雇佣军具有贴合本体的选中边界与勾记，名牌及明方控制章完整；右侧选择摘要与确认已清楚呈现，说明卡未遮挡部队与确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\34-upkeep-pyongyang-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-35-纪年争夺支付.png",
+      "sha256": "48bfb03fd90e59d17ea5276d277fbc342d130a93374372ef644cf94c4e6ae445",
+      "status": "PASS",
+      "observation": "领取纪年卡的正式卡面在左侧完整可见并高亮，较长规则说明不遮卡面；右侧领取与放弃选项清楚，剩余手牌与牌堆仍保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\35-claim-year.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-36-新年顺位与纪年.png",
+      "sha256": "9bf7d86d941a2301a7fd294c182f18e4f232f70a6503ca44cbe78dab444b4d7e",
+      "status": "PASS",
+      "observation": "新纪年卡完整高亮，顺位说明和下一步紧邻卡面；右侧人物候选保留正式缩图、姓名及放大入口，底部剩余两张手牌可见，资源牌堆完整。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\36-new-order.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/11"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-37-年度人物判定.png",
+      "sha256": "8d3d22d1fbc36252d1f309262defbe2e581143c28b86d943fc7a4caeab8a0b6e",
+      "status": "PASS",
+      "observation": "人物选择的三张正式缩图、姓名与各自放大入口齐全，杨镐选项焦点清楚；较长人物说明放于候选下侧空位，未压住人物候选与手牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\37-year-character.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/12"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-38-共享放大镜检视人物.png",
+      "sha256": "273b6df44512d6d4233668df2087027ba2e808a05d0f780b8a90e59f72a6743e",
+      "status": "PASS",
+      "observation": "杨镐正式人物卡完整放大，标题、效果和人物朝觐区域均在屏内；关闭入口清晰位于卡片右上，底层人物选项仍可辨，阅读焦点明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\38-year-character-inspect.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/13"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-39-次年炮兵训练选择.png",
+      "sha256": "3ef3312756f80909a36675a9b68bdd535f96b43ef878f78127933c88318d2325",
+      "status": "PASS",
+      "observation": "训练推荐的叶赫部炮兵选项有清楚焦点边框，较长说明与候选列表并排且互不遮挡；列表内滚动提示可读，顶部资源、左右牌堆和底部手牌保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\39-training-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/14"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png",
+      "sha256": "88159526081302a9d2d3825a06e51bf121920208fa6d45d4541ed9a87ef735a7",
+      "status": "PASS",
+      "observation": "结束说明完整呈现，完成并返回按钮位于说明之后且屏内清楚可见；当前玩家资源、底部手牌与两端浏览箭头、抽弃牌堆均保留，继续操作入口明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\40-finish.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/desktop/visual-review-nonbattle-tail.json",
+      "sourceReviewEntry": "/media/15"
+    },
+    {
+      "id": "frontier-goal",
+      "stepId": "frontier-goal",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-00-辽东边境与当前目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\00-frontier-goal.png",
+      "sha256": "4bf9bf4b418110ce35577e1f4ddcfeab2ac505fd3e5c476add9fd84f1a707ab6",
+      "status": "PASS",
+      "observation": "开局说明与下一步入口完整；当前东北区域、兵和控制标记可辨，顶部资源、左右牌堆与底部半露手牌均保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "recruit-payment",
+      "stepId": "recruit-payment",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-01-征召弃牌支付.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\01-recruit-payment.png",
+      "sha256": "702695740a09adfb58739f56bea00934992bab7440df7fb4ad5eff8297869dee",
+      "status": "PASS",
+      "observation": "征召支付条、支付进度、确认与取消同屏；半露手牌的牌名、类型与放大镜露出，顶部资源和牌堆未被支付条遮住。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "recruit-payment-inspect",
+      "stepId": "recruit-payment",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-02-共享放大镜检视征召手牌.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\02-recruit-payment-inspect.png",
+      "sha256": "886067b08d79f29765c382bb7a554523d75d7c5f93240c6007a581928e4efedf",
+      "status": "PASS",
+      "observation": "银两整张牌面和右上关闭入口完整；支付条仍在背后可辨，关闭后可回到同一支付对象。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "id": "hand-limit",
+      "stepId": "hand-limit",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-03-年中补牌后的手牌上限处理.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\03-hand-limit.png",
+      "sha256": "5386a02d0b144d3278adbd079944a0d39842cb019fc7165d9f1f82c32be8b0a0",
+      "status": "PASS",
+      "observation": "弃牌要求与确认弃牌入口完整；底部多张手牌的牌名、类型、放大镜和右翻箭头可见，牌堆及资源未被占用。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "id": "dispatch-troops",
+      "stepId": "dispatch-troops",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-04-地图兵牌选择出兵.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\04-dispatch-troops.png",
+      "sha256": "c4ffd44343da236380c848b9bcaf93e475644a519c35f74237cefabc18684a84",
+      "status": "PASS",
+      "observation": "叶赫来源区白色边界、实体步兵炮兵与绿色候选边界同屏可辨；右上选择条和确认入口、下方手牌均保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "id": "dispatch-troops-selected",
+      "stepId": "dispatch-troops",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-05-已选部队与确认出兵.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\05-dispatch-troops-selected.png",
+      "sha256": "92bc14947257e7cb38029bd73b2fed20395147eff457b4cc1ecd8233a69bc3f9",
+      "status": "PASS",
+      "observation": "已选实体兵各自有贴合轮廓及勾选反馈，叶赫区域与控制章仍清楚；右上已选进度和确认按钮完整。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "id": "tactic-card-selected",
+      "stepId": "tactic-card",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-06-选中鸳鸯阵并确认.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\06-tactic-card-selected.png",
+      "sha256": "3185e5ec94d949346da7a12d67f0d38676eb111c2deb52b509161423415ca02e",
+      "status": "PASS",
+      "observation": "战术来源牌完整抬起且已选，牌面和放大镜可见；战场实体、战斗操作条和其它手牌仍可辨，未出现解释性调试标签。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-07-炮兵白骰真实投掷.jpg",
+      "sha256": "56bfef277871e1aa851e937d8fc4351d5b4901d397632a7b2e4560898ff04b94",
+      "status": "PASS",
+      "observation": "炮兵阶段六面骰出现多个立体转动朝向，骰体完整处于骰盘内；辽北与叶赫部的真实地区、部队和完整控制章位于骰盘外，手牌滚动箭头未覆盖骰盘或其它资源对象。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-artillery-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-08-炮兵停稳与结果.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "status": "PASS",
+      "observation": "炮兵六面骰停稳，骰面、加数、合计和下方损伤结果均可读；骰体没有膨胀或越界裁切，双方地图地区保持可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-artillery-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-09-骑兵红骰真实投掷.jpg",
+      "sha256": "9b3e71f3f6f1301a63b545dc0589cc2abcf16a691ccad4ad7450d5b205afeeb6",
+      "status": "PASS",
+      "observation": "骑兵阶段红色八面骰呈立体转动姿态，完整处于骰盘内；双方地图地区、军队和控制章可辨，手牌箭头不遮骰盘。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-cavalry-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-10-骑兵停稳与结果.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "status": "PASS",
+      "observation": "骑兵红色八面骰停稳，骰面、合计及损伤结果可读；骰体与文字未越界，地图双方地区未被骰盘覆盖。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-cavalry-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-11-步兵绿骰真实投掷.jpg",
+      "sha256": "53180f187fb80d169b9db418c4609a3f737c4dee528afb3d39f4110e578125dd",
+      "status": "PASS",
+      "observation": "步兵阶段两枚绿色十面骰呈不同转动朝向，仍完整处于骰盘范围；双方地区、兵和控制章保持可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-infantry-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-12-步兵停稳与结果.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "status": "PASS",
+      "observation": "两枚十面骰停稳，零面按十显示的结果、合计和损伤文字可读；骰体未膨胀或裁切，结果区域未侵占双方地区。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "原始整屏逐张私审",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-infantry-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-13-炮骑步连续真实掷骰录屏.webm",
+      "sha256": "1903cfa789077a3167224b52044398d02f584e98ee3ee45c88cd27fbb3abe198",
+      "status": "PASS",
+      "observation": "全部解码帧已分组逐格私审，炮兵、骑兵、步兵分别出现多姿态、停稳与结果阅读段，随后骰盘退场；补读整屏可见战后占领和撤回入口。手牌箭头未遮骰盘或其它资源对象。采样空档内的运动连续性没有外推。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "readMode": "全部解码帧分组骰盘联系表私审，首帧与退场整屏补读",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-real-time.webm",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-battle.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "id": "occupy",
+      "stepId": "occupy",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-14-战后占领选择.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\14-occupy.png",
+      "sha256": "7d78c57f9a571caa7bf32b48b2b6da84b157721c75b9e34d9a276fb3d7dc9307",
+      "status": "PASS",
+      "observation": "占领后的叶赫区实体兵和控制章留在地图；战斗结算面板中的占领撤回选项完整，左侧说明未盖住当前叶赫对象。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "id": "diplomacy-target",
+      "stepId": "diplomacy-target",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-15-外交友好标记选择.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\15-diplomacy-target.png",
+      "sha256": "58e0af599dbe780fc70b97bef43fc6f2899e5cbb6674b383327aaa17c2645f56",
+      "status": "PASS",
+      "observation": "外交当前目标名称在地图上方清楚，候选区域以地图边界表达；右侧结束外交和确认入口完整，手牌及资源留在固定位置。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "id": "diplomacy-finish",
+      "stepId": "diplomacy-finish",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-16-外交结果与落点继续.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\16-diplomacy-finish.png",
+      "sha256": "22021d3d6d4d19c2c52afa87c42c6d718520ad5a5002235140757b58bdbc184b",
+      "status": "PASS",
+      "observation": "外交结束候选有清楚焦点，当前目标与说明仍可对应；完成操作条未被说明覆盖，牌堆和手牌入口保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "id": "hire-target",
+      "stepId": "hire-target",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-17-雇佣部队目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\17-hire-target.png",
+      "sha256": "c34301e321dd943ee8febbc3fe06399c994e201f195efe1c60533e1bf17a5593",
+      "status": "PASS",
+      "observation": "雇佣目标辽东名称与地区候选轮廓同屏可辨，右侧部署确认和说明分开；底部手牌翻看入口未盖住牌堆。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "id": "maintain-shanhai",
+      "stepId": "maintain-shanhai",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-18-山海关维护选择.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\18-maintain-shanhai.png",
+      "sha256": "f26e2d976c16e4d053ec37661c4b538b85adddea818441b26903c517b8bda52e",
+      "status": "PASS",
+      "observation": "山海关维护的支付和放弃选项、确认入口完整，顶部资源与牌堆可见；底部手牌保持半露牌头并保留翻看入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/11"
+    },
+    {
+      "id": "upkeep-yehe-selected",
+      "stepId": "upkeep-yehe",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-19-三张费用牌分别选中.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\19-upkeep-yehe-selected.png",
+      "sha256": "edecb11d7ed7157d0a6f69d9aa973348cf416b90b8e7a20e7336f9ca2ecc0f4e",
+      "status": "PASS",
+      "observation": "叶赫三张支付牌分别完整抬起并显示已选，牌名、类型和放大镜清楚；左侧规则卡、叶赫实体兵、完整控制章及右侧确认同时可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/12"
+    },
+    {
+      "id": "hand-scroll-end",
+      "stepId": "upkeep-yehe",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-20-手牌末端与翻看入口.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\20-hand-scroll-end.png",
+      "sha256": "38c5229af28a229d6f43ee59904b4a71b65c2445118885fa31fa28810dc54e83",
+      "status": "PASS",
+      "observation": "翻至末端后其它手牌的牌名、类型和放大镜清楚，左返箭头可见；右侧支付进度和确认仍保留，箭头未压住资源或牌堆也未越屏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/13"
+    },
+    {
+      "id": "upkeep-pyongyang-selected",
+      "stepId": "upkeep-pyongyang",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-21-选中平壤耗损部队.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\21-upkeep-pyongyang-selected.png",
+      "sha256": "8485f3ea0a24a4c2f7eb552a727e01b779fc97b6989dcbb5fcd5c14665e88df5",
+      "status": "PASS",
+      "observation": "平壤地名、完整控制章和区域边界清楚，所选雇佣兵以贴体边界和勾选表达；右侧撤兵进度与确认、左侧规则卡和底部手牌均保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/14"
+    },
+    {
+      "id": "year-character",
+      "stepId": "year-character",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-22-年度人物判定.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\22-year-character.png",
+      "sha256": "66561aaecf0e15573a79dcc2f5dfc2a3b572296d3ada9d1344ea8797668a560a",
+      "status": "PASS",
+      "observation": "人物候选以独立牌面缩略和名称行承接，当前杨镐候选焦点清楚；各人物放大镜、确认、不打出入口完整，弃牌堆与顶部资源可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/15"
+    },
+    {
+      "id": "year-character-inspect",
+      "stepId": "year-character",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\23-year-character-inspect.png",
+      "sha256": "60ec55227b51b7f5db297058fd28de892fa4cba086b202e82f46d8cad64e9417",
+      "status": "PASS",
+      "observation": "杨镐完整卡面及右上关闭按钮清楚，人物候选列表仍在背后保持焦点；整张特写未被裁掉，关闭后有明确原位入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/16"
+    },
+    {
+      "id": "training-target",
+      "stepId": "training-target",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-24-次年炮兵训练选择.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\24-training-target.png",
+      "sha256": "cb805cf2cb6b530cf05e9c5a799085aac2ffa6c152163e45607fbef3f4d59209",
+      "status": "PASS",
+      "observation": "训练说明与右侧推荐及长候选行分开，所选叶赫炮兵一行完整高亮；地图当前部队、顶部资源和右上弃牌堆均保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/17"
+    },
+    {
+      "id": "finish",
+      "stepId": "finish",
+      "path": "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-25-完整年度教程结束并继续对局.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\25-finish.png",
+      "sha256": "786a34213cadd9f01c097f30a38f624f72e111685bc798c4c431f3fcd228fc38",
+      "status": "PASS",
+      "observation": "教程结束说明、上一步和完成并返回按钮完整可辨；地图实体、行动轮、双方牌堆、顶部资源以及底部手牌和翻看箭头仍在。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/mobile/visual-review-nonbattle.json",
+      "sourceReviewEntry": "/media/18"
+    }
+  ]
+}

@@ -94,7 +94,7 @@ const PlayerCardShell = ({
         data-selected={selected ? 'true' : 'false'}
         className={containerClassName}
     >
-        <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="mb-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
                 <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
                     {displayName}
@@ -463,7 +463,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                             data-testid="dt-card-pool-selection"
                             data-card-pool-kind={cardSourceZone}
                             data-card-pool-visible-rows="two"
-                            className="scrollbar-thin mx-auto min-h-0 max-h-[min(50vh,28rem)] w-full overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
+                            className="scrollbar-thin mx-auto min-h-0 max-h-[min(50vh,28rem)] w-fit max-w-full overflow-y-auto overflow-x-hidden rounded-xl border border-amber-100/25 bg-[#100910]/95 px-1 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.65)] [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
                         >
                             <div
                                 data-testid="dt-card-pool-track"
@@ -510,7 +510,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                     overflow-hidden rounded-[0.3rem] transition-[box-shadow,filter] duration-200
                                                     ${isSelected
                                                         ? 'ring-[3px] ring-amber-200 shadow-[0_0_0_2px_rgba(127,29,29,0.96),0_0_28px_rgba(251,191,36,0.72),0_18px_28px_rgba(0,0,0,0.58)]'
-                                                        : 'shadow-[0_12px_22px_rgba(0,0,0,0.42)] group-hover:ring-1 group-hover:ring-red-200/75 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
+                                                        : 'outline-solid outline-2 outline-slate-100/85 outline-offset-0 shadow-[0_12px_22px_rgba(0,0,0,0.65)] group-hover:outline-amber-100 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
                                                 `}
                                             >
                                                 <CardPreview
@@ -544,6 +544,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     onClick={onCancel}
                                     variant="secondary"
                                     size="sm"
+                                    className="min-h-[44px]"
                                     data-testid="dt-interaction-clear"
                                 >
                                     {t(cancelLabelKey)}
@@ -554,6 +555,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 disabled={!canConfirm}
                                 variant="primary"
                                 size="sm"
+                                className="min-h-[44px]"
                                 data-testid="dt-interaction-confirm"
                             >
                                 {t(confirmLabelKey)}
@@ -578,7 +580,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     )}
                 </div>
             }
-            width="xl"
+            width={targetPlayerIds.length <= 1 ? 'sm' : targetPlayerIds.length === 2 ? 'lg' : 'xl'}
+            density="compact"
             closeOnBackdrop={false} // Force interaction
             allowBackgroundInteraction={allowBackgroundInteraction}
             footer={
@@ -636,7 +639,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
                                         selected={isSelected}
                                         containerClassName={`
-                                            p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                            p-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                             ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'opacity-50 cursor-not-allowed'}
                                             ${isSelected
                                                 ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
@@ -679,7 +682,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     relationLabel={relationLabel}
                                     seatLabel={seatLabel}
                                     containerClassName={`
-                                        p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                        p-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${hasStatus
                                             ? passiveBorderClassName
                                             : 'border-slate-700 bg-slate-800/30 opacity-50'}
@@ -692,6 +695,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             selectedId={interaction.selectedStatusPlayerId === pid ? selectedStatusId : undefined}
                                             highlightAll={true}
                                             onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}
+                                            tooltipPlacementBoundarySelector={targetPlayerIds.length === 1 ? '[data-testid="dt-game-modal"]' : undefined}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="normal"
                                             className="justify-center"
@@ -745,7 +749,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 : '点击作为接收目标'
                                     }
                                     containerClassName={`
-                                        p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                        p-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'cursor-not-allowed opacity-75'}
                                         ${isSourcePlayer
                                             ? `${passiveBorderClassName} ring-2 ring-white/10`

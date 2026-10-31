@@ -1635,6 +1635,11 @@
     "title": "Ability Resolution Choice",
     "option": "Option {{index}}",
     "sliderLabel": "Select amount to spend",
+    "dazeExtraAttack": {
+      "title": "You are about to be Dazed. After this attack, its attacker immediately attacks again. Spend 1 Purify to prevent Daze?",
+      "usePurify": "Spend 1 Purify to prevent Daze",
+      "continue": "Do not use Purify; accept Daze"
+    },
     "statusCheckOrder": {
       "title": "Choose the blinded and dazzle check order",
       "dazzleFirst": "Check dazzle first",
@@ -1993,6 +1998,17 @@
     "hint_copy_step1": "Select source die to copy",
     "hint_copy_step2": "Select target die to set to {{value}}",
     "hint_done": "Done",
+    "skip_reroll": "Skip reroll",
+    "finish_reroll": "Finish reroll",
+    "confirm_reroll": "Confirm reroll",
+    "hint_reroll_continue_repeat_detail": "{{completed}} rerolls used; {{remaining}} selections left, including the same die. You can also finish at the dice tray.",
+    "hint_reroll_continue_detail": "{{completed}} rerolls used; {{remaining}} selections left. You can also finish at the dice tray.",
+    "hint_reroll_done_detail": "Rerolls have resolved. Choose Finish reroll at the dice tray to continue.",
+    "hint_reroll_ready_detail": "{{completed}} rerolls used; {{selected}} queued. Choose Confirm reroll at the dice tray.",
+    "hint_reroll_repeat_detail": "{{remaining}} selections left. The same die can be chosen more than once. Confirm at the dice tray.",
+    "hint_reroll_detail": "{{remaining}} selections left. Confirm the reroll at the dice tray.",
+    "hint_reroll_done": "Rerolls complete ({{current}}/{{max}})",
+    "hint_reroll_ready": "Ready to reroll ({{current}}/{{max}})",
     "hint_choose_value": "Choose the target value",
     "hint_bonus_settlement": "Confirm these bonus dice results to continue settlement",
     "set_value": "Set to {{value}}",
@@ -2001,9 +2017,11 @@
     "hint_set": "Select die to set to {{value}}",
     "hint_adjust": "Select die to adjust",
     "hint_any": "Select die to modify",
-    "hint_select": "Select die ({{current}}/{{max}})",
-    "hint_select_ally": "Select ally die ({{current}}/{{max}})",
-    "hint_select_opponent": "Select opponent's die ({{current}}/{{max}})"
+    "hint_select": "Choose dice to reroll ({{current}}/{{max}})",
+    "hint_select_ally": "Choose an ally’s dice to reroll ({{current}}/{{max}})",
+    "hint_select_opponent": "Choose an opponent’s dice to reroll ({{current}}/{{max}})",
+    "hint_choose_dice": "Choose effect dice",
+    "hint_choose_dice_detail": "Selected {{selected}}/{{count}}; choose {{remaining}} more, then confirm at the dice tray."
   },
   "abilitySlots": {
     "fist": "Fist Technique",

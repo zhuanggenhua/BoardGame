@@ -14,6 +14,8 @@ interface GameModalProps {
     closeOnBackdrop?: boolean;
     /** 保留弹窗内容交互，但让背景操作当前仍可干预的游戏对象。 */
     allowBackgroundInteraction?: boolean;
+    /** 对象候选较少时随内容收紧，保留四周牌桌上下文。 */
+    density?: 'normal' | 'compact';
 }
 
 export const GameModal = ({
@@ -26,7 +28,9 @@ export const GameModal = ({
     className,
     closeOnBackdrop = true,
     allowBackgroundInteraction = false,
+    density = 'normal',
 }: GameModalProps) => {
+    const compact = density === 'compact';
 
     const widthClass = {
         sm: 'max-w-sm',
@@ -47,6 +51,8 @@ export const GameModal = ({
                     contentWrapperClassName={allowBackgroundInteraction ? 'pointer-events-none' : undefined}
                 >
                     <div
+                        data-testid="dt-game-modal"
+                        data-density={density}
                         className={clsx(
                             "relative bg-slate-950 border-2 border-amber-500/40 pointer-events-auto",
                             "shadow-[0_0_50px_rgba(0,0,0,0.8)]",
@@ -61,8 +67,10 @@ export const GameModal = ({
                     >
                         {/* Header */}
                         {title && (
-                            <div className="relative px-6 py-5 max-[1023px]:px-4 max-[1023px]:py-3 bg-black/20 border-b border-white/5 flex items-center justify-center shrink-0">
-                                <h2 className="text-xl sm:text-2xl max-[1023px]:text-lg font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-600 drop-shadow-md text-center">
+                            <div className={clsx("relative bg-black/20 border-b border-white/5 flex items-center justify-center shrink-0",
+                                compact ? "px-4 py-2" : "px-6 py-5 max-[1023px]:px-4 max-[1023px]:py-3")}>
+                                <h2 className={clsx("font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-600 drop-shadow-md text-center",
+                                    compact ? "text-base sm:text-lg" : "text-xl sm:text-2xl max-[1023px]:text-lg")}>
                                     {title}
                                 </h2>
                                 {/* Decorative elements */}
@@ -72,13 +80,15 @@ export const GameModal = ({
                         )}
 
                         {/* Content — z-20 高于 Footer z-10，确保内部 tooltip 不被 Footer 遮挡 */}
-                        <div className="min-h-0 overflow-y-auto p-6 sm:p-8 max-[1023px]:p-4 max-[1023px]:py-3 text-slate-300 leading-relaxed text-center relative z-20 flex flex-col items-center">
+                        <div className={clsx("min-h-0 overflow-y-auto text-slate-300 leading-relaxed text-center relative z-20 flex flex-col items-center",
+                            compact ? "p-3" : "p-6 sm:p-8 max-[1023px]:p-4 max-[1023px]:py-3")}>
                             {children}
                         </div>
 
                         {/* Footer */}
                         {footer && (
-                            <div className="p-6 pt-0 sm:pt-0 sm:pb-8 flex gap-4 justify-center relative z-10">
+                            <div className={clsx("flex justify-center relative z-10 shrink-0",
+                                compact ? "px-4 pb-4 pt-1 gap-3" : "p-6 pt-0 sm:pt-0 sm:pb-8 gap-4")}>
                                 {footer}
                             </div>
                         )}

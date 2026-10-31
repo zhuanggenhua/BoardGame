@@ -426,6 +426,33 @@ describe('formatDiceThroneActionEntry', () => {
         expect(seg?.paramI18nKeys).toContain('phase');
     });
 
+    it('后续 afterEvents 轮次触发的自动防御技能仍写入日志', () => {
+        const state = createState();
+        const command: Command = {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: {},
+            timestamp: 31,
+        };
+        const autoDefenseEvent: AbilityActivatedEvent = {
+            type: 'ABILITY_ACTIVATED',
+            payload: { abilityId: 'angelic-cloak-2', playerId: '1', isDefense: true },
+            sourceCommandType: 'ADVANCE_PHASE',
+            timestamp: 31,
+        };
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [autoDefenseEvent],
+            afterEventsRound: 1,
+        }));
+
+        expect(entries).toHaveLength(1);
+        expect(entries[0].id).toBe('AUTO_DEFENSE-1-angelic-cloak-2-31');
+        expect(findI18nSegment(entries[0].segments, 'actionLog.abilityActivatedDefense')).toBeTruthy();
+    });
+
     it('discard 后自动切人时 ADVANCE_PHASE 日志应归属下一位 activePlayer', () => {
         const state = createState();
         const command: Command = {

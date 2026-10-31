@@ -8,7 +8,7 @@ import { playSound } from '../../../../lib/audio/useGameAudio';
 
 interface GameButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
     children?: ReactNode;
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass';
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass' | 'option';
     size?: 'sm' | 'md' | 'lg';
     fullWidth?: boolean;
     icon?: ReactNode;
@@ -29,8 +29,11 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
     ...props
 }, ref) => {
 
-    const baseEffects = "relative overflow-hidden transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 disabled:grayscale";
-    const typography = "font-black uppercase tracking-wider text-center leading-none select-none flex items-center justify-center gap-2";
+    const isOption = variant === 'option';
+    const baseEffects = clsx("relative overflow-hidden transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none disabled:grayscale", !isOption && "active:scale-95 disabled:active:scale-100");
+    const typography = isOption
+        ? "font-medium text-left leading-relaxed select-none flex items-center justify-start gap-2 whitespace-normal"
+        : "font-black uppercase tracking-wider text-center leading-none select-none flex items-center justify-center gap-2";
 
     // 视觉风格 - 参考 Dice Throne
     // Primary: Amber/Gold gradient (Main Action)
@@ -38,6 +41,7 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
     // Secondary: Blue/Slate (Info/Neutral)
 
     const variants = {
+        option: "bg-slate-900/60 border border-slate-500/70 text-slate-100 hover:bg-slate-700/70 hover:border-amber-300/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 active:bg-slate-700 shadow-none",
         primary: "bg-gradient-to-b from-amber-400 to-amber-600 border border-amber-300 shadow-[0_4px_0_#b45309] active:shadow-none active:translate-y-1 text-white hover:brightness-110",
         danger: "bg-gradient-to-b from-red-500 to-red-700 border border-red-400 shadow-[0_4px_0_#991b1b] active:shadow-none active:translate-y-1 text-white hover:brightness-110",
         secondary: "bg-slate-700 border border-slate-500 shadow-[0_4px_0_#334155] active:shadow-none active:translate-y-1 text-slate-100 hover:bg-slate-600",
@@ -78,10 +82,10 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
                 className
             )}
             whileHover={{
-                scale: disabled ? 1 : 1.01,
+                scale: disabled || isOption ? 1 : 1.01,
                 filter: "brightness(1.05)"
             }}
-            whileTap={{ scale: disabled ? 1 : 0.98 }}
+            whileTap={{ scale: disabled || isOption ? 1 : 0.98 }}
             disabled={disabled}
             onClick={handleClick}
             {...props}

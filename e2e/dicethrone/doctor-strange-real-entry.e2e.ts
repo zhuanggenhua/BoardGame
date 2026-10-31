@@ -5,8 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../framework';
-import { getFrontendSourceHash, sourceIdentityMatches } from '../../scripts/infra/e2e-source-identity.mjs';
-import { findRuntimeById } from '../../scripts/infra/e2e-runtime-registry.js';
+import { captureEvidenceSourceIdentity, startSourceSession, releaseSourceSession } from '../framework/sourceIdentity';
+import { hashSourceIdentity, sourceIdentityMatches } from '../../scripts/infra/e2e-source-identity.mjs';
 import {
     createEvidenceScreenshotRun,
     promoteEvidenceScreenshotRun,
@@ -39,20 +39,31 @@ const DOCTOR_STRANGE_E2E_SOURCE_REVISION = createHash('sha256')
     .digest('hex');
 const CRIMSON_BANDS_SPELL_ID = 'spell-crimson-bands-of-cyttorak';
 
-function assertCurrentEvidenceSourceIdentity(): { sourceRevision: string; e2eSourceRevision: string } {
-    const runtimeId = process.env.PW_MANAGED_RUNTIME_ID;
-    const runtime = runtimeId ? findRuntimeById(runtimeId) : undefined;
-    if (!runtime?.frontendSourceHash) throw new Error('证据必须绑定当前托管运行时的前端源码身份');
-
-    const sourceRevision = getFrontendSourceHash();
-    expect(runtime.frontendSourceHash).toBe(sourceRevision);
-    expect(sourceIdentityMatches(runtime.sourceIdentity)).toBe(true);
+async function assertCurrentEvidenceSourceIdentity(page: Page) {
+    const identity = await captureEvidenceSourceIdentity(page, 'dicethrone');
 
     const e2eSourceRevision = createHash('sha256')
         .update(readFileSync(fileURLToPath(import.meta.url)))
         .digest('hex');
     expect(e2eSourceRevision).toBe(DOCTOR_STRANGE_E2E_SOURCE_REVISION);
-    return { sourceRevision, e2eSourceRevision };
+    return { ...identity, e2eSourceRevision };
+}
+
+const capturedRunSources = new WeakMap<EvidenceScreenshotRun, Map<string, { path: string; hash: string }>>();
+
+async function collectRunSourceIdentity(page: Page, run: EvidenceScreenshotRun, validateCollected = false) {
+    const captured = await assertCurrentEvidenceSourceIdentity(page);
+    const files = capturedRunSources.get(run) ?? new Map();
+    for (const file of captured.sourceIdentity.files) {
+        const first = files.get(file.path);
+        if (first && first.hash !== file.hash) throw new Error(`同一证据组消费了不同源码版本：${file.path}`);
+        files.set(file.path, file);
+    }
+    capturedRunSources.set(run, files);
+    const sourceIdentity = { files: [...files.values()] };
+    // 当前页面已由共享采集器核对；跨上下文累计集合在晋升前再完整核对一次。
+    if (validateCollected) expect(sourceIdentityMatches(sourceIdentity), '整组截图的实际依赖必须仍是当前版本').toBe(true);
+    return { ...captured, sourceIdentity, sourceRevision: hashSourceIdentity(sourceIdentity) };
 }
 
 type TestCard = { id: string };
@@ -150,6 +161,8 @@ async function readEvidenceSnapshot(page: Page, game?: EvidenceGameReader): Prom
             .map(element => element.textContent?.trim() ?? '')
             .filter(Boolean);
         const diceInteractionHintText = readText(document.querySelector('[data-testid="dice-interaction-hint"]'));
+        const diceInteractionHintTitle = readText(document.querySelector('[data-testid="dice-interaction-hint-title"]'));
+        const diceInteractionHintDetail = readText(document.querySelector('[data-testid="dice-interaction-hint-detail"]'));
         const modal = document.querySelector('#modal-root');
         const phaseControl = document.querySelector('[data-tutorial-id="advance-phase-button"]');
         const headingTexts = Array.from(document.querySelectorAll('h1, h2, h3'))
@@ -192,6 +205,8 @@ async function readEvidenceSnapshot(page: Page, game?: EvidenceGameReader): Prom
             selectedChoiceIds,
             modalButtonLabels,
             diceInteractionHintText,
+            diceInteractionHintTitle,
+            diceInteractionHintDetail,
             modalText: readText(modal),
             phaseControlText: readText(phaseControl),
             headingTexts,
@@ -295,6 +310,7 @@ async function captureTracedState(
 }
 
 async function promoteTracedEvidenceScreenshotRun(
+    page: Page,
     run: EvidenceScreenshotRun,
     media: EvidenceScreenshotIndexEntry[],
     recorder: EvidenceTraceRecorder,
@@ -302,7 +318,8 @@ async function promoteTracedEvidenceScreenshotRun(
     outcome: string,
 ): Promise<void> {
     expect(media[0]?.chainId, '行为证据链必须包含媒体').toBeTruthy();
-    const { sourceRevision, e2eSourceRevision } = assertCurrentEvidenceSourceIdentity();
+    const { sourceRevision, e2eSourceRevision, sourceIdentity } = await collectRunSourceIdentity(page, run, true);
+    await writeFile(join(run.stagingDir, '.source-identity.json'), JSON.stringify({ sourceRevision, sourceIdentity }));
     const enrichedMedia = media.map(entry => ({
         ...entry,
         uiChange: entry.uiChange ?? (entry.stage === '前态' || entry.stage === '后态' ? 'layout' : 'interaction-mode'),
@@ -378,7 +395,7 @@ async function openOnlineSelection(page: Page, beforeRoomCreate?: () => Promise<
 }
 
 async function captureState(page: Page, run: EvidenceScreenshotRun, name: string): Promise<string> {
-    assertCurrentEvidenceSourceIdentity();
+    await collectRunSourceIdentity(page, run);
     const filename = `${name}.png`;
     const path = join(run.stagingDir, filename);
     await mkdir(dirname(path), { recursive: true });
@@ -387,8 +404,63 @@ async function captureState(page: Page, run: EvidenceScreenshotRun, name: string
         animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity
     )), undefined, { timeout: 10000 });
     await page.screenshot({ path, fullPage: false, timeout: 20000 });
-    assertCurrentEvidenceSourceIdentity();
+    await collectRunSourceIdentity(page, run);
     return filename;
+}
+
+async function assertStatusTooltipClearOfActions(page: Page): Promise<void> {
+    await page.getByTestId('dt-status-effect-1-blinded').hover();
+    const tooltip = page.locator('[data-testid="info-tooltip"]:visible').first();
+    await expect(tooltip).toBeVisible();
+    const overlaps = await tooltip.evaluate(element => {
+        const tip = element.getBoundingClientRect();
+        return Array.from(document.querySelectorAll('#modal-root [data-testid^="dt-status-effect-"], #modal-root [data-testid="dt-interaction-confirm"]'))
+            .filter(target => {
+                const rect = target.getBoundingClientRect();
+                return Math.min(tip.right, rect.right) > Math.max(tip.left, rect.left)
+                    && Math.min(tip.bottom, rect.bottom) > Math.max(tip.top, rect.top);
+            }).map(target => target.getAttribute('data-testid'));
+    });
+    expect(overlaps, '状态说明不能覆盖同组候选或确认动作').toEqual([]);
+}
+
+async function assertCompactStatusModal(page: Page): Promise<void> {
+    const geometry = await page.getByTestId('dt-game-modal').evaluate(element => {
+        const box = element.getBoundingClientRect();
+        return { width: box.width, height: box.height, viewportWidth: innerWidth, viewportHeight: innerHeight };
+    });
+    expect(geometry.width, '单个状态持有人不应留下占满横屏的弹窗外壳').toBeLessThanOrEqual(Math.min(440, geometry.viewportWidth * 0.65));
+    expect(geometry.height, '状态卡和确认应紧凑呈现，并保留四周牌桌上下文').toBeLessThanOrEqual(geometry.viewportHeight * 0.8);
+}
+
+async function assertCardCandidatesDistinctFromBoard(page: Page): Promise<void> {
+    const contrast = await page.getByTestId('dt-card-pool-selection').evaluate(element => {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1;
+        const ctx = canvas.getContext('2d')!;
+        const rgba = (value: string) => {
+            ctx.clearRect(0, 0, 1, 1);
+            ctx.fillStyle = value;
+            ctx.fillRect(0, 0, 1, 1);
+            return [...ctx.getImageData(0, 0, 1, 1).data];
+        };
+        return {
+            background: rgba(getComputedStyle(element).backgroundColor),
+            candidates: Array.from(element.querySelectorAll('[data-selected="false"] [data-testid^="dt-card-choice-preview-"]'))
+                .map(preview => {
+                    const style = getComputedStyle(preview);
+                    return { width: parseFloat(style.outlineWidth), style: style.outlineStyle, color: rgba(style.outlineColor) };
+                }),
+        };
+    });
+    expect(contrast.background[3], '候选承载底色必须压住棋盘细节').toBeGreaterThanOrEqual(230);
+    expect(contrast.candidates.length).toBeGreaterThan(0);
+    for (const candidate of contrast.candidates) {
+        expect(candidate.width, '未选候选也必须有独立、贴合的可选轮廓').toBeGreaterThanOrEqual(1.5);
+        expect(candidate.style).toBe('solid');
+        expect(candidate.color[3]).toBeGreaterThanOrEqual(190);
+        expect(Math.min(...candidate.color.slice(0, 3)), '候选轮廓必须与深色棋盘和印刷橙边区分').toBeGreaterThanOrEqual(190);
+    }
 }
 
 async function assertCardPoolInteractionFitsViewport(page: Page): Promise<void> {
@@ -872,14 +944,14 @@ test.describe('Dice Throne 奇异博士独立交互验收（内部初始化）',
     test('桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术', async ({ page, game }, testInfo) => {
         const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
         const result = await runAwarenessPrepareFlow(page, game, evidenceRun, { width: 1440, height: 900 }, '桌面');
-        await promoteTracedEvidenceScreenshotRun(evidenceRun, result.media, result.trace,
+        await promoteTracedEvidenceScreenshotRun(page, evidenceRun, result.media, result.trace,
             '桌面宇宙感知与法术选择交互', '索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。');
     });
 
     test('手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术', async ({ page, game }, testInfo) => {
         const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
         const result = await runAwarenessPrepareFlow(page, game, evidenceRun, { width: 812, height: 375 }, '手机横屏');
-        await promoteTracedEvidenceScreenshotRun(evidenceRun, result.media, result.trace,
+        await promoteTracedEvidenceScreenshotRun(page, evidenceRun, result.media, result.trace,
             '手机横屏宇宙感知与法术选择交互', '索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。');
     });
 });
@@ -970,6 +1042,7 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
     await expect(statusOwner).toHaveCount(1);
     await expect(page.locator('#modal-root [data-testid^="dt-player-target-"]')).toHaveCount(0);
     await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
+    await assertStatusTooltipClearOfActions(page);
     const statusCandidatesScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '瓦图姆之风-状态效果候选',
         'remove-status-candidate-effects', '准备瓦图姆之风后显示规则给出的状态候选',
@@ -1024,10 +1097,12 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
                 viewportWidth: window.innerWidth, viewportHeight: window.innerHeight };
         }));
     const mobileStatusCandidateGeometry = await mobileStatusGeometry();
+    await assertCompactStatusModal(page);
     expect(mobileStatusCandidateGeometry).toHaveLength(2);
     expect(mobileStatusCandidateGeometry.every(rect => rect.width > 0 && rect.height > 0
         && rect.left >= -1 && rect.top >= -1
         && rect.right <= rect.viewportWidth + 1 && rect.bottom <= rect.viewportHeight + 1)).toBe(true);
+    await assertStatusTooltipClearOfActions(page);
     const mobileStatusCandidatesScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '瓦图姆之风-横屏-状态效果候选',
         'remove-status-mobile-candidate-effects', '缩窄到横屏手机后仍可直接选择状态图标',
@@ -1043,6 +1118,7 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
     await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
     await expect(page.locator('#modal-root [data-testid^="dt-player-target-"]')).toHaveCount(0);
     const mobileStatusSelectedGeometry = await mobileStatusGeometry();
+    await assertCompactStatusModal(page);
     const mobileConfirmBounds = await page.getByTestId('dt-interaction-confirm').boundingBox();
     expect(mobileStatusSelectedGeometry).toHaveLength(2);
     expect(mobileStatusSelectedGeometry.every(rect => rect.width > 0 && rect.height > 0
@@ -1053,6 +1129,8 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
     expect(mobileConfirmBounds!.y).toBeGreaterThanOrEqual(-1);
     expect(mobileConfirmBounds!.x + mobileConfirmBounds!.width).toBeLessThanOrEqual(813);
     expect(mobileConfirmBounds!.y + mobileConfirmBounds!.height).toBeLessThanOrEqual(376);
+    await expect(page.getByText('选择要移除的状态', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('info-tooltip'), '选中状态后收起说明气泡，保留标题与候选区').toHaveCount(0);
     const mobileStatusSelectedScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '瓦图姆之风-横屏-状态已选待确认',
         'remove-status-mobile-selected-effect', '横屏手机直接选中对手的眩目状态并暂不提交',
@@ -1097,7 +1175,7 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
             behaviorStepId: 'remove-status-mobile-selected-effect', description: '横屏手机上直接选中眩目状态；确认可见，状态尚未移除。',
             role: 'main-flow', viewport: 'mobile', transition: '点击眩目状态图标，一次锁定状态和持有人。' },
     );
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '奇异博士复用法术卡池和状态选择器', '索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。');
 });
 
@@ -1240,7 +1318,8 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await expect(secondRollerDie).toHaveAttribute('data-owner-id', '0');
     await expect(firstRollerDie).toHaveAttribute('data-clickable', 'true');
     await expect(secondRollerDie).toHaveAttribute('data-clickable', 'true');
-    await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择骰子');
+    await expect(page.getByTestId('dice-interaction-hint-title')).toContainText('重投');
+    await expect(page.getByTestId('dice-interaction-hint-detail')).toContainText('同一颗可重复选择');
     const diceHintAnchor = page.getByTestId('dice-interaction-hint-anchor');
     await expect(diceHintAnchor).toHaveAttribute('data-placement', 'left-center');
     const diceHintBounds = await diceHintAnchor.boundingBox();
@@ -1259,7 +1338,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
             return {
                 interaction,
                 rollerDiceClickable: dice.filter(die => die.ownerId === '0' && die.clickable).map(die => die.id).includes('0'),
-                allyHintText: snapshot.visible.diceInteractionHintText,
+                allyHintText: snapshot.visible.diceInteractionHintTitle,
             };
         },
         {
@@ -1269,7 +1348,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
                 allowedDieIds: [0, 1, 2, 3, 4],
             },
             rollerDiceClickable: true,
-            allyHintText: '选择骰子（0/2）',
+            allyHintText: '选择重投骰子（0/2）',
         },
     );
     media.push({
@@ -1282,7 +1361,8 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     });
 
     await firstRollerDie.click();
-    await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择骰子（1/2）');
+    await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择重投骰子（1/2）');
+    await expect(page.getByTestId('dice-interaction-hint-detail')).toContainText('还可选择 1 次');
     const oneRerollScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '值得拥有-同骰已选一次',
         'worthy-teammate-dice-selected-once', '真实鼠标首次选择当前投掷者的一颗骰子',
@@ -1290,9 +1370,9 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         snapshot => ({
             selected: (snapshot.visible.dice as { id: string | null; selected: boolean }[])
                 .some(die => die.id === '0' && die.selected),
-            hint: snapshot.visible.diceInteractionHintText,
+            hint: snapshot.visible.diceInteractionHintTitle,
         }),
-        { selected: true, hint: '选择骰子（1/2）' },
+        { selected: true, hint: '选择重投骰子（1/2）' },
     );
     media.push({
         path: oneRerollScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '已选1/2', stage: '中态',
@@ -1303,9 +1383,10 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     });
     await expect(firstRollerDie).toHaveAttribute('data-clickable', 'true');
     await firstRollerDie.click();
-    await expect(page.getByTestId('dice-interaction-hint')).toHaveText('完成');
+    await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('重投选择已就绪（2/2）');
+    await expect(page.getByTestId('dice-interaction-hint-detail')).toContainText('待执行 2 次');
+    await expect(page.getByTestId('dice-interaction-confirm-button')).toHaveText('确认重投');
     await expect(firstRollerDie).toHaveAttribute('data-selected', 'true');
-    await expect(page.getByTestId('dice-interaction-hint')).toHaveText('完成');
     const selectedScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '值得拥有-投掷者同骰重选两次',
         'worthy-teammate-dice-selected', '真实鼠标连续选择当前投掷者的同一颗骰子两次',
@@ -1341,7 +1422,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
             dice: [5, 2, 3, 4, 5], interaction: null,
         strangeHand: [], strangeDiscard: ['card-worthy-of-me'],
     });
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子',
         '截图只展示骰子候选与选择进度；骰面变化和卡牌去向由同用例断言验证。');
 });
@@ -1454,7 +1535,7 @@ test('桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段', as
         description: '真实鼠标点击即视感后，状态标记消耗、投掷计数归零且旧阶段效果清理。',
         role: 'main-flow', viewport: 'desktop', transition: '点击即视感状态重开进攻投掷阶段。',
     });
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '即视感状态操作说明交互', '截图只展示状态标记的悬停说明；点击后的阶段与状态变化由同用例断言验证。');
 });
 
@@ -1482,6 +1563,31 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
     await advance.click();
     const threeDrawChoice = page.getByRole('button', { name: '花费3预感：抽3张牌' });
     await expect(threeDrawChoice).toBeVisible({ timeout: 10000 });
+    const expectIncomeOptionLayout = async () => {
+        const options = page.getByTestId('dt-choice-options').getByRole('button');
+        await expect(options).toHaveCount(3);
+        const boxes = await options.evaluateAll(nodes => nodes.map(node => {
+            const element = node as HTMLElement;
+            const rect = element.getBoundingClientRect();
+            const shadow = getComputedStyle(element).boxShadow;
+            const shadowColors = shadow.match(/rgba?\([^)]+\)/g) ?? [];
+            return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width,
+                noVisibleShadow: shadow === 'none' || (shadowColors.length > 0
+                    && shadowColors.every(color => /,\s*0\)$/.test(color))),
+                readable: element.scrollWidth <= element.clientWidth };
+        }));
+        for (const [index, box] of boxes.entries()) {
+            expect(box.noVisibleShadow).toBe(true);
+            expect(box.readable).toBe(true);
+            expect(box.x).toBeGreaterThanOrEqual(0);
+            expect(box.right).toBeLessThanOrEqual(page.viewportSize()!.width);
+            expect(box.bottom).toBeLessThanOrEqual(page.viewportSize()!.height);
+            expect(Math.abs(box.x - boxes[0].x)).toBeLessThan(1);
+            expect(Math.abs(box.width - boxes[0].width)).toBeLessThan(1);
+            if (index > 0) expect(box.y).toBeGreaterThan(boxes[index - 1].bottom);
+        }
+    };
+    await expectIncomeOptionLayout();
     const incomeOptionsScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '收入阶段替代选项-桌面',
         'income-replacement-choice', '推进到收入阶段并显示预感替代选项',
@@ -1489,9 +1595,20 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         snapshot => (snapshot.visible.modalButtonLabels as string[]).some(label => label.includes('花费3预感')),
         true,
     );
+    await page.setViewportSize({ width: 813, height: 376 });
+    await expectIncomeOptionLayout();
+    const mobileIncomeOptionsScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '收入阶段替代选项-横屏',
+        'income-replacement-choice-mobile', '切换横屏视口查看预感的三个选项',
+        '三个平面选项单列排列且文字完整',
+        snapshot => (snapshot.visible.modalButtonLabels as string[]).some(label => label.includes('花费3预感')),
+        true,
+    );
+    await page.setViewportSize(viewport);
     await threeDrawChoice.click();
     const drawnCardChoices = page.locator('#modal-root [data-testid^="dt-hand-card-option-"]');
     await expect(drawnCardChoices).toHaveCount(3, { timeout: 10000 });
+    await assertCardCandidatesDistinctFromBoard(page);
     const cardChoiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '本次抽牌返还选择-桌面',
         'income-return-drawn-card', '支付3层预感并从本次抽到的牌中选择返还对象',
@@ -1500,6 +1617,7 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         3,
     );
     await drawnCardChoices.first().click();
+    await assertCardCandidatesDistinctFromBoard(page);
     const selectedDrawnCardScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '本次抽牌已选待确认-桌面',
         'income-return-drawn-card-selected', '选中本次抽到的卡牌但暂不提交返还对象',
@@ -1550,6 +1668,9 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         { path: incomeOptionsScreenshot, chainId: '预感替代收入选项', chainStep: '收入选项候选', stage: '独特界面态',
             uiStateId: 'doctor-strange-income-options', behaviorStepId: 'income-replacement-choice',
             description: '真实主要阶段推进到收入阶段后显示正常收入与预感替代选项。', role: 'main-flow', viewport: 'desktop', transition: '玩家结束维护阶段进入收入阶段。' },
+        { path: mobileIncomeOptionsScreenshot, chainId: '预感替代收入选项横屏', chainStep: '收入选项候选', stage: '独特界面态',
+            uiStateId: 'doctor-strange-income-options-mobile', behaviorStepId: 'income-replacement-choice-mobile',
+            description: '横屏视口中的预感三个选项采用单列平面选项样式。', role: 'main-flow', viewport: 'mobile', transition: '在同一收入选择中切换横屏视口。' },
         { path: cardChoiceScreenshot, chainId: '本次抽牌返还对象选择', chainStep: '本次抽牌候选', stage: '中态',
             uiStateId: 'doctor-strange-income-drawn-cards', behaviorStepId: 'income-return-drawn-card',
             description: '选择花费3层预感抽3张后，只显示本次抽到的卡牌供返还。', role: 'main-flow', viewport: 'desktop', transition: '选择花费3层预感抽取3张牌。' },
@@ -1564,7 +1685,7 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
             description: '结算后预感消耗3、其余两张留手牌且一张回到牌库底。', role: 'main-flow', viewport: 'desktop', transition: '选择牌库底并完成收入替代。' },
     );
     expect(drawnIds).toHaveLength(3);
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '预感替代收入选项与卡牌选择交互', '索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。');
 });
 
@@ -1847,7 +1968,7 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
             behaviorStepId: 'ultimate-attack-settled', description: '一次法术施放后跳过剩余施放，攻击与法术帧均收口。',
             role: 'main-flow', viewport: 'desktop', transition: '跳过剩余施放并等待攻击收口。' },
     );
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '全知之眼法术和目标选择交互', '索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。');
 });
 
@@ -1990,7 +2111,7 @@ test('桌面牌桌以真实鼠标选择星际侵入并确认奖励骰', async ({
             behaviorStepId: 'astral-bonus-dice-confirmed', description: '确认奖励骰后记录三点攻击加伤与一点预感；当前攻击进入伤害前阶段。',
             role: 'main-flow', viewport: 'desktop', transition: '普通确认右侧奖励骰。' },
     );
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '星际侵入技能与奖励骰交互', '索引展示技能待结算和奖励骰待确认界面；伤害前状态由同用例断言验证。');
 });
 
@@ -2091,7 +2212,7 @@ test('桌面牌桌真实打出法术并将深红系带施加到对手', async ({
             behaviorStepId: 'crimson-bands-status-granted', description: '对手状态区显示深红系带；权威状态记录获得回合以延迟本回合激活。',
             role: 'main-flow', viewport: 'desktop', transition: '选择对手并完成法术效果。' },
     );
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '深红系带法术玩家选择交互', '索引只展示现有玩家选择面中的目标候选和选中待确认界面；状态施加结果由同用例断言验证。');
 });
 
@@ -2173,6 +2294,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
     if (!matchId) throw new Error('无法从真实房间地址取得 matchId。');
     const guestContext = await browser.newContext();
     try {
+        await startSourceSession(guestContext, hostUrl.origin);
         await setChineseLocale(guestContext);
         await resetMatchStorage(guestContext, '__doctor_strange_online_guest_storage_reset');
         const guestPage = await guestContext.newPage();
@@ -2261,8 +2383,9 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
             role: 'main-flow', viewport: 'desktop', transition: '客人同步进入同一双人牌桌。',
         });
     } finally {
+        await releaseSourceSession(guestContext);
         await guestContext.close();
     }
-    await promoteTracedEvidenceScreenshotRun(evidenceRun, media, trace,
+    await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
         '奇异博士真实玩家选择界面', '索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。');
 });

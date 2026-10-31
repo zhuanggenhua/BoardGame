@@ -24,7 +24,7 @@ export const ReviewItem = ({ review, isMine, onDelete }: ReviewItemProps) => {
     };
 
     return (
-        <div className="bg-parchment-card-bg border border-parchment-card-border/15 rounded p-2.5 flex flex-col gap-1.5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="platform-review-item bg-parchment-card-bg border border-parchment-card-border/15 rounded p-2.5 flex flex-col gap-1.5 shadow-sm hover:shadow-md transition-shadow">
             {/* 顶部：头像（可选）+ 昵称 | 日期 + 操作 */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -33,13 +33,13 @@ export const ReviewItem = ({ review, isMine, onDelete }: ReviewItemProps) => {
                             <img src={review.user.avatar} alt={review.user.username} className="w-full h-full object-cover" />
                         </div>
                     )}
-                    <span className="font-bold text-parchment-base-text text-xs tracking-tight">
+                    <span className="platform-review-name font-bold text-parchment-base-text text-xs tracking-tight">
                         {review.user?.username || t('common.unknownUser')}
                     </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-parchment-light-text/50 uppercase tracking-tighter tabular-nums">
+                    <span className="platform-review-date text-[9px] text-parchment-light-text/50 uppercase tracking-tighter tabular-nums">
                         {formatDate(review.createdAt)}
                     </span>
                     {isMine && onDelete && (
@@ -64,7 +64,7 @@ export const ReviewItem = ({ review, isMine, onDelete }: ReviewItemProps) => {
                     )}
                 </div>
                 {review.content && (
-                    <div className="text-[13px] text-parchment-base-text/90 leading-[1.4] break-words whitespace-pre-wrap font-serif">
+                    <div className="platform-review-content text-[13px] text-parchment-base-text/90 leading-[1.4] break-words whitespace-pre-wrap font-serif">
                         {review.content}
                     </div>
                 )}

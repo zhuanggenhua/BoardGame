@@ -153,3 +153,44 @@
 - 真实状态：`reversal-target` 已转为 0 号玩家控制，`rev-quick` / `rev-smart` 已进入 0 号玩家弃牌堆；未完成的是夺控后由 `base_ringside` 和敌方 `musketeers_all_for_one` 触发的连续强制反应选择。
 - 修复范围：仅修改 `e2e/smashup/smashup-international-incident-four-factions.e2e.ts`，补齐两段 `smashup_reaction_choose` 的真实候选选择；生产实现 `src/games/smashup/abilities/international_incident.ts` 本轮未改动。
 - 当前证据：完整四派系真实入口 24/24 通过；规则与资源合同测试 68/68 通过。该结果关闭本条主基线的测试缺口，不关闭其它全局历史基线或 R2 / CDN 发布链。
+
+## 2026-10-23 续审：共享验证基线时效
+
+- 国际事件四派系本地 59 对象规则审计结论仍由四份派系 evidence 支持；本轮没有发现国际事件对象的规则失败证据。
+- 上一条四派系 E2E 的 24/24 记录来自 2026-09-21；但 `e2e/smashup/smashup-international-incident-four-factions.e2e.ts` 与 `src/games/smashup/abilities/international_incident.ts` 均在 2026-09-22 提交 `833d79ba8` 大幅更新，因此旧 24/24 不能作为当前提交的复验结果。当前入口文件有 24 个测试，待复跑。
+- 对响应事务的生命周期补证据如下；该表对齐当前 `e2e/smashup/smashup-international-incident-four-factions.e2e.ts` 的“逆转”对象链。当前文件有代码断言，但本次资源门禁阻止复跑。
+
+| 生命周期节点 | 直接证据 / 当前结论 |
+| --- | --- |
+| 窗口打开前（precommit） | 玩家提交“逆转”并选择 `rev-quick`、`rev-smart`；目标 `reversal-target` 已转为己方控制，两张 Set-Up 已离开附着区。上一份回归记录确认当时仍处于 `scoreBases`，这些前置效果已提交，尚有后续响应待处理。 |
+| 窗口内追加（append） | 玩家依次选择 `base_ringside` 与对方 `musketeers_all_for_one` 的强制反应；不能在第一个反应后把仍在计分阶段误认成规则卡死。 |
+| 同一事务累计投影 | 当前 E2E 没有在每次 append 后单独断言累计等待事务 / `ResolutionFrame` 字段；现有证据只能定位到先夺控 / 摧毁，再追加两段响应。此项仍是事务投影证据缺口，不能记为已直接验证。 |
+| 窗口关闭后（closeout） | 当前测试最终断言 P0 得 4 VP、P1 为 0、两张己方 Set-Up 均在弃牌堆、棋盘上无这两张附着行动、response window / triggerQueue / interaction source 均清空；这证明最终权威结果和交互清理，不替代上一行的中间投影断言。 |
+
+- 2026-10-23 实际运行共享 `interactionTargetTypeAudit`（完整命令及两条失败详情见 `2026-09-18-munchkin-faction-audit.md`）为 12/14。失败是全局 response chooser 静态合同片段缺失，以及 `base_uss_undertaking` / 三个 goblins sourceId 的 targetType 歧义；失败报告没有 `international_incident` 对象或文件。这是共享静态审计债务，不构成国际事件规则失败证据。
+- `2026-09-21 资源链复查`里的两个 manifest URL、哈希和 404 状态是当时快照，本轮没有重新查询，也没有上传。当前只能记为“公开资源状态待只读复查”，不能把旧快照当作现状。
+- 本轮 `e2e-doctor` 看到另一条 Fate of Dominion E2E 正在运行，CPU 100%、可用内存 0.46GB，且 `e2e-single.frontend` 6174 端口占用；因此没有并发启动国际事件 E2E。最小补救是运行资源释放后重跑当前四派系 24 项入口，再分别只读回查两个 manifest；发布动作仍不在本轮范围。
+- 当前裁定：四派系本地对象规则审计保持已收口；批次整体仍 `in_progress`，因为 2026-09-22 源码 / E2E 更新后的共享入口基线尚未复验，公开 manifest 状态也已过时。
+
+## 2026-10-23 四派系 E2E 当前源复跑
+
+- 资源门禁曾显示允许启动，但另一条 Fate of Dominion E2E 同时在跑。国际事件测试使用独立 runtime（frontend 6275、gameServer 20102、apiServer 21102），启动后 `e2e-memory-watchdog` 因可用内存持续降到 0.62% 而终止 Playwright 进程树。
+- Playwright 输出到 `Running 24 tests using 1 worker` 后被 watchdog 中止；没有任何用例完成结果，因此本次不计为通过，也不能据此判定规则失败。准确状态是“当前源复跑被资源 watchdog 中止，0/24 已报告完成”。
+- `e2e-doctor` 随后仍看到另一条 Fate E2E 活跃、CPU 92%、可用内存约 1.9GB；不清理也不打断该任务。最小补救是该任务释放后重跑同一 24 项当前基线，再只读复查两个已过期 manifest。此前 9/21 的 24/24 仍仅作历史结果。
+- 本次预检增量生成 manifest；`public/assets/i18n/assets-manifest.json` 原本已是 dirty 文件，保留其当前状态；另外两个 manifest 未产生工作树改动。
+- 当前裁定更新：四派系本地对象规则审计保持已收口；共享入口基线仍待当前源 24 项跑完，公开 manifest 状态仍待只读复查，批次保持 `in_progress`。
+
+## 2026-10-23 公网 manifest 只读刷新
+
+- 真正线上资源根来自当前 `src/core/AssetLoader.ts`：`https://assets.easyboardgame.top/official`。本次只读 HEAD / GET，没有上传或修改外部资源。
+- `official/i18n/zh-CN/smashup/assets-manifest.json` 返回 `200`、`X-Asset-Source: server`；线上为 47,803 bytes，SHA-256 `172312e8267ea7a921e9ebca93354186ef704003f096459443fb43008ea0a2b6`。当前本地 `public/assets/i18n/zh-CN/smashup/assets-manifest.json` 为 48,633 bytes，SHA-256 `869c99fcf3fe82bd85b68a5ce38044a31676164f3178502ca16383b41679576a`，与线上不一致，线上仍是旧索引。
+- `official/smashup/assets-manifest.json` 返回 `404`（响应头带 `X-Asset-Source: server` 只说明由服务器响应，不能把 404 记作资源存在）。当前本地 `public/assets/smashup/assets-manifest.json` 存在，913 bytes，SHA-256 `169d3f289ca26f7d03ce27dab2d3b5930dff0873d6fa64d9d27e1fa9f2102e51`。
+- 资源链审计因此仍未闭合：一份线上 manifest 陈旧，另一份线上缺失。需要资源发布操作后再次只读核对状态、大小、SHA-256 和服务器来源；本轮没有发布授权，也没有执行上传。
+- 当前裁定：本地 59 个对象规则审计仍已收口；当前源四派系 E2E 被 memory watchdog 中止，0/24 已报告完成；公网资源链已确认两项未闭合。批次保持 `in_progress`。
+
+## 2026-10-23 第二次四派系 E2E 复跑尝试
+
+- 本次从 `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts` 入口启动。启动前 `e2e-doctor` 显示无活跃 runtime；runner 随后检测到并发 Fate of Dominion E2E 已启动，并自动为本测试分配隔离端口（frontend 6274、gameServer 20101、apiServer 21101）。
+- 同一 Fate E2E 运行期间，可用内存连续三次降至 0.03%，`e2e-memory-watchdog` 终止本次 Playwright 进程树。输出停在 `Running 24 tests using 1 worker`，没有用例完成结果，记为 0/24；这不是规则失败，也不构成通过。
+- 复查 `e2e-doctor` 仍报告 Fate E2E 活跃且 runtime `active-unhealthy`，故不再重试、不清理也不打断对方任务。最小补救是等该任务退出、资源恢复后，再跑同一 24 项当前源基线。
+- 当前裁定：国际事件本地对象规则范围仍已收口；当前源共享入口基线仍因两次资源 watchdog 中止而待复验；公网 Smash Up i18n manifest 整体陈旧且游戏级 manifest URL 缺失。批次保持 `in_progress`，未执行上传。

@@ -108,6 +108,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             aria-label={t('ui.hand.skillAction', { action: stagedSkill ? t('ui.hand.actions.retract') : active ? t('ui.hand.actions.activate') : t('ui.hand.actions.select'), name: skill.name })}
             aria-disabled={Boolean(ridingChoice) || (active ? !abilityAvailable : !available)}
             data-focus-card={`skill-${player.id}-${skill.id}`}
+            data-tutorial-id={`fate-card-${skill.id}`}
             data-card-zone={stagedSkill ? 'staged-skill' : active ? 'active-skill' : 'skill'}
             onPointerDown={event=>touchInspection.handlePointerDown(event,`skill-${skill.id}`,{assetPath,name:skill.name})}
             onPointerMove={event=>touchInspection.handlePointerMove(event,`skill-${skill.id}`)}

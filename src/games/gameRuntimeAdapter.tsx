@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { MatchState } from '../engine/types';
 import type { MatchSeatSwapConfig } from '../components/game/framework/matchSeatSwap';
+import type { FabMenuPosition } from '../components/system/FabMenu';
 import type { GameSetupSelections } from '../shared/gameSetupOptions';
 
 export type GameHudRuntimeMode = 'local' | 'online' | 'tutorial' | 'test';
@@ -35,6 +36,13 @@ export type GameRuntimeCreateRoomSetupContext = {
     setupData?: Record<string, unknown>;
 };
 
+export type GameHudFabLayout = {
+    position?: FabMenuPosition;
+    storageKey?: string;
+    legacyOffsetStorageKey?: string;
+    resolveInitialOffset?: (viewportHeight: number) => { left?: number; top?: number };
+};
+
 export type GameRuntimeLocalSetupResult = {
     numPlayers: number;
     setupSelections?: GameSetupSelections;
@@ -50,6 +58,7 @@ export type GameRuntimeLocalSetupGateProps = {
 
 export type GameRuntimeAdapter = {
     PageProvider?: ComponentType<GameRuntimePageProviderProps>;
+    hudFabLayout?: GameHudFabLayout;
     dismissTransientUi?: () => boolean;
     forceDismissHud?: (args: GameHudForceDismissInput) => boolean;
     HudSettingsSection?: ComponentType<GameRuntimeSettingsSectionProps>;

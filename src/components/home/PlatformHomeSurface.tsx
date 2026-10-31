@@ -12,6 +12,7 @@ import { PlatformGameCatalog, type PlatformCatalogGame } from './PlatformGameCat
 import { PlatformUploadWorkspace } from './PlatformUploadWorkspace';
 import { PlatformProfile } from './PlatformProfile';
 import { PlatformLibraryNews } from './PlatformLibraryNews';
+import { PlatformExternalCover } from './PlatformExternalCover';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useGameLibrary } from './useGameLibrary';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
@@ -55,6 +56,8 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
     useLayoutEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [section]);
     const setSection = (next: HomeSection) => setSearchParams(current => {
         const updated = new URLSearchParams(current);
+        updated.delete('libraryGame');
+        updated.delete('game');
         if (next === 'discover') updated.delete('section'); else updated.set('section', next);
         return updated;
     });
@@ -73,7 +76,7 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
     const externalGames = external.data?.items ?? [];
     const externalCards: PlatformCatalogGame[] = externalGames.map(game => ({
         id: game.gameId, titleKey: game.name, descriptionKey: game.description,
-        thumbnail: game.coverUrl ? <img src={game.coverUrl} alt="" /> : <span className="platform-external-art"><small>{t('platform.externalGamePage.externalGame')}</small></span>,
+        thumbnail: <PlatformExternalCover name={game.name} coverUrl={game.coverUrl} />,
     }));
     const favorites = allGames.filter(game => favoriteIds.has(game.id));
     const allCards = [...allGames, ...externalCards];
@@ -123,9 +126,9 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
                     </button>)}
                     </div>
                 </aside>}
-                <div className={`platform-home-directory${section === 'library' && libraryDetails ? ' is-detail' : ''}`}>
+                <div className={`platform-home-directory${section === 'library' && libraryDetails && !mobile ? ' is-detail' : ''}`}>
                   {section === 'library' && libraryDetails}
-                  <div hidden={section === 'library' && Boolean(libraryDetails)}>
+                  <div hidden={section === 'library' && Boolean(libraryDetails) && !mobile}>
                     {library.error && <p role="alert">{t('platform.librarySyncError')} <button type="button" onClick={() => void library.retry()}>{t('platform.retry')}</button></p>}
                     {external.isError && <p role="alert">{t('platform.externalGamePage.directoryLoadFailed')} <button type="button" onClick={() => void external.refetch()}>{t('platform.retry')}</button></p>}
                     {section === 'library' && library.isLoading ? <p role="status">{t('platform.loadingLibrary')}</p> : <PlatformGameCatalog

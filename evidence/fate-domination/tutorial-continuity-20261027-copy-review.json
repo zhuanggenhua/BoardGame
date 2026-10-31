@@ -1,0 +1,2826 @@
+{
+  "reviewer": "/root",
+  "reviewedAt": "2026-10-27",
+  "revision": 5,
+  "status": "PASS",
+  "scope": "全部当前可见文案及无正文正式操作节点；逐节点复核前因、规则来源、执行者、输入与后果；不证明浏览器或视觉通过",
+  "steps": [
+    {
+      "id": "intro",
+      "content": "在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。",
+      "sha256": "83272a21214231344408c6aeeb24b37355618dc2c6e1c0271a84cf133a0c626d",
+      "passages": [
+        {
+          "id": "victory",
+          "source": "intake/rules/chm-前情提要与内容物介绍.md",
+          "section": "如何进行游戏",
+          "quote": "在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。"
+        }
+      ],
+      "necessity": "胜负句已含十一天，仅保留这一句，删去独立局长及终局复述。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-5",
+      "content": "按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。",
+      "sha256": "2ac5459efa2475f83f1064e9e30a554d1fcc58cecc97a27d211ed1041160c3a0",
+      "passages": [
+        {
+          "id": "preparation",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "准备阶段",
+          "quote": "按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。"
+        }
+      ],
+      "necessity": "首次手牌实际从0补到3，解释手牌来源和通常上限；删完成准备。",
+      "context": {
+        "command": {
+          "type": "ADVANCE_PHASE",
+          "playerId": "0",
+          "payload": {}
+        },
+        "before": {
+          "round": 1,
+          "phase": "preparation",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 0,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 0,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 0,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "preparation",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 0,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 0,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "INITIAL_ATTACK_HAND_DEALT",
+          "FATE_PHASE_PLAYER_FINISHED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-8",
+      "content": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值。\n\n魔术工房 · 2魔力点位。",
+      "sha256": "06b562c0525cb36d30e4ea69997e57a937a3f6ff3e0ae6be03d58c6011c5cd3a",
+      "passages": [
+        {
+          "id": "deployment",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "前哨阶段（白天）",
+          "quote": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值。",
+          "sourceQuote": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值（C）。",
+          "transcription": "omit-paper-figure-labels"
+        }
+      ],
+      "input": {
+        "text": "魔术工房 · 2魔力点位。",
+        "owner": "DEPLOY_MASTER"
+      },
+      "necessity": "首个部署决定需要地点限制与印刷收益；末句仅标识固定示范的工房2魔力点，不复述选择确认。纸面C标注移除并保留来源。",
+      "context": {
+        "command": {
+          "type": "DEPLOY_MASTER",
+          "payload": {
+            "locationId": "workshop",
+            "deploymentSlot": 0
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "MASTER_DEPLOYED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "first-deployment-result",
+      "content": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。",
+      "sha256": "584d6a33deeb7c0e3ac4a13037a23f19c9640520cff371b00a8777243d4d085e",
+      "passages": [
+        {
+          "id": "outpostAbility",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "前哨阶段（白天）",
+          "quote": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。"
+        }
+      ],
+      "necessity": "已实际落位，紧接本人前哨能力；说明部署后仍可使用，不因落位误结束阶段。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-9",
+      "content": "你能支付1魔力来抽2张牌。\n\n点本人头像查看御主能力。",
+      "sha256": "568e0b73f66fe4bae9643a9cebdc713e8786098357dcffa666a942180c738b9c",
+      "passages": [],
+      "ability": {
+        "masterId": "m_waver",
+        "skillId": "s2"
+      },
+      "input": {
+        "text": "点本人头像查看御主能力。",
+        "owner": "PLAY_SKILL"
+      },
+      "necessity": "原卡支付1魔力抽2张，增加本轮手牌选择；头像是隐蔽能力入口，仅进入前说明，打开详情后整段退让给正式卡文。",
+      "context": {
+        "command": {
+          "type": "PLAY_SKILL",
+          "payload": {
+            "skillId": "s2:1"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "FATE_ABILITY_USED",
+          "FATE_CARDS_DRAWN"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-10",
+      "content": "当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。",
+      "sha256": "5ac93c3a33fc65ca39f3f9b41e2cf393e65447159d4ca47598a86356cfa0a5cf",
+      "passages": [
+        {
+          "id": "order",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "游戏流程",
+          "quote": "当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。"
+        }
+      ],
+      "necessity": "首次交还阶段，解释为何要等其他席，不再重复完成当前阶段按钮。",
+      "context": {
+        "command": {
+          "type": "ADVANCE_PHASE",
+          "payload": {},
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "FATE_PHASE_PLAYER_FINISHED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-11",
+      "content": "玩家 2\n\n若部署于战场且位于地利位置，战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。",
+      "sha256": "04fad5974a2955bece3f76a2325c9ed6079ba2db6077cb7074773ee1d84b8695",
+      "passages": [
+        {
+          "id": "terrain",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "前哨阶段（白天）",
+          "quote": "若部署于战场且位于地利位置，战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。",
+          "sourceQuote": "若部署于战场且位于地利位置（D），战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。",
+          "transcription": "omit-paper-figure-labels"
+        }
+      ],
+      "observer": {
+        "playerId": "1"
+      },
+      "necessity": "第一次真实他席占据地利，说明印刷加成；明确玩家2归属，不要求代操作。纸面D标注移除并保留来源。",
+      "context": {
+        "command": {
+          "type": "DEPLOY_MASTER",
+          "payload": {
+            "locationId": "miyama",
+            "deploymentSlot": 0
+          },
+          "playerId": "1"
+        },
+        "before": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": null,
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "MASTER_DEPLOYED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "map-camera",
+      "content": "拖动地图、滚轮缩放；点局势或事件牌可检视。",
+      "sha256": "a97ffd23563e8f821a131722b919f817853864c486209f491fa4fdcf3d2e51a8",
+      "passages": [],
+      "input": {
+        "text": "拖动地图、滚轮缩放；点局势或事件牌可检视。",
+        "owner": "FateMapSurface"
+      },
+      "necessity": "移至第一次真实移动前。拖动/滚轮和地图规则牌检视均是电子版输入，旧教程只交代按钮不能推导这些手势。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-15",
+      "content": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n令胜利者（们）获得该战场事件牌的战果点数之和的战果\n\n点本人棋子开始移动；本次前往深山町争夺事件战果。",
+      "sha256": "dc3c0c6128b294e41fcf8bc9624fe22064019f5cf648a1d989c7a1fdb04bd2c6",
+      "passages": [
+        {
+          "id": "actionOrder",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "行动阶段（夜晚）",
+          "quote": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。"
+        },
+        {
+          "id": "movementPayment",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规移动",
+          "quote": "常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。"
+        },
+        {
+          "id": "battlefieldReward",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "战力结算",
+          "quote": "令胜利者（们）获得该战场事件牌的战果点数之和的战果"
+        }
+      ],
+      "input": {
+        "text": "点本人棋子开始移动；本次前往深山町争夺事件战果。",
+        "owner": "MOVE_PLAYER"
+      },
+      "necessity": "前哨工房已有2魔力收益，进入行动后先移动；引用战场事件胜者得战果原句解释本次去深山町的局面用途，注明只是本次选择；入口、路线与一次支付分别承接正式输入，不复述确认。",
+      "context": {
+        "command": {
+          "type": "MOVE_PLAYER",
+          "payload": {
+            "locationId": "miyama"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "workshop",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 5,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "PLAYER_MOVED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "ui-inspection-14",
+      "content": "攻击牌有魔力消耗和基本威力。\n\n“打出时：”-可以理解为在您打出此牌时必须遵循的“被动：”能力。\n\n长按或右键检视骑乘。",
+      "sha256": "319d81a8a0d6b542f0e58f53e3d2b2a201d754af9a57a6fce2f89cd6fda563c6",
+      "passages": [
+        {
+          "id": "attackFields",
+          "source": "intake/rules/chm-前情提要与内容物介绍.md",
+          "section": "攻击卡牌",
+          "quote": "攻击牌有魔力消耗和基本威力。",
+          "sourceQuote": "攻击牌有魔力消耗 (J) 和基本威力 (K)。",
+          "transcription": "omit-paper-figure-labels"
+        },
+        {
+          "id": "playTiming",
+          "source": "intake/rules/chm-前情提要与内容物介绍.md",
+          "section": "能力卡牌",
+          "quote": "“打出时：”-可以理解为在您打出此牌时必须遵循的“被动：”能力。"
+        }
+      ],
+      "input": {
+        "text": "长按或右键检视骑乘。",
+        "owner": "FateHandSurface"
+      },
+      "necessity": "在首张牌费用发生作用前识别费用、威力和打出时；亲自检视真实骑乘卡。移除读卡后关闭。纸面J/K标注移除并保留来源。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-16",
+      "content": "通常你必须在出牌前拥有8点及以上的魔力才可以从技能区打出攻击。\n\n恢复魔力。",
+      "sha256": "ca5fc219e4d9db7bb61eef8a3fdd636edb816a0bc568f8d7d26cec986b999d13",
+      "passages": [
+        {
+          "id": "skillThreshold",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规出牌",
+          "quote": "通常你必须在出牌前拥有8点及以上的魔力才可以从技能区打出攻击。"
+        }
+      ],
+      "input": {
+        "text": "恢复魔力。",
+        "owner": "USE_COMMAND_SPELL"
+      },
+      "necessity": "当前4魔力，而技能攻击门槛8；只在进入令咒面板前给源句和本次效果身份。面板打开、选定后不再叠教学或状态条。",
+      "context": {
+        "command": {
+          "type": "USE_COMMAND_SPELL",
+          "payload": {
+            "effect": "mana"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 5,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 8,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 5,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "COMMAND_SPELL_USED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-17",
+      "content": "打出正好两张攻击牌作为你本回合的常规出牌。\n\n它们可以是你手中的普通攻击牌（背面为深蓝色），或是你技能区的技能攻击（背面为红色且具有魔力消耗和威力）\n\n迫击（明置）、骑乘（明置）。",
+      "sha256": "d6a85c715c8db83f94620cadef8630001c896df868f1e5c1e809762edfd3662c",
+      "passages": [
+        {
+          "id": "attack",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规出牌",
+          "quote": "打出正好两张攻击牌作为你本回合的常规出牌。"
+        },
+        {
+          "id": "mixedAttack",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规出牌",
+          "quote": "它们可以是你手中的普通攻击牌（背面为深蓝色），或是你技能区的技能攻击（背面为红色且具有魔力消耗和威力）"
+        }
+      ],
+      "input": {
+        "text": "迫击（明置）、骑乘（明置）。",
+        "owner": "CONFIRM_ATTACK"
+      },
+      "necessity": "首次常规攻击，两张数量及普通/技能两来源是新规则；卡名仅定位演示对象，删除确认/撤回复述，草稿出现后由正式牌对象承接。",
+      "context": {
+        "command": {
+          "type": "CONFIRM_ATTACK",
+          "payload": {
+            "cardIds": [
+              "0:cardB1:0",
+              "sc_iskandar_1:3"
+            ],
+            "faceDownIds": [],
+            "round": 1
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 8,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 5,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 7,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "ATTACKS_CONFIRMED",
+          "FATE_CARDS_DRAWN"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-18",
+      "content": "印刷于攻击或技能牌上的“行动阶段”能力若不具有“被动/”，则需要将此牌激活才可使用。（激活：明置于你的攻击区）\n\n坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。",
+      "sha256": "5dcb702617b5f22fd883f88dc81a3f3e4e8d60ffdc2e8fc21a06ec3a48689118",
+      "passages": [
+        {
+          "id": "activatedAbility",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "行动阶段（夜晚）",
+          "quote": "印刷于攻击或技能牌上的“行动阶段”能力若不具有“被动/”，则需要将此牌激活才可使用。（激活：明置于你的攻击区）"
+        }
+      ],
+      "ability": {
+        "servantId": "servant-rider",
+        "skillId": "sc_iskandar_1",
+        "clause": "action"
+      },
+      "necessity": "骑乘已明置激活才使用行动能力；仅取坐骑召唤行动子句，不重复已发生的打出抽牌条款。用于当前战场追加威力，无取消重开作业。",
+      "context": {
+        "command": {
+          "type": "PLAY_SKILL",
+          "payload": {
+            "skillId": "sc_iskandar_1:3"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 7,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 7,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ],
+          "interaction": {
+            "id": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+            "kind": "simple-choice",
+            "playerId": "0",
+            "ai": {
+              "status": "adapter",
+              "adapterId": "fate-riding",
+              "reason": "Fate AI 按正式骑乘权限与费用校验枚举0至3张及取消。"
+            },
+            "data": {
+              "title": "坐骑召唤",
+              "subtitle": "选择 0–3 张基本威力不超过 3 的手牌；所选牌会明置打出。",
+              "options": [
+                {
+                  "id": "0:cardQ2:7",
+                  "label": "高速移动",
+                  "value": "0:cardQ2:7"
+                },
+                {
+                  "id": "0:cardB2:3",
+                  "label": "强打",
+                  "value": "0:cardB2:3"
+                },
+                {
+                  "id": "0:cardSurveil:10",
+                  "label": "急行",
+                  "value": "0:cardSurveil:10"
+                },
+                {
+                  "id": "0:cardB2:2",
+                  "label": "强打",
+                  "value": "0:cardB2:2"
+                }
+              ],
+              "sourceId": "fate:riding-choice",
+              "multi": {
+                "min": 0,
+                "max": 3
+              },
+              "targetType": "hand",
+              "autoResolveIfSingle": false,
+              "responseValidationMode": "snapshot",
+              "ai": {
+                "status": "adapter",
+                "adapterId": "fate-riding",
+                "reason": "Fate AI 按正式骑乘权限与费用校验枚举0至3张及取消。"
+              },
+              "choiceRequest": {
+                "requestId": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+                "choiceKind": "select-card",
+                "sourceId": "fate:riding-choice",
+                "metadata": {
+                  "opportunityId": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+                  "timingPointId": "postCommit:FATE_RIDING_CHOICE_REQUESTED:FATE_RIDING_CHOICE_REQUESTED:0",
+                  "opportunityClass": "mandatory",
+                  "round": 1,
+                  "playerId": "0",
+                  "skillId": "sc_iskandar_1:3",
+                  "generation": "e23-u0",
+                  "frameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e23-u0"
+                },
+                "aiStatus": "game-policy",
+                "policyId": "baseline",
+                "aiDiagnosticStatus": "missing-policy",
+                "aiDiagnosticReason": "Choice Request 声明需要游戏 AI 策略，但该策略未注册",
+                "diagnostics": [],
+                "candidateSummary": {
+                  "total": 4,
+                  "enabledCandidateIds": [
+                    "0:cardQ2:7",
+                    "0:cardB2:3",
+                    "0:cardSurveil:10",
+                    "0:cardB2:2"
+                  ],
+                  "disabledCandidateIds": [],
+                  "staleCandidateIds": []
+                },
+                "recoveryActionId": "cancel-riding-intent",
+                "projectedLegalActionCount": 1
+              },
+              "fateContext": {
+                "playerId": "0",
+                "skillId": "sc_iskandar_1:3",
+                "round": 1,
+                "generation": "e23-u0",
+                "frameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e23-u0"
+              }
+            },
+            "resolutionFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e23-u0"
+          }
+        },
+        "events": [
+          "FATE_RIDING_CHOICE_REQUESTED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-19",
+      "content": "高速移动、强打、强打。",
+      "sha256": "61d026ac761a2e1da9b08232b727c97281e76aee4bdcb7d876c644f76fbeac96",
+      "passages": [],
+      "input": {
+        "text": "高速移动、强打、强打。",
+        "owner": "SYS_INTERACTION_RESPOND"
+      },
+      "necessity": "只点名当前追加攻击的三张实例，原规则数量/费用已在卡及正式控件承接；选足后隐藏名单，不与正式确认重复。",
+      "context": {
+        "command": {
+          "type": "SYS_INTERACTION_RESPOND",
+          "payload": {
+            "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+            "optionIds": [
+              "0:cardQ2:7",
+              "0:cardB2:3",
+              "0:cardB2:2"
+            ]
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 7,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ],
+          "interaction": {
+            "id": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+            "kind": "simple-choice",
+            "playerId": "0",
+            "ai": {
+              "status": "adapter",
+              "adapterId": "fate-riding",
+              "reason": "Fate AI 按正式骑乘权限与费用校验枚举0至3张及取消。"
+            },
+            "data": {
+              "title": "坐骑召唤",
+              "subtitle": "选择 0–3 张基本威力不超过 3 的手牌；所选牌会明置打出。",
+              "options": [
+                {
+                  "id": "0:cardQ2:7",
+                  "label": "高速移动",
+                  "value": "0:cardQ2:7"
+                },
+                {
+                  "id": "0:cardB2:3",
+                  "label": "强打",
+                  "value": "0:cardB2:3"
+                },
+                {
+                  "id": "0:cardSurveil:10",
+                  "label": "急行",
+                  "value": "0:cardSurveil:10"
+                },
+                {
+                  "id": "0:cardB2:2",
+                  "label": "强打",
+                  "value": "0:cardB2:2"
+                }
+              ],
+              "sourceId": "fate:riding-choice",
+              "multi": {
+                "min": 0,
+                "max": 3
+              },
+              "targetType": "hand",
+              "autoResolveIfSingle": false,
+              "responseValidationMode": "snapshot",
+              "ai": {
+                "status": "adapter",
+                "adapterId": "fate-riding",
+                "reason": "Fate AI 按正式骑乘权限与费用校验枚举0至3张及取消。"
+              },
+              "choiceRequest": {
+                "requestId": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+                "choiceKind": "select-card",
+                "sourceId": "fate:riding-choice",
+                "metadata": {
+                  "opportunityId": "fate:riding-choice:1:0:sc_iskandar_1:3:e23-u0",
+                  "timingPointId": "postCommit:FATE_RIDING_CHOICE_REQUESTED:FATE_RIDING_CHOICE_REQUESTED:0",
+                  "opportunityClass": "mandatory",
+                  "round": 1,
+                  "playerId": "0",
+                  "skillId": "sc_iskandar_1:3",
+                  "generation": "e23-u0",
+                  "frameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e23-u0"
+                },
+                "aiStatus": "game-policy",
+                "policyId": "baseline",
+                "aiDiagnosticStatus": "missing-policy",
+                "aiDiagnosticReason": "Choice Request 声明需要游戏 AI 策略，但该策略未注册",
+                "diagnostics": [],
+                "candidateSummary": {
+                  "total": 4,
+                  "enabledCandidateIds": [
+                    "0:cardQ2:7",
+                    "0:cardB2:3",
+                    "0:cardSurveil:10",
+                    "0:cardB2:2"
+                  ],
+                  "disabledCandidateIds": [],
+                  "staleCandidateIds": []
+                },
+                "recoveryActionId": "cancel-riding-intent",
+                "projectedLegalActionCount": 1
+              },
+              "fateContext": {
+                "playerId": "0",
+                "skillId": "sc_iskandar_1:3",
+                "round": 1,
+                "generation": "e23-u0",
+                "frameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e23-u0"
+              }
+            },
+            "resolutionFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e23-u0"
+          }
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "SYS_INTERACTION_RESOLVED",
+          "FATE_ABILITY_USED",
+          "FATE_RIDING_CARDS_PLAYED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-20",
+      "content": "",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passages": [],
+      "necessity": "无新增信息。结束行动由正式一级入口承接，保留真实手动输入，不渲染空白课程卡。",
+      "context": {
+        "command": {
+          "type": "PASS_ACTION",
+          "payload": {},
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "ACTION_PASSED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-22",
+      "content": "玩家 2\n\n获得2 点合计威力以及获胜后获得 2 点战果点数",
+      "sha256": "7b2a25847f4326cc2a3c68ff6f5d926ddafa8d8d6f607babcb171d793c5e669f",
+      "passages": [
+        {
+          "id": "sealBattle",
+          "source": "intake/rules/chm-前情提要与内容物介绍.md",
+          "section": "令咒",
+          "quote": "获得2 点合计威力以及获胜后获得 2 点战果点数"
+        }
+      ],
+      "observer": {
+        "playerId": "1"
+      },
+      "necessity": "他席首次实用强化令咒的新公开后果；只取2威力与胜后2战果效果，并明确玩家2。",
+      "context": {
+        "command": {
+          "type": "USE_COMMAND_SPELL",
+          "payload": {
+            "effect": "battle"
+          },
+          "playerId": "1"
+        },
+        "before": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 19,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 21,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "COMMAND_SPELL_USED",
+          "FATE_RULE_MODIFIER_ATTACHED",
+          "FATE_RULE_MODIFIER_ATTACHED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "ui-public-cards-26",
+      "content": "然后，计算你当前的合计威力并向其他玩家展示。\n\n悬停对手头像查看已打出的牌；触控可点玩家摘要展开。",
+      "sha256": "15ad5d6db22c28fd2a11101e87f34a47fd3f50e121f7f4bffa930e318ca59601",
+      "passages": [
+        {
+          "id": "power",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规出牌",
+          "quote": "然后，计算你当前的合计威力并向其他玩家展示。"
+        }
+      ],
+      "input": {
+        "text": "悬停对手头像查看已打出的牌；触控可点玩家摘要展开。",
+        "owner": "FatePlayerRail"
+      },
+      "necessity": "首次比较攻击后的公开威力。头像悬停和触控摘要展开是隐藏入口，需教；不重复卡牌放大手势或冷却参数。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-27",
+      "content": "然后，在所有玩家的战斗阶段结束后开始进行战力结算。",
+      "sha256": "8205563757f99be5a34eae102b1b009667ceb20e367af66f53e8740fa08eb308",
+      "passages": [
+        {
+          "id": "battle",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "战斗阶段（夜晚）",
+          "quote": "然后，在所有玩家的战斗阶段结束后开始进行战力结算。"
+        }
+      ],
+      "necessity": "全员战斗阶段结束才进行战力结算，解释当前等待；删除完成当前阶段按钮复述。",
+      "context": {
+        "command": {
+          "type": "ADVANCE_PHASE",
+          "payload": {},
+          "playerId": "0"
+        },
+        "before": {
+          "round": 1,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 1,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 23,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 18,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 1,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 23,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 18,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "FATE_PHASE_PLAYER_FINISHED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-30",
+      "content": "玩家 3\n\n一名玩家激活的攻击威力+地利数+受到自己能力的影响以及局势牌和天气牌的影响。",
+      "sha256": "b77726296bf1630a8e4c784bb53700f5763d7dd619a47457670f3707c3e607e9",
+      "passages": [
+        {
+          "id": "settlement",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "战力结算",
+          "quote": "一名玩家激活的攻击威力+地利数+受到自己能力的影响以及局势牌和天气牌的影响。"
+        }
+      ],
+      "observer": {
+        "playerId": "2"
+      },
+      "necessity": "首次实际结算需要知道战力组成，操作者明确玩家3；不再要求学员替其结算。",
+      "context": {
+        "command": {
+          "type": "RESOLVE_LOCATION",
+          "payload": {
+            "locationId": "miyama"
+          },
+          "playerId": "2"
+        },
+        "before": {
+          "round": 1,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 1,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 23,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 18,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 1,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 0,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 4,
+              "location": "miyama",
+              "spells": 1,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 23,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 3,
+              "vp": 0,
+              "hand": 3,
+              "attack": true,
+              "power": 18,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "LOCATION_RESOLVED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "round-return-observe",
+      "content": "回合结束时\n\n令技能牌明置返回其技能区并令非技能牌暗置进入其弃牌堆",
+      "sha256": "c4db253de7e2d6b535d4b80331133482e17f4bcbba0274da0ecfb21f5b5fe454",
+      "passages": [
+        {
+          "id": "roundEndTiming",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "回合结束时",
+          "quote": "回合结束时"
+        },
+        {
+          "id": "roundReturn",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "回合结束时",
+          "quote": "令技能牌明置返回其技能区并令非技能牌暗置进入其弃牌堆"
+        }
+      ],
+      "necessity": "实际轮末清理之后呈现技能返区、普通牌入弃牌；时间标题不可删，否则会误作随时可执行的技能动作。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "ui-pile-36",
+      "content": "你可以于任何时候查看自己的弃牌堆。",
+      "sha256": "de98ecf41208de306984706bb7e46657fcd879cc6e73b0ceb909a9778a6ec876",
+      "passages": [
+        {
+          "id": "discardInspect",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "回合结束时",
+          "quote": "你可以于任何时候查看自己的弃牌堆。"
+        }
+      ],
+      "necessity": "此时弃牌确已存在，仅说明随时查看权限。打开弃牌后浮层退场，允许但不强迫再检视；抽牌堆不能代做弃牌查看。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-40",
+      "content": "新都 · 地利点位。",
+      "sha256": "1b0ce3e293ef30c16e9ea1a240597f123d6fb228d2f365df20708f6132243599",
+      "passages": [],
+      "input": {
+        "text": "新都 · 地利点位。",
+        "owner": "DEPLOY_MASTER"
+      },
+      "necessity": "学员第一次亲自部署战场，仅标识新都地利示范点；地利规则已观察过，不再全文重复，但仍让学员自己提交。",
+      "context": {
+        "command": {
+          "type": "DEPLOY_MASTER",
+          "payload": {
+            "locationId": "shinto",
+            "deploymentSlot": 1
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 2,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 7,
+              "location": null,
+              "spells": 2,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 8,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 2,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 2,
+          "phase": "outpost",
+          "players": [
+            {
+              "id": "0",
+              "mana": 7,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 0,
+              "hand": 3,
+              "attack": false,
+              "power": 6,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 8,
+              "hand": 3,
+              "attack": false,
+              "power": 8,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 2,
+              "hand": 3,
+              "attack": false,
+              "power": 3,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "MASTER_DEPLOYED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-47",
+      "content": "瞬间的一击（明置）、会心的一击（明置）。",
+      "sha256": "58eba6b1c585aea7cef6f432aac4f062b790ac4f1f6a342df9d20e507e9860c8",
+      "passages": [],
+      "input": {
+        "text": "瞬间的一击（明置）、会心的一击（明置）。",
+        "owner": "CONFIRM_ATTACK"
+      },
+      "necessity": "第一次全普通牌仅标识两张具体演示牌；两张数量已教，不再复述来源和提交。",
+      "context": {
+        "command": {
+          "type": "CONFIRM_ATTACK",
+          "payload": {
+            "cardIds": [
+              "0:cardQ3:8",
+              "0:cardB4:5"
+            ],
+            "faceDownIds": [],
+            "round": 2
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 2,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 0,
+              "hand": 5,
+              "attack": false,
+              "power": 6,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 3,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 8,
+              "hand": 3,
+              "attack": true,
+              "power": 19,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 2,
+              "hand": 3,
+              "attack": true,
+              "power": 14,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 2,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 0,
+              "hand": 5,
+              "attack": true,
+              "power": 15,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 3,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 8,
+              "hand": 3,
+              "attack": true,
+              "power": 19,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 2,
+              "hand": 3,
+              "attack": true,
+              "power": 14,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "ATTACKS_CONFIRMED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-52",
+      "content": "",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passages": [],
+      "necessity": "正式结算入口已存在，计算组成已教；不渲染重复结算课，仍由本人真实提交。",
+      "context": {
+        "command": {
+          "type": "RESOLVE_LOCATION",
+          "payload": {
+            "locationId": "miyama"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 2,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 0,
+              "hand": 5,
+              "attack": true,
+              "power": 15,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 3,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 8,
+              "hand": 3,
+              "attack": true,
+              "power": 19,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 2,
+              "hand": 3,
+              "attack": true,
+              "power": 14,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 2,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 5,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 0,
+              "hand": 5,
+              "attack": true,
+              "power": 15,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 3,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 8,
+              "hand": 3,
+              "attack": true,
+              "power": 19,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 5,
+              "location": "miyama",
+              "spells": 3,
+              "vp": 2,
+              "hand": 3,
+              "attack": true,
+              "power": 14,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "LOCATION_RESOLVED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-120",
+      "content": "玩家 3 · 执行者\n\n战斗阶段：你的总威力+2。",
+      "sha256": "26cf85a62a413d7e0f6bc974064398ba885605708fbab7669fbcb1314487dd37",
+      "passages": [],
+      "ability": {
+        "masterId": "m_kirei",
+        "skillId": "s3"
+      },
+      "observer": {
+        "playerId": "2",
+        "abilityName": "执行者"
+      },
+      "necessity": "言峰绮礼执行者战斗能力，直接取其实际卡文；明确玩家3与能力名，不套用韦伯抽牌效果。",
+      "context": {
+        "command": {
+          "type": "PLAY_SKILL",
+          "payload": {
+            "skillId": "s3:2"
+          },
+          "playerId": "2"
+        },
+        "before": {
+          "round": 5,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 6,
+              "hand": 5,
+              "attack": true,
+              "power": 22,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 0,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 23,
+              "hand": 3,
+              "attack": true,
+              "power": 21,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 0,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 20,
+              "hand": 3,
+              "attack": true,
+              "power": 24,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 5,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 6,
+              "hand": 5,
+              "attack": true,
+              "power": 22,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 0,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 23,
+              "hand": 3,
+              "attack": true,
+              "power": 21,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 0,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 20,
+              "hand": 3,
+              "attack": true,
+              "power": 26,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "FATE_ABILITY_USED",
+          "FATE_RULE_MODIFIER_ATTACHED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "revelation-observe",
+      "content": "玩家 3\n\n有些卡牌会拥有【真名解放】词条，当你使用这些卡牌后，立即展示你的从者概览卡与所有技能牌并处于【真名解放】状态。",
+      "sha256": "d234fe8d85427b70debf52e5df49f2117e995b91ee61e71d43828c9b8c8edb75",
+      "passages": [
+        {
+          "id": "revelation",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "真名解放",
+          "quote": "有些卡牌会拥有【真名解放】词条，当你使用这些卡牌后，立即展示你的从者概览卡与所有技能牌并处于【真名解放】状态。"
+        }
+      ],
+      "observer": {
+        "playerId": "2"
+      },
+      "necessity": "真实他席从者已揭示后标明该玩家，再引用规则解释公开范围；后续详情可检视真实身份，不提前揭示隐藏信息。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-140",
+      "content": "玩家 2\n\n若你位于战场，则你的常规出牌中必须要有一张明置牌。\n\n暗置牌处于未被激活的状态，它们不消耗魔力，不计算威力，也不属于攻击且于回合结束时进入你的弃牌堆。通常而言，技能牌不能被暗置打出。",
+      "sha256": "3d1a30c88157e621109f9c56715c8e0c057c61efe8eb63e19ba591b8a4fcf173",
+      "passages": [
+        {
+          "id": "battlefieldFaceUp",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规出牌",
+          "quote": "若你位于战场，则你的常规出牌中必须要有一张明置牌。"
+        },
+        {
+          "id": "darkTraits",
+          "source": "intake/rules/chm-进行一场圣杯战争.md",
+          "section": "常规出牌",
+          "quote": "暗置牌处于未被激活的状态，它们不消耗魔力，不计算威力，也不属于攻击且于回合结束时进入你的弃牌堆。通常而言，技能牌不能被暗置打出。"
+        }
+      ],
+      "observer": {
+        "playerId": "1"
+      },
+      "necessity": "实际玩家2在深山町战场混合一明一暗；引用战场须至少一张明置原句与暗置属性，不再错引不在战场时两张均暗置的条件。",
+      "context": {
+        "command": {
+          "type": "CONFIRM_ATTACK",
+          "payload": {
+            "cardIds": [
+              "1:cardB5:5",
+              "1:cardB1:1"
+            ],
+            "faceDownIds": [
+              "1:cardB5:5"
+            ],
+            "round": 6
+          },
+          "playerId": "1"
+        },
+        "before": {
+          "round": 6,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 10,
+              "hand": 5,
+              "attack": true,
+              "power": 9,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 2,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 23,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 2,
+              "location": "shinto",
+              "spells": 0,
+              "vp": 28,
+              "hand": 3,
+              "attack": true,
+              "power": 9,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 6,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 6,
+              "location": "miyama",
+              "spells": 2,
+              "vp": 10,
+              "hand": 5,
+              "attack": true,
+              "power": 9,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 2,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 23,
+              "hand": 3,
+              "attack": true,
+              "power": 2,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 2,
+              "location": "shinto",
+              "spells": 0,
+              "vp": 28,
+              "hand": 3,
+              "attack": true,
+              "power": 9,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "ATTACKS_CONFIRMED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-189",
+      "content": "强化战斗。",
+      "sha256": "3cb1c6594cf9d9f001062d184897aa08a8d9590008acc3f91b8776a02dd6bbcb",
+      "passages": [],
+      "input": {
+        "text": "强化战斗。",
+        "owner": "USE_COMMAND_SPELL"
+      },
+      "necessity": "学员首次亲自强化，仅标识本次令咒效果，效果已由他席后果教过；面板打开后退让，不重复使用确认。",
+      "context": {
+        "command": {
+          "type": "USE_COMMAND_SPELL",
+          "payload": {
+            "effect": "battle"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 8,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 2,
+              "vp": 19,
+              "hand": 6,
+              "attack": true,
+              "power": 12,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 0,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 27,
+              "hand": 3,
+              "attack": true,
+              "power": 10,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 0,
+              "vp": 30,
+              "hand": 3,
+              "attack": true,
+              "power": 11,
+              "eliminated": false
+            }
+          ]
+        },
+        "after": {
+          "round": 8,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 1,
+              "vp": 19,
+              "hand": 6,
+              "attack": true,
+              "power": 14,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 0,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 27,
+              "hand": 3,
+              "attack": true,
+              "power": 10,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 0,
+              "vp": 30,
+              "hand": 3,
+              "attack": true,
+              "power": 11,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "COMMAND_SPELL_USED",
+          "FATE_RULE_MODIFIER_ATTACHED",
+          "FATE_RULE_MODIFIER_ATTACHED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-199",
+      "content": "此战场的胜者可以恢复1枚令咒。",
+      "sha256": "df474f9e089625afce4f79bf9f06097c4fcf9e441e1e8bb69c034b36229689cc",
+      "passages": [
+        {
+          "id": "postBattleReward",
+          "source": "intake/catalog/events-fuyuki-ocr.md",
+          "section": "E12 / 遏制第三方威胁",
+          "quote": "此战场的胜者可以恢复1枚令咒。"
+        }
+      ],
+      "necessity": "第八轮真实事件获胜且有已消耗令咒，源卡允许胜者恢复。正式战后面板承接原卡、选项与确认，不再叠要求选择的文字。",
+      "context": {
+        "command": {
+          "type": "SYS_INTERACTION_RESPOND",
+          "payload": {
+            "interactionId": "fate:post-battle-seal:8:0",
+            "optionId": "restore"
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 8,
+          "phase": "battle",
+          "players": [
+            {
+              "id": "0",
+              "mana": 4,
+              "location": "shinto",
+              "spells": 0,
+              "vp": 19,
+              "hand": 6,
+              "attack": true,
+              "power": 16,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 2,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 27,
+              "hand": 3,
+              "attack": true,
+              "power": 10,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": "shinto",
+              "spells": 0,
+              "vp": 30,
+              "hand": 3,
+              "attack": true,
+              "power": 13,
+              "eliminated": false
+            }
+          ],
+          "interaction": {
+            "id": "fate:post-battle-seal:8:0",
+            "kind": "simple-choice",
+            "playerId": "0",
+            "ai": {
+              "status": "adapter",
+              "adapterId": "fate-post-battle",
+              "reason": "Fate AI 使用当前交互的恢复或放弃选项及正式战后权限校验。"
+            },
+            "data": {
+              "title": "战后恢复令咒",
+              "subtitle": "",
+              "options": [
+                {
+                  "id": "restore",
+                  "label": "恢复一枚令咒",
+                  "value": "restore"
+                },
+                {
+                  "id": "decline",
+                  "label": "不恢复",
+                  "value": "decline"
+                }
+              ],
+              "sourceId": "fate:post-battle-seal",
+              "targetType": "generic",
+              "autoResolveIfSingle": false,
+              "responseValidationMode": "snapshot",
+              "ai": {
+                "status": "adapter",
+                "adapterId": "fate-post-battle",
+                "reason": "Fate AI 使用当前交互的恢复或放弃选项及正式战后权限校验。"
+              },
+              "choiceRequest": {
+                "requestId": "fate:post-battle-seal:8:0",
+                "choiceKind": "choose-option",
+                "sourceId": "fate:post-battle-seal",
+                "metadata": {
+                  "opportunityId": "fate:post-battle-seal:8:0",
+                  "timingPointId": "postCommit:FATE_POST_BATTLE_STARTED:FATE_POST_BATTLE_STARTED:0",
+                  "opportunityClass": "mandatory",
+                  "priority": 0,
+                  "round": 8,
+                  "frameId": "fate:battle:8",
+                  "recipient": "0"
+                },
+                "aiStatus": "game-policy",
+                "policyId": "baseline",
+                "aiDiagnosticStatus": "missing-policy",
+                "aiDiagnosticReason": "Choice Request 声明需要游戏 AI 策略，但该策略未注册",
+                "diagnostics": [],
+                "candidateSummary": {
+                  "total": 2,
+                  "enabledCandidateIds": [
+                    "restore",
+                    "decline"
+                  ],
+                  "disabledCandidateIds": [],
+                  "staleCandidateIds": []
+                },
+                "projectedLegalActionCount": 2
+              },
+              "fateContext": {
+                "round": 8,
+                "frameId": "fate:battle:8",
+                "recipient": "0"
+              }
+            },
+            "resolutionFrameId": "fate:battle:8"
+          }
+        },
+        "after": {
+          "round": 9,
+          "phase": "preparation",
+          "players": [
+            {
+              "id": "0",
+              "mana": 8,
+              "location": null,
+              "spells": 1,
+              "vp": 28,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 6,
+              "location": null,
+              "spells": 0,
+              "vp": 29,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 10,
+              "location": null,
+              "spells": 0,
+              "vp": 30,
+              "hand": 3,
+              "attack": false,
+              "power": 0,
+              "eliminated": false
+            }
+          ]
+        },
+        "events": [
+          "SYS_INTERACTION_RESOLVED",
+          "FATE_POST_BATTLE_SEAL_CHOSEN",
+          "BATTLE_RESOLVED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "elimination-observe",
+      "content": "在第 10 天【回合结束时】，除了 VP 的前 2 名的玩家外，所有玩家都被淘汰出局。",
+      "sha256": "0b4c397f09d622de66efaf4b58a2f2778f8b7e729b53f14d6a0c092351b71502",
+      "passages": [
+        {
+          "id": "elimination",
+          "source": "intake/rules/chm-前情提要与内容物介绍.md",
+          "section": "如何进行游戏",
+          "quote": "在第 10 天【回合结束时】，除了 VP 的前 2 名的玩家外，所有玩家都被淘汰出局。"
+        }
+      ],
+      "necessity": "第十天真实淘汰后才解释前二存活，与头像红斜杠及观战权限承接，不代写分数或淘汰状态。",
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    },
+    {
+      "id": "play-255",
+      "content": "骑乘（明置）、神威车轮（明置）。",
+      "sha256": "377cf08817a894de87d8b93ed0a1aaa4513bb5cffec8834f3a3ef1cb080f1252",
+      "passages": [],
+      "input": {
+        "text": "骑乘（明置）、神威车轮（明置）。",
+        "owner": "CONFIRM_ATTACK"
+      },
+      "necessity": "首次全技能两张，点名骑乘与神威车轮；不再重复两张常规规则，明置后真实揭示从者。",
+      "context": {
+        "command": {
+          "type": "CONFIRM_ATTACK",
+          "payload": {
+            "cardIds": [
+              "sc_iskandar_1:3",
+              "sc_iskandar_2:4"
+            ],
+            "faceDownIds": [],
+            "round": 11
+          },
+          "playerId": "0"
+        },
+        "before": {
+          "round": 11,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 10,
+              "location": "miyama",
+              "spells": 1,
+              "vp": 36,
+              "hand": 6,
+              "attack": false,
+              "power": 13,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 8,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 38,
+              "hand": 3,
+              "attack": true,
+              "power": 29,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": null,
+              "spells": 0,
+              "vp": 35,
+              "hand": 1,
+              "attack": false,
+              "power": 0,
+              "eliminated": true
+            }
+          ]
+        },
+        "after": {
+          "round": 11,
+          "phase": "action",
+          "players": [
+            {
+              "id": "0",
+              "mana": 3,
+              "location": "miyama",
+              "spells": 1,
+              "vp": 36,
+              "hand": 6,
+              "attack": true,
+              "power": 24,
+              "eliminated": false
+            },
+            {
+              "id": "1",
+              "mana": 8,
+              "location": "miyama",
+              "spells": 0,
+              "vp": 38,
+              "hand": 3,
+              "attack": true,
+              "power": 29,
+              "eliminated": false
+            },
+            {
+              "id": "2",
+              "mana": 6,
+              "location": null,
+              "spells": 0,
+              "vp": 35,
+              "hand": 1,
+              "attack": false,
+              "power": 0,
+              "eliminated": true
+            }
+          ]
+        },
+        "events": [
+          "ATTACKS_CONFIRMED"
+        ]
+      },
+      "verdict": "PASS",
+      "claimScope": "authored-content-semantics-only"
+    }
+  ]
+}

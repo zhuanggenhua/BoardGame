@@ -27,6 +27,8 @@ type HarnessWindow=Window&{__BG_TEST_HARNESS__?:{
 }};
 
 const SOURCE_FILES=[
+    'public/locales/zh-CN/game-fate-domination.json',
+    'public/locales/en/game-fate-domination.json',
     'src/hooks/ui/useTouchLongPress.ts',
     'e2e/fate-domination/hand-layout-real-board.e2e.ts',
     'src/games/fate-domination/Board.tsx',
@@ -645,11 +647,11 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await expect(peerRow.getByAltText('暗置攻击牌')).toBeVisible();
     const rowStyle=await peerRow.evaluate(element=>({background:getComputedStyle(element).backgroundColor,border:getComputedStyle(element).borderTopWidth,wrap:getComputedStyle(element.querySelector('.fd-runtime-public-cards')!).flexWrap}));
     expect(rowStyle).toEqual({background:'rgba(0, 0, 0, 0)',border:'0px',wrap:'nowrap'});
+    // 在开始真实离开倒计时前取坐标，避免测试查询耗时占用玩家移入牌排的宽限。
+    const rowBounds=await peerRow.boundingBox();expect(rowBounds).toBeTruthy();
     await page.mouse.move(8,8);
     await page.waitForTimeout(1000);
-    await expect(peerRow).toBeVisible();
-    const rowBounds=await peerRow.boundingBox();expect(rowBounds).toBeTruthy();
-    await page.mouse.move(rowBounds!.x+rowBounds!.width/2,rowBounds!.y+rowBounds!.height/2,{steps:6});
+    await page.mouse.move(rowBounds!.x+rowBounds!.width/2,rowBounds!.y+rowBounds!.height/2);
     await expect(peerRow).toBeVisible();
     await page.waitForTimeout(2700);
     await expect(peerRow).toBeVisible();

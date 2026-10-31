@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { buildSync } from 'esbuild';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './scripts/infra/e2e-port-config.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './scripts/infra/e2e-mode-config.js';
 import { loadWorkerPorts, reserveAvailablePorts, reservePorts, saveWorkerPorts } from './scripts/infra/port-allocator.js';
@@ -126,6 +127,14 @@ function collectFrameworkBackedTests(rootDir: string): string[] {
 function collectForbiddenLocalModeSpecs(rootDir: string): string[] {
     const matches: string[] = [];
     const forbiddenPattern = /\/play\/[^/\s'"]+\/local\b/;
+    // 标准单文件入口只检查该用例的实际导入闭包，其他任务的诊断文件不属于本次执行。
+    const explicitTarget = process.env.PW_TEST_TARGET?.trim();
+    if (explicitTarget && fs.existsSync(explicitTarget) && fs.statSync(explicitTarget).isFile()) {
+        const result = buildSync({ entryPoints: [explicitTarget], bundle: true, write: false,
+            metafile: true, platform: 'node', format: 'esm', packages: 'external', logLevel: 'silent' });
+        return Object.keys(result.metafile!.inputs).filter(file => /\.[cm]?[jt]sx?$/.test(file)
+            && forbiddenPattern.test(fs.readFileSync(file, 'utf8')));
+    }
 
     const walk = (currentDir: string) => {
         for (const entry of fs.readdirSync(currentDir, { withFileTypes: true })) {

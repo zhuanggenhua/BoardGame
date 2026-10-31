@@ -5,7 +5,7 @@ import type { PlayerId } from '../../../engine/types';
 import type { DiceModifyResult, DiceSelectResult } from '../domain/diceInteraction';
 import type { InteractionHint, InteractionPresentationContract } from './interactionPresentationContract';
 
-export type DiceSelectionMode = 'reroll' | 'bonusGroupReroll';
+export type DiceSelectionMode = 'reroll' | 'bonusGroupReroll' | 'choice';
 
 export type DiceInteractionMeta = {
     selectCount: number;
@@ -25,7 +25,11 @@ export type DiceInteractionHintSurface = 'game-hints' | 'dice-tray' | 'response-
 export type DiceInteractionHint = InteractionHint & {
     /** 普通骰子交互沿用 GameHints；效果骰整组重掷提示贴其骰盘。 */
     surface: DiceInteractionHintSurface;
+    /** 保留操作语义与下一步，不能在达到额度时退化为孤立的“完成”。 */
+    detail?: InteractionHint;
 };
+
+type DiceInteractionHintText = Omit<DiceInteractionHint, 'surface'>;
 
 export type DiceInteractionAction = {
     kind: 'cancel' | 'submitSelection' | 'confirmInteraction' | 'confirmSettlement' | 'confirmTokenResponse';
@@ -229,7 +233,7 @@ function parseDiceInteraction(interaction?: InteractionDescriptor): ParsedDiceIn
         }
         meta = { dtType: 'modifyDie', dieModifyConfig, selectCount, diceOwnerId, targetOpponentDice };
     } else if (rawMeta.dtType === 'selectDie') {
-        if (rawMeta.selectionMode !== 'reroll' && rawMeta.selectionMode !== 'bonusGroupReroll') {
+        if (rawMeta.selectionMode !== 'reroll' && rawMeta.selectionMode !== 'bonusGroupReroll' && rawMeta.selectionMode !== 'choice') {
             return { kind: 'invalid', reason: 'Invalid dice interaction contract' };
         }
         if (rawMeta.selectionMode === 'bonusGroupReroll' && rawMeta.allowRepeatedDieSelection === true) {
@@ -268,12 +272,27 @@ export function getCompletedDiceStepCount(interaction?: InteractionDescriptor, _
 
 function getSelectDieHint(input: {
     meta: Extract<DiceInteractionMeta, { dtType: 'selectDie' }>;
+    interaction?: InteractionDescriptor;
     result: DiceSelectResult;
     completedCount: number;
     rootPlayerId: PlayerId;
     teamIdByPlayerId?: Record<PlayerId, string>;
-}): InteractionHint {
+}): DiceInteractionHintText {
     const { meta, result, completedCount } = input;
+    if (meta.selectionMode === 'choice') {
+        const data = isRecord(input.interaction?.data) ? input.interaction?.data : {};
+        return {
+            key: typeof data.titleKey === 'string' ? data.titleKey : 'interaction.hint_choose_dice',
+            detail: {
+                key: 'interaction.hint_choose_dice_detail',
+                params: {
+                    selected: result.selectedDiceIds.length,
+                    remaining: Math.max(0, meta.selectCount - result.selectedDiceIds.length),
+                    count: meta.selectCount,
+                },
+            },
+        };
+    }
     if (meta.selectionMode === 'bonusGroupReroll') {
         const selectedCount = result.selectedDiceIds.length;
         return {
@@ -283,15 +302,26 @@ function getSelectDieHint(input: {
     }
 
     const count = completedCount + result.selectedDiceIds.length;
+    const selected = result.selectedDiceIds.length;
+    const remaining = meta.selectCount - count;
     let key = meta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
     if (meta.diceOwnerId && meta.diceOwnerId !== input.rootPlayerId) {
         const ownerTeam = input.teamIdByPlayerId?.[meta.diceOwnerId];
         const rootTeam = input.teamIdByPlayerId?.[input.rootPlayerId];
         key = ownerTeam && ownerTeam === rootTeam ? 'interaction.hint_select_ally' : 'interaction.hint_select_opponent';
     }
-    return count >= meta.selectCount
-        ? { key: 'interaction.hint_done' }
-        : { key, params: { current: count, max: meta.selectCount } };
+    const ready = count >= meta.selectCount;
+    const canFinish = completedCount > 0 && selected === 0;
+    const detailKey = ready
+        ? selected > 0 ? 'interaction.hint_reroll_ready_detail' : 'interaction.hint_reroll_done_detail'
+        : canFinish
+            ? meta.allowRepeatedDieSelection ? 'interaction.hint_reroll_continue_repeat_detail' : 'interaction.hint_reroll_continue_detail'
+            : meta.allowRepeatedDieSelection ? 'interaction.hint_reroll_repeat_detail' : 'interaction.hint_reroll_detail';
+    return {
+        key: ready ? selected > 0 ? 'interaction.hint_reroll_ready' : 'interaction.hint_reroll_done' : key,
+        params: { current: count, max: meta.selectCount },
+        detail: { key: detailKey, params: { completed: completedCount, selected, remaining } },
+    };
 }
 
 /** 提示、候选进度和提交共读同一个多步交互合同；每种骰子操作都必须产生提示。 */
@@ -306,12 +336,13 @@ export function getDiceInteractionHint(input: {
     completedCount?: number;
     rootPlayerId: PlayerId;
     teamIdByPlayerId?: Record<PlayerId, string>;
-}): InteractionHint {
+}): DiceInteractionHintText {
     const { meta } = input;
     const completedCount = input.completedCount ?? getCompletedDiceStepCount(input.interaction, meta);
     if (meta.dtType === 'selectDie') {
         return getSelectDieHint({
             meta,
+            interaction: input.interaction,
             result: (input.result as DiceSelectResult | undefined) ?? { selectedDiceIds: [] },
             completedCount,
             rootPlayerId: input.rootPlayerId,
@@ -405,6 +436,9 @@ export function createDiceInteractionContract(input: {
     if (meta.dtType === 'selectDie' && meta.selectionMode === 'bonusGroupReroll' && !allowedDieIds?.length) {
         throw new Error(`[DiceThrone] Bonus group reroll requires explicit die candidates: ${interaction?.id ?? 'unknown interaction'}`);
     }
+    if (meta.dtType === 'selectDie' && meta.selectionMode === 'choice' && !allowedDieIds?.length) {
+        throw new Error(`[DiceThrone] Dice choice requires explicit die candidates: ${interaction?.id ?? 'unknown interaction'}`);
+    }
     const isBonusGroupReroll = meta.dtType === 'selectDie' && meta.selectionMode === 'bonusGroupReroll';
     if (isBonusGroupReroll && !isBonusDiceSettlement) {
         throw new Error(`[DiceThrone] Bonus group reroll requires its pending settlement: ${interaction?.id ?? 'unknown interaction'}`);
@@ -483,6 +517,14 @@ export function createDiceInteractionContract(input: {
         ? result.selectedDiceIds.length
         : 0;
     const isBonusGroupSettlement = isBonusGroupReroll && isBonusDiceSettlement;
+    const isOrdinaryReroll = meta.dtType === 'selectDie' && meta.selectionMode === 'reroll';
+    const hasPendingReroll = isOrdinaryReroll && result && 'selectedDiceIds' in result
+        && result.selectedDiceIds.length > 0;
+    const rerollLabel = !hasPendingReroll && completedCount > 0
+        ? 'interaction.finish_reroll'
+        : !hasPendingReroll && controller.canConfirm
+            ? 'interaction.skip_reroll'
+            : 'interaction.confirm_reroll';
 
     const left = isBonusGroupSettlement
         ? selectedGroupRerollCount > 0
@@ -510,7 +552,7 @@ export function createDiceInteractionContract(input: {
         }
         : {
             kind: 'confirmInteraction',
-            labelKey: 'common.confirm',
+            labelKey: isOrdinaryReroll ? rerollLabel : 'common.confirm',
             buttonTestId: 'dice-interaction-confirm-button',
         };
 

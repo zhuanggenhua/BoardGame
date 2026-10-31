@@ -9,14 +9,17 @@
 .platform-catalog-filters button, .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
 html[data-home-entry-style="modern"] .platform-details-primary button,
 html[data-home-entry-style="modern"] .platform-details-secondary button,
+html[data-home-entry-style="modern"] :is(.platform-details-close, [data-platform-dialog] .platform-dialog-close),
 html[data-home-entry-style="modern"] .author-support-trigger {
  transition: transform 160ms var(--platform-ease-out), box-shadow 160ms var(--platform-ease-out), background-color 160ms, color 160ms, opacity 120ms ease;
 }
 .platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible),
 .platform-menu-trigger:active:not(:focus-visible), .platform-menu-close:active:not(:focus-visible),
 html[data-home-entry-style="modern"] .platform-details-primary button:active:not(:focus-visible),
-html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible):not(.platform-details-favorite),
+html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible),
+html[data-home-entry-style="modern"] :is(.platform-details-close, [data-platform-dialog] .platform-dialog-close):active:not(:focus-visible),
 html[data-home-entry-style="modern"] .author-support-trigger:active:not(:focus-visible) { transform: translateY(2px) scale(.97); box-shadow: none; }
+html[data-home-entry-style="modern"] :is(.platform-details-close, [data-platform-dialog] .platform-dialog-close, .platform-details-secondary button):focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
 .platform-game-card:has(.platform-game-open:active) .platform-game-surface { transform: scale(.98); }
 .platform-game-card[data-pressed] .platform-game-surface { transform: scale(.96); }
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
@@ -25,12 +28,13 @@ html[data-home-entry-style="modern"] .author-support-trigger:active:not(:focus-v
  .platform-catalog-filters button:hover { background: #d5ff00; transform: translate(-2px, -2px); box-shadow: 4px 4px #000; }
  .platform-navigation button:hover, .platform-menu-close:hover, .platform-menu-trigger:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px #ff008a; }
  html[data-home-entry-style="modern"] .platform-details-primary button:enabled:hover,
- html[data-home-entry-style="modern"] .platform-details-secondary button:enabled:hover:not(.platform-details-favorite) { transform: translate(-2px, -3px); box-shadow: 7px 8px #000; }
- html[data-home-entry-style="modern"] .platform-details-favorite:hover { background: #d5ff00; transform: none; box-shadow: none; }
+ html[data-home-entry-style="modern"] .platform-details-secondary button:enabled:hover { transform: translate(-2px, -3px); box-shadow: 7px 8px #000; }
+ html[data-home-entry-style="modern"] :is(.platform-details-close, [data-platform-dialog] .platform-dialog-close):enabled:hover { background: #ff008a; color: #111; transform: translate(-2px, -2px); box-shadow: 4px 4px #111; }
  html[data-home-entry-style="modern"] .author-support-trigger:hover { transform: translateY(-3px) scale(1.04); }
  .platform-catalog-filters button:active:not(:focus-visible), .platform-navigation button:active:not(:focus-visible), .platform-menu-trigger:active:not(:focus-visible),
  html[data-home-entry-style="modern"] .platform-details-primary button:active:not(:focus-visible),
- html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible):not(.platform-details-favorite) { transform: translateY(2px) scale(.97); box-shadow: 1px 1px #000; }
+ html[data-home-entry-style="modern"] .platform-details-secondary button:active:not(:focus-visible),
+ html[data-home-entry-style="modern"] :is(.platform-details-close, [data-platform-dialog] .platform-dialog-close):active:not(:focus-visible) { transform: translateY(2px) scale(.97); box-shadow: 1px 1px #000; }
 }
 .platform-menu-dialog {
  opacity: 0;
@@ -62,6 +66,7 @@ html[data-home-entry-style="modern"] .author-support:has(.author-support-trigger
  .platform-navigation button, .platform-menu-trigger, .platform-menu-close,
  html[data-home-entry-style="modern"] .platform-details-primary button,
  html[data-home-entry-style="modern"] .platform-details-secondary button,
+ html[data-home-entry-style="modern"] :is(.platform-details-close, [data-platform-dialog] .platform-dialog-close),
  html[data-home-entry-style="modern"] .author-support-trigger { transform: none !important; }
  .platform-menu-dialog, .platform-menu-dialog[open] { transform: none; transition: opacity 120ms var(--platform-ease-out), display 120ms allow-discrete, overlay 120ms allow-discrete; }
  @starting-style { .platform-menu-dialog[open] { opacity: 0; transform: none; } }

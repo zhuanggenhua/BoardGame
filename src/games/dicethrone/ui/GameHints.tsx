@@ -147,7 +147,7 @@ const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = 
             data-testid="dice-interaction-hint-anchor"
             data-anchor="viewport"
             data-placement="left-center"
-            className="fixed left-[max(0.75rem,env(safe-area-inset-left))] top-1/2 -translate-y-1/2 pointer-events-none animate-pulse"
+            className="fixed left-[max(0.75rem,env(safe-area-inset-left))] top-1/2 -translate-y-1/2 pointer-events-none"
             style={{
                 zIndex: UI_Z_INDEX.hint,
                 position: 'fixed',
@@ -158,17 +158,21 @@ const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = 
         >
             <div
                 data-testid="dice-interaction-hint"
-                className="w-max max-w-[calc(100vw-2rem)] rounded-xl border border-amber-400/60 bg-amber-600/90 text-center shadow-lg backdrop-blur-sm"
+                className="w-max max-w-[calc(100vw-2rem)] rounded-lg border border-amber-300/70 bg-[#241505]/95 text-left shadow-lg"
                 style={{
-                    maxWidth: 'min(22rem, calc(100vw - 2rem))',
+                    maxWidth: 'min(15rem, calc(100vw - 2rem))',
                     boxSizing: 'border-box',
-                    paddingInline: dtViewportInlineUnit(2),
-                    paddingBlock: dtViewportInlineUnit(0.6),
+                    padding: '10px 12px',
                 }}
             >
-                <span className="text-white font-bold tracking-wide" style={{ fontSize: dtViewportInlineUnit(1) }}>
+                <span data-testid="dice-interaction-hint-title" className="block text-amber-100 font-bold leading-snug" style={{ fontSize: 'clamp(14px, 1.1vw, 17px)' }}>
                     {t(interaction.hint.key, interaction.hint.params)}
                 </span>
+                {interaction.hint.detail && (
+                    <span data-testid="dice-interaction-hint-detail" className="mt-1 block text-amber-50/90 leading-relaxed" style={{ fontSize: 'clamp(12px, 0.9vw, 14px)' }}>
+                        {t(interaction.hint.detail.key, interaction.hint.detail.params)}
+                    </span>
+                )}
             </div>
         </div>
     );

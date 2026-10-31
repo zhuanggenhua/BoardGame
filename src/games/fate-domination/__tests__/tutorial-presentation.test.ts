@@ -39,6 +39,22 @@ it('移动选点前保留当前规则，选定后由正式确认承接，不追�
     expect(selected.step?.hideOverlay).toBe(true);
     expect(selected.step?.avoidOverlapSelectors).toContain('.fd-runtime-seat');
 });
+it('部署选定后让正式点位预览与确认承接，取消后恢复选点提示',()=>{
+    const deployment={...tutorial,step:{...tutorial.step,fateCommand:{type:'DEPLOY_MASTER',payload:{locationId:'workshop',deploymentSlot:1}}}};
+    expect(presentFateTutorial(deployment,{...closed,deploymentTarget:true}).step?.hideOverlay).toBe(true);
+    expect(presentFateTutorial(deployment,{...closed,deploymentTarget:false}).step?.content).toBe(deployment.step.content);
+});
+it('首次改选战场时在正式确认前说明地利，取消后回到原选择且不增加教学步骤',()=>{
+    const battlefieldCopy:FateTutorialCopy={lessonId:'battleDeployment',passages:['terrain']};
+    const deployment={...tutorial,step:{...tutorial.step,fateCommand:{type:'DEPLOY_MASTER',payload:{locationId:'workshop',deploymentSlot:1}},fateDeploymentChoiceCopies:{miyama:battlefieldCopy,shinto:battlefieldCopy}}};
+    const preview=presentFateTutorial(deployment,{...closed,deploymentTarget:true,deploymentLocation:'miyama'});
+    expect(preview.step?.id).toBe(deployment.step.id);
+    expect(preview.step?.highlightTarget).toBe('fate-deployment-selected');
+    expect(preview.step?.content).toBe(fateTutorialText(battlefieldCopy));
+    expect(preview.step?.hideOverlay).toBe(false);
+    expect(presentFateTutorial(deployment,{...closed,deploymentTarget:false,deploymentLocation:null}).step?.content).toBe(deployment.step.content);
+    expect(deployment.step.content).toBe(tutorial.step.content);
+});
 it('普通草稿和骑乘选择完成后由正式所选卡与确认承接，不再重复目标名单',()=>{
     const attack={...tutorial,step:{...tutorial.step,fateCommand:{type:'CONFIRM_ATTACK',payload:{}}}};
     expect(presentFateTutorial(attack,{...closed,attackStaged:true}).step?.hideOverlay).toBe(true);

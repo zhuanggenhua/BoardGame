@@ -1,0 +1,334 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "generatedAt": "2026-10-26T13:37:07.471Z",
+  "changeType": "new",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "display": {
+    "purpose": "current-private-audit-only",
+    "trigger": "not-requested",
+    "viewer": "none",
+    "finalPassBeforeOpen": false
+  },
+  "requirements": [
+    {
+      "requirement": "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子",
+      "status": "PASS",
+      "evidence": [
+        "traces/worthy-teammate.trace.json",
+        "images/worthy-teammate__值得拥有-四人队伍起始态.png",
+        "images/worthy-teammate__值得拥有-队友骰区目标态.png",
+        "images/worthy-teammate__值得拥有-队友骰子已选.png",
+        "images/worthy-teammate__值得拥有-队友骰区重掷结算.png"
+      ]
+    },
+    {
+      "requirement": "手机横屏宇宙感知真实交互与法术准备",
+      "status": "PASS",
+      "evidence": [
+        "traces/awareness-mobile.trace.json",
+        "images/awareness-mobile__手机横屏-公开法术起始态.png",
+        "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png",
+        "images/awareness-mobile__手机横屏-弃牌准备选择态.png",
+        "images/awareness-mobile__手机横屏-法术准备目标选择态.png",
+        "images/awareness-mobile__手机横屏-法术准备结算态.png"
+      ]
+    },
+    {
+      "requirement": "全知之眼从顶五准备两张不同法术并结算攻击",
+      "status": "PASS",
+      "evidence": [
+        "traces/all-seeing-eye.trace.json",
+        "images/all-seeing-eye__全知之眼攻击前-桌面.png",
+        "images/all-seeing-eye__全知之眼已选待结算-桌面.png",
+        "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+        "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+        "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+        "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+        "images/all-seeing-eye__全知之眼攻击结算-桌面.png"
+      ]
+    },
+    {
+      "requirement": "即视感在投掷用尽后可重开进攻投掷阶段",
+      "status": "PASS",
+      "evidence": [
+        "traces/deja-vu.trace.json",
+        "images/deja-vu__即视感使用前-桌面.png",
+        "images/deja-vu__即视感悬停说明态-桌面.png",
+        "images/deja-vu__即视感重开后-桌面.png"
+      ]
+    },
+    {
+      "requirement": "桌面宇宙感知真实交互与法术准备",
+      "status": "PASS",
+      "evidence": [
+        "traces/awareness-desktop.trace.json",
+        "images/awareness-desktop__桌面-公开法术起始态.png",
+        "images/awareness-desktop__桌面-宇宙感知已选待结算.png",
+        "images/awareness-desktop__桌面-弃牌准备选择态.png",
+        "images/awareness-desktop__桌面-法术准备目标选择态.png",
+        "images/awareness-desktop__桌面-法术准备结算态.png"
+      ]
+    },
+    {
+      "requirement": "星际侵入奖励骰真实确认",
+      "status": "PASS",
+      "evidence": [
+        "traces/astral-invasion.trace.json",
+        "images/astral-invasion__星际侵入前-桌面.png",
+        "images/astral-invasion__星际侵入已选-桌面.png",
+        "images/astral-invasion__星际侵入奖励骰待确认-桌面.png",
+        "images/astral-invasion__星际侵入奖励骰确认-桌面.png"
+      ]
+    },
+    {
+      "requirement": "预感可替代收入抽牌并将本次抽牌放回牌库底",
+      "status": "PASS",
+      "evidence": [
+        "traces/premonition-income.trace.json",
+        "images/premonition-income__收入阶段替代选项-桌面.png",
+        "images/premonition-income__本次抽牌返还选择-桌面.png",
+        "images/premonition-income__选择牌库底-桌面.png",
+        "images/premonition-income__预感收入结算后-桌面.png"
+      ]
+    },
+    {
+      "requirement": "深红系带法术真实目标选择与状态施加",
+      "status": "PASS",
+      "evidence": [
+        "traces/crimson-bands.trace.json",
+        "images/crimson-bands__深红系带手牌-桌面.png",
+        "images/crimson-bands__深红系带目标选择-桌面.png",
+        "images/crimson-bands__深红系带已施加-桌面.png"
+      ]
+    },
+    {
+      "requirement": "真实双人联机选择奇异博士并进入牌桌",
+      "status": "PASS",
+      "evidence": [
+        "traces/online-selection-and-start.trace.json",
+        "images/online-selection-and-start__真实创建房间-待确认.png",
+        "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png",
+        "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png",
+        "images/online-selection-and-start__房主真实选择奇异博士.png",
+        "images/online-selection-and-start__双方选角并由客人准备.png",
+        "images/online-selection-and-start__房主视角进入双人牌桌.png",
+        "images/online-selection-and-start__客人视角进入双人牌桌.png"
+      ]
+    }
+  ],
+  "media": [
+    "images/worthy-teammate__值得拥有-四人队伍起始态.png",
+    "images/worthy-teammate__值得拥有-队友骰区目标态.png",
+    "images/worthy-teammate__值得拥有-队友骰子已选.png",
+    "images/worthy-teammate__值得拥有-队友骰区重掷结算.png",
+    "images/awareness-mobile__手机横屏-公开法术起始态.png",
+    "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png",
+    "images/awareness-mobile__手机横屏-弃牌准备选择态.png",
+    "images/awareness-mobile__手机横屏-法术准备目标选择态.png",
+    "images/awareness-mobile__手机横屏-法术准备结算态.png",
+    "images/all-seeing-eye__全知之眼攻击前-桌面.png",
+    "images/all-seeing-eye__全知之眼已选待结算-桌面.png",
+    "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+    "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+    "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+    "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+    "images/all-seeing-eye__全知之眼攻击结算-桌面.png",
+    "images/deja-vu__即视感使用前-桌面.png",
+    "images/deja-vu__即视感悬停说明态-桌面.png",
+    "images/deja-vu__即视感重开后-桌面.png",
+    "images/awareness-desktop__桌面-公开法术起始态.png",
+    "images/awareness-desktop__桌面-宇宙感知已选待结算.png",
+    "images/awareness-desktop__桌面-弃牌准备选择态.png",
+    "images/awareness-desktop__桌面-法术准备目标选择态.png",
+    "images/awareness-desktop__桌面-法术准备结算态.png",
+    "images/astral-invasion__星际侵入前-桌面.png",
+    "images/astral-invasion__星际侵入已选-桌面.png",
+    "images/astral-invasion__星际侵入奖励骰待确认-桌面.png",
+    "images/astral-invasion__星际侵入奖励骰确认-桌面.png",
+    "images/premonition-income__收入阶段替代选项-桌面.png",
+    "images/premonition-income__本次抽牌返还选择-桌面.png",
+    "images/premonition-income__选择牌库底-桌面.png",
+    "images/premonition-income__预感收入结算后-桌面.png",
+    "images/crimson-bands__深红系带手牌-桌面.png",
+    "images/crimson-bands__深红系带目标选择-桌面.png",
+    "images/crimson-bands__深红系带已施加-桌面.png",
+    "images/online-selection-and-start__真实创建房间-待确认.png",
+    "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png",
+    "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png",
+    "images/online-selection-and-start__房主真实选择奇异博士.png",
+    "images/online-selection-and-start__双方选角并由客人准备.png",
+    "images/online-selection-and-start__房主视角进入双人牌桌.png",
+    "images/online-selection-and-start__客人视角进入双人牌桌.png"
+  ],
+  "evidenceIndex": "e2e-image-index.json",
+  "behaviorChains": [
+    {
+      "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+      "sourceRun": "1792997641650-291300-602eb9b6-881d-40b1-a1fb-aaaf2fbf54d7",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/worthy-teammate.trace.json",
+      "requiredSteps": [
+        "worthy-teammate-roll-ready",
+        "worthy-teammate-dice-targets",
+        "worthy-teammate-dice-selected",
+        "worthy-teammate-reroll-settled"
+      ]
+    },
+    {
+      "chainId": "奇异博士内部初始化法术准备-手机横屏",
+      "sourceRun": "1792997626330-291300-5c6a01ec-a62d-469a-b8d7-6ea0e7095af9",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/awareness-mobile.trace.json",
+      "requiredSteps": [
+        "internal-setup-public-prepared-spells",
+        "internal-setup-select-awareness",
+        "internal-setup-choose-spell-from-discard",
+        "internal-setup-select-opponent-cp-target",
+        "internal-setup-spell-prepared"
+      ]
+    },
+    {
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "sourceRun": "1792997688066-291300-bf519fca-3b36-4b70-b8c3-8b95fdad2ae6",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/all-seeing-eye.trace.json",
+      "requiredSteps": [
+        "ultimate-five-amulet-ready",
+        "ultimate-select-before-resolution",
+        "ultimate-prepare-top-five",
+        "ultimate-prepare-spell-target",
+        "ultimate-order-remaining-cards",
+        "ultimate-post-damage-cast-choice",
+        "ultimate-attack-settled"
+      ]
+    },
+    {
+      "chainId": "奇异博士即视感重开阶段",
+      "sourceRun": "1792997657174-291300-dc3ff76c-accc-4ab6-929d-67e454c52c71",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/deja-vu.trace.json",
+      "requiredSteps": [
+        "deja-vu-ready-after-rolls",
+        "deja-vu-token-hover",
+        "deja-vu-restarted-rolls"
+      ]
+    },
+    {
+      "chainId": "奇异博士内部初始化法术准备-桌面",
+      "sourceRun": "1792997604296-291300-d166288e-591b-4c27-8aed-bba37181aeaf",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/awareness-desktop.trace.json",
+      "requiredSteps": [
+        "internal-setup-public-prepared-spells",
+        "internal-setup-select-awareness",
+        "internal-setup-choose-spell-from-discard",
+        "internal-setup-select-opponent-cp-target",
+        "internal-setup-spell-prepared"
+      ]
+    },
+    {
+      "chainId": "奇异博士星际侵入奖励骰结算",
+      "sourceRun": "1792997716246-291300-a4d2d83b-8f7e-4a43-bf23-dc8cc5099de8",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/astral-invasion.trace.json",
+      "requiredSteps": [
+        "astral-incursion-ready",
+        "astral-incursion-selected",
+        "astral-bonus-dice-pending",
+        "astral-bonus-dice-confirmed"
+      ]
+    },
+    {
+      "chainId": "奇异博士预感替代收入抽牌返还",
+      "sourceRun": "1792997673780-291300-e08d737d-16d0-4bd8-8ebc-37e220aed1f6",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/premonition-income.trace.json",
+      "requiredSteps": [
+        "income-replacement-choice",
+        "income-return-drawn-card",
+        "income-return-position",
+        "income-returned-to-bottom"
+      ]
+    },
+    {
+      "chainId": "奇异博士深红系带真实施加",
+      "sourceRun": "1792997736322-291300-61d923cd-cfd8-47bb-922c-8f14eaaa91dc",
+      "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/crimson-bands.trace.json",
+      "requiredSteps": [
+        "crimson-bands-spell-in-hand",
+        "crimson-bands-select-opponent",
+        "crimson-bands-status-granted"
+      ]
+    },
+    {
+      "chainId": "奇异博士真实双人选角与开局",
+      "sourceRun": "1793019412657-16744-101f21c3-36ae-4493-8d3f-70069c8b27a8",
+      "sourceRevision": "01e88285a349eb3ef26d165915024fccf39ed815e3981b02827dd9b0cc65cc4b",
+      "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+      "evidence": "traces/online-selection-and-start.trace.json",
+      "requiredSteps": [
+        "online-room-create-confirmation",
+        "online-room-created-selection-visible",
+        "online-selection-mobile-viewport",
+        "host-selects-doctor-strange",
+        "guest-selects-monk-and-ready",
+        "host-sees-doctor-strange-board",
+        "guest-sees-monk-board"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewedAt": "2026-10-26T13:37:07.471Z",
+    "reviewFile": "visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/doctor-strange-lifecycle.test.ts src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts src/games/dicethrone/__tests__/criticalImageResolver.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/heroSelection.test.ts src/games/dicethrone/__tests__/dice-assets-contract.test.ts src/games/dicethrone/__tests__/cross-hero.test.ts src/games/dicethrone/ui/__tests__/HandArea.spell-cost.test.tsx src/games/dicethrone/__tests__/crit-token-transfer-full-flow.test.ts src/games/dicethrone/__tests__/card-flick-locked-dice.test.ts src/games/dicethrone/__tests__/card-timing-response-boundaries.test.ts src/games/dicethrone/__tests__/roll-context.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "verification/doctor-strange-regression-current-20261026-closeout.log"
+    ]
+  },
+  "outOfScopeMedia": [],
+  "runId": "e2e-1793019370902-ksuvti",
+  "sourceRevision": "01e88285a349eb3ef26d165915024fccf39ed815e3981b02827dd9b0cc65cc4b",
+  "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+  "currentEligibility": {
+    "status": "NOT_RELEASE_ELIGIBLE",
+    "reason": "本派系实施验收通过；全仓质量残余另有归属记录，尚未执行发布。"
+  },
+  "historyNote": "九条独立链按实际变更影响增量验收，每条链的截图与行为日志保持同源；八条牌桌链采用内部初始化，最新真实双人链覆盖建房、选角及开局。逐文件范围证据确认牌桌输入未改写，后续首页样式已补验。未请求或注册用户查看器。",
+  "currentWorktreeRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "sourceRevisions": [
+    "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+    "01e88285a349eb3ef26d165915024fccf39ed815e3981b02827dd9b0cc65cc4b"
+  ],
+  "sourceScopeEvidence": "verification/doctor-strange-source-scope-20261026-closeout.json",
+  "runtimeVerification": [
+    "verification/doctor-strange-runtime-identity-20261026-closeout.json",
+    "verification/doctor-strange-online-runtime-identity-20261026-final.json"
+  ],
+  "incrementalImpactEvidence": "verification/doctor-strange-incremental-impact-20261026-final.json"
+}

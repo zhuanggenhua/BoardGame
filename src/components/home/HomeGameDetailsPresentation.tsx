@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useReducedMotion, type Variants } from 'framer-motion';
 import { ModalBase } from '../common/overlays/ModalBase';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
+import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { resolveHomeEntryStyle } from '../../lib/homeV2Routing';
 
 interface HomeGameDetailsPresentationProps {
@@ -16,6 +17,7 @@ interface HomeGameDetailsPresentationProps {
 /** 详情承载沿用原弹窗；只有现代入口选择短促的桌面浮现 / 手机底部进退。 */
 export function HomeGameDetailsPresentation({ presentation, children, skipEnterAnimation, ...modalProps }: HomeGameDetailsPresentationProps) {
     const mobile = useMobileViewport();
+    useDocumentScrollLock(presentation === 'modal' || mobile);
     const reduced = useReducedMotion();
     const modern = resolveHomeEntryStyle() === 'modern';
     const [keyboardOpened] = useState(() => Boolean(document.activeElement?.matches(':focus-visible')));
@@ -30,7 +32,7 @@ export function HomeGameDetailsPresentation({ presentation, children, skipEnterA
             document.removeEventListener('pointerdown', pointer, true);
         };
     }, []);
-    if (presentation === 'inline') return <>{children}</>;
+    if (presentation === 'inline' && !mobile) return <>{children}</>;
     const rest = 'translateY(0%) scale(1)';
     const displaced = reduced ? rest : mobile ? 'translateY(100%) scale(1)' : 'translateY(18px) scale(.94)';
     const contentMotion: Variants = {

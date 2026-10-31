@@ -1,5 +1,23 @@
 .creator-center { min-width: 0; }
+.platform-author-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 2px solid #111;
+    border-radius: 0;
+    background: #fff;
+    color: #111;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.platform-author-action--claim { background: #d5ff00; }
 .creator-claim-overlay { position: fixed; inset: 0; overflow: auto; background: #f3f3f3; color: #000; }
+html[data-home-entry-style="modern"] .creator-claim-overlay { font: 14px/1.6 Arial, 'Microsoft YaHei', sans-serif; }
 .creator-claim-sheet { width: min(1100px, 100%); margin: 0 auto; }
 .creator-claim-overlay .platform-upload-back { display: inline-flex; align-items: center; margin: 16px 24px 0; }
 .creator-claim-overlay .platform-upload-form { padding: 12px 24px 32px; }

@@ -1,0 +1,33 @@
+{
+  "reviewedAt": "2026-10-26T12:57:34.939Z",
+  "boardRun": "e2e-1792997531872-feplm0",
+  "reviewer": "/root",
+  "reviewedChanges": [
+    {
+      "path": "src/components/game/framework/widgets/GameHUD.tsx",
+      "beforeHash": "1869aefa2ce4686ffd002a2f3b74bcd05f0952ed170044af4dc433c185bf1ba3",
+      "afterHash": "d232195170b3b47337ad0d25a498248deb373ee69685cd73a8408fb60fe73618",
+      "modifiedAt": "2026-10-26T12:49:43.506Z",
+      "conclusion": "no-impact-on-tested-chains",
+      "reason": "新增分支仅在 gameId=qidahen 且 tutorial 横屏时改变悬浮球位置和存储键；本次 dicethrone 普通牌桌条件为 false。"
+    },
+    {
+      "path": "src/components/tutorial/TutorialOverlay.tsx",
+      "beforeHash": "55131728c94700cd521c6ad54c8526cf7962b37530e9eef9a547104626f0d350",
+      "afterHash": "b4dcc6c50ba20ef09ea24a48ded4a81d4e0b99aadd082900e4d6ca050a77face",
+      "modifiedAt": "2026-10-26T12:34:05.184Z",
+      "conclusion": "no-impact-on-tested-chains",
+      "reason": "改动仅影响活跃教程步骤的浮层；九条验收链均为普通牌桌，未启动教程。"
+    },
+    {
+      "path": "src/engine/types.ts",
+      "beforeHash": "dae2c9ec32ecca9343193409976f6d8784d63e358ba697bb357ca66d8f592adb",
+      "afterHash": "ae45bbd3e3a41bdd9d74350d2b190b0fdd576e3edbdbaa471616b2f14af8bf2c",
+      "modifiedAt": "2026-10-26T12:34:05.182Z",
+      "conclusion": "no-impact-on-tested-chains",
+      "reason": "仅 TypeScript interface 可选字段，编译后擦除；未改变运行时命令消费者。"
+    }
+  ],
+  "entryChanges": "首页两份样式在最新双人建房选角开局链重新验证；不复用12:14旧联机结果。",
+  "limits": "只覆盖奇异博士九条非教程验收链，不证明其他游戏或教程。"
+}

@@ -871,6 +871,12 @@ function resolvePostAttackFollowUp(
     return { events, overrideNextPhase: 'main2' };
 }
 
+function getNextPhaseAfterResolvedAttack(core: DiceThroneCore): TurnPhase {
+    return core.extraAttackInProgress && core.extraAttackInProgress.phaseEntered !== true
+        ? 'offensiveRoll'
+        : 'main2';
+}
+
 function resolveNanobombUpkeepEvents(
     core: DiceThroneCore,
     playerId: string,
@@ -1596,6 +1602,16 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             return { events, overrideNextPhase: 'offensiveRoll' };
         }
 
+        // 被动能力可在 main2 触发额外攻击；离开该阶段前先进入追加进攻，
+        // 避免流程先到弃牌/对手收入阶段，再回头执行攻击。
+        if (
+            from === 'main2'
+            && core.extraAttackInProgress
+            && core.extraAttackInProgress.phaseEntered !== true
+        ) {
+            return { events, overrideNextPhase: 'offensiveRoll' };
+        }
+
         // ========== upkeep 阶段退出：检查脑震荡状态 ==========
         if (from === 'upkeep' && to === 'income') {
             const player = core.players[core.activePlayerId];
@@ -1854,6 +1870,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     let preDefenseEventsSneak = resolveOffensivePreDefenseEffects(core, random, timestamp);
                     if (core.pendingAttack.treantDivinePreventDebuffChoice) {
                         preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(core, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
+                        const deferred = deferAttackDebuffFollowups(state, preDefenseEventsSneak, timestamp, { allowTreant: false });
+                        if (deferred.state !== state) return { events: [...events, ...deferred.events], updatedState: deferred.state, halt: true };
+                        preDefenseEventsSneak = deferred.events;
                     } else {
                         const deferred = deferAttackDebuffFollowups(state, preDefenseEventsSneak, timestamp);
                         if (deferred.state !== state) return { events: [...events, ...deferred.events], updatedState: deferred.state, halt: true };
@@ -1906,6 +1925,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 let preDefenseEvents = resolveOffensivePreDefenseEffects(core, random, timestamp);
                 if (core.pendingAttack.treantDivinePreventDebuffChoice) {
                     preDefenseEvents = preventIncomingDebuffsWithTreantDivine(core, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
+                    const deferred = deferAttackDebuffFollowups(state, preDefenseEvents, timestamp, { allowTreant: false });
+                    if (deferred.state !== state) return { events: [...events, ...deferred.events], updatedState: deferred.state, halt: true };
+                    preDefenseEvents = deferred.events;
                 } else {
                     const deferred = deferAttackDebuffFollowups(state, preDefenseEvents, timestamp);
                     if (deferred.state !== state) return { events: [...events, ...deferred.events], updatedState: deferred.state, halt: true };
@@ -1994,7 +2016,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         if (from === 'targetingRoll') {
             let pendingAttack = core.pendingAttack;
             if (!pendingAttack) {
-                return { events, overrideNextPhase: 'main2' };
+                return { events, overrideNextPhase: getNextPhaseAfterResolvedAttack(core) };
             }
 
             let targetingCore = core;
@@ -2027,7 +2049,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 targetingCore = applyEvents(targetingCore, [localResolvedEvent], reduce);
                 pendingAttack = targetingCore.pendingAttack;
                 if (!pendingAttack) {
-                    return { events, overrideNextPhase: 'main2' };
+                    return { events, overrideNextPhase: getNextPhaseAfterResolvedAttack(targetingCore) };
                 }
             }
 
@@ -2328,6 +2350,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 let preDefenseEventsSneak = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
                 if (targetingCore.pendingAttack?.treantDivinePreventDebuffChoice) {
                     preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
+                    const targetingState = { ...state, core: targetingCore };
+                    const deferred = deferAttackDebuffFollowups(targetingState, preDefenseEventsSneak, timestamp, { allowTreant: false });
+                    if (deferred.state !== targetingState) return { events: [...events, ...deferred.events], updatedState: { ...deferred.state, core: state.core }, halt: true };
+                    preDefenseEventsSneak = deferred.events;
                 } else {
                     const targetingState = { ...state, core: targetingCore };
                     const deferred = deferAttackDebuffFollowups(targetingState, preDefenseEventsSneak, timestamp);
@@ -2372,6 +2398,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             let preDefenseEvents = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
             if (targetingCore.pendingAttack?.treantDivinePreventDebuffChoice) {
                 preDefenseEvents = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
+                const targetingState = { ...state, core: targetingCore };
+                const deferred = deferAttackDebuffFollowups(targetingState, preDefenseEvents, timestamp, { allowTreant: false });
+                if (deferred.state !== targetingState) return { events: [...events, ...deferred.events], updatedState: { ...deferred.state, core: state.core }, halt: true };
+                preDefenseEvents = deferred.events;
             } else {
                 const targetingState = { ...state, core: targetingCore };
                 const deferred = deferAttackDebuffFollowups(targetingState, preDefenseEvents, timestamp);
@@ -2536,7 +2566,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
             }
             // 显式指定下一阶段为 main2（无论是否有 pendingAttack）
-            return { events, overrideNextPhase: 'main2' };
+            return { events, overrideNextPhase: getNextPhaseAfterResolvedAttack(core) };
         }
 
         // ========== discard 阶段退出：潜行自动弃除 + 切换回合 ==========

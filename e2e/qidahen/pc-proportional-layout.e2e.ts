@@ -3,9 +3,10 @@ import { createHash } from 'node:crypto';
 import { buildDrawnHandCards } from '../../src/games/qidahen/domain/handCardState';
 import type { QidahenCore } from '../../src/games/qidahen/domain/types';
 import type {} from '../../src/engine/testing/types';
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from '../framework';
 import { listRuntimes } from '../../scripts/infra/e2e-runtime-registry.js';
-import { getFrontendSourceHash, sourceIdentityMatches } from '../../scripts/infra/e2e-source-identity.mjs';
+import { captureEvidenceSourceIdentity } from '../framework/sourceIdentity';
 import { setChineseLocale, disableAudio, disableTutorial, attachPageDiagnostics, assertNoFatalFrontendErrors } from '../helpers/common';
 
 const dir = 'temp/qidahen-pc-proportional-20261027';
@@ -15,6 +16,7 @@ const hashes = () => Object.fromEntries(sources.map(p => [p, createHash('sha256'
 const selectors = ['qidahen-action-wheel','qidahen-player-float','qidahen-chronology-zone','qidahen-korea-zone','qidahen-hand-zone','qidahen-draw-anchor','qidahen-discard-anchor','qidahen-map-viewport-controls'];
 type Box = { x:number; y:number; width:number; height:number; fontSize:number; lineHeight:string };
 async function capture(page: Page, label: string, payment = false) {
+    await captureEvidenceSourceIdentity(page, 'qidahen');
     const ids = payment ? [...selectors,'qidahen-action-payment-panel'] : selectors;
     const data: Record<string,Box> = {};
     for (const id of ids) {
@@ -25,6 +27,7 @@ async function capture(page: Page, label: string, payment = false) {
     const stage=await page.getByTestId('qidahen-desktop-stage').evaluate(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};});
     await page.mouse.move(1,1);
     await page.screenshot({path:`${dir}/${label}.png`,animations:'disabled'});
+    await captureEvidenceSourceIdentity(page, 'qidahen');
     return {stage,data,count:await page.locator('button[data-qidahen-hand-card-touch-inspect="long-press"]').count()};
 }
 function compare(pc:Awaited<ReturnType<typeof capture>>, mobile:Awaited<ReturnType<typeof capture>>) {
@@ -43,7 +46,7 @@ function compare(pc:Awaited<ReturnType<typeof capture>>, mobile:Awaited<ReturnTy
 test('七大恨 PC 与手机同构等比：常态和支付选择',async ({page})=>{
     test.setTimeout(210000); mkdirSync(dir,{recursive:true});
     const runtime=listRuntimes().find((r: {scope: string})=>r.scope===process.env.PW_RUNTIME_SCOPE);
-    expect(runtime).toBeTruthy(); expect(runtime.frontendSourceHash).toBe(getFrontendSourceHash()); expect(sourceIdentityMatches(runtime.sourceIdentity)).toBe(true);
+    expect(runtime).toBeTruthy();
     const before=hashes();
     await setChineseLocale(page); await disableAudio(page); await disableTutorial(page);
     await page.addInitScript(()=>{window.__E2E_TEST_MODE__=true; (window as Window & {__BG_HIDE_DEBUG_PANEL__?: boolean}).__BG_HIDE_DEBUG_PANEL__=true;});
@@ -78,7 +81,7 @@ test.describe('手机触摸与多牌代表态', () => {
         test.setTimeout(210000);
         mkdirSync(dir, { recursive: true });
         const runtime=listRuntimes().find((r: {scope: string})=>r.scope===process.env.PW_RUNTIME_SCOPE);
-        expect(runtime).toBeTruthy(); expect(runtime.frontendSourceHash).toBe(getFrontendSourceHash()); expect(sourceIdentityMatches(runtime.sourceIdentity)).toBe(true);
+        expect(runtime).toBeTruthy();
         const before=hashes();
         await setChineseLocale(page); await disableAudio(page); await disableTutorial(page);
         await page.addInitScript(()=>{window.__E2E_TEST_MODE__=true; (window as Window & {__BG_HIDE_DEBUG_PANEL__?: boolean}).__BG_HIDE_DEBUG_PANEL__=true;});
@@ -128,7 +131,7 @@ test.describe('手机地图原交互可达性', () => {
         test.setTimeout(210000);
         mkdirSync(dir,{recursive:true});
         const runtime=listRuntimes().find((r: {scope: string})=>r.scope===process.env.PW_RUNTIME_SCOPE);
-        expect(runtime).toBeTruthy(); expect(runtime.frontendSourceHash).toBe(getFrontendSourceHash()); expect(sourceIdentityMatches(runtime.sourceIdentity)).toBe(true);
+        expect(runtime).toBeTruthy();
         const before=hashes();
         await setChineseLocale(page); await disableAudio(page); await disableTutorial(page);
         await page.addInitScript(()=>{window.__E2E_TEST_MODE__=true; (window as Window & {__BG_HIDE_DEBUG_PANEL__?: boolean}).__BG_HIDE_DEBUG_PANEL__=true;});
@@ -142,7 +145,9 @@ test.describe('手机地图原交互可达性', () => {
         expect(covered,'常态存在被手牌区域覆盖的指定人口对象').toBeTruthy();
         const marker=page.getByTestId(covered.id);
         const regionId=covered.id.replace('qidahen-map-population-','');
+        await captureEvidenceSourceIdentity(page, 'qidahen');
         await page.screenshot({path:`${dir}/09-手机地图浏览前.png`,animations:'disabled'});
+        await captureEvidenceSourceIdentity(page, 'qidahen');
         const owner=page.locator('[data-map-zoom]').first();
         const initialZoom=Number(await owner.getAttribute('data-map-zoom'));
         for(let i=0;i<3;i++) await page.getByTestId('qidahen-map-zoom-in').tap();
@@ -182,7 +187,9 @@ test.describe('手机地图原交互可达性', () => {
         await page.touchscreen.tap(point.x,point.y);
         await expect(owner).toHaveAttribute('data-map-selected',regionId);
         await expect(page.getByTestId('qidahen-map-region-tip')).toBeVisible();
+        await captureEvidenceSourceIdentity(page, 'qidahen');
         await page.screenshot({path:`${dir}/10-手机地图平移检视后.png`,animations:'disabled'});
+        await captureEvidenceSourceIdentity(page, 'qidahen');
         expect(hashes()).toEqual(before);
         writeFileSync(`${dir}/map-reachability.json`,JSON.stringify({regionId,covered,after,initialZoom,finalZoom:await owner.getAttribute('data-map-zoom'),initialPan,finalPan:await owner.getAttribute('data-map-pan-y'),gestures,sourceHashes:before},null,2));
     });

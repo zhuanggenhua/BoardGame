@@ -159,12 +159,12 @@ export const ChoiceModal = ({
 
                 {isSlider && confirmOption ? (
                     maxValue === 1 ? (
-                        <div className="flex gap-4">
+                        <div className="flex w-full flex-col gap-3">
                             <GameButton
                                 onClick={() => handleSliderConfirm(1)}
                                 disabled={!canResolve}
-                                variant="primary"
-                                className="min-w-[140px]"
+                                variant="option"
+                                fullWidth
                                 data-option-id={confirmOption.id}
                                 data-choice-custom-id={confirmOption.customId}
                             >
@@ -174,8 +174,8 @@ export const ChoiceModal = ({
                                 <GameButton
                                     onClick={handleSliderSkip}
                                     disabled={!canResolve}
-                                    variant="secondary"
-                                    className="min-w-[100px]"
+                                    variant="option"
+                                    fullWidth
                                     data-option-id={skipOption.id}
                                     data-choice-custom-id={skipOption.customId}
                                 >
@@ -229,7 +229,7 @@ export const ChoiceModal = ({
                                             key={option.id}
                                             onClick={() => onResolve(option.id)}
                                             disabled={!canResolve || option.disabled}
-                                            variant="secondary"
+                                            variant="ghost"
                                             className="min-w-[100px]"
                                             data-option-id={option.id}
                                             data-choice-custom-id={option.customId}
@@ -268,7 +268,7 @@ export const ChoiceModal = ({
                                         ))}
                                     </div>
                                     {choice?.options.filter(option => !option.previewRef).map(option => (
-                                        <GameButton key={option.id} variant="secondary" disabled={!canResolve || option.disabled}
+                                        <GameButton key={option.id} variant="ghost" disabled={!canResolve || option.disabled}
                                             data-option-id={option.id} data-choice-custom-id={option.customId}
                                             onClick={() => onResolve(option.id)}>{resolveOptionLabel(option)}</GameButton>
                                     ))}
@@ -278,7 +278,7 @@ export const ChoiceModal = ({
 
                         // 默认按钮模式
                         return (
-                            <div className="flex flex-wrap gap-4 w-full justify-center">
+                            <div className="flex w-full flex-col gap-3" data-testid="dt-choice-options">
                                 {choice?.options.map(option => {
                                     const target = option.targetPlayerId ? players?.[option.targetPlayerId] : undefined;
                                     const isCancelOption = option.id === '__cancel__';
@@ -287,8 +287,9 @@ export const ChoiceModal = ({
                                             key={option.id}
                                             onClick={() => onResolve(option.id)}
                                             disabled={!canResolve || option.disabled}
-                                            variant={isCancelOption ? 'secondary' : canResolve ? 'primary' : 'secondary'}
-                                            className="min-w-[120px] flex-col"
+                                            variant={isCancelOption ? 'ghost' : 'option'}
+                                            fullWidth
+                                            className={option.dicePreview || target ? 'flex-col' : undefined}
                                             data-option-id={option.id}
                                             data-choice-custom-id={option.customId}
                                         >
@@ -499,7 +500,7 @@ const SliderChoice = ({
                     <GameButton
                         onClick={onSkip}
                         disabled={!canResolve}
-                        variant="secondary"
+                        variant="ghost"
                         className="min-w-[100px]"
                     >
                         {skipLabel}

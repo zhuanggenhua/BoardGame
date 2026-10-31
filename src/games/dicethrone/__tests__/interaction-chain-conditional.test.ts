@@ -12,14 +12,17 @@
  * 8. card-dizzy afterAttackResolved 响应窗口链
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { fixedRandom, createQueuedRandom, createRunner, cmd, createHeroMatchup } from './test-utils';
+import { fixedRandom, createQueuedRandom, createRunner, cmd, createHeroMatchup, getSimpleChoicePrompt, respondToPrompt, testSystems } from './test-utils';
 import { initializeCustomActions } from '../domain/customActions';
 import { registerDiceThroneConditions } from '../conditions';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID, DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID, DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID } from '../domain/dazeExtraAttackChoice';
 import { INITIAL_HEALTH } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 import { checkPlayCard, getPlayableCardsInResponseWindow, isCardPlayableInResponseWindow } from '../domain/rules';
+import { executePipeline } from '../../../engine/pipeline';
+import { DiceThroneDomain } from '../domain';
 
 beforeAll(() => {
     registerDiceThroneConditions();
@@ -27,6 +30,73 @@ beforeAll(() => {
 });
 
 describe('晕眩（Daze）额外攻击链', () => {
+    const createIncomingDazeAttack = () => {
+        const state = createHeroMatchup('barbarian', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'violent-assault',
+            isDefendable: false,
+            damage: 5,
+        };
+        state.core.players['1'].tokens[TOKEN_IDS.PURIFY] = 1;
+        return state;
+    };
+
+    it('施加恍惚时先询问防守方是否用净化抵消', () => {
+        const state = createIncomingDazeAttack();
+        const defenderHp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            cmd('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.DAZE] ?? 0).toBe(0);
+        expect(advanced.state.core.players['1'].tokens[TOKEN_IDS.PURIFY]).toBe(1);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHp);
+
+        const prompt = getSimpleChoicePrompt(advanced.state, DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID);
+        const usePurify = prompt.options.find(option => (
+            (option.value as { customId?: string }).customId === DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID
+        ));
+        expect(usePurify).toBeDefined();
+        const resolved = respondToPrompt(advanced.state, usePurify!.id, '1', fixedRandom, ['0', '1']);
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].tokens[TOKEN_IDS.PURIFY]).toBe(0);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.DAZE] ?? 0).toBe(0);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHp - 5);
+        expect(resolved.state.core.extraAttackInProgress).toBeUndefined();
+    });
+
+    it('防守方选择承受恍惚后仍按规则触发追加攻击', () => {
+        const state = createIncomingDazeAttack();
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            cmd('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        const prompt = getSimpleChoicePrompt(advanced.state, DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID);
+        const continueWithDaze = prompt.options.find(option => (
+            (option.value as { customId?: string }).customId === DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID
+        ));
+        expect(continueWithDaze).toBeDefined();
+        const resolved = respondToPrompt(advanced.state, continueWithDaze!.id, '1', fixedRandom, ['0', '1']);
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('offensiveRoll');
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.DAZE] ?? 0).toBe(0);
+        expect(resolved.state.core.extraAttackInProgress?.attackerId).toBe('0');
+    });
+
     it('防御方有 daze → 攻击结算后立即移除眩晕 + 攻击方获得额外攻击', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({

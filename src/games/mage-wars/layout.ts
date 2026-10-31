@@ -8,6 +8,7 @@ export const MAGE_WARS_PHASE_PROGRESS_RAIL_SELF_HUD_GAP = 'clamp(4rem, 4.2vw, 5r
 export const MAGE_WARS_GAME_HUD_FAB_BASE_LEFT_PX = 80;
 export const MAGE_WARS_GAME_HUD_FAB_PHASE_RAIL_GAP_PX = 8;
 export const MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY = 'game_hud_fab_position:mage-wars:v4';
+export const MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY = 'game_hud_fab_offset:mage-wars';
 
 export const resolveMageWarsPhaseProgressRailWidth = (viewportHeight: number) => Math.min(
     MAGE_WARS_PHASE_PROGRESS_RAIL_MAX_WIDTH_PX,

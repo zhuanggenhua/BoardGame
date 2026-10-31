@@ -37,6 +37,16 @@ html[data-home-entry-style="modern"] [data-platform-dialog] :is(button[type="sub
 html[data-home-entry-style="modern"] [data-platform-dialog="author"] { padding: 24px; }
 html[data-home-entry-style="modern"] [data-platform-dialog="author"] h3 { font-size: 28px; }
 html[data-home-entry-style="modern"] .platform-author-placeholder { display: none; }
+html[data-home-entry-style="modern"] [data-platform-dialog="author"] .platform-author-action {
+    border: 2px solid #111;
+    background: #fff;
+    color: #111;
+    text-decoration: none;
+}
+html[data-home-entry-style="modern"] [data-platform-dialog="author"] .platform-author-action--claim { background: #d5ff00; }
+.platform-author-profile-link { overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 4px; }
+html[data-home-entry-style="modern"] .platform-author-profile-link { color: #333; }
+html[data-home-entry-style="modern"] .platform-author-profile-link:hover { color: #b00060; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child { text-align: left; padding-right: 40px; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:first-child { color: #111; font-size: 24px; font-weight: 800; letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:last-child { display: none; }
@@ -51,9 +61,10 @@ html[data-home-entry-style="modern"] .platform-account-row { display: grid; grid
 html[data-home-entry-style="modern"] .platform-account-row > span { min-width: 0; font-size: 13px; }
 html[data-home-entry-style="modern"] .platform-account-row > div { min-width: 0; width: 100%; justify-content: flex-end; gap: 8px; }
 html[data-home-entry-style="modern"] .platform-account-row > div > span { min-width: 0; overflow-wrap: anywhere; }
-html[data-home-entry-style="modern"] .platform-account-row button { flex-shrink: 0; white-space: nowrap; min-width: 36px; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+html[data-home-entry-style="modern"] .platform-account-row button { flex-shrink: 0; white-space: nowrap; min-width: 44px; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
 html[data-home-entry-style="modern"] .platform-account-row [data-account-edit-password] { grid-column: 1 / -1; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:last-child button { width: 100%; border: 2px solid #111; border-radius: 0; background: #f3f3f3; font-size: 14px; }
+html[data-home-entry-style="modern"] [data-testid="my-feedback-expand"] { min-width: 44px; }
 .platform-cursor-variant-scroll, .platform-cursor-variant-table { display: contents; }
 html[data-home-entry-style="modern"] .platform-cursor-label { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 html[data-home-entry-style="modern"] .platform-history-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }

@@ -1690,6 +1690,11 @@
     "title": "技能结算选择",
     "option": "选项 {{index}}",
     "sliderLabel": "选择花费数量",
+    "dazeExtraAttack": {
+      "title": "即将受到恍惚：攻击结算后攻击者会立即追加攻击。是否花费 1 个净化抵消这次施加？",
+      "usePurify": "花费 1 个净化，抵消恍惚",
+      "continue": "不使用净化，承受恍惚"
+    },
     "statusCheckOrder": {
       "title": "选择致盲与眩光的判定顺序",
       "dazzleFirst": "先判定眩光",
@@ -2048,6 +2053,17 @@
     "hint_copy_step1": "选择要复制的源骰子",
     "hint_copy_step2": "选择要设为{{value}}的目标骰子",
     "hint_done": "完成",
+    "skip_reroll": "跳过重投",
+    "finish_reroll": "完成重投",
+    "confirm_reroll": "确认重投",
+    "hint_reroll_continue_repeat_detail": "已重投 {{completed}} 次，还可选择 {{remaining}} 次，可重复同骰；也可在骰盘完成重投。",
+    "hint_reroll_continue_detail": "已重投 {{completed}} 次，还可选择 {{remaining}} 次；也可在骰盘完成重投。",
+    "hint_reroll_done_detail": "本次重投已结算，点击骰盘“完成重投”继续。",
+    "hint_reroll_ready_detail": "已重投 {{completed}} 次，待执行 {{selected}} 次。点击骰盘“确认重投”执行。",
+    "hint_reroll_repeat_detail": "还可选择 {{remaining}} 次，同一颗可重复选择。选好后在骰盘确认重投。",
+    "hint_reroll_detail": "还可选择 {{remaining}} 次，选好后在骰盘确认重投。",
+    "hint_reroll_done": "重投已完成（{{current}}/{{max}}）",
+    "hint_reroll_ready": "重投选择已就绪（{{current}}/{{max}}）",
     "hint_choose_value": "选择目标点数",
     "hint_bonus_settlement": "确认效果骰结果并继续结算",
     "set_value": "设为{{value}}",
@@ -2056,9 +2072,11 @@
     "hint_set": "选择要设为{{value}}的骰子",
     "hint_adjust": "选择要调整的骰子",
     "hint_any": "选择要修改的骰子",
-    "hint_select": "选择骰子（{{current}}/{{max}}）",
-    "hint_select_ally": "选择队友的骰子（{{current}}/{{max}}）",
-    "hint_select_opponent": "选择对手的骰子（{{current}}/{{max}}）"
+    "hint_select": "选择重投骰子（{{current}}/{{max}}）",
+    "hint_select_ally": "选择队友的重投骰子（{{current}}/{{max}}）",
+    "hint_select_opponent": "选择对手的重投骰子（{{current}}/{{max}}）",
+    "hint_choose_dice": "选择效果骰",
+    "hint_choose_dice_detail": "已选择 {{selected}}/{{count}} 颗，还需选择 {{remaining}} 颗；选好后点击骰盘上的确认。"
   },
   "abilitySlots": {
     "fist": "拳术",

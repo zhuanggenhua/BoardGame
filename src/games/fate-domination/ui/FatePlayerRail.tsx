@@ -31,7 +31,8 @@ export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, 
         hideTimer.current = setTimeout(() => onSelect(null), 2500);
     };
     const show = (id: string) => { keepOpen(); onSelect(id); };
-    useEffect(() => () => clearTimeout(hideTimer.current), [selectedId]);
+    // 换席由 show 取消旧计时；只在卸载时清理，避免旧选中态的延后 cleanup 清掉新计时。
+    useEffect(() => () => clearTimeout(hideTimer.current), []);
     useLayoutEffect(() => {
         if (!selectedId) return;
         const place = () => {
@@ -52,7 +53,7 @@ export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, 
     return <aside data-tutorial-id="fate-opponents" className="fd-runtime-player-rail" aria-label={t('ui.playerRail.playerSeats')}>
         <div className="fd-runtime-seat-list">{core.playerIds.filter(id => id !== viewerId).map(id => {
             const view = projectFatePlayer(core, id, viewerId);
-            return <section key={id} ref={node => { if (node) seats.current.set(id, node); else seats.current.delete(id); }} onPointerLeave={hideLater} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(); }} className={`fd-runtime-seat${selectedId === id ? ' is-selected' : ''}${core.currentPlayerId === id ? ' is-current' : ''}`}>
+            return <section key={id} data-tutorial-id={`fate-player-${id}`} ref={node => { if (node) seats.current.set(id, node); else seats.current.delete(id); }} onPointerLeave={hideLater} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(); }} className={`fd-runtime-seat${selectedId === id ? ' is-selected' : ''}${core.currentPlayerId === id ? ' is-current' : ''}`}>
                 <div className="fd-runtime-seat-row">
                     <button type="button" className="fd-runtime-avatar" aria-description={view.player.eliminated ? t('ui.playerRail.eliminated') : undefined} aria-label={t('ui.playerRail.viewPlayerDetails', { name: nameFor(id) })} onPointerEnter={() => show(id)} onPointerLeave={hideLater} onFocus={() => show(id)} onClick={() => onDetail(id)}>
                         {view.master && <OptimizedImage className="fd-runtime-master-avatar" src={fateTokenAsset(view.master.id)} alt={view.master.name}/>}
@@ -66,7 +67,7 @@ export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, 
                 </div>
             </section>;
         })}</div>
-        {selected && selectedId && <section className="fd-runtime-opponent-cards" style={position} aria-label={t('ui.playerRail.playedCards', { name: nameFor(selectedId) })} onPointerEnter={keepOpen} onPointerLeave={hideLater} onFocus={keepOpen} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(); }} onKeyDown={event => { if (event.key === 'Escape') onSelect(null); }}>
+        {selected && selectedId && <section className="fd-runtime-opponent-cards" style={position} aria-label={t('ui.playerRail.playedCards', { name: nameFor(selectedId) })} onPointerEnter={keepOpen} onPointerLeave={hideLater} onFocus={event => { if(event.target.matches(':focus-visible'))keepOpen(); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(); }} onKeyDown={event => { if (event.key === 'Escape') onSelect(null); }}>
             <div className="fd-runtime-public-cards">{played.map(card => {
                 const definition = FATE_ATTACK_BY_ID[card.definitionId];
                 if(card.definitionId==='hidden')return <div key={card.id} className="fd-hidden-played-card"><OptimizedImage src="fate-domination/backs/attack" alt={t('ui.playerRail.faceDownAttack')}/></div>;

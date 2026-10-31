@@ -13,6 +13,7 @@ import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../f
 import { dispatchDiceThroneCommand, dragDiceThroneHandCardToPlay, waitForDiceThroneHarness } from '../helpers/dicethrone';
 import { waitForTestHarness } from '../helpers/common';
 import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 
 const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: string): Promise<string> => {
     const path = getEvidenceScreenshotPath(testInfo, name, {
@@ -701,6 +702,29 @@ test.describe('DiceThrone 蜘蛛侠真实规则交互', () => {
         });
 
         const invisibleToken = page.getByTestId(`dt-player-1-token-${TOKEN_IDS.INVISIBLE}`);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                attackerId: state?.core?.pendingAttack?.attackerId ?? null,
+                defenderId: state?.core?.pendingAttack?.defenderId ?? null,
+                isDefendable: state?.core?.pendingAttack?.isDefendable ?? null,
+                damageUnblockable: state?.core?.pendingDamage?.unblockable ?? null,
+                damage: state?.core?.pendingDamage?.currentDamage ?? null,
+                defenderHp: state?.core?.players?.['1']?.resources?.HP ?? state?.core?.players?.['1']?.resources?.hp ?? null,
+                invisible: state?.core?.players?.['1']?.tokens?.[TOKEN_IDS.INVISIBLE] ?? 0,
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'defensiveRoll',
+            attackerId: '0',
+            defenderId: '1',
+            isDefendable: false,
+            damageUnblockable: true,
+            damage: 7,
+            defenderHp: 50,
+            invisible: 1,
+        });
+        await expect(page.getByText(/不可防御伤害|不可防御/).first()).toBeVisible({ timeout: 10000 });
         await expect(invisibleToken).toBeVisible({ timeout: 10000 });
         await expect(invisibleToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 10000 });
         await saveEvidenceScreenshot(page, testInfo, '11-隐形-不可防御伤害响应窗口');
@@ -815,6 +839,72 @@ test.describe('DiceThrone 蜘蛛侠真实规则交互', () => {
         });
 
         await saveEvidenceScreenshot(page, testInfo, '14-隐形-增加一次防御投骰');
+    });
+
+    test('连击触发的追加攻击应先进入进攻阶段，不得先进入弃牌或对手收入阶段', async ({ page, game }, testInfo) => {
+        test.setTimeout(120000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await game.openTestGame('dicethrone', { playerID: '0', seat1: 'human' }, 45000);
+        await waitForTestHarness(page, 40000);
+        await waitForDiceThroneHarness(page);
+
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: [],
+                resources: { CP: 4, HP: 50 },
+                tokens: { [TOKEN_IDS.COMBO]: 0 },
+            },
+            player1: {
+                hand: [],
+                resources: { CP: 0, HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'main2',
+            extra: {
+                selectedCharacters: { '0': 'zhizhuxia', '1': 'monk' },
+                activePlayerId: '0',
+                turnNumber: 4,
+                lastResolvedAttackDamage: 3,
+                passiveActionUsedThisTurn: {
+                    '0': { 'zhizhuxia-combo-extra-attack': true },
+                },
+                extraAttackInProgress: {
+                    attackerId: '0',
+                    originalActivePlayerId: '0',
+                    sourceStatusId: TOKEN_IDS.COMBO,
+                    phaseEntered: false,
+                },
+            },
+        });
+
+        await game.waitForPhase('main2', 10000);
+        await saveEvidenceScreenshot(page, testInfo, '15-连击-追加攻击进入前');
+
+        await dispatchDiceThroneCommand(page, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: {},
+        });
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                activePlayerId: state?.core?.activePlayerId ?? null,
+                turnNumber: state?.core?.turnNumber ?? null,
+                phaseEntered: state?.core?.extraAttackInProgress?.phaseEntered ?? null,
+                opponentCp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.CP] ?? null,
+            };
+        }, { timeout: 15000 }).toEqual({
+            phase: 'offensiveRoll',
+            activePlayerId: '0',
+            turnNumber: 4,
+            phaseEntered: true,
+            opponentCp: 0,
+        });
+
+        await saveEvidenceScreenshot(page, testInfo, '16-连击-追加攻击先于对手收入阶段');
     });
 
 });

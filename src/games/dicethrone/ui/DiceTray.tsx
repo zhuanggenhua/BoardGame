@@ -395,7 +395,7 @@ export const DiceTray = ({
                                     className={`
                                         relative flex-shrink-0 group transition-all duration-200
                                         ${!isInteractionMode && die.isKept ? 'opacity-80' : ''}
-                                        ${!clickable && !showAdjustButtons && !showAnyModeButtons ? (isReadOnlyDisplayDie ? 'cursor-default' : 'cursor-not-allowed opacity-50') : ''}
+                                        ${!clickable && !showAdjustButtons && !showAnyModeButtons ? (isReadOnlyDisplayDie || hasSelectionMarker ? 'cursor-default' : 'cursor-not-allowed opacity-50') : ''}
                                         ${clickable ? 'cursor-pointer hover:scale-110' : ''}
                                         ${hasSelectionMarker ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105' : ''}
                                     `}

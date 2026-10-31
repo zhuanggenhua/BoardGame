@@ -1,0 +1,1274 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "reviewedAt": "2026-10-26T13:37:07.471Z",
+  "media": [
+    {
+      "path": "images/worthy-teammate__值得拥有-四人队伍起始态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四人队伍头像、奇异博士玩家板与行动牌均可见，右侧骰区未被遮挡。",
+      "sha256": "0b3a310f97c4bc7d2d484e42375f4c507c091f28d3b499662925bf23ce8c93bd",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792997531872-feplm0/值得拥有-四人队伍起始态.png",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-ready",
+        "before": [
+          "images/worthy-teammate__值得拥有-四人队伍起始态.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-四人队伍起始态.png"
+        ],
+        "visibleConsequence": "四人队伍头像、奇异博士玩家板与行动牌均可见，右侧骰区未被遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/worthy-teammate__值得拥有-队友骰区目标态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示明确写出选择队友骰子，候选骰可见；悬停卡图临时位于骰区下侧，未覆盖选骰目标。",
+      "sha256": "39c33fcaa469ecb676704f52bf4c551a2c792d367f1c0d075f27504a77422946",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792997531872-feplm0/值得拥有-队友骰区目标态.png",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-targets",
+        "before": [
+          "images/worthy-teammate__值得拥有-四人队伍起始态.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-队友骰区目标态.png"
+        ],
+        "visibleConsequence": "提示明确写出选择队友骰子，候选骰可见；悬停卡图临时位于骰区下侧，未覆盖选骰目标。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/worthy-teammate__值得拥有-队友骰子已选.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两颗骰子显示勾选反馈，完成提示与确认按钮可见。",
+      "sha256": "22e3ef2bd4a8f4eaa940e3adb8624f9595092db43729858a3bcb46597190a062",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792997531872-feplm0/值得拥有-队友骰子已选.png",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-selected-dice",
+        "before": [
+          "images/worthy-teammate__值得拥有-队友骰区目标态.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-队友骰子已选.png"
+        ],
+        "visibleConsequence": "两颗骰子显示勾选反馈，完成提示与确认按钮可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/worthy-teammate__值得拥有-队友骰区重掷结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重掷骰子的旋转画面与弃牌区卡图可见，选择提示和勾选反馈已关闭。",
+      "sha256": "92a3fe7fe60b68dfd466cd6060079094b473c8759273386451753d4816919102",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792997531872-feplm0/值得拥有-队友骰区重掷结算.png",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-settled",
+        "before": [
+          "images/worthy-teammate__值得拥有-队友骰子已选.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-队友骰区重掷结算.png"
+        ],
+        "visibleConsequence": "重掷骰子的旋转画面与弃牌区卡图可见，选择提示和勾选反馈已关闭。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-公开法术起始态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏玩家板、公开准备牌和右侧骰区完整呈现，技能槽可定位。",
+      "sha256": "2560030d98a8114c74317903083cb7a8f0fcd1119f14e6ede1a35ccec13595a4",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/手机横屏-公开法术起始态.png",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-prepared-spells-before",
+        "before": [
+          "images/awareness-mobile__手机横屏-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-公开法术起始态.png"
+        ],
+        "visibleConsequence": "横屏玩家板、公开准备牌和右侧骰区完整呈现，技能槽可定位。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宇宙感知槽显示选中边框，结束攻击按钮仍可见。",
+      "sha256": "cf90a52414c7ec58edb2f1d4f2747051e5b201cd85c9fa98264d3b10f0c73217",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/手机横屏-宇宙感知已选待结算.png",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-awareness-selected",
+        "before": [
+          "images/awareness-mobile__手机横屏-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png"
+        ],
+        "visibleConsequence": "宇宙感知槽显示选中边框，结束攻击按钮仍可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-弃牌准备选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备法术弹窗居中，单张法术卡图与名称均在视口内。",
+      "sha256": "19b83262cae6c2a5cc45149465b9f52ceeae09c6806e96f2d1e631ec703a8028",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/手机横屏-弃牌准备选择态.png",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-spell-choice",
+        "before": [
+          "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-弃牌准备选择态.png"
+        ],
+        "visibleConsequence": "准备法术弹窗居中，单张法术卡图与名称均在视口内。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-法术准备目标选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手头像和选择按钮居中呈现，弹窗未超出横屏视口。",
+      "sha256": "35801b1e877886302cd36247c29c7fefb3c4de6764b6b630b800a2b941cde646",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/手机横屏-法术准备目标选择态.png",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-spell-prepare-target-choice",
+        "before": [
+          "images/awareness-mobile__手机横屏-弃牌准备选择态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-法术准备目标选择态.png"
+        ],
+        "visibleConsequence": "对手头像和选择按钮居中呈现，弹窗未超出横屏视口。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-法术准备结算态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备区呈现两张法术，阶段与状态读数仍可见。",
+      "sha256": "5f7d5df36f0698bcb47fddfbc60594c33db3ddda3d24548137f90f8bef778b24",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/手机横屏-法术准备结算态.png",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-spell-prepared",
+        "before": [
+          "images/awareness-mobile__手机横屏-法术准备目标选择态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-法术准备结算态.png"
+        ],
+        "visibleConsequence": "准备区呈现两张法术，阶段与状态读数仍可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击前-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗护身符骰面与全知之眼技能槽同时可见。",
+      "sha256": "d4bb5ad43b79e24175a2391865e9eaf6192e5a81956510a03dcdadf9e639aa85",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼攻击前-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-ready",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "visibleConsequence": "五颗护身符骰面与全知之眼技能槽同时可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼已选待结算-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "全知之眼技能槽显示选中边框，伤害提示和结束攻击按钮可见。",
+      "sha256": "94be6a7bc4ec1063f47d99e4c4d55b9d70838c47acb556b632feb25b9bf12b0c",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼已选待结算-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-selected",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼已选待结算-桌面.png"
+        ],
+        "visibleConsequence": "全知之眼技能槽显示选中边框，伤害提示和结束攻击按钮可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两张不同法术以卡图并排呈现，跳过入口可见。",
+      "sha256": "65a021899ee85f1764da622bc6d9de2d66d336361cbfc7a17d1d75c4a4065eff",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼顶五法术选择-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-top-five-choice",
+        "before": [
+          "images/all-seeing-eye__全知之眼已选待结算-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png"
+        ],
+        "visibleConsequence": "两张不同法术以卡图并排呈现，跳过入口可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "法术目标弹窗呈现对手头像和选择按钮。",
+      "sha256": "c93b459abb5cfee890115473341696cd57e6ab613198b99d6d6e8cda8ba3af37",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼法术准备目标选择-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-prepare-target",
+        "before": [
+          "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png"
+        ],
+        "visibleConsequence": "法术目标弹窗呈现对手头像和选择按钮。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张剩余牌并排呈现，排序提示与候选名称均可读。",
+      "sha256": "3d41f50f981205126b2c10469011dc5164924e4dfa9be415993e3f710616d3f1",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼重排剩余三张-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-reorder",
+        "before": [
+          "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png"
+        ],
+        "visibleConsequence": "三张剩余牌并排呈现，排序提示与候选名称均可读。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "施法选择弹窗呈现三张准备法术与跳过入口。",
+      "sha256": "709037b0b46c78ddd4d5ed0cab346698fb053bf5162adb92b13f77fe62665c4b",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼攻击后施法选择-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-post-damage-cast",
+        "before": [
+          "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png"
+        ],
+        "visibleConsequence": "施法选择弹窗呈现三张准备法术与跳过入口。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击结算-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弹窗关闭后公开准备区显示三张法术，玩家板和阶段读数可见。",
+      "sha256": "1a413f73b314fde4a364d08c3e7e68fad6050d68c8454d8978175a0e40a2bfbd",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792997531872-feplm0/全知之眼攻击结算-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-settled",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击结算-桌面.png"
+        ],
+        "visibleConsequence": "弹窗关闭后公开准备区显示三张法术，玩家板和阶段读数可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/deja-vu__即视感使用前-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感标记与锁定骰区同时可见，结束攻击入口清楚。",
+      "sha256": "f1e1663eef35cb53ba39e5cc0e26ea0894019c90941bb0ea4fcc5853ab2f280c",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792997531872-feplm0/即视感使用前-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-deja-vu-ready",
+        "before": [
+          "images/deja-vu__即视感使用前-桌面.png"
+        ],
+        "after": [
+          "images/deja-vu__即视感使用前-桌面.png"
+        ],
+        "visibleConsequence": "即视感标记与锁定骰区同时可见，结束攻击入口清楚。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/deja-vu__即视感悬停说明态-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感说明浮层位于标记上方，生命和施法值读数未被覆盖。",
+      "sha256": "897094a056520ca8f094381acb67a005a0bf3aad334de045875f0017f1bc57ee",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792997531872-feplm0/即视感悬停说明态-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-deja-vu-token-hover",
+        "before": [
+          "images/deja-vu__即视感使用前-桌面.png"
+        ],
+        "after": [
+          "images/deja-vu__即视感悬停说明态-桌面.png"
+        ],
+        "visibleConsequence": "即视感说明浮层位于标记上方，生命和施法值读数未被覆盖。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/deja-vu__即视感重开后-桌面.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感标记消失，骰区恢复可投掷显示与投掷按钮。",
+      "sha256": "922220b477f73c5cba5ae03e58bff7dc3512a080c70e09d5f8cf584622413a21",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792997531872-feplm0/即视感重开后-桌面.png",
+      "unchangedEvidence": "与已逐图审查的前轮同名截图字节完全一致，原图位于 test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792986122951-tvrkxw/即视感重开后-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-deja-vu-restarted",
+        "before": [
+          "images/deja-vu__即视感悬停说明态-桌面.png"
+        ],
+        "after": [
+          "images/deja-vu__即视感重开后-桌面.png"
+        ],
+        "visibleConsequence": "即视感标记消失，骰区恢复可投掷显示与投掷按钮。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-公开法术起始态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "公开法术准备区、宇宙感知技能槽和手牌同时可见。",
+      "sha256": "837c9d7cda5cd46e899da3218fcbe5fdcc6e86305bea23c02d17eada21fb46be",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/桌面-公开法术起始态.png",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-prepared-spells-before",
+        "before": [
+          "images/awareness-desktop__桌面-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-公开法术起始态.png"
+        ],
+        "visibleConsequence": "公开法术准备区、宇宙感知技能槽和手牌同时可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-宇宙感知已选待结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宇宙感知槽显示选中边框，正式阶段按钮未被覆盖。",
+      "sha256": "b2723ed674740c0a3b4230914b1f7378857e5b674fe8fb1493a85c3f50e103c8",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/桌面-宇宙感知已选待结算.png",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-awareness-selected",
+        "before": [
+          "images/awareness-desktop__桌面-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-宇宙感知已选待结算.png"
+        ],
+        "visibleConsequence": "宇宙感知槽显示选中边框，正式阶段按钮未被覆盖。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-弃牌准备选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "法术准备弹窗居中，单张候选卡图与名称可辨识。",
+      "sha256": "226d7d55fafdc9ebcee70b5000abe3e2795401348fcc00787d7bb007e96cae45",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/桌面-弃牌准备选择态.png",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-spell-choice",
+        "before": [
+          "images/awareness-desktop__桌面-宇宙感知已选待结算.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-弃牌准备选择态.png"
+        ],
+        "visibleConsequence": "法术准备弹窗居中，单张候选卡图与名称可辨识。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-法术准备目标选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手头像和选择按钮清楚可见，弹窗留有足够边距。",
+      "sha256": "49cf9bd19a0fe49a3fd146107ef36d992348535062f39027e4a131364ed672cf",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/桌面-法术准备目标选择态.png",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-spell-prepare-target-choice",
+        "before": [
+          "images/awareness-desktop__桌面-弃牌准备选择态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-法术准备目标选择态.png"
+        ],
+        "visibleConsequence": "对手头像和选择按钮清楚可见，弹窗留有足够边距。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-法术准备结算态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "公开准备区新增法术卡，阶段高亮与状态图标保持可见。",
+      "sha256": "2bf347251ca65a867c926dd028b4f22f48185e82c2160661b32f927470a6ecec",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792997531872-feplm0/桌面-法术准备结算态.png",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-spell-prepared",
+        "before": [
+          "images/awareness-desktop__桌面-法术准备目标选择态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-法术准备结算态.png"
+        ],
+        "visibleConsequence": "公开准备区新增法术卡，阶段高亮与状态图标保持可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入前-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入技能槽与五颗骰面同时可见。",
+      "sha256": "b65e9a54e6830f1943a5ff821e6ba7f58cc3b493d94b6d820a44ed358b2e5077",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792997531872-feplm0/星际侵入前-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-astral-ready",
+        "before": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "visibleConsequence": "星际侵入技能槽与五颗骰面同时可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入已选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入槽显示选中边框，伤害提示和阶段按钮可见。",
+      "sha256": "e5817db875ec8575e0d1fe33185bfcb3a8e10aa21049b066c00628a8da503781",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792997531872-feplm0/星际侵入已选-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-astral-selected",
+        "before": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入已选-桌面.png"
+        ],
+        "visibleConsequence": "星际侵入槽显示选中边框，伤害提示和阶段按钮可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入奖励骰待确认-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧两颗奖励骰处于旋转姿态，确认按钮可见；最终骰值由行为记录核对。",
+      "sha256": "4b5e2ec84e15dac37f3e02b0836b5d557033f98c4143c35576cdda973f1be704",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792997531872-feplm0/星际侵入奖励骰待确认-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-astral-bonus-dice",
+        "before": [
+          "images/astral-invasion__星际侵入已选-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入奖励骰待确认-桌面.png"
+        ],
+        "visibleConsequence": "右侧两颗奖励骰处于旋转姿态，确认按钮可见；最终骰值由行为记录核对。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入奖励骰确认-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "奖励骰确认后切换至防御玩家板，攻击提示与状态图标仍可见。",
+      "sha256": "d46446750d686e0258042e206a6e5f920338a1b4706546a72d702625e053f101",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792997531872-feplm0/星际侵入奖励骰确认-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-astral-bonus-confirmed",
+        "before": [
+          "images/astral-invasion__星际侵入奖励骰待确认-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入奖励骰确认-桌面.png"
+        ],
+        "visibleConsequence": "奖励骰确认后切换至防御玩家板，攻击提示与状态图标仍可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/premonition-income__收入阶段替代选项-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "收入弹窗同时呈现正常抽牌和两种预感替代选项。",
+      "sha256": "2b639fff60fe7f8b5b1b1e0f4179a0cfe6b0efb5fddcd6fe3c00a918db5b3a34",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792997531872-feplm0/收入阶段替代选项-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-income-options",
+        "before": [
+          "images/premonition-income__收入阶段替代选项-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__收入阶段替代选项-桌面.png"
+        ],
+        "visibleConsequence": "收入弹窗同时呈现正常抽牌和两种预感替代选项。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/premonition-income__本次抽牌返还选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本次抽到的三张候选牌并排显示，卡图、名称和选中边框可见。",
+      "sha256": "8fe53117a5b4ea7b93e27326de16883dfa8a8e04b82c98594741a89caa8b5d52",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792997531872-feplm0/本次抽牌返还选择-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-income-drawn-cards",
+        "before": [
+          "images/premonition-income__收入阶段替代选项-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__本次抽牌返还选择-桌面.png"
+        ],
+        "visibleConsequence": "本次抽到的三张候选牌并排显示，卡图、名称和选中边框可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/premonition-income__选择牌库底-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "牌库顶和牌库底两个按钮清楚可见，提示居中。",
+      "sha256": "64eca5b2375f3b4e7d3649c37d3f0ff53f2ce44b461d3b0cd7491f3422e2d7df",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792997531872-feplm0/选择牌库底-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-income-return-position",
+        "before": [
+          "images/premonition-income__本次抽牌返还选择-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__选择牌库底-桌面.png"
+        ],
+        "visibleConsequence": "牌库顶和牌库底两个按钮清楚可见，提示居中。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/premonition-income__预感收入结算后-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返还弹窗关闭后手牌、阶段高亮和预感状态区可见。",
+      "sha256": "9200c1906bf846208b117739e49e5dbb8c89e19297d448cffcafa16ba29d58a3",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792997531872-feplm0/预感收入结算后-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-income-settled",
+        "before": [
+          "images/premonition-income__选择牌库底-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__预感收入结算后-桌面.png"
+        ],
+        "visibleConsequence": "返还弹窗关闭后手牌、阶段高亮和预感状态区可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/crimson-bands__深红系带手牌-桌面.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌中的深红系带法术可辨识，主阶段与下一阶段按钮可见。",
+      "sha256": "e96194c2ca1bc2bd6d2f15dc14dd5c10a45e3678fc03090a99a5637ee17f0226",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792997531872-feplm0/深红系带手牌-桌面.png",
+      "unchangedEvidence": "与已逐图审查的前轮同名截图字节完全一致，原图位于 test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792986122951-tvrkxw/深红系带手牌-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-hand",
+        "before": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "visibleConsequence": "手牌中的深红系带法术可辨识，主阶段与下一阶段按钮可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/crimson-bands__深红系带目标选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手目标头像和选择按钮居中显示。",
+      "sha256": "e35f882b4d48f4174f4f12c897d030e5310b7171c9885391158993308a0ca372",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792997531872-feplm0/深红系带目标选择-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-target",
+        "before": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带目标选择-桌面.png"
+        ],
+        "visibleConsequence": "对手目标头像和选择按钮居中显示。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/crimson-bands__深红系带已施加-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手状态区显示深红系带图标，法术卡出现在公开准备区。",
+      "sha256": "1daa1cb62d0ac08959b2f4bf3be7c1775c49a7b269697f05478f7d5333a987d3",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792997531872-feplm0/深红系带已施加-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-granted",
+        "before": [
+          "images/crimson-bands__深红系带目标选择-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带已施加-桌面.png"
+        ],
+        "visibleConsequence": "对手状态区显示深红系带图标，法术卡出现在公开准备区。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__真实创建房间-待确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式创建房间弹窗呈现人数选择与确认创建按钮。",
+      "sha256": "0b3a20c705cb864af6bac25d2f774d488108087354250355daf5008298dd1e33",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/真实创建房间-待确认.png",
+      "uiAudit": {
+        "target": "doctor-strange-online-room-confirmation",
+        "before": [
+          "images/online-selection-and-start__真实创建房间-待确认.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__真实创建房间-待确认.png"
+        ],
+        "visibleConsequence": "正式创建房间弹窗呈现人数选择与确认创建按钮。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "等待对手加入时奇异博士卡可见且没有实施中条幅，玩家板预览清楚。",
+      "sha256": "d689cfc19ffaa926d50a9493604ae09ea5107f9dc47563e0f92c21e19b8044ab",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/真实选角入口-奇异博士可选-桌面.png",
+      "uiAudit": {
+        "target": "doctor-strange-available-desktop-selection",
+        "before": [
+          "images/online-selection-and-start__真实创建房间-待确认.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png"
+        ],
+        "visibleConsequence": "等待对手加入时奇异博士卡可见且没有实施中条幅，玩家板预览清楚。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "窄屏选角列表与奇异博士预览可见，奇异博士没有实施中条幅。",
+      "sha256": "3a9c1542b9617240f5025bc7b898fd0d29333ad7c865a832cc1ce0e9338fcb8b",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/真实选角入口-奇异博士可选-窄屏.png",
+      "uiAudit": {
+        "target": "doctor-strange-available-mobile-selection",
+        "before": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png"
+        ],
+        "visibleConsequence": "窄屏选角列表与奇异博士预览可见，奇异博士没有实施中条幅。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__房主真实选择奇异博士.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "房主选择标记出现在奇异博士卡上，底部角色名称同步显示。",
+      "sha256": "b3eab107e722cb415c61f9578ae4e03187955e33db61d9d824f2afd622595be6",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/房主真实选择奇异博士.png",
+      "uiAudit": {
+        "target": "doctor-strange-selected-by-host",
+        "before": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__房主真实选择奇异博士.png"
+        ],
+        "visibleConsequence": "房主选择标记出现在奇异博士卡上，底部角色名称同步显示。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__双方选角并由客人准备.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "双方角色和客人准备标记均可见，开始游戏按钮已显示。",
+      "sha256": "8beb7975a016881c5b321192e6a7b1a40ed551e079de08f3555ea243dda9eb02",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/双方选角并由客人准备.png",
+      "uiAudit": {
+        "target": "doctor-strange-opponent-ready",
+        "before": [
+          "images/online-selection-and-start__房主真实选择奇异博士.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__双方选角并由客人准备.png"
+        ],
+        "visibleConsequence": "双方角色和客人准备标记均可见，开始游戏按钮已显示。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__房主视角进入双人牌桌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "房主视角呈现奇异博士玩家板、公开准备区与正式阶段控件。",
+      "sha256": "5ec350414f8388f31b3b83ebf27773b6b4757d474d5080c71eac93d34e6b57a3",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/房主视角进入双人牌桌.png",
+      "uiAudit": {
+        "target": "doctor-strange-live-board-host",
+        "before": [
+          "images/online-selection-and-start__双方选角并由客人准备.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__房主视角进入双人牌桌.png"
+        ],
+        "visibleConsequence": "房主视角呈现奇异博士玩家板、公开准备区与正式阶段控件。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__客人视角进入双人牌桌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "客人视角呈现武僧玩家板，顶部对手为奇异博士；中央游客文字为玩家显示名，未出现规则内部标识。",
+      "sha256": "1d27e377e6671e0cd01821bdc0aac37546e89f0213b9c3886febb8415daed50b",
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793019370902-ksuvti/客人视角进入双人牌桌.png",
+      "uiAudit": {
+        "target": "doctor-strange-live-board-guest",
+        "before": [
+          "images/online-selection-and-start__房主视角进入双人牌桌.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__客人视角进入双人牌桌.png"
+        ],
+        "visibleConsequence": "客人视角呈现武僧玩家板，顶部对手为奇异博士；中央游客文字为玩家显示名，未出现规则内部标识。",
+        "protectedSlots": [
+          "技能与准备区",
+          "生命和施法值读数",
+          "当前选择及确认入口"
+        ],
+        "cropAndOcclusion": "操作目标和弹窗未裁切；常规手牌扇形在屏幕底缘延伸，不遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部标识泄漏；联机游客名称按玩家显示名记录。"
+      }
+    }
+  ]
+}

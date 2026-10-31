@@ -51,10 +51,7 @@ import { useMatchChat } from './useMatchChat';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
 import type { GameOrientationPreference } from '../../../../shared/gameManifest.types';
 import { toggleDocumentFullscreen } from '../../../../lib/webFullscreen';
-import {
-    MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY,
-    resolveMageWarsGameHudFabInitialOffset,
-} from '../../../../games/mage-wars/layout';
+import { useGameHudFabLayout } from '../../../../games/useGameHudFabLayout';
 import { useRuntimeViewport } from '../../../../hooks/ui/useRuntimeViewport';
 import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../../../shared/mobileSupport';
 import {
@@ -121,9 +118,6 @@ interface GameHUDProps {
 
 const EMPTY_EMOTES: readonly EmoteDefinition[] = [];
 
-const MAGE_WARS_GAME_HUD_FAB_POSITION: FabMenuPosition = 'top-left';
-const MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY = 'game_hud_fab_offset:mage-wars';
-
 export const GameHUD = ({
     mode,
     matchId,
@@ -162,6 +156,7 @@ export const GameHUD = ({
     const toast = useToast();
     const { user } = useAuth();
     const { width: viewportWidth, height: viewportHeight } = useRuntimeViewport({ syncCssVars: false });
+    const gameHudFabLayout = useGameHudFabLayout(_gameId);
 
     // 从注册表获取游戏特定的卡牌预览函数
     const getCardPreviewRef = useMemo(() => {
@@ -215,18 +210,14 @@ export const GameHUD = ({
     const isBetrayalCharacterSelect = isBetrayalGame &&
         ((undoState?.G as { core?: { phase?: unknown } } | null | undefined)?.core?.phase === 'characterSelect');
     // Betrayal 选角阶段的确认区占用右下角，悬浮菜单必须让位；进入牌桌后恢复右下角基线。
-    const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_POSITION
-        : isQidahenTutorial
+    const fabMenuPosition: FabMenuPosition = gameHudFabLayout?.position ?? (isQidahenTutorial
             ? 'top-right'
         : isTicTacToePortraitMobile
             ? 'top-right'
         : isBetrayalGame
             ? (isSetupPhase || isBetrayalCharacterSelect ? 'top-right' : 'bottom-right')
-            : 'bottom-right';
-    const fabMenuStorageKey = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
-        : isQidahenTutorial
+            : 'bottom-right');
+    const fabMenuStorageKey = gameHudFabLayout?.storageKey ?? (isQidahenTutorial
             ? (isQidahenTutorialLandscape
                 ? 'game_hud_fab_position:qidahen:tutorial:landscape:v2'
                 : 'game_hud_fab_position:qidahen:tutorial:v1')
@@ -234,10 +225,8 @@ export const GameHUD = ({
             ? 'game_hud_fab_position:tictactoe:portrait:v1'
         : isBetrayalGame
             ? 'game_hud_fab_position:betrayal:v2'
-            : _gameId === 'fate-domination' ? 'game_hud_fab_position:fate-domination:v2' : undefined;
-    const fabMenuLegacyOffsetStorageKey = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY
-        : undefined;
+            : _gameId === 'fate-domination' ? 'game_hud_fab_position:fate-domination:v2' : undefined);
+    const fabMenuLegacyOffsetStorageKey = gameHudFabLayout?.legacyOffsetStorageKey;
 
     const [localChatEmotes, setLocalChatEmotes] = useState<MatchEmoteEvent[]>([]);
     const [seatEmoteEvents, setSeatEmoteEvents] = useState<MatchEmoteEvent[]>([]);
@@ -1028,16 +1017,16 @@ export const GameHUD = ({
                 isDark={true}
                 items={items}
                 position={fabMenuPosition}
-                initialOffset={_gameId === 'mage-wars'
-                    ? resolveMageWarsGameHudFabInitialOffset(viewportHeight)
-                    : isQidahenTutorialLandscape
+                initialOffset={gameHudFabLayout?.resolveInitialOffset?.(viewportHeight)
+                    ?? (isQidahenTutorialLandscape
                         ? { top: -48 }
                     : isTicTacToePortraitMobile
                         // 放在标题与棋盘之间的空档，避免闭合态悬浮球压住棋盘格。
                         ? { top: Math.max(0, Math.min(64, viewportHeight * 0.075)) }
                     : _gameId === 'fate-domination'
                         ? { left: 64, top: -120 }
-                        : undefined}                zIndex={GAME_HUD_FAB_Z_INDEX}
+                        : undefined)}
+                zIndex={GAME_HUD_FAB_Z_INDEX}
                 storageKey={fabMenuStorageKey}
                 legacyOffsetStorageKey={fabMenuLegacyOffsetStorageKey}
                 hudPlacement={hudPlacement}

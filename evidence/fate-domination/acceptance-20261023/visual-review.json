@@ -1,0 +1,1988 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "id": "/root/fate_review",
+    "kind": "subagent"
+  },
+  "runId": "hand:e2e-1792752233172-j0yf5a;riding-zero:e2e-1792752233172-j0yf5a;riding-other-three:e2e-1792751232151-9n62w4;postBattle-seven:e2e-1792754888672-2j86dc;hand-empty:e2e-1792754524176-68szd2;online:e2e-1792754592860-34gb4m;postBattle-observer:e2e-1792755051640-7d95s2",
+  "objective": "对当前真实运行界面按最新用户合同逐原图审查；图面不证明数值规则或联网行为",
+  "requiredVisualChecks": [
+    "target-visible",
+    "interaction-ui",
+    "layout-readable",
+    "no-error"
+  ],
+  "summary": {
+    "groups": {
+      "hand": {
+        "pass": 1,
+        "total": 12,
+        "revise": 0,
+        "carriedForward": 11
+      },
+      "riding": {
+        "pass": 0,
+        "total": 4,
+        "revise": 0,
+        "carriedForward": 4
+      },
+      "postBattle": {
+        "total": 8,
+        "pass": 8,
+        "carriedForward": 0,
+        "revise": 0
+      },
+      "online": {
+        "total": 11,
+        "pass": 11,
+        "carriedForward": 0,
+        "revise": 0
+      }
+    },
+    "pass": 20,
+    "total": 35,
+    "revise": 0,
+    "carriedForward": 15
+  },
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/行动手牌与原位出牌区.png.jpg",
+      "sha256": "67c262f788a94294ebc52d94c87508e7dcde8558951eac5961d28e230ea615b1",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "1920桌面行动空出牌区：攻击手牌只有一个主区，三张技能在右侧完整常显；合计威力在上排左侧，阶段操作位于技能上方且与离开按钮分离。本人身份、令咒、资源与两对手席位可辨。",
+      "score": 93,
+      "group": "hand",
+      "uiStateId": "empty-play-area",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/行动手牌与原位出牌区.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/攻击牌本体暂选于牌区.png.jpg",
+      "sha256": "b93383cd8acc74e5821de8be52faf954dd3146f8bd921dad68549d164db05870",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选中一张高速移动后原牌在上排显示金色边界，预计合计威力紧邻其左；下排剩余手牌和右侧技能完整在视口内，确认攻击入口在技能上方。",
+      "score": 94,
+      "group": "hand",
+      "uiStateId": "staged-card-in-place",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/攻击牌本体暂选于牌区.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/发动骑乘后进入的手牌选择态.png.jpg",
+      "sha256": "6bd2d6d3a3ed5697312a809ac91c615c3b19079343b508bb08a4d51d4f9fe7eb",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑乘开启后已选0/3、实付0/6、确认打出与取消骑乘集中显示；已打出普通牌和骑乘在上排，合计威力贴近牌组左侧，下排候选和右侧两张未打出技能保持可见。",
+      "score": 94,
+      "group": "hand",
+      "uiStateId": "riding-choice-controls",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/发动骑乘后进入的手牌选择态.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/二十张真实实例仍留在原出牌区.png.jpg",
+      "sha256": "35f4821be2e1b3542949593db542da11748c36be9aed3cb2f1a7c9fb1a8baaa9",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "二十张密集代表态使用一条上排滚动轨道，当前末端牌本体与焦点边界完整可见；威力摘要仍在轨道左侧，右侧技能及阶段入口独立。左上大卡预览没有挡住本帧目标牌组、本人资源或对手席位，本帧只判密集浏览态。",
+      "score": 91,
+      "group": "hand",
+      "uiStateId": "twenty-inline-played-cards",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/二十张真实实例仍留在原出牌区.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792754524176-68szd2/空攻击手牌仍留在独立攻击区.png.jpg",
+      "sha256": "6facc9a2d281aab2fba39940873ef0132ce0daf9d33be0920cffe4f2eb1589f2",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "空攻击手牌状态只在唯一攻击主区显示暂无攻击手牌，攻击区域没有侵入本人资源或右侧技能；三张技能在右下完整常显，推进在其上方并避开全局离开，威力摘要保持在出牌区域左侧，未见残留检视遮罩。此图为合法真实定义的布局代表态，不证明自然对局能耗尽全部牌库。",
+      "score": 94,
+      "group": "hand",
+      "uiStateId": "empty-attack-hand",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4d2587e53dabe3eaa9b62d430fde3052b112ad32976fa814197a7acbad749099",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792754524176-68szd2/空攻击手牌仍留在独立攻击区.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "sourceRun": "1792754539758-295004-d5129e70-cf1c-4dbe-b3cc-dfc757b6215d"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄横屏手牌与出牌分区.png.jpg",
+      "sha256": "35b1c4d36cc5dbf93925f6eee14b5ce8cbb7772f5b2016b7a37b9cbddaca73f9",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "936乘432密集代表态已经没有遮挡左侧的大卡预览，本人身份、令咒、魔力战果及合计威力66完整可辨；上排牌组保持可辨大小并在自身轨道内浏览，右侧技能完整，阶段入口在技能上方且与离开圆钮分离。截图不代表自然持有二十张牌。",
+      "score": 93,
+      "group": "hand",
+      "uiStateId": "narrow-landscape-density",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "mobile",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄横屏手牌与出牌分区.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面关闭检视后的正常牌桌.png.jpg",
+      "sha256": "1943f8b39a23ac47231f24c06147cfc1255716f9d7f6e45b204b83a3d662a989",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "1366乘768静息牌桌没有遗留悬停层；暂存牌左侧摘要与牌组相邻，两种手牌完整显示。阶段主按钮在技能上方，已经向内避开全局离开圆钮，两者边界清楚，本人信息与两对手席位同时可辨。",
+      "score": 94,
+      "group": "hand",
+      "uiStateId": "desktop-narrow-normal",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面关闭检视后的正常牌桌.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手出牌抽屉打开.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手出牌抽屉打开.png.jpg",
+      "sha256": "f9676dc74be66072b3526ebf65faaa2b8e96cc61c383a829d5bc22152bf1b3f5",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "score": 93,
+      "group": "hand",
+      "uiStateId": "desktop-opponent-drawer-open",
+      "viewport": "desktop",
+      "observation": "1366窄桌面对手出牌抽屉打开：抽屉紧邻玩家席位，合计威力与尚未打出攻击牌空态清楚，关闭入口可辨；本人手牌、技能、威力与阶段按钮保持可见。此图不将对手空态当作公开出牌密集态验收。",
+      "protectedSlots": {
+        "selfIdentity": "模态详情时按设计背景受遮罩；抽屉时完整可见",
+        "skills": "详情两排技能背面完整",
+        "opponentSeats": "切换或席位入口可辨",
+        "phaseAction": "抽屉时保留；模态时关闭后返回",
+        "manaAndVP": "可辨",
+        "attackHand": "抽屉时保留；模态时背景不承担当前决策",
+        "map": "非本帧当前操作对象",
+        "commandSpells": "目标玩家令咒可辨"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手身份详情打开.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手身份详情打开.png.jpg",
+      "sha256": "bfba5f9e3d9b3f1056a64a3074ae922d573cfb764e15913aca0aa3532ef71030",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "score": 93,
+      "group": "hand",
+      "uiStateId": "desktop-player-detail-open",
+      "viewport": "desktop",
+      "observation": "1366窄桌面对手详情打开：顶部玩家切换高亮清楚，资源与地点一排可读；御主原卡、隐藏从者牌背及三张技能牌背完整保留两排布局，右侧令咒与能力说明位置明确，关闭入口独立，未见未解放从者身份泄漏。右侧长文属于内部滚动区，本帧仅证明顶部内容可读。",
+      "protectedSlots": {
+        "selfIdentity": "模态详情时按设计背景受遮罩；抽屉时完整可见",
+        "skills": "详情两排技能背面完整",
+        "opponentSeats": "切换或席位入口可辨",
+        "phaseAction": "抽屉时保留；模态时关闭后返回",
+        "manaAndVP": "可辨",
+        "attackHand": "抽屉时保留；模态时背景不承担当前决策",
+        "map": "非本帧当前操作对象",
+        "commandSpells": "目标玩家令咒可辨"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏点牌打开完整检视.png.jpg",
+      "sha256": "5cdcf4a09066a0db513b253dc9c1f75c87d3091cd6cb3e91b3a4446024366ebd",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实触控检视：完整绿色攻击卡面居中呈现，费用、威力和标题可读；右上关闭按钮在空白角区，未压费用或威力，背景遮罩明确表示当前焦点在检视。",
+      "score": 95,
+      "group": "hand",
+      "uiStateId": "touch-inspection-open",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "mobile",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏点牌打开完整检视.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏关闭检视后的正常牌桌.png.jpg",
+      "sha256": "1de8bd8eee28369d0b4452244d2c54999af1a4e5d7338a865a4485756c170f71",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "触控关闭检视后没有桌面悬停大卡；本人令咒、身份、魔力与战果、两对手席位、单攻击区和右侧技能同屏可辨；威力贴近已打出牌左侧，主动作在技能上方且与离开入口分离。",
+      "score": 93,
+      "group": "hand",
+      "uiStateId": "touch-normal-after-inspection",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "mobile",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏关闭检视后的正常牌桌.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏检视关闭后继续结束行动.png.jpg",
+      "sha256": "0293e3f69f1ca6492fe7f8771b1d86aa3ef554979fecfa31604d47e25d8d615d",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "触控继续结束行动后，玩家二行动中状态可辨；本人卡牌、技能和资源保持可见，按钮表现为非当前玩家不可继续提交的状态，没有新的悬停预览或遮罩残留。",
+      "score": 92,
+      "group": "hand",
+      "uiStateId": "touch-continued-action",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "mobile",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏检视关闭后继续结束行动.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1792752233172-j0yf5a/骑乘选择打开.png.jpg",
+      "sha256": "544bc4f8a1ae3dea15ebf81718af0cb964bdbd1030ab18e16e472243f5230637",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "1920桌面骑乘零张选择态重新取证：已选0/3、实付0/6及确认与取消可辨，候选保持单攻击主区，威力紧邻上排牌组左侧；右侧技能完整常显，推进在技能上方且避开离开圆钮。此图来自可与当前行为日志配对的新零张运行。",
+      "score": 94,
+      "group": "riding",
+      "uiStateId": "riding-open",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1792752233172-j0yf5a/骑乘选择打开.png.jpg",
+      "protectedSlots": {
+        "phaseAction": "在技能上方，与离开按钮分离",
+        "manaAndVP": "可见",
+        "commandSpells": "可见",
+        "map": "图面已检查，不证明移动操作",
+        "attackHand": "候选完整可辨",
+        "opponentSeats": "两席可见",
+        "skills": "右侧完整常显",
+        "selfIdentity": "可见"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "sourceRun": "1792752351124-288916-185e3475-30ee-4355-93e2-4802cff840fc",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1792751232151-9n62w4/骑乘单张费用牌.png.jpg",
+      "sha256": "ab303ff82117c52ec294158eb72950dd2852688dd6e9499c2bf88a21c2648bd5",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑乘单张费用牌选中态：下排急行卡金色选择边界清楚，已选1/3、实付1/6、确认打出一张与取消入口同屏；费用与威力印刷区完整在视口内，普通已打出牌维持独立上排，未出现第二套普通草稿区。",
+      "score": 95,
+      "group": "riding",
+      "uiStateId": "riding-one-selected",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1792751232151-9n62w4/骑乘单张费用牌.png.jpg",
+      "protectedSlots": {
+        "phaseAction": "在技能上方，与离开按钮分离",
+        "manaAndVP": "可见",
+        "commandSpells": "可见",
+        "map": "图面已检查，不证明移动操作",
+        "attackHand": "候选完整可辨",
+        "opponentSeats": "两席可见",
+        "skills": "右侧完整常显",
+        "selfIdentity": "可见"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1792751232151-9n62w4/骑乘三张已选满.png.jpg",
+      "sha256": "9a7aee24244565b53e93a4794444bc3f47d728aeb6e49fa6f407eed710b116ac",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑乘三张上限代表态：下排三张金色边界与未选候选可辨，控制栏显示已选3/3与确认打出三张；威力读数与上排牌组紧邻，技能和推进位保持最新合同，卡面底部与操作入口未被裁切。静态图不证明第四张服务器拒绝。",
+      "score": 94,
+      "group": "riding",
+      "uiStateId": "riding-three-selected",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1792751232151-9n62w4/骑乘三张已选满.png.jpg",
+      "protectedSlots": {
+        "phaseAction": "在技能上方，与离开按钮分离",
+        "manaAndVP": "可见",
+        "commandSpells": "可见",
+        "map": "图面已检查，不证明移动操作",
+        "attackHand": "候选完整可辨",
+        "opponentSeats": "两席可见",
+        "skills": "右侧完整常显",
+        "selfIdentity": "可见"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1792751232151-9n62w4/骑乘费用不足且候选不可选.png.jpg",
+      "sha256": "957fdf6c9d656abe83c9bbf3b2e42d2d00c66ef2a12356b03ac7e7c31a3e6849",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑乘零魔力费用不足代表态：本人魔力0与控制栏已选0/3、实付0/0清楚可辨，候选与确认取消仍可见；没有选中边界或额外错误遮罩，右侧技能、推进与两对手席位完整。静态图不单独证明拒绝动作或费用结算正确。",
+      "score": 93,
+      "group": "riding",
+      "uiStateId": "riding-unaffordable",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1792751232151-9n62w4/骑乘费用不足且候选不可选.png.jpg",
+      "protectedSlots": {
+        "phaseAction": "在技能上方，与离开按钮分离",
+        "manaAndVP": "可见",
+        "commandSpells": "可见",
+        "map": "图面已检查，不证明移动操作",
+        "attackHand": "候选完整可辨",
+        "opponentSeats": "两席可见",
+        "skills": "右侧完整常显",
+        "selfIdentity": "可见"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "unchangedEvidence": "已独立核对沿用范围：本轮后续改动只作用于准备期、移动目标、淘汰状态和空攻击手牌文案；本图不在这些分支，原路径、摘要、观察及验收条件保持不变。",
+      "unchangedEvidenceFiles": [
+        "temp/fate-ui-carry-forward-scope-20261023.md"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/主视角真实联网选角准备.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/主视角真实联网选角准备.jpg.jpg",
+      "sha256": "01f3e61e3e3247133967a0cce9ba4162ec2269f754d874d559e6a10dc6b8c5dc",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "首轮选角面板中的御主与从者选择完整，右下三张技能在准备阶段常显；推进位于技能上方，唯一攻击区显示暂无攻击手牌，本人身份资源和两对手席位可辨。",
+      "score": 94,
+      "group": "online",
+      "uiStateId": "ui-1",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/三名真实客户端准备完成.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/三名真实客户端准备完成.jpg.jpg",
+      "sha256": "ec033c657b45612e2a0a397e58d0c993d6f7c32cde30727dc2065743e47fc3ea",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三席准备完成后的前哨界面保留单攻击主区与右侧完整技能，印刷地图合法部署槽位清楚；推进保持技能上方，当前尚无暂存牌，威力摘要独立位于左侧。",
+      "score": 93,
+      "group": "online",
+      "uiStateId": "ui-2",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/御主能力与本人详情入口.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/御主能力与本人详情入口.jpg.jpg",
+      "sha256": "77b82c784576a5f355fc62a0df4838a11374523a9304bc4f3d46ef6ecd2b486e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本人详情完整呈现御主、从者、令咒和三张技能原卡；战略部署说明下有直接发动入口，顶部资源、位置、玩家切换和关闭按钮清楚，未发现当前内容裁切。",
+      "score": 95,
+      "group": "online",
+      "uiStateId": "ui-3",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/常规移动目标等待确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/常规移动目标等待确认.jpg.jpg",
+      "sha256": "cd1caf52396c4807000048bfa637f6330443086e2b4ce3fe26ce21464cfded40",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "常规移动待确认时，所选深山町使用粗金色单边界及暖色填充，与其他合法候选明显区分；主操作点名深山町，取消入口可辨，原手牌和右侧技能完整。",
+      "score": 95,
+      "group": "online",
+      "uiStateId": "ui-4",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/常规移动确认并按费用结算.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/常规移动确认并按费用结算.jpg.jpg",
+      "sha256": "d15b9528b584269cfdd978346c43c5702dd801ff51c06251d5ec69524ca3f23c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认常规移动后的棋子位于深山町，地图不再保留移动目标遮罩；本人魔力、攻击手牌、威力摘要、右侧技能和上方当前操作均可辨，费用计算归行为断言。",
+      "score": 93,
+      "group": "online",
+      "uiStateId": "ui-5",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/令咒移动等待确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/令咒移动等待确认.jpg.jpg",
+      "sha256": "eaf76cdebc0bee778f7aad787a7dd2774dd69ea20c5fe61d17f1fbc4039e939e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "令咒移动待确认时，魔术工房以粗金色单边界和暖色填充明确选中，主操作完整写出目的地，末字折行仍可读；取消、当前棋子、手牌与右侧技能可辨。",
+      "score": 94,
+      "group": "online",
+      "uiStateId": "ui-6",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/令咒恢复魔力等待确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/令咒恢复魔力等待确认.jpg.jpg",
+      "sha256": "6d5680538365df9f8d36e7694615f5566c3e5db4634decfd95a2829ea7f2b235",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "使用令咒弹窗显示剩余数量、本次消耗、恢复魔力选中状态、强化战斗和不可选移动项，确认使用与关闭入口完整；背景受到明确模态遮罩。",
+      "score": 95,
+      "group": "online",
+      "uiStateId": "ui-7",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/真实联网两张草稿尚未提交.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/真实联网两张草稿尚未提交.jpg.jpg",
+      "sha256": "1d956485a4489b0927579a516832b26253d9d1d0480d9757c8896e369cfa2722",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两张客户端草稿在同一攻击区上排显示，准备打出数量与预计合计威力紧邻牌组左侧，确认攻击按钮清楚；下排剩余手牌、右侧三技能和本人资源完整可见。",
+      "score": 94,
+      "group": "online",
+      "uiStateId": "ui-8",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/草稿撤回后权威状态保持不变.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/草稿撤回后权威状态保持不变.jpg.jpg",
+      "sha256": "765bf2b267dc92d0f35511fb5f5cf560440842e0d5c961f5ceb5788ad408cd27",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回后上排只留一张暂存牌，准备数量及预计威力随之显示，撤回牌回到下排；确认入口呈禁用状态，右侧技能仍常显，未发现残留检视遮挡。",
+      "score": 94,
+      "group": "online",
+      "uiStateId": "ui-9",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/原子确认后正式攻击生效.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/原子确认后正式攻击生效.jpg.jpg",
+      "sha256": "e651d26ac400de876519e7a783d803dd102e2c1fc6efd1924802ec676eb94b03",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原子确认后的两张正式攻击牌完整位于上排，左侧摘要显示已打出和合计威力；下排手牌、右三技能、本人的资源及技能上方结束行动入口可辨。",
+      "score": 94,
+      "group": "online",
+      "uiStateId": "ui-10",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/真实联网多轮对局正式终局.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/真实联网多轮对局正式终局.jpg.jpg",
+      "sha256": "b851481ee28a2bf42dab482dcc52d667b4624f112f2f601edb9ef68a391e168b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式自然终局面板完整显示胜者和三席最终得分，胜者行突出，再来一局与返回大厅按钮可辨；背景一致模糊，结果没有被玩家栏、手牌或全局按钮遮挡。",
+      "score": 95,
+      "group": "online",
+      "uiStateId": "ui-11",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+      "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；数值计算归行为断言",
+        "opponentSeats": "已检查",
+        "attackHand": "唯一主区完整，模态时背景受控遮挡",
+        "skills": "右侧常显；模态时背景受控遮挡",
+        "phaseAction": "位于技能上方并避让全局离开",
+        "map": "已检查所选目标、取消及确认结果图面"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+      "sha256": "40cfc3468314c3ddf93d20f92597bd2295cc7185b6ee009a1d6e0b448719d12c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第十轮战后恢复令咒弹窗完整位于屏幕中央，原事件卡、恢复与不恢复选项及确认选择按钮清楚；当前选中项突出，背景受到模态遮罩。此图只证明选择界面可辨，事务与数值归行为断言。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-open-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "相同摘要沿用此前逐原图裁决",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+      "sha256": "dffa64e96a362772c23aca9097d0f2dd421e8701046528bab24eca8577a40753",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本人确认后弹窗关闭，主操作明确等待战后选择且呈禁用态；攻击手牌只有一个主区、右侧三张技能完整可见，威力摘要位于上排左侧，推进仍在技能上方。",
+      "score": 93,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-confirm-own-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "相同摘要沿用此前逐原图裁决",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "sha256": "0d7bf69b0dfede16f93d21e0c633de9de6f2b7cb0e4963c47f643638e91967b8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "全部选择后进入第十一轮准备，对手席位已淘汰标签清楚；修复后的准备阶段仍保留唯一攻击区与右侧三张技能，威力摘要和技能上方推进均可见，底部牌面未裁切。",
+      "score": 94,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-complete-peer-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "相同摘要沿用此前逐原图裁决",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示淘汰状态.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "sha256": "f90eece298c80c8921dc38d15083530541f8b81d0e0ee8be05a3bf19b0ded7bf",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "淘汰玩家详情顶行明确显示已淘汰，魔力、令咒、威力与战果可辨；御主原卡可见，未揭示从者及三张技能保持牌背，右上关闭和顶部玩家切换完整，没有发现隐藏身份泄漏。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-inspect-eliminated",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "改写媒体已重新逐原图检查",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰玩家详情明确显示已淘汰.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+      "sha256": "6fbc3c76d1a3ef2ab80b123d0d6f5eca91c6deebf29f697963465db89570a352",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末轮战后恢复令咒弹窗完整显示原事件卡、恢复与不恢复选项、选中状态和确认入口，内容没有被屏幕边缘截断，背景受到一致的模态遮罩。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-11-open-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "相同摘要沿用此前逐原图裁决",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+      "sha256": "26489f711f753235291c6096bfe6cd703000b24716eb78ee0de26a71d9bd2917",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末轮本人完成后仍显示等待战后选择，终局面板尚未出现；对手淘汰标签、本人资源、单攻击主区、完整右侧技能及其上方推进可辨。",
+      "score": 93,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-11-confirm-own-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "相同摘要沿用此前逐原图裁决",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示正式终局.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示正式终局.jpg.jpg",
+      "sha256": "9faf7bec7f9e1c14779f19e107de5e14d348d214a9801f7ba93eafd5af114a42",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式终局面板完整显示胜者和三席战果，胜者行突出，再来一局与返回大厅入口清楚；背景一致模糊，当前结果没有被手牌、玩家栏或全局按钮遮挡。此图不替代胜负计算和联网一致性断言。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-11-complete-peer-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+      "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "改写媒体已重新逐原图检查",
+      "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示正式终局.jpg.jpg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792755051640-7d95s2/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792755051640-7d95s2/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "sha256": "2b56c9baf0fe1a354d612b9cebd5f24f2c172f7947cd4d8182ed77d53e2630d3",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "淘汰本人观战视角现已完整显示印刷地图、局势与事件原卡；左下已淘汰及观战标签清楚，令咒与推进呈禁用状态，唯一攻击主区、威力摘要和右侧三张技能完整可辨，公开出牌空抽屉未遮住关键操作槽。",
+      "score": 94,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-targeted-recapture-observe-eliminated",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:6296ec9d1d6596756cead1ae460fe3866d48d2b654a2b6f6fe3fdf93790560b6",
+      "sourceRun": "1792755069622-297544-a3398cf0-1afe-4088-afc5-aa3331168c8c",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reviewMethod": "地图资源就绪后定向重采，实际改写原图已重新逐张检查"
+    }
+  ],
+  "uncovered": [
+    "当前视觉账本包含手牌十二张、骑乘四张、战后八张、自然联网十一张；其中十五张为同轮未改写媒体沿用，不冒称全部同次拍摄",
+    "自然联网链一至十一轮中未出现战后恢复选择，该分支由独立合法代表态直接覆盖",
+    "对手详情长能力文案的内部滚动到底未由当前原图直接覆盖",
+    "抽屉覆盖尚未出牌空态，不代表对手公开出牌密集态",
+    "数值、正费用、权限、过期重复输入和第四张拒绝由领域与真实网络行为断言证明",
+    "完整卡效、高级响应、全部角色能力、策略人工智能、教程、音频与资源发布不在本组通过范围"
+  ],
+  "boundaries": {
+    "canPublishWholeGroup": true,
+    "individualOriginalImagesInspected": 35,
+    "historicalPassUsed": false,
+    "denseFixtureIsNaturalGameplay": false,
+    "userVisibleMediaOpened": false,
+    "publishScope": "只允许列明的三十五张当前合同媒体，不代表完整游戏或全部规则完成"
+  },
+  "overallTaskStatus": "current-basic-interaction-ui-covered",
+  "preservedRidingEvidence": "零张图已逐原图重审替换为2233172运行以匹配其行为trace；其余三图 UI 源码未变化，继续引用已独立审查的1232151原路径与SHA。",
+  "candidateOnline": {
+    "status": "superseded-diagnostic",
+    "mayPublish": false,
+    "revise": 2,
+    "pass": 2,
+    "media": [
+      {
+        "path": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/御主能力与本人详情入口.jpg.jpg",
+        "source": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/御主能力与本人详情入口.jpg.jpg",
+        "sha256": "7cc76f01d819c68d3385e309710c2b4d639eb6a2d534c0fcd7ddfd89b5569ce3",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "score": 94,
+        "group": "candidateOnline",
+        "observation": "本人详情的御主与从者原卡、右侧令咒和能力文字、下排三张技能完整可辨，战略部署的发动按钮直接跟随对应能力说明；顶部玩家切换、资源和关闭入口清楚，未发现当前目标的裁切或素材错误。",
+        "hardFailures": null,
+        "remedy": "",
+        "chainAcceptance": "未完成自然终局链，仅提前检查单帧，不能作为完整联网验收"
+      },
+      {
+        "path": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/常规移动目标等待确认.jpg.jpg",
+        "source": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/常规移动目标等待确认.jpg.jpg",
+        "sha256": "cfd2954cd17cb017ce28a94fa1ced79612e7f4be398b316ce89a245def24d261",
+        "status": "REVISE",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "score": 86,
+        "group": "candidateOnline",
+        "observation": "地图常规移动待确认：合法地点都由相近浅色细框和填充表示，所选深山町与另外两个候选差异很弱；主操作只写确认移动，没有显示当前目的地，玩家难以第一眼核对提交终点。人物、手牌和技能仍可见。",
+        "hardFailures": "已选终点与合法候选视觉差异不足，确认摘要也未点名终点",
+        "remedy": "加强同一个已选主边界或让确认摘要点明目的地；同一真实操作入口重拍，不新增叠层框",
+        "chainAcceptance": "未完成自然终局链，仅提前检查单帧，不能作为完整联网验收"
+      },
+      {
+        "path": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/令咒移动等待确认.jpg.jpg",
+        "source": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/令咒移动等待确认.jpg.jpg",
+        "sha256": "51dcfd8b71e604ee744d5e8acf1bb289087ad510ffb6a2368a2eb6136d873b30",
+        "status": "REVISE",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "score": 86,
+        "group": "candidateOnline",
+        "observation": "令咒移动待确认：工房、新都与侦察等候选使用近似浅色边界；当前所选工房只有很轻的颜色差，确认摘要未点名目的地，选择与确认之间缺少清楚的终点核对；令咒取消入口与原牌组仍可见。",
+        "hardFailures": "已选终点与合法候选视觉差异不足，确认摘要也未点名终点",
+        "remedy": "加强同一个已选主边界或让确认摘要点明目的地；同一真实操作入口重拍，不新增叠层框",
+        "chainAcceptance": "未完成自然终局链，仅提前检查单帧，不能作为完整联网验收"
+      },
+      {
+        "path": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/令咒恢复魔力等待确认.jpg.jpg",
+        "source": "test-results/evidence-screenshots/_temporary/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651/令咒恢复魔力等待确认.jpg.jpg",
+        "sha256": "26387d4603d11591e7cf4269aceeee8bf086c0a858042ffee76eb0049049874a",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "score": 94,
+        "group": "candidateOnline",
+        "observation": "令咒恢复确认弹窗：剩余两枚及本次消耗一枚、恢复魔力选中状态、其他选项、关闭和确认使用入口清楚，卡牌桌面受到明确模态遮罩，不存在误把背景当当前候选的问题。",
+        "hardFailures": null,
+        "remedy": "",
+        "chainAcceptance": "未完成自然终局链，仅提前检查单帧，不能作为完整联网验收"
+      }
+    ],
+    "total": 4,
+    "runId": "1792753305421-294772-578878f3-1ef9-4af0-a3d0-501a00a24651",
+    "resolution": "移动目标文案与边界已由当前自然链原图重新验收；原失败观察保留为历史，不进入最终媒体"
+  },
+  "codeFindings": [
+    {
+      "scope": "本轮明确要求淘汰与当前界面正式验收，属于基础范围",
+      "id": "elimination-ui-state-missing",
+      "minimumRemedy": "从既有 player.eliminated 派生本人、对手席位和详情的已淘汰标记，必要时说明观战，不新增规则状态",
+      "consequence": "已淘汰者没有可见的淘汰或观战标记，与普通未部署和等待回合混淆",
+      "priority": 2,
+      "evidence": [
+        "FatePlayerRail 席位只显示行动中、战果、魔力和手牌",
+        "FateSelfDock 本人信息无淘汰状态",
+        "playerPresentation location 为 null 时统一投影未部署，详情直接消费该值",
+        "ui 目录只有 useFateAttackDraft 消费 eliminated，未将该字段呈现为玩家状态"
+      ],
+      "status": "RESOLVED",
+      "evidenceFreshness": "原始发现为修复前历史事实，当前已由既有淘汰字段投影标签修复",
+      "resolution": "当前八张战后原图中分别验证对手席位、详情与淘汰本人观战状态，不再列为当前实现缺陷"
+    }
+  ],
+  "postBattleBoundary": {
+    "status": "PASS",
+    "total": 8,
+    "sourceRun": [
+      "e2e-1792754888672-2j86dc",
+      "e2e-1792755051640-7d95s2"
+    ],
+    "kind": "连接前一次注入的合法战后代表态，选择事务由正式流程生成",
+    "naturalFlowClaim": false,
+    "visualScope": "只证明列出的八张真实界面状态，不证明此前十轮自然形成或全部规则数值",
+    "sameHashDecisionsRetained": 5,
+    "rewrittenOriginalsReviewed": 3,
+    "targetedObserverActualSteps": 5,
+    "targetedObserverMediaCount": 1,
+    "observerMapReady": true,
+    "finalTerminalVisible": true
+  },
+  "revisionHistory": [
+    {
+      "id": "preparation-hides-skills",
+      "status": "RESOLVED",
+      "failedRun": "e2e-1792754026323-wdkx5w",
+      "observation": "旧准备期把攻击和技能整区隐藏，已退回；当前运行准备与淘汰本人均保持右侧技能常显",
+      "resolvedRun": "e2e-1792754139352-d2yck6",
+      "mayPublishFailedMedia": false
+    },
+    {
+      "id": "online-terminal-visible-selector",
+      "status": "RESOLVED",
+      "failedRun": "e2e-1792754193677-97y0fi",
+      "reason": "旧记录器只匹配显式区域属性，使末端可见布尔为假却没有实际断言，不能作为正式整链通过",
+      "resolvedRun": "e2e-1792754592860-34gb4m",
+      "resolution": "当前以语义区域可见探测并实际断言，末端实际与预期均为真，全部记录断言一致"
+    },
+    {
+      "id": "observer-map-not-ready",
+      "status": "RESOLVED",
+      "failedRun": "e2e-1792754888672-2j86dc",
+      "failedSha256": "12545bc75f832298d3d5f6364ddb6efdcd28914f5d01356a287b5158000ee692",
+      "resolution": "导航后等待现有地图资源就绪及实际绘制帧，仅重采本人观战状态；完整五步及禁用断言保留",
+      "resolvedRun": "e2e-1792755051640-7d95s2",
+      "resolvedSha256": "2b56c9baf0fe1a354d612b9cebd5f24f2c172f7947cd4d8182ed77d53e2630d3"
+    }
+  ],
+  "incrementalReview": {
+    "carriedForward": [
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/行动手牌与原位出牌区.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/攻击牌本体暂选于牌区.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/发动骑乘后进入的手牌选择态.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/二十张真实实例仍留在原出牌区.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄横屏手牌与出牌分区.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面关闭检视后的正常牌桌.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手出牌抽屉打开.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手身份详情打开.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏点牌打开完整检视.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏关闭检视后的正常牌桌.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏检视关闭后继续结束行动.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1792752233172-j0yf5a/骑乘选择打开.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1792751232151-9n62w4/骑乘单张费用牌.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1792751232151-9n62w4/骑乘三张已选满.png.jpg",
+      "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1792751232151-9n62w4/骑乘费用不足且候选不可选.png.jpg"
+    ],
+    "basis": "temp/fate-ui-carry-forward-scope-20261023.md",
+    "retainedOriginalPathsAndHashes": true,
+    "rereadUnchangedMedia": false,
+    "pendingFreshMedia": []
+  },
+  "supersededMedia": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/空攻击手牌仍留在独立攻击区.png.jpg",
+      "sha256": "a46f19f98d291dcb55c76941a35bb36415589d72e5a5a6ef936c21ad0c3a0a9a",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "1920桌面空手代表态：已打出0、合计威力0和手牌已全部打出明确呈现；旧会心一击大卡已经消失，地图、本人资源身份令咒、右侧三张技能及技能上方阶段入口完整可辨，没有残留孤立牌面。",
+      "score": 93,
+      "group": "hand",
+      "uiStateId": "empty-attack-hand",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+      "viewport": "desktop",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/空攻击手牌仍留在独立攻击区.png.jpg",
+      "protectedSlots": {
+        "selfIdentity": "已检查",
+        "commandSpells": "已检查",
+        "manaAndVP": "已检查",
+        "opponentSeats": "已检查",
+        "attackHand": "已检查",
+        "skills": "已检查",
+        "phaseAction": "已检查",
+        "map": "已检查图面，不据此证明移动规则"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "空攻击手牌文案已改写，原图保留历史，不进入当前最终媒体"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg",
+      "sha256": "40cfc3468314c3ddf93d20f92597bd2295cc7185b6ee009a1d6e0b448719d12c",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第十轮战后恢复令咒弹窗完整位于屏幕中央，原事件卡、恢复与不恢复选项及确认选择按钮清楚；当前选中项突出，背景受到模态遮罩。此图只证明选择界面可辨，事务与数值归行为断言。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-open-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754162490-294868-4cc3e435-87eb-4259-a34b-a3f5b7ae4ddb",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg",
+      "sha256": "dffa64e96a362772c23aca9097d0f2dd421e8701046528bab24eca8577a40753",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本人确认后弹窗关闭，主操作明确等待战后选择且呈禁用态；攻击手牌只有一个主区、右侧三张技能完整可见，威力摘要位于上排左侧，推进仍在技能上方。",
+      "score": 93,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-confirm-own-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754162490-294868-4cc3e435-87eb-4259-a34b-a3f5b7ae4ddb",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "sha256": "0d7bf69b0dfede16f93d21e0c633de9de6f2b7cb0e4963c47f643638e91967b8",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "全部选择后进入第十一轮准备，对手席位已淘汰标签清楚；修复后的准备阶段仍保留唯一攻击区与右侧三张技能，威力摘要和技能上方推进均可见，底部牌面未裁切。",
+      "score": 94,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-complete-peer-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754162490-294868-4cc3e435-87eb-4259-a34b-a3f5b7ae4ddb",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "sha256": "2f938476b2cb636566c4d83f35acecaf1e65834b4f858db2332baa7d2f4080f6",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "淘汰玩家详情顶行明确显示已淘汰，魔力、令咒、威力与战果可辨；御主原卡可见，未揭示从者及三张技能保持牌背，右上关闭和顶部玩家切换完整，没有发现隐藏身份泄漏。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-inspect-eliminated",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754162490-294868-4cc3e435-87eb-4259-a34b-a3f5b7ae4ddb",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "sha256": "2b56c9baf0fe1a354d612b9cebd5f24f2c172f7947cd4d8182ed77d53e2630d3",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "淘汰本人视角左下红底已淘汰与观战标签清楚，推进与令咒呈禁用状态；本人的手牌和右侧技能仍完整常显，威力在上排左侧，其他玩家席位与公开出牌空抽屉可辨。禁用行为本身由实际断言负责。",
+      "score": 93,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-10-observe-eliminated",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754162490-294868-4cc3e435-87eb-4259-a34b-a3f5b7ae4ddb",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg",
+      "sha256": "6fbc3c76d1a3ef2ab80b123d0d6f5eca91c6deebf29f697963465db89570a352",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末轮战后恢复令咒弹窗完整显示原事件卡、恢复与不恢复选项、选中状态和确认入口，内容没有被屏幕边缘截断，背景受到一致的模态遮罩。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-11-open-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754177769-294868-25359710-a5ee-4b9a-8be9-9caa3357c2e3",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg",
+      "sha256": "26489f711f753235291c6096bfe6cd703000b24716eb78ee0de26a71d9bd2917",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末轮本人完成后仍显示等待战后选择，终局面板尚未出现；对手淘汰标签、本人资源、单攻击主区、完整右侧技能及其上方推进可辨。",
+      "score": 93,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-11-confirm-own-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754177769-294868-25359710-a5ee-4b9a-8be9-9caa3357c2e3",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示正式终局.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示正式终局.jpg.jpg",
+      "sha256": "c464045b184995e1e48a472f8d82a562d5610983e2a7c65264ab8bfc37fc220d",
+      "status": "superseded",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式终局面板完整显示胜者和三席战果，胜者行突出，再来一局与返回大厅入口清楚；背景一致模糊，当前结果没有被手牌、玩家栏或全局按钮遮挡。此图不替代胜负计算和联网一致性断言。",
+      "score": 95,
+      "group": "postBattle",
+      "uiStateId": "fate-online-post-battle-11-complete-peer-choice",
+      "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4cc235a868cc800da783371c71d8caaf0a952c9182f51ec592aa9b791a4160a0",
+      "sourceRun": "1792754177769-294868-25359710-a5ee-4b9a-8be9-9caa3357c2e3",
+      "viewport": "desktop",
+      "protectedSlots": {
+        "selfIdentity": "已检查；模态时背景受控遮挡",
+        "commandSpells": "已检查；模态时背景受控遮挡",
+        "manaAndVP": "已检查；模态时背景受控遮挡",
+        "opponentSeats": "已检查；模态时背景受控遮挡",
+        "attackHand": "同一主区；模态时背景受控遮挡",
+        "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+        "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+        "map": "只检查当前图面，不证明部署和移动命中"
+      },
+      "hardFailures": [],
+      "internalIdLeak": "未发现",
+      "reason": "更换为相同界面内容但正式可见记录一致的新行为来源"
+    }
+  ],
+  "onlineBoundary": {
+    "status": "PASS",
+    "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+    "runtimeRun": "e2e-1792754592860-34gb4m",
+    "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+    "behaviorTrace": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/online-basic-match.trace.json",
+    "covered": {
+      "rounds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "postBattleChoices": 0,
+      "capturedPostBattle": false,
+      "eliminated": [
+        "0"
+      ]
+    },
+    "actualSteps": 247,
+    "realBrowserContexts": 1,
+    "additionalProductionTransportClients": 2,
+    "midFlowStateInjection": false,
+    "terminalAssertionActual": true,
+    "terminalAssertionExpected": true,
+    "allRecordedAssertionsEqual": true,
+    "naturalPostBattleChoiceCovered": false,
+    "boundary": "自然链未遇战后恢复选择；该分支由连接前一次合法代表态的独立两链证明。不是三浏览器、完整卡效、全部角色或策略人工智能验收。"
+  },
+  "candidatePostBattle": {
+    "sourceRun": "e2e-1792754888672-2j86dc",
+    "status": "superseded-diagnostic",
+    "mayPublish": false,
+    "total": 8,
+    "pass": 7,
+    "revise": 1,
+    "exactHashRetained": 5,
+    "changedOriginalsReread": 3,
+    "media": [
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+        "sha256": "40cfc3468314c3ddf93d20f92597bd2295cc7185b6ee009a1d6e0b448719d12c",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "第十轮战后恢复令咒弹窗完整位于屏幕中央，原事件卡、恢复与不恢复选项及确认选择按钮清楚；当前选中项突出，背景受到模态遮罩。此图只证明选择界面可辨，事务与数值归行为断言。",
+        "score": 95,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-10-open-choice",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "相同摘要沿用此前逐原图裁决",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+        "sha256": "dffa64e96a362772c23aca9097d0f2dd421e8701046528bab24eca8577a40753",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "本人确认后弹窗关闭，主操作明确等待战后选择且呈禁用态；攻击手牌只有一个主区、右侧三张技能完整可见，威力摘要位于上排左侧，推进仍在技能上方。",
+        "score": 93,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-10-confirm-own-choice",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "相同摘要沿用此前逐原图裁决",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示淘汰状态.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示淘汰状态.jpg.jpg",
+        "sha256": "0d7bf69b0dfede16f93d21e0c633de9de6f2b7cb0e4963c47f643638e91967b8",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "全部选择后进入第十一轮准备，对手席位已淘汰标签清楚；修复后的准备阶段仍保留唯一攻击区与右侧三张技能，威力摘要和技能上方推进均可见，底部牌面未裁切。",
+        "score": 94,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-10-complete-peer-choice",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "相同摘要沿用此前逐原图裁决",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示淘汰状态.jpg.jpg"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+        "sha256": "f90eece298c80c8921dc38d15083530541f8b81d0e0ee8be05a3bf19b0ded7bf",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "淘汰玩家详情顶行明确显示已淘汰，魔力、令咒、威力与战果可辨；御主原卡可见，未揭示从者及三张技能保持牌背，右上关闭和顶部玩家切换完整，没有发现隐藏身份泄漏。",
+        "score": 95,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-10-inspect-eliminated",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "改写媒体已重新逐原图检查",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰玩家详情明确显示已淘汰.jpg.jpg"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰本人进入观战且不能继续行动.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰本人进入观战且不能继续行动.jpg.jpg",
+        "sha256": "12545bc75f832298d3d5f6364ddb6efdcd28914f5d01356a287b5158000ee692",
+        "status": "REVISE",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "淘汰本人观战标签、令咒禁用和右侧技能可辨，但印刷地图、局势与事件卡全部消失，背景只剩纯深色及浮动计数，属于地图尚未实际呈现的过早截图，不能作为正式界面验收。",
+        "score": 65,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-10-observe-eliminated",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [
+          "完整印刷地图与局势事件原卡未显示"
+        ],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "改写媒体已重新逐原图检查",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/淘汰本人进入观战且不能继续行动.jpg.jpg",
+        "remedy": "导航后等待正式地图资源和实际渲染就绪，再从同一真实观战入口重采该帧"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+        "sha256": "6fbc3c76d1a3ef2ab80b123d0d6f5eca91c6deebf29f697963465db89570a352",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "末轮战后恢复令咒弹窗完整显示原事件卡、恢复与不恢复选项、选中状态和确认入口，内容没有被屏幕边缘截断，背景受到一致的模态遮罩。",
+        "score": 95,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-11-open-choice",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "相同摘要沿用此前逐原图裁决",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/战后恢复令咒等待本人确认.jpg.jpg"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+        "sha256": "26489f711f753235291c6096bfe6cd703000b24716eb78ee0de26a71d9bd2917",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "末轮本人完成后仍显示等待战后选择，终局面板尚未出现；对手淘汰标签、本人资源、单攻击主区、完整右侧技能及其上方推进可辨。",
+        "score": 93,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-11-confirm-own-choice",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "相同摘要沿用此前逐原图裁决",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/本人完成选择后仍等待第二席.jpg.jpg"
+      },
+      {
+        "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示正式终局.jpg.jpg",
+        "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示正式终局.jpg.jpg",
+        "sha256": "9faf7bec7f9e1c14779f19e107de5e14d348d214a9801f7ba93eafd5af114a42",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "正式终局面板完整显示胜者和三席战果，胜者行突出，再来一局与返回大厅入口清楚；背景一致模糊，当前结果没有被手牌、玩家栏或全局按钮遮挡。此图不替代胜负计算和联网一致性断言。",
+        "score": 95,
+        "group": "postBattle",
+        "uiStateId": "fate-online-post-battle-11-complete-peer-choice",
+        "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+        "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+        "viewport": "desktop",
+        "protectedSlots": {
+          "selfIdentity": "已检查；模态时背景受控遮挡",
+          "commandSpells": "已检查；模态时背景受控遮挡",
+          "manaAndVP": "已检查；模态时背景受控遮挡",
+          "opponentSeats": "已检查；模态时背景受控遮挡",
+          "attackHand": "同一主区；模态时背景受控遮挡",
+          "skills": "右侧常显；详情或选择模态时背景受控遮挡",
+          "phaseAction": "技能上方；等待及淘汰时呈禁用态",
+          "map": "只检查当前图面，不证明部署和移动命中"
+        },
+        "hardFailures": [],
+        "internalIdLeak": "未发现",
+        "reviewMethod": "改写媒体已重新逐原图检查",
+        "previousReviewedPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754139352-d2yck6/全部战后选择后才显示正式终局.jpg.jpg"
+      }
+    ],
+    "resolution": "黑地图观战图已退回，现经资源就绪等待及同一真实入口定向重采通过；该失败原图保留历史，不进入最终媒体"
+  }
+}

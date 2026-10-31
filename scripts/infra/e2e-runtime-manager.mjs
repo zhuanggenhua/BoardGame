@@ -24,7 +24,7 @@ import {
 } from './e2e-runtime-registry.js';
 import { startSingleWorkerRuntime } from './single-worker-runtime.js';
 import { withE2ELocalAssetEnv } from './e2e-local-assets-env.mjs';
-import { getFrontendSourceHash, readRuntimeSourceIdentity, sourceIdentityMatches } from './e2e-source-identity.mjs';
+import { getFrontendSourceHash, readRuntimeSourceIdentity, sourceIdentityMatches, selectRuntimeSourceIdentity } from './e2e-source-identity.mjs';
 
 const TMP_DIR = path.join(process.cwd(), '.tmp');
 const RUNTIME_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '420000', 10);
@@ -344,8 +344,9 @@ export async function ensureSingleWorkerRuntime(options = {}) {
 async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
     const logger = options.logger ?? console;
     const target = options.target ?? '';
+    const targetGameId = target.replaceAll('\\', '/').match(/^e2e\/([^/]+)\//)?.[1];
     const serverRuntime = process.env.PW_SERVER_RUNTIME || 'bundle';
-    const frontendSourceHash = getFrontendSourceHash();
+    const frontendSourceHash = getFrontendSourceHash(process.cwd());
     const currentWorktreeRoot = getWorktreeRoot(process.cwd());
 
     pruneStaleRuntimes(process.cwd(), { killOrphans: true, logger });
@@ -363,7 +364,8 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
     if (existingRuntime) {
         const inspected = await inspectManagedRuntime({ runtimeId: existingRuntime.runtimeId });
         if (inspected?.health?.ready && inspected.serverRuntime === serverRuntime
-            && inspected.frontendSourceHash === frontendSourceHash && sourceIdentityMatches(inspected.sourceIdentity)) {
+            && inspected.frontendSourceHash === frontendSourceHash
+            && sourceIdentityMatches(selectRuntimeSourceIdentity(inspected.sourceIdentity, targetGameId))) {
             const consumerPids = [...new Set([...(inspected.consumerPids ?? []).filter(isPidAlive), Number(process.env.PW_E2E_CLIENT_PID || process.pid)])];
             touchRuntime(inspected.scope, { consumerPids });
             logger.log?.(`♻️ 复用已就绪的 E2E runtime: ${formatRuntimeSummary(inspected)}`);
@@ -467,8 +469,8 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
             }),
         ]);
         const sourceIdentity = directSourceIdentity ?? readRuntimeSourceIdentity(plan.scope);
-        if (!sourceIdentityMatches(sourceIdentity)) throw new Error('服务启动期间源码发生变化，请按当前源码重新启动。');
-        if (frontendSourceHash !== getFrontendSourceHash()) throw new Error('前端启动期间源码发生变化，请按当前源码重新启动。');
+        if (!sourceIdentityMatches(selectRuntimeSourceIdentity(sourceIdentity, targetGameId))) throw new Error('服务启动期间目标依赖发生变化，请按当前源码重新启动。');
+        if (frontendSourceHash !== getFrontendSourceHash(process.cwd())) throw new Error('前端启动配置在服务启动期间发生变化，请按当前配置重新启动。');
         touchRuntime(plan.scope, { sourceIdentity });
         logger.log?.(`✅ E2E runtime 已就绪: ${formatRuntimeSummary(readyRuntime)}`);
 

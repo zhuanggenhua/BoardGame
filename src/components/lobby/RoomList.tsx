@@ -62,7 +62,7 @@ export const RoomList = ({
                         </p>
                     </div>
                 ) : roomItems.length === 0 ? (
-                    <div className="text-center text-parchment-light-text py-10 italic text-sm border border-dashed border-parchment-card-border/30 rounded-[4px]">
+                    <div className="platform-room-list-empty text-center text-parchment-light-text py-10 italic text-sm border border-dashed border-parchment-card-border/30 rounded-[4px]">
                         {t('rooms.empty')}
                     </div>
                 ) : (

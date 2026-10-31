@@ -176,8 +176,8 @@ test('真实联网自然基础对局：浏览器主视角及两名正式传输�
                     await expect.poll(async () => (await read()).core.players[id].locationId).toBe(destination);
                 });
                 if (!usedMaster) {
-                    await record('从本人详情进入御主能力', async () => {await page.locator('.fd-self-identity').click(); await expect(page.getByRole('button', {name: '发动战略部署'})).toBeEnabled();});
-                    await capture('御主能力与本人详情入口', 'panel');
+                    await record('牌桌御主能力入口可用', async () => {await expect(page.getByRole('dialog')).toHaveCount(0); await expect(page.getByRole('button', {name: '发动战略部署'})).toBeEnabled();});
+                    await capture('御主能力位于本人角色旁', 'panel');
                     const oldHand = (await read()).core.players[id].hand.length;
                     await record('主视角实际发动战略部署', async () => {await page.getByRole('button', {name: '发动战略部署'}).click(); await expect.poll(async () => (await read()).core.players[id].hand.length).toBe(oldHand + 2);});
                     usedMaster = true;

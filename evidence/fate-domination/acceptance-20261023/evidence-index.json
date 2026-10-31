@@ -1,0 +1,822 @@
+{
+  "scope": "用户指定的本地Fate基础对局及当前UI；未发布",
+  "status": "PASS",
+  "entireGameStatus": "incomplete",
+  "mediaCount": 35,
+  "behaviorChainCount": 12,
+  "independentVisualReport": "evidence/fate-domination/acceptance-20261023/visual-review.json",
+  "carriedForwardScope": "evidence/fate-domination/acceptance-20261023/carried-forward-scope.md",
+  "groups": {
+    "hand": {
+      "manifest": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/focused-pass-manifest.json",
+      "manifestSha256": "cbe499baf01b8b99f83ce058916dd705fe6b63961a24bad23d466ee43381052b",
+      "viewer": "http://127.0.0.1:4867/?key=e87d6049367a",
+      "gateLog": "temp/fate-hand-final-gate-20261023.log",
+      "media": [
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/01-行动手牌与原位出牌区.png.jpg",
+          "sha256": "67c262f788a94294ebc52d94c87508e7dcde8558951eac5961d28e230ea615b1",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/行动手牌与原位出牌区.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-inline-play-area-restoration",
+          "behaviorStepId": "stage-real-card"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/02-攻击牌本体暂选于牌区.png.jpg",
+          "sha256": "b93383cd8acc74e5821de8be52faf954dd3146f8bd921dad68549d164db05870",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/攻击牌本体暂选于牌区.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-inline-play-area-restoration",
+          "behaviorStepId": "stage-real-card"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/03-发动骑乘后进入的手牌选择态.png.jpg",
+          "sha256": "6bd2d6d3a3ed5697312a809ac91c615c3b19079343b508bb08a4d51d4f9fe7eb",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/发动骑乘后进入的手牌选择态.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-inline-play-area-restoration",
+          "behaviorStepId": "open-riding-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/04-二十张真实实例仍留在原出牌区.png.jpg",
+          "sha256": "35f4821be2e1b3542949593db542da11748c36be9aed3cb2f1a7c9fb1a8baaa9",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/二十张真实实例仍留在原出牌区.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-inline-play-area-restoration",
+          "behaviorStepId": "dense-direct-card-zone"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/05-空攻击手牌仍留在独立攻击区.png.jpg",
+          "sha256": "6facc9a2d281aab2fba39940873ef0132ce0daf9d33be0920cffe4f2eb1589f2",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792754524176-68szd2/空攻击手牌仍留在独立攻击区.png.jpg",
+          "sourceRun": "1792754539758-295004-d5129e70-cf1c-4dbe-b3cc-dfc757b6215d",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4d2587e53dabe3eaa9b62d430fde3052b112ad32976fa814197a7acbad749099",
+          "chainId": "fate-inline-play-area-targeted-recapture",
+          "behaviorStepId": "empty-attack-hand"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/06-窄横屏手牌与出牌分区.png.jpg",
+          "sha256": "35b1c4d36cc5dbf93925f6eee14b5ce8cbb7772f5b2016b7a37b9cbddaca73f9",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄横屏手牌与出牌分区.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-inline-play-area-restoration",
+          "behaviorStepId": "narrow-viewport"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/07-窄桌面关闭检视后的正常牌桌.png.jpg",
+          "sha256": "1943f8b39a23ac47231f24c06147cfc1255716f9d7f6e45b204b83a3d662a989",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面关闭检视后的正常牌桌.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-desktop-narrow-resting-state",
+          "behaviorStepId": "desktop-narrow-resting-state"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/08-窄桌面对手出牌抽屉打开.png.jpg",
+          "sha256": "f9676dc74be66072b3526ebf65faaa2b8e96cc61c383a829d5bc22152bf1b3f5",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手出牌抽屉打开.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-desktop-narrow-resting-state",
+          "behaviorStepId": "desktop-opponent-drawer-open"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/09-窄桌面对手身份详情打开.png.jpg",
+          "sha256": "bfba5f9e3d9b3f1056a64a3074ae922d573cfb764e15913aca0aa3532ef71030",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/窄桌面对手身份详情打开.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-desktop-narrow-resting-state",
+          "behaviorStepId": "desktop-player-detail-open"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/10-触屏点牌打开完整检视.png.jpg",
+          "sha256": "5cdcf4a09066a0db513b253dc9c1f75c87d3091cd6cb3e91b3a4446024366ebd",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏点牌打开完整检视.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-touch-inspection-close-and-continue",
+          "behaviorStepId": "touch-inspection-open"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/11-触屏关闭检视后的正常牌桌.png.jpg",
+          "sha256": "1de8bd8eee28369d0b4452244d2c54999af1a4e5d7338a865a4485756c170f71",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏关闭检视后的正常牌桌.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-touch-inspection-close-and-continue",
+          "behaviorStepId": "touch-inspection-close-normal"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/12-触屏检视关闭后继续结束行动.png.jpg",
+          "sha256": "0293e3f69f1ca6492fe7f8771b1d86aa3ef554979fecfa31604d47e25d8d615d",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1792752233172-j0yf5a/触屏检视关闭后继续结束行动.png.jpg",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "chainId": "fate-touch-inspection-close-and-continue",
+          "behaviorStepId": "touch-continue-action-after-close"
+        }
+      ],
+      "behaviorChains": [
+        {
+          "chainId": "fate-inline-play-area-restoration",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/fate-inline-play-area-restoration.trace.json",
+          "requiredSteps": [
+            "stage-real-card",
+            "retract-real-card",
+            "open-riding-choice",
+            "cancel-riding-choice",
+            "dense-direct-card-zone",
+            "empty-attack-hand",
+            "narrow-viewport",
+            "mobile-full-card-inspection"
+          ],
+          "sha256": "13727c54f584c4ebf3c348382d092b14c833d2bc6443f01383f1340b84172629"
+        },
+        {
+          "chainId": "fate-inline-play-area-targeted-recapture",
+          "sourceRun": "1792754539758-295004-d5129e70-cf1c-4dbe-b3cc-dfc757b6215d",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:4d2587e53dabe3eaa9b62d430fde3052b112ad32976fa814197a7acbad749099",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/fate-inline-play-area-targeted-recapture.trace.json",
+          "requiredSteps": [
+            "stage-real-card",
+            "retract-real-card",
+            "open-riding-choice",
+            "cancel-riding-choice",
+            "dense-direct-card-zone",
+            "empty-attack-hand",
+            "narrow-viewport",
+            "mobile-full-card-inspection"
+          ],
+          "sha256": "42a4b0d0f83a7003e5017a00989effcaab2b245605f37980cb90feb590a1cf7d"
+        },
+        {
+          "chainId": "fate-desktop-narrow-resting-state",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/fate-desktop-narrow-resting-state.trace.json",
+          "requiredSteps": [
+            "desktop-narrow-resting-state",
+            "desktop-opponent-drawer-open",
+            "desktop-player-detail-open"
+          ],
+          "sha256": "47a4616d9458b542f751f9aa191326a4c926b9d809042caf54ed029d3ac04f27"
+        },
+        {
+          "chainId": "fate-touch-inspection-close-and-continue",
+          "sourceRun": "1792752272851-267204-04a0dd55-2bed-4be6-b438-916d5680deb4",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:8bbe0c541699439521bdf4a20f47bf1bcd7ec96a4dc54e485789141b0fdfc6a7",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式手牌与桌面触控验收-20261023/fate-touch-inspection-close-and-continue.trace.json",
+          "requiredSteps": [
+            "touch-inspection-open",
+            "touch-inspection-close-normal",
+            "touch-continue-action-after-close"
+          ],
+          "sha256": "16029c7c5a2862647d142abe46288638d05770d71944e80d5c7aeadaa2496033"
+        }
+      ]
+    },
+    "riding": {
+      "manifest": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/focused-pass-manifest.json",
+      "manifestSha256": "084f0180d11005eff47672d55e2cdf2b38578953cc6e63f312c60a55f2d9915a",
+      "viewer": "http://127.0.0.1:4867/?key=489987a54bff",
+      "gateLog": "temp/fate-riding-final-gate-20261023.log",
+      "media": [
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/01-骑乘选择打开.png.jpg",
+          "sha256": "544bc4f8a1ae3dea15ebf81718af0cb964bdbd1030ab18e16e472243f5230637",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1792752233172-j0yf5a/骑乘选择打开.png.jpg",
+          "sourceRun": "1792752351124-288916-185e3475-30ee-4355-93e2-4802cff840fc",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "chainId": "iskandar-riding-zero-cancel",
+          "behaviorStepId": "open-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/02-骑乘单张费用牌.png.jpg",
+          "sha256": "ab303ff82117c52ec294158eb72950dd2852688dd6e9499c2bf88a21c2648bd5",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1792751232151-9n62w4/骑乘单张费用牌.png.jpg",
+          "sourceRun": "1792751383119-280592-6c122d9c-3c5c-4687-ae96-92e74782a011",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "chainId": "iskandar-riding-one-card",
+          "behaviorStepId": "select-paid-card"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/03-骑乘三张已选满.png.jpg",
+          "sha256": "9a7aee24244565b53e93a4794444bc3f47d728aeb6e49fa6f407eed710b116ac",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1792751232151-9n62w4/骑乘三张已选满.png.jpg",
+          "sourceRun": "1792751404377-280592-f3089bd9-f34e-408b-8f13-64e284fd0133",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "chainId": "iskandar-riding-three-limit",
+          "behaviorStepId": "select-three-cards"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/04-骑乘费用不足且候选不可选.png.jpg",
+          "sha256": "957fdf6c9d656abe83c9bbf3b2e42d2d00c66ef2a12356b03ac7e7c31a3e6849",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1792751232151-9n62w4/骑乘费用不足且候选不可选.png.jpg",
+          "sourceRun": "1792751423967-280592-904fe64e-1dae-403a-9444-1cabe032bbfd",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "chainId": "iskandar-riding-unaffordable",
+          "behaviorStepId": "reject-unaffordable-card"
+        }
+      ],
+      "behaviorChains": [
+        {
+          "chainId": "iskandar-riding-zero-cancel",
+          "sourceRun": "1792752351124-288916-185e3475-30ee-4355-93e2-4802cff840fc",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/iskandar-riding-zero-cancel.trace.json",
+          "requiredSteps": [
+            "open-choice",
+            "stage-card-before-cancel",
+            "cancel-choice",
+            "reopen-choice",
+            "confirm-zero"
+          ],
+          "sha256": "a0aa1655ba1fc48013837b3b16256c25a7b598bed37f8618632545ced7652707"
+        },
+        {
+          "chainId": "iskandar-riding-one-card",
+          "sourceRun": "1792751383119-280592-6c122d9c-3c5c-4687-ae96-92e74782a011",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/iskandar-riding-one-card.trace.json",
+          "requiredSteps": [
+            "open-choice",
+            "select-paid-card",
+            "confirm-paid-card"
+          ],
+          "sha256": "3bf150658552d7d30b27a3a3ceeba481cd7a3868cd1c06868807607d10d4ad61"
+        },
+        {
+          "chainId": "iskandar-riding-three-limit",
+          "sourceRun": "1792751404377-280592-f3089bd9-f34e-408b-8f13-64e284fd0133",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/iskandar-riding-three-limit.trace.json",
+          "requiredSteps": [
+            "open-choice",
+            "select-three-cards",
+            "attempt-fourth-card",
+            "confirm-three-cards"
+          ],
+          "sha256": "176d4be0a7094200e5bb7f3618fc420ebfc3f98f09f08149011bcde9a64c3a96"
+        },
+        {
+          "chainId": "iskandar-riding-unaffordable",
+          "sourceRun": "1792751423967-280592-904fe64e-1dae-403a-9444-1cabe032bbfd",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:e02a47a9baada306063af607085b90d3170ae36077e4d88d45c8d0e8a1da5e9b",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式骑乘交互验收-20261023/iskandar-riding-unaffordable.trace.json",
+          "requiredSteps": [
+            "settle-low-resource-precondition",
+            "open-low-resource-choice",
+            "reject-unaffordable-card",
+            "cancel-unaffordable-choice"
+          ],
+          "sha256": "d166a1e65b80c7751d0eeff8bdc69252e76e408e7dc150d29787f064ff39a580"
+        }
+      ]
+    },
+    "online": {
+      "manifest": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/focused-pass-manifest.json",
+      "manifestSha256": "6d2644cf6a8d9e1edc1e35ceb7105fe3b6adebe19eeab210961b107cbf1f080a",
+      "viewer": "http://127.0.0.1:4867/?key=234cd79da4b2",
+      "gateLog": "temp/fate-online-final-gate-20261023.log",
+      "media": [
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/01-主视角真实联网选角准备.jpg.jpg",
+          "sha256": "01f3e61e3e3247133967a0cce9ba4162ec2269f754d874d559e6a10dc6b8c5dc",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/主视角真实联网选角准备.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-001"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/02-三名真实客户端准备完成.jpg.jpg",
+          "sha256": "ec033c657b45612e2a0a397e58d0c993d6f7c32cde30727dc2065743e47fc3ea",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/三名真实客户端准备完成.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-004"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/03-御主能力与本人详情入口.jpg.jpg",
+          "sha256": "77b82c784576a5f355fc62a0df4838a11374523a9304bc4f3d46ef6ecd2b486e",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/御主能力与本人详情入口.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-006"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/04-常规移动目标等待确认.jpg.jpg",
+          "sha256": "cd1caf52396c4807000048bfa637f6330443086e2b4ce3fe26ce21464cfded40",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/常规移动目标等待确认.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-013"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/05-常规移动确认并按费用结算.jpg.jpg",
+          "sha256": "d15b9528b584269cfdd978346c43c5702dd801ff51c06251d5ec69524ca3f23c",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/常规移动确认并按费用结算.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-015"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/06-令咒移动等待确认.jpg.jpg",
+          "sha256": "eaf76cdebc0bee778f7aad787a7dd2774dd69ea20c5fe61d17f1fbc4039e939e",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/令咒移动等待确认.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-016"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/07-令咒恢复魔力等待确认.jpg.jpg",
+          "sha256": "6d5680538365df9f8d36e7694615f5566c3e5db4634decfd95a2829ea7f2b235",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/令咒恢复魔力等待确认.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-018"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/08-真实联网两张草稿尚未提交.jpg.jpg",
+          "sha256": "1d956485a4489b0927579a516832b26253d9d1d0480d9757c8896e369cfa2722",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/真实联网两张草稿尚未提交.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-020"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/09-草稿撤回后权威状态保持不变.jpg.jpg",
+          "sha256": "765bf2b267dc92d0f35511fb5f5cf560440842e0d5c961f5ceb5788ad408cd27",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/草稿撤回后权威状态保持不变.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-021"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/10-原子确认后正式攻击生效.jpg.jpg",
+          "sha256": "e651d26ac400de876519e7a783d803dd102e2c1fc6efd1924802ec676eb94b03",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/原子确认后正式攻击生效.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "step-022"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/11-真实联网多轮对局正式终局.jpg.jpg",
+          "sha256": "b851481ee28a2bf42dab482dcc52d667b4624f112f2f601edb9ef68a391e168b",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1792754592860-34gb4m/真实联网多轮对局正式终局.jpg.jpg",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "chainId": "fate-online-natural-basic-match",
+          "behaviorStepId": "terminal"
+        }
+      ],
+      "behaviorChains": [
+        {
+          "chainId": "fate-online-natural-basic-match",
+          "sourceRun": "1792754606987-195460-10014101-4874-4508-8e05-0960296aa29f",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:b8c92596388ce6a694edf0282e2c84484e9737dcd21f87dfa529c14474d66c19",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式联网基础对局验收-20261023/fate-online-natural-basic-match.trace.json",
+          "requiredSteps": [
+            "step-001",
+            "step-002",
+            "step-003",
+            "step-004",
+            "step-005",
+            "step-006",
+            "step-007",
+            "step-008",
+            "step-009",
+            "step-010",
+            "step-011",
+            "step-012",
+            "step-013",
+            "step-014",
+            "step-015",
+            "step-016",
+            "step-017",
+            "step-018",
+            "step-019",
+            "step-020",
+            "step-021",
+            "step-022",
+            "step-023",
+            "step-024",
+            "step-025",
+            "step-026",
+            "step-027",
+            "step-028",
+            "step-029",
+            "step-030",
+            "step-031",
+            "step-032",
+            "step-033",
+            "step-034",
+            "step-035",
+            "step-036",
+            "step-037",
+            "step-038",
+            "step-039",
+            "step-040",
+            "step-041",
+            "step-042",
+            "step-043",
+            "step-044",
+            "step-045",
+            "step-046",
+            "step-047",
+            "step-048",
+            "step-049",
+            "step-050",
+            "step-051",
+            "step-052",
+            "step-053",
+            "step-054",
+            "step-055",
+            "step-056",
+            "step-057",
+            "step-058",
+            "step-059",
+            "step-060",
+            "step-061",
+            "step-062",
+            "step-063",
+            "step-064",
+            "step-065",
+            "step-066",
+            "step-067",
+            "step-068",
+            "step-069",
+            "step-070",
+            "step-071",
+            "step-072",
+            "step-073",
+            "step-074",
+            "step-075",
+            "step-076",
+            "step-077",
+            "step-078",
+            "step-079",
+            "step-080",
+            "step-081",
+            "step-082",
+            "step-083",
+            "step-084",
+            "step-085",
+            "step-086",
+            "step-087",
+            "step-088",
+            "step-089",
+            "step-090",
+            "step-091",
+            "step-092",
+            "step-093",
+            "step-094",
+            "step-095",
+            "step-096",
+            "step-097",
+            "step-098",
+            "step-099",
+            "step-100",
+            "step-101",
+            "step-102",
+            "step-103",
+            "step-104",
+            "step-105",
+            "step-106",
+            "step-107",
+            "step-108",
+            "step-109",
+            "step-110",
+            "step-111",
+            "step-112",
+            "step-113",
+            "step-114",
+            "step-115",
+            "step-116",
+            "step-117",
+            "step-118",
+            "step-119",
+            "step-120",
+            "step-121",
+            "step-122",
+            "step-123",
+            "step-124",
+            "step-125",
+            "step-126",
+            "step-127",
+            "step-128",
+            "step-129",
+            "step-130",
+            "step-131",
+            "step-132",
+            "step-133",
+            "step-134",
+            "step-135",
+            "step-136",
+            "step-137",
+            "step-138",
+            "step-139",
+            "step-140",
+            "step-141",
+            "step-142",
+            "step-143",
+            "step-144",
+            "step-145",
+            "step-146",
+            "step-147",
+            "step-148",
+            "step-149",
+            "step-150",
+            "step-151",
+            "step-152",
+            "step-153",
+            "step-154",
+            "step-155",
+            "step-156",
+            "step-157",
+            "step-158",
+            "step-159",
+            "step-160",
+            "step-161",
+            "step-162",
+            "step-163",
+            "step-164",
+            "step-165",
+            "step-166",
+            "step-167",
+            "step-168",
+            "step-169",
+            "step-170",
+            "step-171",
+            "step-172",
+            "step-173",
+            "step-174",
+            "step-175",
+            "step-176",
+            "step-177",
+            "step-178",
+            "step-179",
+            "step-180",
+            "step-181",
+            "step-182",
+            "step-183",
+            "step-184",
+            "step-185",
+            "step-186",
+            "step-187",
+            "step-188",
+            "step-189",
+            "step-190",
+            "step-191",
+            "step-192",
+            "step-193",
+            "step-194",
+            "step-195",
+            "step-196",
+            "step-197",
+            "step-198",
+            "step-199",
+            "step-200",
+            "step-201",
+            "step-202",
+            "step-203",
+            "step-204",
+            "step-205",
+            "step-206",
+            "step-207",
+            "step-208",
+            "step-209",
+            "step-210",
+            "step-211",
+            "step-212",
+            "step-213",
+            "step-214",
+            "step-215",
+            "step-216",
+            "step-217",
+            "step-218",
+            "step-219",
+            "step-220",
+            "step-221",
+            "step-222",
+            "step-223",
+            "step-224",
+            "step-225",
+            "step-226",
+            "step-227",
+            "step-228",
+            "step-229",
+            "step-230",
+            "step-231",
+            "step-232",
+            "step-233",
+            "step-234",
+            "step-235",
+            "step-236",
+            "step-237",
+            "step-238",
+            "step-239",
+            "step-240",
+            "step-241",
+            "step-242",
+            "step-243",
+            "step-244",
+            "step-245",
+            "step-246",
+            "terminal"
+          ],
+          "sha256": "9309948e0c97acaf3fa1e87bc12c29df6a655e0d19de5299578e6aee78b957c6"
+        }
+      ]
+    },
+    "postBattle": {
+      "manifest": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/focused-pass-manifest.json",
+      "manifestSha256": "49a4d76f4d2bc5c6c5103fd5f152b68c79ade1e996e0d3b9a244f3dcc5c5559e",
+      "viewer": "http://127.0.0.1:4867/?key=cc5a3ce5cf9a",
+      "gateLog": "temp/fate-postBattle-final-gate-20261023.log",
+      "media": [
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/01-战后恢复令咒等待本人确认.jpg.jpg",
+          "sha256": "40cfc3468314c3ddf93d20f92597bd2295cc7185b6ee009a1d6e0b448719d12c",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+          "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-10",
+          "behaviorStepId": "open-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/02-本人完成选择后仍等待第二席.jpg.jpg",
+          "sha256": "dffa64e96a362772c23aca9097d0f2dd421e8701046528bab24eca8577a40753",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+          "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-10",
+          "behaviorStepId": "confirm-own-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/03-全部战后选择后才显示淘汰状态.jpg.jpg",
+          "sha256": "0d7bf69b0dfede16f93d21e0c633de9de6f2b7cb0e4963c47f643638e91967b8",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示淘汰状态.jpg.jpg",
+          "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-10",
+          "behaviorStepId": "complete-peer-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/04-淘汰玩家详情明确显示已淘汰.jpg.jpg",
+          "sha256": "f90eece298c80c8921dc38d15083530541f8b81d0e0ee8be05a3bf19b0ded7bf",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+          "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-10",
+          "behaviorStepId": "inspect-eliminated"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/05-战后恢复令咒等待本人确认.jpg.jpg",
+          "sha256": "6fbc3c76d1a3ef2ab80b123d0d6f5eca91c6deebf29f697963465db89570a352",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/战后恢复令咒等待本人确认.jpg.jpg",
+          "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-11",
+          "behaviorStepId": "open-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/06-本人完成选择后仍等待第二席.jpg.jpg",
+          "sha256": "26489f711f753235291c6096bfe6cd703000b24716eb78ee0de26a71d9bd2917",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/本人完成选择后仍等待第二席.jpg.jpg",
+          "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-11",
+          "behaviorStepId": "confirm-own-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/07-全部战后选择后才显示正式终局.jpg.jpg",
+          "sha256": "9faf7bec7f9e1c14779f19e107de5e14d348d214a9801f7ba93eafd5af114a42",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1792754888672-2j86dc/全部战后选择后才显示正式终局.jpg.jpg",
+          "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "chainId": "fate-online-post-battle-11",
+          "behaviorStepId": "complete-peer-choice"
+        },
+        {
+          "path": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/08-淘汰本人进入观战且不能继续行动.jpg.jpg",
+          "sha256": "2b56c9baf0fe1a354d612b9cebd5f24f2c172f7947cd4d8182ed77d53e2630d3",
+          "sourceOriginalPath": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1792755051640-7d95s2/淘汰本人进入观战且不能继续行动.jpg.jpg",
+          "sourceRun": "1792755069622-297544-a3398cf0-1afe-4088-afc5-aa3331168c8c",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:6296ec9d1d6596756cead1ae460fe3866d48d2b654a2b6f6fe3fdf93790560b6",
+          "chainId": "fate-online-post-battle-10-targeted-recapture",
+          "behaviorStepId": "observe-eliminated"
+        }
+      ],
+      "behaviorChains": [
+        {
+          "chainId": "fate-online-post-battle-10",
+          "sourceRun": "1792754904131-230832-9e0003e4-1321-4a5b-9f3d-998bd8743b65",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/fate-online-post-battle-10.trace.json",
+          "requiredSteps": [
+            "open-choice",
+            "confirm-own-choice",
+            "complete-peer-choice",
+            "inspect-eliminated",
+            "observe-eliminated"
+          ],
+          "sha256": "0e54e093244e05a9e420b31c7ec450f7b6fd4ff5899499d8aab97d11b2d072be"
+        },
+        {
+          "chainId": "fate-online-post-battle-11",
+          "sourceRun": "1792754912059-230832-b04f39a2-ba9e-44ba-8dfd-93394d48744a",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:95233c7c7924692a936dcab1cf493e74f5ece79af80beaaf0d58aeea7994a75b",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/fate-online-post-battle-11.trace.json",
+          "requiredSteps": [
+            "open-choice",
+            "confirm-own-choice",
+            "complete-peer-choice"
+          ],
+          "sha256": "fe566c9bedf58d29b06367b472b97a430a95a7aaa572882dc9c037b42191dc2c"
+        },
+        {
+          "chainId": "fate-online-post-battle-10-targeted-recapture",
+          "sourceRun": "1792755069622-297544-a3398cf0-1afe-4088-afc5-aa3331168c8c",
+          "sourceRevision": "2d1c547eb473cf36b03f164a480b61051759a7ff+tree-sha256:6296ec9d1d6596756cead1ae460fe3866d48d2b654a2b6f6fe3fdf93790560b6",
+          "evidence": "test-results/evidence-screenshots/fate-domination/正式战后淘汰终局验收-20261023/fate-online-post-battle-10-targeted-recapture.trace.json",
+          "requiredSteps": [
+            "open-choice",
+            "confirm-own-choice",
+            "complete-peer-choice",
+            "inspect-eliminated",
+            "observe-eliminated"
+          ],
+          "sha256": "e6d62dccf1ea2fdbc58682ea214dcfde5fb7ee594351a8e67e80b85180b483db"
+        }
+      ]
+    }
+  },
+  "verification": {
+    "fate": {
+      "files": 43,
+      "tests": 229,
+      "status": "PASS",
+      "log": "temp/fate-full-final-20261023.log"
+    },
+    "eslint": {
+      "errors": 0,
+      "warnings": 107,
+      "log": "temp/fate-final-eslint-20261023.log"
+    },
+    "typecheck": {
+      "status": "FAIL",
+      "diagnostics": 4890,
+      "fatePathDiagnostics": 0,
+      "log": "temp/fate-final-typecheck-20261023.log"
+    },
+    "specLint": {
+      "status": "PASS",
+      "log": "temp/fate-final-spec-lint-20261023.log"
+    },
+    "openspec": {
+      "status": "PASS",
+      "logs": [
+        "temp/fate-final-foundation-validate-20261023.log",
+        "temp/fate-final-mechanism-validate-20261023.log"
+      ]
+    },
+    "assets": {
+      "verified": 235,
+      "total": 235,
+      "manifestSha256": "fcaf875c24ae4bae6baebf5268e3779188289a6ea991235fd70060a79457a662",
+      "log": "temp/fate-final-manifest-validation-20261023.log"
+    }
+  },
+  "boundaries": {
+    "network": "自然黄金链为一浏览器主视角与两名正式网络客户端，247步1至11轮，无中途注入；E12选择0次，由两个代表态另证；三浏览器全链未通过。",
+    "riding": "本轮原4个E2E直接通过；后续未改写该场景，四图保留原运行来源。自然网络三张零费，正费用另以合法原牌实例代表态证明。",
+    "artifacts": "35媒体有20条当前PASS与15条未改写沿用；含独立定向空手牌/观战链，未把旧图伪称同一新跑次。",
+    "deferred": [
+      "全卡效果",
+      "高级响应",
+      "全部角色能力及无限剑制中文语义",
+      "AI",
+      "教程",
+      "音频",
+      "资源发布及脏砚令咒素材来源"
+    ]
+  }
+}

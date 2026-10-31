@@ -1,0 +1,1948 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+  "sourceRun": "1792997641650-291300-602eb9b6-881d-40b1-a1fb-aaaf2fbf54d7",
+  "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+  "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+  "status": "PASS",
+  "outcome": "四人组队内部初始化场景中，奇异博士队友通过手牌拖放选择投掷者骰子并结算；此链不证明线上真实选角开放。",
+  "steps": [
+    {
+      "id": "worthy-teammate-roll-ready",
+      "action": "内部初始化四人组队牌桌并由奇异博士队友查看手牌",
+      "before": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange",
+            "thor",
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": "setup",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 1
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 1,
+              "handIds": [
+                "card-worthy-of-me"
+              ],
+              "deckCount": 26,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "当前投掷者与奇异博士位于同队且队友持有目标牌",
+          "actual": {
+            "phase": "offensiveRoll",
+            "rollerDice": [
+              {
+                "id": 0,
+                "value": 1,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "value": 2,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "value": 3,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "value": 4,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "value": 5,
+                "ownerId": "0"
+              }
+            ],
+            "strangeHero": "doctor_strange",
+            "strangeHand": [
+              "card-worthy-of-me"
+            ]
+          },
+          "expected": {
+            "phase": "offensiveRoll",
+            "rollerDice": [
+              {
+                "id": 0,
+                "value": 1,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "value": 2,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "value": 3,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "value": 4,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "value": 5,
+                "ownerId": "0"
+              }
+            ],
+            "strangeHero": "doctor_strange",
+            "strangeHand": [
+              "card-worthy-of-me"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "worthy-teammate-dice-targets",
+      "action": "真实拖拽打出值得拥有并显示当前投掷者骰区",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 1
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 1,
+              "handIds": [
+                "card-worthy-of-me"
+              ],
+              "deckCount": 26,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": "选择队友的骰子（0/2）",
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": {
+            "kind": "multistep-choice",
+            "playerId": "2",
+            "sourceId": "card-worthy-of-me",
+            "dtType": "selectDie",
+            "selectCount": 2,
+            "diceOwnerId": "0",
+            "targetOpponentDice": true,
+            "allowedDieIds": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 0
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 26,
+              "discardCount": 1,
+              "discardIds": [
+                "card-worthy-of-me"
+              ]
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "交互明确标出队友骰子，且投掷者骰子可点击",
+          "actual": {
+            "interaction": {
+              "kind": "multistep-choice",
+              "playerId": "2",
+              "sourceId": "card-worthy-of-me",
+              "dtType": "selectDie",
+              "selectCount": 2,
+              "diceOwnerId": "0",
+              "targetOpponentDice": true,
+              "allowedDieIds": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ]
+            },
+            "rollerDiceClickable": true,
+            "allyHintText": "选择队友的骰子（0/2）"
+          },
+          "expected": {
+            "interaction": {
+              "kind": "multistep-choice",
+              "playerId": "2",
+              "sourceId": "card-worthy-of-me",
+              "dtType": "selectDie",
+              "selectCount": 2,
+              "diceOwnerId": "0",
+              "targetOpponentDice": true,
+              "allowedDieIds": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ]
+            },
+            "rollerDiceClickable": true,
+            "allyHintText": "选择队友的骰子（0/2）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "worthy-teammate-dice-selected",
+      "action": "真实鼠标选择当前投掷者的第1和第2颗骰子",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": "选择队友的骰子（0/2）",
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": {
+            "kind": "multistep-choice",
+            "playerId": "2",
+            "sourceId": "card-worthy-of-me",
+            "dtType": "selectDie",
+            "selectCount": 2,
+            "diceOwnerId": "0",
+            "targetOpponentDice": true,
+            "allowedDieIds": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 0
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 26,
+              "discardCount": 1,
+              "discardIds": [
+                "card-worthy-of-me"
+              ]
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": "完成",
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": true,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": true,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": {
+            "kind": "multistep-choice",
+            "playerId": "2",
+            "sourceId": "card-worthy-of-me",
+            "dtType": "selectDie",
+            "selectCount": 2,
+            "diceOwnerId": "0",
+            "targetOpponentDice": true,
+            "allowedDieIds": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 0
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 26,
+              "discardCount": 1,
+              "discardIds": [
+                "card-worthy-of-me"
+              ]
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "两颗队友骰子出现选中反馈并进入待确认状态",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "worthy-teammate-reroll-settled",
+      "action": "确认重掷并收口卡牌交互",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": "完成",
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": true,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": true,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": {
+            "kind": "multistep-choice",
+            "playerId": "2",
+            "sourceId": "card-worthy-of-me",
+            "dtType": "selectDie",
+            "selectCount": 2,
+            "diceOwnerId": "0",
+            "targetOpponentDice": true,
+            "allowedDieIds": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 0
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 26,
+              "discardCount": 1,
+              "discardIds": [
+                "card-worthy-of-me"
+              ]
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": "0",
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "lotus",
+            "taiji",
+            "palm",
+            "taiji",
+            "taiji"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": "0"
+            },
+            {
+              "id": 1,
+              "value": 5,
+              "ownerId": "0"
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": "0"
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": "0"
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": "0"
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 0
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 26,
+              "discardCount": 1,
+              "discardIds": [
+                "card-worthy-of-me"
+              ]
+            },
+            "3": {
+              "characterId": "treant",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "treant_seedling": 0,
+                "treant_sapling": 0,
+                "treant_divine": 0,
+                "life_sap": 0,
+                "thorn": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "投掷者骰面变化、交互关闭且卡牌进入奇异博士弃牌堆",
+          "actual": {
+            "dice": [
+              {
+                "id": 0,
+                "value": 6,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "value": 5,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "value": 3,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "value": 4,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "value": 5,
+                "ownerId": "0"
+              }
+            ],
+            "interaction": null,
+            "hand": [],
+            "discard": [
+              "card-worthy-of-me"
+            ]
+          },
+          "expected": {
+            "dice": [
+              {
+                "id": 0,
+                "value": 6,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "value": 5,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "value": 3,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "value": 4,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "value": 5,
+                "ownerId": "0"
+              }
+            ],
+            "interaction": null,
+            "hand": [],
+            "discard": [
+              "card-worthy-of-me"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-worthy-teammate-ready",
+      "stepId": "worthy-teammate-roll-ready",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "0b3a310f97c4bc7d2d484e42375f4c507c091f28d3b499662925bf23ce8c93bd"
+    },
+    {
+      "id": "doctor-strange-worthy-teammate-targets",
+      "stepId": "worthy-teammate-dice-targets",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "39c33fcaa469ecb676704f52bf4c551a2c792d367f1c0d075f27504a77422946"
+    },
+    {
+      "id": "doctor-strange-worthy-teammate-selected-dice",
+      "stepId": "worthy-teammate-dice-selected",
+      "change": "target-highlight",
+      "viewport": "desktop",
+      "sha256": "22e3ef2bd4a8f4eaa940e3adb8624f9595092db43729858a3bcb46597190a062"
+    },
+    {
+      "id": "doctor-strange-worthy-teammate-settled",
+      "stepId": "worthy-teammate-reroll-settled",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "92a3fe7fe60b68dfd466cd6060079094b473c8759273386451753d4816919102"
+    }
+  ]
+}

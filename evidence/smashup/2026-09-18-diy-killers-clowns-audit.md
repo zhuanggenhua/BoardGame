@@ -298,4 +298,31 @@
 - 当前阻塞不是产品规则报错：标准命令 `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-diy-killers-real-entry.e2e.ts "柯克船长面具"` 被项目运行门禁排队，原因是另一条 `e2e/qidahen/qidahen-closeout.e2e.ts` 仍占用同一 `shared-single` 测试 runtime 和全局 E2E 预算；当前证据显示 ownerPid `62840`、Playwright pid `106148` 仍在运行。本轮只停止了自己的排队包装进程，没有清理或接管外部运行。
 - 现实影响：柯克船长面具的领域最终状态已验证，但浏览器真实入口、页面反应窗口和真实生命周期尚未验证，因此不能把该对象标为已完成。
 - 最小补救：外部七大恨 E2E 结束并释放 `shared-single` runtime 后，沿同一命令重新运行该面具用例；无需改生产代码，也不能用本轮领域测试替代真实入口证据。
-- 当前裁定：柯克船长面具暂保留在杀人狂残余范围；杀人狂仍为 `in_progress`，当前未完成范围仍为 12 个卡牌对象与 2 个基地。
+- 历史裁定（已于 2026-09-23 被后续证据替代）：当时把柯克船长面具当作可选反应，并将其保留在残余范围；见上方 2026-09-23 修订，该 E2E 已改为断言自动累计力量并记录 1/1 通过。此处的 12 张卡 + 2 个基地只是 2026-09-19 时点统计，不代表当前残余范围。
+
+## 2026-10-23 续审：杀人狂对象覆盖与最新入口差异
+
+- 当前正式对象数：5 张随从、13 种行动、2 张基地，共 20 个唯一对象；对应正式数组见 `src/games/smashup/data/factions/diy_killers.ts`。
+- `diy-killers.test.ts` 中除 `diy_killers_cha_cha_cha_ha_ha_ha` 外，其余 19 个对象 ID 均可定位到领域测试源码；这只表示有领域测试入口引用，不能代替每个断言本身。恰-恰-恰 哈-哈-哈 的中文 / 英文卡面分别写明“移动一个你的仆从”以及可选“将本牌置于牌库顶 / 打出额外行动”；实现包含选己方随从、选目的基地、再选后续效果的三步链，但当前没有该对象的领域测试或 E2E。审计结论是规则链未被测试证明，尚无证据判为产品实现缺陷。
+- 静态消费链对账：`diyKillersChacha` 从 `findOwnMovableMinions` 找己方随从；首步 `buildMinionTargetOptions` 显式用 `effectType: 'move'`，随后 `chachaChooseMinion` 只列其它基地；`chachaChooseBase` 经 `buildValidatedBaseMoveEvents` 以 `sourceKind: 'nonAction'` 重新验证移动保护；成功后 `queueChachaFollowup` 携带原 `cardUid`，`chachaFollowup` 再由 `resolveDeckTopOrExtraAction` 执行牌库顶或限定额外行动。静态链与卡面分支对齐，仍缺最终基地 / 牌区 / 额度状态的领域与真实入口证据。
+- 当前 E2E 源码包含人皮脸、电锯、弗莱迪、杰森、大砍刀、麦克尔、钉子头、柯克船长面具、野蛮攻击、简易武器和爪子手套相关流程。钉子头用例只是把地狱魔盒检索到手牌后转移另一张行动，不证明地狱魔盒自身的持续效果；`Oh No!!!` 在简易武器夹具里只是非匹配卡，也不证明其触发效果。
+- 尚无对象自身规则链 E2E 的对象：恰-恰-恰 哈-哈-哈、他是个好孩子、躲藏在洗衣间、哦 不！！！、起源故事、地狱魔盒、结束了?、水晶湖营地、梦魇世界。弗莱迪用例中的爪子手套只证明其依赖摧毁触发；独立天赋用例已加入当前 E2E 文件，但未见该新增用例的执行结果。
+- 当前 E2E 文件于 2026-09-24（提交 `0fb2918d1`）更新：修正柯克船长面具自动累计力量断言，并新增爪子手套自身天赋生命周期用例。已有 2026-09-23 柯克船长面具单项 1/1 记录；当前 E2E 全文件尚未复跑，2026-10-23 的爪子手套单项真实入口复核失败，因此不将“测试源码存在”记作通过。
+- 本轮运行资源检查：2026-10-23 `e2e-doctor` 发现另一条 Fate of Dominion E2E 正在占用隔离 runtime，CPU 100%、可用内存 0.46GB（门槛 1GB），`e2e-single.frontend` 端口 6174 仍被占用。本轮未启动或打断该任务。下一步是资源释放后重跑当前文件，并为恰-恰-恰 哈-哈-哈 与上述无自身规则入口对象补齐真实入口 / 生命周期证据。
+- 当前裁定：DIY 小丑对象级入口结论不变；DIY 杀人狂仍为 `in_progress`。首个未完成规则证据项是恰-恰-恰 哈-哈-哈（L2 测试缺失），其余对象缺口集中在 9 个对象自身真实入口，以及当前 E2E 文件的最新变更尚未全量复跑。
+
+### 2026-10-23 爪子手套附着天赋 E2E 复核
+
+- 资源释放后使用隔离 runtime 运行单项：`node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-diy-killers-real-entry.e2e.ts "爪子手套从真实附着天赋入口给同基地仆从减力并在下回合开始清除"`。结果失败：附着天赋卡点击后 10 秒内未出现 `diy_killers_clawed_glove` 交互；失败位置为该用例等待交互处（源码约第 1234 行）。
+- 失败时页面状态证明爪子手套仍附着在弗莱迪身上，基地内有两个对手仆从；但没有候选 prompt 或天赋结果。截图同时显示一张居中的“幽灵”卡牌特写。
+- `CardSpotlightQueue` 外层与卡牌内容均为 `pointer-events-none`，因此现有证据不能把失败归因于特写遮挡。当前 E2E 对附着卡使用 `locator.click({ force: true })`，没有证明桌面玩家自然悬停宿主并点击实际可见附着卡的命中路径；所以本次失败标记为入口证据失败 / 原因未定，不判定产品规则缺陷，也不计为通过。
+- 静态 UI 链显示附着天赋只有在 `validate(USE_TALENT)` 有效时才进入可用集合，点击可用附着卡后会 dispatch `USE_TALENT`。仍需自然输入复跑并记录附着卡可用标记、实际前景命中元素、交互源与候选；若自然点击仍不产生交互，再据此定位规则权限或命令链。
+- 本次只运行爪子手套单项，没有复跑全文件。DIY 杀人狂仍为 `in_progress`；上一节的全文件复跑待办及 9 个对象自身真实入口 / 生命周期缺口继续有效。
+
+#### 同日真实鼠标路径复核（覆盖上节“原因未定”）
+
+- 将现有用例改为真实鼠标步骤：悬停弗莱迪、检测附着卡前景命中区域，再经 `page.mouse` 点击；未改游戏实现。当前用例在同一 1920×1080 桌面场景重跑两次，均未能命中附着卡。
+- 第一次 `attachedGlove.hover()` 等待超时；Playwright 命中日志明确显示中心点被对手 P1 基地栏 `su-base-player-column-0-1` 内 `data-card-atlas-index=5` 卡片截获。第二次对附着卡可见矩形做 9×9 前景命中采样，81 个采样点均未命中 `data-attached-action-uid="glove-card"`，因此没有实际点击；截图：`test-results/playwright-artifacts/e2e-1792753508698-cevhpe/smashup-smashup-diy-killer-a0cb1-套从真实附着天赋入口给同基地仆从减力并在下回合开始清除-chromium/test-failed-1.png`。更早一次真实 hover 的 Playwright 证据：`test-results/playwright-artifacts/e2e-1792753195275-6rc0n7/smashup-smashup-diy-killer-a0cb1-套从真实附着天赋入口给同基地仆从减力并在下回合开始清除-chromium/test-failed-1.png`。
+- 场景状态确认爪子手套仍附着在弗莱迪身上，天赋为可用态，同基地有两张对手随从；页面没有活动 interaction。屏幕里附着牌没有可真实命中的前景区域，对手随从卡盖住其 overlay。静态 `USE_TALENT` 候选 / handler 路径存在，但这不能代替玩家可操作性。
+- 当前裁定更新：确认 `diy_killers_clawed_glove` 在该桌面基地布局中的唯一附着卡入口被邻座卡牌遮挡，属于 `功能实现阻塞（真实入口不可达）`，不是已证实的爪子手套规则结算错误。-1 力量和下个回合开始清除仍没有浏览器结果证据。最小补救是修正附着卡 overlay 与相邻玩家栏的层级 / 摆位，再重跑同一真实悬停、前景命中、点击、目标选择和回合开始清理链。
+- 本次只复跑爪子手套单项，没有复跑 E2E 全文件；DIY 杀人狂仍为 `in_progress`。未覆盖对象、Ch-Ch-Ch Ha-Ha-Ha 领域测试和基地链缺口继续有效。

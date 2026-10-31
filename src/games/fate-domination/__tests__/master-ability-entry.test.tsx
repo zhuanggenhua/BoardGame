@@ -6,7 +6,13 @@ import { FateDominationBoard } from '../Board';
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: vi.fn(), registerReset: vi.fn() }) }));
 
 vi.mock('../../../contexts/ToastContext', () => ({ useToast: () => ({ warning: vi.fn() }) }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'zh-CN' } }) }));
+vi.mock('react-i18next', async () => {
+ const {createInstance}=await import('i18next');
+ const {default:zh}=await import('../../../../public/locales/zh-CN/game-fate-domination.json');
+ const i18n=createInstance();
+ await i18n.init({lng:'zh-CN',resources:{'zh-CN':{'game-fate-domination':zh}}});
+ return {useTranslation:()=>({t:i18n.getFixedT('zh-CN','game-fate-domination'),i18n})};
+});
 vi.mock('../../../contexts/UndoContext', () => ({ UndoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock('../../../components/common/media/OptimizedImage', () => ({ OptimizedImage: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt}/> }));
 vi.mock('../ui/FateMapSurface', () => ({

@@ -5,6 +5,11 @@ import type {
 } from '../gameRuntimeAdapter';
 import type { MageId } from './domain/ids';
 import {
+    MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY,
+    MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY,
+    resolveMageWarsGameHudFabInitialOffset,
+} from './layout';
+import {
     buildMageWarsMageSetupData,
     buildMageWarsMageSetupSelections,
     MAGE_WARS_SEAT_0_MAGE_SETUP_FIELD,
@@ -87,6 +92,12 @@ export function resolveMageWarsCreateRoomSetup({
 }
 
 export const mageWarsGameRuntimeAdapter: GameRuntimeAdapter = {
+    hudFabLayout: {
+        position: 'top-left',
+        storageKey: MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY,
+        legacyOffsetStorageKey: MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY,
+        resolveInitialOffset: resolveMageWarsGameHudFabInitialOffset,
+    },
     resolveLocalSetup: resolveMageWarsLocalSetup,
     LocalSetupGate: MageWarsMageSelectionGate,
     resolveCreateRoomSetup: resolveMageWarsCreateRoomSetup,

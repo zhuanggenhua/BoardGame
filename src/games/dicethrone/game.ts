@@ -534,30 +534,44 @@ function formatDiceThroneActionEntry({
             segments: [i18nSeg('actionLog.advancePhase', { phase: phaseI18nKey }, ['phase'])],
         });
 
-        // 检查是否有自动防御技能触发（onPhaseEnter 触发的防御技能）
-        // 这些 ABILITY_ACTIVATED 事件在 ADVANCE_PHASE 命令后产生，需要单独记录
-        const autoDefenseEvent = events.find(
-            (e): e is AbilityActivatedEvent =>
-                e.type === 'ABILITY_ACTIVATED' && (e as AbilityActivatedEvent).payload.isDefense === true
-        );
-        if (autoDefenseEvent) {
-            const { abilityId, playerId } = autoDefenseEvent.payload;
-            const match = findPlayerAbility(core, playerId, abilityId);
-            const rawAbilityName = match?.variant?.name ?? match?.ability.name ?? abilityId;
-            const abilityNameKey = getAbilityI18nKey(rawAbilityName) || abilityId;
-            const isI18nKey = abilityNameKey.includes('.');
-            entries.push({
-                id: `AUTO_DEFENSE-${playerId}-${abilityId}-${timestamp}`,
-                timestamp: timestamp + 0.5,
-                actorId: playerId,
-                kind: 'SELECT_ABILITY',
-                segments: [i18nSeg(
-                    'actionLog.abilityActivatedDefense',
-                    { abilityName: abilityNameKey },
-                    isI18nKey ? ['abilityName'] : undefined,
-                )],
-            });
-        }
+    }
+
+    // onPhaseEnter may emit this event in a later afterEvents round, so it must
+    // not be gated by shouldRecordCommandEntry (which is only true in round 0).
+    const autoDefenseEvent = command.type === 'ADVANCE_PHASE'
+        ? events.find(
+            (event): event is AbilityActivatedEvent => {
+                if (event.type !== 'ABILITY_ACTIVATED') return false;
+                const payload = event.payload;
+                return typeof payload === 'object'
+                    && payload !== null
+                    && 'isDefense' in payload
+                    && payload.isDefense === true
+                    && 'abilityId' in payload
+                    && typeof payload.abilityId === 'string'
+                    && 'playerId' in payload
+                    && typeof payload.playerId === 'string'
+                    && event.sourceCommandType === 'ADVANCE_PHASE';
+            }
+        )
+        : undefined;
+    if (autoDefenseEvent) {
+        const { abilityId, playerId } = autoDefenseEvent.payload;
+        const match = findPlayerAbility(core, playerId, abilityId);
+        const rawAbilityName = match?.variant?.name ?? match?.ability.name ?? abilityId;
+        const abilityNameKey = getAbilityI18nKey(rawAbilityName) || abilityId;
+        const isI18nKey = abilityNameKey.includes('.');
+        entries.push({
+            id: `AUTO_DEFENSE-${playerId}-${abilityId}-${timestamp}`,
+            timestamp: timestamp + 0.5,
+            actorId: playerId,
+            kind: 'SELECT_ABILITY',
+            segments: [i18nSeg(
+                'actionLog.abilityActivatedDefense',
+                { abilityName: abilityNameKey },
+                isI18nKey ? ['abilityName'] : undefined,
+            )],
+        });
     }
 
     if (shouldRecordCommandEntry && command.type === 'SELECT_ABILITY') {

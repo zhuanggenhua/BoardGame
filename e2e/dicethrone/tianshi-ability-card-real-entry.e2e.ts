@@ -11,7 +11,7 @@ import type { GameTestContext } from '../framework';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { ALL_TOKEN_DEFINITIONS } from '../../src/games/dicethrone/domain/characters';
-import { DIVINE_PURIFICATION_2 } from '../../src/games/dicethrone/heroes/tianshi/abilities';
+import { ANGELIC_CLOAK_2, DIVINE_PURIFICATION_2 } from '../../src/games/dicethrone/heroes/tianshi/abilities';
 import { buildDiceThroneTokenResponseChoiceCandidates } from '../../src/games/dicethrone/domain/timingOpportunities';
 import { setDiceThroneBonusDiceValues } from '../helpers/dicethrone';
 import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice, waitForDiceThroneVisualIdle } from './bonus-dice-flow';
@@ -75,12 +75,14 @@ const setupTianshiScene = async (
         statuses?: Record<string, number>;
         opponentTokens?: Record<string, number>;
         opponentStatuses?: Record<string, number>;
+        opponentCharacter?: string;
         disableLocalAiAutomation?: boolean;
+        playerID?: '0' | '1';
         extra?: JsonRecord;
     },
 ): Promise<void> => {
     await game.openTestGame('dicethrone', {
-        playerID: '0',
+        playerID: options.playerID ?? '0',
         ...(options.disableLocalAiAutomation ? { disableLocalAiAutomation: true } : {}),
     });
     await game.setupScene({
@@ -108,7 +110,7 @@ const setupTianshiScene = async (
             responseWindow: { current: undefined },
         },
         extra: {
-            selectedCharacters: { '0': TIANSHI, '1': MONK },
+            selectedCharacters: { '0': TIANSHI, '1': options.opponentCharacter ?? MONK },
             hostStarted: true,
             activePlayerId: options.currentPlayer ?? '0',
             currentPlayer: options.currentPlayer ?? '0',
@@ -149,7 +151,11 @@ const setupTianshiScene = async (
             });
         }, { statuses: options.statuses, opponentStatuses: options.opponentStatuses });
     }
-    await expect(game.page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', TIANSHI, { timeout: 10000 });
+    await expect(game.page.getByTestId('player-board-surface')).toHaveAttribute(
+        'data-character-id',
+        options.playerID === '1' ? MONK : TIANSHI,
+        { timeout: 10000 },
+    );
 }
 
 const clickAbilitySlot = async (page: Page, slotId: string, expectedAbilityId: string): Promise<void> => {
@@ -896,6 +902,190 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-triumphant-return-after-auto-settle', testInfo);
     });
 
+    test('自动触发天使斗篷时应把技能写进行动日志并显示在玩家界面', async ({ page, game }, testInfo) => {
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll',
+            currentPlayer: '1',
+            currentPlayerIndex: 1,
+            disableLocalAiAutomation: true,
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'fist-technique-5',
+                isDefendable: true,
+                damage: 8,
+            },
+            extra: {
+                rollCount: 1,
+                rollLimit: 1,
+                rollDiceCount: 0,
+                rollConfirmed: true,
+            },
+        });
+
+        await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.();
+            if (!state || typeof harness?.state?.set !== 'function') {
+                throw new Error('TestHarness state.set 不可用');
+            }
+
+            const nextState = structuredClone(state);
+            const defender = nextState.core.players['0'];
+            const cloak = defender.abilities.find((ability: JsonRecord) => ability.id === 'angelic-cloak');
+            if (!cloak || cloak.type !== 'defensive') {
+                throw new Error('当前天使角色状态中没有可用的天使斗篷防御技能');
+            }
+            defender.abilities = [
+                ...defender.abilities.filter((ability: JsonRecord) => ability.type !== 'defensive'),
+                cloak,
+            ];
+            harness.state.set(nextState);
+        });
+
+        await dispatchCommand(page, 'ADVANCE_PHASE', '1');
+
+        await expect.poll(async () => {
+            const state = await readState(game);
+            const events = (state.sys?.eventStream?.entries ?? []).map((entry: JsonRecord) => entry?.event ?? entry);
+            const autoDefense = events.find((event: JsonRecord) => (
+                event?.type === 'ABILITY_ACTIVATED'
+                && event?.payload?.abilityId === 'angelic-cloak'
+                && event?.payload?.playerId === '0'
+                && event?.sourceCommandType === 'ADVANCE_PHASE'
+            ));
+            const logEntry = (state.sys?.actionLog?.entries ?? []).find((entry: JsonRecord) => (
+                entry?.kind === 'SELECT_ABILITY'
+                && entry?.actorId === '0'
+                && entry?.id?.startsWith('AUTO_DEFENSE-0-angelic-cloak-')
+                && entry?.segments?.some((segment: JsonRecord) => (
+                    segment?.key === 'actionLog.abilityActivatedDefense'
+                ))
+            ));
+            return {
+                phase: state.sys?.phase ?? null,
+                autoDefenseFound: Boolean(autoDefense),
+                logFound: Boolean(logEntry),
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'defensiveRoll',
+            autoDefenseFound: true,
+            logFound: true,
+        });
+
+        const actionLogButton = page.locator('[data-fab-id="action-log"]').first();
+        if (!await actionLogButton.isVisible().catch(() => false)) {
+            const menuButton = page.locator('[data-testid="fab-menu"] [data-fab-id]').first();
+            await expect(menuButton).toBeVisible({ timeout: 10000 });
+            await menuButton.click();
+            await expect(actionLogButton).toBeVisible({ timeout: 10000 });
+        }
+        await actionLogButton.click();
+        const actionLogPanel = page.locator('[data-testid="fab-panel-action-log"]').first();
+        await expect(actionLogPanel).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="hud-action-log-row"]').filter({
+            hasText: /天使斗篷|Angelic Cloak/i,
+        }).first()).toBeVisible({ timeout: 10000 });
+        await game.screenshot('tianshi-angelic-cloak-auto-defense-action-log', testInfo);
+    });
+
+    test('施加恍惚时应向防御方询问是否使用净化', async ({ page, game }, testInfo) => {
+        await setupTianshiScene(game, {
+            phase: 'offensiveRoll',
+            currentPlayer: '1',
+            currentPlayerIndex: 1,
+            playerID: '0',
+            disableLocalAiAutomation: true,
+            opponentCharacter: 'barbarian',
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'violent-assault',
+                isDefendable: false,
+                damage: 5,
+            },
+            tokens: { [TOKEN_IDS.PURIFY]: 1 },
+            extra: {
+                rollCount: 1,
+                rollLimit: 1,
+                rollDiceCount: 5,
+                rollConfirmed: true,
+            },
+        });
+
+        const before = await readState(game);
+        expect(before.sys?.phase).toBe('offensiveRoll');
+        expect(before.core?.pendingAttack).toMatchObject({
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'violent-assault',
+        });
+        expect(before.core?.players?.['0']?.statusEffects?.[STATUS_IDS.DAZE] ?? 0).toBe(0);
+        expect(before.core?.players?.['0']?.tokens?.[TOKEN_IDS.PURIFY]).toBe(1);
+        await game.screenshot('daze-purify-before-application', testInfo);
+
+        await dispatchCommand(page, 'ADVANCE_PHASE', '1');
+
+        await expect.poll(async () => {
+            const state = await readState(game);
+            const choice = state.sys?.interaction?.current;
+            const options = Array.isArray(choice?.data?.options) ? choice.data.options : [];
+            return {
+                playerId: choice?.playerId ?? null,
+                kind: choice?.kind ?? null,
+                sourceId: choice?.data?.sourceId ?? null,
+                daze: state.core?.players?.['0']?.statusEffects?.[STATUS_IDS.DAZE] ?? 0,
+                purify: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.PURIFY] ?? 0,
+                defenderHp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                pendingAttack: state.core?.pendingAttack?.sourceAbilityId ?? null,
+                optionCustomIds: options.map((option: JsonRecord) => (
+                    option?.value?.customId ?? option?.customId ?? null
+                )),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            playerId: '0',
+            kind: 'simple-choice',
+            sourceId: 'daze-extra-attack-response',
+            daze: 0,
+            purify: 1,
+            defenderHp: 50,
+            pendingAttack: 'violent-assault',
+            optionCustomIds: [
+                'daze-extra-attack-use-purify',
+                'daze-extra-attack-continue',
+            ],
+        });
+
+        const usePurifyButton = page.locator(
+            '#modal-root [data-choice-custom-id="daze-extra-attack-use-purify"]',
+        ).first();
+        await expect(usePurifyButton).toBeVisible({ timeout: 10000 });
+        await game.screenshot('daze-purify-choice-at-application', testInfo);
+        await usePurifyButton.click();
+
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                phase: state.sys?.phase ?? null,
+                defenderHp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                daze: state.core?.players?.['0']?.statusEffects?.[STATUS_IDS.DAZE] ?? 0,
+                purify: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.PURIFY] ?? 0,
+                pendingAttack: state.core?.pendingAttack ?? null,
+                extraAttack: state.core?.extraAttackInProgress ?? null,
+                choiceOpen: Boolean(state.sys?.interaction?.current),
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'main2',
+            defenderHp: 45,
+            daze: 0,
+            purify: 0,
+            pendingAttack: null,
+            extraAttack: null,
+            choiceOpen: false,
+        });
+        await game.screenshot('daze-purify-resolved-no-extra-attack', testInfo);
+    });
+
     test('天使斗篷应通过一次普通防御投掷结算反击，并让主攻击扣除炽天使生命', async ({ page, game }, testInfo) => {
         await setupTianshiScene(game, {
             phase: 'defensiveRoll',
@@ -1054,19 +1244,64 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
                 rollConfirmed: false,
             },
         });
+        await page.evaluate((upgradedAbility) => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness.state.get();
+            const player = state.core.players['0'];
+            return harness.state.set({
+                ...state,
+                core: {
+                    ...state.core,
+                    players: {
+                        ...state.core.players,
+                        '0': {
+                            ...player,
+                            abilities: player.abilities.map((ability: JsonRecord) => (
+                                ability.id === 'angelic-cloak' ? upgradedAbility : ability
+                            )),
+                            abilityLevels: { ...player.abilityLevels, 'angelic-cloak': 2 },
+                        },
+                    },
+                },
+            });
+        }, ANGELIC_CLOAK_2);
+        expect((await readState(game)).core?.players?.['0']?.abilityLevels?.['angelic-cloak']).toBe(2);
         await dismissAttackShowcaseIfVisible(page);
         await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
         await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
 
         const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
         const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
+        const defenseDieButton = page.getByTestId('dicethrone-2d-dice-tray').getByTestId('die-button-0').first();
+        expect((await readState(game)).core?.rollLimit).toBe(2);
         await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
         await page.evaluate(() => {
-            window.__BG_TEST_HARNESS__?.dice.setValues([4]);
+            window.__BG_TEST_HARNESS__?.dice.setValues([1]);
         });
         await expect(rollButton).toBeEnabled({ timeout: 5000 });
         await rollButton.click();
-        await expect.poll(async () => (await readState(game)).core?.dice?.[0]?.value ?? null, { timeout: 10000 }).toBe(4);
+        await expect.poll(async () => (await readState(game)).core?.dice?.[0]?.value ?? null, { timeout: 10000 }).toBe(1);
+        await waitForDiceThroneVisualIdle(page);
+        await expect(defenseDieButton).toHaveAttribute('data-display-value', '1');
+        await expect(rollButton).toBeEnabled({ timeout: 5000 });
+        await game.screenshot('tianshi-angelic-cloak-defense-first-roll-one', testInfo);
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([4]);
+        });
+        await rollButton.click();
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                value: state.core?.dice?.[0]?.value ?? null,
+                rollCount: state.core?.rollCount ?? null,
+                rollLimit: state.core?.rollLimit ?? null,
+                flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? 0,
+            };
+        }, { timeout: 10000 }).toEqual({ value: 4, rollCount: 2, rollLimit: 2, flight: 0 });
+        await waitForDiceThroneVisualIdle(page);
+        await expect(defenseDieButton).toHaveAttribute('data-display-value', '4');
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveCount(0);
+        await game.screenshot('tianshi-angelic-cloak-defense-reroll-to-four-no-flight', testInfo);
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
         await confirmButton.click();
         await expect.poll(async () => {
@@ -1094,6 +1329,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         }, { timeout: 10000 }).toEqual({ phase: 'main2', pendingAttack: null, pendingDamage: null, tianshiHp: 43, flight: 0 });
         await expectVisiblePlayerHp(page, '0', 43);
         await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveCount(0);
+        await waitForDiceThroneVisualIdle(page);
         await game.screenshot('tianshi-angelic-cloak-wing-prevents-1-damage', testInfo);
     });
 

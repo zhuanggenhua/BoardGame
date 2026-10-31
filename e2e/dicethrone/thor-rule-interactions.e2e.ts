@@ -1,7 +1,7 @@
 import type { Page, TestInfo } from '@playwright/test';
 import { test, expect, type GameTestContext } from '../framework';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
-import { closeDebugPanelIfOpen, dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
+import { closeDebugPanelIfOpen, continueAttackShowcaseIfVisible, dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
 import { expectDiceHintSurface, shot } from '../helpers/dicethroneThorEvidence';
 import { THOR_CARDS } from '../../src/games/dicethrone/heroes/thor/cards';
 
@@ -88,11 +88,20 @@ test('索尔连锁二级四颗效果骰保留六个组合选择', async ({ page,
     await expectDiceHintSurface(page, 'dice-tray');
     await shot(page, info, '02-四颗效果骰先由原骰盘确认');
     await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
-    await expect(page.locator('[data-option-id]')).toHaveCount(6);
-    await shot(page, info, '03-六个两骰组合供玩家比较');
-    await chooseCustom(page, game, 'thor-chain-pair', 3);
+    await expectDiceHintSurface(page, 'viewport');
+    await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择两颗效果骰');
+    await expect(page.getByTestId('dicethrone-2d-dice-tray')).toHaveAttribute('data-dice-count', '4');
+    await expect(page.locator('[data-option-id]')).toHaveCount(0);
+    await shot(page, info, '03-原骰盘直接展示四骰与组合选择提示');
+    await page.getByTestId('die-button-0').click();
+    await page.getByTestId('die-button-1').click();
+    await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('die-button-1')).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
+    await shot(page, info, '04-选中两颗后原确认动作启用');
+    await page.getByTestId('dice-interaction-confirm-button').click();
     await expect.poll(async () => { const s = await game.getState(); return { hp: s.core.players['1'].resources.hp, bonus: s.core.pendingAttack?.bonusDamage, phase: s.sys.phase }; }).toEqual({ hp: 47, bonus: 3, phase: 'defensiveRoll' });
-    await shot(page, info, '04-玩家选低值组合后三附属伤害与主攻击分别保留');
+    await shot(page, info, '05-玩家选低值组合后三附属伤害与主攻击分别保留');
 });
 
 for (const input of [
@@ -194,7 +203,15 @@ for (const input of [
     await expect.poll(async () => (await game.getState()).core.pendingDamage).toBeUndefined();
     await expect.poll(async () => (await game.getState()).core.players['0'].resources.hp).toBe(input.finalHp);
     await expect.poll(async () => (await game.getState()).core.players['0'].resources.cp).toBe(3);
-    await shot(page, info, '03-原伤害事务完成且生命与牌费正确');
+    if (input.finalHp === 0) {
+        await expect(page.getByTestId('attack-showcase-overlay')).toBeVisible();
+        await shot(page, info, '03-攻击结果特写等待玩家点击继续');
+    }
+    const continuedAttackShowcase = await continueAttackShowcaseIfVisible(page);
+    if (input.finalHp === 0) expect(continuedAttackShowcase).toBe(true);
+    await shot(page, info, input.finalHp === 0
+        ? '04-玩家点击继续后显示失败结算且生命与牌费正确'
+        : '03-原伤害事务完成且生命与牌费正确');
 });
 
 for (const input of [

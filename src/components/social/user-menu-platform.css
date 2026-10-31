@@ -1,5 +1,6 @@
 .user-menu--platform { position: relative; display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
 .platform-account-trigger, .platform-account-notifications { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; min-height: 44px; padding: 6px 10px; border: 2px solid #fff; background: #000; color: #fff; cursor: pointer; white-space: nowrap; }
+.platform-account-trigger { border-color: transparent; }
 .platform-account-trigger:hover, .platform-account-notifications:hover { background: #242424; }
 .platform-account-trigger:focus-visible, .platform-account-notifications:focus-visible { outline: 3px solid #d5ff00; outline-offset: 3px; }
 .platform-account-avatar { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; }

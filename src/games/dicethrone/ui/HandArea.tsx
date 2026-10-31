@@ -1059,7 +1059,7 @@ export const HandArea = ({
                             >
                                 <motion.div
                                     data-testid="hand-card-visual"
-                                    className="relative w-full h-full"
+                                    className="relative w-full h-full origin-bottom-center"
                                     initial={motionInitial}
                                     animate={{
                                         opacity: 1,

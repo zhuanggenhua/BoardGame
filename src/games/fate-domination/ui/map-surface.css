@@ -8,6 +8,10 @@
 .fd-runtime-deployment-slot { border-radius:50%; }
 .fd-runtime-deployment-slot:not(:disabled) { border-color:#ead28f; background:rgb(161 119 39 / .66); box-shadow:0 0 0 2px #17140e,0 0 15px rgb(235 196 100 / .6); }
 .fd-runtime-deployment-slot:not(:disabled):hover { background:rgb(224 190 109 / .8); }
+.fd-runtime-location.fd-runtime-deployment-slot[aria-pressed="true"] { border-color:#fff; background:rgb(236 222 174 / .2); box-shadow:0 0 0 2px #17140e; }
+.fd-deployment-preview { position:absolute; inset:3px; pointer-events:none; }
+.fd-deployment-preview > img { width:100%; height:100%; object-fit:contain; opacity:.8; }
+.fd-deployment-preview > span { position:absolute; top:100%; left:50%; transform:translateX(-50%); padding:2px 6px; white-space:nowrap; border-radius:3px; background:#101717; color:#fff; font-size:14px; }
 .fd-runtime-deployment-slot:disabled { border-color:transparent; background:transparent; box-shadow:none; cursor:default; }
 .fd-runtime-deployment-slot:disabled:hover { background:transparent; }
 .fd-runtime-map-card-hit { position: absolute; pointer-events: auto; border: 0; background: transparent; cursor: zoom-in; }

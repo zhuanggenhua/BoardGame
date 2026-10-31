@@ -337,7 +337,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
 
             {showAbout && (
                 <Suspense fallback={null}>
-                    <LazyAboutModal onClose={() => setShowAbout(false)} />
+                    <LazyAboutModal onClose={() => setShowAbout(false)} showSponsors={!(homeStyle === 'modern' && isHomeEntryRoute(location.pathname))} />
                 </Suspense>
             )}
             {showFeedback && (

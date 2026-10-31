@@ -13,6 +13,8 @@
       "confirmAttack": "Confirm attack",
       "confirmDeploymentTo": "Confirm deployment to {{location}}",
       "confirmMoveTo": "Confirm movement to {{location}}",
+      "pendingDeployment": "Pending confirmation",
+      "pendingDeploymentPlayer": "Player {{player}} pending deployment",
       "continue": "Continue",
       "endAction": "End action",
       "endBattle": "End battle phase",
