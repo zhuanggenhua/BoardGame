@@ -1635,10 +1635,10 @@
     "title": "Ability Resolution Choice",
     "option": "Option {{index}}",
     "sliderLabel": "Select amount to spend",
-    "dazeExtraAttack": {
-      "title": "You are about to be Dazed. After this attack, its attacker immediately attacks again. Spend 1 Purify to prevent Daze?",
-      "usePurify": "Spend 1 Purify to prevent Daze",
-      "continue": "Do not use Purify; accept Daze"
+    "purifyIncomingDebuff": {
+      "title": "A Purify-removable negative status is about to be applied. Spend 1 Purify to prevent it?",
+      "usePurify": "Use Purify",
+      "decline": "Don't use"
     },
     "statusCheckOrder": {
       "title": "Choose the blinded and dazzle check order",

@@ -458,7 +458,9 @@ export const HandArea = ({
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
     const hasRespondableCards = (respondableCardIds?.size ?? 0) > 0;
-    const visibleFanBottomOffset = preserveCardVisibility
+    // 可响应牌是当前决策的正式候选；与弃牌/牌池选择一样，整手牌需要完整落在视口内。
+    const shouldPreserveCardVisibility = preserveCardVisibility || hasRespondableCards;
+    const visibleFanBottomOffset = shouldPreserveCardVisibility
         ? HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS + Math.max(0, ...handEntries.map(({ index }) => {
             const offset = Math.abs(index - centerIndex);
             const angle = offset * HAND_CARD_ROTATION_STEP_DEGREES * Math.PI / 180;
@@ -469,7 +471,7 @@ export const HandArea = ({
         }))
         : 0;
     const handCardBottomOffset = buildBoardShellInlineUnitValue(
-        preserveCardVisibility ? visibleFanBottomOffset : (hasRespondableCards ? 0.75 : (isCoarsePointer ? 0 : -2)),
+        shouldPreserveCardVisibility ? visibleFanBottomOffset : (isCoarsePointer ? 0 : -2),
     );
 
     const clearAnimationTimers = React.useCallback(() => {

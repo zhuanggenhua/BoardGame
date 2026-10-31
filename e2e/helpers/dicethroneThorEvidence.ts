@@ -145,12 +145,12 @@ export async function shot(page: Page, info: TestInfo, name: string) {
  }
 }
 
-/** 骰子交互提示只渲染一次：普通选骰位于视口左侧垂直居中，效果骰贴 DiceTray。 */
+/** 骰子交互提示只渲染一次：普通选骰位于视口顶部居中，效果骰贴 DiceTray。 */
 export async function expectDiceHintSurface(page: Page, expectedAnchor: 'viewport' | 'dice-tray') {
  const hints=page.getByTestId('dice-interaction-hint');
  const anchors=page.getByTestId('dice-interaction-hint-anchor');
  await expect(hints).toHaveCount(1);
  await expect(anchors).toHaveCount(1);
  await expect(anchors).toHaveAttribute('data-anchor',expectedAnchor);
- await expect(anchors).toHaveAttribute('data-placement',expectedAnchor === 'viewport' ? 'left-center' : 'tray-top');
+ await expect(anchors).toHaveAttribute('data-placement',expectedAnchor === 'viewport' ? 'top-center' : 'tray-top');
 }

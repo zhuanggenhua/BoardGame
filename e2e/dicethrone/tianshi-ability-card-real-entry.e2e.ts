@@ -1005,6 +1005,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
                 damage: 5,
             },
             tokens: { [TOKEN_IDS.PURIFY]: 1 },
+            statuses: { [STATUS_IDS.KNOCKDOWN]: 1 },
             extra: {
                 rollCount: 1,
                 rollLimit: 1,
@@ -1021,8 +1022,22 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             sourceAbilityId: 'violent-assault',
         });
         expect(before.core?.players?.['0']?.statusEffects?.[STATUS_IDS.DAZE] ?? 0).toBe(0);
+        expect(before.core?.players?.['0']?.statusEffects?.[STATUS_IDS.KNOCKDOWN] ?? 0).toBe(1);
         expect(before.core?.players?.['0']?.tokens?.[TOKEN_IDS.PURIFY]).toBe(1);
-        await game.screenshot('daze-purify-before-application', testInfo);
+        const purifyToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.PURIFY}`);
+        await dismissAttackShowcaseIfVisible(page);
+        await expect(purifyToken).toHaveAttribute('data-token-clickable', 'true');
+        const availablePurifyRipples = purifyToken.locator('[data-dicethrone-token-ripple="available"]');
+        await expect(availablePurifyRipples).toHaveCount(2);
+        await expect(availablePurifyRipples.first()).toHaveCSS('display', 'block');
+        await expect(availablePurifyRipples.first()).toHaveCSS('animation-name', 'dicethrone-token-available-ripple');
+        await expect.poll(async () => availablePurifyRipples.evaluateAll((ripples) => ripples.some((ripple) => {
+            const style = window.getComputedStyle(ripple);
+            const scale = new DOMMatrixReadOnly(style.transform).a;
+            return style.display !== 'none' && Number(style.opacity) > 0.2 && scale > 1.05;
+        })), { timeout: 5000 }).toBe(true);
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('净化Token可用波纹-恍惚施加前', testInfo);
 
         await dispatchCommand(page, 'ADVANCE_PHASE', '1');
 
@@ -1060,6 +1075,10 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             '#modal-root [data-choice-custom-id="daze-extra-attack-use-purify"]',
         ).first();
         await expect(usePurifyButton).toBeVisible({ timeout: 10000 });
+        await expect(usePurifyButton).toContainText('使用净化');
+        await expect(page.locator('#modal-root [data-choice-custom-id="daze-extra-attack-continue"]').first())
+            .toContainText('不使用');
+        await page.waitForTimeout(400);
         await game.screenshot('daze-purify-choice-at-application', testInfo);
         await usePurifyButton.click();
 

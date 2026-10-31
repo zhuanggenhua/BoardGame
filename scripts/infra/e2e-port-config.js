@@ -23,9 +23,10 @@ export const E2E_SINGLE_WORKER_PORTS = Object.freeze({
   apiServer: resolvePort(process.env.PW_E2E_API_SERVER_PORT || process.env.API_SERVER_PORT || process.env.PW_API_SERVER_PORT, 21000),
 });
 
-// 多 worker 端口基础值：worker 0 为 6273/20100/21100，后续 worker 每个 +100。
+// 多 worker 端口基础值：worker 0 为 7273/20100/21100，后续 worker 每个 +100。
+// Windows Hyper-V 常将 6176-6475 排除；前端扫描段从该范围外开始。
 export const E2E_MULTI_WORKER_BASE_PORTS = Object.freeze({
-  frontend: resolvePort(process.env.PW_E2E_MULTI_FRONTEND_PORT, 6273),
+  frontend: resolvePort(process.env.PW_E2E_MULTI_FRONTEND_PORT, 7273),
   gameServer: 20100,
   apiServer: 21100,
 });

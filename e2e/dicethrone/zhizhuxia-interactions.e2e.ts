@@ -708,6 +708,7 @@ test.describe('DiceThrone 蜘蛛侠真实规则交互', () => {
                 phase: state?.sys?.phase ?? null,
                 attackerId: state?.core?.pendingAttack?.attackerId ?? null,
                 defenderId: state?.core?.pendingAttack?.defenderId ?? null,
+                sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
                 isDefendable: state?.core?.pendingAttack?.isDefendable ?? null,
                 damageUnblockable: state?.core?.pendingDamage?.unblockable ?? null,
                 damage: state?.core?.pendingDamage?.currentDamage ?? null,
@@ -718,15 +719,24 @@ test.describe('DiceThrone 蜘蛛侠真实规则交互', () => {
             phase: 'defensiveRoll',
             attackerId: '0',
             defenderId: '1',
+            sourceAbilityId: 'venom-punch-4',
             isDefendable: false,
             damageUnblockable: true,
             damage: 7,
             defenderHp: 50,
             invisible: 1,
         });
-        await expect(page.getByText(/不可防御伤害|不可防御/).first()).toBeVisible({ timeout: 10000 });
         await expect(invisibleToken).toBeVisible({ timeout: 10000 });
         await expect(invisibleToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 10000 });
+        const availableInvisibleRipples = invisibleToken.locator('[data-dicethrone-token-ripple="available"]');
+        await expect(availableInvisibleRipples).toHaveCount(2);
+        await expect(availableInvisibleRipples.first()).toHaveCSS('display', 'block');
+        await expect(availableInvisibleRipples.first()).toHaveCSS('animation-name', 'dicethrone-token-available-ripple');
+        await expect.poll(async () => availableInvisibleRipples.evaluateAll((ripples) => ripples.some((ripple) => {
+            const style = window.getComputedStyle(ripple);
+            const scale = new DOMMatrixReadOnly(style.transform).a;
+            return style.display !== 'none' && Number(style.opacity) > 0.2 && scale > 1.05;
+        })), { timeout: 5000 }).toBe(true);
         await saveEvidenceScreenshot(page, testInfo, '11-隐形-不可防御伤害响应窗口');
         await invisibleToken.click();
 

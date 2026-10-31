@@ -58,8 +58,9 @@ describe('gameHudRuntimeAdapter', () => {
         expect(screen.getByTestId('game-hud-fab-layout')).toHaveAttribute('data-offset', JSON.stringify({ left: 160 }));
 
         rerender(<GameHudFabLayoutProbe gameId="dicethrone" />);
-        expect(screen.getByTestId('game-hud-fab-layout')).not.toHaveAttribute('data-position');
-        expect(screen.getByTestId('game-hud-fab-layout')).not.toHaveAttribute('data-storage-key');
+        expect(screen.getByTestId('game-hud-fab-layout')).toHaveAttribute('data-position', 'top-right');
+        expect(screen.getByTestId('game-hud-fab-layout')).toHaveAttribute('data-storage-key', 'game_hud_fab_position:dicethrone:v1');
+        expect(screen.getByTestId('game-hud-fab-layout')).toHaveAttribute('data-offset', JSON.stringify({ top: -48 }));
     });
 
     it('dicethrone 奖励骰不得由 HUD force dismiss 代替骰盘普通确认', () => {

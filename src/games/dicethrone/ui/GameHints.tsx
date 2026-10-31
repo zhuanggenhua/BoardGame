@@ -136,7 +136,7 @@ const HandDiscardHint: React.FC<{
     );
 };
 
-/** 普通选骰/改骰提示固定在视口左侧垂直居中。 */
+/** 普通选骰/改骰提示固定在视口顶部居中，并与手牌弃置提示共用顶部间距。 */
 const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = ({ interaction }) => {
     const { t } = useTranslation('game-dicethrone');
 
@@ -146,14 +146,14 @@ const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = 
         <div
             data-testid="dice-interaction-hint-anchor"
             data-anchor="viewport"
-            data-placement="left-center"
-            className="fixed left-[max(0.75rem,env(safe-area-inset-left))] top-1/2 -translate-y-1/2 pointer-events-none"
+            data-placement="top-center"
+            className="fixed left-1/2 -translate-x-1/2 pointer-events-none"
             style={{
                 zIndex: UI_Z_INDEX.hint,
                 position: 'fixed',
-                top: '50%',
-                left: 'max(0.75rem, env(safe-area-inset-left))',
-                transform: 'translateY(-50%)',
+                top: dtViewportInlineUnit(HAND_DISCARD_HINT_TOP_UNITS),
+                left: '50%',
+                transform: 'translateX(-50%)',
             }}
         >
             <div

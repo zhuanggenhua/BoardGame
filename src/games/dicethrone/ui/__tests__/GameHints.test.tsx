@@ -92,7 +92,7 @@ describe('GameHints', () => {
         expect(onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('普通选骰提示固定在视口左侧垂直居中', () => {
+    it('普通选骰提示固定在视口顶部居中', () => {
         const diceInteraction = createDiceInteraction();
         render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
 
@@ -100,12 +100,12 @@ describe('GameHints', () => {
         expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_select');
         expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-anchor', 'viewport');
         const anchor = screen.getByTestId('dice-interaction-hint-anchor');
-        expect(anchor).toHaveAttribute('data-placement', 'left-center');
+        expect(anchor).toHaveAttribute('data-placement', 'top-center');
         expect(anchor.className).toContain('fixed');
-        expect(anchor.className).toContain('top-1/2');
-        expect(anchor.className).toContain('left-[max(0.75rem,env(safe-area-inset-left))]');
-        expect(anchor.style.top).toBe('50%');
-        expect(anchor.style.transform).toBe('translateY(-50%)');
+        expect(anchor.className).toContain('left-1/2');
+        expect(anchor.style.top).toContain('5.6');
+        expect(anchor.style.left).toBe('50%');
+        expect(anchor.style.transform).toBe('translateX(-50%)');
     });
 
     it('骰盘提示合同不会在 GameHints 再渲染第二份提示', () => {

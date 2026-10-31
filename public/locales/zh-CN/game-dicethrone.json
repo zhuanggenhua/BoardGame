@@ -1690,10 +1690,10 @@
     "title": "技能结算选择",
     "option": "选项 {{index}}",
     "sliderLabel": "选择花费数量",
-    "dazeExtraAttack": {
-      "title": "即将受到恍惚：攻击结算后攻击者会立即追加攻击。是否花费 1 个净化抵消这次施加？",
-      "usePurify": "花费 1 个净化，抵消恍惚",
-      "continue": "不使用净化，承受恍惚"
+    "purifyIncomingDebuff": {
+      "title": "即将受到可净化的负面状态。是否花费 1 个净化抵消本次施加？",
+      "usePurify": "使用净化",
+      "decline": "不使用"
     },
     "statusCheckOrder": {
       "title": "选择致盲与眩光的判定顺序",

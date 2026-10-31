@@ -1321,13 +1321,15 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await expect(page.getByTestId('dice-interaction-hint-title')).toContainText('重投');
     await expect(page.getByTestId('dice-interaction-hint-detail')).toContainText('同一颗可重复选择');
     const diceHintAnchor = page.getByTestId('dice-interaction-hint-anchor');
-    await expect(diceHintAnchor).toHaveAttribute('data-placement', 'left-center');
+    await expect(diceHintAnchor).toHaveAttribute('data-placement', 'top-center');
     const diceHintBounds = await diceHintAnchor.boundingBox();
     expect(diceHintBounds).not.toBeNull();
-    expect(Math.abs(diceHintBounds!.y + diceHintBounds!.height / 2 - 450)).toBeLessThanOrEqual(32);
-    expect(diceHintBounds!.x).toBeGreaterThanOrEqual(0);
-    expect(diceHintBounds!.x).toBeLessThan(360);
-    expect(diceHintBounds!.x + diceHintBounds!.width).toBeLessThanOrEqual(1441);
+    const hintViewport = page.viewportSize();
+    expect(hintViewport).not.toBeNull();
+    expect(Math.abs(diceHintBounds!.x + diceHintBounds!.width / 2 - hintViewport!.width / 2)).toBeLessThanOrEqual(32);
+    expect(diceHintBounds!.y).toBeGreaterThanOrEqual(0);
+    expect(diceHintBounds!.y).toBeLessThan(150);
+    expect(diceHintBounds!.x + diceHintBounds!.width).toBeLessThanOrEqual(hintViewport!.width);
     const targetScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '值得拥有-投掷者骰区目标态',
         'worthy-teammate-dice-targets', '队友出牌后由当前投掷者查看自己的骰区',

@@ -2769,7 +2769,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                     || pendingInteraction?.type === 'selectDeckCard'
                                     || pendingInteraction?.type === 'selectCard'
                                     || isChoiceCardPoolOpen
-                                    || Boolean(selectedAbilityId)}
+                                    || Boolean(selectedAbilityId)
+                                    || Boolean(sharedResponsePrompt)
+                                    || isManualSelfResponseWindow}
                             />
                         </>
                     );

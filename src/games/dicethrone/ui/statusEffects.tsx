@@ -859,6 +859,22 @@ const getClickableTokenHaloStyle = (): CSSProperties => ({
     height: `calc(100% + ${buildBoardShellInlineUnitValue(0.52)})`,
 });
 
+const getClickableTokenRippleStyle = (delayMs: number): CSSProperties => ({
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    zIndex: 9,
+    width: `calc(100% + ${buildBoardShellInlineUnitValue(0.58)})`,
+    height: `calc(100% + ${buildBoardShellInlineUnitValue(0.58)})`,
+    border: '3px solid rgba(253, 224, 71, 0.96)',
+    borderRadius: '9999px',
+    boxShadow: '0 0 14px rgba(253, 224, 71, 0.68), 0 0 26px rgba(96, 165, 250, 0.30)',
+    pointerEvents: 'none',
+    transform: 'translate(-50%, -50%) scale(0.78)',
+    animation: 'dicethrone-token-available-ripple 2.3s ease-out infinite',
+    animationDelay: `${delayMs}ms`,
+});
+
 const clickableTokenBodyStyle: CSSProperties = {
     filter: 'brightness(1.10) saturate(1.22) drop-shadow(0 0 7px rgba(253, 224, 71, 0.72)) drop-shadow(0 0 3px rgba(96, 165, 250, 0.40))',
 };
@@ -998,6 +1014,24 @@ export const TokenBadge = ({
             data-dicethrone-token-size={size}
             data-token-clickable={isClickable ? 'true' : 'false'}
         >
+            {isClickable && (
+                <div
+                    aria-hidden="true"
+                    data-dicethrone-token-ripple="available"
+                    data-ripple-delay={0}
+                    className="pointer-events-none"
+                    style={getClickableTokenRippleStyle(0)}
+                />
+            )}
+            {isClickable && (
+                <div
+                    aria-hidden="true"
+                    data-dicethrone-token-ripple="available"
+                    data-ripple-delay={1}
+                    className="pointer-events-none"
+                    style={getClickableTokenRippleStyle(1300)}
+                />
+            )}
             {isClickable && (
                 <div
                     aria-hidden="true"

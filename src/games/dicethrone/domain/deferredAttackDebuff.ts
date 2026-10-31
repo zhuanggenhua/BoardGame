@@ -1,12 +1,13 @@
 import type { GameEvent, MatchState } from '../../../engine/types';
 import { completeResolutionFrame, getActiveResolutionFrame, pushResolutionFrame } from '../../../engine/systems/resolutionStack';
-import { STATUS_IDS, TOKEN_IDS } from './ids';
+import { TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import { isPurifiableDebuffId } from './statusRemoval';
 import {
-    DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID,
-    DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID,
-    DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID,
-} from './dazeExtraAttackChoice';
+    INCOMING_DEBUFF_PURIFY_CHOICE_SOURCE_ID,
+    INCOMING_DEBUFF_DECLINE_PURIFY_CUSTOM_ID,
+    INCOMING_DEBUFF_USE_PURIFY_CUSTOM_ID,
+} from './incomingDebuffPurifyChoice';
 import type { ChoiceRequestedEvent, ChoiceResolvedEvent, DiceThroneCore, DiceThroneEvent } from './types';
 
 const FRAME_KIND = 'dicethrone:attack-debuff-prevention';
@@ -21,17 +22,15 @@ const incomingDebuff = (core: DiceThroneCore, defenderId: string, event: GameEve
         && core.tokenDefinitions.some(definition => definition.id === id && definition.category === 'debuff');
 };
 
-const incomingDaze = (
+const incomingPurifiableDebuff = (
     core: DiceThroneCore,
     defenderId: string,
-    sourceAbilityId: string,
     event: GameEvent,
 ): boolean => {
-    if (event.type !== 'STATUS_APPLIED' || !incomingDebuff(core, defenderId, event)) return false;
-    const payload = event.payload as { targetId?: string; statusId?: string; sourceAbilityId?: string };
-    return payload.targetId === defenderId
-        && payload.statusId === STATUS_IDS.DAZE
-        && payload.sourceAbilityId === sourceAbilityId;
+    if (!incomingDebuff(core, defenderId, event)) return false;
+    const payload = event.payload as { statusId?: string; tokenId?: string };
+    const debuffId = payload.statusId ?? payload.tokenId;
+    return typeof debuffId === 'string' && isPurifiableDebuffId(core, debuffId);
 };
 
 const getStatusApplicationStart = (events: DiceThroneEvent[], index: number): number => {
@@ -50,7 +49,7 @@ export function deferAttackDebuffFollowups(
     state: MatchState<DiceThroneCore>,
     followups: DiceThroneEvent[],
     timestamp: number,
-    options: { allowPurifyDaze?: boolean; allowTreant?: boolean } = {},
+    options: { purifyStartIndex?: number; allowTreant?: boolean } = {},
 ): { state: MatchState<DiceThroneCore>; events: DiceThroneEvent[] } {
     const attack = state.core.pendingAttack;
     const defenderId = attack?.defenderId;
@@ -60,37 +59,37 @@ export function deferAttackDebuffFollowups(
     }
 
     const purifyStacks = state.core.players[defenderId]?.tokens[TOKEN_IDS.PURIFY] ?? 0;
-    const dazeIndex = options.allowPurifyDaze === false || purifyStacks <= 0
+    const purifyStartIndex = Math.max(0, options.purifyStartIndex ?? 0);
+    const purifyIndex = purifyStacks <= 0
         ? -1
-        : followups.findIndex(event => incomingDaze(state.core, defenderId, attack.sourceAbilityId!, event));
-    const currentDaze = (state.core.players[defenderId]?.statusEffects[STATUS_IDS.DAZE] ?? 0)
-        + (state.core.players[defenderId]?.tokens[STATUS_IDS.DAZE] ?? 0);
-    if (dazeIndex >= 0 && currentDaze === 0) {
-        const start = getStatusApplicationStart(followups, dazeIndex);
-        const frameId = 'dt-purify-daze-' + attack.sourceAbilityId + '-' + defenderId + '-' + timestamp;
+        : followups.findIndex((event, index) => index >= purifyStartIndex
+            && incomingPurifiableDebuff(state.core, defenderId, event));
+    if (purifyIndex >= 0) {
+        const start = getStatusApplicationStart(followups, purifyIndex);
+        const frameId = 'dt-purify-debuff-' + attack.sourceAbilityId + '-' + defenderId + '-' + timestamp + '-' + purifyIndex;
         const nextState = pushResolutionFrame(state, {
             id: frameId, kind: FRAME_KIND, ownerGame: 'dicethrone', ownerSystem: 'dicethrone-events',
             ordering: 'nested-body', status: 'running', phase: state.sys.phase,
             phaseGate: 'block-advance-when-blocked',
             deferredEvents: followups.slice(start),
-            metadata: { defenderId, responseType: 'purify-daze', candidateIndex: dazeIndex - start },
+            metadata: { defenderId, responseType: 'purify-debuff', candidateIndex: purifyIndex - start },
         });
         const choice: ChoiceRequestedEvent = {
             type: 'CHOICE_REQUESTED',
             payload: {
                 playerId: defenderId,
-                sourceAbilityId: DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID,
-                titleKey: 'choices.dazeExtraAttack.title',
+                sourceAbilityId: INCOMING_DEBUFF_PURIFY_CHOICE_SOURCE_ID,
+                titleKey: 'choices.purifyIncomingDebuff.title',
                 options: [
                     {
                         value: 1,
-                        customId: DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID,
-                        labelKey: 'choices.dazeExtraAttack.usePurify',
+                        customId: INCOMING_DEBUFF_USE_PURIFY_CUSTOM_ID,
+                        labelKey: 'choices.purifyIncomingDebuff.usePurify',
                     },
                     {
                         value: 0,
-                        customId: DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID,
-                        labelKey: 'choices.dazeExtraAttack.continue',
+                        customId: INCOMING_DEBUFF_DECLINE_PURIFY_CUSTOM_ID,
+                        labelKey: 'choices.purifyIncomingDebuff.decline',
                     },
                 ],
             },
@@ -148,36 +147,35 @@ export function resumeAttackDebuffFollowups(
     choice: ChoiceResolvedEvent,
 ): { state: MatchState<DiceThroneCore>; events: DiceThroneEvent[] } | undefined {
     if (
-        choice.payload.customId === DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID
-        || choice.payload.customId === DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID
+        choice.payload.customId === INCOMING_DEBUFF_USE_PURIFY_CUSTOM_ID
+        || choice.payload.customId === INCOMING_DEBUFF_DECLINE_PURIFY_CUSTOM_ID
     ) {
         if (
-            choice.payload.sourceAbilityId !== DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID
+            choice.payload.sourceAbilityId !== INCOMING_DEBUFF_PURIFY_CHOICE_SOURCE_ID
             || choice.payload.interactionBacked !== true
         ) return undefined;
         const frame = getActiveResolutionFrame(state);
         const defenderId = frame?.metadata?.defenderId;
         const candidateIndex = frame?.metadata?.candidateIndex;
-        const attackSourceId = state.core.pendingAttack?.sourceAbilityId;
         if (
             frame?.kind !== FRAME_KIND
-            || frame.metadata?.responseType !== 'purify-daze'
+            || (frame.metadata?.responseType !== 'purify-debuff'
+                && frame.metadata?.responseType !== 'purify-daze')
             || typeof defenderId !== 'string'
             || defenderId !== choice.payload.playerId
             || typeof candidateIndex !== 'number'
-            || typeof attackSourceId !== 'string'
         ) return undefined;
 
         const events = (frame.deferredEvents ?? []) as DiceThroneEvent[];
         const index = candidateIndex;
-        if (!incomingDaze(state.core, defenderId, attackSourceId, events[index])) return undefined;
+        if (!incomingPurifiableDebuff(state.core, defenderId, events[index])) return undefined;
         const purifyStacks = state.core.players[defenderId]?.tokens[TOKEN_IDS.PURIFY] ?? 0;
-        const usePurify = choice.payload.customId === DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID
+        const usePurify = choice.payload.customId === INCOMING_DEBUFF_USE_PURIFY_CUSTOM_ID
             && choice.payload.value === 1
             && purifyStacks > 0;
-        const continueWithDaze = choice.payload.customId === DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID
+        const declinePurify = choice.payload.customId === INCOMING_DEBUFF_DECLINE_PURIFY_CUSTOM_ID
             && choice.payload.value === 0;
-        if (!usePurify && !continueWithDaze) return undefined;
+        if (!usePurify && !declinePurify) return undefined;
 
         const start = getStatusApplicationStart(events, index);
         const resumedEvents = usePurify
@@ -200,7 +198,7 @@ export function resumeAttackDebuffFollowups(
             : events;
         const resumedState = completeResolutionFrame(state, frame.id);
         return deferAttackDebuffFollowups(resumedState, resumedEvents, choice.timestamp, {
-            allowPurifyDaze: false,
+            purifyStartIndex: usePurify ? start : index + 1,
         });
     }
 

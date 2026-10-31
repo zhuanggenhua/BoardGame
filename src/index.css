@@ -2081,9 +2081,25 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     }
 }
 
+@keyframes dicethrone-token-available-ripple {
+    0% {
+        opacity: 0.84;
+        transform: translate(-50%, -50%) scale(0.78);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.72);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     [data-dicethrone-token-halo="available"] {
         animation: none !important;
+    }
+
+    [data-dicethrone-token-ripple="available"] {
+        display: none !important;
     }
 }
 

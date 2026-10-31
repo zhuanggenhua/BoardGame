@@ -23,6 +23,8 @@ import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 import { checkPlayCard, getPlayableCardsInResponseWindow, isCardPlayableInResponseWindow } from '../domain/rules';
 import { executePipeline } from '../../../engine/pipeline';
 import { DiceThroneDomain } from '../domain';
+import { deferAttackDebuffFollowups } from '../domain/deferredAttackDebuff';
+import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 
 beforeAll(() => {
     registerDiceThroneConditions();
@@ -143,6 +145,50 @@ describe('晕眩（Daze）额外攻击链', () => {
             expect: { turnPhase: 'main2', activePlayerId: '0' },
         });
         expect(result.passed).toBe(true);
+    });
+});
+
+describe('攻击后续中的通用净化时点', () => {
+    it('除恍惚外，也会在施加其它可净化负面 Token 前询问', () => {
+        const state = createHeroMatchup('barbarian', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.tokenDefinitions = ALL_TOKEN_DEFINITIONS;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'violent-assault',
+            isDefendable: false,
+            damage: 5,
+        };
+        state.core.players['1'].tokens[TOKEN_IDS.PURIFY] = 1;
+
+        const pendingConcussion = {
+            type: 'TOKEN_GRANTED',
+            payload: {
+                targetId: '1',
+                tokenId: STATUS_IDS.CONCUSSION,
+                amount: 1,
+                newTotal: 1,
+                sourceAbilityId: 'violent-assault',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: 123,
+        } as const;
+        const deferred = deferAttackDebuffFollowups(state, [pendingConcussion], 123);
+
+        expect(deferred.events).toEqual([expect.objectContaining({
+            type: 'CHOICE_REQUESTED',
+            payload: expect.objectContaining({
+                playerId: '1',
+                titleKey: 'choices.purifyIncomingDebuff.title',
+                options: expect.arrayContaining([
+                    expect.objectContaining({ labelKey: 'choices.purifyIncomingDebuff.usePurify' }),
+                    expect.objectContaining({ labelKey: 'choices.purifyIncomingDebuff.decline' }),
+                ]),
+            }),
+        })]);
+        expect(deferred.state.core.players['1'].tokens[TOKEN_IDS.PURIFY]).toBe(1);
     });
 });
 
