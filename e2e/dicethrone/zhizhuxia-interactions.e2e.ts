@@ -7,7 +7,8 @@
 
 import type { Page, TestInfo } from '@playwright/test';
 import { dirname } from 'node:path';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
+import sharp from 'sharp';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { dispatchDiceThroneCommand, dragDiceThroneHandCardToPlay, waitForDiceThroneHarness } from '../helpers/dicethrone';
@@ -24,6 +25,73 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     await mkdir(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: false });
     return path;
+};
+
+const countVisibleGoldenTokenRipples = async (page: Page, tokenTestId: string, screenshotPath: string): Promise<number[]> => {
+    const geometry = await page.getByTestId(tokenTestId).evaluate((token) => ({
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        rings: Array.from(token.querySelectorAll<HTMLElement>('[data-dicethrone-token-ripple="available"]')).map((ring) => {
+            const rect = ring.getBoundingClientRect();
+            const style = window.getComputedStyle(ring);
+            return {
+                kind: ring.dataset.rippleKind,
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                borderWidth: Number.parseFloat(style.borderTopWidth),
+                borderColor: style.borderTopColor,
+                display: style.display,
+                animationName: style.animationName,
+                opacity: Number.parseFloat(style.opacity),
+                scale: new DOMMatrixReadOnly(style.transform).a,
+            };
+        }),
+    }));
+    const { data, info } = await sharp(await readFile(screenshotPath)).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const scaleX = info.width / geometry.viewportWidth;
+    const scaleY = info.height / geometry.viewportHeight;
+
+    const visibleAnglesByRing = geometry.rings.map((ring) => {
+        const centerX = (ring.left + ring.width / 2) * scaleX;
+        const centerY = (ring.top + ring.height / 2) * scaleY;
+        const baseDiameter = (ring.width / ring.scale * scaleX + ring.height / ring.scale * scaleY) / 2;
+        const scaleBand = ring.kind === 'inner' ? [1.08, 1.24] : [1.42, 1.62];
+        const minRadius = baseDiameter * scaleBand[0] / 2 - ring.borderWidth * Math.min(scaleX, scaleY) / 2;
+        const maxRadius = baseDiameter * scaleBand[1] / 2 - ring.borderWidth * Math.min(scaleX, scaleY) / 2;
+        let visibleAngles = 0;
+        for (let sample = 0; sample < 96; sample += 1) {
+            const angle = (sample / 96) * Math.PI * 2;
+            let hasGoldenPixel = false;
+            for (let radius = minRadius; radius <= maxRadius && !hasGoldenPixel; radius += 1) {
+                for (let offset = -2; offset <= 2; offset += 1) {
+                    const x = Math.round(centerX + Math.cos(angle) * (radius + offset));
+                    const y = Math.round(centerY + Math.sin(angle) * (radius + offset));
+                    if (x < 0 || y < 0 || x >= info.width || y >= info.height) continue;
+                    const index = (y * info.width + x) * info.channels;
+                    const red = data[index];
+                    const green = data[index + 1];
+                    const blue = data[index + 2];
+                    if (red >= 50 && green >= 40 && blue <= 120 && red - green >= 4 && green - blue >= 10) {
+                        hasGoldenPixel = true;
+                        break;
+                    }
+                }
+            }
+            if (hasGoldenPixel) visibleAngles += 1;
+        }
+        return visibleAngles;
+    });
+    if (visibleAnglesByRing.some((count) => count <= 24)) {
+        throw new Error(`波纹像素检查未覆盖目标环线: ${JSON.stringify({
+            tokenTestId,
+            image: { width: info.width, height: info.height, channels: info.channels },
+            viewport: { width: geometry.viewportWidth, height: geometry.viewportHeight, scaleX, scaleY },
+            rings: geometry.rings.map((ring, index) => ({ ...ring, centerX: ring.left + ring.width / 2, centerY: ring.top + ring.height / 2, visibleAngles: visibleAnglesByRing[index] })),
+        })}`);
+    }
+    return visibleAnglesByRing;
 };
 
 const spiderDice = Array.from({ length: 5 }, (_, id) => ({
@@ -731,13 +799,26 @@ test.describe('DiceThrone 蜘蛛侠真实规则交互', () => {
         const availableInvisibleRipples = invisibleToken.locator('[data-dicethrone-token-ripple="available"]');
         await expect(availableInvisibleRipples).toHaveCount(2);
         await expect(availableInvisibleRipples.first()).toHaveCSS('display', 'block');
-        await expect(availableInvisibleRipples.first()).toHaveCSS('animation-name', 'dicethrone-token-available-ripple');
-        await expect.poll(async () => availableInvisibleRipples.evaluateAll((ripples) => ripples.some((ripple) => {
-            const style = window.getComputedStyle(ripple);
-            const scale = new DOMMatrixReadOnly(style.transform).a;
-            return style.display !== 'none' && Number(style.opacity) > 0.2 && scale > 1.05;
-        })), { timeout: 5000 }).toBe(true);
-        await saveEvidenceScreenshot(page, testInfo, '11-隐形-不可防御伤害响应窗口');
+        await expect(availableInvisibleRipples.nth(0)).toHaveCSS('animation-name', 'dicethrone-token-available-ripple-inner');
+        await expect(availableInvisibleRipples.nth(1)).toHaveCSS('animation-name', 'dicethrone-token-available-ripple-outer');
+        await expect.poll(async () => availableInvisibleRipples.evaluateAll((ripples) => {
+            const rings = ripples.map((ripple) => {
+                const style = window.getComputedStyle(ripple);
+                return {
+                    visible: style.display !== 'none' && Number(style.opacity) > 0.20,
+                    scale: new DOMMatrixReadOnly(style.transform).a,
+                };
+            });
+            return rings.length === 2
+                && rings.every((ring) => ring.visible && ring.scale > 1.05)
+                && Math.abs(rings[0].scale - rings[1].scale) >= 0.17;
+        }), { timeout: 5000 }).toBe(true);
+        const rippleScreenshotPath = await saveEvidenceScreenshot(page, testInfo, '11-隐形-不可防御伤害响应窗口');
+        const goldenPixelCounts = await countVisibleGoldenTokenRipples(page, 'dt-player-1-token-invisible', rippleScreenshotPath);
+        expect(goldenPixelCounts).toHaveLength(2);
+        for (const visibleAngles of goldenPixelCounts) {
+            expect(visibleAngles).toBeGreaterThan(24);
+        }
         await invisibleToken.click();
 
         await expect.poll(async () => {

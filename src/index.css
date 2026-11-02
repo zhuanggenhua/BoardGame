@@ -2081,15 +2081,27 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     }
 }
 
-@keyframes dicethrone-token-available-ripple {
+@keyframes dicethrone-token-available-ripple-inner {
     0% {
-        opacity: 0.84;
-        transform: translate(-50%, -50%) scale(0.78);
+        opacity: 0.46;
+        transform: translate(-50%, -50%) scale(1.08);
     }
 
     100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(1.72);
+        opacity: 0.32;
+        transform: translate(-50%, -50%) scale(1.24);
+    }
+}
+
+@keyframes dicethrone-token-available-ripple-outer {
+    0% {
+        opacity: 0.35;
+        transform: translate(-50%, -50%) scale(1.42);
+    }
+
+    100% {
+        opacity: 0.24;
+        transform: translate(-50%, -50%) scale(1.62);
     }
 }
 
@@ -2098,8 +2110,16 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
         animation: none !important;
     }
 
-    [data-dicethrone-token-ripple="available"] {
-        display: none !important;
+    [data-dicethrone-token-ripple="available"][data-ripple-delay="0"] {
+        animation: none !important;
+        opacity: 0.37 !important;
+        transform: translate(-50%, -50%) scale(1.16) !important;
+    }
+
+    [data-dicethrone-token-ripple="available"][data-ripple-delay="1"] {
+        animation: none !important;
+        opacity: 0.27 !important;
+        transform: translate(-50%, -50%) scale(1.52) !important;
     }
 }
 

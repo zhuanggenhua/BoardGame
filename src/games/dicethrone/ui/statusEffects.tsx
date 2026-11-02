@@ -859,19 +859,22 @@ const getClickableTokenHaloStyle = (): CSSProperties => ({
     height: `calc(100% + ${buildBoardShellInlineUnitValue(0.52)})`,
 });
 
-const getClickableTokenRippleStyle = (delayMs: number): CSSProperties => ({
+const getClickableTokenRippleStyle = (delayMs: number, kind: 'inner' | 'outer'): CSSProperties => ({
     position: 'absolute',
     left: '50%',
     top: '50%',
     zIndex: 9,
     width: `calc(100% + ${buildBoardShellInlineUnitValue(0.58)})`,
     height: `calc(100% + ${buildBoardShellInlineUnitValue(0.58)})`,
-    border: '3px solid rgba(253, 224, 71, 0.96)',
+    border: '2px solid rgba(251, 191, 36, 0.66)',
     borderRadius: '9999px',
-    boxShadow: '0 0 14px rgba(253, 224, 71, 0.68), 0 0 26px rgba(96, 165, 250, 0.30)',
+    boxShadow: '0 0 4px rgba(251, 191, 36, 0.20), 0 0 9px rgba(245, 158, 11, 0.09)',
     pointerEvents: 'none',
-    transform: 'translate(-50%, -50%) scale(0.78)',
-    animation: 'dicethrone-token-available-ripple 2.3s ease-out infinite',
+    opacity: kind === 'inner' ? 0.46 : 0.35,
+    transform: `translate(-50%, -50%) scale(${kind === 'inner' ? 1.08 : 1.42})`,
+    animation: kind === 'inner'
+        ? 'dicethrone-token-available-ripple-inner 2.8s ease-out infinite'
+        : 'dicethrone-token-available-ripple-outer 3.6s ease-out infinite',
     animationDelay: `${delayMs}ms`,
 });
 
@@ -1019,8 +1022,9 @@ export const TokenBadge = ({
                     aria-hidden="true"
                     data-dicethrone-token-ripple="available"
                     data-ripple-delay={0}
+                    data-ripple-kind="inner"
                     className="pointer-events-none"
-                    style={getClickableTokenRippleStyle(0)}
+                    style={getClickableTokenRippleStyle(0, 'inner')}
                 />
             )}
             {isClickable && (
@@ -1028,8 +1032,9 @@ export const TokenBadge = ({
                     aria-hidden="true"
                     data-dicethrone-token-ripple="available"
                     data-ripple-delay={1}
+                    data-ripple-kind="outer"
                     className="pointer-events-none"
-                    style={getClickableTokenRippleStyle(1300)}
+                    style={getClickableTokenRippleStyle(-600, 'outer')}
                 />
             )}
             {isClickable && (

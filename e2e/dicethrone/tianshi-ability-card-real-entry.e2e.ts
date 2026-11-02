@@ -1029,13 +1029,21 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await expect(purifyToken).toHaveAttribute('data-token-clickable', 'true');
         const availablePurifyRipples = purifyToken.locator('[data-dicethrone-token-ripple="available"]');
         await expect(availablePurifyRipples).toHaveCount(2);
-        await expect(availablePurifyRipples.first()).toHaveCSS('display', 'block');
-        await expect(availablePurifyRipples.first()).toHaveCSS('animation-name', 'dicethrone-token-available-ripple');
-        await expect.poll(async () => availablePurifyRipples.evaluateAll((ripples) => ripples.some((ripple) => {
-            const style = window.getComputedStyle(ripple);
-            const scale = new DOMMatrixReadOnly(style.transform).a;
-            return style.display !== 'none' && Number(style.opacity) > 0.2 && scale > 1.05;
-        })), { timeout: 5000 }).toBe(true);
+        await expect(availablePurifyRipples.nth(0)).toHaveCSS('display', 'block');
+        await expect(availablePurifyRipples.nth(0)).toHaveCSS('animation-name', 'dicethrone-token-available-ripple-inner');
+        await expect(availablePurifyRipples.nth(1)).toHaveCSS('animation-name', 'dicethrone-token-available-ripple-outer');
+        await expect.poll(async () => availablePurifyRipples.evaluateAll((ripples) => {
+            const rings = ripples.map((ripple) => {
+                const style = window.getComputedStyle(ripple);
+                return {
+                    visible: style.display !== 'none' && Number(style.opacity) > 0.2,
+                    scale: new DOMMatrixReadOnly(style.transform).a,
+                };
+            });
+            return rings.length === 2
+                && rings.every((ring) => ring.visible && ring.scale > 1.05)
+                && Math.abs(rings[0].scale - rings[1].scale) >= 0.17;
+        }), { timeout: 5000 }).toBe(true);
         await waitForDiceThroneVisualIdle(page);
         await game.screenshot('净化Token可用波纹-恍惚施加前', testInfo);
 
